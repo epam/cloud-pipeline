@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from dataclasses import dataclass
-from typing import Optional
 
 @dataclass
 class RouteSpec:
@@ -29,14 +28,14 @@ class RouteSpec:
     is_same_tab: bool
     edge_num: int
     edge_location: str
-    custom_domain: Optional[str]
+    custom_domain: str | None
     edge_target: str
     run_id: str
     additional: str
     sensitive: bool
     create_dns_record: bool
-    cloudRegionId: Optional[str]
+    cloudRegionId: str | None
     external_app: bool
-    cookie_location: Optional[str]
+    cookie_location: str | None
     edge_jwt_auth: bool
     edge_pass_bearer: bool

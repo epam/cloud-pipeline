@@ -82,14 +82,14 @@ class NginxManager:
             cert_path = os.path.join(PKI_SEARCH_PATH, cert_name + PKI_SEARCH_SUFFIX_CERT)
             key_path = os.path.join(PKI_SEARCH_PATH, cert_name + PKI_SEARCH_SUFFIX_KEY)
             if not os.path.isfile(key_path):
-                do_log('-> Certificate for {} is found at {}, but a key does not exist at {}'.format(domain, cert_path, key_path))
+                do_log(f'-> Certificate for {domain} is found at {cert_path}, but a key does not exist at {key_path}')
                 key_path = None
         
         if not cert_path or not key_path:
             cert_path = PKI_DEFAULT_CERT
             key_path = PKI_DEFAULT_CERT_KEY
 
-        do_log('-> Certificate:Key for {} will be used: {}:{}'.format(domain, cert_path, key_path))
+        do_log(f'-> Certificate:Key for {domain} will be used: {cert_path}:{key_path}')
         return cert_path, key_path
 
     def add_custom_domain(self, domain, location_block, is_external_app=False):
@@ -98,11 +98,11 @@ class NginxManager:
         domain_path = self.get_domain_config_path(domain, is_external_app=is_external_app)
         
         if os.path.exists(domain_path):
-            do_log('-> Adding new location block to existing configuration file at {}'.format(domain_path))
+            do_log(f'-> Adding new location block to existing configuration file at {domain_path}')
             with open(domain_path, 'r') as f:
                 content = f.read()
         else:
-            do_log('-> Creating new custom domain configuration file at {}'.format(domain_path))
+            do_log(f'-> Creating new custom domain configuration file at {domain_path}')
             domain_cert = self.search_custom_domain_cert(domain)
             content = self.srv_template \
                 .replace('{edge_route_server_name}', domain) \
@@ -114,13 +114,13 @@ class NginxManager:
 
         # Check if the location_block already added to the domain config
         if any(location_block_include in line for line in lines):
-            do_log('-> Location block {} already exists for domain {}'.format(location_block, domain))
+            do_log(f'-> Location block {location_block} already exists for domain {domain}')
             return
 
         # If it's a new location entry - add it to the domain config after the {edge_route_location_block} line
         insert_indices = [i for i, line in enumerate(lines) if '# {edge_route_location_block}' in line]
         if not insert_indices:
-             do_log('-> Cannot find an insert location in the domain config {}'.format(domain_path))
+             do_log(f'-> Cannot find an insert location in the domain config {domain_path}')
              return
         lines.insert(insert_indices[-1] + 1, location_block_include)
 
@@ -147,7 +147,7 @@ class NginxManager:
         # Do not delete if this is an "external application", where the server block is managed externally
         if (not is_external_app and domain_path != API_DOMAIN_PATH and 
             sum(NGINX_CUSTOM_DOMAIN_LOC_SUFFIX in line for line in lines) == 0):
-             do_log('-> No more location blocks are available for {}, deleting the config file: {}'.format(domain, domain_path))
+             do_log(f'-> No more location blocks are available for {domain}, deleting the config file: {domain_path}')
              os.remove(domain_path)
         else:
              # Save the domain config back to file
@@ -158,7 +158,7 @@ class NginxManager:
     def remove_custom_domain_all(self, location_block):
         if self.api_domain_name:
             if self.remove_custom_domain(self.api_domain_name, location_block, is_external_app=False):
-                do_log('-> Removed {} location block from the API domain config {}'.format(location_block, API_DOMAIN_PATH))
+                do_log(f'-> Removed {location_block} location block from the API domain config {API_DOMAIN_PATH}')
         
         for domains_root_path in [NGINX_DOMAINS_PATH, EXTERNAL_APPS_DOMAINS_PATH]:
              domain_path_list = [f for f in glob.glob(domains_root_path + '/*' + NGINX_CUSTOM_DOMAIN_CONFIG_EXT)]
@@ -166,15 +166,15 @@ class NginxManager:
                  custom_domain = os.path.basename(domain_path).replace(NGINX_CUSTOM_DOMAIN_CONFIG_EXT, '')
                  is_external = (domains_root_path == EXTERNAL_APPS_DOMAINS_PATH)
                  if self.remove_custom_domain(custom_domain, location_block, is_external_app=is_external):
-                     do_log('-> Removed {} location block from {} domain config'.format(location_block, custom_domain))
+                     do_log(f'-> Removed {location_block} location block from {custom_domain} domain config')
 
     def check_nginx_config(self):
         try:
-            subprocess.check_output('nginx -c %s -t' % NGINX_ROOT_CONFIG_PATH, shell=True)
+            subprocess.check_output(f'nginx -c {NGINX_ROOT_CONFIG_PATH} -t', shell=True)
             do_log('Adding new route ... OK')
             return True
         except subprocess.CalledProcessError as e:
-            do_log('Adding new route ... NOT OK (%s)' % e.returncode)
+            do_log(f'Adding new route ... NOT OK ({e.returncode})')
             return False
 
     def reload_nginx_config(self):
@@ -182,7 +182,7 @@ class NginxManager:
         subprocess.check_output('nginx -s reload', shell=True)
 
     def write_route_config(self, service_spec, service_hostname, has_custom_domain):
-        service_location = '/{}/'.format(service_spec.edge_location) if service_spec.edge_location else "/"
+        service_location = f'/{service_spec.edge_location}/' if service_spec.edge_location else "/"
         # Replace the duplicated forward slashes with a single instance to workaround possible issue when the location is set to "/path//"
         service_location = re.sub('/+', '/', service_location)
 
@@ -228,10 +228,10 @@ class NginxManager:
             for nginx_sensitive_route_definition in nginx_sensitive_route_definitions:
                 added_route_file.write(nginx_sensitive_route_definition)
         
-        do_log('Adding new {}route {}'.format('sensitive ' if service_spec.sensitive else '', path_to_route))
+        do_log(f'Adding new {"sensitive " if service_spec.sensitive else ""}route {path_to_route}')
 
         if has_custom_domain:
-            do_log('Adding new route {} to server block {}'.format(path_to_route, service_hostname))
+            do_log(f'Adding new route {path_to_route} to server block {service_hostname}')
             self.add_custom_domain(service_hostname, path_to_route, is_external_app=service_spec.external_app)
 
         return path_to_route, service_location
@@ -250,7 +250,7 @@ class NginxManager:
 
         with open(path_to_stub, "w") as f:
             f.write(nginx_route_definition)
-        do_log('Adding new stub route ' + path_to_stub)
+        do_log(f'Adding new stub route {path_to_stub}')
         return path_to_stub
 
     def check_route(self, path_to_route, service_location, service_spec, has_custom_domain, service_hostname):
@@ -267,7 +267,7 @@ class NginxManager:
 
         if self.check_nginx_config():
             if has_custom_domain:
-                do_log('Adding new stub route {} to server block {}'.format(path_to_stub, service_hostname))
+                do_log(f'Adding new stub route {path_to_stub} to server block {service_hostname}')
                 self.add_custom_domain(service_hostname, path_to_stub, is_external_app=service_spec.external_app)
             return
 

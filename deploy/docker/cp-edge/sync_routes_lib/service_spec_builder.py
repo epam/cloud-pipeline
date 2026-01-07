@@ -47,7 +47,7 @@ class ServiceSpecBuilder:
                 with open(NGINX_DEFAULT_LOCATION_ATTRIBUTES_PATH) as f:
                     return json.load(f)
             except Exception as e:
-                print('Error reading default location attributes: {}'.format(e))
+                print(f'Error reading default location attributes: {e}')
         return []
 
     def _read_system_endpoints(self):
@@ -119,7 +119,7 @@ class ServiceSpecBuilder:
     # Method will group such parameters by <num> and construct from such group an endpoint.
     def construct_additional_endpoints_from_run_parameters(self, run_details):
         def extract_endpoint_num_from_run_parameter(name):
-             match = re.search(r'{}(\d+).*'.format(CP_CAP_CUSTOM_ENDPOINT_PREFIX), name)
+             match = re.search(fr'{CP_CAP_CUSTOM_ENDPOINT_PREFIX}(\d+).*', name)
              return match.group(1) if match else None
 
         run_parameters = [rp for rp in run_details["pipelineRunParameters"] if rp["name"].startswith(CP_CAP_CUSTOM_ENDPOINT_PREFIX)]
@@ -128,14 +128,14 @@ class ServiceSpecBuilder:
         custom_endpoint_nums = set([CP_CAP_CUSTOM_ENDPOINT_PREFIX + extract_endpoint_num_from_run_parameter(rp["name"]) for rp in run_parameters])
         custom_endpoints_groups = {id: {rp["name"]: rp["value"] for rp in run_parameters if rp["name"].startswith(id)} for id in custom_endpoint_nums}
         
-        do_log('Detected {} custom endpoints groups'.format(len(custom_endpoints_groups)))
+        do_log(f'Detected {len(custom_endpoints_groups)} custom endpoints groups')
 
         endpoints = []
         for e_id, e in custom_endpoints_groups.items():
              endpoints.append({
                  "name": e_id,
                  "endpoint": e.get(e_id + "_PORT"),
-                 "friendly_name": e.get(e_id + "_NAME", "pipeline-{}-{}".format(run_details['id'], e.get(e_id + "_PORT"))),
+                 "friendly_name": e.get(e_id + "_NAME", f"pipeline-{run_details['id']}-{e.get(e_id + '_PORT')}"),
                  "endpoint_additional": e.get(e_id + "_ADDITIONAL", ""),
                  "ssl_backend": e.get(e_id + "_SSL_BACKEND", False),
                  "endpoint_same_tab": e.get(e_id + "_SAME_TAB", False)
@@ -354,7 +354,7 @@ class ServiceSpecBuilder:
              return pretty_path
         
         suffix = name if name else str(custom_num)
-        return "{}-{}".format(pretty_path, suffix) if pretty_path else suffix
+        return f"{pretty_path}-{suffix}" if pretty_path else suffix
 
     def _build_edge_target(self, target_ip, port, path, additional):
         target = EDGE_ROUTE_TARGET_PATH_TMPL.format(pod_ip=target_ip, endpoint_port=port, endpoint_path=path) \

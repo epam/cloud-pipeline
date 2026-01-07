@@ -28,11 +28,11 @@ def main():
     
     api_domain_name = os.environ.get('CP_API_SRV_EXTERNAL_HOST')
     if not api_domain_name:
-            api_domain_name = os.environ.get('CP_API_SRV_INTERNAL_HOST')
+        api_domain_name = os.environ.get('CP_API_SRV_INTERNAL_HOST')
 
     if not api_url or not api_token:
-            print('API url or API token are not set. Exiting')
-            exit(1)
+        print('API url or API token are not set. Exiting')
+        exit(1)
             
     api = CloudPipelineAPI(api_url, api_token)
     
@@ -44,7 +44,7 @@ def main():
 
     do_log('=========== Started iteration ===========')
     if api_domain_name:
-        do_log('API domain name is determined as {}. It will be used to detect friendly URLs'.format(api_domain_name))
+        do_log(f'API domain name is determined as {api_domain_name}. It will be used to detect friendly URLs')
     else:
         do_log('[WARN] Cannot get API domain name from the environment')
 
@@ -58,7 +58,7 @@ def main():
     try:
         synchronizer.sync()
     except Exception as e:
-        do_log('Error during sync: {}'.format(e))
+        do_log(f'Error during sync: {e}')
     do_log('=========== Done iteration ===========')
     print('')
 

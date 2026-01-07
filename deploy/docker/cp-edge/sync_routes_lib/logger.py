@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 from .config import DATE_FORMAT
 
 def do_log(msg):
-    print('[{}] {}'.format(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), msg))
+    print(f'[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] {msg}')
 
 # todo: Use RunLogger from pipe commons instead 
 class RunLogger:
@@ -32,13 +32,13 @@ class RunLogger:
         self._log(message=message, status='RUNNING')
 
     def warning(self, message):
-        self._log(message='\033[93m' + message + '\033[0m', status='RUNNING')
+        self._log(message=f'\033[93m{message}\033[0m', status='RUNNING')
 
     def success(self, message):
-        self._log(message='\033[92m' + message + '\033[0m', status='SUCCESS')
+        self._log(message=f'\033[92m{message}\033[0m', status='SUCCESS')
 
     def _log(self, message, status):
-        do_log("Log run log: " + message)
+        do_log(f"Log run log: {message}")
         now = datetime.fromtimestamp(time.time(), timezone.utc).strftime(DATE_FORMAT)
         date = now[0:len(now) - 3]
         log_entry = json.dumps({
@@ -48,4 +48,4 @@ class RunLogger:
             "logText": message,
             "taskName": self.task_name
         })
-        self.api_client.call_api("run/{}/log".format(self.run_id), data=log_entry)
+        self.api_client.call_api(f"run/{self.run_id}/log", data=log_entry)

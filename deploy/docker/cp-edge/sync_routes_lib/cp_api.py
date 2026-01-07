@@ -28,7 +28,7 @@ class CloudPipelineAPI:
         self.api_token = api_token
         self.headers = {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer {}'.format(self.api_token)
+            'Authorization': f'Bearer {self.api_token}'
         }
 
     def call_api(self, method_url, data=None):
@@ -36,7 +36,7 @@ class CloudPipelineAPI:
         result = None
         for n in range(NUMBER_OF_RETRIES):
             try:
-                do_log('Calling API {}'.format(full_url))
+                do_log(f'Calling API {full_url}')
                 if data:
                     response = requests.post(full_url, verify=False, data=data, headers=self.headers)
                 else:
@@ -45,7 +45,7 @@ class CloudPipelineAPI:
                 try:
                     response_data = json.loads(response.text)
                 except ValueError:
-                    do_log('Calling API ... NOT OK (JSON decode error)\nResponse: {}'.format(response.text))
+                    do_log(f'Calling API ... NOT OK (JSON decode error)\nResponse: {response.text}')
                 else:
                     if response_data.get('status') == 'OK':
                         do_log('Calling API ... OK')
@@ -53,15 +53,15 @@ class CloudPipelineAPI:
                         break
                     else:
                         err_msg = response_data.get('message', 'No error message available')
-                        do_log('Calling API ... NOT OK ({})\n{}'.format(full_url, err_msg))
+                        do_log(f'Calling API ... NOT OK ({full_url})\n{err_msg}')
                         do_log('As the API technically succeeded, it will not be retried')
                         break
             # todo: Use only specific exception types
             except Exception as api_exception:
-                do_log('Calling API ... NOT OK ({})\n{}'.format(full_url, str(api_exception)))
+                do_log(f'Calling API ... NOT OK ({full_url})\n{api_exception}')
 
             if n < NUMBER_OF_RETRIES - 1:
-                do_log('Sleep for {} sec and perform API call again ({}/{})'.format(SECS_TO_WAIT_BEFORE_RETRY, n + 2, NUMBER_OF_RETRIES))
+                do_log(f'Sleep for {SECS_TO_WAIT_BEFORE_RETRY} sec and perform API call again ({n + 2}/{NUMBER_OF_RETRIES})')
                 time.sleep(SECS_TO_WAIT_BEFORE_RETRY)
             else:
                 do_log('All attempts failed. API call failed')

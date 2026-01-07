@@ -52,10 +52,10 @@ class RouteSynchronizer:
          dns_rec = EDGE_DNS_RECORD_FORMAT.format(job_name=service_spec.edge_location, region_name=edge_region_name)
          
          url = API_POST_DNS_RECORD
-         if edge_region_id: url += "?regionId=" + edge_region_id
+         if edge_region_id: url += f"?regionId={edge_region_id}"
          
          data = json.dumps({'dnsRecord': dns_rec, 'target': edge_service_external_ip, 'format': 'RELATIVE'})
-         logger.info('Creating DNS record {}...'.format(dns_rec))
+         logger.info(f'Creating DNS record {dns_rec}...')
          
          resp = self.api.call_api(url, data=data) or {}
          payload = resp.get('payload', {})
@@ -63,23 +63,23 @@ class RouteSynchronizer:
              logger.warning('Failed to create DNS record')
              raise ValueError('Fail to create DNS record')
              
-         logger.success('Created DNS record {}'.format(payload.get('dnsRecord')))
+         logger.success(f"Created DNS record {payload.get('dnsRecord')}")
          service_spec.custom_domain = payload.get('dnsRecord')
          service_spec.edge_location = None
          return service_spec
 
     def update_svc_url_for_run(self, run_id, region_name, service_url):
         if not service_url:
-            do_log('Assigning #{} with service url has been skipped '
-                   'because the corresponding service url has not been found.'.format(run_id))
+            do_log(f'Assigning #{run_id} with service url has been skipped '
+                   'because the corresponding service url has not been found.')
             return
-        do_log('Assigning #{} with service url \n{}'.format(run_id, service_url))
+        do_log(f'Assigning #{run_id} with service url \n{service_url}')
         url = API_UPDATE_SVC.format(run_id=run_id, region=region_name)
         response_data = self.api.call_api(url, data=json.dumps({'serviceUrl': '[' + service_url + ']'}))
         if response_data:
-            do_log('Assigning #{} with service url ... OK'.format(run_id))
+            do_log(f'Assigning #{run_id} with service url ... OK')
         else:
-            do_log('Assigning #{} with service url ... NOT OK.'.format(run_id))
+            do_log(f'Assigning #{run_id} with service url ... NOT OK.')
 
     def sync(self):
         run_pod_selector_key = os.getenv('CP_EDGE_RUN_POD_SELECTOR_KEY', "type")
@@ -163,8 +163,8 @@ class RouteSynchronizer:
         if resp and 'payload' in resp:
             return resp['payload']
         
-        unicode_ids = "[" + ", ".join(["u'{}'".format(rid) for rid in run_ids]) + "]"
-        do_log('Cannot get list of active runs from the API for the following IDs: {}'.format(unicode_ids))
+        unicode_ids = "[" + ", ".join([f"u'{rid}'" for rid in run_ids]) + "]"
+        do_log(f'Cannot get list of active runs from the API for the following IDs: {unicode_ids}')
         return []
 
     def _resolve_expected_routes(self, pods_with_endpoints, runs_with_endpoints):
@@ -176,10 +176,10 @@ class RouteSynchronizer:
             pod_run_id = pod_spec['metadata']['labels'].get('runid')
             if pod_run_id:
                 if str(pod_run_id) not in active_run_ids:
-                    do_log('Cannot find the RunID {} in the list of cached runs, skipping'.format(pod_run_id))
+                    do_log(f'Cannot find the RunID {pod_run_id} in the list of cached runs, skipping')
                     continue
                 services_list.update(self.spec_builder.get_service_list(runs_with_endpoints, pod_id, pod_run_id, pod_ip))
-        do_log('Found {} expected routes'.format(len(services_list)))
+        do_log(f'Found {len(services_list)} expected routes')
         return services_list
 
     def _resolve_actual_routes(self):
@@ -197,7 +197,7 @@ class RouteSynchronizer:
                     self.nginx.remove_custom_domain_all(location_config_path)
                     continue
                 nginx_modules_list[x.replace('.loc.conf', '').replace('.inc.conf', '')] = x
-        do_log('Found {} actual routes'.format(len(nginx_modules_list)))
+        do_log(f'Found {len(nginx_modules_list)} actual routes')
         return nginx_modules_list
 
     def _calculate_route_diff(self, services_list, nginx_modules_list):
@@ -208,9 +208,9 @@ class RouteSynchronizer:
         routes_to_add = routes_expected - routes_actual
         routes_to_delete = routes_actual - routes_expected
         
-        do_log('Found {} existing routes, these routes will be checked'.format(len(routes_to_check)))
-        do_log('Found {} missing routes, these routes will be created'.format(len(routes_to_add)))
-        do_log('Found {} expired routes, these routes will be deleted'.format(len(routes_to_delete)))
+        do_log(f'Found {len(routes_to_check)} existing routes, these routes will be checked')
+        do_log(f'Found {len(routes_to_add)} missing routes, these routes will be created')
+        do_log(f'Found {len(routes_to_delete)} expired routes, these routes will be deleted')
 
         # All routes that exist in both Nginx and API are checked, whether the routes shall be updated or kept untouched.
         # If some routes differ then they are deleted and created from scratch.
@@ -219,7 +219,7 @@ class RouteSynchronizer:
         for route in routes_to_check:
             path_to_route = os.path.join(NGINX_SITES_PATH, nginx_modules_list[route])
             
-            do_log('Checking route {}'.format(path_to_route))
+            do_log(f'Checking route {path_to_route}')
             with open(path_to_route) as route_file:
                 route_file_contents = route_file.read()
             
@@ -238,15 +238,13 @@ class RouteSynchronizer:
             shared_groups_sids_to_update = spec.shared_groups_sids
 
             if shared_users_sids_to_check != shared_users_sids_to_update:
-                do_log('Detected different shared users. Actual: "{}". Expected: "{}"'
-                       .format(shared_users_sids_to_check, shared_users_sids_to_update))
+                do_log(f'Detected different shared users. Actual: "{shared_users_sids_to_check}". Expected: "{shared_users_sids_to_update}"')
                 routes_to_update.add(route)
             elif shared_groups_sids_to_check != shared_groups_sids_to_update:
-                do_log('Detected different shared groups. Actual: "{}". Expected: "{}"'
-                       .format(shared_groups_sids_to_check, shared_groups_sids_to_update))
+                do_log(f'Detected different shared groups. Actual: "{shared_groups_sids_to_check}". Expected: "{shared_groups_sids_to_update}"')
                 routes_to_update.add(route)
         
-        do_log('Found {} changed routes, these routes will be replaced'.format(len(routes_to_update)))
+        do_log(f'Found {len(routes_to_update)} changed routes, these routes will be replaced')
 
         # If a single route of a pod is added/deleted/updated then all other routes of the same pod are replaced.
         # Otherwise, the generated service url will have missing/extra endpoints.
@@ -260,17 +258,17 @@ class RouteSynchronizer:
         
         routes_to_replace = set([route for route in routes_to_check if get_pod_from_route(route) in affected_pods])
         routes_to_affect = routes_to_replace - routes_to_update
-        do_log('Found {} affected routes, these routes will be replaced'.format(len(routes_to_affect)))
+        do_log(f'Found {len(routes_to_affect)} affected routes, these routes will be replaced')
         
         return (routes_to_add | routes_to_replace), (routes_to_delete | routes_to_replace)
 
     def _delete_routes(self, routes_to_delete, nginx_modules_list):
-        do_log("Deleting {} routes...".format(len(routes_to_delete)))
+        do_log(f"Deleting {len(routes_to_delete)} routes...")
         if not routes_to_delete:
             return
         for route in routes_to_delete:
             path_to_route = os.path.join(NGINX_SITES_PATH, nginx_modules_list[route])
-            do_log('Deleting route {}'.format(path_to_route))
+            do_log(f'Deleting route {path_to_route}')
             os.remove(path_to_route)
             self.nginx.remove_custom_domain_all(path_to_route)
 
@@ -278,7 +276,7 @@ class RouteSynchronizer:
         # loop through all routes that we need to create, if this route doesn't have option to create custom DNS record
         # we handle it in the main thread, if custom DNS record should be created, since it consume some time ~ 20 sec,
         # we put it to the separate collection to handle it at the end.
-        do_log("Creating {} routes for regular endpoints...".format(len(regular_routes_to_add)))
+        do_log(f"Creating {len(regular_routes_to_add)} routes for regular endpoints...")
         service_url_dict = {}
         for route in regular_routes_to_add:
             spec = services_list[route]
@@ -314,7 +312,7 @@ class RouteSynchronizer:
             do_log("Creating 0 configurations for dns endpoints...")
             return dns_route_runs, dns_route_results
 
-        do_log("Creating {} configurations for dns endpoints...".format(len(dns_routes_to_configure)))
+        do_log(f"Creating {len(dns_routes_to_configure)} configurations for dns endpoints...")
         for route in dns_routes_to_configure:
             spec = services_list[route]
             dns_route_runs.add(spec.run_id)
@@ -348,9 +346,9 @@ class RouteSynchronizer:
                     if spec:
                         dns_routes_to_add.append(spec.edge_location_path.replace(".inc", ""))
                 except Exception as e:
-                    do_log("DNS creation failed: {}".format(e))
+                    do_log(f"DNS creation failed: {e}")
         
-        do_log("Creating {} routes for dns endpoints...".format(len(dns_routes_to_add)))
+        do_log(f"Creating {len(dns_routes_to_add)} routes for dns endpoints...")
         for route in dns_routes_to_configure:
             spec = services_list[route]
             hostname = spec.custom_domain

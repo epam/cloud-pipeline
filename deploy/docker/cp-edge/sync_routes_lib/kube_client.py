@@ -38,7 +38,7 @@ class KubeClient:
         if api:
             self.api = api
         elif kube_config_path and os.path.exists(kube_config_path):
-            do_log('Using kubeconfig at {}'.format(kube_config_path))
+            do_log(f'Using kubeconfig at {kube_config_path}')
             self.api = HTTPClient(KubeConfig.from_file(kube_config_path))
         else:
             do_log('Using in-cluster service account configuration')
@@ -65,8 +65,7 @@ class KubeClient:
             edge_kube_service = Service.objects(self.api, namespace=CP_KUBE_NAMESPACE).filter(selector=selector)
             
             if not edge_kube_service.response['items']:
-                do_log('EDGE service is not found by labels: cloud-pipeline/role=EDGE and %s=%s'
-                       % (EDGE_SVC_REGION_LABEL, edge_region_name))
+                do_log(f'EDGE service is not found by labels: cloud-pipeline/role=EDGE and {EDGE_SVC_REGION_LABEL}={edge_region_name}')
                 return None, None
             else:
                 edge_kube_service_object = edge_kube_service.response['items'][0]
@@ -83,7 +82,7 @@ class KubeClient:
                 if edge_service_external_ip and edge_service_port:
                     break
                 else:
-                    do_log('Sleep for {} sec and perform kube API call again ({}/{})'.format(SECS_TO_WAIT_BEFORE_RETRY, n + 1, NUMBER_OF_RETRIES))
+                    do_log(f'Sleep for {SECS_TO_WAIT_BEFORE_RETRY} sec and perform kube API call again ({n + 1}/{NUMBER_OF_RETRIES})')
                     time.sleep(SECS_TO_WAIT_BEFORE_RETRY)
 
         if not edge_service_external_ip:
@@ -96,6 +95,5 @@ class KubeClient:
             if edge_kube_service_object['ports']:
                 edge_service_port = edge_kube_service_object['ports'][0]['nodePort']
 
-        do_log('EDGE: {}:{} ({} #{})'.format(edge_service_external_ip, edge_service_port,
-                                             edge_region_name, edge_region_id or 'undefined'))
+        do_log(f'EDGE: {edge_service_external_ip}:{edge_service_port} ({edge_region_name} #{edge_region_id or "undefined"})')
         return edge_service_external_ip, edge_service_port
