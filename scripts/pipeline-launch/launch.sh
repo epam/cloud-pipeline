@@ -619,10 +619,17 @@ EOF
                         fi
                   done
             elif [ "$CP_OS" == "debian" ] || [ "$CP_OS" == "ubuntu" ]; then
+                  # Note: Keeping for backward compatability, further on use CP_REPO_MANAGER_EXTRA_CONFIG_DEB
                   if [ "$CP_REPO_ACCESS_TIMEOUT_SEC" ]; then
                         mkdir -p /etc/apt/apt.conf.d
                         echo "Acquire::http::timeout \"$CP_REPO_ACCESS_TIMEOUT_SEC\";" >> /etc/apt/apt.conf.d/99cp_timeouts
                         echo "Acquire::https::timeout \"$CP_REPO_ACCESS_TIMEOUT_SEC\";" >> /etc/apt/apt.conf.d/99cp_timeouts
+                  fi
+                  # CP_REPO_MANAGER_EXTRA_CONFIG_DEB shall be defined as a set of "key=value;"
+                  # e.g. Acquire::http::timeout "10"; Acquire::https::Pipeline-Depth "0";
+                  if [ "$CP_REPO_MANAGER_EXTRA_CONFIG_DEB" ]; then
+                        mkdir -p /etc/apt/apt.conf.d
+                        echo "$CP_REPO_MANAGER_EXTRA_CONFIG_DEB" >> /etc/apt/apt.conf.d/999cp_extra
                   fi
                   for _CP_REPO_RETRY_ITER in $(seq 1 $CP_REPO_RETRY_COUNT); do
                         # Remove nvidia repositories, as they cause run initialization failure
