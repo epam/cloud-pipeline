@@ -47,6 +47,7 @@ import com.epam.pipeline.entity.pipeline.run.RunChartInfo;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.run.CommitRunConditions;
+import com.epam.pipeline.entity.run.PipelineRunPerformanceMetrics;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.manager.filter.WrongFilterException;
 import com.epam.pipeline.acl.run.RunApiService;
@@ -631,5 +632,16 @@ public class PipelineRunController extends AbstractRestController {
                                             @RequestParam(required = false) final Integer boundary) {
         runApiService.setLimitBoundary(runId, enable, boundary);
         return Result.success();
+    }
+
+    @GetMapping("/run/{runId}/metrics")
+    @ApiOperation(
+            value = "Loads run performance metrics. Metrics can be loaded only for runs in final status.",
+            notes = "Loads run performance metrics. Metrics can be loaded only for runs in final status.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<PipelineRunPerformanceMetrics> loadPipelineRunPerformanceMetrics(
+            @PathVariable(value = RUN_ID) final Long runId) {
+        return Result.success(runApiService.loadPipelineRunPerformanceMetrics(runId));
     }
 }
