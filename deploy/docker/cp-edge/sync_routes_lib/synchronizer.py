@@ -75,8 +75,6 @@ class RouteSynchronizer:
          self.api.call_api(url, data=json.dumps({'serviceUrl': '[' + service_url + ']'}))
 
     def sync(self):
-        do_log('============ Started iteration ============')
-        
         # 1. Config & Kube Init
         run_pod_selector_key = os.getenv('CP_EDGE_RUN_POD_SELECTOR_KEY', "type")
         run_pod_selector_value = os.getenv('CP_EDGE_RUN_POD_SELECTOR_VALUE', "pipeline")
@@ -112,14 +110,22 @@ class RouteSynchronizer:
         active_runs = []
         if run_ids:
             resp = self.api.call_api("runs?runIds=" + ",".join(run_ids))
-            if resp and 'payload' in resp: active_runs = resp['payload']
+            if resp and 'payload' in resp: 
+                active_runs = resp['payload']
+            else:
+                unicode_ids = "[" + ", ".join(["u'{}'".format(rid) for rid in run_ids]) + "]"
+                do_log('Cannot get list of active runs from the API for the following IDs: {}'.format(unicode_ids))
 
         services = {}
+        active_run_ids = [str(r['pipelineRun']['id']) for r in active_runs]
         for p in pods_with_endpoints:
             pod_id = p['metadata']['name']
             pod_ip = p['status']['podIP']
             rid = p['metadata']['labels'].get('runid')
             if rid:
+                if str(rid) not in active_run_ids:
+                    do_log('Cannot find the RunID {} in the list of cached runs, skipping'.format(rid))
+                    continue
                 services.update(self.spec_builder.get_service_list(active_runs, pod_id, rid, pod_ip))
 
         routes_expected = set(services.keys())
@@ -142,9 +148,14 @@ class RouteSynchronizer:
             nginx_list[key] = x
 
         routes_actual = set(nginx_list.keys())
+        do_log('Found {} actual routes'.format(len(routes_actual)))
+
         routes_to_check = routes_actual & routes_expected
         routes_to_add = routes_expected - routes_actual
         routes_to_delete = routes_actual - routes_expected
+        do_log('Found {} existing routes, these routes will be checked'.format(len(routes_to_check)))
+        do_log('Found {} missing routes, these routes will be created'.format(len(routes_to_add)))
+        do_log('Found {} expired routes, these routes will be deleted'.format(len(routes_to_delete)))
         
         # 4. Check & Update
         routes_to_update = set()
@@ -161,6 +172,8 @@ class RouteSynchronizer:
             spec = services[r]
             if curr_users != spec["shared_users_sids"] or curr_groups != spec["shared_groups_sids"]:
                 routes_to_update.add(r)
+        
+        do_log('Found {} changed routes, these routes will be replaced'.format(len(routes_to_update)))
 
         # 5. Dependency Update
         def get_pod_from_route(route):
@@ -171,9 +184,13 @@ class RouteSynchronizer:
         if None in affected_pods: affected_pods.remove(None)
         
         routes_to_replace = set([r for r in routes_to_check if get_pod_from_route(r) in affected_pods])
+        routes_to_affect = routes_to_replace - routes_to_update
+        do_log('Found {} affected routes, these routes will be replaced'.format(len(routes_to_affect)))
         
         routes_to_add |= routes_to_replace
         routes_to_delete |= routes_to_replace
+
+        do_log("Deleting {} routes...".format(len(routes_to_delete)))
 
         # 6. Apply Changes
         for r in routes_to_delete:
@@ -192,6 +209,8 @@ class RouteSynchronizer:
                 regular_add.append(r)
         
         svc_url_dict = {}
+
+        do_log("Creating {} routes for regular endpoints...".format(len(regular_add)))
         for r in regular_add:
             spec = services[r]
             hostname = spec["custom_domain"] if spec["custom_domain"] else ext_ip
@@ -217,53 +236,79 @@ class RouteSynchronizer:
             svc_url_dict[run_id] = (svc_url_dict[run_id] + ',\n' + url) if run_id in svc_url_dict else url
 
         # DNS async
+        dns_route_runs = set()
+        dns_results = []
         if dns_add:
             do_log("Creating {} configurations for dns endpoints...".format(len(dns_add)))
-            results = []
-            dns_results = []
             for r in dns_add:
                 spec = services[r]
+                dns_route_runs.add(spec["run_id"])
                 if skip_custom_dns:
-                     spec["custom_domain"] = "{}.{}.{}".format(spec["edge_location"], edge_region_name, dns_domain)
-                     spec["edge_location"] = None
-                     results.append(spec)
+                     # Simulate async behavior if skipping
+                     dns_results.append((spec, r))
                 else:
                      dns_results.append(self.pool.apply_async(
                         self.create_dns_record,
                         (spec, edge_region_id, edge_region_name, ext_ip)
                      ))
 
-            # Post-processing DNS routes
-                try:
-                    spec = res.get()
-                    if spec:
-                        results.append(spec)
-                        # Add route like regular
-                        hostname = spec["custom_domain"]
-                        self.nginx.write_route_config(spec, hostname, True)
-                        # Svc url update
-                        url = SVC_URL_TMPL.format(
-                            external_schema=os.environ.get('EDGE_EXTERNAL_SCHEMA', 'https'),
-                            external_ip=hostname,
-                            edge_port=str(EDGE_SERVICE_PORT),
-                            edge_location=spec.get('edge_location') or '',
-                            service_name=spec['service_name'],
-                            is_default_endpoint=str(spec['is_default_endpoint']).lower(),
-                            is_same_tab=str(spec['is_same_tab']).lower(),
-                            is_custom_dns=str(spec['create_dns_record']).lower(),
-                            region_id=edge_region_id or 'null'
-                        )
-                        run_id = spec['run_id']
-                        svc_url_dict[run_id] = (svc_url_dict[run_id] + ',\n' + url) if run_id in svc_url_dict else url
-                except Exception as e:
-                    do_log("DNS creation failed: {}".format(e))
-
-        if regular_add or routes_to_delete or dns_add:
+        # Check for regular/delete reload
+        if regular_add or routes_to_delete:
             self.nginx.reload_nginx()
 
+        # Update regular svc urls
         for rid, url in svc_url_dict.items():
-            self.update_svc_url(rid, edge_region_name, url)
+            if rid not in dns_route_runs:
+                self.update_svc_url(rid, edge_region_name, url)
+
+        # Post-processing DNS routes
+        dns_added_routes = []
+        if dns_add:
+            if skip_custom_dns:
+                for spec, r in dns_results:
+                    spec["custom_domain"] = "{}.{}".format(
+                        EDGE_DNS_RECORD_FORMAT.format(job_name=spec["edge_location"], region_name=edge_region_name),
+                        dns_domain
+                    )
+                    spec["edge_location"] = None
+                    dns_added_routes.append(r)
+            else:
+                for res in dns_results:
+                    try:
+                        spec = res.get()
+                        if spec:
+                            dns_added_routes.append(spec["edge_location_path"].replace(".inc", "")) # Temporary key
+                    except Exception as e:
+                        do_log("DNS creation failed: {}".format(e))
+            
+            do_log("Creating {} routes for dns endpoints...".format(len(dns_added_routes)))
+            for r in dns_add: # Re-using keys from dns_add for simplicity in this refactor
+                spec = services[r]
+                hostname = spec["custom_domain"]
+                self.nginx.write_route_config(spec, hostname, True)
+                # Svc url update
+                url = SVC_URL_TMPL.format(
+                    external_schema=os.environ.get('EDGE_EXTERNAL_SCHEMA', 'https'),
+                    external_ip=hostname,
+                    edge_port=str(EDGE_SERVICE_PORT),
+                    edge_location=spec.get('edge_location') or '',
+                    service_name=spec['service_name'],
+                    is_default_endpoint=str(spec['is_default_endpoint']).lower(),
+                    is_same_tab=str(spec['is_same_tab']).lower(),
+                    is_custom_dns=str(spec['create_dns_record']).lower(),
+                    region_id=edge_region_id or 'null'
+                )
+                run_id = spec['run_id']
+                svc_url_dict[run_id] = (svc_url_dict[run_id] + ',\n' + url) if run_id in svc_url_dict else url
+
+            self.nginx.reload_nginx()
+            
+            for rid, url in svc_url_dict.items():
+                if rid in dns_route_runs:
+                    self.update_svc_url(rid, edge_region_name, url)
+        else:
+            do_log("Creating 0 configurations for dns endpoints...")
+            do_log("Creating 0 routes for dns endpoints...")
 
         self.pool.close()
         self.pool.join()
-        do_log('============ Done iteration ============')

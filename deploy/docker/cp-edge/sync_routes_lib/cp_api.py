@@ -54,7 +54,8 @@ class CloudPipelineAPI:
                         break
                     else:
                         err_msg = response_data.get('message', 'No error message available')
-                        do_log('Calling API ... NOT OK ({})\n{}'.format(full_url, err_msg))
+                        do_log('Calling API ... NOT OK ({})'.format(full_url))
+                        print(err_msg)
                         do_log('As the API technically succeeded, it will not be retried')
                         break
             # todo: Use only specific exception types

@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import os
+import time
+import pykube
 from sync_routes_lib.config import CP_KUBE_NAMESPACE
 from sync_routes_lib.logger import do_log
 from sync_routes_lib.cp_api import CloudPipelineAPI
@@ -40,6 +42,13 @@ def main():
     except ImportError:
         raise RuntimeError('pykube is not installed.')
 
+    do_log('========== Started iteration ==========')
+    if api_domain_name:
+        do_log('API domain name is determined as {}. It will be used to detect friendly URLs'.format(api_domain_name))
+    else:
+        do_log('[WARN] Cannot get API domain name from the environment')
+
+    do_log('Using kubeconfig at .\\aws-dev-kube.config')
     kube_api = HTTPClient(KubeConfig.from_service_account())
     kube_api.session.verify = False
     kube_client = KubeClient(api=kube_api)
@@ -47,12 +56,12 @@ def main():
     
     synchronizer = RouteSynchronizer(kube_client, api_client, nginx_manager)
     
-    if api_domain_name:
-        do_log('API domain name is determined as {}. It will be used to detect friendly URLs'.format(api_domain_name))
-    else:
-        do_log('[WARN] Cannot get API domain name from the environment')
-
-    synchronizer.sync()
+    try:
+        synchronizer.sync()
+    except Exception as e:
+        do_log('Error during sync: {}'.format(e))
+    do_log('========== Done iteration ==========')
+    do_log('')
 
 if __name__ == '__main__':
     main()
