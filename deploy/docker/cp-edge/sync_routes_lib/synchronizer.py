@@ -132,6 +132,13 @@ class RouteSynchronizer:
         self.pool.join()
 
     def load_pods_for_runs_with_endpoints(self, selector_key, selector_value):
+        # From each pod with a container, which has endpoints ("job-type=Service" or container's environment
+        # has a parameter from SYSTEM_ENDPOINTS) we shall take:
+        # -- PodIP
+        # -- PodID
+        # -- N entries by a template
+        # --- svc-port-N
+        # --- svc-path-N
         pods = self.kube.get_pods({selector_key: selector_value})
         pods_with_endpoints = []
         for p in pods.response['items']:

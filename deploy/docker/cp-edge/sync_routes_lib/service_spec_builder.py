@@ -32,6 +32,7 @@ from .config import (
     NGINX_DEFAULT_LOCATION_ATTRIBUTES_PATH
 )
 from .logger import do_log
+from .models import RouteSpec
 
 class ServiceSpecBuilder:
     def __init__(self, api_client):
@@ -104,6 +105,18 @@ class ServiceSpecBuilder:
                 return False
         return False
 
+    # Function to construct endpoint was configured with Run Parameters.
+    # Group of Run Parameters started with CP_CAP_CUSTOM_TOOL_ENDPOINT_<num> considered as configuration of additional endpoint
+    # that should be available for this run. Full list of supported params are:
+    #
+    # CP_CAP_CUSTOM_TOOL_ENDPOINT_<num>_PORT
+    # CP_CAP_CUSTOM_TOOL_ENDPOINT_<num>_NAME
+    # CP_CAP_CUSTOM_TOOL_ENDPOINT_<num>_ADDITIONAL
+    # CP_CAP_CUSTOM_TOOL_ENDPOINT_<num>_NUM
+    # CP_CAP_CUSTOM_TOOL_ENDPOINT_<num>_SSL_BACKEND
+    # CP_CAP_CUSTOM_TOOL_ENDPOINT_<num>_SAME_TAB
+    #
+    # Method will group such parameters by <num> and construct from such group an endpoint.
     def construct_additional_endpoints_from_run_parameters(self, run_details):
         def extract_endpoint_num_from_run_parameter(name):
              match = re.search(r'{}(\d+).*'.format(CP_CAP_CUSTOM_ENDPOINT_PREFIX), name)
@@ -130,6 +143,7 @@ class ServiceSpecBuilder:
         return endpoints
 
     def append_additional_endpoints(self, tool_endpoints, run_details):
+        # Append additional endpoints to the existing list
         if not tool_endpoints: 
             tool_endpoints = []
         
@@ -137,7 +151,7 @@ class ServiceSpecBuilder:
             return tool_endpoints, 0
 
         sys_endpoints = self.system_endpoints_config
-        # 1. Identify valid system endpoints from run parameters
+        # Get a list of endpoints from SYSTEM_ENDPOINTS which match the run's parameters (param name and a value)
         additional = []
         for param in run_details["pipelineRunParameters"]:
             name = param["name"]
@@ -147,15 +161,15 @@ class ServiceSpecBuilder:
                     conf.get("endpoint")):
                     additional.append(conf)
 
-        # 2. Identify custom endpoints from run parameters, avoiding conflicts
         configured_ports = {e["endpoint"] for e in additional}
         for custom in self.construct_additional_endpoints_from_run_parameters(run_details):
             if custom["endpoint"] not in configured_ports:
                 additional.append(custom)
                 configured_ports.add(custom["endpoint"])
 
-        # 3. Handle default endpoint logic for single-endpoint tools
         if additional and len(tool_endpoints) == 1:
+            # If only a single endpoint is defined for the tool - we shall make sure it is set to default. Otherwise "system endpoint" may become a default one
+            # If more then one endpoint is defined - we shall not make the changes, as it is up to the owner of the tool
             try:
                 t = json.loads(tool_endpoints[0])
                 t["isDefault"] = "true"
@@ -164,12 +178,12 @@ class ServiceSpecBuilder:
                 pass 
 
         overridden_count = 0
-        
-        # 4. Merge additional endpoints, removing conflicts from existing tool_endpoints
+
         for add_ep in additional:
             port = add_ep["endpoint"]
             friendly = add_ep.get("friendly_name")
             
+            # Filter out any endpoint if it matches with system ones
             # Helper to check if an existing endpoint conflicts with the new one
             def is_conflict(existing_json):
                 try:
@@ -180,14 +194,12 @@ class ServiceSpecBuilder:
                 except:
                     return False
 
-            # Split tool_endpoints into conflicting and non-conflicting
             conflicting = [e for e in tool_endpoints if is_conflict(e)]
             non_conflicting = [e for e in tool_endpoints if not is_conflict(e)]
             
             overridden_count += len(conflicting)
             tool_endpoints = non_conflicting
 
-            # Determine flags (default, ssl, sameTab) from conflicting endpoints or defaults
             is_def, is_ssl, is_same = False, False, False
             for c in conflicting:
                 try:
