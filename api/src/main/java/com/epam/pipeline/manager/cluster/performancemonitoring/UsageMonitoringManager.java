@@ -60,8 +60,8 @@ public interface UsageMonitoringManager {
      * @return List of monitoring stats.
      */
     default PipelineRunPerformanceMetrics getPerformanceMetricsForRun(final String nodeName, final LocalDateTime from,
-                                                                      final LocalDateTime to, final Long runId) {
-        List<MonitoringStats> statsForNode = getStatsForNode(nodeName, from, to, Duration.between(from, to), runId);
+                                                                      final LocalDateTime to, final long runId) {
+        List<MonitoringStats> statsForNode = getStatsForNode(nodeName, from, to, Duration.between(from, to), null);
         Assert.state(statsForNode.size() == 1, "There should be only 1 monitoring stat!");
         return mapToRunPerformanceMetrics(runId, statsForNode.get(0));
     }
