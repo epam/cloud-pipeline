@@ -26,14 +26,14 @@ import com.epam.pipeline.entity.run.PipelineRunPerformanceMetric;
 import com.epam.pipeline.entity.run.PipelineRunPerformanceMetrics;
 import com.epam.pipeline.entity.run.PipelineRunPerformanceMetricsType;
 import com.epam.pipeline.manager.cluster.MonitoringReportType;
+import org.springframework.util.Assert;
 
 import javax.annotation.Nullable;
 import java.io.InputStream;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * Node usage monitoring manager.
@@ -57,13 +57,12 @@ public interface UsageMonitoringManager {
      * @return List of monitoring stats.
      */
     default PipelineRunPerformanceMetrics getStatsForRun(Long runId, String nodeName) {
-        List<MonitoringStats> statsForNode = getStatsForNode(nodeName, null, null, null);
+        final List<MonitoringStats> statsForNode = getStatsForNode(nodeName, null, null, null);
+        Assert.state(statsForNode.size() == 1, "There should be only 1 monitoring stat!");
         return new PipelineRunPerformanceMetrics(
                 runId,
-                statsForNode.stream()
-                        .map(this::mapToRunPerformanceMetric)
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toList()));
+                mapToRunPerformanceMetric(statsForNode.get(0))
+        );
     }
 
     /**
@@ -127,21 +126,27 @@ public interface UsageMonitoringManager {
                                                LocalDateTime from, LocalDateTime to,
                                                Integer intervals, NetworkEventFilter filter);
 
-    default PipelineRunPerformanceMetric mapToRunPerformanceMetric(MonitoringStats stat) {
+    default List<PipelineRunPerformanceMetric> mapToRunPerformanceMetric(MonitoringStats stat) {
+        final List<PipelineRunPerformanceMetric> result = new ArrayList<>();
         if (stat.getCpuUsage() != null) {
-            return PipelineRunPerformanceMetric.builder()
-                    .type(PipelineRunPerformanceMetricsType.CPU)
-                    .capacity(stat.getContainerSpec().getNumberOfCores())
-                    .max(stat.getCpuUsage().getMax())
-                    .avg(stat.getCpuUsage().getLoad()).build();
-        } else  if (stat.getMemoryUsage() != null) {
-            return PipelineRunPerformanceMetric.builder()
-                    .type(PipelineRunPerformanceMetricsType.MEMORY)
-                    .capacity(stat.getContainerSpec().getMaxMemory())
-                    .max(stat.getMemoryUsage().getMax())
-                    .avg(stat.getMemoryUsage().getUsage())
-                    .build();
+            result.add(
+                PipelineRunPerformanceMetric.builder()
+                        .type(PipelineRunPerformanceMetricsType.CPU)
+                        .capacity(stat.getContainerSpec().getNumberOfCores())
+                        .max(stat.getCpuUsage().getMax())
+                        .avg(stat.getCpuUsage().getLoad()).build()
+            );
         }
-        return null;
-    };
+        if (stat.getMemoryUsage() != null) {
+            result.add(
+                PipelineRunPerformanceMetric.builder()
+                        .type(PipelineRunPerformanceMetricsType.MEMORY)
+                        .capacity(stat.getContainerSpec().getMaxMemory())
+                        .max(stat.getMemoryUsage().getMax())
+                        .avg(stat.getMemoryUsage().getUsage())
+                        .build()
+            );
+        }
+        return result;
+    }
 }
