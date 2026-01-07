@@ -60,7 +60,7 @@ public class PipelineRunMetricsDao extends NamedParameterJdbcDaoSupport {
                     .map(metric -> {
                         MapSqlParameterSource params = new MapSqlParameterSource();
                         params.addValue(RUN_ID.name(), metrics.getRunId());
-                        params.addValue(METRIC_TYPE.name(), metric.getType());
+                        params.addValue(METRIC_TYPE.name(), metric.getType().name());
                         params.addValue(MAX_VALUE.name(), metric.getMax());
                         params.addValue(AVG_VALUE.name(), metric.getAvg());
                         params.addValue(CAPACITY.name(), metric.getCapacity());
