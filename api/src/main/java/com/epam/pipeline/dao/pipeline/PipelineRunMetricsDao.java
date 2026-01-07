@@ -84,7 +84,7 @@ public class PipelineRunMetricsDao extends NamedParameterJdbcDaoSupport {
                         .capacity(rs.getDouble(CAPACITY.name())).build()
                     );
                 }
-                return new PipelineRunPerformanceMetrics(runId, metrics);
+                return runId != -1 ? new PipelineRunPerformanceMetrics(runId, metrics) : null;
             };
         }
     }

@@ -120,6 +120,13 @@ public class CAdvisorMonitoringManager implements UsageMonitoringManager {
     }
 
     @Override
+    public List<MonitoringStats> getStatsForNode(final String nodeName, final LocalDateTime from,
+                                                 final LocalDateTime to, final Duration interval) {
+        throw new UnsupportedOperationException("It's not possible to specify custom interval for CAdvisor, " +
+                "during stat request!");
+    }
+
+    @Override
     public GpuMonitoringStats getGpuStatsForNode(final String nodeName, final LocalDateTime from,
                                                  final LocalDateTime to,
                                                  final List<GpuMetricsGranularity> granularity,
