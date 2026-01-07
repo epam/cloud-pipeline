@@ -211,6 +211,7 @@ public final class MessageConstants {
     public static final String INFO_MONITOR_KILL_TASK = "info.monitor.kill.task";
     public static final String ERROR_POD_RELEASE_TASK = "error.pod.release.task";
     public static final String ERROR_RESTART_STATE_REASONS_NOT_FOUND = "error.instance.restart.state.reasons.not.found";
+    public static final String ERROR_SAVE_RUN_METRICS = "error.save.run.metrics";
 
     // ResourceMonitoringManager messages
     public static final String INFO_RUN_IDLE_NOTIFY = "info.run.idle.notify";

@@ -47,6 +47,7 @@ import com.epam.pipeline.entity.pipeline.run.RunChartInfo;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.run.CommitRunConditions;
+import com.epam.pipeline.entity.run.PipelineRunPerformanceMetrics;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.manager.cluster.EdgeServiceManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
@@ -388,5 +389,10 @@ public class RunApiService {
     @PreAuthorize(ADMIN_ONLY + OR + RUN_ADMIN_ONLY)
     public void setLimitBoundary(final Long runId, final Boolean enable, final Integer boundary) {
         runManager.setLimitBoundary(runId, enable, boundary);
+    }
+
+    @PreAuthorize(RUN_ID_READ)
+    public PipelineRunPerformanceMetrics loadPipelineRunPerformanceMetrics(final Long runId) {
+        return runManager.loadPipelineRunPerformanceMetrics(runId);
     }
 }
