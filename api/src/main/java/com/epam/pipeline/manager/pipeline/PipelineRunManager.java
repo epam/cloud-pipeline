@@ -1474,22 +1474,14 @@ public class PipelineRunManager {
     @Transactional(propagation = Propagation.SUPPORTS)
     public PipelineRunPerformanceMetrics loadPipelineRunPerformanceMetrics(final long runId) {
         final PipelineRun run = loadPipelineRun(runId);
-        if (!run.getStatus().isFinal()) {
-            throw new IllegalArgumentException("Requested run is not in the final status!" +
-                    " Only runs in final status have performance metrics saved.");
-        }
-        return runMetricsDao.loadRunMetrics(runId);
+        return runMetricsDao.loadRunMetrics(run.getId());
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
     public void savePipelineRunPerformanceMetrics(
             final PipelineRunPerformanceMetrics metrics) {
         Assert.notNull(metrics.getRunId(), "RunId isn't provided!");
-        final PipelineRun run = loadPipelineRun(metrics.getRunId());
-        if (!run.getStatus().isFinal()) {
-            throw new IllegalArgumentException("Requested run is not in the final status!" +
-                    " Only runs in final status could have performance metrics.");
-        }
+        loadPipelineRun(metrics.getRunId());
         runMetricsDao.createRunMetrics(metrics);
     }
 

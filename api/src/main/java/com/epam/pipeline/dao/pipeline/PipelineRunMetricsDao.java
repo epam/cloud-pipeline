@@ -54,7 +54,7 @@ public class PipelineRunMetricsDao extends NamedParameterJdbcDaoSupport {
         AVG_VALUE,
         CAPACITY;
 
-        static MapSqlParameterSource[] getParameters(PipelineRunPerformanceMetrics metrics) {
+        static MapSqlParameterSource[] getParameters(final PipelineRunPerformanceMetrics metrics) {
             return ListUtils.emptyIfNull(metrics.getMetrics())
                     .stream()
                     .map(metric -> {
@@ -90,12 +90,12 @@ public class PipelineRunMetricsDao extends NamedParameterJdbcDaoSupport {
     }
 
     @Required
-    public void setLoadRunMetricsByIdQuery(String loadRunMetricsByIdQuery) {
+    public void setLoadRunMetricsByIdQuery(final String loadRunMetricsByIdQuery) {
         this.loadRunMetricsByIdQuery = loadRunMetricsByIdQuery;
     }
 
     @Required
-    public void setPutRunMetricsByIdQuery(String putRunMetricsByIdQuery) {
+    public void setPutRunMetricsByIdQuery(final String putRunMetricsByIdQuery) {
         this.putRunMetricsByIdQuery = putRunMetricsByIdQuery;
     }
 }

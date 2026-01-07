@@ -32,8 +32,13 @@
                         :RUN_ID,
                         :METRIC_TYPE,
                         :MAX_VALUE,
-                        :AVG_VALUE)
-                    ON CONFLICT (run_id, metric_type) DO NOTHING
+                        :AVG_VALUE,
+                        :CAPACITY
+                    ) ON CONFLICT (run_id, metric_type) DO UPDATE
+                    SET
+                        max_value = :MAX_VALUE,
+                        avg_value = :AVG_VALUE,
+                        capacity = :CAPACITY
                 ]]>
             </value>
         </property>
