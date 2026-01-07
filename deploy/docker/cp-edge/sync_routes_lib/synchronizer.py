@@ -48,8 +48,8 @@ class RouteSynchronizer:
 
     def create_dns_record(self, service_spec, edge_region_id, edge_region_name, edge_service_external_ip):
          # DNS Creation Logic
-         logger = RunLogger(service_spec["run_id"], 'CreateDNSRecord', self.api)
-         dns_rec = EDGE_DNS_RECORD_FORMAT.format(job_name=service_spec["edge_location"], region_name=edge_region_name)
+         logger = RunLogger(service_spec.run_id, 'CreateDNSRecord', self.api)
+         dns_rec = EDGE_DNS_RECORD_FORMAT.format(job_name=service_spec.edge_location, region_name=edge_region_name)
          
          url = API_POST_DNS_RECORD
          if edge_region_id: url += "?regionId=" + edge_region_id
@@ -64,8 +64,8 @@ class RouteSynchronizer:
              raise ValueError('Fail to create DNS record')
              
          logger.success('Created DNS record {}'.format(payload.get('dnsRecord')))
-         service_spec["custom_domain"] = payload.get('dnsRecord')
-         service_spec["edge_location"] = None
+         service_spec.custom_domain = payload.get('dnsRecord')
+         service_spec.edge_location = None
          return service_spec
 
     def update_svc_url_for_run(self, run_id, region_name, service_url):
@@ -106,8 +106,8 @@ class RouteSynchronizer:
         
         self._delete_routes(routes_to_delete, nginx_modules_list)
 
-        regular_routes_to_add = [r for r in routes_to_add if not (services_list[r]["create_dns_record"] and not services_list[r]["custom_domain"])]
-        dns_routes_to_configure = [r for r in routes_to_add if services_list[r]["create_dns_record"] and not services_list[r]["custom_domain"]]
+        regular_routes_to_add = [r for r in routes_to_add if not (services_list[r].create_dns_record and not services_list[r].custom_domain)]
+        dns_routes_to_configure = [r for r in routes_to_add if services_list[r].create_dns_record and not services_list[r].custom_domain]
         
         service_url_dict = self._create_regular_routes(regular_routes_to_add, services_list, edge_service_external_ip, edge_service_port, edge_service_external_schema, edge_region_id)
         
@@ -227,8 +227,8 @@ class RouteSynchronizer:
                 shared_groups_sids_to_check = g2 if g2 else shared_groups_sids_to_check
             
             spec = services_list[route]
-            shared_users_sids_to_update = spec["shared_users_sids"]
-            shared_groups_sids_to_update = spec["shared_groups_sids"]
+            shared_users_sids_to_update = spec.shared_users_sids
+            shared_groups_sids_to_update = spec.shared_groups_sids
 
             if shared_users_sids_to_check != shared_users_sids_to_update:
                 do_log('Detected different shared users. Actual: "{}". Expected: "{}"'
@@ -275,15 +275,15 @@ class RouteSynchronizer:
         service_url_dict = {}
         for route in regular_routes_to_add:
             spec = services_list[route]
-            hostname = spec["custom_domain"] if spec["custom_domain"] else edge_service_external_ip
-            self.nginx.write_route_config(spec, hostname, spec["custom_domain"] is not None)
+            hostname = spec.custom_domain if spec.custom_domain else edge_service_external_ip
+            self.nginx.write_route_config(spec, hostname, spec.custom_domain is not None)
             self.nginx.check_route(
-                os.path.join(NGINX_SITES_PATH, spec['edge_location_path'] + '.conf'),
-                '/{}/'.format(spec['edge_location']) if spec['edge_location'] else '/',
-                spec, spec["custom_domain"] is not None, hostname
+                os.path.join(NGINX_SITES_PATH, spec.edge_location_path + '.conf'),
+                '/{}/'.format(spec.edge_location) if spec.edge_location else '/',
+                spec, spec.custom_domain is not None, hostname
             )
             url = self._build_svc_url(spec, hostname, edge_service_port, edge_service_external_schema, edge_region_id)
-            run_id = spec['run_id']
+            run_id = spec.run_id
             service_url_dict[run_id] = (service_url_dict[run_id] + ',\n' + url) if run_id in service_url_dict else url
         return service_url_dict
 
@@ -292,11 +292,11 @@ class RouteSynchronizer:
             external_schema=edge_service_external_schema,
             external_ip=hostname,
             edge_port=str(edge_service_port),
-            edge_location=spec.get('edge_location') or '',
-            service_name=spec['service_name'],
-            is_default_endpoint=str(spec['is_default_endpoint']).lower(),
-            is_same_tab=str(spec['is_same_tab']).lower(),
-            is_custom_dns=str(spec['create_dns_record']).lower(),
+            edge_location=spec.edge_location or '',
+            service_name=spec.service_name,
+            is_default_endpoint=str(spec.is_default_endpoint).lower(),
+            is_same_tab=str(spec.is_same_tab).lower(),
+            is_custom_dns=str(spec.create_dns_record).lower(),
             region_id=region_id or 'null'
         )
 
@@ -310,7 +310,7 @@ class RouteSynchronizer:
         do_log("Creating {} configurations for dns endpoints...".format(len(dns_routes_to_configure)))
         for route in dns_routes_to_configure:
             spec = services_list[route]
-            dns_route_runs.add(spec["run_id"])
+            dns_route_runs.add(spec.run_id)
             if skip_custom_dns:
                 dns_route_results.append((spec, route))
             else:
@@ -328,27 +328,27 @@ class RouteSynchronizer:
         dns_routes_to_add = []
         if skip_custom_dns:
             for spec, route in dns_route_results:
-                spec["custom_domain"] = "{}.{}".format(
-                    EDGE_DNS_RECORD_FORMAT.format(job_name=spec["edge_location"], region_name=edge_region_name),
+                spec.custom_domain = "{}.{}".format(
+                    EDGE_DNS_RECORD_FORMAT.format(job_name=spec.edge_location, region_name=edge_region_name),
                     dns_domain
                 )
-                spec["edge_location"] = None
+                spec.edge_location = None
                 dns_routes_to_add.append(route)
         else:
             for res in dns_route_results:
                 try:
                     spec = res.get()
                     if spec:
-                        dns_routes_to_add.append(spec["edge_location_path"].replace(".inc", ""))
+                        dns_routes_to_add.append(spec.edge_location_path.replace(".inc", ""))
                 except Exception as e:
                     do_log("DNS creation failed: {}".format(e))
         
         do_log("Creating {} routes for dns endpoints...".format(len(dns_routes_to_add)))
         for route in dns_routes_to_configure:
             spec = services_list[route]
-            hostname = spec["custom_domain"]
+            hostname = spec.custom_domain
             self.nginx.write_route_config(spec, hostname, True)
             url = self._build_svc_url(spec, hostname, edge_service_port, edge_service_external_schema, edge_region_id)
-            run_id = spec['run_id']
+            run_id = spec.run_id
             service_url_dict[run_id] = (service_url_dict[run_id] + ',\n' + url) if run_id in service_url_dict else url
         return service_url_dict

@@ -130,66 +130,91 @@ class ServiceSpecBuilder:
         return endpoints
 
     def append_additional_endpoints(self, tool_endpoints, run_details):
-        if not tool_endpoints: tool_endpoints = []
+        if not tool_endpoints: 
+            tool_endpoints = []
+        
+        if not (run_details and "pipelineRunParameters" in run_details):
+            return tool_endpoints, 0
+
+        sys_endpoints = self.system_endpoints_config
+        # 1. Identify valid system endpoints from run parameters
+        additional = []
+        for param in run_details["pipelineRunParameters"]:
+            name = param["name"]
+            if name in sys_endpoints:
+                conf = sys_endpoints[name]
+                if (self.match_sys_endpoint_value(param["value"], conf["value"]) and 
+                    conf.get("endpoint")):
+                    additional.append(conf)
+
+        # 2. Identify custom endpoints from run parameters, avoiding conflicts
+        configured_ports = {e["endpoint"] for e in additional}
+        for custom in self.construct_additional_endpoints_from_run_parameters(run_details):
+            if custom["endpoint"] not in configured_ports:
+                additional.append(custom)
+                configured_ports.add(custom["endpoint"])
+
+        # 3. Handle default endpoint logic for single-endpoint tools
+        if additional and len(tool_endpoints) == 1:
+            try:
+                t = json.loads(tool_endpoints[0])
+                t["isDefault"] = "true"
+                tool_endpoints[0] = json.dumps(t)
+            except json.JSONDecodeError:
+                pass 
+
         overridden_count = 0
-        if run_details and "pipelineRunParameters" in run_details:
-             sys_keys = self.system_endpoints_config.keys()
-             # Get a list of endpoints from SYSTEM_ENDPOINTS which match the run's parameters (param name and a value)
-             additional = [self.system_endpoints_config[x["name"]] for x in run_details["pipelineRunParameters"]
-                           if x["name"] in sys_keys 
-                           and self.match_sys_endpoint_value(x["value"], self.system_endpoints_config[x["name"]]["value"])
-                           and self.system_endpoints_config[x["name"]].get("endpoint")]
-             
-             configured_ports = set(e["endpoint"] for e in additional)
+        
+        # 4. Merge additional endpoints, removing conflicts from existing tool_endpoints
+        for add_ep in additional:
+            port = add_ep["endpoint"]
+            friendly = add_ep.get("friendly_name")
+            
+            # Helper to check if an existing endpoint conflicts with the new one
+            def is_conflict(existing_json):
+                try:
+                    obj = json.loads(existing_json)
+                    return (friendly and obj.get("name") and 
+                            obj.get("name").lower() == friendly.lower() and
+                            obj.get("nginx", {}).get("port") == port)
+                except:
+                    return False
 
-             # Filter out any endpoint if it matches with system ones
-             for custom in self.construct_additional_endpoints_from_run_parameters(run_details):
-                 if custom["endpoint"] in configured_ports:
-                     continue
-                 # Append additional custom endpoint that are configured with run parameters
-                 additional.append(custom)
-                 configured_ports.add(custom["endpoint"])
+            # Split tool_endpoints into conflicting and non-conflicting
+            conflicting = [e for e in tool_endpoints if is_conflict(e)]
+            non_conflicting = [e for e in tool_endpoints if not is_conflict(e)]
+            
+            overridden_count += len(conflicting)
+            tool_endpoints = non_conflicting
 
-             # If only a single endpoint is defined for the tool - we shall make sure it is set to default. Otherwise "system endpoint" may become a default one
-             # If more then one endpoint is defined - we shall not make the changes, as it is up to the owner of the tool
-             if additional and len(tool_endpoints) == 1:
-                 t = json.loads(tool_endpoints[0])
-                 t["isDefault"] = "true"
-                 tool_endpoints[0] = json.dumps(t)
+            # Determine flags (default, ssl, sameTab) from conflicting endpoints or defaults
+            is_def, is_ssl, is_same = False, False, False
+            for c in conflicting:
+                try:
+                    obj = json.loads(c)
+                    is_def = is_def or obj.get("isDefault", False)
+                    is_ssl = is_ssl or obj.get("sslBackend", False)
+                    is_same = is_same or obj.get("sameTab", False)
+                except:
+                    pass
 
-             # Append additional endpoints to the existing list
-             for add_ep in additional:
-                 port = add_ep["endpoint"]
-                 new_ep = {"nginx": {"port": port, "additional": add_ep["endpoint_additional"]}}
-                 if "friendly_name" in add_ep:
-                     new_ep["name"] = add_ep["friendly_name"]
-                 if "endpoint_num" in add_ep:
-                     new_ep["endpoint_num"] = add_ep["endpoint_num"]
+            # Construct new endpoint JSON
+            new_ep = {
+                "nginx": {
+                    "port": port, 
+                    "additional": add_ep.get("endpoint_additional", "")
+                },
+                "isDefault": str(is_def).lower(),
+                "sslBackend": add_ep.get("ssl_backend") or is_ssl,
+                "sameTab": add_ep.get("endpoint_same_tab") or is_same
+            }
+            if friendly:
+                new_ep["name"] = friendly
+            if "endpoint_num" in add_ep:
+                new_ep["endpoint_num"] = add_ep["endpoint_num"]
 
-                 filtered_tool_endpoints = []
-                 is_def, is_ssl, is_same = False, False, False
-                 
-                 for existing in tool_endpoints:
-                      obj = json.loads(existing)
-                      if (add_ep.get("friendly_name") and obj.get("name") and 
-                          obj.get("name").lower() == add_ep["friendly_name"].lower() and
-                          obj.get("nginx", {}).get("port") == port):
-                           if obj.get("isDefault"): is_def = True
-                           if obj.get("sslBackend"): is_ssl = True
-                           if obj.get("sameTab"): is_same = True
-                      else:
-                           filtered_tool_endpoints.append(existing)
-                 
-                 removed = len(tool_endpoints) - len(filtered_tool_endpoints)
-                 overridden_count += removed
-                 tool_endpoints = filtered_tool_endpoints
+            tool_endpoints.append(json.dumps(new_ep))
 
-                 new_ep["isDefault"] = str(is_def).lower()
-                 new_ep["sslBackend"] = add_ep.get("ssl_backend") or is_ssl
-                 new_ep["sameTab"] = add_ep.get("endpoint_same_tab") or is_same
-                 
-                 tool_endpoints.append(json.dumps(new_ep))
-                 
         return tool_endpoints, overridden_count
 
     def get_service_list(self, runs_with_endpoints, pod_id, pod_run_id, pod_ip):
@@ -281,31 +306,31 @@ class ServiceSpecBuilder:
             if da['search_pattern'].lower() not in additional.lower():
                 additional += da['value']
 
-        spec = {
-            "edge_location_path": loc_path,
-            "pod_id": pod_id,
-            "pod_ip": target_ip,
-            "pod_owner": base['owner'],
-            "shared_users_sids": self.run_sids_to_str(base['run_sids'], True),
-            "shared_groups_sids": self.run_sids_to_str(base['run_sids'], False),
-            "service_name": name,
-            "is_default_endpoint": is_def,
-            "is_ssl_backend": ep.get("sslBackend", False),
-            "is_same_tab": ep.get("sameTab", False),
-            "edge_num": index,
-            "edge_location": edge_location,
-            "custom_domain": base['pretty'].get('domain') if base['pretty'] else None,
-            "edge_target": edge_target,
-            "run_id": base['run_id'],
-            "additional": additional,
-            "sensitive": base['sensitive'],
-            "create_dns_record": create_dns,
-            "cloudRegionId": base['cloud_region_id'],
-            "external_app": flags['external_app'],
-            "cookie_location": flags['cookie_location'],
-            "edge_jwt_auth": flags['jwt_auth'],
-            "edge_pass_bearer": flags['pass_bearer']
-        }
+        spec = RouteSpec(
+            edge_location_path=loc_path,
+            pod_id=pod_id,
+            pod_ip=target_ip,
+            pod_owner=base['owner'],
+            shared_users_sids=self.run_sids_to_str(base['run_sids'], True),
+            shared_groups_sids=self.run_sids_to_str(base['run_sids'], False),
+            service_name=name,
+            is_default_endpoint=is_def,
+            is_ssl_backend=ep.get("sslBackend", False),
+            is_same_tab=ep.get("sameTab", False),
+            edge_num=index,
+            edge_location=edge_location,
+            custom_domain=base['pretty'].get('domain') if base['pretty'] else None,
+            edge_target=edge_target,
+            run_id=base['run_id'],
+            additional=additional,
+            sensitive=base['sensitive'],
+            create_dns_record=create_dns,
+            cloudRegionId=base['cloud_region_id'],
+            external_app=flags['external_app'],
+            cookie_location=flags['cookie_location'],
+            edge_jwt_auth=flags['jwt_auth'],
+            edge_pass_bearer=flags['pass_bearer']
+        )
         return edge_id, spec
 
     def _resolve_edge_location(self, pretty, is_def, is_sys, has_explicit_num, edge_id, name, custom_num, count):
