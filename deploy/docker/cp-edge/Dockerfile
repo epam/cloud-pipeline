@@ -95,6 +95,7 @@ RUN opm get 3scale/lua-resty-url=0.3.3
 ADD	crontab.sh /etc/sync-routes/crontab.sh
 ADD sync-routes.sh /etc/sync-routes/sync-routes.sh
 ADD	sync-routes.py /etc/sync-routes/sync-routes.py
+ADD sync_routes_lib /etc/sync-routes/sync_routes_lib
 RUN touch /var/log/sync-routes.log && \
     touch /var/log/wetty.log
 
