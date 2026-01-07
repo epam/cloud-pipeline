@@ -28,9 +28,12 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
+import com.epam.pipeline.entity.run.PipelineRunPerformanceMetrics;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.exception.PipelineException;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.cleaner.RunCleaner;
+import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.notification.NotificationSettingsManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
@@ -113,6 +116,7 @@ public class PodMonitor extends AbstractSchedulingManager {
         private static final int POD_RELEASE_TIMEOUT = 3000;
 
         private final BlockingQueue<PipelineRun> queueToKill = new LinkedBlockingQueue<>();
+        private final BlockingQueue<PipelineRun> queueToSavePerformanceMetrics = new LinkedBlockingQueue<>();
         private final Map<String, LocalDateTime> hangingPods = new ConcurrentHashMap<>();
 
         private final String kubeNamespace;
@@ -127,6 +131,7 @@ public class PodMonitor extends AbstractSchedulingManager {
         private final RestartRunManager restartRunManager;
         private final CloudFacade cloudFacade;
         private final PreferenceManager preferenceManager;
+        private final UsageMonitoringManager usageMonitoringManager;
         private final List<RunCleaner> cleaners;
 
         @Autowired
@@ -141,6 +146,7 @@ public class PodMonitor extends AbstractSchedulingManager {
                        final RestartRunManager restartRunManager,
                        final CloudFacade cloudFacade,
                        final PreferenceManager preferenceManager,
+                       final UsageMonitoringManager usageMonitoringManager,
                        final List<RunCleaner> cleaners,
                        final @Value("${kube.namespace:default}") String kubeNamespace) {
             this.runLogManager = runLogManager;
@@ -154,6 +160,7 @@ public class PodMonitor extends AbstractSchedulingManager {
             this.restartRunManager = restartRunManager;
             this.cloudFacade = cloudFacade;
             this.preferenceManager = preferenceManager;
+            this.usageMonitoringManager = usageMonitoringManager;
             this.kubeNamespace = kubeNamespace;
             this.cleaners = ListUtils.emptyIfNull(cleaners);
         }
@@ -212,6 +219,7 @@ public class PodMonitor extends AbstractSchedulingManager {
                                 run.setTerminating(true);
                                 hangingPods.putIfAbsent(run.getPodId(), LocalDateTime.now());
                             }
+                            saveMetricsAsync(run);
                         } else if (status.getPhase().equals(KubernetesConstants.POD_FAILED_PHASE) ||
                                 (status.getReason() != null &&
                                         status.getReason().equals(KubernetesConstants.NODE_LOST))) {
@@ -257,6 +265,19 @@ public class PodMonitor extends AbstractSchedulingManager {
             }
         }
 
+        @Scheduled(fixedDelay = POD_RELEASE_TIMEOUT)
+        public void savePerformanceMetricsForFinishedRuns() {
+            while (!queueToSavePerformanceMetrics.isEmpty()) {
+                try {
+                    storeRunPerformanceMetrics(queueToSavePerformanceMetrics.take());
+                } catch (Exception e) {
+                    LOGGER.error(messageHelper
+                            .getMessage(MessageConstants.ERROR_SAVE_RUN_METRICS, e));
+                    LOGGER.error(e.getMessage(), e);
+                }
+            }
+        }
+
         /**
          * Put tasks from specified {@link PipelineRun} to a queue for killing
          *
@@ -264,6 +285,15 @@ public class PodMonitor extends AbstractSchedulingManager {
          */
         private void killAsync(PipelineRun run) {
             queueToKill.add(run);
+        }
+
+        /**
+         * Put tasks from specified {@link PipelineRun} to a queue for updating performance metrics
+         *
+         * @param run a {@link PipelineRun} which metrics to update
+         */
+        private void saveMetricsAsync(PipelineRun run) {
+            queueToSavePerformanceMetrics.add(run);
         }
 
         private void notifyIfExceedsThreshold(PipelineRun run, Pod pod, NotificationType type) {
@@ -490,7 +520,34 @@ public class PodMonitor extends AbstractSchedulingManager {
             run.setTerminating(true);
             run.setEndDate(DateUtils.now());
             notificationManager.removeNotificationTimestamps(run.getId());
+            saveMetricsAsync(run);
             killAsync(run);
+        }
+
+        private void storeRunPerformanceMetrics(final PipelineRun run) {
+            final Long runId = run.getId();
+            final String nodeName = Optional.ofNullable(run.getInstance())
+                    .map(RunInstance::getNodeName).orElse(StringUtils.EMPTY);
+
+            if (StringUtils.isBlank(nodeName)) {
+                LOGGER.warn("Can't find nodeName for run: {}", runId);
+                return;
+            }
+
+            if (usageMonitoringManager != null) {
+                try {
+                    final PipelineRunPerformanceMetrics statsForRun =
+                            usageMonitoringManager.getStatsForRun(runId, nodeName);
+                    pipelineRunManager.savePipelineRunPerformanceMetrics(statsForRun);
+                } catch (PipelineException e) {
+                    LOGGER.warn("Can't request pipeline run performance metrics, it won't be saved for run: {}", runId);
+                }
+            } else {
+                LOGGER.debug(
+                        "UsageMonitoringManager ius not initialized! Performance metrics won't be saved for run: {}",
+                        runId
+                );
+            }
         }
 
         private void cleanRunResources(final PipelineRun run) {
