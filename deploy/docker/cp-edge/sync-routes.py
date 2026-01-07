@@ -49,7 +49,6 @@ def main():
         do_log('[WARN] Cannot get API domain name from the environment')
 
     kube_api = HTTPClient(KubeConfig.from_service_account())
-    do_log('Using kubeconfig at aws-dev-kube.config')
     kube_api.session.verify = False
     kube = KubeClient(api=kube_api)
     nginx = NginxManager(api_domain_name)

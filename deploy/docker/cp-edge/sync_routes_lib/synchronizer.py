@@ -85,22 +85,10 @@ class RouteSynchronizer:
         run_pod_selector_key = os.getenv('CP_EDGE_RUN_POD_SELECTOR_KEY', "type")
         run_pod_selector_value = os.getenv('CP_EDGE_RUN_POD_SELECTOR_VALUE', "pipeline")
         
-        edge_region_name = os.getenv('CP_EDGE_REGION')
-        if not edge_region_name or edge_region_name.lower() == 'default':
-            edge_region_name = self.find_preference('default.edge.region')
-            
-        edge_region_id = os.getenv('CP_EDGE_REGION_ID')
-        if not edge_region_id or edge_region_id.lower() == 'default':
-            edge_region_id = self.find_preference('default.edge.region.id')
-            
-        skip_custom_dns = os.getenv('CP_EDGE_SKIP_CUSTOM_DNS')
-        if not skip_custom_dns or skip_custom_dns.lower() == 'default':
-            skip_custom_dns = self.find_preference('edge.skip.custom.dns')
-        skip_custom_dns = self.is_true(skip_custom_dns)
-        
-        dns_domain = os.getenv('CP_EDGE_CUSTOM_DOMAIN')
-        if not dns_domain or dns_domain.lower() == 'default':
-            dns_domain = self.find_preference('edge.custom.domain')
+        edge_region_name = os.getenv('CP_EDGE_REGION') or self.find_preference('default.edge.region')
+        edge_region_id = os.getenv('CP_EDGE_REGION_ID') or self.find_preference('default.edge.region.id')
+        skip_custom_dns = self.is_true(os.getenv('CP_EDGE_SKIP_CUSTOM_DNS') or self.find_preference('edge.skip.custom.dns'))
+        dns_domain = os.getenv('CP_EDGE_CUSTOM_DOMAIN') or self.find_preference('edge.custom.domain')
         
 
         edge_service_external_schema = os.environ.get('EDGE_EXTERNAL_SCHEMA', 'https')

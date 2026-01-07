@@ -64,12 +64,6 @@ class KubeClient:
             selector = {EDGE_SVC_ROLE_LABEL: EDGE_SVC_ROLE_LABEL_VALUE, EDGE_SVC_REGION_LABEL: edge_region_name}
             edge_kube_service = Service.objects(self.api, namespace=CP_KUBE_NAMESPACE).filter(selector=selector)
             
-            if not edge_kube_service.response['items'] and edge_region_name == 'default':
-                # Fallback for 'default' region: search by role only
-                edge_kube_service = Service.objects(self.api, namespace=CP_KUBE_NAMESPACE).filter(
-                    selector={EDGE_SVC_ROLE_LABEL: EDGE_SVC_ROLE_LABEL_VALUE}
-                )
-            
             if not edge_kube_service.response['items']:
                 do_log('EDGE service is not found by labels: cloud-pipeline/role=EDGE and %s=%s'
                        % (EDGE_SVC_REGION_LABEL, edge_region_name))
