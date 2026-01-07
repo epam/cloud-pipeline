@@ -112,13 +112,11 @@ class NginxManager:
         location_block_include = NGINX_CUSTOM_DOMAIN_LOC_TMPL.format(location_block)
         lines = content.splitlines()
 
-        # Check if already exists
         # Check if the location_block already added to the domain config
         if any(location_block_include in line for line in lines):
             do_log('-> Location block {} already exists for domain {}'.format(location_block, domain))
             return
 
-        # Insert
         # If it's a new location entry - add it to the domain config after the {edge_route_location_block} line
         insert_indices = [i for i, line in enumerate(lines) if '# {edge_route_location_block}' in line]
         if not insert_indices:
@@ -186,9 +184,9 @@ class NginxManager:
     def write_route_config(self, service_spec, service_hostname, has_custom_domain):
         service_location = '/{}/'.format(service_spec["edge_location"]) if service_spec["edge_location"] else "/"
         # Replace the duplicated forward slashes with a single instance to workaround possible issue when the location is set to "/path//"
+        # proxy_pass cannot have trailing slash for regexp locations
         service_location = re.sub('/+', '/', service_location)
-        
-        # Determine protocol
+
         schema = 'https' if service_spec.get('is_ssl_backend') else 'http'
         
         content = self.loc_template \

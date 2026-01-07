@@ -42,13 +42,12 @@ def main():
     except ImportError:
         raise RuntimeError('pykube is not installed.')
 
-    do_log('========== Started iteration ==========')
+    do_log('=========== Started iteration ===========')
     if api_domain_name:
         do_log('API domain name is determined as {}. It will be used to detect friendly URLs'.format(api_domain_name))
     else:
         do_log('[WARN] Cannot get API domain name from the environment')
 
-    do_log('Using kubeconfig at .\\aws-dev-kube.config')
     kube_api = HTTPClient(KubeConfig.from_service_account())
     kube_api.session.verify = False
     kube_client = KubeClient(api=kube_api)
@@ -60,8 +59,8 @@ def main():
         synchronizer.sync()
     except Exception as e:
         do_log('Error during sync: {}'.format(e))
-    do_log('========== Done iteration ==========')
-    do_log('')
+    do_log('=========== Done iteration ===========')
+    print('')
 
 if __name__ == '__main__':
     main()

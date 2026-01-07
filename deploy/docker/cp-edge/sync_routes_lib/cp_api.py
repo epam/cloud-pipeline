@@ -46,7 +46,6 @@ class CloudPipelineAPI:
                     response_data = json.loads(response.text)
                 except ValueError:
                     do_log('Calling API ... NOT OK (JSON decode error)\nResponse: {}'.format(response.text))
-                    # Retrying might help if it was a transient proxy error returning HTML
                 else:
                     if response_data.get('status') == 'OK':
                         do_log('Calling API ... OK')
