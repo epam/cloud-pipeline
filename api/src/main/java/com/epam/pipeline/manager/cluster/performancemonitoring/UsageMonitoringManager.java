@@ -54,15 +54,16 @@ public interface UsageMonitoringManager {
      * Retrieves monitoring stats for node.
      *
      * @param nodeName Cluster node name.
+     * @param from Minimal date for collecting stats.
+     * @param to Maximal date for collecting stats.
+     * @param runId The run ID to filter particular pod (optional)
      * @return List of monitoring stats.
      */
-    default PipelineRunPerformanceMetrics getStatsForRun(Long runId, String nodeName) {
-        final List<MonitoringStats> statsForNode = getStatsForNode(nodeName, null, null, null);
+    default PipelineRunPerformanceMetrics getPerformanceMetricsForRun(final String nodeName, final LocalDateTime from,
+                                                                      final LocalDateTime to, final Long runId) {
+        List<MonitoringStats> statsForNode = getStatsForNode(nodeName, from, to, Duration.between(from, to), runId);
         Assert.state(statsForNode.size() == 1, "There should be only 1 monitoring stat!");
-        return new PipelineRunPerformanceMetrics(
-                runId,
-                mapToRunPerformanceMetric(statsForNode.get(0))
-        );
+        return mapToRunPerformanceMetrics(runId, statsForNode.get(0));
     }
 
     /**
@@ -77,6 +78,22 @@ public interface UsageMonitoringManager {
     List<MonitoringStats> getStatsForNode(String nodeName,
                                           @Nullable LocalDateTime from,
                                           @Nullable LocalDateTime to,
+                                          @Nullable Long runId);
+
+    /**
+     * Retrieves monitoring stats for node.
+     *
+     * @param nodeName Cluster node name.
+     * @param from Minimal date for collecting stats.
+     * @param to Maximal date for collecting stats.
+     * @param interval interval of time for the histogram step
+     * @param runId The run ID to filter particular pod (optional)
+     * @return List of monitoring stats.
+     */
+    List<MonitoringStats> getStatsForNode(String nodeName,
+                                          @Nullable LocalDateTime from,
+                                          @Nullable LocalDateTime to,
+                                          @Nullable Duration interval,
                                           @Nullable Long runId);
 
     /**
@@ -132,7 +149,8 @@ public interface UsageMonitoringManager {
                                                LocalDateTime from, LocalDateTime to,
                                                Integer intervals, NetworkEventFilter filter);
 
-    default List<PipelineRunPerformanceMetric> mapToRunPerformanceMetric(MonitoringStats stat) {
+    default PipelineRunPerformanceMetrics mapToRunPerformanceMetrics(final long runId,
+                                                                     final MonitoringStats stat) {
         final List<PipelineRunPerformanceMetric> result = new ArrayList<>();
         if (stat.getCpuUsage() != null) {
             result.add(
@@ -153,6 +171,6 @@ public interface UsageMonitoringManager {
                         .build()
             );
         }
-        return result;
+        return result.isEmpty() ? null : new PipelineRunPerformanceMetrics(runId, result);
     }
 }
