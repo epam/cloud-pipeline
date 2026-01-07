@@ -46,7 +46,7 @@
             <value>
                 <![CDATA[
                     SELECT * FROM pipeline.pipeline_run_metrics
-                    WHERE run_id = :RUN_ID
+                    WHERE run_id = ?
                 ]]>
             </value>
         </property>

@@ -269,7 +269,9 @@ public class PodMonitor extends AbstractSchedulingManager {
         public void savePerformanceMetricsForFinishedRuns() {
             while (!queueToSavePerformanceMetrics.isEmpty()) {
                 try {
-                    storeRunPerformanceMetrics(queueToSavePerformanceMetrics.take());
+                    final PipelineRun run = queueToSavePerformanceMetrics.take();
+                    LOGGER.debug("Save performance metrics for run: {}", run.getId());
+                    storeRunPerformanceMetrics(run);
                 } catch (Exception e) {
                     LOGGER.error(messageHelper
                             .getMessage(MessageConstants.ERROR_SAVE_RUN_METRICS, e));
@@ -544,7 +546,7 @@ public class PodMonitor extends AbstractSchedulingManager {
                 }
             } else {
                 LOGGER.debug(
-                        "UsageMonitoringManager ius not initialized! Performance metrics won't be saved for run: {}",
+                        "UsageMonitoringManager is not initialized! Performance metrics won't be saved for run: {}",
                         runId
                 );
             }
