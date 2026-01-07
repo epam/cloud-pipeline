@@ -523,7 +523,7 @@ public class PodMonitor extends AbstractSchedulingManager {
         }
 
         private void storeRunPerformanceMetrics(final PipelineRun run) {
-            final Long runId = run.getId();
+            final long runId = run.getId();
             final String nodeName = Optional.ofNullable(run.getInstance())
                     .map(RunInstance::getNodeName).orElse(StringUtils.EMPTY);
 
@@ -539,7 +539,7 @@ public class PodMonitor extends AbstractSchedulingManager {
                             .map(DateUtils::convertDateToLocalDateTime).orElse(DateUtils.nowUTC());
 
                     Optional.ofNullable(
-                            usageMonitoringManager.getPerformanceMetricsForRun(nodeName, from, to, null)
+                            usageMonitoringManager.getPerformanceMetricsForRun(nodeName, from, to, runId)
                     ).ifPresent(pipelineRunManager::savePipelineRunPerformanceMetrics);
                 } catch (PipelineException e) {
                     LOGGER.warn("Can't request pipeline run performance metrics, it won't be saved for run: {}", runId);
