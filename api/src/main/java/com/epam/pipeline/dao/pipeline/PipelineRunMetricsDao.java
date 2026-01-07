@@ -79,9 +79,9 @@ public class PipelineRunMetricsDao extends NamedParameterJdbcDaoSupport {
                     metrics.add(
                         PipelineRunPerformanceMetric.builder().type(
                                 PipelineRunPerformanceMetricsType.valueOf(rs.getString(METRIC_TYPE.name()))
-                        ).max(rs.getInt(MAX_VALUE.name()))
-                        .avg(rs.getInt(AVG_VALUE.name()))
-                        .capacity(rs.getLong(CAPACITY.name())).build()
+                        ).max(rs.getDouble(MAX_VALUE.name()))
+                        .avg(rs.getDouble(AVG_VALUE.name()))
+                        .capacity(rs.getDouble(CAPACITY.name())).build()
                     );
                 }
                 return new PipelineRunPerformanceMetrics(runId, metrics);
