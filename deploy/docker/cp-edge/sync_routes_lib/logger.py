@@ -21,6 +21,7 @@ from .config import DATE_FORMAT
 def do_log(msg):
     print('[{}] {}'.format(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), msg))
 
+# todo: Use RunLogger from pipe commons instead 
 class RunLogger:
     def __init__(self, run_id, task_name, api_client):
         self.run_id = run_id

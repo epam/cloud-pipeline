@@ -57,6 +57,7 @@ class CloudPipelineAPI:
                         do_log('Calling API ... NOT OK ({})\n{}'.format(full_url, err_msg))
                         do_log('As the API technically succeeded, it will not be retried')
                         break
+            # todo: Use only specific exception types
             except Exception as api_exception:
                 do_log('Calling API ... NOT OK ({})\n{}'.format(full_url, str(api_exception)))
 

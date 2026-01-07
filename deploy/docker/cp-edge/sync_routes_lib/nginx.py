@@ -113,17 +113,20 @@ class NginxManager:
         lines = content.splitlines()
 
         # Check if already exists
+        # Check if the location_block already added to the domain config
         if any(location_block_include in line for line in lines):
             do_log('-> Location block {} already exists for domain {}'.format(location_block, domain))
             return
 
         # Insert
+        # If it's a new location entry - add it to the domain config after the {edge_route_location_block} line
         insert_indices = [i for i, line in enumerate(lines) if '# {edge_route_location_block}' in line]
         if not insert_indices:
              do_log('-> Cannot find an insert location in the domain config {}'.format(domain_path))
              return
         lines.insert(insert_indices[-1] + 1, location_block_include)
 
+        # Save the domain config back to file
         with open(domain_path, 'w') as f:
             f.write('\n'.join(lines))
 
@@ -142,11 +145,14 @@ class NginxManager:
         
         del lines[found_indices[-1]]
 
+        # If no more location block exist in the domain - delete the config file
+        # Do not delete if this is an "external application", where the server block is managed externally
         if (not is_external_app and domain_path != API_DOMAIN_PATH and 
             sum(NGINX_CUSTOM_DOMAIN_LOC_SUFFIX in line for line in lines) == 0):
              do_log('-> No more location blocks are available for {}, deleting the config file: {}'.format(domain, domain_path))
              os.remove(domain_path)
         else:
+             # Save the domain config back to file
              with open(domain_path, 'w') as f:
                  f.write('\n'.join(lines))
         return True
@@ -179,6 +185,7 @@ class NginxManager:
 
     def write_route_config(self, service_spec, service_hostname, has_custom_domain):
         service_location = '/{}/'.format(service_spec["edge_location"]) if service_spec["edge_location"] else "/"
+        # Replace the duplicated forward slashes with a single instance to workaround possible issue when the location is set to "/path//"
         service_location = re.sub('/+', '/', service_location)
         
         # Determine protocol
@@ -238,11 +245,7 @@ class NginxManager:
                 .replace('{edge_route_shared_users}', service_spec["shared_users_sids"]) \
                 .replace('{edge_route_shared_groups}', service_spec["shared_groups_sids"])
         
-        path_without_ext = path_to_route.replace('.conf', '') # Rough removal, precise logic from original:
-        # Original: path_to_route_extension = ".conf" if has_custom_domain else ".loc.conf"
-        # path_to_stub = path_to_route.replace(path_to_route_extension, stub_extension)
-        
-        # Re-implementing correctly:
+        # Determine the correct extensions based on custom domain usage
         ext_to_replace = ".conf" if has_custom_domain else ".loc.conf"
         new_ext = STUB_CUSTOM_DOMAIN_EXTENSION if has_custom_domain else STUB_LOCATION_CONFIG_EXTENSION
         path_to_stub = path_to_route.replace(ext_to_replace, new_ext)

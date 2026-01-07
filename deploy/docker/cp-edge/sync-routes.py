@@ -32,10 +32,17 @@ def main():
             print('API url or API token are not set. Exiting')
             exit(1)
             
-    kube_config_path = HTTPClient(KubeConfig.from_service_account())
-    
     api_client = CloudPipelineAPI(api_url, api_token)
-    kube_client = KubeClient(kube_config_path)
+    
+    try:
+        from pykube.config import KubeConfig
+        from pykube.http import HTTPClient
+    except ImportError:
+        raise RuntimeError('pykube is not installed.')
+
+    kube_api = HTTPClient(KubeConfig.from_service_account())
+    kube_api.session.verify = False
+    kube_client = KubeClient(api=kube_api)
     nginx_manager = NginxManager(api_domain_name)
     
     synchronizer = RouteSynchronizer(kube_client, api_client, nginx_manager)

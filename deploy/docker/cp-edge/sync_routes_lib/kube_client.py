@@ -34,10 +34,18 @@ from .logger import do_log
 import time
 
 class KubeClient:
-    def __init__(self, kube_config_path):
-        do_log('Using kubeconfig at {}'.format(kube_config_path))
-        self.api = HTTPClient(KubeConfig.from_file(kube_config_path))
-        self.api.session.verify = False
+    def __init__(self, kube_config_path=None, api=None):
+        if api:
+            self.api = api
+        elif kube_config_path and os.path.exists(kube_config_path):
+            do_log('Using kubeconfig at {}'.format(kube_config_path))
+            self.api = HTTPClient(KubeConfig.from_file(kube_config_path))
+        else:
+            do_log('Using in-cluster service account configuration')
+            self.api = HTTPClient(KubeConfig.from_service_account())
+        
+        if not api:
+            self.api.session.verify = False
 
     def get_pods(self, selector):
         return Pod.objects(self.api, namespace=CP_KUBE_NAMESPACE).filter(
@@ -45,7 +53,6 @@ class KubeClient:
         ).filter(field_selector={"status.phase": "Running"})
 
     def get_edge_service_details(self, edge_region_name, edge_region_id):
-        # Retry logic here as per original script
         edge_kube_service_object = None
         edge_service_external_ip = None
         edge_service_port = None
@@ -57,9 +64,6 @@ class KubeClient:
             if not edge_kube_service.response['items']:
                 do_log('EDGE service is not found by labels: cloud-pipeline/role=EDGE and %s=%s'
                        % (EDGE_SVC_REGION_LABEL, edge_region_name))
-                # Original script exits here? No, logic loop continues in original.
-                # But original script line 1007 calls exit(1) immediately if not found.
-                # We replicate original behavior.
                 return None, None
             else:
                 edge_kube_service_object = edge_kube_service.response['items'][0]
@@ -81,8 +85,7 @@ class KubeClient:
 
         if not edge_service_external_ip:
              do_log('Getting EDGE service host from externalIP')
-             # Potential index error if list empty, but assuming valid Kube service object logic from original
-             if edge_kube_service_object['spec'].get('externalIPs'):
+             if edge_kube_service_object.get('spec', {}).get('externalIPs'):
                 edge_service_external_ip = edge_kube_service_object['spec']['externalIPs'][0]
         
         if not edge_service_port:
