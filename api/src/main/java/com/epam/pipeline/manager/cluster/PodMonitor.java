@@ -539,7 +539,7 @@ public class PodMonitor extends AbstractSchedulingManager {
                             .map(DateUtils::convertDateToLocalDateTime).orElse(DateUtils.nowUTC());
 
                     Optional.ofNullable(
-                            usageMonitoringManager.getPerformanceMetricsForRun(nodeName, from, to, runId)
+                            usageMonitoringManager.getMeanPerformanceMetricsForRun(nodeName, runId, from, to)
                     ).ifPresent(pipelineRunManager::savePipelineRunPerformanceMetrics);
                 } catch (PipelineException e) {
                     LOGGER.warn("Can't request pipeline run performance metrics, it won't be saved for run: {}", runId);
