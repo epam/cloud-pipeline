@@ -59,9 +59,18 @@ public interface UsageMonitoringManager {
      * @param runId The run ID to filter particular pod (optional)
      * @return List of monitoring stats.
      */
-    default PipelineRunPerformanceMetrics getPerformanceMetricsForRun(final String nodeName, final LocalDateTime from,
-                                                                      final LocalDateTime to, final long runId) {
-        List<MonitoringStats> statsForNode = getStatsForNode(nodeName, from, to, Duration.between(from, to));
+    default PipelineRunPerformanceMetrics getMeanPerformanceMetricsForRun(final String nodeName,
+                                                                          final long runId,
+                                                                          final LocalDateTime from,
+                                                                          final LocalDateTime to) {
+        // hack to accumulate all data in one bin of histogram,
+        // when we specify interval much bigger that period of time when we have real data,
+        // ELK will put everything into one bucket,
+        //
+        // Also, calculation results such as avg and max aggregations will be fair,
+        // because elk "count" period of time in statistics only if it has real data
+        final Duration interval = Duration.between(from, to).multipliedBy(10);
+        List<MonitoringStats> statsForNode = getStatsForNode(nodeName, from, to, interval);
         Assert.state(statsForNode.size() == 1, "There should be only 1 monitoring stat!");
         return mapToRunPerformanceMetrics(runId, statsForNode.get(0));
     }
