@@ -7,6 +7,7 @@ import { DateTime } from "luxon";
 import { FileLogger, OutputLogger } from "./common/logger";
 import { CpExtension } from "./cp-ext";
 import { CpExtConfig } from "./config";
+import { CpCodeContext } from "./cp-ext/code-context";
 
 let cpExtConfig: CpExtConfig;
 let logger: OutputLogger;
@@ -46,9 +47,10 @@ export async function activate(
   logger.info("Logger\n" + `  file: ${loggerFilePath}`);
   context.subscriptions.push(logger);
   try {
+    const codeContext = new CpCodeContext(logger);
     await cpExtConfig.activate(logger);
 
-    cpExt = new CpExtension(cpExtConfig, context, logger);
+    cpExt = new CpExtension(cpExtConfig, context, codeContext, logger);
     await cpExt.activate();
 
     const msgEnd = "Extension 'remote-cp' activated.";

@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 
 import { CpExtension } from "../cp-ext";
 import { ILogger } from "../common/logger";
+import { UserCancelledError } from "../cp-client/error";
 
 interface FilterableTreeDataProvider<T> extends vscode.TreeDataProvider<T> {
   filterValue: string | null;
@@ -187,6 +188,7 @@ export class CpRunViewProvider<TItem> implements vscode.WebviewViewProvider {
       return;
     }
 
+    this.cpExt.codeContext.isUpdatingPipeClient = true;
     try {
       this.nodeLookup = new Map();
       this.nodeIdCounter = 0;
@@ -197,9 +199,16 @@ export class CpRunViewProvider<TItem> implements vscode.WebviewViewProvider {
       await this._view.webview.postMessage({ command: "setData", data });
     } catch (err) {
       const errMsg = `Failed to update the run view: ${err}`;
-      this.logger.error(errMsg);
-      this.logger.error(err);
-      vscode.window.showErrorMessage(errMsg);
+      if (err instanceof UserCancelledError) {
+        this.logger.warn(errMsg);
+        vscode.window.showWarningMessage(errMsg);
+      } else {
+        this.logger.error(errMsg);
+        this.logger.error(err);
+        vscode.window.showErrorMessage(errMsg);
+      }
+    } finally {
+      this.cpExt.codeContext.isUpdatingPipeClient = false;
     }
   }
 

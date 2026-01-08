@@ -8,6 +8,7 @@ import { CpClient } from "../cp-client/cp-client";
 import { REMOTE_CP_AUTHORITY, RemoteCpResolver } from "../authResolver";
 import { OnStartOption, OnStartWhen } from "./on-start";
 import { PipeTunnelInfo } from "../cp-client";
+import { CpCodeContext } from "./code-context";
 
 export class CpExtension extends Disposable {
   private static objCounter = 0;
@@ -20,6 +21,7 @@ export class CpExtension extends Disposable {
   constructor(
     public cpExtConfig: CpExtConfig,
     public context: vscode.ExtensionContext,
+    public codeContext: CpCodeContext,
     public logger: ILogger,
   ) {
     super();
@@ -47,7 +49,7 @@ export class CpExtension extends Disposable {
 
     registerHostTreeView(this);
 
-    vscode.workspace.onDidChangeWorkspaceFolders(async (e) => {
+    vscode.workspace.onDidChangeWorkspaceFolders(async (_event) => {
       this.logger.info(`Workspace folders changed.`);
     });
   }
@@ -86,6 +88,7 @@ export class CpExtension extends Disposable {
     return CpClient.createAndRegister(
       this.cpExtConfig,
       this.context,
+      this.codeContext,
       this.logger,
     );
   }

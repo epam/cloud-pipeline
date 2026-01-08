@@ -3,17 +3,22 @@
 import { ILogger } from "../../common/logger";
 import { ICpExtConfig } from "../../config";
 import { CpClientBase, CpVersionInfo, RunInfo } from "../../cp-client";
+import { ICpCodeContext } from "../../cp-ext/code-context";
 
 interface IClient {
   parseRunListTable(tableStr: string): RunInfo[];
 }
 
 class CpClientTest extends CpClientBase {
-  static create(cpExtConfig: ICpExtConfig, logger: ILogger): CpClientTest {
-    return new CpClientTest(cpExtConfig, logger);
+  static create(
+    cpExtConfig: ICpExtConfig,
+    codeContext: ICpCodeContext,
+    logger: ILogger,
+  ): CpClientTest {
+    return new CpClientTest(cpExtConfig, codeContext, logger);
   }
 
-  public override ensurePipeExec(): Promise<CpVersionInfo> {
+  public override ensurePipeExecDo(): Promise<CpVersionInfo> {
     throw new Error("Not implemented");
   }
 }
@@ -41,7 +46,14 @@ describe("CloudPipelineClient.parseRunListTable", () => {
 
     save: notImplementedStubFunc,
   };
-  const client = CpClientTest.create(cpConfig, console) as any as IClient;
+  const codeContext: ICpCodeContext = {
+    isUpdatingPipeClient: false,
+  };
+  const client = CpClientTest.create(
+    cpConfig,
+    codeContext,
+    console,
+  ) as any as IClient;
 
   it("parses valid table with multiple runs", () => {
     const table = `\

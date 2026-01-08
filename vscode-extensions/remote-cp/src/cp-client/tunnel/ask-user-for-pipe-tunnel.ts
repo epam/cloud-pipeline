@@ -1,5 +1,4 @@
 import * as vscode from "vscode";
-import * as cp from "child_process";
 
 import { PipeTunnelInfo } from "..";
 import { quickPickWithCountdown } from "../../common/quick-pick-with-countdown";
@@ -53,7 +52,7 @@ export async function askUserForPipeTunnel(
     `Pick a tunnel to connect run ${runId}`,
     choices,
     15000,
-  );
+  ).result;
 
   return userResp;
 }

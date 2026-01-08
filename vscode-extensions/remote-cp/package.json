@@ -157,12 +157,14 @@
       {
         "command": "remote-cp.explorer.pipeUpdate",
         "title": "Update (download) pipe client",
-        "icon": "$(cloud-download)"
+        "icon": "$(cloud-download)",
+        "enablement": "!cpRunView:isUpdatingPipeClient"
       },
       {
         "command": "remote-cp.explorer.refresh",
         "title": "Refresh",
-        "icon": "$(refresh)"
+        "icon": "$(refresh)",
+        "enablement": "!cpRunView:isUpdatingPipeClient"
       },
       {
         "command": "remote-cp.explorer.filter",

@@ -11,21 +11,23 @@ import { untarFile } from "../common/files/untarFile";
 import { ICpExtConfig } from "../config";
 import { CpClientBase, CpVersionInfo } from "./index";
 import { ILogger } from "../common/logger";
-import { CpTokenExpiredError } from "./error";
+import { CpTokenExpiredError, UserCancelledError } from "./error";
 import { askUserForUpdatePipe } from "./ask-user-for-update-pipe";
+import { ICpCodeContext } from "../cp-ext/code-context";
 
 export class CpClient extends CpClientBase {
   static createAndRegister(
     cpExtConfig: ICpExtConfig,
     context: vscode.ExtensionContext,
+    codeContext: ICpCodeContext,
     logger: ILogger,
   ): CpClient {
-    const res = new CpClient(cpExtConfig, logger);
+    const res = new CpClient(cpExtConfig, codeContext, logger);
     context.subscriptions.push(res);
     return res;
   }
 
-  public override async ensurePipeExec(
+  public override async ensurePipeExecDo(
     forceUpdate: boolean = false,
   ): Promise<CpVersionInfo> {
     const fsp = fs.promises;
@@ -53,7 +55,7 @@ export class CpClient extends CpClientBase {
     }
 
     let resVersion: CpVersionInfo | undefined;
-    if (!needsDownload && !forceUpdate) {
+    if (!forceUpdate) {
       try {
         resVersion = await this.getVersion();
         needsDownload = false;
@@ -67,6 +69,8 @@ export class CpClient extends CpClientBase {
       } catch (err) {
         if (err instanceof CpTokenExpiredError) {
           needsDownload = false;
+        } else if (err instanceof UserCancelledError) {
+          throw err;
         } else {
           vscode.window.showWarningMessage(
             `${this.cpExtConfig.prefix}: Failed to initialize ${this.cpExtConfig.prefix} client: ${err}. Re-downloading...`,
@@ -78,7 +82,11 @@ export class CpClient extends CpClientBase {
     }
 
     if (needsDownload) {
-      await downloadAndExtract(pipeUri, binPipeDir, this.cpExtConfig);
+      await downloadAndExtract(pipeUri, binPipeDir, this.cpExtConfig, {
+        onDidDownload: () => {
+          this.resetVersion();
+        },
+      });
       resVersion = await this.getVersion();
     }
 
@@ -98,6 +106,7 @@ async function downloadAndExtract(
   pipeUri: string,
   binPipeDir: string,
   cpExtConfig: ICpExtConfig,
+  options?: { onDidDownload?: () => void },
 ): Promise<void> {
   const fsp = fs.promises;
 
@@ -108,7 +117,6 @@ async function downloadAndExtract(
   const downloadFileName = pipeUri.split("/").slice(-1)[0].split("?")[0];
   const tmpFile = tmp.fileSync({ postfix: "-" + downloadFileName });
 
-  const cleanupBinPipeDirP = rimraf(binPipeDir);
   let downloadFileP: Promise<void>;
   if (process.env.CP_STUBS?.includes("downloads")) {
     // Coppy file from ~/Downloads
@@ -125,12 +133,16 @@ async function downloadAndExtract(
       `${cpExtConfig.prefix}: Downloading pipe client '${pipeUrl}'`,
     );
   }
+  await downloadFileP;
+
+  const cleanupBinPipeDirP = rimraf(binPipeDir);
   const cleanupRes = await cleanupBinPipeDirP;
   if (!cleanupRes) {
     throw new Error("Failed to clean up existing pipe client dir.");
   }
-  await downloadFileP;
+
   const binDir = path.join(binPipeDir, "..");
+  options?.onDidDownload?.();
   try {
     // extract archive
     if (pipeUri.endsWith(".zip")) {

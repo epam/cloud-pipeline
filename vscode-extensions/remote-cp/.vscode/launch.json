@@ -11,7 +11,8 @@
       "request": "launch",
       "args": [
         "--extensionDevelopmentPath=${workspaceFolder:remote-cp}",
-        "--extensionDevelopmentPath=${workspaceFolder:remote-cp-helper}"
+        "--extensionDevelopmentPath=${workspaceFolder:remote-cp-helper}",
+        "--trace-deprecation"
       ],
       "outFiles": [
         "${workspaceFolder:remote-cp-helper}/dist/**/*.js",

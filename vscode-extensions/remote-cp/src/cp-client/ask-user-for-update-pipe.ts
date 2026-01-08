@@ -2,13 +2,13 @@ import * as vscode from "vscode";
 
 import { ICpExtConfig } from "../config";
 import {
-  QuickPickActionItem,
+  ActionQuickPickItem,
   quickPickWithCountdown,
 } from "../common/quick-pick-with-countdown";
 import { DateTime, DurationObjectUnits } from "luxon";
 import { ILogger } from "../common/logger";
 
-type ActionItem = QuickPickActionItem<Promise<boolean>>;
+type ActionItem = ActionQuickPickItem<Promise<boolean>>;
 
 export async function askUserForUpdatePipe(
   cpExtConfig: ICpExtConfig,
@@ -69,7 +69,7 @@ export async function askUserForUpdatePipe(
     choices,
     10000,
   );
-  resNeedsDownload = await userResp.action();
+  resNeedsDownload = await (await userResp.result).action();
 
   return resNeedsDownload;
 }

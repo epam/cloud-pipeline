@@ -1,15 +1,22 @@
 import * as vscode from "vscode";
 
-export type QuickPickActionItem<TResult> = vscode.QuickPickItem & {
+export type ActionQuickPickItem<TResult> = vscode.QuickPickItem & {
   action: () => TResult;
 };
 
-export async function quickPickWithCountdown<
-  TItem extends vscode.QuickPickItem,
->(title: string, choices: TItem[], timeoutMs: number): Promise<TItem> {
+export type QuickPickWithResult<TItem extends vscode.QuickPickItem> =
+  vscode.QuickPick<TItem> & {
+    result: Promise<TItem>;
+  };
+
+export function quickPickWithCountdown<TItem extends vscode.QuickPickItem>(
+  title: string,
+  choices: TItem[],
+  timeoutMs: number,
+): QuickPickWithResult<TItem> {
   const defaultChoice = choices[0];
 
-  const quickPick = vscode.window.createQuickPick();
+  const quickPick = vscode.window.createQuickPick<TItem>();
   quickPick.items = choices;
   quickPick.ignoreFocusOut = true;
 
@@ -47,5 +54,5 @@ export async function quickPickWithCountdown<
     }, step);
   });
 
-  return result;
+  return Object.assign(quickPick, { result });
 }

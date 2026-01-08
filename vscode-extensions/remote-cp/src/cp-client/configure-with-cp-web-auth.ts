@@ -6,8 +6,9 @@ import { StringDecoder } from "string_decoder";
 import { ICpExtConfig } from "../config";
 import { ILogger } from "../common/logger";
 import { ICpClientConfig } from "./cp-client-config";
-import { CpAuthInvalidError } from "./error";
+import { CpAuthInvalidError, UserCancelledError } from "./error";
 import { findRandomPort } from "../common/ports";
+import { quickPickWithCountdown } from "../common/quick-pick-with-countdown";
 
 export async function configureWithCpUrl(
   cpExtConfig: ICpExtConfig,
@@ -17,6 +18,8 @@ export async function configureWithCpUrl(
   const callbackPort = await findRandomPort();
 
   return new Promise<ICpClientConfig>((resolve, reject) => {
+    let settled = false;
+    let disposed = false;
     let server: http.Server | null = http.createServer(async (req, res) => {
       try {
         let resConfig: ICpClientConfig | null = null;
@@ -40,19 +43,41 @@ export async function configureWithCpUrl(
 
         if (resConfig) {
           responseSuccess(res, cpExtConfig);
-          resolve(resConfig);
+          settleResolve(resConfig);
         } else {
           responseError(res, cpExtConfig);
-          reject(new CpAuthInvalidError());
+          settleReject(new CpAuthInvalidError());
         }
       } finally {
-        close();
+        dispose();
       }
     });
 
     let timeoutHandler: NodeJS.Timeout | null = null;
 
-    function close(): void {
+    const settleResolve = (config: ICpClientConfig): void => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      dispose();
+      resolve(config);
+    };
+
+    const settleReject = (err: unknown): void => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      dispose();
+      reject(err);
+    };
+
+    function dispose(): void {
+      if (disposed) {
+        return;
+      }
+      disposed = true;
       logger.info(`${logPfx} close.`);
       if (server) {
         server.close();
@@ -62,15 +87,34 @@ export async function configureWithCpUrl(
         clearTimeout(timeoutHandler);
         timeoutHandler = null;
       }
+      if (quickPick) {
+        quickPick.dispose();
+      }
     }
 
     timeoutHandler = setTimeout(() => {
-      close();
-      reject(new Error(`Timeout for ${logPfx} callback`));
+      settleReject(new Error(`Timeout for ${logPfx} callback`));
     }, 600000);
 
     server.listen(callbackPort, "127.0.0.1");
     logger.info(`${logPfx} server listens at port ${callbackPort}`);
+
+    const quickPick = quickPickWithCountdown(
+      "Waiting for the Web Auth callback from the web browser...",
+      [{ label: "Cancel" }],
+      180000,
+    );
+    quickPick.result
+      .then((item) => {
+        if (!settled && item.label === "Cancel") {
+          settleReject(new UserCancelledError("Auth cancelled by user"));
+        }
+      })
+      .catch((err) => {
+        if (!settled) {
+          settleReject(err);
+        }
+      });
 
     const callbackUri = vscode.Uri.parse(
       `http://localhost:${callbackPort}`,

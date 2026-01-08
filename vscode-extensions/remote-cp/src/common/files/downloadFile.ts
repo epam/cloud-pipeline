@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
 import got from "got";
+import { UserCancelledError } from "../../cp-client/error";
 
 export async function downloadFile(
   url: string,
@@ -12,16 +13,30 @@ export async function downloadFile(
     {
       location: vscode.ProgressLocation.Notification,
       title: title ?? "Downloading file",
-      //TODO: make cancellable
-      cancellable: false,
+      cancellable: true,
     },
-    async (progress) => {
+    async (progress, token) => {
       let currentProgress: number = 0; // 0..100
       return new Promise<void>((resolve, reject) => {
         const downloadStream = got.stream(url, {
           retry: retryLimit,
         });
         const fileWriter = fs.createWriteStream(targetPath);
+
+        // Handle cancellation
+        token.onCancellationRequested(() => {
+          downloadStream.destroy();
+          fileWriter.close();
+
+          // Delete the partial file
+          fs.unlink(targetPath, (err) => {
+            if (err && err.code !== "ENOENT") {
+              console.error("Failed to delete partial file:", err);
+            }
+          });
+
+          reject(new UserCancelledError("Download cancelled by user"));
+        });
 
         downloadStream.on("downloadProgress", (p) => {
           if (p.percent !== undefined) {
@@ -37,11 +52,17 @@ export async function downloadFile(
         });
 
         downloadStream.on("error", (err) => {
+          fileWriter.close();
           reject(err);
         });
 
         fileWriter.on("finish", () => {
           resolve();
+        });
+
+        fileWriter.on("error", (err) => {
+          downloadStream.destroy();
+          reject(err);
         });
 
         downloadStream.pipe(fileWriter);

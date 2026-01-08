@@ -8,7 +8,11 @@ import { Disposable } from "../common/disposable";
 import { ICpExtConfig as ICpExtConfig } from "../config";
 import { fileExists, readJsonFile } from "../common/files/file";
 import { ICpClientConfig } from "./cp-client-config";
-import { CpAuthInvalidError, CpTokenExpiredError } from "../cp-client/error";
+import {
+  CpAuthInvalidError,
+  CpTokenExpiredError,
+  UserCancelledError,
+} from "../cp-client/error";
 import { configureWithCliConfigurationCommand } from "./configure-with-cli-configuration-command";
 import { configureWithCpUrl } from "./configure-with-cp-web-auth";
 import { configureWithOAuth } from "./configure-with-oauth";
@@ -20,6 +24,11 @@ import {
 } from "./tunnel/ask-user-for-pipe-tunnel";
 import { findRandomPort } from "../common/ports";
 import { ReusedPipeTunnel } from "./tunnel/reusing-pipe-tunnel";
+import { ICpCodeContext } from "../cp-ext/code-context";
+import {
+  ActionQuickPickItem,
+  quickPickWithCountdown,
+} from "../common/quick-pick-with-countdown";
 
 export enum PipeRunCols {
   runId = "RunID",
@@ -121,6 +130,7 @@ export abstract class CpClientBase extends Disposable {
 
   protected constructor(
     public readonly cpExtConfig: ICpExtConfig,
+    public readonly codeContext: ICpCodeContext,
     public readonly logger: ILogger,
   ) {
     super();
@@ -358,14 +368,27 @@ export abstract class CpClientBase extends Disposable {
 
   private ensurePipeExecActive: boolean = false;
 
-  public abstract ensurePipeExec(forceUpdate?: boolean): Promise<CpVersionInfo>;
+  public abstract ensurePipeExecDo(
+    forceUpdate?: boolean,
+  ): Promise<CpVersionInfo>;
+
+  public async ensurePipeExec(forceUpdate?: boolean): Promise<CpVersionInfo> {
+    try {
+      this.codeContext.isUpdatingPipeClient = true;
+      return await this.ensurePipeExecDo(forceUpdate);
+    } finally {
+      this.codeContext.isUpdatingPipeClient = false;
+    }
+  }
 
   private async ensurePipeExecInternal(): Promise<CpVersionInfo | null> {
     if (!this.ensurePipeExecActive) {
       this.ensurePipeExecActive = true;
+      this.codeContext.isUpdatingPipeClient = true;
       try {
         return await this.ensurePipeExec();
       } finally {
+        this.codeContext.isUpdatingPipeClient = false;
         this.ensurePipeExecActive = false;
       }
     } else {
@@ -395,14 +418,34 @@ export abstract class CpClientBase extends Disposable {
       cpAuth: "${this.cpExtConfig.prefix} OAuth",
     };
 
-    const configUserResp = await vscode.window.showWarningMessage(
-      `${this.cpExtConfig.prefix} pipe client is not configured.`,
-      ...[
-        configureActions.cliConfigurationCommands,
-        configureActions.cpUrl,
-        "Skip",
-      ],
-    );
+    const configUserResp: string = (
+      await quickPickWithCountdown(
+        `${this.cpExtConfig.prefix} pipe client is not configured.`,
+        [
+          { label: "Cancel", action: () => "Cancel" },
+          {
+            label: "-",
+            kind: vscode.QuickPickItemKind.Separator,
+            action: () => {
+              throw new Error("Unexpected");
+            },
+          },
+          {
+            label: configureActions.cpUrl,
+            action: () => configureActions.cpUrl,
+          },
+          {
+            label: configureActions.cliConfigurationCommands,
+            action: () => configureActions.cliConfigurationCommands,
+          },
+        ] as ActionQuickPickItem<string>[],
+        30000,
+      ).result
+    ).action();
+
+    if (configUserResp === "Cancel") {
+      throw new UserCancelledError("Auth cancelled by user");
+    }
 
     switch (configUserResp) {
       case configureActions.cliConfigurationCommands: {

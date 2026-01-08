@@ -16,6 +16,7 @@ import { RunInfo, RunLocation as LocationInfo } from "../cp-client";
 import { Commands } from "../commands";
 import { OnStartAction, OnStartWhen } from "../cp-ext/on-start";
 import { CpExtension } from "../cp-ext";
+import { UserCancelledError } from "../cp-client/error";
 
 class OwnerInfo extends Object {
   constructor(
@@ -82,9 +83,9 @@ export class CpRunTreeDataProvider
 
     registerCommand(HostTreeEvent.add, () => addNewHost());
     registerCommand(HostTreeEvent.configure, () => openSSHConfigFile());
-    registerCommand(Commands.explorer.pipeUpdate, () =>
-      this.updatePipeClient(),
-    );
+    registerCommand(Commands.explorer.pipeUpdate, () => {
+      this.updatePipeClient();
+    });
     registerCommand(Commands.explorer.refresh, () => this.refresh());
     registerCommand(Commands.explorer.emptyWindowInNewWindow, (e) =>
       this.openRemoteCpWindow(e, false),
@@ -245,6 +246,13 @@ export class CpRunTreeDataProvider
    * Update the pipe client (executable)
    */
   private updatePipeClient() {
+    if (this.cpExt.codeContext.isUpdatingPipeClient) {
+      vscode.window.showWarningMessage(
+        "Pipe client update is already in progress.",
+      );
+      return;
+    }
+
     void this.cpClient
       .ensurePipeExec(true)
       .then(() => {
@@ -255,9 +263,14 @@ export class CpRunTreeDataProvider
       })
       .catch((err) => {
         const errMsg = `Failed to update the pipe client: ${err}`;
-        this.logger.error(errMsg);
-        this.logger.error(err);
-        vscode.window.showErrorMessage(errMsg);
+        if (err instanceof UserCancelledError) {
+          this.logger.warn(errMsg);
+          vscode.window.showWarningMessage(errMsg);
+        } else {
+          this.logger.error(errMsg);
+          this.logger.error(err);
+          vscode.window.showErrorMessage(errMsg);
+        }
       });
   }
 
