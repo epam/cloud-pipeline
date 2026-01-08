@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -52,10 +53,13 @@ import com.epam.pipeline.entity.notification.filter.NotificationFilter;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
+import com.epam.pipeline.entity.run.PipelineRunPerformanceMetrics;
 import com.epam.pipeline.entity.user.Sid;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -88,6 +92,8 @@ import com.epam.pipeline.controller.vo.notification.NotificationMessageVO;
 public class NotificationManager implements NotificationService { // TODO: rewrite with Strategy pattern?
 
     private static final Pattern MENTION_PATTERN = Pattern.compile("@([^ ]*\\b)");
+    public static final String TRUE = "true";
+    public static final String METRICS_PREFIX = "metrics_";
 
     @Autowired
     private UserManager userManager;
@@ -118,6 +124,9 @@ public class NotificationManager implements NotificationService { // TODO: rewri
 
     @Autowired
     private DataStorageManager dataStorageManager;
+
+    @Autowired
+    private PipelineRunManager pipelineRunManager;
 
     private final AntPathMatcher matcher = new AntPathMatcher();
 
@@ -259,8 +268,14 @@ public class NotificationManager implements NotificationService { // TODO: rewri
 
         final NotificationMessage message = new NotificationMessage();
         message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
-        message.setTemplateParameters(parameterManager.build(type, run));
 
+        final Map<String, Object> runParameters = parameterManager.build(type, run);
+
+        if (run.getStatus().isFinal()) {
+            runParameters.putAll(getRunPerformanceMetricParameters(run));
+        }
+
+        message.setTemplateParameters(runParameters);
         message.setCopyUserIds(getCCUsers(settings));
 
         if (settings.isKeepInformedOwner()) {
@@ -269,6 +284,24 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         }
 
         saveNotification(message);
+    }
+
+    private Map<String, Object> getRunPerformanceMetricParameters(final PipelineRun run) {
+        final Map<String, Object> runPerformanceMetrics = new HashMap<>();
+        final List<String> runFlags = MapUtils.emptyIfNull(run.getTags()).entrySet().stream()
+                .filter(tag -> tag.getValue().equalsIgnoreCase(TRUE))
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+        runPerformanceMetrics.put(METRICS_PREFIX + "tags", runFlags);
+        Optional.ofNullable(pipelineRunManager.loadPipelineRunPerformanceMetrics(run.getId()))
+                .map(PipelineRunPerformanceMetrics::getMetrics).orElse(Collections.emptyList())
+                .forEach(metric -> {
+                    final String metricName = metric.getType().name();
+                    runPerformanceMetrics.put(METRICS_PREFIX + metricName + "_avg", metric.getAvg());
+                    runPerformanceMetrics.put(METRICS_PREFIX + metricName + "_max", metric.getMax());
+                    runPerformanceMetrics.put(METRICS_PREFIX + metricName + "_capacity", metric.getCapacity());
+                });
+        return runPerformanceMetrics;
     }
 
     /**
