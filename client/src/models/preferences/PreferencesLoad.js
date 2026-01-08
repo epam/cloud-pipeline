@@ -119,6 +119,11 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get searchPromptTemplate () {
+    return this.getPreferenceValue('search.prompt.template');
+  }
+
+  @computed
   get billingEnabled () {
     const value = this.getPreferenceValue('billing.reports.enabled');
     return value && `${value}`.toLowerCase() === 'true';
