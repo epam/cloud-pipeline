@@ -8,7 +8,7 @@ client:
   client_cert:
   client_key:
   ssl_no_validate: False
-  http_auth:
+  http_auth: ${CP_SEARCH_ELK_AUTH_SECRET}
   timeout: 30
   master_only: False
 
