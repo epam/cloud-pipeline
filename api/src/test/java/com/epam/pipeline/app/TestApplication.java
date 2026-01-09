@@ -40,6 +40,7 @@ import com.epam.pipeline.manager.quota.QuotaService;
 import com.epam.pipeline.manager.scheduling.AutowiringSpringBeanJobFactory;
 import com.epam.pipeline.manager.user.OnlineUsersService;
 import com.epam.pipeline.manager.user.UserRunnersManager;
+import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
 import com.epam.pipeline.repository.access.AccessCodeRepository;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleExecutionRepository;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleRepository;
@@ -193,13 +194,18 @@ public class TestApplication {
 
     @MockBean
     protected UIPluginRepository pluginRepository;
+
     @MockBean
     protected UIPluginAssignmentRepository assignmentRepository;
 
     @MockBean
     public AccessCodeRepository accessCodeRepository;
+
     @MockBean
     public AccessCodeCleaner accessCodeCleaner;
+
+    @MockBean
+    public GlobalSearchElasticHelper elasticHelper;
 
     @Bean
     public EmbeddedServletContainerCustomizer containerCustomizer() throws FileNotFoundException {

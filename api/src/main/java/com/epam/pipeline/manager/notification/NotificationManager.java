@@ -94,6 +94,10 @@ public class NotificationManager implements NotificationService { // TODO: rewri
     private static final Pattern MENTION_PATTERN = Pattern.compile("@([^ ]*\\b)");
     public static final String TRUE = "true";
     public static final String METRICS_PREFIX = "metrics_";
+    public static final String TAGS_POSTFIX = "tags";
+    public static final String AVG_POSTFIX = "_avg";
+    public static final String MAX_POSTFIX = "_max";
+    public static final String CAPACITY_POSTFIX = "_capacity";
 
     @Autowired
     private UserManager userManager;
@@ -292,14 +296,14 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                 .filter(tag -> tag.getValue().equalsIgnoreCase(TRUE))
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toList());
-        runPerformanceMetrics.put(METRICS_PREFIX + "tags", runFlags);
+        runPerformanceMetrics.put(METRICS_PREFIX + TAGS_POSTFIX, runFlags);
         Optional.ofNullable(pipelineRunManager.loadPipelineRunPerformanceMetrics(run.getId()))
                 .map(PipelineRunPerformanceMetrics::getMetrics).orElse(Collections.emptyList())
                 .forEach(metric -> {
                     final String metricName = metric.getType().name();
-                    runPerformanceMetrics.put(METRICS_PREFIX + metricName + "_avg", metric.getAvg());
-                    runPerformanceMetrics.put(METRICS_PREFIX + metricName + "_max", metric.getMax());
-                    runPerformanceMetrics.put(METRICS_PREFIX + metricName + "_capacity", metric.getCapacity());
+                    runPerformanceMetrics.put(METRICS_PREFIX + metricName + AVG_POSTFIX, metric.getAvg());
+                    runPerformanceMetrics.put(METRICS_PREFIX + metricName + MAX_POSTFIX, metric.getMax());
+                    runPerformanceMetrics.put(METRICS_PREFIX + metricName + CAPACITY_POSTFIX, metric.getCapacity());
                 });
         return runPerformanceMetrics;
     }
