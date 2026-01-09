@@ -17,16 +17,24 @@
 package com.epam.pipeline.manager.notification;
 
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.exception.PipelineException;
+import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.RunStatusManager;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
 
 
 /**
@@ -36,13 +44,19 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class NotificationAspect {
-    public static final String RESUME_RUN_FAILED = "Resume run failed.";
 
     @Autowired
     private NotificationManager notificationManager;
 
     @Autowired
     private RunStatusManager runStatusManager;
+
+    @Autowired
+    private UsageMonitoringManager usageMonitoringManager;
+
+    @Autowired
+    private PipelineRunManager pipelineRunManager;
+
 
     /**
      * Generates system notifications for PipelineRun status changes
@@ -74,9 +88,43 @@ public class NotificationAspect {
                     run.getId(), run.getStatus());
             return;
         }
+
+        if (newStatus.getStatus().isFinal()) {
+            storeRunPerformanceMetrics(run);
+        }
+
         log.debug("Notify all about pipelineRun status changed {} {} {}: {}",
-                     run.getPodId(), run.getPipelineName(), run.getVersion(), run.getStatus());
+                run.getPodId(), run.getPipelineName(), run.getVersion(), run.getStatus());
         notificationManager.notifyRunStatusChanged(run);
+    }
+
+    private void storeRunPerformanceMetrics(final PipelineRun run) {
+        final long runId = run.getId();
+        final String nodeName = Optional.ofNullable(run.getInstance())
+                .map(RunInstance::getNodeName).orElse(StringUtils.EMPTY);
+
+        if (StringUtils.isBlank(nodeName)) {
+            log.warn("Can't find nodeName for run: {}", runId);
+            return;
+        }
+
+        if (usageMonitoringManager != null) {
+            try {
+                final LocalDateTime from = DateUtils.convertDateToLocalDateTime(run.getStartDate());
+                final LocalDateTime to = Optional.ofNullable(run.getEndDate())
+                        .map(DateUtils::convertDateToLocalDateTime).orElse(DateUtils.nowUTC());
+                Optional.ofNullable(
+                        usageMonitoringManager.getMeanPerformanceMetricsForRun(nodeName, runId, from, to)
+                ).ifPresent(pipelineRunManager::savePipelineRunPerformanceMetrics);
+            } catch (PipelineException e) {
+                log.warn("Can't request pipeline run performance metrics, it won't be saved for run: {}", runId);
+            }
+        } else {
+            log.debug(
+                    "UsageMonitoringManager is not initialized! Performance metrics won't be saved for run: {}",
+                    runId
+            );
+        }
     }
 }
 
