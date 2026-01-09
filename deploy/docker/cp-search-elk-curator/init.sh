@@ -24,9 +24,8 @@ function envsubst_inplace() {
     envsubst < "$_template" > "$_source"
 }
 
-_ELK_AUTH_HEADER=""
 if [ -n "$CP_SEARCH_ELK_AUTH_SECRET" ]; then
-    _ELK_AUTH_HEADER="-H 'Authorization: Basic $(echo -n "$CP_SEARCH_ELK_AUTH_SECRET" | base64)'"
+    _ELK_AUTH_HEADER="Authorization: Basic $(echo -n "$CP_SEARCH_ELK_AUTH_SECRET" | base64)"
 fi
 
 msg "Waiting for ElasticSearch..."
@@ -40,7 +39,13 @@ fi
 not_initialized=true
 try_count=0
 while [ $not_initialized ] && [ $try_count -lt $CP_SEARCH_ELK_INIT_ATTEMPTS ]; do
-    _elk_health_status=$(curl "$_ELK_AUTH_HEADER" -s "${CP_SEARCH_ELK_ADDRESS}/_cluster/health?pretty" | jq -r '.status')
+
+    if [ -n "$_ELK_AUTH_HEADER" ]; then
+      _elk_health_status=$(curl -H "$_ELK_AUTH_HEADER" -s "${CP_SEARCH_ELK_ADDRESS}/_cluster/health?pretty" | jq -r '.status')
+    else
+      _elk_health_status=$(curl -s "${CP_SEARCH_ELK_ADDRESS}/_cluster/health?pretty" | jq -r '.status')
+    fi
+
     if [ "$_elk_health_status" == "green" ] || [ "$_elk_health_status" == "yellow" ]; then
       unset not_initialized
     fi
@@ -67,13 +72,25 @@ if [ "${CP_SEARCH_ELK_TYPE}" == "elasticsearch" ]; then
     for _policy_path in /etc/search-elk/policies/${CP_SEARCH_ELK_TYPE}/*.json; do
       _policy_name="$(basename "$_policy_path" .json)"
       envsubst_inplace "$_policy_path"
-      curl "$_ELK_AUTH_HEADER" -H 'Content-Type: application/json' -XPUT "${CP_SEARCH_ELK_ADDRESS}/_ilm/policy/$_policy_name" -d "@$_policy_path"
+
+      if [ -n "$_ELK_AUTH_HEADER" ]; then
+        curl -H "$_ELK_AUTH_HEADER" -H 'Content-Type: application/json' -XPUT "${CP_SEARCH_ELK_ADDRESS}/_ilm/policy/$_policy_name" -d "@$_policy_path"
+      else
+        curl -H 'Content-Type: application/json' -XPUT "${CP_SEARCH_ELK_ADDRESS}/_ilm/policy/$_policy_name" -d "@$_policy_path"
+      fi
+
     done
 elif [ "${CP_SEARCH_ELK_TYPE}" == "opensearch" ]; then
     for _policy_path in /etc/search-elk/policies/${CP_SEARCH_ELK_TYPE}/*.json; do
       _policy_name="$(basename "$_policy_path" .json)"
       envsubst_inplace "$_policy_path"
-      curl "$_ELK_AUTH_HEADER" -H 'Content-Type: application/json' -XPUT "${CP_SEARCH_ELK_ADDRESS}/_plugins/_ism/policies/$_policy_name" -d "@$_policy_path"
+
+      if [ -n "$_ELK_AUTH_HEADER" ]; then
+        curl -H "$_ELK_AUTH_HEADER" -H 'Content-Type: application/json' -XPUT "${CP_SEARCH_ELK_ADDRESS}/_plugins/_ism/policies/$_policy_name" -d "@$_policy_path"
+      else
+        curl -H 'Content-Type: application/json' -XPUT "${CP_SEARCH_ELK_ADDRESS}/_plugins/_ism/policies/$_policy_name" -d "@$_policy_path"
+      fi
+
     done
 fi
 
@@ -81,13 +98,25 @@ if [ "${CP_SEARCH_ELK_TYPE}" == "elasticsearch" ]; then
     for _template_path in /etc/search-elk/templates/${CP_SEARCH_ELK_TYPE}/*.json; do
       _template_name="$(basename "$_template_path" .json)"
       envsubst_inplace "$_template_path"
-      curl "$_ELK_AUTH_HEADER" -H 'Content-Type: application/json' -XPUT "${CP_SEARCH_ELK_ADDRESS}/_template/$_template_name" -d "@$_template_path"
+
+      if [ -n "$_ELK_AUTH_HEADER" ]; then
+        curl -H "$_ELK_AUTH_HEADER" -H 'Content-Type: application/json' -XPUT "${CP_SEARCH_ELK_ADDRESS}/_template/$_template_name" -d "@$_template_path"
+      else
+        curl -H 'Content-Type: application/json' -XPUT "${CP_SEARCH_ELK_ADDRESS}/_template/$_template_name" -d "@$_template_path"
+      fi
+
     done
 elif [ "${CP_SEARCH_ELK_TYPE}" == "opensearch" ]; then
     for _template_path in /etc/search-elk/templates/${CP_SEARCH_ELK_TYPE}/*.json; do
       _template_name="$(basename "$_template_path" .json)"
       envsubst_inplace "$_template_path"
-      curl "$_ELK_AUTH_HEADER" -H 'Content-Type: application/json' -XPUT "${CP_SEARCH_ELK_ADDRESS}/_index_template/$_template_name" -d "@$_template_path"
+
+      if [ -n "$_ELK_AUTH_HEADER" ]; then
+        curl -H "$_ELK_AUTH_HEADER" -H 'Content-Type: application/json' -XPUT "${CP_SEARCH_ELK_ADDRESS}/_index_template/$_template_name" -d "@$_template_path"
+      else
+        curl "$_ELK_AUTH_HEADER" -H 'Content-Type: application/json' -XPUT "${CP_SEARCH_ELK_ADDRESS}/_index_template/$_template_name" -d "@$_template_path"
+      fi
+
     done
 fi
 
@@ -98,10 +127,21 @@ INDEX="{
   }
 }"
 
-status_code=$(curl "$_ELK_AUTH_HEADER" --write-out %{http_code} --silent --output /dev/null ${CP_SEARCH_ELK_ADDRESS}/${CP_SECURITY_LOGS_ELASTIC_PREFIX})
+if [ -n "$_ELK_AUTH_HEADER" ]; then
+  status_code=$(curl -H "$_ELK_AUTH_HEADER" --write-out %{http_code} --silent --output /dev/null ${CP_SEARCH_ELK_ADDRESS}/${CP_SECURITY_LOGS_ELASTIC_PREFIX})
+else
+  status_code=$(curl --write-out %{http_code} --silent --output /dev/null ${CP_SEARCH_ELK_ADDRESS}/${CP_SECURITY_LOGS_ELASTIC_PREFIX})
+fi
+
 if [[ "$status_code" == 404 ]] ; then
   msg "Creating security log index"
-  curl "$_ELK_AUTH_HEADER" -H 'Content-Type: application/json' -XPUT ${CP_SEARCH_ELK_ADDRESS}/%3C${CP_SECURITY_LOGS_ELASTIC_PREFIX}-%7Bnow%2Fm%7Byyyy.MM.dd%7D%7D-000001%3E -d "$INDEX"
+
+  if [ -n "$_ELK_AUTH_HEADER" ]; then
+    curl -H "$_ELK_AUTH_HEADER" -H 'Content-Type: application/json' -XPUT ${CP_SEARCH_ELK_ADDRESS}/%3C${CP_SECURITY_LOGS_ELASTIC_PREFIX}-%7Bnow%2Fm%7Byyyy.MM.dd%7D%7D-000001%3E -d "$INDEX"
+  else
+    curl -H 'Content-Type: application/json' -XPUT ${CP_SEARCH_ELK_ADDRESS}/%3C${CP_SECURITY_LOGS_ELASTIC_PREFIX}-%7Bnow%2Fm%7Byyyy.MM.dd%7D%7D-000001%3E -d "$INDEX"
+  fi
+
 else
   msg "Security log index already exists"
 fi
@@ -109,11 +149,21 @@ fi
 for _pipeline_path in /etc/search-elk/pipelines/*.json; do
   _pipeline_name="$(basename "$_pipeline_path" .json)"
   envsubst_inplace "$_pipeline_path"
-  curl "$_ELK_AUTH_HEADER" -H 'Content-Type: application/json' -XPUT "${CP_SEARCH_ELK_ADDRESS}/_ingest/pipeline/$_pipeline_name" -d "@$_pipeline_path"
+
+  if [ -n "$_ELK_AUTH_HEADER" ]; then
+    curl -H "$_ELK_AUTH_HEADER" -H 'Content-Type: application/json' -XPUT "${CP_SEARCH_ELK_ADDRESS}/_ingest/pipeline/$_pipeline_name" -d "@$_pipeline_path"
+  else
+    curl -H 'Content-Type: application/json' -XPUT "${CP_SEARCH_ELK_ADDRESS}/_ingest/pipeline/$_pipeline_name" -d "@$_pipeline_path"
+  fi
+
 done
 
 _ELK_SNAPSHOT_REPO_NAME="log_backup_repo"
 if [ "$CP_SEARCH_ELK_TYPE" == "opensearch" ]; then
+    # NOTE:
+    # If opensearch with authentication is used, there is additional manual configuration step for opensearch cluster:
+    # Cloud-Pipeline service role should be added as manage_snapshots role to opensearch role mapping, to be able to register a repo
+    # See: https://docs.aws.amazon.com/opensearch-service/latest/developerguide/managedomains-snapshot-registerdirectory.html#managedomains-snapshot-fgac
     python3 /opt/aws-s3-backup-repo-registration.py --es_host "$CP_SEARCH_ELK_ADDRESS" \
                                                     --region "$CP_CLOUD_REGION_ID" \
                                                     --backup_bucket "${CP_PREF_STORAGE_SYSTEM_STORAGE_NAME}" \
@@ -145,7 +195,13 @@ else
         }
       }"
   fi
-  curl "$_ELK_AUTH_HEADER" -H 'Content-Type: application/json' -XPUT ${CP_SEARCH_ELK_ADDRESS}/_snapshot/${_ELK_SNAPSHOT_REPO_NAME} -d "$LOG_BACKUP_REPO"
+
+  if [ -n "$_ELK_AUTH_HEADER" ]; then
+    curl -H "$_ELK_AUTH_HEADER" -H 'Content-Type: application/json' -XPUT ${CP_SEARCH_ELK_ADDRESS}/_snapshot/${_ELK_SNAPSHOT_REPO_NAME} -d "$LOG_BACKUP_REPO"
+  else
+    curl -H 'Content-Type: application/json' -XPUT ${CP_SEARCH_ELK_ADDRESS}/_snapshot/${_ELK_SNAPSHOT_REPO_NAME} -d "$LOG_BACKUP_REPO"
+  fi
+
 fi
 
 if [ ! -d /var/log/curator ]; then
