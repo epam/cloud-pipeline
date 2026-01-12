@@ -29,7 +29,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 /* TODO: this conf is loaded even if it is uncommented in Application.java,
     but to unsecure endpoints it is needed to comment @EnableWebSecurity */
 //@EnableMethodSecurity(securedEnabled = true)
-@Import({DummySecurityConfiguration.class, AclSecurityConfiguration.class})
+@Import({SAMLSecurityConfiguration.class, AclSecurityConfiguration.class})
 public class SecurityConfig {
 
     @Bean

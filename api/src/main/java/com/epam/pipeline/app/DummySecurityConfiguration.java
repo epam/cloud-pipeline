@@ -20,7 +20,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-@Configuration
+//@Configuration
 public class DummySecurityConfiguration {
 
     @Autowired
