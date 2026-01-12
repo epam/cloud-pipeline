@@ -1420,6 +1420,8 @@ public class SystemPreferences {
             new ObjectPreference<>("search.export.template.mapping", Collections.emptyMap(),
                     new TypeReference<Map<String, SearchTemplateExportConfig>>() {}, SEARCH_GROUP,
                     isValidSearchExportTemplateConfig);
+    public static final StringPreference SEARCH_PROMPT_TEMPLATE = new StringPreference(
+            "search.prompt.template", null, SEARCH_GROUP, pass);
 
     public static final ObjectPreference<List<StorageFileSearchMask>> FILE_SEARCH_MASK_RULES = new ObjectPreference<>(
         "search.storage.elements.settings",
