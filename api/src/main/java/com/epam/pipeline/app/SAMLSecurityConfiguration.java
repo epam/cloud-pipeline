@@ -198,7 +198,9 @@ public class SAMLSecurityConfiguration /*implements WebMvcConfigurer*/ {
                 "/saml/web/**",
                 "/restapi/**",
                 "/error",
-                "/error/**");
+                "/error/**",
+                "/restapi/access/token",
+                "/restapi/access/code");
         return ListUtils.union(excludePaths, ListUtils.emptyIfNull(excludeScripts)).toArray(new String[0]);
     }
 

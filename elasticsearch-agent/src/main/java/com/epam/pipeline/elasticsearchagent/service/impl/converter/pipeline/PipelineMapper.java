@@ -20,12 +20,11 @@ import com.epam.pipeline.elasticsearchagent.model.PipelineDoc;
 import com.epam.pipeline.elasticsearchagent.service.EntityMapper;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.entity.search.SearchDocumentType;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
@@ -34,33 +33,26 @@ import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchron
 public class PipelineMapper implements EntityMapper<PipelineDoc> {
 
     @Override
-    public XContentBuilder map(final EntityContainer<PipelineDoc> container) {
-        PipelineDoc pipelineDoc = container.getEntity();
-        try (XContentBuilder jsonBuilder = XContentFactory.jsonBuilder()) {
-            List<String> revisions = pipelineDoc.getRevisions()
-                    .stream()
-                    .map(Revision::getName)
-                    .collect(Collectors.toList());
-            jsonBuilder
-                    .startObject()
-                    .field("id", pipelineDoc.getPipeline().getId())
-                    .field(DOC_TYPE_FIELD, SearchDocumentType.PIPELINE.name())
-                    .field("name", pipelineDoc.getPipeline().getName())
-                    .field("description", pipelineDoc.getPipeline().getDescription())
-                    .field("createdDate", parseDataToString(pipelineDoc.getPipeline().getCreatedDate()))
-                    .field("parentId", pipelineDoc.getPipeline().getParentFolderId())
-                    .field("repository", pipelineDoc.getPipeline().getRepository())
-                    .field("versions", revisions)
-                    .field("templateId", pipelineDoc.getPipeline().getTemplateId());
+    public Map<String, ?> map(final EntityContainer<PipelineDoc> container) {
+        final PipelineDoc pipelineDoc = container.getEntity();
+        final Map<String, Object> jsonMap = new HashMap<>();
+        final List<String> revisions = pipelineDoc.getRevisions()
+                .stream()
+                .map(Revision::getName)
+                .collect(Collectors.toList());
+        jsonMap.put("id", pipelineDoc.getPipeline().getId());
+        jsonMap.put(DOC_TYPE_FIELD, SearchDocumentType.PIPELINE.name());
+        jsonMap.put("name", pipelineDoc.getPipeline().getName());
+        jsonMap.put("description", pipelineDoc.getPipeline().getDescription());
+        jsonMap.put("createdDate", parseDataToString(pipelineDoc.getPipeline().getCreatedDate()));
+        jsonMap.put("parentId", pipelineDoc.getPipeline().getParentFolderId());
+        jsonMap.put("repository", pipelineDoc.getPipeline().getRepository());
+        jsonMap.put("versions", revisions);
+        jsonMap.put("templateId", pipelineDoc.getPipeline().getTemplateId());
 
-            buildUserContent(container.getOwner(), jsonBuilder);
-            buildMetadata(container.getMetadata(), jsonBuilder);
-            buildPermissions(container.getPermissions(), jsonBuilder);
-
-            jsonBuilder.endObject();
-            return jsonBuilder;
-        } catch (IOException e) {
-            throw new IllegalArgumentException("Failed to create elasticsearch document for pipeline: ", e);
-        }
+        buildUserContent(container.getOwner(), jsonMap);
+        buildMetadata(container.getMetadata(), jsonMap);
+        buildPermissions(container.getPermissions(), jsonMap);
+        return jsonMap;
     }
 }

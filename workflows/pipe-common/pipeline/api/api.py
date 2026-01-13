@@ -224,6 +224,7 @@ class PipelineAPI:
     LOAD_METADATA = "/metadata/load"
     SEARCH_METADATA = "/metadata/search?entityClass={entity_class}&key={entity_key}&value={entity_value}"
     SAVE_METADATA_ENTITY = "metadataEntity/save"
+    UPDATE_METADATA_ENTITY = "metadataEntity/updateKey"
     FIND_METADATA_ENTITY = "metadataEntity/loadExternal?id=%s&folderId=%d&className=%s"
     LOAD_ENTITIES_DATA = "/metadataEntity/entities"
     LOAD_DTS = "/dts"
@@ -529,7 +530,7 @@ class PipelineAPI:
         return result.json()['payload']['podId']
 
     def load_child_pipelines(self, parent_id):
-        request = {'page': '1', 'pageSize': self.MAX_PAGE_SIZE, 'partialParameters': 'parent_id={}'.format(parent_id)}
+        request = {'page': '1', 'pageSize': self.MAX_PAGE_SIZE, 'partialParameters': 'parent-id={}'.format(parent_id)}
         url = self.normalize_url(str(self.api_url) + self.FILTER_RUNS)
         result = requests.post(url, data=json.dumps(request), headers=self.header, verify=False)
         if hasattr(result.json(), 'error') or result.json()['status'] != self.RESPONSE_STATUS_OK:
@@ -562,7 +563,7 @@ class PipelineAPI:
                 current_expression = {"filterExpressionType": "AND",
                                        "expressions": [current_expression, self.parameter_json(parameter[0], parameter[1])]}
             request["filterExpression"] = current_expression
-        
+
         url = self.normalize_url(str(self.api_url) + self.SEARCH_RUNS_URL)
         result = requests.post(url, data=json.dumps(request), headers=self.header, verify=False)
 
@@ -795,6 +796,25 @@ class PipelineAPI:
             raise RuntimeError("Failed to save metadata entities. "
                                "Error message: {}".format(str(e.message)))
 
+    # {
+    #     "entityId": 1,
+    #     "parentId": 1,
+    #     "data": {
+    #         "key1": {
+    #             "type": "string",
+    #             "value": "value1"
+    #         }
+    #     }
+    # }
+    def update_metadata_entity(self, entity):
+        try:
+            result = self.execute_request(str(self.api_url) + self.UPDATE_METADATA_ENTITY, method='post',
+                                          data=json.dumps(entity))
+            return {} if result is None else result
+        except BaseException as e:
+            raise RuntimeError("Failed to update metadata entities. "
+                               "Error message: {}".format(str(e.message)))
+
     def find_metadata_entity(self, folder_id, external_id, class_name):
         try:
             result = self.execute_request(str(self.api_url) +
@@ -848,6 +868,18 @@ class PipelineAPI:
         except BaseException as e:
             raise RuntimeError("Failed to get contextual preference %s for %s level and resource id %s. "
                                "Error message: %s" % (preference_name, preference_level, str(resource_id), e.message))
+
+    def search_contextual_preferences(self, preference_name):
+        try:
+            data = {
+                "preferences": [ preference_name ]
+                }
+            result = self.execute_request(str(self.api_url) + 'contextual/preference', method='post',
+            data=json.dumps(data))
+            return {} if result is None else result
+        except BaseException as e:
+            raise RuntimeError("Failed to get contextual preference %s. "
+                               "Error message: %s" % (preference_name, e.message))
 
     # "preference_level" accepts only "TOOL" value for now. Any other value will throw an error
     # "resource_id"=-1 is used when you don't need to consider the tool's setting. Only user and group

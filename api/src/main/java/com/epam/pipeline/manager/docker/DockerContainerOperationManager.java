@@ -29,7 +29,7 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
-import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
+import com.epam.pipeline.entity.pipeline.run.container.RunContainerSpec;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.CmdExecutionException;
@@ -422,9 +422,9 @@ public class DockerContainerOperationManager {
         final Map<String, String> envs = getResumeRunEnvVars(configuration);
         configuration.setEnvironmentParams(envs);
         configuration.setPodAssignPolicy(
-                RunAssignPolicy.builder()
+                RunContainerSpec.builder()
                         .selector(
-                                RunAssignPolicy.PodAssignSelector.builder()
+                                RunContainerSpec.PodAssignSelector.builder()
                                         .label(KubernetesConstants.RUN_ID_LABEL)
                                         .value(run.getId().toString()).build())
                         .build()

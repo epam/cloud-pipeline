@@ -18,7 +18,6 @@ package com.epam.pipeline.autotests.ao;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
-import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.Utils;
 import com.epam.pipeline.autotests.utils.listener.Cloud;
 import com.google.common.collect.Comparators;
@@ -51,6 +50,7 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.deleteButton;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.editButton;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.modalWithTitle;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.visible;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
@@ -199,6 +199,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         resetMouse().hover(CREATE).click(CREATE_FILE);
         $$(byId("name")).findBy(visible).setValue(fileName);
         $(button("OK")).shouldBe(visible).click();
+        $$(byClassName("browser__name-cell")).findBy(text(fileName)).waitUntil(exist, DEFAULT_TIMEOUT);
         return this;
     }
 
@@ -350,6 +351,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
     public MetadataSectionAO fileMetadata(String filename) {
         $(byClassName("ant-table-tbody")).shouldBe(visible);
         $$(byClassName("browser__name-cell")).findBy(text(filename)).click();
+        $(buttonByIconClass("anticon-arrows-alt")).waitUntil(exist, DEFAULT_TIMEOUT);
         return new MetadataSectionAO(this);
     }
 
@@ -522,7 +524,10 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
     public StorageContentAO markCheckboxByName(String name) {
         SelenideElement checkBox = context().shouldBe(visible)
                 .find(byText(format("%s", name)))
-                .find(byXpath("preceding-sibling::*[contains(@class, 'browser__checkbox-cell')]"));
+                .parent()
+                .parent()
+                .find(byXpath("preceding-sibling::*[contains(@class, 'browser__checkbox-cell')]"))
+                .find(className("ant-checkbox"));
         checkBox.shouldBe(visible).click();
         return this;
     }

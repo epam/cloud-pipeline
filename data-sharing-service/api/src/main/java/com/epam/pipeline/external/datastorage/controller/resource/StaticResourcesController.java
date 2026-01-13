@@ -19,7 +19,7 @@ package com.epam.pipeline.external.datastorage.controller.resource;
 import com.epam.pipeline.external.datastorage.controller.AbstractRestController;
 import com.epam.pipeline.external.datastorage.exception.InvalidPathException;
 import com.epam.pipeline.external.datastorage.manager.resource.StaticResourcesService;
-import io.swagger.annotations.Api;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import okhttp3.Headers;
 import okhttp3.ResponseBody;
@@ -31,12 +31,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import retrofit2.Response;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 @RestController
-@Api(value = "Static resources API")
+@Tag(value = "Static resources API")
 @RequestMapping("/static-resources")
 @RequiredArgsConstructor
 public class StaticResourcesController extends AbstractRestController {

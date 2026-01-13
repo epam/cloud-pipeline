@@ -299,6 +299,20 @@
                 ]]>
             </value>
         </property>
+        <property name="baseFacetQuery">
+            <value>
+                <![CDATA[
+                    WITH base AS (
+                        SELECT  @FIELDS_CLAUSE@
+                        FROM    metadata_entity e INNER JOIN metadata_entity_class c ON e.class_id = c.class_id
+                        WHERE   class_name = :CLASS_NAME
+                        AND     parent_id = :PARENT_ID
+                        @WHERE_CLAUSE@
+                    )
+                    @GROUPINGS_CLAUSE@
+                ]]>
+            </value>
+        </property>
         <property name="recursiveFilterCountQuery">
             <value>
                 <![CDATA[

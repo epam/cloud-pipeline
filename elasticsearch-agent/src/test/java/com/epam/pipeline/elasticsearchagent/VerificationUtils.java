@@ -19,8 +19,10 @@ import com.mchange.util.AssertException;
 import org.apache.commons.collections4.CollectionUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -53,7 +55,12 @@ final class VerificationUtils {
     }
 
     private static ArrayList<String> toStringArray(final Object object) {
-        return new ArrayList<>((Collection<? extends String>) object);
+        if (object instanceof Collection) {
+            return new ArrayList<>((Collection<? extends String>) object);
+        }
+        return Arrays.stream((Object[]) object)
+                .map(o -> (String) o)
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
     private VerificationUtils() {

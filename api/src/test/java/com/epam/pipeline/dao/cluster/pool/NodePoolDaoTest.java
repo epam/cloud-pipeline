@@ -89,7 +89,7 @@ public class NodePoolDaoTest extends AbstractJdbcTest {
         final NodePool first = createPoolWithSchedule();
         final NodePool second = createPoolWithSchedule();
         final List<NodePool> pools = poolDao.loadAll();
-        assertThat(pools).containsOnly(first, second);
+        assertThat(pools).usingRecursiveComparison().isEqualTo(List.of(first, second));
     }
 
     private void findAndAssertPool(final NodePool expected) {

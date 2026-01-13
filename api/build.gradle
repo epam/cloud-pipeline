@@ -130,6 +130,7 @@ dependencies {
     implementation 'org.springframework.security:spring-security-acl'
     implementation 'com.jcraft:jsch:0.1.55'
     implementation 'com.coveo:saml-client:1.4.0'
+    implementation 'com.nimbusds:oauth2-oidc-sdk:11.29.2'
 
     // Cache
     implementation 'org.springframework.boot:spring-boot-starter-cache'
@@ -159,7 +160,7 @@ dependencies {
     // Lombok
     implementation 'org.projectlombok:lombok:1.18.36'
     annotationProcessor 'org.projectlombok:lombok:1.18.36'
-    testAnnotationProcessor 'org.projectlombok:lombok:1.18.32'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.36'
 
     // Notifications
     implementation 'com.relayrides:pushy:0.9.3'
@@ -191,9 +192,12 @@ dependencies {
     implementation 'com.amazonaws:aws-java-sdk-pricing:1.12.780'
 
     // Azure
-    implementation 'com.microsoft.azure:azure-mgmt-resources:1.19.0'
+    implementation group: "com.azure", name: "azure-core", version: "1.54.0"
+    implementation group: "com.azure.resourcemanager", name: "azure-resourcemanager", version: "2.36.0"
     implementation 'com.microsoft.azure:azure:1.19.0'
-    implementation 'com.microsoft.azure:azure-storage-blob:11.0.0'
+    implementation group: "com.azure", name: "azure-storage-blob", version: "12.25.0"
+    implementation group: "com.azure", name: "azure-storage-file-datalake", version: "12.18.0"
+    implementation group: "com.azure", name: "azure-identity", version: "1.13.0"
 
     // File Upload
     implementation 'org.apache.commons:commons-fileupload2-jakarta:2.0.0-M1'
@@ -202,6 +206,9 @@ dependencies {
     // MapStruct
     implementation 'org.mapstruct:mapstruct:1.6.3'
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
+
+    // RxJava
+    implementation group: "io.reactivex.rxjava2", name: "rxjava", version: "2.1.12"
 
     // Elasticsearch
     implementation 'org.elasticsearch.client:elasticsearch-rest-client:6.8.3'

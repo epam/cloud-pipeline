@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,10 +23,14 @@ function generate_params_file() {
         [[ "$cp_param" =~ CP_* ]]  && continue
         cp_param_clean=$(echo "$cp_param" | sed 's/_PARAM_TYPE//')
         cp_param_type="${!cp_param}"
-        if [ "$cp_param_type" == "boolean" ]; then
+        if [ "$cp_param_type" == "boolean" ] || [ "$cp_param_type" == "integer" ] || [ "$cp_param_type" == "float" ]; then
             all_cp_params_json="${all_cp_params_json},\"$cp_param_clean\": ${!cp_param_clean}"
         else
-            all_cp_params_json="${all_cp_params_json},\"$cp_param_clean\": \"${!cp_param_clean}\""
+            # Escaping special characters for JSON
+            _value=${!cp_param_clean}
+            _value=${_value//\\/\\\\}
+            _value=$(eval "echo $_value")
+            all_cp_params_json="${all_cp_params_json},\"$cp_param_clean\": \"${_value}\""
         fi
     done
     all_cp_params_json="{ $(echo "$all_cp_params_json" | sed 's/,//') }"
@@ -46,9 +50,11 @@ function generate_extra_nf_config_option() {
     done
 }
 
-CP_NF_WORKDIR="${CP_NF_WORKDIR:-${ANALYSIS_DIR}/work}"
-CP_NF_CACHEDIR="${CP_NF_CACHEDIR:-${ANALYSIS_DIR}/cache}"
-CP_NF_TRACE_FILE="${CP_NF_TRACE_FILE_DIR:-$CP_NF_WORKDIR}/trace.txt"
+function _expand() { eval "echo \"$1\""; }
+
+CP_NF_WORKDIR=$(_expand "${CP_NF_WORKDIR:-${ANALYSIS_DIR}/work}")
+CP_NF_CACHEDIR=$(_expand "${CP_NF_CACHEDIR:-${ANALYSIS_DIR}/cache}")
+CP_NF_TRACE_FILE=$(_expand "${CP_NF_TRACE_FILE_DIR:-$CP_NF_WORKDIR}/trace.txt")
 CP_NF_RUNTIME_DATA_SYNC_PERIOD=${CP_NF_RUNTIME_DATA_SYNC_PERIOD:-300}
 CP_NF_RUNTIME_DATA_SYNC_BACKOFF_SEC=10
 CP_NF_AUTOGENERATE_PARAMETERS_PATH="${CP_NF_AUTOGENERATE_PARAMETERS_PATH:-$SCRIPTS_DIR/cp_params.json}"
@@ -68,18 +74,22 @@ fi
 
 mkdir -p "$NXF_WORK"
 
+_ARGS=()
 _IS_RUN_COMMAND=
 for param in "$@"; do
    if [ "$param" == "run" ]; then
       _IS_RUN_COMMAND="1"
-      break
    fi
+
+   if [ "$param" == "--weblog-cleanup" ] || [ "$param" == "-wc" ]; then
+       CP_NF_WEBLOG_HANDLER_CLEANUP_ON_RUN="1"
+       continue
+   fi
+   _ARGS+=("$param")
 done
 
-_ARGS=("$@")
-
 # Executor parameters
-NEXTFLOW_CONFIG="/etc/nextflow/nextflow.config"
+NEXTFLOW_CONFIG="$NXF_HOME/config"
 mkdir -p $(dirname "$NEXTFLOW_CONFIG")
 rm -f "$NEXTFLOW_CONFIG"
 
@@ -107,13 +117,17 @@ generate_extra_nf_config_option
 # NF Handler parameters
 if [ "$_IS_RUN_COMMAND" == "1" ]; then
     if [ "$CP_NF_WEBLOG_HANDLER_ENABLED" == "1" ] && /opt/nf-weblog-handler/nf-weblog-handler.sh --check ; then
-        echo "Running Nextflow with -with-weblog http://localhost:${CP_NF_WEBLOG_HANDLER_PORT:-8080}/nextflow/event option"
-        _ARGS+=('-with-weblog')
-        _ARGS+=("http://localhost:${CP_NF_WEBLOG_HANDLER_PORT:-8080}/nextflow/event")
+        if [ "$CP_NF_WEBLOG_HANDLER_CLEANUP_ON_RUN" == "1" ]; then
+            echo "[INFO] Cleanup for nextflow engine view configured by -wc/--weblog-cleanup or CP_NF_WEBLOG_HANDLER_CLEANUP_ON_RUN env, proceeding ..."
+            /opt/nf-weblog-handler/nf-weblog-handler.sh --cleanup
+        fi
+        echo "Running Nextflow with the weblog feature enabled at http://localhost:${CP_NF_WEBLOG_HANDLER_PORT:-8080}/nextflow/event"
+        echo "weblog.enabled = true" >> $NEXTFLOW_CONFIG
+        echo "weblog.url = 'http://localhost:${CP_NF_WEBLOG_HANDLER_PORT:-8080}/nextflow/event'" >> $NEXTFLOW_CONFIG
         if [ -n "$CP_NF_WORKDIR" ]; then
             echo "trace.enabled = true" >> $NEXTFLOW_CONFIG
             echo "trace.raw = true" >> $NEXTFLOW_CONFIG
-            echo "trace.file = '${CP_NF_TRACE_FILE}'" >> $NEXTFLOW_CONFIG
+            echo "trace.file = \"${CP_NF_TRACE_FILE}\"" >> $NEXTFLOW_CONFIG
             echo "trace.fields = 'task_id,hash,native_id,process,tag,name,status,exit,module,container,cpus,time,disk,memory,attempt,submit,start,complete,duration,realtime,queue,%cpu,%mem,rss,vmem,peak_rss,peak_vmem,rchar,wchar,syscr,syscw,read_bytes,write_bytes'" >> $NEXTFLOW_CONFIG
         fi
     fi
@@ -125,11 +139,9 @@ if [ "$_IS_RUN_COMMAND" == "1" ]; then
 fi
 
 if [ -f "$NEXTFLOW_CONFIG" ]; then
-    echo "[INFO] Global nextflow config ($NEXTFLOW_CONFIG):"
+    echo "[INFO] Home nextflow config ($NEXTFLOW_CONFIG):"
     cat "$NEXTFLOW_CONFIG"
     echo
-    _ARGS+=('-c')
-    _ARGS+=("$NEXTFLOW_CONFIG")
 fi
 #
 
@@ -155,7 +167,7 @@ printenv | grep '^NXF_'
 echo
 # - Print nextflow command
 echo "[INFO] Nextflow command:"
-_nf_cmd="$NXF_HOME/nextflow "${_ARGS[@]}""
+_nf_cmd="$NXF_HOME/nextflow "${_ARGS[@]}" $CP_NF_EXTRA_ARGS"
 echo "$_nf_cmd"
 echo
 eval "$_nf_cmd"
@@ -166,4 +178,3 @@ if [ "$_IS_RUN_COMMAND" == "1" ]; then
 fi
 
 exit $_result_code
-

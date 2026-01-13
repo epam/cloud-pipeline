@@ -83,9 +83,9 @@ dependencies {
     annotationProcessor 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.9.6'
     implementation 'com.fasterxml.woodstox:woodstox-core:5.1.0'
     annotationProcessor 'com.fasterxml.woodstox:woodstox-core:5.1.0'
-    implementation 'javax.xml.bind:jaxb-api:2.3.1'
-    annotationProcessor 'javax.xml.bind:jaxb-api:2.3.1'
-    implementation 'javax.validation:validation-api:2.0.1.Final'
+    implementation 'jakarta.xml.bind:jaxb-api:2.3.1'
+    annotationProcessor 'jakarta.xml.bind:jaxb-api:2.3.1'
+    implementation 'jakarta.validation:validation-api:2.0.1.Final'
 
     testImplementation "org.springframework.boot:spring-boot-starter-test:$springBootVersion"
     testImplementation 'com.github.marschall:memoryfilesystem:1.2.1'

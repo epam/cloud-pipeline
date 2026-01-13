@@ -40,4 +40,6 @@ public class AzureRegionDTO extends AbstractCloudRegionDTO {
     private String azureApiUrl;
     private String priceOfferId;
     private Boolean enterpriseAgreements;
+    private String managedIdentity;
+    private boolean hierarchicalStorageNamespace;
 }

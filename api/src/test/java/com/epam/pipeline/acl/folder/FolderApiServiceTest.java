@@ -533,6 +533,7 @@ public class FolderApiServiceTest extends AbstractAclTest {
         doReturn(folder).when(mockEntityManager).load(AclClass.FOLDER, ID);
         doReturn(folder).when(mockFolderManager).lockFolder(ID);
         doReturn(ANOTHER_SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
+        mockSecurityContext();
 
         final Folder returnedFolder = folderApiService.lockFolder(ID);
 
@@ -544,6 +545,7 @@ public class FolderApiServiceTest extends AbstractAclTest {
     @WithMockUser
     public void shouldDenyLockFolderForNotOwner() {
         doReturn(folder).when(mockEntityManager).load(AclClass.FOLDER, ID);
+        mockSecurityContext();
 
         assertThrows(AccessDeniedException.class, () -> folderApiService.lockFolder(ID));
     }
@@ -562,6 +564,7 @@ public class FolderApiServiceTest extends AbstractAclTest {
         doReturn(folder).when(mockEntityManager).load(AclClass.FOLDER, ID);
         doReturn(folder).when(mockFolderManager).unlockFolder(ID);
         doReturn(ANOTHER_SIMPLE_USER).when(mockAuthManager).getAuthorizedUser();
+        mockSecurityContext();
 
         final Folder returnedFolder = folderApiService.unlockFolder(ID);
 
@@ -573,6 +576,7 @@ public class FolderApiServiceTest extends AbstractAclTest {
     @WithMockUser
     public void shouldDenyUnlockFolderForNotOwner() {
         doReturn(folder).when(mockEntityManager).load(AclClass.FOLDER, ID);
+        mockSecurityContext();
 
         assertThrows(AccessDeniedException.class, () -> folderApiService.unlockFolder(ID));
     }

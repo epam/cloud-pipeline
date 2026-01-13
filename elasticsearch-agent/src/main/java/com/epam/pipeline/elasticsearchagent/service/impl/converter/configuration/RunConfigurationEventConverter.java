@@ -15,10 +15,11 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.configuration;
 
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.model.DocWriteRequest;
 import com.epam.pipeline.elasticsearchagent.exception.EntityNotFoundException;
 import com.epam.pipeline.elasticsearchagent.model.EventType;
 import com.epam.pipeline.elasticsearchagent.model.PipelineEvent;
-import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.EventToRequestConverter;
 import com.epam.pipeline.elasticsearchagent.service.impl.ElasticIndexService;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
@@ -27,7 +28,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
-import org.elasticsearch.action.DocWriteRequest;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -44,7 +44,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class RunConfigurationEventConverter implements EventToRequestConverter {
 
-    private static final String WILDCARD = "*";
     private final String indexPrefix;
     private final String indexName;
     private final RunConfigurationLoader configurationLoader;

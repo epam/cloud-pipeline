@@ -88,6 +88,7 @@ import UploadButton from '../../special/UploadButton';
 import PreviewConfiguration from '../configuration/PreviewConfiguration';
 import Breadcrumbs from '../../special/Breadcrumbs';
 import HiddenObjects from '../../../utils/hidden-objects';
+import { RepositoryTypes } from '../../special/git-repository-control';
 
 const MAX_INLINE_METADATA_KEYS = 10;
 const SHOW_SECRET_TAGS_IN_LISTING = false;
@@ -1144,18 +1145,21 @@ export default class Folder extends localization.LocalizedReactComponent {
         return message.error(this.checkRequest.error);
       }
       if (!this.checkRequest.value.repositoryExists) {
-        return Modal.confirm({
-          title: 'Repository does not exist. Create?',
-          style: {
-            wordWrap: 'break-word'
-          },
-          content: null,
-          okText: 'OK',
-          cancelText: 'Cancel',
-          onOk: async () => {
-            await callback(pipelineOpts);
-          }
-        });
+        if (repositoryType === RepositoryTypes.GitLab) {
+          return Modal.confirm({
+            title: 'Repository does not exist. Create?',
+            style: {
+              wordWrap: 'break-word'
+            },
+            content: null,
+            okText: 'OK',
+            cancelText: 'Cancel',
+            onOk: async () => {
+              await callback(pipelineOpts);
+            }
+          });
+        }
+        return message.error(`Repository ${repository} does not exist.`);
       }
     }
     return callback(pipelineOpts);
@@ -1553,7 +1557,13 @@ export default class Folder extends localization.LocalizedReactComponent {
       !this.props.listingMode
     ) {
       let pipelineTemplatesMenu;
-      if (!this.props.templates.pending && roleModel.isManager.pipeline(this)) {
+      if (
+        !this.props.templates.pending &&
+        (
+          roleModel.isManager.pipeline(this) ||
+          roleModel.isManager.pipelineAdmin(this)
+        )
+      ) {
         if (!this.props.templates.error && (this.props.templates.value || []).length > 0) {
           const templates = (this.props.templates.value || [])
             .filter(template => !template.defaultTemplate);
@@ -1588,7 +1598,7 @@ export default class Folder extends localization.LocalizedReactComponent {
           ];
         }
       }
-      if (roleModel.isManager.pipeline(this)) {
+      if (roleModel.isManager.pipeline(this) || roleModel.isManager.pipelineAdmin(this)) {
         if (pipelineTemplatesMenu) {
           createActions.push(
             <SubMenu

@@ -140,10 +140,16 @@ export default `
 @THEME a.cp-text:visited {
   color: @application-color;
 }
-@THEME a:hover,
-@THEME a:focus,
-@THEME .cp-link:hover,
-@THEME .cp-link:focus {
+@THEME a.cp-disabled,
+@THEME a.cp-disabled:active,
+@THEME .cp-link.cp-disabled {
+  cursor: not-allowed;
+  color: @application-color-disabled;
+}
+@THEME a:not(.cp-disabled):hover,
+@THEME a:not(.cp-disabled):focus,
+@THEME .cp-link:not(.cp-disabled):hover,
+@THEME .cp-link:not(.cp-disabled):focus {
   color: @primary-hover-color;
 }
 @THEME a.cp-text:hover,

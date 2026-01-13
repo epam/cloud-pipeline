@@ -137,6 +137,9 @@ public class PipelineManager implements SecuredEntityManager {
             checkRepositoryVO.setBranch(pipelineVO.getBranch());
             checkRepositoryVO = check(checkRepositoryVO);
             if (!checkRepositoryVO.isRepositoryExists()) {
+                Assert.state(!RepositoryType.AZURE_DEVOPS.equals(pipelineVO.getRepositoryType()),
+                        messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_CREATION_NOT_SUPPORTED,
+                                pipelineVO.getRepositoryType().name()));
                 GitProject project = pipelineRepositoryService.createGitRepositoryWithRepoUrl(pipelineVO);
                 pipelineVO.setRepositorySsh(project.getRepoSsh());
             } else if (StringUtils.isEmpty(pipelineVO.getRepositorySsh())) {
@@ -257,8 +260,19 @@ public class PipelineManager implements SecuredEntityManager {
     }
 
     public Pipeline load(Long id, boolean loadVersion) {
-        Pipeline pipeline = pipelineDao.loadPipeline(id);
-        Assert.notNull(pipeline, messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_NOT_FOUND, id));
+        return load(id, loadVersion, true);
+    }
+
+    public Pipeline load(Long id, boolean loadVersion, boolean failOnAbsence) {
+        final Pipeline pipeline = pipelineDao.loadPipeline(id);
+        if (pipeline == null) {
+            if (failOnAbsence) {
+                throw new IllegalArgumentException(
+                        messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_NOT_FOUND, id));
+            } else {
+                return null;
+            }
+        }
         if (loadVersion) {
             setCurrentVersion(pipeline);
         }

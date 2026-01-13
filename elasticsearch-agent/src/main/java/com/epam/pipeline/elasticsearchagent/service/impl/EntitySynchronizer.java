@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl;
 
+import com.epam.pipeline.elasticsearch.model.DocWriteRequest;
 import com.epam.pipeline.elasticsearchagent.dao.PipelineEventDao;
 import com.epam.pipeline.elasticsearchagent.model.PipelineEvent;
 import com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer;
@@ -23,7 +24,6 @@ import com.epam.pipeline.elasticsearchagent.utils.EventProcessorUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.elasticsearch.action.DocWriteRequest;
 
 import java.time.LocalDateTime;
 import java.util.List;

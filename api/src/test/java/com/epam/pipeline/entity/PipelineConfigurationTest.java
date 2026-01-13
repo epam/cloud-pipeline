@@ -26,16 +26,21 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public class PipelineConfigurationTest {
 
     private static final String GENERAL_SECTION = "General";
     private static final String PRETTY_NAME = "PrettyName";
     private static final String ICON = "icon";
+    public static final String METADATA_ENTRY_TYPE = "metadata_entry";
     private static final String WITH_TYPE_OF_PARAMS_JSON =
             "{" +
                 "\"parameters\": {" +
@@ -50,13 +55,25 @@ public class PipelineConfigurationTest {
                     "}," +
                     "\"main_class\" : {" +
                         "\"value\" : \"\"," +
+                        "\"read_only\" : \"true\"," +
                         "\"required\" : \"false\"," +
                         "\"type\" : \"class\"," +
                         "\"enum\" : [\"v1\", \"v2\"]" +
                     "}," +
                     "\"instance_size\" : {" +
                         "\"type\" : \"string\"," +
-                        "\"validation\": [{\"throw\":\"a == a\", \"message\": \"error\"}]" +
+                        "\"validation\": [{\"throw\":\"a == a\", \"message\": \"error\"}]," +
+                        "\"annotation\": { \"key\": \"value\", \"tag\": \"value\" }," +
+                        "\"scheme\": { \"properties\": \"value\", \"field\": \"value\" }" +
+                    "}," +
+                    "\"" + METADATA_ENTRY_TYPE + "_param\" : {" +
+                    "\"type\" : \"" + METADATA_ENTRY_TYPE + "\"," +
+                        "\"metadata_config\": { " +
+                            "\"folderId\": 1, " +
+                            "\"metadataClass\": \"genome\", " +
+                            "\"nameField\": \"Name\", " +
+                            "\"params\": { \"PARAM_FASTA\": \"FASTA\"}" +
+                        "}" +
                     "}," +
                     "\"instance_disk\" : \"200\"" +
                 "}" +
@@ -93,19 +110,35 @@ public class PipelineConfigurationTest {
         final PipeConfValueVO mainFile = pipelineConfiguration.getParameters().get("main_file");
         assertEquals(STRING_TYPE, mainFile.getType());
         assertTrue(mainFile.isRequired());
-        assertEquals(mainFile.getSection(), GENERAL_SECTION);
-        assertEquals(mainFile.getPrettyName(), PRETTY_NAME);
-        assertEquals(mainFile.getIcon(), ICON);
+        assertEquals(GENERAL_SECTION, mainFile.getSection());
+        assertEquals(PRETTY_NAME, mainFile.getPrettyName());
+        assertEquals(ICON, mainFile.getIcon());
 
         final PipeConfValueVO mainClass = pipelineConfiguration.getParameters().get("main_class");
         assertEquals(CLASS_TYPE, mainClass.getType());
         assertFalse(mainClass.isRequired());
+        assertTrue(mainClass.getReadOnly());
 
         final PipeConfValueVO instanceSize = pipelineConfiguration.getParameters().get("instance_size");
         assertEquals(STRING_TYPE, instanceSize.getType());
         assertFalse(instanceSize.isRequired());
         assertEquals(EMPTY, instanceSize.getValue());
         assertEquals(1, instanceSize.getValidation().size());
+        assertEquals(2, instanceSize.getAnnotation().size());
+        assertTrue(instanceSize.getAnnotation().containsKey("key"));
+        assertTrue(instanceSize.getAnnotation().containsKey("tag"));
+        assertNotNull(instanceSize.getScheme());
+
+        final PipeConfValueVO metadataEntryParam = pipelineConfiguration.getParameters()
+                .get(METADATA_ENTRY_TYPE + "_param");
+        assertEquals(METADATA_ENTRY_TYPE, metadataEntryParam.getType());
+        Map<String, Object> metadataConfig = metadataEntryParam.getMetadataConfig();
+        assertNotNull(metadataConfig);
+        assertEquals(1, metadataConfig.get("folderId"));
+        assertEquals("genome", metadataConfig.get("metadataClass"));
+        assertEquals("Name", metadataConfig.get("nameField"));
+        assertNotNull(metadataConfig.get("params"));
+        assertInstanceOf(Map.class, metadataConfig.get("params"));
 
         final PipeConfValueVO instanceDisk = pipelineConfiguration.getParameters().get("instance_disk");
         assertEquals(STRING_TYPE, instanceDisk.getType());

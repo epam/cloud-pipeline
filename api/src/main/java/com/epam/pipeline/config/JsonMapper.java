@@ -107,12 +107,12 @@ public class JsonMapper extends ObjectMapper implements InitializingBean {
         return EMPTY_JSON;
     }
 
-    public static <T> T parseData(String data, TypeReference type) {
+    public static <T> T parseData(String data, TypeReference<T> type) {
         return parseData(data, type, instance);
     }
 
     public static <T> T parseData(final String data,
-                                  final TypeReference type,
+                                  final TypeReference<T> type,
                                   final ObjectMapper customMapper) {
         if (StringUtils.isBlank(data)) {
             return null;

@@ -108,10 +108,10 @@ log_info "Generating OME TIFF in [$_ome_tiff_location_tmp]"
 rm -rf "$_ome_tiff_location_tmp"
 if [[ "$_FILE_PATH" == *.indica.tiff ]] || [[ "$_FILE_PATH" == *.indica.tif ]]; then
     log_info "File is determined as indica.tif file..."
-    source $ANACONDA_HOME/etc/profile.d/conda.sh
-    conda activate indica_tiff_parser
+    source $ANACONDA_HOME/profile.sh
+    micromamba activate indica_tiff_parser
     python3 "${_SRC_LOCATION}/indica_tiff_to_ome_tiff.py" --input "$_FILE_PATH" --output "$_ome_tiff_location_tmp"
-    conda deactivate
+    micromamba deactivate
 else
     build_binary_zarr "$_FILE_PATH" "$_SERIES_NUM"
     if [ $? -ne 0 ]; then

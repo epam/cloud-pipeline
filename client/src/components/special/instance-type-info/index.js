@@ -14,10 +14,14 @@
  * limitations under the License.
  */
 import React from 'react';
-import {AutoComplete, Select} from 'antd';
+import {AutoComplete, Select, Tag} from 'antd';
 import classNames from 'classnames';
 import styles from './instance-type-info.css';
 import AWSRegionTag from '../AWSRegionTag';
+import preferences from '../../../models/preferences/PreferencesLoad';
+import {
+  findReservationParameterConfig
+} from '../../pipelines/launch/form/components/reservation-parameters/utilities';
 
 const cpuMapper = (cpu, hyperThreadingDisabled = false) => {
   return hyperThreadingDisabled && !Number.isNaN(Number(cpu))
@@ -50,7 +54,9 @@ const cpuMapper = (cpu, hyperThreadingDisabled = false) => {
  * @property {Object} [style]
  * @property {boolean} [plainText=true]
  * @property {'Select'|'AutoComplete'} [selectFamily=Select]
- * @property {function} [valueFn]}
+ * @property {function} [valueFn]
+ * @property {PreferencesLoad} [preferences]
+ * @property {boolean} [showReservationTag]
  */
 
 /**
@@ -94,6 +100,8 @@ export function instanceInfoString (instance, options = {}) {
     hyperThreadingDisabled = false,
     displayRegion = false,
     plainText = true,
+    showReservationTag = false,
+    preferences: prefs = preferences,
     className,
     style
   } = options;
@@ -106,6 +114,10 @@ export function instanceInfoString (instance, options = {}) {
     regionId,
     regionIds = [regionId]
   } = instance;
+  const {
+    tag
+  } = showReservationTag ? (findReservationParameterConfig(name, prefs) || {}) : {};
+  const tagValue = tag ? String(tag) : undefined;
   if (vcpu) {
     infoParts.push(plainText
       ? `CPU: ${cpuMapper(vcpu, hyperThreadingDisabled)}`
@@ -134,6 +146,16 @@ export function instanceInfoString (instance, options = {}) {
         <span key="gpu" className={styles.instanceTypeInfoPart}>
           GPU: <span>{gpu}</span>
         </span>
+      )
+    );
+  }
+  if (tagValue) {
+    infoParts.push(plainText
+      ? tagValue
+      : (
+        <Tag key="tag" className={styles.instanceTypeInfoPart}>
+          {tagValue}
+        </Tag>
       )
     );
   }
@@ -204,6 +226,13 @@ export function getSelectOptionForInstance (instance, options = {}) {
     name
   } = instance;
   const {
+    showReservationTag = false,
+    preferences: prefs = preferences
+  } = options;
+  const {tag} = showReservationTag
+    ? (findReservationParameterConfig(name, prefs) || {})
+    : {};
+  const {
     valueFn = (o) => o.name
   } = options || {};
   if (options && options.selectFamily === 'AutoComplete') {
@@ -211,6 +240,7 @@ export function getSelectOptionForInstance (instance, options = {}) {
       <AutoComplete.Option
         key={sku || name}
         value={valueFn(instance)}
+        searchValue={[name, tag].filter(Boolean).join(' ').toLowerCase()}
         title={
           instanceInfoString(
             instance,
@@ -237,6 +267,7 @@ export function getSelectOptionForInstance (instance, options = {}) {
     <Select.Option
       key={sku || name}
       value={valueFn(instance)}
+      searchValue={[name, tag].filter(Boolean).join(' ').toLowerCase()}
       title={
         instanceInfoString(
           instance,

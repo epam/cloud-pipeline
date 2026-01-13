@@ -216,6 +216,7 @@ public final class MessageConstants {
     public static final String INFO_MONITOR_KILL_TASK = "info.monitor.kill.task";
     public static final String ERROR_POD_RELEASE_TASK = "error.pod.release.task";
     public static final String ERROR_RESTART_STATE_REASONS_NOT_FOUND = "error.instance.restart.state.reasons.not.found";
+    public static final String ERROR_SAVE_RUN_METRICS = "error.save.run.metrics";
 
     // ResourceMonitoringManager messages
     public static final String INFO_RUN_IDLE_NOTIFY = "info.run.idle.notify";
@@ -271,11 +272,17 @@ public final class MessageConstants {
     public static final String ERROR_SHARED_ROOT_URL_IS_NOT_SET = "error.shared.root.url.is.not.set";
     public static final String ERROR_DATASTORAGE_USED_AS_DEFAULT = "error.datastorage.is.used.default";
     public static final String ERROR_DATASTORAGE_FILE_TAG_NOT_EXIST = "error.datastorage.file.tag.not.exist";
+    public static final String ERROR_DATASTORAGE_TAG_UPDATE_FAILED = "error.datastorage.tag.update.failed";
     public static final String ERROR_DATASTORAGE_PATH_NOT_FOUND = "error.datastorage.path.not.found";
     public static final String ERROR_DATASTORAGE_PATH_ALREADY_EXISTS = "error.datastorage.path.already.exists";
-    public static final String ERROR_DATASTORAGE_FOLDER_ALREADY_EXISTS = "error.datastorage.folder.already.exists";
+    public static final String ERROR_DATASTORAGE_FOLDER_CREATE_FAILED = "error.datastorage.folder.create.failed";
+    public static final String ERROR_DATASTORAGE_BLOB_DELETE_FAILED = "error.datastorage.blob.delete.failed";
+    public static final String ERROR_DATASTORAGE_BLOB_DOWNLOAD_FAILED = "error.datastorage.blob.download.failed";
+    public static final String ERROR_DATASTORAGE_BLOB_UPLOAD_FAILED = "error.datastorage.blob.upload.failed";
+    public static final String ERROR_DATASTORAGE_BLOB_COPY_FAILED = "error.datastorage.blob.copy.failed";
     public static final String ERROR_DATASTORAGE_PATH_INVALID_SCHEMA = "error.datastorage.path.invalid.schema";
-    public static final String ERROR_DATASTORAGE_PATH_PROCCESSING = "error.datastorage.path.processing.error";
+    public static final String ERROR_DATASTORAGE_PATH_PROCESSING = "error.datastorage.path.processing.error";
+    public static final String ERROR_DATASTORAGE_GET_CONTENT_FAILED = "error.datastorage.get.content.failed";
     public static final String ERROR_AZURE_STORAGE_CREDENTIAL_INVALID = "error.azure.storage.credentials.invalid";
     public static final String ERROR_SENSITIVE_DATASTORAGE_OPERATION =
         "error.sensitive.datastorage.forbidden.operation";
@@ -401,14 +408,10 @@ public final class MessageConstants {
             "error.repository.folder.cannot.be.removed";
     public static final String ERROR_INVALID_PIPELINE_FILE_NAME = "error.pipeline.file.name.invalid";
     public static final String ERROR_REPOSITORY_INDEXING_DISABLED = "error.repository.indexing.disabled";
-    public static final String ERROR_PARSE_BITBUCKET_REPOSITORY_PATH = "error.parse.bitbucket.repository.path";
-    public static final String ERROR_BITBUCKET_TOKEN_NOT_FOUND = "error.bitbucket.token.not.found";
-    public static final String ERROR_PARSE_BITBUCKET_CLOUD_REPOSITORY_PATH =
-            "error.parse.bitbucket.cloud.repository.path";
-    public static final String ERROR_BITBUCKET_CLOUD_TOKEN_NOT_FOUND = "error.bitbucket.cloud.token.not.found";
-    public static final String ERROR_PARSE_GITHUB_REPOSITORY_PATH = "error.parse.github.repository.path";
-    public static final String ERROR_GITHUB_TOKEN_NOT_FOUND = "error.github.token.not.found";
+    public static final String ERROR_REPOSITORY_PATH_PARSE = "error.repository.path.parse";
     public static final String ERROR_REPOSITORY_BRANCH_NOT_FOUND = "error.repository.branch.not.found";
+    public static final String ERROR_REPOSITORY_CREATION_NOT_SUPPORTED = "error.repository.creation.not.supported";
+    public static final String ERROR_REPOSITORY_TOKEN_NOT_FOUND = "error.repository.token.not.found";
 
     // Instance offers expiration check messages
     public static final String DEBUG_INSTANCE_OFFERS_EXPIRATION_CHECK_RUNNING =
@@ -668,7 +671,7 @@ public final class MessageConstants {
 
     //Azure
     public static final String ERROR_AZURE_STORAGE_ACC_REQUIRED = "error.azure.storage.account.required";
-    public static final String ERROR_AZURE_STORAGE_KEY_REQUIRED = "error.azure.storage.key.required";
+    public static final String ERROR_AZURE_STORAGE_AUTH_INFO_REQUIRED = "error.azure.storage.auth.info.required";
     public static final String ERROR_AZURE_INSTANCE_NOT_FOUND = "error.azure.instance.not.found";
     public static final String ERROR_AZURE_RESOURCE_IS_NOT_VM_LIKE = "error.azure.resource.is.not.vm.like";
     public static final String ERROR_AZURE_SCALE_SET_DOESNT_CONTAIN_VMS = "error.azure.scale.set.doesnt.contain.vm";
@@ -677,7 +680,7 @@ public final class MessageConstants {
             "error.datastorage.azure.invalid.account.key";
     public static final String ERROR_DATASTORAGE_AZURE_CREATE_FILE = "error.datastorage.azure.create.file";
     public static final String ERROR_AZURE_RESOURCE_GROUP_NOT_FOUND = "error.azure.resource.group.not.found";
-    public static final String ERROR_AZURE_AUTH_FILE_IS_INVALID = "error.azure.auth.file.invalid";
+    public static final String ERROR_AZURE_AUTHENTICATION_FAILED = "error.azure.auth.failed";
     public static final String ERROR_AZURE_IP_RANGE_IS_INVALID = "error.azure.policy.ip.range.invalid";
     public static final String ERROR_AZURE_IP_IS_INVALID = "error.azure.ip.policy.invalid";
 

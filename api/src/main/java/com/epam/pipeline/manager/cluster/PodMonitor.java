@@ -29,8 +29,10 @@ import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.exception.PipelineException;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.cleaner.RunCleaner;
+import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.notification.NotificationSettingsManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
@@ -114,6 +116,7 @@ public class PodMonitor extends AbstractSchedulingManager implements Initializin
         private static final int POD_RELEASE_TIMEOUT = 3000;
 
         private final BlockingQueue<PipelineRun> queueToKill = new LinkedBlockingQueue<>();
+        private final BlockingQueue<PipelineRun> queueToSavePerformanceMetrics = new LinkedBlockingQueue<>();
         private final Map<String, LocalDateTime> hangingPods = new ConcurrentHashMap<>();
 
         private final String kubeNamespace;
@@ -128,6 +131,7 @@ public class PodMonitor extends AbstractSchedulingManager implements Initializin
         private final RestartRunManager restartRunManager;
         private final CloudFacade cloudFacade;
         private final PreferenceManager preferenceManager;
+        private final UsageMonitoringManager usageMonitoringManager;
         private final List<RunCleaner> cleaners;
 
         @Autowired
@@ -142,8 +146,9 @@ public class PodMonitor extends AbstractSchedulingManager implements Initializin
                        final RestartRunManager restartRunManager,
                        final CloudFacade cloudFacade,
                        final PreferenceManager preferenceManager,
+                       final UsageMonitoringManager usageMonitoringManager,
                        final List<RunCleaner> cleaners,
-                       final @Value("${kube.namespace}") String kubeNamespace) {
+                       final @Value("${kube.namespace:default}") String kubeNamespace) {
             this.runLogManager = runLogManager;
             this.pipelineRunManager = pipelineRunManager;
             this.runStatusManager = runStatusManager;
@@ -155,6 +160,7 @@ public class PodMonitor extends AbstractSchedulingManager implements Initializin
             this.restartRunManager = restartRunManager;
             this.cloudFacade = cloudFacade;
             this.preferenceManager = preferenceManager;
+            this.usageMonitoringManager = usageMonitoringManager;
             this.kubeNamespace = kubeNamespace;
             this.cleaners = ListUtils.emptyIfNull(cleaners);
         }
@@ -201,6 +207,9 @@ public class PodMonitor extends AbstractSchedulingManager implements Initializin
                             }
                         }
 
+                        // update node name, if it is not set yet
+                        addNodeNameToRunIfNone(run.getInstance(), pod, status, run.getId());
+
                         if (status.getPhase().equals(KubernetesConstants.POD_SUCCEEDED_PHASE)) {
                             run.setStatus(TaskStatus.SUCCESS);
                             run.setEndDate(DateUtils.now());
@@ -210,6 +219,7 @@ public class PodMonitor extends AbstractSchedulingManager implements Initializin
                                 run.setTerminating(true);
                                 hangingPods.putIfAbsent(run.getPodId(), LocalDateTime.now());
                             }
+                            saveMetricsAsync(run);
                         } else if (status.getPhase().equals(KubernetesConstants.POD_FAILED_PHASE) ||
                                 (status.getReason() != null &&
                                         status.getReason().equals(KubernetesConstants.NODE_LOST))) {
@@ -255,6 +265,21 @@ public class PodMonitor extends AbstractSchedulingManager implements Initializin
             }
         }
 
+        @Scheduled(fixedDelay = POD_RELEASE_TIMEOUT)
+        public void savePerformanceMetricsForFinishedRuns() {
+            while (!queueToSavePerformanceMetrics.isEmpty()) {
+                try {
+                    final PipelineRun run = queueToSavePerformanceMetrics.take();
+                    LOGGER.debug("Save performance metrics for run: {}", run.getId());
+                    storeRunPerformanceMetrics(run);
+                } catch (Exception e) {
+                    LOGGER.error(messageHelper
+                            .getMessage(MessageConstants.ERROR_SAVE_RUN_METRICS, e));
+                    LOGGER.error(e.getMessage(), e);
+                }
+            }
+        }
+
         /**
          * Put tasks from specified {@link PipelineRun} to a queue for killing
          *
@@ -262,6 +287,15 @@ public class PodMonitor extends AbstractSchedulingManager implements Initializin
          */
         private void killAsync(PipelineRun run) {
             queueToKill.add(run);
+        }
+
+        /**
+         * Put tasks from specified {@link PipelineRun} to a queue for updating performance metrics
+         *
+         * @param run a {@link PipelineRun} which metrics to update
+         */
+        private void saveMetricsAsync(PipelineRun run) {
+            queueToSavePerformanceMetrics.add(run);
         }
 
         private void notifyIfExceedsThreshold(PipelineRun run, Pod pod, NotificationType type) {
@@ -488,7 +522,38 @@ public class PodMonitor extends AbstractSchedulingManager implements Initializin
             run.setTerminating(true);
             run.setEndDate(DateUtils.now());
             notificationManager.removeNotificationTimestamps(run.getId());
+            saveMetricsAsync(run);
             killAsync(run);
+        }
+
+        private void storeRunPerformanceMetrics(final PipelineRun run) {
+            final long runId = run.getId();
+            final String nodeName = Optional.ofNullable(run.getInstance())
+                    .map(RunInstance::getNodeName).orElse(StringUtils.EMPTY);
+
+            if (StringUtils.isBlank(nodeName)) {
+                LOGGER.warn("Can't find nodeName for run: {}", runId);
+                return;
+            }
+
+            if (usageMonitoringManager != null) {
+                try {
+                    final LocalDateTime from = DateUtils.convertDateToLocalDateTime(run.getStartDate());
+                    final LocalDateTime to = Optional.ofNullable(run.getEndDate())
+                            .map(DateUtils::convertDateToLocalDateTime).orElse(DateUtils.nowUTC());
+
+                    Optional.ofNullable(
+                            usageMonitoringManager.getPerformanceMetricsForRun(nodeName, from, to, runId)
+                    ).ifPresent(pipelineRunManager::savePipelineRunPerformanceMetrics);
+                } catch (PipelineException e) {
+                    LOGGER.warn("Can't request pipeline run performance metrics, it won't be saved for run: {}", runId);
+                }
+            } else {
+                LOGGER.debug(
+                        "UsageMonitoringManager is not initialized! Performance metrics won't be saved for run: {}",
+                        runId
+                );
+            }
         }
 
         private void cleanRunResources(final PipelineRun run) {
@@ -704,6 +769,17 @@ public class PodMonitor extends AbstractSchedulingManager implements Initializin
                 return false;
             }
             return true;
+        }
+
+        private void addNodeNameToRunIfNone(final RunInstance runInstance, final Pod pod, final PodStatus status,
+                                            final Long runId) {
+            if (Objects.nonNull(runInstance) && StringUtils.isEmpty(runInstance.getNodeName())) {
+                final String nodeName = pod.getSpec().getNodeName();
+                runInstance.setNodeName(nodeName);
+                runInstance.setNodeIP(Optional.ofNullable(runInstance.getNodeIP()).orElse(status.getHostIP()));
+                runInstance.setNodeId(Optional.ofNullable(runInstance.getNodeId()).orElse(nodeName));
+                pipelineRunManager.updateRunInstance(runId, runInstance);
+            }
         }
     }
 }

@@ -347,6 +347,16 @@ public class InstanceOfferManager {
                 || isInstanceTypeAllowed(instanceType, resources, null, TOOL_INSTANCE_TYPES_PREFERENCES, true);
     }
 
+    public InstanceType loadInstanceType(final String instanceType) {
+        final InstanceOfferRequestVO request = new InstanceOfferRequestVO();
+        request.setInstanceType(instanceType);
+        return ListUtils.emptyIfNull(instanceOfferDao.loadInstanceTypes(request))
+                .stream()
+                .filter(offer -> offer.getName().equalsIgnoreCase(instanceType))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Instance type is not available"));
+    }
+
     private boolean isInstanceTypeAllowed(final String instanceType,
                                           final List<ContextualPreferenceExternalResource> resources,
                                           final Long regionId,

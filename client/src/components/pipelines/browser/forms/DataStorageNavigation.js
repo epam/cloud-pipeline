@@ -17,9 +17,11 @@
 import React from 'react';
 import {observer} from 'mobx-react';
 import PropTypes from 'prop-types';
-import {Row, Breadcrumb, Input} from 'antd';
+import {Row, Breadcrumb, Input, Icon, message} from 'antd';
 import classNames from 'classnames';
 import styles from './DataStorageNavigation.css';
+import {getDataStorageItemFullPath} from '../../launch/dialogs/BucketBrowser';
+import copyTextToClipboard from '../../../special/copy-text-to-clipboard';
 
 @observer
 export default class DataStorageNavigation extends React.Component {
@@ -27,7 +29,8 @@ export default class DataStorageNavigation extends React.Component {
     path: PropTypes.string,
     storage: PropTypes.object,
     navigate: PropTypes.func,
-    navigateFull: PropTypes.func
+    navigateFull: PropTypes.func,
+    showCopyPath: PropTypes.bool
   };
 
   state = {editable: false};
@@ -131,7 +134,18 @@ export default class DataStorageNavigation extends React.Component {
     }
   };
 
+  onCopyPathClick = () => {
+    const {path, storage} = this.props;
+    const fullPath = getDataStorageItemFullPath({path}, storage);
+    copyTextToClipboard(fullPath).then(() => {
+      message.info('Path copied to clipboard', 3);
+    }).catch((error) => {
+      message.error(error.message, 3);
+    });
+  };
+
   render () {
+    const {showCopyPath} = this.props;
     return (
       <Row
         className={
@@ -141,29 +155,43 @@ export default class DataStorageNavigation extends React.Component {
           )
         }
         onClick={this.setEditableMode(true)}>
-        {!this.state.editable &&
-          <Breadcrumb style={{padding: 5}}>
-            {this.getComponents().map(part => {
-              if (part.canNavigate) {
-                return (
-                  <Breadcrumb.Item
-                    className={styles.breadcrumbItem}
-                    key={part.key}>
-                    <a onClick={(event) => this.navigate(event, part.url)}>
-                      {decodeURIComponent(part.title)}
-                    </a>
-                  </Breadcrumb.Item>
-                );
-              } else {
-                return (
-                  <Breadcrumb.Item
-                    className={styles.breadcrumbItem}
-                    key={part.key}>{decodeURIComponent(part.title)}</Breadcrumb.Item>
-                );
-              }
-            })}
-          </Breadcrumb>
-        }
+        {!this.state.editable ? (
+          <div className={styles.breadcrumbsContainer}>
+            <Breadcrumb style={{padding: 5, marginLeft: 3}}>
+              {this.getComponents().map(part => {
+                if (part.canNavigate) {
+                  return (
+                    <Breadcrumb.Item
+                      className={styles.breadcrumbItem}
+                      key={part.key}>
+                      <a onClick={(event) => this.navigate(event, part.url)}>
+                        {decodeURIComponent(part.title)}
+                      </a>
+                    </Breadcrumb.Item>
+                  );
+                } else {
+                  return (
+                    <Breadcrumb.Item
+                      className={styles.breadcrumbItem}
+                      key={part.key}>{decodeURIComponent(part.title)}</Breadcrumb.Item>
+                  );
+                }
+              })}
+            </Breadcrumb>
+            {showCopyPath ? (
+              <Icon
+                className={classNames('cp-primary', styles.copyPath, {
+                  [styles.hidden]: this.state.editable
+                })}
+                type="link"
+                onClick={event => {
+                  event.stopPropagation();
+                  this.onCopyPathClick();
+                }}
+              />
+            ) : null}
+          </div>
+        ) : null}
         {this.state.editable &&
           <Input
             ref={this.initializeInput}

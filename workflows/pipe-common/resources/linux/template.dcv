@@ -9,4 +9,4 @@ proxyuser={CP_PROXY_USER}
 proxypassword={CP_PROXY_TOKEN}
 host={CP_HOST}
 port={CP_HOST_PORT}
-sessionid={CP_USERNAME}-session
+sessionid={CP_SESSION_ID}-session

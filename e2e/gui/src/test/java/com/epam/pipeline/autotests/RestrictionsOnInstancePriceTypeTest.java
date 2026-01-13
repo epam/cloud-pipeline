@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,7 @@
  */
 package com.epam.pipeline.autotests;
 
-import static com.epam.pipeline.autotests.ao.Primitive.ESTIMATED_PRICE;
-import com.epam.pipeline.autotests.ao.SettingsPageAO.UserManagementAO.UsersTabAO.UserEntry.EditUserPopup;
+import com.epam.pipeline.autotests.ao.UserManagementAO.UsersTabAO.UserEntry.EditUserPopup;
 import com.epam.pipeline.autotests.ao.ToolDescription.InstanceManagementSectionAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
@@ -40,12 +39,12 @@ import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.value;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
-import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.refresh;
 import static com.epam.pipeline.autotests.ao.Configuration.confirmConfigurationChange;
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CODE_TAB;
 import static com.epam.pipeline.autotests.ao.Primitive.DISK;
+import static com.epam.pipeline.autotests.ao.Primitive.ESTIMATED_PRICE;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.ao.Primitive.FOLDERS;
 import static com.epam.pipeline.autotests.ao.Primitive.IMAGE;
@@ -218,6 +217,9 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         try {
             loginAs(admin);
             setMaskForUser(user.login, instanceTypesMask, format("%s.*", instanceFamilyName));
+            openEditUserTab(user.login)
+                    .addRoleOrGroupIfNonExist("ROLE_CONFIGURATION_MANAGER")
+                    .ok();
             logout();
             loginAs(user);
             library()
@@ -245,6 +247,9 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
             logout();
             loginAs(admin);
             setMaskForUser(user.login, instanceTypesMask, "");
+            openEditUserTab(user.login)
+                    .deleteRoleOrGroupIfExist("ROLE_CONFIGURATION_MANAGER")
+                    .ok();
         }
     }
 

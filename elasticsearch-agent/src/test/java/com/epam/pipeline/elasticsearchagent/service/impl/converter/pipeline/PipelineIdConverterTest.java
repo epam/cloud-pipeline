@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.pipeline;
 
+import com.epam.pipeline.elasticsearch.model.v6.action.bulk.BulkItemResponseV6;
 import com.epam.pipeline.elasticsearchagent.TestConstants;
 import com.epam.pipeline.elasticsearchagent.service.ResponseIdConverter;
 import org.elasticsearch.action.DocWriteRequest;
@@ -45,7 +46,7 @@ class PipelineIdConverterTest {
 
     @Test
     void shouldGetPipelineIdFromBulkItemResponse() {
-        final BulkItemResponse response = getResponseForIndex(PIPELINE_INDEX_NAME);
+        final BulkItemResponseV6 response = getResponseForIndex(PIPELINE_INDEX_NAME);
 
         final Long id = idConverter.getId(response);
         assertNotNull(id);
@@ -55,7 +56,7 @@ class PipelineIdConverterTest {
     @Test
     void shouldGetPipelineCodeIdFromBulkItemResponse() {
         String indexName = PIPELINE_CODE_INDEX_NAME + "-" + DOCUMENT_ID;
-        final BulkItemResponse response = getResponseForIndex(indexName);
+        final BulkItemResponseV6 response = getResponseForIndex(indexName);
 
         final Long id = idConverter.getId(response);
         assertNotNull(id);
@@ -64,16 +65,18 @@ class PipelineIdConverterTest {
 
     @Test
     void shouldFailGetPipelineIdFromBulkItemResponse() {
-        final BulkItemResponse response = getResponseForIndex(PIPELINE_INDEX_NAME + "-" + DOCUMENT_ID);
+        final BulkItemResponseV6 response = getResponseForIndex(PIPELINE_INDEX_NAME + "-" + DOCUMENT_ID);
 
         assertThrows(IllegalArgumentException.class, () -> idConverter.getId(response));
     }
 
-    private BulkItemResponse getResponseForIndex(final String indexName) {
+    private BulkItemResponseV6 getResponseForIndex(final String indexName) {
         final Index index = new Index(indexName, DOCUMENT_ID);
         final ShardId shardId = new ShardId(index, 1);
         final DocWriteResponse docWriteResponse = new IndexResponse(shardId, TestConstants.TEST_NAME, DOCUMENT_ID,
                 1, 1, 1, true);
-        return new BulkItemResponse(1, DocWriteRequest.OpType.CREATE, docWriteResponse);
+        final BulkItemResponse bulkItemResponse = new BulkItemResponse(1, DocWriteRequest.OpType.CREATE,
+                docWriteResponse);
+        return new BulkItemResponseV6(bulkItemResponse);
     }
 }

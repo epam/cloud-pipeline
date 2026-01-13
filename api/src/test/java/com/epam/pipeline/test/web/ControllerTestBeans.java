@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.test.web;
 
+import com.epam.pipeline.acl.auth.AccessApiService;
 import com.epam.pipeline.acl.billing.BillingApiService;
 import com.epam.pipeline.acl.cloud.credentials.CloudProfileCredentialsApiService;
 import com.epam.pipeline.acl.cluster.InstanceOfferApiService;
@@ -59,6 +60,7 @@ import com.epam.pipeline.acl.metadata.CategoricalAttributeApiService;
 import com.epam.pipeline.acl.metadata.MetadataApiService;
 import com.epam.pipeline.acl.metadata.MetadataEntityApiService;
 import com.epam.pipeline.acl.region.CloudRegionApiService;
+import com.epam.pipeline.manager.access.UnsecuredAccessService;
 import com.epam.pipeline.manager.app.ApplicationInfoManager;
 import com.epam.pipeline.manager.cloudaccess.CloudAccessApiService;
 import com.epam.pipeline.manager.firecloud.FirecloudApiService;
@@ -303,4 +305,10 @@ public class ControllerTestBeans {
 
     @MockBean
     protected PluginAssignmentService pluginAssignmentService;
+
+    @MockBean
+    protected AccessApiService accessApiService;
+
+    @MockBean
+    protected UnsecuredAccessService unsecuredAccessService;
 }

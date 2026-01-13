@@ -17,9 +17,14 @@
 import {isObservableArray} from 'mobx';
 import runDefaultParameters from '../../../../../models/pipelines/PipelineRunDefaultParameters';
 import preferences from '../../../../../models/preferences/PreferencesLoad';
-import {CP_CAP_REQUESTS_CPU, CP_CAP_REQUESTS_GPU, CP_CAP_REQUESTS_RAM, reservedParameters} from './parameters';
+import {
+  systemCapabilitiesParameters,
+  reservedParameters
+} from './parameters';
 import {getSkippedParameters as getGPUScalingSkippedParameters} from './enable-gpu-scaling';
 import whoAmI from '../../../../../models/user/WhoAmI';
+import {base64toString, stringToBase64} from '../../../../../utils/base64';
+import MetadataEntityFilter from '../../../../../models/folderMetadata/MetadataEntityFilter';
 
 function normalizeParameters (parameters) {
   const {keys = [], params = {}} = parameters || {};
@@ -325,6 +330,11 @@ window.launchFormVerbose = function (vb = true) {
 };
 
 /**
+ * @typedef {Object} ObjectParameterScheme
+ * @property {Parameter} [properties]
+ */
+
+/**
  * @typedef {Object} ParameterConfig
  * @property {string} configId
  * @property {string} name
@@ -344,7 +354,10 @@ window.launchFormVerbose = function (vb = true) {
  * @property [resolvedValue]
  * @property {boolean} [system]
  * @property {boolean} [userParameter]
+ * @property {object} [metadata_config]
+ * @property {object} [restConfig]
  * @property {boolean} [fallbackConfig]
+ * @property {ObjectParameterScheme} [scheme]
  */
 
 /**
@@ -376,6 +389,226 @@ function generateKey (parameters = []) {
     key = generate();
   }
   return key;
+}
+
+/**
+ * Parses parameter value. If it is a base64-encoded value, decodes it
+ * @param rawValue
+ * @returns {string}
+ */
+export function parseParameterValue (rawValue) {
+  if (typeof rawValue === 'string') {
+    try {
+      return base64toString(rawValue);
+    } catch {
+      return rawValue;
+    }
+  }
+  return rawValue;
+}
+
+export function parseSchemeParameterValue (value, parameterName) {
+  if (!value) {
+    return undefined;
+  }
+  const errorTitle = parameterName
+    ? `error parsing "${parameterName}" scheme parameter`
+    : 'error parsing scheme parameter value';
+  try {
+    let result = parseParameterValue(value);
+    if (typeof result === 'string') {
+      try {
+        result = result.trim() === '' ? undefined : JSON.parse(result);
+      } catch (error) {
+        // not a JSON string
+        // eslint-disable-next-line max-len
+        console.warn(`${errorTitle}: it is expected to be a string (base64) representing a JSON array`);
+        console.warn(error);
+      }
+    }
+    if (typeof result !== 'object' || !Array.isArray(result)) {
+      throw new Error(`${errorTitle}: expected an array, got ${typeof result}`);
+    }
+    return result;
+  } catch (error) {
+    console.error(`${errorTitle}: ${error.message}`);
+  }
+  return undefined;
+}
+
+/**
+ * @param {string | object | undefined} value
+ * @param {ObjectParameterScheme} scheme
+ * @returns {undefined|string}
+ */
+export function buildSchemeParameterValue (value, scheme) {
+  const parsed = parseSchemeParameterValue(value);
+  if (!parsed || !(Array.isArray(parsed) || isObservableArray(parsed)) || parsed.length === 0) {
+    return undefined;
+  }
+  const {
+    properties = []
+  } = scheme || {};
+  const result = [];
+  for (const entry of parsed) {
+    const e = {};
+    for (const [key, entryValue] of Object.entries(entry || {})) {
+      const {value} = entryValue || {};
+      if (value !== undefined) {
+        const prop = (properties || []).find((p) => p.name === key);
+        let type = entryValue.type || 'string';
+        if (prop) {
+          type = prop.type || 'string';
+        }
+        e[key] = {
+          type: type || 'string',
+          value: value
+        };
+      }
+    }
+    result.push(e);
+  }
+  return stringToBase64(JSON.stringify(result));
+}
+
+/**
+ * Resolves metadata_entity parameter and update payload parameters from metadata_entity parameters
+ * @param {Object} [payload={}]
+ * @param {Parameter[]} [parameters=[]]
+ * @param {Object} [metadata={}]
+ **/
+function resolveMetadataEntityParameters (payload = {}, parameters = [], metadata = {}) {
+  const result = {...payload};
+  const metadataEntityParams = parameters.filter(
+    p => p.type === 'metadata_entity' && p.config?.metadata_config?.params
+  );
+  if (metadataEntityParams.length === 0) {
+    return result;
+  }
+  for (const param of metadataEntityParams) {
+    const {value, config} = param;
+    const {metadata_config: metadataConfig} = config;
+    const {params: paramsMapping} = metadataConfig;
+    if (!value || !paramsMapping) {
+      continue;
+    }
+    const metadataEntries = metadata[param.name];
+    if (!metadataEntries || !metadataEntries.elements) {
+      continue;
+    }
+    const externalIds = config.multiple
+      ? (typeof value === 'string' ? value.split(',').map(v => v.trim()) : [value])
+      : [value];
+    const matchingElements = metadataEntries.elements.filter(
+      element => externalIds.includes(element.externalId)
+    );
+    if (matchingElements.length === 0) {
+      continue;
+    }
+    for (const [paramName, metadataField] of Object.entries(paramsMapping)) {
+      const values = matchingElements
+        .map(element => {
+          const fieldData = element.data?.[metadataField];
+          return fieldData?.value;
+        })
+        .filter(v => v !== undefined && v !== null);
+      if (values.length === 0) {
+        continue;
+      }
+      const resolvedValue = config.multiple
+        ? values.join(',')
+        : values[0];
+      if (result[paramName]) {
+        result[paramName] = {
+          ...result[paramName],
+          value: resolvedValue
+        };
+      } else {
+        result[paramName] = {
+          type: 'string',
+          value: resolvedValue
+        };
+      }
+    }
+  }
+  return result;
+}
+
+const metadataCache = {};
+
+/**
+ * Fetch metadata for all metadata_entity type parameters.
+ * @param {Parameter[]} [parameters=[]]
+ * @param {Object} [pipeline]
+ **/
+async function getMetadataForParameters (parameters = [], pipeline) {
+  const metadataEntityParams = parameters
+    .filter(p => p.type === 'metadata_entity' &&
+      p.config?.metadata_config?.metadataClass
+    );
+  if (metadataEntityParams.length === 0) {
+    return {};
+  }
+  const folderIdFallback = pipeline?.parentFolderId;
+  const getKey = ({config}) => {
+    const {folderId, metadataClass = ''} = config?.metadata_config || {};
+    return `${folderId || folderIdFallback}_${metadataClass}`;
+  };
+  const requestsTemp = {};
+  for (const param of metadataEntityParams) {
+    const {folderId, metadataClass} = param.config.metadata_config;
+    const key = getKey(param);
+    if (metadataCache[key]) {
+      continue;
+    }
+    if (!requestsTemp[key]) {
+      requestsTemp[key] = {
+        folderId: folderId || folderIdFallback,
+        metadataClass,
+        name: param.name
+      };
+    }
+  }
+  const requests = Object.entries(requestsTemp).map(
+    ([key, {name, folderId, metadataClass}]) => {
+      return new Promise((resolve) => {
+        const filter = new MetadataEntityFilter();
+        const payload = {
+          folderId,
+          metadataClass,
+          page: 1,
+          pageSize: 999
+        };
+        filter
+          .send(payload)
+          .then(() => {
+            if (filter.error || !filter.loaded) {
+              console.error(
+                `Error fetching metadata for ${name} parameter:`,
+                filter.error
+              );
+              metadataCache[key] = {error: filter.error};
+            } else {
+              metadataCache[key] = filter.value || {};
+            }
+            resolve();
+          })
+          .catch((error) => {
+            console.error(`Error fetching metadata for ${name} parameter: ${error.message}`);
+            metadataCache[key] = {error: error.message};
+            resolve();
+          });
+      });
+    }
+  );
+  await Promise.all(requests);
+  const result = {};
+  for (const param of metadataEntityParams) {
+    const {name} = param;
+    const key = getKey(param);
+    result[name] = metadataCache[key];
+  }
+  return result;
 }
 
 /**
@@ -485,26 +718,191 @@ async function mergeParametersWithConfiguration (parameters, options) {
   const cfg = configurationParameters ||
     await readParametersFromConfiguration(configuration, options);
   const result = cfg.map((p) => ({...p}));
-  for (const [name, value] of Object.entries(parameters || {})) {
-    const existing = result.find((p) => p.name === name);
-    const d = getParameterConfig(name, value, {detached, pipeline});
-    if (existing) {
-      if (d.value !== undefined && d.value !== null) {
-        existing.value = d.value;
+  if (VERBOSE) {
+    console.groupCollapsed('Merging parameters');
+    console.log('parameters to merge:', parameters);
+    console.log('current parameters:', result.map((r) => ({...r})));
+    console.log('detached configuration:', Boolean(detached));
+    console.log('pipeline assigned:', Boolean(pipeline));
+  }
+  try {
+    for (const [name, value] of Object.entries(parameters || {})) {
+      if (VERBOSE) {
+        console.groupCollapsed(name);
       }
-    } else {
-      result.push({
-        key: generateKey(result),
-        name,
-        type: d.type,
-        value: d.value,
-        config: d,
-        configs: [d],
-        system: d.system
-      });
+      const existing = result.find((p) => p.name === name);
+      const d = getParameterConfig(name, value, {detached, pipeline});
+      if (existing) {
+        if (d.value !== undefined && d.value !== null) {
+          if (VERBOSE) {
+            console.log('current value:', existing.value);
+            console.log('new value:', d.value);
+          }
+          existing.value = d.value;
+        } else if (VERBOSE) {
+          console.log('current value:', existing.value);
+        }
+      } else if (!detached || !pipeline) {
+        if (VERBOSE) {
+          console.log('setting value:', d.value);
+        }
+        result.push({
+          key: generateKey(result),
+          name,
+          type: d.type,
+          value: d.value,
+          config: d,
+          configs: [d],
+          system: d.system
+        });
+      } else {
+        console.log('skipping');
+      }
+      if (VERBOSE) {
+        console.groupEnd();
+      }
+    }
+  } catch (error) {
+    console.warn(`error merging parameters: ${error.message}`);
+  } finally {
+    if (VERBOSE) {
+      console.groupEnd();
     }
   }
   return result;
+}
+
+/**
+ * @param parameterScheme
+ * @returns {ObjectParameterScheme}
+ */
+function getParameterSchemeConfig (parameterScheme) {
+  if (!parameterScheme || typeof parameterScheme !== 'object') {
+    return undefined;
+  }
+  if (VERBOSE) {
+    console.groupCollapsed('Parsing parameter scheme');
+  }
+  try {
+    const {
+      properties = {}
+    } = parameterScheme;
+    const props = [];
+    for (const [prop, cfg] of Object.entries(properties || {})) {
+      const propConfig = getParameterConfig(prop, cfg);
+      props.push(propConfig);
+    }
+    if (props.length === 0) {
+      return undefined;
+    }
+    return {
+      properties: props
+    };
+  } finally {
+    if (VERBOSE) {
+      console.groupEnd();
+    }
+  }
+}
+
+function parameterTypeFromValue (value) {
+  if (typeof value === 'boolean') {
+    return 'boolean';
+  }
+  if (typeof value === 'object' && Array.isArray(value)) {
+    return 'object';
+  }
+  return 'string';
+}
+
+/**
+ * @param {object} json
+ * @returns {ParameterConfig[]}
+ */
+export function generateParameterConfigsFromJsonPayload (json) {
+  if (typeof json === 'object' && !Array.isArray(json)) {
+    const result = [];
+    for (const [key, value] of Object.entries(json)) {
+      if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+        result.push(getParameterConfig(key, {type: parameterTypeFromValue(value), value}));
+      } else if (typeof value === 'object' && value !== null) {
+        if (Array.isArray(value)) {
+          // object parameter
+          result.push(getParameterConfig(key, {type: 'object', value}));
+        } else {
+          result.push(getParameterConfig(key, value));
+        }
+      }
+    }
+    return result;
+  }
+  return [];
+}
+
+/**
+ * @param value
+ * @param {{scheme: ObjectParameterScheme, parameterName}} [options]
+ * @returns {{value: *[], scheme: ObjectParameterScheme}}
+ */
+function mapObjectParameterValue (value, options) {
+  const {
+    parameterName,
+    scheme
+  } = options || {};
+  if (VERBOSE) {
+    console.groupCollapsed(
+      parameterName
+        ? `Parsing "${parameterName}" value`
+        : 'Parsing object parameter value'
+    );
+  }
+  try {
+    if (VERBOSE) {
+      console.log('raw value', value);
+    }
+    const parsed = parseSchemeParameterValue(value, parameterName);
+    if (typeof parsed === 'object' && Array.isArray(parsed)) {
+      if (VERBOSE) {
+        console.log('parsed value', parsed);
+      }
+      const {properties: schemeProperties} = scheme || {};
+      const result = [];
+      const properties = (schemeProperties || []).slice();
+      let entryId = 0;
+      for (const entry of parsed) {
+        if (VERBOSE) {
+          console.groupCollapsed(`Entry #${entryId}`);
+        }
+        entryId += 1;
+        const params = generateParameterConfigsFromJsonPayload(entry);
+        const e = {};
+        for (const param of params) {
+          const {value: paramValue, ...cfg} = param;
+          let prop = properties.find((p) => p.name === cfg.name);
+          if (!prop) {
+            properties.push(cfg);
+            prop = cfg;
+          }
+          e[prop.name] = {type: prop.type || 'string', value: paramValue};
+        }
+        result.push(e);
+        if (VERBOSE) {
+          console.groupEnd();
+        }
+      }
+      return {
+        value: result,
+        scheme: {
+          properties
+        }
+      };
+    }
+    return {value, scheme};
+  } finally {
+    if (VERBOSE) {
+      console.groupEnd();
+    }
+  }
 }
 
 /**
@@ -519,136 +917,182 @@ async function mergeParametersWithConfiguration (parameters, options) {
  * @param {GetParameterConfigOptions} [options]
  * @returns {ParameterConfig}
  */
-function getParameterConfig (
+export function getParameterConfig (
   name,
   parameter,
   options = undefined
 ) {
-  const {
-    condition = undefined,
-    detached = false,
-    pipeline = false
-  } = options || {};
-  const configId = condition ? `condition: ${condition}` : 'default';
-  const system = isSystemParameter(name) ||
-    isCapabilityParameter(name) ||
-    isReservationRequestParameter(name) ||
-    isReservedParameter(name) ||
-    isGPUScalingParameter(name);
-  if (typeof parameter === 'object') {
+  if (VERBOSE) {
+    console.groupCollapsed(name);
+    console.log(parameter);
+  }
+  try {
     const {
-      type = 'string',
-      value,
-      // eslint-disable-next-line camelcase
-      no_override = false,
-      nooverride = no_override,
-      noOverride = nooverride,
-      section,
-      required = false,
-      icon,
-      'enum': enumerationRaw,
-      enumeration = enumerationRaw,
-      resolvedValue,
-      visible,
-      validation,
-      description,
-      fallbackConfig = false,
-      // eslint-disable-next-line camelcase
-      pretty_name,
-      prettyName = pretty_name
-    } = parameter;
-    const readOnly = detached &&
-      pipeline &&
-      noOverride &&
-      (value !== undefined && value !== null && String(value).length !== 0);
+      condition = undefined,
+      detached = false,
+      pipeline = false
+    } = options || {};
+    const configId = condition ? `condition: ${condition}` : 'default';
+    const system = isSystemParameter(name) ||
+      isCapabilityParameter(name) ||
+      isReservationRequestParameter(name) ||
+      isReservedParameter(name) ||
+      isGPUScalingParameter(name);
+    if (typeof parameter === 'object') {
+      const {
+        type: pType = 'string',
+        value,
+        // eslint-disable-next-line camelcase
+        no_override = false,
+        nooverride = no_override,
+        noOverride = nooverride,
+        section,
+        required = false,
+        icon,
+        'enum': enumerationRaw,
+        enumeration = enumerationRaw,
+        multiple,
+        resolvedValue,
+        visible,
+        validation,
+        description,
+        fallbackConfig = false,
+        // eslint-disable-next-line camelcase
+        pretty_name,
+        // eslint-disable-next-line camelcase
+        metadata_config,
+        prettyName = pretty_name,
+        scheme: parameterScheme,
+        // eslint-disable-next-line camelcase
+        read_only = false,
+        readonly = read_only,
+        readOnly = readonly,
+        ...rest
+      } = parameter;
+      let parameterValue = value;
+      const readOnlyComputed = readOnly || (detached &&
+        pipeline &&
+        noOverride &&
+        (
+          parameterValue !== undefined &&
+          parameterValue !== null &&
+          String(parameterValue).length !== 0
+        ));
+      let scheme = parameterScheme ? getParameterSchemeConfig(parameterScheme) : undefined;
+      let type = pType;
+      if (type === 'object') {
+        const {value: mappedValue, scheme: mappedScheme} = mapObjectParameterValue(
+          parameterValue,
+          {scheme, parameterName: name}
+        );
+        scheme = mappedScheme;
+        parameterValue = buildSchemeParameterValue(mappedValue, mappedScheme);
+      }
+      if (type === 'object' && scheme === undefined) {
+        if (VERBOSE) {
+          // eslint-disable-next-line max-len
+          console.log('correcting parameter type from "scheme" to "string" because scheme was not provided (or scheme.properties is empty)');
+        }
+        type = 'string';
+      }
+      if (VERBOSE) {
+        console.log('prettyName:', prettyName);
+        console.log('type:', pType);
+        console.log('value:', value);
+        console.log('mapped value:', parameterValue);
+        console.log('resolvedValue:', resolvedValue);
+        console.log('no_override:', noOverride);
+        console.log('readOnly (computed):', readOnlyComputed);
+        console.log('required:', required);
+        console.log('description:', description);
+        console.log('validation:', validation);
+        console.log('enum:', enumerationRaw);
+        console.log('visible:', visible);
+        console.log('rest config:', rest);
+        console.log('fallback config:', fallbackConfig);
+        console.log('scheme:', scheme);
+      }
+      const asBoolean = (o) => typeof o === 'boolean' ? o : String(o) === 'true';
+      const typedValue = (o) => {
+        if (o !== undefined && o !== null && type.toLowerCase() === 'boolean') {
+          return typeof o === 'boolean' ? o : /^\s*(true|yes)\s*$/i.test(o);
+        }
+        return o;
+      };
+      return {
+        configId,
+        name,
+        prettyName,
+        type,
+        description,
+        value: typedValue(parameterValue),
+        readOnly: asBoolean(readOnlyComputed),
+        readOnlyFromConfiguration: asBoolean(readOnly),
+        noOverride: asBoolean(noOverride),
+        section,
+        required: asBoolean(required),
+        icon,
+        enumeration: enumeration && (Array.isArray(enumeration) || isObservableArray(enumeration))
+          ? [...enumeration]
+          : undefined,
+        multiple,
+        resolvedValue: typedValue(resolvedValue),
+        visible,
+        validation,
+        condition,
+        system,
+        metadata_config,
+        restConfig: rest,
+        fallbackConfig,
+        scheme
+      };
+    }
+    if (
+      typeof parameter === 'boolean' ||
+      (typeof parameter === 'string' && /^\s*(true|false|yes|no)\s*$/i.test(parameter))
+    ) {
+      return {
+        configId,
+        name,
+        value: /^\s*(true|yes)\s*$/i.test(`${parameter}`),
+        type: 'boolean',
+        condition,
+        system
+      };
+    }
+    if (typeof parameter === 'string') {
+      return {
+        configId,
+        name,
+        value: parameter,
+        type: 'string',
+        condition,
+        system
+      };
+    }
+    if (typeof parameter === 'number') {
+      return {
+        configId,
+        name,
+        value: `${parameter}`,
+        type: 'string',
+        condition,
+        system
+      };
+    }
+    return {
+      configId,
+      name,
+      type: 'string',
+      value: undefined,
+      condition,
+      system
+    };
+  } finally {
     if (VERBOSE) {
-      console.groupCollapsed(name);
-      console.log(parameter);
-      console.log('prettyName', prettyName);
-      console.log('type', type);
-      console.log('value', value);
-      console.log('resolvedValue', resolvedValue);
-      console.log('no_override', noOverride);
-      console.log('readOnly (computed)', readOnly);
-      console.log('required', required);
-      console.log('description', description);
-      console.log('validation', validation);
-      console.log('enum', enumerationRaw);
-      console.log('visible', visible);
-      console.log('fallback config', fallbackConfig);
       console.groupEnd();
     }
-    const asBoolean = (o) => typeof o === 'boolean' ? o : String(o) === 'true';
-    const typedValue = (o) => {
-      if (o !== undefined && o !== null && type.toLowerCase() === 'boolean') {
-        return typeof o === 'boolean' ? o : /^\s*(true|yes)\s*$/i.test(o);
-      }
-      return o;
-    };
-    return {
-      configId,
-      name,
-      prettyName,
-      type,
-      description,
-      value: typedValue(value),
-      readOnly: asBoolean(readOnly),
-      noOverride: asBoolean(noOverride),
-      section,
-      required: asBoolean(required),
-      icon,
-      enumeration: enumeration && (Array.isArray(enumeration) || isObservableArray(enumeration))
-        ? [...enumeration]
-        : undefined,
-      resolvedValue: typedValue(resolvedValue),
-      visible,
-      validation,
-      condition,
-      system,
-      fallbackConfig
-    };
   }
-  if (
-    typeof parameter === 'boolean' ||
-    (typeof parameter === 'string' && /^\s*(true|false|yes|no)\s*$/i.test(parameter))
-  ) {
-    return {
-      configId,
-      name,
-      value: /^\s*(true|yes)\s*$/i.test(`${parameter}`),
-      type: 'boolean',
-      condition,
-      system
-    };
-  }
-  if (typeof parameter === 'string') {
-    return {
-      configId,
-      name,
-      value: parameter,
-      type: 'string',
-      condition,
-      system
-    };
-  }
-  if (typeof parameter === 'number') {
-    return {
-      configId,
-      name,
-      value: `${parameter}`,
-      type: 'string',
-      condition,
-      system
-    };
-  }
-  return {
-    configId,
-    name,
-    type: 'string',
-    value: undefined,
-    condition,
-    system
-  };
 }
 
 /**
@@ -901,32 +1345,46 @@ function validateParameter (parameter, parameters, rawEdit = false) {
     }
   } catch (e) {
     nameError = e.message;
+    if (VERBOSE) {
+      console.log('name', parameter.name);
+      console.log('name error:', nameError);
+    }
   }
   try {
-    if (actualConfig.enumeration && actualConfig.enumeration.length > 0 && !rawEdit) {
-      value = actualConfig.enumeration.find((o) => o === value);
-      if (!value) {
+    if (actualConfig.visible) {
+      if (actualConfig.enumeration && actualConfig.enumeration.length > 0 && !rawEdit) {
+        if (!actualConfig.multiple) {
+          value = actualConfig.enumeration.find((o) => o === value);
+        }
+        if (!actualConfig.multiple && !value) {
+          value = actualConfig.value;
+        }
+      } else if (configChanged) {
         value = actualConfig.value;
       }
-    } else if (configChanged) {
-      value = actualConfig.value;
-    }
-    newParameter.value = value;
-    if (!rawEdit) {
-      const validationError = getParameterValidationError(parameters, actualConfig);
-      if (validationError) {
-        throw new Error(validationError);
+      newParameter.value = value;
+      if (!rawEdit) {
+        const validationError = getParameterValidationError(parameters, actualConfig);
+        if (validationError) {
+          throw new Error(validationError);
+        }
+      }
+      if (
+        actualConfig.required &&
+        (value === undefined || value === null || String(value).trim() === '')
+      ) {
+        throw new Error('Required');
+      }
+      if (actualConfig.type.toLowerCase() === 'output' && value && value.includes(',')) {
+        throw new Error('Only one output path can be specified for output parameter');
       }
     }
-    if (
-      actualConfig.required &&
-      (value === undefined || value === null || String(value).trim() === '')
-    ) {
-      throw new Error('Required');
-    }
-    // todo: validation
   } catch (e) {
     error = e.message;
+    if (VERBOSE) {
+      console.log('value', newParameter.value);
+      console.log('value error:', error);
+    }
   }
   const valid = error === undefined && nameError === undefined;
   modified |= parameter.error !== error ||
@@ -1150,16 +1608,43 @@ export function isSystemParameter (parameterName, options = {}) {
 }
 
 /**
- * Checks if parameter is system parameter
+ * Checks if parameter is restricted by role
  * @param {Parameter} parameter
- * @param {{runDefaultParameters}} [options]
+ * @param {{runDefaultParameters, userInfo}} [options]
+ * @returns {boolean}
+ */
+function isSystemParameterRestrictedByRole (parameter, options = {}) {
+  if (
+    parameter &&
+    isSystemParameter(parameter.name, options)
+  ) {
+    const {runDefaultParameters, userInfo} = options;
+    const {admin} = userInfo || {};
+    const [systemParam] = (runDefaultParameters?.value || [])
+      .filter(p => p.name.toUpperCase() === (parameter.name || '').toUpperCase());
+    const userRoleNames = (userInfo?.roles ?? []).map(role => role.name);
+    if (!admin && userInfo && systemParam?.roles?.length > 0) {
+      return !(
+        systemParam.roles.some(roleName => userRoleNames.includes(roleName))
+      );
+    }
+    return false;
+  }
+  return false;
+};
+
+/**
+ * Map system parameter
+ * @param {Parameter} parameter
+ * @param {{runDefaultParameters, userInfo}} [options]
  * @returns {Parameter}
  */
 export function mapSystemParameter (parameter, options = {}) {
   const {
-    runDefaultParameters: rdf = runDefaultParameters
+    runDefaultParameters: rdf = runDefaultParameters,
+    userInfo
   } = options || {};
-  if (rdf.loaded && parameter) {
+  if (rdf.loaded && userInfo && parameter) {
     try {
       const value = rdf.value || [];
       const systemParameter = value
@@ -1174,7 +1659,8 @@ export function mapSystemParameter (parameter, options = {}) {
             description: config.description || systemParameter.description,
             prettyName: config.prettyName || systemParameter.prettyName,
             value: systemParameter.value,
-            type: systemParameter.type
+            type: systemParameter.type,
+            readOnly: isSystemParameterRestrictedByRole(parameter, options)
           }
         };
       }
@@ -1187,10 +1673,14 @@ export function mapSystemParameter (parameter, options = {}) {
 
 /**
  * Returns all capabilities parameters
- * @param [prefs]
+ * @param {{preferences?: PreferencesLoad, onlyCapabilityFlags?: boolean}} [options]
  * @returns {string[]}
  */
-export function getCapabilitiesParameters (prefs = preferences) {
+export function getCapabilitiesParameters (options = {}) {
+  const {
+    preferences: prefs = preferences,
+    onlyCapabilityFlags = true
+  } = options || {};
   if (prefs.loaded) {
     const capabilities = prefs.launchCapabilities || [];
     const getParameters = (capability) => {
@@ -1202,10 +1692,13 @@ export function getCapabilitiesParameters (prefs = preferences) {
       } = capability;
       return [value]
         .concat(children.reduce((acc, cur) => acc.concat(getParameters(cur)), []))
-        .concat(Object.keys(params));
+        .concat(onlyCapabilityFlags ? [] : Object.keys(params));
     };
-    return capabilities
-      .reduce((acc, cur) => acc.concat(getParameters(cur)), []);
+    return systemCapabilitiesParameters.slice()
+      .concat(
+        capabilities
+          .reduce((acc, cur) => acc.concat(getParameters(cur)), [])
+      );
   }
   return [];
 }
@@ -1235,14 +1728,11 @@ export function getReservationRequestParameters (prefs = preferences) {
 /**
  * Checks if parameter is a capabilities parameter
  * @param {string} parameterName
- * @param {{preferences}} [options]
+ * @param {{preferences?: PreferencesLoad, onlyCapabilityFlags?: boolean}} [options]
  * @returns {boolean}
  */
 export function isCapabilityParameter (parameterName, options = {}) {
-  const {
-    preferences: prefs = preferences
-  } = options || {};
-  const params = getCapabilitiesParameters(prefs);
+  const params = getCapabilitiesParameters(options);
   return params.some((p) => p.toLowerCase() === parameterName.toLowerCase());
 }
 
@@ -1284,21 +1774,50 @@ export function isGPUScalingParameter (parameterName, options = {}) {
 }
 
 /**
+ * @param {ObjectParameterScheme} [scheme]
+ */
+export function objectParameterSchemeToPayload (scheme) {
+  if (!scheme) {
+    return undefined;
+  }
+  const {properties} = scheme;
+  return {
+    properties: parameterConfigsToPayloadConfig(properties || [])
+  };
+}
+
+/**
  * @param {ParameterConfig} parameterConfig
  */
-function parameterConfigToPayloadConfig (parameterConfig) {
+export function parameterConfigToPayloadConfig (parameterConfig) {
   return {
+    ...(parameterConfig.restConfig || {}),
     type: parameterConfig.type,
-    value: getTypedValue(parameterConfig.value, parameterConfig.type),
+    value: getTypedValue(parameterConfig.value, parameterConfig),
     no_override: parameterConfig.noOverride,
     visible: parameterConfig.visible,
     icon: parameterConfig.icon,
+    multiple: parameterConfig.multiple,
     section: parameterConfig.section,
     'enum': parameterConfig.enumeration,
     resolvedValue: parameterConfig.resolvedValue,
     validation: parameterConfig.validation,
-    description: parameterConfig.description
+    description: parameterConfig.description,
+    scheme: objectParameterSchemeToPayload(parameterConfig.scheme),
+    pretty_name: parameterConfig.prettyName,
+    metadata_config: parameterConfig.metadata_config,
+    read_only: parameterConfig.readOnlyFromConfiguration
   };
+}
+
+/**
+ * @param {ParameterConfig[]} configs
+ */
+export function parameterConfigsToPayloadConfig (configs = []) {
+  return (configs || []).reduce((acc, cur) => ({
+    ...acc,
+    [cur.name]: parameterConfigToPayloadConfig(cur)
+  }), {});
 }
 
 /**
@@ -1308,10 +1827,7 @@ function parameterConfigToPayloadConfig (parameterConfig) {
 export function parametersToPayloadParams (parameters = []) {
   const parameterToPayloadParameterConfig = (p) => {
     const cfg = findParameterConfig(p, parameters);
-    return {
-      ...parameterConfigToPayloadConfig(cfg),
-      value: p.value
-    };
+    return parameterConfigToPayloadConfig({...cfg, value: p.value});
   };
   return parameters
     .filter((parameter) => !isCapabilityParameter(parameter.name) &&
@@ -1352,15 +1868,16 @@ export function parametersToConfigurationParams (parameters = []) {
     }
     const p = parameterConfigToPayloadConfig(parameterConfig);
     if (actual) {
-      p.value = getTypedValue(parameter.value, parameterConfig.type);
+      p.value = getTypedValue(parameter.value, parameterConfig);
     }
     set[parameter.name] = p;
     return p;
   };
-  const filtered = parameters.filter((parameter) => !isCapabilityParameter(parameter.name) &&
-    !isReservationRequestParameter(parameter.name) &&
-    !isGPUScalingParameter(parameter.name) &&
-    !isReservedParameter(parameter.name));
+  const filtered = parameters
+    .filter((parameter) => !isCapabilityParameter(parameter.name) &&
+      !isReservationRequestParameter(parameter.name) &&
+      !isGPUScalingParameter(parameter.name) &&
+      !isReservedParameter(parameter.name));
   for (const parameter of filtered) {
     const current = findParameterConfig(parameter, parameters);
     for (const cfg of parameter.configs) {
@@ -1374,11 +1891,15 @@ export function parametersToConfigurationParams (parameters = []) {
 }
 
 /**
- * @param {string | number | boolean} value
- * @param {string} type
+ * @param {string | number | boolean | object} value
+ * @param {ParameterConfig} config
  * @returns {string | number | boolean | undefined}
  */
-function getTypedValue (value, type) {
+function getTypedValue (value, config) {
+  const {
+    type = 'string',
+    scheme
+  } = config || {};
   if (value === undefined || value === null) {
     return undefined;
   }
@@ -1390,6 +1911,12 @@ function getTypedValue (value, type) {
   }
   if (type === 'string') {
     return String(value);
+  }
+  if (type === 'object' || typeof value === 'object') {
+    return buildSchemeParameterValue(value, scheme);
+  }
+  if (typeof value === 'string' && type === 'enum' && config.multiple) {
+    return value.split(',').sort().join(',');
   }
   return value;
 }
@@ -1403,10 +1930,7 @@ function getParameterTypedValue (parameter) {
     value,
     config = {}
   } = parameter;
-  const {
-    type = 'string'
-  } = config;
-  return getTypedValue(value, type);
+  return getTypedValue(value, config);
 }
 
 /**
@@ -1462,7 +1986,64 @@ export function parametersModified (parameters, initialParameters) {
   return modified;
 }
 
+/**
+ * @param {Parameter} parameter
+ */
+function parameterIsVisible (parameter = {}) {
+  const {config = {}} = parameter;
+  const {visible = true} = config;
+  return visible;
+}
+
+/**
+ * @param {Parameter[]} parameters
+ * @param {boolean} isSystem
+ * @param {boolean} rawEdit
+ * @param {object} userInfo
+ */
+function getVisibleParameters (
+  parameters = [],
+  isSystem = false,
+  rawEdit = false,
+  userInfo
+) {
+  return parameters
+    .filter((parameter) => rawEdit || parameterIsVisible(parameter))
+    .filter((parameter) => isSystem
+      ? parameter.system &&
+      !isReservedParameter(parameter.name) &&
+      !isCapabilityParameter(parameter.name) &&
+      !isReservationRequestParameter(parameter.name) &&
+      !isGPUScalingParameter(parameter.name)
+      : !parameter.system)
+    .map((parameter) => isSystem ? mapSystemParameter(parameter, {
+      runDefaultParameters,
+      userInfo,
+    }) : parameter);
+}
+
+/**
+ * @param {Parameter[]} parameters
+ */
+function downloadParametersTemplate (parameters = []) {
+  let yamlContent = '';
+  parameters.forEach((p) => {
+    const {name = '', value = ''} = p || {};
+    yamlContent += `${name}: ${value}\n`;
+  });
+  const blob = new Blob([yamlContent], {type: 'text/yaml;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'parameters-template.yaml';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 export {
+  getVisibleParameters,
   getParameterValue,
   getParameterNumberValue,
   booleanParameterValue,
@@ -1471,6 +2052,7 @@ export {
   isVisible,
   validate,
   normalizeParameters,
+  parameterIsVisible,
   parseEnumeration,
   readParametersFromConfiguration,
   mergeParametersWithConfiguration,
@@ -1479,5 +2061,8 @@ export {
   addSystemParameter,
   addSystemParameters,
   hasResolvedValues,
-  toggleResolvedValues
+  toggleResolvedValues,
+  downloadParametersTemplate,
+  getMetadataForParameters,
+  resolveMetadataEntityParameters
 };

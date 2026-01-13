@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,6 +21,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -32,4 +33,7 @@ public class NodePoolUsage {
     private Long nodePoolId;
     private Integer totalNodesCount;
     private Integer occupiedNodesCount;
+    private Integer pendingRunsCount;
+    private Integer activeRunsCount;
+    private Map<String, Requests> requestsStats;
 }

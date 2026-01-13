@@ -33,6 +33,7 @@ import {
   Select
 } from 'antd';
 import LoadingView from '../../special/LoadingView';
+import {GcpSpotInstanceType} from '../../../models/utils/gcp-spot-instance-type';
 
 const valueNames = {
   allowedInstanceMaxCount: 'allowedInstanceMaxCount',
@@ -41,7 +42,8 @@ const valueNames = {
   allowedToolInstanceTypes: 'allowedToolInstanceTypes',
   allowedPriceTypes: 'allowedPriceTypes',
   jobsVisibility: 'jobsVisibility',
-  jwtTokenExpirationRefreshThreshold: 'jwtTokenExpirationRefreshThreshold'
+  jwtTokenExpirationRefreshThreshold: 'jwtTokenExpirationRefreshThreshold',
+  gcpSpotInstanceType: 'gcpSpotInstanceType'
 };
 
 @inject(({preferences}, props) => {
@@ -58,7 +60,11 @@ const valueNames = {
           ]
             .includes(field)
         ) ||
-        (field === valueNames.jwtTokenExpirationRefreshThreshold && props.level === 'USER')
+        (field === valueNames.jwtTokenExpirationRefreshThreshold && props.level === 'USER') ||
+        (
+          field === valueNames.gcpSpotInstanceType &&
+          (props.level === 'USER' || props.level === 'ROLE')
+        )
       ) {
         return {
           [field]: new ContextualPreferenceLoad(props.level, names[field], props.resourceId)
@@ -75,6 +81,7 @@ const valueNames = {
     ...loadPreference(valueNames.allowedPriceTypes),
     ...loadPreference(valueNames.jobsVisibility),
     ...loadPreference(valueNames.jwtTokenExpirationRefreshThreshold),
+    ...loadPreference(valueNames.gcpSpotInstanceType),
     preferences
   };
 })
@@ -112,7 +119,8 @@ export default class InstanceTypesManagementForm extends React.Component {
       this.valuePending(valueNames.allowedInstanceTypes) ||
       this.valuePending(valueNames.allowedToolInstanceTypes) ||
       this.valuePending(valueNames.jobsVisibility) ||
-      this.valuePending(valueNames.jwtTokenExpirationRefreshThreshold);
+      this.valuePending(valueNames.jwtTokenExpirationRefreshThreshold) ||
+      this.valuePending(valueNames.gcpSpotInstanceType);
   }
 
   @computed
@@ -149,7 +157,8 @@ export default class InstanceTypesManagementForm extends React.Component {
       this.valueModified(valueNames.allowedToolInstanceTypes) ||
       this.valueModified(valueNames.allowedPriceTypes) ||
       this.valueModified(valueNames.jobsVisibility) ||
-      this.valueModified(valueNames.jwtTokenExpirationRefreshThreshold);
+      this.valueModified(valueNames.jwtTokenExpirationRefreshThreshold) ||
+      this.valueModified(valueNames.gcpSpotInstanceType);
   }
 
   valueModified = (field) => {
@@ -191,11 +200,30 @@ export default class InstanceTypesManagementForm extends React.Component {
     return this.getValue(valueNames.jobsVisibility) || undefined;
   };
 
+  getGcpSpotInstanceTypeValue = () => {
+    let value = this.getValue(valueNames.gcpSpotInstanceType) || undefined;
+    try {
+      value = value ? JSON.parse(value) : undefined;
+    } catch {
+      // noop
+    }
+    return value;
+  };
+
   onPriceTypeChanged = (e) => {
     const value = e.join(',');
     if (value !== this.state[valueNames.allowedPriceTypes]) {
       this.setState({
         [valueNames.allowedPriceTypes]: value
+      }, this.reportModified);
+    }
+  };
+
+  onGcpSpotInstanceTypeChanged = (value) => {
+    console.log(value);
+    if (value !== this.state[valueNames.gcpSpotInstanceType]) {
+      this.setState({
+        [valueNames.gcpSpotInstanceType]: value
       }, this.reportModified);
     }
   };
@@ -281,6 +309,7 @@ export default class InstanceTypesManagementForm extends React.Component {
       [valueNames.allowedPriceTypes]: undefined,
       [valueNames.jobsVisibility]: undefined,
       [valueNames.jwtTokenExpirationRefreshThreshold]: undefined,
+      [valueNames.gcpSpotInstanceType]: undefined,
       jobsVisibilityUpdated: false
     }, this.reportModified);
   };
@@ -297,6 +326,7 @@ export default class InstanceTypesManagementForm extends React.Component {
     results.push(await this.applyValue(valueNames.allowedPriceTypes));
     results.push(await this.applyValue(valueNames.jobsVisibility));
     results.push(await this.applyValue(valueNames.jwtTokenExpirationRefreshThreshold));
+    results.push(await this.applyValue(valueNames.gcpSpotInstanceType));
     const errors = results.filter(r => !!r);
     if (errors.length) {
       hide();
@@ -309,6 +339,7 @@ export default class InstanceTypesManagementForm extends React.Component {
       await this.reloadValue(valueNames.allowedPriceTypes);
       await this.reloadValue(valueNames.jobsVisibility);
       await this.reloadValue(valueNames.jwtTokenExpirationRefreshThreshold);
+      await this.reloadValue(valueNames.gcpSpotInstanceType);
       this.setState({
         [valueNames.allowedInstanceMaxCount]: undefined,
         [valueNames.allowedInstanceMaxCountGroup]: undefined,
@@ -317,6 +348,7 @@ export default class InstanceTypesManagementForm extends React.Component {
         [valueNames.allowedPriceTypes]: undefined,
         [valueNames.jobsVisibility]: undefined,
         [valueNames.jwtTokenExpirationRefreshThreshold]: undefined,
+        [valueNames.gcpSpotInstanceType]: undefined,
         jobsVisibilityUpdated: false
       }, hide);
     }
@@ -404,6 +436,39 @@ export default class InstanceTypesManagementForm extends React.Component {
               </Select.Option>
             </Select>
           </Row>
+          {
+            (this.props.level === 'ROLE' || this.props.level === 'USER') && (
+              <Row type="flex" style={{marginTop: 5}}>
+                <b>GCP spot instance type</b>
+              </Row>
+            )
+          }
+          {
+            (this.props.level === 'ROLE' || this.props.level === 'USER') && (
+              <Row type="flex">
+                <Select
+                  allowClear
+                  style={{flex: 1}}
+                  value={this.getGcpSpotInstanceTypeValue()}
+                  onChange={this.onGcpSpotInstanceTypeChanged}
+                  disabled={disabled}
+                >
+                  <Select.Option
+                    key={GcpSpotInstanceType.SPOT}
+                    value={GcpSpotInstanceType.SPOT}
+                  >
+                    {GcpSpotInstanceType.SPOT}
+                  </Select.Option>
+                  <Select.Option
+                    key={GcpSpotInstanceType.PREEMPTIBLE}
+                    value={GcpSpotInstanceType.PREEMPTIBLE}
+                  >
+                    {GcpSpotInstanceType.PREEMPTIBLE}
+                  </Select.Option>
+                </Select>
+              </Row>
+            )
+          }
           <Row type="flex" style={{marginTop: 5}}>
             <b>Jobs visibility</b>
           </Row>

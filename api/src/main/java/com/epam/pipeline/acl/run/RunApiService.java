@@ -45,7 +45,6 @@ import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.EngineRunTask;
 import com.epam.pipeline.entity.pipeline.run.EngineRunTaskFilter;
-import com.epam.pipeline.entity.pipeline.run.EngineTaskStatus;
 import com.epam.pipeline.entity.pipeline.run.EngineType;
 import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineRunResult;
@@ -56,6 +55,8 @@ import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.pipeline.run.runtime.RunRuntimeData;
 import com.epam.pipeline.entity.pipeline.run.runtime.RunSyncRuntimeDataType;
 import com.epam.pipeline.entity.run.CommitRunConditions;
+import com.epam.pipeline.entity.run.EngineRunTaskGroupStatsEntity;
+import com.epam.pipeline.entity.run.PipelineRunPerformanceMetrics;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.manager.cluster.EdgeServiceManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
@@ -72,7 +73,7 @@ import com.epam.pipeline.manager.pipeline.PipelineRunResultManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunRuntimeDataManager;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
-import com.epam.pipeline.manager.security.acl.AclFilter;
+import com.epam.pipeline.manager.security.acl.AclRunFilter;
 import com.epam.pipeline.manager.security.acl.AclMask;
 import com.epam.pipeline.manager.security.acl.AclMaskList;
 import com.epam.pipeline.manager.security.acl.AclMaskPage;
@@ -90,13 +91,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
-import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_GENERAL_USER;
-import static com.epam.pipeline.security.acl.AclExpressions.RUN_ID_EXECUTE;
-import static com.epam.pipeline.security.acl.AclExpressions.RUN_ID_OWNER;
-import static com.epam.pipeline.security.acl.AclExpressions.RUN_ID_READ;
-import static com.epam.pipeline.security.acl.AclExpressions.RUN_ID_SSH;
-import static com.epam.pipeline.security.acl.AclExpressions.RUN_ID_WRITE;
+import static com.epam.pipeline.security.acl.AclExpressions.*;
 
 @Service
 @RequiredArgsConstructor
@@ -140,7 +135,7 @@ public class RunApiService {
         return pipelineRunAsManager.runTool(runVO);
     }
 
-    @PreAuthorize("(hasRole('ADMIN') OR "
+    @PreAuthorize("(hasRole('ADMIN') OR hasRole('RUN_ADMIN') OR "
             + "hasPermission(#runVO.pipelineId, 'com.epam.pipeline.entity.pipeline.Pipeline', 'EXECUTE'))"
             + " AND @grantPermissionManager.hasPipelinePermissionToRunAs(#runVO, 'EXECUTE')")
     @AclMask
@@ -151,7 +146,7 @@ public class RunApiService {
                 : runManager.runPipeline(runVO);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR "
+    @PreAuthorize("hasRole('ADMIN') OR hasRole('RUN_ADMIN') OR "
             + "@grantPermissionManager.hasConfigurationUpdatePermission(#configuration, 'EXECUTE')")
     @AclMaskList
     @QuotaLaunchCheck
@@ -161,7 +156,8 @@ public class RunApiService {
         return configurationLauncher.runConfiguration(refreshToken, configuration, expansionExpression);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR @runPermissionManager.runPermission(#runLog.runId, 'EXECUTE')")
+    @PreAuthorize("hasRole('ADMIN') OR hasRole('RUN_ADMIN')" +
+            " OR @runPermissionManager.runPermission(#runLog.runId, 'EXECUTE')")
     public RunLog saveLog(final RunLog runLog) {
         return logManager.saveLog(runLog);
     }
@@ -204,7 +200,8 @@ public class RunApiService {
         return logManager.loadLogsForTask(runId, taskName, parameters, filter);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR @runPermissionManager.runStatusPermission(#runId, #status, 'EXECUTE')")
+    @PreAuthorize("hasRole('ADMIN') OR hasRole('RUN_ADMIN')" +
+            " OR @runPermissionManager.runStatusPermission(#runId, #status, 'EXECUTE')")
     @AclMask
     public PipelineRun updatePipelineStatusIfNotFinal(Long runId, TaskStatus status) {
         return runManager.updatePipelineStatusIfNotFinal(runId, status);
@@ -241,26 +238,26 @@ public class RunApiService {
         return runManager.updateTags(runId, tagsVO, overwrite);
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + RUN_ADMIN_ONLY)
     @AclMask
     public List<PipelineRun> loadRunsActivityStats(final LocalDateTime start, final LocalDateTime end,
                                                    final boolean archive) {
         return runManager.loadRunsActivityStats(start, end, archive);
     }
 
-    @AclFilter
+    @AclRunFilter
     @AclMaskPage
     public PagedResult<List<PipelineRun>> searchPipelineRuns(PagingRunFilterVO filter, boolean loadStorageLinks) {
         return runManager.searchPipelineRuns(filter, loadStorageLinks);
     }
 
-    @AclFilter
+    @AclRunFilter
     public byte[] exportPipelineRuns(final PagingRunFilterVO filter, final String delimiter,
                                      final String fieldDelimiter) {
         return runManager.exportPipelineRuns(filter, delimiter, fieldDelimiter);
     }
 
-    @AclFilter
+    @AclRunFilter
     @AclMaskPage
     public PagedResult<List<PipelineRun>> searchPipelineRunsByExpression(PagingRunFilterExpressionVO filter)
             throws WrongFilterException {
@@ -277,7 +274,7 @@ public class RunApiService {
         return keywords;
     }
 
-    @AclFilter
+    @AclRunFilter
     public Integer countPipelineRuns(PipelineRunFilterVO filter) {
         return runManager.countPipelineRuns(filter);
     }
@@ -372,7 +369,7 @@ public class RunApiService {
         return runManager.generateLaunchCommand(runVO);
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + RUN_ADMIN_ONLY)
     public List<PipelineRunWithTool> getRunsWithTools(final List<Long> runIds) {
         return runManager.loadRunsWithTools(runIds);
     }
@@ -388,12 +385,12 @@ public class RunApiService {
         return pipelineRunKubernetesManager.getKubernetesService(runId);
     }
 
-    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    @PreAuthorize(ADMIN_OR_GENERAL_USER + OR + RUN_ADMIN_ONLY)
     public List<ServiceDescription> loadEdgeServices() {
         return edgeServiceManager.getEdgeServices();
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + RUN_ADMIN_ONLY)
     public List<PipelineRun> loadRunsByPoolId(final Long poolId) {
         return runManager.loadRunsByPoolId(poolId);
     }
@@ -403,22 +400,22 @@ public class RunApiService {
         return runManager.loadRunsByParentId(runId);
     }
 
-    @AclFilter
+    @AclRunFilter
     public RunChartInfo loadActiveRunsCharts(final RunChartFilterVO filter) {
         return runManager.loadActiveRunsCharts(filter);
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + RUN_ADMIN_ONLY)
     public void archiveRuns() {
         archiveRunService.archiveRuns();
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + RUN_ADMIN_ONLY)
     public void archiveRuns(final String name, final boolean principal, final Integer days) {
         archiveRunService.archiveRuns(name, principal, days);
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + RUN_ADMIN_ONLY)
     public void setLimitBoundary(final Long runId, final Boolean enable, final Integer boundary) {
         runManager.setLimitBoundary(runId, enable, boundary);
     }
@@ -434,9 +431,14 @@ public class RunApiService {
         return engineRunTaskService.upsertTasks(runId, tasks);
     }
 
+    @PreAuthorize(RUN_ID_EXECUTE)
+    public void resetRunEngineTaskEvents(final Long runId) {
+        engineRunTaskService.resetTasks(runId);
+    }
+
     @PreAuthorize(RUN_ID_READ)
-    public Map<String, Map<EngineTaskStatus, Long>> loadEngineRunTasksStats(final Long runId,
-                                                                            final EngineType engineType) {
+    public Map<String, EngineRunTaskGroupStatsEntity> loadEngineRunTasksStats(final Long runId,
+                                                                              final EngineType engineType) {
         return engineRunTaskService.loadTasksStats(runId, engineType);
     }
 
@@ -458,5 +460,10 @@ public class RunApiService {
     @PreAuthorize(RUN_ID_READ)
     public List<PipelineRunResult> loadPipelineRunResultsForRun(final Long runId) {
         return runResultManager.loadPipelineRunResultsForRun(runId);
+    }
+
+    @PreAuthorize(RUN_ID_READ)
+    public PipelineRunPerformanceMetrics loadPipelineRunPerformanceMetrics(final Long runId) {
+        return runManager.loadPipelineRunPerformanceMetrics(runId);
     }
 }

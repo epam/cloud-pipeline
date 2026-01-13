@@ -25,7 +25,6 @@ import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import java.util.function.Consumer;
 
-import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -355,6 +354,7 @@ public class DetachedConfigurationsTest
                     .ensure(TEMPLATE, readOnlyEditor())
                     .ensure(START_IDLE, disabled)
                     .ensure(ADD_PARAMETER, disabled)
+                    .ensure(ADD_SYSTEM_PARAMETER, disabled)
             );
     }
 
@@ -629,7 +629,7 @@ public class DetachedConfigurationsTest
                                 .validateParameter(pathParameterName, "")
                                 .setValue(pathParameterValue2)
                                 .validateParameter(pathParameterName, pathParameterValue2)
-                                .ensure(PARAMETER_NAME, disabled);
+                                .parameterNameIsEnable(false);
                         configuration
                                 .click(SAVE)
                                 .ensureDisable(SAVE);
@@ -773,6 +773,7 @@ public class DetachedConfigurationsTest
     @Test(priority = 100)
     @TestCase({"EPMCMBIBPC-1604"})
     public void deleteDetachedConfigurationValidation() {
+        refresh();
         library()
             .removeConfiguration(mainConfiguration)
             .ensure(configurationWithName(mainConfiguration), not(visible));

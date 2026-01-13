@@ -15,6 +15,9 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter;
 
+import com.epam.pipeline.elasticsearch.ElasticStackVersion;
+import com.epam.pipeline.elasticsearch.model.DocWriteRequest;
+import com.epam.pipeline.elasticsearch.model.IndexRequest;
 import com.epam.pipeline.elasticsearchagent.exception.EntityNotFoundException;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
 import com.epam.pipeline.elasticsearchagent.model.EventType;
@@ -25,8 +28,6 @@ import com.epam.pipeline.elasticsearchagent.service.EntityMapper;
 import com.epam.pipeline.elasticsearchagent.service.EventProcessor;
 import lombok.Data;
 import org.apache.commons.collections4.ListUtils;
-import org.elasticsearch.action.DocWriteRequest;
-import org.elasticsearch.action.index.IndexRequest;
 
 import java.util.Collections;
 import java.util.List;
@@ -41,24 +42,28 @@ public class EventToRequestConverterImpl<T> implements EventToRequestConverter {
     private final EntityLoader<T> loader;
     private final EntityMapper<T> mapper;
     private final List<EventProcessor> additionalProcessors;
+    private final ElasticStackVersion version;
 
     public EventToRequestConverterImpl(final String indexPrefix,
                                        final String indexName,
                                        final EntityLoader<T> loader,
-                                       final EntityMapper<T> mapper) {
-       this(indexPrefix, indexName, loader, mapper, Collections.emptyList());
+                                       final EntityMapper<T> mapper,
+                                       final ElasticStackVersion version) {
+       this(indexPrefix, indexName, loader, mapper, Collections.emptyList(), version);
     }
 
     public EventToRequestConverterImpl(final String indexPrefix,
                                        final String indexName,
                                        final EntityLoader<T> loader,
                                        final EntityMapper<T> mapper,
-                                       final List<EventProcessor> additionalProcessors) {
+                                       final List<EventProcessor> additionalProcessors,
+                                       final ElasticStackVersion version) {
         this.indexPrefix = indexPrefix;
         this.indexName = indexName;
         this.loader = loader;
         this.mapper = mapper;
         this.additionalProcessors = Collections.unmodifiableList(additionalProcessors);
+        this.version = version;
     }
 
     @Override
@@ -76,15 +81,16 @@ public class EventToRequestConverterImpl<T> implements EventToRequestConverter {
                                                          final PipelineEvent event) {
         ListUtils.emptyIfNull(additionalProcessors).forEach(p -> p.process(event));
         if (event.getEventType() == EventType.DELETE) {
-            return Optional.of(createDeleteRequest(event, indexName));
+            return Optional.of(createDeleteRequest(event, indexName, version));
         }
         try {
             Optional<EntityContainer<T>> entity = loader.loadEntity(event.getObjectId());
             return entity
-                    .map(ds -> new IndexRequest(indexName, INDEX_TYPE, String.valueOf(event.getObjectId()))
+                    .map(ds -> new IndexRequest(indexName, INDEX_TYPE,
+                            String.valueOf(event.getObjectId()), version)
                             .source(mapper.map(ds)));
         } catch (EntityNotFoundException e) {
-            return Optional.of(createDeleteRequest(event, indexName));
+            return Optional.of(createDeleteRequest(event, indexName, version));
         }
     }
 

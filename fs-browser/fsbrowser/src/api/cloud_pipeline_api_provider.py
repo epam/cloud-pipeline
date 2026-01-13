@@ -79,6 +79,10 @@ class CloudPipelineAPI:
         result = self._post(url, data)
         return result or {}
 
+    def log_security_event(self, event_data):
+        result = self._post('/log', event_data)
+        return result or {}
+
     def get_git_credentials(self, duration, token=None):
         url = '/pipeline/git/credentials'
         if duration:
@@ -164,6 +168,9 @@ class CloudPipelineApiProvider(object):
 
     def log_event(self, run_id, data):
         self.api.log_event(run_id, data)
+
+    def log_security_event(self, event_data):
+        self.api.log_security_event(event_data)
 
     def get_git_credentials(self, duration, token=None):
         result = self.api.get_git_credentials(duration, token)

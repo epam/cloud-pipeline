@@ -22,11 +22,10 @@ import com.epam.pipeline.entity.issue.IssueComment;
 import com.epam.pipeline.entity.issue.IssueStatus;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.vo.EntityVO;
-import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.util.Collections;
+import java.util.Map;
 
 import static com.epam.pipeline.elasticsearchagent.MapperVerificationUtils.verifyAttachments;
 import static com.epam.pipeline.elasticsearchagent.MapperVerificationUtils.verifyComments;
@@ -45,7 +44,7 @@ import static com.epam.pipeline.elasticsearchagent.TestConstants.USER_NAME;
 class IssueMapperTest {
 
     @Test
-    void shouldMapIssue() throws IOException {
+    void shouldMapIssue() {
         IssueMapper mapper = new IssueMapper();
 
         Attachment attachment = new Attachment();
@@ -77,7 +76,7 @@ class IssueMapperTest {
                 .owner(USER)
                 .permissions(PERMISSIONS_CONTAINER)
                 .build();
-        XContentBuilder contentBuilder = mapper.map(container);
+        Map<String, ?> contentBuilder = mapper.map(container);
 
         verifyIssue(issue, contentBuilder);
         verifyAttachments(Collections.singletonList(attachment.getPath()), contentBuilder);

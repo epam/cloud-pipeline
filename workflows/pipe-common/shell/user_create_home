@@ -16,7 +16,7 @@
 
 _HOME_OWNER="$1"
 _HOME_DIR="$2"
-_HOME_MOD="755"
+_HOME_MOD="${CP_OWNER_HOME_MOD:-755}"
 
 if [ -z "$_HOME_OWNER" ]; then
     echo "[ERROR] OWNER is not specified, can't create HOME directory"

@@ -43,6 +43,8 @@ dependencies {
     implementation "org.elasticsearch.client:elasticsearch-rest-high-level-client:$elasticsearchVersion"
     implementation "org.elasticsearch:elasticsearch:$elasticsearchVersion"
 
+    implementation project(path: ":elasticsearch-common", configuration: "shadow")
+
     // Apache Commons
     implementation "commons-io:commons-io:$apacheCommonsIOVersion"
     implementation "org.apache.commons:commons-lang3:$apacheCommonsLangVersion"
