@@ -22,9 +22,7 @@ import com.codeborne.selenide.Driver;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
-import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
-import static java.time.Duration.ofMillis;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.SearchContext;
@@ -122,7 +120,7 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
 
     public GlobalSearchAO waitUntilSearchCompleted() {
         sleep(2, SECONDS);
-        get(SEARCH_RESULT).$(byClassName("anticon-loading")).shouldBe(not(exist), ofMillis(DEFAULT_TIMEOUT));
+        get(SEARCH_RESULT).$(byClassName("anticon-loading")).shouldBe(not(exist));
         return this;
     }
 

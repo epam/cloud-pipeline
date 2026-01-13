@@ -83,7 +83,7 @@ public class ToolDescription extends ToolTab<ToolDescription> {
     }
 
     public PermissionTabAO permissions() {
-        get(TOOL_SETTINGS).shouldBe(visible, ofMillis(DEFAULT_TIMEOUT));
+        get(TOOL_SETTINGS).shouldBe(visible);
         hover(TOOL_SETTINGS).click(PERMISSIONS);
         return new PermissionTabAO(() -> $(byClassName("ant-modal-close-x")).shouldBe(visible).click());
     }
@@ -100,7 +100,7 @@ public class ToolDescription extends ToolTab<ToolDescription> {
     }
 
     private void showMetadata(final By attribute) {
-        $(byId("run-latest-menu-button")).shouldBe(visible, ofMillis(DEFAULT_TIMEOUT));
+        $(byId("run-latest-menu-button")).shouldBe(visible);
         click(SHOW_METADATA);
         ensure(attributesMenu, appears);
         performIf(showAttributes, visible,

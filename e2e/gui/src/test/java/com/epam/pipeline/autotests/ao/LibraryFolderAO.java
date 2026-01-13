@@ -62,7 +62,7 @@ public class LibraryFolderAO implements AccessObject<LibraryFolderAO> {
     }
 
     public LibraryFolderEditPopupAO clickEditButton() {
-        get(SETTINGS).shouldBe(enabled, ofMillis(DEFAULT_TIMEOUT));
+        get(SETTINGS).shouldBe(enabled);
         click(SETTINGS);
         click(EDIT_FOLDER);
         return new LibraryFolderEditPopupAO(this);

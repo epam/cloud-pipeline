@@ -289,7 +289,7 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
     }
 
     public NATGatewayAO waitForRouteData() {
-        $(byClassName("ub-settings__content")).shouldBe(visible, ofMillis(DEFAULT_TIMEOUT));
+        $(byClassName("ub-settings__content")).shouldBe(visible);
         get(ADD_ROUTE).shouldBe(enabled);
         return this;
     }

@@ -173,18 +173,18 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
     public StorageContentAO createFolder(String folderName) {
         sleep(1, SECONDS);
         resetMouse().hover(CREATE);
-        get(CREATE_FOLDER).shouldBe(enabled, ofMillis(DEFAULT_TIMEOUT));
+        get(CREATE_FOLDER).shouldBe(enabled);
         click(CREATE_FOLDER);
         $(byId("name")).shouldBe(visible).setValue(folderName);
         $(button("OK")).shouldBe(visible).click();
-        $(byText("Create folder")).shouldBe(disappear, ofMillis(DEFAULT_TIMEOUT));
+        $(byText("Create folder")).shouldBe(disappear);
         return this;
     }
 
     public StorageContentAO createFolderWithError(String folderName, String message) {
         sleep(1, SECONDS);
         resetMouse().hover(CREATE);
-        get(CREATE_FOLDER).shouldBe(enabled, ofMillis(DEFAULT_TIMEOUT));
+        get(CREATE_FOLDER).shouldBe(enabled);
         click(CREATE_FOLDER);
         $(byId("name")).shouldBe(visible).setValue(folderName);
         $(button("OK")).shouldBe(visible).click();
@@ -201,7 +201,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         resetMouse().hover(CREATE).click(CREATE_FILE);
         $$(byId("name")).findBy(visible).setValue(fileName);
         $(button("OK")).shouldBe(visible).click();
-        $$(byClassName("browser__name-cell")).findBy(text(fileName)).shouldBe(exist, ofMillis(DEFAULT_TIMEOUT));
+        $$(byClassName("browser__name-cell")).findBy(text(fileName)).shouldBe(exist);
         return this;
     }
 
@@ -356,7 +356,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
     public MetadataSectionAO fileMetadata(String filename) {
         $(byClassName("ant-table-tbody")).shouldBe(visible);
         $$(byClassName("browser__name-cell")).findBy(text(filename)).$x("./span/span").click();
-        $(buttonByIconClass("anticon-arrows-alt")).shouldBe(exist, ofMillis(DEFAULT_TIMEOUT));
+        $(buttonByIconClass("anticon-arrows-alt")).shouldBe(exist);
         return new MetadataSectionAO(this);
     }
 

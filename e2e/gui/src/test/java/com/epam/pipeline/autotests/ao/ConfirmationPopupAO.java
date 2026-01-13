@@ -17,7 +17,6 @@ package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
 
-import java.time.Duration;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -31,10 +30,8 @@ import static com.codeborne.selenide.Selenide.$$;
 import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
 import static com.epam.pipeline.autotests.ao.Primitive.DELETE;
 import static com.epam.pipeline.autotests.ao.Primitive.OK;
-import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static java.lang.String.format;
 import static java.lang.String.join;
-import static java.time.Duration.ofMillis;
 import static org.openqa.selenium.By.className;
 import static org.testng.Assert.assertEquals;
 
@@ -103,7 +100,7 @@ public class ConfirmationPopupAO<PARENT_AO> extends PopupAO<ConfirmationPopupAO<
 
     public ConfirmationPopupAO<PARENT_AO> ensureLaunchTitleIs(String expectedTitle) throws RuntimeException {
         String actualTitle = join(" ", element.find(className("cp-run-name-title"))
-                .shouldBe(visible, ofMillis(DEFAULT_TIMEOUT))
+                .shouldBe(visible)
                 .findAll(byXpath("./span")).texts());
         assertEquals(actualTitle, expectedTitle,
                 format("Expected title is '%s', but actual is '%s'", expectedTitle, actualTitle));

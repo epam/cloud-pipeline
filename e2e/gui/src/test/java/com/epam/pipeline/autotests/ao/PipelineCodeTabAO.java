@@ -95,8 +95,8 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
 
         //Click Edit
 
-        get(EDIT).shouldBe(exist, ofMillis(DEFAULT_TIMEOUT)).click();
-        get(SAVE).shouldBe(exist, ofMillis(DEFAULT_TIMEOUT));
+        get(EDIT).shouldBe(exist).click();
+        get(SAVE).shouldBe(exist);
 
         sleep(500, MILLISECONDS);
         get(EDITOR).shouldBe();
@@ -106,7 +106,7 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
         get(SAVE).click();
         $("#message").setValue("test commit message");
         $$("button").findBy(text("Commit")).click();
-        $("ant-modal-content").shouldBe(not(exist), ofMillis(DEFAULT_TIMEOUT));
+        $("ant-modal-content").shouldBe(not(exist));
         sleep(1000, MILLISECONDS);
 
         return this;
@@ -154,7 +154,7 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
     }
 
     public PipelineCodeTabAO shouldContainElement(String folderName) {
-        $(byText("config.json")).shouldBe(visible, ofMillis(DEFAULT_TIMEOUT));
+        $(byText("config.json")).shouldBe(visible);
         $(".ant-table-tbody")
                 .findAll("tr")
                 .shouldHave(size(3))

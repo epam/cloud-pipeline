@@ -214,6 +214,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .launch(this)
                 .shouldContainRun(getPipelineName(), getRunId())
                 .showLog(getRunId())
+                .waitForSshLink()
                 .waitForNestedRunsLink()
                 .getNestedRunID(1);
 
@@ -404,6 +405,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .launch(this)
                 .shouldContainRun(getPipelineName(), getRunId())
                 .showLog(getRunId())
+                .waitForSshLink()
                 .waitForNestedRunsLink()
                 .clickOnNestedRunLink()
                 .instanceParameters(instance ->
@@ -457,6 +459,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .runs()
                 .activeRuns()
                 .showLog(getRunId())
+                .waitForSshLink()
                 .waitForNestedRunsLink()
                 .getNestedRunID(1);
         new LogAO()
@@ -504,6 +507,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                                 .runs()
                                 .activeRuns()
                                 .showLog(getRunId())
+                                .waitForSshLink()
                                 .waitForNestedRunsLink()
                                 .getNestedRunID(1);
         runsMenu()
@@ -588,6 +592,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .showLog(getRunId())
                 .instanceParameters(instance ->
                         instance.ensure(PRICE_TYPE, text(onDemandPrice)))
+                .waitForSshLink()
                 .waitForNestedRunsLink()
                 .clickOnNestedRunLink()
                 .instanceParameters(instance ->
@@ -615,6 +620,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .showLog(getRunId())
                 .instanceParameters(instance ->
                         instance.ensure(PRICE_TYPE, text(spotPrice)))
+                .waitForSshLink()
                 .waitForNestedRunsLink()
                 .clickOnNestedRunLink()
                 .instanceParameters(instance ->
@@ -642,6 +648,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .showLog(getRunId())
                 .instanceParameters(instance ->
                         instance.ensure(PRICE_TYPE, text(spotPrice)))
+                .waitForSshLink()
                 .waitForNestedRunsLink()
                 .clickOnNestedRunLink()
                 .instanceParameters(instance ->

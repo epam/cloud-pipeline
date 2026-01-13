@@ -41,7 +41,6 @@ import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.LABEL;
 import static com.epam.pipeline.autotests.ao.Primitive.NEXT_PAGE;
 import static com.epam.pipeline.autotests.utils.Conditions.contains;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
-import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
@@ -243,7 +242,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
 
     public ClusterMenuAO sortByIncrease(HeaderColumn column) {
         SelenideElement createdHeaderButtonUp = $$("th").findBy(cssClass(column.cssClass))
-                .find(".ant-table-column-sorter-up").shouldBe(exist, ofMillis(DEFAULT_TIMEOUT));
+                .find(".ant-table-column-sorter-up").shouldBe(exist);
         if (createdHeaderButtonUp.has(cssClass("off"))) {
             createdHeaderButtonUp.click();
         }
@@ -253,7 +252,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
 
     public ClusterMenuAO sortByDecrease(HeaderColumn column) {
         SelenideElement createdHeaderButtonDown = $$("th").findBy(cssClass(column.cssClass))
-                .find(".ant-table-column-sorter-down").shouldBe(exist, ofMillis(DEFAULT_TIMEOUT));
+                .find(".ant-table-column-sorter-down").shouldBe(exist);
         if (createdHeaderButtonDown.has(cssClass("off"))) {
             createdHeaderButtonDown.click();
         }
@@ -295,7 +294,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
     }
 
     private void validateSortedBy(HeaderColumn column, Comparator<String> comparator) {
-        $(className("ant-table-placeholder")).shouldBe(not(exist), ofMillis(DEFAULT_TIMEOUT));
+        $(className("ant-table-placeholder")).shouldBe(not(exist));
         ElementsCollection dates = column == HeaderColumn.LABEL
                 ? $$("span").filterBy(id("label-RUNID"))
                 : $$("td").filterBy(cssClass(column.cssClass));
@@ -313,7 +312,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
 
     public HotNodePoolsAO switchToHotNodePool() {
         context().find(byText("Hot Node Pools")).parent()
-                .shouldBe(exist, ofMillis(DEFAULT_TIMEOUT))
+                .shouldBe(exist)
                 .shouldBe(enabled).click();
         return new HotNodePoolsAO();
     }

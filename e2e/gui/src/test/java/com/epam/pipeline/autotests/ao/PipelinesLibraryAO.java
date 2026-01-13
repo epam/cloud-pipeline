@@ -239,7 +239,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
         sleep(1, SECONDS);
         $(byId("edit-storage-dialog-delete-button")).shouldBe(visible).click();
         sleep(1, SECONDS);
-        $(byId("edit-storage-delete-dialog-delete-button")).shouldBe(enabled, ofMillis(DEFAULT_TIMEOUT));
+        $(byId("edit-storage-delete-dialog-delete-button")).shouldBe(enabled);
         $(byId("edit-storage-delete-dialog-delete-button")).shouldBe(visible).click();
         $(byClassName("ant-modal-content")).shouldNotBe(visible);
         return this;
@@ -402,7 +402,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
     }
 
     public PipelinesLibraryAO validatePopupClosed() {
-        $(byClassName("ant-modal-content")).shouldNotBe(visible, ofMillis(DEFAULT_TIMEOUT));
+        $(byClassName("ant-modal-content")).shouldNotBe(visible);
         return this;
     }
 

@@ -504,7 +504,7 @@ public class LogAO implements AccessObject<LogAO> {
 
     public static By log() {
         $(byXpath(".//div[contains(@class,'cp-console-output')]/div[contains(@class,'un-task-logs__console-line')]"))
-                .shouldBe(exist, ofMillis(DEFAULT_TIMEOUT));
+                .shouldBe(exist);
         return byClassName("cp-console-output");
     }
 

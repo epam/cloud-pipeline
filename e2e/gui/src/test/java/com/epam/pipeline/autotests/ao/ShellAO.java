@@ -160,14 +160,14 @@ public class ShellAO implements AccessObject<ShellAO> {
     }
 
     public ShellAO assertNextStringIsVisibleAtFileUpload(String str1, String str2) {
-        $(withText(str1)).shouldBe(visible, ofMillis(DEFAULT_TIMEOUT)).parent()
+        $(withText(str1)).shouldBe(visible).parent()
                 .$(byXpath(format("following::x-row[contains(text(), '%s')]", str2))).shouldBe(visible);
         return this;
     }
 
     public ShellAO assertNextStringIsVisible(String str1, String str2) {
-        $(withText(str1)).shouldBe(visible, ofMillis(DEFAULT_TIMEOUT))
-                .$(byXpath(format("following::x-row[contains(text(), '%s')]", str2))).shouldBe(visible, ofMillis(DEFAULT_TIMEOUT));
+        $(withText(str1)).shouldBe(visible)
+                .$(byXpath(format("following::x-row[contains(text(), '%s')]", str2))).shouldBe(visible);
         return this;
     }
 

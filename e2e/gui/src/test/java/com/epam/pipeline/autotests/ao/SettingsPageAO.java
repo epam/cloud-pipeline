@@ -654,7 +654,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         */
             actions().moveToElement(get(SAVE)).perform();
             get(SAVE).pressEnter();
-            get(SAVE).shouldBe(disabled, ofMillis(DEFAULT_TIMEOUT));
+            get(SAVE).shouldBe(disabled);
             return this;
         }
 

@@ -381,7 +381,7 @@ public class UserManagementAO extends SettingsPageAO {
                         click(CANCEL);
                     }
                     $(className("edit-user-roles-dialog__modal-container"))
-                            .shouldBe(not(visible), ofMillis(DEFAULT_TIMEOUT));
+                            .shouldBe(not(visible));
                     return parentAO;
                 }
 
@@ -410,7 +410,7 @@ public class UserManagementAO extends SettingsPageAO {
                 }
 
                 public EditUserPopup addRoleOrGroupIfNonExist(final String value) {
-                    $(By.className("role-ROLE_USER")).shouldBe(exist, ofMillis(DEFAULT_TIMEOUT));
+                    $(By.className("role-ROLE_USER")).shouldBe(exist);
                     String className = value.startsWith("ROLE_") ? format("role-%s", value)
                             : format("role-ROLE_%s", value);
                     if ($(By.className(className)).exists()) {
@@ -429,7 +429,7 @@ public class UserManagementAO extends SettingsPageAO {
                 }
 
                 public EditUserPopup deleteRoleOrGroupIfExist(final String value) {
-                    $(byClassName("edit-user-roles-dialog__table")).shouldBe(exist, ofMillis(DEFAULT_TIMEOUT));
+                    $(byClassName("edit-user-roles-dialog__table")).shouldBe(exist);
                     if(!$$(byClassName("role-name-column")).findBy(text(value)).exists()) {
                         return this;
                     }
@@ -437,12 +437,12 @@ public class UserManagementAO extends SettingsPageAO {
                 }
 
                 public boolean isUserHasRoleOrGroup(final String value) {
-                    $(By.className("role-ROLE_USER")).shouldBe(exist, ofMillis(DEFAULT_TIMEOUT));
+                    $(By.className("role-ROLE_USER")).shouldBe(exist);
                     return  $(By.className(format("role-%s", value))).exists();
                 }
 
                 public EditUserPopup isListOfRolesBlocked() {
-                    $(byClassName("edit-user-roles-dialog__table")).shouldBe(exist, ofMillis(DEFAULT_TIMEOUT));
+                    $(byClassName("edit-user-roles-dialog__table")).shouldBe(exist);
                     $(byClassName("edit-user-roles-dialog__table"))
                             .$$(xpath(".//tr"))
                             .stream()
@@ -532,7 +532,7 @@ public class UserManagementAO extends SettingsPageAO {
 
                 public NavigationHomeAO impersonate() {
                     click(IMPERSONATE);
-                    context().$(byId("navigation-container")).shouldBe(visible, ofMillis(DEFAULT_TIMEOUT));
+                    context().$(byId("navigation-container")).shouldBe(visible);
                     return new NavigationHomeAO();
                 }
 
@@ -790,7 +790,7 @@ public class UserManagementAO extends SettingsPageAO {
             }
 
             public EditGroupPopup isListOfUsersBlocked() {
-                $(byClassName("user-management__table")).shouldBe(exist, ofMillis(DEFAULT_TIMEOUT));
+                $(byClassName("user-management__table")).shouldBe(exist);
                 $(byClassName("user-management__table"))
                         .$$(xpath(".//tr"))
                         .stream()
@@ -799,7 +799,7 @@ public class UserManagementAO extends SettingsPageAO {
             }
 
             public EditGroupPopup checkUserExistsInGroup(final String userName) {
-                $(byClassName("user-management__table")).shouldBe(exist, ofMillis(DEFAULT_TIMEOUT));
+                $(byClassName("user-management__table")).shouldBe(exist);
                 return ensure($(className("user-management__table")).$(byText(userName)), exist);
             }
 

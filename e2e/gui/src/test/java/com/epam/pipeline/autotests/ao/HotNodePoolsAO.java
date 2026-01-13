@@ -16,8 +16,6 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
-import com.epam.pipeline.autotests.utils.C;
-import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 
 import java.util.Arrays;
@@ -53,7 +51,6 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static java.lang.String.format;
 import static java.lang.String.valueOf;
-import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
@@ -211,7 +208,7 @@ public class HotNodePoolsAO  implements AccessObject<ClusterMenuAO> {
                     .findFirst()
                     .orElseThrow(NoSuchElementException::new)
                     .click();
-            context().find(byXpath(".//div[@title='latest']")).shouldBe(visible, ofMillis(DEFAULT_TIMEOUT));
+            context().find(byXpath(".//div[@title='latest']")).shouldBe(visible);
             sleep(5, SECONDS);
             return this;
         }

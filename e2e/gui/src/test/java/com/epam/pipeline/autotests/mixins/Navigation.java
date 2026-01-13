@@ -39,15 +39,15 @@ public interface Navigation {
 
     default NavigationMenuAO navigationMenu() {
         final By pipelinesPageSelector = byId("navigation-button-library");
-        $(pipelinesPageSelector).shouldBe(visible, ofMillis(DEFAULT_TIMEOUT)).click();
-        $(pipelinesPageSelector).shouldBe(selectedMenuItem, ofMillis(DEFAULT_TIMEOUT));
+        $(pipelinesPageSelector).shouldBe(visible).click();
+        $(pipelinesPageSelector).shouldBe(selectedMenuItem);
         return new NavigationMenuAO();
     }
 
     default NavigationHomeAO home() {
         final By homePageSelector = byId("navigation-button-dashboard");
-        $(homePageSelector).shouldBe(visible, ofMillis(DEFAULT_TIMEOUT)).click();
-        $(homePageSelector).shouldBe(selectedMenuItem, ofMillis(DEFAULT_TIMEOUT));
+        $(homePageSelector).shouldBe(visible).click();
+        $(homePageSelector).shouldBe(selectedMenuItem);
         return new NavigationHomeAO();
     }
 
@@ -57,29 +57,29 @@ public interface Navigation {
 
     default ToolsPage tools() {
         final By toolsPageSelector = byId("navigation-button-tools");
-        $(toolsPageSelector).shouldBe(visible, ofMillis(DEFAULT_TIMEOUT)).click();
-        $(toolsPageSelector).shouldBe(selectedMenuItem, ofMillis(DEFAULT_TIMEOUT));
+        $(toolsPageSelector).shouldBe(visible).click();
+        $(toolsPageSelector).shouldBe(selectedMenuItem);
         return new ToolsPage();
     }
 
     default ClusterMenuAO clusterMenu() {
         final By clusterPageSelector = byId("navigation-button-cluster");
-        $(clusterPageSelector).shouldBe(visible, ofMillis(DEFAULT_TIMEOUT)).click();
-        $(clusterPageSelector).shouldBe(selectedMenuItem, ofMillis(DEFAULT_TIMEOUT));
+        $(clusterPageSelector).shouldBe(visible).click();
+        $(clusterPageSelector).shouldBe(selectedMenuItem);
         return new ClusterMenuAO();
     }
 
     default RunsMenuAO runsMenu() {
         final By runsPageSelector = byId("navigation-button-runs");
-        $(runsPageSelector).shouldBe(visible, ofMillis(DEFAULT_TIMEOUT)).click();
-        $(runsPageSelector).shouldBe(selectedMenuItem, ofMillis(DEFAULT_TIMEOUT));
+        $(runsPageSelector).shouldBe(visible).click();
+        $(runsPageSelector).shouldBe(selectedMenuItem);
         return new RunsMenuAO();
     }
 
     default NavigationHomeAO stopImpersonation() {
         final By stopImpersonateSelector = byId("navigation-button-stop-impersonation");
-        $(stopImpersonateSelector).shouldBe(visible, ofMillis(DEFAULT_TIMEOUT)).click();
-        $(stopImpersonateSelector).shouldBe(not(exist), ofMillis(DEFAULT_TIMEOUT));
+        $(stopImpersonateSelector).shouldBe(visible).click();
+        $(stopImpersonateSelector).shouldBe(not(exist));
         return new NavigationHomeAO();
     }
 

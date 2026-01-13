@@ -56,7 +56,7 @@ public class PipelineSelection extends PopupAO<PipelineSelection, Configuration>
 
     public PipelineSelection selectPipeline(final String pipeline) {
         this.pipeline = pipeline;
-        get(TABLE).shouldBe(exist, ofMillis(DEFAULT_TIMEOUT));
+        get(TABLE).shouldBe(exist);
         context().find(pipelineWithName(pipeline, "browser__tree-item-title")).shouldBe(visible).click();
         return this;
     }

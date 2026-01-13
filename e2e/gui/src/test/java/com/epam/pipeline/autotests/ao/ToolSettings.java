@@ -96,8 +96,8 @@ public class ToolSettings extends ToolTab<ToolSettings> {
     @Override
     public ToolSettings open() {
         click(SETTINGS);
-        get(SETTINGS).shouldBe(have(cssClass("ant-menu-item-selected")), ofMillis(DEFAULT_TIMEOUT));
-        get(EXEC_ENVIRONMENT).shouldBe(exist, ofMillis(DEFAULT_TIMEOUT));
+        get(SETTINGS).shouldBe(have(cssClass("ant-menu-item-selected")));
+        get(EXEC_ENVIRONMENT).shouldBe(exist);
         return click(EXEC_ENVIRONMENT);
     }
 
