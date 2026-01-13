@@ -19,14 +19,14 @@ class RunsInfoChart extends Component {
     onEntryClick: PropTypes.func
   };
 
-  componentDidMount() {
+  componentDidMount () {
     const {themes} = this.props;
     if (themes) {
       themes.addThemeChangedListener(this.updateChart);
     }
   }
 
-  componentWillUnmount() {
+  componentWillUnmount () {
     const {themes} = this.props;
     if (themes) {
       themes.removeThemeChangedListener(this.updateChart);

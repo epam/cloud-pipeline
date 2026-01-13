@@ -224,93 +224,95 @@ class RunsInfo extends React.PureComponent {
     };
     return (
       <div style={{display: 'flex', alignItems: 'flex-start', gap: 5}}>
-        <Select
-          allowClear
-          mode="multiple"
-          style={{minWidth: 200}}
-          placeholder="Statuses"
-          value={filters.statuses}
-          onChange={onChangeFilter('statuses')}
-        >
-          {Object.keys(STATUSES).map(status => (
-            <Select.Option key={status} value={status}>
-              {`${status[0]}${status.substring(1).toLowerCase()}`}
-            </Select.Option>
-          ))}
-        </Select>
-        {owners.length ? (
+        <div style={{display: 'flex', flexWrap: 'wrap', gap: 5}}>
           <Select
             allowClear
             mode="multiple"
             style={{minWidth: 200}}
-            placeholder="Owners"
-            value={filters.owners}
-            onChange={onChangeFilter('owners')}
+            placeholder="Statuses"
+            value={filters.statuses}
+            onChange={onChangeFilter('statuses')}
           >
-            {owners.map(owner => (
-              <Select.Option key={owner} value={owner}>
-                {formatUserName(owner, this.users)}
+            {Object.keys(STATUSES).map(status => (
+              <Select.Option key={status} value={status}>
+                {`${status[0]}${status.substring(1).toLowerCase()}`}
               </Select.Option>
             ))}
           </Select>
-        ) : null}
-        {instanceTypes.length ? (
-          <Select
-            allowClear
-            mode="multiple"
-            style={{minWidth: 200}}
-            placeholder="Instance types"
-            value={filters.instanceTypes}
-            onChange={onChangeFilter('instanceTypes')}
-          >
-            {instanceTypes.map(instance => (
-              <Select.Option key={instance} value={instance}>
-                {instance}
-              </Select.Option>
-            ))}
-          </Select>
-        ) : null}
-        {dockerImages.length ? (
-          <Select
-            allowClear
-            mode="multiple"
-            style={{minWidth: 200}}
-            placeholder="Docker images"
-            value={filters.dockerImages}
-            onChange={onChangeFilter('dockerImages')}
-          >
-            {dockerImages.map(docker => (
-              <Select.Option
-                key={docker}
-                value={docker}
-                title={formatDockerImage(docker)}
-              >
-                {formatDockerImage(docker)}
-              </Select.Option>
-            ))}
-          </Select>
-        ) : null}
-        {tags.length ? (
-          <Select
-            allowClear
-            mode="multiple"
-            style={{minWidth: 200}}
-            placeholder="Tags"
-            value={filters.tags}
-            onChange={onChangeFilter('tags')}
-          >
-            {tags.map(tag => (
-              <Select.Option key={tag} value={tag}>
-                {tag}
-              </Select.Option>
-            ))}
-          </Select>
-        ) : null}
-        {this.filtersApplied ? (
-          <a style={{lineHeight: '28px', whiteSpace: 'nowrap'}} onClick={this.clearFilters}>
-            Clear filters
-          </a>
-        ) : null}
+          {owners.length ? (
+            <Select
+              allowClear
+              mode="multiple"
+              style={{minWidth: 200}}
+              placeholder="Owners"
+              value={filters.owners}
+              onChange={onChangeFilter('owners')}
+            >
+              {owners.map(owner => (
+                <Select.Option key={owner} value={owner}>
+                  {formatUserName(owner, this.users)}
+                </Select.Option>
+              ))}
+            </Select>
+          ) : null}
+          {instanceTypes.length ? (
+            <Select
+              allowClear
+              mode="multiple"
+              style={{minWidth: 200}}
+              placeholder="Instance types"
+              value={filters.instanceTypes}
+              onChange={onChangeFilter('instanceTypes')}
+            >
+              {instanceTypes.map(instance => (
+                <Select.Option key={instance} value={instance}>
+                  {instance}
+                </Select.Option>
+              ))}
+            </Select>
+          ) : null}
+          {dockerImages.length ? (
+            <Select
+              allowClear
+              mode="multiple"
+              style={{minWidth: 200}}
+              placeholder="Docker images"
+              value={filters.dockerImages}
+              onChange={onChangeFilter('dockerImages')}
+            >
+              {dockerImages.map(docker => (
+                <Select.Option
+                  key={docker}
+                  value={docker}
+                  title={formatDockerImage(docker)}
+                >
+                  {formatDockerImage(docker)}
+                </Select.Option>
+              ))}
+            </Select>
+          ) : null}
+          {tags.length ? (
+            <Select
+              allowClear
+              mode="multiple"
+              style={{minWidth: 200}}
+              placeholder="Tags"
+              value={filters.tags}
+              onChange={onChangeFilter('tags')}
+            >
+              {tags.map(tag => (
+                <Select.Option key={tag} value={tag}>
+                  {tag}
+                </Select.Option>
+              ))}
+            </Select>
+          ) : null}
+          {this.filtersApplied ? (
+            <a style={{lineHeight: '28px', whiteSpace: 'nowrap'}} onClick={this.clearFilters}>
+              Clear filters
+            </a>
+          ) : null}
+        </div>
         <div style={{marginLeft: 'auto'}}>
           {topEntriesFilters.length > 1 && (
             <Select
@@ -423,7 +425,11 @@ class RunsInfo extends React.PureComponent {
                   datasets: dataSets,
                   entries: labels
                 }}
-                style={{width: determineWidth(labels)}}
+                style={{
+                  flex: `1 1 ${determineWidth(labels)}`,
+                  minWidth: 330, // at <225px chart.js renders nothing (sometimes)
+                  maxWidth: determineWidth(labels)
+                }}
                 onEntryClick={(entry) => this.onEntryClick(entry, key)}
               />
             );
