@@ -26,7 +26,8 @@ import com.epam.pipeline.entity.run.PipelineRunPerformanceMetric;
 import com.epam.pipeline.entity.run.PipelineRunPerformanceMetrics;
 import com.epam.pipeline.entity.run.PipelineRunPerformanceMetricsType;
 import com.epam.pipeline.manager.cluster.MonitoringReportType;
-import org.springframework.util.Assert;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.InputStream;
@@ -39,6 +40,9 @@ import java.util.List;
  * Node usage monitoring manager.
  */
 public interface UsageMonitoringManager {
+
+    Logger LOGGER = LoggerFactory.getLogger(UsageMonitoringManager.class);
+
 
     /**
      * Retrieves monitoring stats for node.
@@ -71,7 +75,11 @@ public interface UsageMonitoringManager {
         // because elk "count" period of time in statistics only if it has real data
         final Duration interval = Duration.between(from, to).multipliedBy(10);
         List<MonitoringStats> statsForNode = getStatsForNode(nodeName, from, to, interval, null);
-        Assert.state(statsForNode.size() == 1, "There should be only 1 monitoring stat!");
+        if (statsForNode.size() != 1) {
+            LOGGER.warn("Expected stats for node with one element, got: {}, won't save run performance metrics!",
+                    statsForNode.size());
+            return null;
+        }
         return mapToRunPerformanceMetrics(runId, statsForNode.get(0));
     }
 
