@@ -608,7 +608,7 @@ class StorageReports extends React.Component {
                               datasets={this.detailsDatasets}
                               valueFormatter={valueFormatter}
                               highlightTickFn={
-                                (storage) => `${(storage.groupingInfo || {}).is_deleted}` === 'true'
+                                (s) => `${(s?.groupingInfo || {}).is_deleted}` === 'true'
                               }
                               highlightTickStyle={{
                                 fontColor: reportThemes.errorColor
