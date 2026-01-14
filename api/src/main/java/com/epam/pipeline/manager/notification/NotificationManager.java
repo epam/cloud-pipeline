@@ -98,6 +98,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
     public static final String AVG_POSTFIX = "_avg";
     public static final String MAX_POSTFIX = "_max";
     public static final String CAPACITY_POSTFIX = "_capacity";
+    public static final long SECS_IN_MIN = 60L;
 
     @Autowired
     private UserManager userManager;
@@ -865,7 +866,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         if (type == NotificationType.LONG_PAUSED_STOPPED) {
             final long longPausedActionThreshold = Optional.ofNullable(
                     preferenceManager.getPreference(SystemPreferences.SYSTEM_LONG_PAUSED_ACTION_TIMEOUT_MINUTES)
-            ).map(Integer::longValue).orElse(-1L);
+            ).map(Integer::longValue).map(minutes -> minutes * SECS_IN_MIN).orElse(-1L);
             settings.setThreshold(longPausedActionThreshold);
         }
 
