@@ -110,8 +110,8 @@ class RunsInfoChart extends Component {
             },
             ticks: {
               autoSkip: false,
-              maxRotation: labelsCount > 5 ? 90 : undefined,
-              minRotation: labelsCount > 5 ? 90 : undefined,
+              maxRotation: labelsCount > 5 ? 90 : 15,
+              minRotation: labelsCount > 5 ? 90 : 1,
               fontColor: this.fontColor
             }
           }],

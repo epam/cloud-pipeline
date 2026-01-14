@@ -427,7 +427,7 @@ class RunsInfo extends React.PureComponent {
                 }}
                 style={{
                   flex: `1 1 ${determineWidth(labels)}`,
-                  minWidth: 330, // at <225px chart.js renders nothing (sometimes)
+                  minWidth: 0,
                   maxWidth: determineWidth(labels)
                 }}
                 onEntryClick={(entry) => this.onEntryClick(entry, key)}
