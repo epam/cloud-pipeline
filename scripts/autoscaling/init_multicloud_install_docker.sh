@@ -18,6 +18,10 @@ wget $_WO -O docker.tgz "$_docker_url"
 tar --extract --file docker.tgz --strip-components 1 --directory "$CP_DOCKER_HOME"
 rm -f docker.tgz
 
+# Install docker-init
+rm -rf /bin/docker-init
+\cp "$CP_DOCKER_HOME/docker-init" /bin/docker-init
+
 cat > /usr/lib/systemd/system/docker.service<<EOF
 [Unit]
 Description=Docker Application Container Engine
