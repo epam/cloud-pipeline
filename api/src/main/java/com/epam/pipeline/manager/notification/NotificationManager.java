@@ -862,6 +862,13 @@ public class NotificationManager implements NotificationService { // TODO: rewri
             return Collections.emptyList();
         }
 
+        if (type == NotificationType.LONG_PAUSED_STOPPED) {
+            final long longPausedActionThreshold = Optional.ofNullable(
+                    preferenceManager.getPreference(SystemPreferences.SYSTEM_LONG_PAUSED_ACTION_TIMEOUT_MINUTES)
+            ).map(Integer::longValue).orElse(-1L);
+            settings.setThreshold(longPausedActionThreshold);
+        }
+
         final LocalDateTime now = DateUtils.nowUTC();
         final Long threshold = settings.getThreshold();
         if (threshold == null || threshold <= 0) {
