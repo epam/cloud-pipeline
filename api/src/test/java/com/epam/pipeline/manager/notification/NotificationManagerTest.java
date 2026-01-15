@@ -134,7 +134,8 @@ public class NotificationManagerTest extends AbstractManagerTest {
     private static final Map<String, Object> PARAMETERS = Collections.singletonMap("key", "value");
     private static final int LONG_STATUS_THRESHOLD = 100;
     private static final Duration LONG_RUNNING_DURATION = Duration.standardMinutes(6);
-    private static final Long LONG_PAUSED_SECONDS = 10L;
+    private static final Long LONG_PAUSED_SECONDS = 60L;
+    private static final Integer LONG_PAUSED_MINUTES = 1;
     private static final String TEST_PLATFORM = "linux";
     private static final String EXCLUDE_PARAM_VALUE = "equalPramValue";
     private static final String EQUAL_PARAM_NAME = "equalParamName";
@@ -236,6 +237,8 @@ public class NotificationManagerTest extends AbstractManagerTest {
         stopLongPausedTemplate = createTemplate(LONG_PAUSED_STOPPED.getId(), "stopLongPausedTemplate");
         createSettings(LONG_PAUSED_STOPPED, stopLongPausedTemplate.getId(), LONG_PAUSED_SECONDS,
                 LONG_PAUSED_SECONDS);
+        doReturn(LONG_PAUSED_MINUTES).when(preferenceManager)
+                .getPreference(SystemPreferences.SYSTEM_LONG_PAUSED_ACTION_TIMEOUT_MINUTES);
 
         createTemplate(HIGH_CONSUMED_RESOURCES.getId(), "idle-run-template");
         highConsuming = createSettings(HIGH_CONSUMED_RESOURCES, HIGH_CONSUMED_RESOURCES.getId(),
@@ -445,7 +448,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
                         .timestamp(DateUtils.nowUTC())
                         .build()));
 
-        createSettings(LONG_STATUS, createTemplate(5L, "stuckStatusTemplate").getId(),
+        createSettings(LONG_STATUS, createTemplate(LONG_STATUS.getId(), "stuckStatusTemplate").getId(),
                 LONG_STATUS_THRESHOLD, LONG_STATUS_THRESHOLD);
 
         notificationManager.notifyStuckInStatusRuns(Arrays.asList(notified, skipped));
@@ -492,7 +495,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
         when(pipelineRunManager.loadPipelineRunPerformanceMetrics(notified.getId()))
                 .thenReturn(runPerformanceMetrics);
 
-        notificationManager.notifyRunStatusChanged(notified);
+        notificationManager.notifyRunStatusChanged(notified, Collections.emptyMap());
         final List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
         assertEquals(1, messages.size());
         final NotificationMessage message = messages.get(0);

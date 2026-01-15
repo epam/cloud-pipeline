@@ -253,9 +253,17 @@ public class NotificationManager implements NotificationService { // TODO: rewri
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
-    public void notifyRunStatusChanged(final PipelineRun run) {
+    public void notifyRunStatusChanged(final PipelineRun run, final Map<String, Object> additionalNotificationParams) {
         final NotificationType type = NotificationType.PIPELINE_RUN_STATUS;
-        contextualNotificationManager.notifyRunStatusChanged(run);
+
+        Map<String, Object> additionalRunParams = additionalNotificationParams;
+        if (run.getStatus().isFinal()) {
+            additionalRunParams = Stream.of(additionalNotificationParams, getRunPerformanceMetricParameters(run))
+                    .flatMap(paramMap -> paramMap.entrySet().stream())
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        }
+
+        contextualNotificationManager.notifyRunStatusChanged(run, additionalRunParams);
 
         final NotificationSettings settings = settingsManager.load(type);
         if (settings == null || !settings.isEnabled()) {
@@ -276,9 +284,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
 
         final Map<String, Object> runParameters = parameterManager.build(type, run);
 
-        if (run.getStatus().isFinal()) {
-            runParameters.putAll(getRunPerformanceMetricParameters(run));
-        }
+        runParameters.putAll(additionalRunParams);
 
         message.setTemplateParameters(runParameters);
         message.setCopyUserIds(getCCUsers(settings));
@@ -297,7 +303,9 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                 .filter(tag -> tag.getValue().equalsIgnoreCase(TRUE))
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toList());
-        runPerformanceMetrics.put(METRICS_PREFIX + TAGS_POSTFIX, runFlags);
+        if (!runFlags.isEmpty()) {
+            runPerformanceMetrics.put(METRICS_PREFIX + TAGS_POSTFIX, runFlags);
+        }
         Optional.ofNullable(pipelineRunManager.loadPipelineRunPerformanceMetrics(run.getId()))
                 .map(PipelineRunPerformanceMetrics::getMetrics).orElse(Collections.emptyList())
                 .forEach(metric -> {
