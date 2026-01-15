@@ -52,7 +52,7 @@ public interface NotificationService {
 
     }
 
-    default void notifyRunStatusChanged(PipelineRun pipelineRun) {
+    default void notifyRunStatusChanged(PipelineRun run, Map<String, Object> additionalNotificationParams) {
 
     }
 
