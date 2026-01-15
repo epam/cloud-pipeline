@@ -109,9 +109,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ContextConfiguration(classes = TestApplication.class)
 @Transactional
@@ -127,7 +125,8 @@ public class NotificationManagerTest extends AbstractManagerTest {
     private static final Map<String, Object> PARAMETERS = Collections.singletonMap("key", "value");
     private static final int LONG_STATUS_THRESHOLD = 100;
     private static final Duration LONG_RUNNING_DURATION = Duration.standardMinutes(6);
-    private static final Long LONG_PAUSED_SECONDS = 10L;
+    private static final Long LONG_PAUSED_SECONDS = 60L;
+    private static final Integer LONG_PAUSED_MINUTES = 1;
     private static final long LONG_THRESHOLD = 2000L;
     public static final String LONG_RUNNING_TAG = "LONG_RUNNING";
     public static final double CPU_AVG = 0.5d;
@@ -224,6 +223,8 @@ public class NotificationManagerTest extends AbstractManagerTest {
         stopLongPausedTemplate = createTemplate(LONG_PAUSED_STOPPED.getId(), "stopLongPausedTemplate");
         createSettings(LONG_PAUSED_STOPPED, stopLongPausedTemplate.getId(), LONG_PAUSED_SECONDS,
                 LONG_PAUSED_SECONDS);
+        doReturn(LONG_PAUSED_MINUTES).when(preferenceManager)
+                .getPreference(SystemPreferences.SYSTEM_LONG_PAUSED_ACTION_TIMEOUT_MINUTES);
 
         createTemplate(HIGH_CONSUMED_RESOURCES.getId(), "idle-run-template");
         highConsuming = createSettings(HIGH_CONSUMED_RESOURCES, HIGH_CONSUMED_RESOURCES.getId(),
@@ -433,7 +434,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
                         .timestamp(DateUtils.nowUTC())
                         .build()));
 
-        createSettings(LONG_STATUS, createTemplate(5L, "stuckStatusTemplate").getId(),
+        createSettings(LONG_STATUS, createTemplate(LONG_STATUS.getId(), "stuckStatusTemplate").getId(),
                 LONG_STATUS_THRESHOLD, LONG_STATUS_THRESHOLD);
 
         notificationManager.notifyStuckInStatusRuns(Arrays.asList(notified, skipped));
@@ -480,7 +481,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
         when(pipelineRunManager.loadPipelineRunPerformanceMetrics(notified.getId()))
                 .thenReturn(runPerformanceMetrics);
 
-        notificationManager.notifyRunStatusChanged(notified);
+        notificationManager.notifyRunStatusChanged(notified, Collections.emptyMap());
         final List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
         assertEquals(1, messages.size());
         final NotificationMessage message = messages.get(0);

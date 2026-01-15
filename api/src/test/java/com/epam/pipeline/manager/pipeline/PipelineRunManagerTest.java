@@ -285,7 +285,7 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         startVO.setHddSize(1);
         pipelineRunManager.runCmd(startVO);
 
-        verify(notificationManager).notifyRunStatusChanged(any());
+        verify(notificationManager).notifyRunStatusChanged(any(), eq(Collections.emptyMap()));
     }
 
     @Test

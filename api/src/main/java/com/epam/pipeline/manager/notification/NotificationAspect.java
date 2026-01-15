@@ -34,6 +34,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.Optional;
 
 
@@ -95,7 +96,7 @@ public class NotificationAspect {
 
         log.debug("Notify all about pipelineRun status changed {} {} {}: {}",
                 run.getPodId(), run.getPipelineName(), run.getVersion(), run.getStatus());
-        notificationManager.notifyRunStatusChanged(run);
+        notificationManager.notifyRunStatusChanged(run, Collections.emptyMap());
     }
 
     private void storeRunPerformanceMetrics(final PipelineRun run) {

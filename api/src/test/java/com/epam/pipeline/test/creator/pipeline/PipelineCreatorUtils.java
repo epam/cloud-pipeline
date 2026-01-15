@@ -137,7 +137,9 @@ public final class PipelineCreatorUtils {
 
     public static PipelineRun getPipelineRun(final TaskStatus taskStatus) {
         final PipelineRun pipelineRun = new PipelineRun();
+        pipelineRun.setId(ID);
         pipelineRun.setStatus(taskStatus);
+        pipelineRun.setLastChangeCommitTime(DateUtils.now());
         pipelineRun.setStartDate(new Date());
         return pipelineRun;
     }
