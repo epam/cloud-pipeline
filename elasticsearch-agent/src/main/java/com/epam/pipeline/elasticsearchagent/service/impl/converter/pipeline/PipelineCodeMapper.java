@@ -19,47 +19,41 @@ import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.utils.FileContentUtils;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.HashMap;
+import java.util.Map;
 
 import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
 
 @Component
 public class PipelineCodeMapper {
 
-    public XContentBuilder pipelineCodeToDocument(final Pipeline pipeline,
-                                                  final String pipelineVersion,
-                                                  final String path,
-                                                  final byte[] fileContent,
-                                                  final PermissionsContainer permissions) {
-        try (XContentBuilder jsonBuilder = XContentFactory.jsonBuilder()) {
-            jsonBuilder
-                    .startObject()
-                    .field(DOC_TYPE_FIELD, SearchDocumentType.PIPELINE_CODE.name())
-                    .field("pipelineId", pipeline.getId())
-                    .field("parentId", pipeline.getId())
-                    .field("pipelineName", pipeline.getName())
-                    .field("pipelineVersion", pipelineVersion)
-                    .field("description", pipelineVersion)
-                    .field("path", path)
-                    .field("name", path)
-                    .field("id", path)
-                    .field("content", buildDocContent(fileContent));
+    public Map<String, ?> pipelineCodeToDocument(final Pipeline pipeline,
+                                                 final String pipelineVersion,
+                                                 final String path,
+                                                 final byte[] fileContent,
+                                                 final PermissionsContainer permissions) {
+        final Map<String, Object> jsonMap = new HashMap<>();
 
-            jsonBuilder.array("allowed_users", permissions.getAllowedUsers().toArray());
-            jsonBuilder.array("denied_users", permissions.getDeniedUsers().toArray());
-            jsonBuilder.array("allowed_groups", permissions.getAllowedGroups().toArray());
-            jsonBuilder.array("denied_groups", permissions.getDeniedGroups().toArray());
+        jsonMap.put(DOC_TYPE_FIELD, SearchDocumentType.PIPELINE_CODE.name());
+        jsonMap.put("pipelineId", pipeline.getId());
+        jsonMap.put("parentId", pipeline.getId());
+        jsonMap.put("pipelineName", pipeline.getName());
+        jsonMap.put("pipelineVersion", pipelineVersion);
+        jsonMap.put("description", pipelineVersion);
+        jsonMap.put("path", path);
+        jsonMap.put("name", path);
+        jsonMap.put("id", path);
+        jsonMap.put("content", buildDocContent(fileContent));
 
-            jsonBuilder.endObject();
-            return jsonBuilder;
-        } catch (IOException e) {
-            throw new IllegalArgumentException("An error occurred while creating document: ", e);
-        }
+        jsonMap.put("allowed_users", permissions.getAllowedUsers().toArray());
+        jsonMap.put("denied_users", permissions.getDeniedUsers().toArray());
+        jsonMap.put("allowed_groups", permissions.getAllowedGroups().toArray());
+        jsonMap.put("denied_groups", permissions.getDeniedGroups().toArray());
+
+        return jsonMap;
     }
 
     private String buildDocContent(final byte[] fileContent) {

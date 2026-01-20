@@ -143,7 +143,7 @@ public class BitbucketCloudServiceTest extends AbstractSpringTest {
     @Disabled
     @Test
     public void testGetFile() throws GitClientException {
-        final byte[] content = service.getFileContents(getGitProject(), FILE_PATH, COMMIT_ID, token);
+        final byte[] content = service.getFileContents(getGitProject(), FILE_PATH, COMMIT_ID, token, true);
         assertNotNull(content);
     }
 
@@ -151,7 +151,7 @@ public class BitbucketCloudServiceTest extends AbstractSpringTest {
     @Test
     public void testGetFiles() throws GitClientException {
         final List<GitRepositoryEntry> contents = service.getRepositoryContents(getPipeline(),
-                FOLDER_PATH, COMMIT_ID, true);
+                FOLDER_PATH, COMMIT_ID, true, true);
         assertTrue(contents.size() > 0);
     }
 

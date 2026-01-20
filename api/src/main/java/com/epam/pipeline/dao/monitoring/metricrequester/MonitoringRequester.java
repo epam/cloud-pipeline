@@ -36,7 +36,9 @@ public interface MonitoringRequester {
      * @param from Minimal date for collecting stats.
      * @param to Maximal date for collecting stats.
      * @param interval Duration of a single monitoring.
+     * @param podName The pod name filter (optional)
      * @return Monitoring stats for the given period.
      */
-    List<MonitoringStats> requestStats(String nodeName, LocalDateTime from, LocalDateTime to, Duration interval);
+    List<MonitoringStats> requestStats(String nodeName, LocalDateTime from, LocalDateTime to, Duration interval,
+                                       String podName);
 }

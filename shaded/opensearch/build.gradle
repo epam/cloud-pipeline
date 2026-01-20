@@ -1,0 +1,33 @@
+plugins {
+    id 'java-library'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+group = 'com.epam.pipeline'
+version = '1.0.0'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(8)
+    }
+}
+
+base {
+    archivesName = 'shaded-opensearch'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.opensearch.client:opensearch-java:1.0.0'
+    implementation 'org.opensearch.client:opensearch-rest-high-level-client:1.0.0'
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.2.1'
+}
+
+// Shadow jar hack to keep compatible copy of DocWriteResponse for OpenSearch 2.x/3.x
+tasks.withType(com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar).configureEach {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    relocate('org.apache.lucene', 'shaded.org.apache.lucene8')
+}

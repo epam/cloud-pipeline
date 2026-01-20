@@ -56,6 +56,7 @@ import com.epam.pipeline.dao.pipeline.EngineRunTaskDao;
 import com.epam.pipeline.dao.pipeline.FolderDao;
 import com.epam.pipeline.dao.pipeline.PipelineDao;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
+import com.epam.pipeline.dao.pipeline.PipelineRunMetricsDao;
 import com.epam.pipeline.dao.pipeline.RestartRunDao;
 import com.epam.pipeline.dao.pipeline.RunLogDao;
 import com.epam.pipeline.dao.pipeline.RunScheduleDao;
@@ -71,6 +72,10 @@ import com.epam.pipeline.dao.tool.ToolVulnerabilityDao;
 import com.epam.pipeline.dao.user.GroupStatusDao;
 import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
+import com.epam.pipeline.manager.access.AccessCodeCleaner;
+import com.epam.pipeline.manager.access.AccessService;
+import com.epam.pipeline.manager.access.UnsecuredAccessService;
+import com.epam.pipeline.manager.audit.CommonAuditClient;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.billing.detail.EntityBillingDetailsLoader;
 import com.epam.pipeline.manager.cloud.CloudFacade;
@@ -89,6 +94,7 @@ import com.epam.pipeline.manager.notification.ContextualNotificationSettingsMana
 import com.epam.pipeline.manager.pipeline.PipelineRunResultManager;
 import com.epam.pipeline.manager.scheduling.RunScheduler;
 import com.epam.pipeline.mapper.cluster.KubernetesMapper;
+import com.epam.pipeline.mapper.git.AzureDevOpsMapper;
 import com.epam.pipeline.mapper.git.BitbucketCloudMapper;
 import com.epam.pipeline.mapper.git.GitHubMapper;
 import com.epam.pipeline.security.saml.impersonation.ImpersonationManager;
@@ -520,4 +526,21 @@ public class AspectTestBeans {
 
     @MockBean
     public StoragePathPermissionsDao storagePathPermissionsDao;
+
+    @MockBean
+    public AccessCodeCleaner accessCodeCleaner;
+
+    @MockBean
+    public AccessService accessService;
+
+    @MockBean
+    public UnsecuredAccessService unsecuredAccessService;
+
+    @MockBean
+    public AzureDevOpsMapper azureDevOpsMapper;
+
+    @MockBean
+    public CommonAuditClient auditClient;
+    @MockBean
+    private PipelineRunMetricsDao runMetricsDao;
 }

@@ -22,12 +22,15 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
+import java.util.Date;
+
 @Data
 @AllArgsConstructor
 @Builder
 public class EngineRunTaskStatsEntity {
     private EngineType engineType;
     private String taskGroup;
+    private Date startDateTime;
     private EngineTaskStatus status;
     private Long tasksCount;
 }

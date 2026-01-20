@@ -475,7 +475,12 @@ export default class AddInstanceForm extends React.Component {
             onClick={() => onSelect({key: 'string'})}>
             Add parameter
           </Button>
-          <Dropdown overlay={parameterTypeMenu} placement="bottomRight" style={{minWidth: 200}}>
+          <Dropdown
+            overlay={parameterTypeMenu}
+            placement="bottomRight"
+            style={{minWidth: 200}}
+            trigger={this.props.pending ? [] : ['hover']}
+          >
             <Button
               id="add-parameter-dropdown-button"
               style={{padding: '0px 8px'}}

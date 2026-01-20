@@ -85,7 +85,8 @@ class UserOperationsManager:
         if self.is_admin():
             return True
         if not owner:
-            owner = self.get_owner(storage_identifier, 'DATA_STORAGE')
+            if storage_identifier:
+                owner = self.get_owner(storage_identifier, 'DATA_STORAGE')
         if not owner:
             return False
         if self.is_owner(owner):

@@ -44,7 +44,6 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
 import io.fabric8.kubernetes.api.model.Node;
 import io.fabric8.kubernetes.api.model.Pod;
-import io.fabric8.kubernetes.api.model.PodList;
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
@@ -132,7 +131,7 @@ public class AutoscaleManager extends AbstractSchedulingManager implements Initi
                              final NodesManager nodesManager,
                              final KubernetesManager kubernetesManager,
                              final PreferenceManager preferenceManager,
-                             final @Value("${kube.namespace}") String kubeNamespace,
+                             final @Value("${kube.namespace:default}") String kubeNamespace,
                              final CloudFacade cloudFacade,
                              final NodePoolManager nodePoolManager,
                              final ReassignHandler reassignHandler,
@@ -163,12 +162,27 @@ public class AutoscaleManager extends AbstractSchedulingManager implements Initi
             log.debug("Starting autoscaling job.");
             Config config = new Config();
             Set<String> scheduledRuns = new HashSet<>();
+
+            Boolean disableReassign = preferenceManager.getPreference(SystemPreferences.CLUSTER_DISABLE_REASSIGN);
+            Integer maxClusterSize = preferenceManager.getPreference(SystemPreferences.CLUSTER_MAX_SIZE);
+            Integer nodeUpRetryCount = preferenceManager.getPreference(SystemPreferences.CLUSTER_NODEUP_RETRY_COUNT);
+            Boolean killNotMatchingNodes = preferenceManager.getPreference(
+                    SystemPreferences.CLUSTER_KILL_NOT_MATCHING_NODES);
+            int maxNodeUpThreads = preferenceManager.getPreference(SystemPreferences.CLUSTER_NODEUP_MAX_THREADS);
+            int spotMaxAttempts = preferenceManager.getPreference(SystemPreferences.CLUSTER_SPOT_MAX_ATTEMPTS);
+            Map<String, RuntimeParameter> parametersMapping = preferenceManager
+                    .getPreference(SystemPreferences.CLUSTER_RUN_PARAMETERS_MAPPING);
+            Boolean randomScheduling = preferenceManager.getPreference(SystemPreferences.CLUSTER_RANDOM_SCHEDULING);
+
+
             try (KubernetesClient client = kubernetesManager.getKubernetesClient(config)) {
                 Set<String> nodes = kubernetesManager.getSchedulableNodesIds(client);
-                checkPendingPods(scheduledRuns, client, nodes);
+                checkPendingPods(scheduledRuns, client, nodes, disableReassign, maxClusterSize, nodeUpRetryCount,
+                        killNotMatchingNodes, maxNodeUpThreads, spotMaxAttempts, parametersMapping,
+                        randomScheduling);
                 Set<String> pods = kubernetesManager.getAllPodIds(client);
                 scaleDownHandler.checkFreeNodes(scheduledRuns, client, pods);
-                checkPoolNodes(client);
+                checkPoolNodes(client, maxNodeUpThreads);
                 int clusterSize = kubernetesManager.getAvailableNodes(client).getItems().size();
                 int nodeUpTasksSize = nodeUpTaskInProgress.size() + getPoolNodeUpTasksCount();
 
@@ -189,15 +203,30 @@ public class AutoscaleManager extends AbstractSchedulingManager implements Initi
             poolAutoscaler.adjustPoolSizes();
         }
 
-        private void checkPendingPods(Set<String> scheduledRuns, KubernetesClient client, Set<String> nodes) {
+        private void checkPendingPods(Set<String> scheduledRuns,
+                                      KubernetesClient client,
+                                      Set<String> nodes,
+                                      Boolean disableReassign,
+                                      Integer maxClusterSize,
+                                      Integer nodeUpRetryCount,
+                                      Boolean killNotMatchingNodes,
+                                      int maxNodeUpThreads,
+                                      int spotMaxAttempts,
+                                      Map<String, RuntimeParameter> parametersMapping,
+                                      Boolean randomScheduling) {
             List<CompletableFuture<Void>> tasks = new ArrayList<>();
-            PodList podList = kubernetesManager.getPodList(client);
-            List<Pod> orderedPipelines = getOrderedPipelines(podList.getItems(), client);
-            Set<String> allPods = kubernetesManager.convertKubeItemsToRunIdSet(podList.getItems());
+            List<Pod> pods = new ArrayList<>(kubernetesManager.getPodList(client)
+                    .getItems());
+            List<Pod> orderedPipelines = getOrderedPipelines(pods, client, randomScheduling);
+            Set<String> allPods = kubernetesManager.convertKubeItemsToRunIdSet(pods);
             Set<String> reassignedNodes = new HashSet<>();
+            int nodeCount = kubernetesManager.getAvailableNodes(client).getItems().size();
             orderedPipelines.forEach(pod -> {
                 if (kubernetesManager.isPodUnscheduled(pod)) {
-                    processPod(pod, client, scheduledRuns, tasks, allPods, nodes, reassignedNodes);
+                    processPod(pod, client, scheduledRuns, tasks, allPods, nodes,
+                            reassignedNodes, disableReassign, maxClusterSize, nodeUpRetryCount,
+                            killNotMatchingNodes, maxNodeUpThreads, spotMaxAttempts, parametersMapping,
+                            nodeCount);
                 }
             });
             if (!tasks.isEmpty()) {
@@ -206,7 +235,8 @@ public class AutoscaleManager extends AbstractSchedulingManager implements Initi
             log.debug("In progress {} nodeup tasks.", nodeUpTaskInProgress.size());
         }
 
-        private void checkPoolNodes(final KubernetesClient client) {
+        private void checkPoolNodes(final KubernetesClient client,
+                                    final int maxNodeUpThreads) {
             final List<NodePool> activePools = nodePoolManager.getActivePools();
             if (CollectionUtils.isEmpty(activePools)) {
                 return;
@@ -230,19 +260,21 @@ public class AutoscaleManager extends AbstractSchedulingManager implements Initi
                 if (totalCount < pool.getCount()) {
                     final long nodesToCreate = pool.getCount() - totalCount;
                     log.debug("Creating {} pool instance(s) for {}.", nodesToCreate, pool);
-                    LongStream.range(0, nodesToCreate).forEach(i -> createPoolNode(pool, client));
+                    LongStream.range(0, nodesToCreate).forEach(i -> createPoolNode(pool, client, maxNodeUpThreads));
                 }
             });
         }
 
-        private void createPoolNode(final NodePool node, final KubernetesClient client) {
+        private void createPoolNode(final NodePool node,
+                                    final KubernetesClient client,
+                                    final int maxNodeUpThreads) {
             final int currentClusterSize = getCurrentClusterSize(client);
             final Integer maxClusterSize = preferenceManager.getPreference(SystemPreferences.CLUSTER_MAX_SIZE);
             if (currentClusterSize >= maxClusterSize) {
                 log.debug("Reached maximum cluster size {} - current size {}.", maxClusterSize, currentClusterSize);
                 return;
             }
-            if (!hasFreeNodeUpThreads()) {
+            if (!hasFreeNodeUpThreads(maxNodeUpThreads)) {
                 return;
             }
             poolNodeUpTaskInProgress.merge(node.getId(), 1, (oldVal, newVal) -> oldVal + 1);
@@ -265,7 +297,10 @@ public class AutoscaleManager extends AbstractSchedulingManager implements Initi
 
         private void processPod(Pod pod, KubernetesClient client, Set<String> scheduledRuns,
                                 List<CompletableFuture<Void>> tasks, Set<String> allPods, Set<String> nodes,
-                                Set<String> reassignedNodes) {
+                                Set<String> reassignedNodes, Boolean disableReassign, Integer maxClusterSize,
+                                Integer nodeUpRetryCount, Boolean killNotMatchingNodes, int maxNodeUpThreads,
+                                int spotMaxAttempts, Map<String, RuntimeParameter> parametersMapping,
+                                int nodeCount) {
             log.debug("Found an unscheduled pod: {}.", pod.getMetadata().getName());
             Map<String, String> labels = pod.getMetadata().getLabels();
             String runId = labels.get(KubernetesConstants.RUN_ID_LABEL);
@@ -281,8 +316,6 @@ public class AutoscaleManager extends AbstractSchedulingManager implements Initi
             }
             //check max nodeup retry count
             int retryCount = nodeUpAttempts.getOrDefault(longId, 0); // TODO: should we lock here?
-            int nodeUpRetryCount = preferenceManager.getPreference(SystemPreferences.CLUSTER_NODEUP_RETRY_COUNT);
-
             if (retryCount >= nodeUpRetryCount) {
                 log.debug("Exceeded max nodeup attempts ({}) for run ID {}. Setting run status 'FAILURE'.",
                         retryCount, runId);
@@ -294,7 +327,7 @@ public class AutoscaleManager extends AbstractSchedulingManager implements Initi
             try {
                 final PipelineRun run = pipelineRunManager.findRun(longId)
                         .orElseThrow(() -> new IllegalArgumentException("Failed to find run " + longId));
-                InstanceRequest requiredInstance = getNewRunInstance(run);
+                InstanceRequest requiredInstance = getNewRunInstance(run, spotMaxAttempts, parametersMapping);
                 // check whether instance already exists
                 RunInstance instance = cloudFacade.describeInstance(longId, requiredInstance.getInstance());
                 if (instance != null && instance.getNodeId() != null) {
@@ -303,25 +336,26 @@ public class AutoscaleManager extends AbstractSchedulingManager implements Initi
                     createNodeForRun(tasks, runId, requiredInstance);
                     return;
                 }
-                List<String> freeNodes =
-                        nodes.stream().filter(nodeId -> !allPods.contains(nodeId)
+                List<String> freeNodes = disableReassign ? Collections.emptyList() : nodes.stream()
+                        .filter(nodeId -> !allPods.contains(nodeId)
                                 && !reassignedNodes.contains(nodeId) &&
                                 kubernetesManager.isNodeAvailable(client, nodeId))
-                                .collect(Collectors.toList());
-                log.debug("Found {} free nodes.", freeNodes.size());
-                if (reassignHandler.tryReassignNode(client, scheduledRuns, reassignedNodes, runId,
-                        longId, requiredInstance, freeNodes)) {
-                    unLabelPendingRun(run);
-                    return;
+                        .collect(Collectors.toList());
+
+                if (!disableReassign) {
+                    log.debug("Found {} free nodes.", freeNodes.size());
+                    if (reassignHandler.tryReassignNode(client, scheduledRuns, reassignedNodes, runId,
+                            longId, requiredInstance, freeNodes)) {
+                        unLabelPendingRun(run);
+                        return;
+                    }
                 }
-                if (!hasClusterCapacity(client)) {
+                if (!hasClusterCapacity(nodeCount, maxClusterSize)) {
                     labelPendingRun(run);
                     return;
                 }
-                int currentClusterSize = getCurrentClusterSize(client);
-                Integer maxClusterSize = preferenceManager.getPreference(SystemPreferences.CLUSTER_MAX_SIZE);
-                if (currentClusterSize == maxClusterSize &&
-                        preferenceManager.getPreference(SystemPreferences.CLUSTER_KILL_NOT_MATCHING_NODES)) {
+                int currentClusterSize = getCurrentClusterSize(nodeCount);
+                if (currentClusterSize == maxClusterSize && killNotMatchingNodes) {
                     log.debug("Current cluster size {} has reached limit {}. Checking free nodes.",
                             currentClusterSize, maxClusterSize);
 
@@ -342,7 +376,7 @@ public class AutoscaleManager extends AbstractSchedulingManager implements Initi
                         return;
                     }
                 }
-                if (!hasFreeNodeUpThreads()) {
+                if (!hasFreeNodeUpThreads(maxNodeUpThreads)) {
                     return;
                 }
                 scheduledRuns.add(runId);
@@ -370,9 +404,8 @@ public class AutoscaleManager extends AbstractSchedulingManager implements Initi
             }
         }
 
-        private boolean hasClusterCapacity(final KubernetesClient client) {
-            final int currentClusterSize = getCurrentClusterSize(client);
-            final Integer maxClusterSize = preferenceManager.getPreference(SystemPreferences.CLUSTER_MAX_SIZE);
+        private boolean hasClusterCapacity(final int nodeCount, final int maxClusterSize) {
+            final int currentClusterSize = getCurrentClusterSize(nodeCount);
             if (currentClusterSize > maxClusterSize) {
                 log.debug("Exceeded maximum cluster size {} - current size {}.",
                         maxClusterSize, currentClusterSize);
@@ -381,8 +414,7 @@ public class AutoscaleManager extends AbstractSchedulingManager implements Initi
             return true;
         }
 
-        private boolean hasFreeNodeUpThreads() {
-            final int maxNodeUpThreads = preferenceManager.getPreference(SystemPreferences.CLUSTER_NODEUP_MAX_THREADS);
+        private boolean hasFreeNodeUpThreads(int maxNodeUpThreads) {
             final int nodeUpTasks = nodeUpTaskInProgress.size() + getPoolNodeUpTasksCount();
             if (nodeUpTasks >= maxNodeUpThreads) {
                 log.debug("Exceeded maximum node up tasks queue size {}.", nodeUpTasks);
@@ -391,10 +423,13 @@ public class AutoscaleManager extends AbstractSchedulingManager implements Initi
             return true;
         }
 
-        private List<Pod> getOrderedPipelines(List<Pod> items, KubernetesClient client) {
+        private List<Pod> getOrderedPipelines(List<Pod> items,
+                                              KubernetesClient client,
+                                              Boolean randomScheduling) {
             Map<Pod, Long> parentIds = new HashMap<>();
             Map<Pod, Long> priorityScore = new HashMap<>();
             List<Pod> checkedPods = new ArrayList<>();
+            log.debug("Processing {} pending pods", items.size());
 
             final List<Long> activeRunIds = ListUtils.emptyIfNull(items).stream()
                     .map(p -> Long.parseLong(p.getMetadata().getLabels().get(KubernetesConstants.RUN_ID_LABEL)))
@@ -422,25 +457,26 @@ public class AutoscaleManager extends AbstractSchedulingManager implements Initi
                         log.debug("Pipeline run {} is paused", runId);
                         continue;
                     }
-                    List<PipelineRunParameter> runParameters = run.getPipelineRunParameters();
-                    if (!preferenceManager.getPreference(SystemPreferences.CLUSTER_RANDOM_SCHEDULING)) {
-                        getParentId(parentIds, pod, runParameters);
-                    }
                     checkedPods.add(pod);
-                    priorityScore.put(pod, getParameterValue(runParameters, "priority-score", 0L));
+                    if (!randomScheduling) {
+                        List<PipelineRunParameter> runParameters = run.getPipelineRunParameters();
+                        getParentId(parentIds, pod, runParameters);
+                        priorityScore.put(pod, getParameterValue(runParameters, "priority-score", 0L));
+                    }
                 } catch (IllegalArgumentException e) {
                     log.error(e.getMessage(), e);
                     handleLostRun(client, pod, runId);
                 }
             }
             if (!CollectionUtils.isEmpty(checkedPods)) {
+                if (randomScheduling) {
+                    return checkedPods;
+                }
                 checkedPods.sort((p1, p2) -> {
-                    if (!preferenceManager.getPreference(SystemPreferences.CLUSTER_RANDOM_SCHEDULING)) {
-                        Long parentId1 = parentIds.get(p1);
-                        Long parentId2 = parentIds.get(p2);
-                        if (!parentId1.equals(parentId2)) {
-                            return Long.compare(parentId1, parentId2);
-                        }
+                    Long parentId1 = parentIds.get(p1);
+                    Long parentId2 = parentIds.get(p2);
+                    if (!parentId1.equals(parentId2)) {
+                        return Long.compare(parentId1, parentId2);
                     }
                     return Long.compare(priorityScore.get(p2), priorityScore.get(p1));
                 });
@@ -590,11 +626,17 @@ public class AutoscaleManager extends AbstractSchedulingManager implements Initi
         }
 
         private int getCurrentClusterSize(KubernetesClient client) {
-            return nodeUpTaskInProgress.size() + getPoolNodeUpTasksCount() +
-                    kubernetesManager.getAvailableNodes(client).getItems().size();
+            return getCurrentClusterSize(kubernetesManager.getAvailableNodes(client).getItems().size());
         }
 
-        public InstanceRequest getNewRunInstance(final PipelineRun run) throws GitClientException {
+        private int getCurrentClusterSize(int nodeCount) {
+            return nodeUpTaskInProgress.size() + getPoolNodeUpTasksCount() + nodeCount;
+        }
+
+        public InstanceRequest getNewRunInstance(final PipelineRun run,
+                                                 final int spotMaxAttempts,
+                                                 final Map<String, RuntimeParameter> parametersMapping)
+                throws GitClientException {
             RunInstance instance;
             if (run.getInstance() == null || run.getInstance().isEmpty()) {
                 PipelineConfiguration configuration = pipelineRunManager.loadRunConfiguration(run.getId());
@@ -604,22 +646,20 @@ public class AutoscaleManager extends AbstractSchedulingManager implements Initi
             }
 
             if (instance.getSpot() != null && instance.getSpot() &&
-                    spotNodeUpAttempts.getOrDefault(run.getId(), 0) >= preferenceManager.getPreference(
-                            SystemPreferences.CLUSTER_SPOT_MAX_ATTEMPTS)) {
+                    spotNodeUpAttempts.getOrDefault(run.getId(), 0) >= spotMaxAttempts) {
                 instance.setSpot(false);
                 pipelineRunManager.updateRunInstance(run.getId(), instance);
             }
             final InstanceRequest instanceRequest = new InstanceRequest();
             instanceRequest.setInstance(instance);
             instanceRequest.setRequestedImage(run.getActualDockerImage());
-            instanceRequest.setRuntimeParameters(buildRuntimeParameters(run));
+            instanceRequest.setRuntimeParameters(buildRuntimeParameters(run, parametersMapping));
             instanceRequest.setTags(metadataManager.prepareCloudResourceTags(run));
             return instanceRequest;
         }
 
-        private Map<String, String> buildRuntimeParameters(final PipelineRun run) {
-            final Map<String, RuntimeParameter> parametersMapping = preferenceManager
-                    .getPreference(SystemPreferences.CLUSTER_RUN_PARAMETERS_MAPPING);
+        private Map<String, String> buildRuntimeParameters(final PipelineRun run,
+                                                           final Map<String, RuntimeParameter> parametersMapping) {
             final Map<String, String> runtimeParameters = new HashMap<>();
             MapUtils.emptyIfNull(parametersMapping).forEach((runParameterName, parameter) ->
                 run.getParameterValue(runParameterName)

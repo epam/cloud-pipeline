@@ -1,0 +1,8 @@
+instance_type        = "m6i.large"
+region               = "us-east-1"
+source_ami           = "ami-068c0051b15cdb816"
+ssh_username         = "ec2-user"
+iam_instance_profile = ""
+subnet_id            = ""
+deps_file            = "cpu/install-deps.sh"
+ami_type             = "cpu"

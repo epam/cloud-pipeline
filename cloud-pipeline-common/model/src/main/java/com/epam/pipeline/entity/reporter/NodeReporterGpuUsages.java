@@ -32,4 +32,5 @@ public class NodeReporterGpuUsages {
     Integer memoryUsed;
     Integer memoryTotal;
     Integer memoryUtilization;
+    Long runId;
 }

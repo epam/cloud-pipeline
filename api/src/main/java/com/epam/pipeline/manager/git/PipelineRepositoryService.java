@@ -88,17 +88,20 @@ public class PipelineRepositoryService {
     private final PreferenceManager preferenceManager;
     private final String defaultTemplate;
     private final String templatesDirectoryPath;
+    private final boolean showHidden;
 
     public PipelineRepositoryService(final PipelineRepositoryProviderService providerService,
                                      final MessageHelper messageHelper,
                                      final PreferenceManager preferenceManager,
                                      @Value("${templates.default.template}") final String defaultTemplate,
-                                     @Value("${templates.directory}") final String templatesDirectoryPath) {
+                                     @Value("${templates.directory}") final String templatesDirectoryPath,
+                                     @Value("${pipeline.sources.show.hidden:false}") final boolean showHidden) {
         this.providerService = providerService;
         this.messageHelper = messageHelper;
         this.preferenceManager = preferenceManager;
         this.defaultTemplate = defaultTemplate;
         this.templatesDirectoryPath = templatesDirectoryPath;
+        this.showHidden = showHidden;
     }
 
     public GitProject createGitRepositoryWithRepoUrl(final PipelineVO pipelineVO) throws GitClientException {
@@ -173,7 +176,8 @@ public class PipelineRepositoryService {
         final String token = pipeline.getRepositoryToken();
         final GitProject gitProject = new GitProject();
         gitProject.setRepoUrl(pipeline.getRepository());
-        return getFileContents(repositoryType, gitProject, path, GitUtils.getRevisionName(revision), token);
+        return getFileContents(repositoryType, gitProject, path, GitUtils.getRevisionName(revision), token,
+                GitUtils.isDraftVersion(revision));
     }
 
     public byte[] getTruncatedPipelineFileContent(final Pipeline pipeline, final String revision,
@@ -181,7 +185,7 @@ public class PipelineRepositoryService {
         Assert.isTrue(StringUtils.isNotBlank(path), "File path can't be null");
         Assert.isTrue(StringUtils.isNotBlank(revision), "Revision can't be null");
         return providerService.getTruncatedFileContents(pipeline, GitUtils.withoutLeadingDelimiter(path),
-                GitUtils.getRevisionName(revision), byteLimit);
+                GitUtils.getRevisionName(revision), byteLimit, GitUtils.isDraftVersion(revision));
     }
 
     public GitCredentials getPipelineCloneCredentials(final Pipeline pipeline, final boolean useEnvVars,
@@ -210,14 +214,15 @@ public class PipelineRepositoryService {
 
     public List<GitRepositoryEntry> getRepositoryContents(final Pipeline pipeline, final String path,
                                                           final String version, final boolean recursive) {
-        return getRepositoryContents(pipeline, path, version, recursive, false);
+        return getRepositoryContents(pipeline, path, version, recursive, showHidden);
     }
 
     public List<GitRepositoryEntry> getRepositoryContents(final Pipeline pipeline, final String path,
                                                           final String version, final boolean recursive,
                                                           final boolean showHiddenFiles) {
         return ListUtils.emptyIfNull(providerService.getRepositoryContents(pipeline,
-                GitUtils.withoutLeadingDelimiter(path), GitUtils.getRevisionName(version), recursive)).stream()
+                        GitUtils.withoutLeadingDelimiter(path), GitUtils.getRevisionName(version), recursive,
+                        GitUtils.isDraftVersion(version))).stream()
                 .filter(entry -> showHiddenFiles || !entry.getName().startsWith(Constants.DOT))
                 .collect(Collectors.toList());
     }
@@ -391,11 +396,13 @@ public class PipelineRepositoryService {
     }
 
     private byte[] getFileContents(final RepositoryType repositoryType, final GitProject repository,
-                                   final String path, final String revision, final String token) {
+                                   final String path, final String revision, final String token,
+                                   final boolean isDraft) {
         Assert.isTrue(StringUtils.isNotBlank(path), "File path can't be null");
         Assert.isTrue(StringUtils.isNotBlank(revision), "Revision can't be null");
         return providerService
-                .getFileContents(repositoryType, repository, GitUtils.withoutLeadingDelimiter(path), revision, token);
+                .getFileContents(repositoryType, repository, GitUtils.withoutLeadingDelimiter(path),
+                        revision, token, isDraft);
     }
 
     private void uploadFolder(final RepositoryType repositoryType, final Template template,
@@ -491,7 +498,7 @@ public class PipelineRepositoryService {
 
         try {
             boolean fileExists = Objects.nonNull(getFileContents(repositoryType, repository,
-                    DEFAULT_README, DEFAULT_BRANCH, token));
+                    DEFAULT_README, DEFAULT_BRANCH, token, false));
             if (!fileExists) {
                 providerService.createFile(repositoryType, repository, DEFAULT_README, README_DEFAULT_CONTENTS,
                         token, branch);

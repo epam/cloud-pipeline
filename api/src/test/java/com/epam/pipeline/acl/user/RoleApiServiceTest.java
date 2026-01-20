@@ -38,12 +38,15 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_LONG_LI
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 
 public class RoleApiServiceTest extends AbstractAclTest {
 
     private final RoleVO roleVO = UserCreatorUtils.getRoleVO();
     private final ExtendedRole extendedRole = getExtendedRole();
+    private final ExtendedRole adminRole = getAdminRole(1L);
+    private final ExtendedRole scopedAdminRole = getScopedAdminRole(10L);
     private final Role role = UserCreatorUtils.getRole("role", ID, ANOTHER_SIMPLE_USER);
     private final Role anotherRole = UserCreatorUtils.getRole("anotherRole", ID_2, ANOTHER_SIMPLE_USER);
     private final List<Role> roleList = mutableListOf(role, anotherRole);
@@ -57,6 +60,14 @@ public class RoleApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldLoadRolesWithUsersForAdmin() {
+        doReturn(roleList).when(mockRoleManager).loadAllRoles(true);
+
+        assertThat(roleApiService.loadRolesWithUsers()).isEqualTo(roleList);
+    }
+
+    @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldLoadRolesWithUsersForUserAdmin() {
         doReturn(roleList).when(mockRoleManager).loadAllRoles(true);
 
         assertThat(roleApiService.loadRolesWithUsers()).isEqualTo(roleList);
@@ -86,6 +97,14 @@ public class RoleApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldLoadRoleForAdmin() {
+        doReturn(extendedRole).when(mockRoleManager).loadRoleWithUsers(ID);
+
+        assertThat(roleApiService.loadRole(ID)).isEqualTo(extendedRole);
+    }
+
+    @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldLoadRoleForUserAdmin() {
         doReturn(extendedRole).when(mockRoleManager).loadRoleWithUsers(ID);
 
         assertThat(roleApiService.loadRole(ID)).isEqualTo(extendedRole);
@@ -130,6 +149,14 @@ public class RoleApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldCreateRoleForUserAdmin() {
+        doReturn(role).when(mockRoleManager).create(TEST_STRING, false, true, ID);
+
+        assertThat(roleApiService.createRole(TEST_STRING, true, ID)).isEqualTo(role);
+    }
+
+    @Test
     @WithMockUser
     public void shouldDenyCreateRoleForNotAdmin() {
         doReturn(role).when(mockRoleManager).create(TEST_STRING, false, true, ID);
@@ -146,10 +173,21 @@ public class RoleApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldUpdateRoleForUserAdmin() {
+        doReturn(role).when(mockRoleManager).update(ID, roleVO);
+        doReturn(role).when(mockRoleManager).load(eq(role.getId()));
+        initAclEntity(UserCreatorUtils.getRole(role.getName(), role.getId(), ANOTHER_SIMPLE_USER));
+
+        assertThat(roleApiService.updateRole(ID, roleVO)).isEqualTo(role);
+    }
+
+    @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldUpdateRoleWhenPermissionIsGranted() {
         initAclEntity(role, AclPermission.WRITE);
-        doReturn(role).when(mockRoleManager).update(ID, roleVO);
+        doReturn(role).when(mockRoleManager).load(eq(role.getId()));
+        doReturn(role).when(mockRoleManager).update(role.getId(), roleVO);
 
         assertThat(roleApiService.updateRole(ID, roleVO)).isEqualTo(role);
     }
@@ -172,6 +210,14 @@ public class RoleApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldDeleteRoleForUserAdmin() {
+        doReturn(role).when(mockRoleManager).delete(ID);
+
+        assertThat(roleApiService.deleteRole(ID)).isEqualTo(role);
+    }
+
+    @Test
     @WithMockUser
     public void shouldDenyDeleteRoleForNotAdmin() {
         doReturn(role).when(mockRoleManager).delete(ID);
@@ -185,6 +231,35 @@ public class RoleApiServiceTest extends AbstractAclTest {
         doReturn(extendedRole).when(mockRoleManager).assignRole(ID, TEST_LONG_LIST);
 
         assertThat(roleApiService.assignRole(ID, TEST_LONG_LIST)).isEqualTo(extendedRole);
+    }
+
+    @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldAssignRoleForUserAdmin() {
+        doReturn(extendedRole).when(mockRoleManager).load(eq(extendedRole.getId()));
+        doReturn(extendedRole).when(mockRoleManager).assignRole(ID, TEST_LONG_LIST);
+
+        assertThat(roleApiService.assignRole(ID, TEST_LONG_LIST)).isEqualTo(extendedRole);
+    }
+
+    @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldNotAssignAdminRoleForUserAdmin() {
+        doReturn(adminRole).when(mockRoleManager).load(eq(adminRole.getId()));
+        doReturn(adminRole).when(mockRoleManager).assignRole(adminRole.getId(), TEST_LONG_LIST);
+        initAclEntity(UserCreatorUtils.getRole(adminRole.getName(), adminRole.getId(), ANOTHER_SIMPLE_USER));
+        assertThrows(AccessDeniedException.class, () -> roleApiService.assignRole(adminRole.getId(), TEST_LONG_LIST));
+    }
+
+    @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldNotAssignScopedAdminRoleForUserAdmin() {
+        doReturn(scopedAdminRole).when(mockRoleManager).load(eq(scopedAdminRole.getId()));
+        doReturn(scopedAdminRole).when(mockRoleManager).assignRole(scopedAdminRole.getId(), TEST_LONG_LIST);
+        initAclEntity(
+            UserCreatorUtils.getRole(scopedAdminRole.getName(), scopedAdminRole.getId(), ANOTHER_SIMPLE_USER));
+        assertThrows(AccessDeniedException.class,
+            () -> roleApiService.assignRole(scopedAdminRole.getId(), TEST_LONG_LIST));
     }
 
     @Test
@@ -205,6 +280,16 @@ public class RoleApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldRemoveRoleForUserAdmin() {
+        doReturn(extendedRole).when(mockRoleManager).removeRole(ID, TEST_LONG_LIST);
+        doReturn(extendedRole).when(mockRoleManager).load(eq(extendedRole.getId()));
+        initAclEntity(UserCreatorUtils.getRole(extendedRole.getName(), extendedRole.getId(), ANOTHER_SIMPLE_USER));
+
+        assertThat(roleApiService.removeRole(ID, TEST_LONG_LIST)).isEqualTo(extendedRole);
+    }
+
+    @Test
     @WithMockUser
     public void shouldDenyRemoveRoleForNotAdmin() {
         initAclEntity(UserCreatorUtils.getRole(extendedRole.getName(), extendedRole.getId(), ANOTHER_SIMPLE_USER));
@@ -217,6 +302,22 @@ public class RoleApiServiceTest extends AbstractAclTest {
         final ExtendedRole extendedRole = new ExtendedRole();
         extendedRole.setName("role");
         extendedRole.setId(ID);
+        extendedRole.setOwner(ANOTHER_SIMPLE_USER);
+        return extendedRole;
+    }
+
+    private static ExtendedRole getAdminRole(long id) {
+        final ExtendedRole extendedRole = new ExtendedRole();
+        extendedRole.setName("ROLE_ADMIN");
+        extendedRole.setId(id);
+        extendedRole.setOwner(ANOTHER_SIMPLE_USER);
+        return extendedRole;
+    }
+
+    private static ExtendedRole getScopedAdminRole(long id) {
+        final ExtendedRole extendedRole = new ExtendedRole();
+        extendedRole.setName("ROLE_USER_ADMIN");
+        extendedRole.setId(id);
         extendedRole.setOwner(ANOTHER_SIMPLE_USER);
         return extendedRole;
     }

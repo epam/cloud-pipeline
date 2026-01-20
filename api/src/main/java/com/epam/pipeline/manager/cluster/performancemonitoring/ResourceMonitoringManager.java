@@ -658,7 +658,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager impleme
                     stopServerlessRunManager.loadActiveServerlessRuns());
             activeServerlessRuns.stream()
                     .filter(this::serverlessRunIsExpired)
-                    .forEach(run -> pipelineRunManager.stopServerlessRun(run.getId()));
+                    .forEach(run -> pipelineRunManager.stopServerlessRun(run.getRunId()));
         }
 
         private boolean serverlessRunIsExpired(final StopServerlessRun run) {

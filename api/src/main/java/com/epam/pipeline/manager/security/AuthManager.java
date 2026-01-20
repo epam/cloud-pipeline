@@ -109,9 +109,13 @@ public class AuthManager {
     }
 
     public JwtRawToken issueTokenForCurrentUser(Long expiration) {
+        return issueTokenForCurrentUser(expiration, !isAdmin());
+    }
+
+    public JwtRawToken issueTokenForCurrentUser(Long expiration, boolean validateExpirationDuration) {
         Object principal = getPrincipal();
         if (principal instanceof UserContext) {
-            return issueToken((UserContext) principal, expiration);
+            return issueToken((UserContext) principal, expiration, validateExpirationDuration);
         } else {
             throw new IllegalArgumentException("Unexpected authorization type: " + principal);
         }
@@ -173,8 +177,14 @@ public class AuthManager {
      * Creates a JWT token for current user.
      * @param user user to create token for
      * @param expiration token expiration time
+     * @param validateExpirationDuration if true - will throw an error if requested expiration > that configured limit
+     *                                   should be used with any user request for the token
      * @return a JwtRawToken, that contains a string representation of JWT token
      */
+    public JwtRawToken issueToken(UserContext user, @Nullable Long expiration, boolean validateExpirationDuration) {
+        return new JwtRawToken(jwtTokenGenerator.encodeToken(user.toClaims(), expiration, validateExpirationDuration));
+    }
+
     public JwtRawToken issueToken(UserContext user, @Nullable Long expiration) {
         return new JwtRawToken(jwtTokenGenerator.encodeToken(user.toClaims(), expiration));
     }

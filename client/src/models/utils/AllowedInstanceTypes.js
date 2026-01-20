@@ -354,21 +354,22 @@ export default class AllowedInstanceTypes extends Remote {
           }
           const results = await Promise.all(regions.map((r) => this.doFetchForRegion(r)));
           const merged = mergeResults(results, regions, regionId);
-          if (isSpot !== this._isSpot || regionId !== this._regionId || toolId !== this._toolId) {
-            resolve();
-            return;
-          } else {
+          if (
+            isSpot === this._isSpot &&
+            regionId === this._regionId &&
+            toolId === this._toolId
+          ) {
             this.update(merged);
           }
         } catch (e) {
           console.warn(e);
           this.failed = true;
           this.error = e.toString();
+        } finally {
+          this._pending = false;
+          this._fetchPromise = null;
+          resolve();
         }
-
-        this._pending = false;
-        this._fetchPromise = null;
-        resolve();
       });
     }
     return this._fetchPromise;

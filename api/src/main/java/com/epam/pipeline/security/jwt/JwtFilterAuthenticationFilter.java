@@ -43,6 +43,7 @@ public class JwtFilterAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenVerifier tokenVerifier;
     private final UserAccessService accessService;
+    private final boolean disableLogging;
 
     @Override
     protected void doFilterInternal(final HttpServletRequest request,
@@ -56,7 +57,9 @@ public class JwtFilterAuthenticationFilter extends OncePerRequestFilter {
                 JwtAuthenticationToken token = new JwtAuthenticationToken(context, context.getAuthorities());
                 token.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(token);
-                log.info("Successfully authenticate user with name: " + context.getUsername());
+                if (!disableLogging) {
+                    log.info("Successfully authenticate user with name: " + context.getUsername());
+                }
             }
         } catch (TokenVerificationException e) {
             log.info("JWT authentication failed: {}", e.getMessage());

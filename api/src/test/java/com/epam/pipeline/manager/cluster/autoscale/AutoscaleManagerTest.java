@@ -140,6 +140,8 @@ public class AutoscaleManagerTest {
             .thenReturn(SystemPreferences.CLUSTER_RANDOM_SCHEDULING.getDefaultValue());
         when(preferenceManager.getPreference(SystemPreferences.CLUSTER_HIGH_NON_BATCH_PRIORITY))
             .thenReturn(SystemPreferences.CLUSTER_HIGH_NON_BATCH_PRIORITY.getDefaultValue());
+        when(preferenceManager.getPreference(SystemPreferences.CLUSTER_DISABLE_REASSIGN))
+                .thenReturn(false);
 
         when(kubernetesManager.getKubernetesClient(any(Config.class))).thenReturn(kubernetesClient);
 

@@ -15,6 +15,7 @@
 
 package com.epam.pipeline.entity.cluster.pool;
 
+import com.epam.pipeline.entity.utils.MapRequestsConverter;
 import com.epam.pipeline.entity.utils.TimestampConverter;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -28,6 +29,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Entity
 @Getter
@@ -44,8 +46,11 @@ public class NodePoolUsageEntity {
     private LocalDateTime logDate;
 
     private Long nodePoolId;
-
     private Integer totalNodesCount;
-
     private Integer occupiedNodesCount;
+    private Integer pendingRunsCount;
+    private Integer activeRunsCount;
+
+    @Convert(converter = MapRequestsConverter.class)
+    private Map<String, Requests> requestsStats;
 }

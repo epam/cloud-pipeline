@@ -283,14 +283,14 @@ function Tag (
       {valueToDisplay}
     </span>
   );
-  if (tagOptions.link) {
+  if (tagOptions.link && interactive) {
     return (
       <a
         className={styles.link}
-        onMouseEnter={interactive ? onMouseEnter : undefined}
-        onMouseLeave={interactive ? onMouseLeave : undefined}
-        onClick={interactive ? handleClick : undefined}
-        onFocus={interactive ? onFocus : undefined}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        onClick={handleClick}
+        onFocus={onFocus}
         href={tagOptions.link}
         target="_blank"
       >
@@ -298,17 +298,17 @@ function Tag (
       </a>
     );
   }
-  if (isInstanceLink) {
+  if (isInstanceLink && interactive) {
     const instanceLink = `/cluster/${instance.nodeName}/monitor`;
     return (
       <Link
         id={tagName}
         to={instanceLink}
         className={styles.link}
-        onMouseEnter={interactive ? onMouseEnter : undefined}
-        onMouseLeave={interactive ? onMouseLeave : undefined}
-        onClick={interactive ? handleClick : undefined}
-        onFocus={interactive ? onFocus : undefined}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        onClick={handleClick}
+        onFocus={onFocus}
       >
         {element}
       </Link>

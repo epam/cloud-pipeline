@@ -18,12 +18,12 @@
 
 package com.epam.pipeline.entity.cloud.azure;
 
+import com.azure.resourcemanager.compute.models.PowerState;
+import com.azure.resourcemanager.compute.models.VirtualMachine;
+import com.azure.resourcemanager.compute.models.VirtualMachineDataDisk;
+import com.azure.resourcemanager.compute.models.VirtualMachineScaleSetVM;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.exception.cloud.azure.AzureException;
-import com.microsoft.azure.management.compute.PowerState;
-import com.microsoft.azure.management.compute.VirtualMachine;
-import com.microsoft.azure.management.compute.VirtualMachineDataDisk;
-import com.microsoft.azure.management.compute.VirtualMachineScaleSetVM;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -58,7 +58,7 @@ public class AzureVirtualMachineStats {
         return new AzureVirtualMachineStats(
                 machine.powerState(),
                 machine.name(),
-                machine.getPrimaryNetworkInterface().primaryIPConfiguration().privateIPAddress(),
+                machine.getPrimaryNetworkInterface().primaryIPConfiguration().privateIpAddress(),
                 toDisks(machine));
     }
 
@@ -70,7 +70,7 @@ public class AzureVirtualMachineStats {
                         .findFirst()
                         .orElseThrow(() -> new AzureException(
                                 String.format(NO_NET_INTERFACE_FOR_VM, machine.computerName())))
-                        .primaryIPConfiguration().privateIPAddress(),
+                        .primaryIPConfiguration().privateIpAddress(),
                 toDisks(machine));
     }
 
@@ -82,7 +82,7 @@ public class AzureVirtualMachineStats {
         return toDisks(machine.dataDisks(), machine.osDiskSizeInGB());
     }
 
-    private static List<InstanceDisk> toDisks(final Map<Integer, VirtualMachineDataDisk> dataDisks, 
+    private static List<InstanceDisk> toDisks(final Map<Integer, VirtualMachineDataDisk> dataDisks,
                                               final int osDiskSize) {
         return Stream.concat(osDisk(osDiskSize), dataDisks(dataDisks)).collect(Collectors.toList());
     }

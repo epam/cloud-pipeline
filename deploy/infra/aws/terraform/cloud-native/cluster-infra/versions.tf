@@ -18,5 +18,14 @@ terraform {
       source  = "cyrilgdn/postgresql"
       version = "1.22.0"
     }
+    helm = {
+      version = "2.17.0"
+    }
+    aws = {
+      version = "5.100.0"
+    }
+    kubernetes = {
+      version = "2.38.0"
+    }
   }
 }

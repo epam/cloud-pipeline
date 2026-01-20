@@ -1,0 +1,93 @@
+:root {
+  --border-radius: 3px;
+  /* Base Colors */
+  --color-primary: #0369a1;
+  --color-primary-light: #0ea5e9;
+  --color-primary-dark: #1e40af;
+  --color-secondary: #64748b;
+  --color-accent: #f59e0b;
+  
+  /* Text Colors */
+  --color-text-primary: #1f2937;
+  --color-text-secondary: #6b7280;
+  --color-text-muted: #9ca3af;
+  --color-text-inverse: #ffffff;
+  
+  /* Background Colors */
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f9fafb;
+  --color-bg-tertiary: #f3f4f6;
+  --color-bg-overlay: rgba(0, 0, 0, 0.5);
+  
+  /* Border Colors */
+  --color-border: #e5e7eb;
+  --color-border-light: #f3f4f6;
+  --color-border-dark: #d1d5db;
+  
+  /* Status Colors */
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+  
+  /* Link Colors */
+  --color-link: var(--color-primary);
+  --color-link-hover: var(--color-primary-dark);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Dark Base Colors */
+    --color-primary: #7dd3fc;
+    --color-primary-light: #93c5fd;
+    --color-primary-dark: #60a5fa;
+    --color-secondary: #94a3b8;
+    
+    /* Dark Text Colors */
+    --color-text-primary: #f9fafb;
+    --color-text-secondary: #d1d5db;
+    --color-text-muted: #9ca3af;
+    --color-text-inverse: #1f2937;
+    
+    /* Dark Background Colors */
+    --color-bg-primary: #111827;
+    --color-bg-secondary: #1f2937;
+    --color-bg-tertiary: #374151;
+    --color-bg-overlay: rgba(0, 0, 0, 0.7);
+    
+    /* Dark Border Colors */
+    --color-border: #374151;
+    --color-border-light: #4b5563;
+    --color-border-dark: #6b7280;
+    
+    /* Dark Status Colors */
+    --color-success: #34d399;
+    --color-warning: #fbbf24;
+    --color-error: #f87171;
+    --color-info: #60a5fa;
+    
+    /* Dark Link Colors */
+    --color-link: var(--color-primary);
+    --color-link-hover: var(--color-primary-light);
+  }
+}
+
+:root,
+#root,
+body {
+  height: 100%;
+  width: 100%;
+  margin: 0px;
+  padding: 0px;
+}
+
+a .text,
+a {
+  color: var(--color-link);
+  cursor: pointer;
+}
+
+a:hover .text,
+a:hover {
+  color: var(--color-link-hover);
+}

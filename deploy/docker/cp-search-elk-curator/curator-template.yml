@@ -1,0 +1,19 @@
+client:
+  hosts:
+    - ${CP_SEARCH_ELK_INTERNAL_HOST}
+  port: ${CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT}
+  url_prefix:
+  use_ssl: ${CP_SEARCH_ELK_ELASTIC_USE_SSL}
+  certificate:
+  client_cert:
+  client_key:
+  ssl_no_validate: False
+  http_auth:
+  timeout: 30
+  master_only: False
+
+logging:
+  loglevel: INFO
+  logfile:
+  logformat: default
+  blacklist: ['elasticsearch', 'urllib3']

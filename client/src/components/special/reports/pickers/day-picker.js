@@ -58,14 +58,16 @@ export default class DayPicker extends React.Component {
     };
 
     render () {
-      const {onChange} = this.props;
+      const {onChange, style = {}} = this.props;
       const {day} = this.state;
       return (
         <DatePicker
           format="D MMM YYYY"
           value={day}
           onChange={onChange}
-          style={{marginRight: 15}}
+          style={Object.assign({
+            marginRight: 15
+          }, style)}
           onOpenChange={this.handlePickerVisibility}
         />
       );

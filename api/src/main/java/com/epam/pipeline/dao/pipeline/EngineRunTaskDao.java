@@ -133,7 +133,8 @@ public class EngineRunTaskDao extends DryRunJdbcDaoSupport {
             sortBuilder.append(" ORDER BY ")
                     .append(sorts.stream()
                             .map(this::buildDbSorting)
-                            .collect(Collectors.joining(", ")));
+                            .collect(Collectors.joining(", ")))
+                    .append(" NULLS LAST");
         }
         return SORT_PATTERN.matcher(query).replaceFirst(sortBuilder.toString());
     }
@@ -219,6 +220,7 @@ public class EngineRunTaskDao extends DryRunJdbcDaoSupport {
                     .taskGroup(rs.getString(TASK_GROUP.name()))
                     .status(EngineTaskStatus.valueOf(rs.getString(STATUS.name())))
                     .tasksCount(rs.getLong(TASKS_COUNT.name()))
+                    .startDateTime(getDataTime(rs, START_DATE.name()))
                     .build();
         }
 

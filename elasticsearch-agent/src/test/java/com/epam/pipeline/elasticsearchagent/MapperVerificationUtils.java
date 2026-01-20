@@ -34,16 +34,10 @@ import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.vo.EntityVO;
-import com.fasterxml.jackson.core.JsonFactory;
 import com.mchange.util.AssertException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
-import org.elasticsearch.common.Strings;
-import org.elasticsearch.common.xcontent.NamedXContentRegistry;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.json.JsonXContentParser;
 
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -69,23 +63,19 @@ public final class MapperVerificationUtils {
 
     private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 
-    public static void verifyFolder(final Folder expected, final XContentBuilder content) throws IOException {
-        Map<String, Object> puttedObjects = getPuttedObject(content);
-
+    public static void verifyFolder(final Folder expected, final Map<String, ?> puttedObjects) {
         assertEquals("FOLDER", puttedObjects.get(DOC_TYPE));
-        assertEquals(expected.getId().intValue(), puttedObjects.get(ID));
+        assertEquals(expected.getId(), puttedObjects.get(ID));
         assertEquals(expected.getName(), puttedObjects.get(NAME));
-        assertEquals(expected.getParentId().intValue(), puttedObjects.get(PARENT_ID));
+        assertEquals(expected.getParentId(), puttedObjects.get(PARENT_ID));
     }
 
-    public static void verifyPipeline(final Pipeline expected, final XContentBuilder content) throws IOException {
-        Map<String, Object> puttedObjects = getPuttedObject(content);
-
+    public static void verifyPipeline(final Pipeline expected, final Map<String, ?> puttedObjects) {
         assertEquals("PIPELINE", puttedObjects.get(DOC_TYPE));
-        assertEquals(toInt(expected.getId()), puttedObjects.get(ID));
+        assertEquals(expected.getId(), puttedObjects.get(ID));
         assertEquals(expected.getName(), puttedObjects.get(NAME));
         assertEquals(SIMPLE_DATE_FORMAT.format(expected.getCreatedDate()), puttedObjects.get("createdDate"));
-        assertEquals(toInt(expected.getParentFolderId()), puttedObjects.get(PARENT_ID));
+        assertEquals(expected.getParentFolderId(), puttedObjects.get(PARENT_ID));
         assertEquals(expected.getDescription(), puttedObjects.get(DESCRIPTION));
         assertEquals(expected.getRepository(), puttedObjects.get("repository"));
         assertEquals(expected.getTemplateId(), puttedObjects.get("templateId"));
@@ -95,11 +85,9 @@ public final class MapperVerificationUtils {
                                           final String pipelineVersion,
                                           final String path,
                                           final String fileContent,
-                                          final XContentBuilder content) throws IOException {
-        Map<String, Object> puttedObjects = getPuttedObject(content);
-
+                                          final Map<String, ?> puttedObjects) {
         assertEquals("PIPELINE_CODE", puttedObjects.get(DOC_TYPE));
-        assertEquals(toInt(expected.getId()), puttedObjects.get(PIPELINE_ID));
+        assertEquals(expected.getId(), puttedObjects.get(PIPELINE_ID));
         assertEquals(expected.getName(), puttedObjects.get(PIPELINE_NAME));
         assertEquals(pipelineVersion, puttedObjects.get(PIPELINE_VERSION));
         assertEquals(path, puttedObjects.get(PATH));
@@ -107,78 +95,66 @@ public final class MapperVerificationUtils {
     }
 
     public static void verifyDockerRegistry(final DockerRegistry expected,
-                                            final XContentBuilder content) throws IOException {
-        Map<String, Object> puttedObjects = getPuttedObject(content);
-
+                                            final Map<String, ?> puttedObjects) {
         assertEquals("DOCKER_REGISTRY", puttedObjects.get(DOC_TYPE));
-        assertEquals(toInt(expected.getId()), puttedObjects.get(ID));
+        assertEquals(expected.getId(), puttedObjects.get(ID));
         assertEquals(expected.getName(), puttedObjects.get(NAME));
         assertEquals(expected.getDescription(), puttedObjects.get(DESCRIPTION));
         assertEquals(expected.getPath(), puttedObjects.get(PATH));
         assertEquals(expected.getUserName(), puttedObjects.get("userName"));
     }
 
-    public static void verifyToolGroup(final ToolGroup expected, final XContentBuilder content) throws IOException {
-        Map<String, Object> puttedObjects = getPuttedObject(content);
-
+    public static void verifyToolGroup(final ToolGroup expected, final Map<String, ?> puttedObjects) {
         assertEquals("TOOL_GROUP", puttedObjects.get(DOC_TYPE));
-        assertEquals(toInt(expected.getId()), puttedObjects.get(ID));
+        assertEquals(expected.getId(), puttedObjects.get(ID));
         assertEquals(expected.getName(), puttedObjects.get(NAME));
-        assertEquals(toInt(expected.getRegistryId()), puttedObjects.get("registryId"));
+        assertEquals(expected.getRegistryId(), puttedObjects.get("registryId"));
         assertEquals(expected.getDescription(), puttedObjects.get(DESCRIPTION));
     }
 
-    public static void verifyTool(final Tool expected, final XContentBuilder content) throws IOException {
-        Map<String, Object> puttedObjects = getPuttedObject(content);
-
+    public static void verifyTool(final Tool expected, final Map<String, ?> puttedObjects) {
         assertEquals("TOOL", puttedObjects.get(DOC_TYPE));
-        assertEquals(toInt(expected.getId()), puttedObjects.get(ID));
+        assertEquals(expected.getId(), puttedObjects.get(ID));
         assertEquals(expected.getRegistry(), puttedObjects.get("registry"));
-        assertEquals(toInt(expected.getRegistryId()), puttedObjects.get("registryId"));
+        assertEquals(expected.getRegistryId(), puttedObjects.get("registryId"));
         assertEquals(expected.getImage(), puttedObjects.get("image"));
         assertEquals(expected.getDescription(), puttedObjects.get(DESCRIPTION));
         assertEquals(expected.getDefaultCommand(), puttedObjects.get("defaultCommand"));
         verifyStringArray(expected.getLabels(), puttedObjects.get("labels"));
-        assertEquals(toInt(expected.getToolGroupId()), puttedObjects.get("toolGroupId"));
+        assertEquals(expected.getToolGroupId(), puttedObjects.get("toolGroupId"));
     }
 
-    public static void verifyIssue(final Issue expected, final XContentBuilder content) throws IOException {
-        Map<String, Object> puttedObjects = getPuttedObject(content);
-
+    public static void verifyIssue(final Issue expected, final Map<String, ?> puttedObjects) {
         assertEquals("ISSUE", puttedObjects.get(DOC_TYPE));
-        assertEquals(toInt(expected.getId()), puttedObjects.get(ID));
+        assertEquals(expected.getId(), puttedObjects.get(ID));
         assertEquals(expected.getName(), puttedObjects.get(NAME));
         assertEquals(expected.getText(), puttedObjects.get("text"));
-        assertEquals(expected.getStatus().name(), puttedObjects.get("status"));
+        assertEquals(expected.getStatus(), puttedObjects.get("status"));
         verifyStringArray(expected.getLabels(), puttedObjects.get("labels"));
         verifyEntityVO(expected.getEntity(), puttedObjects);
     }
 
     public static void verifyMetadataEntity(final MetadataEntity expected, final List<String> expectedData,
-                                            final XContentBuilder content) throws IOException {
-        Map<String, Object> puttedObjects = getPuttedObject(content);
-
+                                            final Map<String, ?> puttedObjects) {
         assertEquals("METADATA_ENTITY", puttedObjects.get(DOC_TYPE));
-        assertEquals(toInt(expected.getId()), puttedObjects.get(ID));
+        assertEquals(expected.getId(), puttedObjects.get(ID));
         assertEquals(expected.getName(), puttedObjects.get(NAME));
-        assertEquals(toInt(expected.getParent().getId()), puttedObjects.get(PARENT_ID));
+        assertEquals(expected.getParent().getId(), puttedObjects.get(PARENT_ID));
         assertEquals(expected.getExternalId(), puttedObjects.get("externalId"));
         assertEquals(expected.getClassEntity().getName(), puttedObjects.get("className"));
-        assertEquals(toInt(expected.getClassEntity().getId()), puttedObjects.get("classId"));
+        assertEquals(expected.getClassEntity().getId(), puttedObjects.get("classId"));
         verifyStringArray(expectedData, puttedObjects.get("fields"));
     }
 
     public static void verifyPipelineRun(final PipelineRun expected, final String description,
-                                         final XContentBuilder content) throws IOException {
-        Map<String, Object> puttedObjects = getPuttedObject(content);
-
+                                         final Map<String, ?> puttedObjects) {
         assertEquals("PIPELINE_RUN", puttedObjects.get(DOC_TYPE));
-        assertEquals(toInt(expected.getId()), puttedObjects.get(ID));
+        assertEquals(expected.getId(), puttedObjects.get(ID));
         assertEquals(expected.getPodId(), puttedObjects.get(NAME));
         assertEquals(description, puttedObjects.get(DESCRIPTION));
         assertEquals(expected.getPipelineName(), puttedObjects.get(PIPELINE_NAME));
         assertEquals(expected.getVersion(), puttedObjects.get(PIPELINE_VERSION));
-        assertEquals(expected.getStatus().name(), puttedObjects.get("status"));
+        assertEquals(expected.getStatus(), puttedObjects.get("status"));
         assertEquals(expected.getDockerImage(), puttedObjects.get("dockerImage"));
         assertEquals(expected.getActualCmd(), puttedObjects.get("actualCmd"));
         assertEquals(expected.getConfigName(), puttedObjects.get("configurationName"));
@@ -194,9 +170,7 @@ public final class MapperVerificationUtils {
     }
 
     public static void verifyRunConfiguration(final RunConfiguration expected, final String description,
-                                              final XContentBuilder content) throws IOException {
-        Map<String, Object> puttedObjects = getPuttedObject(content);
-
+                                              final Map<String, ?> puttedObjects) {
         assertEquals("CONFIGURATION", puttedObjects.get(DOC_TYPE));
         assertEquals(description, puttedObjects.get(DESCRIPTION));
         assertEquals(expected.getName(), puttedObjects.get(NAME));
@@ -204,9 +178,7 @@ public final class MapperVerificationUtils {
     }
 
     public static void verifyRunConfigurationEntry(final RunConfigurationEntry expected, final Pipeline pipeline,
-                                                   final XContentBuilder content) throws IOException {
-        Map<String, Object> puttedObjects = getPuttedObject(content);
-
+                                                   final Map<String, ?> puttedObjects) {
         assertEquals(expected.getExecutionEnvironment().name(), puttedObjects.get("environment"));
         assertEquals(expected.getName(), puttedObjects.get("entryName"));
         assertEquals(toInt(expected.getRootEntityId()), puttedObjects.get("rootEntityId"));
@@ -224,9 +196,7 @@ public final class MapperVerificationUtils {
     }
 
     public static void verifyFirecloudConfigurationEntry(final FirecloudRunConfigurationEntry expected,
-                                                         final XContentBuilder content) throws IOException {
-        Map<String, Object> puttedObjects = getPuttedObject(content);
-
+                                                         final Map<String, ?> puttedObjects) {
         assertEquals(expected.getExecutionEnvironment().name(), puttedObjects.get("environment"));
         assertEquals(expected.getName(), puttedObjects.get("entryName"));
         assertEquals(toInt(expected.getRootEntityId()), puttedObjects.get("rootEntityId"));
@@ -243,32 +213,28 @@ public final class MapperVerificationUtils {
     }
 
     public static void verifyS3Storage(final S3bucketDataStorage expected, final String region,
-                                       final XContentBuilder content) throws IOException {
-        Map<String, Object> puttedObjects = getPuttedObject(content);
-
+                                       final Map<String, ?> puttedObjects) {
         assertEquals("S3_STORAGE", puttedObjects.get(DOC_TYPE));
         assertEquals(region, puttedObjects.get("regionCode"));
-        assertEquals(toInt(expected.getId()), puttedObjects.get(ID));
+        assertEquals(expected.getId(), puttedObjects.get(ID));
         assertEquals(expected.getName(), puttedObjects.get(NAME));
         assertEquals(expected.getPath(), puttedObjects.get(PATH));
-        assertEquals(toInt(expected.getParentFolderId()), puttedObjects.get(PARENT_ID));
-        assertEquals(expected.getType().name(), puttedObjects.get("storageType"));
+        assertEquals(expected.getParentFolderId(), puttedObjects.get(PARENT_ID));
+        assertEquals(expected.getType(), puttedObjects.get("storageType"));
         assertEquals(expected.getDescription(), puttedObjects.get(DESCRIPTION));
 
         verifyStoragePolicy(expected.getStoragePolicy(), puttedObjects);
     }
 
     public static void verifyNFSStorage(final NFSDataStorage expected,
-                                        final XContentBuilder content) throws IOException {
-        Map<String, Object> puttedObjects = getPuttedObject(content);
-
+                                        final Map<String, ?> puttedObjects) {
         assertEquals("NFS_STORAGE", puttedObjects.get(DOC_TYPE));
         assertNull(puttedObjects.get("regionCode"));
-        assertEquals(toInt(expected.getId()), puttedObjects.get(ID));
+        assertEquals(expected.getId(), puttedObjects.get(ID));
         assertEquals(expected.getName(), puttedObjects.get(NAME));
         assertEquals(expected.getPath(), puttedObjects.get(PATH));
-        assertEquals(toInt(expected.getParentFolderId()), puttedObjects.get(PARENT_ID));
-        assertEquals(expected.getType().name(), puttedObjects.get("storageType"));
+        assertEquals(expected.getParentFolderId(), puttedObjects.get(PARENT_ID));
+        assertEquals(expected.getType(), puttedObjects.get("storageType"));
         assertEquals(expected.getDescription(), puttedObjects.get(DESCRIPTION));
 
         assertNull(puttedObjects.get("storagePolicyBackupDuration"));
@@ -277,7 +243,7 @@ public final class MapperVerificationUtils {
         assertNull(puttedObjects.get("storagePolicyVersioningEnabled"));
     }
 
-    private static void verifyStoragePolicy(final StoragePolicy expected, final Map<String, Object> puttedObjects) {
+    private static void verifyStoragePolicy(final StoragePolicy expected, final Map<String, ?> puttedObjects) {
         if (expected == null) {
             return;
         }
@@ -289,19 +255,17 @@ public final class MapperVerificationUtils {
     }
 
     public static void verifyRunParameters(final List<String> expected,
-                                           final XContentBuilder content) throws IOException {
+                                           final Map<String, ?> content) {
         verifyArrays(expected, content, "parameters");
     }
 
-    public static void verifyRunLogs(final List<String> expected, final XContentBuilder content) throws IOException {
+    public static void verifyRunLogs(final List<String> expected, final Map<String, ?> content) {
         verifyArrays(expected, content, "logs");
     }
 
     public static void verifyPipelineUser(final PipelineUser expected,
-                                          final XContentBuilder content) throws IOException {
-        Map<String, Object> puttedObjects = getPuttedObject(content);
-
-        assertEquals(expected.getId().intValue(), puttedObjects.get("ownerUserId"));
+                                          final Map<String, ?> puttedObjects) {
+        assertEquals(expected.getId(), puttedObjects.get("ownerUserId"));
         assertEquals(expected.getUserName(), puttedObjects.get("ownerUserName"));
         verifyStringArray(expected.getGroups(), puttedObjects.get("ownerGroups"));
         String prettyName = MapUtils.emptyIfNull(expected.getAttributes()).get("Name");
@@ -309,25 +273,23 @@ public final class MapperVerificationUtils {
     }
 
     public static void verifyPermissions(final PermissionsContainer expected,
-                                         final XContentBuilder content) throws IOException {
-        Map<String, Object> puttedObjects = getPuttedObject(content);
-
+                                         final Map<String, ?> puttedObjects) {
         verifyStringArray(expected.getAllowedUsers(), puttedObjects.get("allowed_users"));
         verifyStringArray(expected.getDeniedUsers(), puttedObjects.get("denied_users"));
         verifyStringArray(expected.getAllowedGroups(), puttedObjects.get("allowed_groups"));
         verifyStringArray(expected.getDeniedGroups(), puttedObjects.get("denied_groups"));
     }
 
-    public static void verifyMetadata(final List<String> expected, final XContentBuilder content) throws IOException {
+    public static void verifyMetadata(final List<String> expected, final Map<String, ?> content) {
         verifyArrays(expected, content, "metadata");
     }
 
     public static void verifyAttachments(final List<String> expected,
-                                         final XContentBuilder content) throws IOException {
+                                         final Map<String, ?> content) {
         verifyArrays(expected, content, "attachments");
     }
 
-    public static void verifyComments(final List<String> expected, final XContentBuilder content) throws IOException {
+    public static void verifyComments(final List<String> expected, final Map<String, ?> content) {
         verifyArrays(expected, content, "comments");
     }
 
@@ -342,17 +304,15 @@ public final class MapperVerificationUtils {
         // TODO: expand to all sizes
         RunStatus expectedRunStatus = expected.get(0);
         Map<String, Object> actualRunStatus = content.get(0);
-        assertEquals(expectedRunStatus.getStatus().name(), actualRunStatus.get("status"));
+        assertEquals(expectedRunStatus.getStatus(), actualRunStatus.get("status"));
     }
 
-    private static void verifyArrays(final List<String> expected, final XContentBuilder content,
-                                     final String fieldName) throws IOException {
-        Map<String, Object> puttedObjects = getPuttedObject(content);
-
+    private static void verifyArrays(final List<String> expected, final Map<String, ?> puttedObjects,
+                                     final String fieldName) {
         verifyStringArray(expected, puttedObjects.get(fieldName));
     }
 
-    private static void verifyRunInstance(final RunInstance runInstance, final Map<String, Object> content) {
+    private static void verifyRunInstance(final RunInstance runInstance, final Map<String, ?> content) {
         assertEquals(runInstance.getNodeType(), content.get("nodeType"));
         assertEquals(runInstance.getNodeDisk(), content.get("nodeDisk"));
         assertEquals(runInstance.getNodeIP(), content.get("nodeIP"));
@@ -360,22 +320,15 @@ public final class MapperVerificationUtils {
         assertEquals(runInstance.getNodeImage(), content.get("nodeImage"));
         assertEquals(runInstance.getNodeName(), content.get("nodeName"));
         assertEquals(runInstance.getSpot(), content.get("priceType"));
-        assertEquals(toInt(runInstance.getCloudRegionId()), content.get("cloudRegionId"));
+        assertEquals(runInstance.getCloudRegionId(), content.get("cloudRegionId"));
     }
 
-    private static Map<String, Object> getPuttedObject(final XContentBuilder contentBuilder) throws IOException {
-        JsonFactory factory = new JsonFactory();
-        JsonXContentParser parser = new JsonXContentParser(NamedXContentRegistry.EMPTY, null,
-                factory.createParser(Strings.toString(contentBuilder)));
-        return parser.map();
-    }
-
-    private static void verifyEntityVO(final EntityVO expected, final Map<String, Object> puttedObjects) {
+    private static void verifyEntityVO(final EntityVO expected, final Map<String, ?> puttedObjects) {
         if (expected == null) {
             return;
         }
-        assertEquals(toInt(expected.getEntityId()), puttedObjects.get("entityId"));
-        assertEquals(expected.getEntityClass().name(), puttedObjects.get("entityClass"));
+        assertEquals(expected.getEntityId(), puttedObjects.get("entityId"));
+        assertEquals(expected.getEntityClass(), puttedObjects.get("entityClass"));
     }
 
     private static Integer toInt(final Long value) {

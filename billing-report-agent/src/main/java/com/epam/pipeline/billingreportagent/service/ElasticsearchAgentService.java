@@ -107,7 +107,7 @@ public class ElasticsearchAgentService {
         try {
             CompletableFuture.allOf(results.toArray(new CompletableFuture[0])).get();
             Files.write(Paths.get(lastSynchronizationTimeFilePath),
-                        (syncStart.toString() + System.lineSeparator()).getBytes(),
+                        (syncStart.format(DATE_TIME_FORMATTER) + System.lineSeparator()).getBytes(),
                         StandardOpenOption.APPEND, StandardOpenOption.CREATE);
             log.debug("Finished billing data synchronization...");
         } catch (IOException | InterruptedException | ExecutionException e) {

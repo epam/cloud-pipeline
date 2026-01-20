@@ -228,7 +228,7 @@ class EditHotNodePool extends React.Component {
         labels: Object.entries(labels || {}).map(([key, value]) => ({
           key,
           name: key,
-          value
+          ...value
         })),
         schedule: schedule.slice().map((s, i) => ({...s, id: i})),
         initialSchedule: schedule.slice().map(sc => ({...sc})),
@@ -436,9 +436,7 @@ class EditHotNodePool extends React.Component {
       .filter(o => !o.removed)
       .map(o => (o.image || '').trim())
       .filter(Boolean);
-    if (images.length === 0) {
-      dockerImagesError = 'You must provide at least 1 docker image';
-    } else if ((new Set(images)).size < images.length) {
+    if ((new Set(images)).size < images.length) {
       dockerImagesError = 'Duplicates are not allowed';
     }
     if (schedule.map(scheduleIsValid).filter(o => !o).length > 0) {
@@ -687,7 +685,10 @@ class EditHotNodePool extends React.Component {
         scaleStep: autoscaled ? scaleStep : undefined,
         kubeLabels: labels.reduce((acc, label) => ({
           ...acc,
-          [label.name]: label.value
+          [label.name]: {
+            value: label.value,
+            monitored: label.monitored || false
+          }
         }), {})
       };
       onSave(
@@ -1540,6 +1541,7 @@ class EditHotNodePool extends React.Component {
     const isDuplicateImage = (image) => {
       return images.filter(o => o === image).length > 1;
     };
+    const filteredDockerImages = dockerImages.filter(o => !o.removed);
     return (
       <div>
         <div
@@ -1550,18 +1552,16 @@ class EditHotNodePool extends React.Component {
           </span>
           <div className={styles.column}>
             {
-              dockerImages
-                .filter(o => !o.removed)
-                .map((image) => (
-                  <AddDockerRegistryControl
-                    key={image.id}
-                    disabled={disabled || readOnly}
-                    duplicate={isDuplicateImage(image.image)}
-                    docker={image.image}
-                    onChange={this.onChangeDockerImage(image.id)}
-                    onRemove={this.onRemoveDockerImage(image.id)}
-                  />
-                ))
+              filteredDockerImages.map((image) => (
+                <AddDockerRegistryControl
+                  key={image.id}
+                  disabled={disabled || readOnly}
+                  duplicate={isDuplicateImage(image.image)}
+                  docker={image.image}
+                  onChange={this.onChangeDockerImage(image.id)}
+                  onRemove={this.onRemoveDockerImage(image.id)}
+                />
+              ))
             }
             {
               !readOnly && (
@@ -1577,6 +1577,9 @@ class EditHotNodePool extends React.Component {
                 </div>
               )
             }
+            {readOnly && filteredDockerImages.length === 0 ? (
+              <span>Not specified</span>
+            ) : null}
           </div>
         </div>
         {
@@ -1613,7 +1616,7 @@ class EditHotNodePool extends React.Component {
         nodeLabelKey = generate();
       }
       this.setState({
-        labels: [...labels, {key: nodeLabelKey, name: '', value: ''}]
+        labels: [...labels, {key: nodeLabelKey, name: '', value: '', monitored: false}]
       }, this.onChange);
     };
     const renderLabelControl = (label) => {
@@ -1649,6 +1652,17 @@ class EditHotNodePool extends React.Component {
           this.setState({labels: result}, this.onChange);
         }
       };
+      const onChangeLabelMonitored = (event) => {
+        const result = labels.slice();
+        const idx = result.findIndex(o => o.key === label.key);
+        if (idx >= 0) {
+          result.splice(idx, 1, {
+            ...label,
+            monitored: event.target.checked
+          });
+          this.setState({labels: result}, this.onChange);
+        }
+      };
       const st = {
         display: 'flex',
         flexDirection: 'row',
@@ -1664,12 +1678,24 @@ class EditHotNodePool extends React.Component {
             key={label.key}
             style={st}
           >
-            <span>{label.name}:</span>
+            <span style={{flexShrink: 0}}>
+              {label.name}:
+            </span>
             <span
-              style={{flex: 1, overflow: 'auto', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}
+              style={{
+                flexShrink: 1,
+                overflow: 'auto',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }}
             >
               {label.value}
             </span>
+            {
+              label.monitored && (
+                <span style={{flexShrink: 0}}>(monitored)</span>
+              )
+            }
           </div>
         );
       }
@@ -1689,6 +1715,13 @@ class EditHotNodePool extends React.Component {
             value={label.value}
             onChange={onChangeLabelValue}
           />
+          <Checkbox
+            style={{flexShrink: 0, marginRight: 5}}
+            checked={label.monitored}
+            onChange={onChangeLabelMonitored}
+          >
+            Monitored
+          </Checkbox>
           <Button size="small" onClick={onRemoveNodeLabel} type="danger">
             <Icon type="delete" />
           </Button>

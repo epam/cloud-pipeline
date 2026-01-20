@@ -29,6 +29,7 @@ import {
   Tooltip
 } from 'antd';
 import S3Storage, {MAX_FILE_SIZE_DESCRIPTION} from '../../models/s3-upload/s3-storage';
+import DataStorageGenerateUploadUrl from '../../models/dataStorage/DataStorageGenerateUploadUrl';
 
 const KB = 1024;
 const MB = 1024 * KB;
@@ -49,7 +50,8 @@ class UploadButton extends React.Component {
     region: PropTypes.string,
     owner: PropTypes.string,
     onInitialized: PropTypes.func,
-    style: PropTypes.object
+    style: PropTypes.object,
+    disabled: PropTypes.bool
   };
 
   state = {
@@ -200,7 +202,7 @@ class UploadButton extends React.Component {
       percent: 0
     }));
     const uploadFile = async (file) => {
-      return new Promise((resolve) => {
+      return new Promise(async (resolve) => {
         const files = this.state.uploadingFiles;
         const [uploadingFile] = files.filter(f => f.uid === file.uid);
         const updateError = (error) => {
@@ -260,8 +262,33 @@ class UploadButton extends React.Component {
           }
           resolve();
         };
-        request.open('POST', this.props.action);
-        request.send(formData);
+        if (this.props.uploadToAzure) {
+          const basePath = this.props.path || '';
+          const normalizedBase = basePath && !basePath.endsWith('/')
+            ? `${basePath}/`
+            : basePath;
+          const targetPath = file.path || `${normalizedBase}${file.name}`;
+          const urlRequest = new DataStorageGenerateUploadUrl(
+            this.props.storageId,
+            targetPath
+          );
+          await urlRequest.fetch();
+          const url = urlRequest.value?.url;
+          if (!url) {
+            updateError('Failed to generate Azure upload URL');
+            resolve();
+            return;
+          }
+          request.open('PUT', url);
+          request.setRequestHeader('x-ms-blob-type', 'BlockBlob');
+          if (file.type) {
+            request.setRequestHeader('Content-Type', file.type);
+          }
+          request.send(file);
+        } else {
+          request.open('POST', this.props.action);
+          request.send(formData);
+        }
       });
     };
     this.setState({uploadInfoVisible: true, uploadingFiles: uploadingFiles}, async () => {
@@ -530,7 +557,11 @@ class UploadButton extends React.Component {
         }, this.startUploadToS3Timeout);
         return false;
       };
-    } else if (this.props.synchronous || this.props.uploadToNFS) {
+    } else if (
+      this.props.synchronous ||
+      this.props.uploadToAzure ||
+      this.props.uploadToNFS
+    ) {
       uploadProps.beforeUpload = (file) => {
         const files = this.state.synchronousUploadingFiles;
         files.push(file);
@@ -546,7 +577,7 @@ class UploadButton extends React.Component {
       <Button
         size="small"
         id="upload-button"
-        disabled={this.props.uploadToS3 && !!this.s3StorageError}
+        disabled={this.props.disabled || (this.props.uploadToS3 && !!this.s3StorageError)}
       >
         <Icon type="upload" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
         <span style={{lineHeight: 'inherit', verticalAlign: 'middle'}}>{this.props.title}</span>
@@ -557,7 +588,7 @@ class UploadButton extends React.Component {
       <div style={{display: 'inline'}}>
         <Upload
           {...uploadProps}
-          disabled={this.props.uploadToS3 && !!this.s3StorageError}
+          disabled={this.props.disabled || (this.props.uploadToS3 && !!this.s3StorageError)}
           ref={component => {
             this.uploadButton = component;
           }}

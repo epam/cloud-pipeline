@@ -18,7 +18,6 @@ public class AuditConfiguration {
         return new AuditClient(DataStorageType.S3);
     }
 
-
     @Bean
     public AuditClient azAuditClient() {
         return new AuditClient(DataStorageType.AZ);
@@ -27,5 +26,10 @@ public class AuditConfiguration {
     @Bean
     public AuditClient gsAuditClient() {
         return new AuditClient(DataStorageType.GS);
+    }
+
+    @Bean
+    public AuditClient nfsAuditClient() {
+        return new AuditClient(DataStorageType.NFS);
     }
 }

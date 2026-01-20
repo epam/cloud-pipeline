@@ -206,7 +206,7 @@ export function runSupportsContinue (run) {
     : false;
   return !isRemovedPipeline &&
     roleModel.executeAllowed(run) &&
-    ['FAILURE', 'STOPPED'].includes(status.toUpperCase()) &&
+    ['FAILURE', 'STOPPED', 'SUCCESS'].includes(status.toUpperCase()) &&
     cpSupportContinue &&
     checkRunActionAvailable(run, runActions.continue);
 }

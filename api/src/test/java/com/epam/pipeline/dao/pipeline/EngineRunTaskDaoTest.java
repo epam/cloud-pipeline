@@ -23,12 +23,14 @@ import com.epam.pipeline.entity.pipeline.run.EngineRunTask;
 import com.epam.pipeline.entity.pipeline.run.EngineRunTaskFilter;
 import com.epam.pipeline.entity.pipeline.run.EngineTaskStatus;
 import com.epam.pipeline.entity.pipeline.run.EngineType;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import com.epam.pipeline.util.TestUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -220,6 +222,76 @@ public class EngineRunTaskDaoTest extends AbstractJdbcTest {
     }
 
     @Test
+    public void shouldFilterEngineRunTasksWithSortByStartDateAndPaging() {
+        final PipelineRun run = run();
+        pipelineRunDao.createPipelineRun(run);
+
+        engineRunTaskDao.batchUpsert(tasks(run.getId()));
+
+        List<EngineRunTask> page = engineRunTaskDao
+                .filterTasksByRunIdAndTypeAndFilter(run.getId(), EngineType.NEXTFLOW,
+                        pagingBuilder()
+                                .pageSize(3)
+                                .sorts(Collections.singletonList(EngineRunTaskSortVO.builder()
+                                        .column(EngineRunTaskSortVO.Columns.startDate)
+                                        .descending(true)
+                                        .build()))
+                                .build());
+        assertThat(page).hasSize(3);
+        assertThat(page.get(0).getTaskId()).isEqualTo(TASK_6);
+        assertThat(page.get(1).getTaskId()).isEqualTo(TASK_5);
+        assertThat(page.get(2).getTaskId()).isEqualTo(TASK_4);
+
+        page = engineRunTaskDao
+                .filterTasksByRunIdAndTypeAndFilter(run.getId(), EngineType.NEXTFLOW,
+                        pagingBuilder()
+                                .pageSize(3)
+                                .sorts(Collections.singletonList(EngineRunTaskSortVO.builder()
+                                        .column(EngineRunTaskSortVO.Columns.startDate)
+                                        .descending(false)
+                                        .build()))
+                                .build());
+        assertThat(page).hasSize(3);
+        assertThat(page.get(0).getTaskId()).isEqualTo(TASK_1);
+        assertThat(page.get(1).getTaskId()).isEqualTo(TASK_2);
+        assertThat(page.get(2).getTaskId()).isEqualTo(TASK_3);
+    }
+
+    @Test
+    public void shouldFilterEngineRunTasksWithSortByEndDateAndPaging() {
+        final PipelineRun run = run();
+        pipelineRunDao.createPipelineRun(run);
+
+        engineRunTaskDao.batchUpsert(tasks(run.getId()));
+
+        List<EngineRunTask> page = engineRunTaskDao
+                .filterTasksByRunIdAndTypeAndFilter(run.getId(), EngineType.NEXTFLOW,
+                        pagingBuilder()
+                                .pageSize(2)
+                                .sorts(Collections.singletonList(EngineRunTaskSortVO.builder()
+                                        .column(EngineRunTaskSortVO.Columns.endDate)
+                                        .descending(true)
+                                        .build()))
+                                .build());
+        assertThat(page).hasSize(2);
+        assertThat(page.get(0).getTaskId()).isEqualTo(TASK_3);
+        assertThat(page.get(1).getTaskId()).isEqualTo(TASK_6);
+
+        page = engineRunTaskDao
+                .filterTasksByRunIdAndTypeAndFilter(run.getId(), EngineType.NEXTFLOW,
+                        pagingBuilder()
+                                .pageSize(2)
+                                .sorts(Collections.singletonList(EngineRunTaskSortVO.builder()
+                                        .column(EngineRunTaskSortVO.Columns.endDate)
+                                        .descending(false)
+                                        .build()))
+                                .build());
+        assertThat(page).hasSize(2);
+        assertThat(page.get(0).getTaskId()).isEqualTo(TASK_6);
+        assertThat(page.get(1).getTaskId()).isEqualTo(TASK_3);
+    }
+
+    @Test
     public void shouldCalculateCountOfEngineRunTasks() {
         final PipelineRun run = run();
         pipelineRunDao.createPipelineRun(run);
@@ -236,33 +308,42 @@ public class EngineRunTaskDaoTest extends AbstractJdbcTest {
         runningEvent11.setTaskGroup(TASK_GROUP_1);
         runningEvent11.setTaskTag(TAG);
         runningEvent11.setStatus(EngineTaskStatus.RUNNING);
+        runningEvent11.setStartDateTime(Date.from(DateUtils.now().toInstant().minus(10L, ChronoUnit.MINUTES)));
 
         final EngineRunTask runningEvent12 = event(runId, TEST);
         runningEvent12.setTaskId(TASK_2);
         runningEvent12.setTaskGroup(TASK_GROUP_1);
         runningEvent12.setStatus(EngineTaskStatus.RUNNING);
+        runningEvent12.setStartDateTime(Date.from(DateUtils.now().toInstant().minus(9L, ChronoUnit.MINUTES)));
 
         final EngineRunTask completedEvent11 = event(runId, TEST);
         completedEvent11.setTaskId(TASK_3);
         completedEvent11.setTaskGroup(TASK_GROUP_1);
         completedEvent11.setStatus(EngineTaskStatus.COMPLETED);
+        completedEvent11.setStartDateTime(Date.from(DateUtils.now().toInstant().minus(8L, ChronoUnit.MINUTES)));
+        completedEvent11.setEndDateTime(DateUtils.now());
 
         final EngineRunTask runningEvent21 = event(runId, TEST);
         runningEvent21.setTaskId(TASK_4);
         runningEvent21.setTaskGroup(TASK_GROUP_2);
         runningEvent21.setTaskKey(TEST + HASH.toUpperCase(Locale.ROOT));
         runningEvent21.setStatus(EngineTaskStatus.RUNNING);
+        runningEvent21.setStartDateTime(Date.from(DateUtils.now().toInstant().minus(7L, ChronoUnit.MINUTES)));
+
 
         final EngineRunTask runningEvent22 = event(runId, TEST);
         runningEvent22.setTaskId(TASK_5);
         runningEvent22.setTaskGroup(TASK_GROUP_2);
         runningEvent22.setStatus(EngineTaskStatus.RUNNING);
+        runningEvent22.setStartDateTime(Date.from(DateUtils.now().toInstant().minus(6L, ChronoUnit.MINUTES)));
 
         final EngineRunTask completedEvent21 = event(runId, TEST);
         completedEvent21.setTaskId(TASK_6);
         completedEvent21.setTaskGroup(TASK_GROUP_2);
         completedEvent21.setTaskKey(TEST + HASH.toLowerCase(Locale.ROOT));
         completedEvent21.setStatus(EngineTaskStatus.COMPLETED);
+        completedEvent21.setStartDateTime(Date.from(DateUtils.now().toInstant().minus(5L, ChronoUnit.MINUTES)));
+        completedEvent21.setEndDateTime(Date.from(DateUtils.now().toInstant().minus(1L, ChronoUnit.MINUTES)));
 
         final EngineRunTask emptyGroupEvent = event(runId, TEST);
         emptyGroupEvent.setTaskId(TASK_7);
@@ -285,7 +366,6 @@ public class EngineRunTaskDaoTest extends AbstractJdbcTest {
                 .taskName(task)
                 .status(EngineTaskStatus.CREATED)
                 .engineType(EngineType.NEXTFLOW)
-                .startDateTime(new Date())
                 .attributes("{\"test\": \"JSON object\"}")
                 .build();
     }

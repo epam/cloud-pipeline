@@ -17,23 +17,22 @@
 package com.epam.pipeline.manager.cloud.azure;
 
 
+import com.azure.core.credential.TokenCredential;
+import com.azure.core.management.Region;
+import com.azure.resourcemanager.AzureResourceManager;
+import com.azure.resourcemanager.compute.fluent.models.ResourceSkuInner;
+import com.azure.resourcemanager.compute.models.ComputeResourceType;
+import com.azure.resourcemanager.compute.models.ResourceSkuCapabilities;
+import com.azure.resourcemanager.compute.models.ResourceSkuRestrictionsReasonCode;
+import com.azure.resourcemanager.resources.fluentcore.model.HasInnerModel;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.pricing.azure.AzurePricingMeter;
-import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
 import com.epam.pipeline.manager.datastorage.providers.azure.AzureHelper;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.microsoft.azure.credentials.ApplicationTokenCredentials;
-import com.microsoft.azure.credentials.AzureTokenCredentials;
-import com.microsoft.azure.management.Azure;
-import com.microsoft.azure.management.compute.ComputeResourceType;
-import com.microsoft.azure.management.compute.ResourceSkuCapabilities;
-import com.microsoft.azure.management.compute.ResourceSkuRestrictionsReasonCode;
-import com.microsoft.azure.management.compute.implementation.ResourceSkuInner;
-import com.microsoft.azure.management.resources.fluentcore.arm.Region;
-import com.microsoft.azure.management.resources.fluentcore.model.HasInner;
 import okhttp3.OkHttpClient;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -41,7 +40,6 @@ import org.apache.commons.lang.StringUtils;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Date;
@@ -103,43 +101,36 @@ public abstract class AbstractAzurePriceListLoader {
 
     }
 
-    public List<InstanceOffer> load(final AbstractCloudRegion region) throws IOException {
-        final AzureTokenCredentials credentials = getAzureCredentials();
-        final Azure client = AzureHelper.buildClient(authPath);
+    public List<InstanceOffer> load(final AzureRegion region) throws IOException {
+        final AzureCredentials credential = AzureHelper.getAzureCredentials(region);
+        final AzureResourceManager client = AzureHelper.buildClient(credential);
 
         final Map<String, ResourceSkuInner> vmSkusByName = client.computeSkus()
-                .listbyRegionAndResourceType(Region.fromName(region.getRegionCode()),
+                .listByRegionAndResourceType(Region.fromName(region.getRegionCode()),
                         ComputeResourceType.VIRTUALMACHINES)
                 .stream()
-                .map(HasInner::inner)
+                .map(HasInnerModel::innerModel)
                 .filter(sku -> Objects.nonNull(sku.name()) && isAvailableForSubscription(sku))
                 .collect(Collectors.toMap(sku -> buildVMKey(sku.name()), Function.identity()));
 
         final Map<String, ResourceSkuInner> diskSkusByName = client.computeSkus()
                 .listByResourceType(ComputeResourceType.DISKS)
                 .stream()
-                .map(HasInner::inner)
+                .map(HasInnerModel::innerModel)
                 .filter(sku -> Objects.nonNull(sku.size()) && isAvailableForSubscription(sku))
                 .collect(Collectors.toMap(ResourceSkuInner::size, Function.identity(), (o1, o2) -> o1));
 
-        return getInstanceOffers(region, credentials, client, vmSkusByName, diskSkusByName);
+        return getInstanceOffers(region, credential.getCredential(), client, vmSkusByName, diskSkusByName);
     }
 
-    protected abstract List<InstanceOffer> getInstanceOffers(AbstractCloudRegion region,
-                                                             AzureTokenCredentials credentials,
-                                                             Azure client,
+    protected abstract List<InstanceOffer> getInstanceOffers(AzureRegion region,
+                                                             TokenCredential credential,
+                                                             AzureResourceManager client,
                                                              Map<String, ResourceSkuInner> vmSkusByName,
                                                              Map<String, ResourceSkuInner> diskSkusByName)
-                                                             throws IOException;
+            throws IOException;
 
     public abstract String getAPIVersion();
-
-    protected AzureTokenCredentials getAzureCredentials() throws IOException {
-        if (StringUtils.isBlank(authPath)) {
-            return AzureHelper.getAzureCliCredentials();
-        }
-        return ApplicationTokenCredentials.fromFile(new File(authPath));
-    }
 
     protected boolean isLowPriorityAvailable(final ResourceSkuInner sku) {
         return ListUtils.emptyIfNull(sku.capabilities())
@@ -183,9 +174,9 @@ public abstract class AbstractAzurePriceListLoader {
     }
 
     protected InstanceOffer diskSkuToOffer(final Long regionId,
-                                         final ResourceSkuInner diskSku,
-                                         final double price,
-                                         final String unit) {
+                                           final ResourceSkuInner diskSku,
+                                           final double price,
+                                           final String unit) {
         final Map<String, String> capabilitiesByName = ListUtils.emptyIfNull(diskSku.capabilities())
                 .stream()
                 .collect(Collectors.toMap(ResourceSkuCapabilities::name, ResourceSkuCapabilities::value));

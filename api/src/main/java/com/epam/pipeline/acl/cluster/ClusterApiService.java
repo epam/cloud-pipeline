@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import com.epam.pipeline.controller.vo.FilterNodesVO;
 import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
@@ -29,6 +30,7 @@ import com.epam.pipeline.entity.cluster.MachineType;
 import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeInstance;
+import com.epam.pipeline.entity.cluster.NodeResources;
 import com.epam.pipeline.entity.cluster.PodDescription;
 import com.epam.pipeline.entity.cluster.PodInstance;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
@@ -46,6 +48,7 @@ import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.PodsManager;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
+import com.epam.pipeline.manager.security.acl.AclMaskList;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PostFilter;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -57,6 +60,8 @@ import static com.epam.pipeline.security.acl.AclExpressions.CLOUD_NODE_READ;
 import static com.epam.pipeline.security.acl.AclExpressions.NODE_READ;
 import static com.epam.pipeline.security.acl.AclExpressions.NODE_READ_FILTER;
 import static com.epam.pipeline.security.acl.AclExpressions.NODE_STOP;
+import static com.epam.pipeline.security.acl.AclExpressions.OR;
+import static com.epam.pipeline.security.acl.AclExpressions.RUN_ADMIN_ONLY;
 
 @Service
 @RequiredArgsConstructor
@@ -70,11 +75,13 @@ public class ClusterApiService {
     private final PodsManager podsManager;
 
     @PostFilter(NODE_READ_FILTER)
+    @AclMaskList
     public List<NodeInstance> getNodes(final MachineType machineType) {
         return nodesManager.getNodes(machineType);
     }
 
     @PostFilter(NODE_READ_FILTER)
+    @AclMaskList
     public List<NodeInstance> filterNodes(final FilterNodesVO filterNodesVO, final MachineType machineType) {
         return nodesManager.filterNodes(filterNodesVO, machineType);
     }
@@ -102,26 +109,29 @@ public class ClusterApiService {
         return nodesManager.terminateKubeOrCloudNode(name, machineType, regionId);
     }
 
-    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    @PreAuthorize(ADMIN_OR_GENERAL_USER + OR + RUN_ADMIN_ONLY)
     public List<MonitoringStats> getStatsForNode(final String name,
                                                  final LocalDateTime from,
-                                                 final LocalDateTime to) {
-        return usageMonitoringManager.getStatsForNode(name, from, to);
+                                                 final LocalDateTime to,
+                                                 final Long runId) {
+        return usageMonitoringManager.getStatsForNode(name, from, to, runId);
     }
 
-    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    @PreAuthorize(ADMIN_OR_GENERAL_USER + OR + RUN_ADMIN_ONLY)
     public GpuMonitoringStats getGpuStatsForNode(final String name,
                                                  final LocalDateTime from,
                                                  final LocalDateTime to,
                                                  final List<GpuMetricsGranularity> granularity,
-                                                 final boolean squashCharts) {
-        return usageMonitoringManager.getGpuStatsForNode(name, from, to, granularity, squashCharts);
+                                                 final boolean squashCharts,
+                                                 final Long runId) {
+        return usageMonitoringManager.getGpuStatsForNode(name, from, to, granularity, squashCharts, runId);
     }
 
-    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    @PreAuthorize(ADMIN_OR_GENERAL_USER + OR + RUN_ADMIN_ONLY)
     public InputStream getUsageStatisticsFile(final String name, final LocalDateTime from, final LocalDateTime to,
-                                              final Duration interval, final MonitoringReportType type) {
-        return usageMonitoringManager.getStatsForNodeAsInputStream(name, from, to, interval, type);
+                                              final Duration interval, final MonitoringReportType type,
+                                              final Long runId) {
+        return usageMonitoringManager.getStatsForNodeAsInputStream(name, from, to, interval, type, runId);
     }
 
     public List<InstanceType> getAllowedInstanceTypes(final Long regionId, final Boolean spot) {
@@ -155,26 +165,39 @@ public class ClusterApiService {
         return podsManager.getCorePods();
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + RUN_ADMIN_ONLY)
+    public List<PodInstance> getPodsByLabels(final Map<String, String> labels) {
+        return podsManager.getPodsByLabels(labels);
+    }
+
+    @PreAuthorize(ADMIN_ONLY + OR + RUN_ADMIN_ONLY)
     public PodDescription getPodDescription(final String podId, final boolean detailed) {
         return podsManager.describePod(podId, detailed);
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + RUN_ADMIN_ONLY)
     public String getContainerLogs(final String podId, final String containerId, final Integer limit) {
         return podsManager.getContainerLogs(podId, containerId, limit);
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + RUN_ADMIN_ONLY)
     public NetworkEventFilter getPlatformNetworkEventFilter() {
         return usageMonitoringManager.getPlatformNetworkStatsFilters();
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + RUN_ADMIN_ONLY)
     public List<HistogramBin> filterPlatformNetworkEvents(final HistogramType histogramType,
                                                           final LocalDateTime from, final LocalDateTime to,
                                                           final Integer intervals,
                                                           final NetworkEventFilter filter) {
         return usageMonitoringManager.getPlatformNetworkStats(histogramType, from, to, intervals, filter);
+    }
+
+    public InstanceType loadInstanceType(final String instanceType) {
+        return instanceOfferManager.loadInstanceType(instanceType);
+    }
+
+    public List<NodeResources> loadNodeAvailableResource(final Map<String, String> labels) {
+        return nodesManager.loadNodeAvailableResources(labels);
     }
 }

@@ -35,10 +35,13 @@ import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.PathDescription;
+import com.epam.pipeline.entity.datastorage.access.DataAccessEvent;
+import com.epam.pipeline.entity.datastorage.access.DataAccessType;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.exception.ObjectNotFoundException;
 import com.epam.pipeline.manager.datastorage.FileShareMountManager;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoredListingContainer;
+import com.epam.pipeline.manager.datastorage.providers.StorageEventCollector;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Constants;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -101,6 +104,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     private final Set<PosixFilePermission> filePermissions;
     private final Set<PosixFilePermission> folderPermissions;
     private final Integer groupUID;
+    private final StorageEventCollector events;
 
     public NFSStorageProvider(final PreferenceManager preferenceManager,
                               final FileShareMountManager shareMountManager,
@@ -108,7 +112,8 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
                               final AuthManager authManager,
                               @Value("${data.storage.nfs.default.umask:0002}") final String fileShareUMask,
                               @Value("${data.storage.nfs.default.group.uid:}") final Integer groupUID,
-                              final MessageHelper messageHelper) {
+                              final MessageHelper messageHelper,
+                              final StorageEventCollector nfsEvents) {
         this.messageHelper = messageHelper;
         this.preferenceManager = preferenceManager;
         this.shareMountManager = shareMountManager;
@@ -123,6 +128,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
                 .filter(p -> !PosixPermissionUtils.EXECUTE_PERMISSIONS.contains(p))
                 .collect(Collectors.toSet());
         this.groupUID = groupUID;
+        this.events = nfsEvents;
     }
 
     @Override
@@ -355,6 +361,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
         throws DataStorageException {
         File dataStorageDir = nfsStorageMounter.mount(dataStorage);
         File file = new File(dataStorageDir, path);
+        events.put(new DataAccessEvent(path, DataAccessType.WRITE, dataStorage));
 
         try (BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(file))) {
             IOUtils.copy(dataStream, outputStream);
@@ -370,6 +377,9 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     public DataStorageFolder createFolder(NFSDataStorage dataStorage, String path) throws DataStorageException {
         File dataStorageDir = nfsStorageMounter.mount(dataStorage);
         File folder = new File(dataStorageDir, path);
+
+        events.put(new DataAccessEvent(path, DataAccessType.WRITE, dataStorage));
+
         if (!folder.mkdirs()) {
             throw new DataStorageException(messageHelper.getMessage(
                 MessageConstants.ERROR_DATASTORAGE_NFS_CREATE_FOLDER, dataStorage.getPath()));
@@ -401,6 +411,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
         throws DataStorageException {
         File dataStorageDir = nfsStorageMounter.mount(dataStorage);
         File file = new File(dataStorageDir, path);
+        events.put(new DataAccessEvent(path, DataAccessType.DELETE, dataStorage));
 
         try {
             Files.delete(file.toPath());
@@ -414,6 +425,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
         throws DataStorageException {
         File dataStorageDir = nfsStorageMounter.mount(dataStorage);
         File folder = new File(dataStorageDir, path);
+        events.put(new DataAccessEvent(path, DataAccessType.DELETE, dataStorage));
 
         try {
             FileUtils.deleteDirectory(folder);
@@ -440,6 +452,10 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
         File dataStorageDir = nfsStorageMounter.mount(dataStorage);
         File file = new File(dataStorageDir, oldPath);
         File newFile = new File(dataStorageDir, newPath);
+
+        events.put(new DataAccessEvent(oldPath, DataAccessType.READ, dataStorage),
+                new DataAccessEvent(oldPath, DataAccessType.DELETE, dataStorage),
+                new DataAccessEvent(newPath, DataAccessType.WRITE, dataStorage));
 
         try {
             if (file.isDirectory()) {
@@ -470,6 +486,10 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
         final File dataStorageDir = nfsStorageMounter.mount(dataStorage);
         final File oldFile = new File(dataStorageDir, oldPath);
         final File newFile = new File(dataStorageDir, newPath);
+
+        events.put(new DataAccessEvent(oldPath, DataAccessType.READ, dataStorage),
+                new DataAccessEvent(newPath, DataAccessType.WRITE, dataStorage));
+
         copy(oldFile, newFile);
         return newFile;
     }
@@ -518,6 +538,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
                                           Long maxDownloadSize) {
         File mntDir = nfsStorageMounter.mount(dataStorage);
         File file = new File(mntDir, path);
+        events.put(new DataAccessEvent(path, DataAccessType.READ, dataStorage));
 
         try (FileInputStream fis = new FileInputStream(file)) {
             DataStorageItemContent content = new DataStorageItemContent();
@@ -546,6 +567,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     public DataStorageStreamingContent getStream(NFSDataStorage dataStorage, String path, String version) {
         File mntDir = nfsStorageMounter.mount(dataStorage);
         File file = new File(mntDir, path);
+        events.put(new DataAccessEvent(path, DataAccessType.READ, dataStorage));
 
         try {
             return new DataStorageStreamingContent(file);

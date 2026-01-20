@@ -80,7 +80,7 @@ public class RunBillingMapperTest {
     private static final String TEST_REGION_NAME = "test-region";
     private static final CloudProvider TEST_REGION_PROVIDER = CloudProvider.AWS;
     private static final BigDecimal TEST_PRICE = BigDecimal.ONE;
-    private static final int TEST_PRICES_MULTIPLIER = 100_000;
+    private static final Long TEST_PRICES_MULTIPLIER = 100_000L;
     private static final Long TEST_USAGE_MINUTES = 600L;
     private static final Long TEST_PAUSED_MINUTES = 400L;
     private static final List<String> TEST_GROUPS = Arrays.asList(TEST_GROUP_1, TEST_GROUP_2);
@@ -166,9 +166,7 @@ public class RunBillingMapperTest {
             .region(region)
             .build();
 
-        final XContentBuilder mappedBilling = mapper.map(billingContainer);
-
-        final Map<String, Object> mappedFields = TestUtils.getPuttedObject(mappedBilling);
+        final Map<String, ?> mappedFields = mapper.map(billingContainer);
 
         assertEquals(SearchDocumentType.PIPELINE_RUN.name(),
                 mappedFields.get(ElasticsearchSynchronizer.DOC_TYPE_FIELD));
@@ -206,8 +204,8 @@ public class RunBillingMapperTest {
 
         assertEquals(TEST_USAGE_MINUTES.intValue(), mappedFields.get("usage_minutes"));
         assertEquals(TEST_PAUSED_MINUTES.intValue(), mappedFields.get("paused_minutes"));
-        assertEquals(run.getPricePerHour().intValue(), mappedFields.get("run_price"));
-        assertEquals(run.getComputePricePerHour().intValue() * TEST_PRICES_MULTIPLIER,
+        assertEquals(run.getPricePerHour()..intValue(), mappedFields.get("run_price"));
+        assertEquals(run.getComputePricePerHour()..intValue() * TEST_PRICES_MULTIPLIER,
                 mappedFields.get("compute_price"));
         assertEquals(run.getDiskPricePerHour().intValue() * TEST_PRICES_MULTIPLIER,
                 mappedFields.get("disk_price"));

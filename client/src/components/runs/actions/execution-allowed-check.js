@@ -25,6 +25,7 @@ import {
   Dropdown
 } from 'antd';
 import roleModel from '../../../utils/roleModel';
+import preferences from '../../../models/preferences/PreferencesLoad';
 
 const SCHEMAS = /^(gs:\/\/|s3:\/\/|az:\/\/|cp:\/\/)/i;
 
@@ -223,6 +224,7 @@ export async function performAsyncCheck (props, state = undefined) {
     skipCheck
   } = props;
   await Promise.all([
+    preferences.fetchIfNeededOrWait(),
     dataStorages ? dataStorages.fetchIfNeededOrWait() : null,
     dockerRegistries ? dockerRegistries.fetchIfNeededOrWait() : null]
     .filter(Boolean)
@@ -244,7 +246,13 @@ export async function performAsyncCheck (props, state = undefined) {
   if (!outputsErrors) {
     outputsErrors = [];
   }
-  if (!skipCheck && (!dockerImageChecked || props.dockerImage !== dockerImageChecked)) {
+  const skipDockerVerify = !preferences.launchDockerPreflightChecks;
+  if (skipDockerVerify) {
+    dockerImageErrors = [];
+  } else if (
+    !skipCheck &&
+    (!dockerImageChecked || props.dockerImage !== dockerImageChecked)
+  ) {
     dockerImageErrors = (await checkDockerImage(props)).filter(Boolean);
     dockerImageChecked = props.dockerImage;
   }

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -57,8 +57,9 @@ yum install -y  docker-ce-20.10* \
 if [ $? -ne 0 ]; then
   echo "Unable to install docker from the official repository, trying to use default docker-18.03*"
 
-  # Otherwise try to install default docker (e.g. if it's amazon linux)
-  yum install -y docker-20.10*
+  # Otherwise try to install default docker (e.g. if it's amazon linux) defining containerd version
+  rm -f /etc/yum.repos.d/docker-ce.repo
+  yum install -y docker-20.10* containerd-1.6*
   if [ $? -ne 0 ]; then
     echo "Unable to install default docker-18.03* too, exiting"
     exit 1

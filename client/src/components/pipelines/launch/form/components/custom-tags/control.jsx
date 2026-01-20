@@ -10,10 +10,10 @@ class CustomTagsControl extends React.PureComponent {
 
   onOpen = () => this.setState({visible: true});
   onClose = () => this.setState({visible: false});
-  onSave = (newTags) => {
+  onSave = (newTags, tagsTouched) => {
     const {onChange} = this.props;
     if (onChange) {
-      onChange(newTags);
+      onChange(newTags, tagsTouched);
     }
     this.onClose();
   }
@@ -25,6 +25,7 @@ class CustomTagsControl extends React.PureComponent {
       disabled,
       tags = {},
       validation = [],
+      visibleTags = [],
       payload,
       buttonText
     } = this.props;
@@ -39,6 +40,7 @@ class CustomTagsControl extends React.PureComponent {
         <CustomTagsButton
           tags={tags}
           validation={validation}
+          visibleTags={visibleTags}
           payload={payload}
           disabled={disabled}
           onClick={this.onOpen}
@@ -62,6 +64,7 @@ CustomTagsControl.propTypes = {
   disabled: PropTypes.bool,
   tags: PropTypes.object,
   validation: PropTypes.oneOfType(PropTypes.object, PropTypes.array),
+  visibleTags: PropTypes.oneOfType(PropTypes.object, PropTypes.array),
   payload: PropTypes.object,
   onChange: PropTypes.func,
   buttonText: PropTypes.node

@@ -15,7 +15,7 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl;
 
-import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
 import com.epam.pipeline.elasticsearchagent.service.lock.LockService;
 import com.epam.pipeline.entity.datastorage.*;

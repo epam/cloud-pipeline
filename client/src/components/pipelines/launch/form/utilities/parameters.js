@@ -35,6 +35,18 @@ export const CP_CAP_REQUESTS_CPU = 'CP_CAP_REQUESTS_CPU';
 export const CP_CAP_REQUESTS_GPU = 'CP_CAP_REQUESTS_GPU';
 export const CP_CAP_REQUESTS_RAM = 'CP_CAP_REQUESTS_RAM';
 
+export const systemCapabilitiesParameters = [
+  CP_CAP_DIND_CONTAINER,
+  CP_CAP_SINGULARITY,
+  CP_CAP_SYSTEMD_CONTAINER,
+  CP_CAP_DESKTOP_NM,
+  CP_CAP_MODULES,
+  CP_DISABLE_HYPER_THREADING,
+  CP_CAP_DCV,
+  CP_CAP_DCV_DESKTOP,
+  CP_CAP_DCV_WEB
+];
+
 export const reservedParameters = [
   CP_CAP_LIMIT_MOUNTS,
   CP_CAP_SGE,
@@ -46,6 +58,8 @@ export const reservedParameters = [
   CP_CAP_AUTOSCALE_HYBRID,
   CP_CAP_AUTOSCALE_PRICE_TYPE,
   CP_CAP_RESCHEDULE_RUN,
+
+  ...systemCapabilitiesParameters,
 
   CP_CAP_SHARE_FS_TYPE,
   CP_CAP_SHARE_FS_DEPLOYMENT_TYPE,

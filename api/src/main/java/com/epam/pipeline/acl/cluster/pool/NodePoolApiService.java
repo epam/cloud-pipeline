@@ -36,32 +36,32 @@ public class NodePoolApiService {
     private final NodePoolManager nodeManager;
     private final NodePoolUsageService nodePoolUsageService;
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    @PreAuthorize(AclExpressions.ADMIN_OR_CLUSTER_READER)
     public List<? extends NodePoolInfo> loadAll(final boolean loadStatus) {
         return nodeManager.loadAll(loadStatus);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    @PreAuthorize(AclExpressions.ADMIN_OR_CLUSTER_READER)
     public NodePool load(final Long poolId) {
         return nodeManager.load(poolId);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    @PreAuthorize(AclExpressions.ADMIN_ONLY + AclExpressions.OR + AclExpressions.RUN_ADMIN_ONLY)
     public NodePool createOrUpdate(final NodePoolVO vo) {
         return nodeManager.createOrUpdate(vo);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    @PreAuthorize(AclExpressions.ADMIN_ONLY + AclExpressions.OR + AclExpressions.RUN_ADMIN_ONLY)
     public NodePool delete(final Long poolId) {
         return nodeManager.delete(poolId);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    @PreAuthorize(AclExpressions.ADMIN_ONLY + AclExpressions.OR + AclExpressions.RUN_ADMIN_ONLY)
     public List<NodePoolUsage> saveUsage(final List<NodePoolUsage> records) {
         return nodePoolUsageService.save(records);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    @PreAuthorize(AclExpressions.ADMIN_ONLY + AclExpressions.OR + AclExpressions.RUN_ADMIN_ONLY)
     public Boolean deleteUsage(final LocalDate date) {
         return nodePoolUsageService.deleteExpired(date);
     }

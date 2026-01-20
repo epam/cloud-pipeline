@@ -60,6 +60,8 @@ const extractDataSets = (
 function OverallPoolChart ({
   title,
   style,
+  className,
+  containerStyle,
   onClick,
   rawData = [],
   units,
@@ -112,15 +114,13 @@ function OverallPoolChart ({
       style={
         Object.assign(
           {
-            width: '50%',
-            height: '450px',
             position: 'relative',
-            display: 'block',
-            marginRight: '5px'
+            display: 'block'
           },
-          style
+          containerStyle
         )
       }
+      className={className}
     >
       <Chart
         data={dataConfiguration}

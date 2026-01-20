@@ -173,6 +173,10 @@ public class PipelineUser extends AbstractSecuredEntity implements StorageContai
         return AclClass.PIPELINE;
     }
 
+    public boolean hasRole(Role role) {
+        return roles.stream().anyMatch(r -> r.getName().equals(role.getName()));
+    }
+
     public static class AttributesConverterJson implements AttributeConverter<Map<String, String>, String>  {
 
         private final ObjectMapper mapper = new ObjectMapper();

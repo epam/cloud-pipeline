@@ -129,26 +129,10 @@ function config_nm {
   mv nomachine-common/create_chrome_launcher.sh /tmp/ && \
   mv nomachine-common/scramble /usr/local/bin/ && \
   cp -r nomachine-common/* /etc/nomachine/ && \
-  rm -f /etc/nomachine/xfce/.config/xfce4/panel/xkb-plugin-${XKB_PLUGIN_ID}.rc && \
-  mv /etc/nomachine/xfce/.config/xfce4/panel/xkb-plugin.rc /etc/nomachine/xfce/.config/xfce4/panel/xkb-plugin-${XKB_PLUGIN_ID}.rc && \
   rm -rf nomachine-common* && \
   cp /usr/NX/etc/server.cfg /usr/NX/etc/server.cfg.template
   if [[ $? -ne 0 ]]; then
     return 1
-  fi
-
-  if [[ "$IS_RPM_BASED" = 0 ]]; then
-    XKB_PLUGIN_ID=6
-    sed -i 's@_XKB_PLUGIN_NAME_@xkb-plugin@g' /etc/nomachine/xfce/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml && \
-    sed -i 's@_XKB_PLUGIN_ID_@'"$XKB_PLUGIN_ID"'@g' /etc/nomachine/xfce/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml
-  else
-    XKB_PLUGIN_ID=9
-    if [[ "$(. /etc/os-release;echo $VERSION_ID)" == *"18."* ]]; then
-        sed -i 's@_XKB_PLUGIN_NAME_@xkb@g' /etc/nomachine/xfce/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml ;
-    else
-        sed -i 's@_XKB_PLUGIN_NAME_@xkb-plugin@g' /etc/nomachine/xfce/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml;
-    fi
-    sed -i 's@_XKB_PLUGIN_ID_@'"$XKB_PLUGIN_ID"'@g' /etc/nomachine/xfce/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml
   fi
 }
 

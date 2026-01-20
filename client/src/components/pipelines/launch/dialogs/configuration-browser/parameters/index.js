@@ -182,7 +182,7 @@ class Parameters extends React.Component {
           </Button>
           <Dropdown
             overlay={menu}
-            trigger={['click']}
+            trigger={(disabled || !editable) ? [] : ['click']}
             placement="bottomRight"
           >
             <Button

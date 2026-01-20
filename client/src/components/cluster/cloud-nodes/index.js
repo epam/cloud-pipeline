@@ -15,11 +15,46 @@
  */
 
 import React from 'react';
+import {Alert} from 'antd';
 import Cluster from '../Cluster';
 import {MACHINE_TYPES} from '../../../models/cluster/ClusterNodes';
+import roleModel from '../../../utils/roleModel';
+import {observer} from 'mobx-react';
+import LoadingView from '../../special/LoadingView';
+import {isAdmin} from '../utilities/access-permissinos';
 
+@roleModel.authenticationInfo
+@observer
 export default class CloudNodes extends React.Component {
   render () {
+    const {authenticatedUserInfo} = this.props;
+    const {pending, loaded, value, error: loadError} = authenticatedUserInfo;
+    if (pending && !loaded) {
+      return (
+        <div style={{width: '100%', height: '100%'}}>
+          <LoadingView />
+        </div>
+      );
+    }
+    const error = (() => {
+      if (loadError) {
+        return `Access is denied: ${loadError}`;
+      }
+      if (!value) {
+        return `Access is denied: error fetching user info`;
+      }
+      if (!isAdmin(value)) {
+        return `Access is denied`;
+      }
+      return undefined;
+    })();
+    if (error) {
+      return (
+        <div style={{width: '100%', height: '100%'}}>
+          <Alert message={error} type="error" />
+        </div>
+      );
+    }
     return (
       <Cluster
         {...this.props}

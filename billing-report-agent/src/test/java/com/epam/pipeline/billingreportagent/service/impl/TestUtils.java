@@ -33,7 +33,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -59,13 +58,6 @@ public final class TestUtils {
 
         assertEquals(expected.size(), actual.size());
         expected.forEach(element -> assertTrue(actual.contains(element)));
-    }
-
-    public static Map<String, Object> getPuttedObject(final XContentBuilder contentBuilder) throws IOException {
-        JsonFactory factory = new JsonFactory();
-        JsonXContentParser parser = new JsonXContentParser(NamedXContentRegistry.EMPTY, null,
-                                                           factory.createParser(Strings.toString(contentBuilder)));
-        return parser.map();
     }
 
     public static PipelineRun createTestPipelineRun(final Long runId, final Long pipelineId, final String tool,
