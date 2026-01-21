@@ -34,6 +34,13 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
       - run: bash deploy/github_actions/gha_build_macos_arm.sh
+        env:
+          MAC_SIGN_IDENTITY: ${{ secrets.MAC_SIGN_IDENTITY }}
+          MAC_SIGN_KEYCHAIN: ${{ secrets.MAC_SIGN_KEYCHAIN }}
+          MAC_SIGN_KEYCHAIN_PASSWORD: ${{ secrets.MAC_SIGN_KEYCHAIN_PASSWORD }}
+          MAC_SIGN_P12: ${{ secrets.MAC_SIGN_P12 }}
+          MAC_SIGN_P12_PASSWORD: ${{ secrets.MAC_SIGN_P12_PASSWORD }}
+          PIPE_CLI_REQUIRES_SIGNING: ${{ secrets.PIPE_CLI_REQUIRES_SIGNING }}
   Publish_Docs:
     runs-on: ubuntu-22.04
     steps:
