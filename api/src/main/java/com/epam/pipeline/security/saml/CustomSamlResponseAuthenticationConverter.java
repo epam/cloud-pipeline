@@ -54,16 +54,13 @@ public class CustomSamlResponseAuthenticationConverter {
     private final UserManager userManager;
     private final UserAccessService accessService;
 
-    public CustomSamlResponseAuthenticationConverter(@Value("${saml.authorities.attribute.names: null}")
-                                                     final List<String> authorities,
-                                                     @Value("#{'${saml.user.attributes}'.split(',')}")
-                                                     final Set<String> samlAttributes,
-                                                     @Value("${saml.user.blocked.attribute: }")
-                                                     final String blockedAttribute,
-                                                     @Value("${saml.user.blocked.attribute.true.val: true}")
-                                                     final String blockedAttributeTrueValue,
-                                                     final UserManager userManager,
-                                                     final UserAccessService accessService) {
+    public CustomSamlResponseAuthenticationConverter(
+            @Value("${saml.authorities.attribute.names: null}") final List<String> authorities,
+            @Value("#{'${saml.user.attributes}'.split(',')}") final Set<String> samlAttributes,
+            @Value("${saml.user.blocked.attribute: }") final String blockedAttribute,
+            @Value("${saml.user.blocked.attribute.true.val: true}") final String blockedAttributeTrueValue,
+            final UserManager userManager,
+            final UserAccessService accessService) {
         this.authorities = authorities;
         this.samlAttributes = samlAttributes;
         this.blockedAttribute = blockedAttribute;
@@ -141,12 +138,12 @@ public class CustomSamlResponseAuthenticationConverter {
         if (CollectionUtils.isEmpty(samlAttributes)) {
             return Collections.emptyMap();
         }
-        Map<String, String> parsedAttributes = new HashMap<>();
+        final Map<String, String> parsedAttributes = new HashMap<>();
         for (String attribute : samlAttributes) {
             if (attribute.contains(ATTRIBUTES_DELIMITER)) {
-                String[] splittedRecord = attribute.split(ATTRIBUTES_DELIMITER);
-                String key = splittedRecord[0];
-                String value = splittedRecord[1];
+                final String[] splittedRecord = attribute.split(ATTRIBUTES_DELIMITER);
+                final String key = splittedRecord[0];
+                final String value = splittedRecord[1];
                 if (StringUtils.isEmpty(key) || StringUtils.isEmpty(value)) {
                     log.error("Can not parse saml user attributes property.");
                     continue;

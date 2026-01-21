@@ -23,6 +23,7 @@ import org.springframework.boot.autoconfigure.session.DefaultCookieSerializerCus
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -33,6 +34,8 @@ import org.springframework.security.saml2.provider.service.registration.RelyingP
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
+import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
+import org.springframework.security.web.authentication.logout.SimpleUrlLogoutSuccessHandler;
 import org.springframework.web.cors.CorsConfiguration;
 
 @Configuration
@@ -41,16 +44,22 @@ public class SAMLSecurityConfiguration {
 
     private final String loginFailureRedirect;
     private final String acsEndpoint;
+    private final boolean logoutInvalidateSession;
+    private final String logoutEndpoint;
     private final CustomSamlResponseAuthenticationConverter responseAuthenticationConverter;
     private final CustomSamlRelyingPartyRegistrationBuilder relyingPartyRegistrationBuilder;
 
     public SAMLSecurityConfiguration(
-            @Value("${saml.login.failure.redirect:/error}") final  String loginFailureRedirect,
+            @Value("${saml.login.failure.redirect:/error}") final String loginFailureRedirect,
             @Value("${saml.sso.acs.endpoint:/saml/SSO}") final String acsEndpoint,
+            @Value("${saml.logout.invalidate.session:false}") final boolean logoutInvalidateSession,
+            @Value("${saml.logout.endpoint:/saml/logout}") final String logoutEndpoint,
             final CustomSamlResponseAuthenticationConverter responseAuthenticationConverter,
             final CustomSamlRelyingPartyRegistrationBuilder relyingPartyRegistrationBuilder) {
         this.loginFailureRedirect = loginFailureRedirect;
         this.acsEndpoint = acsEndpoint;
+        this.logoutInvalidateSession = logoutInvalidateSession;
+        this.logoutEndpoint = logoutEndpoint;
         this.responseAuthenticationConverter = responseAuthenticationConverter;
         this.relyingPartyRegistrationBuilder = relyingPartyRegistrationBuilder;
     }
@@ -65,18 +74,27 @@ public class SAMLSecurityConfiguration {
 
     @Bean
     public SecurityFilterChain samlFilterChain(final HttpSecurity http) throws Exception {
+        final var relyingPartyRegistrationRepository = relyingPartyRegistrationRepository();
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorize -> authorize
                         .anyRequest().authenticated()
                 )
                 .saml2Login(saml2 -> saml2
-                        .relyingPartyRegistrationRepository(relyingPartyRegistrationRepository())
+                        .relyingPartyRegistrationRepository(relyingPartyRegistrationRepository)
                         .successHandler(successRedirectHandler())
                         .failureHandler(authenticationFailureHandler())
-                        .authenticationManager(authenticationProvider())
+                        .authenticationManager(samlAuthenticationProviderManager(samlAuthenticationProvider()))
                         .loginProcessingUrl(acsEndpoint)
                 )
+                .logout(logout -> logout
+                        .logoutSuccessHandler(logoutSuccessHandler())
+                        .logoutUrl(logoutEndpoint)
+                        .invalidateHttpSession(logoutInvalidateSession)
+                        .clearAuthentication(true)
+                        .deleteCookies("JSESSIONID")
+                )
+                .saml2Logout(Customizer.withDefaults())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                 )
@@ -113,9 +131,22 @@ public class SAMLSecurityConfiguration {
     }
 
     @Bean
-    public ProviderManager authenticationProvider() {
+    public OpenSaml4AuthenticationProvider samlAuthenticationProvider() {
         final var authenticationProvider = new OpenSaml4AuthenticationProvider();
         authenticationProvider.setResponseAuthenticationConverter(responseAuthenticationConverter::covert);
-        return new ProviderManager(authenticationProvider);
+        return authenticationProvider;
+    }
+
+    @Bean
+    public ProviderManager samlAuthenticationProviderManager(
+            final OpenSaml4AuthenticationProvider samlAuthenticationProvider) {
+        return new ProviderManager(samlAuthenticationProvider);
+    }
+
+    @Bean
+    public LogoutSuccessHandler logoutSuccessHandler() {
+        final var handler = new SimpleUrlLogoutSuccessHandler();
+        handler.setDefaultTargetUrl("/");
+        return handler;
     }
 }

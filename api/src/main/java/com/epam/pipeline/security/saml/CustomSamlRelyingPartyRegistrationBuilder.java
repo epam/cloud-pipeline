@@ -21,7 +21,9 @@ import org.opensaml.xmlsec.signature.support.SignatureConstants;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResourceLoader;
 import org.springframework.security.saml2.core.Saml2X509Credential;
-import org.springframework.security.saml2.provider.service.registration.*;
+import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistration;
+import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistrations;
+import org.springframework.security.saml2.provider.service.registration.Saml2MessageBinding;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -53,7 +55,7 @@ public class CustomSamlRelyingPartyRegistrationBuilder {
             @Value("${server.ssl.keyAlias}") final String keyAlias,
             @Value("${server.ssl.key-store}") final String keyStore,
             @Value("${server.ssl.key-store-password}") final String keyStorePassword) {
-        this.federationMetadataFile = federationMetadataFile;
+        this.federationMetadataFile = federationMetadataFile; // TODO: support old-fashioned plain path (convert to resource)
         this.registrationId = registrationId;
         this.endpointId = endpointId;
         this.acsEndpoint = acsEndpoint;
@@ -65,14 +67,14 @@ public class CustomSamlRelyingPartyRegistrationBuilder {
 
     public RelyingPartyRegistration build() {
         return RelyingPartyRegistrations.fromMetadataLocation(federationMetadataFile)
-                .assertingPartyDetails((party) -> party
+                .assertingPartyDetails(party -> party
                         .singleSignOnServiceBinding(Saml2MessageBinding.REDIRECT)
-                        .signingAlgorithms((sign) -> sign.add(SignatureConstants.ALGO_ID_SIGNATURE_RSA)))
-                .registrationId(registrationId) // TODO: probably not the best option (it is just a name)
+                        .signingAlgorithms(sign -> sign.add(SignatureConstants.ALGO_ID_SIGNATURE_RSA)))
+                .registrationId(registrationId)
                 .entityId(endpointId)
                 .assertionConsumerServiceLocation(buildAcsUrl())
                 .assertionConsumerServiceBinding(Saml2MessageBinding.POST) // TODO: or redirect?
-                .signingX509Credentials((c) -> {
+                .signingX509Credentials(c -> {
                     c.add(getSigningX509Credentials(signingKey, Saml2X509Credential.Saml2X509CredentialType.SIGNING));
                     c.add(getSigningX509Credentials(keyAlias, Saml2X509Credential.Saml2X509CredentialType.SIGNING,
                             Saml2X509Credential.Saml2X509CredentialType.DECRYPTION));
