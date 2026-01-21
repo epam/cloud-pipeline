@@ -266,6 +266,8 @@ export class CpRunTreeDataProvider
         if (err instanceof UserCancelledError) {
           this.logger.warn(errMsg);
           vscode.window.showWarningMessage(errMsg);
+        } else if (err) {
+          this.logger.warn(errMsg);
         } else {
           this.logger.error(errMsg);
           this.logger.error(err);

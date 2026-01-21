@@ -67,7 +67,7 @@ export async function askUserForUpdatePipe(
   const userResp = await quickPickWithCountdown<ActionItem>(
     `${cpExtConfig.prefix}: client API ${v.apiVersion} vs CLI ${v.cliVersion} version mismatch.`,
     choices,
-    10000,
+    15000,
   );
   resNeedsDownload = await (await userResp.result).action();
 

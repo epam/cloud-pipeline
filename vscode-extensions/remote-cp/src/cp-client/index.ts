@@ -29,6 +29,7 @@ import {
   ActionQuickPickItem,
   quickPickWithCountdown,
 } from "../common/quick-pick-with-countdown";
+import { parsePipeTunnelStartCommandLine } from "./tunnel/parse-pipe-tunnel-start";
 
 export enum PipeRunCols {
   runId = "RunID",
@@ -85,6 +86,12 @@ export class PipeTunnelInfo {
     public localPort: number,
     public remotePort: number,
   ) {}
+}
+
+export interface ExecPipeTunnelInfo {
+  pid: number;
+  host: number;
+  localPort: number;
 }
 
 export function pipeParseTunnelList(table: string): PipeTunnelInfo[] {
@@ -289,6 +296,59 @@ export abstract class CpClientBase extends Disposable {
     return pipeParseTunnelList(output);
   }
 
+  protected async getExecTunnelList(): Promise<ExecPipeTunnelInfo[]> {
+    if (process.platform !== "win32") return [];
+
+    const normalizedPath = this.pipeExec;
+    const psScript =
+      `Get-CimInstance Win32_Process | ` +
+      `Where-Object { $_.ExecutablePath -eq "${normalizedPath}" } | ` +
+      `Select-Object ProcessId,CommandLine |` +
+      ` ConvertTo-Json -Compress`;
+
+    const stdout = await new Promise<string>((resolve, reject) => {
+      const child = cp.spawn("powershell.exe", [
+        "-NoProfile",
+        "-Command",
+        psScript,
+      ]);
+
+      let outBuf = "";
+      child.stdout.on("data", (data) => {
+        outBuf += data.toString();
+      });
+      child.on("error", (err) => {
+        reject(new Error(`Failed to list tunnel processes: ${err.message}`));
+      });
+      child.on("close", (code) => {
+        if (code === 0) {
+          resolve(outBuf);
+        } else {
+          const errMsg = `Failed to list tunnel processes: exit code ${code}`;
+          reject(new Error(errMsg));
+        }
+      });
+    });
+
+    if (!stdout) return [];
+    const stdoutObj = JSON.parse(stdout);
+    const list: {
+      ProcessId: number;
+      CommandLine: string;
+    }[] = Array.isArray(stdoutObj) ? stdoutObj : [stdoutObj];
+    const res: ExecPipeTunnelInfo[] = [];
+
+    for (const item of list) {
+      const pid = Number(item?.ProcessId);
+      const cmdline = String(item?.CommandLine ?? "");
+      const parsedCmd = parsePipeTunnelStartCommandLine(cmdline);
+      if (!pid || !parsedCmd) continue;
+      res.push({ pid, host: parsedCmd.host, localPort: parsedCmd.localPort });
+    }
+
+    return res;
+  }
+
   async startTunnel(
     cpRunId: number,
     reuseTunnel: PipeTunnelInfo | null,
@@ -482,7 +542,7 @@ export abstract class CpClientBase extends Disposable {
 
   // -- routines --
 
-  private configToEnv(config: ICpClientConfig): any {
+  protected configToEnv(config: ICpClientConfig): any {
     const resEnv = {
       API: config.apiUri,
       API_TOKEN: config.apiToken,

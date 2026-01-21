@@ -1,14 +1,23 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
 import got from "got";
-import { UserCancelledError } from "../../cp-client/error";
+import { DependentAbortError, UserCancelledError } from "../../cp-client/error";
+import { ILogger } from "../logger";
 
 export async function downloadFile(
   url: string,
   targetPath: string,
-  title?: string,
-  retryLimit: number = 3,
+  options?: {
+    title?: string;
+    retryLimit?: number /* 3 */;
+    abortSignal?: AbortSignal;
+    logger?: ILogger;
+  },
 ): Promise<void> {
+  const title = options?.title;
+  const retryLimit = options?.retryLimit ?? 3;
+
+  let abortHandler: (err: any) => void;
   await vscode.window.withProgress(
     {
       location: vscode.ProgressLocation.Notification,
@@ -23,19 +32,24 @@ export async function downloadFile(
         });
         const fileWriter = fs.createWriteStream(targetPath);
 
-        // Handle cancellation
-        token.onCancellationRequested(() => {
+        const abort = (err: Error) => {
+          options?.logger?.debug("Download aborted outside.");
           downloadStream.destroy();
           fileWriter.close();
+          reject(err);
+        };
 
-          // Delete the partial file
-          fs.unlink(targetPath, (err) => {
-            if (err && err.code !== "ENOENT") {
-              console.error("Failed to delete partial file:", err);
-            }
-          });
+        options?.abortSignal?.addEventListener(
+          "abort",
+          (abortHandler = () => {
+            abort(new DependentAbortError("Download aborted dependent"));
+          }),
+        );
 
-          reject(new UserCancelledError("Download cancelled by user"));
+        // Handle cancellation
+        token.onCancellationRequested(() => {
+          options?.logger?.debug("Download cancelled by user.");
+          abort(new UserCancelledError("Download cancelled by user"));
         });
 
         downloadStream.on("downloadProgress", (p) => {
@@ -66,6 +80,8 @@ export async function downloadFile(
         });
 
         downloadStream.pipe(fileWriter);
+      }).finally(() => {
+        options?.abortSignal?.removeEventListener("abort", abortHandler);
       });
     },
   );

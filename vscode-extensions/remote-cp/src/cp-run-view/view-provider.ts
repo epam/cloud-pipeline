@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 
 import { CpExtension } from "../cp-ext";
 import { ILogger } from "../common/logger";
-import { UserCancelledError } from "../cp-client/error";
+import { DependentAbortError, UserCancelledError } from "../cp-client/error";
 
 interface FilterableTreeDataProvider<T> extends vscode.TreeDataProvider<T> {
   filterValue: string | null;
@@ -202,6 +202,8 @@ export class CpRunViewProvider<TItem> implements vscode.WebviewViewProvider {
       if (err instanceof UserCancelledError) {
         this.logger.warn(errMsg);
         vscode.window.showWarningMessage(errMsg);
+      } else if (err instanceof DependentAbortError) {
+        this.logger.warn(errMsg);
       } else {
         this.logger.error(errMsg);
         this.logger.error(err);
