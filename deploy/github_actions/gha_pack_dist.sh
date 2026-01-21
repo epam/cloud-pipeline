@@ -50,7 +50,6 @@ function get_pipe_binaries() {
   aws s3 cp --no-progress s3://cloud-pipeline-oss-builds/temp/${_OSX_CLI_TAR_NAME} ${_OSX_CLI_PATH}/
   tar -zxf $_OSX_CLI_PATH/$_OSX_CLI_TAR_NAME -C $_OSX_CLI_PATH
 
-  mv $_OSX_CLI_PATH/dist/dist-file/pipe-osx* ${API_STATIC_PATH}/
   mv $_OSX_CLI_PATH/dist/dist-folder/pipe-osx*.tar.gz ${API_STATIC_PATH}/
 }
 
