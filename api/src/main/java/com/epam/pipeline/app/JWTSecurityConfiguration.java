@@ -16,33 +16,44 @@
 
 package com.epam.pipeline.app;
 
+import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.security.UserAccessService;
 import com.epam.pipeline.security.jwt.JwtAuthenticationProvider;
 import com.epam.pipeline.security.jwt.JwtFilterAuthenticationFilter;
 import com.epam.pipeline.security.jwt.JwtTokenVerifier;
+import com.epam.pipeline.security.jwt.RestAuthenticationEntryPoint;
+import lombok.Getter;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.core.annotation.Order;
-//import org.springframework.security.saml.SAMLAuthenticationProvider;
-//import org.springframework.security.saml.SAMLEntryPoint;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.savedrequest.RequestCache;
-//import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 @Configuration
 @ComponentScan(basePackages = {"com.epam.pipeline.security.jwt"})
-@Order(2)
-public class JWTSecurityConfiguration implements WebMvcConfigurer {
+public class JWTSecurityConfiguration {
 
     private static final String REST_API_PREFIX = "/restapi/**";
 
@@ -58,6 +69,7 @@ public class JWTSecurityConfiguration implements WebMvcConfigurer {
     @Value("${api.security.redirected.urls:/restapi/route,/restapi/**/prolong**,/restapi/static-resources/**}")
     private String[] redirectedResources;
     
+    @Getter
     @Value("${api.security.anonymous.urls:/restapi/route}")
     private String[] anonymousResources;
 
@@ -70,12 +82,6 @@ public class JWTSecurityConfiguration implements WebMvcConfigurer {
     @Value("${api.security.disable.logging:false}")
     private boolean disableLogging;
 
-    /*@Autowired
-    private SAMLAuthenticationProvider samlAuthenticationProvider;*/
-
-    /*@Autowired
-    private SAMLEntryPoint samlEntryPoint;*/
-
     @Autowired
     private UserAccessService userAccessService;
 
@@ -83,41 +89,38 @@ public class JWTSecurityConfiguration implements WebMvcConfigurer {
         return publicKey;
     }
 
-   /* @Override
-    protected void configure(AuthenticationManagerBuilder auth) {
-        auth.authenticationProvider(samlAuthenticationProvider);
-        auth.authenticationProvider(jwtAuthenticationProvider());
-    }*/
+    @Bean
+    @Order(2)
+    public SecurityFilterChain jwtSecurityFilterChain(final HttpSecurity http) throws Exception {
+        http.csrf(AbstractHttpConfigurer::disable)
+            .exceptionHandling(exceptions -> exceptions
+                .defaultAuthenticationEntryPointFor(
+                    new RestAuthenticationEntryPoint(),
+                    new AntPathRequestMatcher(getSecuredResources())))
+            .securityMatcher(getFullRequestMatcher())
+            .authorizeHttpRequests(auth -> {
+                auth.requestMatchers(new AntPathRequestMatcher("/**", HttpMethod.OPTIONS.name())).permitAll();
+                auth.requestMatchers(toAntMatchers(getUnsecuredResources())).permitAll();
+                auth.requestMatchers(toAntMatchers(getAnonymousResources()))
+                    .hasAnyAuthority(
+                        DefaultRoles.ROLE_ADMIN.getName(),
+                        DefaultRoles.ROLE_USER.getName(),
+                        DefaultRoles.ROLE_ANONYMOUS_USER.getName());
+                auth.requestMatchers(toAntMatchers(getSwaggerResources())).hasAnyAuthority(swaggerAccessRoles);
+                auth.requestMatchers(new AntPathRequestMatcher(getSecuredResources()))
+                    .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName());
+            })
+            .sessionManagement(session -> session.sessionCreationPolicy(
+                disableJwtSession ? SessionCreationPolicy.NEVER : SessionCreationPolicy.IF_REQUIRED))
+            .requestCache(cache -> cache.requestCache(requestCache()))
+            .addFilterBefore(getJwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+        return http.build();
+    }
 
-    /*@Override
-    protected void configure(HttpSecurity http) throws Exception {
-        http.csrf().disable()
-                .exceptionHandling()
-                    .defaultAuthenticationEntryPointFor(
-                            samlEntryPoint, getRedirectRequestMatcher())
-                    .defaultAuthenticationEntryPointFor(
-                            new RestAuthenticationEntryPoint(), new AntPathRequestMatcher(getSecuredResources()))
-                .and()
-                .requestMatcher(getFullRequestMatcher())
-                .authorizeRequests()
-                .antMatchers(HttpMethod.OPTIONS).permitAll()
-                .antMatchers(getUnsecuredResources()).permitAll()
-                .antMatchers(getAnonymousResources())
-                    .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName(), 
-                            DefaultRoles.ROLE_ANONYMOUS_USER.getName())
-                .antMatchers(getSwaggerResources())
-                .hasAnyAuthority(swaggerAccessRoles)
-                .antMatchers(getSecuredResources())
-                    .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName())
-                .and()
-                .sessionManagement().sessionCreationPolicy(
-                        disableJwtSession ? SessionCreationPolicy.NEVER : SessionCreationPolicy.IF_REQUIRED)
-                .and()
-                .requestCache().requestCache(requestCache())
-                .and()
-                .addFilterBefore(getJwtAuthenticationFilter(),
-                        UsernamePasswordAuthenticationFilter.class);
-    }*/
+    @Bean
+    public AuthenticationManager authenticationManager() {
+        return new ProviderManager(Collections.singletonList(jwtAuthenticationProvider()));
+    }
 
     @Bean public JwtTokenVerifier jwtTokenVerifier() {
         return new JwtTokenVerifier(getPublicKey());
@@ -132,8 +135,7 @@ public class JWTSecurityConfiguration implements WebMvcConfigurer {
     }
 
     protected RequestMatcher getFullRequestMatcher() {
-        //return new AntPathRequestMatcher(getSecuredResources());
-        return null;
+        return new AntPathRequestMatcher(getSecuredResources());
     }
 
     protected String getSecuredResources() {
@@ -160,21 +162,22 @@ public class JWTSecurityConfiguration implements WebMvcConfigurer {
         return paths.toArray(new String[0]);
     }
 
-    public String[] getAnonymousResources() {
-        return anonymousResources;
-    }
-
     private RequestCache requestCache() {
         final HttpSessionRequestCache requestCache = new HttpSessionRequestCache();
-        //requestCache.setRequestMatcher(getRedirectRequestMatcher());
+        requestCache.setRequestMatcher(getRedirectRequestMatcher());
         return requestCache;
     }
 
     //Only one of redirectedUrls
-    /*private RequestMatcher getRedirectRequestMatcher() {
+    private RequestMatcher getRedirectRequestMatcher() {
         return new OrRequestMatcher(Arrays.stream(redirectedResources)
                 .map(AntPathRequestMatcher::new)
                 .collect(Collectors.toCollection(ArrayList::new)));
-    }*/
+    }
 
+    private AntPathRequestMatcher[] toAntMatchers(String[] patterns) {
+        return Arrays.stream(patterns)
+                .map(AntPathRequestMatcher::new)
+                .toArray(AntPathRequestMatcher[]::new);
+    }
 }
