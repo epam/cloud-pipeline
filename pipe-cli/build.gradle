@@ -90,6 +90,10 @@ task buildMacArm(type: Exec) {
     environment "MAC_SIGN_P12": System.getenv("MAC_SIGN_P12")
     environment "MAC_SIGN_P12_PASSWORD": System.getenv("MAC_SIGN_P12_PASSWORD")
     environment "PIPE_CLI_REQUIRES_SIGNING": System.getenv("PIPE_CLI_REQUIRES_SIGNING")
+    environment "MAC_SIGN_APPLE_ID": System.getenv("MAC_SIGN_APPLE_ID")
+    environment "MAC_SIGN_APPLE_TEAM_ID": System.getenv("MAC_SIGN_APPLE_TEAM_ID")
+    environment "MAC_SIGN_APPLE_APP_PASSWORD": System.getenv("MAC_SIGN_APPLE_APP_PASSWORD")
+
 
     commandLine "bash", "$project.rootDir/pipe-cli/build_mac_arm.sh"
     doLast {

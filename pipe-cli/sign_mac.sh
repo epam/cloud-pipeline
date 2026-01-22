@@ -59,6 +59,17 @@ fi
 echo "Verifying signature..."
 codesign --verify --deep --strict --verbose=2 "$PIPE_CLI_PATH/pipe"
 
+echo "Creating ZIP for notarization..."
+ditto -c -k --keepParent "$PIPE_CLI_PATH" pipe-cli.zip
+
+echo "Submitting for notarization..."
+xcrun notarytool submit pipe-cli.zip \
+  --apple-id "$MAC_SIGN_APPLE_ID" \
+  --team-id "$MAC_SIGN_APPLE_TEAM_ID" \
+  --password "$MAC_SIGN_APPLE_APP_PASSWORD" \
+  --wait
+rm -f pipe-cli.zip
+
 echo "Cleanup..."
 security delete-keychain "$MAC_SIGN_KEYCHAIN"
 rm -f entitlements.plist
