@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -819,6 +819,23 @@ function add_self_to_no_proxy() {
       export no_proxy="${_self_no_proxy},${_kube_no_proxy}"
 }
 
+function is_external_uid_enabled() {
+    local enable
+    local field
+    local uid
+
+    enable="$(get_pipe_preference_low_level "launch.external.uid.enable" "false")"
+    field="$(get_pipe_preference_low_level "launch.external.uid.field.name" "")"
+    [ "$enable" = "true" ] || return 1
+    [ -n "$field" ] || return 1
+
+    uid="$(resolve_owner_uid "$field")"
+    [ -n "$uid" ] || return 1
+
+    echo "$uid"
+    return 0
+}
+
 function configure_owner_account() {
     OWNER_ID="$(resolve_owner_id)"
     export OWNER_ID
@@ -838,9 +855,15 @@ function configure_owner_account() {
                 return "$?"
             fi
         else
-            UID_SEED="$(get_pipe_preference_low_level "launch.uid.seed" "${CP_CAP_UID_SEED:-70000}")"
-            export UID_SEED
-            export OWNER_UID=$(( UID_SEED + OWNER_ID ))
+            OWNER_UID_EXTERNAL="$(is_external_uid_enabled)"
+            export OWNER_UID_EXTERNAL
+            if [ -n "$OWNER_UID_EXTERNAL" ]; then
+                export OWNER_UID="$OWNER_UID_EXTERNAL"
+            else
+                UID_SEED="$(get_pipe_preference_low_level "launch.uid.seed" "${CP_CAP_UID_SEED:-70000}")"
+                export UID_SEED
+                export OWNER_UID=$(( UID_SEED + OWNER_ID ))
+            fi
             export OWNER_GID="$OWNER_UID"
             export OWNER_GROUPS_EXTRA=$(create_user_extra_groups)
             if check_user_created "$OWNER" "$OWNER_UID" "$OWNER_GID"; then
@@ -894,6 +917,12 @@ function get_owner_info () {
 function resolve_owner_id() {
     # Returns current cloud pipeline user id
     get_owner_info | jq -r '.payload.id // 0'
+}
+
+function resolve_owner_uid() {
+    local field_name="$1"
+    # Returns the external uid if found
+    get_owner_info | jq -r --arg field "$field_name" '.payload[$field] // empty'
 }
 
 function check_user_created() {

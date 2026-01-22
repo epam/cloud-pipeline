@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -860,6 +860,11 @@ public class SystemPreferences {
             LAUNCH_GROUP, pass, true);
     public static final IntPreference  LAUNCH_GID_SEED = new IntPreference("launch.gid.seed", 90000,
             LAUNCH_GROUP, pass, true);
+
+    public static final BooleanPreference LAUNCH_EXTERNAL_UID_ENABLE = new BooleanPreference(
+            "launch.external.uid.enable", false, LAUNCH_GROUP, pass, true);
+    public static final StringPreference LAUNCH_EXTERNAL_UID_FIELD_NAME = new StringPreference(
+            "launch.external.uid.field.name", null, LAUNCH_GROUP, pass, true);
 
     public static final ObjectPreference<Map<String, Object>> LAUNCH_PRE_COMMON_COMMANDS = new ObjectPreference<>(
             "launch.pre.common.commands", null, new TypeReference<Map<String, Object>>() {},
