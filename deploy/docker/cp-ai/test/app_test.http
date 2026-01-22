@@ -1,0 +1,47 @@
+### Create a chat
+POST {{host}}/chat
+Content-Type: application/json
+#Cookie: bearer={{token}}
+
+### Create a chat
+POST {{host}}/chat
+Content-Type: application/json
+#Cookie: bearer={{token}}
+
+{
+  "title": "Title"
+}
+
+### Get a chat
+GET {{host}}/chat/68517fd5ae10e1bc7506dd2e
+Content-Type: application/json
+#Cookie: bearer={{token}}
+
+### Create a message
+POST {{host}}/chat/68517fd5ae10e1bc7506dd2e/message
+Content-Type: application/json
+#Cookie: bearer={{token}}
+
+{
+  "role": "user",
+  "content": "Use documents_tool. How to add environment variable to a tool?",
+  "attributes": {
+    "attr1": "val1",
+    "attr2": "val2"
+  }
+}
+
+### Get a message
+GET {{host}}/chat/message/68518028ae10e1bc7506dd30
+Content-Type: application/json
+#Cookie: bearer={{token}}
+
+### Get messages
+GET {{host}}/chat/68517fd5ae10e1bc7506dd2e/messages
+Content-Type: application/json
+#Cookie: bearer={{token}}
+
+### Delete a message
+DELETE {{host}}/chat/message/684fe0b4c3e10ab36e8c0802
+Content-Type: application/json
+#Cookie: bearer={{token}}
