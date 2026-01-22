@@ -68,11 +68,11 @@ xcrun notarytool submit pipe-cli.zip \
   --team-id "$MAC_SIGN_APPLE_TEAM_ID" \
   --password "$MAC_SIGN_APPLE_APP_PASSWORD" \
   --wait
-rm -f pipe-cli.zip
 
 echo "Cleanup..."
 security delete-keychain "$MAC_SIGN_KEYCHAIN"
 rm -f entitlements.plist
 rm -f cert.p12
+rm -f pipe-cli.zip
 
 echo "Signing for pipe-cli completed"
