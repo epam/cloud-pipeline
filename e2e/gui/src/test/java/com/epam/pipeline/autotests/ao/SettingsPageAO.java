@@ -629,7 +629,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             sleep(1, SECONDS);
             final String[] strings = $$(byClassName("CodeMirror-line")).texts().toArray(new String[0]);
             try {
-                JsonNode instance = new ObjectMapper().readTree(String.join("", strings)).get("regions");
+                JsonNode instance = new ObjectMapper().readTree(String.join("", strings)
+                        .replaceAll("\\u00a0", "")).get("regions");
                 for (JsonNode node1 : instance) {
                     if (node1.get("name").asText().equals(region)) {
                         for (JsonNode node : node1.get("amis")) {
