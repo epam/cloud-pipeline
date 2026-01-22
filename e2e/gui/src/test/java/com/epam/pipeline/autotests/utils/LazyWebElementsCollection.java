@@ -17,7 +17,7 @@ package com.epam.pipeline.autotests.utils;
 
 import com.codeborne.selenide.Driver;
 import com.codeborne.selenide.ElementsCollection;
-import com.codeborne.selenide.WebDriverRunner;
+import static com.codeborne.selenide.Selenide.webdriver;
 
 import java.util.List;
 import java.util.Optional;
@@ -36,7 +36,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import javax.annotation.Nonnull;
 
 class LazyWebElementsCollection implements CollectionSource {
-
     private final IntPredicate collectionSizeValidator;
     private final By elementsQualifier;
     private final int maxAttempts;
@@ -121,7 +120,7 @@ class LazyWebElementsCollection implements CollectionSource {
 
     @Override
     public Driver driver() {
-        return (Driver) WebDriverRunner.getWebDriver();
+        return webdriver().driver();
     }
 
     @Nonnull
