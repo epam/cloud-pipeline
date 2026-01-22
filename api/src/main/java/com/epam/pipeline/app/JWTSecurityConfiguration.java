@@ -158,7 +158,9 @@ public class JWTSecurityConfiguration {
                 "/restapi/swagger-resources/**",
                 "/restapi/swagger-ui.html",
                 "/restapi/webjars/springfox-swagger-ui/**",
-                "/restapi/v2/api-docs/**");
+                "/restapi/v2/api-docs/**",
+                "/restapi/v3/api-docs/**"
+                );
         return paths.toArray(new String[0]);
     }
 

@@ -42,10 +42,10 @@ import org.springframework.context.annotation.Import;
     SecurityConfig.class,
     MappersConfiguration.class,
     CacheConfiguration.class})
-@ComponentScan(basePackages = {"com.epam.pipeline.app"}/*,
-        excludeFilters = {@ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = RestConfiguration.class)}
-        TODO: this makes RestConfiguration not to be picked up by Spring and controllers are not registered
-        */)
+@ComponentScan(basePackages = {
+    "com.epam.pipeline.app",
+    "com.epam.pipeline.controller"
+})
 @SuppressWarnings("checkstyle:HideUtilityClassConstructor")
 public final class Application {
 

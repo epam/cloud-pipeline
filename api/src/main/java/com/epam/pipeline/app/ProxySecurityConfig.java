@@ -18,8 +18,6 @@ package com.epam.pipeline.app;
 
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.core.annotation.Order;
 import com.epam.pipeline.security.saml.SAMLProxyAuthenticationProvider;
 import com.epam.pipeline.security.saml.SAMLProxyFilter;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;

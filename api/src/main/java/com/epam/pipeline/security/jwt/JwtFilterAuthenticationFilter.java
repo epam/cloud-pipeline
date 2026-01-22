@@ -67,10 +67,10 @@ public class JwtFilterAuthenticationFilter extends OncePerRequestFilter {
                 if (!disableLogging) {
                     log.info("Successfully authenticate user with name: " + context.getUsername());
                 }
-            } else {
+            } /*else {
                 // No JWT token provided - set fallback admin authentication
                 setAdminAuthentication(request);
-            }
+            }*/
         } catch (TokenVerificationException e) {
             log.info("JWT authentication failed: {}", e.getMessage());
         }
