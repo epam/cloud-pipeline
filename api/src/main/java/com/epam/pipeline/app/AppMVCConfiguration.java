@@ -23,18 +23,16 @@ import java.util.concurrent.TimeUnit;
 import com.epam.pipeline.config.JsonMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.web.servlet.ServletRegistrationBean;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.CacheControl;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.stereotype.Component;
-import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
+import org.springframework.web.method.HandlerTypePredicate;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.web.servlet.DispatcherServlet;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 
 import jakarta.servlet.FilterChain;
@@ -80,36 +78,9 @@ public class AppMVCConfiguration implements WebMvcConfigurer {
         registry.addMapping("/**").allowedMethods("GET", "PUT", "DELETE", "POST");
     }
 
-    /* TODO: no one knows why the prefix has done like that, and why it hasn't been done via application.properties.
-         Also now it doesn't configure the controllers.
-         Now it works via application.properties: server.servlet.context-path=/pipeline/restapi
-    @Bean
-    public ServletRegistrationBean dispatcherRegistration(){
-        DispatcherServlet dispatcherServlet = new DispatcherServlet();
-        ServletRegistrationBean bean =
-                new ServletRegistrationBean(dispatcherServlet, "/restapi/*");
-        bean.setAsyncSupported(true);
-        bean.setName("pipeline");
-        bean.setLoadOnStartup(1);
-        AnnotationConfigWebApplicationContext applicationContext = new AnnotationConfigWebApplicationContext();
-        applicationContext.register(RestConfiguration.class);
-        dispatcherServlet.setApplicationContext(applicationContext);
-        return bean;
-    }*/
-
-    @Bean
-    public ServletRegistrationBean<DispatcherServlet> restApiDispatcher(ApplicationContext parent) {
-        AnnotationConfigWebApplicationContext child = new AnnotationConfigWebApplicationContext();
-        child.setParent(parent);
-        child.register(RestConfiguration.class);
-
-        DispatcherServlet dispatcher = new DispatcherServlet(child);
-        ServletRegistrationBean<DispatcherServlet> reg =
-                new ServletRegistrationBean<>(dispatcher, "/restapi/*");
-        reg.setName("pipeline");
-        reg.setLoadOnStartup(1);
-        reg.setAsyncSupported(true);
-        return reg;
+    @Override
+    public void configurePathMatch(final PathMatchConfigurer configurer) {
+        configurer.addPathPrefix("/restapi", HandlerTypePredicate.forBasePackage("com.epam.pipeline.controller"));
     }
 
     @Bean

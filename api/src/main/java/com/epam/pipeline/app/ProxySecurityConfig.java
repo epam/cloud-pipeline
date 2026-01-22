@@ -18,14 +18,12 @@ package com.epam.pipeline.app;
 
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.core.annotation.Order;
 import com.epam.pipeline.security.saml.SAMLProxyAuthenticationProvider;
 import com.epam.pipeline.security.saml.SAMLProxyFilter;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-@Configuration
-@Order(1)
+// @Configuration - Disabled SAML proxy configuration
+// @Order(1)
 public class ProxySecurityConfig implements WebMvcConfigurer {
 
     private static final String RESTAPI_PROXY = "/restapi/proxy/**";
