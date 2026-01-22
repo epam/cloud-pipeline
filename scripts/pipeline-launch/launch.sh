@@ -922,7 +922,7 @@ function resolve_owner_id() {
 function resolve_owner_uid() {
     local field_name="$1"
     # Returns the external uid if found
-    get_owner_info | jq -r --arg field "$field_name" '.payload[$field] // empty'
+    get_owner_info | jq -r --arg field "$field_name" '.payload.attributes[$field] // empty'
 }
 
 function check_user_created() {
