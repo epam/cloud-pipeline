@@ -1,15 +1,71 @@
 {
   "folders": [
     {
-      "name": "remote-cp-helper",
-      "path": "../remote-cp-helper"
+      "path": "../remote-cp-meta",
+      "settings": {
+        "chat.promptFilesLocations": {
+          ".vscode/prompts": true,
+        },
+      },
     },
     {
       "name": "remote-cp",
-      "path": "."
+      "path": ".",
     },
     {
-      "path": "../../../open-remote-ssh"
-    }
+      "name": "remote-cp-helper",
+      "path": "../remote-cp-helper",
+    },
+    {
+      "path": "../../../open-remote-ssh",
+    },
+    {
+      "path": "../cp-client-meta",
+      "settings": {
+        "chat.promptFilesLocations": {
+          ".vscode/prompts": true,
+        },
+      },
+    },
+    {
+      "path": "../cp-client",
+    },
+    {
+      "path": "../cp-client-tunnel",
+    },
+    {
+      "path": "../cp-client-common",
+    },
+    {
+      "path": "../../pipe-cli",
+    },
   ],
+  "settings": {
+    "jest.autoRun": "off",
+    "chat.tools.terminal.autoApprove": {
+      "Set-Location": true,
+      "&": true,
+      "Get-Item": true,
+    },
+    // "editor.formatOnSave": true,
+    "[typescript]": {
+      "editor.defaultFormatter": "vscode.typescript-language-features",
+    },
+    "[typescriptreact]": {
+      "editor.defaultFormatter": "dbaeumer.vscode-eslint",
+    },
+    "[json]": {
+      "editor.tabSize": 2,
+      "editor.insertSpaces": true,
+      "editor.defaultFormatter": "vscode.json-language-features",
+    },
+    "[jsonc]": {
+      "editor.tabSize": 2,
+      "editor.insertSpaces": true,
+      "editor.defaultFormatter": "vscode.json-language-features",
+    },
+    "[javascript]": {
+      "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+    },
+  },
 }

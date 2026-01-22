@@ -1,0 +1,29 @@
+{
+  "name": "cp-client-tunnel",
+  "version": "0.0.1",
+  "private": true,
+  "type": "commonjs",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "clean": "rimraf dist",
+    "build": "tsc -p .",
+    "lint": "echo 'lint: todo'",
+    "check": "npm run build"
+  },
+  "dependencies": {
+    "cp-client-common": "file:../cp-client-common",
+    "ps-list": "^8.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.3.3"
+  }
+}

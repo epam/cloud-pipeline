@@ -103,6 +103,17 @@
           "default": "info",
           "description": "Log level (file). Changes require restart.",
           "scope": "application"
+        },
+        "remote-cp.cpClientMode": {
+          "type": "string",
+          "enum": [
+            "command-line (download)",
+            "nodejs (internal)",
+            "both"
+          ],
+          "default": "both",
+          "description": "Tunnel client mode: use Python CLI, Node.js library, or both (user chooses on connect).",
+          "scope": "application"
         }
       }
     },
@@ -309,10 +320,8 @@
     "copy-webpack-plugin": "^12.0.2",
     "esbuild": "^0.25.8",
     "eslint": "^9.32.0",
-    "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-jsx-a11y": "^6.10.2",
-    "eslint-plugin-prettier": "^5.5.4",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
     "jest": "^30.1.3",
@@ -339,6 +348,7 @@
     "@vscode/extension-telemetry": "^0.9.0",
     "@vscode/prompt-tsx": "^0.3.0-alpha.13",
     "commander": "^14.0.2",
+    "cp-client-tunnel": "file:../cp-client-tunnel",
     "dotenv": "^17.2.3",
     "glob": "^10.3.10",
     "got": "^11.8.6",

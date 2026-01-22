@@ -228,9 +228,17 @@ export class RemoteCpResolver
             this.logger,
           );
 
-          // Create proxy jump connections if any
+          // Get stream from tunnel if available (for internal/direct connection mode)
+          // This is used by NodeJSTunnelClient to provide raw socket after HTTP CONNECT
           let proxyStream: ssh2.ClientChannel | stream.Duplex | undefined;
-          if (sshHostConfig["ProxyJump"]) {
+          const tunnelStream = await tunnel.getStream();
+          if (tunnelStream) {
+            this.logger.debug(`Using tunnel internal stream for run ${cpRunId}`);
+            proxyStream = tunnelStream;
+          }
+
+          // Create proxy jump connections if any
+          if (!proxyStream && sshHostConfig["ProxyJump"]) {
             const proxyJumps = sshHostConfig["ProxyJump"]
               .split(",")
               .filter((i) => !!i.trim())
@@ -281,7 +289,7 @@ export class RemoteCpResolver
                 proxyIdentityKeys,
                 preferredAuthentications,
               );
-              const proxyConnection = new SSHConnection(this.cpExtConfig, {
+              const proxyConnection: SSHConnection = new SSHConnection(this.cpExtConfig, {
                 host: !proxyStream ? proxyHostName : undefined,
                 port: !proxyStream ? proxyPort : undefined,
                 sock: proxyStream,

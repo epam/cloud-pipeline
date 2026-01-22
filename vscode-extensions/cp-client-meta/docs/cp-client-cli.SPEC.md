@@ -1,0 +1,30 @@
+# cp-client CLI Specification
+
+- Purpose: CLI tool runnable as `npx pipe tunnel ...`; delegates to `cp-client-tunnel` library.
+- Entry point: `src/cli.ts` - main entry with Commander.js setup; shebang `#!/usr/bin/env node`
+- Code structure:
+  - `src/cli.ts` - Entry point, command registration
+  - `src/cli/types.ts` - CLI type definitions and interfaces
+  - `src/cli/utils.ts` - Utility functions (config creation, port checking, background spawning)
+  - `src/cli/commands/` - Command handlers
+    - `tunnel-list.ts` - List command handler
+    - `tunnel-start.ts` - Start command handler (foreground/background logic)
+    - `tunnel-stop.ts` - Stop command handler
+    - `index.ts` - Command exports
+  - `src/index.ts` - Library API exports (`pipeTunnelStart`, `pipeTunnelList`, `pipeTunnelStop`)
+- Commands:
+  - `tunnel list` - List active tunnels
+  - `tunnel start <run_id>` - Start tunnel (foreground or background)
+  - `tunnel stop [run_id]` - Stop tunnel by run_id or port
+- Flags: Aligned with Python `pipe-cli` tunnel semantics (see `docs/pipe-cli/tunnel.SPEC.md`)
+  - Common: `-v|--log-level`, `-u|--user`, `--debug`, `--trace`
+  - Start: `-lp|--local-port`, `-rp|--remote-port`, `-f|--foreground`, `-s|--ssh`, `-d|--direct`, `-ke|--keep-existing`, `-ks|--keep-same`, `-re|--replace-existing`, `-rd|--replace-different`, `--ignore-existing`, `--ignore-owner`, `-rg|--region`, `-l|--log-file`, `-t|--timeout`, `-ts|--timeout-stop`, and SSH options
+  - Stop: `-lp|--local-port`, `-f|--force`, `-ts|--timeout-stop`
+- Background mode: Without `-f|--foreground`, spawns detached process with filtered args (removes conflict flags, adds `--foreground --ignore-existing`)
+  - Uses `child_process.spawn()` with `detached: true`
+  - Waits for port to be listening before parent exits
+  - Logs to `~/.pipe/logs/tunnel-<runId>.log` or custom path
+- Foreground mode: With `-f|--foreground`, keeps process alive with `await new Promise(() => {})`
+- Output: Human-readable summaries; return non-zero exit on failures; list shows PID/PPID/Owner/Host/LocalPort/RemotePort
+- Library surface: Export `pipeTunnelStart`, `pipeTunnelList`, `pipeTunnelStop` from `src/index.ts` that forward to `cp-client-tunnel`
+- Packaging: Provide bin entry `pipe`; use workspace dependency on `cp-client-tunnel` and `cp-client-common`; keep bundle Node-targeted

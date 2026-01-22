@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "outDir": "dist",
+    "rootDir": "src",
+    "declaration": true,
+    "sourceMap": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "cp-client-tunnel": [
+        "../cp-client-tunnel/src"
+      ],
+      "cp-client-common": [
+        "../cp-client-common/src"
+      ],
+    },
+  },
+  "include": [
+    "src/**/*"
+  ]
+}

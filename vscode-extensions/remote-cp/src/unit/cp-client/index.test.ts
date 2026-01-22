@@ -1,7 +1,7 @@
 /// <reference types="jest" />
 
 import { ILogger } from "../../common/logger";
-import { ICpExtConfig } from "../../config";
+import { ICpExtConfig, CpClientMode } from "../../config";
 import { CpClientBase, CpVersionInfo, RunInfo } from "../../cp-client";
 import { ICpCodeContext } from "../../cp-ext/code-context";
 
@@ -37,6 +37,7 @@ describe("CloudPipelineClient.parseRunListTable", () => {
     pipeApiToken: null,
     pipeSnoozeUpdate: null,
     logLevel: "trace",
+    cpClientMode: CpClientMode.both,
 
     getClientConfig: notImplementedStubFunc,
     setClientConfig: notImplementedStubFunc,

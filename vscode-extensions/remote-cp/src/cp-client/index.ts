@@ -21,9 +21,13 @@ import {
   askUserForPipeTunnel,
   ExecutePipeTunnelItem,
   ReusePipeTunnelItem,
+  EnterLocalPortItem,
+  CreateTunnelOnLocalPortItem,
+  CreateTunnelInternalItem,
 } from "./tunnel/ask-user-for-pipe-tunnel";
 import { findRandomPort } from "../common/ports";
 import { ReusedPipeTunnel } from "./tunnel/reusing-pipe-tunnel";
+import { NodeJSTunnelClient } from "./tunnel/nodejs-tunnel-client";
 import { ICpCodeContext } from "../cp-ext/code-context";
 import {
   ActionQuickPickItem,
@@ -416,6 +420,68 @@ export abstract class CpClientBase extends Disposable {
           this.logger.trace(`${logPfx2}, end (activated)`);
           return res;
         })();
+      } else if (pipeTunnelUserResp instanceof CreateTunnelOnLocalPortItem) {
+        this.logger.trace(`${logPfx}, user resp to create tunnel on local port`);
+        resPipeTunnel = await (async (): Promise<PipeTunnelBase> => {
+          const logPfx2 = `${logPfx}.createOnLocalPort`;
+          this.logger.trace(`${logPfx2}, start`);
+          const localPort = await findRandomPort();
+          this.logger.trace(`${logPfx2}, localPort: ${localPort}`);
+          const res = new NodeJSTunnelClient(
+            cpRunId,
+            localPort,
+            true,
+            this.cpExtConfig,
+            this.logger,
+          );
+          this.logger.trace(`${logPfx2}, created`);
+          await res.activate();
+          this.logger.trace(`${logPfx2}, end (activated)`);
+          return res;
+        })();
+      } else if (pipeTunnelUserResp instanceof CreateTunnelInternalItem) {
+        this.logger.trace(`${logPfx}, user resp to create tunnel (internal)`);
+        resPipeTunnel = await (async (): Promise<PipeTunnelBase> => {
+          const logPfx2 = `${logPfx}.createInternal`;
+          this.logger.trace(`${logPfx2}, start`);
+          const res = new NodeJSTunnelClient(
+            cpRunId,
+            -1, // -1 indicates internal mode (no local port)
+            true,
+            this.cpExtConfig,
+            this.logger,
+          );
+          this.logger.trace(`${logPfx2}, created`);
+          await res.activate();
+          this.logger.trace(`${logPfx2}, end (activated)`);
+          return res;
+        })();
+      } else if (pipeTunnelUserResp instanceof EnterLocalPortItem) {
+        this.logger.trace(`${logPfx}, user resp to enter local port`);
+        const portStr = await vscode.window.showInputBox({
+          title: "Enter local port number",
+          validateInput: (value) => {
+            const port = parseInt(value);
+            if (isNaN(port) || port < 1 || port > 65535) {
+              return "Enter a valid port number (1-65535)";
+            }
+            return "";
+          },
+        });
+        if (!portStr) {
+          throw new Error("User cancelled port entry");
+        }
+        const localPort = parseInt(portStr);
+        resPipeTunnel = new ReusedPipeTunnel(
+          new PipeTunnelInfo(
+            -1,         // pid: manual entry, no process
+            null,       // parentPid
+            "manual",   // owner
+            cpRunId,    // runId
+            localPort,  // localPort
+            22,         // remotePort
+          ),
+        );
       }
     }
     this._register(resPipeTunnel!);

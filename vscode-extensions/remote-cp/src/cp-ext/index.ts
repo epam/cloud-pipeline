@@ -86,7 +86,7 @@ export class CpExtension extends Disposable {
 
   async registerCpClient(): Promise<CpClient> {
     return CpClient.createAndRegister(
-      this.cpExtConfig,
+      this.cpExtConfig as any,
       this.context,
       this.codeContext,
       this.logger,

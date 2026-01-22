@@ -17,6 +17,12 @@ import {
 } from "./common/files/file";
 import { IPackageJson, PackageJsonData } from "./common/files/packageJson";
 
+export enum CpClientMode {
+  cli = "command-line (download)",
+  nodejs = "nodejs (internal)",
+  both = "both",
+}
+
 export const CpExtConfigKeyValues = [
   "prefix",
   "platformUrl",
@@ -29,6 +35,7 @@ export const CpExtConfigKeyValues = [
   "pipeSnoozeUpdate",
 
   "logLevel",
+  "cpClientMode",
 ];
 export type CpExtConfigKey = (typeof CpExtConfigKeyValues)[number];
 export const CpExtConfigKeys = mirrorKeys(CpExtConfigKeyValues);
@@ -46,6 +53,7 @@ export interface ICpExtConfigData {
   pipeSnoozeUpdate: DateTime | null;
 
   logLevel: LogLevelName;
+  cpClientMode: CpClientMode;
 
   getOnStart(): ReadonlyArray<OnStartProps>;
   setOnStart(value: ArrayLike<OnStartProps>): void;
@@ -273,6 +281,24 @@ export class CpExtConfig implements ICpExtConfig {
 
   public set logLevel(value: LogLevelName) {
     this.data.logLevel = value;
+  }
+
+  public get cpClientMode(): CpClientMode {
+    let res = this.data.cpClientMode;
+    if (res === undefined)
+      res =
+        /* this.data.cpClientMode = */
+        this.configData.get<CpClientMode | undefined>(
+          CpExtConfigKeys.cpClientMode,
+        ) ??
+        this.defaults[CpExtConfigKeys.cpClientMode] ??
+        CpClientMode.both;
+
+    return res!;
+  }
+
+  public set cpClientMode(value: CpClientMode) {
+    this.data.cpClientMode = value;
   }
 
   public getOnStart(): ReadonlyArray<OnStartProps> {

@@ -1,0 +1,10 @@
+name: New MCP server
+version: 0.0.1
+schema: v1
+mcpServers:
+  - name: context7
+    command: npx
+    args:
+      - -y
+      - "@upstash/context7-mcp@latest"
+    env: {}
