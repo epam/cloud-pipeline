@@ -63,10 +63,12 @@ echo "Creating ZIP for notarization..."
 ditto -c -k --keepParent "$PIPE_CLI_PATH" pipe-cli.zip
 
 echo "Submitting for notarization..."
+echo "$MAC_SIGN_P8" > AuthKey.p8
 xcrun notarytool submit pipe-cli.zip \
-  --apple-id "$MAC_SIGN_APPLE_ID" \
-  --team-id "$MAC_SIGN_APPLE_TEAM_ID" \
-  --password "$MAC_SIGN_APPLE_APP_PASSWORD" \
+  --key AuthKey.p8 \
+  --key-id "$MAC_SIGN_KEY_ID" \
+  --issuer "$MAC_SIGN_ISSUER_ID" \
+  --team-id "$MAC_SIGN_TEAM_ID" \
   --wait
 
 echo "Cleanup..."
@@ -74,5 +76,6 @@ security delete-keychain "$MAC_SIGN_KEYCHAIN"
 rm -f entitlements.plist
 rm -f cert.p12
 rm -f pipe-cli.zip
+rm -f AuthKey.p8
 
 echo "Signing for pipe-cli completed"
