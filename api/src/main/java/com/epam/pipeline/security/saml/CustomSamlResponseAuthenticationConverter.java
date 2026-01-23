@@ -27,6 +27,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.saml2.provider.service.authentication.DefaultSaml2AuthenticatedPrincipal;
 import org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationProvider;
 import org.springframework.security.saml2.provider.service.authentication.Saml2Authentication;
@@ -81,15 +83,15 @@ public class CustomSamlResponseAuthenticationConverter {
         final Map<String, List<Object>> credentials = principal.getAttributes();
         final UserContext userContext = loadUserBySAML(credentials, principal);
 
-        // TODO: shall we add groups to Authorities?
-//        final List<GrantedAuthority> groups = attributes.get("groups").stream()
-//                .map(o -> (String) o)
-//                .map(SimpleGrantedAuthority::new)
-//                .collect(Collectors.toList());
-//        groups.addAll(authentication.getAuthorities());
+        final List<GrantedAuthority> authorities = ListUtils.emptyIfNull(credentials.get("groups")).stream()
+                .map(o -> (String) o)
+                .map(String::toUpperCase)
+                .map(SimpleGrantedAuthority::new)
+                .collect(Collectors.toList());
+        authorities.addAll(authentication.getAuthorities());
 
         final var authenticationToken = new UsernamePasswordAuthenticationToken(
-                userContext, authentication.getSaml2Response(), authentication.getAuthorities());
+                userContext, authentication.getSaml2Response(), authorities);
         authenticationToken.setDetails(responseToken.getToken().getDetails());
         return authenticationToken;
     }
