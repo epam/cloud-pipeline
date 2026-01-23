@@ -41,6 +41,10 @@ jobs:
           MAC_SIGN_P12: ${{ secrets.MAC_SIGN_P12 }}
           MAC_SIGN_P12_PASSWORD: ${{ secrets.MAC_SIGN_P12_PASSWORD }}
           PIPE_CLI_REQUIRES_SIGNING: ${{ secrets.PIPE_CLI_REQUIRES_SIGNING }}
+          MAC_SIGN_P8: ${{ secrets.MAC_SIGN_P8 }}
+          MAC_SIGN_KEY_ID: ${{ secrets.MAC_SIGN_KEY_ID }}
+          MAC_SIGN_ISSUER_ID: ${{ secrets.MAC_SIGN_ISSUER_ID }}
+          MAC_SIGN_TEAM_ID: ${{ secrets.MAC_SIGN_TEAM_ID }}
   Build_All:
     runs-on: ubuntu-22.04
     needs:
