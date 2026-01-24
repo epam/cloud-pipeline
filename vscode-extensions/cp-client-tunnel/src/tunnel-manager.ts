@@ -28,14 +28,14 @@ export class TunnelManager extends Disposable implements ITunnelManager {
 
   async startTunnel(
     runId: number,
-    config: Partial<ITunnelConfig>,
+    config: ITunnelConfig,
   ): Promise<ITunnelConnection> {
     this.logger.info(`Starting tunnel to run ${runId}`);
 
     // Create tunnel connection with proxy stream factory
     const tunnelConfig: ITunnelConfig = {
       runId,
-      remotePort: config.remotePort || 22,
+      remotePort: config.remotePort,
       localPort: config.localPort,
       region: config.region,
       direct: config.direct,

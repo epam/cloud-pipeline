@@ -284,7 +284,8 @@
   "scripts": {
     "clean": "rimraf ./dist",
     "check": "npm run check-types && npm run lint && npm run validate-commands",
-    "compile": "npm run check && npx webpack --mode development",
+    "build:this": "npm run check && npx webpack --mode development",
+    "build": "npm run --prefix .. prebuild:remote-cp && npm run build:this",
     "validate-commands": "npx tsx ./validate/commands.ts",
     "watch": "npm-run-all -p watch:*",
     "watch:esbuild": "npx tsc -b -w",

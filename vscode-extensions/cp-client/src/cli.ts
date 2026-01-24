@@ -12,10 +12,13 @@ import {
   tunnelStartAction,
   tunnelStopAction,
 } from "./cli/commands";
+import { FileLogger, LoggerBase } from "cp-client-common";
 
 const pkg = JSON.parse(
   readFileSync(path.resolve(__dirname, "../package.json"), "utf8"),
 );
+
+const logger = new LoggerBase(console);
 
 const program = new Command();
 program
@@ -70,7 +73,7 @@ tunnelCmd
   .option("--noclean", "Disable resource cleanup")
   .option("--debug", "Enable debug logging")
   .option("--trace", "Enable trace logging")
-  .action(tunnelStartAction);
+  .action((runId, opts) => tunnelStartAction(runId, opts, logger));
 
 // tunnel stop
 tunnelCmd
@@ -83,7 +86,7 @@ tunnelCmd
   .option("-u, --user <user>", "User name")
   .option("--debug", "Enable debug logging")
   .option("--trace", "Enable trace logging")
-  .action(tunnelStopAction);
+  .action((runId, opts) => tunnelStopAction(runId, opts, logger));
 
 // Parse and execute
 program.parseAsync(process.argv);

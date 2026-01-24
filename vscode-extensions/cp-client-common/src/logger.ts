@@ -23,12 +23,12 @@ export interface ILogger {
 
 // Base logger implementation - framework-agnostic
 export class LoggerBase extends Disposable implements ILogger {
-  constructor(private readonly base?: LoggerBase) {
+  constructor(private readonly base?: ILogger & (Disposable | object)) {
     super();
   }
 
   override dispose(): void {
-    if (this.base) {
+    if (this.base instanceof Disposable) {
       this.base.dispose();
       // @ts-expect-error readonly cleanup
       this.base = undefined;
@@ -90,7 +90,7 @@ export class FileLogger extends LoggerBase {
     private readonly filePath: string,
     level: LogLevelName,
     options: WriteStreamOptions = { flags: "a", flush: true },
-    base?: LoggerBase,
+    base?: ILogger,
   ) {
     super(base);
     const dir = path.dirname(filePath);

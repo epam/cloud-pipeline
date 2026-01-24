@@ -54,3 +54,9 @@ import {
 const logger = new FileLogger("/tmp/tunnel.log", "info");
 const port = await findRandomPort();
 ```
+
+## Code Organization
+
+Shared code-organization guidelines live in the meta project. See cp-client-meta/docs/CODESPEC.md#code-organization
+
+Note for AI contributors: general coding instructions should be maintained in `cp-client-meta`. Prefer updating the meta spec and linking to it here instead of duplicating content.

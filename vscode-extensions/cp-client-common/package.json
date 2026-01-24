@@ -3,8 +3,8 @@
   "version": "0.0.1",
   "private": true,
   "type": "commonjs",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "development": "./src/index.ts",
@@ -13,9 +13,11 @@
   },
   "scripts": {
     "clean": "rimraf dist",
-    "build": "tsc -p .",
-    "lint": "echo 'lint: todo'",
-    "check": "npm run build"
+    "build:this": "npm run check && tsc -p .",
+    "build": "npm --prefix .. run prebuild:cp-client-common && npm run build:this",
+    "check": "npm run check-types && npm run lint",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint src"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",

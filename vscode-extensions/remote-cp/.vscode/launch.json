@@ -14,6 +14,9 @@
         "--extensionDevelopmentPath=${workspaceFolder:remote-cp-helper}",
         "--trace-deprecation"
       ],
+      "env": {
+        "NODE_ENV": "development",
+      },
       "outFiles": [
         "${workspaceFolder:remote-cp-helper}/dist/**/*.js",
         "${workspaceFolder:remote-cp}/dist/**/*.js"
@@ -27,9 +30,15 @@
       "request": "launch",
       "args": [
         "--extensionDevelopmentPath=${workspaceFolder}",
-        "--enable-proposed-api", "epam.remote-cp"
+        "--enable-proposed-api",
+        "epam.remote-cp"
       ],
-      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+      "env": {
+        "NODE_ENV": "development",
+      },
+      "outFiles": [
+        "${workspaceFolder}/dist/**/*.js"
+      ],
       "sourceMaps": true,
       "preLaunchTask": "remote-cp: compile & watch"
     },
@@ -39,11 +48,15 @@
       "request": "launch",
       "args": [
         "--extensionDevelopmentPath=${workspaceFolder}",
-        "--enable-proposed-api", "epam.remote-cp",
-        "--remote", "cp-remote+pipeline-77805",
+        "--enable-proposed-api",
+        "epam.remote-cp",
+        "--remote",
+        "cp-remote+pipeline-77805",
         "root/projs/test-1"
       ],
-      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+      "outFiles": [
+        "${workspaceFolder}/dist/**/*.js"
+      ],
       "preLaunchTask": "remote-cp: compile & watch"
     },
     {
@@ -53,7 +66,9 @@
       "program": "${workspaceFolder}/out/test/runTest.js",
       "args": [],
       "cwd": "${workspaceFolder}",
-      "outFiles": ["${workspaceFolder}/out/test/**/*.js"],
+      "outFiles": [
+        "${workspaceFolder}/out/test/**/*.js"
+      ],
       "preLaunchTask": "tsc: build - tsconfig.test.json",
       "console": "integratedTerminal"
       // "internalConsoleOptions": "neverOpen"
@@ -63,7 +78,10 @@
       "type": "node",
       "request": "launch",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "validate-commands"],
+      "runtimeArgs": [
+        "run",
+        "validate-commands"
+      ],
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal"
     },
@@ -73,9 +91,14 @@
       "request": "launch",
       "program": "${workspaceFolder}/tools/saml.ts",
       "cwd": "${workspaceFolder}",
-      "runtimeArgs": ["-r", "ts-node/register"],
+      "runtimeArgs": [
+        "-r",
+        "ts-node/register"
+      ],
       "console": "integratedTerminal",
-      "skipFiles": ["<node_internals>/**"]
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
     }
   ]
 }

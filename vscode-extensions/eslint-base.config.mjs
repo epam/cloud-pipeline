@@ -18,8 +18,10 @@ export default [
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    files: ["**/*.ts", "**/*.mjs"],
     ignores: ["dist/**/*", "node_modules/**/*", "out/**/*"],
+  },
+  {
+    files: ["**/*.ts"],
     languageOptions: {
       parser: tseslint.parser,
       globals: {
@@ -44,6 +46,14 @@ export default [
       // General
       "no-useless-escape": "warn",
       "no-debugger": "warn",
+      "newline-per-chained-call": "off",
     },
   },
+  {
+    files: ["**/*.mjs"],
+    ignores: ["dist/**/*", "node_modules/**/*"],
+    rules: {
+      "newline-per-chained-call": "off",
+    },
+  }
 ];

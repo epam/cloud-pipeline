@@ -1,0 +1,29 @@
+{
+  "name": "cp-workspace",
+  "version": "0.0.1",
+  "private": true,
+  "workspaces": [
+    "cp-client-common",
+    "cp-client-tunnel",
+    "cp-client"
+  ],
+  "scripts": {
+    "clean": "npm run clean -ws --if-present",
+    "build": "npm run build:cp-client && npm run build:this -w remote-cp",
+
+    "prebuild:cp-client-common": "echo 'No dependencies for cp-client-common'",
+    "prebuild:cp-client-tunnel": "npm run build:this -w cp-client-common",
+    "prebuild:cp-client": "npm run build:this -w cp-client-common && npm run build:this -w cp-client-tunnel",
+    "prebuild:remote-cp": "npm run build:this -w cp-client-common && npm run build:this -w cp-client-tunnel",
+
+    "build:cp-client-common": "npm run build -w cp-client-common",
+    "build:cp-client-tunnel": "npm run build -w cp-client-tunnel",
+    "build:cp-client": "npm run build -w cp-client",
+    "build:remote-cp": "npm run compile -w remote-cp",
+    "package:remote-cp": "npm run compile -w remote-cp && npm run package -w remote-cp",
+
+    "lint": "npm run lint -ws --if-present",
+    "check": "npm run check -ws --if-present"
+  },
+  "devDependencies": {}
+}

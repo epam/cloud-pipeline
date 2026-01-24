@@ -9,8 +9,8 @@ export interface GlobalOptions {
 
 // Options for tunnel start command
 export interface TunnelStartOptions extends GlobalOptions {
-  localPort?: string; // Single port or range (e.g., "4567" or "4567-4569")
-  remotePort?: string; // Single port or range
+  localPort?: number;
+  remotePort: number; // Single port or range
   connectionTimeout?: number;
   ssh?: boolean;
   sshPath?: string;
@@ -32,6 +32,7 @@ export interface TunnelStartOptions extends GlobalOptions {
   region?: string;
 }
 
+
 // Options for tunnel stop command
 export interface TunnelStopOptions extends GlobalOptions {
   localPort?: number;
@@ -40,4 +41,4 @@ export interface TunnelStopOptions extends GlobalOptions {
 }
 
 // Options for tunnel list command
-export interface TunnelListOptions extends GlobalOptions {}
+export type TunnelListOptions = GlobalOptions;

@@ -2,14 +2,16 @@
  * Tunnel list command implementation
  */
 
-import { TunnelListOptions } from "cp-client-common";
-import { pipeTunnelList } from "../../index";
+import { ILogger, TunnelListOptions } from "cp-client-common";
+import { TunnelManager } from "cp-client-tunnel";
 import { createTunnelManagerConfig } from "../utils";
 import { GlobalOptions } from "../types";
 
-export async function tunnelListAction(opts: GlobalOptions): Promise<void> {
+export async function tunnelListAction(
+  opts: GlobalOptions, logger: ILogger
+): Promise<void> {
   try {
-    const config = createTunnelManagerConfig(opts);
+    const config = createTunnelManagerConfig(opts, logger);
     const options: TunnelListOptions = {
       logLevel: opts.logLevel as any,
       user: opts.user,
@@ -17,7 +19,13 @@ export async function tunnelListAction(opts: GlobalOptions): Promise<void> {
       trace: opts.trace,
     };
 
-    const tunnels = await pipeTunnelList(options, config);
+    const manager = new TunnelManager(config);
+    let tunnels;
+    try {
+      tunnels = await manager.listTunnels();
+    } finally {
+      manager.dispose();
+    }
 
     if (tunnels.length === 0) {
       console.log("No active tunnels.");

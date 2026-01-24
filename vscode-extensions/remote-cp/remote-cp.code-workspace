@@ -1,6 +1,11 @@
 {
   "folders": [
     {
+      "name": "root",
+      "path": "..",
+      "about": "Root folder for npm workspaces package.json"
+    },
+    {
       "path": "../remote-cp-meta",
       "settings": {
         "chat.promptFilesLocations": {
@@ -15,6 +20,21 @@
     {
       "name": "remote-cp-helper",
       "path": "../remote-cp-helper",
+      "tasks": [
+        {
+          "label": "cph-compile",
+          "type": "npm",
+          "script": "compile",
+          "options": {
+            "env": {
+              "CP_PLATFORM_URL": "https://aws.cloud-pipeline.com"
+            }
+          },
+          "problemMatcher": [
+            "$tsc"
+          ]
+        }
+      ]
     },
     {
       "path": "../../../open-remote-ssh",
@@ -31,10 +51,21 @@
       "path": "../cp-client",
     },
     {
+      "name": "cp-client-tunnel",
       "path": "../cp-client-tunnel",
     },
     {
       "path": "../cp-client-common",
+      "tasks": [
+        {
+          "label": "cp-client-common-build",
+          "type": "shell",
+          "command": "npm run build",
+          "problemMatcher": [
+            "$tsc"
+          ]
+        }
+      ]
     },
     {
       "path": "../../pipe-cli",
@@ -46,6 +77,32 @@
       "Set-Location": true,
       "&": true,
       "Get-Item": true,
+      "/^Push-Location \"c:\\\\Users\\\\aleksandr_tanas\\\\projs\\\\pipe\\\\cloud-pipeline\\\\vscode-extensions\"; & npm install; Pop-Location$/": {
+        "approve": true,
+        "matchCommandLine": true
+      },
+      "/^Start-Process -FilePath \"cmd\\.exe\" -ArgumentList \"/c cd /d `\"c:\\\\Users\\\\aleksandr_tanas\\\\projs\\\\pipe\\\\cloud-pipeline\\\\vscode-extensions`\" && npm install\" -NoNewWindow -Wait$/": {
+        "approve": true,
+        "matchCommandLine": true
+      },
+      "/^Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass; cd c:\\\\Users\\\\aleksandr_tanas\\\\projs\\\\pipe\\\\cloud-pipeline\\\\vscode-extensions; npm run build:cp-client-common$/": {
+        "approve": true,
+        "matchCommandLine": true
+      },
+      "/^cmd /c cd \"c:\\\\Users\\\\aleksandr_tanas\\\\projs\\\\pipe\\\\cloud-pipeline\\\\vscode-extensions\" ; npm run clean ; npm run build:cp-client$/": {
+        "approve": true,
+        "matchCommandLine": true
+      },
+      "/^powershell -NoProfile -ExecutionPolicy Bypass -Command \"cd 'c:\\\\Users\\\\aleksandr_tanas\\\\projs\\\\pipe\\\\cloud-pipeline\\\\vscode-extensions'; npm run clean; npm run build:cp-client\"$/": {
+        "approve": true,
+        "matchCommandLine": true
+      },
+      "Push-Location": true,
+      "Pop-Location": true,
+      "/^Push-Location \"c:\\\\Users\\\\aleksandr_tanas\\\\projs\\\\pipe\\\\cloud-pipeline\\\\vscode-extensions\\\\cp-client\"; node dist/cli\\.js tunnel start 12345 --foreground --trace 2>&1 \\| Select-Object -First 50; Pop-Location$/": {
+        "approve": true,
+        "matchCommandLine": true
+      }
     },
     // "editor.formatOnSave": true,
     "[typescript]": {
@@ -65,7 +122,26 @@
       "editor.defaultFormatter": "vscode.json-language-features",
     },
     "[javascript]": {
-      "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+      "editor.defaultFormatter": "vscode.typescript-language-features"
     },
+    "files.exclude": {
+      "**/.git": true,
+      "**/.svn": true,
+      "**/.hg": true,
+      "**/.DS_Store": true,
+      "**/Thumbs.db": true
+    },
+    "search.exclude": {
+      "src/**/*.js": true,
+      "src/**/*.d.ts": true,
+      "src/**/*.js.map": true,
+      "src/**/*.d.ts.map": true
+    },
+    "files.readonlyInclude": {
+      "src/**/*.js": true,
+      "src/**/*.d.ts": true,
+      "src/**/*.js.map": true,
+      "src/**/*.d.ts.map": true
+    }
   },
 }

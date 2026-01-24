@@ -6,8 +6,8 @@
     {
       "label": "CP both: compile",
       "dependsOn": [
-        "${workspaceFolder:remote-cp-helper}/.vscode/tasks.json:cph-compile",
-        "remote-cp: compile"
+        "rcph-compile",
+        "rcp-compile"
       ],
       "dependsOrder": "sequence"
     },
@@ -20,7 +20,7 @@
       "dependsOrder": "sequence"
     },
     {
-      "label": "remote-cp: compile",
+      "label": "rcp-compile",
       "type": "npm",
       "script": "compile", // "webpack"
       "group": "build",
@@ -32,7 +32,7 @@
       }
     },
     {
-      "label": "remote-cp: watch",
+      "label": "rcp-watch",
       "dependsOn": [
         "remote-cp: npm: watch:tsc",
         "remote-cp: npm: watch:esbuild"

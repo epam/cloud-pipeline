@@ -63,3 +63,9 @@ Represents active tunnel with access to proxy stream.
 
 - Python pipe-cli implementation: See `cp-client-meta/docs/pipe-cli/tunnel.SPEC.md`
 - See [cp-client-meta/docs/cp-client-tunnel.SPEC.md](../cp-client-meta/docs/cp-client-tunnel.SPEC.md) for full specification
+
+## Code Organization
+
+Shared code-organization guidelines live in the meta project. See cp-client-meta/docs/CODESPEC.md#code-organization
+
+Note for AI contributors: general coding instructions should be maintained in `cp-client-meta`. Prefer updating the meta spec and linking to it here instead of duplicating content.

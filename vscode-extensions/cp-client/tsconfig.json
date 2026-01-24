@@ -11,16 +11,17 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "moduleResolution": "node",
+    "preserveSymlinks": true,
     "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
       "cp-client-tunnel": [
-        "../cp-client-tunnel/src"
+        "./node_modules/cp-client-tunnel/dist"
       ],
       "cp-client-common": [
-        "../cp-client-common/src"
-      ],
-    },
+        "./node_modules/cp-client-common/dist"
+      ]
+    }
   },
   "include": [
     "src/**/*"

@@ -96,20 +96,29 @@ Logs are saved to `~/.pipe/logs/tunnel.log`
 
 ## Library API
 
-The package also exports tunnel functions for programmatic use:
+For programmatic use, the package exports `TunnelManager` for direct tunnel operations. CLI-specific helpers are kept internal to command handlers.
 
 ```typescript
-import { 
-  pipeTunnelStart, 
-  pipeTunnelList, 
-  pipeTunnelStop,
-  TunnelManager 
-} from "cp-client";
+import { TunnelManager } from "cp-client";
 
-const tunnels = await pipeTunnelList({}, {
-  proxyHost: "proxy.example.com",
-  proxyPort: 443,
+const manager = new TunnelManager({ 
+  proxyHost: "proxy.example.com", 
+  proxyPort: 443 
 });
+
+// Start a tunnel
+const tunnel = await manager.startTunnel(12345, { 
+  runId: 12345, 
+  remotePort: 22 
+});
+
+// List tunnels
+const tunnels = await manager.listTunnels();
+
+// Stop a tunnel
+await manager.stopTunnel(12345);
+
+manager.dispose();
 ```
 
 ## Project Structure
@@ -117,7 +126,7 @@ const tunnels = await pipeTunnelList({}, {
 ```
 src/
 ├── cli.ts                    # Main CLI entry point
-├── index.ts                  # Library API exports
+├── index.ts                  # Library API exports (reusable helpers only)
 └── cli/
     ├── types.ts              # CLI type definitions
     ├── utils.ts              # Utilities (config, port checking, background spawn)
@@ -127,6 +136,13 @@ src/
         ├── tunnel-start.ts   # Start command handler
         └── tunnel-stop.ts    # Stop command handler
 ```
+
+## Code Organization
+
+Shared code-organization guidelines live in the meta project. See cp-client-meta/docs/CODESPEC.md#code-organization
+
+Note for AI contributors: general coding instructions should be maintained in `cp-client-meta`. Prefer updating the meta spec and linking to it here instead of duplicating content.
+
 
 ## How It Works
 
