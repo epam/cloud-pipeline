@@ -19,9 +19,9 @@ export interface TunnelStartOptions extends GlobalOptions {
   sshKeep?: boolean;
   direct?: boolean;
   logFile?: string;
-  timeout?: number;
-  timeoutStop?: number;
-  foreground?: boolean;
+  timeout: number;
+  timeoutStop: number;
+  foreground: boolean;
   keepExisting?: boolean;
   keepSame?: boolean;
   replaceExisting?: boolean;

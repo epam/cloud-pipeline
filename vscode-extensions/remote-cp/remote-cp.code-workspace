@@ -102,6 +102,10 @@
       "/^Push-Location \"c:\\\\Users\\\\aleksandr_tanas\\\\projs\\\\pipe\\\\cloud-pipeline\\\\vscode-extensions\\\\cp-client\"; node dist/cli\\.js tunnel start 12345 --foreground --trace 2>&1 \\| Select-Object -First 50; Pop-Location$/": {
         "approve": true,
         "matchCommandLine": true
+      },
+      "/^node dist/cli\\.js tunnel start 85984 -rp 22 -lp 22084 -f$/": {
+        "approve": true,
+        "matchCommandLine": true
       }
     },
     // "editor.formatOnSave": true,

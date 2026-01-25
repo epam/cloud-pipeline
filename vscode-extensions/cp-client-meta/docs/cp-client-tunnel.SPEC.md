@@ -1,6 +1,7 @@
 # cp-client-tunnel Specification
 
-- Purpose: Pure TypeScript/Node.js tunnel library; no Python CLI calls.
+- **Project Type**: Pure TypeScript/Node.js **library** (not a runnable application). This package is imported by other projects like `cp-client`. No `.vscode/launch.json` debug configurations exist for this project.
+- Purpose: Tunnel library; no Python CLI calls.
 - Architecture: Two-step connect (TCP → HTTP CONNECT → raw socket) then handoff to SSH tooling; mirror Python `pipe-cli` semantics unless explicit override.
 - API:
   - `startTunnel(runId, options): Promise<TunnelConnection>`

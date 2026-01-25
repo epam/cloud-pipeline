@@ -1,8 +1,10 @@
 # cp-client-tunnel
 
-Pure TypeScript/Node.js tunnel library for Cloud Pipeline.
+Pure TypeScript/Node.js tunnel **library** for Cloud Pipeline.
 
 Establishes proxy tunnel connections through HTTP CONNECT protocol and manages tunnel lifecycle independently from Python CLI.
+
+**Note**: This is a library package, not a runnable application. It is imported by other packages like `cp-client`. No `.vscode/launch.json` configurations exist for this project.
 
 ## Architecture
 

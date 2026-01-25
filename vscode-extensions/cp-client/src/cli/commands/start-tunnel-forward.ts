@@ -8,7 +8,8 @@ export async function startTunnelForward(
   runId: number,
   options: TunnelStartOptions,
   config: any,
-  logger: ILogger): Promise<void> {
+  logger: ILogger
+): Promise<void> {
   const manager = new TunnelManager(config);
   const tunnel = await manager.startTunnel(runId, {
     runId,

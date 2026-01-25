@@ -8,3 +8,9 @@
 - VS Code specifics: Keep UI-dependent pieces (like OutputLogger) here; do not push VS Code APIs into `cp-client-*` projects.
 - References: For tunnel behavior parity see `cp-client-meta/docs/pipe-cli/tunnel.SPEC.md`.
 - Duplication guard: When editing instructions or docs, check for duplicate content/spec files and consolidate into a single referenced source; prefer linking over copying.
+
+## File Naming Conventions
+
+- TypeScript files: Use **kebab-case** (e.g., `tunnel-manager.ts`, `process-discovery.ts`).
+- React components: Use **PascalCase** (e.g., `TunnelView.tsx`, `ConnectionPanel.tsx`).
+- Exception: Configuration and declaration files may follow their ecosystem conventions (e.g., `tsconfig.json`, `vscode.d.ts`).

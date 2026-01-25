@@ -12,7 +12,7 @@ import {
   tunnelStartAction,
   tunnelStopAction,
 } from "./cli/commands";
-import { FileLogger, LoggerBase } from "cp-client-common";
+import { LoggerBase } from "cp-client-common";
 
 const pkg = JSON.parse(
   readFileSync(path.resolve(__dirname, "../package.json"), "utf8"),

@@ -10,7 +10,13 @@
 - Dependencies: Use npm workspaces (`"workspace:*"`) between `cp-client-*` projects; avoid VS Code-specific APIs here.
 - Docs rule: `pipe-cli` is read-only; descriptions live under `docs/pipe-cli/` (e.g., `docs/pipe-cli/tunnel.SPEC.md`) and are for reference only.
 - Duplication guard: When editing instructions or docs, check for duplicate content/spec files and consolidate into a single referenced source; prefer linking over copying.
- - Colocation: Place function/type declarations as close as possible to their usage. If a helper is only used by a single CLI command, keep it in that command (or a sibling helper in `src/cli/`). Only promote utilities to `src/index.ts` if they serve external, reusable programmatic use.
+- Colocation: Place function/type declarations as close as possible to their usage. If a helper is only used by a single CLI command, keep it in that command (or a sibling helper in `src/cli/`). Only promote utilities to `src/index.ts` if they serve external, reusable programmatic use.
+
+## File Naming Conventions
+
+- TypeScript files: Use **kebab-case** (e.g., `tunnel-manager.ts`, `process-discovery.ts`, `start-tunnel-forward.ts`).
+- React components: Use **PascalCase** (e.g., `TunnelView.tsx`, `ConnectionPanel.tsx`).
+- Exception: Configuration and declaration files may follow their ecosystem conventions (e.g., `tsconfig.json`, `index.ts`).
 
 ## Code Organization
 
