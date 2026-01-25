@@ -114,7 +114,7 @@ public class Utils {
 
     public static void clickAndSendKeysWithSlashes(WebElement element, String text) {
         actions().moveToElement(element).click().perform();
-        sendKeysWithSlashes(text);
+        sendKeysWithSlashes(text.replace("\u200b", ""));
     }
 
     public static void clearTextField(final SelenideElement field) {

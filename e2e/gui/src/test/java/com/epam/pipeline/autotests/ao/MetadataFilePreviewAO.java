@@ -40,7 +40,8 @@ public class MetadataFilePreviewAO extends PopupAO<MetadataFilePreviewAO, Metada
             entry(EDIT, $(button("Edit"))),
             entry(CLOSE, $(button("Close"))),
             entry(SAVE, $(button("Save"))),
-            entry(VIEW_AS_TEXT, $(byClassName("data-storage-code-form__button ant-switch")))
+            entry(VIEW_AS_TEXT, $(byCssSelector(".data-storage-code-form__button.ant-switch")))
+//            entry(VIEW_AS_TEXT, $(byClassName("data-storage-code-form__button ant-switch")))
     );
 
     private final MetadataSectionAO parentAO;
