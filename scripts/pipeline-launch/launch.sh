@@ -965,7 +965,7 @@ function check_user_created() {
 }
 
 function create_user_extra_groups() {
-      local _enable_external_gid="$1"
+      local _enable_external_uid="$1"
       if ! check_installed "groupadd" && ! check_installed "addgroup"; then
             return
       fi
