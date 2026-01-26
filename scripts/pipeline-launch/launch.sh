@@ -819,17 +819,18 @@ function add_self_to_no_proxy() {
       export no_proxy="${_self_no_proxy},${_kube_no_proxy}"
 }
 
-function is_external_uid_enabled() {
-    local enable
-    local field
+function get_external_uid() {
+    local entity_id="$1"
+    local entity_class="$2"
+    local field="$3"
     local uid
 
-    enable="$(get_pipe_preference_low_level "launch.external.uid.enable" "false")"
-    field="$(get_pipe_preference_low_level "launch.external.uid.field.name" "")"
-    [ "$enable" = "true" ] || return 1
+    if [ -z "$field" ]; then
+        field="$(get_pipe_preference_low_level "launch.external.uid.field.name" "")"
+    fi
     [ -n "$field" ] || return 1
 
-    uid="$(resolve_owner_uid "$field")"
+    uid="$(resolve_external_uid "$entity_id" "$entity_class" "$field")"
     [ -n "$uid" ] || return 1
 
     echo "$uid"
@@ -855,8 +856,11 @@ function configure_owner_account() {
                 return "$?"
             fi
         else
-            OWNER_UID_EXTERNAL="$(is_external_uid_enabled)"
-            export OWNER_UID_EXTERNAL
+            _enable_external_uid="$(get_pipe_preference_low_level "launch.external.uid.enable" "false")"
+            if [ "$_enable_external_uid" = "true" ]; then
+                OWNER_UID_EXTERNAL="$(get_external_uid "$OWNER_ID" "PIPELINE_USER" "")"
+                export OWNER_UID_EXTERNAL
+            fi
             if [ -n "$OWNER_UID_EXTERNAL" ]; then
                 export OWNER_UID="$OWNER_UID_EXTERNAL"
             else
@@ -865,7 +869,7 @@ function configure_owner_account() {
                 export OWNER_UID=$(( UID_SEED + OWNER_ID ))
             fi
             export OWNER_GID="$OWNER_UID"
-            export OWNER_GROUPS_EXTRA=$(create_user_extra_groups)
+            export OWNER_GROUPS_EXTRA=$(create_user_extra_groups "$_enable_external_uid")
             if check_user_created "$OWNER" "$OWNER_UID" "$OWNER_GID"; then
                 # Check that a user is a member of all the groups. This is useful for the "committed" images
                 add_user_to_groups "$OWNER" "$OWNER_GROUPS,$OWNER_GROUPS_EXTRA"
@@ -914,15 +918,31 @@ function get_owner_info () {
             "$API/whoami"
 }
 
+function get_entity_attributes() {
+    local entity_id="$1"
+    local entity_class="$2"
+    curl -s -k \
+            --max-time 60 \
+            --header "Accept: application/json" \
+            --header "Authorization: Bearer $API_TOKEN" \
+            --header "Content-Type: application/json" \
+            "$API/metadata/load" \
+            -d "[ { \"entityId\": ${entity_id}, \"entityClass\": \"${entity_class}\" } ]"
+}
+
 function resolve_owner_id() {
     # Returns current cloud pipeline user id
     get_owner_info | jq -r '.payload.id // 0'
 }
 
-function resolve_owner_uid() {
-    local field_name="$1"
+function resolve_external_uid() {
+    local entity_id="$1"
+    local entity_class="$2"
+    local field="$3"
+
     # Returns the external uid if found
-    get_owner_info | jq -r --arg field "$field_name" '.payload.attributes[$field] // empty'
+    get_entity_attributes "$entity_id" "$entity_class" |
+        jq -r --arg field "$field" 'select(.status == "OK") | .payload? // [] | .[] | .data[$field]?.value // empty'
 }
 
 function check_user_created() {
@@ -945,15 +965,24 @@ function check_user_created() {
 }
 
 function create_user_extra_groups() {
+      local _enable_external_gid="$1"
       if ! check_installed "groupadd" && ! check_installed "addgroup"; then
             return
       fi
 
-      _gid_seed="$(get_pipe_preference_low_level "launch.gid.seed" "${CP_CAP_GID_SEED:-90000}")"
+      _default_gid_seed="$(get_pipe_preference_low_level "launch.gid.seed" "${CP_CAP_GID_SEED:-90000}")"
+      _external_uid_field_name="$(get_pipe_preference_low_level "launch.external.uid.field.name" "")"
       _groups_added=""
       _user_groups=$(get_owner_info | jq -r '.payload.roles[] | (.id | tostring) + "," + .name')
       while IFS=, read -r group_id group_name; do
-            real_group_id=$(( _gid_seed + group_id ))
+            if [ "$_enable_external_uid" = "true" ] && [ -n "$_external_uid_field_name" ]; then
+                _external_gid="$(get_external_uid "$group_id" "ROLE" "$_external_uid_field_name")"
+            fi
+            if [ -n "${_external_gid}" ]; then
+                real_group_id=${_external_gid}
+            else
+                real_group_id=$(( _default_gid_seed + group_id ))
+            fi
             _group_create_result=1
             if ! getent group $real_group_id &> /dev/null; then
                   if check_installed "groupadd"; then
