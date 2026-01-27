@@ -36,6 +36,7 @@ import org.springframework.security.web.util.matcher.OrRequestMatcher;
 @Configuration
 @Order(1)
 public class ImpersonationSecurityConfiguration {
+
     private final String impersonationOperationsRootUrl;
     private final ImpersonationManager impersonationManager;
 

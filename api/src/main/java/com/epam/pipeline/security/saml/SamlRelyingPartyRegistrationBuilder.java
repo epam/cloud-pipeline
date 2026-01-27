@@ -35,7 +35,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
 @Component
-public class CustomSamlRelyingPartyRegistrationBuilder {
+public class SamlRelyingPartyRegistrationBuilder {
 
     private final String federationMetadataFile;
     private final String registrationId;
@@ -46,7 +46,7 @@ public class CustomSamlRelyingPartyRegistrationBuilder {
     private final String keyStore;
     private final String keyStorePassword;
 
-    public CustomSamlRelyingPartyRegistrationBuilder(
+    public SamlRelyingPartyRegistrationBuilder(
             @Value("${server.ssl.metadata}") final String federationMetadataFile,
             @Value("${saml.sso.registration-id:SSO}") final String registrationId,
             @Value("${server.ssl.endpoint.id}") final String endpointId,
@@ -55,7 +55,7 @@ public class CustomSamlRelyingPartyRegistrationBuilder {
             @Value("${server.ssl.keyAlias}") final String keyAlias,
             @Value("${server.ssl.key-store}") final String keyStore,
             @Value("${server.ssl.key-store-password}") final String keyStorePassword) {
-        this.federationMetadataFile = federationMetadataFile; // TODO: support old-fashioned plain path (convert to resource)
+        this.federationMetadataFile = federationMetadataFile;
         this.registrationId = registrationId;
         this.endpointId = endpointId;
         this.acsEndpoint = acsEndpoint;
@@ -66,14 +66,14 @@ public class CustomSamlRelyingPartyRegistrationBuilder {
     }
 
     public RelyingPartyRegistration build() {
-        return RelyingPartyRegistrations.fromMetadataLocation(federationMetadataFile)
+        return RelyingPartyRegistrations.fromMetadataLocation(prepareFederationMetadataPath())
                 .assertingPartyDetails(party -> party
                         .singleSignOnServiceBinding(Saml2MessageBinding.REDIRECT)
                         .signingAlgorithms(sign -> sign.add(SignatureConstants.ALGO_ID_SIGNATURE_RSA)))
                 .registrationId(registrationId)
                 .entityId(endpointId)
                 .assertionConsumerServiceLocation(buildAcsUrl())
-                .assertionConsumerServiceBinding(Saml2MessageBinding.POST) // TODO: or redirect?
+                .assertionConsumerServiceBinding(Saml2MessageBinding.POST)
                 .signingX509Credentials(c -> {
                     c.add(getSigningX509Credentials(signingKey, Saml2X509Credential.Saml2X509CredentialType.SIGNING));
                     c.add(getSigningX509Credentials(keyAlias, Saml2X509Credential.Saml2X509CredentialType.SIGNING,
@@ -112,5 +112,15 @@ public class CustomSamlRelyingPartyRegistrationBuilder {
 
     private String buildAcsUrl() {
         return ProviderUtils.withoutTrailingDelimiter(endpointId) + ProviderUtils.withLeadingDelimiter(acsEndpoint);
+    }
+
+    private String prepareFederationMetadataPath() {
+        final String metadataLocation = federationMetadataFile.toLowerCase();
+        if (metadataLocation.startsWith("classpath:") || metadataLocation.startsWith("file:")
+                || metadataLocation.startsWith("http:") || metadataLocation.startsWith("https:")) {
+            return metadataLocation;
+        }
+        // support the former metadata path:
+        return "file:" + metadataLocation;
     }
 }

@@ -45,7 +45,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Component
-public class CustomSamlResponseAuthenticationConverter {
+public class SamlResponseAuthenticationConverter {
 
     private static final String ATTRIBUTES_DELIMITER = "=";
 
@@ -56,7 +56,7 @@ public class CustomSamlResponseAuthenticationConverter {
     private final UserManager userManager;
     private final UserAccessService accessService;
 
-    public CustomSamlResponseAuthenticationConverter(
+    public SamlResponseAuthenticationConverter(
             @Value("${saml.authorities.attribute.names: null}") final List<String> authorities,
             @Value("#{'${saml.user.attributes}'.split(',')}") final Set<String> samlAttributes,
             @Value("${saml.user.blocked.attribute: }") final String blockedAttribute,
@@ -81,11 +81,10 @@ public class CustomSamlResponseAuthenticationConverter {
         }
         final var principal = (DefaultSaml2AuthenticatedPrincipal) authentication.getPrincipal();
         final Map<String, List<Object>> credentials = principal.getAttributes();
-        final UserContext userContext = loadUserBySAML(credentials, principal);
+        final List<String> groups = readAuthorities(credentials);
+        final UserContext userContext = loadUserBySAML(credentials, principal, groups);
 
-        final List<GrantedAuthority> authorities = ListUtils.emptyIfNull(credentials.get("groups")).stream()
-                .map(o -> (String) o)
-                .map(String::toUpperCase)
+        final List<GrantedAuthority> authorities = ListUtils.emptyIfNull(groups).stream()
                 .map(SimpleGrantedAuthority::new)
                 .collect(Collectors.toList());
         authorities.addAll(authentication.getAuthorities());
@@ -97,9 +96,9 @@ public class CustomSamlResponseAuthenticationConverter {
     }
 
     private UserContext loadUserBySAML(final Map<String, List<Object>> credentials,
-                                       final DefaultSaml2AuthenticatedPrincipal principal) {
+                                       final DefaultSaml2AuthenticatedPrincipal principal,
+                                       final List<String> groups) {
         final String userName = principal.getName().toUpperCase();
-        final List<String> groups = readAuthorities(credentials);
         final Map<String, String> attributes = readAttributes(credentials);
         final UserContext userContext = accessService.parseUser(userName, groups, attributes);
         accessService.validateUserGroupsBlockStatus(userContext.toPipelineUser());

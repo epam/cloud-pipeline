@@ -17,8 +17,8 @@
 package com.epam.pipeline.app;
 
 import com.epam.pipeline.entity.user.DefaultRoles;
-import com.epam.pipeline.security.saml.CustomSamlRelyingPartyRegistrationBuilder;
-import com.epam.pipeline.security.saml.CustomSamlResponseAuthenticationConverter;
+import com.epam.pipeline.security.saml.SamlRelyingPartyRegistrationBuilder;
+import com.epam.pipeline.security.saml.SamlResponseAuthenticationConverter;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.session.DefaultCookieSerializerCustomizer;
@@ -53,8 +53,8 @@ public class SAMLSecurityConfiguration {
     private final String acsEndpoint;
     private final boolean logoutInvalidateSession;
     private final String logoutEndpoint;
-    private final CustomSamlResponseAuthenticationConverter responseAuthenticationConverter;
-    private final CustomSamlRelyingPartyRegistrationBuilder relyingPartyRegistrationBuilder;
+    private final SamlResponseAuthenticationConverter responseAuthenticationConverter;
+    private final SamlRelyingPartyRegistrationBuilder relyingPartyRegistrationBuilder;
     private final String[] anonymousResources;
     private final List<String> excludeScripts;
     private final String[] swaggerAccessRoles;
@@ -64,8 +64,8 @@ public class SAMLSecurityConfiguration {
             @Value("${saml.sso.acs.endpoint:/saml/SSO}") final String acsEndpoint,
             @Value("${saml.logout.invalidate.session:false}") final boolean logoutInvalidateSession,
             @Value("${saml.logout.endpoint:/saml/logout}") final String logoutEndpoint,
-            final CustomSamlResponseAuthenticationConverter responseAuthenticationConverter,
-            final CustomSamlRelyingPartyRegistrationBuilder relyingPartyRegistrationBuilder,
+            final SamlResponseAuthenticationConverter responseAuthenticationConverter,
+            final SamlRelyingPartyRegistrationBuilder relyingPartyRegistrationBuilder,
             @Value("${api.security.anonymous.urls:/restapi/route}") final String[] anonymousResources,
             @Value("#{'${api.security.public.urls}'.split(',')}") final List<String> excludeScripts,
             @Value("${api.security.swagger.access.roles:ROLE_ADMIN,ROLE_USER}") final String[] swaggerAccessRoles) {
