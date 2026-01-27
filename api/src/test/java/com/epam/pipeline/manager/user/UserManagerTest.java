@@ -296,17 +296,17 @@ public class UserManagerTest extends AbstractSpringTest {
     @Test
     public void createGroupStatus() {
         assertNotNull(userManager.upsertGroupBlockingStatus(TEST_GROUP_NAME_1, false));
-        assertFalse(getGroupStatus(TEST_GROUP_NAME_1).isBlocked());
+        assertFalse(getGroupStatus(TEST_GROUP_NAME_1).blocked());
     }
 
     @Test
     public void updateGroupStatus() {
         userManager.upsertGroupBlockingStatus(TEST_GROUP_NAME_1, false);
-        assertFalse(getGroupStatus(TEST_GROUP_NAME_1).isBlocked());
+        assertFalse(getGroupStatus(TEST_GROUP_NAME_1).blocked());
         userManager.upsertGroupBlockingStatus(TEST_GROUP_NAME_1, true);
-        assertTrue(getGroupStatus(TEST_GROUP_NAME_1).isBlocked());
+        assertTrue(getGroupStatus(TEST_GROUP_NAME_1).blocked());
         userManager.upsertGroupBlockingStatus(TEST_GROUP_NAME_1, false);
-        assertFalse(getGroupStatus(TEST_GROUP_NAME_1).isBlocked());
+        assertFalse(getGroupStatus(TEST_GROUP_NAME_1).blocked());
     }
 
     private GroupStatus getGroupStatus(final String groupName) {
@@ -319,7 +319,7 @@ public class UserManagerTest extends AbstractSpringTest {
     @Test
     public void deleteGroupStatus() {
         userManager.upsertGroupBlockingStatus(TEST_GROUP_NAME_1, false);
-        assertFalse(getGroupStatus(TEST_GROUP_NAME_1).isBlocked());
+        assertFalse(getGroupStatus(TEST_GROUP_NAME_1).blocked());
         userManager.deleteGroupBlockingStatus(TEST_GROUP_NAME_1);
         assertNull(getGroupStatus(TEST_GROUP_NAME_1));
     }
@@ -330,7 +330,7 @@ public class UserManagerTest extends AbstractSpringTest {
         userManager.upsertGroupBlockingStatus(TEST_GROUP_NAME_2, true);
         final Map<String, Boolean> groupsStatuses = userManager.loadAllGroupsBlockingStatuses()
             .stream()
-            .collect(Collectors.toMap(GroupStatus::getGroupName, GroupStatus::isBlocked));
+            .collect(Collectors.toMap(GroupStatus::groupName, GroupStatus::blocked));
         assertEquals(2, groupsStatuses.size());
         assertFalse(groupsStatuses.get(TEST_GROUP_NAME_1));
         assertTrue(groupsStatuses.get(TEST_GROUP_NAME_2));

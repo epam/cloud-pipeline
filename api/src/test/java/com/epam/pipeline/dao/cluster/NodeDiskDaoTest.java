@@ -63,12 +63,12 @@ public class NodeDiskDaoTest extends AbstractJdbcTest {
         
         assertThat(disks.size(), is(1));
         final NodeDisk disk = disks.get(0);
-        assertThat(disk.getSize(), is(SIZE));
-        assertThat(disk.getNodeId(), is(NODE_ID));
+        assertThat(disk.size(), is(SIZE));
+        assertThat(disk.nodeId(), is(NODE_ID));
         final LocalDateTime expectedCreationDate = DateUtils.nowUTC();
         final LocalDateTime lowerExpectedCreationDate = expectedCreationDate.minusMinutes(1);
         final LocalDateTime upperExpectedCreationDate = expectedCreationDate.plusMinutes(1);
-        final LocalDateTime actualCreationDate = disk.getCreatedDate();
+        final LocalDateTime actualCreationDate = disk.createdDate();
         assertTrue(actualCreationDate.isAfter(lowerExpectedCreationDate)
                 && actualCreationDate.isBefore(upperExpectedCreationDate));
     }
@@ -79,7 +79,7 @@ public class NodeDiskDaoTest extends AbstractJdbcTest {
         final List<NodeDisk> disks = insert(NODE_ID, creationDate, diskRequestOf(SIZE), diskRequestOf(SIZE));
         
         assertThat(disks.size(), is(2));
-        disks.forEach(disk -> assertThat(disk.getCreatedDate(), is(creationDate)));
+        disks.forEach(disk -> assertThat(disk.createdDate(), is(creationDate)));
     }
     
     @Test
@@ -94,7 +94,7 @@ public class NodeDiskDaoTest extends AbstractJdbcTest {
         final List<NodeDisk> disks = insert(NODE_ID, diskRequestOf(SIZE), diskRequestOf(SIZE));
         
         final Set<LocalDateTime> creationDates = disks.stream()
-                .map(NodeDisk::getCreatedDate)
+                .map(NodeDisk::createdDate)
                 .collect(Collectors.toSet());
         assertThat(creationDates.size(), is(1));
     }

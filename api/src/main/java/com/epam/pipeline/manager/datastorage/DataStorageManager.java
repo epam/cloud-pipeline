@@ -845,15 +845,15 @@ public class DataStorageManager implements SecuredEntityManager {
                 (rootId, tags) -> tags.forEach(
                     rootTag -> storagesByRootId.getOrDefault(rootId, Collections.emptyList())
                         .stream()
-                        .filter(dataStorage -> rootTag.getObject().getPath().startsWith(dataStorage.getPrefix()))
+                        .filter(dataStorage -> rootTag.object().path().startsWith(dataStorage.getPrefix()))
                         .max(Comparator.comparingInt(s -> s.getPrefix().length()))
                         .ifPresent(dataStorage -> {
                             final DataStorageTag storageTag = new DataStorageTag(
                                 new DataStorageObject(
-                                        dataStorage.resolveRelativePath(rootTag.getObject().getPath()),
-                                        rootTag.getObject().getVersion()
+                                        dataStorage.resolveRelativePath(rootTag.object().path()),
+                                        rootTag.object().version()
                                 ),
-                                rootTag.getKey(), rootTag.getValue()
+                                rootTag.key(), rootTag.value()
                             );
                             results.computeIfAbsent(dataStorage.getId(), (id) -> new ArrayList<>()).add(storageTag);
                         })

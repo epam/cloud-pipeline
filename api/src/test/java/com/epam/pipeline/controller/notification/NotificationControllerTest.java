@@ -22,6 +22,7 @@ import com.epam.pipeline.acl.notification.NotificationApiService;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -32,6 +33,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
+@WebMvcTest(controllers = NotificationController.class)
 public class NotificationControllerTest extends AbstractControllerTest {
 
     private static final String NOTIFICATION_URL = SERVLET_PATH + "/notification";

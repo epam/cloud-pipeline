@@ -89,11 +89,12 @@ import com.epam.pipeline.security.jwt.JwtTokenVerifier;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 
 @Configuration
 @Import(InternalResourceViewResolver.class)
-//@EnableWebSecurity //TODO: if it is uncommented tests are not working
+@EnableWebSecurity
 public class ControllerTestBeans {
 
     @MockBean

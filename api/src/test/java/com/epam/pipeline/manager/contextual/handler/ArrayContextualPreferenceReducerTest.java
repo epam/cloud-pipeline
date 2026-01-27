@@ -53,7 +53,7 @@ public class ArrayContextualPreferenceReducerTest {
         final Optional<ContextualPreference> reducedPreference = reducer.reduce(preferences);
 
         assertTrue(reducedPreference.isPresent());
-        assertThat(reducedPreference.get().getValue(), is(MERGED_VALUE));
+        assertThat(reducedPreference.get().value(), is(MERGED_VALUE));
     }
 
     @Test
@@ -74,7 +74,7 @@ public class ArrayContextualPreferenceReducerTest {
         final Optional<ContextualPreference> reducedPreference = reducer.reduce(preferences);
 
         assertTrue(reducedPreference.isPresent());
-        assertThat(reducedPreference.get().getCreatedDate(), is(nullValue()));
-        assertThat(reducedPreference.get().getResource(), is(nullValue()));
+        assertThat(reducedPreference.get().createdDate(), is(nullValue()));
+        assertThat(reducedPreference.get().resource(), is(nullValue()));
     }
 }

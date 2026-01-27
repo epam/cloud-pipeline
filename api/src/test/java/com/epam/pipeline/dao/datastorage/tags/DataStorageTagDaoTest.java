@@ -97,7 +97,7 @@ public class DataStorageTagDaoTest extends AbstractJdbcTest {
 
         final Optional<DataStorageTag> loadedTag = dataStorageTagDao.load(testStorageRootId, object, KEY);
         assertTrue(loadedTag.isPresent());
-        assertThat(loadedTag.get().getValue(), is(ANOTHER_VALUE));
+        assertThat(loadedTag.get().value(), is(ANOTHER_VALUE));
     }
     
     @Test
@@ -110,7 +110,7 @@ public class DataStorageTagDaoTest extends AbstractJdbcTest {
 
         final Optional<DataStorageTag> loadedTag = dataStorageTagDao.load(testStorageRootId, object, KEY);
         assertTrue(loadedTag.isPresent());
-        assertNotNull(loadedTag.get().getCreatedDate());
+        assertNotNull(loadedTag.get().createdDate());
     }
 
     @Test

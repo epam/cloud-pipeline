@@ -44,6 +44,7 @@ import com.epam.pipeline.test.web.AbstractControllerTest;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
@@ -63,6 +64,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
+@WebMvcTest(controllers = PipelineController.class)
 public class PipelineControllerTest extends AbstractControllerTest {
 
     private static final String PIPELINE_URL = SERVLET_PATH + "/pipeline";

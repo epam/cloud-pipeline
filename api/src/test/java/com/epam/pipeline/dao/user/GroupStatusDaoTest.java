@@ -40,17 +40,17 @@ public class GroupStatusDaoTest extends AbstractJdbcTest {
     public void testGroupStatusCRUD() {
         final GroupStatus groupStatusArgument = new GroupStatus(TEST_GROUP_1, false, null);
         final GroupStatus savedGroupStatus = groupStatusDao.upsertGroupBlockingStatusQuery(groupStatusArgument);
-        assertEquals(TEST_GROUP_1, savedGroupStatus.getGroupName());
-        assertFalse(savedGroupStatus.isBlocked());
+        assertEquals(TEST_GROUP_1, savedGroupStatus.groupName());
+        assertFalse(savedGroupStatus.blocked());
 
         final GroupStatus loadedGroupStatus = loadGroupStatus(TEST_GROUP_1);
-        assertEquals(savedGroupStatus.getGroupName(), loadedGroupStatus.getGroupName());
-        assertEquals(savedGroupStatus.isBlocked(), loadedGroupStatus.isBlocked());
+        assertEquals(savedGroupStatus.groupName(), loadedGroupStatus.groupName());
+        assertEquals(savedGroupStatus.blocked(), loadedGroupStatus.blocked());
 
         final GroupStatus blockedGroupStatus = new GroupStatus(TEST_GROUP_1, true, null);
         final GroupStatus updatedGroupStatus = groupStatusDao.upsertGroupBlockingStatusQuery(blockedGroupStatus);
-        assertEquals(blockedGroupStatus.getGroupName(), updatedGroupStatus.getGroupName());
-        assertTrue(updatedGroupStatus.isBlocked());
+        assertEquals(blockedGroupStatus.groupName(), updatedGroupStatus.groupName());
+        assertTrue(updatedGroupStatus.blocked());
 
         groupStatusDao.deleteGroupBlockingStatus(TEST_GROUP_1);
         assertNull(loadGroupStatus(TEST_GROUP_1));
@@ -64,10 +64,10 @@ public class GroupStatusDaoTest extends AbstractJdbcTest {
         groupStatusDao.upsertGroupBlockingStatusQuery(groupStatus2);
         final Map<String, Boolean> loadedStatuses = groupStatusDao.loadAllGroupsBlockingStatuses()
             .stream()
-            .collect(Collectors.toMap(GroupStatus::getGroupName, GroupStatus::isBlocked));
+            .collect(Collectors.toMap(GroupStatus::groupName, GroupStatus::blocked));
         assertEquals(2, loadedStatuses.size());
-        assertEquals(groupStatus1.isBlocked(), loadedStatuses.get(groupStatus1.getGroupName()));
-        assertEquals(groupStatus2.isBlocked(), loadedStatuses.get(groupStatus2.getGroupName()));
+        assertEquals(groupStatus1.blocked(), loadedStatuses.get(groupStatus1.groupName()));
+        assertEquals(groupStatus2.blocked(), loadedStatuses.get(groupStatus2.groupName()));
 
     }
 

@@ -107,12 +107,12 @@ public class ContextualPreferenceControllerTest extends AbstractControllerTest {
         final ContextualPreferenceSearchRequest searchRequest = ContextualPreferenceCreatorUtils.getCPSearchRequest();
         final String content = getObjectMapper().writeValueAsString(searchRequest);
         Mockito.doReturn(contextualPreference).when(mockContextualPreferenceApiService)
-                .search(searchRequest.getPreferences(), searchRequest.getResource());
+                .search(searchRequest.preferences(), searchRequest.resource());
 
         final MvcResult mvcResult = performRequest(post(CONTEXTUAL_URL).content(content));
 
         Mockito.verify(mockContextualPreferenceApiService)
-                .search(searchRequest.getPreferences(), searchRequest.getResource());
+                .search(searchRequest.preferences(), searchRequest.resource());
         assertResponse(mvcResult, contextualPreference, ContextualPreferenceCreatorUtils.CONTEXTUAL_PREFERENCE_TYPE);
     }
 

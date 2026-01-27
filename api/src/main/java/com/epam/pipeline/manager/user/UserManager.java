@@ -446,7 +446,7 @@ public class UserManager implements SecuredEntityManager {
         final GroupStatus groupStatus = loadGroupBlockingStatus(groupName);
         Assert.notNull(groupName,
                 messageHelper.getMessage(MessageConstants.ERROR_NO_GROUP_WAS_FOUND, groupName));
-        groupStatusDao.deleteGroupBlockingStatus(groupStatus.getGroupName());
+        groupStatusDao.deleteGroupBlockingStatus(groupStatus.groupName());
         return groupStatus;
     }
 

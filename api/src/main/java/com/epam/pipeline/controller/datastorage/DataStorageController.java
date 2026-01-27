@@ -357,8 +357,26 @@ public class DataStorageController extends AbstractRestController {
             @PathVariable(value = ID) final Long id,
             @RequestParam(value = PATH) final String path,
             @RequestBody String content) {
+        final String normalizedContent = normalizeJsonStringLiteral(content);
         return Result.success(dataStorageApiService.createDataStorageFile(id, path,
-                content.getBytes(Charset.defaultCharset())));
+                normalizedContent.getBytes(Charset.defaultCharset())));
+    }
+
+    /**
+     * Spring MVC may bind {@code @RequestBody String} for {@code application/json} using a String converter,
+     * resulting in the JSON literal being passed verbatim (e.g. {@code "\"TEST\""}). To preserve the legacy
+     * behaviour (treating JSON string bodies as plain text), we unquote such bodies here.
+     */
+    private static String normalizeJsonStringLiteral(final String raw) {
+        if (raw == null) {
+            return "";
+        }
+        final String trimmed = raw.trim();
+        if (trimmed.length() >= 2 && trimmed.startsWith("\"") && trimmed.endsWith("\"")) {
+            // Minimal unquoting (covers our API usage where body is a simple JSON string).
+            return trimmed.substring(1, trimmed.length() - 1);
+        }
+        return raw;
     }
 
     @RequestMapping(value = "/datastorage/{id}/list", method = RequestMethod.DELETE)

@@ -75,161 +75,161 @@ public class DataStorageTagBatchManager {
 
     @Transactional
     public List<DataStorageTag> insert(final Long storageId, final DataStorageTagInsertBatchRequest request) {
-        if (CollectionUtils.isEmpty(request.getRequests())) {
+        if (CollectionUtils.isEmpty(request.requests())) {
             return Collections.emptyList();
         }
         final Optional<Long> root = getRoot(storageId);
         if (!root.isPresent()) {
             return Collections.emptyList();
         }
-        final List<String> allowedPaths = getAllowedPaths(storageId, request.getRequests(),
-                DataStorageTagInsertRequest::getPath, AclPermission.WRITE.getMask());
+        final List<String> allowedPaths = getAllowedPaths(storageId, request.requests(),
+                DataStorageTagInsertRequest::path, AclPermission.WRITE.getMask());
         if (Objects.nonNull(allowedPaths) && CollectionUtils.isEmpty(allowedPaths)) {
             log.debug("No allowed path found for storage '{}' to insert tags.", storageId);
             return Collections.emptyList();
         }
-        final List<DataStorageTag> tags = request.getRequests().stream()
-                .filter(insertRequest -> isPathAllowed(insertRequest.getPath(), allowedPaths))
+        final List<DataStorageTag> tags = request.requests().stream()
+                .filter(insertRequest -> isPathAllowed(insertRequest.path(), allowedPaths))
                 .map(this::tagFrom)
                 .collect(Collectors.toList());
-        tagDao.batchDelete(root.get(), tags.stream().map(DataStorageTag::getObject));
+        tagDao.batchDelete(root.get(), tags.stream().map(DataStorageTag::object));
         return tagDao.batchUpsert(root.get(), tags);
     }
 
     private DataStorageTag tagFrom(final DataStorageTagInsertRequest request) {
-        final DataStorageObject object = new DataStorageObject(request.getPath(), request.getVersion());
-        return new DataStorageTag(object, request.getKey(), request.getValue());
+        final DataStorageObject object = new DataStorageObject(request.path(), request.version());
+        return new DataStorageTag(object, request.key(), request.value());
     }
 
     @Transactional
     public List<DataStorageTag> upsert(final Long storageId, final DataStorageTagUpsertBatchRequest request) {
-        if (CollectionUtils.isEmpty(request.getRequests())) {
+        if (CollectionUtils.isEmpty(request.requests())) {
             return Collections.emptyList();
         }
         final Optional<Long> root = getRoot(storageId);
         if (!root.isPresent()) {
             return Collections.emptyList();
         }
-        final List<String> allowedPaths = getAllowedPaths(storageId, request.getRequests(),
-                DataStorageTagUpsertRequest::getPath, AclPermission.WRITE.getMask());
+        final List<String> allowedPaths = getAllowedPaths(storageId, request.requests(),
+                DataStorageTagUpsertRequest::path, AclPermission.WRITE.getMask());
         if (Objects.nonNull(allowedPaths) && CollectionUtils.isEmpty(allowedPaths)) {
             log.debug("No allowed path found for storage '{}' to upsert tags.", storageId);
             return Collections.emptyList();
         }
-        final List<DataStorageTag> tags = request.getRequests().stream()
-                .filter(upsertRequest -> isPathAllowed(upsertRequest.getPath(), allowedPaths))
+        final List<DataStorageTag> tags = request.requests().stream()
+                .filter(upsertRequest -> isPathAllowed(upsertRequest.path(), allowedPaths))
                 .map(this::tagFrom)
                 .collect(Collectors.toList());
         return tagDao.batchUpsert(root.get(), tags);
     }
 
     private DataStorageTag tagFrom(final DataStorageTagUpsertRequest request) {
-        final DataStorageObject object = new DataStorageObject(request.getPath(), request.getVersion());
-        return new DataStorageTag(object, request.getKey(), request.getValue());
+        final DataStorageObject object = new DataStorageObject(request.path(), request.version());
+        return new DataStorageTag(object, request.key(), request.value());
     }
 
     @Transactional
     public List<DataStorageTag> copy(final Long storageId, final DataStorageTagCopyBatchRequest request) {
-        if (CollectionUtils.isEmpty(request.getRequests())) {
+        if (CollectionUtils.isEmpty(request.requests())) {
             return Collections.emptyList();
         }
         final Optional<Long> root = getRoot(storageId);
         if (!root.isPresent()) {
             return Collections.emptyList();
         }
-        final List<String> readAllowedPaths = getAllowedPaths(storageId, request.getRequests().stream()
-                        .map(DataStorageTagCopyRequest::getSource).collect(Collectors.toList()),
-                DataStorageTagCopyRequest.DataStorageTagCopyRequestObject::getPath, AclPermission.READ.getMask());
+        final List<String> readAllowedPaths = getAllowedPaths(storageId, request.requests().stream()
+                        .map(DataStorageTagCopyRequest::source).collect(Collectors.toList()),
+                DataStorageTagCopyRequest.DataStorageTagCopyRequestObject::path, AclPermission.READ.getMask());
         if (Objects.nonNull(readAllowedPaths) && CollectionUtils.isEmpty(readAllowedPaths)) {
             log.debug("No allowed path found for storage '{}' to load tags for copy.", storageId);
             return Collections.emptyList();
         }
         final Map<DataStorageTagCopyRequest.DataStorageTagCopyRequestObject, List<DataStorageTag>> sourceTagsMap =
-                request.getRequests().stream()
-                        .map(DataStorageTagCopyRequest::getSource)
+                request.requests().stream()
+                        .map(DataStorageTagCopyRequest::source)
                         .distinct()
-                        .filter(o -> isPathAllowed(o.getPath(), readAllowedPaths))
+                        .filter(o -> isPathAllowed(o.path(), readAllowedPaths))
                         .collect(Collectors.toMap(Function.identity(),
-                            it -> tagDao.load(root.get(), new DataStorageObject(it.getPath(), it.getVersion()))));
-        final List<String> writeAllowedPaths = getAllowedPaths(storageId, request.getRequests().stream()
-                        .map(DataStorageTagCopyRequest::getDestination).collect(Collectors.toList()),
-                DataStorageTagCopyRequest.DataStorageTagCopyRequestObject::getPath, AclPermission.WRITE.getMask());
+                            it -> tagDao.load(root.get(), new DataStorageObject(it.path(), it.version()))));
+        final List<String> writeAllowedPaths = getAllowedPaths(storageId, request.requests().stream()
+                        .map(DataStorageTagCopyRequest::destination).collect(Collectors.toList()),
+                DataStorageTagCopyRequest.DataStorageTagCopyRequestObject::path, AclPermission.WRITE.getMask());
         if (Objects.nonNull(writeAllowedPaths) && CollectionUtils.isEmpty(writeAllowedPaths)) {
             log.debug("No allowed path found for storage '{}' to copy tags.", storageId);
             return Collections.emptyList();
         }
-        final List<DataStorageTag> tags = request.getRequests().stream()
-                .filter(r -> isPathAllowed(r.getDestination().getPath(), writeAllowedPaths))
-                .flatMap(r -> Optional.ofNullable(sourceTagsMap.get(r.getSource()))
+        final List<DataStorageTag> tags = request.requests().stream()
+                .filter(r -> isPathAllowed(r.destination().path(), writeAllowedPaths))
+                .flatMap(r -> Optional.ofNullable(sourceTagsMap.get(r.source()))
                         .map(sourceTags -> sourceTags.stream()
-                                .map(it -> it.withObject(new DataStorageObject(r.getDestination().getPath(), 
-                                        r.getDestination().getVersion()))))
+                                .map(it -> it.withObject(new DataStorageObject(r.destination().path(),
+                                        r.destination().version()))))
                         .orElseGet(Stream::empty))
                 .collect(Collectors.toList());
-        tagDao.batchDelete(root.get(), tags.stream().map(DataStorageTag::getObject).distinct());
+        tagDao.batchDelete(root.get(), tags.stream().map(DataStorageTag::object).distinct());
         return tagDao.batchUpsert(root.get(), tags);
     }
 
     @Transactional
     public List<DataStorageTag> load(final Long storageId, final DataStorageTagLoadBatchRequest request) {
-        if (CollectionUtils.isEmpty(request.getRequests())) {
+        if (CollectionUtils.isEmpty(request.requests())) {
             return Collections.emptyList();
         }
         final Optional<Long> root = getRoot(storageId);
         if (!root.isPresent()) {
             return Collections.emptyList();
         }
-        final List<String> allowedPaths = getAllowedPaths(storageId, request.getRequests(),
-                DataStorageTagLoadRequest::getPath, AclPermission.READ.getMask());
+        final List<String> allowedPaths = getAllowedPaths(storageId, request.requests(),
+                DataStorageTagLoadRequest::path, AclPermission.READ.getMask());
         if (Objects.nonNull(allowedPaths) && CollectionUtils.isEmpty(allowedPaths)) {
             log.debug("No allowed path found for storage '{}' to load tags.", storageId);
             return Collections.emptyList();
         }
-        return tagDao.batchLoad(root.get(), request.getRequests().stream()
-                .map(DataStorageTagLoadRequest::getPath)
+        return tagDao.batchLoad(root.get(), request.requests().stream()
+                .map(DataStorageTagLoadRequest::path)
                 .filter(path -> isPathAllowed(path, allowedPaths))
                 .collect(Collectors.toList()));
     }
 
     @Transactional
     public void delete(final Long storageId, final DataStorageTagDeleteBatchRequest request) {
-        if (CollectionUtils.isEmpty(request.getRequests())) {
+        if (CollectionUtils.isEmpty(request.requests())) {
             return;
         }
         final Optional<Long> root = getRoot(storageId);
         if (!root.isPresent()) {
             return;
         }
-        final List<String> allowedPaths = getAllowedPaths(storageId, request.getRequests(),
-                DataStorageTagDeleteRequest::getPath, AclPermission.WRITE.getMask());
+        final List<String> allowedPaths = getAllowedPaths(storageId, request.requests(),
+                DataStorageTagDeleteRequest::path, AclPermission.WRITE.getMask());
         if (Objects.nonNull(allowedPaths) && CollectionUtils.isEmpty(allowedPaths)) {
             log.debug("No allowed path found for storage '{}' to delete tags.", storageId);
             return;
         }
-        tagDao.batchDelete(root.get(), request.getRequests().stream()
-                .filter(r -> isPathAllowed(r.getPath(), allowedPaths))
-                .map(r -> new DataStorageObject(r.getPath(), r.getVersion())));
+        tagDao.batchDelete(root.get(), request.requests().stream()
+                .filter(r -> isPathAllowed(r.path(), allowedPaths))
+                .map(r -> new DataStorageObject(r.path(), r.version())));
     }
 
     @Transactional
     public void deleteAll(final Long storageId, final DataStorageTagDeleteAllBatchRequest request) {
-        if (CollectionUtils.isEmpty(request.getRequests())) {
+        if (CollectionUtils.isEmpty(request.requests())) {
             return;
         }
         final Optional<Long> root = getRoot(storageId);
         if (!root.isPresent()) {
             return;
         }
-        final List<String> allowedPaths = getAllowedPaths(storageId, request.getRequests(),
-                DataStorageTagDeleteAllRequest::getPath, AclPermission.WRITE.getMask());
+        final List<String> allowedPaths = getAllowedPaths(storageId, request.requests(),
+                DataStorageTagDeleteAllRequest::path, AclPermission.WRITE.getMask());
         if (Objects.nonNull(allowedPaths) && CollectionUtils.isEmpty(allowedPaths)) {
             log.debug("No allowed path found for storage '{}' to delete all tags.", storageId);
             return;
         }
-        tagDao.batchDeleteAll(root.get(), request.getRequests().stream()
-                .filter(r -> isPathAllowed(r.getPath(), allowedPaths))
-                .map(r -> new DataStorageObject(r.getPath()))
-                .map(DataStorageObject::getPath)
+        tagDao.batchDeleteAll(root.get(), request.requests().stream()
+                .filter(r -> isPathAllowed(r.path(), allowedPaths))
+                .map(r -> new DataStorageObject(r.path()))
+                .map(DataStorageObject::path)
                 .collect(Collectors.toList()));
     }
 

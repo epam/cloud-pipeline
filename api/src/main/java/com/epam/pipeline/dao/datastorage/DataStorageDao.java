@@ -122,7 +122,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         createDataStorageRoot(dataStorage.getRoot());
         final DataStorageRoot dataStorageRoot = loadDataStorageRoot(dataStorage.getRoot())
                 .orElseThrow(() -> new RuntimeException("Data storage root not found"));
-        dataStorage.setRootId(dataStorageRoot.getId());
+        dataStorage.setRootId(dataStorageRoot.id());
         dataStorage.setId(createDataStorageId());
         if (dataStorage.getCreatedDate() == null) {
             dataStorage.setCreatedDate(DateUtils.now());

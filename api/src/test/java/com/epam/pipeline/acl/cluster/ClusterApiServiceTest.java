@@ -448,33 +448,33 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldReturnNodeDisksForAdmin() {
-        doReturn(nodeDisks).when(mockNodeDiskManager).loadByNodeId(nodeDisk.getNodeId());
+        doReturn(nodeDisks).when(mockNodeDiskManager).loadByNodeId(nodeDisk.nodeId());
 
-        assertThat(clusterApiService.loadNodeDisks(nodeDisk.getNodeId())).hasSize(1).contains(nodeDisk);
+        assertThat(clusterApiService.loadNodeDisks(nodeDisk.nodeId())).hasSize(1).contains(nodeDisk);
     }
 
     @Test
     @WithMockUser
     public void shouldReturnNodeDisksWhenPermissionIsGranted() {
         initAclEntity(nodeInstance, AclPermission.READ);
-        doReturn(nodeDisks).when(mockNodeDiskManager).loadByNodeId(nodeDisk.getNodeId());
+        doReturn(nodeDisks).when(mockNodeDiskManager).loadByNodeId(nodeDisk.nodeId());
         mockNode(nodeInstance);
         mockUser();
         mockRun(pipelineRun);
 
-        assertThat(clusterApiService.loadNodeDisks(nodeDisk.getNodeId())).hasSize(1).contains(nodeDisk);
+        assertThat(clusterApiService.loadNodeDisks(nodeDisk.nodeId())).hasSize(1).contains(nodeDisk);
     }
 
     @Test
     @WithMockUser
     public void shouldDenyAccessToNodeDisksWhenPermissionIsNotGranted() {
         initAclEntity(nodeInstance);
-        doReturn(nodeDisks).when(mockNodeDiskManager).loadByNodeId(nodeDisk.getNodeId());
+        doReturn(nodeDisks).when(mockNodeDiskManager).loadByNodeId(nodeDisk.nodeId());
         mockRun(pipelineRun);
         mockNode(nodeInstance);
         mockSecurityContext();
 
-        assertThrows(AccessDeniedException.class, () -> clusterApiService.loadNodeDisks(nodeDisk.getNodeId()));
+        assertThrows(AccessDeniedException.class, () -> clusterApiService.loadNodeDisks(nodeDisk.nodeId()));
     }
 
     private void mockNode(final NodeInstance nodeInstance) {
