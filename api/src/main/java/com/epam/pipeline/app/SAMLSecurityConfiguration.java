@@ -19,9 +19,6 @@ package com.epam.pipeline.app;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.security.saml.CustomSamlRelyingPartyRegistrationBuilder;
 import com.epam.pipeline.security.saml.CustomSamlResponseAuthenticationConverter;
-import com.epam.pipeline.security.saml.impersonation.ImpersonateFailureHandler;
-import com.epam.pipeline.security.saml.impersonation.ImpersonateSuccessHandler;
-import com.epam.pipeline.security.saml.impersonation.ImpersonationManager;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.session.DefaultCookieSerializerCustomizer;
@@ -29,7 +26,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.ProviderManager;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -42,15 +38,13 @@ import org.springframework.security.web.authentication.SavedRequestAwareAuthenti
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 import org.springframework.security.web.authentication.logout.SimpleUrlLogoutSuccessHandler;
-import org.springframework.security.web.authentication.switchuser.SwitchUserFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
-import org.springframework.web.cors.CorsConfiguration;
 
 import java.util.Arrays;
 import java.util.List;
 
-@Order(2)
+@Order(3)
 @Configuration
 @EnableWebSecurity
 public class SAMLSecurityConfiguration {
@@ -64,7 +58,6 @@ public class SAMLSecurityConfiguration {
     private final String[] anonymousResources;
     private final List<String> excludeScripts;
     private final String[] swaggerAccessRoles;
-    final String impersonationOperationsRootUrl;
 
     public SAMLSecurityConfiguration(
             @Value("${saml.login.failure.redirect:/error}") final String loginFailureRedirect,
@@ -75,9 +68,7 @@ public class SAMLSecurityConfiguration {
             final CustomSamlRelyingPartyRegistrationBuilder relyingPartyRegistrationBuilder,
             @Value("${api.security.anonymous.urls:/restapi/route}") final String[] anonymousResources,
             @Value("#{'${api.security.public.urls}'.split(',')}") final List<String> excludeScripts,
-            @Value("${api.security.swagger.access.roles:ROLE_ADMIN,ROLE_USER}") final String[] swaggerAccessRoles,
-            @Value("${api.security.impersonation.operations.root.url:/restapi/user/impersonation}")
-            final String impersonationOperationsRootUrl) {
+            @Value("${api.security.swagger.access.roles:ROLE_ADMIN,ROLE_USER}") final String[] swaggerAccessRoles) {
         this.loginFailureRedirect = loginFailureRedirect;
         this.acsEndpoint = acsEndpoint;
         this.logoutInvalidateSession = logoutInvalidateSession;
@@ -87,7 +78,6 @@ public class SAMLSecurityConfiguration {
         this.anonymousResources = anonymousResources;
         this.excludeScripts = excludeScripts;
         this.swaggerAccessRoles = swaggerAccessRoles;
-        this.impersonationOperationsRootUrl = impersonationOperationsRootUrl;
     }
 
     @Bean
@@ -132,18 +122,8 @@ public class SAMLSecurityConfiguration {
                         .invalidateHttpSession(logoutInvalidateSession)
                         .clearAuthentication(true)
                 )
-                .saml2Logout(Customizer.withDefaults())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-                )
-                .cors(cors -> cors
-                        .configurationSource(request -> {
-                            var config = new CorsConfiguration();
-                            config.addAllowedOrigin("*"); // Replace with specific origins in production!
-                            config.addAllowedMethod("*");
-                            config.addAllowedHeader("*");
-                            return config;
-                        })
                 )
                 .build();
     }
@@ -188,20 +168,6 @@ public class SAMLSecurityConfiguration {
         return handler;
     }
 
-    @Bean
-    public SwitchUserFilter switchUserFilter(final ImpersonationManager impersonationManager) {
-        final var filter = new SwitchUserFilter();
-        final String impersonationStartUrl = getImpersonationStartUrl();
-        final String impersonationStopUrl = getImpersonationStopUrl();
-        filter.setUserDetailsService(impersonationManager);
-        filter.setUserDetailsChecker(impersonationManager);
-        filter.setSwitchUserMatcher(new AntPathRequestMatcher(impersonationStartUrl, "GET"));
-        filter.setExitUserMatcher(new AntPathRequestMatcher(impersonationStopUrl, "GET"));
-        filter.setFailureHandler(new ImpersonateFailureHandler(impersonationStartUrl, impersonationStopUrl));
-        filter.setSuccessHandler(new ImpersonateSuccessHandler(impersonationStartUrl, impersonationStopUrl));
-        return filter;
-    }
-
     private RequestMatcher getFullRequestMatcher() {
         return new AntPathRequestMatcher(getSecuredResourcesRoot());
     }
@@ -236,13 +202,5 @@ public class SAMLSecurityConfiguration {
                 "/restapi/v3/api-docs/**"
         );
         return paths.toArray(new String[0]);
-    }
-
-    private String getImpersonationStartUrl() {
-        return impersonationOperationsRootUrl + "/start";
-    }
-
-    private String getImpersonationStopUrl() {
-        return impersonationOperationsRootUrl + "/stop";
     }
 }

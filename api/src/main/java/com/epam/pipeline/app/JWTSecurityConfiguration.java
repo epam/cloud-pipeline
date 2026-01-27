@@ -50,7 +50,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Order(1)
+@Order(2)
 @Configuration
 @ComponentScan(basePackages = {"com.epam.pipeline.security.jwt"})
 public class JWTSecurityConfiguration {
