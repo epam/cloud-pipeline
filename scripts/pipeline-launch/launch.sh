@@ -957,6 +957,17 @@ function check_user_created() {
         if [ "$_user_uid" ] && [ "$_user_uid" != "$_existing_user_uid" ] \
             || [ "$_user_gid" ] && [ "$_user_gid" != "$_existing_user_gid" ]; then
             echo "Existing user $_user_name (uid: $_existing_user_uid, gid: $_existing_user_gid) configuration is different from the expected one (uid: $_user_uid, gid: $_user_gid)"
+            if check_cp_cap "CP_CAP_UID_RECREATE_EXISTING_USER"; then
+                if check_installed "userdel"; then
+                    userdel "$_user_name"
+                elif check_installed "deluser"; then
+                    deluser "$_user_name"
+                else
+                    echo "Cannot delete user $_user_name: userdel/deluser commands are not installed"
+                    return 0
+                fi
+                return 1
+            fi
         fi
         return 0
     else
