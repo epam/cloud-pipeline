@@ -865,6 +865,8 @@ public class SystemPreferences {
             "launch.external.uid.enable", false, LAUNCH_GROUP, pass, true);
     public static final StringPreference LAUNCH_EXTERNAL_UID_FIELD_NAME = new StringPreference(
             "launch.external.uid.field.name", null, LAUNCH_GROUP, pass, true);
+    public static final StringPreference LAUNCH_EXTERNAL_GID_FIELD_NAME = new StringPreference(
+            "launch.external.default.gid.field.name", null, LAUNCH_GROUP, pass, true);
 
     public static final ObjectPreference<Map<String, Object>> LAUNCH_PRE_COMMON_COMMANDS = new ObjectPreference<>(
             "launch.pre.common.commands", null, new TypeReference<Map<String, Object>>() {},

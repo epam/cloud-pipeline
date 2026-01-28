@@ -873,11 +873,15 @@ function configure_owner_account() {
             if check_user_created "$OWNER" "$OWNER_UID" "$OWNER_GID"; then
                 # Check that a user is a member of all the groups. This is useful for the "committed" images
                 add_user_to_groups "$OWNER" "$OWNER_GROUPS,$OWNER_GROUPS_EXTRA"
-                return 0
+                _modified_user_status=0
             else
                 create_user "$OWNER" "$OWNER" "$OWNER_UID" "$OWNER_GID" "$OWNER_HOME" "$OWNER_GROUPS,$OWNER_GROUPS_EXTRA"
-                return "$?"
+                _modified_user_status=$?
             fi
+            if [ ${_modified_user_status} -eq 0 ] && [ "$_enable_external_uid" = "true" ]; then
+                update_default_user_group "$OWNER" "$OWNER_ID"
+            fi
+            return $_modified_user_status
         fi
     else
         echo "OWNER is not set - skipping owner account configuration"
@@ -1074,6 +1078,31 @@ function create_user() {
     _existing_user_gid="$(id "$_user_name" -g)"
     echo "User ${_user_name} (uid: $_existing_user_uid, gid: $_existing_user_gid) has been created"
     return 0
+}
+
+function update_default_user_group() {
+    local _user_name="$1"
+    local _user_id="$2"
+
+    _external_gid_field_name="$(get_pipe_preference_low_level "launch.external.default.gid.field.name" "")"
+    [ -n "${_external_gid_field_name}" ] || return 1
+
+    _user_external_default_gid="$(get_external_uid "$_user_id" "PIPELINE_USER" "$_external_gid_field_name")"
+    [ -n "${_user_external_default_gid}" ] || return 1
+
+    _current_gid="$(id -g "$_user_name")"
+    [ "$_current_gid" -eq "$_user_external_default_gid" ] && return 0
+
+    if ! check_installed "usermod"; then
+        echo "Cannot modify user $_user_name default group - usermod is not installed"
+        return 1
+    fi
+    if ! getent group "$_user_external_default_gid" &> /dev/null; then
+        echo "Cannot modify user $_user_name default group - group '$_user_external_default_gid' doesn't exist"
+        return 1
+    fi
+    echo "Changing default user $_user_name group to the group: $_user_external_default_gid"
+    usermod -g "$_user_external_default_gid" "$_user_name"
 }
 
 function configureHyperThreading() {
