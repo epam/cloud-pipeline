@@ -19,9 +19,16 @@ import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {TitleSection} from '../index';
 import styles from './parameter-group.css';
+import {computed} from 'mobx';
 
 @observer
 export default class ParameterGroup extends React.Component {
+  @computed
+  get noParameters () {
+    const {formStore} = this.props;
+    const {parameters} = formStore;
+    return !parameters || Object.keys(parameters).length === 0;
+  }
   renderParameters = () => {
     const {formStore} = this.props;
     const {parameters} = formStore;
@@ -49,6 +56,9 @@ export default class ParameterGroup extends React.Component {
   };
 
   render () {
+    if (this.noParameters) {
+      return null;
+    }
     return (
       <div>
         <TitleSection title="Parameters" />

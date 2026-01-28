@@ -237,5 +237,6 @@ Message.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
   first: PropTypes.bool,
-  last: PropTypes.bool
+  last: PropTypes.bool,
+  onRunLaunchSuccess: PropTypes.func
 };

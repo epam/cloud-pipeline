@@ -72,9 +72,14 @@ export default class RunStatusMessage extends React.Component {
   @computed
   get run () {
     if (!this._runRequest) {
-      return this.state.run;
+      return undefined;
     }
     return this._runRequest.value;
+  }
+
+  @computed
+  get runId () {
+    return this.props.run?.id;
   }
 
   setStateFromProps = () => {
@@ -113,24 +118,32 @@ export default class RunStatusMessage extends React.Component {
   };
 
   render () {
-    if (!this.run) {
+    const {
+      runId,
+      run
+    } = this;
+    if (!runId) {
       return <Spin spinning />;
     }
     return (
       <div style={{display: 'flex', alignItems: 'center', gap: '5px'}}>
-        <span>Job</span>
-        <Observer>
-          {() => (
-            <StatusIcon
-              run={this.run}
-              small
-            />
-          )}
-        </Observer>
-        <Link to={`run/${this.run.id}`}>
-          {this.run.name}
+        {
+          run && (
+            <Observer>
+              {() => (
+                <StatusIcon
+                  run={run}
+                  small
+                />
+              )}
+            </Observer>
+
+          )
+        }
+        <Link to={`run/${runId}`}>
+          {run?.podId || `pipeline-${runId}`}
         </Link>
-        was successfully launched!
+        <span>was successfully launched!</span>
       </div>
     );
   }
