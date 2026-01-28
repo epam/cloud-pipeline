@@ -1,4 +1,5 @@
 import chromadb
+import time
 
 from cpaibot.common.logger import CpLogger as Logger
 from cpaibot.common.settings import settings
@@ -11,6 +12,7 @@ from llama_index.vector_stores.chroma import ChromaVectorStore
 from .documents import get_documents
 from .issues import get_issues
 
+from google.genai.errors import ClientError
 
 default_logger = github_logger
 
@@ -78,6 +80,8 @@ def create_github_documents_db(
     logger.info(f'github documents database: storing {len(all_documents)} documents...')
     batch_size = 100
     batches_count = (len(all_documents) + batch_size - 1) // batch_size
+    max_retries = 10
+    retry_delay_seconds = 3
     for batch_idx in range(batches_count):
         start = batch_idx * batch_size
         end = min(start + batch_size, len(all_documents))
@@ -86,6 +90,7 @@ def create_github_documents_db(
 
         valid_nodes = []
         skipped_count = 0
+
         for i, node in enumerate(nodes):
             # Check if node has text content
             text = getattr(node, 'text', None) or getattr(node, 'get_content', lambda: '')()
@@ -103,10 +108,27 @@ def create_github_documents_db(
             continue
 
         logger.info(f'github documents database: storing batch {batch_idx + 1}/{batches_count} ({start}...{end}) - {len(valid_nodes)} valid nodes, {skipped_count} skipped')
-        try:
-            index.insert_nodes(valid_nodes)
-        except Exception as e:
-            logger.error(f'github documents database: storing batch {batch_idx + 1}/{batches_count} error',
-                         exception=e)
+        for attempt in range(max_retries):
+            try:
+                index.insert_nodes(valid_nodes)
+            except ClientError as e:
+                if e.code == 429 or e.status == "RESOURCE_EXHAUSTED":
+                    if attempt < max_retries - 1:
+                        delay = retry_delay_seconds * (2 ** attempt)  # Exponential backoff
+                        logger.warning(f'github documents database: storing batch {batch_idx + 1}/{batches_count} error,'
+                                       f' rate limit exceeded after {max_retries} attempts')
+                        time.sleep(delay)
+                    else:
+                        logger.error(f'github documents database: storing batch {batch_idx + 1}/{batches_count} error,'
+                                     f' rate limit exceeded after {max_retries} attempts')
+                        raise  # Re-raise after all retries exhausted
+                else:
+                    # If it's a different error, raise immediately
+                    logger.error(f'github documents database: storing batch {batch_idx + 1}/{batches_count} error',
+                                 exception=e)
+                    raise
+            except Exception as e:
+                logger.error(f'github documents database: storing batch {batch_idx + 1}/{batches_count} error',
+                             exception=e)
 
     logger.info(f'github documents database: initialized.')

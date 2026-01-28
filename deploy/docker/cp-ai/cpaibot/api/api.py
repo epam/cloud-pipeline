@@ -183,7 +183,6 @@ async def connect(sid: str, env: dict, auth):
             bearer = cookie.get('bearer')
             bearer_token = bearer.value if bearer else None
     api_logger.info(f'client {sid} connected')
-    api_logger.info(f'client {sid} bearer token: {repr(bearer_token)}')
     await sio_server.save_session(sid, {'bearer': bearer_token})
 
 @sio_server.event
@@ -204,8 +203,7 @@ async def _get_bearer_from_socket_session(sid: str) -> str | None:
 @sio_server.on('assistant')
 async def handle_message(sid, request_data: dict):
     try:
-        bearer = await _get_bearer_from_socket_session(sid)
-        api_logger.info(f'socket "assistant" event:\nsid: {sid}\nbearer: {bearer}\n\nPayload:\n{repr(request_data)}')
+        api_logger.info(f'socket "assistant" event:\nsid: {sid}\n\nPayload:\n{repr(request_data)}')
         chat_id = request_data.get('chat_id')
         if chat_id is None:
             raise RuntimeError('chat identifier is not specified')
