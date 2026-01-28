@@ -180,7 +180,7 @@ export default class AIChat extends React.Component {
             ref={el => {
               this.answersContainerRef = el;
             }}
-            className={styles.answerArea}
+            className={classNames(styles.answerArea, styles.chatArea)}
           >
             {chat.messages.length
               ? chat.messages.map((message, index) => (
@@ -210,34 +210,40 @@ export default class AIChat extends React.Component {
         </div>
         {
           chat.error && (
-            <div className={styles.chatError}>
-              <Alert message={(
-                <div>
-                  <span>{chat.error}</span>
-                  <a style={{marginLeft: 5}} onClick={() => chat.reload()}>
-                    Reload
-                  </a>
-                </div>
-              )} type="error" showIcon />
+            <div className={classNames(styles.chatError, styles.chatArea)}>
+              <Alert
+                message={(
+                  <div>
+                    <span>{chat.error}</span>
+                    <a style={{marginLeft: 5}} onClick={() => chat.reload()}>
+                      Reload
+                    </a>
+                  </div>
+                )}
+                type="error"
+                showIcon
+                style={{width: '100%'}}
+              />
             </div>
           )
         }
         {
           chat.socketError && (
-            <div className={styles.chatError}>
-              <Alert message={chat.socketError} type="error" showIcon />
+            <div className={classNames(styles.chatError, styles.chatArea)}>
+              <Alert message={chat.socketError} type="error" showIcon style={{width: '100%'}} />
             </div>
           )
         }
         {
           chat.messageError && (
-            <div className={styles.chatError}>
-              <Alert message={chat.messageError} type="error" showIcon />
+            <div className={classNames(styles.chatError, styles.chatArea)}>
+              <Alert message={chat.messageError} type="error" showIcon style={{width: '100%'}} />
             </div>
           )
         }
         <div className={classNames(
           styles.inputFieldArea,
+          styles.chatArea,
           'cp-panel-color', {
             [styles.dropShadow]: !this.scrolledDown
           })}>
