@@ -666,49 +666,6 @@ function get_install_command_by_current_distr {
       eval $_RESULT_VAR=\$_INSTALL_COMMAND_TEXT
 }
 
-function symlink_common_locations {
-      local _OWNER="$1"
-      local _OWNER_HOME="$2"
-
-      # Grant OWNER passwordless sudo
-      if check_cp_cap CP_CAP_SUDO_ENABLE || [[ "$_OWNER" == "root" ]]
-      then
-            echo "$_OWNER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
-      fi
-      user_create_home "$_OWNER" "$_OWNER_HOME"
-
-      # Create symlinks to /cloud-data with mounted buckets into account's home dir
-      mkdir -p /cloud-data/
-      if [ -L $_OWNER_HOME/cloud-data ]; then
-        unlink $_OWNER_HOME/cloud-data
-      fi
-      [ -d /cloud-data/ ] && ln -s -f /cloud-data/ $_OWNER_HOME/cloud-data || echo "/cloud-data/ not found, no buckets will be available"
-      
-      # Create symlinks to /common with cluster share fs into account's home dir
-      mkdir -p "$SHARED_WORK_FOLDER"
-      if [ -L $_OWNER_HOME/workdir ]; then
-        unlink $_OWNER_HOME/workdir
-      fi
-      [ -d $SHARED_WORK_FOLDER ] && ln -s -f $SHARED_WORK_FOLDER $_OWNER_HOME/workdir || echo "$SHARED_WORK_FOLDER not found, no shared fs will be available in $_OWNER_HOME"
-      
-      # Create symlinks to /code-repository with gitfs repository into account's home dir
-      local _REPOSITORY_MOUNT_SRC="${REPOSITORY_MOUNT}/${PIPELINE_NAME}/current"
-      local _REPOSITORY_HOME="$_OWNER_HOME/code-repository"
-      if [ ! -z "$GIT_REPO" ] && [ -d "$_REPOSITORY_MOUNT_SRC" ]; then
-            if [ -L "$_REPOSITORY_HOME/${PIPELINE_NAME}" ]; then
-                  unlink "$_REPOSITORY_HOME/${PIPELINE_NAME}"
-            fi
-            mkdir -p $_REPOSITORY_HOME
-            if [ -d "$_REPOSITORY_MOUNT_SRC/src" ]; then
-                  ln -s "$_REPOSITORY_MOUNT_SRC/src" "$_REPOSITORY_HOME/${PIPELINE_NAME}"
-            else
-                  ln -s "$_REPOSITORY_MOUNT_SRC" "$_REPOSITORY_HOME/${PIPELINE_NAME}"
-            fi
-      else
-            echo "$_REPOSITORY_MOUNT_SRC not found, no code repository will be available"
-      fi
-}
-
 function create_sys_dir {
       local _DIR_NAME="$1"
       mkdir -p "$_DIR_NAME"
@@ -1251,6 +1208,62 @@ function jwt_get_user_groups() {
   local _jwt_roles=$(jwt_get_attribute "roles" | jq '. | join(" ")' -r)
 
   echo ${_jwt_groups} ${_jwt_roles}
+}
+
+function symlink_common_locations {
+      local _OWNER="$1"
+      local _OWNER_HOME="$2"
+
+      # Grant OWNER passwordless sudo
+      # NOTE:
+      # 1. 'system.ssh.default.root.user.available.commands' must contain a list of allowed commands in sudoers format,
+      #    e.g.: "/usr/bin/yum, /usr/bin/dnf"
+      # 2. To allow a non-admin user to execute ALL commands from sudo, use the value: "ALL"
+      # 3. For users with the ROLE_ADMIN role, CP_CAP_SUDO_ENABLE capability is enabled by default (check code below)
+      _cp_user_available_cmd="$(get_pipe_preference_low_level "system.ssh.default.root.user.available.commands" "")"
+      _cp_user_sudo_file="/etc/sudoers.d/${_OWNER}-sudoers"
+      _user_groups=$(jwt_get_user_groups)
+      if check_cp_cap CP_CAP_SUDO_ENABLE \
+         && [[ "$_OWNER" != "root" ]] \
+         && [[ -n "$_cp_user_available_cmd" ]] \
+         && ! [[ " ${_user_groups} " =~ " ROLE_ADMIN " ]]; then
+          echo "${_OWNER} ALL=(ALL) NOPASSWD:SETENV: ${_cp_user_available_cmd}" > "${_cp_user_sudo_file}"
+          chmod 440 "${_cp_user_sudo_file}"
+      elif check_cp_cap CP_CAP_SUDO_ENABLE || [[ "$_OWNER" == "root" ]]; then
+          echo "$_OWNER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+      fi
+      user_create_home "$_OWNER" "$_OWNER_HOME"
+
+      # Create symlinks to /cloud-data with mounted buckets into account's home dir
+      mkdir -p /cloud-data/
+      if [ -L $_OWNER_HOME/cloud-data ]; then
+        unlink $_OWNER_HOME/cloud-data
+      fi
+      [ -d /cloud-data/ ] && ln -s -f /cloud-data/ $_OWNER_HOME/cloud-data || echo "/cloud-data/ not found, no buckets will be available"
+
+      # Create symlinks to /common with cluster share fs into account's home dir
+      mkdir -p "$SHARED_WORK_FOLDER"
+      if [ -L $_OWNER_HOME/workdir ]; then
+        unlink $_OWNER_HOME/workdir
+      fi
+      [ -d $SHARED_WORK_FOLDER ] && ln -s -f $SHARED_WORK_FOLDER $_OWNER_HOME/workdir || echo "$SHARED_WORK_FOLDER not found, no shared fs will be available in $_OWNER_HOME"
+
+      # Create symlinks to /code-repository with gitfs repository into account's home dir
+      local _REPOSITORY_MOUNT_SRC="${REPOSITORY_MOUNT}/${PIPELINE_NAME}/current"
+      local _REPOSITORY_HOME="$_OWNER_HOME/code-repository"
+      if [ ! -z "$GIT_REPO" ] && [ -d "$_REPOSITORY_MOUNT_SRC" ]; then
+            if [ -L "$_REPOSITORY_HOME/${PIPELINE_NAME}" ]; then
+                  unlink "$_REPOSITORY_HOME/${PIPELINE_NAME}"
+            fi
+            mkdir -p $_REPOSITORY_HOME
+            if [ -d "$_REPOSITORY_MOUNT_SRC/src" ]; then
+                  ln -s "$_REPOSITORY_MOUNT_SRC/src" "$_REPOSITORY_HOME/${PIPELINE_NAME}"
+            else
+                  ln -s "$_REPOSITORY_MOUNT_SRC" "$_REPOSITORY_HOME/${PIPELINE_NAME}"
+            fi
+      else
+            echo "$_REPOSITORY_MOUNT_SRC not found, no code repository will be available"
+      fi
 }
 
 ######################################################
