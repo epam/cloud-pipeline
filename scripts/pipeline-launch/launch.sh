@@ -1215,6 +1215,11 @@ function symlink_common_locations {
       local _OWNER_HOME="$2"
 
       # Grant OWNER passwordless sudo
+      # NOTE:
+      # 1. 'system.ssh.default.root.user.available.commands' must contain a list of allowed commands in sudoers format,
+      #    e.g.: "/usr/bin/yum, /usr/bin/dnf"
+      # 2. To allow a non-admin user to execute ALL commands from sudo, use the value: "ALL"
+      # 3. For users with the ROLE_ADMIN role, CP_CAP_SUDO_ENABLE capability is enabled by default (check code below)
       _cp_user_available_cmd="$(get_pipe_preference_low_level "system.ssh.default.root.user.available.commands" "")"
       _cp_user_sudo_file="/etc/sudoers.d/${_OWNER}-sudoers"
       _user_groups=$(jwt_get_user_groups)
