@@ -118,7 +118,7 @@ def create_github_documents_db(
                     if attempt < max_retries - 1:
                         delay = get_exponential_backoff_seconds(retry_delay_seconds, attempt)
                         logger.warning(f'github documents database: storing batch {batch_idx + 1}/{batches_count} error,'
-                                       f' rate limit exceeded after {max_retries} attempts')
+                                       f' rate limit exceeded (attempt {attempt + 1}/{max_retries})')
                         time.sleep(delay)
                     else:
                         logger.error(f'github documents database: storing batch {batch_idx + 1}/{batches_count} error,'
@@ -127,8 +127,10 @@ def create_github_documents_db(
                     # If it's a different error, raise immediately
                     logger.error(f'github documents database: storing batch {batch_idx + 1}/{batches_count} error',
                                  exception=e)
+                    break
             except Exception as e:
                 logger.error(f'github documents database: storing batch {batch_idx + 1}/{batches_count} error',
                              exception=e)
+                break
 
     logger.info(f'github documents database: initialized.')
