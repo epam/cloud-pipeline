@@ -52,3 +52,8 @@ def get_username_from_bearer(bearer: str | None) -> str | None:
     except:
         pass
     return None
+
+
+def get_exponential_backoff_seconds(delay_seconds: float, attempt: int) -> float:
+    attempt = max(0, attempt)
+    return delay_seconds * (2 * attempt)

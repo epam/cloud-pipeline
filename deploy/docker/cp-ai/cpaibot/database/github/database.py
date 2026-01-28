@@ -3,6 +3,7 @@ import time
 
 from cpaibot.common.logger import CpLogger as Logger
 from cpaibot.common.settings import settings
+from cpaibot.common.utils import get_exponential_backoff_seconds
 from cpaibot.database.github.misc import github_logger
 from cpaibot.llm.base import embed_model
 
@@ -111,22 +112,21 @@ def create_github_documents_db(
         for attempt in range(max_retries):
             try:
                 index.insert_nodes(valid_nodes)
+                break
             except ClientError as e:
                 if e.code == 429 or e.status == "RESOURCE_EXHAUSTED":
                     if attempt < max_retries - 1:
-                        delay = retry_delay_seconds * (2 ** attempt)  # Exponential backoff
+                        delay = get_exponential_backoff_seconds(retry_delay_seconds, attempt)
                         logger.warning(f'github documents database: storing batch {batch_idx + 1}/{batches_count} error,'
                                        f' rate limit exceeded after {max_retries} attempts')
                         time.sleep(delay)
                     else:
                         logger.error(f'github documents database: storing batch {batch_idx + 1}/{batches_count} error,'
                                      f' rate limit exceeded after {max_retries} attempts')
-                        raise  # Re-raise after all retries exhausted
                 else:
                     # If it's a different error, raise immediately
                     logger.error(f'github documents database: storing batch {batch_idx + 1}/{batches_count} error',
                                  exception=e)
-                    raise
             except Exception as e:
                 logger.error(f'github documents database: storing batch {batch_idx + 1}/{batches_count} error',
                              exception=e)

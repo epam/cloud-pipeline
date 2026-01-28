@@ -6,6 +6,7 @@ from llama_index.embeddings.google_genai import GoogleGenAIEmbedding
 from cpaibot.common.settings import settings
 from cpaibot.common.logger import CpLogger as Logger
 from cpaibot.common.model.chat import Message, MessagePart
+from cpaibot.common.utils import get_exponential_backoff_seconds
 from cpaibot.managers.chat import update_message_part, update_message_part_from_gen
 
 from google.genai.errors import ClientError
@@ -82,7 +83,7 @@ def llm_chat(
                     part.warnings = prev_message_warnings[:]
                     update_message_part(part)
                 if attempt < max_retries - 1:
-                    delay = retry_delay_seconds * (2 ** attempt)  # Exponential backoff
+                    delay = get_exponential_backoff_seconds(retry_delay_seconds, attempt)
                     status = f"Rate limit hit (429). Retrying in {delay}s (attempt {attempt + 1}/{max_retries})..."
                     if part is not None:
                         part.warnings.append(e.__str__())
@@ -161,7 +162,7 @@ def llm_stream_chat(
                         part.text = prev_text
                     update_message_part(part)
                 if attempt < max_retries - 1:
-                    delay = retry_delay_seconds * (2 ** attempt)  # Exponential backoff
+                    delay = get_exponential_backoff_seconds(retry_delay_seconds, attempt)
                     status = f"Rate limit hit (429). Retrying in {delay}s (attempt {attempt + 1}/{max_retries})..."
                     if part is not None:
                         part.warnings.append(e.__str__())
