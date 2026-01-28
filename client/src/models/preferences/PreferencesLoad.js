@@ -1077,6 +1077,23 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get miscAIPreferences () {
+    const value = this.getPreferenceValue('misc.ai.preferences');
+    if (value) {
+      try {
+        const cfg = JSON.parse(value);
+        if (typeof cfg === 'object') {
+          return cfg;
+        }
+        throw new Error(`unsupported type "${typeof cfg}"`);
+      } catch (e) {
+        console.warn('Error parsing "misc.ai.preferences" preference:', e.message);
+      }
+    }
+    return {};
+  }
+
+  @computed
   get launchReservationParameters () {
     const value = this.getPreferenceValue('launch.reservation.parameters');
     if (value) {

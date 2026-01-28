@@ -273,11 +273,34 @@ class UINavigation {
   }
 
   @computed
+  get aiChatBotAvailable () {
+    if (!this._loaded) {
+      return false;
+    }
+    const {
+      api
+    } = this.preferences.miscAIPreferences || {};
+    return !!api && api.length > 0;
+  }
+
+  @computed
+  get availablePages () {
+    if (!this._loaded) {
+      return [];
+    }
+    let pages = [...new Set((this.userPages || allPages).map(p => p.toLowerCase()))];
+    if (!this.aiChatBotAvailable) {
+      pages = pages.filter((page) => page !== Pages.chat);
+    }
+    return new Set(pages);
+  }
+
+  @computed
   get navigationItems () {
     if (!this._loaded) {
       return [];
     }
-    const pages = new Set((this.userPages || allPages).map(p => p.toLowerCase()));
+    const {availablePages: pages = []} = this;
     return NavigationItems
       .filter(page => page.static || pages.has(page.key));
   }
