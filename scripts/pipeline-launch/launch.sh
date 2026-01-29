@@ -1223,6 +1223,13 @@ function symlink_common_locations {
       _cp_user_available_cmd="$(get_pipe_preference_low_level "system.ssh.default.root.user.available.commands" "")"
       _cp_user_sudo_file="/etc/sudoers.d/${_OWNER}-sudoers"
       _user_groups=$(jwt_get_user_groups)
+      if [ -f /etc/sudoers ]; then
+          _sudoers_owner="$(printf '%s' "$_OWNER" | sed 's/[][\/.^$*+?|(){}-]/\\&/g')"
+          sed -i -e "/^${_sudoers_owner}[[:space:]]\+ALL=(ALL)[[:space:]]\+NOPASSWD/d" /etc/sudoers
+      fi
+      if [ -f "${_cp_user_sudo_file}" ]; then
+          rm -f "${_cp_user_sudo_file}"
+      fi
       if check_cp_cap CP_CAP_SUDO_ENABLE \
          && [[ "$_OWNER" != "root" ]] \
          && [[ -n "$_cp_user_available_cmd" ]] \
