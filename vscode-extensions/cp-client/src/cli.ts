@@ -4,21 +4,49 @@
  * Cloud Pipeline CLI entry point
  */
 
-import { Command } from "commander";
-import { readFileSync } from "fs";
+import * as dotenv from "dotenv";
 import * as path from "path";
+import { existsSync, readFileSync } from "fs";
+import { Command } from "commander";
 import {
   tunnelListAction,
   tunnelStartAction,
   tunnelStopAction,
 } from "./cli/commands";
-import { LoggerBase } from "cp-client-common";
+import { ConsoleLogger, ILogger, LogLevel, LogLevelName } from "cp-client-common";
+
+// Load environment variables from .env file if it exists
+const envPath = path.resolve(process.cwd(), ".env");
+if (existsSync(envPath)) {
+  dotenv.config({ path: envPath });
+}
+
+// Error.stackTraceLimit = 3;
 
 const pkg = JSON.parse(
   readFileSync(path.resolve(__dirname, "../package.json"), "utf8"),
 );
 
-const logger = new LoggerBase(console);
+/**
+ * Create logger with appropriate log level based on CLI options
+ */
+function createLogger(opts: any): ILogger {
+  // Determine log level from options
+  let logLevelName: LogLevelName = "info";
+
+  if (opts.trace) {
+    logLevelName = "trace";
+  } else if (opts.debug) {
+    logLevelName = "debug";
+  } else if (opts.logLevel) {
+    const normalizedLevel = opts.logLevel.toLowerCase();
+    if (normalizedLevel in LogLevel) {
+      logLevelName = normalizedLevel as LogLevelName;
+    }
+  }
+
+  return new ConsoleLogger(console, logLevelName);
+}
 
 const program = new Command();
 program
@@ -39,7 +67,10 @@ tunnelCmd
   .option("-u, --user <user>", "User name (admin only)")
   .option("--debug", "Enable debug logging")
   .option("--trace", "Enable trace logging")
-  .action(tunnelListAction);
+  .action((opts) => {
+    const logger = createLogger(opts);
+    return tunnelListAction(opts, logger);
+  });
 
 // tunnel start
 tunnelCmd
@@ -73,7 +104,10 @@ tunnelCmd
   .option("--noclean", "Disable resource cleanup")
   .option("--debug", "Enable debug logging")
   .option("--trace", "Enable trace logging")
-  .action((runId, opts) => tunnelStartAction(runId, opts, logger));
+  .action((runId, opts) => {
+    const logger = createLogger(opts);
+    return tunnelStartAction(runId, opts, logger);
+  });
 
 // tunnel stop
 tunnelCmd
@@ -86,7 +120,10 @@ tunnelCmd
   .option("-u, --user <user>", "User name")
   .option("--debug", "Enable debug logging")
   .option("--trace", "Enable trace logging")
-  .action((runId, opts) => tunnelStopAction(runId, opts, logger));
+  .action((runId, opts) => {
+    const logger = createLogger(opts);
+    return tunnelStopAction(runId, opts, logger);
+  });
 
 // Parse and execute
 program.parseAsync(process.argv);

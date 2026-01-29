@@ -16,14 +16,6 @@
     "preserveSymlinks": true,
     "resolveJsonModule": true,
     "baseUrl": ".",
-    "paths": {
-      "cp-client-tunnel": [
-        "./node_modules/cp-client-tunnel/dist"
-      ],
-      "cp-client-common": [
-        "./node_modules/cp-client-common/dist"
-      ]
-    }
   },
   "include": [
     "src/**/*"

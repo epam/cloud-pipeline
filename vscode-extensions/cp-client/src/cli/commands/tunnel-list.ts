@@ -19,7 +19,7 @@ export async function tunnelListAction(
       trace: opts.trace,
     };
 
-    const manager = new TunnelManager(config);
+    const manager = new TunnelManager(config, logger);
     let tunnels;
     try {
       tunnels = await manager.listTunnels();

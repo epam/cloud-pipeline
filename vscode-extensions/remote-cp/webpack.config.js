@@ -40,6 +40,9 @@ function createExtensionConfig(isProduction) {
           use: [
             {
               loader: "ts-loader",
+              options: {
+                transpileOnly: true,
+              },
             },
           ],
         },

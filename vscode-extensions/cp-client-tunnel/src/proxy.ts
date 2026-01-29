@@ -1,25 +1,31 @@
 import { Socket, createConnection } from "net";
 import { Duplex } from "stream";
-import { ILogger, LoggerBase } from "cp-client-common";
+import { ILogger } from "cp-client-common";
 import { TunnelProxyError, TunnelConnectionError } from "./errors";
+import { Endpoint, ProxyEndpoint } from "./common/interfaces";
 
 /**
  * Establishes HTTP CONNECT tunnel through proxy.
  * Returns Duplex stream after successful CONNECT, ready for caller to use (e.g., SSH handshake).
- * Based on Python pipe-cli http_proxy_tunnel_connect algorithm.
+ * Based on Python pipe-cli http_proxy_tunnel_connect algorithm (lines 212-254).
+ * 
+ * @param proxyEndpoint - pipe-cli proxy_endpoint: ('edge.aws.cloud-pipeline.com', 443)
+ * @param targetEndpoint - pipe-cli target_endpoint: ('10.244.78.133', 22)
+ * @param proxyUsername - Username for proxy authentication (Basic Auth)
+ * @param proxyPassword - Password/API key for proxy authentication
+ * @param connectionTimeout - Timeout in seconds for establishing connection
+ * @param logger - Logger instance
+ * @returns Duplex stream after HTTP CONNECT handshake
  */
 export async function httpProxyTunnelConnect(
-  proxyHost: string,
-  proxyPort: number,
-  targetHost: string,
-  targetPort: number,
-  proxyUsername?: string,
-  proxyPassword?: string,
+  proxyEndpoint: ProxyEndpoint,
+  targetEndpoint: Endpoint,
   connectionTimeout?: number,
   logger?: ILogger,
 ): Promise<Duplex> {
+  logger?.info(`httpProxyTunnelConnect() called`);
   logger?.debug(
-    `HTTP CONNECT proxy: ${proxyHost}:${proxyPort} -> ${targetHost}:${targetPort}`,
+    `HTTP CONNECT proxy: ${proxyEndpoint.host}:${proxyEndpoint.port} -> ${targetEndpoint.host}:${targetEndpoint.port}`,
   );
 
   return new Promise((resolve, reject) => {
@@ -41,8 +47,8 @@ export async function httpProxyTunnelConnect(
 
     try {
       socket = createConnection({
-        host: proxyHost,
-        port: proxyPort,
+        host: proxyEndpoint.host,
+        port: proxyEndpoint.port,
         timeout: timeoutMs,
       });
 
@@ -56,23 +62,23 @@ export async function httpProxyTunnelConnect(
       });
 
       socket.on("connect", () => {
-        logger?.debug(`Connected to proxy ${proxyHost}:${proxyPort}`);
+        logger?.debug(`Connected to proxy ${proxyEndpoint.host}:${proxyEndpoint.port}`);
 
         // Send HTTP CONNECT request
-        let connectReq = `CONNECT ${targetHost}:${targetPort} HTTP/1.0\r\n`;
+        let connectReq = `CONNECT ${targetEndpoint.host}:${targetEndpoint.port} HTTP/1.0\r\n`;
         connectReq += "User-Agent: pipe-tunnel/nodejs\r\n";
         connectReq += "Connection: close\r\n";
 
-        if (proxyUsername && proxyPassword) {
-          const auth = Buffer.from(`${proxyUsername}:${proxyPassword}`).toString(
-            "base64",
-          );
-          connectReq += `Proxy-Authorization: Basic ${auth}\r\n`;
+        if (proxyEndpoint.username && proxyEndpoint.password) {
+          const proxyAuthBase64 = Buffer
+            .from(`${proxyEndpoint.username}:${proxyEndpoint.password}`)
+            .toString("base64");
+          connectReq += `Proxy-Authorization: Basic ${proxyAuthBase64}\r\n`;
         }
 
         connectReq += "\r\n";
 
-        logger?.debug(`Sending HTTP CONNECT: ${targetHost}:${targetPort}`);
+        logger?.debug(`Sending HTTP CONNECT: ${targetEndpoint.host}:${targetEndpoint.port}`);
         socket!.write(connectReq);
       });
 
@@ -80,7 +86,7 @@ export async function httpProxyTunnelConnect(
       let responseData = "";
       socket.on("data", (chunk: Buffer) => {
         responseData += chunk.toString();
-        logger?.trace(`Proxy response: ${chunk.toString()}`);
+        logger?.info(`Proxy response: ${chunk.toString()}`);
 
         // Look for end of headers (blank line)
         if (responseData.includes("\r\n\r\n")) {
@@ -97,7 +103,7 @@ export async function httpProxyTunnelConnect(
             // If there's extra data after headers, it needs to be handled
             const extra = responseData.substring(headerEnd + 4);
             if (extra) {
-              logger?.trace(`Extra data after headers: ${extra.length} bytes`);
+              logger?.info(`Extra data after headers: ${extra.length} bytes`);
               // Prepend extra data back to stream if needed by downstream
             }
 

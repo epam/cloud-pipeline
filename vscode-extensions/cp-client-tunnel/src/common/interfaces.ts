@@ -2,6 +2,24 @@ import { Duplex } from "stream";
 import { IDisposable, ITunnelInfo, ITunnelConfig } from "cp-client-common";
 
 /**
+ * Network endpoint (host + port).
+ * Maps to pipe-cli target_endpoint and proxy_endpoint tuples.
+ * 
+ * Example:
+ *   targetEndpoint = { host: '10.244.78.133', port: 22 }  (maps to pipe-cli target_endpoint)
+ *   proxyEndpoint = { host: 'edge.aws.cloud-pipeline.com', port: 443 }  (maps to pipe-cli proxy_endpoint)
+ */
+export interface Endpoint {
+  host: string;
+  port: number;
+}
+
+export interface ProxyEndpoint extends Endpoint {
+  username?: string;
+  password?: string;
+}
+
+/**
  * Represents an active tunnel connection.
  */
 export interface ITunnelConnection extends IDisposable {
@@ -23,9 +41,9 @@ export interface ITunnelConnection extends IDisposable {
  */
 export interface ITunnelManager extends IDisposable {
   /**
-   * Start a new tunnel connection to a run.
+   * Create a new tunnel connection to a run.
    */
-  startTunnel(runId: number, config: Partial<ITunnelConfig>): Promise<ITunnelConnection>;
+  createTunnel(config: Partial<ITunnelConfig>): Promise<ITunnelConnection>;
 
   /**
    * List all active tunnel connections.

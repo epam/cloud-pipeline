@@ -1,26 +1,28 @@
 import { TunnelStartOptions, ILogger } from "cp-client-common";
-import { TunnelManager } from "cp-client-tunnel";
+import { TunnelManager, TunnelManagerConfig } from "cp-client-tunnel";
 
 /**
  * Start tunnel in foreground mode and keep process alive
  */
-export async function startTunnelForward(
-  runId: number,
+export async function startTunnelForeground(
   options: TunnelStartOptions,
-  config: any,
+  config: TunnelManagerConfig,
   logger: ILogger
 ): Promise<void> {
-  const manager = new TunnelManager(config);
-  const tunnel = await manager.startTunnel(runId, {
-    runId,
+  logger.trace(`startTunnelForeground() called:\n  runId=${options.runId}, options=${JSON.stringify(options)}`);
+  const manager = new TunnelManager(config, logger);
+  logger.info(`TunnelManager created, calling createTunnel...`);
+  const tunnel = await manager.createTunnel({
+    runId: options.runId,
     localPort: options.localPort,
     remotePort: options.remotePort,
     region: options.region,
     direct: options.direct,
     ssh: options.ssh,
   });
+  logger.info(`Tunnel created: localPort=${tunnel.localPort}, remotePort=${tunnel.remotePort}`);
 
-  logger.info(`Tunnel started to run ${runId} (foreground mode)`);
+  logger.info(`Tunnel started to run ${options.runId} (foreground mode)`);
   logger.info(
     `Local port: ${tunnel.localPort}, Remote port: ${tunnel.remotePort}`
   );
@@ -65,7 +67,7 @@ export async function startTunnelForward(
   await waitForSignal();
 
   try {
-    await manager.stopTunnel(runId, tunnel.localPort);
+    await manager.stopTunnel(options.runId, tunnel.localPort);
   } catch (e) {
     logger.warn("Error while stopping tunnel:", e);
   } finally {

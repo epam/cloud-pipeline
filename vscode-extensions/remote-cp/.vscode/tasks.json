@@ -12,22 +12,26 @@
       "dependsOrder": "sequence"
     },
     {
-      "label": "remote-cp: compile & watch",
+      "label": "rcp-compile-watch",
       "dependsOn": [
-        "remote-cp: compile"
-        // "remote-cp: watch",
+        "rcp-compile"
+        // "rcp-watch",
       ],
-      "dependsOrder": "sequence"
+      "dependsOrder": "sequence",
     },
     {
-      "label": "rcp-compile",
+      "label": "rcp-compile dev",
       "type": "npm",
-      "script": "compile", // "webpack"
+      "script": "build", // "webpack"
       "group": "build",
-      "problemMatcher": ["$tsc"],
+      "problemMatcher": [
+        "$esbuild",
+        "$tsc"
+      ],
       "options": {
         "env": {
-          "CP_PLATFORM_URL": "https://aws.cloud-pipeline.com"
+          "CP_PLATFORM_URL": "https://aws.cloud-pipeline.com",
+          "NODE_ENV": "development",
         }
       }
     },
@@ -84,7 +88,10 @@
     },
     {
       "label": "tasks: watch-tests",
-      "dependsOn": ["npm: watch", "npm: watch-tests"],
+      "dependsOn": [
+        "npm: watch",
+        "npm: watch-tests"
+      ],
       "problemMatcher": []
     },
     {
@@ -92,7 +99,9 @@
       "type": "shell",
       "command": "npx tsc -p tsconfig.test.json",
       "group": "build",
-      "problemMatcher": ["$tsc"]
+      "problemMatcher": [
+        "$tsc"
+      ]
     }
   ]
 }

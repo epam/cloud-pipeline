@@ -1,40 +1,37 @@
-import { ITunnelConnection, ITunnelManager } from "./interfaces";
+import { ITunnelConnection, ITunnelManager, Endpoint, ProxyEndpoint } from "./common/interfaces";
 import { Disposable, ILogger, LoggerBase, ITunnelConfig, ITunnelInfo } from "cp-client-common";
 import { TunnelConnection } from "./tunnel-connection";
 import { httpProxyTunnelConnect } from "./proxy";
 import { findExistingTunnels } from "./process-discovery";
+import { getRunConnectionInfo } from "./connection-info";
 
 export interface TunnelManagerConfig {
-  proxyHost: string;
-  proxyPort: number;
-  proxyUsername?: string;
-  proxyPassword?: string;
+  proxy?: ProxyEndpoint;
   connectionTimeout?: number;
-  logger?: ILogger;
+  apiUrl: string;
+  apiToken: string;
 }
 
 /**
  * Main tunnel manager implementation.
- * Provides startTunnel, listTunnels, stopTunnel API.
+ * Provides createTunnel, listTunnels, stopTunnel API.
  */
 export class TunnelManager extends Disposable implements ITunnelManager {
-  private logger: ILogger;
   private activeTunnels: Map<number, ITunnelConnection> = new Map();
 
-  constructor(private config: TunnelManagerConfig) {
+  constructor(
+    private config: TunnelManagerConfig,
+    private readonly logger: ILogger
+  ) {
     super();
-    this.logger = config.logger || new LoggerBase();
   }
 
-  async startTunnel(
-    runId: number,
+  async createTunnel(
     config: ITunnelConfig,
   ): Promise<ITunnelConnection> {
-    this.logger.info(`Starting tunnel to run ${runId}`);
-
     // Create tunnel connection with proxy stream factory
     const tunnelConfig: ITunnelConfig = {
-      runId,
+      runId: config.runId,
       remotePort: config.remotePort,
       localPort: config.localPort,
       region: config.region,
@@ -42,28 +39,59 @@ export class TunnelManager extends Disposable implements ITunnelManager {
       ssh: config.ssh,
     };
 
+    // Get connection info from Cloud Pipeline API
+    // Corresponds to pipe-cli: conn_info = get_conn_info(run_id, region)
+    this.logger.debug(`Fetching connection info for run ${config.runId}...`);
+    const runConnInfo = await getRunConnectionInfo(
+      config.runId,
+      config.region,
+      this.config.apiUrl,
+      this.config.apiToken,
+      this.logger,
+    );
+
+    // Build proxy endpoint (corresponds to pipe-cli proxy_endpoint)
+    // pipe-cli: proxy_endpoint = (os.getenv('CP_CLI_TUNNEL_PROXY_HOST', conn_info.ssh_proxy[0]), ...)
+
+
+    const edgeProxyEndpoint: ProxyEndpoint = {
+      host: process.env.CP_CLI_TUNNEL_PROXY_HOST || runConnInfo.sshProxy.host,
+      port: process.env.CP_CLI_TUNNEL_PROXY_PORT
+        ? parseInt(process.env.CP_CLI_TUNNEL_PROXY_PORT, 10)
+        : runConnInfo.sshProxy.port,
+      username: runConnInfo.owner,
+      password: this.config.apiToken,
+    };
+
     const connection = new TunnelConnection(
-      runId,
+      config.runId,
       tunnelConfig,
       async () => {
+        // Build target endpoint (corresponds to pipe-cli target_endpoint)
+        // pipe-cli: target_endpoint = (conn_info.ssh_endpoint[0], remote_port)
+        const targetEndpoint: Endpoint = {
+          host: runConnInfo.sshEndpoint.host,  // ✅ Now using actual pod IP from conn_info
+          port: tunnelConfig.remotePort,
+        };
+
+        this.logger.debug(
+          `Creating proxy tunnel: ${edgeProxyEndpoint.host}:${edgeProxyEndpoint.port} -> ${targetEndpoint.host}:${targetEndpoint.port}`
+        );
+
         // Factory function to create proxy stream on demand
         return httpProxyTunnelConnect(
-          this.config.proxyHost,
-          this.config.proxyPort,
-          "127.0.0.1", // Target host (will be overridden by caller)
-          tunnelConfig.remotePort,
-          this.config.proxyUsername,
-          this.config.proxyPassword,
+          this.config.proxy ?? edgeProxyEndpoint,
+          targetEndpoint,
           this.config.connectionTimeout,
           this.logger,
         );
       },
+      this.logger,
     );
 
     this._register(connection);
-    this.activeTunnels.set(runId, connection);
+    this.activeTunnels.set(config.runId, connection);
 
-    this.logger.info(`Tunnel to run ${runId} started (connection created)`);
     return connection;
   }
 

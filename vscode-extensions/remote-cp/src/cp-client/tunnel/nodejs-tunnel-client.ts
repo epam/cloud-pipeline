@@ -8,9 +8,34 @@ import { PipeTunnelBase } from "./pipe-tunnel-base";
 import { PipeTunnelInfo } from "..";
 import { ICpExtConfig } from "../../config";
 import { Duplex } from "stream";
+import { parseProxyUrl } from "cp-client-tunnel";
 
 // Import types from cp-client-tunnel library
-import { TunnelManager, ITunnelConnection } from "cp-client-tunnel";
+import { TunnelManager, ITunnelConnection, TunnelManagerConfig } from "cp-client-tunnel";
+
+function createTunnelManagerConfig(
+  config: ICpExtConfig
+): TunnelManagerConfig {
+
+  const envProxyUrl = process.env.CP_PROXY_URL
+    || undefined;
+
+  const proxy = parseProxyUrl(
+    envProxyUrl,
+    () => {
+      return {
+        username: process.env.CP_PROXY_USERNAME,
+        password: process.env.CP_PROXY_PASSWORD
+      }
+    });
+
+  return {
+    proxy,
+    connectionTimeout: 30,
+    apiUrl: config.pipeApiUri!,
+    apiToken: config.pipeApiToken!,
+  }
+}
 
 /**
  * Tunnel connection wrapper for Node.js implementation.
@@ -75,23 +100,14 @@ export class NodeJSTunnelClient extends PipeTunnelBase {
         throw new Error("Cloud Pipeline configuration not found");
       }
 
-      // Extract proxy host from platformUrl
-      const platformUrl = new URL(this.cpConfig.platformUrl);
-      const proxyHost = platformUrl.hostname;
-      const proxyPort = parseInt(platformUrl.port) || (platformUrl.protocol === "https:" ? 443 : 80);
+      const config = createTunnelManagerConfig(this.cpConfig);
 
       // Initialize TunnelManager
-      this.tunnelManager = new TunnelManager({
-        proxyHost,
-        proxyPort,
-        proxyUsername: cpClientConfig.apiToken ? "Bearer" : undefined,
-        proxyPassword: cpClientConfig.apiToken || undefined,
-        connectionTimeout: 30,
-        logger: this.logger,
-      });
+      this.tunnelManager = new TunnelManager(config, this.logger);
 
-      // Start tunnel
-      this.tunnelConnection = await this.tunnelManager.startTunnel(this.runId, {
+      // Create tunnel
+      this.tunnelConnection = await this.tunnelManager.createTunnel({
+        runId: this.runId,
         remotePort: 22,
         localPort: this.localPort === -1 ? undefined : this.localPort,
       });
@@ -118,7 +134,7 @@ export class NodeJSTunnelClient extends PipeTunnelBase {
 
   override dispose(): void {
     this.logger.info(`Disposing Node.js tunnel for run ${this.runId}`);
-    
+
     // Cleanup tunnel connection
     if (this.tunnelConnection) {
       this.tunnelConnection.dispose();

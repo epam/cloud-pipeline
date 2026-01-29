@@ -1,33 +1,32 @@
 {
-  "name": "cp-client",
+  "name": "cp-client-api",
   "version": "0.0.1",
   "private": true,
   "type": "commonjs",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "bin": {
-    "cp-client": "dist/cli.js"
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
   },
   "scripts": {
     "clean": "rimraf dist",
     "build:this": "npm run check && tsc -p .",
-    "build": "npm run --prefix .. prebuild:cp-client && npm run build:this",
-    "lint": "eslint src",
+    "build": "npm run --prefix .. prebuild:cp-client-api && npm run build:this",
     "check": "npm run check-types && npm run lint",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "lint": "eslint src"
   },
   "dependencies": {
-    "commander": "^12.1.0",
-    "cp-client-common": "file:../cp-client-common",
-    "cp-client-api": "file:../cp-client-api",
-    "cp-client-tunnel": "file:../cp-client-tunnel",
-    "dotenv": "16.0.3"
+    "cp-client-common": "file:../cp-client-common"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
-    "@types/node": "^20.12.12",
     "@typescript-eslint/eslint-plugin": "^8.39.0",
     "@typescript-eslint/parser": "^8.39.0",
+    "@types/node": "^20.12.12",
     "eslint": "^9.39.2",
     "eslint-plugin-import": "^2.32.0",
     "globals": "^15.0.0",

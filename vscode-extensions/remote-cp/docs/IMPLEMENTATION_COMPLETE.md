@@ -17,7 +17,7 @@ Successfully completed Node.js tunnel client integration into remote-cp VS Code 
 - ✅ HTTP CONNECT proxy implementation (Duplex stream API)
 - ✅ Process discovery with ps-list
 - ✅ Complete error hierarchy (TunnelError, TunnelTimeoutError, etc.)
-- ✅ TunnelManager API (startTunnel, listTunnels, stopTunnel)
+- ✅ TunnelManager API (createTunnel, listTunnels, stopTunnel)
 - ✅ TunnelConnection with stream management
 
 ### 3. **CP-Client** (CLI Tool)
@@ -122,7 +122,7 @@ const manager = new TunnelManager({
   // ... config from this.cpConfig
 });
 
-await manager.startTunnel();
+await manager.createTunnel({
 ```
 
 ### Mode Selection Logic

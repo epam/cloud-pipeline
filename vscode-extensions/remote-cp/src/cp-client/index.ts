@@ -194,15 +194,15 @@ export abstract class CpClientBase extends Disposable {
    */
   async getRunList(): Promise<RunInfo[]> {
     const logPfx = `${this.toLog()}.getRunList()`;
-    this.logger.trace(`${logPfx}, start`);
+    this.logger.info(`${logPfx}, start`);
     try {
       const output = await this.execPipeCommand(`view-runs`);
       const res = await pipeParseRunList(output);
-      this.logger.trace(`${logPfx}, end`);
+      this.logger.info(`${logPfx}, end`);
       return res;
     } finally {
       await this.cpExtConfig.save(logPfx);
-      this.logger.trace(`${logPfx}, finally`);
+      this.logger.info(`${logPfx}, finally`);
     }
   }
 
@@ -378,12 +378,12 @@ export abstract class CpClientBase extends Disposable {
       if (pipeTunnelUserResp instanceof ReusePipeTunnelItem) {
         resPipeTunnel = new ReusedPipeTunnel(pipeTunnelUserResp.tunnelInfo);
       } else if (pipeTunnelUserResp instanceof ExecutePipeTunnelItem) {
-        this.logger.trace(`${logPfx}, user resp to execute pipe tunnel`);
+        this.logger.info(`${logPfx}, user resp to execute pipe tunnel`);
         resPipeTunnel = await (async (): Promise<PipeTunnelBase> => {
           const logPfx2 = `${logPfx}.execPipeTunnel`;
-          this.logger.trace(`${logPfx2}, start`);
+          this.logger.info(`${logPfx2}, start`);
           const localPort = await findRandomPort();
-          this.logger.trace(`${logPfx2}, localPort: ${localPort}`);
+          this.logger.info(`${logPfx2}, localPort: ${localPort}`);
           const res = new PipeTunnel(
             cpRunId,
             localPort,
@@ -391,7 +391,7 @@ export abstract class CpClientBase extends Disposable {
             this.cpExtConfig,
             this.logger,
           );
-          this.logger.trace(`${logPfx2}, created`);
+          this.logger.info(`${logPfx2}, created`);
           // context.subscriptions.push(resPipeTunnel);
           await res.activate(
             async (
@@ -399,7 +399,7 @@ export abstract class CpClientBase extends Disposable {
               toStop: boolean,
             ): Promise<[cp.ChildProcessWithoutNullStreams, CpVersionInfo]> => {
               const logPfx3 = `${logPfx2}.startProcess`;
-              this.logger.trace(`${logPfx3}, start`);
+              this.logger.info(`${logPfx3}, start`);
               const [resProcess, resVersion] = await this.configSpawn(
                 // prettier-ignore
                 [
@@ -413,20 +413,20 @@ export abstract class CpClientBase extends Disposable {
                 ],
                 { detached: !toStop },
               );
-              this.logger.trace(`${logPfx3}, end (spawned)`);
+              this.logger.info(`${logPfx3}, end (spawned)`);
               return [resProcess, resVersion];
             },
           );
-          this.logger.trace(`${logPfx2}, end (activated)`);
+          this.logger.info(`${logPfx2}, end (activated)`);
           return res;
         })();
       } else if (pipeTunnelUserResp instanceof CreateTunnelOnLocalPortItem) {
-        this.logger.trace(`${logPfx}, user resp to create tunnel on local port`);
+        this.logger.info(`${logPfx}, user resp to create tunnel on local port`);
         resPipeTunnel = await (async (): Promise<PipeTunnelBase> => {
           const logPfx2 = `${logPfx}.createOnLocalPort`;
-          this.logger.trace(`${logPfx2}, start`);
+          this.logger.info(`${logPfx2}, start`);
           const localPort = await findRandomPort();
-          this.logger.trace(`${logPfx2}, localPort: ${localPort}`);
+          this.logger.info(`${logPfx2}, localPort: ${localPort}`);
           const res = new NodeJSTunnelClient(
             cpRunId,
             localPort,
@@ -434,16 +434,16 @@ export abstract class CpClientBase extends Disposable {
             this.cpExtConfig,
             this.logger,
           );
-          this.logger.trace(`${logPfx2}, created`);
+          this.logger.info(`${logPfx2}, created`);
           await res.activate();
-          this.logger.trace(`${logPfx2}, end (activated)`);
+          this.logger.info(`${logPfx2}, end (activated)`);
           return res;
         })();
       } else if (pipeTunnelUserResp instanceof CreateTunnelInternalItem) {
-        this.logger.trace(`${logPfx}, user resp to create tunnel (internal)`);
+        this.logger.info(`${logPfx}, user resp to create tunnel (internal)`);
         resPipeTunnel = await (async (): Promise<PipeTunnelBase> => {
           const logPfx2 = `${logPfx}.createInternal`;
-          this.logger.trace(`${logPfx2}, start`);
+          this.logger.info(`${logPfx2}, start`);
           const res = new NodeJSTunnelClient(
             cpRunId,
             -1, // -1 indicates internal mode (no local port)
@@ -451,13 +451,13 @@ export abstract class CpClientBase extends Disposable {
             this.cpExtConfig,
             this.logger,
           );
-          this.logger.trace(`${logPfx2}, created`);
+          this.logger.info(`${logPfx2}, created`);
           await res.activate();
-          this.logger.trace(`${logPfx2}, end (activated)`);
+          this.logger.info(`${logPfx2}, end (activated)`);
           return res;
         })();
       } else if (pipeTunnelUserResp instanceof EnterLocalPortItem) {
-        this.logger.trace(`${logPfx}, user resp to enter local port`);
+        this.logger.info(`${logPfx}, user resp to enter local port`);
         const portStr = await vscode.window.showInputBox({
           title: "Enter local port number",
           validateInput: (value) => {

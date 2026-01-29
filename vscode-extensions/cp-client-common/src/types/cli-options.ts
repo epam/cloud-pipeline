@@ -9,6 +9,7 @@ export interface GlobalOptions {
 
 // Options for tunnel start command
 export interface TunnelStartOptions extends GlobalOptions {
+  runId: number;
   localPort?: number;
   remotePort: number; // Single port or range
   connectionTimeout?: number;

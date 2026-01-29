@@ -27,8 +27,9 @@ const manager = new TunnelManager({
   connectionTimeout: 30,
 });
 
-// Start tunnel
-const tunnel = await manager.startTunnel(12345, {
+// Create tunnel
+const tunnel = await manager.createTunnel({
+  runId: 12345,
   remotePort: 22,
 });
 

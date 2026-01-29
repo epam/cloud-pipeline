@@ -21,11 +21,19 @@
   },
   "dependencies": {
     "cp-client-common": "file:../cp-client-common",
+    "cp-client-api": "file:../cp-client-api",
     "ps-list": "^8.1.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.39.0",
+    "@typescript-eslint/parser": "^8.39.0",
     "@types/node": "^20.12.12",
+    "eslint": "^9.39.2",
+    "eslint-plugin-import": "^2.32.0",
+    "globals": "^15.0.0",
     "rimraf": "^5.0.5",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "typescript-eslint": "^8.43.0"
   }
 }

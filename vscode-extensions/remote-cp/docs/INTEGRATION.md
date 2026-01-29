@@ -172,7 +172,7 @@ const config: TunnelManagerConfig = {
 };
 
 const manager = new TunnelManager(config);
-await manager.startTunnel();
+await manager.createTunnel({
 this.tunnelManager = manager;
 ```
 

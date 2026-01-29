@@ -5,6 +5,7 @@ export { IDisposable, Disposable, disposeAll } from "./disposable";
 export {
   ILogger,
   LoggerBase,
+  ConsoleLogger,
   FileLogger,
   LogLevel,
   LogLevelName,

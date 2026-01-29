@@ -6,7 +6,7 @@ import { TunnelStartOptions, ILogger } from "cp-client-common";
 import { createTunnelManagerConfig } from "../utils";
 import { TunnelStartCommandOptions } from "../types";
 import { startTunnelBackground } from "./start-tunnel-background";
-import { startTunnelForward } from "./start-tunnel-forward";
+import { startTunnelForeground } from "./start-tunnel-foreground";
 
 export async function tunnelStartAction(
   runIdStr: string,
@@ -25,6 +25,7 @@ export async function tunnelStartAction(
       // Foreground mode: keep process alive
       const options: TunnelStartOptions = {
         ...cmdOptions,
+        runId,
         localPort: cmdOptions.localPort ? parseInt(cmdOptions.localPort) : undefined,
         remotePort: cmdOptions.remotePort ? parseInt(cmdOptions.remotePort) : 22,
         connectionTimeout: cmdOptions.connectionTimeout ? parseInt(cmdOptions.connectionTimeout) : 0,
@@ -33,7 +34,7 @@ export async function tunnelStartAction(
         logLevel: cmdOptions.logLevel as any,
         foreground: cmdOptions.foreground ? true : false,
       };
-      await startTunnelForward(runId, options, config, logger);
+      await startTunnelForeground(options, config, logger);
     } else {
       // Background mode: spawn detached process
       await startTunnelBackground(runId, cmdOptions, config, logger);

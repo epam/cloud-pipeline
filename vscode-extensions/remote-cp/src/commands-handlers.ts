@@ -5,7 +5,7 @@ import { getRemoteAuthority } from "./authResolver";
 // import { exists as fileExists } from './common/files';
 // import SSHDestination from './ssh/sshDestination';
 
-export async function promptOpenRemoteCpWindow(reuseWindow: boolean) {
+export async function promptOpenRemoteCpWindow(_reuseWindow: boolean) {
   const host = await vscode.window.showInputBox({
     title: "Enter [user@]hostname[:port]",
   });
@@ -28,9 +28,9 @@ export function openRemoteCpWindow(host: string, reuseWindow: boolean) {
 }
 
 export function openRemoteCpLocationWindow(
-  host: string,
-  path: string,
-  reuseWindow: boolean,
+  _host: string,
+  _path: string,
+  _reuseWindow: boolean,
 ) {
   vscode.window.showWarningMessage("Not implemented yet!");
 

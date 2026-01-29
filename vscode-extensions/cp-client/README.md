@@ -106,8 +106,8 @@ const manager = new TunnelManager({
   proxyPort: 443 
 });
 
-// Start a tunnel
-const tunnel = await manager.startTunnel(12345, { 
+// Create a tunnel
+const tunnel = await manager.createTunnel({ 
   runId: 12345, 
   remotePort: 22 
 });

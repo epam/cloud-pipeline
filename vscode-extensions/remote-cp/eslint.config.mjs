@@ -1,23 +1,23 @@
 import { fileURLToPath } from "url";
 import path from "path";
 
-import baseConfig from "../cp-client-common/eslint-base.config.mjs";
-import reactPlugin from "eslint-plugin-react";
-import reactHooks from "eslint-plugin-react-hooks";
+import baseConfig from "../eslint-base.config.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+import reactPlugin from "eslint-plugin-react";
+import reactHooks from "eslint-plugin-react-hooks";
+
 export default [
   ...baseConfig,
   {
-    files: ["**/*.ts", "**/*.tsx", "**/*.mjs"],
+    files: ["**/*.ts", "**/*.tsx"],
     ignores: ["src/cp-run-view/webview/**/*.ts"],
     languageOptions: {
       parserOptions: {
         project: "./tsconfig.json",
         tsconfigRootDir: __dirname,
-        // extraFileExtensions: [".mjs", ".tsx"],
       },
     },
     plugins: {

@@ -25,7 +25,7 @@
       "preLaunchTask": "CP both: compile"
     },
     {
-      "name": "CP extension",
+      "name": "remote-cp ext new",
       "type": "extensionHost",
       "request": "launch",
       "args": [
@@ -36,14 +36,17 @@
       "env": {
         "NODE_ENV": "development",
       },
-      "outFiles": [
-        "${workspaceFolder}/dist/**/*.js"
-      ],
       "sourceMaps": true,
-      "preLaunchTask": "remote-cp: compile & watch"
+      "outFiles": [
+        "${workspaceFolder}/dist/**/*.js",
+        "${workspaceFolder}/../cp-client-tunnel/dist/**/*.js",
+        "${workspaceFolder}/../cp-client-api/dist/**/*.js",
+        "${workspaceFolder}/../cp-client-common/dist/**/*.js",
+      ],
+      //"preLaunchTask": "rcp-compile-watch"
     },
     {
-      "name": "CP remote ext",
+      "name": "remote-cp ext",
       "type": "extensionHost",
       "request": "launch",
       "args": [
@@ -51,7 +54,7 @@
         "--enable-proposed-api",
         "epam.remote-cp",
         "--remote",
-        "cp-remote+pipeline-77805",
+        "cp-remote+pipeline-85984",
         "root/projs/test-1"
       ],
       "outFiles": [

@@ -1,8 +1,21 @@
 # cp-client-common Specification
 
-- Purpose: Shared utilities and types for tunnel-related projects.
-- Interfaces: Provide `IDisposable`, `ILogger`, `LoggerBase`, `FileLogger`, `disposeAll` and keep them framework-agnostic; do not include VS Code-specific `OutputLogger`.
-- Utilities: Port helpers (`ports.ts`), file helpers (`files.ts` set), CLI option types (e.g., `GlobalOptions`, `TunnelStartOptions`, `TunnelStopOptions`, `TunnelListOptions`).
-- Exports: Make types and helpers consumable by `cp-client` and `cp-client-tunnel` via workspace dependency.
-- Style: No VS Code imports; keep ASCII; surface minimal API required by consumers.
-- References: For tunnel option parity, align with `cp-client-meta/docs/pipe-cli/tunnel.SPEC.md`.
+Shared utilities and types for cp-client-* projects.
+
+## Source Files
+
+- [src/logger.ts](../../cp-client-common/src/logger.ts) - `ILogger`, `LoggerBase`, `FileLogger` (framework-agnostic)
+- [src/disposable.ts](../../cp-client-common/src/disposable.ts) - `IDisposable`, `disposeAll`
+- [src/ports.ts](../../cp-client-common/src/ports.ts) - Port validation and helpers
+- [src/files.ts](../../cp-client-common/src/files.ts) - File system utilities
+- [src/types/](../../cp-client-common/src/types/) - CLI option types (`GlobalOptions`, `TunnelStartOptions`, etc.)
+
+## Architecture
+
+- **Framework-agnostic**: No VS Code dependencies
+- **Workspace consumption**: Used by `cp-client`, `cp-client-tunnel`, `cp-client-api`
+- **Minimal API**: Only exports required by consumers
+
+## References
+
+- Tunnel option types align with [pipe-cli/tunnel.SPEC.md](pipe-cli/tunnel.SPEC.md)

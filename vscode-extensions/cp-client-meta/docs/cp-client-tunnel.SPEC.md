@@ -1,18 +1,35 @@
 # cp-client-tunnel Specification
 
-- **Project Type**: Pure TypeScript/Node.js **library** (not a runnable application). This package is imported by other projects like `cp-client`. No `.vscode/launch.json` debug configurations exist for this project.
-- Purpose: Tunnel library; no Python CLI calls.
-- Architecture: Two-step connect (TCP → HTTP CONNECT → raw socket) then handoff to SSH tooling; mirror Python `pipe-cli` semantics unless explicit override.
-- API:
-  - `startTunnel(runId, options): Promise<TunnelConnection>`
-  - `listTunnels(): Promise<ITunnelInfo[]>`
-  - `stopTunnel(runId?, localPort?, options?): Promise<void>`
-  - `TunnelConnection.getStream(): Promise<Duplex>` returns socket post-HTTP CONNECT (pre-SSH) for authResolver compatibility.
-  - `TunnelConnection` exposes metadata: runId, localPort, remotePort, pid, owner, and `dispose()`.
-- Options: Support full flag set from `pipe-cli tunnel start/stop/list` (see `docs/pipe-cli/tunnel.SPEC.md`). Implement conflict strategies: keep-same, replace-existing, replace-different, ignore-existing, ignore-owner.
-- Process discovery: Iterate processes (e.g., `ps-list`) and parse args to find tunnels; include owner/runId/ports mapping.
-- Background mode: Spawn child process; wait for readiness by checking bound ports and/or health probe; support timeouts.
-- Port handling: Accept single ports and ranges; ensure local/remote counts align; forbid ranges with SSH direct mode if required by spec.
-- Error model: Provide specific errors (timeout, port occupied, owner mismatch, sensitive run rejection if implemented) matching Python behavior when applicable.
-- Dependencies: Import shared types/helpers from `cp-client-common` via workspace dependency.
-- Tests: Mirror remote-cp tunnel tests where applicable; add cases for HTTP CONNECT failure, port conflict, and getStream without local port.
+TypeScript/Node.js tunnel library (not a CLI). Imported by `cp-client` and other projects.
+
+**Implementation Status:** See [FUNCTION_MAPPING.md](FUNCTION_MAPPING.md)
+
+## Source Files
+
+- [src/connection-info.ts](../../cp-client-tunnel/src/connection-info.ts) - Connection info resolution
+- [src/proxy.ts](../../cp-client-tunnel/src/proxy.ts) - HTTP CONNECT proxy
+- [src/tcp-forwarder.ts](../../cp-client-tunnel/src/tcp-forwarder.ts) - Port forwarding
+- [src/process-discovery.ts](../../cp-client-tunnel/src/process-discovery.ts) - Tunnel process discovery
+- [src/interfaces.ts](../../cp-client-tunnel/src/interfaces.ts) - `TunnelConnection`, `TunnelConfig`
+
+## Architecture
+
+**Two-step connection:**
+1. TCP → HTTP CONNECT → raw socket
+2. Socket handoff to SSH tooling
+
+**Key features:**
+- Proxy connection with endpoint resolution (see [pipe-cli/create_tunnel.SPEC.md#proxy-connection-architecture](pipe-cli/create_tunnel.SPEC.md#proxy-connection-architecture))
+- Process discovery via process iteration
+- Conflict resolution strategies (`keep-same`, `replace-existing`, etc.)
+- Port handling (single ports and ranges)
+
+**API:**
+- `TunnelConnection.getStream()` - Returns socket post-HTTP CONNECT (pre-SSH)
+- `TunnelConnection` metadata: runId, localPort, remotePort, pid, owner, `dispose()`
+
+## References
+
+- pipe-cli reference: [pipe-cli/create_tunnel.SPEC.md](pipe-cli/create_tunnel.SPEC.md)
+- Function mapping: [FUNCTION_MAPPING.md](FUNCTION_MAPPING.md)
+- Options reference: [pipe-cli/tunnel.SPEC.md](pipe-cli/tunnel.SPEC.md)

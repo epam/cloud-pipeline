@@ -151,3 +151,56 @@ export class FileLogger extends LoggerBase {
       this.logToFile("TRACE", message, ...optionalParams);
   }
 }
+
+// Console logger - writes to console with level filtering
+export class ConsoleLogger extends LoggerBase {
+  protected levelValue: LogLevel;
+
+  public get level(): LogLevelName {
+    return LogLevel[this.levelValue] as LogLevelName;
+  }
+
+  public set level(value: LogLevelName) {
+    this.levelValue = LogLevel[value];
+  }
+
+  constructor(
+    private readonly console: Console,
+    level: LogLevelName,
+    base?: ILogger,
+  ) {
+    super(base);
+    this.levelValue = LogLevel[level];
+  }
+
+  override error(message?: any, ...optionalParams: any[]): string {
+    const errMsg = super.error(message, ...optionalParams);
+    if (this.levelValue >= LogLevel.error)
+      this.console.error(errMsg, ...optionalParams);
+    return errMsg;
+  }
+
+  override warn(message?: any, ...optionalParams: any[]): void {
+    super.warn(message, ...optionalParams);
+    if (this.levelValue >= LogLevel.warn)
+      this.console.warn(message, ...optionalParams);
+  }
+
+  override info(message?: any, ...optionalParams: any[]): void {
+    super.info(message, ...optionalParams);
+    if (this.levelValue >= LogLevel.info)
+      this.console.info(message, ...optionalParams);
+  }
+
+  override debug(message?: any, ...optionalParams: any[]): void {
+    super.debug(message, ...optionalParams);
+    if (this.levelValue >= LogLevel.debug)
+      this.console.debug(message, ...optionalParams);
+  }
+
+  override trace(message?: any, ...optionalParams: any[]): void {
+    super.trace(message, ...optionalParams);
+    if (this.levelValue >= LogLevel.trace)
+      this.console.trace(message, ...optionalParams);
+  }
+}

@@ -2,10 +2,8 @@
  * Utility functions for CLI operations
  */
 
-import { TunnelManagerConfig } from "cp-client-tunnel";
-import { FileLogger, ILogger } from "cp-client-common";
-import * as path from "path";
-import * as os from "os";
+import { TunnelManagerConfig, parseProxyUrl } from "cp-client-tunnel";
+import { ILogger } from "cp-client-common";
 import { GlobalOptions } from "./types";
 
 /**
@@ -14,14 +12,31 @@ import { GlobalOptions } from "./types";
 export function createTunnelManagerConfig(
   opts: GlobalOptions, logger: ILogger
 ): TunnelManagerConfig {
-  const logLevel = opts.debug ? "debug" : opts.trace ? "trace" : "info";
-  const logDir = path.join(os.homedir(), ".pipe", "logs");
-  const logFile = path.join(logDir, "tunnel.log");
+  // Parse platform URL to extract host/port (allows http/https or bare host)
+  const apiUrl = process.env.CP_API
+    || process.env.API; // From pipe-cli
+
+  const apiToken = process.env.CP_API_TOKEN
+    || process.env.API_TOKEN; // From pipe-cli
+
+  if (!apiUrl || !apiToken)
+    throw new Error("API URL and token must be provided");
+
+  // Proxy auth: mirror pipe-cli behavior (Basic base64 user:access_key)
+  const envProxyUrl = process.env.CP_PROXY_URL
+    || undefined;
+
+  const proxy = parseProxyUrl(envProxyUrl, () => {
+    return {
+      username: process.env.CP_PROXY_USERNAME,
+      password: process.env.CP_PROXY_PASSWORD
+    }
+  });
 
   return {
-    proxyHost: process.env.CP_PLATFORM_URL || "aws.cloud-pipeline.com",
-    proxyPort: 443,
+    proxy,
     connectionTimeout: 30,
-    logger: new FileLogger(logFile, logLevel as any, undefined, logger),
+    apiUrl,
+    apiToken,  // Use same token for API calls
   };
 }

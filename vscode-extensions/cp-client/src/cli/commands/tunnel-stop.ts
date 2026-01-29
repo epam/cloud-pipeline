@@ -30,7 +30,7 @@ export async function tunnelStopAction(
       trace: opts.trace,
     };
 
-    const manager = new TunnelManager(config);
+    const manager = new TunnelManager(config, logger);
     try {
       const localPort = options.localPort
         ? parseInt(String(options.localPort))

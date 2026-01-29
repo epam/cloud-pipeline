@@ -55,6 +55,10 @@
       "path": "../cp-client-tunnel",
     },
     {
+      "name": "cp-client-api",
+      "path": "../cp-client-api",
+    },
+    {
       "path": "../cp-client-common",
       "tasks": [
         {
@@ -68,6 +72,7 @@
       ]
     },
     {
+      "name": "pipe-cli",
       "path": "../../pipe-cli",
     },
   ],
@@ -139,7 +144,8 @@
       "src/**/*.js": true,
       "src/**/*.d.ts": true,
       "src/**/*.js.map": true,
-      "src/**/*.d.ts.map": true
+      "src/**/*.d.ts.map": true,
+      "dist/**": true,
     },
     "files.readonlyInclude": {
       "src/**/*.js": true,
@@ -148,4 +154,29 @@
       "src/**/*.d.ts.map": true
     }
   },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "pipe-cli tunnel start",
+        "type": "python",
+        "request": "launch",
+        "python": "C:\\Users\\aleksandr_tanas\\projs\\pipe\\.envs\\pipe-cli-env-3.6.4\\python.exe",
+        "program": "${workspaceFolder:pipe-cli}/pipe.py",
+        "args": [
+          "tunnel",
+          "start",
+          "85984",
+          "--remote-port",
+          "22",
+          "--local-port",
+          "23084",
+          "--foreground",
+          "--log-level",
+          "INFO",
+        ],
+        "console": "integratedTerminal"
+      }
+    ]
+  }
 }
