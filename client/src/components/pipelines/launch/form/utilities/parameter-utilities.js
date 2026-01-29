@@ -25,6 +25,7 @@ import {getSkippedParameters as getGPUScalingSkippedParameters} from './enable-g
 import whoAmI from '../../../../../models/user/WhoAmI';
 import {base64toString, stringToBase64} from '../../../../../utils/base64';
 import MetadataEntityFilter from '../../../../../models/folderMetadata/MetadataEntityFilter';
+import {getFolderIdFromTree} from '../../../../../utils/folder-utils';
 
 function normalizeParameters (parameters) {
   const {keys = [], params = {}} = parameters || {};
@@ -540,8 +541,9 @@ const metadataCache = {};
  * Fetch metadata for all metadata_entity type parameters.
  * @param {Parameter[]} [parameters=[]]
  * @param {Object} [pipeline]
+ * @param {Object} [pipelinesLibrary]
  **/
-async function getMetadataForParameters (parameters = [], pipeline) {
+async function getMetadataForParameters (parameters = [], pipeline, pipelinesLibrary) {
   const metadataEntityParams = parameters
     .filter(p => p.type === 'metadata_entity' &&
       p.config?.metadata_config?.metadataClass
@@ -562,8 +564,15 @@ async function getMetadataForParameters (parameters = [], pipeline) {
       continue;
     }
     if (!requestsTemp[key]) {
+      const resolvedId = getFolderIdFromTree(folderId, pipelinesLibrary);
+      if (!resolvedId) {
+        console.warn(
+          `getMetadataForParameters: folder ${folderId} can not be resolved, ` +
+          'parent folder id will be used'
+        );
+      }
       requestsTemp[key] = {
-        folderId: folderId || folderIdFallback,
+        folderId: resolvedId || folderIdFallback,
         metadataClass,
         name: param.name
       };
