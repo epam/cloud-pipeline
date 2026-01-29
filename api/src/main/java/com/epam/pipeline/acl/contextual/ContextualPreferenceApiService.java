@@ -39,7 +39,7 @@ public class ContextualPreferenceApiService {
         return contextualPreferenceManager.loadAll();
     }
 
-    @PreAuthorize(ADMIN_ONLY+ OR + SCOPED_ADMIN_ON_CONTEXTUAL_PREFERENCE_RESOURCE)
+    @PreAuthorize(ADMIN_ONLY + OR + SCOPED_ADMIN_ON_CONTEXTUAL_PREFERENCE_RESOURCE)
     public ContextualPreference load(final String name, final ContextualPreferenceExternalResource resource) {
         return contextualPreferenceManager.load(name, resource);
     }

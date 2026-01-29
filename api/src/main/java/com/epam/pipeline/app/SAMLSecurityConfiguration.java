@@ -41,13 +41,19 @@ import org.springframework.security.web.authentication.logout.SimpleUrlLogoutSuc
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+
+import static org.opensaml.saml.saml2.assertion.SAML2AssertionValidationParameters.CLOCK_SKEW;
+import static org.opensaml.saml.saml2.assertion.SAML2AssertionValidationParameters.STMT_AUTHN_MAX_TIME;
 
 @Order(3)
 @Configuration
 @EnableWebSecurity
 public class SAMLSecurityConfiguration {
+
+    private static final int RESPONSE_SKEW = 1200;
 
     private final String loginFailureRedirect;
     private final String acsEndpoint;
@@ -58,6 +64,7 @@ public class SAMLSecurityConfiguration {
     private final String[] anonymousResources;
     private final List<String> excludeScripts;
     private final String[] swaggerAccessRoles;
+    private final Long maxAuthentificationAge;
 
     public SAMLSecurityConfiguration(
             @Value("${saml.login.failure.redirect:/error}") final String loginFailureRedirect,
@@ -68,7 +75,8 @@ public class SAMLSecurityConfiguration {
             final SamlRelyingPartyRegistrationBuilder relyingPartyRegistrationBuilder,
             @Value("${api.security.anonymous.urls:/restapi/route}") final String[] anonymousResources,
             @Value("#{'${api.security.public.urls}'.split(',')}") final List<String> excludeScripts,
-            @Value("${api.security.swagger.access.roles:ROLE_ADMIN,ROLE_USER}") final String[] swaggerAccessRoles) {
+            @Value("${api.security.swagger.access.roles:ROLE_ADMIN,ROLE_USER}") final String[] swaggerAccessRoles,
+            @Value("${saml.authn.max.authentication.age:93600}") final Long maxAuthentificationAge) {
         this.loginFailureRedirect = loginFailureRedirect;
         this.acsEndpoint = acsEndpoint;
         this.logoutInvalidateSession = logoutInvalidateSession;
@@ -78,6 +86,7 @@ public class SAMLSecurityConfiguration {
         this.anonymousResources = anonymousResources;
         this.excludeScripts = excludeScripts;
         this.swaggerAccessRoles = swaggerAccessRoles;
+        this.maxAuthentificationAge = maxAuthentificationAge;
     }
 
     @Bean
@@ -152,6 +161,11 @@ public class SAMLSecurityConfiguration {
     public OpenSaml4AuthenticationProvider samlAuthenticationProvider() {
         final var authenticationProvider = new OpenSaml4AuthenticationProvider();
         authenticationProvider.setResponseAuthenticationConverter(responseAuthenticationConverter::covert);
+        authenticationProvider.setAssertionValidator(OpenSaml4AuthenticationProvider
+                .createDefaultAssertionValidatorWithParameters(params -> {
+                    params.put(CLOCK_SKEW, Duration.ofSeconds(RESPONSE_SKEW));
+                    params.put(STMT_AUTHN_MAX_TIME, Duration.ofSeconds(maxAuthentificationAge));
+                }));
         return authenticationProvider;
     }
 

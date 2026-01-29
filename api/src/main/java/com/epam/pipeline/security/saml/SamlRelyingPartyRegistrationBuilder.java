@@ -34,6 +34,9 @@ import java.security.UnrecoverableEntryException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
+/**
+ * This class includes RelyingPartyRegistration related configurations.
+ */
 @Component
 public class SamlRelyingPartyRegistrationBuilder {
 
@@ -45,6 +48,7 @@ public class SamlRelyingPartyRegistrationBuilder {
     private final String keyAlias;
     private final String keyStore;
     private final String keyStorePassword;
+    private final String authnRequestBinding;
 
     public SamlRelyingPartyRegistrationBuilder(
             @Value("${server.ssl.metadata}") final String federationMetadataFile,
@@ -54,7 +58,8 @@ public class SamlRelyingPartyRegistrationBuilder {
             @Value("${saml.sign.key}") final String signingKey,
             @Value("${server.ssl.keyAlias}") final String keyAlias,
             @Value("${server.ssl.key-store}") final String keyStore,
-            @Value("${server.ssl.key-store-password}") final String keyStorePassword) {
+            @Value("${server.ssl.key-store-password}") final String keyStorePassword,
+            @Value("${saml.authn.request.binding}") final String authnRequestBinding) {
         this.federationMetadataFile = federationMetadataFile;
         this.registrationId = registrationId;
         this.endpointId = endpointId;
@@ -63,12 +68,13 @@ public class SamlRelyingPartyRegistrationBuilder {
         this.keyAlias = keyAlias;
         this.keyStore = keyStore;
         this.keyStorePassword = keyStorePassword;
+        this.authnRequestBinding = authnRequestBinding;
     }
 
     public RelyingPartyRegistration build() {
         return RelyingPartyRegistrations.fromMetadataLocation(prepareFederationMetadataPath())
                 .assertingPartyDetails(party -> party
-                        .singleSignOnServiceBinding(Saml2MessageBinding.REDIRECT)
+                        .singleSignOnServiceBinding(Saml2MessageBinding.from(authnRequestBinding))
                         .signingAlgorithms(sign -> sign.add(SignatureConstants.ALGO_ID_SIGNATURE_RSA)))
                 .registrationId(registrationId)
                 .entityId(endpointId)
@@ -76,8 +82,7 @@ public class SamlRelyingPartyRegistrationBuilder {
                 .assertionConsumerServiceBinding(Saml2MessageBinding.POST)
                 .signingX509Credentials(c -> {
                     c.add(getSigningX509Credentials(signingKey, Saml2X509Credential.Saml2X509CredentialType.SIGNING));
-                    c.add(getSigningX509Credentials(keyAlias, Saml2X509Credential.Saml2X509CredentialType.SIGNING,
-                            Saml2X509Credential.Saml2X509CredentialType.DECRYPTION));
+                    c.add(getSigningX509Credentials(keyAlias, Saml2X509Credential.Saml2X509CredentialType.SIGNING));
                 })
                 .authnRequestsSigned(true)
                 .build();
