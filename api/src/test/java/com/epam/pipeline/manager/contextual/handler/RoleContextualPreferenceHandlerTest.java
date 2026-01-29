@@ -85,7 +85,7 @@ public class RoleContextualPreferenceHandlerTest extends AbstractDaoContextualPr
     @Test
     public void isValidShouldReturnFalseIfRoleDoesNotExist() {
         final ContextualPreference preference = new ContextualPreference(NAME, VALUE, role1Resource);
-        when(roleDao.loadRole(eq(Long.valueOf(role1Resource.getResourceId())))).thenReturn(Optional.empty());
+        when(roleDao.loadRole(eq(Long.valueOf(role1Resource.resourceId())))).thenReturn(Optional.empty());
 
         assertFalse(handler().isValid(preference));
     }
@@ -93,7 +93,7 @@ public class RoleContextualPreferenceHandlerTest extends AbstractDaoContextualPr
     @Test
     public void isValidShouldReturnTrueIfRoleExists() {
         final ContextualPreference preference = new ContextualPreference(NAME, VALUE, role1Resource);
-        when(roleDao.loadRole(eq(Long.valueOf(role1Resource.getResourceId())))).thenReturn(Optional.of(new Role()));
+        when(roleDao.loadRole(eq(Long.valueOf(role1Resource.resourceId())))).thenReturn(Optional.of(new Role()));
 
         assertTrue(handler().isValid(preference));
     }
@@ -105,9 +105,9 @@ public class RoleContextualPreferenceHandlerTest extends AbstractDaoContextualPr
         final List<ContextualPreference> preferences = Arrays.asList(preference1, preference2);
         final ContextualPreference reducedPreference = new ContextualPreference(NAME, VALUE);
         final List<ContextualPreferenceExternalResource> resources = Arrays.asList(role1Resource, role2Resource);
-        when(contextualPreferenceDao.load(eq(preference1.getName()), eq(role1Resource)))
+        when(contextualPreferenceDao.load(eq(preference1.name()), eq(role1Resource)))
                 .thenReturn(Optional.of(preference1));
-        when(contextualPreferenceDao.load(eq(preference2.getName()), eq(role2Resource)))
+        when(contextualPreferenceDao.load(eq(preference2.name()), eq(role2Resource)))
                 .thenReturn(Optional.of(preference2));
         when(reducer.reduce(eq(preferences))).thenReturn(Optional.of(reducedPreference));
 
@@ -125,9 +125,9 @@ public class RoleContextualPreferenceHandlerTest extends AbstractDaoContextualPr
         final List<ContextualPreference> preferences = Arrays.asList(preference1, preference2);
         final ContextualPreference preference = new ContextualPreference(NAME, VALUE, role1Resource);
         final List<ContextualPreferenceExternalResource> resources = Arrays.asList(role1Resource, role2Resource);
-        when(contextualPreferenceDao.load(eq(preference1.getName()), eq(role1Resource)))
+        when(contextualPreferenceDao.load(eq(preference1.name()), eq(role1Resource)))
                 .thenReturn(Optional.of(preference1));
-        when(contextualPreferenceDao.load(eq(preference2.getName()), eq(role2Resource)))
+        when(contextualPreferenceDao.load(eq(preference2.name()), eq(role2Resource)))
                 .thenReturn(Optional.of(preference2));
         when(reducer.reduce(eq(preferences))).thenReturn(Optional.empty());
         when(nextHandler.search(eq(SINGLE_NAME), eq(resources))).thenReturn(Optional.of(preference));
@@ -145,7 +145,7 @@ public class RoleContextualPreferenceHandlerTest extends AbstractDaoContextualPr
         final ContextualPreference preference1 = new ContextualPreference(NAME, VALUE, role1Resource);
         final ContextualPreference preference2 = new ContextualPreference(NAME, VALUE, role2Resource);
         final List<ContextualPreference> preferences = Arrays.asList(preference1, preference2);
-        final ContextualPreference reducedPreference = new ContextualPreference(NAME, VALUE, preference1.getResource());
+        final ContextualPreference reducedPreference = new ContextualPreference(NAME, VALUE, preference1.resource());
         final List<ContextualPreferenceExternalResource> resources = Arrays.asList(role1Resource, role2Resource);
         when(contextualPreferenceDao.load(eq(NAME), eq(role1Resource))).thenReturn(Optional.empty());
         when(contextualPreferenceDao.load(eq(NAME), eq(role2Resource))).thenReturn(Optional.empty());

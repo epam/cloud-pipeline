@@ -25,6 +25,7 @@ import com.epam.pipeline.acl.folder.FolderApiService;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -46,6 +47,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
+@WebMvcTest(controllers = FolderController.class)
 public class FolderControllerTest extends AbstractControllerTest {
 
     private static final String FOLDER_URL = SERVLET_PATH + "/folder";

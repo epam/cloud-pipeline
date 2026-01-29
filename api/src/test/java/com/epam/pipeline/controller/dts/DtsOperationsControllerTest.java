@@ -40,8 +40,8 @@ public class DtsOperationsControllerTest extends AbstractControllerTest {
 
     private static final String DTS_URL = SERVLET_PATH + "/dts";
     private static final String LIST_URL = DTS_URL + "/list/%d";
-    private static final String SUBMISSION_URL = DTS_URL + "/%d/submission/";
-    private static final String CLUSTER_URL = DTS_URL + "/%d/cluster/";
+    private static final String SUBMISSION_URL = DTS_URL + "/%d/submission";
+    private static final String CLUSTER_URL = DTS_URL + "/%d/cluster";
 
     private static final String PATH = "path";
     private static final String PAGE_SIZE = "pageSize";

@@ -63,9 +63,9 @@ public class GroupStatusDao extends NamedParameterJdbcDaoSupport {
 
         private static MapSqlParameterSource getParameters(final GroupStatus groupStatus) {
             final MapSqlParameterSource params = new MapSqlParameterSource();
-            params.addValue(GROUP_NAME.name(), groupStatus.getGroupName());
-            params.addValue(GROUP_BLOCKED_STATUS.name(), groupStatus.isBlocked());
-            params.addValue(GROUP_BLOCK_DATE.name(), groupStatus.getLastModifiedData());
+            params.addValue(GROUP_NAME.name(), groupStatus.groupName());
+            params.addValue(GROUP_BLOCKED_STATUS.name(), groupStatus.blocked());
+            params.addValue(GROUP_BLOCK_DATE.name(), groupStatus.lastModifiedData());
             return params;
         }
 

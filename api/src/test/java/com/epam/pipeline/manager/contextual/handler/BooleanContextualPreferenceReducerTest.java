@@ -59,7 +59,7 @@ public class BooleanContextualPreferenceReducerTest {
                 .forEach((inputs, expectedMergedValue) -> {
                     final Optional<ContextualPreference> reducedPreference = reducer.reduce(inputs);
                     assertTrue(reducedPreference.isPresent());
-                    assertThat(reducedPreference.get().getValue(), is(expectedMergedValue));
+                    assertThat(reducedPreference.get().value(), is(expectedMergedValue));
                 });
     }
 
@@ -81,7 +81,7 @@ public class BooleanContextualPreferenceReducerTest {
         final Optional<ContextualPreference> reducedPreference = reducer.reduce(preferences);
 
         assertTrue(reducedPreference.isPresent());
-        assertThat(reducedPreference.get().getCreatedDate(), is(nullValue()));
-        assertThat(reducedPreference.get().getResource(), is(nullValue()));
+        assertThat(reducedPreference.get().createdDate(), is(nullValue()));
+        assertThat(reducedPreference.get().resource(), is(nullValue()));
     }
 }

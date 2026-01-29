@@ -149,7 +149,7 @@ public class RunLimitsService {
 
     private Optional<Integer> findUserLimit(final Long userId) {
         return findLimitPreference(LAUNCH_MAX_RUNS_USER_LIMIT, ContextualPreferenceLevel.USER, userId)
-            .map(ContextualPreference::getValue)
+            .map(ContextualPreference::value)
             .filter(NumberUtils::isNumber)
             .map(Integer::parseInt);
     }
@@ -176,12 +176,12 @@ public class RunLimitsService {
 
     private GroupLimit mapToLimitDetails(final ContextualPreference pref,
                                          final Map<String, ExtendedRole> groupIdsMapping) {
-        final ExtendedRole groupDetails = groupIdsMapping.get(pref.getResource().getResourceId());
+        final ExtendedRole groupDetails = groupIdsMapping.get(pref.resource().resourceId());
         final String groupName = getNameWithoutRolePrefix(groupDetails.getName());
         final List<String> groupUsers = groupDetails.getUsers().stream()
             .map(PipelineUser::getUserName)
             .collect(Collectors.toList());
-        return new GroupLimit(groupName, Integer.parseInt(pref.getValue()), groupUsers);
+        return new GroupLimit(groupName, Integer.parseInt(pref.value()), groupUsers);
     }
 
     private Optional<ContextualPreference> findLimitPreference(final String pref,
@@ -207,9 +207,9 @@ public class RunLimitsService {
 
     private boolean isTargetGroupPreference(final ContextualPreference preference,
                                             final Map<String, ExtendedRole> groupIdsMapping) {
-        final ContextualPreferenceExternalResource resource = preference.getResource();
-        return resource.getLevel().equals(ContextualPreferenceLevel.ROLE)
-               && groupIdsMapping.containsKey(resource.getResourceId());
+        final ContextualPreferenceExternalResource resource = preference.resource();
+        return resource.level().equals(ContextualPreferenceLevel.ROLE)
+               && groupIdsMapping.containsKey(resource.resourceId());
     }
 
     private String getNameWithoutRolePrefix(final String fullName) {

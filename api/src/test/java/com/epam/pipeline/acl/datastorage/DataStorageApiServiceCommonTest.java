@@ -867,6 +867,6 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
         final ContextualPreferenceExternalResource resource = new ContextualPreferenceExternalResource(
                 ContextualPreferenceLevel.STORAGE, storage.getId().toString());
         doReturn(preference).when(contextualPreferenceManager)
-                .search(eq(Collections.singletonList(preference.getName())), eq(resource));
+                .search(eq(Collections.singletonList(preference.name())), eq(resource));
     }
 }

@@ -173,7 +173,7 @@ public class DataStorageTagProviderManager {
         final String absolutePath = storage.resolveAbsolutePath(path);
         final DataStorageObject object = new DataStorageObject(absolutePath, version);
         final List<DataStorageTag> existingTags = tagManager.load(storage.getRootId(), object);
-        tags.forEach(tag -> Assert.isTrue(existingTags.stream().anyMatch(it -> it.getKey().equals(tag)),
+        tags.forEach(tag -> Assert.isTrue(existingTags.stream().anyMatch(it -> it.key().equals(tag)),
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_FILE_TAG_NOT_EXIST, tag)));
         if (storage.isVersioningEnabled()) {
             storageProviderManager.findFile(storage, path)
@@ -238,6 +238,6 @@ public class DataStorageTagProviderManager {
     }
 
     private Map<String, String> mapFrom(final List<DataStorageTag> tags) {
-        return tags.stream().collect(Collectors.toMap(DataStorageTag::getKey, DataStorageTag::getValue));
+        return tags.stream().collect(Collectors.toMap(DataStorageTag::key, DataStorageTag::value));
     }
 }

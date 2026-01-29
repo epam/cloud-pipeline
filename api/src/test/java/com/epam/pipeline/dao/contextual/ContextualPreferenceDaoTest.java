@@ -58,7 +58,7 @@ public class ContextualPreferenceDaoTest extends AbstractJdbcTest {
     public void tearDown() {
         if (!skipTearDown) {
             contextualPreferenceDao.loadAll().forEach(pref ->
-                    contextualPreferenceDao.delete(pref.getName(), pref.getResource()));
+                    contextualPreferenceDao.delete(pref.name(), pref.resource()));
         }
         skipTearDown = false;
     }
@@ -122,7 +122,7 @@ public class ContextualPreferenceDaoTest extends AbstractJdbcTest {
         final Optional<ContextualPreference> loadedPreference = contextualPreferenceDao.load(NAME, resource);
 
         assertTrue(loadedPreference.isPresent());
-        assertThat(loadedPreference.get().getValue(), is(ANOTHER_VALUE));
+        assertThat(loadedPreference.get().value(), is(ANOTHER_VALUE));
     }
 
     @Test
@@ -134,7 +134,7 @@ public class ContextualPreferenceDaoTest extends AbstractJdbcTest {
         final Optional<ContextualPreference> loadedPreference = contextualPreferenceDao.load(NAME, resource);
 
         assertTrue(loadedPreference.isPresent());
-        assertNotNull(loadedPreference.get().getCreatedDate());
+        assertNotNull(loadedPreference.get().createdDate());
     }
 
     @Test
@@ -174,11 +174,11 @@ public class ContextualPreferenceDaoTest extends AbstractJdbcTest {
 
         assertTrue(loadedPreference.isPresent());
         loadedPreference.ifPresent(pref -> {
-            assertThat(pref.getName(), is(storedPreference.getName()));
-            assertThat(pref.getValue(), is(storedPreference.getValue()));
-            assertThat(pref.getType(), is(storedPreference.getType()));
-            assertThat(pref.getCreatedDate(), is(storedPreference.getCreatedDate()));
-            assertThat(pref.getResource(), is(storedPreference.getResource()));
+            assertThat(pref.name(), is(storedPreference.name()));
+            assertThat(pref.value(), is(storedPreference.value()));
+            assertThat(pref.type(), is(storedPreference.type()));
+            assertThat(pref.createdDate(), is(storedPreference.createdDate()));
+            assertThat(pref.resource(), is(storedPreference.resource()));
         });
     }
 

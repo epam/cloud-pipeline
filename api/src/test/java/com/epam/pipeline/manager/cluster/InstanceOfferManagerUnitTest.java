@@ -148,9 +148,9 @@ public class InstanceOfferManagerUnitTest {
         final AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes =
                 instanceOfferManager.getAllowedInstanceAndPriceTypes(null, null, false);
 
-        assertThat(allowedInstanceAndPriceTypes.getAllowedInstanceTypes(), is(allowedInstanceTypes));
-        assertThat(allowedInstanceAndPriceTypes.getAllowedInstanceDockerTypes(), is(allowedInstanceDockerTypes));
-        assertThat(allowedInstanceAndPriceTypes.getAllowedPriceTypes(), is(allowedPriceTypes));
+        assertThat(allowedInstanceAndPriceTypes.allowedInstanceTypes(), is(allowedInstanceTypes));
+        assertThat(allowedInstanceAndPriceTypes.allowedInstanceDockerTypes(), is(allowedInstanceDockerTypes));
+        assertThat(allowedInstanceAndPriceTypes.allowedPriceTypes(), is(allowedPriceTypes));
     }
 
     @Test
@@ -175,9 +175,9 @@ public class InstanceOfferManagerUnitTest {
         final AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes =
                 instanceOfferManager.getAllowedInstanceAndPriceTypes(TOOL_ID, null, false);
 
-        assertThat(allowedInstanceAndPriceTypes.getAllowedInstanceTypes(), is(allowedInstanceTypes));
-        assertThat(allowedInstanceAndPriceTypes.getAllowedInstanceDockerTypes(), is(allowedInstanceDockerTypes));
-        assertThat(allowedInstanceAndPriceTypes.getAllowedPriceTypes(), is(allowedPriceTypes));
+        assertThat(allowedInstanceAndPriceTypes.allowedInstanceTypes(), is(allowedInstanceTypes));
+        assertThat(allowedInstanceAndPriceTypes.allowedInstanceDockerTypes(), is(allowedInstanceDockerTypes));
+        assertThat(allowedInstanceAndPriceTypes.allowedPriceTypes(), is(allowedPriceTypes));
     }
 
     @Test

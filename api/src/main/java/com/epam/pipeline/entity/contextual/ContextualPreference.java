@@ -18,27 +18,19 @@ package com.epam.pipeline.entity.contextual;
 
 import com.epam.pipeline.entity.preference.PreferenceType;
 import java.util.Date;
-import lombok.AllArgsConstructor;
-import lombok.Value;
+
 import lombok.With;
 
 /**
  * Contextual preference.
- *
+ * <p>
  * Represents a specific preference for some external {@link #resource}.
- *
+ * <p>
  * A tuple of {@link #name}, {@link #resource} is a contextual preference primary key.
  */
-@Value
 @With
-@AllArgsConstructor
-public class ContextualPreference {
-    private final String name;
-    private final String value;
-    private final PreferenceType type;
-    private final Date createdDate;
-    private final ContextualPreferenceExternalResource resource;
-
+public record ContextualPreference(String name, String value, PreferenceType type, Date createdDate,
+                                   ContextualPreferenceExternalResource resource) {
     public ContextualPreference(final String name, final String value, final PreferenceType type,
                                 final ContextualPreferenceExternalResource resource) {
         this(name, value, type, null, resource);

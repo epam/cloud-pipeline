@@ -61,9 +61,9 @@ public class NodeDiskDao extends NamedParameterJdbcDaoSupport {
 
         static MapSqlParameterSource getParameters(final NodeDisk disk) {
             final MapSqlParameterSource params = new MapSqlParameterSource();
-            params.addValue(SIZE.name(), disk.getSize());
-            params.addValue(NODE_ID.name(), disk.getNodeId());
-            params.addValue(CREATED_DATE.name(), Timestamp.valueOf(disk.getCreatedDate()));
+            params.addValue(SIZE.name(), disk.size());
+            params.addValue(NODE_ID.name(), disk.nodeId());
+            params.addValue(CREATED_DATE.name(), Timestamp.valueOf(disk.createdDate()));
             return params;
         }
 

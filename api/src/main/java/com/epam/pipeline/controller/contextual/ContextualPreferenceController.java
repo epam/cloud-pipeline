@@ -86,8 +86,8 @@ public class ContextualPreferenceController extends AbstractRestController {
             value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<ContextualPreference> search(@RequestBody final ContextualPreferenceSearchRequest searchRequest) {
-        return Result.success(contextualPreferenceApiService.search(searchRequest.getPreferences(),
-                searchRequest.getResource()));
+        return Result.success(contextualPreferenceApiService.search(searchRequest.preferences(),
+                searchRequest.resource()));
     }
 
     @PutMapping

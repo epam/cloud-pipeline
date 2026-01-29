@@ -144,9 +144,7 @@ public abstract class AbstractControllerTest {
 
     @SneakyThrows
     public void performUnauthorizedRequest(final MockHttpServletRequestBuilder requestBuilder) {
-        mockMvc.perform(requestBuilder
-                .servletPath(SERVLET_PATH))
-                .andExpect(status().isUnauthorized());
+        mockMvc.perform(requestBuilder).andExpect(status().isUnauthorized());
     }
 
     @SneakyThrows
@@ -158,7 +156,6 @@ public abstract class AbstractControllerTest {
     @SneakyThrows
     public MvcResult performRequest(final MockHttpServletRequestBuilder requestBuilder, final String contentType) {
         return mockMvc.perform(requestBuilder
-                .servletPath(SERVLET_PATH)
                 .contentType(contentType))
                 .andExpect(status().isOk())
                 .andExpect(MockMvcResultMatchers.content().contentType(contentType))
@@ -170,7 +167,6 @@ public abstract class AbstractControllerTest {
                                     final String requestContentType,
                                     final String responseContentType) {
         return mockMvc.perform(requestBuilder
-                .servletPath(SERVLET_PATH)
                 .contentType(requestContentType))
                 .andExpect(status().isOk())
                 .andExpect(MockMvcResultMatchers.content().contentType(responseContentType))
@@ -181,7 +177,8 @@ public abstract class AbstractControllerTest {
     public MvcResult performRedirectedRequest(final MockHttpServletRequestBuilder requestBuilder,
                                               final String redirectUrl) {
         return mockMvc.perform(requestBuilder
-                .servletPath(SERVLET_PATH)
+                // see note in performUnauthorizedRequest
+                //.servletPath(SERVLET_PATH)
                 .contentType(EXPECTED_CONTENT_TYPE))
                 .andExpect(status().isFound())
                 .andExpect(redirectedUrl(redirectUrl))
@@ -191,7 +188,8 @@ public abstract class AbstractControllerTest {
     @SneakyThrows
     public void performRequestWithoutResponse(final MockHttpServletRequestBuilder requestBuilder) {
         mockMvc.perform(requestBuilder
-                .servletPath(SERVLET_PATH)
+                // see note in performUnauthorizedRequest
+                //.servletPath(SERVLET_PATH)
                 .contentType(EXPECTED_CONTENT_TYPE))
                 .andExpect(status().isOk());
     }

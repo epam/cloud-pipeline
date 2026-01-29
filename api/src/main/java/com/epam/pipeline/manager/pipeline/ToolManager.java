@@ -889,18 +889,18 @@ public class ToolManager implements SecuredEntityManager {
      */
     @Transactional(propagation = Propagation.REQUIRED)
     public Tool symlink(final ToolSymlinkRequest request) {
-        Assert.notNull(request.getToolId(), messageHelper.getMessage(
+        Assert.notNull(request.toolId(), messageHelper.getMessage(
                 MessageConstants.ERROR_TOOL_SYMLINK_SOURCE_TOOL_ID_MISSING));
-        Assert.notNull(request.getGroupId(), messageHelper.getMessage(
+        Assert.notNull(request.groupId(), messageHelper.getMessage(
                 MessageConstants.ERROR_TOOL_SYMLINK_TARGET_GROUP_ID_MISSING));
 
-        final Tool sourceTool = load(request.getToolId());
-        final ToolGroup targetGroup = toolGroupManager.load(request.getGroupId());
+        final Tool sourceTool = load(request.toolId());
+        final ToolGroup targetGroup = toolGroupManager.load(request.groupId());
 
         Assert.notNull(sourceTool, messageHelper.getMessage(MessageConstants.ERROR_TOOL_SYMLINK_SOURCE_TOOL_NOT_FOUND,
-                request.getToolId()));
+                request.toolId()));
         Assert.notNull(targetGroup, messageHelper.getMessage(MessageConstants.ERROR_TOOL_SYMLINK_TARGET_GROUP_NOT_FOUND,
-                request.getGroupId()));
+                request.groupId()));
         Assert.isTrue(!sourceTool.isSymlink(), messageHelper.getMessage(
                 MessageConstants.ERROR_TOOL_SYMLINK_TARGET_SYMLINK));
 

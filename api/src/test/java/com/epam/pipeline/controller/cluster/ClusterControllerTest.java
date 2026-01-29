@@ -192,7 +192,7 @@ public class ClusterControllerTest extends AbstractControllerTest {
 
     @Test
     public void shouldFailTerminateNodeForUnauthorizedUser() throws Exception {
-        performUnauthorizedRequest(delete(NODE_NAME_URL, NAME));
+        performUnauthorizedRequest(delete(String.format(NODE_NAME_URL, NAME)));
     }
 
     @Test

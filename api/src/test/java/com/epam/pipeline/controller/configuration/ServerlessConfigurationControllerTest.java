@@ -75,7 +75,6 @@ public class ServerlessConfigurationControllerTest extends AbstractControllerTes
     @Test
     @WithMockUser
     public void shouldRun() throws Exception {
-        final String expectedResult = "\"" + RESULT + "\"";
         Mockito.doReturn(RESULT).when(mockServerlessConfigurationApiService)
                 .run(eq(ID), eq(TEST_CONFIG), Mockito.any());
 
@@ -87,6 +86,6 @@ public class ServerlessConfigurationControllerTest extends AbstractControllerTes
         Mockito.verify(mockServerlessConfigurationApiService, Mockito.times(4))
                 .run(eq(ID), eq(TEST_CONFIG), Mockito.any());
         final String actualResult = mvcResult.getResponse().getContentAsString();
-        assertEquals(expectedResult, actualResult);
+        assertEquals(RESULT, actualResult);
     }
 }

@@ -223,7 +223,7 @@ public class DockerRegistryControllerTest extends AbstractControllerTest {
 
     @Test
     public void shouldFailLoadDockerRegistry() {
-        performUnauthorizedRequest(get(LOAD_REGISTRY_URL));
+        performUnauthorizedRequest(get(String.format(LOAD_REGISTRY_URL, ID)));
     }
 
     @Test
@@ -241,7 +241,7 @@ public class DockerRegistryControllerTest extends AbstractControllerTest {
 
     @Test
     public void shouldFailDeleteDockerRegistry() {
-        performUnauthorizedRequest(delete(DELETE_REGISTRY_URL));
+        performUnauthorizedRequest(delete(String.format(DELETE_REGISTRY_URL, ID)));
     }
 
     @Test

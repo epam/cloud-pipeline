@@ -151,7 +151,7 @@ public class DataStorageControllerTest extends AbstractDataStorageControllerTest
 
     @Test
     public void shouldDeleteDataStorageForUnauthorizedUser() {
-        performUnauthorizedRequest(delete(DATASTORAGE_DELETE_URL, ID));
+        performUnauthorizedRequest(delete(String.format(DATASTORAGE_DELETE_URL, ID)));
     }
 
     @Test

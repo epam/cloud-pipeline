@@ -433,8 +433,8 @@ public class BillingManager {
                 final String totalPagesVal = Long.toString((long) Math.ceil(1.0 * resultSize / pageSize));
                 final String pageNumVal = Long.toString(requiredPageNum);
                 finalBilling.forEach(record -> {
-                    record.getGroupingInfo().put(BillingUtils.PAGE, pageNumVal);
-                    record.getGroupingInfo().put(BillingUtils.TOTAL_PAGES, totalPagesVal);
+                    record.groupingInfo().put(BillingUtils.PAGE, pageNumVal);
+                    record.groupingInfo().put(BillingUtils.TOTAL_PAGES, totalPagesVal);
                 });
                 return finalBilling;
             }

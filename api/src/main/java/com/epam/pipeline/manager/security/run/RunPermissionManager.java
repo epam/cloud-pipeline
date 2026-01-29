@@ -222,7 +222,7 @@ public class RunPermissionManager {
         final ContextualPreference visibilityPreference = preferenceManager.search(
                 Collections.singletonList(SystemPreferences.RUN_VISIBILITY_POLICY.getKey()));
         final RunVisibilityPolicy visibilityPolicy = Optional.ofNullable(visibilityPreference)
-                .map(ContextualPreference::getValue)
+                .map(ContextualPreference::value)
                 .filter(value -> EnumUtils.isValidEnum(RunVisibilityPolicy.class, value))
                 .map(RunVisibilityPolicy::valueOf)
                 .orElse(DEFAULT_POLICY);

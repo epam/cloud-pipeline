@@ -63,8 +63,8 @@ public class ContextualPreferenceDao extends NamedParameterJdbcDaoSupport {
     }
 
     public void delete(final String name, final ContextualPreferenceExternalResource externalResource) {
-        getJdbcTemplate().update(deleteContextualPreferenceQuery, name, externalResource.getLevel().getId(),
-                externalResource.getResourceId());
+        getJdbcTemplate().update(deleteContextualPreferenceQuery, name, externalResource.level().getId(),
+                externalResource.resourceId());
     }
 
     public List<ContextualPreference> loadAll() {
@@ -82,12 +82,12 @@ public class ContextualPreferenceDao extends NamedParameterJdbcDaoSupport {
 
         static MapSqlParameterSource getParameters(final ContextualPreference preference) {
             final MapSqlParameterSource params = new MapSqlParameterSource();
-            params.addValue(NAME.name(), preference.getName());
-            params.addValue(VALUE.name(), preference.getValue());
-            params.addValue(TYPE.name(), preference.getType().getId());
-            params.addValue(CREATED_DATE.name(), preference.getCreatedDate());
-            params.addValue(RESOURCE_ID.name(), preference.getResource().getResourceId());
-            params.addValue(LEVEL.name(), preference.getResource().getLevel().getId());
+            params.addValue(NAME.name(), preference.name());
+            params.addValue(VALUE.name(), preference.value());
+            params.addValue(TYPE.name(), preference.type().getId());
+            params.addValue(CREATED_DATE.name(), preference.createdDate());
+            params.addValue(RESOURCE_ID.name(), preference.resource().resourceId());
+            params.addValue(LEVEL.name(), preference.resource().level().getId());
             return params;
         }
 
@@ -95,8 +95,8 @@ public class ContextualPreferenceDao extends NamedParameterJdbcDaoSupport {
                                                    final ContextualPreferenceExternalResource externalResource) {
             final MapSqlParameterSource params = new MapSqlParameterSource();
             params.addValue(NAME.name(), name);
-            params.addValue(RESOURCE_ID.name(), externalResource.getResourceId());
-            params.addValue(LEVEL.name(), externalResource.getLevel().getId());
+            params.addValue(RESOURCE_ID.name(), externalResource.resourceId());
+            params.addValue(LEVEL.name(), externalResource.level().getId());
             return params;
         }
 

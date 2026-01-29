@@ -139,7 +139,7 @@ public class ContextualPreferenceManagerTest {
         final ContextualPreferenceVO preferenceVO = new ContextualPreferenceVO(NAME, VALUE, TYPE, toolResource);
         final ContextualPreference preference = new ContextualPreference(NAME, VALUE, TYPE, toolResource);
         when(contextualPreferenceHandler.isValid(eq(preference))).thenReturn(true);
-        when(contextualPreferenceDao.load(eq(preference.getName()))).thenReturn(Collections.singletonList(
+        when(contextualPreferenceDao.load(eq(preference.name()))).thenReturn(Collections.singletonList(
                 new ContextualPreference(NAME, VALUE, ANOTHER_TYPE, anotherResource)));
 
         assertThrows(IllegalArgumentException.class, () -> manager.upsert(preferenceVO));
@@ -151,7 +151,7 @@ public class ContextualPreferenceManagerTest {
                 toolResource);
         final ContextualPreference preference = new ContextualPreference(NAME, VALUE, ANOTHER_TYPE, toolResource);
         when(contextualPreferenceHandler.isValid(eq(preference))).thenReturn(true);
-        when(contextualPreferenceDao.load(eq(preference.getName()))).thenReturn(Collections.emptyList());
+        when(contextualPreferenceDao.load(eq(preference.name()))).thenReturn(Collections.emptyList());
 
         assertThrows(IllegalArgumentException.class, () -> manager.upsert(preferenceVO));
     }
