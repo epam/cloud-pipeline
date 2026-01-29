@@ -199,6 +199,13 @@ sed -i '1a \
   },' /etc/docker/daemon.json
 fi
 
+######################################################
+# Start dockerd
+######################################################
+nohup dind_setup_entrypoint dockerd > /var/log/dockerd-entrypoint.log 2>&1 &
+
+pipe_log_info "Docker daemon started" "$DIND_SETUP_TASK"
+
 
 ######################################################
 # Install buildx
@@ -237,9 +244,4 @@ if util_version_compare "$CP_CAP_DIND_VERSION" "19.03.0" ">" && \
     fi
 fi
 
-######################################################
-# Start dockerd
-######################################################
-nohup dind_setup_entrypoint dockerd > /var/log/dockerd-entrypoint.log 2>&1 &
-
-pipe_log_success "Docker daemon started" "$DIND_SETUP_TASK"
+pipe_log_success "Docker setup completed" "$DIND_SETUP_TASK"
