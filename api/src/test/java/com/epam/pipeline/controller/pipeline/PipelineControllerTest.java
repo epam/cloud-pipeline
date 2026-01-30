@@ -596,10 +596,9 @@ public class PipelineControllerTest extends AbstractControllerTest {
                         .params(multiValueMapOf(PATH, TEST_STRING))
                         .content(MULTIPART_CONTENT),
                         MULTIPART_CONTENT_TYPE, EXPECTED_CONTENT_TYPE);
-        final ArgumentCaptor<UploadFileMetadata> captor = ArgumentCaptor.forClass(UploadFileMetadata.class);
+        final ArgumentCaptor<List<UploadFileMetadata>> captor = ArgumentCaptor.forClass(List.class);
 
-        verify(mockPipelineApiService).uploadFiles(eq(ID), eq(TEST_STRING),
-                Collections.singletonList(captor.capture()));
+        verify(mockPipelineApiService).uploadFiles(eq(ID), eq(TEST_STRING), captor.capture());
         assertUnwrappedResponse(mvcResult, fileMetadataList);
     }
 

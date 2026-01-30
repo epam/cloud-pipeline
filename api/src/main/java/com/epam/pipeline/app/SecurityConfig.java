@@ -30,9 +30,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
     but to unsecure endpoints it is needed to comment @EnableWebSecurity */
 //@EnableMethodSecurity(securedEnabled = true)
 @Import({ImpersonationSecurityConfiguration.class,
-        JWTSecurityConfiguration.class,
-        SAMLSecurityConfiguration.class,
-        AclSecurityConfiguration.class})
+    JWTSecurityConfiguration.class,
+    SAMLSecurityConfiguration.class,
+    AclSecurityConfiguration.class})
 public class SecurityConfig {
 
     @Bean

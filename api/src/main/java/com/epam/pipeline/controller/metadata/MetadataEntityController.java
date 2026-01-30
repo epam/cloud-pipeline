@@ -35,8 +35,8 @@ import org.apache.commons.fileupload2.core.FileUploadException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
@@ -151,7 +151,8 @@ public class MetadataEntityController extends AbstractRestController {
             })
     public Result<List<MetadataEntity>> uploadMetadataFromFile(
             @RequestParam Long parentId,
-            @RequestParam("file") MultipartFile file) throws FileUploadException {
+            final HttpServletRequest request) throws FileUploadException, IOException {
+        final var file = consumeMultipartFile(request);
         if (file.isEmpty()) {
             throw new FileUploadException("File is empty!");
         }

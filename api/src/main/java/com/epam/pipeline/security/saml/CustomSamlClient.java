@@ -18,8 +18,6 @@ package com.epam.pipeline.security.saml;
 
 //import com.coveo.saml.SamlException;
 //import com.coveo.saml.SamlResponse;
-import com.epam.pipeline.utils.URLUtils;
-import org.joda.time.DateTime;
 //import org.opensaml.common.SAMLException;
 //import org.opensaml.common.binding.decoding.BasicURLComparator;
 //import org.opensaml.common.binding.decoding.URIComparator;
@@ -41,18 +39,8 @@ import org.joda.time.DateTime;
 //import org.opensaml.xml.signature.X509Data;
 //import org.opensaml.xml.util.Base64;
 //import org.opensaml.xml.validation.ValidationException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 /*import org.springframework.security.saml.context.SAMLMessageContext;
 import org.springframework.security.saml.websso.WebSSOProfileConsumerImpl;*/
-import java.io.Reader;
-import java.io.UnsupportedEncodingException;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 //import static org.springframework.security.saml.util.SAMLUtil.isDateTimeSkewValid;
 

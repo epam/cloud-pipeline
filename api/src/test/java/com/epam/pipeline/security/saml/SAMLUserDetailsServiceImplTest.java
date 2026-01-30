@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
-import org.opensaml.saml2.core.NameID;
+//import org.opensaml.saml2.core.NameID;
 import org.springframework.test.util.ReflectionTestUtils;
 import java.util.Collections;
 import java.util.HashMap;
@@ -82,8 +82,8 @@ public class SAMLUserDetailsServiceImplTest {
     /*@Mock
     private SAMLCredential mockCredential;*/
 
-    @Mock
-    private NameID mockNameID;
+    /*@Mock
+    private NameID mockNameID;*/
 
     @Mock
     private UserManager mockUserManager;
@@ -108,7 +108,7 @@ public class SAMLUserDetailsServiceImplTest {
         expectedUserContext.setGroups(groups);
 
         MockitoAnnotations.initMocks(this);
-        when(mockNameID.getValue()).thenReturn(USER_NAME);
+        //when(mockNameID.getValue()).thenReturn(USER_NAME);
         //when(mockCredential.getNameID()).thenReturn(mockNameID);
         final String[] mockAttributesArray = {SAML_ATTRIBUTE_1, SAML_ATTRIBUTE_2};
         //when(mockCredential.getAttributeAsStringArray(anyString())).thenReturn(mockAttributesArray);

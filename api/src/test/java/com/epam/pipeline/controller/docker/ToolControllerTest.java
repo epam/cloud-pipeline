@@ -39,7 +39,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
@@ -56,7 +55,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -393,15 +391,13 @@ public class ToolControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldUploadToolIcon() {
-        final byte[] content = FILE_NAME.getBytes();
-        final MockMultipartFile file = new MockMultipartFile("file", FILE_NAME, "image/jpg", content);
-        doReturn(ID).when(mockToolApiService).updateToolIcon(ID, FILE_NAME, content);
+        doReturn(ID).when(mockToolApiService).updateToolIcon(ID, FILE_NAME, FILE_NAME.getBytes());
 
         final MvcResult mvcResult = performRequest(
-                multipart(String.format(ICON_TOOL_URL, ID)).file(file),
-                MediaType.MULTIPART_FORM_DATA_VALUE, EXPECTED_CONTENT_TYPE);
+                post(String.format(ICON_TOOL_URL, ID)).content(MULTIPART_CONTENT).param(PATH, FILE_NAME),
+                MULTIPART_CONTENT_TYPE, EXPECTED_CONTENT_TYPE);
 
-        verify(mockToolApiService).updateToolIcon(ID, FILE_NAME, content);
+        verify(mockToolApiService).updateToolIcon(ID, FILE_NAME, FILE_NAME.getBytes());
         assertResponse(mvcResult, ID, CommonCreatorConstants.LONG_INSTANCE_TYPE);
     }
 

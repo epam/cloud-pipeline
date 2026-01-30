@@ -17,17 +17,9 @@
 package com.epam.pipeline.security.saml;
 
 //import com.coveo.saml.SamlResponse;
-import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.manager.preference.PreferenceManager;
-import com.epam.pipeline.security.ExternalServiceEndpoint;
 import com.epam.pipeline.security.UserAccessService;
-import com.epam.pipeline.security.UserContext;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.ListUtils;
-import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 //import org.opensaml.common.SAMLException;
 //import org.opensaml.saml2.core.Assertion;
 //import org.opensaml.saml2.core.Attribute;
@@ -40,27 +32,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import static com.epam.pipeline.manager.preference.SystemPreferences.SYSTEM_EXTERNAL_SERVICES_ENDPOINTS;
 
 public class SAMLProxyFilter extends OncePerRequestFilter {
     private static final Logger LOGGER = LoggerFactory.getLogger(SAMLProxyFilter.class);

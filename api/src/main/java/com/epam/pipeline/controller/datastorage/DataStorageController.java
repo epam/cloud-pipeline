@@ -33,7 +33,6 @@ import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageConvertRequest;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
-import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageItemType;
@@ -70,6 +69,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -300,31 +300,29 @@ public class DataStorageController extends AbstractRestController {
     public List<UploadFileMetadata> uploadFile(
             @PathVariable(value = ID) Long id,
             @RequestParam(value = PATH, required = false) final String folder,
-            @RequestParam("file") final MultipartFile file) throws FileUploadException {
-        UploadFileMetadata fileMeta = new UploadFileMetadata();
+            final HttpServletRequest request) throws FileUploadException, IOException {
+        final var file = consumeMultipartFile(request);
+        final UploadFileMetadata fileMeta = new UploadFileMetadata();
         fileMeta.setFileName(FilenameUtils.getName(file.getOriginalFilename()));
         fileMeta.setFileSize(file.getSize() / BYTES_IN_KB + " Kb");
         fileMeta.setFileType(file.getContentType());
-        try {
-            dataStorageApiService.createDataStorageFile(id, folder, fileMeta.getFileName(), file.getBytes());
-        } catch (IOException e) {
-            throw new DataStorageException("Failed to upload file to datastorage.", e);
-        }
+        dataStorageApiService.createDataStorageFile(id, folder, fileMeta.getFileName(), file.getBytes());
         return Collections.singletonList(fileMeta);
     }
 
     @RequestMapping(value = "/datastorage/{id}/upload/stream", method= RequestMethod.POST)
     @ResponseBody
-    public Result<List<DataStorageFile>> uploadStream(@RequestParam("files") List<MultipartFile> files,
+    public Result<List<DataStorageFile>> uploadStream(final HttpServletRequest request,
                                         @PathVariable Long id,
                                         @RequestParam(value = PATH, required = false) String folder)
         throws IOException, FileUploadException {
+        final List<MultipartFile> files = consumeMultipartFiles(request);
         if (files.isEmpty()) {
             throw new FileUploadException(NO_FILES_SPECIFIED);
         }
 
-        List<DataStorageFile> uploadedFiles = new ArrayList<>();
-        for (MultipartFile file : files) {
+        final List<DataStorageFile> uploadedFiles = new ArrayList<>();
+        for (final MultipartFile file : files) {
             if (!file.isEmpty()) {
                 try (var inputStream = file.getInputStream()) {
                     uploadedFiles.add(dataStorageApiService.createDataStorageFile(id, folder,

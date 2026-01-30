@@ -57,6 +57,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.LocalDate;
@@ -388,7 +389,8 @@ public class UserController extends AbstractRestController {
             @RequestParam(defaultValue = FALSE) final boolean createUser,
             @RequestParam(defaultValue = FALSE) final boolean createGroup,
             @RequestParam(required = false) final List<String> createMetadata,
-            @RequestParam("file") final MultipartFile file) throws FileUploadException {
+            final HttpServletRequest request) throws FileUploadException, IOException {
+        final MultipartFile file = consumeMultipartFile(request);
         if (file.isEmpty()) {
             throw new FileUploadException("File is empty!");
         }

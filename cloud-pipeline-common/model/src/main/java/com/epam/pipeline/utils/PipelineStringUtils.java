@@ -33,4 +33,21 @@ public final class PipelineStringUtils {
         }
         return input.replaceAll(ALPHANUMERIC_DASH_TEMPLATE, DASH);
     }
+
+    /**
+     * Spring MVC may bind {@code @RequestBody String} for {@code application/json} using a String converter,
+     * resulting in the JSON literal being passed verbatim (e.g. {@code "\"TEST\""}). To preserve the legacy
+     * behaviour (treating JSON string bodies as plain text), we unquote such bodies here.
+     */
+    public static String normalizeJsonStringLiteral(final String raw) {
+        if (raw == null) {
+            return "";
+        }
+        final String trimmed = raw.trim();
+        if (trimmed.length() >= 2 && trimmed.startsWith("\"") && trimmed.endsWith("\"")) {
+            // Minimal unquoting (covers our API usage where body is a simple JSON string).
+            return trimmed.substring(1, trimmed.length() - 1);
+        }
+        return raw;
+    }
 }

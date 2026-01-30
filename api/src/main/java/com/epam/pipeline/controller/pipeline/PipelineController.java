@@ -57,12 +57,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.apache.commons.fileupload2.core.FileUploadException;
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -75,7 +73,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.util.Base64;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -427,7 +427,10 @@ public class PipelineController extends AbstractRestController {
             @PathVariable(value = ID) Long id,
             @RequestParam(value = VERSION) final String version,
             @RequestParam String path) throws GitClientException {
-        return new ResponseEntity<>(pipelineApiService.getPipelineFileContents(id, version, path), HttpStatus.OK);
+        final byte[] bytes = pipelineApiService.getPipelineFileContents(id, version, path);
+        return ResponseEntity.ok()
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .body(toBase64Json(bytes).getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
 
     @GetMapping(value = "/pipeline/{id}/file/truncate")
@@ -444,8 +447,16 @@ public class PipelineController extends AbstractRestController {
         @RequestParam(value = VERSION) final String version,
         @RequestParam String path,
         @RequestParam Integer byteLimit) throws GitClientException {
-        return new ResponseEntity<>(pipelineApiService.getTruncatedPipelineFileContent(id, version, path, byteLimit),
-                                    HttpStatus.OK);
+        final byte[] bytes = pipelineApiService.getTruncatedPipelineFileContent(id, version, path, byteLimit);
+        return ResponseEntity.ok()
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .body(toBase64Json(bytes).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
+
+    private static String toBase64Json(final byte[] bytes) {
+        // Jackson's byte[] JSON representation is a base64 JSON string, e.g. "AQEB".
+        // We return the same shape explicitly to keep legacy tests stable.
+        return "\"" + Base64.getEncoder().encodeToString(bytes == null ? new byte[0] : bytes) + "\"";
     }
 
     @RequestMapping(value = "/pipeline/{id}/file", method= RequestMethod.POST)
@@ -498,10 +509,9 @@ public class PipelineController extends AbstractRestController {
     public List<UploadFileMetadata> uploadFile(
             @PathVariable(value = ID) Long id,
             @RequestParam(value = PATH) final String folder,
-            @RequestParam("file") MultipartFile file) throws GitClientException, FileUploadException {
-        if (file.isEmpty()) {
-            throw new FileUploadException("File is empty!");
-        }
+            HttpServletRequest request) throws GitClientException, IOException {
+        MultipartFile file = consumeMultipartFile(request);
+
         List<UploadFileMetadata> uploadedFiles = new LinkedList<>();
         UploadFileMetadata fileMeta = new UploadFileMetadata();
         fileMeta.setFileName(FilenameUtils.getName(file.getOriginalFilename()).replaceAll("[ ]", "_"));

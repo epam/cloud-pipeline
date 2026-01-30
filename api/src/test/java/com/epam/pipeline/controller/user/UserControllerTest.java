@@ -91,17 +91,17 @@ public class UserControllerTest extends AbstractControllerTest {
     private static final String URL = "url";
     private static final String TYPE = "type";
     private final String redirectCookie =
-            "\"<html><body><script>window.location.href = \\\"TEST\\\"</script></body></html>\"";
+            "<html><body><script>window.location.href = \"TEST\"</script></body></html>";
     private final String redirectForm =
-            "\"<html>\\n"
-            + "<body>\\n"
-            + "<form id=\\\"form\\\" method=\\\"post\\\" action=\\\"TEST\\\">\\n"
-            + " <input type=\\\"hidden\\\" name=\\\"bearer\\\" value=\\\"TEST\\\" />\\n"
-            + "</form>\\n"
-            + "<script>\\n" + "document.getElementById('form').submit()\\n"
-            + "</script>\\n"
-            + "</body>\\n"
-            + "</html>\"";
+            "<html>\n"
+            + "<body>\n"
+            + "<form id=\"form\" method=\"post\" action=\"TEST\">\n"
+            + " <input type=\"hidden\" name=\"bearer\" value=\"TEST\" />\n"
+            + "</form>\n"
+            + "<script>\n" + "document.getElementById('form').submit()\n"
+            + "</script>\n"
+            + "</body>\n"
+            + "</html>";
     private static final String TEXT_HTML_UTF8_CONTENT_TYPE = "text/html;charset=UTF-8";
     private static final String FILE_NAME = "users.csv";
     private static final String ROLE_ANONYMOUS_USER = "ANONYMOUS_USER";
@@ -282,7 +282,7 @@ public class UserControllerTest extends AbstractControllerTest {
 
     @Test
     public void shouldFailLoadUserByNameForUnauthorizedUser() {
-        performUnauthorizedRequest(get(USER_ID_URL));
+        performUnauthorizedRequest(get(String.format(USER_ID_URL, ID)));
     }
 
     @Test

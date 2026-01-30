@@ -50,8 +50,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.multipart.MultipartFile;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
@@ -261,8 +261,9 @@ public class ToolController extends AbstractRestController {
 
     @PostMapping(value = "/tool/{toolId}/icon")
     @ResponseBody
-    public Result<Long> uploadToolIcon(@RequestParam("file") final MultipartFile file, @PathVariable long toolId)
+    public Result<Long> uploadToolIcon(final HttpServletRequest request, @PathVariable long toolId)
         throws FileUploadException, IOException {
+        final var file = consumeMultipartFile(request);
         if (file.isEmpty()) {
             throw new FileUploadException("File is empty!");
         }

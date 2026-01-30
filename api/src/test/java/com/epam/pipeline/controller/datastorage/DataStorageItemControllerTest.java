@@ -31,7 +31,6 @@ import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.util.LinkedMultiValueMap;
@@ -47,11 +46,10 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.INTEGER_TYPE
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.OBJECT_TYPE;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.STRING_MAP_INSTANCE_TYPE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.junit.jupiter.api.Assertions.*;
 
 public class DataStorageItemControllerTest extends AbstractDataStorageControllerTest {
 
@@ -434,18 +432,9 @@ public class DataStorageItemControllerTest extends AbstractDataStorageController
         uploadFileMetadata.setFileType(OCTET_STREAM_CONTENT_TYPE);
         final List<UploadFileMetadata> uploadFileMetadataList = Collections.singletonList(uploadFileMetadata);
 
-        final MockMultipartFile multipartFile = new MockMultipartFile(
-                "file",
-                FILE_NAME,
-                OCTET_STREAM_CONTENT_TYPE,
-                TEST.getBytes()
-        );
-
         final MvcResult mvcResult = performRequest(
-                multipart(String.format(DATASTORAGE_ITEMS_UPLOAD_URL, ID))
-                        .file(multipartFile)
-                        .param(PATH, TEST),
-                EXPECTED_CONTENT_TYPE
+                post(String.format(DATASTORAGE_ITEMS_UPLOAD_URL, ID)).content(MULTIPART_CONTENT).param(PATH, TEST),
+                MULTIPART_CONTENT_TYPE, EXPECTED_CONTENT_TYPE
         );
 
         Mockito.verify(mockStorageApiService).createDataStorageFile(ID, TEST, FILE_NAME, TEST.getBytes());
@@ -468,19 +457,8 @@ public class DataStorageItemControllerTest extends AbstractDataStorageController
                 .createDataStorageFile(Mockito.eq(ID), Mockito.eq(TEST),
                         Mockito.eq(FILE_NAME), (InputStream) Mockito.any());
 
-        final MockMultipartFile multipartFile = new MockMultipartFile(
-                "files",
-                FILE_NAME,
-                OCTET_STREAM_CONTENT_TYPE,
-                TEST.getBytes()
-        );
-
-        final MvcResult mvcResult = performRequest(
-                multipart(String.format(DATASTORAGE_UPLOAD_STREAM_URL, ID))
-                        .file(multipartFile)
-                        .param(PATH, TEST),
-                EXPECTED_CONTENT_TYPE
-        );
+        final MvcResult mvcResult = performRequest(post(String.format(DATASTORAGE_UPLOAD_STREAM_URL, ID))
+                .content(MULTIPART_CONTENT).param(PATH, TEST), MULTIPART_CONTENT_TYPE, EXPECTED_CONTENT_TYPE);
 
         Mockito.verify(mockStorageApiService)
                 .createDataStorageFile(Mockito.eq(ID), Mockito.eq(TEST),

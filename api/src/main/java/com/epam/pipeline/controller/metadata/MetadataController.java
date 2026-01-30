@@ -43,7 +43,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.multipart.MultipartFile;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Set;
 
@@ -169,9 +169,9 @@ public class MetadataController extends AbstractRestController {
             @RequestParam(value = "id") final Long entityId,
             @RequestParam(value = "class") final AclClass entityClass,
             @RequestParam(value = "merge", defaultValue = "false") final boolean mergeWithExistingMetadata,
-            /*final HttpServletRequest request,*/
-            @RequestParam(value = "file") final MultipartFile file
-    ) throws FileUploadException {
+            final HttpServletRequest request
+    ) throws FileUploadException, java.io.IOException {
+        final var file = consumeMultipartFile(request);
         if (file.isEmpty()) {
             throw new FileUploadException("File is empty");
         }

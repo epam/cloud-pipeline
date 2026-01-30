@@ -24,6 +24,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.Result;
@@ -48,7 +49,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.multipart.MultipartFile;
 
 @Controller
 @Tag(name = "Issues")
@@ -188,9 +188,10 @@ public class IssueController extends AbstractRestController {
     @ApiResponses(
         value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
         })
-    public Result<List<Attachment>> uploadAttachments(@RequestParam("files")List<MultipartFile> files)
+    public Result<List<Attachment>> uploadAttachments(final HttpServletRequest request)
         throws IOException, FileUploadException {
-        return Result.success(processStreamingUpload(files, attachmentFileManager::uploadAttachment));
+        return Result.success(processStreamingUpload(consumeMultipartFiles(request),
+                attachmentFileManager::uploadAttachment));
     }
 
     @GetMapping(value = "/attachment/{id}")

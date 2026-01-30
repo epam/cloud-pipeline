@@ -16,21 +16,13 @@
 
 package com.epam.pipeline.entity.notification;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
-
 import java.util.Date;
 
-@Getter
-@Setter
-@RequiredArgsConstructor
-@EqualsAndHashCode
-public class SystemNotificationConfirmation {
-    private final Long notificationId;
-    private final String title;
-    private final String body;
-    private final String user;
-    private final Date date;
+
+public record SystemNotificationConfirmation(
+        Long notificationId,
+        String title,
+        String body,
+        String user,
+        Date date) {
 }

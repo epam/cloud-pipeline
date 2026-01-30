@@ -326,7 +326,7 @@ public class MetadataEntityControllerTest extends AbstractControllerTest {
 
     @Test
     public void shouldFailUpdateMetadataEntity() {
-        performUnauthorizedRequest(post(METADATA_ENTITY_DELETE_URL, ID));
+        performUnauthorizedRequest(post(String.format(METADATA_ENTITY_DELETE_URL, ID)));
     }
 
     @Test
