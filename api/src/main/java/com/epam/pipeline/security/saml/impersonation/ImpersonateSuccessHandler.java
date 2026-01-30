@@ -16,8 +16,7 @@
 
 package com.epam.pipeline.security.saml.impersonation;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 
@@ -25,9 +24,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
+@Slf4j
 public class ImpersonateSuccessHandler implements AuthenticationSuccessHandler, ImpersonateRequestHandler {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(ImpersonateSuccessHandler.class);
 
     private final String impersonationStartUrl;
     private final String impersonationStopUrl;
@@ -40,9 +38,8 @@ public class ImpersonateSuccessHandler implements AuthenticationSuccessHandler, 
     @Override
     public void onAuthenticationSuccess(final HttpServletRequest request, final HttpServletResponse response,
                                         final Authentication authentication) throws IOException {
-        LOGGER.info("Successful impersonation action: " +
-                getImpersonationAction(impersonationStartUrl, impersonationStopUrl, request) +
-                ", user: " + authentication.getName());
+        log.info("Successful impersonation action: {}, user: {}",
+                getImpersonationAction(impersonationStartUrl, impersonationStopUrl, request), authentication.getName());
         response.sendRedirect("/");
     }
 

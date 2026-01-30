@@ -16,20 +16,18 @@
 
 package com.epam.pipeline.security.saml.impersonation;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+@Slf4j
 public class ImpersonateFailureHandler implements AuthenticationFailureHandler, ImpersonateRequestHandler {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ImpersonateFailureHandler.class);
     private final String impersonationStartUrl;
     private final String impersonationStopUrl;
-
 
     public ImpersonateFailureHandler(final String impersonationStartUrl, final String impersonationStopUrl) {
         this.impersonationStartUrl = impersonationStartUrl;
@@ -39,9 +37,8 @@ public class ImpersonateFailureHandler implements AuthenticationFailureHandler, 
     @Override
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
                                         AuthenticationException exception) {
-        LOGGER.info("Failed impersonation action: " +
-                getImpersonationAction(impersonationStartUrl, impersonationStopUrl, request) +
-                ", message: " + exception.getMessage());
+        log.info("Failed impersonation action: {}, message: {}",
+                getImpersonationAction(impersonationStartUrl, impersonationStopUrl, request), exception.getMessage());
     }
 
 }

@@ -27,8 +27,8 @@ import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opensaml.common.SAMLException;
-import org.opensaml.saml2.core.Response;
+//import org.opensaml.common.SAMLException;
+//import org.opensaml.saml2.core.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -57,52 +57,53 @@ public class SAMLProxyAuthenticationProvider implements AuthenticationProvider {
 
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
-        SAMLProxyAuthentication auth = (SAMLProxyAuthentication) authentication;
-
-        List<ExternalServiceEndpoint> externalServices = preferenceManager.getPreference(
-            SYSTEM_EXTERNAL_SERVICES_ENDPOINTS);
-        if (CollectionUtils.isEmpty(externalServices)) {
-            throw new AuthenticationServiceException(
-                    messageHelper.getMessage(MessageConstants.ERROR_PROXY_SECURITY_CONFIG_MISSING));
-        }
-
-        if (StringUtils.isNotBlank(auth.getRawSamlResponse())) {
-            try {
-                Response decoded = CustomSamlClient.decodeSamlResponse(auth.getRawSamlResponse());
-                String endpointId = decoded.getDestination()    // cut out SSO endpoint
-                    .substring(0, decoded.getDestination().length() - CustomSamlClient.SSO_ENDPOINT.length());
-                Optional<ExternalServiceEndpoint> endpointOpt = externalServices.stream()
-                    .filter(e -> e.getEndpointId().equals(endpointId)).findFirst();
-
-                if (endpointOpt.isPresent()) {
-                    Authentication validated = validateAuthentication(auth, decoded, endpointId, endpointOpt.get());
-                    log.debug("Successfully authenticate user with name: " + auth.getName());
-                    return validated;
-                } else {
-                    throw new AuthenticationServiceException("Authentication error: unexpected external service");
-                }
-            } catch (SAMLException e) {
-                throw new AuthenticationServiceException("Authentication error: ", e);
-            }
-        } else {
-            throw new AuthenticationServiceException("Authentication error: missing SAML token");
-        }
+        return null;
+//        SAMLProxyAuthentication auth = (SAMLProxyAuthentication) authentication;
+//
+//        List<ExternalServiceEndpoint> externalServices = preferenceManager.getPreference(
+//            SYSTEM_EXTERNAL_SERVICES_ENDPOINTS);
+//        if (CollectionUtils.isEmpty(externalServices)) {
+//            throw new AuthenticationServiceException(
+//                    messageHelper.getMessage(MessageConstants.ERROR_PROXY_SECURITY_CONFIG_MISSING));
+//        }
+//
+//        if (StringUtils.isNotBlank(auth.getRawSamlResponse())) {
+//            try {
+//                Response decoded = CustomSamlClient.decodeSamlResponse(auth.getRawSamlResponse());
+//                String endpointId = decoded.getDestination()    // cut out SSO endpoint
+//                    .substring(0, decoded.getDestination().length() - CustomSamlClient.SSO_ENDPOINT.length());
+//                Optional<ExternalServiceEndpoint> endpointOpt = externalServices.stream()
+//                    .filter(e -> e.getEndpointId().equals(endpointId)).findFirst();
+//
+//                if (endpointOpt.isPresent()) {
+//                    Authentication validated = validateAuthentication(auth, decoded, endpointId, endpointOpt.get());
+//                    log.debug("Successfully authenticate user with name: " + auth.getName());
+//                    return validated;
+//                } else {
+//                    throw new AuthenticationServiceException("Authentication error: unexpected external service");
+//                }
+//            } catch (SAMLException e) {
+//                throw new AuthenticationServiceException("Authentication error: ", e);
+//            }
+//        } else {
+//            throw new AuthenticationServiceException("Authentication error: missing SAML token");
+//        }
     }
 
-    private Authentication validateAuthentication(SAMLProxyAuthentication auth, Response decoded, String endpointId,
-                                                  ExternalServiceEndpoint endpoint) throws SAMLException {
-        try (FileReader metadataReader = new FileReader(new File(endpoint.getMetadataPath()))) {
-            CustomSamlClient client = CustomSamlClient.fromMetadata(endpointId, metadataReader,
-                                                                    RESPONSE_SKEW);
-
-            //client.setMaxAuthenticationAge(maxAuthentificationAge);
-            client.validate(decoded);
-            return auth;
-
-        } catch (IOException e) {
-            throw new AuthenticationServiceException("Could not read proxy metadata", e);
-        }
-    }
+//    private Authentication validateAuthentication(SAMLProxyAuthentication auth, Response decoded, String endpointId,
+//                                                  ExternalServiceEndpoint endpoint) throws SAMLException {
+//        try (FileReader metadataReader = new FileReader(new File(endpoint.getMetadataPath()))) {
+//            CustomSamlClient client = CustomSamlClient.fromMetadata(endpointId, metadataReader,
+//                                                                    RESPONSE_SKEW);
+//
+//            //client.setMaxAuthenticationAge(maxAuthentificationAge);
+//            client.validate(decoded);
+//            return auth;
+//
+//        } catch (IOException e) {
+//            throw new AuthenticationServiceException("Could not read proxy metadata", e);
+//        }
+//    }
 
     @Override
     public boolean supports(Class<?> authentication) {

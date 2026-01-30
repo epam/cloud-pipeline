@@ -27,22 +27,15 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.security.JwtTokenClaims;
-import com.epam.pipeline.entity.user.PipelineUser;
-import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.security.UserAccessService;
 import com.epam.pipeline.security.UserContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationServiceException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
-
-import java.util.Collections;
-import java.util.List;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -67,9 +60,6 @@ public class JwtFilterAuthenticationFilter extends OncePerRequestFilter {
                 if (!disableLogging) {
                     log.info("Successfully authenticate user with name: " + context.getUsername());
                 }
-            } else {
-                // No JWT token provided - set fallback admin authentication
-                setAdminAuthentication(request);
             }
         } catch (TokenVerificationException e) {
             log.info("JWT authentication failed: {}", e.getMessage());
@@ -93,26 +83,6 @@ public class JwtFilterAuthenticationFilter extends OncePerRequestFilter {
             log.trace(e.getMessage(), e);
         }
         return rawToken;
-    }
-
-    private void setAdminAuthentication(HttpServletRequest request) {
-        PipelineUser adminUser = PipelineUser.builder()
-                .userName("PIPE_ADMIN")
-                .id(1L)
-                .admin(true)
-                .roles(Collections.singletonList(new Role("ROLE_ADMIN")))
-                .groups(Collections.emptyList())
-                .build();
-        UserContext adminContext = new UserContext(adminUser);
-        UsernamePasswordAuthenticationToken adminToken = new UsernamePasswordAuthenticationToken(
-                adminContext,
-                null,
-                List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
-        );
-        SecurityContextHolder.getContext().setAuthentication(adminToken);
-        if (!disableLogging) {
-            log.info("Set fallback admin authentication for user: PIPE_ADMIN");
-        }
     }
 
     private String extractAuthHeader(HttpServletRequest request) {

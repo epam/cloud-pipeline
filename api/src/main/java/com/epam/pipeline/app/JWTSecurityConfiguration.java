@@ -50,7 +50,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-
+@Order(2)
 @Configuration
 @ComponentScan(basePackages = {"com.epam.pipeline.security.jwt"})
 public class JWTSecurityConfiguration {
@@ -90,7 +90,6 @@ public class JWTSecurityConfiguration {
     }
 
     @Bean
-    @Order(2)
     public SecurityFilterChain jwtSecurityFilterChain(final HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
             .exceptionHandling(exceptions -> exceptions
