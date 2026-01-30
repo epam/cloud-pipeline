@@ -8,14 +8,22 @@ import { PipeTunnelBase } from "./pipe-tunnel-base";
 import { PipeTunnelInfo } from "..";
 import { ICpExtConfig } from "../../config";
 import { Duplex } from "stream";
-import { parseProxyUrl } from "cp-client-tunnel";
+import { ITunnelManagerConfig, parseProxyUrl } from "cp-client-tunnel";
 
 // Import types from cp-client-tunnel library
-import { TunnelManager, ITunnelConnection, TunnelManagerConfig } from "cp-client-tunnel";
+import { TunnelManager, ITunnelConnection } from "cp-client-tunnel";
+import { IApiOptions } from "cp-client-api";
+
+
 
 function createTunnelManagerConfig(
   config: ICpExtConfig
-): TunnelManagerConfig {
+): ITunnelManagerConfig {
+
+  const api: IApiOptions = {
+    url: config.pipeApiUri!,
+    token: config.pipeApiToken!,
+  };
 
   const envProxyUrl = process.env.CP_PROXY_URL
     || undefined;
@@ -30,10 +38,9 @@ function createTunnelManagerConfig(
     });
 
   return {
+    api,
     proxy,
     connectionTimeout: 30,
-    apiUrl: config.pipeApiUri!,
-    apiToken: config.pipeApiToken!,
   }
 }
 

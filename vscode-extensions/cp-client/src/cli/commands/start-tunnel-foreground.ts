@@ -1,12 +1,12 @@
 import { TunnelStartOptions, ILogger } from "cp-client-common";
-import { TunnelManager, TunnelManagerConfig } from "cp-client-tunnel";
+import { TunnelManager, ITunnelManagerConfig } from "cp-client-tunnel";
 
 /**
  * Start tunnel in foreground mode and keep process alive
  */
 export async function startTunnelForeground(
   options: TunnelStartOptions,
-  config: TunnelManagerConfig,
+  config: ITunnelManagerConfig,
   logger: ILogger
 ): Promise<void> {
   logger.trace(`startTunnelForeground() called:\n  runId=${options.runId}, options=${JSON.stringify(options)}`);

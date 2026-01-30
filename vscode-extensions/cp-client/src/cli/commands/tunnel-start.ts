@@ -3,10 +3,10 @@
  */
 
 import { TunnelStartOptions, ILogger } from "cp-client-common";
-import { createTunnelManagerConfig } from "../utils";
 import { TunnelStartCommandOptions } from "../types";
 import { startTunnelBackground } from "./start-tunnel-background";
 import { startTunnelForeground } from "./start-tunnel-foreground";
+import { TunnelManagerConfig } from "../options";
 
 export async function tunnelStartAction(
   runIdStr: string,
@@ -19,7 +19,7 @@ export async function tunnelStartAction(
       logger.error("Invalid run ID (must be numeric)");
       process.exit(1);
     }
-    const config = createTunnelManagerConfig(cmdOptions, logger);
+    const config = TunnelManagerConfig.fromCommandOptions(cmdOptions, logger);
 
     if (cmdOptions.foreground) {
       // Foreground mode: keep process alive

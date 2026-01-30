@@ -2,7 +2,12 @@
  * Common types and interfaces for CLI
  */
 
-export interface GlobalOptions {
+export interface GlobalCommandOptions {
+  apiUrl?: string;
+  apiToken?: string;
+
+  connectionTimeout?: string;
+
   logLevel?: string;
   user?: string;
   noclean?: boolean;
@@ -10,10 +15,9 @@ export interface GlobalOptions {
   trace?: boolean;
 }
 
-export interface TunnelStartCommandOptions extends GlobalOptions {
+export interface TunnelStartCommandOptions extends GlobalCommandOptions {
   localPort?: string;
   remotePort?: string;
-  connectionTimeout?: string;
   ssh?: boolean;
   sshPath?: string;
   sshHost?: string;
@@ -33,7 +37,7 @@ export interface TunnelStartCommandOptions extends GlobalOptions {
   timeoutStop?: string;
 }
 
-export interface TunnelStopCommandOptions extends GlobalOptions {
+export interface TunnelStopCommandOptions extends GlobalCommandOptions {
   localPort?: string;
   force?: boolean;
   timeoutStop?: string;

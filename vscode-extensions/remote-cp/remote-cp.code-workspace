@@ -111,6 +111,22 @@
       "/^node dist/cli\\.js tunnel start 85984 -rp 22 -lp 22084 -f$/": {
         "approve": true,
         "matchCommandLine": true
+      },
+      "/^Push-Location 'c:\\\\Users\\\\aleksandr_tanas\\\\projs\\\\pipe\\\\cloud-pipeline\\\\vscode-extensions\\\\cp-client-api'; & 'C:\\\\Program Files\\\\nodejs\\\\node\\.exe' 'C:\\\\Program Files\\\\nodejs\\\\node_modules\\\\npm\\\\bin\\\\npm-cli\\.js' run build; Pop-Location$/": {
+        "approve": true,
+        "matchCommandLine": true
+      },
+      "/^Push-Location 'c:\\\\Users\\\\aleksandr_tanas\\\\projs\\\\pipe\\\\cloud-pipeline\\\\vscode-extensions\\\\cp-client'; & 'C:\\\\Program Files\\\\nodejs\\\\node\\.exe' 'C:\\\\Program Files\\\\nodejs\\\\node_modules\\\\npm\\\\bin\\\\npm-cli\\.js' run build; Pop-Location$/": {
+        "approve": true,
+        "matchCommandLine": true
+      },
+      "/^Push-Location 'c:\\\\Users\\\\aleksandr_tanas\\\\projs\\\\pipe\\\\cloud-pipeline\\\\vscode-extensions\\\\cp-client'; & 'C:\\\\Program Files\\\\nodejs\\\\node\\.exe' 'C:\\\\Program Files\\\\nodejs\\\\node_modules\\\\npm\\\\bin\\\\npm-cli\\.js' run build:this; Pop-Location$/": {
+        "approve": true,
+        "matchCommandLine": true
+      },
+      "/^cmd /c npm run build:this$/": {
+        "approve": true,
+        "matchCommandLine": true
       }
     },
     // "editor.formatOnSave": true,
@@ -152,6 +168,9 @@
       "src/**/*.d.ts": true,
       "src/**/*.js.map": true,
       "src/**/*.d.ts.map": true
+    },
+    "airun.settings": {
+      "workspaceId": "e732253c-a1b0-4af4-8bc3-a20f4aba828c"
     }
   },
   "launch": {

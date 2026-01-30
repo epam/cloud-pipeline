@@ -1,13 +1,13 @@
 import { ILogger } from "cp-client-common";
 import { BaseAPI } from "./base-api";
-import { APIOptions, ClusterNodeModel, ClusterInstanceTypeModel } from "./types";
+import { IApiOptions, ClusterNodeModel, ClusterInstanceTypeModel } from "./types/api";
 
 /**
  * Cluster API client.
  * Corresponds to pipe-cli src/api/cluster.py:Cluster class.
  */
 export class ClusterAPI extends BaseAPI {
-  constructor(options: APIOptions, logger: ILogger) {
+  constructor(options: IApiOptions, logger: ILogger) {
     super(options, logger);
   }
 
@@ -95,22 +95,22 @@ export class Cluster {
    * Get EDGE service external URL.
    * Static convenience method that creates API instance internally.
    * 
-   * @param options - API options (platformUrl, apiToken, region, logger)
+   * @param apiOpts - API options (platformUrl, apiToken, region, logger)
    * @returns External URL string
    */
-  static async getEdgeExternalUrl(options: APIOptions, region: string | undefined, logger: ILogger): Promise<string> {
-    const api = new ClusterAPI(options, logger);
+  static async getEdgeExternalUrl(apiOpts: IApiOptions, region: string | undefined, logger: ILogger): Promise<string> {
+    const api = new ClusterAPI(apiOpts, logger);
     return await api.getEdgeExternalUrl(region);
   }
 
   /**
    * List all cluster nodes.
    * 
-   * @param options - API options
+   * @param apiOpts - API options
    * @returns Array of cluster nodes
    */
-  static async listNodes(options: APIOptions, logger: ILogger): Promise<ClusterNodeModel[]> {
-    const api = new ClusterAPI(options, logger);
+  static async listNodes(apiOpts: IApiOptions, logger: ILogger): Promise<ClusterNodeModel[]> {
+    const api = new ClusterAPI(apiOpts, logger);
     return await api.listNodes();
   }
 
@@ -121,19 +121,19 @@ export class Cluster {
    * @param options - API options
    * @returns Cluster node
    */
-  static async getNode(name: string, options: APIOptions, logger: ILogger): Promise<ClusterNodeModel> {
-    const api = new ClusterAPI(options, logger);
+  static async getNode(name: string, apiOpts: IApiOptions, logger: ILogger): Promise<ClusterNodeModel> {
+    const api = new ClusterAPI(apiOpts, logger);
     return await api.getNode(name);
   }
 
   /**
    * List available instance types.
    * 
-   * @param options - API options
+   * @param apiOpts - API options
    * @returns Array of instance types
    */
-  static async listInstanceTypes(options: APIOptions, logger: ILogger): Promise<ClusterInstanceTypeModel[]> {
-    const api = new ClusterAPI(options, logger);
+  static async listInstanceTypes(apiOpts: IApiOptions, logger: ILogger): Promise<ClusterInstanceTypeModel[]> {
+    const api = new ClusterAPI(apiOpts, logger);
     return await api.listInstanceTypes();
   }
 }

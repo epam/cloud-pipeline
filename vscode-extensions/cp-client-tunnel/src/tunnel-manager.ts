@@ -1,16 +1,15 @@
-import { ITunnelConnection, ITunnelManager, Endpoint, ProxyEndpoint } from "./common/interfaces";
-import { Disposable, ILogger, LoggerBase, ITunnelConfig, ITunnelInfo } from "cp-client-common";
+import {
+  ITunnelConnection,
+  ITunnelManager,
+  Endpoint,
+  ProxyEndpoint,
+  ITunnelManagerConfig
+} from "./types";
+import { Disposable, ILogger, ITunnelConfig, ITunnelInfo } from "cp-client-common";
 import { TunnelConnection } from "./tunnel-connection";
 import { httpProxyTunnelConnect } from "./proxy";
 import { findExistingTunnels } from "./process-discovery";
 import { getRunConnectionInfo } from "./connection-info";
-
-export interface TunnelManagerConfig {
-  proxy?: ProxyEndpoint;
-  connectionTimeout?: number;
-  apiUrl: string;
-  apiToken: string;
-}
 
 /**
  * Main tunnel manager implementation.
@@ -20,7 +19,7 @@ export class TunnelManager extends Disposable implements ITunnelManager {
   private activeTunnels: Map<number, ITunnelConnection> = new Map();
 
   constructor(
-    private config: TunnelManagerConfig,
+    private config: ITunnelManagerConfig,
     private readonly logger: ILogger
   ) {
     super();
@@ -45,8 +44,7 @@ export class TunnelManager extends Disposable implements ITunnelManager {
     const runConnInfo = await getRunConnectionInfo(
       config.runId,
       config.region,
-      this.config.apiUrl,
-      this.config.apiToken,
+      this.config.api,
       this.logger,
     );
 
@@ -60,7 +58,7 @@ export class TunnelManager extends Disposable implements ITunnelManager {
         ? parseInt(process.env.CP_CLI_TUNNEL_PROXY_PORT, 10)
         : runConnInfo.sshProxy.port,
       username: runConnInfo.owner,
-      password: this.config.apiToken,
+      password: this.config.api.token,
     };
 
     const connection = new TunnelConnection(
@@ -70,7 +68,7 @@ export class TunnelManager extends Disposable implements ITunnelManager {
         // Build target endpoint (corresponds to pipe-cli target_endpoint)
         // pipe-cli: target_endpoint = (conn_info.ssh_endpoint[0], remote_port)
         const targetEndpoint: Endpoint = {
-          host: runConnInfo.sshEndpoint.host,  // ✅ Now using actual pod IP from conn_info
+          host: runConnInfo.sshEndpoint.host,  // Now using actual pod IP from conn_info
           port: tunnelConfig.remotePort,
         };
 

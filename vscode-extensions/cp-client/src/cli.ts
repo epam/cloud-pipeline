@@ -7,13 +7,15 @@
 import * as dotenv from "dotenv";
 import * as path from "path";
 import { existsSync, readFileSync } from "fs";
-import { Command } from "commander";
 import {
   tunnelListAction,
   tunnelStartAction,
   tunnelStopAction,
+  runListAction,
 } from "./cli/commands";
 import { ConsoleLogger, ILogger, LogLevel, LogLevelName } from "cp-client-common";
+import { PipeCommand } from "./cli-pipe-command";
+import { RunListCommandOptions } from "./cli/commands/run-list";
 
 // Load environment variables from .env file if it exists
 const envPath = path.resolve(process.cwd(), ".env");
@@ -48,7 +50,7 @@ function createLogger(opts: any): ILogger {
   return new ConsoleLogger(console, logLevelName);
 }
 
-const program = new Command();
+const program = new PipeCommand();
 program
   .description("Cloud Pipeline CLI")
   .version(pkg.version)
@@ -63,11 +65,8 @@ const tunnelCmd = program
 tunnelCmd
   .command("list")
   .description("List active tunnel connections")
-  .option("-v, --log-level <level>", "Log level (ERROR, WARNING, INFO, DEBUG)")
-  .option("-u, --user <user>", "User name (admin only)")
-  .option("--debug", "Enable debug logging")
-  .option("--trace", "Enable trace logging")
-  .action((opts) => {
+  .addTunnelListOptions()
+  .action((opts: any) => {
     const logger = createLogger(opts);
     return tunnelListAction(opts, logger);
   });
@@ -76,35 +75,8 @@ tunnelCmd
 tunnelCmd
   .command("start <run_id>")
   .description("Start a tunnel to a Cloud Pipeline run")
-  .option("-lp, --local-port <port>", "Local port (single or range 4567-4569)")
-  .option("-rp, --remote-port <port>", "Remote port (default 22)")
-  .option(
-    "-ct, --connection-timeout <seconds>",
-    "Connection timeout in seconds",
-  )
-  .option("-s, --ssh", "Configure passwordless SSH")
-  .option("-sp, --ssh-path <path>", "SSH config path")
-  .option("-sh, --ssh-host <host>", "SSH host")
-  .option("-su, --ssh-user <user>", "SSH user (can be used multiple times)")
-  .option("-sk, --ssh-keep", "Keep SSH config after tunnel stops")
-  .option("-d, --direct", "Direct connection without proxy")
-  .option("-f, --foreground", "Run tunnel in foreground")
-  .option("-ke, --keep-existing", "Skip if tunnel already exists")
-  .option("-ks, --keep-same", "Skip if same config already exists")
-  .option("-re, --replace-existing", "Replace existing tunnel")
-  .option("-rd, --replace-different", "Replace if config differs")
-  .option("--ignore-existing", "Ignore existing tunnels")
-  .option("--ignore-owner", "Replace tunnels from other users")
-  .option("-rg, --region <region>", "Edge region name")
-  .option("-l, --log-file <file>", "Log file path")
-  .option("-t, --timeout <seconds>", "Tunnel health check timeout")
-  .option("-ts, --timeout-stop <seconds>", "Tunnel stop timeout")
-  .option("-v, --log-level <level>", "Log level")
-  .option("-u, --user <user>", "User name")
-  .option("--noclean", "Disable resource cleanup")
-  .option("--debug", "Enable debug logging")
-  .option("--trace", "Enable trace logging")
-  .action((runId, opts) => {
+  .addTunnelStartOptions()
+  .action((runId: any, opts: any) => {
     const logger = createLogger(opts);
     return tunnelStartAction(runId, opts, logger);
   });
@@ -113,16 +85,35 @@ tunnelCmd
 tunnelCmd
   .command("stop [run_id]")
   .description("Stop a tunnel")
-  .option("-lp, --local-port <port>", "Local port to stop")
-  .option("-f, --force", "Force stop (SIGKILL)")
-  .option("-ts, --timeout-stop <seconds>", "Timeout for graceful stop")
-  .option("-v, --log-level <level>", "Log level")
-  .option("-u, --user <user>", "User name")
-  .option("--debug", "Enable debug logging")
-  .option("--trace", "Enable trace logging")
-  .action((runId, opts) => {
+  .addTunnelStopOptions()
+  .action((runId: any, opts: any) => {
     const logger = createLogger(opts);
     return tunnelStopAction(runId, opts, logger);
+  });
+
+// view-runs command
+program
+  .command("view-runs [run_id]")
+  .description("Display details of a run or list of pipeline runs")
+  .addRunListOptions()
+  .action((runId: string | undefined, opts: RunListCommandOptions) => {
+    const logger = createLogger(opts);
+    return runListAction(runId, opts, logger);
+  });
+
+// Run commands group
+const runCmd = program
+  .command("run")
+  .description("Pipeline run management commands");
+
+// run list (synonym for view-runs)
+runCmd
+  .command("list [run_id]")
+  .description("Display details of a run or list of pipeline runs")
+  .addRunListOptions()
+  .action((runId: string | undefined, cmdOpts: RunListCommandOptions) => {
+    const logger = createLogger(cmdOpts);
+    return runListAction(runId, cmdOpts, logger);
   });
 
 // Parse and execute

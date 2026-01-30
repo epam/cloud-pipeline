@@ -2,7 +2,7 @@ import { Socket, createConnection } from "net";
 import { Duplex } from "stream";
 import { ILogger } from "cp-client-common";
 import { TunnelProxyError, TunnelConnectionError } from "./errors";
-import { Endpoint, ProxyEndpoint } from "./common/interfaces";
+import { Endpoint, ProxyEndpoint } from "./types";
 
 /**
  * Establishes HTTP CONNECT tunnel through proxy.

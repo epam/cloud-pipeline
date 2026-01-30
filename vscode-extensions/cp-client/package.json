@@ -17,9 +17,11 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
+    "chalk": "^4.1.2",
+    "cli-table3": "^0.6.4",
     "commander": "^12.1.0",
-    "cp-client-common": "file:../cp-client-common",
     "cp-client-api": "file:../cp-client-api",
+    "cp-client-common": "file:../cp-client-common",
     "cp-client-tunnel": "file:../cp-client-tunnel",
     "dotenv": "16.0.3"
   },

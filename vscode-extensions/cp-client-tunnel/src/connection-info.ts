@@ -1,6 +1,6 @@
-import { Endpoint } from "./common/interfaces";
+import { Endpoint } from "./types";
 import { ILogger } from "cp-client-common";
-import { Cluster, Run } from "cp-client-api";
+import { IApiOptions, Cluster, Run } from "cp-client-api";
 
 /**
  * Run connection information.
@@ -47,8 +47,7 @@ export interface RunConnectionInfo {
 export async function getRunConnectionInfo(
   runId: number,
   region: string | undefined,
-  apiUrl: string,
-  apiToken: string,
+  apiOpts: IApiOptions,
   logger: ILogger,
 ): Promise<RunConnectionInfo> {
   logger?.debug(`getRunConnectionInfo() called for run ${runId}`);
@@ -56,7 +55,7 @@ export async function getRunConnectionInfo(
   // Fetch run details from Cloud Pipeline API
   // Corresponds to: run_model = PipelineRun.get(run_id)
   logger?.debug(`Fetching run details for run ${runId}`);
-  const run = await Run.get(runId, { apiUrl: apiUrl, apiToken: apiToken }, logger);
+  const run = await Run.get(runId, apiOpts, logger);
 
   // Check if run is initialized
   // Corresponds to: if not run_model.is_initialized
@@ -67,7 +66,7 @@ export async function getRunConnectionInfo(
   // Resolve proxy endpoint from cluster config
   // Corresponds to: proxy_url = Cluster.get_edge_external_url(region)
   logger?.debug(`Fetching edge URL for region ${region || "(default)"}`);
-  const edgeProxyUrl = await Cluster.getEdgeExternalUrl({ apiUrl, apiToken }, region, logger);
+  const edgeProxyUrl = await Cluster.getEdgeExternalUrl(apiOpts, region, logger);
 
   if (!edgeProxyUrl) {
     throw new Error("Cannot retrieve EDGE service external url");
@@ -135,23 +134,15 @@ export async function getRunConnectionInfo(
 export async function getCustomConnectionInfo(
   hostId: string,
   region: string | undefined,
-  apiUrl: string,
-  apiToken: string,
+  apiOpts: IApiOptions,
   logger: ILogger,
 ): Promise<RunConnectionInfo> {
   logger?.debug(`getCustomConnectionInfo() called for host ${hostId}`);
 
-  const baseUrl = apiUrl || process.env.CP_PLATFORM_URL || "https://aws.cloud-pipeline.com";
-  const token = apiToken || process.env.CP_API_TOKEN || process.env.CP_API_KEY;
-
-  if (!token) {
-    throw new Error("API token is required. Set CP_API_TOKEN environment variable.");
-  }
-
   // Resolve proxy endpoint from cluster config
   // Corresponds to: proxy_url = Cluster.get_edge_external_url(region)
   logger?.debug(`Fetching edge URL for region ${region || "(default)"}`);
-  const proxyUrl = await Cluster.getEdgeExternalUrl({ apiUrl: baseUrl, apiToken: token }, region, logger);
+  const proxyUrl = await Cluster.getEdgeExternalUrl(apiOpts, region, logger);
 
   if (!proxyUrl) {
     throw new Error("Cannot retrieve EDGE service external url");

@@ -4,20 +4,14 @@
 
 import { ILogger, TunnelListOptions } from "cp-client-common";
 import { TunnelManager } from "cp-client-tunnel";
-import { createTunnelManagerConfig } from "../utils";
-import { GlobalOptions } from "../types";
+import { TunnelManagerConfig } from "../options";
+
 
 export async function tunnelListAction(
-  opts: GlobalOptions, logger: ILogger
+  cmdOpts: TunnelListOptions, logger: ILogger
 ): Promise<void> {
   try {
-    const config = createTunnelManagerConfig(opts, logger);
-    const options: TunnelListOptions = {
-      logLevel: opts.logLevel as any,
-      user: opts.user,
-      debug: opts.debug,
-      trace: opts.trace,
-    };
+    const config = TunnelManagerConfig.fromCommandOptions(cmdOpts, logger);
 
     const manager = new TunnelManager(config, logger);
     let tunnels;

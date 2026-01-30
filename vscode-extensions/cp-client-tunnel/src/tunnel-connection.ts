@@ -1,4 +1,4 @@
-import { ITunnelConnection } from "./common/interfaces";
+import { ITunnelConnection } from "./types";
 import { Disposable, ITunnelConfig, ILogger, LoggerBase } from "cp-client-common";
 import { Duplex } from "stream";
 import { TcpForwarder } from "./tcp-forwarder";

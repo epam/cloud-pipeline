@@ -1,13 +1,17 @@
 // Public API
 export {
-  type ITunnelConnection,
-  type ITunnelManager,
-  type Endpoint,
-  type ProxyEndpoint,
   parseProxyUrl
 } from "./common";
 
-export { TunnelManager, type TunnelManagerConfig } from "./tunnel-manager";
+export {
+  type Endpoint,
+  type ProxyEndpoint,
+  type ITunnelManagerConfig,
+  type ITunnelConnection,
+  type ITunnelManager,
+} from "./types";
+
+export { TunnelManager, } from "./tunnel-manager";
 export { TunnelConnection } from "./tunnel-connection";
 export { TcpForwarder } from "./tcp-forwarder";
 

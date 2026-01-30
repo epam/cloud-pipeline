@@ -1,4 +1,4 @@
-import { ProxyEndpoint } from "./interfaces";
+import { ProxyEndpoint } from "../types";
 
 export function parseProxyUrl(
     proxyUrl?: string,

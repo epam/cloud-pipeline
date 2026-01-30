@@ -4,12 +4,12 @@
 
 import { ILogger, TunnelStopOptions } from "cp-client-common";
 import { TunnelManager } from "cp-client-tunnel";
-import { createTunnelManagerConfig } from "../utils";
 import { TunnelStopCommandOptions } from "../types";
+import { TunnelManagerConfig } from "../options/tunnel-manager";
 
 export async function tunnelStopAction(
   runIdStr: string | undefined,
-  opts: TunnelStopCommandOptions,
+  cmdOpts: TunnelStopCommandOptions,
   logger: ILogger
 ): Promise<void> {
   try {
@@ -19,15 +19,15 @@ export async function tunnelStopAction(
       process.exit(1);
     }
 
-    const config = createTunnelManagerConfig(opts, logger);
+    const config = TunnelManagerConfig.fromCommandOptions(cmdOpts, logger);
     const options: TunnelStopOptions = {
-      localPort: opts.localPort ? parseInt(opts.localPort) : undefined,
-      force: opts.force,
-      timeoutStop: opts.timeoutStop ? parseInt(opts.timeoutStop) : 60,
-      logLevel: opts.logLevel as any,
-      user: opts.user,
-      debug: opts.debug,
-      trace: opts.trace,
+      localPort: cmdOpts.localPort ? parseInt(cmdOpts.localPort) : undefined,
+      force: cmdOpts.force,
+      timeoutStop: cmdOpts.timeoutStop ? parseInt(cmdOpts.timeoutStop) : 60,
+      logLevel: cmdOpts.logLevel as any,
+      user: cmdOpts.user,
+      debug: cmdOpts.debug,
+      trace: cmdOpts.trace,
     };
 
     const manager = new TunnelManager(config, logger);
@@ -42,8 +42,8 @@ export async function tunnelStopAction(
 
     if (runId) {
       console.log(`Tunnel for run ${runId} stopped`);
-    } else if (opts.localPort) {
-      console.log(`Tunnel on port ${opts.localPort} stopped`);
+    } else if (cmdOpts.localPort) {
+      console.log(`Tunnel on port ${cmdOpts.localPort} stopped`);
     }
   } catch (err) {
     console.error("Error stopping tunnel:", err);

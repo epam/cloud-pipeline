@@ -1,14 +1,15 @@
 import { ILogger } from "cp-client-common";
 import { BaseAPI } from "./base-api";
-import { APIOptions, PipelineRunModel } from "./types";
+import { IApiOptions, PipelineRunFilterModel, PipelineRunModel } from "./types/api";
+import { RunFilterOptions } from "./types/run";
 
 /**
  * Pipeline Run API client.
  * Corresponds to pipe-cli src/api/pipeline_run.py:PipelineRun class.
  */
 export class RunAPI extends BaseAPI {
-  constructor(options: APIOptions, logger: ILogger) {
-    super(options, logger);
+  constructor(apiOpts: IApiOptions, logger: ILogger) {
+    super(apiOpts, logger);
   }
 
   /**
@@ -22,6 +23,55 @@ export class RunAPI extends BaseAPI {
   async getRun(runId: number): Promise<PipelineRunModel> {
     this.logger?.debug(`Getting pipeline run: ${runId}`);
     return await this.call<PipelineRunModel>(`run/${runId}`);
+  }
+
+  /**
+   * List pipeline runs with filtering.
+   * Corresponds to pipe-cli PipelineRun.list().
+   * 
+   * @param options - Filter options
+   * @returns Pipeline run filter result
+   */
+  async listRuns(options: RunFilterOptions = {}): Promise<PipelineRunFilterModel> {
+    this.logger?.debug(`Listing pipeline runs with options:`, options);
+
+    const data: any = {
+      page: options.page ?? 1,
+      pageSize: options.pageSize ?? 100,
+    };
+
+    if (options.statuses && options.statuses.length > 0) {
+      data.statuses = options.statuses;
+    }
+    if (options.startDateFrom) {
+      data.startDateFrom = options.startDateFrom;
+    }
+    if (options.endDateTo) {
+      data.endDateTo = options.endDateTo;
+    }
+    if (options.pipelineIds && options.pipelineIds.length > 0) {
+      data.pipelineIds = options.pipelineIds;
+    }
+    if (options.versions && options.versions.length > 0) {
+      data.versions = options.versions;
+    }
+    if (options.parentId !== undefined) {
+      data.parentId = options.parentId;
+    }
+    if (options.partialParameters) {
+      data.partialParameters = options.partialParameters;
+    }
+    if (options.owners && options.owners.length > 0) {
+      data.owners = options.owners;
+    }
+
+    const result = await this.call<PipelineRunFilterModel>('run/filter', 'POST', data);
+
+    // Ensure page and pageSize are set in the result
+    result.page = data.page;
+    result.pageSize = data.pageSize;
+
+    return result;
   }
 
   /**
@@ -49,20 +99,39 @@ export class Run {
    * @param options - API options
    * @returns Pipeline run model
    */
-  static async get(runId: number, options: APIOptions, logger: ILogger): Promise<PipelineRunModel> {
-    const api = new RunAPI(options, logger);
+  static async get(runId: number, apiOpts: IApiOptions, logger: ILogger): Promise<PipelineRunModel> {
+    const api = new RunAPI(apiOpts, logger);
     return await api.getRun(runId);
+  }
+
+  /**
+   * List pipeline runs with filtering.
+   * Static convenience method.
+   * Corresponds to pipe-cli PipelineRun.list().
+   * 
+   * @param filterOptions - Filter options
+   * @param options - API options
+   * @param logger - Logger instance
+   * @returns Pipeline run filter result
+   */
+  static async list(
+    filterOptions: RunFilterOptions,
+    apiOpts: IApiOptions,
+    logger: ILogger
+  ): Promise<PipelineRunFilterModel> {
+    const api = new RunAPI(apiOpts, logger);
+    return await api.listRuns(filterOptions);
   }
 
   /**
    * Check if run is initialized for SSH.
    * 
    * @param runId - Pipeline run ID
-   * @param options - API options
+   * @param apiOpts - API options
    * @returns True if run is initialized
    */
-  static async isInitialized(runId: number, options: APIOptions, logger: ILogger): Promise<boolean> {
-    const api = new RunAPI(options, logger);
+  static async isInitialized(runId: number, apiOpts: IApiOptions, logger: ILogger): Promise<boolean> {
+    const api = new RunAPI(apiOpts, logger);
     return await api.isRunInitialized(runId);
   }
 }

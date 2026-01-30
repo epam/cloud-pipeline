@@ -1,24 +1,16 @@
 import { ILogger } from "cp-client-common";
-import { APIOptions, APIResponse } from "./types";
+import { IApiOptions, IApiResponse } from "./types/api";
 
 /**
  * Base API client class.
  * Corresponds to pipe-cli src/api/base.py:API class.
  */
 export class BaseAPI {
-  protected apiUrl: string;
-  protected apiToken: string;
 
   constructor(
-    options: APIOptions,
+    protected apiOpts: IApiOptions,
     protected readonly logger: ILogger
   ) {
-    this.apiUrl = options.apiUrl || process.env.CP_API_URL!;
-    this.apiToken = options.apiToken || process.env.CP_API_TOKEN!;
-
-    if (!this.apiToken) {
-      throw new Error("API token is required. Set CP_API_TOKEN environment variable or provide apiToken in options.");
-    }
   }
 
   /**
@@ -31,11 +23,11 @@ export class BaseAPI {
    * @returns API response payload
    */
   protected async call<T>(path: string, method: "GET" | "POST" | "PUT" | "DELETE" = "GET", data?: any): Promise<T> {
-    const url = `${this.apiUrl}${path}`;
+    const url = `${this.apiOpts.url}${path}`;
     this.logger.debug(`API call: ${method} ${url}`);
 
     const headers: Record<string, string> = {
-      "Authorization": `Bearer ${this.apiToken}`,
+      "Authorization": `Bearer ${this.apiOpts.token}`,
       "Content-Type": "application/json",
     };
 
@@ -55,7 +47,7 @@ export class BaseAPI {
       throw new Error(`API request failed: ${response.status} ${errorText}`);
     }
 
-    const responseData: APIResponse<T> = await response.json();
+    const responseData: IApiResponse<T> = await response.json();
 
     if (responseData.message) {
       throw new Error(responseData.message);
@@ -72,12 +64,12 @@ export class BaseAPI {
    * Get API response without extracting payload.
    * Used when full response structure is needed.
    */
-  protected async callRaw<T>(path: string, method: "GET" | "POST" | "PUT" | "DELETE" = "GET", data?: any): Promise<APIResponse<T>> {
-    const url = `${this.apiUrl}/${path}`;
+  protected async callRaw<T>(path: string, method: "GET" | "POST" | "PUT" | "DELETE" = "GET", data?: any): Promise<IApiResponse<T>> {
+    const url = `${this.apiOpts.url}${path}`;
     this.logger?.debug(`API call (raw): ${method} ${url}`);
 
     const headers: Record<string, string> = {
-      "Authorization": `Bearer ${this.apiToken}`,
+      "Authorization": `Bearer ${this.apiOpts.token}`,
       "Content-Type": "application/json",
     };
 
