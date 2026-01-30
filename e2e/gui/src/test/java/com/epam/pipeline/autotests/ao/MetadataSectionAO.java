@@ -51,6 +51,7 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.modalWithTitle
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import org.openqa.selenium.By;
 
 public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> {
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
@@ -169,7 +170,7 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
     }
 
     public MetadataSectionAO ensureMetadataSectionNotContainText(String text) {
-        $(byCssSelector(".Pane.horizontal.Pane1")).shouldNotHave(text(text));
+        $(By.className("cp-split-panel")).shouldNotHave(text(text));
         return this;
     }
 

@@ -52,6 +52,14 @@ public abstract class AbstractBfxPipelineTest implements ITest {
 
     @BeforeClass
     public void setUp() {
+        setUpConfiguration();
+        login(C.ROOT_ADDRESS);
+
+        //reset mouse
+        $(byId("navigation-button-logo")).shouldBe(visible).click();
+        sleep(3, SECONDS);
+    }
+    public void setUpConfiguration() {
         Configuration.browser = "chrome";
         Configuration.browserSize = "1920x1080";
         Configuration.timeout = DEFAULT_TIMEOUT;
@@ -64,12 +72,6 @@ public abstract class AbstractBfxPipelineTest implements ITest {
 
         WebDriver driver = new ChromeDriver(options);
         WebDriverRunner.setWebDriver(driver);
-
-        login(C.ROOT_ADDRESS);
-
-        //reset mouse
-        $(byId("navigation-button-logo")).shouldBe(visible).click();
-        sleep(3, SECONDS);
     }
 
     @BeforeMethod(alwaysRun = true)
@@ -86,8 +88,8 @@ public abstract class AbstractBfxPipelineTest implements ITest {
 
     public void restartBrowser(final String address) {
         Selenide.closeWindow();
+        setUpConfiguration();
         login(address);
-//        setUp();
     }
 
     public void addExtension(final String extensionPath) {

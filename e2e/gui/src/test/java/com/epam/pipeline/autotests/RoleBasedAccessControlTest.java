@@ -126,6 +126,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
                 sleep(1, SECONDS);
             }
         } else {
+            setUpConfiguration();
             open(C.ROOT_ADDRESS);
             new AuthenticationPageAO()
                     .login(C.LOGIN)

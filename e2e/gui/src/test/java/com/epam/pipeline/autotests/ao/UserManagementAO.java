@@ -262,7 +262,7 @@ public class UserManagementAO extends SettingsPageAO {
         }
 
         public UsersTabAO deleteUserIfExist(String name) {
-            if (!clickSearch().setSearchName(name).pressEnter().userTabIsEmpty()) {
+            if (!searchUser(name).userTabIsEmpty()) {
                 SelenideElement entry = getUser(name.toUpperCase()).shouldBe(visible);
                 new UserEntry(this, name.toUpperCase(), entry)
                         .edit()
@@ -459,6 +459,7 @@ public class UserManagementAO extends SettingsPageAO {
                 }
 
                 public EditUserPopup unblockUser(final String user) {
+                    get(UNBLOCK).should(exist);
                     click(UNBLOCK);
                     new ConfirmationPopupAO(this)
                             .ensureTitleIs(format("Are you sure you want to unblock user %s?", user))

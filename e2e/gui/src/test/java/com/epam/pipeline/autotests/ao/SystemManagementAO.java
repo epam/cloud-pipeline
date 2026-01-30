@@ -95,6 +95,7 @@ public class SystemManagementAO extends SettingsPageAO {
             List<String> serviceFilters = getMultiSelectFilterValues("Service");
             List<String> typeFilters = getMultiSelectFilterValues("Type");
             String messageFilter = getMessageFilter();
+            sleep(5, SECONDS);
             while (containerLogs().stream().filter(r ->
                     r.has(matchText(message)) && r.has(text(type))).count() == 0
                     && attempt < maxAttempts) {
