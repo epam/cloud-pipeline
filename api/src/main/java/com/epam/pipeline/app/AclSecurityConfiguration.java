@@ -47,14 +47,14 @@ import org.springframework.security.acls.jdbc.JdbcMutableAclService;
 import org.springframework.security.acls.model.AclCache;
 import org.springframework.security.acls.model.PermissionGrantingStrategy;
 import org.springframework.security.acls.model.SidRetrievalStrategy;
-//import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import javax.sql.DataSource;
 
 @Configuration
 @ComponentScan(basePackages = {"com.epam.pipeline.acl"})
-//@EnableMethodSecurity
+@EnableMethodSecurity
 public class AclSecurityConfiguration {
 
     private static final String TRUE = "true";
@@ -84,17 +84,14 @@ public class AclSecurityConfiguration {
 
     @Bean
     public RoleHierarchy roleHierarchy() {
-        RoleHierarchyImpl roleHierarchy = new RoleHierarchyImpl();
-        roleHierarchy.setHierarchy(DefaultRoles.ROLE_ADMIN.getName() + " > " +
-                DefaultRoles.ROLE_USER.getName());
-        return roleHierarchy;
+        return RoleHierarchyImpl.fromHierarchy(DefaultRoles.ROLE_ADMIN.getName()
+                + " > " + DefaultRoles.ROLE_USER.getName());
     }
 
     @Bean
     public SidRetrievalStrategy sidRetrievalStrategy() {
         return new SidRetrievalStrategyImpl(roleHierarchy());
     }
-
 
     @Bean
     public PermissionEvaluator permissionEvaluator() {
@@ -142,4 +139,3 @@ public class AclSecurityConfiguration {
         return new PermissionGrantingStrategyImpl(auditLogger());
     }
 }
-

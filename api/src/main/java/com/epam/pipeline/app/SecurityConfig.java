@@ -19,16 +19,14 @@ package com.epam.pipeline.app;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-//import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 @EnableWebSecurity
-/* TODO: this conf is loaded even if it is uncommented in Application.java,
-    but to unsecure endpoints it is needed to comment @EnableWebSecurity */
-//@EnableMethodSecurity(securedEnabled = true)
+@EnableMethodSecurity(securedEnabled = true)
 @Import({ImpersonationSecurityConfiguration.class,
     JWTSecurityConfiguration.class,
     SAMLSecurityConfiguration.class,

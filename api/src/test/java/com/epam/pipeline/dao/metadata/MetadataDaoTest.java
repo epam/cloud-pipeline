@@ -168,7 +168,7 @@ public class MetadataDaoTest extends AbstractJdbcTest {
         metadataDao.deleteMetadataItem(entity1);
         metadataDao.deleteMetadataItem(entity2);
         createdMetadata = metadataDao.loadMetadataItems(entities);
-        assertNull(createdMetadata);
+        assertEquals(0, createdMetadata.size());
     }
 
     @Test

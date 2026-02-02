@@ -141,27 +141,24 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
     }
 
     public List<MetadataEntry> loadMetadataItems(List<EntityVO> entities) {
-        List<MetadataEntry> items = getNamedParameterJdbcTemplate().query(
+        return getNamedParameterJdbcTemplate().query(
                 convertEntitiesToString(loadMetadataItemsQuery, entities),
                 MetadataParameters.getParametersWithArrays(entities),
                 MetadataParameters.getRowMapper());
-        return items.isEmpty() ? null : items;
     }
 
     public List<MetadataEntry> loadMetadataItemsByKey(final String key, final List<EntityVO> entities) {
-        List<MetadataEntry> items = getNamedParameterJdbcTemplate().query(
+        return getNamedParameterJdbcTemplate().query(
                 convertEntitiesToString(loadMetadataItemsQuery, entities),
                 MetadataParameters.getParametersWithArrays(entities),
                 MetadataParameters.getRowMapper(Collections.singletonList(key)));
-        return items.isEmpty() ? null : items;
     }
 
     public List<MetadataEntryWithIssuesCount> loadMetadataItemsWithIssues(List<EntityVO> entities) {
-        List<MetadataEntryWithIssuesCount> items = getNamedParameterJdbcTemplate()
+        return getNamedParameterJdbcTemplate()
                 .query(convertEntitiesToString(loadMetadataItemsWithIssuesQuery, entities),
                         MetadataParameters.getParametersWithArrays(entities),
                         MetadataParameters.getRowMapperWithIssues());
-        return items.isEmpty() ? null : items;
     }
 
     public List<EntityVO> searchMetadataByClassAndKey(final AclClass entityClass, final String key) {
