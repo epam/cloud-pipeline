@@ -33,8 +33,6 @@ import com.epam.pipeline.entity.user.PipelineUserEvent;
 import com.epam.pipeline.entity.user.RunnerSid;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.acl.user.UserApiService;
-
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;

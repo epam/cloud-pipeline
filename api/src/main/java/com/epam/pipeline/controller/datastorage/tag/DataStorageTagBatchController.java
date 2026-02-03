@@ -26,14 +26,11 @@ import com.epam.pipeline.entity.datastorage.tag.DataStorageTagDeleteBatchRequest
 import com.epam.pipeline.entity.datastorage.tag.DataStorageTagInsertBatchRequest;
 import com.epam.pipeline.entity.datastorage.tag.DataStorageTagLoadBatchRequest;
 import com.epam.pipeline.entity.datastorage.tag.DataStorageTagUpsertBatchRequest;
-
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
-
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;

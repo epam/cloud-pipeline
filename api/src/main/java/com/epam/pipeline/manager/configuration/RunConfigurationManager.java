@@ -29,7 +29,6 @@ import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.run.ScheduleType;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.pipeline.FolderCrudManager;
-//import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.SecuredEntityManager;
@@ -57,7 +56,6 @@ public class RunConfigurationManager implements SecuredEntityManager {
     private RunConfigurationDao runConfigurationDao;
 
     @Autowired
-    //private FolderManager folderManager;
     private FolderCrudManager folderCrudManager;
 
     @Autowired
