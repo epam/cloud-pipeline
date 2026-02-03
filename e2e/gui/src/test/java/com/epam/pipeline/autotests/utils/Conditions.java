@@ -173,7 +173,7 @@ public interface Conditions {
 
             @Override
             public String toString() {
-                return String.format("%s '%s'", toString(), value);
+                return String.format("%s '%s'", "contains in value", value);
             }
         };
     }
