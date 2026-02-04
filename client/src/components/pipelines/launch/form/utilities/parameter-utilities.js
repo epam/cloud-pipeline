@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -308,7 +308,9 @@ function booleanParameterIsSetToValue (parameters, parameter, value = true) {
 }
 
 function getParameterValue (parameters, parameter, defaultValue = undefined) {
-  const value = (parameters && parameters.hasOwnProperty(parameter) ? parameters[parameter].value : undefined);
+  const value = (parameters && parameters.hasOwnProperty(parameter)
+    ? parameters[parameter].value
+    : undefined);
   if (value === undefined) {
     return defaultValue;
   }
@@ -2018,7 +2020,7 @@ function getVisibleParameters (
       : !parameter.system)
     .map((parameter) => isSystem ? mapSystemParameter(parameter, {
       runDefaultParameters,
-      userInfo,
+      userInfo
     }) : parameter);
 }
 
