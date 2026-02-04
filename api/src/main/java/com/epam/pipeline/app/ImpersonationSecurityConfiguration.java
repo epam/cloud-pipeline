@@ -34,7 +34,6 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.OrRequestMatcher;
 
 @Configuration
-@Order(1)
 public class ImpersonationSecurityConfiguration {
 
     private final String impersonationOperationsRootUrl;
@@ -48,6 +47,7 @@ public class ImpersonationSecurityConfiguration {
         this.impersonationManager = impersonationManager;
     }
 
+    @Order(1)
     @Bean
     public SecurityFilterChain impersonationFilterChain(final HttpSecurity http) throws Exception {
         return http

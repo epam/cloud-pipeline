@@ -27,7 +27,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationProvider;
@@ -48,9 +47,7 @@ import java.util.List;
 import static org.opensaml.saml.saml2.assertion.SAML2AssertionValidationParameters.CLOCK_SKEW;
 import static org.opensaml.saml.saml2.assertion.SAML2AssertionValidationParameters.STMT_AUTHN_MAX_TIME;
 
-@Order(3)
 @Configuration
-@EnableWebSecurity
 public class SAMLSecurityConfiguration {
 
     private static final int RESPONSE_SKEW = 1200;
@@ -97,6 +94,7 @@ public class SAMLSecurityConfiguration {
         };
     }
 
+    @Order(3)
     @Bean
     public SecurityFilterChain samlFilterChain(final HttpSecurity http) throws Exception {
         final var relyingPartyRegistrationRepository = relyingPartyRegistrationRepository();
