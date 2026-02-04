@@ -17,19 +17,25 @@
 package com.epam.pipeline.app;
 
 import com.epam.pipeline.entity.user.DefaultRoles;
+import com.epam.pipeline.security.UserContext;
+import com.epam.pipeline.security.saml.SAMLUserDetailsService;
 import com.epam.pipeline.security.saml.SamlRelyingPartyRegistrationBuilder;
-import com.epam.pipeline.security.saml.SamlResponseAuthenticationConverter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.session.DefaultCookieSerializerCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.saml2.provider.service.authentication.DefaultSaml2AuthenticatedPrincipal;
 import org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationProvider;
+import org.springframework.security.saml2.provider.service.authentication.Saml2Authentication;
 import org.springframework.security.saml2.provider.service.registration.InMemoryRelyingPartyRegistrationRepository;
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
@@ -43,11 +49,13 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import static org.opensaml.saml.saml2.assertion.SAML2AssertionValidationParameters.CLOCK_SKEW;
 import static org.opensaml.saml.saml2.assertion.SAML2AssertionValidationParameters.STMT_AUTHN_MAX_TIME;
 
 @Configuration
+@Slf4j
 public class SAMLSecurityConfiguration {
 
     private static final int RESPONSE_SKEW = 1200;
@@ -56,7 +64,7 @@ public class SAMLSecurityConfiguration {
     private final String acsEndpoint;
     private final boolean logoutInvalidateSession;
     private final String logoutEndpoint;
-    private final SamlResponseAuthenticationConverter responseAuthenticationConverter;
+    private final SAMLUserDetailsService userDetailsService;
     private final SamlRelyingPartyRegistrationBuilder relyingPartyRegistrationBuilder;
     private final String[] anonymousResources;
     private final List<String> excludeScripts;
@@ -68,7 +76,7 @@ public class SAMLSecurityConfiguration {
             @Value("${saml.sso.acs.endpoint:/saml/SSO}") final String acsEndpoint,
             @Value("${saml.logout.invalidate.session:false}") final boolean logoutInvalidateSession,
             @Value("${saml.logout.endpoint:/saml/logout}") final String logoutEndpoint,
-            final SamlResponseAuthenticationConverter responseAuthenticationConverter,
+            final SAMLUserDetailsService userDetailsService,
             final SamlRelyingPartyRegistrationBuilder relyingPartyRegistrationBuilder,
             @Value("${api.security.anonymous.urls:/restapi/route}") final String[] anonymousResources,
             @Value("#{'${api.security.public.urls}'.split(',')}") final List<String> excludeScripts,
@@ -78,7 +86,7 @@ public class SAMLSecurityConfiguration {
         this.acsEndpoint = acsEndpoint;
         this.logoutInvalidateSession = logoutInvalidateSession;
         this.logoutEndpoint = logoutEndpoint;
-        this.responseAuthenticationConverter = responseAuthenticationConverter;
+        this.userDetailsService = userDetailsService;
         this.relyingPartyRegistrationBuilder = relyingPartyRegistrationBuilder;
         this.anonymousResources = anonymousResources;
         this.excludeScripts = excludeScripts;
@@ -158,7 +166,7 @@ public class SAMLSecurityConfiguration {
     @Bean
     public OpenSaml4AuthenticationProvider samlAuthenticationProvider() {
         final var authenticationProvider = new OpenSaml4AuthenticationProvider();
-        authenticationProvider.setResponseAuthenticationConverter(responseAuthenticationConverter::covert);
+        authenticationProvider.setResponseAuthenticationConverter(this::convertSAMLResponse);
         authenticationProvider.setAssertionValidator(OpenSaml4AuthenticationProvider
                 .createDefaultAssertionValidatorWithParameters(params -> {
                     params.put(CLOCK_SKEW, Duration.ofSeconds(RESPONSE_SKEW));
@@ -178,6 +186,25 @@ public class SAMLSecurityConfiguration {
         final var handler = new SimpleUrlLogoutSuccessHandler();
         handler.setDefaultTargetUrl("/");
         return handler;
+    }
+
+    @Nullable
+    private UsernamePasswordAuthenticationToken convertSAMLResponse(
+            final OpenSaml4AuthenticationProvider.ResponseToken responseToken) {
+        final Saml2Authentication authentication = OpenSaml4AuthenticationProvider
+                .createDefaultResponseAuthenticationConverter()
+                .convert(responseToken);
+        if (Objects.isNull(authentication)) {
+            log.debug("Cannot parse SAML2 response.");
+            return null;
+        }
+        final var credential = (DefaultSaml2AuthenticatedPrincipal) authentication.getPrincipal();
+        final UserContext userContext = userDetailsService.loadUserBySAML(credential);
+
+        final var authenticationToken = new UsernamePasswordAuthenticationToken(
+                userContext, authentication.getSaml2Response(), userContext.getAuthorities());
+        authenticationToken.setDetails(responseToken.getToken().getDetails());
+        return authenticationToken;
     }
 
     private RequestMatcher getFullRequestMatcher() {

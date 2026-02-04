@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,12 +25,8 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.authentication.AbstractAuthenticationToken;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.saml2.provider.service.authentication.DefaultSaml2AuthenticatedPrincipal;
-import org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationProvider;
-import org.springframework.security.saml2.provider.service.authentication.Saml2Authentication;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -42,8 +38,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
-@Component
-public class SamlResponseAuthenticationConverter {
+@Service
+public class SAMLUserDetailsService {
 
     private static final String ATTRIBUTES_DELIMITER = "=";
 
@@ -54,7 +50,7 @@ public class SamlResponseAuthenticationConverter {
     private final UserManager userManager;
     private final UserAccessService accessService;
 
-    public SamlResponseAuthenticationConverter(
+    public SAMLUserDetailsService(
             @Value("${saml.authorities.attribute.names: null}") final List<String> authorities,
             @Value("#{'${saml.user.attributes}'.split(',')}") final Set<String> samlAttributes,
             @Value("${saml.user.blocked.attribute: }") final String blockedAttribute,
@@ -69,27 +65,9 @@ public class SamlResponseAuthenticationConverter {
         this.accessService = accessService;
     }
 
-    public AbstractAuthenticationToken covert(final OpenSaml4AuthenticationProvider.ResponseToken responseToken) {
-        final Saml2Authentication authentication = OpenSaml4AuthenticationProvider
-                .createDefaultResponseAuthenticationConverter()
-                .convert(responseToken);
-        if (Objects.isNull(authentication)) {
-            log.debug("Cannot parse SAML2 response.");
-            return null;
-        }
-        final var principal = (DefaultSaml2AuthenticatedPrincipal) authentication.getPrincipal();
-        final Map<String, List<Object>> credentials = principal.getAttributes();
-        final UserContext userContext = loadUserBySAML(credentials, principal);
-
-        final var authenticationToken = new UsernamePasswordAuthenticationToken(
-                userContext, authentication.getSaml2Response(), userContext.getAuthorities());
-        authenticationToken.setDetails(responseToken.getToken().getDetails());
-        return authenticationToken;
-    }
-
-    private UserContext loadUserBySAML(final Map<String, List<Object>> credentials,
-                                       final DefaultSaml2AuthenticatedPrincipal principal) {
-        final String userName = principal.getName().toUpperCase();
+    public UserContext loadUserBySAML(final DefaultSaml2AuthenticatedPrincipal credential) {
+        final String userName = credential.getName().toUpperCase();
+        final Map<String, List<Object>> credentials = credential.getAttributes();
         final Map<String, String> attributes = readAttributes(credentials);
         final List<String> groups = readAuthorities(credentials);
         final UserContext userContext = accessService.parseUser(userName, groups, attributes);

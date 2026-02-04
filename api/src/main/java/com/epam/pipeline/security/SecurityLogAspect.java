@@ -27,7 +27,7 @@ import org.aspectj.lang.annotation.Before;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-//import org.springframework.security.saml.SAMLCredential;
+import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticatedPrincipal;
 import org.springframework.stereotype.Component;
 
 @Aspect
@@ -75,7 +75,7 @@ public class SecurityLogAspect {
             "|| execution(* com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycle*Manager.delete*(..))";
 
     public static final String AUTHORIZATION_RELATED_METHODS_POINTCUT =
-            "execution(* com.epam.pipeline.security.saml.SAMLUserDetailsServiceImpl.loadUserBySAML(..)) " +
+            "execution(* com.epam.pipeline.security.saml.SAMLUserDetailsService.loadUserBySAML(..)) " +
                     "|| execution(* com.epam.pipeline.security.saml.SAMLProxyAuthenticationProvider.authenticate(..))" +
                     "|| execution(* com.epam.pipeline.security.jwt.JwtFilterAuthenticationFilter.doFilterInternal(..))";
 
@@ -124,13 +124,13 @@ public class SecurityLogAspect {
         }
     }
 
-    /*@Before(value = "execution(* com.epam.pipeline.security.saml.SAMLUserDetailsServiceImpl.loadUserBySAML(..))" +
+    @Before(value = "execution(* com.epam.pipeline.security.saml.SAMLUserDetailsService.loadUserBySAML(..)) " +
             "&& args(credential,..)")
-    public void addUserInfoFromSAML(final JoinPoint joinPoint, final SAMLCredential credential) {
+    public void addUserInfoFromSAML(final JoinPoint joinPoint, final Saml2AuthenticatedPrincipal credential) {
         if (credential != null) {
-            ThreadContext.put(KEY_USER, credential.getNameID().getValue().toUpperCase());
+            ThreadContext.put(KEY_USER, credential.getName().toUpperCase());
         }
-    }*/
+    }
 
     @Before(value = "execution(* com.epam.pipeline.security.jwt.JwtTokenVerifier.readClaims(..)) && args(token,..)")
     public void addUserInfoWhileAuthByJWT(final JoinPoint joinPoint, String token) {
