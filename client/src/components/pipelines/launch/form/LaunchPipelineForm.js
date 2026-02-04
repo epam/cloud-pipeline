@@ -863,7 +863,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   }
 
   get estimatedPriceSectionVisible () {
-    const {uiNavigation} = this.props;
+    const {uiNavigation, editConfigurationMode, isDetachedConfiguration} = this.props;
+    if (editConfigurationMode || isDetachedConfiguration) {
+      return true;
+    }
     const {pipeline} = this.state;
     const {tools, pipelines} = uiNavigation.utils.estimatedPriceVisible();
     if (pipeline) {
