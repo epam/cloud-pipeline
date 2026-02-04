@@ -85,6 +85,11 @@ public class NavigationHomeAO implements AccessObject<NavigationHomeAO> {
         return this;
     }
 
+    public NavigationHomeAO checkEndpointsLinkNotOnServicesPanel(String endpoint) {
+        get(SERVICES).find(byText(endpoint)).shouldNotBe(visible);
+        return this;
+    }
+
     public NavigationHomeAO checkServiceToolPath(String endpoint, String registry,
                                                  String group, String name, String runId) {
         serviceCardByRunId(runId).shouldHave(text(registry), text(group), text(name), text(endpoint));
@@ -92,7 +97,7 @@ public class NavigationHomeAO implements AccessObject<NavigationHomeAO> {
     }
 
     private SelenideElement serviceCardByRunId(String runId) {
-        return get(SERVICES).find(byText(format("pipeline-%s", runId))).closest("div[@class='ant-card-body']");
+        return get(SERVICES).find(byText(format("pipeline-%s", runId))).ancestor(".ant-card-body");
     }
 
     public ToolPageAO openEndpointLink(String endpoint, String runId) {

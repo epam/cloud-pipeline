@@ -26,6 +26,7 @@ import static com.epam.pipeline.autotests.utils.C.DEFAULT_CLOUD_REGION;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import static com.epam.pipeline.autotests.utils.Utils.refresh;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -52,9 +53,11 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
     private String userGroup = C.ROLE_USER;
     private int timeout = C.SHARING_TIMEOUT;
 
-    @BeforeMethod
+    @AfterMethod
     public void openPage() {
         open(C.ROOT_ADDRESS);
+        logout();
+        loginAs(admin);
     }
 
     @Test
@@ -94,8 +97,7 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
     @Test(dependsOnMethods = {"validationOfFriendlyURL"})
     @TestCase({"EPMCMBIBPC-2678"})
     public void shareToolRunWithUser() {
-        try {
-            runsMenu()
+             runsMenu()
                     .showLog(runID)
                     .shareWithUser(user.login, false)
                     .validateShareLink(user.login);
@@ -121,17 +123,11 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
             open(endpointsLink, "", user.login, user.password);
             new ToolPageAO(endpointsLink)
                     .assertPageTitleIs("401 Authorization Required");
-        } finally {
-            open(C.ROOT_ADDRESS);
-            logout();
-            loginAs(admin);
-        }
     }
 
     @Test(dependsOnMethods = {"validationOfFriendlyURL"})
     @TestCase({"EPMCMBIBPC-2679"})
     public void shareToolRunWithUserGroup() {
-        try {
             runsMenu()
                     .log(getRunId(), log -> log
                             .shareWithGroup(userGroup)
@@ -161,17 +157,11 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
             refresh();
             new ToolPageAO(endpointsLink)
                     .assertPageTitleIs("401 Authorization Required");
-        } finally {
-            open(C.ROOT_ADDRESS);
-            logout();
-            loginAs(admin);
-        }
     }
 
     @Test(dependsOnMethods = {"validationOfFriendlyURL"})
     @TestCase({"EPMCMBIBPC-2680"})
     public void displayingSharingToolAtServicesPanel() {
-        try {
             runsMenu()
                     .showLog(runID)
                     .shareWithUser(user.login, false)
@@ -207,18 +197,12 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
                     .markCheckboxByName("Services")
                     .ok()
                     .ensureVisible(SERVICES)
-                    .checkNoServicesLabel();
-        } finally {
-            open(C.ROOT_ADDRESS);
-            logout();
-            loginAs(admin);
-        }
+                    .checkEndpointsLinkNotOnServicesPanel(runID);
     }
 
     @Test(dependsOnMethods = {"validationOfFriendlyURL"})
     @TestCase({"EPMCMBIBPC-3179"})
     public void shareSSHSession() {
-        try {
             navigationMenu()
                     .settings()
                     .switchToPreferences()
@@ -267,10 +251,5 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
                     .ensureVisible(SERVICES)
                     .checkEndpointsLinkOnServicesPanel(name[name.length - 1])
                     .checkSSHLinkIsNotDisplayedOnServicesPanel(runID);
-        } finally {
-            open(C.ROOT_ADDRESS);
-            logout();
-            loginAs(admin);
-        }
     }
 }
