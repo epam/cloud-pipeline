@@ -863,11 +863,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   }
 
   get estimatedPriceSectionVisible () {
-    const {
-      'estimates-visible': estimatesVisible = true,
-      'estimated-price-visible': estimatedPriceSectionVisible = estimatesVisible
-    } = this.launchFormUserPreferences || {};
-    return `${estimatedPriceSectionVisible}`.toLowerCase() === 'true';
+    const {uiNavigation} = this.props;
+    const {pipeline} = this.state;
+    const {tools, pipelines} = uiNavigation.utils.estimatedPriceVisible();
+    if (pipeline) {
+      return pipelines;
+    }
+    return tools;
   }
 
   get currentDetachedConfiguration () {
