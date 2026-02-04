@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ import {action, computed, observable} from 'mobx';
 import Pages from './pages';
 import NavigationItems from './navigation-items';
 import MetadataMultiLoad from '../../models/metadata/MetadataMultiLoad';
+import {estimatedPriceVisible} from './utils';
 
 const USER_CLASS = 'PIPELINE_USER';
 const ROLE_CLASS = 'ROLE';
@@ -429,6 +430,13 @@ class UINavigation {
         .then(() => resolve(this.searchDocumentTypes));
     });
   };
+
+  @computed
+  get utils () {
+    return {
+      estimatedPriceVisible: () => estimatedPriceVisible(this.launchForm)
+    };
+  }
 
   pageIsUnavailable (pageKey) {
     return !this.navigationItems.find(item => item.key === pageKey);
