@@ -191,7 +191,8 @@ function getFormItemClassName (rootClass, key) {
   'preferences',
   'dockerRegistries',
   'dataStorageAvailable',
-  'uiNavigation'
+  'uiNavigation',
+  'pipelinesLibrary'
 )
 @localization.localizedComponent
 @roleModel.authenticationInfo
@@ -824,6 +825,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       return this.currentCloudRegion.provider;
     }
     return null;
+  }
+
+  @computed
+  get pipelinesLibrary () {
+    if (this.props.pipelinesLibrary.loaded) {
+      return this.props.pipelinesLibrary.value || {};
+    }
+    return {};
   }
 
   get launchFormUserPreferences () {
@@ -5482,7 +5491,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   updateFromProps = () => {
     const {
       parameters: payload,
-      detached = false
+      detached = false,
+      pipelinesLibrary
     } = this.props;
     const {
       pipeline
@@ -5499,8 +5509,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             pipelineObject: pipeline
           }
         );
+        await pipelinesLibrary.fetchIfNeededOrWait();
         parametersMetadata = await parameterUtilities
-          .getMetadataForParameters(params, this.state.pipeline);
+          .getMetadataForParameters(params, pipeline, this.pipelinesLibrary);
       } catch (error) {
         console.log(`error initializing parameters: ${error.message}`);
       }
