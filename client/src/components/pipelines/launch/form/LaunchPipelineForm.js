@@ -5509,6 +5509,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             pipelineObject: pipeline
           }
         );
+        await pipelinesLibrary.fetchIfNeededOrWait();
         parametersMetadata = await parameterUtilities
           .getMetadataForParameters(params, pipeline, this.pipelinesLibrary);
       } catch (error) {
