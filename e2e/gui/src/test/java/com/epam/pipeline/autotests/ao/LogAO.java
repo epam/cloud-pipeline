@@ -677,9 +677,10 @@ public class LogAO implements AccessObject<LogAO> {
 
         public void addGroupToShare(final String groupName) {
             click(ADD_GROUP);
-            setValue($(byClassName("ant-select-search__field")), groupName).enter();
-            click(byXpath(".//*[contains(@aria-labelledby, 'rcDialogTitle1') and " +
-                    ".//*[contains(@class, 'ant-modal-footer')]]//button[. =  'OK']"));
+            SelenideElement selectGroupPopup = Utils.getPopupByTitle("Select group");
+            setValue(selectGroupPopup.$(byClassName("ant-select-search__field")), groupName);
+            $(byClassName("ant-select-dropdown-menu")).$(byText(groupName)).click();
+            selectGroupPopup.find(button("OK")).shouldBe(visible).click();
             click(OK);
         }
 

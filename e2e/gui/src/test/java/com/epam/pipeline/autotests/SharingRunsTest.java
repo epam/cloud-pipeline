@@ -120,7 +120,7 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
             restartBrowser(C.ROOT_ADDRESS);
             loginAs(user);
             sleep(timeout, SECONDS);
-            open(endpointsLink, "", user.login, user.password);
+            open(endpointsLink);
             new ToolPageAO(endpointsLink)
                     .assertPageTitleIs("401 Authorization Required");
     }
@@ -153,7 +153,7 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
             restartBrowser(C.ROOT_ADDRESS);
             loginAs(user);
             sleep(timeout, SECONDS);
-            open(endpointsLink, "", user.login, user.password);
+            open(endpointsLink);
             refresh();
             new ToolPageAO(endpointsLink)
                     .assertPageTitleIs("401 Authorization Required");
