@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests;
 
+import static com.codeborne.selenide.Selenide.open;
 import com.epam.pipeline.autotests.ao.UserManagementAO.UsersTabAO.UserEntry.EditUserPopup;
 import com.epam.pipeline.autotests.ao.ToolDescription.InstanceManagementSectionAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
@@ -137,7 +138,9 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
 
     @AfterMethod(alwaysRun = true)
     public void logoutUser() {
+        open(C.ROOT_ADDRESS);
         logout();
+        loginAs(admin);
     }
 
     @Test
@@ -675,7 +678,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                 .settings()
                 .switchToUserManagement()
                 .switchToUsers()
-                .searchForUserEntry(user)
+                .searchUserEntry(user)
                 .edit();
     }
 
