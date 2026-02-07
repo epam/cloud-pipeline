@@ -257,7 +257,7 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public LogAO waitForEndpointLink() {
-        get(ENDPOINT).shouldBe(appears, ofMillis(SSH_LINK_APPEARING_TIMEOUT));
+        get(ENDPOINT).shouldBe(visible, ofMillis(SSH_LINK_APPEARING_TIMEOUT));
         return this;
     }
 
