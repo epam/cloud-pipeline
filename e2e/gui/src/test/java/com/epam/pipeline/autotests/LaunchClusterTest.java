@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests;
 
+import static com.codeborne.selenide.Selenide.open;
 import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.PipelineRunFormAO;
 import com.epam.pipeline.autotests.ao.Template;
@@ -98,7 +99,9 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
 
     @BeforeMethod
     public void refreshPage() {
-        refresh();
+        open(C.ROOT_ADDRESS);
+        logout();
+        loginAs(admin);
     }
 
     @Test
