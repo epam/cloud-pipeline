@@ -478,6 +478,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
     @Test
     @TestCase({"EPMCMBIBPC-3153"})
     public void hybridAutoScaledCluster() {
+        String[] runID = new String[2];
         String cpu = library()
                 .createPipeline(Template.SHELL, getPipelineName())
                 .clickOnPipeline(getPipelineName())
@@ -494,18 +495,18 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .setCommand(format("qsub -b y -pe local %s sleep 15m && sleep infinity", Integer.parseInt(cpu) + 1))
                 .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
                 .launch(this)
-                .shouldContainRun(getPipelineName(), getRunId())
-                .showLog(getRunId())
+                .shouldContainRun(runID[1] = getPipelineName(), runID[0] = getRunId())
+                .showLog(runID[0])
                 .expandTab(PARAMETERS)
                 .ensure(configurationParameter("CP_CAP_AUTOSCALE", "true"), exist)
                 .ensure(configurationParameter("CP_CAP_AUTOSCALE_WORKERS", "1"), exist)
                 .ensure(configurationParameter("CP_CAP_AUTOSCALE_HYBRID", "true"), exist)
                 .waitForSshLink()
                 .ssh(shell -> shell
-                        .waitUntilTextAppears(getPipelineName(), getRunId())
+                        .waitUntilTextAppears(runID[1], runID[0])
                         .execute("qhost")
                         .assertOutputContains("HOSTNAME", "global", format("%s-%s lx-amd64",
-                                getPipelineName().toLowerCase(), getRunId()))
+                                runID[1].toLowerCase(), runID[0]))
                         .sleep(20, SECONDS)
                         .execute("qstat")
                         .assertPageContains(sleepCommand, " 1 ")
@@ -515,13 +516,13 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
         String nestedRunID = navigationMenu()
                                 .runs()
                                 .activeRuns()
-                                .showLog(getRunId())
+                                .showLog(runID[0])
                                 .waitForSshLink()
                                 .waitForNestedRunsLink()
                                 .getNestedRunID(1);
         runsMenu()
                 .activeRuns()
-                .showLog(getRunId())
+                .showLog(runID[0])
                 .clickOnNestedRunLink()
                 .instanceParameters(instance ->
                         instance.ensure(TYPE, text(C.DEFAULT_INSTANCE.substring(0, C.DEFAULT_INSTANCE.indexOf("."))))
@@ -529,11 +530,10 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 )
                 .waitForSshLink()
                 .ssh(shell -> shell
-                        .waitUntilTextAppears(getPipelineName(), getRunId())
+                        .waitUntilTextAppears(runID[1], runID[0])
                         .execute("qhost")
                         .assertOutputContains("HOSTNAME", "global", format("%s-%s lx-amd64",
-                                getPipelineName().toLowerCase(), getRunId()), format("%s-%s",
-                                getPipelineName().toLowerCase(), nestedRunID))
+                                runID[1].toLowerCase(), runID[0]), format("pipeline-%s", nestedRunID))
                         .sleep(20, SECONDS)
                         .execute("qstat")
                         .assertPageContains(sleepCommand, " r ")
