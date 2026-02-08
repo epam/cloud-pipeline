@@ -379,6 +379,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .showLog(getRunId())
                 .expandTab(PARAMETERS)
                 .ensure(configurationParameter("CP_CAP_SPARK", "true"), exist)
+                .waitForSshLink()
                 .waitForEndpointLink()
                 .clickTaskWithName("SparkMasterSetup")
                 .ensure(log(), containsMessages("Spark master is started"))
