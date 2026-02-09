@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import React from 'react';
 import {isObservableArray} from 'mobx';
 import runDefaultParameters from '../../../../../models/pipelines/PipelineRunDefaultParameters';
 import preferences from '../../../../../models/preferences/PreferencesLoad';
@@ -1284,6 +1285,51 @@ function validateParametersIteration (parameters, rawEdit = false) {
 }
 
 /**
+ * Parse validators module from string
+ * @param {string} moduleCode - The module code string
+ * @returns {Object} - Validators map: {paramName: validatorFn}
+ */
+function parseCustomValidatorsModule (moduleCode) {
+  if (!moduleCode || typeof moduleCode !== 'string') {
+    console.warn('parseCustomValidatorsModule: invalid module code provided');
+    return {};
+  }
+  try {
+    const moduleExports = {};
+    // eslint-disable-next-line no-new-func
+    const moduleFunction = new Function(
+      'module',
+      'exports',
+      'require',
+      `
+      ${moduleCode}
+      return module.exports;
+      `
+    );
+    const validators = moduleFunction(
+      {exports: moduleExports},
+      moduleExports,
+      (moduleName) => {
+        throw new Error(`require() is not allowed. Attempted to require: ${moduleName}`);
+      }
+    );
+    if (!validators || typeof validators !== 'object') {
+      console.error('Validators module must export an object, got:', typeof validators);
+      return {};
+    }
+    Object.keys(validators).forEach(key => {
+      if (typeof validators[key] !== 'function') {
+        console.error(`Invalid validator ${key}, must be function`);
+      }
+    });
+    return validators;
+  } catch (error) {
+    console.error('Failed to parse validators module:', error.message);
+    return {};
+  }
+};
+
+/**
  * Applies custom validation functions to parameters.
  * @param {Object.<string, function>} customValidators
  * @param {Parameter[]} parameters
@@ -1291,37 +1337,75 @@ function validateParametersIteration (parameters, rawEdit = false) {
  * @returns {Promise<{parameters: Parameter[], changed: boolean}>}
  */
 async function customValidate (customValidators, parameters, opts) {
+  if (!customValidators || typeof customValidators !== 'object') {
+    console.warn('customValidate: invalid customValidators provided');
+    return {parameters, changed: false};
+  }
   const result = parameters.slice();
   let changed = false;
   const promises = parameters
-    .filter(({name}) => {
+    .filter(({value, name}) => {
       const validator = customValidators[name];
-      return typeof validator === 'function';
+      return typeof validator === 'function' && !!value;
     })
     .map((parameter) => {
       return new Promise(async (resolve) => {
-        const validator = customValidators[parameter.name];
-        const validationResult = await validator(parameter, opts);
-        console.log('validationResult', validationResult)
-        if (validationResult?.error) {
+        try {
+          const validator = customValidators[parameter.name];
+          const validationResult = await validator(parameter, opts);
+          if (validationResult?.error) {
+            resolve({
+              ...parameter,
+              error: validationResult.error,
+              warning: undefined,
+              valid: false
+            });
+          } else if (validationResult?.warning) {
+            resolve({
+              ...parameter,
+              error: undefined,
+              warning: validationResult.warning,
+              valid: true
+            });
+          } else {
+            resolve({
+              ...parameter,
+              error: undefined,
+              warning: undefined
+            });
+          }
+        } catch (error) {
+          console.error(
+            `Custom validator for "${parameter.name}" failed:`,
+            error.message
+          );
+          console.error('Stack trace:', error.stack);
           resolve({
             ...parameter,
-            error: validationResult.error
+            error: undefined,
+            warning: 'Unable to validate parameter',
+            valid: true
           });
         }
-        resolve(parameter);
       });
     });
   const validationResults = await Promise.all(promises);
   validationResults.forEach(parameter => {
     const idx = result.findIndex(r => r.name === parameter.name);
-    const shouldUpdate = parameter.error !== result[idx].error;
-    if (shouldUpdate) {
-      changed = true;
-      result.splice(idx, 1, parameter);
+    if (idx >= 0) {
+      const shouldUpdate = parameter.error !== result[idx].error ||
+        parameter.warning !== result[idx].warning ||
+        parameter.valid !== result[idx].valid;
+      if (shouldUpdate) {
+        changed = true;
+        result.splice(idx, 1, parameter);
+      }
     }
   });
-  return {parameters: result, changed};
+  return {
+    parameters: result,
+    changed
+  };
 }
 
 /**
@@ -1864,28 +1948,27 @@ export function parametersModified (parameters, initialParameters) {
   return modified;
 }
 
-const customValidateFnMock = `
-async function validate (parameter, options) {
-  const {DataStorageItemSize} = options.api;
-  const request = new DataStorageItemSize();
-  await request.send([parameter.value]);
-  const response = request.value
-    ? request.value[0] ?? {}
-    : {};
-  console.log('response', response)
-  console.log('options', options)
-  console.log('parameter', parameter)
-  console.log('request', request.value)
-  if (!parameter?.value) {
-    return {};
+/**
+ * Gets warning from parameters
+ * @param {Parameter[]} parameters
+ * @returns {Parameter[]}
+ */
+function getParametersWarning (parameters = []) {
+  const withWarnings = parameters
+    .filter((parameter) => parameter.warning && parameter.warning.trim().length > 0);
+  if (withWarnings.length > 0) {
+    const s = withWarnings.length > 1 ? 's' : '';
+    return (
+      <div>
+        The following parameter{s} {s ? 'have' : 'has a'} warning{s}:
+        {withWarnings.map(p => (<div key={p}>
+          <b>{p.name}</b>: {p.warning}
+        </div>))}
+      </div>
+    );
   }
-  const size = response.size;
-  if (size > 100_000_000) {
-    return {
-      error: "File size is too large for current Node type (mock error)"
-    }
-  }
-}`;
+  return null;
+}
 
 export {
   getParameterValue,
@@ -1906,5 +1989,6 @@ export {
   addSystemParameters,
   hasResolvedValues,
   toggleResolvedValues,
-  customValidateFnMock
+  parseCustomValidatorsModule,
+  getParametersWarning
 };

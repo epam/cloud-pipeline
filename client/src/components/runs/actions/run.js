@@ -662,7 +662,7 @@ export class RunConfirmation extends React.Component {
   };
 
   static propTypes = {
-    warning: PropTypes.string,
+    warning: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
     versionErrors: PropTypes.shape({
       size: PropTypes.shape({
         soft: PropTypes.bool,
@@ -1412,7 +1412,7 @@ class RunSpotConfirmationWithPrice extends React.Component {
       }),
       allowedWarning: PropTypes.string
     }),
-    warning: PropTypes.string,
+    warning: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
     platform: PropTypes.string,
     isSpot: PropTypes.bool,
     isCluster: PropTypes.bool,

@@ -165,6 +165,9 @@ import {
 } from './components/reservation-parameters/utilities';
 import Markdown from '../../../special/markdown';
 import DataStorageItemSize from '../../../../models/dataStorage/DataStorageItemSize';
+import VersionFile from '../../../../models/pipelines/VersionFile';
+import {base64toString} from '../../../../utils/base64';
+import {getStorageFileAccessInfo} from '../../../../utils/object-storage';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -173,8 +176,6 @@ const RUN_CLUSTER_KEY = 'run cluster';
 const CLOUD_PLATFORM_ENVIRONMENT = 'CLOUD_PLATFORM';
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
-
-const VALIDATION_DEBOUNCE_TIMEOUT = 700;
 
 function getFormItemClassName (rootClass, key) {
   if (key) {
@@ -285,6 +286,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   state = {
+    pending: false,
     userTags: {},
     userTagsValidation: [],
     userTagsVisibleTags: [],
@@ -461,7 +463,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   _customValidators = {}
 
   get customValidators () {
-    return this._customValidators;
+    return this._customValidators || {};
   }
 
   @action
@@ -974,6 +976,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     };
 
     this.props.form.validateFields(async (errors, values) => {
+      this.setState({pending: true});
+      const hide = message.loading('Validate parameters...', 0);
+      await this.onCustomValidateParameters();
+      hide();
+      this.setState({pending: false});
       const userTagsValid = await this.validateUserTags(await this.generateLaunchPayload(values));
       const parametersValidationResult = await this.getParametersValidationResult(true);
       const {
@@ -1018,7 +1025,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             values[ADVANCED].hostedApplication,
             this.toolPlatform,
             this.props.parameters.run_as &&
-            this.currentUserName() !== this.props.parameters.run_as
+            this.currentUserName() !== this.props.parameters.run_as,
+            parameterUtilities.getParametersWarning(this.getParameters())
           );
           if (result) {
             this.reset();
@@ -4842,7 +4850,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 dropdownRenderer={dropdownRenderer}
                 dropdownId="launch-metadata"
                 loading={this.props.pending}
-                disabled={this.props.pending}
+                disabled={this.props.pending || this.state.pending}
               >
                 Launch
               </SubmitButton>
@@ -5697,33 +5705,41 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   updateCustomValidators = async () => {
-    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-    await sleep(700);
-    const stringToFunction = (str) => {
-      try {
-        // eslint-disable-next-line no-eval
-        return eval(`(${str})`);
-      } catch (e) {
-        console.error('Invalid validator string: ', e);
+    try {
+      // TODO: get path to validators.js file from configuration ?
+      const request = new VersionFile(
+        this.props.pipeline.id,
+        'src/validators.js',
+        this.state.version
+      );
+      await request.fetch();
+      if (request.error) {
+        console.warn('Failed to load validators file:', request.error);
+        this._customValidators = {};
+        return;
       }
-    };
-    const validatorFn = stringToFunction(parameterUtilities.customValidateFnMock);
-    this._customValidators['input_table_for_preprocessing'] = validatorFn;
-    this.onValidateParameters();
+      if (!request.response) {
+        console.warn('Validators file is empty or not found');
+        this._customValidators = {};
+        return;
+      }
+      const string = base64toString(request.response);
+      if (!string || string.trim() === '') {
+        console.warn('Validators file content is empty');
+        this._customValidators = {};
+        return;
+      }
+      const validators = parameterUtilities.parseCustomValidatorsModule(string);
+      this._customValidators = validators;
+    } catch (e) {
+      console.error('Error updating custom validators:', e.message);
+      this._customValidators = {};
+    }
   };
 
   _validateParametersTimeout;
 
   onValidateParameters = (commitState = undefined) => {
-    if (this._validateParametersTimeout) {
-      clearTimeout(this._validateParametersTimeout);
-    }
-    this._validateParametersTimeout = setTimeout(() => {
-      this._onValidateParameters(commitState);
-    }, VALIDATION_DEBOUNCE_TIMEOUT);
-  };
-
-  _onValidateParameters = async (commitState = undefined) => {
     commitState = commitState || ((st) => {
       if (typeof st === 'function') {
         this.setState(st(this.state));
@@ -5736,40 +5752,24 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     /**
      * @param {ParametersPayload} payload
      */
-    const validationFn = async (payload) => {
+    const validationFn = (payload) => {
       const {parameters} = payload;
       let {
         changed,
-        parameters: preResult
+        parameters: result
       } = parameterUtilities.validateParameters(
         parameters,
         isRawEditEnabled
       );
-      const instanceTypeValue = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
-      const instanceType = this.instanceTypes.find(t => t.name === instanceTypeValue);
-      const opts = {
-        customValidators: this.customValidators,
-        form: this.props.form,
-        instanceType,
-        parameters,
-        api: {
-          DataStorageItemSize
-        }
-      };
-      const {
-        parameters: result,
-        changed: customChanged
-      } = await parameterUtilities.customValidate(this.customValidators, preResult, opts);
       return {
-        changed: customChanged || changed,
+        changed: changed,
         payload: {
           ...payload,
           parameters: result
         }
       };
     };
-    const validations = payloads.map(validationFn);
-    const payloadsValidation = await Promise.all(validations);
+    const payloadsValidation = payloads.map(validationFn);
     const changed = payloadsValidation
       .filter((pv) => pv.changed)
       .map((pv) => pv.payload);
@@ -5785,6 +5785,51 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         ...cur,
         parametersPayloads: updated
       }));
+    }
+  };
+
+  onCustomValidateParameters = async () => {
+    const payloads = this.getParametersPayloads();
+    const validationFn = async (payload) => {
+      const {parameters} = payload;
+      const instanceTypeValue = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
+      const instanceType = this.instanceTypes.find(t => t.name === instanceTypeValue);
+      const opts = {
+        form: this.props.form,
+        instanceType,
+        parameters,
+        api: {
+          DataStorageItemSize,
+          getStorageFileAccessInfo
+        }
+      };
+      const {
+        parameters: result,
+        changed: customChanged
+      } = await parameterUtilities.customValidate(this.customValidators, parameters, opts);
+      return {
+        changed: customChanged,
+        payload: {
+          ...payload,
+          parameters: result
+        }
+      };
+    };
+    const payloadsValidation = await Promise.all(payloads.map(validationFn));
+    const changed = payloadsValidation
+      .filter((pv) => pv.changed)
+      .map((pv) => pv.payload);
+    if (changed.length > 0) {
+      const updated = payloads.slice();
+      for (const p of changed) {
+        const idx = updated.findIndex(c => c.id === p.id);
+        if (idx >= 0) {
+          updated.splice(idx, 1, p);
+        }
+      }
+      this.setState({
+        parametersPayloads: updated
+      });
     }
   };
 
