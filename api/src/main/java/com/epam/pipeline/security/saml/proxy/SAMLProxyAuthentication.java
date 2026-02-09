@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.security.saml;
+package com.epam.pipeline.security.saml.proxy;
 
 import java.util.Collection;
 import java.util.Collections;
 
+import lombok.Getter;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 
@@ -27,6 +28,7 @@ import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
 public class SAMLProxyAuthentication implements Authentication {
+    @Getter
     private String rawSamlResponse;
     private UserContext userContext;
 
@@ -63,9 +65,5 @@ public class SAMLProxyAuthentication implements Authentication {
     @Override
     public String getName() {
         return userContext.getUsername();
-    }
-
-    public String getRawSamlResponse() {
-        return rawSamlResponse;
     }
 }

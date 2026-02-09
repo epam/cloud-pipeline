@@ -17,7 +17,7 @@
 package com.epam.pipeline.security;
 
 import com.auth0.jwt.JWT;
-import com.epam.pipeline.security.saml.SAMLProxyAuthentication;
+import com.epam.pipeline.security.saml.proxy.SAMLProxyAuthentication;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.ThreadContext;
 import org.aspectj.lang.JoinPoint;
