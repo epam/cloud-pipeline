@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import com.epam.pipeline.autotests.utils.TestCase;
 
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
+
 import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.DATE;
 import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.LABEL;
 import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.NAME;

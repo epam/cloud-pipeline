@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import com.epam.pipeline.autotests.AbstractSeveralPipelineRunningTest;
 import com.epam.pipeline.autotests.AbstractSinglePipelineRunningTest;
 import com.epam.pipeline.autotests.ao.popups.ConfigureInternalDNSPopupAO;
 import com.epam.pipeline.autotests.utils.C;
-import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.SelenideElements;
 import com.epam.pipeline.autotests.utils.Utils;
@@ -31,7 +30,6 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 
-import static java.time.Duration.ofMillis;
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchWindowException;
 
@@ -40,9 +38,11 @@ import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
 import static com.codeborne.selenide.Selenide.*;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.visible;
 import static java.lang.String.format;
+import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.cssSelector;
@@ -60,9 +60,12 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             entry(PIPELINE, context().find(byId("launch-form-pipeline-name"))),
             entry(VERSION, context().find(byId("launch-pipeline-form-header"))
                     .find(byText("Version:")).parent().find(byClassName("ant-select-selection"))),
-            entry(TOOL_VERSION, context().find(byClassName("launch-pipeline-form__layout-header")).find(byId("launch-form-pipeline-version"))),
-            entry(ESTIMATED_PRICE, $(byClassName("launch-pipeline-form__layout-header")).find(byText("Estimated price per hour:"))),
-            entry(INFORMATION_ICON, $(byClassName("launch-pipeline-form__layout-header")).find(byClassName("launch-pipeline-form__hint"))),
+            entry(TOOL_VERSION, context().find(byClassName("launch-pipeline-form__layout-header"))
+                    .find(byId("launch-form-pipeline-version"))),
+            entry(ESTIMATED_PRICE, $(byClassName("launch-pipeline-form__layout-header"))
+                    .find(byText("Estimated price per hour:"))),
+            entry(INFORMATION_ICON, $(byClassName("launch-pipeline-form__layout-header"))
+                    .find(byClassName("launch-pipeline-form__hint"))),
             entry(PRICE_TABLE, $(byClassName("ant-popover-placement-bottom"))),
             entry(DISK, context().find(byId("exec.disk"))),
             entry(TIMEOUT, context().find(byId("advanced.timeout"))),

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,10 +24,8 @@ import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.ex.ElementNotFound;
 import com.codeborne.selenide.impl.Alias;
 import com.epam.pipeline.autotests.utils.C;
-import static com.epam.pipeline.autotests.utils.C.ENDPOINT_INITIALIZATION_TIMEOUT;
 import com.epam.pipeline.autotests.utils.Conditions;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
-import static java.time.Duration.ofMillis;
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchWindowException;
 import org.openqa.selenium.SearchContext;
@@ -47,10 +45,12 @@ import static com.codeborne.selenide.Selenide.*;
 import static com.codeborne.selenide.WebDriverRunner.driver;
 import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.utils.C.COMPLETION_TIMEOUT;
-import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
+import static com.epam.pipeline.autotests.utils.C.ENDPOINT_INITIALIZATION_TIMEOUT;
+import static com.epam.pipeline.autotests.utils.C.SSH_APPEARING_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.elementWithText;
 import static java.lang.String.format;
+import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
@@ -61,7 +61,7 @@ import static org.testng.Assert.assertTrue;
 public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
     private static final String GET_LOGS_ERROR = "get_logs_error";
-    private static final long APPEARING_TIMEOUT = C.SSH_APPEARING_TIMEOUT;
+    private static final long APPEARING_TIMEOUT = SSH_APPEARING_TIMEOUT;
 
     private final Condition tableIsEmpty = new Condition("table is empty") {
         @Override
@@ -351,7 +351,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public RunsMenuAO waitUntilPauseButtonAppear(final String runId) {
-        $("#run-" + runId + "-pause-button").shouldBe(appear);
+        $("#run-" + runId + "-pause-button").shouldBe(appear, ofMillis(SSH_APPEARING_TIMEOUT));
         return this;
     }
 

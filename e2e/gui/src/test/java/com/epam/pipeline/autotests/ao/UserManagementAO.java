@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,11 +61,9 @@ import static com.epam.pipeline.autotests.ao.Primitive.STATUS;
 import static com.epam.pipeline.autotests.ao.Primitive.TABLE;
 import static com.epam.pipeline.autotests.ao.Primitive.UNBLOCK;
 import static com.epam.pipeline.autotests.ao.Primitive.USERS_TAB;
-import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
 import static java.lang.String.format;
-import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.openqa.selenium.By.className;
@@ -180,9 +178,6 @@ public class UserManagementAO extends SettingsPageAO {
         public UsersTabAO searchUser(String name) {
             sleep(1, SECONDS);
             clear(SEARCH);
-//            return clickSearch()
-//                    .setSearchName(name)
-//                    .pressEnter();
             clickSearch();
             get(Primitive.SEARCH)
                     .getWrappedElement()

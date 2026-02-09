@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,19 +17,19 @@ package com.epam.pipeline.autotests.utils;
 
 import com.codeborne.selenide.Driver;
 import com.codeborne.selenide.ElementsCollection;
-import static com.codeborne.selenide.Selenide.webdriver;
+import com.codeborne.selenide.impl.Alias;
+import com.codeborne.selenide.impl.CollectionSource;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.function.IntPredicate;
 
 import static com.codeborne.selenide.impl.Alias.NONE;
-import com.codeborne.selenide.impl.Alias;
-import com.codeborne.selenide.impl.CollectionSource;
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebElement;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.screenshot;
+import static com.codeborne.selenide.Selenide.webdriver;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.SECONDS;
 

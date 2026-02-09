@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,7 +51,8 @@ public class SelectLimitMountsPopupAO<PARENT_TYPE>
             entry(OK, context().find(byClassName("ant-btn-primary"))),
             entry(CLEAR_SELECTION, context().find(byClassName("ant-btn-danger"))),
             entry(SELECT_ALL, context().find(byXpath(".//button/span[.='Select all']")).closest("button")),
-            entry(SELECT_ALL_NON_SENSITIVE, context().find(byXpath(".//button/span[.='Select all non-sensitive']")).closest("button")),
+            entry(SELECT_ALL_NON_SENSITIVE, context().find(byXpath(".//button/span[.='Select all non-sensitive']"))
+                    .closest("button")),
             entry(SEARCH_INPUT, context().find(byClassName("ant-input"))),
             entry(TABLE, context().find(byClassName("ant-table-content"))),
             entry(SENSITIVE_STORAGE, context().find(byClassName("ant-alert-message")))

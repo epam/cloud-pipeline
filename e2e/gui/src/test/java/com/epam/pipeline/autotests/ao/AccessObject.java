@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.CollectionCondition;
-import static com.codeborne.selenide.CollectionCondition.size;
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.Selenide;
@@ -44,8 +43,8 @@ import static java.time.Duration.ofMillis;
 import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
 
+import static com.codeborne.selenide.CollectionCondition.size;
 import static com.codeborne.selenide.Condition.appear;
-import static com.codeborne.selenide.Condition.appears;
 import static com.codeborne.selenide.Condition.disabled;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exist;
@@ -432,7 +431,7 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
     }
 
     default ELEMENT_TYPE messageShouldAppear(String message, long timeout) {
-        $(withText(message)).shouldBe(appears, ofMillis(timeout));
+        $(withText(message)).shouldBe(appear, ofMillis(timeout));
         return (ELEMENT_TYPE) this;
     }
 

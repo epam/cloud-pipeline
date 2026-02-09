@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -150,9 +150,6 @@ public class DnsHostsManagementTest extends AbstractSeveralPipelineRunningTest
         if (!matcher.find()) {
             final String screenName = format("DnsHostsManagementTest_%s", Utils.randomSuffix());
             screenshot(screenName);
-//            throw new ElementNotFound(driver(), new Alias($(byClassName("log__run-title")).getAlias()),
-//                    format("Could not get run IP from message: %s. Screenshot: %s.png", logMessage,
-//                    screenName), exist);
         }
         return matcher.group();
     }
