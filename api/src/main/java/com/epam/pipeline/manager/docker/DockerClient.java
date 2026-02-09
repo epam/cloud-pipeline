@@ -195,9 +195,7 @@ public class DockerClient {
      */
     public List<ImageHistoryLayer> getImageHistory(final DockerRegistry registry, final String imageName,
                                                    final String tag) {
-        final ManifestV2 manifestV2 = getManifest(registry, imageName, tag)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        String.format("Cannot get manifest for image %s/%s", imageName, tag)));
+        final ManifestV2 manifestV2 = getManifestV2(registry, imageName, tag);
         final RawImageDescriptionV2 rawImage = getRawImageDescription(manifestV2, registry, imageName);
         final List<HistoryEntryV2> history = rawImage.getHistory();
         final Map<String, Long> layersSize = getLayersSize(registry, imageName, tag);
@@ -221,6 +219,12 @@ public class DockerClient {
     public Map<String, String> getImageLabels(final DockerRegistry registry, final String imageName, final String tag) {
         final RawImageDescriptionV2 rawImage = getRawImageDescription(registry, imageName, tag);
         return DockerParsingUtils.getLabels(rawImage);
+    }
+
+    private ManifestV2 getManifestV2(final DockerRegistry registry, final String imageName, final String tag) {
+        return getManifest(registry, imageName, tag)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        String.format("Cannot get manifest for image %s/%s", imageName, tag)));
     }
 
     private Map<String, Long> getLayersSize(final DockerRegistry registry, final String imageName, final String tag) {
@@ -305,9 +309,7 @@ public class DockerClient {
 
     private RawImageDescriptionV2 getRawImageDescription(final DockerRegistry registry, final String imageName,
                                                          final String tag) {
-        final ManifestV2 manifestV2 = getManifest(registry, imageName, tag)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        String.format("Cannot get manifest for image %s/%s", imageName, tag)));
+        final ManifestV2 manifestV2 = getManifestV2(registry, imageName, tag);
         return getRawImageDescription(manifestV2, registry, imageName);
     }
 
@@ -369,9 +371,7 @@ public class DockerClient {
                                             final String tag) {
         final ToolVersion attributes = new ToolVersion();
         attributes.setVersion(tag);
-        final ManifestV2 manifestV2 = getManifest(registry, imageName, tag)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        String.format("Cannot get manifest for image %s/%s", imageName, tag)));
+        final ManifestV2 manifestV2 = getManifestV2(registry, imageName, tag);
         attributes.setDigest(manifestV2.getDigest());
         attributes.setSize(manifestV2.getLayers()
                 .stream()

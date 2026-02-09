@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,25 +16,21 @@
 
 package com.epam.pipeline.entity.docker;
 
-import com.epam.pipeline.utils.DockerDateUtils;
-import java.util.Date;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Setter
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class ImageDescription {
-    private Long registryId;
-    private String image;
-    private String tag;
-    private Date createdDate;
-
-    public ImageDescription(RawImageDescriptionV2 rawImage) {
-        this.registryId = rawImage.getRegistry();
-        this.image = rawImage.getImage();
-        this.tag = rawImage.getTag();
-        this.createdDate = DockerDateUtils.getEarliestDate(rawImage);
-    }
+public class HistoryEntryV2 {
+    @JsonProperty("created")
+    private String created;
+    @JsonProperty("created_by")
+    private String createdBy;
+    @JsonProperty("empty_layer")
+    private boolean emptyLayer;
 }
