@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,8 @@ import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.entity.docker.ImageDescription;
 import com.epam.pipeline.entity.docker.ImageHistoryLayer;
 import com.epam.pipeline.entity.docker.ManifestV2;
-import com.epam.pipeline.entity.docker.RawImageDescription;
+import com.epam.pipeline.entity.docker.HistoryEntryV2;
+import com.epam.pipeline.entity.docker.RawImageDescriptionV2;
 import com.epam.pipeline.entity.docker.RegistryListing;
 import com.epam.pipeline.entity.docker.TagsListing;
 import com.epam.pipeline.entity.docker.ToolVersion;
@@ -59,6 +60,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLHandshakeException;
 import javax.xml.ws.http.HTTPException;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -76,7 +78,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.util.ArrayList;
 import java.util.stream.Stream;
 
 /**
@@ -90,7 +92,7 @@ public class DockerClient {
     // TODO use docker registry paging API to list images
     private static final String LIST_REGISTRY_URL = "https://%s/v2/_catalog?n=1000";
     private static final String IMAGE_DESCRIPTION_URL = "https://%s/v2/%s/manifests/%s";
-    private static final String LAYER_DELETE_URL = "https://%s/v2/%s/blobs/%s";
+    private static final String BLOBS_URL = "https://%s/v2/%s/blobs/%s";
 
     private static final String V2_MANIFEST_FORMAT = "application/vnd.docker.distribution.manifest.v2+json";
     // in ms
@@ -111,7 +113,6 @@ public class DockerClient {
         this.token = token;
         initRestTemplate(mapper);
     }
-
 
     public DockerClient(DockerRegistry registry, ObjectMapper mapper) {
         this(registry, mapper, null);
@@ -179,9 +180,9 @@ public class DockerClient {
         }
     }
 
-
-    public ImageDescription getImageDescription(DockerRegistry registry, String imageName, String tag) {
-        RawImageDescription rawImage = getRawImageDescription(registry, imageName, tag, getAuthHeaders());
+    public ImageDescription getImageDescription(final DockerRegistry registry,
+                                                final String imageName, final String tag) {
+        final RawImageDescriptionV2 rawImage = getRawImageDescription(registry, imageName, tag);
         rawImage.setRegistry(registry.getId());
         return rawImage.getImageDescription();
     }
@@ -194,39 +195,51 @@ public class DockerClient {
      */
     public List<ImageHistoryLayer> getImageHistory(final DockerRegistry registry, final String imageName,
                                                    final String tag) {
-        final RawImageDescription rawImage = getRawImageDescription(registry, imageName, tag, getAuthHeaders());
-        final List<String> buildHistory = DockerParsingUtils.getBuildHistory(rawImage);
+        final ManifestV2 manifestV2 = getManifest(registry, imageName, tag)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        String.format("Cannot get manifest for image %s/%s", imageName, tag)));
+        final RawImageDescriptionV2 rawImage = getRawImageDescription(manifestV2, registry, imageName);
+        final List<HistoryEntryV2> history = rawImage.getHistory();
         final Map<String, Long> layersSize = getLayersSize(registry, imageName, tag);
-        final List<String> layersDigest = getLayersDigestDirectCreationOrder(rawImage);
-        return IntStream.range(0, buildHistory.size())
-            .mapToObj(i -> {
-                final ImageHistoryLayer layer = new ImageHistoryLayer();
-                layer.setCommand(buildHistory.get(i));
+        final List<String> layersDigest = getLayersDigestDirectCreationOrder(manifestV2);
+        int i = 0;
+        final List<ImageHistoryLayer> result = new ArrayList<>();
+        for (HistoryEntryV2 h: history) {
+            final ImageHistoryLayer layer = new ImageHistoryLayer();
+            layer.setCommand(DockerParsingUtils.getBuildHistory(h));
+            if (h.isEmptyLayer()) {
+                layer.setSize(0L);
+            } else {
                 layer.setSize(layersSize.getOrDefault(layersDigest.get(i), 0L));
-                return layer;
-            }).collect(Collectors.toList());
+                i++;
+            }
+            result.add(layer);
+        }
+        return result;
     }
 
     public Map<String, String> getImageLabels(final DockerRegistry registry, final String imageName, final String tag) {
-        final RawImageDescription rawImage = getRawImageDescription(registry, imageName, tag, getAuthHeaders());
+        final RawImageDescriptionV2 rawImage = getRawImageDescription(registry, imageName, tag);
         return DockerParsingUtils.getLabels(rawImage);
     }
 
     private Map<String, Long> getLayersSize(final DockerRegistry registry, final String imageName, final String tag) {
-        return getManifest(registry, imageName, tag)
+        final Optional<ManifestV2> manifestV2 = getManifest(registry, imageName, tag);
+        return getLayersSize(manifestV2);
+    }
+
+    private Map<String, Long> getLayersSize(final Optional<ManifestV2> manifestV2) {
+        return manifestV2
             .map(ManifestV2::getLayers)
             .map(Collection::stream)
             .orElse(Stream.empty())
             .collect(Collectors.toMap(ManifestV2.Config::getDigest, ManifestV2.Config::getSize, (s1, s2) -> s1));
     }
 
-    private List<String> getLayersDigestDirectCreationOrder(final RawImageDescription rawImage) {
-        final List<String> layers = rawImage.getFsLayers().stream()
-            .map(Map::values)
-            .flatMap(Collection::stream)
+    private List<String> getLayersDigestDirectCreationOrder(final ManifestV2 manifestV2) {
+        return manifestV2.getLayers().stream()
+            .map(ManifestV2.Config::getDigest)
             .collect(Collectors.toList());
-        Collections.reverse(layers);
-        return layers;
     }
 
     /**
@@ -238,7 +251,7 @@ public class DockerClient {
     public void deleteLayer(DockerRegistry registry, String image, String digest) {
         String url;
         try {
-            url = String.format(LAYER_DELETE_URL, registry.getPath(), URLEncoder.encode(image, "UTF-8"), digest);
+            url = String.format(BLOBS_URL, registry.getPath(), URLEncoder.encode(image, "UTF-8"), digest);
         } catch (UnsupportedEncodingException e) {
             throw new IllegalArgumentException(e);
         }
@@ -290,24 +303,32 @@ public class DockerClient {
         });
     }
 
-    public RawImageDescription getRawImageDescription(DockerRegistry registry, String imageName, String tag) {
-        return getRawImageDescription(registry, imageName, tag, getAuthHeaders());
+    private RawImageDescriptionV2 getRawImageDescription(final DockerRegistry registry, final String imageName,
+                                                         final String tag) {
+        final ManifestV2 manifestV2 = getManifest(registry, imageName, tag)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        String.format("Cannot get manifest for image %s/%s", imageName, tag)));
+        return getRawImageDescription(manifestV2, registry, imageName);
     }
 
-    private RawImageDescription getRawImageDescription(DockerRegistry registry, String imageName, String tag,
-                                                       HttpEntity headers) {
-        String url = String.format(IMAGE_DESCRIPTION_URL, registry.getPath(), imageName, tag);
+    private RawImageDescriptionV2 getRawImageDescription(final ManifestV2 manifestV2, final DockerRegistry registry,
+                                                         final String imageName) {
+        final String url = String.format(BLOBS_URL, registry.getPath(),
+                imageName, manifestV2.getConfig().getDigest());
         try {
-            URI uri = new URI(url);
-            ResponseEntity<RawImageDescription>
-                response = getRestTemplate().exchange(uri, HttpMethod.GET, headers,
-                                                      new ParameterizedTypeReference<RawImageDescription>() {});
+            final URI uri = new URI(url);
+            final ResponseEntity<byte[]> response = restTemplate.exchange(
+                    uri,
+                    HttpMethod.GET,
+                    new HttpEntity<>(getAuthHeaders()),
+                    byte[].class
+            );
             if (response.getStatusCode() == HttpStatus.OK) {
-                return response.getBody();
+                return new ObjectMapper().readValue(response.getBody(), RawImageDescriptionV2.class);
             } else {
                 throw new UnexpectedResponseStatusException(response.getStatusCode());
             }
-        } catch (URISyntaxException | UnexpectedResponseStatusException e) {
+        } catch (URISyntaxException | UnexpectedResponseStatusException | IOException e) {
             LOGGER.error(e.getMessage(), e);
             throw new DockerConnectionException(url, e.getMessage());
         }
@@ -346,9 +367,9 @@ public class DockerClient {
 
     public ToolVersion getVersionAttributes(final DockerRegistry registry, final String imageName,
                                             final String tag) {
-        ToolVersion attributes = new ToolVersion();
+        final ToolVersion attributes = new ToolVersion();
         attributes.setVersion(tag);
-        ManifestV2 manifestV2 = getManifest(registry, imageName, tag)
+        final ManifestV2 manifestV2 = getManifest(registry, imageName, tag)
                 .orElseThrow(() -> new IllegalArgumentException(
                         String.format("Cannot get manifest for image %s/%s", imageName, tag)));
         attributes.setDigest(manifestV2.getDigest());
@@ -356,8 +377,8 @@ public class DockerClient {
                 .stream()
                 .mapToLong(ManifestV2.Config::getSize)
                 .sum());
-        RawImageDescription rawImage = getRawImageDescription(registry, imageName, tag, getAuthHeaders());
-        String platform = DockerParsingUtils.getPlatform(rawImage).orElse("linux");
+        final RawImageDescriptionV2 rawImage = getRawImageDescription(manifestV2, registry, imageName);
+        final String platform = DockerParsingUtils.getPlatform(rawImage).orElse("linux");
         attributes.setPlatform(platform);
         attributes.setModificationDate(getLatestDate(registry, imageName, tag));
         return attributes;
@@ -448,7 +469,7 @@ public class DockerClient {
         return dockerResponseConverter;
     }
 
-    private Date getLatestDate(DockerRegistry registry, String imageName, String tag) {
-        return DockerParsingUtils.getLatestDate(getRawImageDescription(registry, imageName, tag, getAuthHeaders()));
+    private Date getLatestDate(final DockerRegistry registry, final String imageName, final String tag) {
+        return DockerParsingUtils.getLatestDate(getRawImageDescription(registry, imageName, tag));
     }
 }
