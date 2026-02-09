@@ -262,6 +262,7 @@ public class ToolsTest
         tools().perform(defaultRegistry, defaultGroup, testingTool, tool ->
                 tool.ensure(BACK_TO_GROUP, visible)
                         .ensure(IMAGE_NAME, text(testingTool))
+                        .sleep(3, SECONDS)
                         .ensureVisible(SHOW_METADATA, RUN)
                         .also(shouldContainOptions(DELETE, PERMISSIONS))
                         .ensureVisible(DESCRIPTION, VERSIONS, SETTINGS)

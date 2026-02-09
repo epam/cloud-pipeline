@@ -131,7 +131,7 @@ public class NavigationHomeAO implements AccessObject<NavigationHomeAO> {
 
     private SelenideElement activeRunCardByRunId(String runId) {
         return get(RUNS).find(byXpath(format(".//*[contains(text(), 'pipeline-%s')]", runId)))
-                .closest("div[@class='ant-card-body']");
+                .ancestor(".ant-card-body");
     }
 
     public NavigationHomeAO checkPauseLinkIsDisabledOnActiveRunsPanel(String runId) {
