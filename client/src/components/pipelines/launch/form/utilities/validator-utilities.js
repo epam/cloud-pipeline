@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,30 @@
  * limitations under the License.
  */
 
+import DataStorageAvailable from '../../../../../models/dataStorage/DataStorageAvailable';
+import DataStorageItemContent from '../../../../../models/dataStorage/DataStorageItemContent';
 import DataStorageItemSize from '../../../../../models/dataStorage/DataStorageItemSize';
-import {getStorageFileAccessInfo} from '../../../../../utils/object-storage';
+import {base64toString} from '../../../../../utils/base64';
+import {getStorageLinkInfo} from '../../../../special/data-storage-link/utilities.js';
 
+/**
+ * Logs validation error for a parameter
+ * @param {Object} parameter - Parameter object with name property
+ * @param {Error|string} error - Error object or message
+ */
 function logError (parameter, error) {
   const errorText = typeof error === 'object' && error.message
     ? error.message
     : error;
-  return console.error(`[${parameter.name}] validation error: ${errorText}`);
+  console.error(`[${parameter.name}] validation error: ${errorText}`);
 }
 
+/**
+ * Fetches the size of a file at the given path
+ * @param {string} path - File path
+ * @returns {Promise<number>} File size in bytes
+ * @throws {Error} If file is not found or size cannot be retrieved
+ */
 async function getFileSize (path) {
   const sizeRequest = new DataStorageItemSize();
   await sizeRequest.send([path]);
@@ -37,6 +51,11 @@ async function getFileSize (path) {
   return result.size;
 }
 
+/**
+ * Extracts column names from CSV header
+ * @param {string} csvString - CSV file content
+ * @returns {string[]} Array of column names
+ */
 function getCSVColumns (csvString = '') {
   if (!csvString || typeof csvString !== 'string') {
     return [];
@@ -49,13 +68,15 @@ function getCSVColumns (csvString = '') {
   return header.split(',').map((col) => col.trim());
 }
 
-async function getFileContent (path) {
-  const info = await getStorageFileAccessInfo(path);
-  const {path: pathInfo, objectStorage} = info;
-  const content = await objectStorage.getFileContent(pathInfo);
-  return content;
-}
-
+/**
+ * Validates that file size does not exceed maximum
+ * @param {Object} config - Validation configuration
+ * @param {Object} config.parameter - Parameter object with value property
+ * @param {number} config.maxSizeMb - Maximum allowed file size in MB
+ * @param {string} config.type - Type of message ('warning' | 'error')
+ * @param {string} config.message - Custom error message
+ * @returns {Promise<Object>} Validation result object
+ */
 async function validateItemSize ({
   parameter,
   options,
@@ -71,16 +92,25 @@ async function validateItemSize ({
     const fileSizeMb = fileSize / (1024 * 1024);
     if (fileSizeMb > maxSizeMb) {
       const errorMessage = message ||
-      `File size is too large (maximum file size is ${maxSizeMb}MB`;
+        `File size is too large (maximum file size is ${maxSizeMb}MB).`;
       return {[type]: errorMessage};
     }
     return {};
   } catch (error) {
     logError(parameter, error);
-    return {warning: `Unable to validate parameter.`};
+    return {warning: 'Unable to validate parameter.'};
   }
 }
 
+/**
+ * Validates that CSV file contains required columns
+ * @param {Object} config - Validation configuration
+ * @param {Object} config.parameter - Parameter object with value property
+ * @param {string[]} config.columns - Required column names
+ * @param {string} config.type - Type of message ('warning' | 'error')
+ * @param {string} config.message - Custom error message
+ * @returns {Promise<Object>} Validation result object
+ */
 async function validateCSVHeader ({
   parameter,
   options,
@@ -92,9 +122,15 @@ async function validateCSVHeader ({
     if (!parameter.value) {
       return {};
     }
-    const content = await getFileContent(parameter.value);
+    if (!Array.isArray(columns) || columns.length === 0) {
+      return {warning: 'No columns specified for validation.'};
+    }
+    const {content, truncated} = await getFileContent(parameter.value);
     if (!content) {
-      return {[type]: 'File is missing or empty'};
+      return {[type]: 'File is missing or empty.'};
+    }
+    if (truncated) {
+      return {warning: 'File is too large to validate.'};
     }
     const csvColumns = getCSVColumns(content);
     const missingColumns = columns.filter((col) => !csvColumns.includes(col));
@@ -106,14 +142,48 @@ async function validateCSVHeader ({
     return {};
   } catch (error) {
     logError(parameter, error);
-    return {warning: `Unable to validate parameter.`};
+    return {warning: 'Unable to validate parameter.'};
   }
+}
+
+/**
+ * Fetches file content from storage
+ * @param {string} path - File path
+ * @returns {Promise<Object>} Object with content, truncated and mayBeBinary flag
+ * @throws {Error} If storage or file is not found
+ */
+async function getFileContent (path) {
+  await DataStorageAvailable.fetchIfNeededOrWait();
+  const info = getStorageLinkInfo({
+    storages: DataStorageAvailable.value,
+    path,
+    isFolder: false,
+    showShared: true
+  });
+  if (!info?.storageId) {
+    throw new Error(`Storage not found for path: ${path}`);
+  }
+  const request = new DataStorageItemContent(info.storageId, info.relativePath);
+  await request.fetch();
+  if (request.error) {
+    throw new Error(`Error fetching file content: ${request.error}`);
+  }
+  if (!request?.value) {
+    throw new Error(`File not found: ${path}`);
+  }
+  const {truncated, mayBeBinary, content = ''} = request.value;
+  return {
+    content: base64toString(content),
+    truncated,
+    mayBeBinary
+  };
 }
 
 export {
   logError,
   getFileSize,
   getFileContent,
+  getCSVColumns,
   validateItemSize,
   validateCSVHeader
 };
