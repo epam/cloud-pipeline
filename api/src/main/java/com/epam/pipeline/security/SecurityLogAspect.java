@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.ThreadContext;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.After;
+import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.springframework.security.core.Authentication;
@@ -76,7 +77,7 @@ public class SecurityLogAspect {
 
     public static final String AUTHORIZATION_RELATED_METHODS_POINTCUT =
             "execution(* com.epam.pipeline.security.saml.SAMLUserDetailsService.loadUserBySAML(..)) " +
-                    "|| execution(* com.epam.pipeline.security.saml.SAMLProxyAuthenticationProvider.authenticate(..))" +
+                    "|| execution(* com.epam.pipeline.security.saml.proxy.SAMLProxyFilter.doFilterInternal(..))" +
                     "|| execution(* com.epam.pipeline.security.jwt.JwtFilterAuthenticationFilter.doFilterInternal(..))";
 
     public static final String ANONYMOUS = "Anonymous";
@@ -115,8 +116,9 @@ public class SecurityLogAspect {
         ThreadContext.put(KEY_TOPIC, AUDIT_TOPIC);
     }
 
-    @Before(value = "execution(* com.epam.pipeline.security.saml.SAMLProxyAuthenticationProvider.authenticate(..)) " +
-            "&& args(authentication,..)")
+    @AfterReturning(pointcut =
+            "execution(* com.epam.pipeline.security.saml.proxy.SAMLProxyAuthenticationProvider.authenticate(..)) ",
+            returning = "authentication")
     public void addUserInfoFromSAMLProxy(final JoinPoint joinPoint, final Authentication authentication) {
         if (authentication != null) {
             final SAMLProxyAuthentication auth = (SAMLProxyAuthentication) authentication;

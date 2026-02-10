@@ -21,8 +21,6 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.security.ExternalServiceEndpoint;
-import com.epam.pipeline.security.UserAccessService;
-import com.epam.pipeline.security.UserContext;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,10 +29,8 @@ import lombok.extern.slf4j.Slf4j;
 import net.shibboleth.utilities.java.support.xml.XMLParserException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
-import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.bouncycastle.util.encoders.Base64;
 import org.opensaml.core.config.ConfigurationService;
 import org.opensaml.core.xml.config.XMLObjectProviderRegistry;
@@ -47,7 +43,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationProvider;
-import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticatedPrincipal;
 import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticationToken;
 import org.springframework.security.saml2.provider.service.authentication.Saml2PostAuthenticationRequest;
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistration;
@@ -63,13 +58,9 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static com.epam.pipeline.manager.preference.SystemPreferences.SYSTEM_EXTERNAL_SERVICES_ENDPOINTS;
 import static org.opensaml.saml.saml2.assertion.SAML2AssertionValidationParameters.CLOCK_SKEW;
@@ -84,17 +75,17 @@ public class SAMLProxyFilter extends OncePerRequestFilter {
 
     private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
-    private final UserAccessService accessService;
+    private final SAMLProxyAuthenticationProvider authenticationProvider;
     private final Long maxAuthentificationAge;
 
     public SAMLProxyFilter(final MessageHelper messageHelper,
                            final PreferenceManager preferenceManager,
-                           final UserAccessService accessService,
+                           final SAMLProxyAuthenticationProvider authenticationProvider,
                            @Value("${saml.authn.max.authentication.age:93600}")
                            final Long maxAuthentificationAge) {
         this.messageHelper = messageHelper;
         this.preferenceManager = preferenceManager;
-        this.accessService = accessService;
+        this.authenticationProvider = authenticationProvider;
         this.maxAuthentificationAge = maxAuthentificationAge;
     }
 
@@ -142,19 +133,9 @@ public class SAMLProxyFilter extends OncePerRequestFilter {
     }
 
     private void authenticate(final String samlResponse, final ExternalServiceEndpoint endpoint) {
-        final var principal = (Saml2AuthenticatedPrincipal) attemptAuthentication(samlResponse, endpoint)
-                .getPrincipal();
-
-        final String userName = principal.getName().toUpperCase();
-        final Map<String, List<Object>> credentials = principal.getAttributes();
-        final Map<String, String> attributes = readAttributes(credentials, endpoint.getSamlAttributes());
-        final List<String> groups = readAuthorities(credentials, endpoint.getAuthorities());
-        final UserContext userContext = accessService.parseUser(userName, groups, attributes);
-        userContext.setExternal(endpoint.isExternal());
-        log.debug("Found user by name {}", userName);
-
-        final var authenticationToken = new SAMLProxyAuthentication(samlResponse, userContext);
-        SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+        final Authentication authentication = attemptAuthentication(samlResponse, endpoint);
+        SecurityContextHolder.getContext()
+                .setAuthentication(authenticationProvider.authenticate(authentication, samlResponse, endpoint));
     }
 
     private Authentication attemptAuthentication(final String samlResponse, final ExternalServiceEndpoint endpoint) {
@@ -184,89 +165,8 @@ public class SAMLProxyFilter extends OncePerRequestFilter {
         return authenticationProvider;
     }
 
-    private Map<String, String> readAttributes(final Map<String, List<Object>> attributes,
-                                               final Set<String> samlAttributes) {
-        if (MapUtils.isEmpty(attributes) || CollectionUtils.isEmpty(samlAttributes)) {
-            return Collections.emptyMap();
-        }
-        return samlAttributes
-                .stream()
-                .filter(attribute -> attribute.contains("="))
-                .map(attribute -> {
-                    String[] splittedRecord = attribute.split("=");
-                    String key = splittedRecord[0];
-                    String value = splittedRecord[1];
-                    if (StringUtils.isEmpty(key) || StringUtils.isEmpty(value)) {
-                        log.error("Can not parse saml user attributes property.");
-                        return null;
-                    }
-                    List<Object> attributeValues = attributes.get(value);
-                    return ListUtils.emptyIfNull(attributeValues).stream()
-                            .findFirst()
-                            .map(o -> (String) o)
-                            .map(v -> new ImmutablePair<>(key, v))
-                            .orElse(null);
-                })
-                .filter(Objects::nonNull)
-                .collect(Collectors.toMap(ImmutablePair::getLeft, ImmutablePair::getRight, (v1, v2) -> v1));
-    }
-
-    private List<String> readAuthorities(final Map<String, List<Object>> attributes,
-                                         final List<String> authorities) {
-        if (CollectionUtils.isEmpty(authorities) || MapUtils.isEmpty(attributes)) {
-            return Collections.emptyList();
-        }
-        return authorities
-                .stream()
-                .filter(StringUtils::isNotBlank)
-                .map(attributes::get)
-                .filter(Objects::nonNull)
-                .flatMap(List::stream)
-                .map(o -> (String) o)
-                .map(String::toUpperCase)
-                .collect(Collectors.toList());
-    }
-
-    private boolean urlMatches(final HttpServletRequest request) {
-        final String url = request.getRequestURL().toString();
-        final String[] parts = url.split("restapi");
-        final var antPathMatcher = new AntPathMatcher();
-        return parts.length > 1 && antPathMatcher.match("/proxy/**", parts[1]);
-    }
-
-    @Nullable
-    private String extractAudienceURI(final String samlResponse) {
-        final var response = parseSamlResponse(samlResponse);
-        if (Objects.isNull(response)) {
-            return null;
-        }
-        return ListUtils.emptyIfNull(response.getAssertions()).stream()
-                .findFirst()
-                .map(Assertion::getConditions)
-                .map(conditions -> ListUtils.emptyIfNull(conditions.getAudienceRestrictions()).stream()
-                        .findFirst())
-                .flatMap(Function.identity())
-                .map(audienceRestriction
-                        -> ListUtils.emptyIfNull(audienceRestriction.getAudiences()).stream()
-                        .findFirst())
-                .flatMap(Function.identity())
-                .map(Audience::getURI)
-                .orElse(StringUtils.EMPTY);
-    }
-
-    @Nullable
-    private String extractInResponseTo(final String samlResponse) {
-        final var response = parseSamlResponse(samlResponse);
-        if (Objects.isNull(response)) {
-            return null;
-        }
-        return ListUtils.emptyIfNull(response.getAssertions()).stream()
-                .findFirst()
-                .map(Assertion::getSubject)
-                .map(subject -> ListUtils.emptyIfNull(subject.getSubjectConfirmations()).getFirst())
-                .map(subjectConfirmation
-                        -> subjectConfirmation.getSubjectConfirmationData().getInResponseTo())
-                .orElse(StringUtils.EMPTY);
+    private String buildAcsUrl(final String endpointId) {
+        return ProviderUtils.withoutTrailingDelimiter(endpointId) + ProviderUtils.withLeadingDelimiter(ACS_ENDPOINT);
     }
 
     @Nullable
@@ -290,14 +190,19 @@ public class SAMLProxyFilter extends OncePerRequestFilter {
         }
     }
 
-    private String decodeSamlResponse(final String rawSamlResponse) {
-        final var decodedResponse = new String(Base64.decode(rawSamlResponse), StandardCharsets.UTF_8);
-        logger.trace("Validating SAML response: " + decodedResponse);
-        return decodedResponse;
-    }
-
-    private String buildAcsUrl(final String endpointId) {
-        return ProviderUtils.withoutTrailingDelimiter(endpointId) + ProviderUtils.withLeadingDelimiter(ACS_ENDPOINT);
+    @Nullable
+    private String extractInResponseTo(final String samlResponse) {
+        final var response = parseSamlResponse(samlResponse);
+        if (Objects.isNull(response)) {
+            return null;
+        }
+        return ListUtils.emptyIfNull(response.getAssertions()).stream()
+                .findFirst()
+                .map(Assertion::getSubject)
+                .map(subject -> ListUtils.emptyIfNull(subject.getSubjectConfirmations()).getFirst())
+                .map(subjectConfirmation
+                        -> subjectConfirmation.getSubjectConfirmationData().getInResponseTo())
+                .orElse(StringUtils.EMPTY);
     }
 
     private Saml2PostAuthenticationRequest buildAuthenticationRequest(final RelyingPartyRegistration registration,
@@ -311,5 +216,38 @@ public class SAMLProxyFilter extends OncePerRequestFilter {
                 .id(inResponseTo)
                 .samlRequest(registrationId) // dummy string to avoid hasText check failure
                 .build();
+    }
+
+    @Nullable
+    private String extractAudienceURI(final String samlResponse) {
+        final var response = parseSamlResponse(samlResponse);
+        if (Objects.isNull(response)) {
+            return null;
+        }
+        return ListUtils.emptyIfNull(response.getAssertions()).stream()
+                .findFirst()
+                .map(Assertion::getConditions)
+                .map(conditions -> ListUtils.emptyIfNull(conditions.getAudienceRestrictions()).stream()
+                        .findFirst())
+                .flatMap(Function.identity())
+                .map(audienceRestriction
+                        -> ListUtils.emptyIfNull(audienceRestriction.getAudiences()).stream()
+                        .findFirst())
+                .flatMap(Function.identity())
+                .map(Audience::getURI)
+                .orElse(StringUtils.EMPTY);
+    }
+
+    private String decodeSamlResponse(final String rawSamlResponse) {
+        final var decodedResponse = new String(Base64.decode(rawSamlResponse), StandardCharsets.UTF_8);
+        log.trace("Validating SAML response: {}", decodedResponse);
+        return decodedResponse;
+    }
+
+    private boolean urlMatches(final HttpServletRequest request) {
+        final String url = request.getRequestURL().toString();
+        final String[] parts = url.split("restapi");
+        final var antPathMatcher = new AntPathMatcher();
+        return parts.length > 1 && antPathMatcher.match("/proxy/**", parts[1]);
     }
 }
