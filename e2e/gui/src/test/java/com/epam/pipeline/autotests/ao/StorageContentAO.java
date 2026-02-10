@@ -447,6 +447,11 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         return this;
     }
 
+    public StorageContentAO validateIsUploading() {
+        $(withText("Uploading files...")).should(disappear);
+        return this;
+    }
+
     public StorageContentAO validateElementsAreNotEditable() {
         getElementsAOs().forEach(element -> element.ensureNotVisible(DELETE, EDIT));
         return this;

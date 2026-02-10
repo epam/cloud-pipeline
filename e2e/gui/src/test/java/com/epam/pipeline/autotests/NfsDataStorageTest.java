@@ -226,7 +226,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
     @Test(priority = 11,dependsOnMethods = {"createNfsMountAndValidate"})
     @TestCase(value = {"EPMCMBIBPC-2594"})
     public void downloadFileAndValidateNfsMount() {
-        file = Utils.createTempFileWithNameAndSize(file.getName());
+        file = Utils.createFileAndFillWithString(file.getName(), "123", 20);
 
         final File destinationFile = Paths.get(C.DOWNLOAD_FOLDER).resolve(file.getName()).toFile();
 

@@ -331,7 +331,7 @@ public class Utils {
                                                    String repeatingString,
                                                    int totalNumberOfChars) {
 
-        byte[] content = repeatString("abc1", totalNumberOfChars / repeatingString.length()).getBytes();
+        byte[] content = repeatString(repeatingString, totalNumberOfChars / repeatingString.length()).getBytes();
         Path path = Paths.get(C.DOWNLOAD_FOLDER).resolve(name);
         try {
             Files.write(path, content);
