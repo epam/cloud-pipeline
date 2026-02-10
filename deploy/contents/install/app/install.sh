@@ -1312,14 +1312,21 @@ if is_service_requested cp-search; then
 
     if is_install_requested; then
         print_info "-> Deploying Search ELK service"
-        create_kube_resource $K8S_SPECS_HOME/cp-search/cp-search-elk-dpl.yaml
-        create_kube_resource $K8S_SPECS_HOME/cp-search/cp-search-elk-svc.yaml
+        if [ "$CP_SEARCH_ELK_TYPE" == "elasticsearch" ]; then
+          create_kube_resource $K8S_SPECS_HOME/cp-search/cp-search-elk-dpl.yaml
+          create_kube_resource $K8S_SPECS_HOME/cp-search/cp-search-elk-svc.yaml
+          print_info "-> Waiting for Search ELK service to initialize"
+          wait_for_deployment "cp-search-elk"
+        else
+          print_info "-> CP_SEARCH_ELK_DEPLOYMENT_TYPE was configured as '$CP_SEARCH_ELK_DEPLOYMENT_TYPE', cp-search-elk will not be deployed"
+        fi
 
-        print_info "-> Waiting for Search ELK service to initialize"
-        wait_for_deployment "cp-search-elk"
+        create_kube_resource $K8S_SPECS_HOME/cp-search/cp-search-elk-curator-dpl.yaml
+        print_info "-> Waiting for Search ELK curator service to initialize"
+        wait_for_deployment "cp-search-elk-curator"
 
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-search-elk:"
-        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nElastic:   http://$CP_SEARCH_ELK_INTERNAL_HOST:$CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT"
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nElastic:   $CP_SEARCH_ELK_INTERNAL_SCHEME://$CP_SEARCH_ELK_INTERNAL_HOST:$CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT"
 
         print_info "-> Deploying Search service"
         create_kube_resource $K8S_SPECS_HOME/cp-search/cp-search-srv-dpl.yaml

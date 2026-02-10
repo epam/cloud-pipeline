@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-source $ANACONDA_HOME/etc/profile.d/conda.sh
-conda activate hcs
+export PATH=$PATH:$ANACONDA_HOME/bin && \
+export MAMBA_ROOT_PREFIX=$ANACONDA_HOME && \
+eval "$(micromamba shell hook --shell bash)" 
+micromamba activate hcs
 python2 "$HCS_TOOLS_HOME/scripts/parser/process_hcs_files.py" > "$ANALYSIS_DIR/hcs-parser-$RUN_ID.log" 2>&1

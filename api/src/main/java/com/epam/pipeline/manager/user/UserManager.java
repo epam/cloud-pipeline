@@ -40,6 +40,7 @@ import com.epam.pipeline.entity.user.PipelineUserWithStoragePath;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.utils.ControlEntry;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStorageValidator;
 import com.epam.pipeline.manager.keypair.SshKeyPair;
@@ -149,6 +150,10 @@ public class UserManager implements SecuredEntityManager {
 
     @Autowired
     private SshKeyPairManager sshKeyPairManager;
+
+    @Autowired
+    private CloudProfileCredentialsManagerProvider cloudProfileCredentialsManager;
+
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     @Transactional(propagation = Propagation.REQUIRED)
@@ -274,8 +279,12 @@ public class UserManager implements SecuredEntityManager {
      * @return generated token
      */
     public JwtRawToken issueToken(final String userName, final Long expiration) {
+        return issueToken(userName, expiration, false);
+    }
+
+    public JwtRawToken issueToken(final String userName, final Long expiration, boolean validateExpirationDuration) {
         final UserContext userContext = loadUserContext(userName);
-        return authManager.issueToken(userContext, expiration);
+        return authManager.issueToken(userContext, expiration, validateExpirationDuration);
     }
 
     public PipelineUser loadUserByName(final String name) {
@@ -340,6 +349,7 @@ public class UserManager implements SecuredEntityManager {
     public Collection<PipelineUser> loadUsersWithActivityStatus(final boolean loadQuotas) {
         final PipelineUser currentUser = getCurrentUser();
         final Collection<PipelineUser> pipelineUsers = currentUser.isAdmin()
+                || UserUtils.hasRole(currentUser, DefaultRoles.ROLE_USER_ADMIN)
                 ? userDao.loadUsersWithActivityStatus()
                 : loadAllUsers();
         if (loadQuotas) {
@@ -376,6 +386,7 @@ public class UserManager implements SecuredEntityManager {
         permissionHandler.deleteGrantedAuthority(userContext.getUserName(), true);
         userDao.deleteUserRoles(id);
         userNotificationManager.deleteByUserId(id);
+        cloudProfileCredentialsManager.assignProfiles(id, true, Collections.emptySet(), null);
         userDao.deleteUser(id);
         log.info(messageHelper.getMessage(MessageConstants.INFO_DELETE_USER, userContext.getUserName(), id));
         return userContext;

@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.storage;
 
-import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
 import com.epam.pipeline.elasticsearchagent.service.impl.CloudPipelineAPIClient;
 import com.epam.pipeline.elasticsearchagent.utils.ESConstants;
@@ -32,13 +31,10 @@ import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.collections4.SetUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
 import org.slf4j.Logger;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.util.StringUtils;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
@@ -61,70 +57,65 @@ public class StorageFileMapper {
     private final Map<String, Set<String>> hiddenMasks = new HashMap<>();
     private final Map<String, Set<String>> indexContentMasks = new HashMap<>();
 
-    public XContentBuilder fileToDocument(final DataStorageFile dataStorageFile,
-                                          final AbstractDataStorage dataStorage,
-                                          final String region,
-                                          final PermissionsContainer permissions,
-                                          final SearchDocumentType type,
-                                          final String tagDelimiter,
-                                          final String content) {
-        try (XContentBuilder jsonBuilder = XContentFactory.jsonBuilder()) {
-            final Map<String, String> tags = MapUtils.emptyIfNull(dataStorageFile.getTags());
-            final Map<String, String> labels = MapUtils.emptyIfNull(dataStorageFile.getLabels());
-            jsonBuilder
-                    .startObject()
-                    .field("lastModified", dataStorageFile.getChanged())
-                    .field("size", dataStorageFile.getSize())
-                    .field("path", dataStorageFile.getPath())
-                    .field("cloud_path", constructCloudPath(dataStorage, dataStorageFile))
-                    .field("mount_path", constructMountPath(dataStorage, dataStorageFile))
-                    .field("id", dataStorageFile.getPath())
-                    .field("name", dataStorageFile.getName())
-                    .field("ownerUserName", tags.get("CP_OWNER"))
-                    .field("parentId", dataStorage.getId())
-                    .field("storage_id", dataStorage.getId())
-                    .field("storage_name", dataStorage.getName())
-                    .field("storage_region", region)
-                    .field("is_hidden", isHidden(dataStorage, dataStorageFile))
-                    .field("is_deleted", Boolean.TRUE.equals(dataStorageFile.getDeleteMarker()))
-                    .field(DOC_TYPE_FIELD, type.name())
-                    .array("metadata", tags.entrySet().stream()
-                            .map(entry -> entry.getKey() + " " + entry.getValue())
-                            .toArray(String[]::new))
-                    .array("allowed_users", permissions.getAllowedUsers().toArray())
-                    .array("denied_users", permissions.getDeniedUsers().toArray())
-                    .array("allowed_groups", permissions.getAllowedGroups().toArray())
-                    .array("denied_groups", permissions.getDeniedGroups().toArray())
-                    .field("content", content)
-                    .field("storage_class", labels.getOrDefault(ESConstants.STORAGE_CLASS_LABEL, STANDARD_TIER));
+    public Map<String, ?> fileToDocument(final DataStorageFile dataStorageFile,
+                                         final AbstractDataStorage dataStorage,
+                                         final String region,
+                                         final PermissionsContainer permissions,
+                                         final SearchDocumentType type,
+                                         final String tagDelimiter,
+                                         final String content) {
+        final Map<String, String> tags = MapUtils.emptyIfNull(dataStorageFile.getTags());
+        final Map<String, String> labels = MapUtils.emptyIfNull(dataStorageFile.getLabels());
+        final Map<String, Object> jsonMap = new HashMap<>();
 
-            if (MapUtils.isNotEmpty(dataStorageFile.getVersions())) {
-                final Map<String, ImmutablePair<Long, Integer>> versionSizesByStorageClass =
-                        calculateVersionSizes(dataStorageFile.getVersions());
-                for (String key : versionSizesByStorageClass.keySet()) {
-                    String storageClassKey = key.toLowerCase(Locale.ROOT);
-                    jsonBuilder.field(
-                            String.format("ov_%s_size", storageClassKey),
-                            versionSizesByStorageClass.get(key).getLeft());
-                    jsonBuilder.field(
-                            String.format("ov_%s_count", storageClassKey),
-                            versionSizesByStorageClass.get(key).getRight());
-                }
-            }
+        jsonMap.put("lastModified", dataStorageFile.getChanged());
+        jsonMap.put("size", dataStorageFile.getSize());
+        jsonMap.put("path", dataStorageFile.getPath());
+        jsonMap.put("cloud_path", constructCloudPath(dataStorage, dataStorageFile));
+        jsonMap.put("mount_path", constructMountPath(dataStorage, dataStorageFile));
+        jsonMap.put("id", dataStorageFile.getPath());
+        jsonMap.put("name", dataStorageFile.getName());
+        jsonMap.put("ownerUserName", tags.get("CP_OWNER"));
+        jsonMap.put("parentId", dataStorage.getId());
+        jsonMap.put("storage_id", dataStorage.getId());
+        jsonMap.put("storage_name", dataStorage.getName());
+        jsonMap.put("storage_region", region);
+        jsonMap.put("is_hidden", isHidden(dataStorage, dataStorageFile));
+        jsonMap.put("is_deleted", Boolean.TRUE.equals(dataStorageFile.getDeleteMarker()));
+        jsonMap.put(DOC_TYPE_FIELD, type.name());
+        jsonMap.put("metadata", tags.entrySet().stream()
+                .map(entry -> entry.getKey() + " " + entry.getValue())
+                .toArray(String[]::new));
+        jsonMap.put("allowed_users", permissions.getAllowedUsers().toArray());
+        jsonMap.put("denied_users", permissions.getDeniedUsers().toArray());
+        jsonMap.put("allowed_groups", permissions.getAllowedGroups().toArray());
+        jsonMap.put("denied_groups", permissions.getDeniedGroups().toArray());
+        jsonMap.put("content", content);
+        jsonMap.put("storage_class", labels.getOrDefault(ESConstants.STORAGE_CLASS_LABEL, STANDARD_TIER));
 
-            for (final Map.Entry<String, String> entry : tags.entrySet()) {
-                if (StringUtils.hasText(tagDelimiter) && StringUtils.hasText(entry.getValue())
-                        && entry.getValue().contains(tagDelimiter)) {
-                    final String[] chunks = entry.getValue().split(tagDelimiter);
-                    jsonBuilder.array(entry.getKey(), chunks);
-                } else {
-                    jsonBuilder.field(entry.getKey(), entry.getValue());
-                }
+        if (MapUtils.isNotEmpty(dataStorageFile.getVersions())) {
+            final Map<String, ImmutablePair<Long, Integer>> versionSizesByStorageClass =
+                    calculateVersionSizes(dataStorageFile.getVersions());
+            for (String key : versionSizesByStorageClass.keySet()) {
+                String storageClassKey = key.toLowerCase(Locale.ROOT);
+                jsonMap.put(String.format("ov_%s_size", storageClassKey),
+                        versionSizesByStorageClass.get(key).getLeft());
+                jsonMap.put(String.format("ov_%s_count", storageClassKey),
+                        versionSizesByStorageClass.get(key).getRight());
             }
-            return jsonBuilder.endObject();
-        } catch (IOException e) {
-            throw new AmazonS3Exception("An error occurred while creating document: ", e);
         }
+
+        for (final Map.Entry<String, String> entry : tags.entrySet()) {
+            if (StringUtils.hasText(tagDelimiter) && StringUtils.hasText(entry.getValue())
+                    && entry.getValue().contains(tagDelimiter)) {
+                final String[] chunks = entry.getValue().split(tagDelimiter);
+                jsonMap.put(entry.getKey(), chunks);
+            } else {
+                jsonMap.put(entry.getKey(), entry.getValue());
+            }
+        }
+
+        return jsonMap;
     }
 
     private Map<String, ImmutablePair<Long, Integer>> calculateVersionSizes(

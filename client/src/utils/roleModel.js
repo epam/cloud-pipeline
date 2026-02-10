@@ -365,52 +365,85 @@ function wrapUserIs (role) {
   return (user) => userHasRole(user, role);
 }
 
+const ROLES = {
+  ROLE_STORAGE_ARCHIVE_READER: 'ROLE_STORAGE_ARCHIVE_READER',
+  ROLE_STORAGE_ARCHIVE_MANAGER: 'ROLE_STORAGE_ARCHIVE_MANAGER',
+  ROLE_STORAGE_ADMIN: 'ROLE_STORAGE_ADMIN',
+  ROLE_DTS_MANAGER: 'ROLE_DTS_MANAGER',
+  ROLE_PIPELINE_MANAGER: 'ROLE_PIPELINE_MANAGER',
+  ROLE_VERSIONED_STORAGE_MANAGER: 'ROLE_VERSIONED_STORAGE_MANAGER',
+  ROLE_FOLDER_MANAGER: 'ROLE_FOLDER_MANAGER',
+  ROLE_CONFIGURATION_MANAGER: 'ROLE_CONFIGURATION_MANAGER',
+  ROLE_STORAGE_MANAGER: 'ROLE_STORAGE_MANAGER',
+  ROLE_STORAGE_TAG_MANAGER: 'ROLE_STORAGE_TAG_MANAGER',
+  ROLE_TOOL_GROUP_MANAGER: 'ROLE_TOOL_GROUP_MANAGER',
+  ROLE_ENTITIES_MANAGER: 'ROLE_ENTITIES_MANAGER',
+  ROLE_BILLING_MANAGER: 'ROLE_BILLING_MANAGER',
+  ROLE_TOOL_ADMIN: 'ROLE_TOOL_ADMIN',
+  ROLE_USER_ADMIN: 'ROLE_USER_ADMIN',
+  ROLE_PIPELINE_ADMIN: 'ROLE_PIPELINE_ADMIN',
+  ROLE_USER_READER: 'ROLE_USER_READER',
+  ROLE_RUN_ADMIN: 'ROLE_RUN_ADMIN'
+};
+
 const userIs = {
-  archiveReader: wrapUserIs('ROLE_STORAGE_ARCHIVE_READER'),
-  archiveManager: wrapUserIs('ROLE_STORAGE_ARCHIVE_MANAGER'),
-  storageAdmin: wrapUserIs('ROLE_STORAGE_ADMIN'),
-  dtsManager: wrapUserIs('ROLE_DTS_MANAGER'),
-  pipeline: wrapUserIs('ROLE_PIPELINE_MANAGER'),
-  versionedStorage: wrapUserIs('ROLE_VERSIONED_STORAGE_MANAGER'),
-  folder: wrapUserIs('ROLE_FOLDER_MANAGER'),
-  configuration: wrapUserIs('ROLE_CONFIGURATION_MANAGER'),
-  storage: wrapUserIs('ROLE_STORAGE_MANAGER'),
-  storageTag: wrapUserIs('ROLE_STORAGE_TAG_MANAGER'),
-  toolGroup: wrapUserIs('ROLE_TOOL_GROUP_MANAGER'),
-  entities: wrapUserIs('ROLE_ENTITIES_MANAGER'),
-  billing: wrapUserIs('ROLE_BILLING_MANAGER')
+  archiveReader: wrapUserIs(ROLES.ROLE_STORAGE_ARCHIVE_READER),
+  archiveManager: wrapUserIs(ROLES.ROLE_STORAGE_ARCHIVE_MANAGER),
+  storageAdmin: wrapUserIs(ROLES.ROLE_STORAGE_ADMIN),
+  dtsManager: wrapUserIs(ROLES.ROLE_DTS_MANAGER),
+  pipeline: wrapUserIs(ROLES.ROLE_PIPELINE_MANAGER),
+  versionedStorage: wrapUserIs(ROLES.ROLE_VERSIONED_STORAGE_MANAGER),
+  folder: wrapUserIs(ROLES.ROLE_FOLDER_MANAGER),
+  configuration: wrapUserIs(ROLES.ROLE_CONFIGURATION_MANAGER),
+  storage: wrapUserIs(ROLES.ROLE_STORAGE_MANAGER),
+  storageTag: wrapUserIs(ROLES.ROLE_STORAGE_TAG_MANAGER),
+  toolGroup: wrapUserIs(ROLES.ROLE_TOOL_GROUP_MANAGER),
+  entities: wrapUserIs(ROLES.ROLE_ENTITIES_MANAGER),
+  billing: wrapUserIs(ROLES.ROLE_BILLING_MANAGER),
+  toolAdmin: wrapUserIs(ROLES.ROLE_TOOL_ADMIN),
+  userAdmin: wrapUserIs(ROLES.ROLE_USER_ADMIN),
+  pipelineAdmin: wrapUserIs(ROLES.ROLE_PIPELINE_ADMIN),
+  runAdmin: wrapUserIs(ROLES.ROLE_RUN_ADMIN)
 };
 
 const manager = {
-  archiveReader: management('ROLE_STORAGE_ARCHIVE_READER'),
-  archiveManager: management('ROLE_STORAGE_ARCHIVE_MANAGER'),
-  dtsManager: management('ROLE_DTS_MANAGER'),
-  storageAdmin: management('ROLE_STORAGE_ADMIN'),
-  pipeline: management('ROLE_PIPELINE_MANAGER'),
-  versionedStorage: management('ROLE_VERSIONED_STORAGE_MANAGER'),
-  folder: management('ROLE_FOLDER_MANAGER'),
-  configuration: management('ROLE_CONFIGURATION_MANAGER'),
-  storage: management('ROLE_STORAGE_MANAGER'),
-  storageTag: management('ROLE_STORAGE_TAG_MANAGER'),
-  toolGroup: management('ROLE_TOOL_GROUP_MANAGER'),
-  entities: management('ROLE_ENTITIES_MANAGER'),
-  billing: management('ROLE_BILLING_MANAGER')
+  archiveReader: management(ROLES.ROLE_STORAGE_ARCHIVE_READER),
+  archiveManager: management(ROLES.ROLE_STORAGE_ARCHIVE_MANAGER),
+  dtsManager: management(ROLES.ROLE_DTS_MANAGER),
+  storageAdmin: management(ROLES.ROLE_STORAGE_ADMIN),
+  pipeline: management(ROLES.ROLE_PIPELINE_MANAGER),
+  versionedStorage: management(ROLES.ROLE_VERSIONED_STORAGE_MANAGER),
+  folder: management(ROLES.ROLE_FOLDER_MANAGER),
+  configuration: management(ROLES.ROLE_CONFIGURATION_MANAGER),
+  storage: management(ROLES.ROLE_STORAGE_MANAGER),
+  storageTag: management(ROLES.ROLE_STORAGE_TAG_MANAGER),
+  toolGroup: management(ROLES.ROLE_TOOL_GROUP_MANAGER),
+  entities: management(ROLES.ROLE_ENTITIES_MANAGER),
+  billing: management(ROLES.ROLE_BILLING_MANAGER),
+  toolAdmin: management(ROLES.ROLE_TOOL_ADMIN),
+  userAdmin: management(ROLES.ROLE_USER_ADMIN),
+  pipelineAdmin: management(ROLES.ROLE_PIPELINE_ADMIN),
+  runAdmin: management(ROLES.ROLE_RUN_ADMIN)
 };
 
 const isManager = {
-  archiveReader: hasRole('ROLE_STORAGE_ARCHIVE_READER'),
-  archiveManager: hasRole('ROLE_STORAGE_ARCHIVE_MANAGER'),
-  storageAdmin: hasRole('ROLE_STORAGE_ADMIN'),
-  dtsManager: hasRole('ROLE_DTS_MANAGER'),
-  pipeline: hasRole('ROLE_PIPELINE_MANAGER'),
-  versionedStorage: hasRole('ROLE_VERSIONED_STORAGE_MANAGER'),
-  folder: hasRole('ROLE_FOLDER_MANAGER'),
-  configuration: hasRole('ROLE_CONFIGURATION_MANAGER'),
-  storage: hasRole('ROLE_STORAGE_MANAGER'),
-  storageTag: hasRole('ROLE_STORAGE_TAG_MANAGER'),
-  toolGroup: hasRole('ROLE_TOOL_GROUP_MANAGER'),
-  entities: hasRole('ROLE_ENTITIES_MANAGER'),
-  billing: hasRole('ROLE_BILLING_MANAGER')
+  archiveReader: hasRole(ROLES.ROLE_STORAGE_ARCHIVE_READER),
+  archiveManager: hasRole(ROLES.ROLE_STORAGE_ARCHIVE_MANAGER),
+  storageAdmin: hasRole(ROLES.ROLE_STORAGE_ADMIN),
+  dtsManager: hasRole(ROLES.ROLE_DTS_MANAGER),
+  pipeline: hasRole(ROLES.ROLE_PIPELINE_MANAGER),
+  versionedStorage: hasRole(ROLES.ROLE_VERSIONED_STORAGE_MANAGER),
+  folder: hasRole(ROLES.ROLE_FOLDER_MANAGER),
+  configuration: hasRole(ROLES.ROLE_CONFIGURATION_MANAGER),
+  storage: hasRole(ROLES.ROLE_STORAGE_MANAGER),
+  storageTag: hasRole(ROLES.ROLE_STORAGE_TAG_MANAGER),
+  toolGroup: hasRole(ROLES.ROLE_TOOL_GROUP_MANAGER),
+  entities: hasRole(ROLES.ROLE_ENTITIES_MANAGER),
+  billing: hasRole(ROLES.ROLE_BILLING_MANAGER),
+  toolAdmin: hasRole(ROLES.ROLE_TOOL_ADMIN),
+  userAdmin: hasRole(ROLES.ROLE_USER_ADMIN),
+  pipelineAdmin: hasRole(ROLES.ROLE_PIPELINE_ADMIN),
+  runAdmin: hasRole(ROLES.ROLE_RUN_ADMIN)
 };
 
 export default {
@@ -436,5 +469,6 @@ export default {
   checkObjectPermissionsConflict,
   readPermissionEnabled,
   writePermissionEnabled,
-  executePermissionEnabled
+  executePermissionEnabled,
+  ROLES
 };

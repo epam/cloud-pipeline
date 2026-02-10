@@ -119,6 +119,11 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get searchPromptTemplate () {
+    return this.getPreferenceValue('search.prompt.template');
+  }
+
+  @computed
   get billingEnabled () {
     const value = this.getPreferenceValue('billing.reports.enabled');
     return value && `${value}`.toLowerCase() === 'true';
@@ -1072,6 +1077,23 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get miscAIPreferences () {
+    const value = this.getPreferenceValue('misc.ai.preferences');
+    if (value) {
+      try {
+        const cfg = JSON.parse(value);
+        if (typeof cfg === 'object') {
+          return cfg;
+        }
+        throw new Error(`unsupported type "${typeof cfg}"`);
+      } catch (e) {
+        console.warn('Error parsing "misc.ai.preferences" preference:', e.message);
+      }
+    }
+    return {};
+  }
+
+  @computed
   get launchReservationParameters () {
     const value = this.getPreferenceValue('launch.reservation.parameters');
     if (value) {
@@ -1082,6 +1104,21 @@ class PreferencesLoad extends Remote {
       }
     }
     return undefined;
+  }
+
+  @computed
+  get launchJWTTokenExpirationUserLimit () {
+    const value = this.getPreferenceValue('launch.jwt.token.expiration.user.limit');
+    if (value && !Number.isNaN(Number(value)) && Number(value) > 0) {
+      return Number(value);
+    }
+    return 0;
+  }
+
+  @computed
+  get launchDockerPreflightChecks () {
+    const value = this.getPreferenceValue('launch.docker.preflight.checks') || 'true';
+    return `${value}`.toLowerCase() !== 'false';
   }
 
   toolScanningEnabledForRegistry (registry) {

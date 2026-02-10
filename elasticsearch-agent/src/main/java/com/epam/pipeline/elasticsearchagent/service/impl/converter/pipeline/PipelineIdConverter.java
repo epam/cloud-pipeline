@@ -15,10 +15,10 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.pipeline;
 
+import com.epam.pipeline.elasticsearch.model.BulkItemResponse;
 import com.epam.pipeline.elasticsearchagent.service.ResponseIdConverter;
 import com.epam.pipeline.elasticsearchagent.utils.Utils;
 import lombok.RequiredArgsConstructor;
-import org.elasticsearch.action.bulk.BulkItemResponse;
 
 import java.util.Arrays;
 

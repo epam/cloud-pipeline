@@ -41,7 +41,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Getter
@@ -52,7 +51,6 @@ public class PipelineRun extends AbstractSecuredEntity {
     public static final String KEY_VALUE_DELIMITER = "=";
     public static final String PARAM_DELIMITER = "|";
     public static final String DEFAULT_PIPELINE_NAME = "pipeline";
-    private static final Pattern PARAMS_REGEXP = Pattern.compile("([a-zA-Z0-9_]*=[a-zA-Z0-9_]*)");
     public static final String GE_AUTOSCALING = "CP_CAP_AUTOSCALE";
 
     // Describes the user who actually launch this run, in common case will be the same as owner field,
@@ -192,21 +190,10 @@ public class PipelineRun extends AbstractSecuredEntity {
                 .findFirst();
     }
 
-    public void convertParamsToString(Map<String, PipeConfValueVO> parameters) {
-        params = parameters
-                .entrySet().stream()
-                .map(entry -> {
-                    String param = entry.getKey() + KEY_VALUE_DELIMITER +
-                            entry.getValue().getValue();
-                    if (StringUtils.isNotBlank(entry.getValue().getType())) {
-                        param += KEY_VALUE_DELIMITER + (entry.getValue().getType());
-                    }
-                    return param;
-                })
-                .collect(Collectors.joining(PARAM_DELIMITER));
-    }
-
     public void parseParameters() {
+        if (CollectionUtils.isNotEmpty(pipelineRunParameters)) {
+            return;
+        }
         pipelineRunParameters = new ArrayList<>();
         if (StringUtils.isNotBlank(params)) {
             String[] parts = params.split("\\|");

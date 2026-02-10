@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,7 @@ import com.epam.pipeline.entity.pipeline.run.parameter.RuntimeParameter;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.run.PipelineRunEmergencyTermAction;
+import com.epam.pipeline.entity.search.ElasticStackVersion;
 import com.epam.pipeline.entity.search.StorageFileSearchMask;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.sharing.SharedStoragePermissions;
@@ -756,7 +757,13 @@ public class SystemPreferences {
             "python .\\launch.py",
             LAUNCH_GROUP, isNotBlank);
     public static final IntPreference LAUNCH_JWT_TOKEN_EXPIRATION = new IntPreference(
-        "launch.jwt.token.expiration", 2592000, LAUNCH_GROUP, isGreaterThan(0));
+        "launch.jwt.token.expiration", 2592000, LAUNCH_GROUP,
+            isGreaterThan(0)
+     );
+    public static final IntPreference LAUNCH_JWT_TOKEN_EXPIRATION_USER_LIMIT = new IntPreference(
+            "launch.jwt.token.expiration.user.limit", 2592000, LAUNCH_GROUP,
+            isGreaterThan(0)
+    );
     public static final ObjectPreference<EnvVarsSettings> LAUNCH_ENV_PROPERTIES = new ObjectPreference<>(
         "launch.env.properties", null, new TypeReference<EnvVarsSettings>() {}, LAUNCH_GROUP,
         isNullOrValidJson(new TypeReference<EnvVarsSettings>() {}));
@@ -785,6 +792,9 @@ public class SystemPreferences {
     public static final EnumPreference<PipelineRunEmergencyTermAction> LAUNCH_RUN_EMERGENCY_TERM_ACTION =
             new EnumPreference<>("launch.run.emergency.termination.action",
                     PipelineRunEmergencyTermAction.DISABLED, LAUNCH_GROUP);
+
+    public static final BooleanPreference LAUNCH_DOCKER_PREFLIGHT_CHECKS = new BooleanPreference(
+            "launch.docker.preflight.checks", true, LAUNCH_GROUP, pass, true);
 
     /**
      * Specifies a comma-separated list of environment variables that should be inherited by DIND containers
@@ -816,6 +826,10 @@ public class SystemPreferences {
             "launch.serverless.stop.timeout", 60, LAUNCH_GROUP, isGreaterThan(0));
     public static final IntPreference LAUNCH_SERVERLESS_ENDPOINT_WAIT_COUNT = new IntPreference(
             "launch.serverless.endpoint.wait.count", 40, LAUNCH_GROUP, isGreaterThan(0));
+    public static final ObjectPreference<List<String>> LAUNCH_SERVERLESS_ENDPOINT_HTTP_HEADERS_TO_CLEANUP =
+            new ObjectPreference<>("launch.serverless.endpoint.http.headers.to.cleanup",
+            Arrays.asList("host", "SESSION"), new TypeReference<List<String>>() {}, LAUNCH_GROUP,
+                    isNullOrValidJson(new TypeReference<List<String>>() {}));
     public static final IntPreference LAUNCH_SERVERLESS_ENDPOINT_WAIT_TIME = new IntPreference(
             "launch.serverless.endpoint.wait.time", 20000, LAUNCH_GROUP, isGreaterThan(0));
     public static final StringPreference LAUNCH_ORIGINAL_OWNER_PARAMETER = new StringPreference(
@@ -846,6 +860,13 @@ public class SystemPreferences {
             LAUNCH_GROUP, pass, true);
     public static final IntPreference  LAUNCH_GID_SEED = new IntPreference("launch.gid.seed", 90000,
             LAUNCH_GROUP, pass, true);
+
+    public static final BooleanPreference LAUNCH_EXTERNAL_UID_ENABLE = new BooleanPreference(
+            "launch.external.uid.enable", false, LAUNCH_GROUP, pass, true);
+    public static final StringPreference LAUNCH_EXTERNAL_UID_FIELD_NAME = new StringPreference(
+            "launch.external.uid.field.name", null, LAUNCH_GROUP, pass, true);
+    public static final StringPreference LAUNCH_EXTERNAL_GID_FIELD_NAME = new StringPreference(
+            "launch.external.default.gid.field.name", null, LAUNCH_GROUP, pass, true);
 
     public static final ObjectPreference<Map<String, Object>> LAUNCH_PRE_COMMON_COMMANDS = new ObjectPreference<>(
             "launch.pre.common.commands", null, new TypeReference<Map<String, Object>>() {},
@@ -1168,6 +1189,11 @@ public class SystemPreferences {
     public static final BooleanPreference SYSTEM_SSH_DEFAULT_ROOT_USER_ENABLED = new BooleanPreference(
             "system.ssh.default.root.user.enabled", true, SYSTEM_GROUP, pass, true);
     /**
+     * Specifies paths/command list that will be available for default user under sudo.
+     */
+    public static final StringPreference SYSTEM_SSH_DEFAULT_ROOT_USER_AVAILABLE_COMMANDS = new StringPreference(
+            "system.ssh.default.root.user.available.commands", "", SYSTEM_GROUP, pass);
+    /**
      * Controls which instance types will be excluded from notification list.
      */
     public static final StringPreference SYSTEM_NOTIFICATIONS_EXCLUDE_INSTANCE_TYPES = new StringPreference(
@@ -1292,6 +1318,18 @@ public class SystemPreferences {
             "system.default.docker.registry.id", null, SYSTEM_GROUP, isNullOrGreaterThan(0));
     public static final IntPreference SYSTEM_RUN_FILTER_MAX_PAGE_SIZE = new IntPreference(
             "system.run.filter.max.page.size", 1000, SYSTEM_GROUP, isGreaterThan(0));
+    public static final IntPreference SYSTEM_ACCESS_CODE_LENGTH = new IntPreference(
+            "system.access.code.length", 23, SYSTEM_GROUP, isGreaterThan(0));
+    public static final ObjectPreference<List<String>> SYSTEM_ACCESS_ALLOWED_CODE_CHALLENGE_METHODS =
+            new ObjectPreference<>("system.access.allowed.code.challenge.methods",
+                    Collections.singletonList("S256"), new TypeReference<List<String>>() {}, SYSTEM_GROUP,
+                    isNullOrValidJson(new TypeReference<List<String>>() {}));
+    public static final IntPreference SYSTEM_ACCESS_CODE_TTL_MINUTES = new IntPreference(
+            "system.access.code.ttl.minutes", 10, SYSTEM_GROUP, isGreaterThan(0));
+    public static final IntPreference SYSTEM_ACCESS_CODE_MONITOR_DELAY = new IntPreference(
+            "system.access.code.monitor.delay", Constants.MILLISECONDS_IN_DAY, SYSTEM_GROUP, isGreaterThan(0));
+    public static final BooleanPreference SYSTEM_ACCESS_CODE_MONITOR_ENABLED = new BooleanPreference(
+            "system.access.code.monitor.enable", true, SYSTEM_GROUP, pass);
 
     // FireCloud Integration
     public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(
@@ -1348,6 +1386,8 @@ public class SystemPreferences {
             null, SEARCH_GROUP, pass);
     public static final IntPreference SEARCH_ELASTIC_SOCKET_TIMEOUT = new IntPreference(
             "search.elastic.socket.timeout", 30000, SEARCH_GROUP, pass);
+    public static final EnumPreference<ElasticStackVersion> SEARCH_ELASTIC_VERSION = new EnumPreference<>(
+            "search.elastic.version", ElasticStackVersion.V6, SEARCH_GROUP, pass);
     public static final IntPreference SEARCH_ELASTIC_BILLING_SOCKET_TIMEOUT = new IntPreference(
             "search.elastic.billing.socket.timeout", 30000, SEARCH_GROUP, pass);
     public static final IntPreference SEARCH_ELASTIC_BILLING_RETRY_TIMEOUT = new IntPreference(
@@ -1392,6 +1432,8 @@ public class SystemPreferences {
             new ObjectPreference<>("search.export.template.mapping", Collections.emptyMap(),
                     new TypeReference<Map<String, SearchTemplateExportConfig>>() {}, SEARCH_GROUP,
                     isValidSearchExportTemplateConfig);
+    public static final StringPreference SEARCH_PROMPT_TEMPLATE = new StringPreference(
+            "search.prompt.template", null, SEARCH_GROUP, pass);
 
     public static final ObjectPreference<List<StorageFileSearchMask>> FILE_SEARCH_MASK_RULES = new ObjectPreference<>(
         "search.storage.elements.settings",

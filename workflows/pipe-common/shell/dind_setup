@@ -212,6 +212,44 @@ sed -i '1a \
   },' /etc/docker/daemon.json
 fi
 
+
+######################################################
+# Install buildx
+######################################################
+CP_CAP_DIND_BUILDX_ENABLED="${CP_CAP_DIND_BUILDX_ENABLED:-false}"
+CP_CAP_DIND_BUILDX_VERSION="${CP_CAP_DIND_BUILDX_VERSION:-0.25.0}"
+CP_CAP_DIND_BUILDX_INSTALL_DIR="${CP_CAP_DIND_BUILDX_INSTALL_DIR:-/usr/lib/docker/cli-plugins}"
+CP_CAP_DIND_BUILDX_DISTR_PREFIX="${CP_CAP_DIND_BUILDX_DISTR_PREFIX:-"${GLOBAL_DISTRIBUTION_URL}tools/docker/buildx"}"
+CP_CAP_DIND_BUILDX_BUILDER_NAME="${CP_CAP_DIND_BUILDX_BUILDER_NAME:-cp-builder}"
+if util_version_compare "$CP_CAP_DIND_VERSION" "19.03.0" ">" && \
+    [ "$CP_CAP_DIND_BUILDX_ENABLED" != "false" ]; then
+
+    pipe_log_info "Installing buildx plugin:" "$DIND_SETUP_TASK"
+    pipe_log_info "- version: $CP_CAP_DIND_BUILDX_VERSION" "$DIND_SETUP_TASK"
+    pipe_log_info "- url: $CP_CAP_DIND_BUILDX_DISTR_PREFIX" "$DIND_SETUP_TASK"
+    pipe_log_info "- install dir: $CP_CAP_DIND_BUILDX_INSTALL_DIR" "$DIND_SETUP_TASK"
+    
+    mkdir -p "${CP_CAP_DIND_BUILDX_INSTALL_DIR}" && \
+    wget -q -O "$CP_CAP_DIND_BUILDX_INSTALL_DIR/docker-buildx" "${CP_CAP_DIND_BUILDX_DISTR_PREFIX}/buildx-v${CP_CAP_DIND_BUILDX_VERSION}.linux-amd64" && \
+    chmod +x "$CP_CAP_DIND_BUILDX_INSTALL_DIR/docker-buildx"
+
+    if [ $? -ne 0 ]; then
+        pipe_log_warn "buildx installation failed" "$DIND_SETUP_TASK"
+    else
+        if [ "$http_proxy" ] || [ "$https_proxy" ] || [ "$no_proxy" ]; then
+            pipe_log_info "Setting up buildx proxies" "$DIND_SETUP_TASK"
+            docker buildx rm "$CP_CAP_DIND_BUILDX_BUILDER_NAME"
+            docker buildx create \
+                --name "$CP_CAP_DIND_BUILDX_BUILDER_NAME" \
+                --use \
+                --driver docker-container \
+                --driver-opt env.http_proxy="$http_proxy" \
+                --driver-opt env.https_proxy="$https_proxy" \
+                --driver-opt '"env.no_proxy='$no_proxy'"'
+        fi
+    fi
+fi
+
 ######################################################
 # Start dockerd
 ######################################################

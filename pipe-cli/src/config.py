@@ -138,59 +138,42 @@ class Config(object):
             return decorator(_func)
 
     def resolve_proxy(self, target_url=None):
-        if not self.proxy:
-            return None
-        elif self.proxy == PROXY_TYPE_PAC:
-            pac_file = PacAPI.get_pac()
-            if not pac_file:
-                return None
-            proxy_resolver = PacProxyResolver(pac_file)
-            url_to_resolve = target_url
-            if not url_to_resolve and self.api:
-                url_to_resolve = self.api
-            if not url_to_resolve:
-                url_to_resolve = PROXY_PAC_DEFAULT_URL
-
-            return proxy_resolver.get_proxy_for_requests(url_to_resolve)
-        elif self.proxy_ntlm:
-            ntlm_proxy = network_utilities.NTLMProxy.get_proxy(self.build_ntlm_module_path(),
-                                                               self.proxy_ntlm_domain,
-                                                               self.proxy_ntlm_user,
-                                                               self.proxy_ntlm_pass,
-                                                               self.proxy)
-            ntlm_aps_proxy_url = ntlm_proxy.get_ntlm_aps_local_url()
-            return {'http': ntlm_aps_proxy_url,
-                    'https': ntlm_aps_proxy_url,
-                    'ftp': ntlm_aps_proxy_url}
-        else:
-            return {'http': self.proxy,
-                    'https': self.proxy,
-                    'ftp': self.proxy}
+        return self._resolve_proxy(self.proxy,
+                                   self.proxy_ntlm,
+                                   self.proxy_ntlm_domain,
+                                   self.proxy_ntlm_user,
+                                   self.proxy_ntlm_pass,
+                                   self.api,
+                                   target_url)
 
     @classmethod
     def get_base_source_dir(cls):
         return sys._MEIPASS if is_frozen() else os.path.dirname(os.path.abspath(__file__))
 
-    def build_inner_module_path(self, module):
+    @classmethod
+    def build_inner_module_path(cls, module):
         # Setup pipe executable path
         # Both frozen and plain distributions: https://stackoverflow.com/a/42615559
-        pipe_path = self.get_base_source_dir()
+        pipe_path = cls.get_base_source_dir()
         return os.path.join(pipe_path, module)
 
-    def build_ntlm_module_path(self):
-        return self.build_inner_module_path("ntlmaps/ntlmaps")
+    @classmethod
+    def build_ntlm_module_path(cls):
+        return cls.build_inner_module_path("ntlmaps/ntlmaps")
+
+    @classmethod
+    def build_proxies(cls, proxy, proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain, proxy_ntlm_pass, api):
+        cls._validate_proxy(proxy, proxy_ntlm, proxy_ntlm_pass)
+        cls.validate_pac_proxy(proxy)
+        proxy_ntlm_pass = cls.encode_password(proxy_ntlm_pass)
+        return cls._resolve_proxy(proxy, proxy_ntlm, proxy_ntlm_domain, proxy_ntlm_user, proxy_ntlm_pass, api)
+
 
     @classmethod
     def store(cls, access_key, api, timezone, proxy,
               proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain, proxy_ntlm_pass, codec, config_store):
         check_token(access_key, timezone)
-        if proxy == PROXY_TYPE_PAC and proxy_ntlm:
-            raise ProxyInvalidConfig('NTLM proxy authentication cannot be used for the PAC proxy type'
-                                     'Remove the NTLM parameters or change the PAC to the proxy URL')
-        if proxy_ntlm and not is_frozen():
-            raise ProxyInvalidConfig('NTLM proxy authentication is supported only for prebuilt CLI binaries.')
-        if proxy_ntlm_pass:
-            click.secho('Warning: NTLM proxy user password will be stored unencrypted.', fg='yellow')
+        cls._validate_proxy(proxy, proxy_ntlm, proxy_ntlm_pass)
         if codec and sys.version_info[0] >= 3:
             click.echo('Encoding can not be configured with current environment.', err=True)
             sys.exit(1)
@@ -315,3 +298,45 @@ class Config(object):
         if self.__USER_TOKEN__:
             return self.__USER_TOKEN__
         return self.access_key
+
+    @classmethod
+    def _validate_proxy(cls, proxy, proxy_ntlm, proxy_ntlm_pass):
+        if proxy == PROXY_TYPE_PAC and proxy_ntlm:
+            raise ProxyInvalidConfig('NTLM proxy authentication cannot be used for the PAC proxy type'
+                                     'Remove the NTLM parameters or change the PAC to the proxy URL')
+        if proxy_ntlm and not is_frozen():
+            raise ProxyInvalidConfig('NTLM proxy authentication is supported only for prebuilt CLI binaries.')
+        if proxy_ntlm_pass:
+            click.secho('Warning: NTLM proxy user password will be stored unencrypted.', fg='yellow')
+
+    @classmethod
+    def _resolve_proxy(cls, proxy, proxy_ntlm, proxy_ntlm_domain, proxy_ntlm_user, proxy_ntlm_pass, api,
+                       target_url=None):
+        if not proxy:
+            return None
+        elif proxy == PROXY_TYPE_PAC:
+            pac_file = PacAPI.get_pac()
+            if not pac_file:
+                return None
+            proxy_resolver = PacProxyResolver(pac_file)
+            url_to_resolve = target_url
+            if not url_to_resolve and api:
+                url_to_resolve = api
+            if not url_to_resolve:
+                url_to_resolve = PROXY_PAC_DEFAULT_URL
+
+            return proxy_resolver.get_proxy_for_requests(url_to_resolve)
+        elif proxy_ntlm:
+            ntlm_proxy = network_utilities.NTLMProxy.get_proxy(cls.build_ntlm_module_path(),
+                                                               proxy_ntlm_domain,
+                                                               proxy_ntlm_user,
+                                                               proxy_ntlm_pass,
+                                                               proxy)
+            ntlm_aps_proxy_url = ntlm_proxy.get_ntlm_aps_local_url()
+            return {'http': ntlm_aps_proxy_url,
+                    'https': ntlm_aps_proxy_url,
+                    'ftp': ntlm_aps_proxy_url}
+        else:
+            return {'http': proxy,
+                    'https': proxy,
+                    'ftp': proxy}

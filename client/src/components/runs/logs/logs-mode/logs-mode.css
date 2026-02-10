@@ -1,0 +1,9 @@
+.logs-mode-button {
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 4px;
+  padding: 4px;
+  font-size: small;
+  line-height: 1;
+}

@@ -113,10 +113,20 @@ export function stopRun (parent, callback) {
     localization,
     dockerRegistries,
     hiddenObjects,
-    preferences
+    preferences,
+    authenticatedUserInfo
   } = parent.props;
   return function (run) {
-    return stopRunFn(run, callback, {preferences, localization, dockerRegistries, hiddenObjects});
+    return stopRunFn(
+      run,
+      callback,
+      {
+        preferences,
+        localization,
+        dockerRegistries,
+        hiddenObjects,
+        authenticatedUserInfo
+      });
   };
 }
 

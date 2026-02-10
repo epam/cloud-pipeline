@@ -16,15 +16,12 @@
 
 package com.epam.pipeline.entity.pipeline;
 
-import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import org.junit.Test;
 import org.springframework.util.StringUtils;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -41,31 +38,6 @@ public class PipelineRunTest {
     private static final String PARAM2_TYPE = "output";
     private static final String PARAM2_VALUE = "value";
     private static final String PARAM2_VALUE_WITH_DELIMITER = "value";
-
-    @Test
-    public void shouldReturnValidStringWithoutType() {
-        PipelineRun pipelineRun = new PipelineRun();
-        Map<String, PipeConfValueVO> params = new HashMap<>();
-        params.put(PARAM1_NAME, new PipeConfValueVO(PARAM1_VALUE, null));
-        params.put(PARAM2_NAME, new PipeConfValueVO(PARAM2_VALUE, null));
-        pipelineRun.convertParamsToString(params);
-
-        assertThat(pipelineRun.getParams(),
-                is(glueParams(glueParam(PARAM1_NAME, PARAM1_VALUE), glueParam(PARAM2_NAME, PARAM2_VALUE))));
-    }
-
-    @Test
-    public void shouldReturnValidStringWithType() {
-        PipelineRun pipelineRun = new PipelineRun();
-        Map<String, PipeConfValueVO> params = new HashMap<>();
-        params.put(PARAM1_NAME, new PipeConfValueVO(PARAM1_VALUE, PARAM1_TYPE));
-        params.put(PARAM2_NAME, new PipeConfValueVO(PARAM2_VALUE, PARAM2_TYPE));
-        pipelineRun.convertParamsToString(params);
-
-        assertThat(pipelineRun.getParams(),
-                is(glueParams(glueParam(PARAM1_NAME, PARAM1_VALUE, PARAM1_TYPE),
-                        glueParam(PARAM2_NAME, PARAM2_VALUE, PARAM2_TYPE))));
-    }
 
     @Test
     public void shouldParseParamWithTypeValueParam() {

@@ -25,12 +25,11 @@ import com.epam.pipeline.entity.scan.ToolDependency;
 import com.epam.pipeline.entity.scan.ToolVersionScanResult;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import org.apache.commons.collections.CollectionUtils;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
@@ -39,59 +38,51 @@ import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchron
 public class ToolMapper implements EntityMapper<ToolWithDescription> {
 
     @Override
-    public XContentBuilder map(final EntityContainer<ToolWithDescription> doc) {
-        try (XContentBuilder jsonBuilder = XContentFactory.jsonBuilder()) {
-            final Tool tool = doc.getEntity().getTool();
-            final ToolDescription toolDescription = doc.getEntity().getToolDescription();
-            jsonBuilder
-                    .startObject()
-                    .field(DOC_TYPE_FIELD, SearchDocumentType.TOOL.name())
-                    .field("id", tool.getId())
-                    .field("registry", tool.getRegistry())
-                    .field("registryId", tool.getRegistryId())
-                    .field("image", tool.getImage())
-                    .field("name", tool.getImage())
-                    .field("createdDate", parseDataToString(tool.getCreatedDate()))
-                    .field("description", tool.getDescription())
-                    .field("shortDescription", tool.getShortDescription())
-                    .field("defaultCommand", tool.getDefaultCommand())
-                    .field("toolGroupId", tool.getToolGroupId())
-                    .field("parentId", tool.getToolGroupId());
+    public Map<String, ?> map(final EntityContainer<ToolWithDescription> doc) {
+        final Tool tool = doc.getEntity().getTool();
+        final ToolDescription toolDescription = doc.getEntity().getToolDescription();
+        final Map<String, Object> jsonMap = new HashMap<>();
+        jsonMap.put(DOC_TYPE_FIELD, SearchDocumentType.TOOL.name());
+        jsonMap.put("id", tool.getId());
+        jsonMap.put("registry", tool.getRegistry());
+        jsonMap.put("registryId", tool.getRegistryId());
+        jsonMap.put("image", tool.getImage());
+        jsonMap.put("name", tool.getImage());
+        jsonMap.put("createdDate", parseDataToString(tool.getCreatedDate()));
+        jsonMap.put("description", tool.getDescription());
+        jsonMap.put("shortDescription", tool.getShortDescription());
+        jsonMap.put("defaultCommand", tool.getDefaultCommand());
+        jsonMap.put("toolGroupId", tool.getToolGroupId());
+        jsonMap.put("parentId", tool.getToolGroupId());
 
-            buildLabels(tool.getLabels(), jsonBuilder);
-            buildVersions(toolDescription, jsonBuilder);
-            buildPackages(toolDescription, jsonBuilder);
+        buildLabels(tool.getLabels(), jsonMap);
+        buildVersions(toolDescription, jsonMap);
+        buildPackages(toolDescription, jsonMap);
 
-            buildUserContent(doc.getOwner(), jsonBuilder);
-            buildMetadata(doc.getMetadata(), jsonBuilder);
-            buildPermissions(doc.getPermissions(), jsonBuilder);
+        buildUserContent(doc.getOwner(), jsonMap);
+        buildMetadata(doc.getMetadata(), jsonMap);
+        buildPermissions(doc.getPermissions(), jsonMap);
 
-            jsonBuilder.endObject();
-            return jsonBuilder;
-        } catch (IOException e) {
-            throw new IllegalArgumentException("Failed to create elasticsearch document for tool: ", e);
-        }
+        return jsonMap;
     }
 
-    private void buildLabels(final List<String> labels, final XContentBuilder jsonBuilder) throws IOException {
+    private void buildLabels(final List<String> labels, final Map<String, Object> jsonMap) {
         if (!CollectionUtils.isEmpty(labels)) {
-            jsonBuilder.array("labels", labels.toArray());
+            jsonMap.put("labels", labels.toArray());
         }
     }
 
-    private void buildVersions(final ToolDescription toolDescription, final XContentBuilder jsonBuilder)
-        throws IOException {
+    private void buildVersions(final ToolDescription toolDescription, final Map<String, Object> jsonMap) {
         final List<ToolVersionAttributes> versions = toolDescription.getVersions();
         if (CollectionUtils.isNotEmpty(versions)) {
             final String[] versionArray = versions.stream()
                 .map(ToolVersionAttributes::getVersion)
                 .toArray(String[]::new);
-            jsonBuilder.array("version", versionArray);
+            jsonMap.put("version", versionArray);
         }
     }
 
-    private void buildPackages(final ToolDescription toolDescription, final XContentBuilder jsonBuilder)
-        throws IOException {
+    private void buildPackages(final ToolDescription toolDescription, final Map<String, Object> jsonMap) {
         final List<ToolVersionAttributes> versions = toolDescription.getVersions();
         if (CollectionUtils.isNotEmpty(versions)) {
             final String[] toolPackagesNames = versions.stream()
@@ -105,7 +96,7 @@ public class ToolMapper implements EntityMapper<ToolWithDescription> {
                 .filter(Objects::nonNull)
                 .distinct()
                 .toArray(String[]::new);
-            jsonBuilder.array("packages", toolPackagesNames);
+            jsonMap.put("packages", toolPackagesNames);
         }
     }
 }

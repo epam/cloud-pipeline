@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.test.acl;
 
+import com.epam.pipeline.acl.auth.AccessApiService;
 import com.epam.pipeline.acl.plugin.PluginAssignmentService;
 import com.epam.pipeline.acl.plugin.PluginService;
 import com.epam.pipeline.common.MessageHelper;
@@ -634,6 +635,9 @@ public class AclTestBeans {
 
     @MockBean
     protected PluginAssignmentService assignmentService;
+
+    @MockBean
+    protected AccessApiService accessApiService;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {

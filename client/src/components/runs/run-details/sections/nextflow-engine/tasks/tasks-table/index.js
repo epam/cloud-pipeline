@@ -72,8 +72,9 @@ const columns = [
     )
   },
   {
-    key: 'started',
+    key: 'startDate',
     title: 'Started',
+    sorting: true,
     render: (o) => {
       const {startDateTime} = o;
       if (startDateTime) {
@@ -83,8 +84,9 @@ const columns = [
     }
   },
   {
-    key: 'finished',
+    key: 'endDate',
     title: 'Finished',
+    sorting: true,
     render: (o) => {
       const {endDateTime} = o;
       if (endDateTime) {

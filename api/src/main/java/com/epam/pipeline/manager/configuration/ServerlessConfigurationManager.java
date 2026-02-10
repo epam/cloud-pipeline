@@ -88,6 +88,7 @@ public class ServerlessConfigurationManager {
     private static final int DEFAULT_PAGE_SIZE = 20;
     private static final String BEARER_COOKIE_NAME = "bearer";
     private static final String PATH_DELIMITER = "/";
+    private static final long JWT_EXPIRATION_SEC = 600L;
 
     private final RunConfigurationManager runConfigurationManager;
     private final ConfigurationRunner configurationRunner;
@@ -245,23 +246,27 @@ public class ServerlessConfigurationManager {
                 .LAUNCH_SERVERLESS_ENDPOINT_WAIT_COUNT);
         final Integer waitTime = preferenceManager.getPreference(SystemPreferences
                 .LAUNCH_SERVERLESS_ENDPOINT_WAIT_TIME);
-
-        for (int i = 0; i < maxRetryCount; i++) {
-            try {
-                final HttpEntity<String> requestEntity = buildHttpEntity(request);
-                final ResponseEntity<String> resp = buildRestTemplate()
-                        .exchange(appPath, HttpMethod.valueOf(request.getMethod()), requestEntity, String.class);
-                return resp.getBody();
-            } catch (IOException | NoSuchAlgorithmException | KeyStoreException | KeyManagementException e) {
-                throw new IllegalArgumentException(e);
-            } catch (HttpServerErrorException e) {
-                if (HttpStatus.BAD_GATEWAY.equals(e.getStatusCode())) {
-                    log.debug("Waiting for service. Try: {}", i + 1);
-                    waitTimeout(waitTime);
-                    continue;
+        final List<String> headersToCleanup = preferenceManager.getPreference(
+                SystemPreferences.LAUNCH_SERVERLESS_ENDPOINT_HTTP_HEADERS_TO_CLEANUP);
+        try {
+            final HttpEntity<String> requestEntity = buildHttpEntity(request, headersToCleanup);
+            final RestTemplate restTemplate = buildRestTemplate();
+            for (int i = 0; i < maxRetryCount; i++) {
+                try {
+                    final ResponseEntity<String> resp = restTemplate.exchange(
+                            appPath, HttpMethod.valueOf(request.getMethod()), requestEntity, String.class);
+                    return resp.getBody();
+                } catch (HttpServerErrorException e) {
+                    if (HttpStatus.BAD_GATEWAY.equals(e.getStatusCode())) {
+                        log.debug("Waiting for service. Try: {}", i + 1);
+                        waitTimeout(waitTime);
+                        continue;
+                    }
+                    throw new IllegalArgumentException(e);
                 }
-                throw new IllegalArgumentException(e);
             }
+        } catch (IOException | NoSuchAlgorithmException | KeyStoreException | KeyManagementException e) {
+            throw new IllegalArgumentException(e);
         }
         throw new IllegalArgumentException(String.format("Failed to retrieve successful response from endpoint %s",
                 appPath));
@@ -287,26 +292,35 @@ public class ServerlessConfigurationManager {
         return matcher.matches() ? matcher.group(1) : "";
     }
 
-    private HttpHeaders buildHttpHeaders(final HttpServletRequest request) {
+    private HttpHeaders buildHttpHeaders(final HttpServletRequest request,
+                                         final List<String> headersToCleanup) {
         final HttpHeaders headers = new HttpHeaders();
         final List<String> headerNames = Collections.list(request.getHeaderNames());
         final Cookie[] cookies = request.getCookies();
-        if (hasNotBearerCookie(cookies)) {
-            final String token = ((UserContext) authManager.getAuthentication().getPrincipal()).getJwtRawToken()
-                    .getToken();
-            headers.add(HttpHeaders.COOKIE, Objects.isNull(cookies)
-                    ? String.format("%s=%s", BEARER_COOKIE_NAME, token)
-                    : String.format("%s; %s=%s", request.getHeader(HttpHeaders.COOKIE), BEARER_COOKIE_NAME, token));
-        }
+
+        headers.add(HttpHeaders.COOKIE, calculateCookieHeader(request, cookies));
         headerNames.stream()
-                .filter(headerName -> !(HttpHeaders.COOKIE.equals(headerName) && hasNotBearerCookie(cookies)))
+                .filter(headerName -> !HttpHeaders.COOKIE.equals(headerName))
+                .filter(headerName -> !CollectionUtils.emptyIfNull(headersToCleanup).contains(headerName))
                 .forEach(headerName -> headers.add(headerName, request.getHeader(headerName)));
         return headers;
     }
 
-    private boolean hasNotBearerCookie(final Cookie[] cookies) {
-        return !Objects.nonNull(cookies) || Arrays.stream(cookies)
-                .noneMatch(cookie -> BEARER_COOKIE_NAME.equalsIgnoreCase(cookie.getName()));
+    private String calculateCookieHeader(final HttpServletRequest request, final Cookie[] cookies) {
+        if (!hasBearerCookie(cookies)) {
+            final String token = authManager.issueToken(
+                    (UserContext) authManager.getAuthentication().getPrincipal(), JWT_EXPIRATION_SEC).getToken();
+            return Objects.isNull(cookies)
+                    ? String.format("%s=%s", BEARER_COOKIE_NAME, token)
+                    : String.format("%s; %s=%s", request.getHeader(HttpHeaders.COOKIE), BEARER_COOKIE_NAME, token);
+        } else  {
+            return request.getHeader(HttpHeaders.COOKIE);
+        }
+    }
+
+    private boolean hasBearerCookie(final Cookie[] cookies) {
+        return Objects.nonNull(cookies) && Arrays.stream(cookies)
+                .anyMatch(cookie -> BEARER_COOKIE_NAME.equalsIgnoreCase(cookie.getName()));
     }
 
     private RestTemplate buildRestTemplate() throws KeyStoreException, NoSuchAlgorithmException,
@@ -329,10 +343,11 @@ public class ServerlessConfigurationManager {
                 .build();
     }
 
-    private HttpEntity<String> buildHttpEntity(final HttpServletRequest request) throws IOException {
+    private HttpEntity<String> buildHttpEntity(final HttpServletRequest request,
+                                               final List<String> headersToCleanup) throws IOException {
         final String body = IOUtils.toString(request.getInputStream(),
                 Charset.forName(request.getCharacterEncoding()));
-        return new HttpEntity<>(body, buildHttpHeaders(request));
+        return new HttpEntity<>(body, buildHttpHeaders(request, headersToCleanup));
     }
 
     private void waitTimeout(final Integer waitTime) {

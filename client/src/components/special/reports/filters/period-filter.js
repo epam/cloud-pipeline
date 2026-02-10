@@ -26,7 +26,9 @@ export default function DateFilter ({
   filter,
   range,
   onChange = () => {},
-  periods
+  periods,
+  pending,
+  style
 }) {
   const getButtonType = (key) => key === filter ? 'primary' : 'default';
   const onClick = (key) => () => {
@@ -55,6 +57,7 @@ export default function DateFilter ({
         period={filter}
         range={range}
         onChange={onChange}
+        style={style}
       />
       <Divider />
       <Button.Group className={styles.periodBtnGroup}>
@@ -66,6 +69,7 @@ export default function DateFilter ({
               key={period}
               type={getButtonType(period)}
               onClick={onClick(period)}
+              loading={pending && period === filter}
             >
               {getPeriodName(period)}
             </Button>

@@ -37,14 +37,24 @@ public enum DefaultRoles {
     ROLE_STORAGE_ARCHIVE_MANAGER(new Role(null, "ROLE_STORAGE_ARCHIVE_MANAGER", true, false, null, null, null, null)),
     ROLE_STORAGE_ARCHIVE_READER(new Role(null, "ROLE_STORAGE_ARCHIVE_READER", true, false, null, null, null, null)),
     ROLE_STORAGE_MANAGER(new Role(null, "ROLE_STORAGE_MANAGER", true, false, null, null, null, null)),
+    ROLE_FOLDER_MANAGER(new Role(null, "ROLE_FOLDER_MANAGER", true, false, null, null, null, null)),
+    ROLE_CONFIGURATION_MANAGER(new Role(null, "ROLE_CONFIGURATION_MANAGER", true, false, null, null, null, null)),
+    ROLE_TOOL_GROUP_MANAGER(new Role(null, "ROLE_TOOL_GROUP_MANAGER", true, false, null, null, null, null)),
+    ROLE_ENTITIES_MANAGER(new Role(null, "ROLE_ENTITIES_MANAGER", true, false, null, null, null, null)),
     ROLE_STORAGE_TAG_MANAGER(new Role(null, "ROLE_STORAGE_TAG_MANAGER", true, false, null, null, null, null)),
     ROLE_PIPELINE_MANAGER(new Role(null, "ROLE_PIPELINE_MANAGER", true, false, null, null, null, null)),
     ROLE_VERSIONED_STORAGE_MANAGER(new Role(null, "ROLE_VERSIONED_STORAGE_MANAGER", true, false,
             null, null, null, null)),
     ROLE_STORAGE_ADMIN(new Role(null, "ROLE_STORAGE_ADMIN", true, false, null, null, null, null)),
+    ROLE_TOOL_ADMIN(new Role(null, "ROLE_TOOL_ADMIN", true, false, null, null, null, null)),
+    ROLE_USER_ADMIN(new Role(null, "ROLE_USER_ADMIN", true, false, null, null, null, null)),
+    ROLE_PIPELINE_ADMIN(new Role(null, "ROLE_PIPELINE_ADMIN", true, false, null, null, null, null)),
+    ROLE_RUN_ADMIN(new Role(null, "ROLE_RUN_ADMIN", true, false, null, null, null, null)),
     ROLE_ADVANCED_RUN_POLICY_MANAGER(new Role(null, "ROLE_ADVANCED_RUN_POLICY_MANAGER", true, false,
             null, null, null, null)),
-    ROLE_CLUSTER_READER(new Role(null, "ROLE_CLUSTER_READER", true, false, null, null, null, null));
+    ROLE_CLUSTER_READER(new Role(null, "ROLE_CLUSTER_READER", true, false, null, null, null, null)),
+    ROLE_USER_METADATA_READER(new Role(null, "ROLE_USER_METADATA_READER", true, false, null, null, null, null)),
+    ROLE_USER_READER(new Role(null, "ROLE_USER_READER", true, false, null, null, null, null));
 
     private Role role;
 

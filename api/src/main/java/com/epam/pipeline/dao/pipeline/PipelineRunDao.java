@@ -25,7 +25,7 @@ import com.epam.pipeline.dao.DaoUtils;
 import com.epam.pipeline.dao.DryRunJdbcDaoSupport;
 import com.epam.pipeline.dao.run.RunServiceUrlDao;
 import com.epam.pipeline.entity.BaseEntity;
-import com.epam.pipeline.entity.filter.AclSecuredFilter;
+import com.epam.pipeline.entity.filter.AclSecuredRunFilter;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -33,6 +33,7 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.ExecutionPreferences;
 import com.epam.pipeline.entity.pipeline.run.PipelineRunServiceUrl;
+import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunAccessType;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.region.CloudProvider;
@@ -81,6 +82,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
     private Pattern wherePattern = Pattern.compile("@WHERE@");
     private Pattern whereTagsPattern = Pattern.compile("@WHERE_TAGS@");
     private static final String AND = " AND ";
+    private static final String OR = " OR ";
     private static final String WHERE = " WHERE ";
     private static final String POSTGRE_TYPE_BIGINT = "BIGINT";
     private static final int STRING_BUFFER_SIZE = 70;
@@ -812,26 +814,52 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
 
         if (StringUtils.isNotBlank(filter.getPartialParameters())) {
             appendAnd(whereBuilder, clausesCount);
-            whereBuilder.append(" r.parameters like :").append(PipelineRunParameters.PARAMETERS.name());
+            //TODO cleanup when migration from parameters to parameters_json will be done
             params.addValue(PipelineRunParameters.PARAMETERS.name(),
                     String.format("%%%s%%", filter.getPartialParameters()));
+            final String partialParametersClause = String.format("r.parameters like :%s",
+                    PipelineRunParameters.PARAMETERS.name());
+            final String parameterJsonClause = buildParameterJsonClauseForPartialParameters(
+                    filter.getPartialParameters(), params);
+            whereBuilder
+                    .append(" (")
+                    .append(partialParametersClause).append(OR)
+                    .append(parameterJsonClause).append(") ");
             clausesCount++;
         }
 
         if (filter.getParentId() != null) {
             appendAnd(whereBuilder, clausesCount);
 
-            whereBuilder.append(String.format(" (r.parent_id = %d OR r.parameters = 'parent-id=%d' "
-                            + "OR r.parameters like "
-                            + "any(array['%%|parent-id=%d|%%','%%|parent-id=%d','parent-id=%d|%%', " +
-                            "'parent-id=%d=%%', '%%|parent-id=%d=%%']))",
+            final String parentIdFieldIsPresentClause = String.format("(r.parent_id = %d)", filter.getParentId());
+            //TODO cleanup when migration from parameters to parameters_json will be done
+            final String parametersFieldHasParentIdClause = String.format(
+                    "(r.parameters = 'parent-id=%d' " +
+                            "OR r.parameters like " +
+                            "any(array[" +
+                                    "'%%|parent-id=%d|%%','%%|parent-id=%d'," +
+                                    "'parent-id=%d|%%', 'parent-id=%d=%%', '%%|parent-id=%d=%%']" +
+                            ")" +
+                        ")",
                     filter.getParentId(),
                     filter.getParentId(),
                     filter.getParentId(),
                     filter.getParentId(),
                     filter.getParentId(),
-                    filter.getParentId(),
-                    filter.getParentId()));
+                    filter.getParentId()
+            );
+            final String parameterJsonFieldHasParentIdClause = String.format(
+                    "(r.parameters_json @> '{\"parent-id\" : {\"name\": \"parent-id\", \"value\": \"%d\"}}'::jsonb)",
+                    filter.getParentId()
+            );
+            whereBuilder
+                    .append(" (")
+                    .append(parentIdFieldIsPresentClause)
+                    .append(OR)
+                    .append(parametersFieldHasParentIdClause)
+                    .append(OR)
+                    .append(parameterJsonFieldHasParentIdClause)
+                    .append(" )");
             clausesCount++;
         }
 
@@ -866,7 +894,15 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
 
         if (filter.isMasterRun()) {
             appendAnd(whereBuilder, clausesCount);
-            whereBuilder.append(" (r.node_count > 0 OR r.parameters like '%CP_CAP_AUTOSCALE=true=boolean%')");
+            //TODO cleanup when migration from parameters to parameters_json will be done
+            whereBuilder.append(
+                    " (" +
+                        "r.node_count > 0 " +
+                        "OR r.parameters like '%CP_CAP_AUTOSCALE=true=boolean%' " +
+                        "OR r.parameters_json @> '{\"CP_CAP_AUTOSCALE\": " +
+                            "{\"name\": \"CP_CAP_AUTOSCALE\", \"value\": \"true\", \"type\": \"boolean\"}}'::jsonb" +
+                    ")"
+            );
             clausesCount++;
         }
 
@@ -880,6 +916,28 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         appendAclFilters(filter, params, whereBuilder, clausesCount);
 
         return whereBuilder.toString();
+    }
+
+    private String buildParameterJsonClauseForPartialParameters(final String partialParams,
+                                                                final MapSqlParameterSource params) {
+        final String[] partialParametersParts = partialParams.split("=", 3);
+        String parameterJsonClause = StringUtils.EMPTY;
+        if (partialParametersParts.length >= 1) {
+            parameterJsonClause = String.format("\"name\": \"%s\"", partialParametersParts[0]);
+        }
+
+        if (partialParametersParts.length >= 2) {
+            parameterJsonClause = parameterJsonClause
+                    + String.format(", \"value\": \"%s\"", partialParametersParts[1]);
+        }
+
+        if (partialParametersParts.length >= 3) {
+            parameterJsonClause = parameterJsonClause
+                    + String.format(", \"type\": \"%s\"", partialParametersParts[2]);
+        }
+        parameterJsonClause = String.format("{\"%s\": {%s}}", partialParametersParts[0], parameterJsonClause);
+        params.addValue(PipelineRunParameters.PARAMETER_JSON.name(), parameterJsonClause);
+        return String.format("r.parameters_json @> :%s::jsonb", PipelineRunParameters.PARAMETER_JSON.name());
     }
 
     private void appendAnd(StringBuilder whereBuilder, int clausesCount) {
@@ -901,7 +959,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             whereBuilder.append(
                     String.format(" r.pipeline_id in (:%s) ", PipelineRunParameters.PROJECT_PIPELINES.name()));
             if (CollectionUtils.isNotEmpty(projectFilter.getConfigurationIds())) {
-                whereBuilder.append(" OR ");
+                whereBuilder.append(OR);
             }
         }
         if (CollectionUtils.isNotEmpty(projectFilter.getConfigurationIds())) {
@@ -922,7 +980,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         }
     }
 
-    private void buildAclFiltersClause(final AclSecuredFilter filter, final MapSqlParameterSource params,
+    private void buildAclFiltersClause(final AclSecuredRunFilter filter, final MapSqlParameterSource params,
                                        final StringBuilder whereBuilder) {
         params.addValue(PipelineRunParameters.OWNERSHIP.name(), filter.getOwnershipFilter().toLowerCase());
         if (CollectionUtils.isNotEmpty(filter.getAllowedPipelines())) {
@@ -948,7 +1006,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
                 .map(entry -> String.format("(end_date < '%s' AND lower(owner) = '%s')",
                         Timestamp.from(entry.getValue().toInstant()),
                         entry.getKey().toLowerCase()))
-                .collect(Collectors.joining(" OR "));
+                .collect(Collectors.joining(OR));
     }
 
     private String makeRunSidsCondition(PipelineUser user, MapSqlParameterSource params) {
@@ -1043,6 +1101,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         START_DATE,
         END_DATE,
         PARAMETERS,
+        PARAMETER_JSON,
         PARENT_ID,
         CHILD_RUNS_COUNT,
         ACTIVE_CHILD_RUNS_COUNT,
@@ -1112,7 +1171,8 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         CLUSTER_PRICE,
         NODE_POOL_ID,
         NODE_START_DATE,
-        PROJECT_ID;
+        PROJECT_ID,
+        PARAMETERS_JSON;
 
         public static final RunAccessType DEFAULT_ACCESS_TYPE = RunAccessType.ENDPOINT;
 
@@ -1126,7 +1186,9 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             params.addValue(NODE_START_DATE.name(), run.getInstanceStartDate());
             params.addValue(PROJECT_ID.name(), run.getProjectId());
             params.addValue(END_DATE.name(), run.getEndDate());
-            params.addValue(PARAMETERS.name(), run.getParams());
+            params.addValue(PARAMETERS.name(), null);
+            params.addValue(PARAMETERS_JSON.name(),
+                    JsonMapper.convertDataToJsonStringForQuery(getParamsMap(run)));
             params.addValue(STATUS.name(), run.getStatus().getId());
             params.addValue(COMMIT_STATUS.name(), run.getCommitStatus().getId());
             params.addValue(LAST_CHANGE_COMMIT_TIME.name(), run.getLastChangeCommitTime());
@@ -1169,6 +1231,15 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             params.addValue(KUBE_SERVICE_ENABLED.name(), BooleanUtils.toBoolean(run.isKubeServiceEnabled()));
             addInstanceFields(run, params);
             return params;
+        }
+
+        private static Map<String, PipelineRunParameter> getParamsMap(final PipelineRun run) {
+            run.parseParameters();
+            if (CollectionUtils.isEmpty(run.getPipelineRunParameters())) {
+                return Collections.emptyMap();
+            }
+            return run.getPipelineRunParameters().stream().collect(
+                    Collectors.toMap(PipelineRunParameter::getName, Function.identity(), (p1, p2) -> p1));
         }
 
         private static void addInstanceFields(PipelineRun run, MapSqlParameterSource params) {
@@ -1235,7 +1306,14 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             if (!rs.wasNull()) {
                 run.setInstanceStartDate(new Date(instanceStartDate.getTime()));
             }
-            run.setParams(rs.getString(PARAMETERS.name()));
+
+            List<PipelineRunParameter> data = parseParams(rs.getString(PARAMETERS_JSON.name()));
+            if (!rs.wasNull()) {
+                run.setPipelineRunParameters(data);
+            } else {
+                run.setParams(rs.getString(PARAMETERS.name()));
+                run.parseParameters();
+            }
             run.setStatus(TaskStatus.getById(rs.getLong(STATUS.name())));
             run.setCommitStatus(CommitStatus.getById(rs.getLong(COMMIT_STATUS.name())));
             run.setLastChangeCommitTime(new Date(rs.getTimestamp(LAST_CHANGE_COMMIT_TIME.name()).getTime()));
@@ -1290,7 +1368,6 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             if (!rs.wasNull()) {
                 run.setParentRunId(parentRunId);
             }
-            run.parseParameters();
             Array entitiesIdsArray = rs.getArray(ENTITIES_IDS.name());
             if (entitiesIdsArray != null) {
                 List<Long> entitiesIds = Arrays.asList((Long[]) entitiesIdsArray.getArray());
@@ -1341,6 +1418,12 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
                 run.setTags(newTags);
             }
             return run;
+        }
+
+        static List<PipelineRunParameter> parseParams(final String data) {
+            final Map<String, PipelineRunParameter> params =
+                    JsonMapper.parseData(data, new TypeReference<Map<String, PipelineRunParameter>>() {});
+            return new ArrayList<>(MapUtils.emptyIfNull(params).values());
         }
 
         static RowMapper<PipelineRun> getRowMapper() {

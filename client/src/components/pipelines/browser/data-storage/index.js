@@ -592,6 +592,10 @@ export default class DataStorage extends React.Component {
     if (!info) {
       return [];
     }
+    const isAzure = /^az$/i.test(
+      this.storage.info.storageType ||
+      this.storage.info.type
+    );
     const {sensitive} = info;
     const items = [];
     const documentPreviewAvailable = (item) => {
@@ -623,8 +627,10 @@ export default class DataStorage extends React.Component {
       const fileRestored = restoreStatus.status === STATUS.SUCCEEDED;
       for (let version in versions) {
         if (versions.hasOwnProperty(version)) {
-          const archived = versions[version].labels &&
-            !isStandardClass(versions[version].labels['StorageClass']);
+          const {labels} = versions[version] || {};
+          const archived = isAzure
+            ? false
+            : labels && !isStandardClass(labels['StorageClass']);
           const versionRestored = restoreStatus.restoreVersions &&
             restoreStatus.status === STATUS.SUCCEEDED;
           const latest = versions[version].version === item.version;
@@ -665,7 +671,9 @@ export default class DataStorage extends React.Component {
     };
     items.push(...elements.map(i => {
       const restored = (this.getRestoredStatus(i) || {}).status === STATUS.SUCCEEDED;
-      const archived = i.labels && !isStandardClass(i.labels['StorageClass']);
+      const archived = isAzure
+        ? false
+        : i.labels && !isStandardClass(i.labels['StorageClass']);
       const active = i.labels && isActiveClass(i.labels['StorageClass']);
       const type = i.type.toLowerCase();
       const isDownloadable = !this.isOmicsStore
@@ -2658,6 +2666,7 @@ export default class DataStorage extends React.Component {
                   // synchronous
                   uploadToS3={/^s3$/i.test(type)}
                   uploadToNFS={/^nfs$/i.test(type)}
+                  uploadToAzure={/^az$/i.test(type)}
                   action={
                     DataStorageItemUpdate.uploadUrl(
                       this.props.storageId,

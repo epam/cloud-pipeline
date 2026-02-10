@@ -23,6 +23,7 @@ import com.epam.pipeline.billingreportagent.model.billing.StoragePricing;
 import com.epam.pipeline.billingreportagent.model.storage.StorageDescription;
 import com.epam.pipeline.billingreportagent.service.AbstractEntityMapper;
 import com.epam.pipeline.billingreportagent.service.impl.CloudPipelineAPIClient;
+import com.epam.pipeline.elasticsearch.ElasticStackVersion;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.LustreFS;
 import com.epam.pipeline.entity.datastorage.MountType;
@@ -37,17 +38,21 @@ public class LustreToBillingRequestConverterImpl extends StorageToBillingRequest
     public LustreToBillingRequestConverterImpl(final AbstractEntityMapper<StorageBillingInfo> mapper,
                                                final StoragePricingService storagePricing,
                                                final CloudPipelineAPIClient apiClient,
-                                               final boolean enableStorageHistoricalBillingGeneration) {
-        super(mapper, StorageType.FILE_STORAGE, storagePricing, apiClient, enableStorageHistoricalBillingGeneration);
+                                               final boolean enableStorageHistoricalBillingGeneration,
+                                               final ElasticStackVersion elasticStackVersion) {
+        super(mapper, StorageType.FILE_STORAGE, storagePricing, apiClient, enableStorageHistoricalBillingGeneration,
+                elasticStackVersion);
     }
 
     public LustreToBillingRequestConverterImpl(final AbstractEntityMapper<StorageBillingInfo> mapper,
                                                final StoragePricingService storagePricing,
                                                final CloudPipelineAPIClient apiClient,
                                                final FileShareMountsService fileshareMountsService,
-                                               final boolean enableStorageHistoricalBillingGeneration) {
+                                               final boolean enableStorageHistoricalBillingGeneration,
+                                               final ElasticStackVersion elasticStackVersion) {
         super(mapper, StorageType.FILE_STORAGE, storagePricing, apiClient,
-                fileshareMountsService, MountType.LUSTRE, enableStorageHistoricalBillingGeneration);
+                fileshareMountsService, MountType.LUSTRE, enableStorageHistoricalBillingGeneration,
+                elasticStackVersion);
     }
 
     @Override

@@ -275,9 +275,16 @@ if [ "$CP_TP_SMTP_DEST" ]; then
     nginx_add_proxy_entry "$CP_TP_SMTP_DEST" "smtp"
     # Start nginx smtp auth server: http://nginx.org/en/docs/mail/ngx_mail_auth_http_module.html
     nohup $MAMBA_ROOT_PREFIX/envs/auth-srv/bin/python /opt/smtp/smtp-auth-srv.py &> "$CP_TP_NGINX_SMTP_AUTH_SRV_LOG_FILE" &
+
     # Run Filebeat
-    envsubst < /etc/filebeat/filebeat-template.yml > /etc/filebeat/filebeat.yml
-    nohup filebeat &
+    CP_SEARCH_ELK_TYPE="${CP_SEARCH_ELK_TYPE:-standard}"
+    if [ "${CP_SEARCH_ELK_TYPE}" == "opensearch" ]; then
+      envsubst < /opt/filebeat-oss/filebeat-template.yml > /opt/filebeat-oss/filebeat.yml
+      nohup /opt/filebeat-oss/filebeat -c /opt/filebeat-oss/filebeat.yml &
+    else
+      envsubst < /etc/filebeat/filebeat-template.yml > /etc/filebeat/filebeat.yml
+      nohup filebeat &
+    fi
 fi
 
 # Add general nginx footer

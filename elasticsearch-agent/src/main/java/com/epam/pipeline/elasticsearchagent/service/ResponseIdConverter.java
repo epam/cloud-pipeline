@@ -15,8 +15,8 @@
  */
 package com.epam.pipeline.elasticsearchagent.service;
 
+import com.epam.pipeline.elasticsearch.model.BulkItemResponse;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.elasticsearch.action.bulk.BulkItemResponse;
 
 public interface ResponseIdConverter {
 

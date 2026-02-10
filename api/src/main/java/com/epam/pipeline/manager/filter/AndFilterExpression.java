@@ -16,7 +16,11 @@
 
 package com.epam.pipeline.manager.filter;
 
+import java.util.stream.Collectors;
+
 public class AndFilterExpression extends FilterExpression {
+
+    public static final String AND = " AND ";
 
     AndFilterExpression() {
         super();
@@ -24,10 +28,15 @@ public class AndFilterExpression extends FilterExpression {
 
     @Override
     public String toSQLStatement() throws WrongFilterException {
-        if (this.getExpressions() != null && this.getExpressions().size() == 2) {
-            return String.format("(%s AND %s)",
-                    this.getExpressions().get(0).toSQLStatement(),
-                    this.getExpressions().get(1).toSQLStatement());
+        if (this.getExpressions() != null) {
+            return String.format("(%s)",
+                    this.getExpressions().stream().map(child -> {
+                        try {
+                            return child.toSQLStatement();
+                        } catch (WrongFilterException e) {
+                            throw new IllegalStateException(e);
+                        }
+                    }).collect(Collectors.joining(AND)));
         }
         throw new WrongFilterException();
     }

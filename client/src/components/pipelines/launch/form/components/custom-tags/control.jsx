@@ -10,10 +10,10 @@ class CustomTagsControl extends React.PureComponent {
 
   onOpen = () => this.setState({visible: true});
   onClose = () => this.setState({visible: false});
-  onSave = (newTags) => {
+  onSave = (newTags, tagsTouched) => {
     const {onChange} = this.props;
     if (onChange) {
-      onChange(newTags);
+      onChange(newTags, tagsTouched);
     }
     this.onClose();
   }

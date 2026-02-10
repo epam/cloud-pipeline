@@ -107,7 +107,7 @@ class LaunchFormPathParameterInput extends React.PureComponent {
           defaultInput={!metadataAutoComplete}
         />
         <BucketBrowser
-          multiple
+          multiple={!isOutputType}
           onSelect={onPathChange}
           onCancel={this.closeBucketBrowser}
           visible={bucketBrowserOpened}

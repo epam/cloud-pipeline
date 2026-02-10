@@ -85,6 +85,7 @@ const LATEST_VERSION_PLACEHOLDER = {
     folders
   };
 })
+@roleModel.authenticationInfo
 @observer
 export default class Pipeline extends localization.LocalizedReactComponent {
   _versions = null;
@@ -376,14 +377,13 @@ export default class Pipeline extends localization.LocalizedReactComponent {
                 roleModel.writeAllowed(this.props.pipeline.value) &&
                 this.props.pipeline.loaded &&
                 !/^BITBUCKET$/i.test(this.repositoryType) &&
-                  roleModel.manager.pipeline(
-                    <Button
-                      id={`folder-item-${item.key}-release-button`}
-                      size="small"
-                      onClick={(event) => this.openRegisterVersionDialog(item, event)}>
-                      RELEASE
-                    </Button>
-                  )
+                (roleModel.isManager.pipeline(this) || roleModel.isManager.pipelineAdmin(this)) &&
+                <Button
+                  id={`folder-item-${item.key}-release-button`}
+                  size="small"
+                  onClick={(event) => this.openRegisterVersionDialog(item, event)}>
+                  RELEASE
+                </Button>
               }
               {
                 roleModel.executeAllowed(this.props.pipeline.value) &&

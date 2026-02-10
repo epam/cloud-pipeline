@@ -266,7 +266,7 @@ export async function buildLaunchParametersFromReservationParameters (
 }
 
 export async function ensureValidReservationParametersForLaunchPayloads (payloads) {
-  const reservationRequests = Promise.all(
+  const reservationRequests = await Promise.all(
     payloads.map((p) => buildLaunchParametersFromReservationParameters(
       readReservationParameters(p.params),
       p.instanceType,

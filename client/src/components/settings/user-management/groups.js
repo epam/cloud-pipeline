@@ -81,7 +81,11 @@ export default class GroupsManagement extends React.Component {
   };
 
   get isReader () {
-    return roleModel.hasRole('ROLE_USER_READER')(this);
+    return roleModel.hasRole(roleModel.ROLES.ROLE_USER_READER)(this);
+  };
+
+  get isUsersAdmin () {
+    return roleModel.hasRole(roleModel.ROLES.ROLE_USER_ADMIN)(this);
   };
 
   @computed
@@ -125,6 +129,7 @@ export default class GroupsManagement extends React.Component {
     const {groupsSearchText} = this.state;
     return this.roles.filter(r => {
       const hasPermissions = this.isAdmin ||
+        this.isUsersAdmin ||
         this.isReader ||
         roleModel.readAllowed(r);
       return hasPermissions && r.displayName
@@ -214,7 +219,7 @@ export default class GroupsManagement extends React.Component {
           );
         }
       },
-      this.isAdmin || this.groupsSharedPermissions.write
+      this.isAdmin || this.isUsersAdmin || this.groupsSharedPermissions.write
         ? {
           key: 'actions',
           render: (role) => {
@@ -227,7 +232,7 @@ export default class GroupsManagement extends React.Component {
                   <Icon type="edit" />
                 </Button>
                 {
-                  this.isAdmin && !predefined && (
+                  (this.isAdmin || this.isUsersAdmin) && !predefined && (
                     <Button
                       size="small"
                       type="danger"
@@ -284,6 +289,7 @@ export default class GroupsManagement extends React.Component {
     if (
       !this.isReader &&
       !this.isAdmin &&
+      !this.isUsersAdmin &&
       !this.groupsSharedPermissions.read &&
       !this.groupsSharedPermissions.write
     ) {
@@ -304,7 +310,7 @@ export default class GroupsManagement extends React.Component {
               onChange={this.onGroupSearchChanged} />
           </div>
           {
-            this.isAdmin && !predefined && (
+            (this.isAdmin || this.isUsersAdmin) && !predefined && (
               <div style={{paddingLeft: 10}}>
                 <Button
                   type="primary"
@@ -321,7 +327,11 @@ export default class GroupsManagement extends React.Component {
           visible={!!this.state.editableGroup}
           onClose={this.closeEditGroupDialog}
           role={this.state.editableGroup}
-          readOnly={!this.isAdmin && !roleModel.writeAllowed(this.state.editableGroup)}
+          readOnly={
+            !this.isAdmin &&
+            !this.isUsersAdmin &&
+            !roleModel.writeAllowed(this.state.editableGroup)
+          }
           predefined={predefined}
         />
         <CreateGroupDialog

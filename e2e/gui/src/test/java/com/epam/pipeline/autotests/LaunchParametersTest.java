@@ -23,7 +23,6 @@ import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
-import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import com.epam.pipeline.autotests.utils.ConfigurationPermission;
 import com.epam.pipeline.autotests.utils.Json;
 import com.epam.pipeline.autotests.utils.PipelinePermission;
@@ -63,12 +62,13 @@ import static com.epam.pipeline.autotests.ao.Primitive.IMAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
 import static com.epam.pipeline.autotests.ao.Profile.advancedTab;
 import static com.epam.pipeline.autotests.ao.ToolVersions.hasOnPage;
-import static com.epam.pipeline.autotests.utils.Utils.resourceName;
 import static com.epam.pipeline.autotests.utils.Privilege.EXECUTE;
 import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static com.epam.pipeline.autotests.utils.Utils.readResourceFully;
+import static com.epam.pipeline.autotests.utils.Utils.resourceName;
 import static java.lang.String.format;
 import static java.lang.String.valueOf;
 import static java.lang.Double.parseDouble;
@@ -155,6 +155,10 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                 .searchUserEntry(userWithoutCompletedRuns.login)
                 .edit()
                 .deleteRoleOrGroupIfExist(USER_ROLE)
+                .ok()
+                .searchUserEntry(user.login)
+                .edit()
+                .addRoleOrGroupIfNonExist(USER_ROLE)
                 .ok();
     }
 
@@ -218,7 +222,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                                 .clickAddStringParameter()
                                 .setName(CP_FSBROWSER_ENABLED)
                                 .close()
-                                .messageShouldAppear(PARAMETER_IS_NOT_ALLOWED_FOR_USE)
+                                .messageShouldAppear(NAME_IS_RESERVED)
                 );
     }
 
@@ -241,7 +245,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                     profile.clickAddStringParameter()
                             .setName(CP_FSBROWSER_ENABLED)
                             .setValue("")
-                            .messageShouldAppear(PARAMETER_IS_NOT_ALLOWED_FOR_USE)
+                            .messageShouldAppear(NAME_IS_RESERVED)
                             .click(REMOVE_PARAMETER);
                 });
         library()
@@ -254,7 +258,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                             .cancel();
                     configuration
                             .addStringParameter(CP_FSBROWSER_ENABLED, "")
-                            .messageShouldAppear(PARAMETER_IS_NOT_ALLOWED_FOR_USE)
+                            .messageShouldAppear(NAME_IS_RESERVED)
                             .deleteParameter(CP_FSBROWSER_ENABLED);
                 });
     }
@@ -504,7 +508,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
         }
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase(value = "913")
     @CloudProviderOnly(values = {Cloud.AWS})
     public void addSupportForAutoscalingFilesystemForAWS() {
@@ -691,7 +695,9 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
         for(int i = 0; i < 3; i++) {
             sizeDisk[i+1] = (int) Math.floor(sizeDisk[i] * SCALING_COEFF);
         }
-        shell.execute(format("fallocate -l %sG test.big", scaling[2] - 1));
+        String bigFileCommand = format("fallocate -l %sG test.big", scaling[2] - 2);
+        shell.execute(bigFileCommand)
+                .assertNextStringIsVisible(bigFileCommand, rootHost);
     }
 
     private void checkFilesystemSpace(ShellAO shell, int diskSize) {

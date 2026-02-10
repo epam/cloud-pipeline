@@ -6,6 +6,46 @@ import {
 } from '../../pipelines/launch/form/utilities/parameters';
 import whoAmI from '../../../models/user/WhoAmI';
 import fetchToolOSCached from '../../pipelines/launch/form/utilities/fetch-tool-os';
+import RequiredLaunchTags from '../../special/metadata/special/required-launch-tags';
+
+export async function fillUserTagsWithDefaultValues (
+  tags = {},
+  tagsTouched = [],
+  visibleTags = [],
+  userAttributes,
+  launchPayload
+) {
+  const result = tags || {};
+  let defaults = {};
+  if (!userAttributes.loaded) {
+    await userAttributes.refresh();
+  }
+  if (!userAttributes.hasAttribute(RequiredLaunchTags.metadataKey)) {
+    return tags;
+  }
+  try {
+    defaults = JSON.parse(
+      userAttributes.getAttributeValue(RequiredLaunchTags.metadataKey) || '{}'
+    ) || {};
+  } catch (e) {
+    console.error('Error parsing required launch tags defaults.', e);
+    return tags;
+  }
+  const required = await getRequiredUserTags(launchPayload);
+  visibleTags.forEach((tag) => {
+    const current = (result || {})[tag];
+    const hasValue = current !== undefined && String(current).trim().length > 0;
+    const defaultValue = defaults[tag.toLowerCase()];
+    const isTagGenerated = hasValue && !tagsTouched.includes(tag);
+    if (!required.includes(tag) && result[tag] && isTagGenerated) {
+      delete result[tag];
+    }
+    if (required.includes(tag) && !hasValue && defaultValue) {
+      result[tag] = defaultValue;
+    }
+  });
+  return result;
+}
 
 export async function getUserTagsValidationResult (tags, opts) {
   await preferences.fetchIfNeededOrWait();

@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -52,10 +53,13 @@ import com.epam.pipeline.entity.notification.filter.NotificationFilter;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
+import com.epam.pipeline.entity.run.PipelineRunPerformanceMetrics;
 import com.epam.pipeline.entity.user.Sid;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -88,6 +92,13 @@ import com.epam.pipeline.controller.vo.notification.NotificationMessageVO;
 public class NotificationManager implements NotificationService { // TODO: rewrite with Strategy pattern?
 
     private static final Pattern MENTION_PATTERN = Pattern.compile("@([^ ]*\\b)");
+    public static final String TRUE = "true";
+    public static final String METRICS_PREFIX = "metrics_";
+    public static final String TAGS_POSTFIX = "tags";
+    public static final String AVG_POSTFIX = "_avg";
+    public static final String MAX_POSTFIX = "_max";
+    public static final String CAPACITY_POSTFIX = "_capacity";
+    public static final long SECS_IN_MIN = 60L;
 
     @Autowired
     private UserManager userManager;
@@ -118,6 +129,9 @@ public class NotificationManager implements NotificationService { // TODO: rewri
 
     @Autowired
     private DataStorageManager dataStorageManager;
+
+    @Autowired
+    private PipelineRunManager pipelineRunManager;
 
     private final AntPathMatcher matcher = new AntPathMatcher();
 
@@ -239,9 +253,17 @@ public class NotificationManager implements NotificationService { // TODO: rewri
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
-    public void notifyRunStatusChanged(final PipelineRun run) {
+    public void notifyRunStatusChanged(final PipelineRun run, final Map<String, Object> additionalNotificationParams) {
         final NotificationType type = NotificationType.PIPELINE_RUN_STATUS;
-        contextualNotificationManager.notifyRunStatusChanged(run);
+
+        Map<String, Object> additionalRunParams = additionalNotificationParams;
+        if (run.getStatus().isFinal()) {
+            additionalRunParams = Stream.of(additionalNotificationParams, getRunPerformanceMetricParameters(run))
+                    .flatMap(paramMap -> paramMap.entrySet().stream())
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        }
+
+        contextualNotificationManager.notifyRunStatusChanged(run, additionalRunParams);
 
         final NotificationSettings settings = settingsManager.load(type);
         if (settings == null || !settings.isEnabled()) {
@@ -259,8 +281,12 @@ public class NotificationManager implements NotificationService { // TODO: rewri
 
         final NotificationMessage message = new NotificationMessage();
         message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
-        message.setTemplateParameters(parameterManager.build(type, run));
 
+        final Map<String, Object> runParameters = parameterManager.build(type, run);
+
+        runParameters.putAll(additionalRunParams);
+
+        message.setTemplateParameters(runParameters);
         message.setCopyUserIds(getCCUsers(settings));
 
         if (settings.isKeepInformedOwner()) {
@@ -269,6 +295,26 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         }
 
         saveNotification(message);
+    }
+
+    private Map<String, Object> getRunPerformanceMetricParameters(final PipelineRun run) {
+        final Map<String, Object> runPerformanceMetrics = new HashMap<>();
+        final List<String> runFlags = MapUtils.emptyIfNull(run.getTags()).entrySet().stream()
+                .filter(tag -> tag.getValue().equalsIgnoreCase(TRUE))
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+        if (!runFlags.isEmpty()) {
+            runPerformanceMetrics.put(METRICS_PREFIX + TAGS_POSTFIX, runFlags);
+        }
+        Optional.ofNullable(pipelineRunManager.loadPipelineRunPerformanceMetrics(run.getId()))
+                .map(PipelineRunPerformanceMetrics::getMetrics).orElse(Collections.emptyList())
+                .forEach(metric -> {
+                    final String metricName = metric.getType().name();
+                    runPerformanceMetrics.put(METRICS_PREFIX + metricName + AVG_POSTFIX, metric.getAvg());
+                    runPerformanceMetrics.put(METRICS_PREFIX + metricName + MAX_POSTFIX, metric.getMax());
+                    runPerformanceMetrics.put(METRICS_PREFIX + metricName + CAPACITY_POSTFIX, metric.getCapacity());
+                });
+        return runPerformanceMetrics;
     }
 
     /**
@@ -823,6 +869,13 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         if (settings == null || !settings.isEnabled() || settings.getTemplateId() == 0) {
             log.info("No template configured for long paused status notifications or it was disabled!");
             return Collections.emptyList();
+        }
+
+        if (type == NotificationType.LONG_PAUSED_STOPPED) {
+            final long longPausedActionThreshold = Optional.ofNullable(
+                    preferenceManager.getPreference(SystemPreferences.SYSTEM_LONG_PAUSED_ACTION_TIMEOUT_MINUTES)
+            ).map(Integer::longValue).map(minutes -> minutes * SECS_IN_MIN).orElse(-1L);
+            settings.setThreshold(longPausedActionThreshold);
         }
 
         final LocalDateTime now = DateUtils.nowUTC();

@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.elasticsearchagent.app;
 
-import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageIndex;
 import com.epam.pipeline.elasticsearchagent.service.impl.CloudPipelineAPIClient;

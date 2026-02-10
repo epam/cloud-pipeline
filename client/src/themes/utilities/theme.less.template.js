@@ -140,10 +140,16 @@ export default `
 @THEME a.cp-text:visited {
   color: @application-color;
 }
-@THEME a:hover,
-@THEME a:focus,
-@THEME .cp-link:hover,
-@THEME .cp-link:focus {
+@THEME a.cp-disabled,
+@THEME a.cp-disabled:active,
+@THEME .cp-link.cp-disabled {
+  cursor: not-allowed;
+  color: @application-color-disabled;
+}
+@THEME a:not(.cp-disabled):hover,
+@THEME a:not(.cp-disabled):focus,
+@THEME .cp-link:not(.cp-disabled):hover,
+@THEME .cp-link:not(.cp-disabled):focus {
   color: @primary-hover-color;
 }
 @THEME a.cp-text:hover,
@@ -678,6 +684,12 @@ export default `
 @THEME .cp-even-odd-element:nth-child(even):not(.cp-table-element-selected) {
   background-color: @even-element-background;
 }
+@THEME .table-element-selected-background-color {
+  background-color: @table-element-selected-background-color;
+}
+@THEME .table-element-selected-background-color-important {
+  background-color: @table-element-selected-background-color !important;
+}
 @THEME .ant-tree li .ant-tree-node-content-wrapper {
   color: @application-color;
 }
@@ -811,6 +823,12 @@ export default `
 }
 @THEME .cp-transparent-background {
   background-color: transparent !important;
+}
+@THEME .cp-panel-background-color {
+  background-color: @panel-background-color;
+}
+@THEME .cp-panel-color {
+  color: @panel-background-color;
 }
 @THEME .cp-split-panel-panel {
   color: @application-color;
@@ -3189,8 +3207,14 @@ export default `
 @THEME .markdown table {
   border-collapse: collapse;
   border: 1px solid @card-border-color;
-}
-@THEME .markdown table td,
+  margin-bottom: 10px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+@THEME }
+
+.markdown table td,
 @THEME .markdown table th {
   border: 1px solid @card-border-color;
   padding: 5px;

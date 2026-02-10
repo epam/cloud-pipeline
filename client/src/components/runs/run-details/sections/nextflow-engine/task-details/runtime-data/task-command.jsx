@@ -2,6 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {TaskRuntimeDataDetails} from './task-runtime-data-details';
 import CodeEditor from '../../../../../../special/CodeEditor';
+import DataStorageLink from '../../../../../../special/data-storage-link';
 import styles from './runtime-data.css';
 
 function Renderer (props) {
@@ -25,6 +26,25 @@ function Renderer (props) {
       };
     });
   console.log(env, envs);
+
+  const renderWorkdir = () => {
+    const isWorkdirUrl = (path) => path && /^(s3|az|gs|nfs|https?):\/\//i.test(path);
+    if (!workdir) {
+      return '-';
+    };
+    if (isWorkdirUrl(workdir)) {
+      return (
+        <DataStorageLink
+          path={workdir}
+          isFolder
+        >
+          {workdir}
+        </DataStorageLink>
+      );
+    }
+    return workdir;
+  };
+
   return (
     <div
       className={className}
@@ -47,7 +67,7 @@ function Renderer (props) {
               className="cp-divider bottom light"
               key="value"
               style={{borderWidth: 5}}>
-              {workdir || '-'}
+              {renderWorkdir()}
             </td>
           </tr>
           {

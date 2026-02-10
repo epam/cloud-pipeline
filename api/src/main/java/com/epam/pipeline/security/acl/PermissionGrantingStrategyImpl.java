@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,30 +16,45 @@
 
 package com.epam.pipeline.security.acl;
 
+import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
+import com.epam.pipeline.entity.pipeline.DockerRegistry;
+import com.epam.pipeline.entity.pipeline.Pipeline;
+import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.Tool;
+import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.user.DefaultRoles;
+import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.security.PermissionsService;
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.acls.domain.AuditLogger;
 import org.springframework.security.acls.domain.GrantedAuthoritySid;
 import org.springframework.security.acls.model.AccessControlEntry;
 import org.springframework.security.acls.model.Acl;
 import org.springframework.security.acls.model.NotFoundException;
+import org.springframework.security.acls.model.ObjectIdentity;
 import org.springframework.security.acls.model.Permission;
 import org.springframework.security.acls.model.PermissionGrantingStrategy;
 import org.springframework.security.acls.model.Sid;
 import org.springframework.util.Assert;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 public class PermissionGrantingStrategyImpl implements PermissionGrantingStrategy {
 
+    private static final GrantResult GRANT_RESULT_NOT_FOUND = new GrantResult(false, false);
     private static final Set<String> STORAGE_CLASSES = new HashSet<>(
             Arrays.asList(
                     S3bucketDataStorage.class.getName(),
@@ -47,6 +62,16 @@ public class PermissionGrantingStrategyImpl implements PermissionGrantingStrateg
                     AzureBlobStorage.class.getName(),
                     NFSDataStorage.class.getName())
     );
+    private static final Set<String> PIPELINE_CLASSES = new HashSet<>(
+            Arrays.asList(Pipeline.class.getName(), RunConfiguration.class.getName()));
+
+    private static final Set<String> TOOL_CLASSES = new HashSet<>(
+            Arrays.asList(Tool.class.getName(), ToolGroup.class.getName(), DockerRegistry.class.getName()));
+
+    private static final Set<String> USER_CLASSES = new HashSet<>(
+            Arrays.asList(PipelineUser.class.getName(), Role.class.getName()));
+
+    private static final Set<String> RUN_CLASSES = Collections.singleton(PipelineRun.class.getName());
 
     @Autowired
     private PermissionsService permissionsService;
@@ -62,29 +87,26 @@ public class PermissionGrantingStrategyImpl implements PermissionGrantingStrateg
     }
 
     /**
+     * For tests
+     */
+    protected PermissionGrantingStrategyImpl(AuditLogger auditLogger, PermissionsService permissionsService) {
+        Assert.notNull(auditLogger, "auditLogger cannot be null");
+        this.permissionsService = permissionsService;
+        this.auditLogger = auditLogger;
+    }
+
+    /**
      * Determines authorization. The order of the <code>permission</code> and
      * <code>sid</code> arguments is <em>extremely important</em>! The method will iterate
      * through each of the <code>permission</code>s in the order specified. For each
-     * iteration, all of the <code>sid</code>s will be considered, again in the order they
-     * are presented. A search will then be performed for the first
-     * {@link AccessControlEntry} object that directly matches that
-     * <code>permission:sid</code> combination. When the <em>first full match</em> is
-     * found (ie an ACE that has the SID currently being searched for and the exact
-     * permission bit mask being search for), the grant or deny flag for that ACE will
-     * prevail. If the ACE specifies to grant access, the method will return
-     * <code>true</code>. If the ACE specifies to deny access, the loop will stop and the
-     * next <code>permission</code> iteration will be performed. If each permission
-     * indicates to deny access, the first deny ACE found will be considered the reason
-     * for the failure (as it was the first match found, and is therefore the one most
-     * logically requiring changes - although not always). If absolutely no matching ACE
-     * was found at all for any permission, the parent ACL will be tried (provided that
-     * there is a parent and {@link Acl#isEntriesInheriting()} is <code>true</code>. The
-     * parent ACL will also scan its parent and so on. If ultimately no matching ACE is
-     * found, a <code>NotFoundException</code> will be thrown and the caller will need to
-     * decide how to handle the permission check. Similarly, if any of the SID arguments
-     * presented to the method were not loaded by the ACL,
-     * <code>UnloadedSidException</code> will be thrown.
-     *
+     * iteration, all of the <code>sid</code>s will be considered, order of the sids defined as:
+     * PRINCIPAL -> GROUP -> ROLE, which gives possibility to finetune permissions quiet flexible.
+     * For each type of the SID the following approach is applied:
+     * Method will try to match all SIDs in group and check permissions for them.
+     * Then, if any SID match deny result, deny will prevail. If no deny was found, either
+     * allow will be returned (if any) as result for the group or empty result will be returned
+     * if no match at all, then based on PRINCIPAL -> GROUP -> ROLE order final result will be checked.
+     * Finally, if no permissions were found, process will be repeated for the parent, then for its parent and etc.
      * @param permission         the exact permissions to scan for (order is important)
      * @param sids               the exact SIDs to scan for (order is important)
      * @param administrativeMode if <code>true</code> denotes the query is for
@@ -97,68 +119,28 @@ public class PermissionGrantingStrategyImpl implements PermissionGrantingStrateg
     public boolean isGranted(Acl acl, List<Permission> permission, List<Sid> sids,
             boolean administrativeMode) throws NotFoundException {
 
-        if (sids.stream().anyMatch(sid -> acl.getOwner().equals(sid))) {
+        final Map<SidType, List<Sid>> sidsByType = AclUtils.groupSidsByType(sids);
+
+        if (sidsByType.get(SidType.PRINCIPAL).stream().anyMatch(sid -> acl.getOwner().equals(sid))) {
             return true;
         }
 
-        //Storage special case
-        if (STORAGE_CLASSES.contains(acl.getObjectIdentity().getType()) &&
-                sids.stream().anyMatch(sid ->
-                        sid.equals(new GrantedAuthoritySid(DefaultRoles.ROLE_STORAGE_ADMIN.getName())))) {
+        if (isScopedAdmin(acl, sidsByType.get(SidType.ROLE))) {
             return true;
         }
 
         final List<AccessControlEntry> aces = acl.getEntries();
 
-        AccessControlEntry firstRejection = null;
-
         for (Permission p : permission) {
-            for (Sid sid : sids) {
-                // Attempt to find exact match for this permission mask and SID
-                boolean scanNextSid = true;
+            final GrantResult grantResult = Stream.of(SidType.PRINCIPAL, SidType.GROUP, SidType.ROLE)
+                    .map(sidsByType::get)
+                    .map(sidGroup -> calculateGrantingResultForSidGroup(p, sidGroup, aces, administrativeMode))
+                    .filter(GrantResult::isFound)
+                    .findFirst().orElse(GRANT_RESULT_NOT_FOUND);
 
-                for (AccessControlEntry ace : aces) {
-
-                    if (ace.getSid().equals(sid) && permissionsService.containsPermission(ace.getPermission(), p)) {
-                        // Found a matching ACE, so its authorization decision will
-                        // prevail
-                        if (permissionsService.permissionIsNotDenied(ace, ace.getPermission(), p)) {
-                            // Success
-                            if (!administrativeMode) {
-                                auditLogger.logIfNeeded(true, ace);
-                            }
-
-                            return true;
-                        }
-
-                        // Failure for this permission, so stop search
-                        // We will see if they have a different permission
-                        // (this permission is 100% rejected for this SID)
-                        if (firstRejection == null) {
-                            // Store first rejection for auditing reasons
-                            firstRejection = ace;
-                        }
-
-                        scanNextSid = false; // helps break the loop
-
-                        break; // exit aces loop
-                    }
-                }
-
-                if (!scanNextSid) {
-                    break; // exit SID for loop (now try next permission)
-                }
+            if (grantResult.isFound()) {
+                return grantResult.isGrant();
             }
-        }
-
-        if (firstRejection != null) {
-            // We found an ACE to reject the request at this point, as no
-            // other ACEs were found that granted a different permission
-            if (!administrativeMode) {
-                auditLogger.logIfNeeded(false, firstRejection);
-            }
-
-            return false;
         }
 
         // No matches have been found so far
@@ -169,6 +151,88 @@ public class PermissionGrantingStrategyImpl implements PermissionGrantingStrateg
             // We either have no parent, or we're the uppermost parent
             throw new NotFoundException(
                     "Unable to locate a matching ACE for passed permissions and SIDs");
+        }
+    }
+
+    private static boolean hasRole(List<Sid> roleSids, DefaultRoles role) {
+        return roleSids.contains(new GrantedAuthoritySid(role.getName()));
+    }
+
+    private GrantResult calculateGrantingResultForSidGroup(Permission p, List<Sid> sids, List<AccessControlEntry> aces,
+                                                           boolean administrativeMode) {
+        GrantResult granting = GRANT_RESULT_NOT_FOUND;
+        for (Sid sid: sids) {
+            GrantResult grantResult = calculateGrantingResultForSid(p, sid, aces, administrativeMode);
+            if (grantResult.isFound()) {
+                if (!grantResult.isGrant()) {
+                    return grantResult;
+                } else {
+                    // only safe allowing result for now, since we still can find reject,
+                    // and it has priority over allow for the same SidType
+                    granting = grantResult;
+                }
+            }
+        }
+        return granting;
+    }
+
+    private GrantResult calculateGrantingResultForSid(Permission p, Sid sid, List<AccessControlEntry> aces,
+                                                      boolean administrativeMode) {
+        for (AccessControlEntry ace : aces) {
+            if (ace.getSid().equals(sid) && permissionsService.containsPermission(ace.getPermission(), p)) {
+                // Found a matching ACE, so its authorization decision will
+                // prevail
+                if (permissionsService.permissionIsNotDenied(ace, ace.getPermission(), p)) {
+                    // Success
+                    if (!administrativeMode) {
+                        auditLogger.logIfNeeded(true, ace);
+                    }
+                    return new GrantResult(true, true);
+                } else {
+                    // Failure for this permission, so stop search
+                    // We will see if they have a different permission
+                    // (this permission is 100% rejected for this SID)
+                    if (!administrativeMode) {
+                        auditLogger.logIfNeeded(false, ace);
+                    }
+                    return new GrantResult(true, false);
+                }
+            }
+        }
+        return GRANT_RESULT_NOT_FOUND;
+    }
+
+    private boolean isScopedAdmin(final Acl acl, final List<Sid> roleSids) {
+        final String objectType = Optional.ofNullable(acl).map(Acl::getObjectIdentity)
+                .map(ObjectIdentity::getType).orElse(null);
+
+        if (objectType == null) {
+            return false;
+        }
+
+        if (STORAGE_CLASSES.contains(objectType)) {
+            return hasRole(roleSids, DefaultRoles.ROLE_STORAGE_ADMIN);
+        } else if (PIPELINE_CLASSES.contains(objectType)) {
+            return hasRole(roleSids, DefaultRoles.ROLE_PIPELINE_ADMIN);
+        } else if (TOOL_CLASSES.contains(objectType)) {
+            return hasRole(roleSids, DefaultRoles.ROLE_TOOL_ADMIN);
+        } else if (USER_CLASSES.contains(objectType)) {
+            return hasRole(roleSids, DefaultRoles.ROLE_USER_ADMIN);
+        } else if (RUN_CLASSES.contains(objectType)) {
+            return hasRole(roleSids, DefaultRoles.ROLE_RUN_ADMIN);
+        }
+        return false;
+    }
+
+    @Getter
+    private static final class GrantResult {
+
+        private final boolean found;
+        private final boolean grant;
+
+        private GrantResult(boolean found, boolean grant) {
+            this.found = found;
+            this.grant = grant;
         }
     }
 

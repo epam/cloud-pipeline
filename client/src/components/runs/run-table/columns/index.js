@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import {
  * @property {*} [state]
  * @property {function} [setState]
  * @property {string[]} [disabledFilters]
+ * @property {boolean} [estimatedPriceVisible]
  */
 
 /**
@@ -56,7 +57,8 @@ function getColumn (
     reload,
     state,
     setState,
-    disabledFilters = []
+    disabledFilters = [],
+    estimatedPriceVisible = true
   } = options || {};
   /**
    * @type {{getColumnFilter: function, getColumn: function}}
@@ -108,7 +110,7 @@ function getColumn (
     default:
       break;
   }
-  const column = config.getColumn(localizedString, reload);
+  const column = config.getColumn(localizedString, reload, {estimatedPriceVisible});
   if (column && !disabledFilters.includes(type)) {
     const filters = config.getColumnFilter(state, setState);
     const {

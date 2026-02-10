@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,7 +51,7 @@ const renderEstimatedPrice = (item) => {
   );
 };
 
-const renderRunningTime = (item) => {
+const renderRunningTime = (item, estimatedPriceVisible = true) => {
   const renderTime = () => {
     if (item.endDate && item.startDate && item.status !== 'RUNNING') {
       const diff = moment.utc(item.endDate).diff(moment.utc(item.startDate), 'minutes', true);
@@ -76,9 +76,11 @@ const renderRunningTime = (item) => {
         <Row>
           {time}
         </Row>
-        <Row>
-          {estimatedPrice}
-        </Row>
+        {estimatedPriceVisible ? (
+          <Row>
+            {estimatedPrice}
+          </Row>
+        ) : null}
       </div>
     );
   }
@@ -89,16 +91,19 @@ const renderRunningTime = (item) => {
   );
 };
 
-const getColumn = () => ({
-  title: 'Elapsed',
-  key: 'runningTime',
-  className: styles.runRowElapsedTime,
-  render: (run) => (
-    <RunLoadingPlaceholder run={run} empty>
-      {renderRunningTime(run)}
-    </RunLoadingPlaceholder>
-  )
-});
+const getColumn = (localizedString, reload, options = {}) => {
+  const {estimatedPriceVisible = true} = options;
+  return {
+    title: 'Elapsed',
+    key: 'runningTime',
+    className: styles.runRowElapsedTime,
+    render: (run) => (
+      <RunLoadingPlaceholder run={run} empty>
+        {renderRunningTime(run, estimatedPriceVisible)}
+      </RunLoadingPlaceholder>
+    )
+  };
+};
 
 export {
   getColumn,

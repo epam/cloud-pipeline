@@ -90,7 +90,8 @@ export default class NotificationCenter extends React.Component {
     notificationsState: [],
     hiddenNotifications: [],
     initialized: false,
-    previewNotification: null
+    previewNotification: null,
+    pending: false
   };
 
   @observable _notificationsBottomBound = 0;
@@ -380,14 +381,21 @@ export default class NotificationCenter extends React.Component {
     userNotifications && userNotifications.hideNotifications();
   };
 
-  onReadAllClick = async () => {
-    const {userNotifications} = this.props;
-    const request = new ReadAllUserNotifications();
-    await request.send();
-    if (request.error) {
-      message.error(request.error, 5);
+  onReadAllClick = () => {
+    const {pending} = this.state;
+    if (pending) {
+      return;
     }
-    userNotifications.fetch();
+    this.setState({pending: true}, async () => {
+      const {userNotifications} = this.props;
+      const request = new ReadAllUserNotifications();
+      await request.send();
+      if (request.error) {
+        message.error(request.error, 5);
+      }
+      await userNotifications.fetch();
+      this.setState({pending: false});
+    });
   };
 
   renderSeverityIcon = (notification) => {
@@ -446,14 +454,28 @@ export default class NotificationCenter extends React.Component {
           hide
         </a>
         <a
-          onClick={this.onReadAllClick}
+          onClick={e => {
+            if (this.state.pending) {
+              return e.preventDefault();
+            }
+            this.onReadAllClick(e);
+          }}
           style={{marginLeft: '10px', paddingLeft: '10px'}}
           className={classNames(
             'cp-divider',
-            'left'
+            'left', {
+              'cp-disabled': this.state.pending
+            }
           )}
         >
           read all
+          {this.state.pending ? (
+            <Icon
+              style={{marginLeft: 5}}
+              type="loading"
+              className={classNames({'cp-disabled': this.state.pending})}
+            />
+          ) : null}
         </a>
       </div>
     );

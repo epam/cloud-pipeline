@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
-import static java.lang.String.format;
 import org.openqa.selenium.By;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
@@ -24,6 +23,7 @@ import org.openqa.selenium.WebElement;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static java.lang.String.format;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
@@ -41,14 +41,15 @@ public class ParameterFieldAO extends By implements AccessObject<ParameterFieldA
     public final By nameInput;
     public final By valueInput;
     public final By removeButton;
-    public static final String idTemplate = "parameters.params.param_%d.%s";
 
     protected ParameterFieldAO(final By qualifier) {
         this(
-                qualifier,
-                confine(inputByIdSuffix("name"), qualifier),
-                confine(inputByIdSuffix("value"), qualifier),
-                byClassName("dynamic-delete-button")
+             qualifier,
+             confine(xpath(".//input[@placeholder = 'Parameter name' and @class = 'arameter-name-input__parameter-name-input']"),
+                     qualifier),
+             confine(xpath(".//*[contains(@class, 'ant-form-item-control')]//input"),
+                     qualifier),
+             byClassName("dynamic-delete-button")
         );
     }
 
@@ -74,8 +75,9 @@ public class ParameterFieldAO extends By implements AccessObject<ParameterFieldA
     }
 
     public static ParameterFieldAO parameter(final String name, final String value) {
-        final String controlClass = "ant-form-item-control";
-        final String nameAsAChild = format(".//input[@placeholder = 'Name' and @value = '%s']", name);
+        final String controlClass = "aunch-form-parameter__launch-form-parameter";
+        final String nameAsAChild = format("//*[contains(@class, 'arameter-name-input__parameter-name') and contains(., '%s')]",
+                name);
         final String valueAsAChild = format(".//input[@value = '%s']", value);
         final By parameterField = byXpath(format(
                 ".//*[contains(concat(' ', @class, ' '), ' %s ') and %s and %s]",
@@ -88,12 +90,8 @@ public class ParameterFieldAO extends By implements AccessObject<ParameterFieldA
      * @param index The numerical part of {@code id} attribute of the field you search.
      */
     public static ParameterFieldAO parameterByIndex(final int index) {
-        final String controlClass = "ant-form-item-control";
-        final String templateId = parameterId("key", index);
-        final By parameterField = byXpath(format(
-                ".//*[contains(concat(' ', @class, ' '), ' %s ') and .//@id = '%s']",
-                controlClass, templateId
-        ));
+        final By parameterField =
+                className(format("launch-form-parameter-key-parameter_%s", index));
         return new ParameterFieldAO(parameterField);
     }
 
@@ -101,12 +99,7 @@ public class ParameterFieldAO extends By implements AccessObject<ParameterFieldA
      * @param name Value of the parameter's name.
      */
     public static ParameterFieldAO parameterByName(final String name) {
-        final String controlClass = "ant-form-item-control";
-        final By parameterField = byXpath(format(
-                ".//*[contains(concat(' ', @class, ' '), ' %s ') and .//input[@placeholder = 'Name' and @value = '%s']]",
-                controlClass, name
-        ));
-        return new ParameterFieldAO(parameterField);
+        return new ParameterFieldAO(className(format("launch-form-parameter-%s", name)));
     }
 
     /**
@@ -122,9 +115,8 @@ public class ParameterFieldAO extends By implements AccessObject<ParameterFieldA
     }
 
     public int index() {
-        final String key = context().find(inputByIdSuffix("key")).val();
-        final String index = key.replace("param_", "");
-        return Integer.parseInt(index);
+        final String parameterId = context().getAttribute("class");
+        return Integer.parseInt(parameterId.substring(parameterId.indexOf("key-parameter")).replaceAll("\\D+", ""));
     }
 
     @Override
@@ -148,16 +140,6 @@ public class ParameterFieldAO extends By implements AccessObject<ParameterFieldA
     @Override
     public List<WebElement> findElements(final SearchContext context) {
         return context.findElements(qualifier);
-    }
-
-    /**
-     * Produces parameter input id by its {@code index} and {@code entry}.
-     *
-     * @param entry Entry is all the part after the last dot in the id attribute of an input.
-     * @param index Index is a digit part of
-     */
-    private static String parameterId(final String entry, final int index) {
-        return format(idTemplate, index, entry);
     }
 
     /**

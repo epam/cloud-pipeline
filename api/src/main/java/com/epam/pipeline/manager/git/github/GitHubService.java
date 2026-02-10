@@ -151,13 +151,13 @@ public class GitHubService implements GitClientService {
 
     @Override
     public byte[] getFileContents(final GitProject repository, final String path,
-                                  final String revision, final String token) {
+                                  final String revision, final String token, final boolean isDraft) {
         return getClient(repository.getRepoUrl(), token).getFileContent(path, revision);
     }
 
     @Override
     public byte[] getTruncatedFileContents(final Pipeline pipeline, final String path, final String revision,
-                                           final int byteLimit) {
+                                           final int byteLimit, final boolean isDraft) {
         final byte[] content = getClient(pipeline).getFileContent(path, revision);
         return Arrays.copyOfRange(content, 0, byteLimit);
     }
@@ -253,7 +253,8 @@ public class GitHubService implements GitClientService {
 
     @Override
     public List<GitRepositoryEntry> getRepositoryContents(final Pipeline pipeline, final String rawPath,
-                                                          final String version, final boolean recursive) {
+                                                          final String version, final boolean recursive,
+                                                          final boolean isDraft) {
         final GitHubClient client = getClient(pipeline);
 
         final String path = ProviderUtils.DELIMITER.equals(rawPath) ? version : getContentSha(rawPath, version, client);
@@ -373,7 +374,7 @@ public class GitHubService implements GitClientService {
         final String gitHubHost = protocol + "api." + host;
 
         Assert.isTrue(StringUtils.isNotBlank(token), messageHelper
-                .getMessage(MessageConstants.ERROR_GITHUB_TOKEN_NOT_FOUND));
+                .getMessage(MessageConstants.ERROR_REPOSITORY_TOKEN_NOT_FOUND, getType()));
         final String credentials = AuthorizationUtils.BEARER_AUTH + token;
 
         return new GitHubClient(gitHubHost, credentials, null, projectName, repositoryName);
@@ -381,7 +382,7 @@ public class GitHubService implements GitClientService {
 
     private GitClientException buildUrlParseError(final String urlPart) {
         return new GitClientException(messageHelper.getMessage(
-                MessageConstants.ERROR_PARSE_GITHUB_REPOSITORY_PATH, urlPart));
+                MessageConstants.ERROR_REPOSITORY_PATH_PARSE, urlPart, getType()));
     }
 
     private GitHubRelease fillCommitInfo(final GitHubRelease tag, final GitHubClient client) {

@@ -16,10 +16,11 @@
 
 package com.epam.pipeline.elasticsearchagent.app;
 
+import com.epam.pipeline.elasticsearch.ElasticStackVersion;
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.dao.PipelineEventDao;
 import com.epam.pipeline.elasticsearchagent.model.DataStorageDoc;
 import com.epam.pipeline.elasticsearchagent.model.PipelineEvent;
-import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.impl.BulkRequestSender;
 import com.epam.pipeline.elasticsearchagent.service.impl.CloudPipelineAPIClient;
 import com.epam.pipeline.elasticsearchagent.service.impl.ElasticIndexService;
@@ -43,6 +44,8 @@ public class AzureBlobStorageSyncConfiguration {
 
     @Value("${sync.index.common.prefix}")
     private String commonIndexPrefix;
+    @Value("${elasticsearch.client.version:V6}")
+    private ElasticStackVersion version;
 
     @Bean
     public DataStorageMapper azStorageMapper() {
@@ -69,7 +72,7 @@ public class AzureBlobStorageSyncConfiguration {
             final @Value("${sync.az-blob-storage.index.name}") String indexName) {
         return new EventToRequestConverterImpl<>(
                 commonIndexPrefix, indexName, azStorageLoader, azStorageMapper,
-                Collections.singletonList(indexCleaner));
+                Collections.singletonList(indexCleaner), version);
     }
 
     @Bean

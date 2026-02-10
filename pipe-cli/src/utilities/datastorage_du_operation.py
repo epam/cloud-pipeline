@@ -75,10 +75,12 @@ class DataUsageCommand(object):
         user_manager = UserOperationsManager()
         if user_manager.is_admin():
             return user_manager, None
-        entity = Entity.load_by_id_or_name(self.storage_name, 'DATA_STORAGE')
-        storage_owner = entity.get('owner')
-        if user_manager.is_owner(storage_owner):
-            return user_manager, storage_owner
+        storage_owner = None
+        if self.storage_name:
+            entity = Entity.load_by_id_or_name(self.storage_name, 'DATA_STORAGE')
+            storage_owner = entity.get('owner')
+            if user_manager.is_owner(storage_owner):
+                return user_manager, storage_owner
         if DuOutput.is_old(self.generation):
             raise RuntimeError('The old versions loading available for ADMIN or storage OWNER only.')
         self.generation = 'current'
@@ -99,6 +101,9 @@ class DataUsageHelper(object):
         result = []
         storage_to_fetch = [storage] if storage else list(DataStorage.list())
         for _storage in storage_to_fetch:
+            if _storage.source_storage_id:
+                click.echo("Storage '%s' is mirror of another storage, will not load du information." % _storage.name, err=True)
+                continue
             if du_command.perform_on_cloud and _storage.type != "nfs":
                 summary = self.get_cloud_storage_summary(_storage, du_command.relative_path, du_command.depth)
             else:

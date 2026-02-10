@@ -18,6 +18,7 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {Alert} from 'antd';
+import classNames from 'classnames';
 import OverallPoolChart from './charts/overall-pool-chart';
 import PoolChart from './charts/pool-chart';
 import LoadingView from '../../../special/LoadingView';
@@ -33,6 +34,7 @@ import colors, {
 import styles from './hot-cluster-usage.css';
 import PoolsHardwareChart from './charts/pools-hardware-chart';
 import {HARDWARE_MAPPING} from './charts/utils/hardware-chart-utils';
+import ResourseSharingPoolTable from './resourse-sharing-pool-table';
 
 @inject('themes')
 @inject((stores, params) => {
@@ -312,12 +314,14 @@ class HotClusterUsage extends React.Component {
       .find(({poolId}) => poolId === currentPoolId);
     const {poolName, resourceSharingPool = false} = currentPoolData || {};
     const onlyResourceSharingPools = !(data || []).some((p) => !p.resourceSharingPool);
+    // CSS Grid controls the placement and order of elements.
     return (
       <div>
         <ControlRow
           onChange={this.onPeriodChange}
           period={period}
           periodType={periodType}
+          pending={pending}
         />
         {
           error && (
@@ -333,7 +337,22 @@ class HotClusterUsage extends React.Component {
         }
         {
           data && (
-            <div className={styles.chartsContainer}>
+            <div
+              className={classNames(
+                styles.chartsContainer, {
+                  [styles.onlySharing]: onlyResourceSharingPools,
+                  [styles.withSharing]: resourceSharingPool,
+                  [styles.noSharing]: !resourceSharingPool
+                }
+              )}
+            >
+              {resourceSharingPool ? (
+                <ResourseSharingPoolTable
+                  data={currentPoolData}
+                  className={styles.poolTableArea}
+                  periodType={periodType}
+                />
+              ) : null}
               {!onlyResourceSharingPools && (
                 <OverallPoolChart
                   rawData={data}
@@ -349,7 +368,7 @@ class HotClusterUsage extends React.Component {
                   textColor={this.textColor}
                   period={period}
                   periodType={periodType}
-                  containerStyle={{width: 'calc(50% - 3px)'}}
+                  className={styles.overallPoolChartArea}
                 />
               )}
               {!onlyResourceSharingPools && (
@@ -366,7 +385,7 @@ class HotClusterUsage extends React.Component {
                   textColor={this.textColor}
                   period={period}
                   periodType={periodType}
-                  containerStyle={{width: 'calc(50% - 3px)'}}
+                  className={styles.poolChartArea}
                 />
               )}
               {resourceSharingPool && (
@@ -392,7 +411,7 @@ class HotClusterUsage extends React.Component {
                   lineColor={this.lineColor}
                   period={period}
                   periodType={periodType}
-                  style={{width: 'calc(100% - 6px)'}}
+                  className={styles.jobsArea}
                 />
               )}
               {resourceSharingPool && (
@@ -415,7 +434,7 @@ class HotClusterUsage extends React.Component {
                   lineColor={this.lineColor}
                   period={period}
                   periodType={periodType}
-                  style={{width: 'calc(100% - 6px)'}}
+                  className={styles.gpuArea}
                 />
               )}
               {resourceSharingPool && (
@@ -438,7 +457,7 @@ class HotClusterUsage extends React.Component {
                   lineColor={this.lineColor}
                   period={period}
                   periodType={periodType}
-                  style={{width: 'calc(100% - 6px)'}}
+                  className={styles.cpuArea}
                 />
               )}
               {resourceSharingPool && (
@@ -461,7 +480,7 @@ class HotClusterUsage extends React.Component {
                   lineColor={this.lineColor}
                   period={period}
                   periodType={periodType}
-                  style={{width: 'calc(100% - 6px)'}}
+                  className={styles.ramArea}
                 />
               )}
             </div>

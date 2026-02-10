@@ -421,14 +421,14 @@ function runFn (
       hide();
       if (PipelineRunner.error) {
         message.error(PipelineRunner.error);
-        resolve(false);
+        resolve(undefined);
         callbackFn && callbackFn(false);
       } else {
         if (scheduleRules && scheduleRules.length > 0) {
           await saveRunSchedule(PipelineRunner.value.id, scheduleRules);
         }
         await runHostedApp(PipelineRunner.value.id, hostedApplicationConfiguration);
-        resolve(true);
+        resolve(PipelineRunner.value);
         callbackFn && callbackFn(true);
       }
     };
@@ -516,9 +516,9 @@ function runFn (
         closable: false,
         okText: 'Launch',
         onOk: async function () {
-          const runSinglePayload = async (idx = 0) => {
+          const runSinglePayload = async (idx = 0, runs = []) => {
             if (idx >= payloadsArray.length) {
-              return;
+              return runs;
             }
             const singlePayload = payloadsArray[idx];
             const launchPostfix = payloadsArray.length > 1
@@ -580,6 +580,7 @@ function runFn (
                 };
               }
             }
+            let launchedRun;
             if (!singlePayload.instanceType) {
               throw new Error('You should select instance type');
             } else {
@@ -608,6 +609,7 @@ function runFn (
                   message.error(PipelineRunner.error);
                   throw new Error(PipelineRunner.error);
                 } else {
+                  launchedRun = PipelineRunner.value;
                   if (scheduleRules && scheduleRules.length > 0) {
                     await saveRunSchedule(PipelineRunner.value.id, scheduleRules);
                   }
@@ -617,19 +619,22 @@ function runFn (
                 hide();
               }
             }
-            return runSinglePayload(idx + 1);
+            if (launchedRun) {
+              runs.push(launchedRun);
+            }
+            return runSinglePayload(idx + 1, runs);
           };
           try {
-            await runSinglePayload();
-            resolve(true);
+            const runs = await runSinglePayload();
+            resolve(runs.pop());
             callbackFn && callbackFn(true);
           } catch (error) {
-            resolve(false);
+            resolve(undefined);
             callbackFn && callbackFn(false);
           }
         },
         onCancel () {
-          resolve(false);
+          resolve(undefined);
           callbackFn && callbackFn(false);
         }
       });

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -113,6 +113,7 @@ import {
 // eslint-disable-next-line max-len
 import ParameterValueRepresentation from '../../pipelines/launch/form/parameters/parameter/representation';
 import ShareWith from '../ShareWith';
+import LogsModeButton from './logs-mode';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -134,7 +135,8 @@ const MAX_KUBE_SERVICES_TO_DISPLAY = 3;
   'uiNavigation'
 )
 @VSActions.check
-@inject(({routing, pipelines, multiZoneManager}, {params}) => {
+@inject(({routing, pipelines, multiZoneManager}, props) => {
+  const {params, currentMode, modes, onChangeMode} = props;
   const queryParameters = parseQueryParameters(routing);
   let task = null;
   if (params.taskName) {
@@ -155,7 +157,10 @@ const MAX_KUBE_SERVICES_TO_DISPLAY = 3;
     task,
     pipelines,
     routing,
-    multiZone: multiZoneManager
+    multiZone: multiZoneManager,
+    currentMode,
+    modes,
+    onChangeMode
   };
 })
 @observer
@@ -418,6 +423,11 @@ class Logs extends localization.LocalizedReactComponent {
       return preferences.systemMaintenanceMode;
     }
     return false;
+  }
+
+  get estimatedPriceVisible () {
+    const {uiNavigation} = this.props;
+    return uiNavigation.utils.estimatedPriceVisible().logs;
   }
 
   get isCapacityBlock () {
@@ -1980,9 +1990,18 @@ class Logs extends localization.LocalizedReactComponent {
             >
               #{runId}
             </RunName.AutoUpdate>
-            {failureReason} - </span>
+            {failureReason}
+          </span>
+          {
+            pipelineLink && <span>{' - '}</span>
+          }
           {pipelineLink}
-          <span>{pipelineLink && ' -'} Logs</span>
+          <LogsModeButton
+            current={this.props.currentMode}
+            modes={this.props.modes}
+            onChangeMode={this.props.onChangeMode}
+            style={{marginLeft: 5}}
+          />
         </h1>
       );
       const {
@@ -2068,7 +2087,7 @@ class Logs extends localization.LocalizedReactComponent {
           }
           return cents / 100;
         };
-        price = (
+        price = this.estimatedPriceVisible ? (
           <tr>
             <th>Estimated price:</th>
             <td>
@@ -2086,7 +2105,7 @@ class Logs extends localization.LocalizedReactComponent {
               </JobEstimatedPriceInfo>
             </td>
           </tr>
-        );
+        ) : null;
       }
 
       Details =
@@ -2495,8 +2514,8 @@ class Logs extends localization.LocalizedReactComponent {
           flex: 1,
           overflowY: 'auto'
         }}>
-        <Row>
-          <Col span={18}>
+        <Row type="flex">
+          <div style={{flex: 1}}>
             <Row type="flex" justify="space-between">
               {Title}
             </Row>
@@ -2520,8 +2539,8 @@ class Logs extends localization.LocalizedReactComponent {
             <Row>
               {Details}
             </Row>
-          </Col>
-          <Col span={6}>
+          </div>
+          <div>
             <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
               {
                 this.buttonsWrapper(
@@ -2558,7 +2577,7 @@ class Logs extends localization.LocalizedReactComponent {
                 </Row>
               )
             }
-          </Col>
+          </div>
         </Row>
         <Row>
           <Col>

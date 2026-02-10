@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.ExtendedRole;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
+import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
 import com.epam.pipeline.manager.datastorage.DataStorageValidator;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionHandler;
@@ -42,6 +43,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -71,6 +73,9 @@ public class RoleManager implements SecuredEntityManager {
 
     @Autowired
     private AuthManager authManager;
+
+    @Autowired
+    private CloudProfileCredentialsManagerProvider cloudProfileCredentialsManager;
 
     @Transactional(propagation = Propagation.REQUIRED)
     public Role create(final String name, final boolean predefined,
@@ -106,6 +111,7 @@ public class RoleManager implements SecuredEntityManager {
         final Role role = load(id);
         Assert.isTrue(!role.isPredefined(), "Predefined system roles cannot be deleted");
         permissionHandler.deleteGrantedAuthority(role.getName(), false);
+        cloudProfileCredentialsManager.assignProfiles(id, false, Collections.emptySet(), null);
         roleDao.deleteRoleReferences(id);
         roleDao.deleteRole(id);
         return role;
@@ -228,4 +234,5 @@ public class RoleManager implements SecuredEntityManager {
     public Role loadWithParents(Long id) {
         return load(id);
     }
+
 }

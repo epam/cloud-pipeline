@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,13 +20,15 @@ import com.epam.pipeline.autotests.mixins.StorageHandling;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
-import java.io.File;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import java.io.File;
+
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.open;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class LaunchParametersTypesTest extends AbstractAutoRemovingPipelineRunningTest implements StorageHandling {
@@ -63,6 +65,8 @@ public class LaunchParametersTypesTest extends AbstractAutoRemovingPipelineRunni
                 )
                 .sleep(2, SECONDS)
                 .runPipeline()
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
+                .doNotMountStoragesSelect(true)
                 .clickAddOutputParameter()
                 .setName("output_parameter")
                 .openPathAdditionDialog()

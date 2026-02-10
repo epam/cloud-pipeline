@@ -130,7 +130,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                              final NodesManager nodesManager,
                              final KubernetesManager kubernetesManager,
                              final PreferenceManager preferenceManager,
-                             final @Value("${kube.namespace}") String kubeNamespace,
+                             final @Value("${kube.namespace:default}") String kubeNamespace,
                              final CloudFacade cloudFacade,
                              final NodePoolManager nodePoolManager,
                              final ReassignHandler reassignHandler,

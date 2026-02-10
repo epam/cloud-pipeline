@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,15 @@ import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
-import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.Test;
+
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Selenide.open;
 import static com.codeborne.selenide.Selenide.screenshot;
@@ -34,9 +37,6 @@ import static java.lang.String.format;
 import static java.util.regex.Pattern.compile;
 
 import java.util.regex.Matcher;
-
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.Test;
 
 public class DnsHostsManagementTest extends AbstractSeveralPipelineRunningTest
         implements Navigation, Authorization {
@@ -54,6 +54,8 @@ public class DnsHostsManagementTest extends AbstractSeveralPipelineRunningTest
 
     @AfterMethod(alwaysRun = true)
     public void logoutUser() {
+        logoutIfNeeded();
+        loginAs(admin);
         open(C.ROOT_ADDRESS);
     }
 
@@ -77,6 +79,7 @@ public class DnsHostsManagementTest extends AbstractSeveralPipelineRunningTest
                     userRunIP[0] = getRunIP(shell
                             .waitUntilTextAppears(userRunId1)
                             .execute(format(command[0], "$HOSTNAME"))
+                            .waitUntilTextAppearsSeveralTimes(userRunId1, 2)
                             .lastCommandResult(format(command[0], "$HOSTNAME")));
                     shell.close();
                 });
@@ -89,6 +92,7 @@ public class DnsHostsManagementTest extends AbstractSeveralPipelineRunningTest
                         .assertNextStringIsVisible("Complete!",
                                 format("pipeline-%s", userRunId2))
                         .execute(format(command[2], userRunId1))
+                        .waitUntilTextAppearsSeveralTimes(userRunId2, 2)
                         .assertPageAfterCommandContainsStrings(format(command[2], userRunId1), SERVER_IP,
                                 format("Address: %s", userRunIP[0]))
                         .close()
@@ -131,6 +135,7 @@ public class DnsHostsManagementTest extends AbstractSeveralPipelineRunningTest
                             .assertNextStringIsVisible("Complete!",
                                     format("pipeline-%s", parentRunId))
                             .execute(format(command[2], childRunID))
+                            .waitUntilTextAppearsSeveralTimes(parentRunId, 3)
                             .assertPageAfterCommandContainsStrings(format(command[2], childRunID), SERVER_IP);
                     String childRunIP = getRunIP(shell.lastCommandResult("Name:"));
                     shell

@@ -20,11 +20,13 @@ import com.epam.pipeline.controller.vo.ContextualPreferenceVO;
 import com.epam.pipeline.entity.contextual.ContextualPreference;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
-import com.epam.pipeline.security.acl.AclExpressions;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+import static com.epam.pipeline.security.acl.AclExpressions.*;
 
 @Service
 @RequiredArgsConstructor
@@ -32,12 +34,12 @@ public class ContextualPreferenceApiService {
 
     private final ContextualPreferenceManager contextualPreferenceManager;
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY)
     public List<ContextualPreference> loadAll() {
         return contextualPreferenceManager.loadAll();
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + SCOPED_ADMIN_ON_CONTEXTUAL_PREFERENCE_RESOURCE)
     public ContextualPreference load(final String name, final ContextualPreferenceExternalResource resource) {
         return contextualPreferenceManager.load(name, resource);
     }
@@ -47,12 +49,12 @@ public class ContextualPreferenceApiService {
         return contextualPreferenceManager.search(preferences, resource);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + SCOPED_ADMIN_ON_CONTEXTUAL_PREFERENCE)
     public ContextualPreference upsert(final ContextualPreferenceVO preference) {
         return contextualPreferenceManager.upsert(preference);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + SCOPED_ADMIN_ON_CONTEXTUAL_PREFERENCE_RESOURCE)
     public ContextualPreference delete(final String name, final ContextualPreferenceExternalResource resource) {
         return contextualPreferenceManager.delete(name, resource);
     }

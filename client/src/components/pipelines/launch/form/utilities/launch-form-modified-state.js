@@ -42,6 +42,7 @@ import {
 } from './configure-fs/utilities';
 import {parametersModified} from "./parameter-utilities";
 import {readReservationParameters, reservationParametersDiffer} from "../components/reservation-parameters/utilities";
+import * as prettyUrlGenerator from './pretty-url';
 
 function formItemInitialized (form, formName) {
   if (!formName) {
@@ -58,11 +59,19 @@ function formItemInitialized (form, formName) {
   return values.hasOwnProperty(formName) || test(values, 0);
 }
 
-function modified (form, parameters, formName, parametersName, defaultValue) {
+function modified (
+  form,
+  parameters,
+  formName,
+  parametersName,
+  defaultValue,
+  formValueAccessor = (v) => v
+) {
   if (!formItemInitialized(form, formName)) {
     return false;
   }
-  return `${form.getFieldValue(formName) || defaultValue}` !==
+  const formValue = formValueAccessor(form.getFieldValue(formName));
+  return `${formValue || defaultValue}` !==
     `${parameters[parametersName] || defaultValue}`;
 }
 
@@ -353,8 +362,15 @@ export default function (props, state, options) {
     spotOnDemandCheck(form, options) ||
     // auto-pause check
     autoPauseCheck(form, state) ||
-    // pretty url check
-    modified(form, parameters, `${ADVANCED}.prettyUrl`, 'prettyUrl') ||
+    // friendly url check
+    modified(
+      form,
+      parameters,
+      `${ADVANCED}.friendly_url`,
+      'friendly_url',
+      undefined,
+      (v) => prettyUrlGenerator.build(v)
+    ) ||
     // timeout check
     modified(form, parameters, `${ADVANCED}.timeout`, 'timeout') ||
     // stopAfter check

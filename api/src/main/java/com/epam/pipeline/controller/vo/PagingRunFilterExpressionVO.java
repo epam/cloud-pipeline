@@ -18,7 +18,7 @@ package com.epam.pipeline.controller.vo;
 
 import java.util.List;
 
-import com.epam.pipeline.entity.filter.AclSecuredFilter;
+import com.epam.pipeline.entity.filter.AclSecuredRunFilter;
 import com.epam.pipeline.manager.filter.FilterExpression;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
@@ -28,7 +28,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class PagingRunFilterExpressionVO implements AclSecuredFilter {
+public class PagingRunFilterExpressionVO implements AclSecuredRunFilter {
 
     private int page;
     private int pageSize;

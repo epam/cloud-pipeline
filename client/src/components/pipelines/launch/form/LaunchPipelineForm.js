@@ -75,7 +75,9 @@ import {
   kubeEnabled,
   getAutoScaledPriceTypeValue,
   applyChildNodeInstanceParameters,
-  parseChildNodeInstanceConfiguration
+  parseChildNodeInstanceConfiguration,
+  LAUNCH_CLUSTER_MODES,
+  CLUSTER_TYPE
 } from './utilities/launch-cluster';
 import checkModifiedState from './utilities/launch-form-modified-state';
 import {
@@ -149,6 +151,7 @@ import CustomTagsControl from './components/custom-tags/control';
 import UploadParametersButton from './components/upload-parameters-button';
 import ConfigurePlugins from '../../../plugins/configure';
 import {
+  fillUserTagsWithDefaultValues,
   filterVisibleTagsSync,
   getUserTagsValidationResult,
   getVisibleUserTags
@@ -192,7 +195,8 @@ function getFormItemClassName (rootClass, key) {
   'preferences',
   'dockerRegistries',
   'dataStorageAvailable',
-  'uiNavigation'
+  'uiNavigation',
+  'pipelinesLibrary'
 )
 @localization.localizedComponent
 @roleModel.authenticationInfo
@@ -227,7 +231,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return this.props.authenticatedUserInfo.value.userName;
   };
 
-  friendlyUrlAvailable = () => {
+  prettyUrlAvailable = () => {
     return this.isAdmin || this.isAdvancedUser;
   };
 
@@ -288,6 +292,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   state = {
     pending: false,
     userTags: {},
+    userTagsTouched: [],
     userTagsValidation: [],
     userTagsVisibleTags: [],
     userTagsValidationPayload: undefined,
@@ -325,6 +330,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     bucketPathParameterKey: null,
     bucketPathParameterSection: null,
     currentMetadataEntity: [],
+    parametersMetadata: {},
     rootEntityId: null,
     filteredEntityFields: [],
     activeAutoCompleteParameterKey: null,
@@ -832,6 +838,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return null;
   }
 
+  @computed
+  get pipelinesLibrary () {
+    if (this.props.pipelinesLibrary.loaded) {
+      return this.props.pipelinesLibrary.value || {};
+    }
+    return {};
+  }
+
   get launchFormUserPreferences () {
     const {uiNavigation, editConfigurationMode, isDetachedConfiguration} = this.props;
     if (editConfigurationMode || isDetachedConfiguration) {
@@ -869,11 +883,16 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   }
 
   get estimatedPriceSectionVisible () {
-    const {
-      'estimates-visible': estimatesVisible = true,
-      'estimated-price-visible': estimatedPriceSectionVisible = estimatesVisible
-    } = this.launchFormUserPreferences || {};
-    return `${estimatedPriceSectionVisible}`.toLowerCase() === 'true';
+    const {uiNavigation, editConfigurationMode, isDetachedConfiguration} = this.props;
+    if (editConfigurationMode || isDetachedConfiguration) {
+      return true;
+    }
+    const {pipeline} = this.state;
+    const {tools, pipelines} = uiNavigation.utils.estimatedPriceVisible();
+    if (pipeline) {
+      return pipelines;
+    }
+    return tools;
   }
 
   get currentDetachedConfiguration () {
@@ -1297,6 +1316,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     let payload = {
       instance_size: instanceType,
       instance_disk: +values[EXEC_ENVIRONMENT].disk,
+      friendly_url: prettyUrlGenerator.build(values[ADVANCED].friendly_url),
       timeout: +(values[ADVANCED].timeout || 0),
       stopAfter: stopAfterIsIncorrect(values[ADVANCED].stopAfter)
         ? undefined
@@ -1467,6 +1487,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     }
     if (this.props.isDetachedConfiguration) {
       payload.rootEntityId = this.state.rootEntityId;
+      delete payload.friendly_url;
     }
     return payload;
   };
@@ -1499,7 +1520,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         ? +values[EXEC_ENVIRONMENT].cloudRegionId
         : undefined,
       prettyUrl: this.prettyUrlEnabled
-        ? prettyUrlGenerator.build(values[ADVANCED].prettyUrl)
+        ? prettyUrlGenerator.build(values[ADVANCED].friendly_url)
         : undefined,
       notifications: (values[ADVANCED].notifications || []).slice()
     };
@@ -1540,6 +1561,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           visible: parameter.visible,
           validation: parameter.validation,
           no_override: parameter.noOverride,
+          read_only: parameter.readOnly,
           section: parameter.section
         };
       }
@@ -1664,6 +1686,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       payload.params
     );
     payload.params = appliedReservationParameters;
+    payload.params = parameterUtilities
+      .resolveMetadataEntityParameters(
+        payload.params,
+        this.getParameters(parametersPayloadId),
+        this.state.parametersMetadata
+      );
     payload.podAssignPolicy = podAssignPolicy;
     if (!payload.isSpot &&
       !this.state.launchCluster &&
@@ -2582,16 +2610,24 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   validateUserTags = async (payload = this.launchCommandPayload) => new Promise(async (resolve) => {
     let result = [];
     let visibleTags = [];
+    let newUserTags = this.state.userTags;
     if (
       !this.props.detached &&
       !this.props.isDetachedConfiguration &&
       !this.props.editConfigurationMode
     ) {
-      const {userTags} = this.state;
-      result = await getUserTagsValidationResult(userTags, {launchPayload: payload});
       visibleTags = await getVisibleUserTags(payload);
+      newUserTags = await fillUserTagsWithDefaultValues(
+        this.state.userTags,
+        this.state.userTagsTouched,
+        visibleTags,
+        this.props.currentUserAttributes,
+        payload
+      );
+      result = await getUserTagsValidationResult(newUserTags, {launchPayload: payload});
     }
     this.setState({
+      userTags: newUserTags,
       userTagsValidation: result,
       userTagsVisibleTags: visibleTags,
       userTagsValidationPayload: payload
@@ -2699,6 +2735,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         detached={detached}
         pipeline={pipelineSelected}
         description={description ? (<Markdown md={description} />) : undefined}
+        parametersMetadata={this.state.parametersMetadata}
       />,
       <div
         key={`add-${system ? 'system' : 'default'}-parameter`}
@@ -2785,30 +2822,16 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   @computed
   get prettyUrlSSHMode () {
+    const {dockerRegistries} = this.props;
     if (!this.prettyUrlEnabled) {
       return false;
     }
-    const dockerImage = this.getSectionFieldValue(EXEC_ENVIRONMENT)('dockerImage') ||
+    const image = this.getSectionFieldValue(EXEC_ENVIRONMENT)('dockerImage') ||
       this.getDefaultValue('docker_image');
-    if (dockerImage && this.props.dockerRegistries.loaded) {
-      const [registry, group, toolAndVersion] = dockerImage.toLowerCase().split('/');
-      const [imageRegistry] = (this.props.dockerRegistries.value.registries || [])
-        .filter(r => r.path.toLowerCase() === registry);
-      if (imageRegistry) {
-        const [imageGroup] = (imageRegistry.groups || [])
-          .filter(g => g.name.toLowerCase() === group);
-        if (imageGroup) {
-          const [image] = toolAndVersion.split(':');
-          const [im] = (imageGroup.tools || [])
-            .filter(i => i.image.toLowerCase() === `${group}/${image}`);
-          return !(im && im.endpoints && (im.endpoints || []).length > 0);
-        }
-      }
-    }
-    return true;
+    return prettyUrlGenerator.isPrettyUrlSSHMode(image, dockerRegistries);
   }
 
-  checkFriendlyURL = (rule, value, callback) => {
+  checkPrettyURL = (rule, value, callback) => {
     const error = prettyUrlGenerator.validate(value, this.prettyUrlSSHMode);
     if (error) {
       callback(error);
@@ -2817,11 +2840,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   renderPrettyUrlFormItem = () => {
-    if (this.prettyUrlEnabled && this.friendlyUrlAvailable()) {
+    if (this.prettyUrlEnabled && this.prettyUrlAvailable()) {
       const sshMode = this.prettyUrlSSHMode;
       return (
         <FormItem
-          className={getFormItemClassName(styles.formItemRow, 'prettyUrl')}
+          className={getFormItemClassName(styles.formItemRow, 'friendly_url')}
           {...this.leftFormItemLayout}
           label="Friendly URL"
           hasFeedback>
@@ -2830,14 +2853,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               className={styles.formItemRow}
               hasFeedback
             >
-              {this.getSectionFieldDecorator(ADVANCED)('prettyUrl',
+              {this.getSectionFieldDecorator(ADVANCED)('friendly_url',
                 {
                   rules: [
                     {
-                      validator: this.checkFriendlyURL
+                      validator: this.checkPrettyURL
                     }
                   ],
-                  initialValue: prettyUrlGenerator.parse(this.getDefaultValue('prettyUrl'))
+                  initialValue: prettyUrlGenerator.parse(this.getDefaultValue('friendly_url'))
                 }
               )(
                 <Input
@@ -3894,7 +3917,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           validation={userTagsValidation}
           visibleTags={userTagsVisibleTags}
           payload={userTagsValidationPayload}
-          onChange={(tags) => this.setState({userTags: tags}, this.formFieldsChanged)}
+          onChange={(tags, tagsTouched) => this.setState({
+            userTags: tags,
+            userTagsTouched: tagsTouched
+          }, this.formFieldsChanged)}
           buttonText="Configure"
         />
       </FormItem>
@@ -4575,6 +4601,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   renderUploadParametersControls = (style = {}) => {
     const {preferences} = this.props;
+    const {isRawEditEnabled} = this.state;
     const preventDefault = (e) => {
       e.stopPropagation();
     };
@@ -4619,6 +4646,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         }
       })();
     };
+    const {parameters} = this.getCurrentParametersPayload();
+    const visibleParameters = parameterUtilities.getVisibleParameters(
+      parameters,
+      false,
+      isRawEditEnabled
+    );
     if (!preferences.loaded) {
       return null;
     }
@@ -4632,8 +4665,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     }
     return (
       <div
-        style={{display: 'inline-flex', alignItems: 'center', ...(style || {})}}
-        onClick={preventDefault}>
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '5px',
+          ...(style || {})
+        }}
+        onClick={preventDefault}
+      >
         <UploadParametersButton
           disabled={
             this.getLoadingState('parameters').pending ||
@@ -4641,7 +4680,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           }
           multiple={!this.props.editConfigurationMode && !this.props.detached}
           onParametersUploaded={onUploaded}
-          asLink={false}>
+          parametersToDownload={visibleParameters}
+          asLink={false}
+        >
           Upload
         </UploadParametersButton>
       </div>
@@ -5039,6 +5080,30 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (this.state.parameterType === 'path' || this.state.parameterType === 'input') {
       bucketTypes.push('AWS_OMICS_SEQ', 'AWS_OMICS_REF');
     }
+    const launchMode = !!this.props.pipeline && !!this.props.pipeline.id
+      ? LAUNCH_CLUSTER_MODES.pipeline
+      : LAUNCH_CLUSTER_MODES.tool;
+    const getDisplayConfig = () => {
+      const getInitialSelectedClusterType = () => {
+        if (this.state.launchCluster) {
+          return this.state.autoScaledCluster &&
+          !this.state.sparkEnabled
+            ? CLUSTER_TYPE.autoScaledCluster
+            : CLUSTER_TYPE.fixedCluster;
+        } else {
+          return CLUSTER_TYPE.singleNode;
+        }
+      };
+      return ConfigureClusterDialog.getDisplayConfig(
+        launchMode,
+        this.props.uiNavigation,
+        getInitialSelectedClusterType(),
+        this.props.authenticatedUserInfo
+      );
+    };
+    const configureClusterDisplayConfig = getDisplayConfig();
+    const configureClusterEnabled = configureClusterDisplayConfig.autoScaledVisible ||
+      configureClusterDisplayConfig.staticVisible;
     return (
       <Form onSubmit={this.handleSubmit}>
         <div className={styles.layout}>
@@ -5136,14 +5201,16 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                             style={{width: '100%'}}
                           />
                         </Col>
-                        <a
-                          onClick={this.openConfigureClusterDialog}
-                          className="cp-text underline"
-                          style={{marginLeft: 'auto', marginRight: '30px'}}
-                        >
-                          <Icon type="setting" />
-                          {ConfigureClusterDialog.getConfigureClusterButtonDescription(this)}
-                        </a>
+                        {configureClusterEnabled ? (
+                          <a
+                            onClick={this.openConfigureClusterDialog}
+                            className="cp-text underline"
+                            style={{marginLeft: 'auto', marginRight: '30px'}}
+                          >
+                            <Icon type="setting" />
+                            {ConfigureClusterDialog.getConfigureClusterButtonDescription(this)}
+                          </a>
+                        ) : null}
                       </Row>
                     )}
                     <ConfigureClusterDialog
@@ -5167,6 +5234,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       visible={this.state.configureClusterDialogVisible}
                       disabled={this.props.readOnly && !this.props.canExecute}
                       instanceTypes={this.instanceTypes}
+                      displayConfig={configureClusterDisplayConfig}
                     />
                     {
                       this.renderFormItemRow(
@@ -5446,26 +5514,36 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   updateFromProps = () => {
     const {
       parameters: payload,
-      detached = false
+      detached = false,
+      pipelinesLibrary
     } = this.props;
     const {
       pipeline
     } = this.state;
     this.wrapLoading('parameters', async (commitState) => {
       let params = [];
+      let parametersMetadata = {};
       try {
         params = await parameterUtilities.readParametersFromConfiguration(
           payload,
           {
             detached,
-            pipeline: pipeline !== undefined && pipeline !== null
+            pipeline: pipeline !== undefined && pipeline !== null,
+            pipelineObject: pipeline
           }
         );
+        await pipelinesLibrary.fetchIfNeededOrWait();
+        parametersMetadata = await parameterUtilities
+          .getMetadataForParameters(params, pipeline, this.pipelinesLibrary);
       } catch (error) {
         console.log(`error initializing parameters: ${error.message}`);
       }
+      this.setState({parametersMetadata});
       await this.registerParametersPayloads(
-        [{parameters: params, id: 'default'}],
+        [{
+          parameters: params,
+          id: 'default'
+        }],
         commitState
       );
     });

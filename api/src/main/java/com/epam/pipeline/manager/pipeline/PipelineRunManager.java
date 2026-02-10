@@ -27,6 +27,7 @@ import com.epam.pipeline.controller.vo.PipelineRunServiceUrlVO;
 import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.controller.vo.run.RunChartFilterVO;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
+import com.epam.pipeline.dao.pipeline.PipelineRunMetricsDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
@@ -67,6 +68,7 @@ import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.entity.run.PipelineRunPerformanceMetrics;
 import com.epam.pipeline.entity.run.RunChartInfoEntity;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
@@ -102,6 +104,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -254,6 +257,9 @@ public class PipelineRunManager {
 
     @Autowired
     private CommonAuditClient auditClient;
+
+    @Autowired
+    private PipelineRunMetricsDao runMetricsDao;
 
     /**
      * Launches cmd command execution, uses Tool as ACL identity
@@ -645,7 +651,7 @@ public class PipelineRunManager {
     @Transactional(propagation = Propagation.SUPPORTS)
     public AbstractSecuredEntity loadRunParent(PipelineRun run) {
         if (run.getPipelineId() != null && run.getPipelineId() != 0) {
-            return pipelineManager.load(run.getPipelineId());
+            return pipelineManager.load(run.getPipelineId(), false, false);
         } else {
             return null;
         }
@@ -986,7 +992,7 @@ public class PipelineRunManager {
         run.setLastChangeCommitTime(DateUtils.now());
         run.setPodId(getRootPodIDFromPipeline(run));
         Optional.ofNullable(parentRun).map(PipelineRun::getId).ifPresent(run::setParentRunId);
-        run.convertParamsToString(configuration.getParameters());
+        run.setPipelineRunParameters(mapPipeConfValuesToRunParameters(configuration));
         run.setTimeout(configuration.getTimeout());
         run.setDockerImage(configuration.getDockerImage());
         run.setActualDockerImage(Optional.ofNullable(tool).map(Tool::getImage).orElse(configuration.getDockerImage()));
@@ -1014,6 +1020,19 @@ public class PipelineRunManager {
             run.setNonPause(configuration.isNonPause());
         }
         return run;
+    }
+
+    private List<PipelineRunParameter> mapPipeConfValuesToRunParameters(final PipelineConfiguration configuration) {
+        return MapUtils.emptyIfNull(configuration.getParameters()).entrySet()
+                .stream()
+                .filter(parameter -> Objects.nonNull(parameter.getValue()))
+                .map(parameter ->
+                        new PipelineRunParameter(
+                                parameter.getKey(),
+                                parameter.getValue().getValue(),
+                                parameter.getValue().getType()
+                        )
+                ).collect(Collectors.toList());
     }
 
     private String calculateOriginalOwner(final PipelineConfiguration configuration, final PipelineRun parentRun) {
@@ -1452,11 +1471,30 @@ public class PipelineRunManager {
         return pipelineRunDao.runExists(runId);
     }
 
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public PipelineRunPerformanceMetrics loadPipelineRunPerformanceMetrics(final long runId) {
+        final PipelineRun run = loadPipelineRun(runId);
+        return runMetricsDao.loadRunMetrics(run.getId());
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void savePipelineRunPerformanceMetrics(
+            final PipelineRunPerformanceMetrics metrics) {
+        Assert.notNull(metrics.getRunId(), "RunId isn't provided!");
+        loadPipelineRun(metrics.getRunId());
+        runMetricsDao.createRunMetrics(metrics);
+    }
+
     private int getTotalSize(final List<InstanceDisk> disks) {
         return (int) disks.stream().mapToLong(InstanceDisk::getSize).sum();
     }
 
     private void adjustInstanceDisk(final PipelineConfiguration configuration) {
+        final Boolean launchDockerPreflightChecks = preferenceManager.getPreference(
+                SystemPreferences.LAUNCH_DOCKER_PREFLIGHT_CHECKS);
+        if (BooleanUtils.isFalse(launchDockerPreflightChecks)) {
+            return;
+        }
         long imageSizeBytes = toolManager.getCurrentImageSize(configuration.getDockerImage());
         long requiredDiskForImageBytes = imageSizeBytes
                 * preferenceManager.getPreference(SystemPreferences.CLUSTER_DOCKER_EXTRA_MULTI)
@@ -1608,7 +1646,7 @@ public class PipelineRunManager {
 
     private void setParent(PipelineRun run) {
         if (run.getPipelineId() != null && run.getPipelineId() != 0L) {
-            run.setParent(pipelineManager.load(run.getPipelineId()));
+            run.setParent(pipelineManager.load(run.getPipelineId(), false, false));
         }
     }
 

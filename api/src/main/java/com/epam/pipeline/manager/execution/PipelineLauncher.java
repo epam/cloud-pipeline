@@ -109,7 +109,7 @@ public class PipelineLauncher {
     @Autowired
     private ToolScanInfoManager toolScanInfoManager;
 
-    @Value("${kube.namespace}")
+    @Value("${kube.namespace:default}")
     private String kubeNamespace;
 
     @Value("${launch.script.url.linux}")
