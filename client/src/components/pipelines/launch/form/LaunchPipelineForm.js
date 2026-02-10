@@ -88,6 +88,7 @@ import {
 } from './utilities/launch-form-sections';
 import * as prettyUrlGenerator from './utilities/pretty-url';
 import * as parameterUtilities from './utilities/parameter-utilities';
+import * as validatorUtilities from './utilities/validator-utilities';
 import RunSchedulingList from '../../../runs/run-scheduling/run-sheduling-list';
 import pipelinesEquals from './utilities/pipelines-equals';
 import LaunchCommand from './utilities/launch-command';
@@ -996,7 +997,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
     this.props.form.validateFields(async (errors, values) => {
       this.setState({pending: true});
-      const hide = message.loading('Validate parameters...', 0);
+      const hide = message.loading('Validating parameters...', 0);
       await this.onCustomValidateParameters();
       hide();
       this.setState({pending: false});
@@ -5874,12 +5875,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       const instanceType = this.instanceTypes.find(t => t.name === instanceTypeValue);
       const opts = {
         form: this.props.form,
+        payload,
         instanceType,
         parameters,
         api: {
           DataStorageItemSize,
           getStorageFileAccessInfo
-        }
+        },
+        utils: validatorUtilities
       };
       const {
         parameters: result,

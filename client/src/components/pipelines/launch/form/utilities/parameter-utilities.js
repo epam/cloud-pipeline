@@ -2135,7 +2135,7 @@ function getParametersWarning (parameters = []) {
     return (
       <div>
         The following parameter{s} {s ? 'have' : 'has a'} warning{s}:
-        {withWarnings.map(p => (<div key={p}>
+        {withWarnings.map(p => (<div key={p.name}>
           <b>{p.name}</b>: {p.warning}
         </div>))}
       </div>
