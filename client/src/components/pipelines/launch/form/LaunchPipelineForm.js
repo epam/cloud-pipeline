@@ -998,6 +998,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     this.props.form.validateFields(async (errors, values) => {
       this.setState({pending: true});
       const hide = message.loading('Validating parameters...', 0);
+      validatorUtilities.invalidateFileContentCache();
       await this.onCustomValidateParameters();
       hide();
       this.setState({pending: false});

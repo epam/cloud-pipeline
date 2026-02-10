@@ -21,6 +21,13 @@ import {base64toString} from '../../../../../utils/base64';
 import {getStorageLinkInfo} from '../../../../special/data-storage-link/utilities.js';
 
 /**
+ * Cache for file content promises, key is a path.
+ * Stores promises to deduplicate concurrent requests for the same file.
+ * @type {Map<string, Promise<{content: string, truncated: boolean, mayBeBinary: boolean}>>}
+ */
+const fileContentCache = new Map();
+
+/**
  * Logs validation error for a parameter
  * @param {Object} parameter - Parameter object with name property
  * @param {Error|string} error - Error object or message
@@ -106,6 +113,7 @@ async function validateItemSize ({
  * Validates that CSV file contains required columns
  * @param {Object} config - Validation configuration
  * @param {Object} config.parameter - Parameter object with value property
+ * @param {Object} config.path - Path can be used as a replacement to parameter.value
  * @param {string[]} config.columns - Required column names
  * @param {string} config.type - Type of message ('warning' | 'error')
  * @param {string} config.message - Custom error message
@@ -113,16 +121,18 @@ async function validateItemSize ({
  */
 async function validateCSVHeader ({
   parameter,
+  path: pathProp,
   options,
   columns,
   type = 'warning',
   message = ''
 }) {
   try {
-    if (!parameter.value) {
+    if (!parameter?.value && !pathProp) {
       return {};
     }
-    const {content, truncated, mayBeBinary} = await getFileContent(parameter.value);
+    const path = pathProp || parameter.value;
+    const {content, truncated, mayBeBinary} = await getFileContent(path);
     if (mayBeBinary) {
       return {warning: 'File is binary, unable to validate.'};
     }
@@ -153,30 +163,41 @@ async function validateCSVHeader ({
  * @throws {Error} If storage or file is not found
  */
 async function getFileContent (path) {
-  await DataStorageAvailable.fetchIfNeededOrWait();
-  const info = getStorageLinkInfo({
-    storages: DataStorageAvailable.value,
-    path,
-    isFolder: false,
-    showShared: true
-  });
-  if (!info?.storageId) {
-    throw new Error(`Storage not found for path: ${path}`);
+  if (fileContentCache.has(path)) {
+    return fileContentCache.get(path);
   }
-  const request = new DataStorageItemContent(info.storageId, info.relativePath);
-  await request.fetch();
-  if (request.error) {
-    throw new Error(`Error fetching file content: ${request.error}`);
-  }
-  if (!request?.value) {
-    throw new Error(`File not found: ${path}`);
-  }
-  const {truncated, mayBeBinary, content = ''} = request.value;
-  return {
-    content: base64toString(content),
-    truncated,
-    mayBeBinary
-  };
+  const fetchPromise = (async () => {
+    await DataStorageAvailable.fetchIfNeededOrWait();
+    const info = getStorageLinkInfo({
+      storages: DataStorageAvailable.value,
+      path,
+      isFolder: false,
+      showShared: true
+    });
+    if (!info?.storageId) {
+      throw new Error(`Storage not found for path: ${path}`);
+    }
+    const request = new DataStorageItemContent(info.storageId, info.relativePath);
+    await request.fetch();
+    if (request.error) {
+      throw new Error(`Error fetching file content: ${request.error}`);
+    }
+    if (!request?.value) {
+      throw new Error(`File not found: ${path}`);
+    }
+    const {truncated, mayBeBinary, content = ''} = request.value;
+    return {
+      content: base64toString(content),
+      truncated,
+      mayBeBinary
+    };
+  })();
+  fileContentCache.set(path, fetchPromise);
+  return fetchPromise;
+}
+
+function invalidateFileContentCache () {
+  fileContentCache.clear();
 }
 
 export {
@@ -185,5 +206,6 @@ export {
   getFileContent,
   getCSVColumns,
   validateItemSize,
-  validateCSVHeader
+  validateCSVHeader,
+  invalidateFileContentCache
 };
