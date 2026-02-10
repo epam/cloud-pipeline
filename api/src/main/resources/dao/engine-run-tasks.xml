@@ -88,7 +88,7 @@
                 ]]>
             </value>
         </property>
-        <property name="loadEngineRunTasksByIdsQuery">
+        <property name="loadEngineRunTasksByKeysQuery">
             <value>
                 <![CDATA[
                     SELECT
@@ -104,7 +104,7 @@
                         r.end_date,
                         r.run_id,
                         r.duration,
-                        null as r.data
+                        null as data
                     FROM
                         pipeline.engine_run_task r
                     WHERE r.engine_type = :ENGINE_TYPE AND r.task_key IN (:TASK_KEY)

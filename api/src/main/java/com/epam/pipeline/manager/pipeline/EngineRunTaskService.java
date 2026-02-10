@@ -87,9 +87,9 @@ public class EngineRunTaskService {
 
     public List<PipelineRunWithEngineTasks> loadRunInfoByTasks(final EngineType engineType,
                                                                final List<String> taskKeys) {
-        final List<EngineRunTask> engineRunTasks = loadTasks(engineType, taskKeys);
-        final Map<Long, List<EngineRunTask>> tasksGroupedByRun =
-                engineRunTasks.stream().collect(Collectors.groupingBy(EngineRunTask::getRunId));
+        final Map<Long, List<EngineRunTask>> tasksGroupedByRun = loadTasks(engineType, taskKeys)
+                .stream()
+                .collect(Collectors.groupingBy(EngineRunTask::getRunId));
         final List<PipelineRun> pipelineRuns = runCRUDService.loadRunsByIds(
                 new ArrayList<>(tasksGroupedByRun.keySet())
         );

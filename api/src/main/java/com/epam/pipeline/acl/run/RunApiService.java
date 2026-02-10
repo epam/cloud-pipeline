@@ -472,6 +472,6 @@ public class RunApiService {
     @PreAuthorize(ADMIN_ONLY + OR + RUN_ADMIN_ONLY)
     public List<PipelineRunWithEngineTasks> getPipelineRunInfoByEngineTask(final EngineType engineType,
                                                                            final EngineRunTaskKeys keys) {
-        return engineRunTaskService.loadRunInfoByTasks(engineType, keys.getTaskKeys());
+        return engineRunTaskService.loadRunInfoByTasks(engineType, keys.getEngineTaskKeys());
     }
 }
