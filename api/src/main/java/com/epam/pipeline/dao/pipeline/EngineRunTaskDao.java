@@ -54,6 +54,7 @@ public class EngineRunTaskDao extends DryRunJdbcDaoSupport {
     private String loadEngineRunTasksStatsByRunIdAndTypeQuery;
     private String findEngineRunTaskByRunIdAndTypeQuery;
     private String countEngineRunTaskByRunIdAndTypeQuery;
+    private String loadEngineRunTasksByKeysQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public List<EngineRunTask> batchUpsert(final List<EngineRunTask> tasks) {
@@ -141,6 +142,15 @@ public class EngineRunTaskDao extends DryRunJdbcDaoSupport {
 
     private String buildDbSorting(final EngineRunTaskSortVO sorting) {
         return "r." + sorting.getColumn().getDbColumn() + " " + (sorting.isDescending() ? "DESC" : "ASC");
+    }
+
+    public List<EngineRunTask> loadEngineTasksByTaskKeys(final EngineType engineType, final List<String> taskKeys) {
+        final MapSqlParameterSource parameters = new MapSqlParameterSource()
+                .addValue(Parameters.ENGINE_TYPE.name(), engineType)
+                .addValue(Parameters.TASK_ID.name(), taskKeys);
+
+        return getNamedParameterJdbcTemplate().query(loadEngineRunTasksByKeysQuery, parameters, Parameters.getRowMapper());
+
     }
 
     enum Parameters {
@@ -239,6 +249,11 @@ public class EngineRunTaskDao extends DryRunJdbcDaoSupport {
     @Required
     public void setDeleteEngineRunTaskByRunIdsQuery(final String deleteEngineRunTaskByRunIdsQuery) {
         this.deleteEngineRunTaskByRunIdsQuery = deleteEngineRunTaskByRunIdsQuery;
+    }
+
+    @Required
+    public void setLoadEngineRunTasksByKeysQuery(final String loadEngineRunTasksByKeysQuery) {
+        this.loadEngineRunTasksByKeysQuery = loadEngineRunTasksByKeysQuery;
     }
 
     @Required

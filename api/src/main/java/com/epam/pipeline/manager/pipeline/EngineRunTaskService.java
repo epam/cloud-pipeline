@@ -20,23 +20,22 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.dao.pipeline.EngineRunTaskDao;
+import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.EngineRunTask;
 import com.epam.pipeline.entity.pipeline.run.EngineRunTaskFilter;
+import com.epam.pipeline.entity.pipeline.run.EngineType;
+import com.epam.pipeline.entity.pipeline.run.PipelineRunWithEngineTasks;
 import com.epam.pipeline.entity.run.EngineRunTaskGroupStatsEntity;
 import com.epam.pipeline.entity.run.EngineRunTaskStatsEntity;
-import com.epam.pipeline.entity.pipeline.run.EngineType;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.math3.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -79,6 +78,34 @@ public class EngineRunTaskService {
         runCRUDService.loadRunById(runId);
         return new PagedResult<>(engineRunTaskDao.filterTasksByRunIdAndTypeAndFilter(runId, engineType, filter),
                 engineRunTaskDao.countTasksByRunIdAndTypeAndFilter(runId, engineType, filter));
+    }
+
+    public List<EngineRunTask> loadTasks(final EngineType engineType, final List<String> taskKeys) {
+        Assert.notEmpty(taskKeys, "List of task keys should be provided!");
+        return engineRunTaskDao.loadEngineTasksByTaskKeys(engineType, taskKeys);
+    }
+
+    public List<PipelineRunWithEngineTasks> loadRunInfoByTasks(final EngineType engineType,
+                                                               final List<String> taskKeys) {
+        final List<EngineRunTask> engineRunTasks = loadTasks(engineType, taskKeys);
+        final Map<Long, List<EngineRunTask>> tasksGroupedByRun =
+                engineRunTasks.stream().collect(Collectors.groupingBy(EngineRunTask::getRunId));
+        final List<PipelineRun> pipelineRuns = runCRUDService.loadRunsByIds(
+                new ArrayList<>(tasksGroupedByRun.keySet())
+        );
+        return pipelineRuns.stream()
+                .map(pipelineRun ->
+                    Pair.create(
+                        pipelineRun,
+                        tasksGroupedByRun.getOrDefault(pipelineRun.getId(), Collections.emptyList())
+                    )
+                ).map(p ->
+                    PipelineRunWithEngineTasks.builder()
+                        .run(p.getKey())
+                        .engineTaskKeys(
+                                p.getValue().stream().map(EngineRunTask::getTaskKey).collect(Collectors.toList())
+                        ).build()
+                ).collect(Collectors.toList());
     }
 
     protected static Map<String, EngineRunTaskGroupStatsEntity> calculateTaskGroupStatistic(
