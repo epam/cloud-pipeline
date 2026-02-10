@@ -18,7 +18,6 @@ package com.epam.pipeline.app;
 
 import com.epam.pipeline.security.jwt.RestAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.session.DefaultCookieSerializerCustomizer;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import com.epam.pipeline.security.saml.proxy.SAMLProxyFilter;
@@ -39,14 +38,6 @@ public class ProxySecurityConfig {
     private static final String RESTAPI_PROXY = "/restapi/proxy/**";
 
     private final SAMLProxyFilter proxyFilter;
-
-    @Bean
-    public DefaultCookieSerializerCustomizer proxyCookieSerializerCustomizer() {
-        return cookieSerializer -> {
-            // SAML breaks when using spring session as it sets LAX on cookie by default
-            cookieSerializer.setSameSite(null);
-        };
-    }
 
     @Order(1)
     @Bean
@@ -71,7 +62,7 @@ public class ProxySecurityConfig {
     @Bean
     public FilterRegistrationBean<SAMLProxyFilter> proxyRegistration(final SAMLProxyFilter filter) {
         final var registration = new FilterRegistrationBean<>(filter);
-        registration.setEnabled(false);
+        registration.setEnabled(false); // exclude from global chain
         return registration;
     }
 }
