@@ -122,10 +122,10 @@ async function validateCSVHeader ({
     if (!parameter.value) {
       return {};
     }
-    if (!Array.isArray(columns) || columns.length === 0) {
-      return {warning: 'No columns specified for validation.'};
+    const {content, truncated, mayBeBinary} = await getFileContent(parameter.value);
+    if (mayBeBinary) {
+      return {warning: 'File is binary, unable to validate.'};
     }
-    const {content, truncated} = await getFileContent(parameter.value);
     if (!content) {
       return {[type]: 'File is missing or empty.'};
     }
