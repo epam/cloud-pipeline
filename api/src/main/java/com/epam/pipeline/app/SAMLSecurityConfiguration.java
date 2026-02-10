@@ -22,7 +22,6 @@ import com.epam.pipeline.security.saml.SAMLUserDetailsService;
 import com.epam.pipeline.security.saml.SamlRelyingPartyRegistrationBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
-import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.session.DefaultCookieSerializerCustomizer;
 import org.springframework.context.annotation.Bean;
@@ -46,6 +45,7 @@ import org.springframework.security.web.authentication.logout.SimpleUrlLogoutSuc
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
+import javax.annotation.Nullable;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
@@ -102,7 +102,7 @@ public class SAMLSecurityConfiguration {
         };
     }
 
-    @Order(3)
+    @Order(4)
     @Bean
     public SecurityFilterChain samlFilterChain(final HttpSecurity http) throws Exception {
         final var relyingPartyRegistrationRepository = relyingPartyRegistrationRepository();

@@ -47,7 +47,7 @@ public class ImpersonationSecurityConfiguration {
         this.impersonationManager = impersonationManager;
     }
 
-    @Order(1)
+    @Order(2)
     @Bean
     public SecurityFilterChain impersonationFilterChain(final HttpSecurity http) throws Exception {
         return http

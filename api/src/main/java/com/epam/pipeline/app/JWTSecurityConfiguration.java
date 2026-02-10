@@ -88,7 +88,7 @@ public class JWTSecurityConfiguration {
         return publicKey;
     }
 
-    @Order(2)
+    @Order(3)
     @Bean
     public SecurityFilterChain jwtSecurityFilterChain(final HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)

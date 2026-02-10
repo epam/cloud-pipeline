@@ -37,7 +37,8 @@ import java.util.Optional;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ToolSymlinkContextualPreferenceDaoTest  extends AbstractJdbcTest {
     
@@ -71,7 +72,8 @@ public class ToolSymlinkContextualPreferenceDaoTest  extends AbstractJdbcTest {
     @Autowired
     private ContextualPreferenceDao contextualPreferenceDao;
 
-    @BeforeEach    public void setUp() throws Exception {
+    @BeforeEach
+    public void setUp() throws Exception {
         firstRegistry = new DockerRegistry();
         firstRegistry.setPath(TEST_REPO);
         firstRegistry.setOwner(TEST_USER);

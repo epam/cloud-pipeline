@@ -120,12 +120,11 @@ public class SamlRelyingPartyRegistrationBuilder {
     }
 
     private String prepareFederationMetadataPath() {
-        final String metadataLocation = federationMetadataFile.toLowerCase();
-        if (metadataLocation.startsWith("classpath:") || metadataLocation.startsWith("file:")
-                || metadataLocation.startsWith("http:") || metadataLocation.startsWith("https:")) {
-            return metadataLocation;
+        if (federationMetadataFile.startsWith("classpath:") || federationMetadataFile.startsWith("file:")
+                || federationMetadataFile.startsWith("http:") || federationMetadataFile.startsWith("https:")) {
+            return federationMetadataFile;
         }
         // support the former metadata path:
-        return "file:" + metadataLocation;
+        return "file:" + federationMetadataFile;
     }
 }

@@ -50,6 +50,7 @@ import com.epam.pipeline.repository.notification.UserNotificationRepository;
 import com.epam.pipeline.repository.user.PipelineUserRepository;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import com.epam.pipeline.security.jwt.JwtTokenVerifier;
+import com.epam.pipeline.security.saml.proxy.SAMLProxyFilter;
 import org.mockito.Mockito;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.SpringBootConfiguration;
@@ -197,6 +198,8 @@ public class TestApplication {
     public AccessCodeRepository accessCodeRepository;
     @MockBean
     public AccessCodeCleaner accessCodeCleaner;
+    @MockBean
+    private SAMLProxyFilter proxyFilter;
 
     @MockBean
     public CommonAuditClient auditClient;
