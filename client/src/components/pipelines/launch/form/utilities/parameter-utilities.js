@@ -2142,6 +2142,10 @@ function getParametersWarning (parameters = []) {
     );
   }
   return null;
+}
+
+/**
+ * Gets warning from parameters
  * @param {Parameter} parameter
  */
 function parameterIsVisible (parameter = {}) {
@@ -2219,7 +2223,7 @@ export {
   hasResolvedValues,
   toggleResolvedValues,
   parseCustomValidatorsModule,
-  getParametersWarning
+  getParametersWarning,
   downloadParametersTemplate,
   getMetadataForParameters,
   resolveMetadataEntityParameters
