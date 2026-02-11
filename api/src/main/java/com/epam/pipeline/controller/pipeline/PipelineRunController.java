@@ -726,8 +726,8 @@ public class PipelineRunController extends AbstractRestController {
 
     @PostMapping("run/engine/{engineType}/tasks/runInfo")
     @ApiOperation(
-            value = "Loads engine task for run with applied filters",
-            notes = "Loads engine task for run with applied filters",
+            value = "Loads pipeline runs for provided engine task keys, response is grouped by pipeline run.",
+            notes = "Loads pipeline runs for provided engine task keys, response is grouped by pipeline run.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<List<PipelineRunWithEngineTasks>> getPipelineRunInfoByEngineTask(

@@ -149,7 +149,8 @@ public class EngineRunTaskDao extends DryRunJdbcDaoSupport {
                 .addValue(Parameters.ENGINE_TYPE.name(), engineType.name())
                 .addValue(Parameters.TASK_KEY.name(), taskKeys);
 
-        return getNamedParameterJdbcTemplate().query(loadEngineRunTasksByKeysQuery, parameters, Parameters.getRowMapper());
+        return getNamedParameterJdbcTemplate().query(loadEngineRunTasksByKeysQuery,
+                parameters, Parameters.getRowMapper());
 
     }
 
