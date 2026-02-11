@@ -211,6 +211,9 @@ class StorageItemManager(object):
         if io_threads is not None:
             transfer_config.max_concurrency = max(io_threads, 1)
             transfer_config.use_threads = transfer_config.max_concurrency > 1
+        multipart_chunksize = os.getenv('CP_AWS_MULTIPART_CHUNKSIZE_MB')
+        if multipart_chunksize:
+            transfer_config.multipart_chunksize = int(multipart_chunksize) * 1024 * 1024
         return transfer_config
 
 
