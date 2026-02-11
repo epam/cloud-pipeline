@@ -166,7 +166,7 @@ public class ToolVersions extends ToolTab<ToolVersions> {
             public List<WebElement> findElements(final SearchContext context) {
                 return $(".ant-table-body")
                         .findAll(".ant-table-row").stream()
-                        .filter(element -> exactText(version).apply(driver(), element.find(".tools__version-name")))
+                        .filter(element -> element.find(".tools__version-name").has(exactText(version)))
                         .collect(toList());
             }
         };

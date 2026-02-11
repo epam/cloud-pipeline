@@ -511,7 +511,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             sleep(1, SECONDS);
             final List<String> list = $$(byClassName("CodeMirror-line")).texts();
             final String[] prefValue = new String[2];
-            prefValue[0] = (list.size() <= 1 ) ? String.join("", list) : String.join("\n", list);
+            prefValue[0] = (list.size() <= 1 ) ? String.join("", list)
+                    : String.join("\n", list).replaceAll("\\u00a0", "");
             prefValue[1] = String.valueOf(!context().find(byClassName("preference-group__preference-row"))
                     .$(byClassName("anticon")).has(cssClass("anticon-eye-o")));
             return prefValue;
