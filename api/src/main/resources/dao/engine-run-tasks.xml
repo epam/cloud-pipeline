@@ -88,6 +88,30 @@
                 ]]>
             </value>
         </property>
+        <property name="loadEngineRunTasksByKeysQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        r.task_id,
+                        r.task_name,
+                        r.task_key,
+                        r.task_tag,
+                        r.task_group,
+                        r.parent_id,
+                        r.engine_type,
+                        r.status,
+                        r.start_date,
+                        r.end_date,
+                        r.run_id,
+                        r.duration,
+                        null as data
+                    FROM
+                        pipeline.engine_run_task r
+                    WHERE r.engine_type = :ENGINE_TYPE AND r.task_key IN (:TASK_KEY)
+                    ORDER BY r.run_id
+                ]]>
+            </value>
+        </property>
         <property name="findEngineRunTaskByRunIdAndTypeQuery">
             <value>
                 <![CDATA[
