@@ -30,16 +30,14 @@ import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringMa
 import com.epam.pipeline.manager.docker.DockerContainerOperationManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.quota.RunLimitsService;
 import org.apache.commons.lang.time.DateUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 import static com.epam.pipeline.entity.utils.DateUtils.convertDateToLocalDateTime;
 import static org.mockito.Matchers.any;
@@ -159,6 +157,22 @@ public class PipelineRunDockerOperationManagerTest {
         verify(dockerContainerOperationManager).resumeRun(runToResume, TEST_NAMES);
     }
 
+    @Test(expected = IllegalStateException.class)
+    public void shouldNotPauseIfPauseDisabled() {
+        final PipelineRun runToPause = pauseDisabledRun();
+        runToPause.setId(TEST_ID);
+        runToPause.setDockerImage(TEST_NAME);
+
+        when(toolManager.loadByNameOrId(TEST_NAME)).thenReturn(tool());
+        when(preferenceManager.findPreference(SystemPreferences.SYSTEM_MAINTENANCE_MODE))
+                .thenReturn(Optional.of(false));
+        when(pipelineRunDao.loadPipelineRun(TEST_ID))
+                .thenReturn(runToPause);
+        pipelineRunDockerOperationManager.pauseRun(TEST_ID, false);
+
+    }
+
+
     @Test
     public void shouldCorrectlyCalculateContainerSizeAgainstLimits() {
         TwoBoundaryLimit limit = TwoBoundaryLimit.builder().soft(Long.MAX_VALUE / 2).hard(Long.MAX_VALUE).build();
@@ -217,6 +231,13 @@ public class PipelineRunDockerOperationManagerTest {
     private PipelineRun pausingRun() {
         final PipelineRun run = pipelineRun();
         run.setStatus(TaskStatus.PAUSING);
+        return run;
+    }
+
+    private PipelineRun pauseDisabledRun() {
+        final PipelineRun run = pipelineRun();
+        run.setPauseDisabled(true);
+        run.getInstance().setSpot(false);
         return run;
     }
 

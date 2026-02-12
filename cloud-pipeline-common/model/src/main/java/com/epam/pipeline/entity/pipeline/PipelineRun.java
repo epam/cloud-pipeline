@@ -121,7 +121,11 @@ public class PipelineRun extends AbstractSecuredEntity {
     private String stateReasonMessage;
     private List<RestartRun> restartedRuns;
     private List<RunStatus> runStatuses;
+    // Is used to disable AUTO-pause functionality, see ResourceMonitoringManager.performPause()
     private boolean nonPause;
+
+    // Is used to completely disable pause functionality, even per user request
+    private boolean pauseDisabled;
 
     /**
      * For CMD runs parent is TOOL, for usual runs - it is a PIPELINE

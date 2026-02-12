@@ -288,6 +288,8 @@ public class PipelineRunDockerOperationManager {
         Assert.isTrue(!instance.getSpot(), messageHelper.getMessage(MessageConstants.ERROR_ON_DEMAND_REQUIRED));
         Assert.notNull(pipelineRun.getPodId(),
                 messageHelper.getMessage(MessageConstants.ERROR_POD_ID_NOT_FOUND, runId));
+        Assert.state(!pipelineRun.isPauseDisabled(),
+                messageHelper.getMessage(MessageConstants.ERROR_RUN_CANNOT_BE_PAUSED, runId));
     }
 
     private String retrieveImageName(PipelineRun pipelineRun) {

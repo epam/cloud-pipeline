@@ -1093,6 +1093,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         FS_PRICE_PER_HOUR,
         STATE_REASON,
         NON_PAUSE,
+        PAUSE_DISABLED,
         NODE_REAL_DISK,
         QUEUED,
         NODEUP_TASK,
@@ -1154,6 +1155,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             params.addValue(CLUSTER_PRICE.name(), run.getWorkersPrice());
             params.addValue(STATE_REASON.name(), run.getStateReasonMessage());
             params.addValue(NON_PAUSE.name(), run.isNonPause());
+            params.addValue(PAUSE_DISABLED.name(), run.isPauseDisabled());
             params.addValue(TAGS.name(), JsonMapper.convertDataToJsonStringForQuery(run.getTags()));
             params.addValue(SENSITIVE.name(), BooleanUtils.toBoolean(run.getSensitive()));
             params.addValue(KUBE_SERVICE_ENABLED.name(), BooleanUtils.toBoolean(run.isKubeServiceEnabled()));
@@ -1320,6 +1322,10 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             boolean nonPause = rs.getBoolean(NON_PAUSE.name());
             if (!rs.wasNull()) {
                 run.setNonPause(nonPause);
+            }
+            boolean pauseDisabled = rs.getBoolean(PAUSE_DISABLED.name());
+            if (!rs.wasNull()) {
+                run.setPauseDisabled(pauseDisabled);
             }
             final String tagsJson = rs.getString(TAGS.name());
             if (!rs.wasNull()) {
