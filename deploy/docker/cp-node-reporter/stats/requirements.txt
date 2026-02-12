@@ -3,3 +3,4 @@ Werkzeug==2.2.2
 Flask==2.2.2
 gunicorn==20.1.0
 kubernetes==33.1.0
+pyopenssl==25.3.0
