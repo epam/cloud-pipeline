@@ -428,6 +428,15 @@ public class PipelineRunManager {
                     }
                 });
 
+        if (!configuration.getPodAssignPolicy().isMatch(KubernetesConstants.RUN_ID_LABEL)) {
+            log.debug(String.format(
+                    "Pod assign policy for run #%d doesn't match RUN_ID_LABEL policy. " +
+                            "Pause functionality will be disabled.",
+                    run.getId())
+            );
+            run.setPauseDisabled(true);
+            run.setNonPause(true);
+        }
 
         run.setConfigName(configurationName);
         run.setRunSids(runSids);

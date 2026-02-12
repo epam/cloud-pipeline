@@ -68,6 +68,7 @@
                         r.fs_price_per_hour,
                         r.state_reason,
                         r.non_pause,
+                        r.pause_disabled,
                         r.node_real_disk,
                         r.node_cloud_provider,
                         r.tags,

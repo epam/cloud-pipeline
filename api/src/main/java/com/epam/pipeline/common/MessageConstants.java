@@ -161,6 +161,7 @@ public final class MessageConstants {
     public static final String ERROR_DOCKER_IMAGE_NOT_FOUND = "error.docker.image.not.found";
     public static final String ERROR_PIPELINE_RUN_ID_NOT_FOUND = "error.pipeline.run.id.not.found";
     public static final String ERROR_ON_DEMAND_REQUIRED = "error.instance.on.demand.required";
+    public static final String ERROR_RUN_CANNOT_BE_PAUSED = "error.run.cannot.be.paused";
     public static final String ERROR_INSTANCE_IP_NOT_FOUND = "error.instance.ip.not.found";
     public static final String ERROR_ACTUAL_CMD_NOT_FOUND = "error.actual.cmd.not.found";
     public static final String ERROR_PIPELINE_RUN_NOT_INITIALIZED = "error.pipeline.run.not.initialized";
