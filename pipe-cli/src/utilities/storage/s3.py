@@ -206,12 +206,11 @@ class StorageItemManager(object):
     def get_local_modification_datetime(path):
         return StorageOperations.get_local_file_modification_datetime(path)
 
-    def get_transfer_config(self, io_threads):
+    def get_transfer_config(self, io_threads, multipart_chunksize=None):
         transfer_config = TransferConfig()
         if io_threads is not None:
             transfer_config.max_concurrency = max(io_threads, 1)
             transfer_config.use_threads = transfer_config.max_concurrency > 1
-        multipart_chunksize = os.getenv('CP_AWS_MULTIPART_CHUNKSIZE_MB')
         if multipart_chunksize:
             transfer_config.multipart_chunksize = int(multipart_chunksize) * 1024 * 1024
         return transfer_config
@@ -282,7 +281,8 @@ class DownloadStreamManager(StorageItemManager, AbstractTransferManager):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
-        transfer_config = self.get_transfer_config(io_threads)
+        multipart_chunksize = os.getenv('CP_AWS_STREAM_MULTIPART_CHUNKSIZE_MB')
+        transfer_config = self.get_transfer_config(io_threads, multipart_chunksize)
         if StorageItemManager.show_progress(quiet, size, lock):
             progress_callback = ProgressPercentage(relative_path, size)
         else:
@@ -377,7 +377,8 @@ class UploadStreamManager(StorageItemManager, AbstractTransferManager):
             'ACL': 'bucket-owner-full-control'
         }
         TransferManager.ALLOWED_UPLOAD_ARGS.append('Tagging')
-        transfer_config = self.get_transfer_config(io_threads)
+        multipart_chunksize = os.getenv('CP_AWS_STREAM_MULTIPART_CHUNKSIZE_MB')
+        transfer_config = self.get_transfer_config(io_threads, multipart_chunksize)
         if StorageItemManager.show_progress(quiet, size, lock):
             progress_callback = ProgressPercentage(relative_path, size)
         else:
