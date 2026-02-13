@@ -54,18 +54,22 @@ public class NFSStorageMounter {
     private final CloudRegionManager regionManager;
     private final FileShareMountManager shareMountManager;
     private final String rootMountPoint;
+    private final long timeoutMills;
 
     public NFSStorageMounter(final MessageHelper messageHelper,
                              final DataStorageDao dataStorageDao,
                              final CloudRegionManager regionManager,
                              final FileShareMountManager shareMountManager,
                              @Value("${data.storage.nfs.root.mount.point}")
-                             final String rootMountPoint) {
+                             final String rootMountPoint,
+                             @Value("${data.storage.nfs.mount.timeout.mills:0}")
+                             final long timeoutMills) {
         this.messageHelper = messageHelper;
         this.dataStorageDao = dataStorageDao;
         this.regionManager = regionManager;
         this.shareMountManager = shareMountManager;
         this.rootMountPoint = rootMountPoint;
+        this.timeoutMills = timeoutMills;
     }
 
     public synchronized File mount(final NFSDataStorage dataStorage) {
@@ -95,7 +99,7 @@ public class NFSStorageMounter {
                 final String mountCmd = String.format(NFS_MOUNT_CMD_PATTERN, protocol, mountOptions,
                         rootNfsPath, rootMount.getAbsolutePath());
                 try {
-                    cmdExecutor.executeCommand(mountCmd);
+                    cmdExecutor.executeCommand(mountCmd, timeoutMills);
                 } catch (CmdExecutionException e) {
                     NFSHelper.deleteFolderIfEmpty(rootMount);
                     LOGGER.error(messageHelper.getMessage(
