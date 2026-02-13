@@ -506,6 +506,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
     }
 
     public StorageContentAO elementsShouldBeSelected(String... elementsNames) {
+        sleep(2, SECONDS);
         filesAndFolderElements().stream()
                 .filter(element ->
                         Arrays.stream(elementsNames)
