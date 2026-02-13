@@ -319,7 +319,7 @@ public class DockerClient {
             url = String.format(BLOBS_URL, registry.getPath(), URLEncoder.encode(imageName, "UTF-8"),
                     manifestV2.getConfig().getDigest());
         } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
+            throw new IllegalArgumentException(e);
         }
         try {
             final URI uri = new URI(url);
