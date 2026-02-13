@@ -88,8 +88,8 @@ export function canPauseRun (run, preferences) {
   // Checks only run state, not user permissions
   const {
     instance,
-    pauseDisabled = false,
     pipelineRunParameters,
+    pauseDisabled = false,
     podIP,
     initialized
   } = run;
