@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,8 +86,14 @@ export function checkCommitAllowedForTool (dockerImage, dockerRegistries) {
 
 export function canPauseRun (run, preferences) {
   // Checks only run state, not user permissions
-  const {instance, pipelineRunParameters, podIP, initialized} = run;
-  return canStopRun(run) && initialized &&
+  const {
+    instance,
+    pauseDisabled = false,
+    pipelineRunParameters,
+    podIP,
+    initialized
+  } = run;
+  return !pauseDisabled && canStopRun(run) && initialized &&
     instance && instance.spot !== undefined && !instance.spot &&
     podIP && !(run.nodeCount > 0) &&
     !(run.parentRunId && run.parentRunId > 0) &&
