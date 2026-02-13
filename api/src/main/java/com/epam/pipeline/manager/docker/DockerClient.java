@@ -428,7 +428,7 @@ public class DockerClient {
 
             HttpClientBuilder builder = HttpClients.custom()
                     .setSSLSocketFactory(csf);
-
+//            drop Authorization headers when handling a cross-origin redirect
             builder.setRedirectStrategy(new DefaultRedirectStrategy() {
                 @Override
                 public HttpUriRequest getRedirect(HttpRequest request,
