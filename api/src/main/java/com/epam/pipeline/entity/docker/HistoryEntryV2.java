@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity.docker;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -26,6 +27,7 @@ import lombok.Setter;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class HistoryEntryV2 {
     @JsonProperty("created")
     private String created;

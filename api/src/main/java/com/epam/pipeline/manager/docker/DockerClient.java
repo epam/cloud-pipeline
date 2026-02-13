@@ -33,11 +33,17 @@ import com.epam.pipeline.exception.git.UnexpectedResponseStatusException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpRequest;
+import org.apache.http.HttpResponse;
+import org.apache.http.ProtocolException;
+import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.TrustStrategy;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.DefaultRedirectStrategy;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.protocol.HttpContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -70,16 +76,17 @@ import java.security.GeneralSecurityException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.ArrayList;
 import java.util.stream.Stream;
 
 /**
@@ -323,21 +330,12 @@ public class DockerClient {
         }
         try {
             final URI uri = new URI(url);
-            final RestTemplate template = getRestTemplate(new ObjectMapper(), true);
-            ResponseEntity<byte[]> response = template.exchange(
+            final ResponseEntity<byte[]> response = getRestTemplate().exchange(
                     uri,
                     HttpMethod.GET,
                     new HttpEntity<>(getHttpHeaders()),
                     byte[].class
             );
-            if (response.getStatusCode().is3xxRedirection()) {
-                response = template.exchange(
-                        response.getHeaders().getLocation(),
-                        HttpMethod.GET,
-                        new HttpEntity<>(new HttpHeaders()),
-                        byte[].class
-                );
-            }
             if (response.getStatusCode() != HttpStatus.OK) {
                 throw new DockerConnectionException(url, "Unexpected response status: " + response.getStatusCode());
             }
@@ -416,7 +414,7 @@ public class DockerClient {
         return headers;
     }
 
-    private ClientHttpRequestFactory getHttpRequestFactory(String caCert, boolean disableRedirect) {
+    private ClientHttpRequestFactory getHttpRequestFactory(String caCert) {
         try {
             X509Certificate providedCert = getCertificate(caCert);
             TrustStrategy acceptingTrustStrategy =
@@ -430,9 +428,24 @@ public class DockerClient {
 
             HttpClientBuilder builder = HttpClients.custom()
                     .setSSLSocketFactory(csf);
-            if (disableRedirect) {
-                builder.disableRedirectHandling();
-            }
+
+            builder.setRedirectStrategy(new DefaultRedirectStrategy() {
+                @Override
+                public HttpUriRequest getRedirect(HttpRequest request,
+                                                  HttpResponse response,
+                                                  HttpContext context) throws ProtocolException {
+                    HttpUriRequest redirect = super.getRedirect(request, response, context);
+                    URI originalUri = URI.create(request.getRequestLine().getUri());
+                    URI redirectUri = redirect.getURI();
+
+                    if (!Objects.equals(originalUri, redirectUri)) {
+                        redirect.setHeaders(request.getAllHeaders());
+                        redirect.removeHeaders("Authorization");
+                    }
+
+                    return redirect;
+                }
+            });
             CloseableHttpClient httpClient = builder.build();
 
             HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
@@ -461,15 +474,15 @@ public class DockerClient {
     }
 
     private void initRestTemplate(ObjectMapper mapper) {
-        this.restTemplate = getRestTemplate(mapper, false);
+        this.restTemplate = getRestTemplate(mapper);
     }
 
-    private RestTemplate getRestTemplate(ObjectMapper mapper, boolean disableRedirect) {
+    private RestTemplate getRestTemplate(ObjectMapper mapper) {
         RestTemplateBuilder builder = new RestTemplateBuilder()
                 .additionalMessageConverters(new RestTemplate().getMessageConverters());
 
         if (StringUtils.isNotBlank(caCert)) {
-            builder = builder.requestFactory(getHttpRequestFactory(caCert, disableRedirect));
+            builder = builder.requestFactory(getHttpRequestFactory(caCert));
         }
         if (mapper != null) {
             builder = builder.additionalMessageConverters(getMessageConverters(mapper));
