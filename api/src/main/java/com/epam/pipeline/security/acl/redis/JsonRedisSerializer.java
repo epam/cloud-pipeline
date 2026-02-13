@@ -22,16 +22,18 @@ import org.springframework.data.redis.serializer.SerializationException;
 import org.springframework.security.acls.domain.AclImpl;
 
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
-public class JsonRedisSerializer implements RedisSerializer<Object> {
+public class JsonRedisSerializer<T> implements RedisSerializer<T> {
 
     private final ObjectMapper om;
+    private final Class<T> type;
 
-    public JsonRedisSerializer(final ObjectMapper om) {
+    public JsonRedisSerializer(final ObjectMapper om, final Class<T> type) {
         this.om = om;
+        this.type = type;
     }
 
     @Override
-    public byte[] serialize(final Object t) throws SerializationException {
+    public byte[] serialize(final T t) throws SerializationException {
         try {
             return om.writeValueAsBytes(t);
         } catch (JsonProcessingException e) {
@@ -40,12 +42,12 @@ public class JsonRedisSerializer implements RedisSerializer<Object> {
     }
 
     @Override
-    public Object deserialize(final byte[] bytes) throws SerializationException {
+    public T deserialize(final byte[] bytes) throws SerializationException {
         if (bytes == null) {
             return null;
         }
         try {
-            return om.readValue(bytes, AclImpl.class);
+            return om.readValue(bytes, type);
         } catch (Exception e) {
             throw new SerializationException(e.getMessage(), e);
         }

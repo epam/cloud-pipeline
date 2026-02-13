@@ -133,14 +133,13 @@ dependencies {
     implementation 'com.auth0:java-jwt:3.1.0'
     implementation 'org.springframework.security:spring-security-acl'
     implementation 'com.jcraft:jsch:0.1.55'
-//    implementation 'com.coveo:saml-client:1.4.0'
     implementation 'org.bouncycastle:bcprov-jdk15on:1.68'
     implementation 'com.nimbusds:oauth2-oidc-sdk:11.29.2'
 
     // Cache
     implementation 'org.springframework.boot:spring-boot-starter-cache'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-    implementation 'redis.clients:jedis'
+    implementation 'redis.clients:jedis:5.0.2'
 
     // GCP
     implementation 'com.google.auth:google-auth-library-oauth2-http:0.10.0'
