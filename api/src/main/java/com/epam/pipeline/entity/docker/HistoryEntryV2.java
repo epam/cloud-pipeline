@@ -33,4 +33,6 @@ public class HistoryEntryV2 {
     private String createdBy;
     @JsonProperty("empty_layer")
     private boolean emptyLayer;
+    @JsonProperty("comment")
+    private String comment;
 }

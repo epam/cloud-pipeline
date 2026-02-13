@@ -36,6 +36,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.TrustStrategy;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -259,7 +260,6 @@ public class DockerClient {
         } catch (UnsupportedEncodingException e) {
             throw new IllegalArgumentException(e);
         }
-
         executeDeletion(url, image);
     }
 
@@ -280,7 +280,6 @@ public class DockerClient {
                 LOGGER.error("Image not found:" + image);
                 return;
             }
-
             throw new DockerConnectionException(url, e.getMessage());
         }
     }
@@ -315,22 +314,35 @@ public class DockerClient {
 
     private RawImageDescriptionV2 getRawImageDescription(final ManifestV2 manifestV2, final DockerRegistry registry,
                                                          final String imageName) {
-        final String url = String.format(BLOBS_URL, registry.getPath(),
-                imageName, manifestV2.getConfig().getDigest());
+        String url;
+        try {
+            url = String.format(BLOBS_URL, registry.getPath(), URLEncoder.encode(imageName, "UTF-8"),
+                    manifestV2.getConfig().getDigest());
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
         try {
             final URI uri = new URI(url);
-            final ResponseEntity<byte[]> response = restTemplate.exchange(
+            final RestTemplate template = getRestTemplate(new ObjectMapper(), true);
+            ResponseEntity<byte[]> response = template.exchange(
                     uri,
                     HttpMethod.GET,
-                    new HttpEntity<>(getAuthHeaders()),
+                    new HttpEntity<>(getHttpHeaders()),
                     byte[].class
             );
-            if (response.getStatusCode() == HttpStatus.OK) {
-                return new ObjectMapper().readValue(response.getBody(), RawImageDescriptionV2.class);
-            } else {
-                throw new UnexpectedResponseStatusException(response.getStatusCode());
+            if (response.getStatusCode().is3xxRedirection()) {
+                response = template.exchange(
+                        response.getHeaders().getLocation(),
+                        HttpMethod.GET,
+                        new HttpEntity<>(new HttpHeaders()),
+                        byte[].class
+                );
             }
-        } catch (URISyntaxException | UnexpectedResponseStatusException | IOException e) {
+            if (response.getStatusCode() != HttpStatus.OK) {
+                throw new DockerConnectionException(url, "Unexpected response status: " + response.getStatusCode());
+            }
+            return new ObjectMapper().readValue(response.getBody(), RawImageDescriptionV2.class);
+        } catch (IOException | URISyntaxException e) {
             LOGGER.error(e.getMessage(), e);
             throw new DockerConnectionException(url, e.getMessage());
         }
@@ -404,7 +416,7 @@ public class DockerClient {
         return headers;
     }
 
-    private ClientHttpRequestFactory getHttpRequestFactory(String caCert) {
+    private ClientHttpRequestFactory getHttpRequestFactory(String caCert, boolean disableRedirect) {
         try {
             X509Certificate providedCert = getCertificate(caCert);
             TrustStrategy acceptingTrustStrategy =
@@ -416,9 +428,13 @@ public class DockerClient {
                     .build();
             SSLConnectionSocketFactory csf = new SSLConnectionSocketFactory(sslContext);
 
-            CloseableHttpClient httpClient = HttpClients.custom()
-                    .setSSLSocketFactory(csf)
-                    .build();
+            HttpClientBuilder builder = HttpClients.custom()
+                    .setSSLSocketFactory(csf);
+            if (disableRedirect) {
+                builder.disableRedirectHandling();
+            }
+            CloseableHttpClient httpClient = builder.build();
+
             HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
             requestFactory.setHttpClient(httpClient);
             return requestFactory;
@@ -445,17 +461,21 @@ public class DockerClient {
     }
 
     private void initRestTemplate(ObjectMapper mapper) {
+        this.restTemplate = getRestTemplate(mapper, false);
+    }
+
+    private RestTemplate getRestTemplate(ObjectMapper mapper, boolean disableRedirect) {
         RestTemplateBuilder builder = new RestTemplateBuilder()
                 .additionalMessageConverters(new RestTemplate().getMessageConverters());
 
         if (StringUtils.isNotBlank(caCert)) {
-            builder = builder.requestFactory(getHttpRequestFactory(caCert));
+            builder = builder.requestFactory(getHttpRequestFactory(caCert, disableRedirect));
         }
         if (mapper != null) {
             builder = builder.additionalMessageConverters(getMessageConverters(mapper));
         }
 
-        this.restTemplate = builder
+        return builder
                 .setConnectTimeout(REQUEST_TIMEOUT)
                 .build();
     }
