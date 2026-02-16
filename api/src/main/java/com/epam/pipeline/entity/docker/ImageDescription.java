@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.epam.pipeline.entity.docker;
 
 import com.epam.pipeline.manager.docker.DockerParsingUtils;
 import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -26,16 +27,17 @@ import java.util.Date;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode
 public class ImageDescription {
     private Long registryId;
     private String image;
     private String tag;
     private Date createdDate;
 
-    public ImageDescription(RawImageDescription rawImage) {
+    public ImageDescription(RawImageDescriptionV2 rawImage) {
         this.registryId = rawImage.getRegistry();
         this.image = rawImage.getImage();
         this.tag = rawImage.getTag();
-        this.createdDate = DockerParsingUtils.getEarliestDate(rawImage);
+        this.createdDate = DockerParsingUtils.parseDate(rawImage.getCreated());
     }
 }
