@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,25 @@
 
 package com.epam.pipeline.entity.docker;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Getter
 @Setter
-public class HistoryEntry {
-    @JsonProperty("v1Compatibility")
-    private String v1Compatibility;
-
-    public String getV1Compatibility() {
-        return this.v1Compatibility;
-    }
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown=true)
+public class HistoryEntryV2 {
+    @JsonProperty("created")
+    private String created;
+    @JsonProperty("created_by")
+    private String createdBy;
+    @JsonProperty("empty_layer")
+    private boolean emptyLayer;
+    @JsonProperty("comment")
+    private String comment;
 }
