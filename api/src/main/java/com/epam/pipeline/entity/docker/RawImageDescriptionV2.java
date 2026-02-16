@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,44 +18,57 @@ package com.epam.pipeline.entity.docker;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.util.List;
 import java.util.Map;
-import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown=true)
-public class RawImageDescription {
+public class RawImageDescriptionV2 {
     private Long registry;
 
-    @JsonProperty("name")
     private String image;
 
-    @JsonProperty("tag")
     private String tag;
 
+    @JsonProperty("architecture")
+    private String architecture;
+    @JsonProperty("os")
+    private String os;
+    @JsonProperty("docker_version")
+    private String dockerVersion;
+
+    @JsonProperty("created")
+    private String created;
+
+    @JsonProperty("container")
+    private String container;
+
+    @JsonProperty("container_config")
+    private Config containerConfig;
+
+    @JsonProperty("config")
+    private Config config;
+
     @JsonProperty("history")
-    private List<HistoryEntry> history;
+    private List<HistoryEntryV2> history;
 
-    /**
-     * Contains image's layers in the following format:
-     * [
-     *   {
-     *     "blobSum": "sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4"
-     *   },
-     *   ...
-     * ]
-     */
-    @JsonProperty("fsLayers")
-    private List<Map<String, String>> fsLayers;
-    @JsonProperty("signature")
-    private Object signature;
-
-    public List<HistoryEntry> getHistory() {
-        return this.history;
+    @Setter
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown=true)
+    public static class Config {
+        @JsonProperty("Labels")
+        private Map<String, String> labels;
     }
 
     public ImageDescription getImageDescription() {
         return new ImageDescription(this);
     }
-
 }
