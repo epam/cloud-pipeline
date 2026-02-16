@@ -40,10 +40,12 @@ import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.conn.ssl.TrustStrategy;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.ssl.DefaultClientTlsStrategy;
+import org.apache.hc.core5.ssl.SSLContextBuilder;
+import org.apache.hc.core5.ssl.TrustStrategy;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpEntity;
@@ -329,16 +331,19 @@ public class ServerlessConfigurationManager {
         final RestTemplateBuilder builder = new RestTemplateBuilder()
                 .additionalMessageConverters(new RestTemplate().getMessageConverters());
         final TrustStrategy acceptingTrustStrategy = (X509Certificate[] chain, String authType) -> true;
-        final SSLContext sslContext = org.apache.http.ssl.SSLContexts.custom()
+        final SSLContext sslContext = SSLContextBuilder.create()
                 .loadTrustMaterial(null, acceptingTrustStrategy)
                 .build();
-        final SSLConnectionSocketFactory csf = new SSLConnectionSocketFactory(sslContext);
+        final var tlsStrategy = new DefaultClientTlsStrategy(sslContext);
+        final var connectionManager = PoolingHttpClientConnectionManagerBuilder.create()
+                .setTlsSocketStrategy(tlsStrategy)
+                .build();
         final CloseableHttpClient httpClient = HttpClients.custom()
-                .setSSLSocketFactory(csf)
+                .setConnectionManager(connectionManager)
                 .build();
 
         final HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
-        //requestFactory.setHttpClient(httpClient);
+        requestFactory.setHttpClient(httpClient);
 
         return builder
                 .requestFactory(() -> requestFactory)

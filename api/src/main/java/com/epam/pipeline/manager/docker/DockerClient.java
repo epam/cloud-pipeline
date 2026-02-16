@@ -32,10 +32,12 @@ import com.epam.pipeline.exception.git.UnexpectedResponseStatusException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.conn.ssl.TrustStrategy;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.ssl.DefaultClientTlsStrategy;
+import org.apache.hc.core5.ssl.SSLContexts;
+import org.apache.hc.core5.ssl.TrustStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -389,14 +391,16 @@ public class DockerClient {
                 (x509Certificates, s) -> Arrays.stream(x509Certificates).anyMatch(cert ->
                     cert.getSerialNumber().equals(providedCert.getSerialNumber()));
 
-            SSLContext sslContext = org.apache.http.ssl.SSLContexts.custom()
+            SSLContext sslContext = SSLContexts.custom()
                     .loadTrustMaterial(null, acceptingTrustStrategy)
                     .build();
-            SSLConnectionSocketFactory csf = new SSLConnectionSocketFactory(sslContext);
-            /*CloseableHttpClient httpClient = org.apache.http.impl.client.HttpClients.custom()
-                    .setSSLSocketFactory(csf)
-                    .build();*/
-            HttpClient httpClient = HttpClients.createDefault();
+            var tlsStrategy = new DefaultClientTlsStrategy(sslContext);
+            var connectionManager = PoolingHttpClientConnectionManagerBuilder.create()
+                    .setTlsSocketStrategy(tlsStrategy)
+                    .build();
+            CloseableHttpClient httpClient = HttpClients.custom()
+                    .setConnectionManager(connectionManager)
+                    .build();
             HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
             requestFactory.setHttpClient(httpClient);
             return requestFactory;
@@ -434,7 +438,6 @@ public class DockerClient {
         }
 
         this.restTemplate = builder
-                //.connectTimeout(Duration.ofMillis(REQUEST_TIMEOUT))
                 .setConnectTimeout(Duration.ofMillis(REQUEST_TIMEOUT))
                 .build();
     }
