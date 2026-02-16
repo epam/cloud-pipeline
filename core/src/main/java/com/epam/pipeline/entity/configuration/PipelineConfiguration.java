@@ -75,6 +75,7 @@ public class PipelineConfiguration implements Cloneable {
     private static final String NOTIFICATIONS = "notifications";
     private static final String RAW_EDIT = "raw";
     private static final String FRIENDLY_URL = "friendly_url";
+    private static final String CONFIG_VALIDATION = "config_validation";
 
     public static final String EXECUTION_ENVIRONMENT = "EXEC_ENVIRONMENT";
 
@@ -174,6 +175,10 @@ public class PipelineConfiguration implements Cloneable {
 
     @JsonProperty(value = "config_description")
     private String description;
+
+    // path inside the pipeline repo to the validation script of this configuration
+    @JsonProperty(value = CONFIG_VALIDATION)
+    private String validation;
 
     @JsonIgnore
     public void setParameters(Map<String, PipeConfValueVO> parameters) {
