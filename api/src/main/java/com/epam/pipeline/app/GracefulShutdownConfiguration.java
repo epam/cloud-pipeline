@@ -36,17 +36,6 @@ public class GracefulShutdownConfiguration {
         return NumberUtils.toInt(StringUtils.removeEnd(timeoutString, "s"));
     }
 
-    /*
-        @Bean
-        public EmbeddedServletContainerCustomizer embeddedServletContainerCustomizer(
-                final GracefulShutdownListener gracefulShutdownListener) {
-            return container -> Optional.of(container)
-                    .filter(TomcatEmbeddedServletContainerFactory.class::isInstance)
-                    .map(TomcatEmbeddedServletContainerFactory.class::cast)
-                    .ifPresent(factory -> factory.addConnectorCustomizers(gracefulShutdownListener));
-        }
-    */
-
     @Bean
     public WebServerFactoryCustomizer<TomcatServletWebServerFactory> embeddedServletContainerCustomizer(
             final GracefulShutdownListener gracefulShutdownListener) {

@@ -43,7 +43,7 @@ public class GlobalSearchElasticHelper {
     private final PreferenceManager preferenceManager;
 
     @Value("${elasticsearch.client.auth:#{null}}")
-    private String elasticsearchAuth;
+    private final String elasticsearchAuth;
 
     public ELKVersionedRestHighLevelClient buildClient() {
         return new ELKVersionedRestHighLevelClient(buildLowLevelClientBuilder());
