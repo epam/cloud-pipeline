@@ -19,7 +19,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.data.redis.serializer.SerializationException;
-import org.springframework.security.acls.domain.AclImpl;
 
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class JsonRedisSerializer<T> implements RedisSerializer<T> {
