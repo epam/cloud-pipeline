@@ -22,9 +22,9 @@ import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.SchedulerLock;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import java.util.Objects;
 
 /**
@@ -32,12 +32,12 @@ import java.util.Objects;
  */
 @Service
 @RequiredArgsConstructor
-public class AccessCodeCleaner extends AbstractSchedulingManager {
+public class AccessCodeCleaner extends AbstractSchedulingManager implements InitializingBean {
 
     private final AccessCodeCleanerCore core;
 
-    @PostConstruct
-    public void init() {
+    @Override
+    public void afterPropertiesSet() {
         scheduleFixedDelaySecured(core::monitor, SystemPreferences.SYSTEM_ACCESS_CODE_MONITOR_DELAY,
                 "AccessCodeCleaner");
     }
