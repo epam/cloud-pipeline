@@ -32,7 +32,7 @@ const fileContentCache = new Map();
  * @param {Object} parameter - Parameter object with name property
  * @param {Error|string} error - Error object or message
  */
-function logError (parameter, error) {
+function logError (parameter = {}, error) {
   const errorText = typeof error === 'object' && error.message
     ? error.message
     : error;
@@ -143,7 +143,10 @@ async function validateCSVHeader ({
       return {warning: 'File is too large to validate.'};
     }
     const csvColumns = getCSVColumns(content);
-    const missingColumns = columns.filter((col) => !csvColumns.includes(col));
+    const columnsArray = typeof columns === 'string'
+      ? columns.split(',').map(c => c.trim()).filter(Boolean)
+      : columns;
+    const missingColumns = columnsArray.filter((col) => !csvColumns.includes(col));
     if (missingColumns.length > 0) {
       const errorMessage = message ||
         `File has missing columns: ${missingColumns.join(', ')}`;
