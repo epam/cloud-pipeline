@@ -120,7 +120,10 @@ function LaunchFormParameter (props) {
       {
         description && (
           <div className="cp-text-not-important">
-            <Markdown md={description} />
+            <Markdown
+              md={description}
+              className={styles.parameterDescription}
+            />
           </div>
         )
       }
