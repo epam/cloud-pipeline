@@ -40,7 +40,7 @@ export function showOptionalParametersFilter (launchFormSettings) {
   const getSectionVisibility = (section) => {
     const config = launchFormSettings?.[section] || {};
     const {
-      'show-optional-parameters-filter': showOptional
+      'optional-parameters-filter': showOptional
     } = config;
     return `${showOptional}`.toLowerCase() === 'true';
   };
