@@ -5786,10 +5786,19 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   updateCustomValidators = async () => {
     try {
-      // TODO: get path to validators.js file from configuration ?
+      const {pipeline} = this.props;
+      const [currentConfiguration] = this.props.configurations
+        .filter(config => config.name === this.props.currentConfigurationName);
+      const path = parameterUtilities.getCustomValidatorsPath(
+        pipeline,
+        currentConfiguration
+      );
+      if (!path) {
+        return;
+      }
       const request = new VersionFile(
         this.props.pipeline.id,
-        'src/validators.js',
+        path,
         this.state.version
       );
       await request.fetch();
