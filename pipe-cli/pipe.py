@@ -2119,7 +2119,7 @@ def split_tool_path(tool_path, registry, group, tool, version, strict=False):
 @common_options
 def token(user_id, duration):
     """
-    Prints a JWT token for specified user
+    Prints a JWT token for specified user. If USER_ID is not specified, prints token of the current user.
     """
     UserTokenOperations().print_user_token(user_id, duration)
 
