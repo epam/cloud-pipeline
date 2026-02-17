@@ -66,11 +66,6 @@ public class DockerCommitTest
     private final String toolInPersonalGroup = personalGroupActualName(login) + "/" + exactToolName(tool);
     private final String customTag = "test_tag" + Utils.randomSuffix();
 
-    @BeforeMethod
-    void openApplication() {
-        open(C.ROOT_ADDRESS);
-    }
-
     @AfterClass(alwaysRun = true, dependsOnMethods = {"stopRuns"})
     @Override
     public void removeNodes() {
