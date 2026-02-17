@@ -35,3 +35,17 @@ export function estimatedPriceVisible (launchFormSettings) {
     tools: getSectionVisibility(SECTIONS.tools)
   };
 }
+
+export function showOptionalParametersFilter (launchFormSettings) {
+  const getSectionVisibility = (section) => {
+    const config = launchFormSettings?.[section] || {};
+    const {
+      'show-optional-parameters-filter': showOptional
+    } = config;
+    return `${showOptional}`.toLowerCase() === 'true';
+  };
+  return {
+    pipelines: getSectionVisibility(SECTIONS.pipelines),
+    tools: getSectionVisibility(SECTIONS.tools)
+  };
+}

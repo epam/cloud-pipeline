@@ -52,7 +52,8 @@ function filterParameterBySection (parameter, section) {
 class Parameters extends Component {
   state = {
     useResolvedValues: false,
-    highlightedSection: undefined
+    highlightedSection: undefined,
+    showOptional: false
   };
 
   sectionDivs = {};
@@ -77,6 +78,14 @@ class Parameters extends Component {
       return undefined;
     }
     return this.props.authenticatedUserInfo.value;
+  }
+
+  get optionalIsVisible () {
+    const {swowOptionalParametersFilter, system} = this.props;
+    if (!swowOptionalParametersFilter || system) {
+      return true;
+    }
+    return this.state.showOptional;
   }
 
   checkResolvedValues = () => {
@@ -122,6 +131,10 @@ class Parameters extends Component {
     }), 1000);
   }
 
+  onChangeShowOptional = (e) => {
+    this.setState({showOptional: e.target.checked});
+  };
+
   render () {
     const {
       className,
@@ -149,12 +162,19 @@ class Parameters extends Component {
       pipeline,
       parameterRowClassName,
       description,
-      parametersMetadata
+      parametersMetadata,
+      swowOptionalParametersFilter
     } = this.props;
     if (!preferences.loaded || !runDefaultParameters.loaded) {
       return (<LoadingView />);
     }
-    const filtered = getVisibleParameters(parameters, system, rawEdit, this.userInfo);
+    const filtered = getVisibleParameters(
+      parameters,
+      system,
+      rawEdit,
+      this.userInfo,
+      this.optionalIsVisible
+    );
     const sections = getSections(filtered);
     const grouped = sections.map((section) => ({
       section,
@@ -262,6 +282,16 @@ class Parameters extends Component {
               </div>
             )
           }
+          {!system && swowOptionalParametersFilter ? (
+            <div className={styles.parametersGroupContainer}>
+              <Checkbox
+                checked={this.state.showOptional}
+                onChange={this.onChangeShowOptional}
+              >
+                Show optional parameters
+              </Checkbox>
+            </div>
+          ) : null}
           {
             grouped.map(({section, parameters: sectionParameters}) => {
               return (

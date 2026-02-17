@@ -18,7 +18,7 @@ import {action, computed, observable} from 'mobx';
 import Pages from './pages';
 import NavigationItems from './navigation-items';
 import MetadataMultiLoad from '../../models/metadata/MetadataMultiLoad';
-import {estimatedPriceVisible} from './utils';
+import {estimatedPriceVisible, showOptionalParametersFilter} from './utils';
 
 const USER_CLASS = 'PIPELINE_USER';
 const ROLE_CLASS = 'ROLE';
@@ -434,7 +434,8 @@ class UINavigation {
   @computed
   get utils () {
     return {
-      estimatedPriceVisible: () => estimatedPriceVisible(this.launchForm)
+      estimatedPriceVisible: () => estimatedPriceVisible(this.launchForm),
+      showOptionalParametersFilter: () => showOptionalParametersFilter(this.launchForm)
     };
   }
 
