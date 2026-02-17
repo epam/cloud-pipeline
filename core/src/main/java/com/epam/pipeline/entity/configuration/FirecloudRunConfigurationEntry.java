@@ -79,7 +79,7 @@ public class FirecloudRunConfigurationEntry extends AbstractRunConfigurationEntr
 
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private static class Configuration {
+    private static final class Configuration {
         @JsonProperty(value = PARAMETERS_PROPERTY)
         @JsonDeserialize(using = PipelineConfValuesMapDeserializer.class)
         private Map<String, PipeConfValueVO> parameters = new LinkedHashMap<>();
