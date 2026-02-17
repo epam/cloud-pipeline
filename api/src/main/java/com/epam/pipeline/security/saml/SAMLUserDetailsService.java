@@ -87,7 +87,7 @@ public class SAMLUserDetailsService {
                 && blockingStatus.equalsIgnoreCase(blockedAttributeTrueValue);
     }
 
-    List<String> readAuthorities(final Map<String, List<Object>> attributes) {
+    private List<String> readAuthorities(final Map<String, List<Object>> attributes) {
         return ListUtils.emptyIfNull(authorities).stream()
                 .filter(StringUtils::isNotBlank)
                 .map(authName -> getGroupsFromArrayValue(attributes, authName))
@@ -105,7 +105,7 @@ public class SAMLUserDetailsService {
                 .collect(Collectors.toList());
     }
 
-    Map<String, String> readAttributes(final Map<String, List<Object>> attributes) {
+    private Map<String, String> readAttributes(final Map<String, List<Object>> attributes) {
         if (CollectionUtils.isEmpty(samlAttributes)) {
             return Collections.emptyMap();
         }
