@@ -216,9 +216,9 @@ class RunParameter:
 
 class LocalizedPath:
 
-    def __init__(self, path, cloud_path, local_path, type, prefix=None, suffix=None):
+    def __init__(self, path, remote_path, local_path, type, prefix=None, suffix=None):
         self.path = path
-        self.cloud_path = cloud_path
+        self.remote_path = remote_path
         self.local_path = local_path
         self.type = type
         self.prefix = prefix
@@ -497,6 +497,7 @@ class InputDataTask:
         return self._build_remote_path(path, input_type, PathType.HTTP_OR_FTP)
 
     def _build_remote_path(self, path, input_type, path_type):
+        remote_path = path
         path_suffix = None
         if input_type == ParameterType.OUTPUT_PARAMETER:
             local_path = self.analysis_dir
@@ -507,9 +508,9 @@ class InputDataTask:
                 Logger.info('Path {} ends with a wildcard. Whole parent directory will be downloaded.'.format(path),
                             task_name=self.task_name)
                 path_suffix = os.path.basename(path)[:-1]
-                path = os.path.dirname(path)
-            remote = urlparse.urlparse(path)
-            relative_path = path.replace('%s://%s' % (remote.scheme, remote.netloc), '')
+                remote_path = os.path.dirname(path)
+            remote = urlparse.urlparse(remote_path)
+            relative_path = remote_path.replace('%s://%s' % (remote.scheme, remote.netloc), '')
             local_dir = self.get_local_dir(input_type)
 
             omics_parsed_path = re.search('^(omics://(.*/(\\d+/(?:reference|readSet)))/(\\d+/(source|source1|source2|index)))$', path)
@@ -521,7 +522,7 @@ class InputDataTask:
         Logger.info('Found %s %s path %s. It will be localized to %s.' % (path_type.lower(), input_type, path,
                                                                           local_path),
                     task_name=self.task_name)
-        return LocalizedPath(path, path, local_path, path_type, suffix=path_suffix)
+        return LocalizedPath(path, remote_path, local_path, path_type, suffix=path_suffix)
 
     def calculate_omics_file_local_path(self, local_dir, omics_parsed_path):
 
@@ -603,8 +604,8 @@ class InputDataTask:
             dts_client.transfer_data([self.create_dts_path(path, rule_patterns) for path in paths], self.task_name)
 
     def create_dts_path(self, path, rules):
-        return LocalToS3(path.path, path.cloud_path, rules) if self.is_upload \
-            else S3ToLocal(path.cloud_path, path.path, rules)
+        return LocalToS3(path.path, path.remote_path, rules) if self.is_upload \
+            else S3ToLocal(path.remote_path, path.path, rules)
 
     def localize_data(self, remote_locations, rules=None):
         cluster = Cluster.build_cluster(self.api, self.task_name)
@@ -769,11 +770,11 @@ class InputDataTask:
     @staticmethod
     def get_local_paths(path, upload):
         if upload:
-            source = path.cloud_path if path.type == PathType.DTS else path.path
+            source = path.remote_path
             destination = path.local_path
         else:
             source = path.local_path
-            destination = path.path if path.type == PathType.HTTP_OR_FTP else path.cloud_path
+            destination = path.remote_path
         return source, destination
 
 
@@ -796,7 +797,7 @@ def main():
     task = InputDataTask(args.input_dir, args.common_dir, args.analysis_dir,
                         args.task, bucket, args.report_file, args.storage_rules, args.operation == 'upload',
                         args.env_suffix)
-    
+
     if args.operation == 'publish-results':
         rules = task.get_sts_rules(args.storage_rules)
         parameter_types = {ParameterType.OUTPUT_PARAMETER, ParameterType.PATH_PARAMETER}
