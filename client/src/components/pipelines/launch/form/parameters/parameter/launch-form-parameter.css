@@ -16,9 +16,3 @@
   white-space: nowrap;
   max-width: 100%;
 }
-
-.parameter-description table tbody,
-.parameter-description table thead {
-  display: table;
-  width: 100%;
-}
