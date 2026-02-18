@@ -70,11 +70,11 @@ public class ACLEventConfiguration {
                 .get(EventType.ACL.name());
 
         if (aclTopic != null) {
-            if (aclTopic.isEnabled()) {
+            if (aclTopic.enabled()) {
                 aclEventProducer.init(
                     eventEngine.enableProducer(
                             String.format("%s:%s", applicationId, ACLUpdateEventProducer.class.getSimpleName()),
-                            applicationId, EventType.ACL.name(), aclTopic.getStream()
+                            applicationId, EventType.ACL.name(), aclTopic.stream()
                     )
                 );
             } else {
@@ -91,10 +91,10 @@ public class ACLEventConfiguration {
                 .get(aclUpdateEventHandler.getEventType());
 
         if (aclTopic != null) {
-            if (aclTopic.isEnabled()) {
+            if (aclTopic.enabled()) {
                 eventEngine.enableHandlerFromNow(
-                        aclTopic.getStream(), aclUpdateEventHandler,
-                        aclTopic.getTimeout(), true
+                        aclTopic.stream(), aclUpdateEventHandler,
+                        aclTopic.timeout(), true
                 );
             } else {
                 eventEngine.disableHandler(aclUpdateEventHandler.getId());
