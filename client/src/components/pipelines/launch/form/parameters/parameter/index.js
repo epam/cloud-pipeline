@@ -30,7 +30,7 @@ function LaunchFormParameter (props) {
   if (!parameter) {
     return null;
   }
-  const {name, config = {}, error, system} = parameter;
+  const {name, config = {}, error, warning, system} = parameter;
   const {
     description,
     required = false,
@@ -67,7 +67,7 @@ function LaunchFormParameter (props) {
       />
       <div style={{display: 'flex', flexWrap: 'nowrap', fontSize: 'larger'}}>
         <Form.Item
-          validateStatus={error ? 'error' : 'success'}
+          validateStatus={error ? 'error' : warning ? 'warning' : 'success'}
           hasFeedback
           style={{flex: 1, marginBottom: 0}}>
           <LaunchFormParameterInput
@@ -113,6 +113,13 @@ function LaunchFormParameter (props) {
         error && (
           <div className="cp-error" style={{margin: 0}}>
             {error}
+          </div>
+        )
+      }
+      {
+        !error && warning && (
+          <div className="cp-warning" style={{margin: 0}}>
+            {warning}
           </div>
         )
       }
