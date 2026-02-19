@@ -1453,29 +1453,6 @@ function validateParametersIteration (parameters, rawEdit = false) {
 }
 
 /**
- * Get path to validators js file
- * @param {Object} pipeline
- * @param {Object} configuration
- * @returns {String} path to validators js file
- */
-function getCustomValidatorsPath (pipeline, configuration) {
-  if (!configuration?.configuration?.config_validation) {
-    return;
-  }
-  let codePath = pipeline.codePath || '';
-  if (codePath.startsWith('/')) {
-    codePath = codePath.slice(1);
-  }
-  if (codePath.endsWith('/')) {
-    codePath = codePath.slice(0, -1);
-  }
-  if (!codePath) {
-    return configuration.configuration.config_validation;
-  }
-  return `${codePath}/${configuration.configuration.config_validation}`;
-}
-
-/**
  * Parse validators module from string
  * @param {string} moduleCode - The module code string
  * @returns {Object} - Validators map: {paramName: validatorFn}
@@ -2246,7 +2223,6 @@ export {
   hasResolvedValues,
   toggleResolvedValues,
   parseCustomValidatorsModule,
-  getCustomValidatorsPath,
   getParametersWarning,
   downloadParametersTemplate,
   getMetadataForParameters,

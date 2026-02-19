@@ -5786,13 +5786,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   updateCustomValidators = async () => {
     try {
-      const {pipeline} = this.props;
-      const [currentConfiguration] = this.props.configurations
+      const [currentConfiguration = {}] = this.props.configurations
         .filter(config => config.name === this.props.currentConfigurationName);
-      const path = parameterUtilities.getCustomValidatorsPath(
-        pipeline,
-        currentConfiguration
-      );
+      const path = currentConfiguration?.configuration?.config_validation;
       if (!path) {
         return;
       }
@@ -5819,6 +5815,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         return;
       }
       const validators = parameterUtilities.parseCustomValidatorsModule(string);
+      console.log('LaunchForm custom validators loaded: ', validators);
       this._customValidators = validators;
     } catch (e) {
       console.error('Error updating custom validators:', e.message);
@@ -5894,6 +5891,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         },
         utils: validatorUtilities
       };
+      console.log('LaunchForm custom validators opts: ', opts);
       const {
         parameters: result,
         changed: customChanged
