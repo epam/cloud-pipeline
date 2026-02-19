@@ -2147,11 +2147,15 @@ function getParametersWarning (parameters = []) {
 /**
  * Gets warning from parameters
  * @param {Parameter} parameter
+ * @param {boolean} showOptional
  */
-function parameterIsVisible (parameter = {}) {
+function parameterIsVisible (parameter = {}, showOptional = true) {
   const {config = {}} = parameter;
-  const {visible = true} = config;
-  return visible;
+  const {visible = true, required} = config;
+  if (showOptional) {
+    return visible;
+  }
+  return visible && required;
 }
 
 /**
@@ -2159,15 +2163,17 @@ function parameterIsVisible (parameter = {}) {
  * @param {boolean} isSystem
  * @param {boolean} rawEdit
  * @param {object} userInfo
+ * @param {boolean} showOptional
  */
 function getVisibleParameters (
   parameters = [],
   isSystem = false,
   rawEdit = false,
-  userInfo
+  userInfo,
+  showOptional = true
 ) {
   return parameters
-    .filter((parameter) => rawEdit || parameterIsVisible(parameter))
+    .filter((parameter) => rawEdit || parameterIsVisible(parameter, showOptional))
     .filter((parameter) => isSystem
       ? parameter.system &&
       !isReservedParameter(parameter.name) &&

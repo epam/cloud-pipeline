@@ -6,6 +6,7 @@ import LaunchFormParameterInput from './inputs';
 import styles from './launch-form-parameter.css';
 import ParameterNameInput from './name-input';
 import {getParameterKeyClassName} from '../utilities';
+import Markdown from '../../../../../special/markdown';
 
 function LaunchFormParameter (props) {
   const {
@@ -126,7 +127,10 @@ function LaunchFormParameter (props) {
       {
         description && (
           <div className="cp-text-not-important">
-            {description}
+            <Markdown
+              md={description}
+              className={styles.parameterDescription}
+            />
           </div>
         )
       }

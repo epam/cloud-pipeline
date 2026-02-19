@@ -896,6 +896,22 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return tools;
   }
 
+  get showOptionalParametersFilter () {
+    const {uiNavigation} = this.props;
+    const parameters = this.getParameters();
+    const hasOptional = parameters
+      .some(({config}) => config.visible && !config.system && !config.required);
+    if (!hasOptional || this.state.isRawEditEnabled || this.props.editConfigurationMode) {
+      return false;
+    }
+    const {pipeline} = this.state;
+    const {tools, pipelines} = uiNavigation.utils.showOptionalParametersFilter();
+    if (pipeline) {
+      return pipelines;
+    }
+    return tools;
+  }
+
   get currentDetachedConfiguration () {
     const {detachedConfigurations = []} = this.state;
     const {currentConfigurationName} = this.props;
@@ -2738,6 +2754,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         pipeline={pipelineSelected}
         description={description ? (<Markdown md={description} />) : undefined}
         parametersMetadata={this.state.parametersMetadata}
+        swowOptionalParametersFilter={this.showOptionalParametersFilter}
       />,
       <div
         key={`add-${system ? 'system' : 'default'}-parameter`}
