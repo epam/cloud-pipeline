@@ -184,9 +184,6 @@ public class ControllerTestBeans {
     @MockBean
     protected UserApiService userApiService;
 
-    /*@MockBean
-    protected SAMLAuthenticationProvider samlAuthenticationProvider;*/
-
     @MockBean
     protected PreferenceManager preferenceManager;
 
@@ -225,9 +222,6 @@ public class ControllerTestBeans {
 
     @MockBean
     protected UserAccessService userAccessService;
-
-    /*@MockBean
-    protected SAMLEntryPoint samlEntryPoint;*/
 
     @MockBean
     protected JwtTokenVerifier jwtTokenVerifier;

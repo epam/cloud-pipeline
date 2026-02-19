@@ -75,13 +75,8 @@ public abstract class AbstractControllerTest {
     @Autowired
     private JsonMapper objectMapper;
 
-    /*@Autowired
-    protected WebApplicationContext wac;*/
-
     @BeforeEach
     public void setup() {
-        // checks that all required dependencies are provided.
-        //Assertions.assertNotNull(wac, "WebApplicationContext isn't provided.");
         Assertions.assertNotNull(objectMapper, "ObjectMapper isn't provided.");
         deserializationMapper = JsonMapper.newInstance().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
     }
@@ -177,8 +172,6 @@ public abstract class AbstractControllerTest {
     public MvcResult performRedirectedRequest(final MockHttpServletRequestBuilder requestBuilder,
                                               final String redirectUrl) {
         return mockMvc.perform(requestBuilder
-                // see note in performUnauthorizedRequest
-                //.servletPath(SERVLET_PATH)
                 .contentType(EXPECTED_CONTENT_TYPE))
                 .andExpect(status().isFound())
                 .andExpect(redirectedUrl(redirectUrl))
@@ -188,8 +181,6 @@ public abstract class AbstractControllerTest {
     @SneakyThrows
     public void performRequestWithoutResponse(final MockHttpServletRequestBuilder requestBuilder) {
         mockMvc.perform(requestBuilder
-                // see note in performUnauthorizedRequest
-                //.servletPath(SERVLET_PATH)
                 .contentType(EXPECTED_CONTENT_TYPE))
                 .andExpect(status().isOk());
     }

@@ -1,7 +1,7 @@
 plugins {
     id 'java'
     id 'jacoco'
-    id 'org.springframework.boot' version '3.5.3'
+    id 'org.springframework.boot' version '3.3.13'
     id 'io.spring.dependency-management' version '1.1.7'
     id 'org.sonarqube' version '2.6.1'
 }
@@ -16,7 +16,7 @@ repositories {
 }
 
 ext {
-    springBootVersion = '3.5.3'
+    springBootVersion = '3.3.13'
 }
 
 jar {

@@ -95,6 +95,8 @@ public abstract class AbstractRestController {
      *
      * @param request a HttpServletRequest to controller
      * @return an InputStream of data, being uploaded
+     * @throws IOException
+     * @throws FileUploadException
      */
     protected InputStream getMultipartStream(HttpServletRequest request) throws IOException, FileUploadException {
         if (request instanceof MultipartHttpServletRequest multipartRequest) {
@@ -248,8 +250,9 @@ public abstract class AbstractRestController {
      * Consumes the whole multipart file to memory
      * @param request a HttpServletRequest to controller
      * @return a {@link MultipartFile}, containing all the file data in memory
+     * @throws IOException
      */
-    protected MultipartFile consumeMultipartFile(HttpServletRequest request) throws FileUploadException, IOException {
+    protected MultipartFile consumeMultipartFile(HttpServletRequest request) throws IOException {
         return consumeMultipartFile(request, Collections.emptySet());
     }
 
@@ -260,7 +263,7 @@ public abstract class AbstractRestController {
      * @return a {@link MultipartFile}, containing all the file data in memory
      */
     protected MultipartFile consumeMultipartFile(HttpServletRequest request, Set<String> allowedExtensions)
-            throws FileUploadException, IOException {
+            throws IOException {
         MultipartFile file;
         if (request instanceof MultipartHttpServletRequest multipartRequest) {
             file = multipartRequest.getFileMap().values().stream()
