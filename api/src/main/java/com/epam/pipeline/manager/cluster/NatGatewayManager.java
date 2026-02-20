@@ -633,7 +633,7 @@ public class NatGatewayManager {
 
     private List<NatRoutingRuleDescription> validateRequest(final NatRoutingRulesRequest request) {
         final List<NatRoutingRuleDescription> ruleDescriptions = Optional.ofNullable(request)
-            .map(NatRoutingRulesRequest::getRules)
+            .map(NatRoutingRulesRequest::rules)
             .filter(CollectionUtils::isNotEmpty)
             .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
                 MessageConstants.NAT_ROUTE_CONFIG_ERROR_EMPTY_RULE)));

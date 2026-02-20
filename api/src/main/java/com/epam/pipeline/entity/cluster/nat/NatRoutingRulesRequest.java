@@ -16,12 +16,9 @@
 
 package com.epam.pipeline.entity.cluster.nat;
 
-import lombok.Value;
-
 import java.util.List;
 
-@Value
-public class NatRoutingRulesRequest {
-
-    private final List<NatRoutingRuleDescription> rules;
+public record NatRoutingRulesRequest(
+    List<NatRoutingRuleDescription> rules
+) {
 }

@@ -19,6 +19,7 @@ package com.epam.pipeline.dto.datastorage.lifecycle;
 import com.epam.pipeline.entity.user.SidImpl;
 import lombok.Builder;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.List;
 
@@ -27,6 +28,7 @@ import java.util.List;
  * */
 @Value
 @Builder
+@Jacksonized
 public class StorageLifecycleNotification {
     Long notifyBeforeDays;
     Long prolongDays;

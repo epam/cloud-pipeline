@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -27,6 +28,7 @@ import java.util.List;
 
 @Value
 @Builder
+@Jacksonized
 @EqualsAndHashCode
 public class PipelineRunResult {
 

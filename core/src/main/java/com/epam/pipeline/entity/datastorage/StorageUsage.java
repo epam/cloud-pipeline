@@ -21,6 +21,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.Map;
 
@@ -44,6 +45,7 @@ public class StorageUsage {
 
     @Value
     @Builder
+    @Jacksonized
     @AllArgsConstructor
     public static class StorageUsageStats {
         String storageClass;

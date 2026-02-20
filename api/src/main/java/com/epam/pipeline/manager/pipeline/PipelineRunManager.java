@@ -1277,10 +1277,10 @@ public class PipelineRunManager {
         Assert.state(pipelineRun.getStatus() == TaskStatus.RUNNING || pipelineRun.getStatus().isPause(),
                 messageHelper.getMessage(MessageConstants.ERROR_RUN_DISK_ATTACHING_WRONG_STATUS, runId,
                         pipelineRun.getStatus()));
-        Assert.notNull(request.getSize(),
+        Assert.notNull(request.size(),
                 messageHelper.getMessage(MessageConstants.ERROR_RUN_DISK_SIZE_NOT_FOUND));
-        Assert.isTrue(request.getSize() > 0,
-                messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_DISK_IS_INVALID, request.getSize()));
+        Assert.isTrue(request.size() > 0,
+                messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_DISK_IS_INVALID, request.size()));
         final Map<String, String> resourceTags = metadataManager.prepareCloudResourceTags(pipelineRun);
         nodesManager.attachDisk(pipelineRun, request, resourceTags);
         return pipelineRun;

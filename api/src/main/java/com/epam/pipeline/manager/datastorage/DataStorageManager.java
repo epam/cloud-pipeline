@@ -827,9 +827,9 @@ public class DataStorageManager implements SecuredEntityManager {
     }
 
     public List<DataStorageTagSearchResult> searchDataStorageItemByTag(final DataStorageObjectSearchByTagRequest req) {
-        final Set<Long> requestedStorageIds = new HashSet<>(CollectionUtils.emptyIfNull(req.getDatastorageIds()));
+        final Set<Long> requestedStorageIds = new HashSet<>(CollectionUtils.emptyIfNull(req.datastorageIds()));
         final Map<Long, List<DataStorageTag>> searchTagsResult =
-                tagProviderManager.search(getDatastoragesByIds(req.getDatastorageIds()), req.getTags());
+                tagProviderManager.search(getDatastoragesByIds(req.datastorageIds()), req.tags());
 
         if (MapUtils.isNotEmpty(searchTagsResult)) {
             // by tagProviderManager.search we found tags for datastorage_root, and now we need to map it on

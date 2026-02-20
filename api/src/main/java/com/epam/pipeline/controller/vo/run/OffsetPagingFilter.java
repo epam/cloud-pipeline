@@ -18,9 +18,11 @@ package com.epam.pipeline.controller.vo.run;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 @Value
 @Builder
+@Jacksonized
 @RequiredArgsConstructor
 public class OffsetPagingFilter {
     Integer offset;

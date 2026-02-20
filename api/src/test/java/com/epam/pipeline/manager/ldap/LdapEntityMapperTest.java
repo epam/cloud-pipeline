@@ -51,9 +51,9 @@ public class LdapEntityMapperTest {
 
         final LdapEntity entity = mapper.map(attributes, LdapEntityType.USER, NAME_ATTRIBUTE);
         
-        assertThat(entity.getName(), is(NAME));
-        assertThat(entity.getType(), is(LdapEntityType.USER));
-        final Map<String, List<String>> attributesMap = entity.getAttributes();
+        assertThat(entity.name(), is(NAME));
+        assertThat(entity.type(), is(LdapEntityType.USER));
+        final Map<String, List<String>> attributesMap = entity.attributes();
         assertThat(attributesMap.get(NAME_ATTRIBUTE), is(Collections.singletonList(NAME)));
         assertThat(attributesMap.get(SCALAR_ATTRIBUTE), is(Collections.singletonList(SCALAR_ATTRIBUTE_VALUE)));
         assertThat(attributesMap.get(VECTOR_ATTRIBUTE), notNullValue());
