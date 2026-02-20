@@ -391,7 +391,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     parameterType: undefined,
     selectedParameter: undefined,
     highlightedParameterSection: undefined,
-    reservationParameters: undefined
+    reservationParameters: undefined,
+    showOptionalParameters: true
   };
 
   formItemLayout = {
@@ -901,7 +902,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const parameters = this.getParameters();
     const hasOptional = parameters
       .some(({config}) => config.visible && !config.system && !config.required);
-    if (!hasOptional || this.state.isRawEditEnabled || this.props.editConfigurationMode) {
+    if (!hasOptional || this.props.editConfigurationMode) {
       return false;
     }
     const {pipeline} = this.state;
@@ -1029,6 +1030,18 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         nonValidParameter ? {[nonValidParameter.system ? SYSTEM_PARAMETERS : PARAMETERS]: {
           [getParameterKeyClassName(nonValidParameter)]: false
         }} : undefined);
+      const parameters = this.getParameters();
+      const optionalParamsHasErrors = parameters.some(p => {
+        const isOptional = p.config.visible && !p.config.system && !p.config.required;
+        return isOptional && !!p.error;
+      });
+      if (
+        this.showOptionalParametersFilter &&
+        optionalParamsHasErrors &&
+        !this.state.showOptionalParameters
+      ) {
+        this.setState({showOptionalParameters: true});
+      }
       if (err) {
         console.warn('Validation error');
         console.log(err);
@@ -2754,7 +2767,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         pipeline={pipelineSelected}
         description={description ? (<Markdown md={description} />) : undefined}
         parametersMetadata={this.state.parametersMetadata}
-        swowOptionalParametersFilter={this.showOptionalParametersFilter}
+        showOptionalParameters={this.state.showOptionalParameters}
       />,
       <div
         key={`add-${system ? 'system' : 'default'}-parameter`}
@@ -4252,12 +4265,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       case ADVANCED: title = 'Advanced'; icon = 'setting'; break;
       case PARAMETERS: title = 'Parameters'; icon = 'bars'; break;
     }
+    const onChangeShowOptionalParameters = (e) => {
+      this.setState({showOptionalParameters: e.target.checked});
+    };
     return (
       <Row
         className={styles.panelHeader}
         type="flex"
         justify={key === PARAMETERS ? 'flex-start' : 'space-between'}
-        align="middle"
       >
         <span className={styles.itemHeader}>
           <Icon type={icon} /> {title}
@@ -4265,15 +4280,35 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         {
           this.getPanelShortDescription(key)
         }
-        {
-          key === PARAMETERS && this.renderUploadParametersControls({marginLeft: 10})
-        }
-        {
-          key === PARAMETERS && this.renderParametersPayloadSelector({marginLeft: 10})
-        }
-        {
-          key === PARAMETERS && this.renderRawEditCheckbox()
-        }
+        {key === PARAMETERS ? (
+          <div style={{
+            display: 'flex',
+            flex: 1,
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            marginLeft: 10
+          }}>
+            <div style={{display: 'flex', gap: 10}}>
+              {this.renderUploadParametersControls()}
+              {this.renderParametersPayloadSelector()}
+            </div>
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{display: 'flex', flexWrap: 'wrap', gap: 5, paddingLeft: 10}}
+            >
+              {this.showOptionalParametersFilter ? (
+                <Checkbox
+                  checked={this.state.showOptionalParameters}
+                  onChange={onChangeShowOptionalParameters}
+                  disabled={this.state.isRawEditEnabled}
+                >
+                  Show optional parameters
+                </Checkbox>
+              ) : null}
+              {this.renderRawEditCheckbox()}
+            </div>
+          </div>
+        ) : null}
       </Row>
     );
   };
@@ -4715,9 +4750,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const payloads = this.getParametersPayloads();
     const current = this.getCurrentParametersPayload();
     const onChange = (e) => this.setCurrentParametersPayload(e);
-    if (!payloads.some((p) => p.id !== 'default')) {
-      return null;
-    }
+    // if (!payloads.some((p) => p.id !== 'default')) {
+    //   return null;
+    // }
     return (
       <div
         style={{display: 'inline-flex', alignItems: 'center', ...(style || {})}}
@@ -4753,8 +4788,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return (
       <div
         style={{
-          display: 'inline',
-          marginLeft: 'auto'
+          display: 'inline'
         }}
         onClick={handleChangeRawEdit}
       >
