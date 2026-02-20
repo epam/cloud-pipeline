@@ -4750,9 +4750,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const payloads = this.getParametersPayloads();
     const current = this.getCurrentParametersPayload();
     const onChange = (e) => this.setCurrentParametersPayload(e);
-    // if (!payloads.some((p) => p.id !== 'default')) {
-    //   return null;
-    // }
+    if (!payloads.some((p) => p.id !== 'default')) {
+      return null;
+    }
     return (
       <div
         style={{display: 'inline-flex', alignItems: 'center', ...(style || {})}}
