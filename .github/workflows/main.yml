@@ -15,24 +15,6 @@ env:
   CLOUD_PIPELINE_BUILD_NUMBER_SEED: 20000
 
 jobs:
-  CLI_MacOS_Arm:
-    runs-on: macos-14
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-java@v2
-        with:
-          distribution: 'zulu'
-          java-version: '21'
-      - uses: actions/setup-python@v2
-        with:
-          python-version: '3.9'
-          architecture: 'arm64'
-      - uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
-      - run: bash deploy/github_actions/gha_build_macos_arm.sh
   Publish_Docs:
     runs-on: ubuntu-22.04
     steps:
@@ -52,7 +34,6 @@ jobs:
   Build_All:
     runs-on: ubuntu-22.04
     needs:
-    - CLI_MacOS_Arm
     - Publish_Docs
     steps:
       - uses: actions/checkout@v2
