@@ -362,7 +362,7 @@ class PipelineAPI:
         return self._request('GET', 'whoami')
 
     def _request(self, http_method, endpoint, data=None):
-        url = self.normalize_url('{}/{}'.format(self.api_url, endpoint))
+        url = '{}/{}'.format(self.api_url.rstrip('/'), endpoint.lstrip('/'))
         count = 0
         exceptions = []
         while count < self.attempts:
@@ -392,7 +392,7 @@ class PipelineAPI:
         if output_dir and not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
-        url = self.normalize_url('{}/{}'.format(self.api_url, endpoint))
+        url = '{}/{}'.format(self.api_url.rstrip('/'), endpoint.lstrip('/'))
         count = 0
         exceptions = []
         while count < self.attempts:
