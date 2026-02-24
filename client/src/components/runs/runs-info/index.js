@@ -46,7 +46,7 @@ function getTopEntriesFilters (maxEntriesCount = 0, thresholds = [10, 25, 50]) {
 
 @inject('reportThemes', 'usersInfo')
 @observer
-class RunsInfo extends React.PureComponent {
+class RunsInfo extends React.Component {
   state = {
     statistics: {},
     pending: false,

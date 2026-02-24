@@ -200,7 +200,7 @@ export default class AllowedInstancesCountWarning extends React.Component {
   }
 }
 
-AllowedInstancesCountWarning.PropTypes = {
+AllowedInstancesCountWarning.propTypes = {
   payload: PropTypes.object,
   singleNode: PropTypes.bool,
   style: PropTypes.object

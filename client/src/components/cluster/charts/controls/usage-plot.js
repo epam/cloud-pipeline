@@ -24,7 +24,7 @@ const maxHeight = 40;
 
 @inject('themes')
 @observer
-class UsagePlot extends React.PureComponent {
+class UsagePlot extends React.Component {
   @computed
   get plotColors () {
     return getThemedPlotColors(this);

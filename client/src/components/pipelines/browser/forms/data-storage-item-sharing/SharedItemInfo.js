@@ -568,7 +568,7 @@ class SharedItemInfo extends React.Component {
   }
 }
 
-SharedItemInfo.PropTypes = {
+SharedItemInfo.propTypes = {
   shareItems: PropTypes.array,
   close: PropTypes.func,
   visible: PropTypes.bool

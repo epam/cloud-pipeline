@@ -25,7 +25,7 @@ const MARGIN = 5;
 
 @inject('themes')
 @observer
-class TooltipRenderer extends React.PureComponent {
+class TooltipRenderer extends React.Component {
   state = {
     sizes: {}
   };
@@ -241,7 +241,7 @@ TooltipRenderer.defaultProps = {
 
 @inject('data', 'plot', 'timeline', 'themes')
 @observer
-class Tooltip extends React.PureComponent {
+class Tooltip extends React.Component {
   @observable hoveredItem;
 
   @computed

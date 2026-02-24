@@ -48,7 +48,7 @@ import HCS3DButton from './hcs-3d-button';
 import styles from './hcs-image.css';
 
 @observer
-class HcsImage extends React.PureComponent {
+class HcsImage extends React.Component {
   state = {
     pending: false,
     sequencePending: false,

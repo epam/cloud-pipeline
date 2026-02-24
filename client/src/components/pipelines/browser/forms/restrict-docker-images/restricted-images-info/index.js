@@ -110,7 +110,7 @@ function RestrictedImagesInfo ({
   );
 }
 
-RestrictedImagesInfo.PropTypes = {
+RestrictedImagesInfo.propTypes = {
   toolsToMount: PropTypes.arrayOf(PropTypes.shape({
     id: PropTypes.number,
     image: PropTypes.string,

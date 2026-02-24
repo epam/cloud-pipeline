@@ -123,7 +123,7 @@ export default class MetadataParameterInput extends React.Component {
   }
 }
 
-MetadataParameterInput.PropTypes = {
+MetadataParameterInput.propTypes = {
   value: PropTypes.string,
   style: PropTypes.object,
   disabled: PropTypes.bool,

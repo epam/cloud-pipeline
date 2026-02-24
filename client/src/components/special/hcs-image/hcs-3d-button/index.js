@@ -284,7 +284,7 @@ export default class HCS3DButton extends React.Component {
   }
 }
 
-HCS3DButton.PropTypes = {
+HCS3DButton.propTypes = {
   size: PropTypes.string,
   viewer: PropTypes.object
 };

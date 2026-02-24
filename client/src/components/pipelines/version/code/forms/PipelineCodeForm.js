@@ -32,7 +32,7 @@ import styles from './PipelineCodeForm.css';
   routing
 }))
 @observer
-class PipelineCodeForm extends React.PureComponent {
+class PipelineCodeForm extends React.Component {
   static propTypes = {
     path: PropTypes.string,
     version: PropTypes.string,

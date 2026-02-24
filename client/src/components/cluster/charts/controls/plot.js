@@ -25,7 +25,7 @@ import Legend from './legend';
 import Tooltip from './tooltip';
 
 @observer
-class Plot extends React.PureComponent {
+class Plot extends React.Component {
   canvas;
 
   canvasRef = (element) => {

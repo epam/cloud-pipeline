@@ -182,7 +182,7 @@ class BaseChart extends React.Component {
   }
 }
 
-BaseChart.PropTypes = {
+BaseChart.propTypes = {
   data: PropTypes.object,
   options: PropTypes.object,
   type: PropTypes.string,

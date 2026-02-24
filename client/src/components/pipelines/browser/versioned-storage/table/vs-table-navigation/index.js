@@ -78,7 +78,7 @@ class VSTableNavigation extends React.Component {
   };
 }
 
-VSTableNavigation.PropTypes = {
+VSTableNavigation.propTypes = {
   path: PropTypes.string,
   onNavigate: PropTypes.func
 };

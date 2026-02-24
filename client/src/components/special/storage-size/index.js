@@ -86,7 +86,7 @@ function InfoTooltip ({sizes, isNFS}) {
 
 @inject('preferences')
 @observer
-class StorageSize extends React.PureComponent {
+class StorageSize extends React.Component {
   state = {
     showDetailedInfo: false
   };

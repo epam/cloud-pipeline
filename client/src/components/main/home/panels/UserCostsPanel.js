@@ -347,7 +347,7 @@ export default class UserCostsPanel extends React.Component {
   }
 }
 
-UserCostsPanel.PropTypes = {
+UserCostsPanel.propTypes = {
   showDisclaimer: PropTypes.bool,
   userName: PropTypes.string,
   billingPeriods: PropTypes.arrayOf(PropTypes.string),

@@ -426,7 +426,7 @@ class ImageUploader extends React.PureComponent {
   }
 }
 
-ImageUploader.PropTypes = {
+ImageUploader.propTypes = {
   className: PropTypes.string,
   disabled: PropTypes.bool,
   maxSize: PropTypes.number,
