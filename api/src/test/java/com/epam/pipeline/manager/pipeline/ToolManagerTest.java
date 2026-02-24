@@ -90,6 +90,7 @@ public class ToolManagerTest extends AbstractManagerTest {
     public static final String CENTOS_VERSION = "6.10";
     private static final String TEST_SOURCE_IMAGE = "library/image";
     private static final String TEST_SYMLINK_IMAGE = "test/image";
+    public static final String PREV_TAG = "prev";
 
     @Autowired
     private DockerRegistryDao registryDao;
@@ -156,12 +157,21 @@ public class ToolManagerTest extends AbstractManagerTest {
         secondToolGroup.setRegistryId(secondRegistry.getId());
         toolGroupManager.create(secondToolGroup);
 
-        ToolVersion toolVersion = new ToolVersion();
-        toolVersion.setDigest("test_digest");
-        toolVersion.setSize(DOCKER_SIZE);
-        toolVersion.setVersion("test_version");
-        Mockito.when(dockerClient.getVersionAttributes(Mockito.any(), Mockito.any(), Mockito.any()))
-                .thenReturn(toolVersion);
+        ToolVersion toolVersion1 = new ToolVersion();
+        toolVersion1.setDigest("test_digest");
+        toolVersion1.setSize(DOCKER_SIZE);
+        toolVersion1.setVersion("test_version");
+        toolVersion1.setPlatform("linux");
+        Mockito.when(dockerClient.getVersionAttributes(Mockito.any(), Mockito.any(), Mockito.eq(LATEST_TAG)))
+                .thenReturn(toolVersion1);
+
+        ToolVersion toolVersion2 = new ToolVersion();
+        toolVersion2.setDigest("test_digest");
+        toolVersion2.setSize(DOCKER_SIZE);
+        toolVersion2.setVersion("test_version_2");
+        toolVersion2.setPlatform("linux");
+        Mockito.when(dockerClient.getVersionAttributes(Mockito.any(), Mockito.any(), Mockito.eq(PREV_TAG)))
+                .thenReturn(toolVersion2);
 
         Mockito.when(instanceOfferManager.isToolInstanceAllowedInAnyRegion(eq(TEST_ALLOWED_INSTANCE_TYPE), any()))
                 .thenReturn(true);
@@ -534,7 +544,7 @@ public class ToolManagerTest extends AbstractManagerTest {
         toolOSPref.setValue("centos:6,ubuntu:14.04");
         preferenceManager.update(Collections.singletonList(toolOSPref));
 
-        String latestVersion = LATEST_TAG, testRef = "testRef", prevVersion = "prev";
+        String latestVersion = LATEST_TAG, testRef = "testRef", prevVersion = PREV_TAG;
         Date scanDate = new Date();
 
         Mockito.doReturn(Arrays.asList(latestVersion, prevVersion)).when(dockerClient).getImageTags(any(), anyString());
@@ -567,7 +577,7 @@ public class ToolManagerTest extends AbstractManagerTest {
     @Test()
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void testLoadToolScanResult() {
-        String latestVersion = LATEST_TAG, testRef = "testRef", prevVersion = "prev";
+        String latestVersion = LATEST_TAG, testRef = "testRef", prevVersion = PREV_TAG;
         Date scanDate = new Date();
 
         Mockito.doReturn(Arrays.asList(latestVersion, prevVersion)).when(dockerClient).getImageTags(any(), anyString());
