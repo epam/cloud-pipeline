@@ -142,6 +142,7 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
         toolVersion.setDigest("test_digest");
         toolVersion.setSize(DOCKER_SIZE);
         toolVersion.setVersion("test_version");
+        toolVersion.setPlatform("linux");
         when(mockClient.getVersionAttributes(Mockito.any(), Mockito.any(), Mockito.any()))
                 .thenReturn(toolVersion);
 
