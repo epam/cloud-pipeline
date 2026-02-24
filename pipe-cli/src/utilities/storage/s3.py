@@ -441,6 +441,9 @@ class RestoreManager(StorageItemManager, AbstractRestoreManager):
         if not prefix.endswith(delimiter):
             prefix += delimiter
 
+        permissions_manager = get_permissions_manager(self.bucket.bucket, prefix, write_required=True, quite=False,
+                                                      root_file_flag=self.bucket.is_file())
+
         operation_parameters = {
             'Bucket': bucket
         }
@@ -453,7 +456,7 @@ class RestoreManager(StorageItemManager, AbstractRestoreManager):
         restore_items = []
         for page in pages:
             S3BucketOperations.process_listing(page, 'DeleteMarkers', restore_items, delimiter, exclude, include, prefix,
-                                               versions=True)
+                                               permissions_manager, versions=True)
             restore_items, flushing_items = S3BucketOperations.split_by_aws_limit(restore_items)
             if flushing_items:
                 self._restore_objects(client, bucket, flushing_items)
