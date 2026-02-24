@@ -42,7 +42,7 @@ import PipelineCodeSourceNameDialog from '../code/forms/PipelineCodeSourceNameDi
 import roleModel from '../../../../utils/roleModel';
 import download from '../utilities/download-pipeline-file';
 import {base64toString} from '../../../../utils/base64';
-import * as styles from './PipelineDocuments.css';
+import styles from './PipelineDocuments.css';
 
 function correctFolderPath (folder) {
   if (!folder) {
