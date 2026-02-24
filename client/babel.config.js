@@ -20,8 +20,7 @@ const presets = [
     {
       targets: {
         browsers: [
-          'last 2 versions',
-          'ie > 10'
+          'last 2 versions'
         ]
       }
     }
