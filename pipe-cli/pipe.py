@@ -307,6 +307,11 @@ def cli():
       CP_CLI_API_CALL_RETRY_TIMEOUT          The time interval in seconds between API call attempts (Default: 5)
       CP_AWS_MAX_ATTEMPTS                    The number of maximum retries to call AWS API. If not specifies the
                                              default boto3 provided values will be used.
+      CP_AWS_STREAM_MULTIPART_CHUNKSIZE_MB   The partition size of each part for a multipart transfer. If not specified
+                                             the default boto3 provided values will be used (8 MB). AWS S3 enforces
+                                             a maximum of 10,000 parts per object. Configuring part size is important
+                                             for large STREAM transfers, as the final size of the stream cannot
+                                             be predicted.
     """
     pass
 
