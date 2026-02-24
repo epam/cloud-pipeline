@@ -52,8 +52,7 @@ function filterParameterBySection (parameter, section) {
 class Parameters extends Component {
   state = {
     useResolvedValues: false,
-    highlightedSection: undefined,
-    showOptional: false
+    highlightedSection: undefined
   };
 
   sectionDivs = {};
@@ -81,11 +80,11 @@ class Parameters extends Component {
   }
 
   get optionalIsVisible () {
-    const {swowOptionalParametersFilter, system} = this.props;
-    if (!swowOptionalParametersFilter || system) {
+    const {showOptionalParameters = true, system} = this.props;
+    if (system) {
       return true;
     }
-    return this.state.showOptional;
+    return showOptionalParameters;
   }
 
   checkResolvedValues = () => {
@@ -131,10 +130,6 @@ class Parameters extends Component {
     }), 1000);
   }
 
-  onChangeShowOptional = (e) => {
-    this.setState({showOptional: e.target.checked});
-  };
-
   render () {
     const {
       className,
@@ -162,8 +157,7 @@ class Parameters extends Component {
       pipeline,
       parameterRowClassName,
       description,
-      parametersMetadata,
-      swowOptionalParametersFilter
+      parametersMetadata
     } = this.props;
     if (!preferences.loaded || !runDefaultParameters.loaded) {
       return (<LoadingView />);
@@ -282,16 +276,6 @@ class Parameters extends Component {
               </div>
             )
           }
-          {!system && swowOptionalParametersFilter ? (
-            <div className={styles.parametersGroupContainer}>
-              <Checkbox
-                checked={this.state.showOptional}
-                onChange={this.onChangeShowOptional}
-              >
-                Show optional parameters
-              </Checkbox>
-            </div>
-          ) : null}
           {
             grouped.map(({section, parameters: sectionParameters}) => {
               return (
@@ -356,6 +340,7 @@ Parameters.propTypes = {
   rootEntityId: PropTypes.string,
   onChangeRootEntityId: PropTypes.func,
   showRootEntityId: PropTypes.bool,
+  showOptionalParameters: PropTypes.bool,
   metadataAutoComplete: PropTypes.bool,
   navigationClassName: PropTypes.string,
   navigationStyle: PropTypes.object,
