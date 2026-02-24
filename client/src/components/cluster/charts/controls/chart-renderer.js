@@ -187,7 +187,7 @@ class ChartRendererWithOffset extends React.Component {
     this.setState(newState);
   }
 
-  componentWillReceiveProps (nextProps, nextContext) {
+  UNSAFE_componentWillReceiveProps (nextProps, nextContext) {
     const newState = {};
     if (nextProps.baseLine !== this.props.baseLine) {
       newState.baseLine = nextProps.baseLine;

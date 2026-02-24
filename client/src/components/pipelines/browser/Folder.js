@@ -2359,7 +2359,7 @@ export default class Folder extends localization.LocalizedReactComponent {
     }
   }
 
-  componentWillMount () {
+  UNSAFE_componentWillMount () {
     let showDescriptionInfo = localStorage.getItem('show_description');
     if (showDescriptionInfo) {
       try {

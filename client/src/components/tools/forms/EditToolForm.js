@@ -738,7 +738,7 @@ export default class EditToolForm extends React.Component {
     }
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (
       nextProps.tool !== this.props.tool ||
       nextProps.configuration !== this.props.configuration

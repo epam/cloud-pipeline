@@ -150,7 +150,7 @@ class Timeline extends React.Component {
     }
   }
 
-  componentWillReceiveProps (nextProps, nextContext) {
+  UNSAFE_componentWillReceiveProps (nextProps, nextContext) {
     const newState = {};
     if (nextProps.from !== this.props.from) {
       newState.from = nextProps.from;

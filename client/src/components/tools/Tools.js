@@ -753,7 +753,7 @@ export default class Tools extends React.Component {
     this.redirectIfNeeded();
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.registryId !== this.props.registryId ||
       nextProps.groupId !== this.props.groupId) {
       this.setState({

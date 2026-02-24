@@ -279,7 +279,7 @@ export default class FireCloudBrowser extends React.Component {
     );
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (this.props.method !== nextProps.method ||
       this.props.namespace !== nextProps.namespace ||
       this.props.snapshot !== nextProps.snapshot ||

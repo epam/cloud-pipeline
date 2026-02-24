@@ -2699,7 +2699,7 @@ class IPRangeFormItem extends React.Component {
     }
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (!!nextProps.value !== !!this.props.value ||
       (!!nextProps.value &&
         (nextProps.value.ipMin !== this.props.value.ipMin ||
@@ -2815,7 +2815,7 @@ class CloudRegionFileShareMountFormItem extends React.Component {
       valueB.mountOptions === valueB.mountOptions;
   };
 
-  componentWillReceiveProps (nextProps, nextContext) {
+  UNSAFE_componentWillReceiveProps (nextProps, nextContext) {
     if (
       !CloudRegionFileShareMountFormItem.valuesAreEqual(this.state, nextProps.value) ||
       nextProps.provider !== this.props.provider
@@ -3053,7 +3053,7 @@ class CloudRegionFileShareMountsFormItem extends React.Component {
     this.props.onUnMount && this.props.onUnMount(this);
   }
 
-  componentWillReceiveProps (nextProps, nextContext) {
+  UNSAFE_componentWillReceiveProps (nextProps, nextContext) {
     if (!CloudRegionFileShareMountsFormItem.fileShareMountsAreEqual(
       this.state.mounts,
       nextProps.value

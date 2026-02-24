@@ -139,7 +139,7 @@ export default class ConfigureHomePage extends localization.LocalizedReactCompon
     );
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (this.props.visible !== nextProps.visible) {
       this.updatePanelsState();
     }

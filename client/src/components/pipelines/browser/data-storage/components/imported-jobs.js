@@ -419,7 +419,7 @@ export default class JobList extends React.Component {
     }
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.updateJobsSearch) {
       this.setJobList();
     }

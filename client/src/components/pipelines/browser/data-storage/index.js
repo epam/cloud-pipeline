@@ -3390,7 +3390,7 @@ export default class DataStorage extends React.Component {
     }
   };
 
-  componentWillReceiveProps (nextProps, nextState) {
+  UNSAFE_componentWillReceiveProps (nextProps, nextState) {
     if (nextProps.storageId !== this.props.storageId) {
       this.setState({selectedFile: null});
     }

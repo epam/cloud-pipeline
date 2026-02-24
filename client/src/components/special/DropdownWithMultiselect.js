@@ -152,7 +152,7 @@ export default class DropdownWithMultiselect extends React.Component {
     );
   }
 
-  componentWillReceiveProps (props) {
+  UNSAFE_componentWillReceiveProps (props) {
     this.setState({
       selectedColumns: props.columns.filter(c => c.selected),
       columns: props.columns

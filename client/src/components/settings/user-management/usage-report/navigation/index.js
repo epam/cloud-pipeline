@@ -35,7 +35,7 @@ class UsageNavigation extends React.Component {
   );
 
   @observable filterStore = new FilterStore();
-  componentWillReceiveProps (nextProps, nextContext) {
+  UNSAFE_componentWillReceiveProps (nextProps, nextContext) {
     this.filterStore.rebuild(this.props);
   }
 

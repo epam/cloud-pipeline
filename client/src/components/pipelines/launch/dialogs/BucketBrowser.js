@@ -995,7 +995,7 @@ export default class BucketBrowser extends React.Component {
     );
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.path !== this.props.path) {
       let path = nextProps.path;
       const allowBucketSelection = nextProps.allowBucketSelection;

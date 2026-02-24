@@ -397,7 +397,7 @@ export class DataStoragePathInput extends React.Component {
     }
   };
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     this.updateState(nextProps);
   }
 

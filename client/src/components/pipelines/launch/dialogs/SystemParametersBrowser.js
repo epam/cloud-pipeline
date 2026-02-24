@@ -269,7 +269,7 @@ export default class SystemParametersBrowser extends Component {
     );
   }
 
-  componentWillReceiveProps () {
+  UNSAFE_componentWillReceiveProps () {
     this.setState({
       selectedParameters: [],
       searchString: null

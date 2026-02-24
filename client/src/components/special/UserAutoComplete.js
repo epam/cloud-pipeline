@@ -162,7 +162,7 @@ export default class UserAutoComplete extends React.Component {
     );
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.value !== this.props.value) {
       this.setState({
         value: null,

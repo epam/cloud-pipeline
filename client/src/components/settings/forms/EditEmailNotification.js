@@ -462,7 +462,7 @@ export default class EditEmailNotification extends React.Component {
     }
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (!nextProps.template || !this.props.template || nextProps.template.id !== this.props.template.id) {
       this.emailNotificationChanged();
       this.resetFormFields(nextProps);
