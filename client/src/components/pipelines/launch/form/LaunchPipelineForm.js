@@ -392,7 +392,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     selectedParameter: undefined,
     highlightedParameterSection: undefined,
     reservationParameters: undefined,
-    showOptionalParameters: true
+    showOptionalParameters: false
   };
 
   formItemLayout = {
@@ -913,6 +913,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return tools;
   }
 
+  get showOptionalParameters () {
+    const {showOptionalParameters} = this.state;
+    if (this.showOptionalParametersFilter) {
+      return showOptionalParameters;
+    }
+    return true;
+  }
+
   get currentDetachedConfiguration () {
     const {detachedConfigurations = []} = this.state;
     const {currentConfigurationName} = this.props;
@@ -1038,7 +1046,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       if (
         this.showOptionalParametersFilter &&
         optionalParamsHasErrors &&
-        !this.state.showOptionalParameters
+        !this.showOptionalParameters
       ) {
         this.setState({showOptionalParameters: true});
       }
@@ -2767,7 +2775,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         pipeline={pipelineSelected}
         description={description ? (<Markdown md={description} />) : undefined}
         parametersMetadata={this.state.parametersMetadata}
-        showOptionalParameters={this.state.showOptionalParameters}
+        showOptionalParameters={this.showOptionalParameters}
       />,
       <div
         key={`add-${system ? 'system' : 'default'}-parameter`}
