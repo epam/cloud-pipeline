@@ -25,7 +25,7 @@ import {
   Button,
   Select
 } from 'antd';
-import { DeleteOutlined, RightOutlined } from '@ant-design/icons';
+import {DeleteOutlined, RightOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import DockerImageDetails from './docker-image-details';
 import MultiSelect from '../../special/multiSelect';

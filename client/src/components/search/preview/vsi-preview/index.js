@@ -25,7 +25,7 @@ import {
   Popover,
   message
 } from 'antd';
-import { ArrowsAltOutlined, CameraFilled, CopyOutlined, ExportOutlined, ShrinkOutlined, TagFilled, TagOutlined } from '@ant-design/icons';
+import {ArrowsAltOutlined, CameraFilled, CopyOutlined, ExportOutlined, ShrinkOutlined, TagFilled, TagOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import html2canvas from 'html2canvas';
 import FileSaver from 'file-saver';

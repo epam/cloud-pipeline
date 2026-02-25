@@ -35,7 +35,7 @@ import {
   Table,
   Tooltip
 } from 'antd';
-import { ForkOutlined, HddOutlined, InboxOutlined, LockOutlined } from '@ant-design/icons';
+import {ForkOutlined, HddOutlined, InboxOutlined, LockOutlined} from '@ant-design/icons';
 import dataStorages from '../../../models/dataStorage/DataStorages';
 import {formatTreeItems, generateTreeData, ItemTypes} from '../model/treeStructureFunctions';
 import highlightText from '../../special/highlightText';

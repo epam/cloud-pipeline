@@ -28,7 +28,7 @@ import {
   Table,
   Tree
 } from 'antd';
-import { FolderOutlined, SolutionOutlined } from '@ant-design/icons';
+import {FolderOutlined, SolutionOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import {
   formatTreeItems,

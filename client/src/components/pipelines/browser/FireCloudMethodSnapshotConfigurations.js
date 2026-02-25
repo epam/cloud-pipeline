@@ -26,7 +26,7 @@ import {Button,
   Select,
   Table
 } from 'antd';
-import { CheckCircleFilled, SettingOutlined } from '@ant-design/icons';
+import {CheckCircleFilled, SettingOutlined} from '@ant-design/icons';
 import styles from './Browser.css';
 import {ItemTypes} from '../model/treeStructureFunctions';
 import FireCloudMethodSnapshotConfigurationsRequest

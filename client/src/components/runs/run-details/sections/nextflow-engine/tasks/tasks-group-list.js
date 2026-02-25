@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {Alert, Input} from 'antd';
-import { LoadingOutlined } from '@ant-design/icons';
+import {LoadingOutlined} from '@ant-design/icons';
 import styles from './nextflow-engine-tasks.css';
 import TasksGroup from './tasks-group';
 import {

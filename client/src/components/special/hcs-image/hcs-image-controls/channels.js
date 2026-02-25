@@ -22,7 +22,7 @@ import {
 import {
   Checkbox
 } from 'antd';
-import { LoadingOutlined } from '@ant-design/icons';
+import {LoadingOutlined} from '@ant-design/icons';
 import Channel from './channel';
 import styles from './hcs-image-controls.css';
 

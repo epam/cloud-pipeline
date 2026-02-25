@@ -21,7 +21,7 @@ import {computed} from 'mobx';
 import classNames from 'classnames';
 import {SERVER} from '../../../config';
 import {Button, Icon, message, Popover, Tooltip} from 'antd';
-import { LeftOutlined, RightOutlined } from '@ant-design/icons';
+import {LeftOutlined, RightOutlined} from '@ant-design/icons';
 import PropTypes from 'prop-types';
 import PipelineRunInfo from '../../../models/pipelines/PipelineRunInfo';
 import CounterMenuItem from './CounterMenuItem';

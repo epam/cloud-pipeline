@@ -20,7 +20,7 @@ import {
   Select,
   Tooltip
 } from 'antd';
-import { QuestionCircleFilled } from '@ant-design/icons';
+import {QuestionCircleFilled} from '@ant-design/icons';
 import {
   CP_CAP_SHARE_FS_DEPLOYMENT_TYPE, CP_CAP_SHARE_FS_IOPS,
   CP_CAP_SHARE_FS_SIZE,

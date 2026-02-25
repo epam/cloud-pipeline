@@ -27,7 +27,7 @@ import {
   Select,
   Spin
 } from 'antd';
-import { FolderOutlined } from '@ant-design/icons';
+import {FolderOutlined} from '@ant-design/icons';
 import roleModel from '../../../../utils/roleModel';
 import BucketBrowser from '../../launch/dialogs/BucketBrowser';
 import dataStorageRestrictedAccessCheck from '../../../../utils/data-storage-restricted-access';

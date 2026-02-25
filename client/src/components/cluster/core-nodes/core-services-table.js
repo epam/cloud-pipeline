@@ -28,7 +28,7 @@ import {
   Badge,
   message
 } from 'antd';
-import { InfoCircleFilled } from '@ant-design/icons';
+import {InfoCircleFilled} from '@ant-design/icons';
 import CorePods from '../../../models/cluster/CorePods';
 import highlightText from '../../special/highlightText';
 import styles from '../ClusterNode.css';

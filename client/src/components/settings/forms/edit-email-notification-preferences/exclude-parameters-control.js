@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {Button, Input, Select} from 'antd';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import {DeleteOutlined, PlusOutlined} from '@ant-design/icons';
 import styles from './exclude-parameters-control.css';
 
 const OPERATORS = {

@@ -5,7 +5,7 @@ import {
 import {
   Popover
 } from 'antd';
-import { ExclamationCircleFilled, ForkOutlined } from '@ant-design/icons';
+import {ExclamationCircleFilled, ForkOutlined} from '@ant-design/icons';
 import localization from '../../../../../utils/localization';
 import styles from './run-executable.css';
 import classNames from 'classnames';

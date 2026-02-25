@@ -22,7 +22,7 @@ import {
   Button,
   Spin
 } from 'antd';
-import { CaretLeftOutlined, CaretRightOutlined, FilterOutlined } from '@ant-design/icons';
+import {CaretLeftOutlined, CaretRightOutlined, FilterOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import CommitCard from './commit-card';
 import HistoryFilter from './history-filter';

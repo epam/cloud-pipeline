@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {
   observer} from 'mobx-react';
-import { RightOutlined } from '@ant-design/icons';
+import {RightOutlined} from '@ant-design/icons';
 import styles from './cell-profiler.css';
 
 @observer

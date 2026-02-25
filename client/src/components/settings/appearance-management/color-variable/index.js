@@ -23,7 +23,7 @@ import {
   InputNumber,
   Select
 } from 'antd';
-import { RollbackOutlined } from '@ant-design/icons';
+import {RollbackOutlined} from '@ant-design/icons';
 import ColorPicker, {ColorPresenter} from '../../../special/color-picker';
 import {parseAmount} from '../../../../themes/utilities/color-utilities';
 import {groupedColorVariables} from '../utilities/variable-sections';

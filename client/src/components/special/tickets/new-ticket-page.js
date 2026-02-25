@@ -20,7 +20,7 @@ import {
   Button,
   message
 } from 'antd';
-import { LeftOutlined } from '@ant-design/icons';
+import {LeftOutlined} from '@ant-design/icons';
 import GitlabIssueCreate from '../../../models/gitlab-issues/GitlabIssueCreate';
 import NewTicketForm from './special/new-ticket-form';
 import styles from './tickets.css';

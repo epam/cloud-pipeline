@@ -28,7 +28,7 @@ import {Alert,
   Row,
   Select
 } from 'antd';
-import { ForkOutlined, LeftOutlined } from '@ant-design/icons';
+import {ForkOutlined, LeftOutlined} from '@ant-design/icons';
 import LoadingView from '../../special/LoadingView';
 import FireCloudMethodsBrowser from './FireCloudMethodsBrowser';
 import FireCloudMethodSnapshotConfigurations from './FireCloudMethodSnapshotConfigurations';

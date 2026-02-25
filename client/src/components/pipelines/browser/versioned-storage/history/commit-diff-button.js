@@ -22,7 +22,7 @@ import {
   message,
   Modal
 } from 'antd';
-import { LeftOutlined, RightOutlined } from '@ant-design/icons';
+import {LeftOutlined, RightOutlined} from '@ant-design/icons';
 import * as diff2html from 'diff2html';
 import VsContentsDiff from '../../../../../models/versioned-storage/vs-contents-diff';
 import styles from './history.css';

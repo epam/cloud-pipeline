@@ -21,7 +21,7 @@ import {
   Input,
   Modal
 } from 'antd';
-import { ArrowRightOutlined, DeleteOutlined, LinkOutlined, PlusOutlined } from '@ant-design/icons';
+import {ArrowRightOutlined, DeleteOutlined, LinkOutlined, PlusOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import SystemDictionaryLinksForm from './SystemDictionaryLinksForm';
 import EditSystemDictionaryPermissions from './EditSystemDictionaryPermissions';

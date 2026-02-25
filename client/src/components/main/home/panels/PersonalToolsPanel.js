@@ -38,7 +38,7 @@ import {Alert,
   Modal,
   Row
 } from 'antd';
-import { CaretRightOutlined } from '@ant-design/icons';
+import {CaretRightOutlined} from '@ant-design/icons';
 import {
   getInputPaths,
   getOutputPaths,

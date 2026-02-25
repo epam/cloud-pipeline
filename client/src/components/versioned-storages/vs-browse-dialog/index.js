@@ -27,7 +27,7 @@ import {
   Modal,
   Table
 } from 'antd';
-import { CheckOutlined } from '@ant-design/icons';
+import {CheckOutlined} from '@ant-design/icons';
 import VSVersions from '../vs-versions-select';
 import styles from './vs-browse-dialog.css';
 

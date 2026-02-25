@@ -24,7 +24,7 @@ import {
   Badge,
   Button
 } from 'antd';
-import { ExportOutlined } from '@ant-design/icons';
+import {ExportOutlined} from '@ant-design/icons';
 import RcMenu, {MenuItem, SubMenu, Divider as MenuDivider} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import SharedItemInfo

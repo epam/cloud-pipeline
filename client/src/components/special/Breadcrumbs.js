@@ -20,7 +20,7 @@ import {computed} from 'mobx';
 import PropTypes from 'prop-types';
 import {Link} from 'react-router';
 import {Icon} from 'antd';
-import { CaretRightOutlined, LoadingOutlined, LockOutlined } from '@ant-design/icons';
+import {CaretRightOutlined, LoadingOutlined, LockOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import EditableField from './EditableField';
 import {

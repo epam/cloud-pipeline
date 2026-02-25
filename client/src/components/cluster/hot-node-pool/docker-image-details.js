@@ -18,7 +18,7 @@ import React from 'react';
 import {
   inject,
   observer} from 'mobx-react';
-import { RightOutlined } from '@ant-design/icons';
+import {RightOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import ToolImage from '../../../models/tools/ToolImage';
 import styles from './docker-image-details.css';

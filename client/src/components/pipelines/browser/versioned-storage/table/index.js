@@ -24,7 +24,7 @@ import {
   Modal,
   Row
 } from 'antd';
-import { DownOutlined, FileOutlined, FolderOutlined, PlusOutlined } from '@ant-design/icons';
+import {DownOutlined, FileOutlined, FolderOutlined, PlusOutlined} from '@ant-design/icons';
 import Menu, {MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import classNames from 'classnames';

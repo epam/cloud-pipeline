@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import { ExclamationCircleOutlined } from '@ant-design/icons';
+import {ExclamationCircleOutlined} from '@ant-design/icons';
 import RunDetail, {RunDetailProps} from '../run-detail';
 
 function RunFailureReason (props) {

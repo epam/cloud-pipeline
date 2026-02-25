@@ -26,7 +26,7 @@ import {Alert,
   Button,
   Select
 } from 'antd';
-import { ReloadOutlined } from '@ant-design/icons';
+import {ReloadOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import displayDate from '../../../../utils/displayDate';
 import SubSettings from '../../sub-settings';

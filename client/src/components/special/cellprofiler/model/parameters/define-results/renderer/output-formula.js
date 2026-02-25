@@ -22,7 +22,7 @@ import {Button,
   Input,
   Select
 } from 'antd';
-import { DeleteOutlined } from '@ant-design/icons';
+import {DeleteOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import {
   getObjectProperties, ObjectProperty,

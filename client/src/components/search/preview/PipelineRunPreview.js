@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {Icon, Row} from 'antd';
-import { LoadingOutlined } from '@ant-design/icons';
+import {LoadingOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import pipelineRun from '../../../models/pipelines/PipelineRun';
 import renderHighlights from './renderHighlights';

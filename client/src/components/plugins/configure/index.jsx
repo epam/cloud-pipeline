@@ -10,7 +10,7 @@ import {Alert,
   message,
   Button
 } from 'antd';
-import { SettingOutlined } from '@ant-design/icons';
+import {SettingOutlined} from '@ant-design/icons';
 import ConfigurePluginsControl from './configure-plugins-control';
 import classNames from 'classnames';
 

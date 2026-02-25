@@ -26,7 +26,7 @@ import EditableField from '../../special/EditableField';
 import {Alert,
   Row
 } from 'antd';
-import { ClockCircleOutlined, LockOutlined } from '@ant-design/icons';
+import {ClockCircleOutlined, LockOutlined} from '@ant-design/icons';
 import connect from '../../../utils/connect';
 import HiddenObjects from '../../../utils/hidden-objects';
 import styles from './Browser.css';

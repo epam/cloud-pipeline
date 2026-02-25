@@ -25,7 +25,7 @@ import {
   Spin,
   Alert
 } from 'antd';
-import { DownOutlined } from '@ant-design/icons';
+import {DownOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import {computed, reaction} from 'mobx';
 import {inject, observer} from 'mobx-react';

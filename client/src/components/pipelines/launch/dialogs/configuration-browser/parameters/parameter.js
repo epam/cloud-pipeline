@@ -24,7 +24,7 @@ import {
   InputNumber,
   Select
 } from 'antd';
-import { MinusCircleOutlined } from '@ant-design/icons';
+import {MinusCircleOutlined} from '@ant-design/icons';
 import {observer} from 'mobx-react';
 import Hint from './hint';
 import BucketBrowser from '../../BucketBrowser';

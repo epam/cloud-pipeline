@@ -26,7 +26,7 @@ import {Alert,
   Col,
   Row
 } from 'antd';
-import { CloseCircleOutlined, ExclamationCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import {CloseCircleOutlined, ExclamationCircleOutlined, InfoCircleOutlined} from '@ant-design/icons';
 import displayDate from '../../../../utils/displayDate';
 import Markdown from '../../../special/markdown';
 import {PredefinedNotifications} from '../../notification/NotificationCenter';

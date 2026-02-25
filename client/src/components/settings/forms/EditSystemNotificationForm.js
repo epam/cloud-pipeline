@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Button, Modal, Form, Input, Row, Col, Spin, Select, Checkbox, Tabs} from 'antd';
-import { CloseCircleOutlined, ExclamationCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import {CloseCircleOutlined, ExclamationCircleOutlined, InfoCircleOutlined} from '@ant-design/icons';
 import Markdown from '../../special/markdown';
 import styles from './EditSystemNotificationForm.css';
 

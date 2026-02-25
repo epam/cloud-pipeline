@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Mentions, Row, Tabs} from 'antd';
-import { ForkOutlined, HddOutlined, InboxOutlined, SettingOutlined, ToolOutlined } from '@ant-design/icons';
+import {ForkOutlined, HddOutlined, InboxOutlined, SettingOutlined, ToolOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import {ItemTypes} from '../../../pipelines/model/treeStructureFunctions';
 import IssueCommentPreview from './IssueCommentPreview';

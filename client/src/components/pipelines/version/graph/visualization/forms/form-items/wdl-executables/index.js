@@ -24,7 +24,7 @@ import {Button,
   Collapse,
   Modal
 } from 'antd';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import {DeleteOutlined, PlusOutlined} from '@ant-design/icons';
 import WdlIssues from '../wdl-issues';
 import {addCall, getEntityNameOptions, removeTask} from '../../utilities/workflow-utilities';
 import styles from './wdl-executables.css';

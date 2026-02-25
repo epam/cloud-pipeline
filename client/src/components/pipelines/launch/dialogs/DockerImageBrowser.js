@@ -27,7 +27,7 @@ import {Modal,
   Input,
   Select
 } from 'antd';
-import { CaretRightOutlined, CheckCircleFilled, LoadingOutlined } from '@ant-design/icons';
+import {CaretRightOutlined, CheckCircleFilled, LoadingOutlined} from '@ant-design/icons';
 import LoadToolTags from '../../../../models/tools/LoadToolTags';
 import styles from './Browser.css';
 import registryName from '../../../tools/registryName';

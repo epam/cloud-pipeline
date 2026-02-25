@@ -1,6 +1,6 @@
 import React from 'react';
 import classNames from 'classnames';
-import { ExclamationCircleOutlined } from '@ant-design/icons';
+import {ExclamationCircleOutlined} from '@ant-design/icons';
 import RunDetail, {RunDetailProps} from '../run-detail';
 
 function RunStateReason (props) {

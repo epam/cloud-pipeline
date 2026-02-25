@@ -24,7 +24,7 @@ import {
   Tooltip,
   Modal
 } from 'antd';
-import { QuestionCircleFilled } from '@ant-design/icons';
+import {QuestionCircleFilled} from '@ant-design/icons';
 import {validateName} from './utilities/theme-validation';
 import {getThemeConfiguration, parseConfiguration} from '../../../themes/themes';
 import ColorVariable from './color-variable';

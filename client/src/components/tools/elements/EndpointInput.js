@@ -28,7 +28,7 @@ import {
   Menu,
   Row
 } from 'antd';
-import { CheckOutlined, SettingOutlined } from '@ant-design/icons';
+import {CheckOutlined, SettingOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import CodeEditor from '../../special/CodeEditor';
 import styles from '../Tools.css';

@@ -26,7 +26,7 @@ import {
   Spin,
   Select
 } from 'antd';
-import { QuestionCircleFilled } from '@ant-design/icons';
+import {QuestionCircleFilled} from '@ant-design/icons';
 import classNames from 'classnames';
 
 import protocols from '../protocols';

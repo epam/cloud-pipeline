@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import moment from 'moment-timezone';
 import {message, Popover} from 'antd';
-import { InfoCircleFilled } from '@ant-design/icons';
+import {InfoCircleFilled} from '@ant-design/icons';
 import {inject} from 'mobx-react';
 import Markdown from '../../../markdown';
 import displayDate from '../../../../../utils/displayDate';

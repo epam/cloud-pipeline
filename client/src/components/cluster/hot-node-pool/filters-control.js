@@ -20,7 +20,7 @@ import {
   Button,
   Select
 } from 'antd';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import {DeleteOutlined, PlusOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import FilterControl, {
   criteriaValid,

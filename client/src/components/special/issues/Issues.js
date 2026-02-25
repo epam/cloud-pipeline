@@ -30,7 +30,7 @@ import {Button,
   Table,
   Alert
 } from 'antd';
-import { ArrowLeftOutlined } from '@ant-design/icons';
+import {ArrowLeftOutlined} from '@ant-design/icons';
 import Issue from './Issue';
 import EditIssueForm from './controls/EditIssueForm';
 import {processUnusedAttachments} from './utilities/UnusedAttachmentsProcessor';

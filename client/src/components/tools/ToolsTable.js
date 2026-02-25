@@ -23,7 +23,7 @@ import {Button,
   Col,
   Row
 } from 'antd';
-import { ExportOutlined, MessageOutlined } from '@ant-design/icons';
+import {ExportOutlined, MessageOutlined} from '@ant-design/icons';
 import ToolLink from './elements/ToolLink';
 import ToolImage from '../../models/tools/ToolImage';
 import highlightText from '../special/highlightText';

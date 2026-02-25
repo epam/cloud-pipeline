@@ -24,7 +24,7 @@ import {Alert,
   Popover,
   Row
 } from 'antd';
-import { LoadingOutlined } from '@ant-design/icons';
+import {LoadingOutlined} from '@ant-design/icons';
 import ServerlessAPIURL from '../../../models/configuration/ServerlessAPIURL';
 
 const CLOSE_POPOVER_DELAY_MS = 200;

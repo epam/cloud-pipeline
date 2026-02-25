@@ -18,7 +18,7 @@ import PropTypes from 'prop-types';
 import {
   Input
 } from 'antd';
-import { DeleteOutlined } from '@ant-design/icons';
+import {DeleteOutlined} from '@ant-design/icons';
 import styles from './wdl-parameter.css';
 import WdlTypeSelector from '../wdl-type-selector';
 import WdlIssues from '../wdl-issues';

@@ -21,7 +21,7 @@ import {
   ConfigProvider,
   Modal
 } from 'antd';
-import { LoadingOutlined, QuestionCircleFilled } from '@ant-design/icons';
+import {LoadingOutlined, QuestionCircleFilled} from '@ant-design/icons';
 import enUS from 'antd/lib/locale/en_US';
 import classNames from 'classnames';
 import {observer} from 'mobx-react';

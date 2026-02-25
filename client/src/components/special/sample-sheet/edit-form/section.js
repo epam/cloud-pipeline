@@ -20,7 +20,7 @@ import classNames from 'classnames';
 import {
   Button
 } from 'antd';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import {DeleteOutlined, PlusOutlined} from '@ant-design/icons';
 import compareArrays from '../../../../utils/compareArrays';
 import InputWrapper from './input-wrapper';
 import styles from './sample-sheet-edit-form.css';

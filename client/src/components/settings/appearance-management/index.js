@@ -25,7 +25,7 @@ import {
   Modal,
   Radio
 } from 'antd';
-import { LeftOutlined } from '@ant-design/icons';
+import {LeftOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';

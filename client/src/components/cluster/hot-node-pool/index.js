@@ -24,7 +24,7 @@ import {
   message,
   Modal
 } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import {PlusOutlined} from '@ant-design/icons';
 import {computed} from 'mobx';
 import LoadingView from '../../special/LoadingView';
 import EditHotNodePool from './edit-hot-node-pool';

@@ -32,7 +32,7 @@ import {
   Select,
   Checkbox
 } from 'antd';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import {DeleteOutlined, PlusOutlined} from '@ant-design/icons';
 import Role from '../../../models/user/Role';
 import UserFind from '../../../models/user/UserFind';
 import RoleAssign from '../../../models/user/RoleAssign';

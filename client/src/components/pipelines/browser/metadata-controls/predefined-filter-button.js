@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Button} from 'antd';
-import { LoadingOutlined } from '@ant-design/icons';
+import {LoadingOutlined} from '@ant-design/icons';
 import moment from 'moment-timezone';
 import MetadataEntityFilter from '../../../../models/folderMetadata/MetadataEntityFilter';
 import classNames from 'classnames';

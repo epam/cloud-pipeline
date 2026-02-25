@@ -20,7 +20,7 @@ import classNames from 'classnames';
 import {observer, Provider} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import {Alert, Button, Radio} from 'antd';
-import { ApiOutlined, AppstoreFilled, AppstoreOutlined, SettingOutlined } from '@ant-design/icons';
+import {ApiOutlined, AppstoreFilled, AppstoreOutlined, SettingOutlined} from '@ant-design/icons';
 
 import HCSImageViewer from './hcs-image-viewer';
 import HCSInfo from './utilities/hcs-image-info';

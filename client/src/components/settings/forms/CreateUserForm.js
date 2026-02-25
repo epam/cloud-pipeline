@@ -29,7 +29,7 @@ import {Button,
   Select,
   message
 } from 'antd';
-import { DeleteOutlined } from '@ant-design/icons';
+import {DeleteOutlined} from '@ant-design/icons';
 import styles from './UserManagement.css';
 import roleModel from '../../../utils/roleModel';
 

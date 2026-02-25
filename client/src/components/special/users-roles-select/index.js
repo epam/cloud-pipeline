@@ -22,7 +22,7 @@ import {
 import {computed} from 'mobx';
 import {Select
 } from 'antd';
-import { TeamOutlined } from '@ant-design/icons';
+import {TeamOutlined} from '@ant-design/icons';
 import Roles from '../../../models/user/Roles';
 import GroupFind from '../../../models/user/GroupFind';
 import UserName from '../UserName';

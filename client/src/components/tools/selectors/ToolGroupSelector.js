@@ -24,7 +24,7 @@ import {Row,
   Dropdown,
   Input
 } from 'antd';
-import { LoadingOutlined } from '@ant-design/icons';
+import {LoadingOutlined} from '@ant-design/icons';
 import styles from './Selectors.css';
 import compareArrays from '../../../utils/compareArrays';
 

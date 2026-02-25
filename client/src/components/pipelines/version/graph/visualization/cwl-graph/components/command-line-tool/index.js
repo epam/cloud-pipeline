@@ -20,7 +20,7 @@ import {
   isType} from 'cwlts/models';
 import {Button
 } from 'antd';
-import { DeleteOutlined } from '@ant-design/icons';
+import {DeleteOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import DockerImageSelector from '../shared/docker-image-selector';
 import CodeEditor from '../../../../../../../special/CodeEditor';

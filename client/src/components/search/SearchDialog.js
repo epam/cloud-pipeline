@@ -26,7 +26,7 @@ import {
   Tooltip,
   Row
 } from 'antd';
-import { FilterOutlined, LoadingOutlined, QuestionOutlined } from '@ant-design/icons';
+import {FilterOutlined, LoadingOutlined, QuestionOutlined} from '@ant-design/icons';
 import Preview from './preview';
 import {PreviewIcons} from './preview/previewIcons';
 import {SearchItemTypes} from '../../models/search';

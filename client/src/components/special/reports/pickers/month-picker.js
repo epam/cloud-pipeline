@@ -19,7 +19,7 @@ import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import moment from 'moment-timezone';
 import {Dropdown} from 'antd';
-import { DoubleLeftOutlined, DoubleRightOutlined } from '@ant-design/icons';
+import {DoubleLeftOutlined, DoubleRightOutlined} from '@ant-design/icons';
 import styles from './pickers.css';
 import PickerButton from './picker-button';
 

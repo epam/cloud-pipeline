@@ -16,7 +16,7 @@
 
 import React, {Component} from 'react';
 import {Modal, Button} from 'antd';
-import { QuestionCircleFilled } from '@ant-design/icons';
+import {QuestionCircleFilled} from '@ant-design/icons';
 
 let openCallback;
 

@@ -26,7 +26,7 @@ import {
   Popover,
   Row
 } from 'antd';
-import { CaretLeftOutlined, CloseOutlined } from '@ant-design/icons';
+import {CaretLeftOutlined, CloseOutlined} from '@ant-design/icons';
 import ToolsSelector, {ToolIcon} from './tools-selector';
 import OpenToolInfo from './open-tool-info';
 import FileTools from './file-tools';

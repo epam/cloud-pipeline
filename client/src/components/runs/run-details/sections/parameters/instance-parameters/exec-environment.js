@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import {
   inject,
   observer} from 'mobx-react';
-import { LoadingOutlined } from '@ant-design/icons';
+import {LoadingOutlined} from '@ant-design/icons';
 import {isDtsEnvironment, isFireCloudEnvironment} from './utilities';
 
 const ExecEnvironment = inject(

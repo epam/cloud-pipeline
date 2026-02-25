@@ -23,7 +23,7 @@ import {computed,
 import {
   message
 } from 'antd';
-import { CloudDownloadOutlined, DownOutlined, ExceptionOutlined, ExclamationCircleFilled, ForkOutlined, LoadingOutlined, SaveOutlined, SyncOutlined } from '@ant-design/icons';
+import {CloudDownloadOutlined, DownOutlined, ExceptionOutlined, ExclamationCircleFilled, ForkOutlined, LoadingOutlined, SaveOutlined, SyncOutlined} from '@ant-design/icons';
 import VsActionsAvailable, {vsAvailabilityCheck} from './vs-actions-available';
 import Menu, {MenuItem, Divider, ItemGroup, SubMenu} from 'rc-menu';
 import Dropdown from 'rc-dropdown';

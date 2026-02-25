@@ -29,7 +29,7 @@ import {
   message,
   Modal
 } from 'antd';
-import { DeleteOutlined, DownloadOutlined, EditOutlined, FileTextOutlined } from '@ant-design/icons';
+import {DeleteOutlined, DownloadOutlined, EditOutlined, FileTextOutlined} from '@ant-design/icons';
 import FileSaver from 'file-saver';
 import VersionFile from '../../../../models/pipelines/VersionFile';
 import PipelineGenerateFile from '../../../../models/pipelines/PipelineGenerateFile';

@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Menu, Dropdown} from 'antd';
-import { AppstoreOutlined, CheckOutlined, DownOutlined } from '@ant-design/icons';
+import {AppstoreOutlined, CheckOutlined, DownOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import styles from './logs-mode.css';
 

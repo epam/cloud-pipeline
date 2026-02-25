@@ -25,7 +25,7 @@ import {
   Menu,
   Tabs
 } from 'antd';
-import { CaretDownOutlined, CaretUpOutlined, CloseCircleFilled, CloseOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
+import {CaretDownOutlined, CaretUpOutlined, CloseCircleFilled, CloseOutlined, PlusOutlined, SearchOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import LoadingView from '../special/LoadingView';
 import {SearchGroupTypes} from './searchGroupTypes';

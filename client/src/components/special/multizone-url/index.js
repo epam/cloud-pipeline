@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import { DownOutlined } from '@ant-design/icons';
+import {DownOutlined} from '@ant-design/icons';
 import Menu, {MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import {inject, observer} from 'mobx-react';

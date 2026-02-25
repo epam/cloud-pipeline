@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Popover} from 'antd';
-import { QuestionCircleFilled } from '@ant-design/icons';
+import {QuestionCircleFilled} from '@ant-design/icons';
 import styles from './parameters.css';
 
 function Hint (props = {}) {

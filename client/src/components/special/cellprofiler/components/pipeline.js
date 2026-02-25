@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import { InfoCircleOutlined } from '@ant-design/icons';
+import {InfoCircleOutlined} from '@ant-design/icons';
 import {observer} from 'mobx-react';
 import {CellProfilerModule, CellProfilerModuleHeader} from './module';
 import AnalysisPipelineInfo from './info';

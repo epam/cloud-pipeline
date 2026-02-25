@@ -7,7 +7,7 @@ import {
 import MultizoneUrl from '../../../../../special/multizone-url';
 import RunSSHButton from '../run-actions/run-ssh-button';
 import RunFsBrowserButton from '../run-actions/run-fs-browser-button';
-import { ExportOutlined } from '@ant-design/icons';
+import {ExportOutlined} from '@ant-design/icons';
 
 function RunEndpoints (props) {
   const {

@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { SettingOutlined } from '@ant-design/icons';
+import {SettingOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import RunTags from '../../../../../runs/run-tags';
 import styles from './custom-tags.css';

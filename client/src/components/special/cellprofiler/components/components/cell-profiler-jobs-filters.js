@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import { FileOutlined } from '@ant-design/icons';
+import {FileOutlined} from '@ant-design/icons';
 import UsersRolesSelect from '../../../users-roles-select';
 import Collapse from '../collapse';
 import DelayedInput from '../../../DelayedInput';

@@ -20,7 +20,7 @@ import {observer} from 'mobx-react';
 import {observable} from 'mobx';
 import classNames from 'classnames';
 import {Row, Col, message} from 'antd';
-import { ArrowsAltOutlined, MinusCircleOutlined, PlusCircleOutlined, ShrinkOutlined } from '@ant-design/icons';
+import {ArrowsAltOutlined, MinusCircleOutlined, PlusCircleOutlined, ShrinkOutlined} from '@ant-design/icons';
 import styles from './Graph.css';
 import CodeFileCommitForm from '../../code/forms/CodeFileCommitForm';
 import PipelineFilesUpdate from '../../../../../models/pipelines/PipelineFilesUpdate';

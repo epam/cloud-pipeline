@@ -25,7 +25,7 @@ import localization from '../../../../utils/localization';
 import {Alert,
   Row
 } from 'antd';
-import { CaretRightOutlined, RightSquareOutlined } from '@ant-design/icons';
+import {CaretRightOutlined, RightSquareOutlined} from '@ant-design/icons';
 import CardsPanel from './components/CardsPanel';
 import getServiceActions from './components/getServiceActions';
 import roleModel from '../../../../utils/roleModel';

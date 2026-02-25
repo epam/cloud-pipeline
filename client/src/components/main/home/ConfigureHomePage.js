@@ -25,7 +25,7 @@ import {
   AsyncLayout
 } from './layout';
 import {Button, Checkbox, Col, Icon, Modal, Row, Tooltip} from 'antd';
-import { QuestionCircleFilled } from '@ant-design/icons';
+import {QuestionCircleFilled} from '@ant-design/icons';
 import {getDisplayOnlyFavourites, setDisplayOnlyFavourites} from './utils/favourites';
 import localization from '../../../utils/localization';
 

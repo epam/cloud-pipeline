@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Input, message, Tooltip} from 'antd';
-import { EditOutlined } from '@ant-design/icons';
+import {EditOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import styles from './EditableField.css';
 

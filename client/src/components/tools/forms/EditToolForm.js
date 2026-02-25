@@ -33,7 +33,7 @@ import {
   Select,
   Tag
 } from 'antd';
-import { SettingOutlined } from '@ant-design/icons';
+import {SettingOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 
 import ToolEndpointsFormItem from '../elements/ToolEndpointsFormItem';

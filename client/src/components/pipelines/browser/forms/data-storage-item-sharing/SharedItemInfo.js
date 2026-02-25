@@ -25,7 +25,7 @@ import {
   message,
   Popover
 } from 'antd';
-import { TeamOutlined } from '@ant-design/icons';
+import {TeamOutlined} from '@ant-design/icons';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import DataStorageItemPermissionsForm from './DataStorageItemPermissionsForm';

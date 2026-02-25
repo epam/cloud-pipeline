@@ -27,7 +27,7 @@ import {
   Row,
   Select
 } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import {PlusOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import QuotaThreshold from './quotas-threshold';
 import {quotaGroupNames} from './utilities/quota-groups';

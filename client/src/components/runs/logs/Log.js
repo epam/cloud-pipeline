@@ -34,7 +34,7 @@ import {
   Row,
   Spin
 } from 'antd';
-import { ClockCircleFilled, ClockCircleOutlined, DownOutlined, ExclamationCircleFilled, ExclamationCircleOutlined, LoadingOutlined } from '@ant-design/icons';
+import {ClockCircleFilled, ClockCircleOutlined, DownOutlined, ExclamationCircleFilled, ExclamationCircleOutlined, LoadingOutlined} from '@ant-design/icons';
 import SplitPane from 'react-split-pane';
 import PausePipeline from '../../../models/pipelines/PausePipeline';
 import ResumePipeline from '../../../models/pipelines/ResumePipeline';

@@ -28,7 +28,7 @@ import {
   Row,
   Table
 } from 'antd';
-import { CheckCircleFilled } from '@ant-design/icons';
+import {CheckCircleFilled} from '@ant-design/icons';
 import roleModel from '../../../../utils/roleModel';
 import LoadingView from '../../../special/LoadingView';
 import styles from './Browser.css';

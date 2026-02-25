@@ -22,7 +22,7 @@ import {
   Tooltip,
   Modal
 } from 'antd';
-import { InfoCircleFilled } from '@ant-design/icons';
+import {InfoCircleFilled} from '@ant-design/icons';
 import {computed, observable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {STORAGE_CLASSES} from '../../pipelines/browser/data-storage';

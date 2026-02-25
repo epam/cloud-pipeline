@@ -21,7 +21,7 @@ import {
   Dropdown,
   Menu
 } from 'antd';
-import { EllipsisOutlined, PaperClipOutlined } from '@ant-design/icons';
+import {EllipsisOutlined, PaperClipOutlined} from '@ant-design/icons';
 import Markdown from '../../../markdown';
 import displayDate from '../../../../../utils/displayDate';
 import getAuthor from '../utilities/get-author';

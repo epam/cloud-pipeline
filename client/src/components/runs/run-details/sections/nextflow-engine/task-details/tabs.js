@@ -1,5 +1,5 @@
 import React from 'react';
-import { AreaChartOutlined, BarsOutlined, CodeOutlined } from '@ant-design/icons';
+import {AreaChartOutlined, BarsOutlined, CodeOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import TaskRuntimePlainTextLogs from './runtime-data/task-runtime-plain-text-logs';
 import styles from './task-details.css';

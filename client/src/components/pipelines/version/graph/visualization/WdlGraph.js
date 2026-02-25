@@ -47,7 +47,7 @@ import {
   Popover,
   Tooltip
 } from 'antd';
-import { AppstoreOutlined, ArrowsAltOutlined, CloseOutlined, MinusCircleOutlined, PlusCircleOutlined, ReloadOutlined, SaveOutlined, ScanOutlined, SearchOutlined, ShrinkOutlined, SwapOutlined } from '@ant-design/icons';
+import {AppstoreOutlined, ArrowsAltOutlined, CloseOutlined, MinusCircleOutlined, PlusCircleOutlined, ReloadOutlined, SaveOutlined, ScanOutlined, SearchOutlined, ShrinkOutlined, SwapOutlined} from '@ant-design/icons';
 import WdlPropertiesForm from './forms/wdl-properties-form';
 import {
   generatePipelineCommand,

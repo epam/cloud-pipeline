@@ -4,7 +4,7 @@ import {
   inject,
   observer} from 'mobx-react';
 import classNames from 'classnames';
-import { CloseOutlined, FileOutlined } from '@ant-design/icons';
+import {CloseOutlined, FileOutlined} from '@ant-design/icons';
 import displaySize from '../../../../../utils/displaySize';
 import styles from './upload-files-area.css';
 

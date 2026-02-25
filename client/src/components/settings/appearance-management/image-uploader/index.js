@@ -24,7 +24,7 @@ import {
   Tooltip,
   Checkbox
 } from 'antd';
-import { CameraOutlined, DeleteOutlined, ExclamationCircleOutlined, LoadingOutlined, RollbackOutlined } from '@ant-design/icons';
+import {CameraOutlined, DeleteOutlined, ExclamationCircleOutlined, LoadingOutlined, RollbackOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import displaySize from '../../../../utils/displaySize';
 import styles from './image-uploader.css';

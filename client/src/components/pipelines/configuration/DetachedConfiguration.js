@@ -29,7 +29,7 @@ import {Row,
   Tabs,
   message
 } from 'antd';
-import { PlusOutlined, SettingOutlined } from '@ant-design/icons';
+import {PlusOutlined, SettingOutlined} from '@ant-design/icons';
 import LaunchPipelineForm from '../launch/form/LaunchPipelineForm';
 import pipelines from '../../../models/pipelines/Pipelines';
 import pipelinesLibrary from '../../../models/folders/FolderLoadTree';

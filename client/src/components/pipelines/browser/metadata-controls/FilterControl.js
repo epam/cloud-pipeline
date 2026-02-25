@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {Popover, Button, Select, Checkbox} from 'antd';
-import { CloseOutlined } from '@ant-design/icons';
+import {CloseOutlined} from '@ant-design/icons';
 import {defaultSorter} from '../../../../utils/sorting';
 
 function tagsAreEqual (tagsA, tagsB) {

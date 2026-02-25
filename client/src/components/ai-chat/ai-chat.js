@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {Alert} from 'antd';
-import { DownCircleOutlined } from '@ant-design/icons';
+import {DownCircleOutlined} from '@ant-design/icons';
 import {observable, computed} from 'mobx';
 import {observer} from 'mobx-react';
 import classNames from 'classnames';

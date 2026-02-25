@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import styles from './file-preview.css';
 import {Alert} from 'antd';
-import { LoadingOutlined } from '@ant-design/icons';
+import {LoadingOutlined} from '@ant-design/icons';
 import {getFilePreviewConfiguration} from './utils';
 
 class FilePreview extends React.Component {

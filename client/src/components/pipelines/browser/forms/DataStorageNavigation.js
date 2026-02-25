@@ -23,7 +23,7 @@ import {Row,
   Input,
   message
 } from 'antd';
-import { LinkOutlined } from '@ant-design/icons';
+import {LinkOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import styles from './DataStorageNavigation.css';
 import {getDataStorageItemFullPath} from '../../launch/dialogs/BucketBrowser';

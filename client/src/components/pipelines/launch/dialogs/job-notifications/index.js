@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Button, Checkbox, Modal} from 'antd';
-import { PlusOutlined, SettingOutlined } from '@ant-design/icons';
+import {PlusOutlined, SettingOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import {notificationArraysAreEqual} from './notifications-equal';
 import JobNotification from './job-notification';

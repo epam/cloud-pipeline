@@ -32,7 +32,7 @@ import {
 import {Button,
   Select
 } from 'antd';
-import { CloseOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import {CloseOutlined, DeleteOutlined, PlusOutlined} from '@ant-design/icons';
 
 function Statistics (props) {
   const {

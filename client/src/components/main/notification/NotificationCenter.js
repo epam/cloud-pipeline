@@ -29,7 +29,7 @@ import {message,
   Button,
   Row
 } from 'antd';
-import { CloseCircleOutlined, ExclamationCircleOutlined, InfoCircleOutlined, LoadingOutlined } from '@ant-design/icons';
+import {CloseCircleOutlined, ExclamationCircleOutlined, InfoCircleOutlined, LoadingOutlined} from '@ant-design/icons';
 import moment from 'moment-timezone';
 import ConfirmNotification from '../../../models/notifications/ConfirmNotification';
 import {DEFAULT_PAGE_SIZE} from '../../../models/notifications/CurrentUserNotifications';

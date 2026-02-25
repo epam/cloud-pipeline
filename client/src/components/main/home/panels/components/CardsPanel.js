@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Card, Icon, Input, Popover, Row} from 'antd';
-import { StarFilled, StarOutlined } from '@ant-design/icons';
+import {StarFilled, StarOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import renderSeparator from './renderSeparator';
 import styles from './CardsPanel.css';

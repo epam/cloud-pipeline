@@ -20,7 +20,7 @@ import classNames from 'classnames';
 import {observable} from 'mobx';
 import {Provider, observer} from 'mobx-react';
 import {Button} from 'antd';
-import { ArrowsAltOutlined, CloseOutlined, SettingOutlined, ShrinkOutlined } from '@ant-design/icons';
+import {ArrowsAltOutlined, CloseOutlined, SettingOutlined, ShrinkOutlined} from '@ant-design/icons';
 import HCSImageViewer from '../../../special/hcs-image/hcs-image-viewer';
 import {createObjectStorageWrapper} from '../../../../utils/object-storage';
 import dataStorageAvailable from '../../../../models/dataStorage/DataStorageAvailable';

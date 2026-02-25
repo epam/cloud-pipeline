@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import styles from './plugins.css';
 import {Button, Select} from 'antd';
-import { DeleteOutlined } from '@ant-design/icons';
+import {DeleteOutlined} from '@ant-design/icons';
 import {getPluginTypeName, UI_PLUGIN_TYPE_LAUNCH_FORM} from '../utilities';
 import UsersRolesSelect from '../../special/users-roles-select';
 

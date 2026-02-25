@@ -20,7 +20,7 @@ import {
 import PropTypes from 'prop-types';
 import {Row
 } from 'antd';
-import { CloseCircleOutlined, CloseOutlined, ExclamationCircleOutlined, InfoCircleOutlined, MailOutlined } from '@ant-design/icons';
+import {CloseCircleOutlined, CloseOutlined, ExclamationCircleOutlined, InfoCircleOutlined, MailOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import displayDate from '../../../utils/displayDate';
 import PreviewNotification from './PreviewNotification';

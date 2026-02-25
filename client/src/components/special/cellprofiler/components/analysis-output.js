@@ -22,7 +22,7 @@ import {
 import {
   Alert
 } from 'antd';
-import { CloseOutlined, LoadingOutlined } from '@ant-design/icons';
+import {CloseOutlined, LoadingOutlined} from '@ant-design/icons';
 import FileSaver from 'file-saver';
 import AnalysisOutputTable, {fetchContents} from './analysis-output-table';
 import {generateResourceUrl} from '../model/analysis/output-utilities';

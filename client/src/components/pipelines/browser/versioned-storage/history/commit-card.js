@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {message, Button} from 'antd';
-import { DownloadOutlined, RetweetOutlined, TagFilled } from '@ant-design/icons';
+import {DownloadOutlined, RetweetOutlined, TagFilled} from '@ant-design/icons';
 import CommitDiffButton from './commit-diff-button';
 import UserName from '../../../../special/UserName';
 import displayDate from '../../../../../utils/displayDate';

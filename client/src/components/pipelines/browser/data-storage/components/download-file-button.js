@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
 import {message} from 'antd';
-import { DownloadOutlined, LoadingOutlined } from '@ant-design/icons';
+import {DownloadOutlined, LoadingOutlined} from '@ant-design/icons';
 import Dropdown from 'rc-dropdown';
 import Menu, {MenuItem} from 'rc-menu';
 import GenerateDownloadUrlRequest from '../../../../../models/dataStorage/GenerateDownloadUrl';

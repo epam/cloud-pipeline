@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {Button, Input, message} from 'antd';
-import { ClockCircleFilled, ClockCircleOutlined } from '@ant-design/icons';
+import {ClockCircleFilled, ClockCircleOutlined} from '@ant-design/icons';
 import {inject} from 'mobx-react';
 import styles from './run-logs.css';
 import SplitPane from 'react-split-pane';

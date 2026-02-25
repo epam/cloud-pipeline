@@ -4,7 +4,7 @@ import classNames from 'classnames';
 import GetRunTaskRuntimeData from '../../../../../../../models/run-engines/fetch-task-runtime-data';
 import styles from './runtime-data.css';
 import {Alert} from 'antd';
-import { LoadingOutlined } from '@ant-design/icons';
+import {LoadingOutlined} from '@ant-design/icons';
 import {
   isRunCompleted,
   NO_DATA_AVAILABLE_COMPLETED_JOB_MESSAGE,

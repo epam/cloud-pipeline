@@ -25,7 +25,7 @@ import {
   Button,
   Table
 } from 'antd';
-import { EditOutlined, PlusOutlined } from '@ant-design/icons';
+import {EditOutlined, PlusOutlined} from '@ant-design/icons';
 import CloudCredentialsProfileForm from './cloud-credentials-profile-form';
 import LoadingView from '../../special/LoadingView';
 import styles from './cloud-credentials-form.css';

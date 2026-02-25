@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import styles from './HomePage.css';
 import {Row, Icon, Tooltip} from 'antd';
-import { CloseOutlined, QuestionCircleFilled } from '@ant-design/icons';
+import {CloseOutlined, QuestionCircleFilled} from '@ant-design/icons';
 import {
   Panels,
   PanelIcons,

@@ -11,7 +11,7 @@ import {
   Modal,
   Table
 } from 'antd';
-import { CloseCircleOutlined, DeleteOutlined, EditOutlined, ExclamationCircleOutlined, InfoCircleOutlined, PlusOutlined } from '@ant-design/icons';
+import {CloseCircleOutlined, DeleteOutlined, EditOutlined, ExclamationCircleOutlined, InfoCircleOutlined, PlusOutlined} from '@ant-design/icons';
 import EditSystemNotificationForm from './forms/EditSystemNotificationForm';
 import Notifications from '../../models/notifications/Notifications';
 import UpdateNotification from '../../models/notifications/UpdateNotification';

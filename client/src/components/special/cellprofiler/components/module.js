@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {Button} from 'antd';
-import { DeleteOutlined, DownOutlined, PictureOutlined, UpOutlined } from '@ant-design/icons';
+import {DeleteOutlined, DownOutlined, PictureOutlined, UpOutlined} from '@ant-design/icons';
 import {observer} from 'mobx-react';
 import CellProfilerParameter from './parameter';
 import styles from './cell-profiler.css';

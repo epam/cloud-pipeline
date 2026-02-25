@@ -26,7 +26,7 @@ import {
   Input,
   message
 } from 'antd';
-import { ArrowsAltOutlined, EyeFilled, LeftOutlined } from '@ant-design/icons';
+import {ArrowsAltOutlined, EyeFilled, LeftOutlined} from '@ant-design/icons';
 import localization from '../../../../../utils/localization';
 import {SplitPanel} from '../../../../special/splitPanel';
 import PipelineCodeForm from '../../../version/code/forms/PipelineCodeForm';

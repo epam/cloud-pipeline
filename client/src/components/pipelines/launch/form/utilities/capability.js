@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {Tooltip} from 'antd';
-import { CheckCircleFilled, EllipsisOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import {CheckCircleFilled, EllipsisOutlined, QuestionCircleOutlined} from '@ant-design/icons';
 import {inject, observer} from 'mobx-react';
 import parseCapabilityCloudSetting from './capabilities-utilities/parse-cloud-setting';
 

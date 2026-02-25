@@ -30,7 +30,7 @@ import {
   message,
   Table
 } from 'antd';
-import { LeftOutlined, RightOutlined } from '@ant-design/icons';
+import {LeftOutlined, RightOutlined} from '@ant-design/icons';
 import {
   Period,
   getPeriod,

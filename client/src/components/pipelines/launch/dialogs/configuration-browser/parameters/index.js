@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import {
   Button
 } from 'antd';
-import { DownOutlined } from '@ant-design/icons';
+import {DownOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import {observer, inject} from 'mobx-react';
 import Menu, {MenuItem} from 'rc-menu';

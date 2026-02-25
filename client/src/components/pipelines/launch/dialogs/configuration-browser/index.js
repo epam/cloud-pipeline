@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Alert, Button, Icon, Modal, Tree} from 'antd';
-import { DownOutlined } from '@ant-design/icons';
+import {DownOutlined} from '@ant-design/icons';
 import {inject} from 'mobx-react';
 import classNames from 'classnames';
 import Menu, {MenuItem} from 'rc-menu';

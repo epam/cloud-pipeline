@@ -21,7 +21,7 @@ import {computed} from 'mobx';
 import classNames from 'classnames';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import {Icon, Row} from 'antd';
-import { LoadingOutlined } from '@ant-design/icons';
+import {LoadingOutlined} from '@ant-design/icons';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
 import {renderAttributes} from './renderAttributes';

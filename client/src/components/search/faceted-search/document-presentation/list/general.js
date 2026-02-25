@@ -17,7 +17,7 @@
 import React from 'react';
 import getDocumentName from '../utilities/get-document-name';
 import {Icon} from 'antd';
-import { UserOutlined } from '@ant-design/icons';
+import {UserOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import styles from './document-list-presentation.css';
 import UserName from '../../../../special/UserName';

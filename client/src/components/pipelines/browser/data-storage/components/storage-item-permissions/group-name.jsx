@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { TeamOutlined } from '@ant-design/icons';
+import {TeamOutlined} from '@ant-design/icons';
 
 export function getGroupName (group, removePrefix = false) {
   let groupName = group;

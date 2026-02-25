@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Row, Spin} from 'antd';
-import { SettingOutlined } from '@ant-design/icons';
+import {SettingOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import {COMPUTED_DAYS, DAYS, MONTHS, ORDINALS, getOrdinalSuffix} from './forms';
 import {isTimeZoneEqualCurrent, CronConvert, ruleModes} from './cron-convert';

@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import {
   Button
 } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import {PlusOutlined} from '@ant-design/icons';
 import AddDockerRegistryControl
   from '../../../../../components/cluster/hot-node-pool/add-docker-registry-control';
 import styles from './RestrictDockerDialog.css';

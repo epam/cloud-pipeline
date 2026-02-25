@@ -29,7 +29,7 @@ import {Checkbox,
   message,
   Alert
 } from 'antd';
-import { AppstoreOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import {AppstoreOutlined, DeleteOutlined, PlusOutlined} from '@ant-design/icons';
 import {ItemTypes, generateTreeData} from '../model/treeStructureFunctions';
 import styles from './Browser.css';
 import roleModel from '../../../utils/roleModel';

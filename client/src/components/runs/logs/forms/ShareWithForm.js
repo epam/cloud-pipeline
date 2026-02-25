@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Table, Row, Col, Button, AutoComplete, Modal, Checkbox, message} from 'antd';
-import { DeleteOutlined, TeamOutlined, UserAddOutlined, UserOutlined, UsergroupAddOutlined } from '@ant-design/icons';
+import {DeleteOutlined, TeamOutlined, UserAddOutlined, UserOutlined, UsergroupAddOutlined} from '@ant-design/icons';
 import {AccessTypes} from '../../../../models/pipelines/PipelineRunUpdateSids';
 import UserFind from '../../../../models/user/UserFind';
 import GroupFind from '../../../../models/user/GroupFind';

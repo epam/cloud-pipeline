@@ -26,7 +26,7 @@ import {
   Select,
   Button
 } from 'antd';
-import { CaretLeftOutlined, CaretRightOutlined } from '@ant-design/icons';
+import {CaretLeftOutlined, CaretRightOutlined} from '@ant-design/icons';
 import LoadingView from '../../../../special/LoadingView';
 import OmicsJobsImport from '../../../../../models/dataStorage/OmicsJobsImport';
 import displayDate from '../../../../../utils/displayDate';

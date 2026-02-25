@@ -23,7 +23,7 @@ import classNames from 'classnames';
 import {Button,
   Checkbox
 } from 'antd';
-import { DownOutlined, UpOutlined } from '@ant-design/icons';
+import {DownOutlined, UpOutlined} from '@ant-design/icons';
 import ColorPicker from '../../color-picker';
 import styles from './cell-profiler.css';
 

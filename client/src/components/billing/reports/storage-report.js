@@ -22,7 +22,7 @@ import {computed} from 'mobx';
 import {
   Button
 } from 'antd';
-import { CloseOutlined } from '@ant-design/icons';
+import {CloseOutlined} from '@ant-design/icons';
 import {
   BarChart,
   BillingTable,

@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Icon, Tooltip} from 'antd';
-import { ExclamationCircleOutlined, LoadingOutlined } from '@ant-design/icons';
+import {ExclamationCircleOutlined, LoadingOutlined} from '@ant-design/icons';
 import pipelineRunSSHCache from '../../../../../models/pipelines/PipelineRunSSHCache';
 import MultizoneUrl from '../../../../special/multizone-url';
 

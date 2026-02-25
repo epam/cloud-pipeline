@@ -15,7 +15,7 @@
  */
 import React from 'react';
 import PropTypes from 'prop-types';
-import { SolutionOutlined, TeamOutlined, UserOutlined } from '@ant-design/icons';
+import {SolutionOutlined, TeamOutlined, UserOutlined} from '@ant-design/icons';
 
 const types = {
   overall: 'OVERALL',

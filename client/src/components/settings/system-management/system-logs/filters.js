@@ -32,7 +32,7 @@ import {
   Select,
   Tooltip
 } from 'antd';
-import { InfoCircleFilled } from '@ant-design/icons';
+import {InfoCircleFilled} from '@ant-design/icons';
 import moment from 'moment-timezone';
 import SystemLogsFilterDictionaries from '../../../../models/system-logs/filter-dictionaries';
 

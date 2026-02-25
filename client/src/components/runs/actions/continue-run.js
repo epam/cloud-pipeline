@@ -15,7 +15,7 @@
  */
 import React from 'react';
 import {Button, message, Modal} from 'antd';
-import { QuestionCircleFilled } from '@ant-design/icons';
+import {QuestionCircleFilled} from '@ant-design/icons';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import RunName from '../run-name';

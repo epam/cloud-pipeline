@@ -23,7 +23,7 @@ import {
   Icon,
   Menu
 } from 'antd';
-import { CheckCircleFilled, FilterOutlined } from '@ant-design/icons';
+import {CheckCircleFilled, FilterOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import {SearchGroupTypes} from '../../searchGroupTypes';
 import localization from '../../../../utils/localization';

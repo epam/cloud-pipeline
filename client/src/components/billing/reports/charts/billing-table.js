@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import { BarsOutlined, CaretDownOutlined, CaretUpOutlined } from '@ant-design/icons';
+import {BarsOutlined, CaretDownOutlined, CaretUpOutlined} from '@ant-design/icons';
 import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
 import Export from '../export';

@@ -26,7 +26,7 @@ import {
   message,
   Row
 } from 'antd';
-import { DownOutlined, ExportOutlined } from '@ant-design/icons';
+import {DownOutlined, ExportOutlined} from '@ant-design/icons';
 import Menu, {MenuItem, Divider as MenuDivider} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import FileSaver from 'file-saver';

@@ -23,7 +23,7 @@ import {Button,
   Table,
   Tooltip
 } from 'antd';
-import { CloseOutlined } from '@ant-design/icons';
+import {CloseOutlined} from '@ant-design/icons';
 import {
   BarChart,
   BillingTable,

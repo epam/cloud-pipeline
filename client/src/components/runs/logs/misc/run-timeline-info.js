@@ -22,7 +22,7 @@ import moment from 'moment-timezone';
 import {
   Popover
 } from 'antd';
-import { InfoCircleOutlined } from '@ant-design/icons';
+import {InfoCircleOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import getRunDurationInfo, {
   getIntervalDuration,

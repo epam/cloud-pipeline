@@ -28,7 +28,7 @@ import {
   Table,
   Select
 } from 'antd';
-import { DeleteOutlined, TeamOutlined, UserAddOutlined, UserOutlined, UsergroupAddOutlined } from '@ant-design/icons';
+import {DeleteOutlined, TeamOutlined, UserAddOutlined, UserOutlined, UsergroupAddOutlined} from '@ant-design/icons';
 import {isObservableArray, observable, computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';

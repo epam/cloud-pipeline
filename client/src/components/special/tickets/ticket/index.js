@@ -29,7 +29,7 @@ import {
   Dropdown,
   Menu
 } from 'antd';
-import { LeftOutlined, PaperClipOutlined } from '@ant-design/icons';
+import {LeftOutlined, PaperClipOutlined} from '@ant-design/icons';
 import moment from 'moment-timezone';
 import CommentCard from '../special/comment-card';
 import CommentEditor from '../special/comment-editor';

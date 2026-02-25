@@ -25,7 +25,7 @@ import {
   Input,
   Row
 } from 'antd';
-import { LoadingOutlined, RightOutlined } from '@ant-design/icons';
+import {LoadingOutlined, RightOutlined} from '@ant-design/icons';
 import {
   getFiltersState,
   onFilterDropdownVisibilityChangedGenerator,

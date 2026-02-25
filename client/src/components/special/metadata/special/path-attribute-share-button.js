@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Button} from 'antd';
-import { ShareAltOutlined } from '@ant-design/icons';
+import {ShareAltOutlined} from '@ant-design/icons';
 import {getStorageFileAccessInfo} from '../../../../utils/object-storage';
 // eslint-disable-next-line max-len
 import SharedItemInfo from '../../../pipelines/browser/forms/data-storage-item-sharing/SharedItemInfo';

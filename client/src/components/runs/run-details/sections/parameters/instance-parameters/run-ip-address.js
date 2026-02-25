@@ -10,7 +10,7 @@ import {
 import {Dropdown,
   Menu
 } from 'antd';
-import { DownOutlined } from '@ant-design/icons';
+import {DownOutlined} from '@ant-design/icons';
 
 const RunIpAddress = generateRunInstanceParameterValueComponent(
   'nodeIP',

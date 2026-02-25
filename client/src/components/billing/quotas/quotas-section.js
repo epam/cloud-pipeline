@@ -23,7 +23,7 @@ import {computed} from 'mobx';
 import {Button,
   message
 } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import {PlusOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import QuotaDescription from './utilities/quota-description';
 import EditQuotaDialog from './quota-edit-dialog';

@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {Button} from 'antd';
-import { DownloadOutlined, LoadingOutlined } from '@ant-design/icons';
+import {DownloadOutlined, LoadingOutlined} from '@ant-design/icons';
 import {downloadStorageItems} from '../../../../special/download-omics-storage-items';
 
 export default class DownloadOmicsButton extends React.Component {

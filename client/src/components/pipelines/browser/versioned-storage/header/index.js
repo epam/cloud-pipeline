@@ -23,7 +23,7 @@ import {
   Col,
   Button
 } from 'antd';
-import { AppstoreFilled, SettingOutlined } from '@ant-design/icons';
+import {AppstoreFilled, SettingOutlined} from '@ant-design/icons';
 import localization from '../../../../../utils/localization';
 import Breadcrumbs from '../../../../special/Breadcrumbs';
 import roleModel from '../../../../../utils/roleModel';

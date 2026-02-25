@@ -24,7 +24,7 @@ import {
   Alert,
   Select
 } from 'antd';
-import { RightOutlined } from '@ant-design/icons';
+import {RightOutlined} from '@ant-design/icons';
 import DockerImageDetails from '../../../../../../../../cluster/hot-node-pool/docker-image-details';
 
 @inject('dockerRegistries')

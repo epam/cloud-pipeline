@@ -30,7 +30,7 @@ import {
   Checkbox,
   message
 } from 'antd';
-import { EditOutlined, PictureOutlined } from '@ant-design/icons';
+import {EditOutlined, PictureOutlined} from '@ant-design/icons';
 import UsersRolesSelect from '../../../../../special/users-roles-select';
 import CodeEditor from '../../../../../special/CodeEditor';
 import EmailPreview from '../../../../../../components/settings/forms/EmailPreview';

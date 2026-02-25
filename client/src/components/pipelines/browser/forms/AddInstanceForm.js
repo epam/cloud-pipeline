@@ -27,7 +27,7 @@ import {
   Input,
   Select
 } from 'antd';
-import { DeleteOutlined, DownOutlined } from '@ant-design/icons';
+import {DeleteOutlined, DownOutlined} from '@ant-design/icons';
 import Menu, {MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import SelectMetadataItems from './SelectMetadataItems';

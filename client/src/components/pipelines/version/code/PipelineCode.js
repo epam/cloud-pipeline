@@ -34,7 +34,7 @@ import {
   Modal,
   message
 } from 'antd';
-import { DeleteOutlined, FolderOutlined, PlusOutlined } from '@ant-design/icons';
+import {DeleteOutlined, FolderOutlined, PlusOutlined} from '@ant-design/icons';
 import styles from './PipelineCode.css';
 import parseQueryParameters from '../../../../utils/queryParameters';
 import roleModel from '../../../../utils/roleModel';

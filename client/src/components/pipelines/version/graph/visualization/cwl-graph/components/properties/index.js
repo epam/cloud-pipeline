@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import { CloseOutlined } from '@ant-design/icons';
+import {CloseOutlined} from '@ant-design/icons';
 import styles from './cwl-properties.css';
 
 class CWLProperties extends React.PureComponent {

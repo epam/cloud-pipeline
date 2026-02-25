@@ -25,7 +25,7 @@ import {
   Button,
   Alert
 } from 'antd';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import {DeleteOutlined, PlusOutlined} from '@ant-design/icons';
 import moment from 'moment-timezone';
 import {DESTINATIONS} from '../modals';
 import styles from './life-cycle-forms.css';

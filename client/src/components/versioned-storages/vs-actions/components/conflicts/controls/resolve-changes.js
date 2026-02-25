@@ -21,7 +21,7 @@ import {
 import {
   Button
 } from 'antd';
-import { ArrowLeftOutlined, ArrowRightOutlined, RollbackOutlined } from '@ant-design/icons';
+import {ArrowLeftOutlined, ArrowRightOutlined, RollbackOutlined} from '@ant-design/icons';
 import ChangeStatuses from '../utilities/changes/statuses';
 import {HeadBranch, RemoteBranch} from '../utilities/conflicted-file/branches';
 import styles from './resolve-changes.css';

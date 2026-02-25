@@ -21,7 +21,7 @@ import {
   Input,
   Select
 } from 'antd';
-import { DeleteOutlined } from '@ant-design/icons';
+import {DeleteOutlined} from '@ant-design/icons';
 
 const Types = {
   any: 'any',

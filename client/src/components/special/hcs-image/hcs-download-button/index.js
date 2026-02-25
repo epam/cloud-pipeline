@@ -23,7 +23,7 @@ import {Button,
   Dropdown,
   message
 } from 'antd';
-import { CameraFilled, DownloadOutlined } from '@ant-design/icons';
+import {CameraFilled, DownloadOutlined} from '@ant-design/icons';
 import Menu, {MenuItem} from 'rc-menu';
 import FileSaver from 'file-saver';
 import {

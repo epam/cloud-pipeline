@@ -24,7 +24,7 @@ import {
   Button,
   Select
 } from 'antd';
-import { DeleteOutlined } from '@ant-design/icons';
+import {DeleteOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import styles from './configure-run-as-permissions.css';
 

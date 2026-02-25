@@ -26,7 +26,7 @@ import {Alert,
   Dropdown,
   message
 } from 'antd';
-import { CodeOutlined } from '@ant-design/icons';
+import {CodeOutlined} from '@ant-design/icons';
 import Menu, {MenuItem} from 'rc-menu';
 import LoadingView from '../../../special/LoadingView';
 import SubSettings from '../../sub-settings';

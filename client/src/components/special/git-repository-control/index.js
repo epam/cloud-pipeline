@@ -26,7 +26,7 @@ import {Button,
   Popover,
   Row
 } from 'antd';
-import { DownOutlined } from '@ant-design/icons';
+import {DownOutlined} from '@ant-design/icons';
 
 const CloneOption = {
   https: 'https',

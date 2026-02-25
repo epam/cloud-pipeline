@@ -24,7 +24,7 @@ import {
   Button,
   Row
 } from 'antd';
-import { LoadingOutlined } from '@ant-design/icons';
+import {LoadingOutlined} from '@ant-design/icons';
 import displaySize from '../../../utils/displaySize';
 import DataStorageItemSize from '../../../models/dataStorage/DataStorageItemSize';
 

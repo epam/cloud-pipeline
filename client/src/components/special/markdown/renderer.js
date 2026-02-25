@@ -18,7 +18,7 @@ import React from 'react';
 import ReactDOMServer from 'react-dom/server';
 import Remarkable from 'remarkable';
 import highlightJs from 'highlight.js';
-import { ForkOutlined, HddOutlined, InboxOutlined, SettingOutlined, ToolOutlined } from '@ant-design/icons';
+import {ForkOutlined, HddOutlined, InboxOutlined, SettingOutlined, ToolOutlined} from '@ant-design/icons';
 import {ItemTypes} from '../../pipelines/model/treeStructureFunctions';
 import {
   fetchCloudPipelineLinks,

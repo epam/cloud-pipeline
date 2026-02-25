@@ -24,7 +24,7 @@ import {
   Alert,
   Checkbox
 } from 'antd';
-import { LoadingOutlined } from '@ant-design/icons';
+import {LoadingOutlined} from '@ant-design/icons';
 import UserName from '../../../../special/UserName';
 import styles from './ome-tiff-annotations.css';
 

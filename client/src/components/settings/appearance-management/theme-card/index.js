@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Radio} from 'antd';
-import { CheckCircleOutlined, ClockCircleOutlined, ForkOutlined, HomeOutlined, PlayCircleFilled, PlayCircleOutlined } from '@ant-design/icons';
+import {CheckCircleOutlined, ClockCircleOutlined, ForkOutlined, HomeOutlined, PlayCircleFilled, PlayCircleOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 
 import styles from './theme-card.css';

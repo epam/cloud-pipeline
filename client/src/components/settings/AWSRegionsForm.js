@@ -40,7 +40,7 @@ import {
   Col,
   AutoComplete
 } from 'antd';
-import { CloseOutlined, DeleteOutlined, InfoCircleFilled, PlusOutlined, TeamOutlined, UserAddOutlined, UserOutlined, UsergroupAddOutlined } from '@ant-design/icons';
+import {CloseOutlined, DeleteOutlined, InfoCircleFilled, PlusOutlined, TeamOutlined, UserAddOutlined, UserOutlined, UsergroupAddOutlined} from '@ant-design/icons';
 import Menu, {MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import AWSRegionUpdate from '../../models/dataStorage/AWSRegionUpdate';

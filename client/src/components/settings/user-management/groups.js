@@ -29,7 +29,7 @@ import {
   Modal,
   message
 } from 'antd';
-import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import {DeleteOutlined, EditOutlined, PlusOutlined} from '@ant-design/icons';
 import RoleRemove from '../../../models/user/RoleRemove';
 import EditRoleDialog from '../forms/EditRoleDialog';
 import LoadingView from '../../special/LoadingView';

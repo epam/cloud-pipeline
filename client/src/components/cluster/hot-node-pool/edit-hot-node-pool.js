@@ -30,7 +30,7 @@ import {
   Popover,
   Select
 } from 'antd';
-import { DeleteOutlined, PlusOutlined, QuestionCircleFilled } from '@ant-design/icons';
+import {DeleteOutlined, PlusOutlined, QuestionCircleFilled} from '@ant-design/icons';
 import classNames from 'classnames';
 import InstanceDetails from './instance-details';
 import AddDockerRegistryControl from './add-docker-registry-control';

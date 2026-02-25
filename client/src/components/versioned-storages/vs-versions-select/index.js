@@ -20,7 +20,7 @@ import {
   Alert,
   Select
 } from 'antd';
-import { LoadingOutlined } from '@ant-design/icons';
+import {LoadingOutlined} from '@ant-design/icons';
 import LoadVSCommits from '../../../models/versioned-storage/load-commits';
 import styles from './vs-versions-select.css';
 import UserName from '../../special/UserName';

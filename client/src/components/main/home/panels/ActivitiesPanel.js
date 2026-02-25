@@ -29,7 +29,7 @@ import {Alert,
   Card,
   Row
 } from 'antd';
-import { FolderOutlined, ForkOutlined, HddOutlined, SettingOutlined, ToolOutlined } from '@ant-design/icons';
+import {FolderOutlined, ForkOutlined, HddOutlined, SettingOutlined, ToolOutlined} from '@ant-design/icons';
 import roleModel from '../../../../utils/roleModel';
 import styles from './Panel.css';
 import moment from 'moment-timezone';

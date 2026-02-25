@@ -30,7 +30,7 @@ import {
   Row,
   Select
 } from 'antd';
-import { EditOutlined, PictureOutlined } from '@ant-design/icons';
+import {EditOutlined, PictureOutlined} from '@ant-design/icons';
 import CodeEditor from '../../special/CodeEditor';
 import compareArrays from '../../../utils/compareArrays';
 import EmailPreview from './EmailPreview';

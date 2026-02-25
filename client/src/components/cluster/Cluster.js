@@ -30,7 +30,7 @@ import {
   Table,
   Tooltip
 } from 'antd';
-import { CloudOutlined } from '@ant-design/icons';
+import {CloudOutlined} from '@ant-design/icons';
 import clusterNodes, {MACHINE_TYPES} from '../../models/cluster/ClusterNodes';
 import cloudNodes from '../../models/cluster/CloudNodes';
 import NodesFilter from '../../models/cluster/FilterClusterNodes';

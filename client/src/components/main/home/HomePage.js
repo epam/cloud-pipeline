@@ -28,7 +28,7 @@ import {AsyncLayout,
 import {Button,
   Row
 } from 'antd';
-import { SettingOutlined } from '@ant-design/icons';
+import {SettingOutlined} from '@ant-design/icons';
 import PipelineRunFilter from '../../../models/pipelines/PipelineRunSingleFilter';
 import PipelineRunServices from '../../../models/pipelines/PipelineRunServices';
 import roleModel from '../../../utils/roleModel';

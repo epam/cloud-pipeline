@@ -32,7 +32,7 @@ import {
   Select,
   Tooltip
 } from 'antd';
-import { BarsOutlined, DownloadOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import {BarsOutlined, DownloadOutlined, EditOutlined, PlusOutlined} from '@ant-design/icons';
 import Menu, {MenuItem} from 'rc-menu';
 import Roles from '../../../models/user/Roles';
 import UserCreate from '../../../models/user/UserCreate';

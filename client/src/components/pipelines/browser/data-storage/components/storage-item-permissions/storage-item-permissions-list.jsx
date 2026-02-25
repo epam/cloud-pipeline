@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Button, Checkbox, Table} from 'antd';
-import { DeleteOutlined, UserAddOutlined, UsergroupAddOutlined } from '@ant-design/icons';
+import {DeleteOutlined, UserAddOutlined, UsergroupAddOutlined} from '@ant-design/icons';
 import {getSIDKey, normalizePermissions, parseSIDKey} from './utilities';
 import UserName from '../../../../../special/UserName';
 import PickUserModal from './pick-user-modal';

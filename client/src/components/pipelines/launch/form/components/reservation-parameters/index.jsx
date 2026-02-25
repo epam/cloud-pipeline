@@ -8,7 +8,7 @@ import {
   Select,
   Slider
 } from 'antd';
-import { CheckCircleFilled, CloseCircleFilled, ExclamationCircleFilled, LoadingOutlined } from '@ant-design/icons';
+import {CheckCircleFilled, CloseCircleFilled, ExclamationCircleFilled, LoadingOutlined} from '@ant-design/icons';
 import {
   getReservationParametersConfig,
   correctReservationParameters,

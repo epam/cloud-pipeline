@@ -24,7 +24,7 @@ import {
   Row,
   Tooltip
 } from 'antd';
-import { UserOutlined } from '@ant-design/icons';
+import {UserOutlined} from '@ant-design/icons';
 import {compareUserNames, compareUserNamesWithoutDomain} from '../../utils/users-filters';
 
 function getAttribute (attributes, ...attribute) {

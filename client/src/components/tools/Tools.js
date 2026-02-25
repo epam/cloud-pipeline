@@ -28,7 +28,7 @@ import {
   Col,
   message
 } from 'antd';
-import { InfoCircleOutlined } from '@ant-design/icons';
+import {InfoCircleOutlined} from '@ant-design/icons';
 import {Link} from 'react-router';
 import classNames from 'classnames';
 import ToolsGroupPrivateCreate from '../../models/tools/ToolsGroupPrivateCreate';

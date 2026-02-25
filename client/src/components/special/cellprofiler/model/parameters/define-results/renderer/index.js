@@ -23,7 +23,7 @@ import {computed,
   isObservableArray} from 'mobx';
 import {Button
 } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import {PlusOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import generateId from '../../../common/generate-id';
 import OutputProperty from './output-property';

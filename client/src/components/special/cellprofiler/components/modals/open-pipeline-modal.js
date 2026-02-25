@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Alert, Button, Checkbox, message, Modal, Table} from 'antd';
-import { LoadingOutlined } from '@ant-design/icons';
+import {LoadingOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import {observer} from 'mobx-react';
 import {loadAvailablePipelineGroups} from '../../model/analysis/analysis-pipeline-management';

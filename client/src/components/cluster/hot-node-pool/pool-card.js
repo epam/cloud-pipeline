@@ -22,7 +22,7 @@ import {
   Button,
   Progress
 } from 'antd';
-import { AreaChartOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
+import {AreaChartOutlined, DeleteOutlined, EditOutlined} from '@ant-design/icons';
 import moment from 'moment-timezone';
 import classNames from 'classnames';
 import DockerImageDetails from './docker-image-details';

@@ -20,7 +20,7 @@ import {
   observer} from 'mobx-react';
 import {Button
 } from 'antd';
-import { CheckOutlined } from '@ant-design/icons';
+import {CheckOutlined} from '@ant-design/icons';
 import {HeadBranch, RemoteBranch} from './utilities/conflicted-file/branches';
 import styles from './conflicts.css';
 

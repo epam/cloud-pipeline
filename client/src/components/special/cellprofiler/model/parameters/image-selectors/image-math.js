@@ -22,7 +22,7 @@ import {Button,
   Input,
   Select
 } from 'antd';
-import { DeleteOutlined } from '@ant-design/icons';
+import {DeleteOutlined} from '@ant-design/icons';
 import {getFilesForModule} from '../file-parameter';
 import {observer} from 'mobx-react';
 import styles from './image-selectors.css';

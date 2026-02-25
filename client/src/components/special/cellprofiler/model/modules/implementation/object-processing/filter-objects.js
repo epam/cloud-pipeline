@@ -23,7 +23,7 @@ import {Button,
   Checkbox,
   Input
 } from 'antd';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import {DeleteOutlined, PlusOutlined} from '@ant-design/icons';
 import {AnalysisTypes} from '../../../common/analysis-types';
 import MeasurementSelector, {
   AreaShapeMeasurements,

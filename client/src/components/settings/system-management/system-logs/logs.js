@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Button, message, Table} from 'antd';
-import { CaretLeftOutlined, CaretRightOutlined } from '@ant-design/icons';
+import {CaretLeftOutlined, CaretRightOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import displayDate from '../../../../utils/displayDate';
 import SystemLogsFilter from '../../../../models/system-logs/filter';

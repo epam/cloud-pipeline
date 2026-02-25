@@ -27,7 +27,7 @@ import {Alert,
   Spin,
   message
 } from 'antd';
-import { LoadingOutlined } from '@ant-design/icons';
+import {LoadingOutlined} from '@ant-design/icons';
 import {Environment, LaunchFormInfo, ParameterGroup} from './index';
 import LaunchFormStore from './launch-form-store';
 import {getDockerImage} from '../../../../utils/get-docker-image';

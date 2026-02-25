@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {Alert, Pagination} from 'antd';
-import { DownOutlined, LoadingOutlined, UpOutlined } from '@ant-design/icons';
+import {DownOutlined, LoadingOutlined, UpOutlined} from '@ant-design/icons';
 import displayDate from '../../../../../../../utils/displayDate';
 import {NextflowTaskStatus} from '../utilities';
 import TasksTableTagFilter from './tasks-table-tag-filter';

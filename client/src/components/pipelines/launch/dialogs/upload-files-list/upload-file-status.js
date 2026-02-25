@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {Progress} from 'antd';
-import { CheckCircleFilled, ExclamationCircleFilled, LoadingOutlined } from '@ant-design/icons';
+import {CheckCircleFilled, ExclamationCircleFilled, LoadingOutlined} from '@ant-design/icons';
 import styles from './upload-files-list.css';
 import displaySize from '../../../../../utils/displaySize';
 

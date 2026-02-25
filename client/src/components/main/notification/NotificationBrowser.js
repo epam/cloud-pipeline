@@ -29,7 +29,7 @@ import {
   Select,
   Spin
 } from 'antd';
-import { MailOutlined } from '@ant-design/icons';
+import {MailOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import ReadMessage from '../../../models/notifications/ReadMessage';
 import NotificationsRequest from '../../../models/notifications/CurrentUserNotificationsPaging';

@@ -25,7 +25,7 @@ import {
   Row,
   Dropdown
 } from 'antd';
-import { DownOutlined, ExclamationCircleFilled, ExclamationCircleOutlined } from '@ant-design/icons';
+import {DownOutlined, ExclamationCircleFilled, ExclamationCircleOutlined} from '@ant-design/icons';
 import roleModel from '../../../utils/roleModel';
 import preferences from '../../../models/preferences/PreferencesLoad';
 

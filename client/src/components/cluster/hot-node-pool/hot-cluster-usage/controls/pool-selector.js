@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Dropdown, Menu} from 'antd';
-import { CheckOutlined, SettingOutlined } from '@ant-design/icons';
+import {CheckOutlined, SettingOutlined} from '@ant-design/icons';
 import PoolShortDescription from '../../pool-short-description';
 import styles from './pool-selector.css';
 

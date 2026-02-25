@@ -20,7 +20,7 @@ import {
 import {Button,
   Row
 } from 'antd';
-import { CaretLeftOutlined, CaretRightOutlined } from '@ant-design/icons';
+import {CaretLeftOutlined, CaretRightOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import styles from './storage-pagination.css';
 

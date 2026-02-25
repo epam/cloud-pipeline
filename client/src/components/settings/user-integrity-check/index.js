@@ -29,7 +29,7 @@ import {
   Select,
   Tooltip
 } from 'antd';
-import { CaretRightOutlined, ExclamationCircleOutlined, InfoCircleFilled, LockOutlined } from '@ant-design/icons';
+import {CaretRightOutlined, ExclamationCircleOutlined, InfoCircleFilled, LockOutlined} from '@ant-design/icons';
 import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import updateUserMetadata from './update-user-metadata';

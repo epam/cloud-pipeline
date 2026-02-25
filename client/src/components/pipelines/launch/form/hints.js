@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {Popover, Row} from 'antd';
-import { QuestionCircleFilled } from '@ant-design/icons';
+import {QuestionCircleFilled} from '@ant-design/icons';
 import styles from './LaunchPipelineForm.css';
 
 function renderHint (localizedStringFn, hint, placement, style) {

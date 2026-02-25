@@ -23,7 +23,7 @@ import {Button,
   Input,
   Row
 } from 'antd';
-import { CaretRightOutlined } from '@ant-design/icons';
+import {CaretRightOutlined} from '@ant-design/icons';
 import registryName from './registryName';
 import DockerRegistriesGroupsDropdownContent from './DockerRegistriesGroupsDropdownContent';
 import styles from './Tools.css';

@@ -27,7 +27,7 @@ import {
   Button,
   Modal
 } from 'antd';
-import { BarsOutlined, DownloadOutlined } from '@ant-design/icons';
+import {BarsOutlined, DownloadOutlined} from '@ant-design/icons';
 import Menu, {MenuItem, Divider} from 'rc-menu';
 import FileSaver from 'file-saver';
 import ExportConfigurationModal from './configuration-modal';

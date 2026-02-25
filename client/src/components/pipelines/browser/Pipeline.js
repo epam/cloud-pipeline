@@ -42,7 +42,7 @@ import {Alert,
   Select,
   Table
 } from 'antd';
-import { AppstoreFilled, CheckCircleFilled, CopyOutlined, EditOutlined, FolderOutlined, ForkOutlined, SettingOutlined, TagFilled } from '@ant-design/icons';
+import {AppstoreFilled, CheckCircleFilled, CopyOutlined, EditOutlined, FolderOutlined, ForkOutlined, SettingOutlined, TagFilled} from '@ant-design/icons';
 import Menu, {MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import EditPipelineForm from '../version/forms/EditPipelineForm';

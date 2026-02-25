@@ -24,7 +24,7 @@ import {
   Tag,
   Spin
 } from 'antd';
-import { DownOutlined } from '@ant-design/icons';
+import {DownOutlined} from '@ant-design/icons';
 import styles from './styles.css';
 
 class MultiSelect extends React.Component {

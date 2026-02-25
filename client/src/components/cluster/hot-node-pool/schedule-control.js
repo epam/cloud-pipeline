@@ -21,7 +21,7 @@ import {
   Select,
   TimePicker
 } from 'antd';
-import { DeleteOutlined } from '@ant-design/icons';
+import {DeleteOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import moment from 'moment-timezone';
 import formStyles from './edit-hot-node-pool.css';

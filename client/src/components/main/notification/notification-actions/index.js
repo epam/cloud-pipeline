@@ -23,7 +23,7 @@ import {
   Menu,
   message
 } from 'antd';
-import { LoadingOutlined, SettingOutlined } from '@ant-design/icons';
+import {LoadingOutlined, SettingOutlined} from '@ant-design/icons';
 import PipelineRunInfo from '../../../../models/pipelines/PipelineRunInfo';
 import BillingQuota from '../../../../models/billing/quotas/get-quota';
 import {ACTIONS, ENTITY_CLASSES, NOTIFICATION_TYPES} from './actions';

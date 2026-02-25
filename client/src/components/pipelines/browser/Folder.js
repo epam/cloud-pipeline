@@ -42,7 +42,7 @@ import {
   Table,
   Tooltip
 } from 'antd';
-import { AppstoreFilled, AppstoreOutlined, CheckCircleFilled, ClockCircleOutlined, CopyOutlined, DeleteOutlined, DownOutlined, EditOutlined, FolderOutlined, ForkOutlined, HddOutlined, InboxOutlined, LockOutlined, MessageOutlined, PlusOutlined, QuestionCircleFilled, SettingOutlined, TagFilled, UnlockOutlined } from '@ant-design/icons';
+import {AppstoreFilled, AppstoreOutlined, CheckCircleFilled, ClockCircleOutlined, CopyOutlined, DeleteOutlined, DownOutlined, EditOutlined, FolderOutlined, ForkOutlined, HddOutlined, InboxOutlined, LockOutlined, MessageOutlined, PlusOutlined, QuestionCircleFilled, SettingOutlined, TagFilled, UnlockOutlined} from '@ant-design/icons';
 import Menu, {SubMenu, MenuItem, Divider} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import EditFolderForm from './forms/EditFolderForm';

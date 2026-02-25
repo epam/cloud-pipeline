@@ -27,7 +27,7 @@ import {Alert,
   Button,
   Col
 } from 'antd';
-import { DownOutlined, SettingOutlined } from '@ant-design/icons';
+import {DownOutlined, SettingOutlined} from '@ant-design/icons';
 import Menu, {MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import {graphIsSupportedForLanguage} from './graph/visualization';

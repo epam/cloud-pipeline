@@ -23,7 +23,7 @@ import {
   Select,
   Popover
 } from 'antd';
-import { QuestionCircleFilled } from '@ant-design/icons';
+import {QuestionCircleFilled} from '@ant-design/icons';
 import PreferenceLoad from '../../../../models/preferences/PreferenceLoad';
 import {Preferences} from './configuration';
 import ExcludeParametersControl from './exclude-parameters-control';

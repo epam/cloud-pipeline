@@ -8,7 +8,7 @@ import {
   DatePicker,
   Button
 } from 'antd';
-import { CloseOutlined } from '@ant-design/icons';
+import {CloseOutlined} from '@ant-design/icons';
 import moment from 'moment';
 
 const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';

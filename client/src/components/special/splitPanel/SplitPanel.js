@@ -21,7 +21,7 @@ import {
 import {computed} from 'mobx';
 import {Row
 } from 'antd';
-import { CloseOutlined } from '@ant-design/icons';
+import {CloseOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import localization from '../../../utils/localization';
 

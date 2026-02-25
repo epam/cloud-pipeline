@@ -6,7 +6,7 @@ import {
 import {
   Spin
 } from 'antd';
-import { InboxOutlined } from '@ant-design/icons';
+import {InboxOutlined} from '@ant-design/icons';
 import Chart from 'chart.js';
 import {computed} from 'mobx';
 import {BarchartDataLabelPlugin, ChartClickPlugin} from '../../billing/reports/charts/extensions';

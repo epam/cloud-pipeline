@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Button, Modal, Row, Select, TimePicker} from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import {PlusOutlined} from '@ant-design/icons';
 import {observer} from 'mobx-react';
 import moment from 'moment-timezone';
 import classNames from 'classnames';

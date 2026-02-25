@@ -28,7 +28,7 @@ import {
   Checkbox,
   Row
 } from 'antd';
-import { MinusCircleOutlined } from '@ant-design/icons';
+import {MinusCircleOutlined} from '@ant-design/icons';
 import styles from './KubeLabels.css';
 
 function kubeLabelArraysEqual (source = [], compare = []) {

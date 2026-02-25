@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {Row, Tooltip} from 'antd';
-import { QuestionCircleFilled } from '@ant-design/icons';
+import {QuestionCircleFilled} from '@ant-design/icons';
 
 /*
  * Launch cluster tooltips.

@@ -27,7 +27,7 @@ import {
   Tooltip,
   message
 } from 'antd';
-import { CloseOutlined, FolderOutlined, LoadingOutlined, UploadOutlined } from '@ant-design/icons';
+import {CloseOutlined, FolderOutlined, LoadingOutlined, UploadOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import dataStorageRestrictedAccessCheck from '../../utils/data-storage-restricted-access';
 import BucketBrowser from '../pipelines/launch/dialogs/BucketBrowser';

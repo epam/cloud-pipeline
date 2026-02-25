@@ -29,7 +29,7 @@ import {Row,
   Alert,
   message
 } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import {PlusOutlined} from '@ant-design/icons';
 import {names} from '../../../../models/utils/ContextualPreference';
 import pipelines from '../../../../models/pipelines/Pipelines';
 import AllowedInstanceTypes from '../../../../models/utils/AllowedInstanceTypes';

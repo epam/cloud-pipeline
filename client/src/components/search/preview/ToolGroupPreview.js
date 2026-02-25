@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {Icon, Row} from 'antd';
-import { CaretRightOutlined, ExportOutlined, LoadingOutlined } from '@ant-design/icons';
+import {CaretRightOutlined, ExportOutlined, LoadingOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';

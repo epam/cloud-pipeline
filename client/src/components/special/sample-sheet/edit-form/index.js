@@ -22,7 +22,7 @@ import {
   Button,
   Modal
 } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import {PlusOutlined} from '@ant-design/icons';
 import EditSection from './section';
 import SamplesEditor from './samples';
 import {buildSampleSheet, isSampleSheetContent, parseSampleSheet} from '../utilities';

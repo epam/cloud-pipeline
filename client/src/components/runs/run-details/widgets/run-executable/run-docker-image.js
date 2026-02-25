@@ -5,7 +5,7 @@ import {
 import {
   Popover
 } from 'antd';
-import { ToolOutlined } from '@ant-design/icons';
+import {ToolOutlined} from '@ant-design/icons';
 import {inject, observer} from 'mobx-react';
 import {getDockerImage} from '../../../../../utils/get-docker-image';
 import ToolImage from '../../../../../models/tools/ToolImage';

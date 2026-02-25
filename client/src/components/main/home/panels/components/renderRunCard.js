@@ -17,7 +17,7 @@
 import React from 'react';
 import StatusIcon from '../../../../special/run-status-icon';
 import {Popover, Row} from 'antd';
-import { CodeFilled, DatabaseOutlined, ExportOutlined } from '@ant-design/icons';
+import {CodeFilled, DatabaseOutlined, ExportOutlined} from '@ant-design/icons';
 import moment from 'moment-timezone';
 import evaluateRunPrice from '../../../../../utils/evaluate-run-price';
 import {getRunSpotTypeName} from '../../../../special/spot-instance-names';

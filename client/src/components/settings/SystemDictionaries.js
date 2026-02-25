@@ -26,7 +26,7 @@ import {
   Modal,
   message
 } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import {PlusOutlined} from '@ant-design/icons';
 import SystemDictionaryForm from './forms/SystemDictionaryForm';
 import roleModel from '../../utils/roleModel';
 import SystemDictionariesUpdate from '../../models/systemDictionaries/SystemDictionariesUpdate';

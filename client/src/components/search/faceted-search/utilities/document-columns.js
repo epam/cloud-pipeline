@@ -17,7 +17,7 @@
 import React from 'react';
 import classNames from 'classnames';
 import {Icon} from 'antd';
-import { InfoCircleOutlined } from '@ant-design/icons';
+import {InfoCircleOutlined} from '@ant-design/icons';
 import {isObservableArray} from 'mobx';
 import {PreviewIcons} from '../../preview/previewIcons';
 import SearchItemTypes from '../../../../models/search/search-item-types';

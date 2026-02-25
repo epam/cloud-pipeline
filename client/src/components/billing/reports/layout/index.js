@@ -23,7 +23,7 @@ import {action,
   observable} from 'mobx';
 import classNames from 'classnames';
 import GridLayout from 'react-grid-layout';
-import { ArrowsAltOutlined } from '@ant-design/icons';
+import {ArrowsAltOutlined} from '@ant-design/icons';
 import * as GeneralReportLayout from './general-report';
 import * as InstanceReportLayout from './instance-report';
 import * as StorageReportLayout from './storage-report';

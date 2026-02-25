@@ -21,7 +21,7 @@ import {
 import {
   Select
 } from 'antd';
-import { RightOutlined } from '@ant-design/icons';
+import {RightOutlined} from '@ant-design/icons';
 import {isObservableArray} from 'mobx';
 
 const DEBUG = process.env.DEVELOPMENT;

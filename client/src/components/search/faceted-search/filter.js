@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Checkbox, Input} from 'antd';
-import { CaretRightOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import {CaretRightOutlined, CloseCircleOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import {FilterControl} from './controls';
 import highlightText from '../../special/highlightText';

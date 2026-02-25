@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {Checkbox, Popover, Row} from 'antd';
-import { DatabaseOutlined, ExportOutlined } from '@ant-design/icons';
+import {DatabaseOutlined, ExportOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
 import AWSRegionTag from '../../../special/AWSRegionTag';

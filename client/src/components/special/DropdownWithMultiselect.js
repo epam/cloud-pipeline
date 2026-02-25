@@ -25,7 +25,7 @@ import {
   Checkbox,
   Popover
 } from 'antd';
-import { BarsOutlined } from '@ant-design/icons';
+import {BarsOutlined} from '@ant-design/icons';
 import {
   SortableContainer,
   SortableElement,

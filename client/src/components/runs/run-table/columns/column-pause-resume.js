@@ -22,7 +22,7 @@ import {
   Modal,
   Popover
 } from 'antd';
-import { ExclamationCircleOutlined } from '@ant-design/icons';
+import {ExclamationCircleOutlined} from '@ant-design/icons';
 import {inject, observer} from 'mobx-react';
 import roleModel from '../../../../utils/roleModel';
 import {canPauseRun, runPipelineActions} from '../../actions';

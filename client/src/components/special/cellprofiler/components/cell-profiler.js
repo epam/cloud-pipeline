@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Alert, Button, Checkbox, message} from 'antd';
-import { BarsOutlined, CaretRightOutlined, DownloadOutlined, FileOutlined, FolderOpenOutlined, LoadingOutlined } from '@ant-design/icons';
+import {BarsOutlined, CaretRightOutlined, DownloadOutlined, FileOutlined, FolderOpenOutlined, LoadingOutlined} from '@ant-design/icons';
 import Menu, {MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import {observer} from 'mobx-react';

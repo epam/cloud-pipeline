@@ -19,7 +19,7 @@ import classNames from 'classnames';
 import {
   Button
 } from 'antd';
-import { DeleteOutlined, DownloadOutlined, EditOutlined, FileOutlined, FolderOutlined } from '@ant-design/icons';
+import {DeleteOutlined, DownloadOutlined, EditOutlined, FileOutlined, FolderOutlined} from '@ant-design/icons';
 import DOCUMENT_TYPES from '../document-types';
 import UserName from '../../../../special/UserName';
 import roleModel from '../../../../../utils/roleModel';

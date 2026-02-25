@@ -32,7 +32,7 @@ import {
   message,
   Modal
 } from 'antd';
-import { EllipsisOutlined } from '@ant-design/icons';
+import {EllipsisOutlined} from '@ant-design/icons';
 import measureTextWidth from '../../../../utils/measure-text-width';
 import displayDate from '../../../../utils/displayDate';
 import highlightText from '../../highlightText';

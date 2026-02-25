@@ -27,7 +27,7 @@ import {
   Spin,
   message
 } from 'antd';
-import { BookOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import {BookOutlined, DeleteOutlined, EditOutlined, PlusOutlined} from '@ant-design/icons';
 import DataStorageLifeCycleRulesLoad
   from '../../../../../models/dataStorage/lifeCycleRules/DataStorageLifeCycleRulesLoad';
 import DataStorageLifeCycleRulesUpdate

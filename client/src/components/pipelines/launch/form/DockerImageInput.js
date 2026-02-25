@@ -22,7 +22,7 @@ import {
 import {computed} from 'mobx';
 import {Input
 } from 'antd';
-import { ToolOutlined } from '@ant-design/icons';
+import {ToolOutlined} from '@ant-design/icons';
 import DockerImageBrowser from '../dialogs/DockerImageBrowser';
 import styles from './LaunchPipelineForm.css';
 import HiddenObjects from '../../../../utils/hidden-objects';

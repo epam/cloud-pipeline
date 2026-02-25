@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Spin} from 'antd';
-import { InboxOutlined } from '@ant-design/icons';
+import {InboxOutlined} from '@ant-design/icons';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {

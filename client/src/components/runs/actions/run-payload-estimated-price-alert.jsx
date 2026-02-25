@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import PipelineRunEstimatedPrice from '../../../models/pipelines/PipelineRunEstimatedPrice';
 import {Alert} from 'antd';
-import { LoadingOutlined } from '@ant-design/icons';
+import {LoadingOutlined} from '@ant-design/icons';
 import JobEstimatedPriceInfo from '../../special/job-estimated-price-info';
 
 class RunPayloadEstimatedPriceAlert extends React.PureComponent {

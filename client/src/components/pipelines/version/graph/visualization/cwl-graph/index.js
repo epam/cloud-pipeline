@@ -41,7 +41,7 @@ import {
   Button,
   message
 } from 'antd';
-import { SaveOutlined } from '@ant-design/icons';
+import {SaveOutlined} from '@ant-design/icons';
 import moment from 'moment-timezone';
 import classNames from 'classnames';
 import Graph from '../Graph';

@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {Form} from 'antd';
-import { MinusCircleOutlined } from '@ant-design/icons';
+import {MinusCircleOutlined} from '@ant-design/icons';
 import LaunchFormParameterInput from './inputs';
 import styles from './launch-form-parameter.css';
 import ParameterNameInput from './name-input';

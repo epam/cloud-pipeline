@@ -24,7 +24,7 @@ import {inject,
 import {
   Table
 } from 'antd';
-import { CheckCircleFilled } from '@ant-design/icons';
+import {CheckCircleFilled} from '@ant-design/icons';
 import classNames from 'classnames';
 import ChangesDisplayConfig from './controls/changes-display-config';
 import ConflictsSession from './session';

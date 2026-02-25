@@ -3,7 +3,7 @@ import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import styles from './scheme-parameter-input.css';
 import {Button} from 'antd';
-import { DeleteOutlined } from '@ant-design/icons';
+import {DeleteOutlined} from '@ant-design/icons';
 import LaunchFormSchemeParameterEntryProp from './scheme-parameter-entry-prop';
 
 function LaunchFormSchemeParameterEntry (props) {

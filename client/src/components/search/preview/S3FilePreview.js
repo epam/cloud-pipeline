@@ -20,7 +20,7 @@ import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import {Icon, Row} from 'antd';
-import { CaretRightOutlined, LoadingOutlined } from '@ant-design/icons';
+import {CaretRightOutlined, LoadingOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';

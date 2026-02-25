@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {Button, Popover} from 'antd';
-import { ArrowUpOutlined, EditOutlined, InfoCircleFilled, PlusCircleOutlined, PlusSquareOutlined } from '@ant-design/icons';
+import {ArrowUpOutlined, EditOutlined, InfoCircleFilled, PlusCircleOutlined, PlusSquareOutlined} from '@ant-design/icons';
 import styles from './ome-tiff-annotations-renderer.css';
 
 function AnnotationsTooltip () {

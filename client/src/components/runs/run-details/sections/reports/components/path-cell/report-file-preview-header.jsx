@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import { DownloadOutlined, ExportOutlined } from '@ant-design/icons';
+import {DownloadOutlined, ExportOutlined} from '@ant-design/icons';
 import {FileExternalPreview} from '../../../../../../special/file-preview';
 import DataStorageFileDownloadButton
 from '../../../../../../special/data-storage-file-download-button';

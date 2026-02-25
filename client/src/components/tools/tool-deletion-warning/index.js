@@ -18,7 +18,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
 import {Button, Checkbox, Modal, message, Row} from 'antd';
-import { ExclamationCircleFilled } from '@ant-design/icons';
+import {ExclamationCircleFilled} from '@ant-design/icons';
 import LoadTool from '../../../models/tools/LoadTool';
 import dockerRegistries from '../../../models/tools/DockerRegistriesTree';
 import PipelineRunSingleFilter from '../../../models/pipelines/PipelineRunSingleFilter';

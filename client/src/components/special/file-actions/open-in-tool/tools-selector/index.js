@@ -21,7 +21,7 @@ import {
   Menu,
   Dropdown
 } from 'antd';
-import { DownOutlined } from '@ant-design/icons';
+import {DownOutlined} from '@ant-design/icons';
 import ToolImage from '../../../../../models/tools/ToolImage';
 import styles from './tool-selector.css';
 

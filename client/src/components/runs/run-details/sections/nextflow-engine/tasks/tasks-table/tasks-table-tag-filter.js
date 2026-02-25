@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {Input, Popover} from 'antd';
-import { FilterOutlined } from '@ant-design/icons';
+import {FilterOutlined} from '@ant-design/icons';
 import styles from './tasks-table.css';
 
 function prevent (event) {

@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {Input, Popover} from 'antd';
-import { EditOutlined } from '@ant-design/icons';
+import {EditOutlined} from '@ant-design/icons';
 import styles from './parameter-name-input.css';
 
 class ParameterNameInput extends React.PureComponent {

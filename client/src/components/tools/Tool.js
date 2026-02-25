@@ -35,7 +35,7 @@ import {
   Tooltip,
   Upload
 } from 'antd';
-import { AppstoreFilled, ArrowLeftOutlined, CameraOutlined, CheckCircleFilled, DeleteOutlined, DownOutlined, ExclamationCircleFilled, LinkOutlined, LoadingOutlined, SettingOutlined, UploadOutlined } from '@ant-design/icons';
+import {AppstoreFilled, ArrowLeftOutlined, CameraOutlined, CheckCircleFilled, DeleteOutlined, DownOutlined, ExclamationCircleFilled, LinkOutlined, LoadingOutlined, SettingOutlined, UploadOutlined} from '@ant-design/icons';
 import Menu, {MenuItem, Divider} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import classNames from 'classnames';

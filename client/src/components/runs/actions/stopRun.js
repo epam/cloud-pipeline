@@ -28,7 +28,7 @@ import {Alert,
   Modal,
   Row
 } from 'antd';
-import { QuestionCircleFilled } from '@ant-design/icons';
+import {QuestionCircleFilled} from '@ant-design/icons';
 import moment from 'moment-timezone';
 import CommitRunForm from '../logs/forms/CommitRunForm';
 import PipelineRunCommit from '../../../models/pipelines/PipelineRunCommit';

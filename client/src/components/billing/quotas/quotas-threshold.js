@@ -21,7 +21,7 @@ import {
   InputNumber,
   Select
 } from 'antd';
-import { CloseOutlined } from '@ant-design/icons';
+import {CloseOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import {actionNames, actionsByGroup} from './utilities/quota-actions';
 import styles from './quotas.css';

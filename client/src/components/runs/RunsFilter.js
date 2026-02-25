@@ -30,7 +30,7 @@ import {Alert,
   Row,
   Table
 } from 'antd';
-import { DeleteOutlined, DownOutlined } from '@ant-design/icons';
+import {DeleteOutlined, DownOutlined} from '@ant-design/icons';
 import RunTable from './run-table';
 import AdaptedLink from '../special/AdaptedLink';
 import SessionStorageWrapper from '../special/SessionStorageWrapper';

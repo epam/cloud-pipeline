@@ -27,7 +27,7 @@ import {Slider,
   Popover,
   Button
 } from 'antd';
-import { DownOutlined } from '@ant-design/icons';
+import {DownOutlined} from '@ant-design/icons';
 import displaySize from '../../../../utils/displaySize';
 import styles from './hcs-3d-button.css';
 import classNames from "classnames";

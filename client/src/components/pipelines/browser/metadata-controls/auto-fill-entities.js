@@ -19,7 +19,7 @@ import classNames from 'classnames';
 import {
   Button
 } from 'antd';
-import { DownOutlined, EditOutlined } from '@ant-design/icons';
+import {DownOutlined, EditOutlined} from '@ant-design/icons';
 import Menu, {MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import styles from './auto-fill-entities.css';

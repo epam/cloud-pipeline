@@ -23,7 +23,7 @@ import classNames from 'classnames';
 import {
   Tabs
 } from 'antd';
-import { PlayCircleFilled, SwitcherOutlined } from '@ant-design/icons';
+import {PlayCircleFilled, SwitcherOutlined} from '@ant-design/icons';
 import CellProfiler, {CellProfilerJobs} from '../../cellprofiler/components';
 import styles from './hcs-image-analysis.css';
 import roleModel from '../../../../utils/roleModel';

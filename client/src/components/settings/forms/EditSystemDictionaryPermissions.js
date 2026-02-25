@@ -1,7 +1,7 @@
 import React from 'react';
 import PermissionsForm from '../../roleModel/PermissionsForm';
 import {Modal, Button} from 'antd';
-import { SettingOutlined } from '@ant-design/icons';
+import {SettingOutlined} from '@ant-design/icons';
 
 export default class EditSystemDictionaryPermissions extends React.Component {
     state = {

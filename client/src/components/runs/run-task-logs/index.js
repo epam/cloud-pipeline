@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {Button, Checkbox, Input} from 'antd';
-import { DownOutlined, LoadingOutlined } from '@ant-design/icons';
+import {DownOutlined, LoadingOutlined} from '@ant-design/icons';
 import AnsiUP from 'ansi_up';
 import FileSaver from 'file-saver';
 import PipelineRunLog from '../../../models/pipelines/PipelineRunLog';

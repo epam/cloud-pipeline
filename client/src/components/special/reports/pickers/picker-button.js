@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Button} from 'antd';
-import { CalendarOutlined, CloseCircleFilled, LeftOutlined, RightOutlined } from '@ant-design/icons';
+import {CalendarOutlined, CloseCircleFilled, LeftOutlined, RightOutlined} from '@ant-design/icons';
 import styles from './pickers.css';
 import '../../../../staticStyles/billing-calendar.css';
 

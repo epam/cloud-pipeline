@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import {
   Input
 } from 'antd';
-import { ToolOutlined } from '@ant-design/icons';
+import {ToolOutlined} from '@ant-design/icons';
 import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import HiddenObjects from '../../../../../../../utils/hidden-objects';

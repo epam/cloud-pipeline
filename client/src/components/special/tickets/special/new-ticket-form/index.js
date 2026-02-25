@@ -24,7 +24,7 @@ import {
   Modal,
   message
 } from 'antd';
-import { UploadOutlined } from '@ant-design/icons';
+import {UploadOutlined} from '@ant-design/icons';
 import Markdown from '../../../markdown';
 import blobFilesToBase64 from '../utilities/blob-files-to-base64';
 import styles from './new-ticket-form.css';

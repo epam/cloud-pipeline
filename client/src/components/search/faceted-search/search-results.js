@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
 import {Alert, Checkbox, Spin} from 'antd';
-import { CaretDownOutlined, CaretUpOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import {CaretDownOutlined, CaretUpOutlined, InfoCircleOutlined} from '@ant-design/icons';
 import PreviewModal from '../preview/preview-modal';
 import {InfiniteScroll, PresentationModes} from '../faceted-search/controls';
 import DocumentListPresentation from './document-presentation/list';

@@ -29,7 +29,7 @@ import {
   Input,
   Modal
 } from 'antd';
-import { ArrowUpOutlined, EditOutlined, PlusCircleOutlined, PlusSquareOutlined } from '@ant-design/icons';
+import {ArrowUpOutlined, EditOutlined, PlusCircleOutlined, PlusSquareOutlined} from '@ant-design/icons';
 import ColorPicker from '../../../../../special/color-picker';
 import AnnotationsTooltip from './annotations-tooltip';
 import styles from './ome-tiff-annotations-renderer.css';

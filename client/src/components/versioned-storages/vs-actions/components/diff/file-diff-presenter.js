@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import * as diff2html from 'diff2html';
 import {Checkbox, Collapse} from 'antd';
-import { FileTextOutlined } from '@ant-design/icons';
+import {FileTextOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import rawTemplates from './raw-templates';
 import styles from './diff.css';

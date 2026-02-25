@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Input} from 'antd';
-import { AppstoreOutlined } from '@ant-design/icons';
+import {AppstoreOutlined} from '@ant-design/icons';
 import MetadataBrowser from './../dialogs/MetadataBrowser';
 import styles from './LaunchPipelineForm.css';
 

@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import { CloseOutlined, DoubleLeftOutlined, DoubleRightOutlined } from '@ant-design/icons';
+import {CloseOutlined, DoubleLeftOutlined, DoubleRightOutlined} from '@ant-design/icons';
 import {inject, observer} from 'mobx-react';
 import Caret from './caret';
 import getClassNameForChange from './utilities/class-name-for-change';

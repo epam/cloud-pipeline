@@ -28,7 +28,7 @@ import {
   Tabs,
   Card
 } from 'antd';
-import { ArrowLeftOutlined } from '@ant-design/icons';
+import {ArrowLeftOutlined} from '@ant-design/icons';
 import LoadingView from '../../special/LoadingView';
 import Owner from '../../special/owner';
 import roleModel from '../../../utils/roleModel';

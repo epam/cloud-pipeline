@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {Popover, Tooltip} from 'antd';
-import { ClockCircleOutlined, ExclamationCircleOutlined, HourglassOutlined, LoadingOutlined, PlayCircleOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import {ClockCircleOutlined, ExclamationCircleOutlined, HourglassOutlined, LoadingOutlined, PlayCircleOutlined, QuestionCircleOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import NATRouteStatuses from './route-statuses';
 import * as portUtilities from './ports-utilities';

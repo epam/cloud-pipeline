@@ -22,7 +22,7 @@ import {
   InputNumber,
   Modal
 } from 'antd';
-import { DeleteOutlined, PlusOutlined, SettingOutlined } from '@ant-design/icons';
+import {DeleteOutlined, PlusOutlined, SettingOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import styles from './HostedAppConfiguration.css';
 

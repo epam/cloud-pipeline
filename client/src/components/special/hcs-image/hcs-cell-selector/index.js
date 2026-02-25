@@ -25,7 +25,7 @@ import {
   Select,
   Tooltip
 } from 'antd';
-import { MinusCircleOutlined, PlusCircleOutlined, ShrinkOutlined } from '@ant-design/icons';
+import {MinusCircleOutlined, PlusCircleOutlined, ShrinkOutlined} from '@ant-design/icons';
 import createBuffers from './buffers';
 import {mat4translate, mat4scale, mat4identity} from './matrix-functions';
 import {createGLProgram, resizeCanvas, getLinesToDraw} from './canvas-utilities';

@@ -30,7 +30,7 @@ import {
   Select,
   Tabs
 } from 'antd';
-import { DeleteOutlined, LoadingOutlined, PlusOutlined } from '@ant-design/icons';
+import {DeleteOutlined, LoadingOutlined, PlusOutlined} from '@ant-design/icons';
 import UserInfoSummary from './UserInfoSummary';
 import User from '../../../../models/user/User';
 import Roles from '../../../../models/user/Roles';

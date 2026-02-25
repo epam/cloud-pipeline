@@ -23,7 +23,7 @@ import {
   Button,
   Select
 } from 'antd';
-import { DeleteOutlined } from '@ant-design/icons';
+import {DeleteOutlined} from '@ant-design/icons';
 import {getObjectsForModule} from './object-parameter';
 import styles from './outline-object-configuration.css';
 import ColorPicker from '../../../color-picker';

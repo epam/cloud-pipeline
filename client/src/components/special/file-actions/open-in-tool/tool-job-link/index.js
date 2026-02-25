@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {
   PUBLIC_URL} from '../../../../../config';
-import { LoadingOutlined } from '@ant-design/icons';
+import {LoadingOutlined} from '@ant-design/icons';
 import PipelineRunInfo from '../../../../../models/pipelines/PipelineRunInfo';
 import MultizoneUrl from '../../../multizone-url';
 import {parseRunServiceUrlConfiguration} from '../../../../../utils/multizone';

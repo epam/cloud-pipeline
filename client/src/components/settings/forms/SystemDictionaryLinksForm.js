@@ -21,7 +21,7 @@ import {
   Modal,
   Select
 } from 'antd';
-import { CaretRightOutlined } from '@ant-design/icons';
+import {CaretRightOutlined} from '@ant-design/icons';
 
 class SystemDictionaryLinksForm extends React.Component {
   state = {

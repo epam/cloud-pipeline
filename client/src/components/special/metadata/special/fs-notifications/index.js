@@ -24,7 +24,7 @@ import {
   Select,
   Tooltip
 } from 'antd';
-import { DeleteOutlined, ExclamationCircleOutlined, NotificationOutlined, PlusOutlined, SettingOutlined } from '@ant-design/icons';
+import {DeleteOutlined, ExclamationCircleOutlined, NotificationOutlined, PlusOutlined, SettingOutlined} from '@ant-design/icons';
 import {observer} from 'mobx-react';
 import UsersRolesSelect from '../../../users-roles-select';
 import roleModel from '../../../../../utils/roleModel';

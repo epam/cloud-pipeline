@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {computed} from 'mobx';
-import { LoadingOutlined, MinusCircleOutlined, PlusCircleOutlined } from '@ant-design/icons';
+import {LoadingOutlined, MinusCircleOutlined, PlusCircleOutlined} from '@ant-design/icons';
 import styles from './chart.css';
 
 const TITLE_HEIGHT = 26;

@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Popover} from 'antd';
-import { ExclamationCircleOutlined, LoadingOutlined } from '@ant-design/icons';
+import {ExclamationCircleOutlined, LoadingOutlined} from '@ant-design/icons';
 
 const RUN_LOADING_PLACEHOLDER_PROPERTY = '___loading_placeholder___';
 const RUN_LOADING_ERROR_PROPERTY = '___loading_error___';

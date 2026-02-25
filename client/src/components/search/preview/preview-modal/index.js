@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import { ArrowsAltOutlined, CloseOutlined } from '@ant-design/icons';
+import {ArrowsAltOutlined, CloseOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import Preview from '../index.js';
 import styles from './preview-modal.css';

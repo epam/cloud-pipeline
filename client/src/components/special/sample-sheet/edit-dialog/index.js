@@ -23,7 +23,7 @@ import {
   Switch,
   Upload
 } from 'antd';
-import { UploadOutlined } from '@ant-design/icons';
+import {UploadOutlined} from '@ant-design/icons';
 import SampleSheet from '../edit-form';
 import CodeEditor from '../../CodeEditor';
 import {isSampleSheetContent} from '../utilities';

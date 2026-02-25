@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarsOutlined, CodeOutlined, CopyOutlined, ExportOutlined, FileTextOutlined, SettingOutlined } from '@ant-design/icons';
+import {BarsOutlined, CodeOutlined, CopyOutlined, ExportOutlined, FileTextOutlined, SettingOutlined} from '@ant-design/icons';
 import {isMlflowEngine, isNextflowEngine} from '../../utilities/helpers';
 import NextflowEngineTasks from '../../sections/nextflow-engine/tasks';
 import RunParametersSection from '../../sections/parameters';

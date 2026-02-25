@@ -18,7 +18,7 @@ import React from 'react';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import {Modal, Button, Spin, Checkbox, Input, Tabs} from 'antd';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import {DeleteOutlined, PlusOutlined} from '@ant-design/icons';
 import LocalSyncDtsPreference from './components/local-sync-dts-preference';
 import DtsLogs from './components/dts-logs';
 import {

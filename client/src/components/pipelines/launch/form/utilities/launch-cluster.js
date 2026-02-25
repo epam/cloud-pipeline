@@ -24,7 +24,7 @@ import {
   Row,
   Select
 } from 'antd';
-import { CloseOutlined } from '@ant-design/icons';
+import {CloseOutlined} from '@ant-design/icons';
 import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {

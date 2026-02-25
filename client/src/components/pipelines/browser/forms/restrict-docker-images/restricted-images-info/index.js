@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import {
   Popover
 } from 'antd';
-import { ExclamationCircleOutlined } from '@ant-design/icons';
+import {ExclamationCircleOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import DockerImageDetails from '../../../../../cluster/hot-node-pool/docker-image-details';
 import styles from './restricted-images-info.css';

@@ -25,7 +25,7 @@ import {
   Button,
   message
 } from 'antd';
-import { CopyOutlined, LoadingOutlined } from '@ant-design/icons';
+import {CopyOutlined, LoadingOutlined} from '@ant-design/icons';
 import {getMarkdownRenderer, processLinks} from '../../../markdown';
 import ToolJobLink from '../tool-job-link';
 import styles from './open-tool-info.css';

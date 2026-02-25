@@ -23,7 +23,7 @@ import {
   message,
   Button
 } from 'antd';
-import { DeleteOutlined, EditOutlined, PlusOutlined, QuestionCircleOutlined, SettingOutlined } from '@ant-design/icons';
+import {DeleteOutlined, EditOutlined, PlusOutlined, QuestionCircleOutlined, SettingOutlined} from '@ant-design/icons';
 import Menu, {MenuItem, Divider, SubMenu} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import roleModel from '../../utils/roleModel';

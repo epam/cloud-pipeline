@@ -26,7 +26,7 @@ import {
   Table,
   Tabs
 } from 'antd';
-import { ExportOutlined, HomeOutlined, PlayCircleFilled, SearchOutlined } from '@ant-design/icons';
+import {ExportOutlined, HomeOutlined, PlayCircleFilled, SearchOutlined} from '@ant-design/icons';
 import Menu, {MenuItem} from 'rc-menu';
 import classNames from 'classnames';
 import {sectionNames} from './utilities/variable-sections';

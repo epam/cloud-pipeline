@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {Popover} from 'antd';
-import { ClockCircleOutlined } from '@ant-design/icons';
+import {ClockCircleOutlined} from '@ant-design/icons';
 import getRunDurationInfo from '../../../../../utils/run-duration';
 import displayDate from '../../../../../utils/displayDate';
 import {displayDurationInSeconds} from '../../../../../utils/displayDuration';

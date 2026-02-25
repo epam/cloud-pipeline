@@ -6,7 +6,7 @@ import {
 import {createObjectStorageWrapper} from '../../../../../utils/object-storage';
 import {Alert
 } from 'antd';
-import { LoadingOutlined } from '@ant-design/icons';
+import {LoadingOutlined} from '@ant-design/icons';
 
 @inject('dataStorages')
 @observer

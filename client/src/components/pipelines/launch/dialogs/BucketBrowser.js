@@ -21,7 +21,7 @@ import {computed, observable} from 'mobx';
 import PropTypes from 'prop-types';
 import SplitPane from 'react-split-pane';
 import {Alert, Button, Checkbox, Col, Icon, Input, Modal, Row, Table, Tree, message} from 'antd';
-import { CaretLeftOutlined, CaretRightOutlined } from '@ant-design/icons';
+import {CaretLeftOutlined, CaretRightOutlined} from '@ant-design/icons';
 import dataStorages from '../../../../models/dataStorage/DataStorages';
 import DataStorageRequest from '../../../../models/dataStorage/DataStoragePage';
 import DTSRequest from '../../../../models/dts/DTSItemsPage';

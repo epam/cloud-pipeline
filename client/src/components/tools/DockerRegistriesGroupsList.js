@@ -23,7 +23,7 @@ import {
   Tag,
   Collapse
 } from 'antd';
-import { CheckOutlined } from '@ant-design/icons';
+import {CheckOutlined} from '@ant-design/icons';
 import {observer} from 'mobx-react';
 import styles from './DockerRegistryGroupsList.css';
 

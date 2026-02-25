@@ -35,7 +35,7 @@ import {
   Select,
   Spin
 } from 'antd';
-import { CodeFilled, DownOutlined, ExportOutlined, InfoCircleFilled, PlayCircleOutlined, SettingOutlined } from '@ant-design/icons';
+import {CodeFilled, DownOutlined, ExportOutlined, InfoCircleFilled, PlayCircleOutlined, SettingOutlined} from '@ant-design/icons';
 import styles from './LaunchPipelineForm.css';
 import Menu, {MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';

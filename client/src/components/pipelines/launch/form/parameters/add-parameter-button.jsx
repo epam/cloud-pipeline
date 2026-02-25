@@ -6,7 +6,7 @@ import {
   observer} from 'mobx-react';
 import {Button
 } from 'antd';
-import { DownOutlined } from '@ant-design/icons';
+import {DownOutlined} from '@ant-design/icons';
 import Dropdown from 'rc-dropdown';
 import classNames from 'classnames';
 import {addParameter, addSystemParameters} from '../utilities/parameter-utilities';

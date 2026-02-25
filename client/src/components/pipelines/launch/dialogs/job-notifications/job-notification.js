@@ -23,7 +23,7 @@ import {Button,
   Input,
   Select
 } from 'antd';
-import { DeleteOutlined } from '@ant-design/icons';
+import {DeleteOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import notificationValidationError from './notification-validation-error';
 import compareArrays from '../../../../../utils/compareArrays';

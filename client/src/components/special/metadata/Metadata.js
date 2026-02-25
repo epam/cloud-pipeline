@@ -40,7 +40,7 @@ import {
   Row,
   Select
 } from 'antd';
-import { ArrowsAltOutlined, CheckOutlined, CloseOutlined, DeleteOutlined, LeftOutlined, PlusOutlined } from '@ant-design/icons';
+import {ArrowsAltOutlined, CheckOutlined, CloseOutlined, DeleteOutlined, LeftOutlined, PlusOutlined} from '@ant-design/icons';
 import ItemsTable, {isJson} from './items-table';
 import styles from './Metadata.css';
 import {SplitPanel} from '../splitPanel';

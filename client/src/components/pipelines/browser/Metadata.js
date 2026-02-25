@@ -35,7 +35,7 @@ import {
   Pagination,
   Row
 } from 'antd';
-import { CaretDownOutlined, CaretUpOutlined, CloseOutlined, CloudUploadOutlined, DeleteOutlined, DownOutlined, FilterOutlined, LoadingOutlined, PlusOutlined, SettingOutlined, UploadOutlined } from '@ant-design/icons';
+import {CaretDownOutlined, CaretUpOutlined, CloseOutlined, CloudUploadOutlined, DeleteOutlined, DownOutlined, FilterOutlined, LoadingOutlined, PlusOutlined, SettingOutlined, UploadOutlined} from '@ant-design/icons';
 import Menu, {MenuItem, Divider} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import {

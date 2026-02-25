@@ -28,7 +28,7 @@ import {
   Modal,
   Select
 } from 'antd';
-import { CaretRightOutlined, CheckCircleFilled, LoadingOutlined } from '@ant-design/icons';
+import {CaretRightOutlined, CheckCircleFilled, LoadingOutlined} from '@ant-design/icons';
 import roleModel from '../../../../../utils/roleModel';
 import highlightText from '../../../../special/highlightText';
 import ToolImage from '../../../../../models/tools/ToolImage';

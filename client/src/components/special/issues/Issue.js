@@ -27,7 +27,7 @@ import {Alert,
   Row,
   Tooltip
 } from 'antd';
-import { ArrowLeftOutlined, CheckOutlined, CloseOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
+import {ArrowLeftOutlined, CheckOutlined, CloseOutlined, DeleteOutlined, EditOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import IssueCommentPreview from './controls/IssueCommentPreview';
 import IssueComment from './controls/IssueComment';

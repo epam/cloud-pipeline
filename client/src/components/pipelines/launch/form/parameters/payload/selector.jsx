@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import styles from './parameters-payload.css';
 import {Button, Checkbox, Popover} from 'antd';
-import { DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import {DeleteOutlined, ExclamationCircleOutlined} from '@ant-design/icons';
 
 function payloadIsInvalid (payload) {
   const {parameters = []} = payload;

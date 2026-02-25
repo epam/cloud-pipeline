@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Popover} from 'antd';
-import { LinkOutlined } from '@ant-design/icons';
+import {LinkOutlined} from '@ant-design/icons';
 
 function ToolLink ({link, style}) {
   if (!link) {

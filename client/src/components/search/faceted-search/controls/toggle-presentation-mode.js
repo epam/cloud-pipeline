@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {Button} from 'antd';
-import { BarsOutlined, LayoutOutlined } from '@ant-design/icons';
+import {BarsOutlined, LayoutOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import styles from './controls.css';

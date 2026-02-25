@@ -20,7 +20,7 @@ import {
   inject,
   observer} from 'mobx-react';
 import classNames from 'classnames';
-import { ExportOutlined } from '@ant-design/icons';
+import {ExportOutlined} from '@ant-design/icons';
 import dataStorages from '../../../../../models/dataStorage/DataStorages';
 import {getStaticResourceUrl} from '../../../../../models/static-resources';
 

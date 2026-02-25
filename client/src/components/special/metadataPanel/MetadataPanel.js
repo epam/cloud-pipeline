@@ -27,7 +27,7 @@ import {Button,
   Modal,
   Row
 } from 'antd';
-import { CheckOutlined, CloseOutlined, DeleteOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import {CheckOutlined, CloseOutlined, DeleteOutlined, PlusOutlined, ReloadOutlined} from '@ant-design/icons';
 import MetadataEntityDeleteKey from '../../../models/folderMetadata/MetadataEntityDeleteKey';
 import MetadataEntityDelete from '../../../models/folderMetadata/MetadataEntityDelete';
 import MetadataEntityUpdateKey from '../../../models/folderMetadata/MetadataEntityUpdateKey';

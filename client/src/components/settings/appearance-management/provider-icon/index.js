@@ -22,7 +22,7 @@ import {
   Checkbox,
   Select
 } from 'antd';
-import { RollbackOutlined } from '@ant-design/icons';
+import {RollbackOutlined} from '@ant-design/icons';
 import styles from '../color-variable/color-variable.css';
 
 const IconSet = {
