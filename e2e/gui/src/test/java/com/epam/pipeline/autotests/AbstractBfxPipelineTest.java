@@ -69,6 +69,7 @@ public abstract class AbstractBfxPipelineTest implements ITest {
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
         options.addArguments("--disable-gpu");
+        options.addArguments("--ignore-certificate-errors");
 
         WebDriver driver = new ChromeDriver(options);
         WebDriverRunner.setWebDriver(driver);
