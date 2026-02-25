@@ -781,7 +781,7 @@ export default class PermissionsForm extends React.Component {
           overflowY: 'auto'
         }}
         rowClassName={getRowClassName}
-        onRowClick={selectPermission}
+        onRow={(record) => ({ onClick: () => selectPermission(record) })}
         loading={pending}
         title={() => title}
         showHeader={false}

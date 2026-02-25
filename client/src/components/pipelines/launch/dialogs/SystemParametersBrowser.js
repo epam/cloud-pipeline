@@ -222,7 +222,7 @@ export default class SystemParametersBrowser extends Component {
           dataSource={this.currentParameters}
           columns={columns}
           showHeader
-          onRowClick={(parameter) => this.onSelect(parameter)}
+          onRow={(parameter) => ({ onClick: () => this.onSelect(parameter) })}
           rowKey="name"
           rowClassName={() => styles.parameterRow}
           pagination={false}

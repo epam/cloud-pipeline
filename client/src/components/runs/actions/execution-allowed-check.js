@@ -314,9 +314,9 @@ class SubmitButton extends React.Component {
   static propTypes = {
     dockerImage: PropTypes.string,
     id: PropTypes.string,
-    inputs: PropTypes.object,
+    inputs: PropTypes.array,
     onClick: PropTypes.func,
-    outputs: PropTypes.object,
+    outputs: PropTypes.array,
     type: PropTypes.string,
     htmlType: PropTypes.string,
     size: PropTypes.string,

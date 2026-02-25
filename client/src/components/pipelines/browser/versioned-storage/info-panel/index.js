@@ -367,7 +367,7 @@ class InfoPanel extends localization.LocalizedReactComponent {
           autoComplete="off"
           autoCorrect="off"
           autoCapitalize="off"
-          autosize={false}
+          autoSize={false}
           className={styles.filePreviewInput}
           value={fileContent || (fileIsFetching && '') || 'empty'}
           style={

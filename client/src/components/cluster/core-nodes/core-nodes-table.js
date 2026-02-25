@@ -413,7 +413,7 @@ export default class CoreNodesTable extends localization.LocalizedReactComponent
         title: 'Name',
         sorter: alphabeticNameSorter,
         className: styles.clusterNodeRowName,
-        onCellClick: this.onNodeInstanceSelect
+        onCell: (record) => ({onClick: () => this.onNodeInstanceSelect(record)})
       },
       {
         dataIndex: 'pipelineRun',
@@ -421,7 +421,7 @@ export default class CoreNodesTable extends localization.LocalizedReactComponent
         title: this.localizedString('Pipeline'),
         render: pipelineRun => this.renderPipelineName(pipelineRun),
         className: styles.clusterNodeRowPipeline,
-        onCellClick: this.onNodeInstanceSelect
+        onCell: (record) => ({onClick: () => this.onNodeInstanceSelect(record)})
       },
       {
         dataIndex: 'labels',
@@ -431,7 +431,7 @@ export default class CoreNodesTable extends localization.LocalizedReactComponent
         ...this.getInputFilter('runId', 'Run Id'),
         sorter: runSorter,
         className: styles.clusterNodeRowLabels,
-        onCellClick: this.onNodeInstanceSelect
+        onCell: (record) => ({onClick: () => this.onNodeInstanceSelect(record)})
       },
       {
         dataIndex: 'addresses',
@@ -440,7 +440,7 @@ export default class CoreNodesTable extends localization.LocalizedReactComponent
         ...this.getInputFilter('address', 'IP'),
         className: styles.clusterNodeRowAddresses,
         render: (addresses) => addressesCellContent(addresses),
-        onCellClick: this.onNodeInstanceSelect
+        onCell: (record) => ({onClick: () => this.onNodeInstanceSelect(record)})
       },
       {
         dataIndex: 'created',
@@ -449,7 +449,7 @@ export default class CoreNodesTable extends localization.LocalizedReactComponent
         sorter: dateSorter,
         className: styles.clusterNodeRowCreated,
         render: (date) => createdCellContent(date),
-        onCellClick: this.onNodeInstanceSelect
+        onCell: (record) => ({onClick: () => this.onNodeInstanceSelect(record)})
       }
     ];
     const dataSource = [];
@@ -475,7 +475,7 @@ export default class CoreNodesTable extends localization.LocalizedReactComponent
         pagination={{pageSize: 25}}
         rowClassName={(item) => `cluster-row-${item.name}`}
         size="small"
-        onRowClick={onNodeInstanceSelect}
+        onRow={(record) => ({ onClick: () => onNodeInstanceSelect(record) })}
       />
     );
   }

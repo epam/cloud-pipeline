@@ -18,7 +18,7 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import PropTypes from 'prop-types';
 import SplitPane from 'react-split-pane';
-import {Alert, Button, Col, Icon, Modal, Row, Select, Tree} from 'antd';
+import {Alert, AutoComplete, Button, Col, Icon, Modal, Row, Tree} from 'antd';
 import Folder from '../../browser/Folder';
 import LoadingView from '../../../special/LoadingView';
 import {
@@ -166,11 +166,10 @@ export default class ConfigurationBrowser extends React.Component {
     };
 
     return (
-      <Select
+      <AutoComplete
         style={{width: '100%'}}
         disabled={!this.isExpansionExpressionAvailable}
         value={this.state.expansionExpression}
-        mode="combobox"
         filterOption={false}
         onChange={handleSearch}
         onFocus={() => {
@@ -187,14 +186,14 @@ export default class ConfigurationBrowser extends React.Component {
               currentValue = parseValue.join('.') + '.' + field.name;
             }
             return (
-              <Select.Option
+              <AutoComplete.Option
                 key={field.name}
                 value={currentValue}>
                 {field.name}
-              </Select.Option>);
+              </AutoComplete.Option>);
           })
         }
-      </Select>
+      </AutoComplete>
     );
   };
   updateState = () => {

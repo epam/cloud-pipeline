@@ -646,7 +646,7 @@ export default class PipelineDocuments extends Component {
               this.toggleEditMode(false);
             }
           }}
-          autosize={{minRows: 25}}
+          autoSize={{minRows: 25}}
           style={{width: '100%', resize: 'none'}}
           className={styles.markdownEditor}
         />
@@ -716,7 +716,7 @@ export default class PipelineDocuments extends Component {
       <Table
         key="docs table"
         rowKey="name"
-        onRowClick={(file, index, evt) => this.onFileClick(file, index, evt)}
+        onRow={(file, index) => ({ onClick: (evt) => this.onFileClick(file, index, evt) })}
         rowClassName={() => styles.documentRow}
         className={styles.docsTable}
         dataSource={tableData.dataSource}

@@ -338,7 +338,7 @@ export default class MetadataPanel extends React.Component {
               onChange={onChange('value')}
               size="small"
               type="textarea"
-              autosize
+              autoSize
             />
           </td>
         </tr>,
@@ -598,7 +598,7 @@ export default class MetadataPanel extends React.Component {
                 <Input
                   {...inputOptions('value', key, metadataItem[key].value)}
                   type="textarea"
-                  autosize
+                  autoSize
                 />
               </td>
             </tr>

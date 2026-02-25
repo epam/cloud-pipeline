@@ -256,7 +256,7 @@ export default class GroupsManagement extends React.Component {
         columns={columns}
         dataSource={this.filteredRoles}
         onChange={this.handleGroupsTableChange}
-        onRowClick={(group) => this.openEditGroupDialog(group)}
+        onRow={(group) => ({ onClick: () => this.openEditGroupDialog(group) })}
         pagination={{
           total: this.filteredRoles.length,
           PAGE_SIZE,

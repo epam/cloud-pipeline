@@ -15,7 +15,7 @@
  */
 
 import React, {Component} from 'react';
-import {Layout, LocaleProvider} from 'antd';
+import {Layout, ConfigProvider} from 'antd';
 import enUS from 'antd/lib/locale-provider/en_US';
 import {observer, Provider, inject} from 'mobx-react';
 import {observable} from 'mobx';
@@ -28,6 +28,7 @@ import {SearchDialog} from '../search';
 import roleModel from '../../utils/roleModel';
 import {Pages} from '../../utils/ui-navigation';
 import {RunContinuationConfirmation} from '../runs/actions/continue-run';
+import ErrorBoundary from './ErrorBoundary';
 
 @inject('preferences', 'uiNavigation')
 @roleModel.authenticationInfo
@@ -116,15 +117,17 @@ export default class App extends Component {
           <Layout.Content
             id="root-content"
             className={`${styles.contentWrapper} ${searchStyle.join(' ')}`}>
-            <Provider displayInfo={this.info}>
-              {this.props.children}
-            </Provider>
+            <ErrorBoundary>
+              <Provider displayInfo={this.info}>
+                {this.props.children}
+              </Provider>
+            </ErrorBoundary>
           </Layout.Content>
         </Layout>
       );
     }
     return (
-      <LocaleProvider locale={enUS}>
+      <ConfigProvider locale={enUS}>
         <div id="root-container" className={styles.appContainer}>
           {
             this.props.uiNavigation.searchEnabled() && !isExternalApp && (
@@ -145,7 +148,7 @@ export default class App extends Component {
           <RunModal />
           <RunContinuationConfirmation />
         </div>
-      </LocaleProvider>
+      </ConfigProvider>
     );
   }
 

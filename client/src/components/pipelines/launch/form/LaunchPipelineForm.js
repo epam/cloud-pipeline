@@ -4272,7 +4272,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       <Row
         className={styles.panelHeader}
         type="flex"
-        justify={key === PARAMETERS ? 'flex-start' : 'space-between'}
+        justify={key === PARAMETERS ? 'start' : 'space-between'}
       >
         <span className={styles.itemHeader}>
           <Icon type={icon} /> {title}

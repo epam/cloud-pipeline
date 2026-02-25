@@ -227,15 +227,14 @@ export default class Tools extends React.Component {
   get tools () {
     if (this.currentGroup) {
       const checkIssues = (tool = {}) => {
-        const currentTool = tool;
         if (this._toolsWithIssues && this._toolsWithIssues.loaded) {
           const toolWithIssues = (this._toolsWithIssues.value.toolsWithIssues || [])
-            .filter(t => t.id === currentTool.id)[0];
+            .filter(t => t.id === tool.id)[0];
           if (toolWithIssues && toolWithIssues.hasOwnProperty('issuesCount')) {
-            currentTool.issuesCount = toolWithIssues.issuesCount;
+            return {...tool, issuesCount: toolWithIssues.issuesCount};
           }
         }
-        return currentTool;
+        return tool;
       };
       return (this.currentGroup.tools || [])
         .map(t => t)

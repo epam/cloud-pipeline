@@ -671,7 +671,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
         title: this.localizedString('Pipeline'),
         render: pipelineRun => this.renderPipelineName(pipelineRun),
         className: styles.clusterNodeRowPipeline,
-        onCellClick: this.onNodeInstanceSelect
+        onCell: (record) => ({onClick: () => this.onNodeInstanceSelect(record)})
       });
     }
     const columns = [
@@ -706,7 +706,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
         title: 'Name',
         sorter: this.alphabeticNameSorter,
         className: styles.clusterNodeRowName,
-        onCellClick: this.onNodeInstanceSelect,
+        onCell: (record) => ({onClick: () => this.onNodeInstanceSelect(record)}),
         render: (item, record) => {
           return (
             <span>
@@ -727,7 +727,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
         ...(onlyCloudNodes ? {} : this.getInputFilter('runId', 'Run Id')),
         sorter: onlyCloudNodes ? undefined : this.runSorter,
         className: styles.clusterNodeRowLabels,
-        onCellClick: this.onNodeInstanceSelect
+        onCell: (record) => ({onClick: () => this.onNodeInstanceSelect(record)})
       },
       {
         dataIndex: 'addresses',
@@ -736,7 +736,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
         ...this.getInputFilter('address', 'IP'),
         className: styles.clusterNodeRowAddresses,
         render: (addresses) => addressesCellContent(addresses),
-        onCellClick: this.onNodeInstanceSelect
+        onCell: (record) => ({onClick: () => this.onNodeInstanceSelect(record)})
       },
       {
         dataIndex: 'created',
@@ -745,7 +745,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
         sorter: this.dateSorter,
         className: styles.clusterNodeRowCreated,
         render: (date) => createdCellContent(date),
-        onCellClick: this.onNodeInstanceSelect
+        onCell: (record) => ({onClick: () => this.onNodeInstanceSelect(record)})
       },
       {
         key: 'terminate',

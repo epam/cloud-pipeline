@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Input, Select} from 'antd';
+import {AutoComplete, Input} from 'antd';
 import {observer} from 'mobx-react';
 import classNames from 'classnames';
 import {injectParametersStore} from './store';
@@ -112,7 +112,7 @@ class AutoCompleteInput extends React.Component {
         <Addon>
           {addonBefore}
         </Addon>
-        <Select
+        <AutoComplete
           className={
             classNames(
               {
@@ -123,21 +123,20 @@ class AutoCompleteInput extends React.Component {
           disabled={disabled}
           value={value}
           onChange={this.onChange}
-          mode="combobox"
           filterOption={false}
           style={{flex: 1}}
         >
           {
             this.options.map(option => (
-              <Select.Option
+              <AutoComplete.Option
                 key={option.value}
                 value={option.value}
               >
                 {option.name}
-              </Select.Option>
+              </AutoComplete.Option>
             ))
           }
-        </Select>
+        </AutoComplete>
         <Addon>
           {addonAfter}
         </Addon>

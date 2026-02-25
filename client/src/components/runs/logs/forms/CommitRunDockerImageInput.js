@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
-import {Input, Row, AutoComplete, Select} from 'antd';
+import {Input, Row, AutoComplete} from 'antd';
 import classNames from 'classnames';
 import roleModel from '../../../../utils/roleModel';
 import RegistrySelector from '../../../tools/selectors/RegistrySelector';
@@ -338,8 +338,7 @@ export default class CommitRunDockerImageInput extends React.Component {
             onChange={this.onSelectGroup}
             emptyValueMessage="Select group" />
         </div>
-        <Select
-          mode="combobox"
+        <AutoComplete
           className={styles.toolAutocomplete}
           disabled={this.props.disabled}
           ref={this.initializeNameInput}
@@ -359,17 +358,17 @@ export default class CommitRunDockerImageInput extends React.Component {
           {
             this.tools.map(tool => {
               return (
-                <Select.Option key={tool.name} text={tool.name}>
+                <AutoComplete.Option key={tool.name} text={tool.name}>
                   {
                     tool.isNew
                       ? `Add new tool '${tool.name}'`
                       : tool.name
                   }
-                </Select.Option>
+                </AutoComplete.Option>
               );
             })
           }
-        </Select>
+        </AutoComplete>
         <AutoComplete
           disabled={this.props.disabled}
           size="large"

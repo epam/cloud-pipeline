@@ -18,7 +18,7 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import PropTypes from 'prop-types';
 import SplitPane from 'react-split-pane';
-import {Alert, Button, Col, Icon, Input, Modal, Row, Select, Tree} from 'antd';
+import {Alert, AutoComplete, Button, Col, Icon, Input, Modal, Row, Tree} from 'antd';
 import Folder from '../../browser/Folder';
 import Metadata from '../../browser/Metadata';
 import MetadataFolder from '../../browser/MetadataFolder';
@@ -460,11 +460,10 @@ export default class MetadataBrowser extends React.Component {
         <div className={styles.expansionExpressionTitle}>
           Define expression
         </div>
-        <Select
+        <AutoComplete
           style={{width: '100%'}}
           disabled={!this.isExpansionExpressionAvailable}
           value={this.state.expansionExpression}
-          mode="combobox"
           filterOption={false}
           onChange={handleSearch}
           onFocus={() => handleSearch(this.state.expansionExpression)}
@@ -478,15 +477,15 @@ export default class MetadataBrowser extends React.Component {
                 currentValue = parseValue.join('.') + '.' + field.name;
               }
               return (
-                <Select.Option
+                <AutoComplete.Option
                   key={field.name}
                   value={currentValue}
                 >
                   {field.name}
-                </Select.Option>);
+                </AutoComplete.Option>);
             })
           }
-        </Select>
+        </AutoComplete>
       </Row>
     );
   };

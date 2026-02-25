@@ -704,6 +704,7 @@ export default class EditToolForm extends React.Component {
   }
 
   componentDidMount () {
+    // TODO: check why maximum update depth exceeded.
     this.reset();
     if (this.props.allowedInstanceTypes) {
       const isSpot = this.getPriceTypeInitialValue();
@@ -2002,6 +2003,7 @@ export default class EditToolForm extends React.Component {
 
   reset = (props) => {
     props = props || this.props;
+    // TODO: check why maximum update depth exceeded.
     this.rebuildComponent(props);
     if (this.editor) {
       this.editor.clear();

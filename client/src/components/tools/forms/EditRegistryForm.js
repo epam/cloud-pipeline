@@ -160,7 +160,7 @@ export default class EditRegistryForm extends localization.LocalizedReactCompone
                 value={this.state.certificateValue}
                 onChange={(e) => this.setState({certificateValue: e.target.value})}
                 type="textarea"
-                autosize={{minRows: 4}}
+                autoSize={{minRows: 4}}
               />
             </Col>
           </Row>,

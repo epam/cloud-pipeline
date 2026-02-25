@@ -941,7 +941,7 @@ export default class EditUserRolesDialog extends React.Component {
               size="small"
               filterOption={(input, option) =>
                 option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0 ||
-                option.props.pathMask.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                (option.props.pathmask || '').toLowerCase().indexOf(input.toLowerCase()) >= 0
               }>
               {
                 this.dataStorages.map(d => {
@@ -951,7 +951,7 @@ export default class EditUserRolesDialog extends React.Component {
                       value={`${d.id}`}
                       title={d.name}
                       name={d.name}
-                      pathMask={d.pathMask}>
+                      pathmask={d.pathMask}>
                       <b>{d.name}</b> ({d.pathMask})
                     </Select.Option>
                   );

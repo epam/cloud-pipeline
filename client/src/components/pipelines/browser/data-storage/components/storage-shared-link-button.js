@@ -142,7 +142,7 @@ class StorageSharedLinkButton extends React.Component {
     if (link) {
       return (
         <Input
-          autosize
+          autoSize
           type="textarea"
           value={link}
           disabled={pending}

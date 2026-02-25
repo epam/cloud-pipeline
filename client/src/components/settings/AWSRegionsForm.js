@@ -318,7 +318,7 @@ export default class AWSRegionsForm extends React.Component {
             );
           }
         }
-        onRowClick={region => !this.state.newRegion && this.selectRegion(region)}
+        onRow={(region) => ({ onClick: () => !this.state.newRegion && this.selectRegion(region) })}
         size="medium" />
     );
   };

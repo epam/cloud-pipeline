@@ -1712,7 +1712,7 @@ export default class DataStorage extends React.Component {
       key: 'type',
       title: '',
       className: styles.itemTypeCell,
-      onCellClick: (item) => this.didSelectDataStorageItem(item),
+      onCell: (item) => ({onClick: () => this.didSelectDataStorageItem(item)}),
       render: (text, item) => (
         <Observer>
           {() => getItemIcon(item)}
@@ -1867,7 +1867,7 @@ export default class DataStorage extends React.Component {
         this.filterDropdownVisible = visible ? 'name' : undefined;
       },
       ...filteredStatus([FILTER_FIELDS.name]),
-      onCellClick: (item) => this.didSelectDataStorageItem(item)
+      onCell: (item) => ({onClick: () => this.didSelectDataStorageItem(item)})
     };
     const sizeColumn = {
       dataIndex: 'size',
@@ -1890,7 +1890,7 @@ export default class DataStorage extends React.Component {
         this.filterDropdownVisible = visible ? 'size' : undefined;
       },
       ...filteredStatus([FILTER_FIELDS.sizeGreaterThan, FILTER_FIELDS.sizeLessThan]),
-      onCellClick: (item) => this.didSelectDataStorageItem(item)
+      onCell: (item) => ({onClick: () => this.didSelectDataStorageItem(item)})
     };
     const changedColumn = {
       dataIndex: 'changed',
@@ -1913,7 +1913,7 @@ export default class DataStorage extends React.Component {
         this.filterDropdownVisible = visible ? 'date' : undefined;
       },
       ...filteredStatus([FILTER_FIELDS.dateAfter, FILTER_FIELDS.dateBefore]),
-      onCellClick: (item) => this.didSelectDataStorageItem(item)
+      onCell: (item) => ({onClick: () => this.didSelectDataStorageItem(item)})
     };
     const labelsColumn = {
       dataIndex: 'labels',
@@ -1926,7 +1926,7 @@ export default class DataStorage extends React.Component {
           labels={labels}
         />
       ),
-      onCellClick: (item) => this.didSelectDataStorageItem(item)
+      onCell: (item) => ({onClick: () => this.didSelectDataStorageItem(item)})
     };
     const actionsColumn = {
       key: 'actions',

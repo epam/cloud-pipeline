@@ -426,7 +426,7 @@ export default class ShareWithForm extends React.Component {
           overflowY: 'auto'
         }}
         rowClassName={getRowClassName}
-        onRowClick={selectPermission}
+        onRow={(record) => ({ onClick: () => selectPermission(record) })}
         title={() => title}
         showHeader={false}
         size="small"

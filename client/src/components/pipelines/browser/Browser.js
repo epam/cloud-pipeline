@@ -370,9 +370,9 @@ export default class Folder extends localization.LocalizedReactComponent {
         loading={this.props.folder.pending}
         pagination={{pageSize: 40}}
         locale={{emptyText: 'Folder is empty'}}
-        onRowClick={(item) => {
-          this.navigate(item);
-        }}
+        onRow={(item) => ({
+          onClick: () => this.navigate(item)
+        })}
         size="small" />
     );
   };

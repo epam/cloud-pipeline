@@ -248,7 +248,7 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
         })(
           <Input
             type="textarea"
-            autosize={{minRows: 2, maxRows: 6}}
+            autoSize={{minRows: 2, maxRows: 6}}
             disabled={this.props.pending || readOnly}
           />
         )}

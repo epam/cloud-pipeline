@@ -877,7 +877,7 @@ export class RunConfirmation extends React.Component {
       <Select.OptGroup key={g.key} label={g.key}>
         {
           g.storages.map(s => (
-            <Select.Option key={s.id} value={s.id.toString()} name={s.name} pathMask={s.pathMask}>
+            <Select.Option key={s.id} value={s.id.toString()} name={s.name} pathmask={s.pathMask}>
               <Tooltip
                 overlayClassName="limit-mounts-warning"
                 title={s.pathMask}>
@@ -939,7 +939,7 @@ export class RunConfirmation extends React.Component {
           filterOption={
             (input, option) =>
               option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0 ||
-              option.props.pathMask.toLowerCase().indexOf(input.toLowerCase()) >= 0}
+              (option.props.pathmask || '').toLowerCase().indexOf(input.toLowerCase()) >= 0}
           value={value}
         >
           {this.getSelectStructure()}

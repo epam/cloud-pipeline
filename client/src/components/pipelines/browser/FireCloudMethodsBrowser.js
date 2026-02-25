@@ -78,7 +78,7 @@ export default class FireCloudMethodsBrowser extends React.Component {
         <Table
           className={styles.childrenContainer}
           rowClassName={() => styles.fireCloudMethodRow}
-          onRowClick={this.onMethodSelect}
+          onRow={(record) => ({ onClick: () => this.onMethodSelect(record) })}
           style={{width: '100%'}}
           columns={this.columns}
           dataSource={this.methods}

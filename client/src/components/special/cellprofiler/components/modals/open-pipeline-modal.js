@@ -168,7 +168,7 @@ class OpenPipelineModal extends React.Component {
         rowKey="key"
         size="small"
         rowClassName={() => classNames(styles.analysisPipelineRow)}
-        onRowClick={(pipeline, opts, event) => togglePipeline(pipeline, event)}
+        onRow={(pipeline) => ({ onClick: (event) => togglePipeline(pipeline, event) })}
         onExpand={onExpand}
         expandedRowKeys={expandedKeys}
         onExpandedRowsChange={keys => this.setState({expandedKeys: keys})}

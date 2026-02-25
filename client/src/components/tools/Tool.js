@@ -563,7 +563,7 @@ export default class Tool extends localization.LocalizedReactComponent {
       if (this.state.editDescriptionMode) {
         return (
           <Input.TextArea
-            autosize
+            autoSize
             autoFocus
             id="description-input"
             value={this.state.description}
@@ -1214,15 +1214,17 @@ export default class Tool extends localization.LocalizedReactComponent {
           columns={columns}
           dataSource={data}
           pagination={{pageSize: 20}}
-          onRowClick={(version) => {
-            if (this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) &&
-              !/^windows$/i.test(version.platform) &&
-              version.status !== ScanStatuses.notScanned) {
-              this.props.router.push(`/tool/${this.props.toolId}/info/${version.name}/scaninfo`);
-            } else {
-              this.props.router.push(`/tool/${this.props.toolId}/info/${version.name}/settings`);
+          onRow={(version) => ({
+            onClick: () => {
+              if (this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) &&
+                !/^windows$/i.test(version.platform) &&
+                version.status !== ScanStatuses.notScanned) {
+                this.props.router.push(`/tool/${this.props.toolId}/info/${version.name}/scaninfo`);
+              } else {
+                this.props.router.push(`/tool/${this.props.toolId}/info/${version.name}/settings`);
+              }
             }
-          }}
+          })}
           size="small" />
         {
           containsUnScannedVersion &&

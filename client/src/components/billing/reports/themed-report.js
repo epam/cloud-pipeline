@@ -187,7 +187,7 @@ class ThemedReportConfiguration {
   }
 }
 
-class ThemedReport extends React.PureComponent {
+class ThemedReport extends React.Component {
   @observable configuration = new ThemedReportConfiguration();
   componentDidMount () {
     const {themes} = this.props;

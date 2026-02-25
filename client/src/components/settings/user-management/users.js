@@ -608,7 +608,7 @@ export default class UsersManagement extends React.Component {
         dataSource={this.filteredUsers}
         onChange={this.handleUserTableChange}
         rowClassName={user => `user-${user.id}`}
-        onRowClick={(user) => this.openEditUserRolesDialog(user)}
+        onRow={(user) => ({ onClick: () => this.openEditUserRolesDialog(user) })}
         pagination={{
           total: this.filteredUsers.length,
           PAGE_SIZE,

@@ -355,7 +355,7 @@ class BillingCentersTable extends React.Component {
             columns={tableColumns}
             loading={pending}
             pagination={false}
-            onRowClick={record => onUserSelect({key: record.name})}
+            onRow={(record) => ({ onClick: () => onUserSelect({key: record.name}) })}
             size="small"
           />
         </div>

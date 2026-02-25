@@ -704,7 +704,7 @@ class RunTable extends localization.LocalizedReactComponent {
           }
         )}
         dataSource={runs}
-        onRowClick={onRunClick || this.onRunClick}
+        onRow={(record) => ({ onClick: () => (onRunClick || this.onRunClick)(record) })}
         pagination={false}
         loading={pending}
         size="small"

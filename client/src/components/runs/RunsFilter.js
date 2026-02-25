@@ -381,7 +381,7 @@ class RunsFilter extends React.Component {
           showHeader={false}
           columns={columns}
           rowClassName={() => styles.savedFiltersRow}
-          onRowClick={onSelect}
+          onRow={(record) => ({ onClick: () => onSelect(record) })}
           size="small" />
       </Row>
     );

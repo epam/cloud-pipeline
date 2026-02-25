@@ -217,8 +217,13 @@ class RunCapabilities extends React.Component {
   };
 
   componentDidMount () {
+    this._mounted = true;
     this.fetchDockerImageOS();
     this.setInitialRequiredCapabilities();
+  }
+
+  componentWillUnmount () {
+    this._mounted = false;
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
@@ -250,7 +255,7 @@ class RunCapabilities extends React.Component {
         const initialRequired = required
           .filter((capability) => enabled.includes(capability.value))
           .map((capability) => capability.value);
-        if (token === this.token) {
+        if (token === this.token && this._mounted) {
           this.setState({
             initialRequiredCapabilities: initialRequired
           });
@@ -327,7 +332,11 @@ class RunCapabilities extends React.Component {
       }, this.correctCapabilitiesSelection);
     } else if (dockerImage) {
       fetchToolOS(dockerImage, dockerRegistries)
-        .then(os => this.setState({os}, this.correctCapabilitiesSelection));
+        .then(os => {
+          if (this._mounted) {
+            this.setState({os}, this.correctCapabilitiesSelection);
+          }
+        });
     } else {
       this.setState({
         os: undefined

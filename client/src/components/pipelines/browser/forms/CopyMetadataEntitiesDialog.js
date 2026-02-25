@@ -195,7 +195,7 @@ class CopyMetadataEntitiesDialog extends React.Component {
           pagination={false}
           rowClassName={() => styles.row}
           showHeader={false}
-          onRowClick={onSelect}
+          onRow={(record) => ({ onClick: () => onSelect(record) })}
           size="small"
         />
       </div>

@@ -704,7 +704,7 @@ export default class PipelineCode extends Component {
           dataSource={this.createScriptsTableData()}
           pagination={false}
           showHeader={false}
-          onRowClick={this.didSelectSourceItem}
+          onRow={(record) => ({ onClick: () => this.didSelectSourceItem(record) })}
           rowKey={file => file.path}
           rowClassName={() => styles.sourceItemRow}
           title={() => header}

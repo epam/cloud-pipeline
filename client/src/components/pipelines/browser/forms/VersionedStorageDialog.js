@@ -136,7 +136,7 @@ class VersionedStorageDialog extends React.Component {
               {getFieldDecorator('description')(
                 <Input
                   type="textarea"
-                  autosize={{minRows: 2, maxRows: 6}}
+                  autoSize={{minRows: 2, maxRows: 6}}
                   disabled={pending}
                   onPressEnter={this.handleSubmit}
                 />
@@ -164,7 +164,7 @@ class VersionedStorageDialog extends React.Component {
                   <Input
                     type="textarea"
                     disabled={pending}
-                    autosize={{minRows: 5}}
+                    autoSize={{minRows: 5}}
                     placeholder={[
                       'To set folder paths, use "/" as divider,',
                       'for example:\n',

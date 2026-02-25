@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import {
   Button,
   Icon,
-  LocaleProvider,
+  ConfigProvider,
   Modal
 } from 'antd';
 import enUS from 'antd/lib/locale-provider/en_US';
@@ -282,9 +282,9 @@ function registerCallback (callback) {
 
 ReactDOM.render(
   (
-    <LocaleProvider locale={enUS}>
+    <ConfigProvider locale={enUS}>
       <ConfirmPauseContainer onRegisterCallback={registerCallback} />
-    </LocaleProvider>
+    </ConfigProvider>
   ),
   pauseRunDialogContainer
 );

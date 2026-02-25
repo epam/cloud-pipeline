@@ -19,6 +19,7 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {
   Alert,
+  AutoComplete,
   Button,
   Checkbox,
   Icon,
@@ -547,7 +548,7 @@ class UserIntegrityCheck extends React.Component {
                   return (
                     <td key={column}>
                       <div className={styles.cell}>
-                        <Select
+                        <AutoComplete
                           className={
                             classNames(
                               'cp-settings-users-integrity-check',
@@ -558,7 +559,6 @@ class UserIntegrityCheck extends React.Component {
                                   this.isNewValue(dictionary, userMetadata[column])
                               })
                           }
-                          mode="combobox"
                           size="large"
                           style={{flex: 1}}
                           allowClear
@@ -581,25 +581,25 @@ class UserIntegrityCheck extends React.Component {
                         >
                           {
                             this.isNewValue(dictionary, userMetadata[column]) && (
-                              <Select.Option
+                              <AutoComplete.Option
                                 key={userMetadata[column]}
                                 value={userMetadata[column]}
                               >
                                 {userMetadata[column]} <i>(new value)</i>
-                              </Select.Option>
+                              </AutoComplete.Option>
                             )
                           }
                           {
                             (dictionary.values || []).map((value) => (
-                              <Select.Option
+                              <AutoComplete.Option
                                 key={value.id}
                                 value={value.value || ''}
                               >
                                 {value.value || (<i>Empty value</i>)}
-                              </Select.Option>
+                              </AutoComplete.Option>
                             ))
                           }
-                        </Select>
+                        </AutoComplete>
                         {
                           fieldParentLink && (
                             <Tooltip

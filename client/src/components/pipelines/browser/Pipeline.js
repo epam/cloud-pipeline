@@ -194,7 +194,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       key: 'type',
       className: styles.treeItemType,
       render: (item) => this.renderTreeItemType(item),
-      onCellClick: (item) => this.navigate(item)
+      onCell: (item) => ({onClick: () => this.navigate(item)})
     },
     {
       dataIndex: 'name',
@@ -202,14 +202,14 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       title: 'Name',
       className: `${styles.treeItemName} ${styles.treeItemVersion}`,
       render: this.renderTreeItemText,
-      onCellClick: (item) => this.navigate(item)
+      onCell: (item) => ({onClick: () => this.navigate(item)})
     },
     {
       dataIndex: 'description',
       key: 'description',
       className: `${styles.treeItemName} ${styles.treeItemNameWrap}`,
       render: this.renderTreeItemCollapsedText,
-      onCellClick: (item) => this.navigate(item)
+      onCell: (item) => ({onClick: () => this.navigate(item)})
     },
     {
       dataIndex: 'createdDate',
@@ -228,13 +228,13 @@ export default class Pipeline extends localization.LocalizedReactComponent {
           item
         );
       },
-      onCellClick: (item) => this.navigate(item)
+      onCell: (item) => ({onClick: () => this.navigate(item)})
     },
     {
       key: 'actions',
       className: styles.treeItemActions,
       render: (item) => this.renderTreeItemActions(item),
-      onCellClick: (item) => this.navigate(item)
+      onCell: (item) => ({onClick: () => this.navigate(item)})
     }
   ];
 
@@ -243,13 +243,13 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       key: 'selection',
       className: styles.treeItemSelection,
       render: (item) => this.renderTreeItemSelection(item),
-      onCellClick: (item) => this.navigate(item)
+      onCell: (item) => ({onClick: () => this.navigate(item)})
     },
     {
       key: 'type',
       className: styles.treeItemType,
       render: (item) => this.renderTreeItemType(item),
-      onCellClick: (item) => this.navigate(item)
+      onCell: (item) => ({onClick: () => this.navigate(item)})
     },
     {
       dataIndex: 'name',
@@ -257,14 +257,14 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       title: 'Name',
       className: styles.treeItemName,
       render: this.renderTreeItemText,
-      onCellClick: (item) => this.navigate(item)
+      onCell: (item) => ({onClick: () => this.navigate(item)})
     },
     {
       dataIndex: 'description',
       key: 'description',
       className: styles.treeItemName,
       render: this.renderTreeItemCollapsedText,
-      onCellClick: (item) => this.navigate(item)
+      onCell: (item) => ({onClick: () => this.navigate(item)})
     },
     {
       dataIndex: 'createdDate',
@@ -282,7 +282,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
           item
         );
       },
-      onCellClick: (item) => this.navigate(item)
+      onCell: (item) => ({onClick: () => this.navigate(item)})
     },
     {
       key: 'actions',

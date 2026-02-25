@@ -435,7 +435,7 @@ class VersionedStorageTable extends React.Component {
           rowKey={(record) => record.name}
           dataSource={this.data}
           size="small"
-          onRowClick={this.onRowClick}
+          onRow={(record, index) => ({ onClick: (event) => this.onRowClick(record, index, event) })}
           pagination={false}
           rowClassName={() => styles.tableRow}
           loading={pending}

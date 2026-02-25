@@ -128,7 +128,7 @@ const MetadataDisplayOptions = {
     }
   },
   edit: {
-    autosize: {
+    autoSize: {
       maxRows: 6,
       minRows: undefined
     }
@@ -1122,7 +1122,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
                   style: {height: '24px'}
                 } : {
                   type: 'textarea',
-                  autosize: MetadataDisplayOptions.edit.autosize
+                  autoSize: MetadataDisplayOptions.edit.autoSize
                 })}
                 className={classNames(
                   'qa-metadata-item-value-input',
@@ -1392,7 +1392,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
             onChange={onChange('value')}
             size="small"
             type="textarea"
-            autosize
+            autoSize
           />
         );
       }

@@ -393,7 +393,6 @@ module.exports = function (webpackEnv) {
                   math: 'always',
                   javascriptEnabled: true,
                   modifyVars: {
-                    '@icon-url': `"${publicUrl}/iconfont/iconfont"`,
                     '@icons-root': `"${publicUrl}/icons"`
                   }
                 }
