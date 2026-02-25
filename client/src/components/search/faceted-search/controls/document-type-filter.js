@@ -20,7 +20,6 @@ import {observer} from 'mobx-react';
 import {
   Button,
   Dropdown,
-  Icon,
   Menu
 } from 'antd';
 import {CheckCircleFilled, FilterOutlined} from '@ant-design/icons';
@@ -84,31 +83,30 @@ class DocumentTypeFilter extends localization.LocalizedReactComponent {
         onClick={this.handleFilterClick}
         className={styles.azaza}
       >
-        {this.filters.map(filter => (
-          <Menu.Item
-            key={filter.key}
-            style={{
-              cursor: !filter.enabled && filter.count === 0
-                ? 'default'
-                : 'pointer'
-            }}
-          >
-            <div
-              className={
-                classNames(
-                  styles.documentFilter,
-                  'cp-search-faceted-button',
-                  {
-                    'selected': filter.enabled,
-                    'disabled': (!filter.enabled && showCounts && filter.count === 0) || disabled
-                  }
-                )
-              }
+        {this.filters.map(filter => {
+          const FilterIcon = filter.icon;
+          return (
+            <Menu.Item
+              key={filter.key}
+              style={{
+                cursor: !filter.enabled && filter.count === 0
+                  ? 'default'
+                  : 'pointer'
+              }}
             >
-              <Icon
-                className={classNames('cp-icon-larger', styles.icon)}
-                type={filter.icon}
-              />
+              <div
+                className={
+                  classNames(
+                    styles.documentFilter,
+                    'cp-search-faceted-button',
+                    {
+                      'selected': filter.enabled,
+                      'disabled': (!filter.enabled && showCounts && filter.count === 0) || disabled
+                    }
+                  )
+                }
+              >
+                {FilterIcon && <FilterIcon className={classNames('cp-icon-larger', styles.icon)} />}
               {filter.title(this.localizedString)()}
               {filter.count > 0 && showCounts
                 ? (
@@ -125,7 +123,8 @@ class DocumentTypeFilter extends localization.LocalizedReactComponent {
               ) : null}
             </div>
           </Menu.Item>
-        ))}
+          );
+        })}
       </Menu>
     );
     return (

@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
-import {Icon, Row} from 'antd';
+import {Row} from 'antd';
 import {CaretRightOutlined, ExportOutlined, LoadingOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import renderHighlights from './renderHighlights';
@@ -233,6 +233,7 @@ export default class ToolGroupPreview extends React.Component {
     const highlights = renderHighlights(this.props.item);
     const attributes = renderAttributes(this.props.metadata);
     const tools = this.renderTools();
+    const ItemIcon = PreviewIcons[this.props.item.type];
 
     return (
       <div
@@ -245,7 +246,7 @@ export default class ToolGroupPreview extends React.Component {
       >
         <div className={styles.header}>
           <Row key="name" className={classNames(styles.title, 'cp-search-header-title')} type="flex" align="middle" >
-            <Icon type={PreviewIcons[this.props.item.type]} />
+            {ItemIcon && <ItemIcon />}
             <span>{this.path}</span>
           </Row>
           {

@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import AWSRegionTag from '../../special/AWSRegionTag';
-import {Icon, Row} from 'antd';
+import {Row} from 'antd';
 import {CaretRightOutlined, LoadingOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import renderHighlights from './renderHighlights';
@@ -496,6 +496,7 @@ export default class S3FilePreview extends React.Component {
       ? null
       : renderAttributes(this.props.metadata, {tags: true});
     const preview = this.renderPreview();
+    const ItemIcon = PreviewIcons[this.props.item.type];
     return (
       <div
         className={
@@ -507,7 +508,7 @@ export default class S3FilePreview extends React.Component {
       >
         <div className={classNames(styles.header, {[styles.shrinkedHeader]: this.state.hideInfo})}>
           <Row className={classNames(styles.title, 'cp-search-header-title')}>
-            <Icon type={PreviewIcons[this.props.item.type]} />
+            {ItemIcon && <ItemIcon />}
             <span>{this.props.item.name}</span>
           </Row>
           {

@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Icon, Row, Tooltip} from 'antd';
+import {Row, Tooltip} from 'antd';
 import {getRunStatusIcon} from './run-status-iconset';
 import DefaultStyles from './run-status-styles';
 import StatusTooltips from './run-status-tooltips';
@@ -25,7 +25,7 @@ import '../../../staticStyles/tooltip-without-arrow.css';
 
 const StatusIcon = (props) => {
   const status = getStatus(props);
-  const icon = getRunStatusIcon(status, props.iconSet);
+  const IconComponent = getRunStatusIcon(status, props.iconSet);
   const className = [props.className, DefaultStyles[status]].filter(Boolean).join(' ');
   let iconStyle = {verticalAlign: 'middle', fontWeight: 'normal', fontSize: 'large'};
   if (props.small) {
@@ -35,12 +35,9 @@ const StatusIcon = (props) => {
     iconStyle = Object.assign(iconStyle, props.additionalStyle);
   }
 
-  const result = (
-    <Icon
-      className={className}
-      type={icon}
-      style={iconStyle} />
-  );
+  const result = IconComponent
+    ? <IconComponent className={className} style={iconStyle} />
+    : null;
   if (props.displayTooltip && StatusTooltips.hasOwnProperty(status)) {
     const {description, title} = StatusTooltips[status];
     if (!!title || !!description) {

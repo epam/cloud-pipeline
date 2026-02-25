@@ -20,7 +20,6 @@ import {inject, observer} from 'mobx-react';
 import {observable, computed} from 'mobx';
 import classNames from 'classnames';
 import {
-  Icon,
   Input,
   message,
   Tooltip,
@@ -287,12 +286,9 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
   };
 
   renderIcon = (resultItem) => {
-    if (PreviewIcons[resultItem.type]) {
-      return (
-        <Icon
-          className={styles.searchResultItemIcon}
-          type={PreviewIcons[resultItem.type]} />
-      );
+    const ItemIcon = PreviewIcons[resultItem.type];
+    if (ItemIcon) {
+      return <ItemIcon className={styles.searchResultItemIcon} />;
     }
     return null;
   };
@@ -690,6 +686,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
               this.searchTypesArray.map((type, index) => {
                 const disabled = this.state.aggregates && !this.state.aggregates[type.key];
                 const selected = !disabled && this.state.selectedGroupTypes.indexOf(type.key) >= 0;
+                const TypeIcon = type.icon;
                 return (
                   <div
                     className={
@@ -704,7 +701,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
                     }
                     onClick={this.enableDisableSearchGroup(type.key, disabled)}
                     key={index}>
-                    <Icon type={type.icon} />
+                    {TypeIcon && <TypeIcon />}
                     <span className={styles.typeTitle}>
                       {
                         type.title(this.localizedString)(

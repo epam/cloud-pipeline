@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import AWSRegionTag from '../../special/AWSRegionTag';
-import {Icon, Row} from 'antd';
+import {Row} from 'antd';
 import {FileOutlined, FolderOutlined, LoadingOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import renderHighlights from './renderHighlights';
@@ -113,6 +113,7 @@ export default class S3BucketPreview extends React.Component {
       : null;
     const description = loadedDescription || propsDescription;
     const items = this.renderItems();
+    const ItemIcon = PreviewIcons[this.props.item.type];
     return (
       <div
         className={
@@ -124,7 +125,7 @@ export default class S3BucketPreview extends React.Component {
       >
         <div className={styles.header}>
           <Row className={classNames(styles.title, 'cp-search-header-title')} type="flex" align="middle">
-            <Icon type={PreviewIcons[this.props.item.type]} />
+            {ItemIcon && <ItemIcon />}
             <span style={{padding: '0px 5px'}}>{this.props.item.name}</span>
             {
               this.props.dataStorageInfo && this.props.dataStorageInfo.loaded &&

@@ -187,14 +187,13 @@ export default class FolderPreview extends React.Component {
               (items.length > MAX_ITEMS
                 ? items.slice(0, MAX_ITEMS)
                 : items || []).map((item, index) => {
+                  const ItemIcon = PreviewIcons[item.type];
                   return (
                     <tr key={index} style={rowStyle}>
                       <td className={styles.firstCell}>
                         {
-                          PreviewIcons[item.type]
-                            ? <Icon
-                              className={styles.searchResultItemIcon}
-                              type={PreviewIcons[item.type]} />
+                          ItemIcon
+                            ? <ItemIcon className={styles.searchResultItemIcon} />
                             : item.icon && <Icon
                               className={styles.searchResultItemIcon}
                               type={item.icon} />
@@ -218,6 +217,7 @@ export default class FolderPreview extends React.Component {
       return null;
     }
 
+    const HeaderIcon = PreviewIcons[this.props.item.type];
     const highlights = renderHighlights(this.props.item);
     const attributes = renderAttributes(this.folderMetadataTags, {tags: true});
     const items = this.renderItems();
@@ -233,7 +233,7 @@ export default class FolderPreview extends React.Component {
       >
         <div className={styles.header}>
           <Row className={classNames(styles.title, 'cp-search-header-title')} type="flex" align="middle">
-            <Icon type={PreviewIcons[this.props.item.type]} />
+            {HeaderIcon && <HeaderIcon />}
             <span>{this.props.item.name}</span>
           </Row>
         </div>

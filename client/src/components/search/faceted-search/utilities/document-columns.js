@@ -16,7 +16,6 @@
 
 import React from 'react';
 import classNames from 'classnames';
-import {Icon} from 'antd';
 import {InfoCircleOutlined} from '@ant-design/icons';
 import {isObservableArray} from 'mobx';
 import {PreviewIcons} from '../../preview/previewIcons';
@@ -76,12 +75,9 @@ function fetchAndParseExtraColumns (preferences) {
 }
 
 const renderIcon = (resultItem) => {
-  if (PreviewIcons[resultItem.type]) {
-    return (
-      <Icon
-        className={classNames('cp-icon-larger', styles.icon, 'cp-search-result-item-main')}
-        type={PreviewIcons[resultItem.type]} />
-    );
+  const ItemIcon = PreviewIcons[resultItem.type];
+  if (ItemIcon) {
+    return <ItemIcon className={classNames('cp-icon-larger', styles.icon, 'cp-search-result-item-main')} />;
   }
   return null;
 };

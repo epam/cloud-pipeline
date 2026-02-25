@@ -16,9 +16,14 @@
 
 import React from 'react';
 import {
-  Icon,
   Tooltip
 } from 'antd';
+import {
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  ExclamationCircleOutlined,
+  MailOutlined
+} from '@ant-design/icons';
 import {DESTINATIONS} from '../life-cycle-edit-modal';
 // eslint-disable-next-line max-len
 import {EXECUTION_STATUSES} from '../../../../../../../models/dataStorage/lifeCycleRules/DataStorageLifeCycleRulesExecutionLoad';
@@ -28,22 +33,22 @@ const FORMAT = 'YYYY-MM-DD';
 
 const STATUS_CONFIG = {
   [EXECUTION_STATUSES.NOTIFICATION_SENT]: {
-    type: 'mail',
+    icon: MailOutlined,
     className: 'cp-primary',
     description: 'Notification sent'
   },
   [EXECUTION_STATUSES.RUNNING]: {
-    type: 'clock-circle-o',
+    icon: ClockCircleOutlined,
     className: 'cp-primary',
     description: 'Running'
   },
   [EXECUTION_STATUSES.SUCCESS]: {
-    type: 'check-circle-o',
+    icon: CheckCircleOutlined,
     className: 'cp-success',
     description: 'Success'
   },
   [EXECUTION_STATUSES.FAILED]: {
-    type: 'exclamation-circle-o',
+    icon: ExclamationCircleOutlined,
     className: 'cp-error',
     description: 'Failed'
   }
@@ -60,6 +65,8 @@ const columns = [{
   key: 'action',
   render: (action, record) => {
     if (action === 'Transition') {
+      const config = STATUS_CONFIG[record.status];
+      const StatusIconComponent = config ? config.icon : null;
       return (
         <div
           style={{
@@ -71,13 +78,10 @@ const columns = [{
           <span>
             {action}
           </span>
-          {STATUS_CONFIG[record.status] ? (
-            <Tooltip
-              title={STATUS_CONFIG[record.status].description}
-            >
-              <Icon
-                type={STATUS_CONFIG[record.status].type}
-                className={STATUS_CONFIG[record.status].className}
+          {StatusIconComponent ? (
+            <Tooltip title={config.description}>
+              <StatusIconComponent
+                className={config.className}
                 style={{marginLeft: 5, fontSize: 'larger'}}
               />
             </Tooltip>

@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
-import {Icon, Row} from 'antd';
+import {Row} from 'antd';
 import {LoadingOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import renderHighlights from './renderHighlights';
@@ -122,6 +122,7 @@ export default class MetadataEntityPreview extends React.Component {
       return null;
     }
 
+    const ItemIcon = PreviewIcons[this.props.item.type];
     const highlights = renderHighlights(this.props.item);
     const items = this.renderItems();
 
@@ -136,7 +137,7 @@ export default class MetadataEntityPreview extends React.Component {
       >
         <div className={styles.header}>
           <Row className={classNames(styles.title, 'cp-search-header-title')} type="flex" align="middle">
-            <Icon type={PreviewIcons[this.props.item.type]} />
+            {ItemIcon && <ItemIcon />}
             <span>{this.props.item.name}</span>
           </Row>
           {
