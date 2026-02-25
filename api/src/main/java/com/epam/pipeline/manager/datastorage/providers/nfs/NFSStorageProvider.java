@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.access.DataAccessEvent;
 import com.epam.pipeline.entity.datastorage.access.DataAccessType;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
+import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.exception.ObjectNotFoundException;
 import com.epam.pipeline.manager.datastorage.FileShareMountManager;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoredListingContainer;
@@ -47,6 +48,7 @@ import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Constants;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.user.ExternalUIDManager;
 import com.epam.pipeline.utils.FileContentUtils;
 import com.epam.pipeline.utils.PosixPermissionUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -101,6 +103,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     private final FileShareMountManager shareMountManager;
     private final NFSStorageMounter nfsStorageMounter;
     private final AuthManager authManager;
+    private final ExternalUIDManager externalUIDManager;
     private final Set<PosixFilePermission> filePermissions;
     private final Set<PosixFilePermission> folderPermissions;
     private final Integer groupUID;
@@ -110,6 +113,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
                               final FileShareMountManager shareMountManager,
                               final NFSStorageMounter nfsStorageMounter,
                               final AuthManager authManager,
+                              final ExternalUIDManager externalUIDManager,
                               @Value("${data.storage.nfs.default.umask:0002}") final String fileShareUMask,
                               @Value("${data.storage.nfs.default.group.uid:}") final Integer groupUID,
                               final MessageHelper messageHelper,
@@ -119,6 +123,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
         this.shareMountManager = shareMountManager;
         this.nfsStorageMounter = nfsStorageMounter;
         this.authManager = authManager;
+        this.externalUIDManager = externalUIDManager;
         final Set<PosixFilePermission> allowedPermissionsFromUMask =
                 PosixPermissionUtils.getAllowedPermissionsFromUMask(fileShareUMask);
         // default mask for folders 777 -> no need for additional filtering
@@ -398,12 +403,23 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
             Files.setPosixFilePermissions(file.toPath(), permissions);
             if (!preferenceManager.getPreference(SystemPreferences.SYSTEM_SSH_DEFAULT_ROOT_USER_ENABLED)) {
                 Optional.ofNullable(authManager.getCurrentUser())
-                        .ifPresent(user ->
-                                nfsStorageMounter.chown(file, user,
-                                        preferenceManager.getPreference(SystemPreferences.LAUNCH_UID_SEED),
-                                        groupUID));
+                        .ifPresent(user -> {
+                            final Long userUID = resolveUid(user);
+                            final Long userGID = resolveGid(user, userUID);
+                            nfsStorageMounter.chown(file, userUID, userGID);
+                        });
             }
         }
+    }
+
+    private Long resolveUid(final PipelineUser user) {
+        final Long defaultUserUID = user.getId() + preferenceManager.getPreference(SystemPreferences.LAUNCH_UID_SEED);
+        return externalUIDManager.resolveExternalUid(user).orElse(defaultUserUID);
+    }
+
+    private Long resolveGid(final PipelineUser user, final Long uid) {
+        final Long defaultGID = Optional.ofNullable(groupUID).map(Integer::longValue).orElse(uid);
+        return externalUIDManager.resolveExternalGid(user).orElse(defaultGID);
     }
 
     @Override

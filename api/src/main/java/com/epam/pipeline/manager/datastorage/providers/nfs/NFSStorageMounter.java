@@ -1,3 +1,18 @@
+/*
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.epam.pipeline.manager.datastorage.providers.nfs;
 
 import com.epam.pipeline.common.MessageConstants;
@@ -10,7 +25,6 @@ import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
-import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.exception.CmdExecutionException;
 import com.epam.pipeline.manager.CmdExecutor;
 import com.epam.pipeline.manager.datastorage.FileShareMountManager;
@@ -138,9 +152,8 @@ public class NFSStorageMounter {
         }
     }
 
-    public void chown(final File file, final PipelineUser user, final Integer seed, final Integer groupUID) {
-        final Long userUID = user.getId() + seed;
-        final Long resolvedGroupUID = Optional.ofNullable(groupUID).map(Integer::longValue).orElse(userUID);
+    public void chown(final File file, final Long userUID, final Long groupUID) {
+        final Long resolvedGroupUID = Optional.ofNullable(groupUID).orElse(userUID);
         final String path = file.getAbsoluteFile().getPath();
         final String cmd = String.format(CHOWN_CMD_PATTERN, userUID, resolvedGroupUID, path);
         try {
