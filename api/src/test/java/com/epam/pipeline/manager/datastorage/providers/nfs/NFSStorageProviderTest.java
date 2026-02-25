@@ -57,6 +57,7 @@ import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.*;
+import com.epam.pipeline.manager.user.ExternalUIDManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.mapper.region.CloudRegionMapper;
 import com.epam.pipeline.test.creator.CommonCreatorConstants;
@@ -134,6 +135,9 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
 
     @Autowired
     private NFSStorageMounter nfsStorageMounter;
+
+    @Autowired
+    private ExternalUIDManager externalUIDManager;
 
     @MockBean
     CloudRegionAspect cloudRegionAspect;
@@ -537,7 +541,8 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
 
         Whitebox.setInternalState(nfsProvider, "preferenceManager", mockPreferenceManager);
         Whitebox.setInternalState(nfsProvider, "authManager", mockAuthManager);
-        Whitebox.setInternalState(nfsProvider, "metadataManager", mockMetadataManager);
+        Whitebox.setInternalState(externalUIDManager, "preferenceManager", mockPreferenceManager);
+        Whitebox.setInternalState(externalUIDManager, "metadataManager", mockMetadataManager);
     }
 
     private void createFileForChownTest() {
