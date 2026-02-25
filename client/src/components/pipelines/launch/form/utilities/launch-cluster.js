@@ -19,12 +19,12 @@ import PropTypes from 'prop-types';
 import {
   Checkbox,
   InputNumber,
-  Icon,
   Modal,
   Radio,
   Row,
   Select
 } from 'antd';
+import { CloseOutlined } from '@ant-design/icons';
 import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {
@@ -1050,7 +1050,7 @@ class ConfigureClusterDialog extends React.Component {
                 className="cp-text underline"
                 style={{marginLeft: 5}}
               >
-                <Icon type="close" /> Reset
+                <CloseOutlined /> Reset
               </a>
             ) : null}
           </Row>

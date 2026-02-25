@@ -1,6 +1,6 @@
 import React from 'react';
 import classNames from 'classnames';
-import {Icon} from 'antd';
+import { ExclamationCircleOutlined } from '@ant-design/icons';
 import RunDetail, {RunDetailProps} from '../run-detail';
 
 function RunStateReason (props) {
@@ -22,7 +22,7 @@ function RunStateReason (props) {
       {...props}
       className={classNames(className, 'cp-error')}
     >
-      <Icon type="exclamation-circle-o" className="cp-error" />
+      <ExclamationCircleOutlined className="cp-error" />
       <span>Server failure reason: </span>
       <span>{stateReasonMessage}</span>
     </RunDetail>

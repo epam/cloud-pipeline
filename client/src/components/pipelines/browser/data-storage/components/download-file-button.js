@@ -18,7 +18,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
-import {Icon, message} from 'antd';
+import {message} from 'antd';
+import { DownloadOutlined, LoadingOutlined } from '@ant-design/icons';
 import Dropdown from 'rc-dropdown';
 import Menu, {MenuItem} from 'rc-menu';
 import GenerateDownloadUrlRequest from '../../../../../models/dataStorage/GenerateDownloadUrl';
@@ -192,9 +193,7 @@ class DownloadFileButton extends React.Component {
           onClick={(e) => this.handleClick(e)}
           style={style}
         >
-          <Icon
-            type={pending ? 'loading' : 'download'}
-          />
+          {pending ? <LoadingOutlined /> : <DownloadOutlined />}
         </a>
       );
     }
@@ -234,9 +233,7 @@ class DownloadFileButton extends React.Component {
           }
           onClick={event => event.preventDefault()}
         >
-          <Icon
-            type={pending ? 'loading' : 'download'}
-          />
+          {pending ? <LoadingOutlined /> : <DownloadOutlined />}
         </a>
       </Dropdown>
     );

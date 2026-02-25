@@ -1,13 +1,14 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
+import {
+  observer} from 'mobx-react';
 import {
   Checkbox,
   Popover,
-  Icon,
   DatePicker,
   Button
 } from 'antd';
+import { CloseOutlined } from '@ant-design/icons';
 import moment from 'moment';
 
 const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';
@@ -292,10 +293,7 @@ class RangeDatePicker extends React.Component {
               cursor: 'pointer'
             }}>
             <h4>Select date range</h4>
-            <Icon
-              type="close"
-              onClick={() => this.handleRangeFilterVisibility(false)}
-            />
+            <CloseOutlined onClick={() => this.handleRangeFilterVisibility(false)} />
           </div>
         )}
         trigger={['click', 'mouseover']}

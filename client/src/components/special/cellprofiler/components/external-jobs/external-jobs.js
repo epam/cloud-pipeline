@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Icon} from 'antd';
+import { LoadingOutlined } from '@ant-design/icons';
 import {computed} from 'mobx';
 import {observer} from 'mobx-react';
 import Collapse from '../collapse';
@@ -306,10 +306,7 @@ class CellProfilerExternalJobs extends React.Component {
             }
             {
               pending && (
-                <Icon
-                  type="loading"
-                  style={{marginLeft: 5}}
-                />
+                <LoadingOutlined style={{marginLeft: 5}} />
               )
             }
             {

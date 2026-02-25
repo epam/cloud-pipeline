@@ -1,7 +1,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Alert, Icon, Input} from 'antd';
+import {Alert, Input} from 'antd';
+import { LoadingOutlined } from '@ant-design/icons';
 import styles from './nextflow-engine-tasks.css';
 import TasksGroup from './tasks-group';
 import {
@@ -47,7 +48,7 @@ class TasksGroupList extends React.Component {
           </span>
           {
             pending && tasksGroups.length === 0 && (
-              <Icon type="loading" style={{marginLeft: 5}} />
+              <LoadingOutlined style={{marginLeft: 5}} />
             )
           }
           {
@@ -136,7 +137,7 @@ class TasksGroupList extends React.Component {
                 }}
               >
                 <span className="cp-text-not-important">
-                  <Icon type="loading" style={{marginRight: 5}} />
+                  <LoadingOutlined style={{marginRight: 5}} />
                   <span>Loading processes...</span>
                 </span>
               </div>

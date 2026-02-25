@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Button, Icon} from 'antd';
+import {Button} from 'antd';
+import { ShareAltOutlined } from '@ant-design/icons';
 import {getStorageFileAccessInfo} from '../../../../utils/object-storage';
 // eslint-disable-next-line max-len
 import SharedItemInfo from '../../../pipelines/browser/forms/data-storage-item-sharing/SharedItemInfo';
@@ -129,7 +130,7 @@ class PathAttributeShareButton extends React.PureComponent {
         style={style}
         className={className}
       >
-        <Icon type="share-alt" />
+        <ShareAltOutlined />
         <SharedItemInfo
           visible={shareDialogVisible}
           shareItems={itemsToShare}

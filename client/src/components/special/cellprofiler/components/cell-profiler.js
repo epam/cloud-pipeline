@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Alert, Button, Checkbox, Icon, message} from 'antd';
+import {Alert, Button, Checkbox, message} from 'antd';
+import { BarsOutlined, CaretRightOutlined, DownloadOutlined, FileOutlined, FolderOpenOutlined, LoadingOutlined } from '@ant-design/icons';
 import Menu, {MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import {observer} from 'mobx-react';
@@ -171,16 +172,16 @@ class CellProfiler extends React.Component {
           onClick={onSelect}
         >
           <MenuItem key="New" disabled={disabled}>
-            <Icon type="file" /> New
+            <FileOutlined /> New
           </MenuItem>
           <MenuItem key="Open" disabled={disabled}>
-            <Icon type="folder-open" /> Open
+            <FolderOpenOutlined /> Open
           </MenuItem>
           <MenuItem key="Save" disabled={disabled}>
-            <Icon type="download" /> Save
+            <DownloadOutlined /> Save
           </MenuItem>
           <MenuItem key="SaveAsNew" disabled={disabled}>
-            <Icon type="download" /> Save as new
+            <DownloadOutlined /> Save as new
           </MenuItem>
         </Menu>
       </div>
@@ -194,7 +195,7 @@ class CellProfiler extends React.Component {
         <Button
           size="small"
         >
-          <Icon type="bars" />
+          <BarsOutlined />
           <span>Pipeline</span>
           <OpenPipelineModal
             visible={openPipelineModalVisible}
@@ -351,10 +352,10 @@ class CellProfiler extends React.Component {
             disabled={this.analysisDisabled}
             onClick={() => this.runAnalysis()}
           >
-            <Icon type="caret-right" />
+            <CaretRightOutlined />
             {
               analysis.pending && (
-                <Icon type="loading" />
+                <LoadingOutlined />
               )
             }
           </Button>

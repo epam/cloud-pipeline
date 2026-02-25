@@ -15,9 +15,15 @@
  */
 
 import React from 'react';
-import {observer} from 'mobx-react';
+import {
+  observer} from 'mobx-react';
 import PropTypes from 'prop-types';
-import {Row, Breadcrumb, Input, Icon, message} from 'antd';
+import {Row,
+  Breadcrumb,
+  Input,
+  message
+} from 'antd';
+import { LinkOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import styles from './DataStorageNavigation.css';
 import {getDataStorageItemFullPath} from '../../launch/dialogs/BucketBrowser';
@@ -179,16 +185,13 @@ export default class DataStorageNavigation extends React.Component {
               })}
             </Breadcrumb>
             {showCopyPath ? (
-              <Icon
-                className={classNames('cp-primary', styles.copyPath, {
+              <LinkOutlined className={classNames('cp-primary', styles.copyPath, {
                   [styles.hidden]: this.state.editable
                 })}
-                type="link"
                 onClick={event => {
                   event.stopPropagation();
                   this.onCopyPathClick();
-                }}
-              />
+                }} />
             ) : null}
           </div>
         ) : null}

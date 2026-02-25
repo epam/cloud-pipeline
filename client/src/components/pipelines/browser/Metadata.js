@@ -35,6 +35,7 @@ import {
   Pagination,
   Row
 } from 'antd';
+import { CaretDownOutlined, CaretUpOutlined, CloseOutlined, CloudUploadOutlined, DeleteOutlined, DownOutlined, FilterOutlined, LoadingOutlined, PlusOutlined, SettingOutlined, UploadOutlined } from '@ant-design/icons';
 import Menu, {MenuItem, Divider} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import {
@@ -667,14 +668,7 @@ export default class Metadata extends React.Component {
           border: 'none'
         }}
       >
-        <Icon
-          type="filter"
-          className={
-            classNames(
-              {'cp-primary': !!values || (key === 'createdDate' && (startDateFrom || endDateTo))}
-            )
-          }
-        />
+        <FilterOutlined className={ classNames( {'cp-primary': !!values || (key === 'createdDate' && (startDateFrom || endDateTo))} ) } />
       </Button>
     );
     if (/^date$/i.test(this.getColumnType(key))) {
@@ -1966,10 +1960,7 @@ export default class Metadata extends React.Component {
           key={Actions.addMetadata}
           className={classNames(styles.menuItem, Actions.addMetadata)}
         >
-          <Icon
-            type="plus"
-            style={{marginRight: 5}}
-          />
+          <PlusOutlined style={{marginRight: 5}} />
           Add instance
         </MenuItem>
       ));
@@ -1978,10 +1969,7 @@ export default class Metadata extends React.Component {
           key={Actions.upload}
           className={classNames(styles.menuItem, Actions.upload)}
         >
-          <Icon
-            type="upload"
-            style={{marginRight: 5}}
-          />
+          <UploadOutlined style={{marginRight: 5}} />
           Upload metadata
         </MenuItem>
       ));
@@ -1995,10 +1983,7 @@ export default class Metadata extends React.Component {
             key={Actions.transfer}
             className={classNames(styles.menuItem, Actions.transfer)}
           >
-            <Icon
-              type="cloud-upload-o"
-              style={{marginRight: 5}}
-            />
+            <CloudUploadOutlined style={{marginRight: 5}} />
             Transfer to the cloud
           </MenuItem>
         ));
@@ -2011,10 +1996,7 @@ export default class Metadata extends React.Component {
           key={Actions.deleteClass}
           className={classNames(styles.menuItem, Actions.deleteClass, 'cp-danger')}
         >
-          <Icon
-            type="delete"
-            style={{marginRight: 5}}
-          />
+          <DeleteOutlined style={{marginRight: 5}} />
           Delete class
         </MenuItem>
       ));
@@ -2049,9 +2031,7 @@ export default class Metadata extends React.Component {
             size="small"
             style={{lineHeight: 1, margin: '0 0 0 5px'}}
           >
-            <Icon
-              type="setting"
-            />
+            <SettingOutlined />
           </Button>
         </Dropdown>
       );
@@ -2112,9 +2092,9 @@ export default class Metadata extends React.Component {
           orderNumber = <sup style={{marginRight: 5}}>{number}</sup>;
         }
         if (orderBy.desc) {
-          icon = <Icon style={iconStyle} type="caret-down" />;
+          icon = <CaretDownOutlined style={iconStyle} />;
         } else {
-          icon = <Icon style={iconStyle} type="caret-up" />;
+          icon = <CaretUpOutlined style={iconStyle} />;
         }
       }
       return (
@@ -2355,9 +2335,7 @@ export default class Metadata extends React.Component {
             onClick={this.onClearFilters}
             style={{margin: '0 5px'}}
           >
-            <Icon
-              type="close"
-            />
+            <CloseOutlined />
             Clear filters
           </Button>
         );
@@ -2460,7 +2438,7 @@ export default class Metadata extends React.Component {
             <Button
               size="small"
             >
-              <Icon type="down" />
+              <DownOutlined />
             </Button>
           </Dropdown>
         </Button.Group>
@@ -2510,7 +2488,7 @@ export default class Metadata extends React.Component {
             >
               {totalRecordsInfo}
               {
-                loading && (<Icon type="loading" />)
+                loading && (<LoadingOutlined />)
               }
             </span>
           }

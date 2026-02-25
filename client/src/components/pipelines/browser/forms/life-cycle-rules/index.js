@@ -15,7 +15,9 @@
  */
 
 import React from 'react';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
 import {
@@ -23,9 +25,9 @@ import {
   Modal,
   Tooltip,
   Spin,
-  Icon,
   message
 } from 'antd';
+import { BookOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import DataStorageLifeCycleRulesLoad
   from '../../../../../models/dataStorage/lifeCycleRules/DataStorageLifeCycleRulesLoad';
 import DataStorageLifeCycleRulesUpdate
@@ -184,7 +186,7 @@ class LifeCycleRules extends React.Component {
           size="small"
           key="edit"
         >
-          <Icon type="edit" />
+          <EditOutlined />
         </Button>
       ),
       <Button
@@ -193,7 +195,7 @@ class LifeCycleRules extends React.Component {
         size="small"
         key="history"
       >
-        <Icon type="book" />
+        <BookOutlined />
       </Button>,
       !readOnly && (
         <Button
@@ -203,7 +205,7 @@ class LifeCycleRules extends React.Component {
           size="small"
           key="delete"
         >
-          <Icon type="delete" />
+          <DeleteOutlined />
         </Button>
       )
     ].filter(Boolean);
@@ -246,7 +248,7 @@ class LifeCycleRules extends React.Component {
                 className="cp-primary"
                 style={{marginLeft: 5, cursor: 'pointer'}}
               >
-                <Icon type="plus" />
+                <PlusOutlined />
                 {`${rule.transitions.length - 1} more`}
               </span>
             </Tooltip>
@@ -275,7 +277,7 @@ class LifeCycleRules extends React.Component {
             size="small"
             disabled={readOnly}
           >
-            <Icon type="plus" />
+            <PlusOutlined />
             Create
           </Button>
           {this.rules.length > 0 ? (

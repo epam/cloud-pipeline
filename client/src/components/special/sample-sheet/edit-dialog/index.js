@@ -21,9 +21,9 @@ import {
   Modal,
   message,
   Switch,
-  Icon,
   Upload
 } from 'antd';
+import { UploadOutlined } from '@ant-design/icons';
 import SampleSheet from '../edit-form';
 import CodeEditor from '../../CodeEditor';
 import {isSampleSheetContent} from '../utilities';
@@ -135,7 +135,7 @@ class SampleSheetEditDialog extends React.Component {
                   multiple={false}
                 >
                   <Button>
-                    <Icon type="upload" /> Upload
+                    <UploadOutlined /> Upload
                   </Button>
                 </Upload>
               </div>

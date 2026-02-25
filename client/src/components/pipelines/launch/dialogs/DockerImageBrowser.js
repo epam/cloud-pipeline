@@ -15,10 +15,19 @@
  */
 
 import React from 'react';
-import {observer} from 'mobx-react';
+import {
+  observer} from 'mobx-react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
-import {Modal, Row, Button, Dropdown, Icon, Table, Input, Select} from 'antd';
+import {Modal,
+  Row,
+  Button,
+  Dropdown,
+  Table,
+  Input,
+  Select
+} from 'antd';
+import { CaretRightOutlined, CheckCircleFilled, LoadingOutlined } from '@ant-design/icons';
 import LoadToolTags from '../../../../models/tools/LoadToolTags';
 import styles from './Browser.css';
 import registryName from '../../../tools/registryName';
@@ -150,7 +159,7 @@ export default class DockerImageBrowser extends React.Component {
     }
     if (this.groups.filter(r => r.id !== this.currentGroup.id).length === 0) {
       return [
-        <Icon type="caret-right" key="group-arrow" />,
+        <CaretRightOutlined key="group-arrow" />,
         <Button key="group" size="small" style={{border: 'none', fontWeight: 'bold'}} onClick={null}>
           {this.currentGroup ? renderGroupName(this.currentGroup) : 'Unknown group'}
         </Button>
@@ -190,7 +199,7 @@ export default class DockerImageBrowser extends React.Component {
       });
     };
     return [
-      <Icon type="caret-right" key="group-arrow" />,
+      <CaretRightOutlined key="group-arrow" />,
       <Dropdown
         visible={this.state.groupsDropDownVisible}
         onVisibleChange={onDropDownVisibleChanged}
@@ -249,7 +258,7 @@ export default class DockerImageBrowser extends React.Component {
     };
     if (this.currentGroup) {
       return [
-        <Icon key="tool-icon" type="caret-right" />,
+        <CaretRightOutlined key="tool-icon" />,
         <Input.Search
           key="tool-search"
           style={{flex: 1, marginLeft: 10}}
@@ -381,7 +390,7 @@ export default class DockerImageBrowser extends React.Component {
           if (toolIsSelected(tool)) {
             return (
               <span>
-                <Icon type="check-circle" style={{width: 20}} />
+                <CheckCircleFilled style={{width: 20}} />
                 {image}
               </span>
             );
@@ -402,7 +411,7 @@ export default class DockerImageBrowser extends React.Component {
           if (toolIsSelected(tool)) {
             const {tagsPending, tagsError, tags = []} = this.state;
             if (tagsPending) {
-              return <Icon type="loading" />;
+              return <LoadingOutlined />;
             }
             if (tagsError) {
               return <i>Error loading tags</i>;

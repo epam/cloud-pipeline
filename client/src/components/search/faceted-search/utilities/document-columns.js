@@ -17,6 +17,7 @@
 import React from 'react';
 import classNames from 'classnames';
 import {Icon} from 'antd';
+import { InfoCircleOutlined } from '@ant-design/icons';
 import {isObservableArray} from 'mobx';
 import {PreviewIcons} from '../../preview/previewIcons';
 import SearchItemTypes from '../../../../models/search/search-item-types';
@@ -99,9 +100,7 @@ const Name = {
       }}
     >
       <div className="cp-search-result-item-actions">
-        <Icon
-          type="info-circle-o"
-          className={
+        <InfoCircleOutlined className={
             classNames(
               'cp-search-result-item-action',
               'cp-icon-larger',
@@ -112,8 +111,7 @@ const Name = {
             e.stopPropagation();
             e.preventDefault();
             onClick && onClick(document);
-          }}
-        />
+          }} />
         {renderCheckBox && renderCheckBox(document)}
         <OpenInToolAction
           file={document.path}

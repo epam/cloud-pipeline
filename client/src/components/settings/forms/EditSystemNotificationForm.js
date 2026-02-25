@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Button, Modal, Form, Input, Row, Col, Spin, Select, Icon, Checkbox, Tabs} from 'antd';
+import {Button, Modal, Form, Input, Row, Col, Spin, Select, Checkbox, Tabs} from 'antd';
+import { CloseCircleOutlined, ExclamationCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import Markdown from '../../special/markdown';
 import styles from './EditSystemNotificationForm.css';
 
@@ -143,28 +144,19 @@ export default class EditSystemNotificationForm extends React.Component {
           <Select>
             <Select.Option key="INFO" value="INFO" title="Info">
               <div className={styles.select}>
-                <Icon
-                  type="info-circle-o"
-                  className="cp-setting-info cp-icon-large"
-                />
+                <InfoCircleOutlined className="cp-setting-info cp-icon-large" />
                 Info
               </div>
             </Select.Option>
             <Select.Option key="WARNING" value="WARNING" title="Warning">
               <div className={styles.select}>
-                <Icon
-                  type="exclamation-circle-o"
-                  className="cp-setting-warning cp-icon-large"
-                />
+                <ExclamationCircleOutlined className="cp-setting-warning cp-icon-large" />
                 Warning
               </div>
             </Select.Option>
             <Select.Option key="CRITICAL" value="CRITICAL" title="Critical">
               <div className={styles.select}>
-                <Icon
-                  type="close-circle-o"
-                  className="cp-setting-critical cp-icon-large"
-                />
+                <CloseCircleOutlined className="cp-setting-critical cp-icon-large" />
                 Critical
               </div>
             </Select.Option>

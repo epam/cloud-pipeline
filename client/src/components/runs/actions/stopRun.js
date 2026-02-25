@@ -16,10 +16,19 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom';
-import {observable} from 'mobx';
-import {Provider, observer} from 'mobx-react';
+import {
+  observable} from 'mobx';
+import {Provider,
+  observer} from 'mobx-react';
 import PropTypes from 'prop-types';
-import {Alert, Button, Checkbox, Icon, message, Modal, Row} from 'antd';
+import {Alert,
+  Button,
+  Checkbox,
+  message,
+  Modal,
+  Row
+} from 'antd';
+import { QuestionCircleFilled } from '@ant-design/icons';
 import moment from 'moment-timezone';
 import CommitRunForm from '../logs/forms/CommitRunForm';
 import PipelineRunCommit from '../../../models/pipelines/PipelineRunCommit';
@@ -306,10 +315,7 @@ class TerminateRunDialog extends React.Component {
         visible={this.state.visible}>
         <div>
           <Row style={{marginBottom: 10}} type="flex" align="middle">
-            <Icon
-              type="question-circle"
-              className="cp-stop-run-modal-confirm-icon"
-              style={{fontSize: 'x-large', marginLeft: 20}} />
+            <QuestionCircleFilled className="cp-stop-run-modal-confirm-icon" style={{fontSize: 'x-large', marginLeft: 20}} />
             <b
               style={{marginLeft: 10, fontSize: 14}}>Terminate {this.run.podId}?</b>
           </Row>

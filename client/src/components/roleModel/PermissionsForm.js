@@ -22,13 +22,13 @@ import {
   Button,
   Checkbox,
   Col,
-  Icon,
   Modal,
   Popover,
   Row,
   Table,
   Select
 } from 'antd';
+import { DeleteOutlined, TeamOutlined, UserAddOutlined, UserOutlined, UsergroupAddOutlined } from '@ant-design/icons';
 import {isObservableArray, observable, computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
@@ -244,14 +244,14 @@ export default class PermissionsForm extends React.Component {
           size="small"
           onClick={this.openFindUserDialog}
         >
-          <Icon type="user-add" />
+          <UserAddOutlined />
         </Button>
         <Button
           disabled={this.props.readonly || this.permissionsAreReadOnly}
           size="small"
           onClick={this.openFindGroupDialog}
         >
-          <Icon type="usergroup-add" />
+          <UsergroupAddOutlined />
         </Button>
       </span>
     );
@@ -724,9 +724,9 @@ export default class PermissionsForm extends React.Component {
         className: styles.userIcon,
         render: (item) => {
           if (item.sid.principal) {
-            return <Icon type="user" />;
+            return <UserOutlined />;
           }
-          return <Icon type="team" />;
+          return <TeamOutlined />;
         }
       },
       {
@@ -747,7 +747,7 @@ export default class PermissionsForm extends React.Component {
               )}
               onClick={this.removeUserOrGroupClicked(item)}
               size="small">
-              <Icon type="delete" />
+              <DeleteOutlined />
             </Button>
           </Row>
         )

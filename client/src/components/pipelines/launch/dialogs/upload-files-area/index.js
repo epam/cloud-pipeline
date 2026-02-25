@@ -1,8 +1,10 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import classNames from 'classnames';
-import {Icon} from 'antd';
+import { CloseOutlined, FileOutlined } from '@ant-design/icons';
 import displaySize from '../../../../../utils/displaySize';
 import styles from './upload-files-area.css';
 
@@ -126,15 +128,12 @@ class UploadFilesArea extends React.Component {
         <div className={styles.uploadFilesList}>
           {files.map((f, idx) => (
             <div key={`file-${f.name}-${idx}`} className={styles.uploadedFile}>
-              <Icon type="file" />
+              <FileOutlined />
               <span className={styles.uploadedFileName}>{f.name}</span>
               <span className={styles.uploadedFileSize}>({displaySize(f.size)})</span>
-              <Icon
-                type="close"
-                style={{marginLeft: 5}}
+              <CloseOutlined style={{marginLeft: 5}}
                 className={classNames('cp-error', styles.uploadedFileAction)}
-                onClick={() => this.onRemoveFile(f)}
-              />
+                onClick={() => this.onRemoveFile(f)} />
             </div>
           ))}
         </div>

@@ -18,10 +18,11 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {
-  Button, Checkbox,
-  Icon,
+  Button,
+  Checkbox,
   Select
 } from 'antd';
+import { RollbackOutlined } from '@ant-design/icons';
 import styles from '../color-variable/color-variable.css';
 
 const IconSet = {
@@ -125,7 +126,7 @@ function ProviderIcon (
             onClick={onRevert}
             className={classNames(styles.button, styles.small)}
           >
-            <Icon type="rollback" />
+            <RollbackOutlined />
           </Button>
         )
       }

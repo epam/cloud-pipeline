@@ -20,10 +20,10 @@ import classNames from 'classnames';
 import {
   Button,
   Checkbox,
-  Icon,
   InputNumber,
   Select
 } from 'antd';
+import { RollbackOutlined } from '@ant-design/icons';
 import ColorPicker, {ColorPresenter} from '../../../special/color-picker';
 import {parseAmount} from '../../../../themes/utilities/color-utilities';
 import {groupedColorVariables} from '../utilities/variable-sections';
@@ -347,7 +347,7 @@ class ColorVariable extends React.PureComponent {
               onClick={this.onRevert}
               className={classNames(styles.button, styles.small)}
             >
-              <Icon type="rollback" />
+              <RollbackOutlined />
             </Button>
           )
         }

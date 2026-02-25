@@ -18,9 +18,9 @@ import React from 'react';
 import classNames from 'classnames';
 import {
   Button,
-  message,
-  Icon
+  message
 } from 'antd';
+import { LeftOutlined } from '@ant-design/icons';
 import GitlabIssueCreate from '../../../models/gitlab-issues/GitlabIssueCreate';
 import NewTicketForm from './special/new-ticket-form';
 import styles from './tickets.css';
@@ -85,7 +85,7 @@ class NewTicketPage extends React.Component {
             size="small"
             className={styles.goBackButton}
           >
-            <Icon type="left" />
+            <LeftOutlined />
           </Button>
           <b
             className={styles.heading}

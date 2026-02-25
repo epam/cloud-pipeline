@@ -20,10 +20,10 @@ import classNames from 'classnames';
 import {
   Button,
   Row,
-  Icon,
   Tag,
   Collapse
 } from 'antd';
+import { CheckOutlined } from '@ant-design/icons';
 import {observer} from 'mobx-react';
 import styles from './DockerRegistryGroupsList.css';
 
@@ -123,10 +123,7 @@ class DockerRegistryGroupsList extends React.Component {
           ) : null}
         </div>
         {isActive ? (
-          <Icon
-            className={styles.activeGroupIcon}
-            type="check"
-          />
+          <CheckOutlined className={styles.activeGroupIcon} />
         ) : null}
       </Button>
     );

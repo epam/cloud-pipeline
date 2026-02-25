@@ -18,7 +18,7 @@ import React from 'react';
 import ReactDOMServer from 'react-dom/server';
 import Remarkable from 'remarkable';
 import highlightJs from 'highlight.js';
-import {Icon} from 'antd';
+import { ForkOutlined, HddOutlined, InboxOutlined, SettingOutlined, ToolOutlined } from '@ant-design/icons';
 import {ItemTypes} from '../../pipelines/model/treeStructureFunctions';
 import {
   fetchCloudPipelineLinks,
@@ -81,19 +81,19 @@ export default function getMarkdownRenderer (options = {}) {
       if (renderPipelineLinkIcon()) {
         switch (linkType) {
           case ItemTypes.pipeline:
-            icon = <Icon type="fork" />;
+            icon = <ForkOutlined />;
             break;
           case ItemTypes.versionedStorage:
-            icon = <Icon type="inbox" className="cp-versioned-storage" />;
+            icon = <InboxOutlined className="cp-versioned-storage" />;
             break;
           case ItemTypes.configuration:
-            icon = <Icon type="setting" />;
+            icon = <SettingOutlined />;
             break;
           case ItemTypes.storage:
-            icon = <Icon type="hdd" />;
+            icon = <HddOutlined />;
             break;
           case 'tool':
-            icon = <Icon type="tool" />;
+            icon = <ToolOutlined />;
             break;
         }
       }

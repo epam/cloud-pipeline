@@ -1,7 +1,12 @@
 import React, {Component} from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
-import {Icon, Spin} from 'antd';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {
+  Spin
+} from 'antd';
+import { InboxOutlined } from '@ant-design/icons';
 import Chart from 'chart.js';
 import {computed} from 'mobx';
 import {BarchartDataLabelPlugin, ChartClickPlugin} from '../../billing/reports/charts/extensions';
@@ -202,7 +207,7 @@ class RunsInfoChart extends Component {
               transform: 'translate(-50%, -50%)'
             }}
           >
-            <Icon type="inbox" style={{fontSize: 'large'}} />
+            <InboxOutlined style={{fontSize: 'large'}} />
             <span>No data</span>
           </div>
         ) : null}

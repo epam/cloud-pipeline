@@ -16,8 +16,12 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
-import {Button, Icon, Input} from 'antd';
+import {
+  observer} from 'mobx-react';
+import {Button,
+  Input
+} from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 import Menu, {MenuItem, SubMenu} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import classNames from 'classnames';
@@ -150,7 +154,7 @@ class AddModulesButton extends React.Component {
         <Button
           size="small"
         >
-          <Icon type="plus" />
+          <PlusOutlined />
           <span>Add module</span>
         </Button>
       </Dropdown>

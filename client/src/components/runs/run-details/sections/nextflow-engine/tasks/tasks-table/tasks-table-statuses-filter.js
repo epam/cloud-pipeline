@@ -1,7 +1,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Checkbox, Icon, Popover} from 'antd';
+import {Checkbox, Popover} from 'antd';
+import { FilterOutlined } from '@ant-design/icons';
 import styles from './tasks-table.css';
 import {NextflowTaskStatus, nextflowTaskStatuses} from '../utilities';
 import {defaultSorter} from '../../../../../../../utils/sorting';
@@ -112,7 +113,7 @@ class TasksTableStatuses extends React.Component {
           onClick={prevent}
           style={style}
         >
-          <Icon type="filter" className={styles.tasksTableColumnFilter} />
+          <FilterOutlined className={styles.tasksTableColumnFilter} />
         </div>
       </Popover>
     );

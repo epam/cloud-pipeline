@@ -16,9 +16,17 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
+import {
+  observer} from 'mobx-react';
 import {computed} from 'mobx';
-import {Button, Dropdown, Icon, Input, Menu, Popover, Row} from 'antd';
+import {Button,
+  Dropdown,
+  Input,
+  Menu,
+  Popover,
+  Row
+} from 'antd';
+import { DownOutlined } from '@ant-design/icons';
 
 const CloneOption = {
   https: 'https',
@@ -111,7 +119,7 @@ class GitRepositoryControl extends React.Component {
         <b style={{marginRight: 5}}>Clone repository via</b>
         <Dropdown overlay={menu}>
           <a style={{lineHeight: 1}}>
-            <b>{cloneType.toUpperCase()}<Icon type="down" /></b>
+            <b>{cloneType.toUpperCase()}<DownOutlined /></b>
           </a>
         </Dropdown>
       </Row>

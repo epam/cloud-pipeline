@@ -15,18 +15,20 @@
  */
 
 import React from 'react';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
 import {
   Button,
   Col,
   Dropdown,
-  Icon,
   Input,
   Menu,
   Row
 } from 'antd';
+import { CheckOutlined, SettingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import CodeEditor from '../../special/CodeEditor';
 import styles from '../Tools.css';
@@ -362,19 +364,19 @@ export default class EndpointInput extends React.Component {
         onClick={onChange}
       >
         <Menu.Item key="isDefault">
-          {this.isDefault ? (<Icon type="check" />) : undefined}
+          {this.isDefault ? (<CheckOutlined />) : undefined}
           <span style={{marginLeft: 5}}>Default</span>
         </Menu.Item>
         <Menu.Item key="sslBackend">
-          {this.sslBackend ? (<Icon type="check" />) : undefined}
+          {this.sslBackend ? (<CheckOutlined />) : undefined}
           <span style={{marginLeft: 5}}>SSL backend</span>
         </Menu.Item>
         <Menu.Item key="customDNS">
-          {this.customDNS ? (<Icon type="check" />) : undefined}
+          {this.customDNS ? (<CheckOutlined />) : undefined}
           <span style={{marginLeft: 5}}>Use sub-domain</span>
         </Menu.Item>
         <Menu.Item key="sameTab">
-          {this.sameTab ? (<Icon type="check" />) : undefined}
+          {this.sameTab ? (<CheckOutlined />) : undefined}
           <span style={{marginLeft: 5}}>Open in same tab</span>
         </Menu.Item>
       </Menu>
@@ -470,7 +472,7 @@ export default class EndpointInput extends React.Component {
             >
               <a>
                 {options.join(', ')}
-                <Icon type="setting" style={{marginLeft: 2}} />
+                <SettingOutlined style={{marginLeft: 2}} />
               </a>
             </Dropdown>
           </Col>

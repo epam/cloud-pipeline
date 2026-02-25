@@ -15,8 +15,11 @@
  */
 
 import React from 'react';
-import {observable, computed} from 'mobx';
-import {inject, observer} from 'mobx-react';
+import {
+  observable,
+  computed} from 'mobx';
+import {inject,
+  observer} from 'mobx-react';
 import {
   DeletionPlugin,
   SelectionPlugin,
@@ -36,9 +39,9 @@ import yaml from 'js-yaml';
 import {
   Alert,
   Button,
-  Icon,
   message
 } from 'antd';
+import { SaveOutlined } from '@ant-design/icons';
 import moment from 'moment-timezone';
 import classNames from 'classnames';
 import Graph from '../Graph';
@@ -475,7 +478,7 @@ export default class CwlGraph extends Graph {
             disabled={!modified || readOnly}
             onClick={this.openCommitFormDialog}
           >
-            <Icon type="save" />
+            <SaveOutlined />
           </Button>
         </div>
         <CWLProperties

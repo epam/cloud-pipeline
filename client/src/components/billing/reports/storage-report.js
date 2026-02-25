@@ -15,9 +15,14 @@
  */
 
 import React from 'react';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import {computed} from 'mobx';
-import {Icon, Button} from 'antd';
+import {
+  Button
+} from 'antd';
+import { CloseOutlined } from '@ant-design/icons';
 import {
   BarChart,
   BillingTable,
@@ -438,7 +443,7 @@ class StorageReports extends React.Component {
             right: 5
           }}
         >
-          <Icon type="close" /> {layer}
+          <CloseOutlined /> {layer}
         </Button>
       );
     }

@@ -1,7 +1,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Icon, Input, Popover} from 'antd';
+import {Input, Popover} from 'antd';
+import { FilterOutlined } from '@ant-design/icons';
 import styles from './tasks-table.css';
 
 function prevent (event) {
@@ -88,7 +89,7 @@ class TasksTableTagFilter extends React.Component {
           onClick={prevent}
           style={style}
         >
-          <Icon type="filter" className={styles.tasksTableColumnFilter} />
+          <FilterOutlined className={styles.tasksTableColumnFilter} />
         </div>
       </Popover>
     );

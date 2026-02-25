@@ -16,9 +16,14 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import classNames from 'classnames';
-import {Icon, Tabs} from 'antd';
+import {
+  Tabs
+} from 'antd';
+import { PlayCircleFilled, SwitcherOutlined } from '@ant-design/icons';
 import CellProfiler, {CellProfilerJobs} from '../../cellprofiler/components';
 import styles from './hcs-image-analysis.css';
 import roleModel from '../../../../utils/roleModel';
@@ -29,8 +34,8 @@ const HcsAnalysisTabs = {
 };
 
 const HcsAnalysisTabName = {
-  [HcsAnalysisTabs.analysis]: (<span><Icon type="play-circle" /> Analysis</span>),
-  [HcsAnalysisTabs.batch]: (<span><Icon type="switcher" /> Evaluations</span>)
+  [HcsAnalysisTabs.analysis]: (<span><PlayCircleFilled /> Analysis</span>),
+  [HcsAnalysisTabs.batch]: (<span><SwitcherOutlined /> Evaluations</span>)
 };
 
 class HcsImageAnalysis extends React.Component {

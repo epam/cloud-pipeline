@@ -16,8 +16,12 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
-import {Icon, Select} from 'antd';
+import {
+  observer} from 'mobx-react';
+import {
+  Select
+} from 'antd';
+import { RightOutlined } from '@ant-design/icons';
 import {isObservableArray} from 'mobx';
 
 const DEBUG = process.env.DEVELOPMENT;
@@ -396,7 +400,7 @@ function MeasurementSelector (props) {
                     title={measurement.name}
                   >
                     {GroupNames[aGroup] || aGroup}
-                    <Icon type="right" />
+                    <RightOutlined />
                     {measurement.name}
                   </Select.Option>
                 ))

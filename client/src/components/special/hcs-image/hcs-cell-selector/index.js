@@ -17,9 +17,15 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import {observable} from 'mobx';
-import {Icon, Select, Tooltip} from 'antd';
+import {
+  Select,
+  Tooltip
+} from 'antd';
+import { MinusCircleOutlined, PlusCircleOutlined, ShrinkOutlined } from '@ant-design/icons';
 import createBuffers from './buffers';
 import {mat4translate, mat4scale, mat4identity} from './matrix-functions';
 import {createGLProgram, resizeCanvas, getLinesToDraw} from './canvas-utilities';
@@ -1751,34 +1757,21 @@ class HcsCellSelector extends React.Component {
             {
               this.fitScale &&
               this.fitCenter && (
-                <Icon
-                  type="shrink"
-                  className={classNames(
-                    'cp-hcs-zoom-button',
-                    styles.zoomControlBtn
-                  )}
-                  onClick={this.fit}
-                />
+                <ShrinkOutlined className={classNames( 'cp-hcs-zoom-button', styles.zoomControlBtn )} onClick={this.fit} />
               )
             }
-            <Icon
-              type="minus-circle-o"
-              className={classNames(
+            <MinusCircleOutlined className={classNames(
                 'cp-hcs-zoom-button',
                 {'cp-disabled': !this.zoomOutAvailable},
                 styles.zoomControlBtn
               )}
-              onClick={() => this.zoom(-1)}
-            />
-            <Icon
-              type="plus-circle-o"
-              className={classNames(
+              onClick={() => this.zoom(-1)} />
+            <PlusCircleOutlined className={classNames(
                 'cp-hcs-zoom-button',
                 {'cp-disabled': !this.zoomInAvailable},
                 styles.zoomControlBtn
               )}
-              onClick={() => this.zoom(1)}
-            />
+              onClick={() => this.zoom(1)} />
           </div>
         </div>
         {this.renderTagsSelector()}

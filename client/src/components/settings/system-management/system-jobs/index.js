@@ -16,9 +16,17 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observable, computed} from 'mobx';
-import {inject, observer} from 'mobx-react';
-import {Alert, Button, Dropdown, Icon, message} from 'antd';
+import {
+  observable,
+  computed} from 'mobx';
+import {inject,
+  observer} from 'mobx-react';
+import {Alert,
+  Button,
+  Dropdown,
+  message
+} from 'antd';
+import { CodeOutlined } from '@ant-design/icons';
 import Menu, {MenuItem} from 'rc-menu';
 import LoadingView from '../../../special/LoadingView';
 import SubSettings from '../../sub-settings';
@@ -354,7 +362,7 @@ class SystemJobs extends React.Component {
     }
     const sections = jobs.map((aJob) => ({
       key: aJob.identifier,
-      title: (<span><Icon type="code-o" style={{marginRight: 5}} />{aJob.identifier}</span>),
+      title: (<span><CodeOutlined style={{marginRight: 5}} />{aJob.identifier}</span>),
       name: aJob.identifier,
       render: () => this.renderSystemJob(aJob)
     }));

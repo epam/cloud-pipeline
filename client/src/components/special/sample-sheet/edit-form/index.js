@@ -20,9 +20,9 @@ import classNames from 'classnames';
 import {
   Alert,
   Button,
-  Icon,
   Modal
 } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 import EditSection from './section';
 import SamplesEditor from './samples';
 import {buildSampleSheet, isSampleSheetContent, parseSampleSheet} from '../utilities';
@@ -242,7 +242,7 @@ class SampleSheetEditForm extends React.Component {
                 className={styles.addSection}
                 onClick={this.onAddSection}
               >
-                <Icon type="plus" /> Add section
+                <PlusOutlined /> Add section
               </Button>
             </div>
           )

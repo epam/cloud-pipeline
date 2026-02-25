@@ -16,13 +16,14 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
+import {
+  observer} from 'mobx-react';
 import {
   Row,
   Col,
-  Button,
-  Icon
+  Button
 } from 'antd';
+import { AppstoreFilled, SettingOutlined } from '@ant-design/icons';
 import localization from '../../../../../utils/localization';
 import Breadcrumbs from '../../../../special/Breadcrumbs';
 import roleModel from '../../../../../utils/roleModel';
@@ -72,7 +73,7 @@ class VersionedStorageHeader extends localization.LocalizedReactComponent {
         size="small"
         onClick={this.onHistoryBtnClick}
       >
-        <Icon type="appstore" />
+        <AppstoreFilled />
         {historyPanelOpen ? 'Hide history' : 'Show history'}
       </Button>
     );
@@ -141,7 +142,7 @@ class VersionedStorageHeader extends localization.LocalizedReactComponent {
                     onClick={this.onSettingsClick}
                     disabled={readOnly}
                   >
-                    <Icon type="setting" />
+                    <SettingOutlined />
                   </Button>
                 )
               }

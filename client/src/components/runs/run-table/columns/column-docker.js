@@ -17,13 +17,15 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import {
   Checkbox,
-  Icon,
   Input,
   Row
 } from 'antd';
+import { LoadingOutlined, RightOutlined } from '@ant-design/icons';
 import {
   getFiltersState,
   onFilterDropdownVisibilityChangedGenerator,
@@ -64,7 +66,7 @@ function DockersFilterComponent (
           )
         }
       >
-        <Icon type="loading" />
+        <LoadingOutlined />
       </div>
     );
   }
@@ -113,9 +115,9 @@ function DockersFilterComponent (
           checked={checked}
         >
           <span>{image.registry}</span>
-          <Icon type="right" />
+          <RightOutlined />
           <span>{image.group}</span>
-          <Icon type="right" />
+          <RightOutlined />
           <span>{image.image}</span>
         </Checkbox>
       </Row>

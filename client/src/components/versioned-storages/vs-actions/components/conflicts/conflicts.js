@@ -16,9 +16,15 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observable} from 'mobx';
-import {inject, observer, Provider} from 'mobx-react';
-import {Icon, Table} from 'antd';
+import {
+  observable} from 'mobx';
+import {inject,
+  observer,
+  Provider} from 'mobx-react';
+import {
+  Table
+} from 'antd';
+import { CheckCircleFilled } from '@ant-design/icons';
 import classNames from 'classnames';
 import ChangesDisplayConfig from './controls/changes-display-config';
 import ConflictsSession from './session';
@@ -184,10 +190,7 @@ class Conflicts extends React.Component {
         render: resolved => {
           if (resolved) {
             return (
-              <Icon
-                className="cp-success"
-                type="check-circle"
-              />
+              <CheckCircleFilled className="cp-success" />
             );
           }
           return null;

@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Icon} from 'antd';
+import { ExclamationCircleOutlined } from '@ant-design/icons';
 import RunDetail, {RunDetailProps} from '../run-detail';
 
 function RunFailureReason (props) {
@@ -25,7 +25,7 @@ function RunFailureReason (props) {
       {...props}
       className={classNames(className, 'cp-error')}
     >
-      <Icon type="exclamation-circle-o" className="cp-error" />
+      <ExclamationCircleOutlined className="cp-error" />
       <span>{wrapWithBrackets ? `(${podStatus})` : podStatus}</span>
     </RunDetail>
   );

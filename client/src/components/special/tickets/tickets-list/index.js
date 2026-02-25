@@ -16,13 +16,14 @@
 
 import React from 'react';
 import classNames from 'classnames';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {
   Button,
   Select,
   Dropdown,
-  Icon,
   Pagination,
   Menu,
   Input,
@@ -31,6 +32,7 @@ import {
   message,
   Modal
 } from 'antd';
+import { EllipsisOutlined } from '@ant-design/icons';
 import measureTextWidth from '../../../../utils/measure-text-width';
 import displayDate from '../../../../utils/displayDate';
 import highlightText from '../../highlightText';
@@ -481,10 +483,7 @@ class TicketsList extends React.Component {
                 onClick={e => e.stopPropagation()}
                 disabled={pending}
               >
-                <Icon
-                  type="ellipsis"
-                  className={styles.controlsIcon}
-                />
+                <EllipsisOutlined className={styles.controlsIcon} />
               </Dropdown>
             )
           }

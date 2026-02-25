@@ -16,13 +16,15 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {computed} from 'mobx';
-import {inject, observer} from 'mobx-react';
+import {
+  computed} from 'mobx';
+import {inject,
+  observer} from 'mobx-react';
 import {
   Badge,
-  Button,
-  Icon
+  Button
 } from 'antd';
+import { ExportOutlined } from '@ant-design/icons';
 import RcMenu, {MenuItem, SubMenu, Divider as MenuDivider} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import SharedItemInfo
@@ -280,7 +282,7 @@ class SharingControl extends React.Component {
               size={size}
               style={{width: 35, padding: 0}}
             >
-              <Icon type="export" />
+              <ExportOutlined />
             </Button>
           </Dropdown>
         </Badge>

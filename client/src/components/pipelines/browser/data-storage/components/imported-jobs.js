@@ -15,7 +15,8 @@
  */
 
 import React from 'react';
-import {observable} from 'mobx';
+import {
+  observable} from 'mobx';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import moment from 'moment-timezone';
@@ -23,9 +24,9 @@ import {
   message,
   DatePicker,
   Select,
-  Button,
-  Icon
+  Button
 } from 'antd';
+import { CaretLeftOutlined, CaretRightOutlined } from '@ant-design/icons';
 import LoadingView from '../../../../special/LoadingView';
 import OmicsJobsImport from '../../../../../models/dataStorage/OmicsJobsImport';
 import displayDate from '../../../../../utils/displayDate';
@@ -366,7 +367,7 @@ export default class JobList extends React.Component {
           disabled={!this.canNavigateToPreviousPage}
           onClick={this.navigateToPreviousPage}
         >
-          <Icon type="caret-left" />
+          <CaretLeftOutlined />
         </Button>
         <Button
           className={styles.button}
@@ -374,7 +375,7 @@ export default class JobList extends React.Component {
           disabled={!this.canNavigateToNextPage}
           onClick={this.navigateToNextPage}
         >
-          <Icon type="caret-right" />
+          <CaretRightOutlined />
         </Button>
       </div>
     );

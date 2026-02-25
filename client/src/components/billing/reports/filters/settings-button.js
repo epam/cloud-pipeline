@@ -17,7 +17,8 @@
 import React from 'react';
 import Dropdown from 'rc-dropdown';
 import Menu, {MenuItem, Divider} from 'rc-menu';
-import {Button, Icon} from 'antd';
+import {Button} from 'antd';
+import { SettingOutlined } from '@ant-design/icons';
 import {inject, observer} from 'mobx-react';
 import roleModel from '../../../../utils/roleModel';
 import {restoreLayoutConsumer} from '../layout';
@@ -183,10 +184,7 @@ class SettingsButton extends React.Component {
             padding: '0px 8px'
           }}
         >
-          <Icon
-            type="setting"
-            style={{fontSize: 'larger'}}
-          />
+          <SettingOutlined style={{fontSize: 'larger'}} />
           <DiscountsModal
             key="modal"
             visible={configureDiscountsModalVisible}

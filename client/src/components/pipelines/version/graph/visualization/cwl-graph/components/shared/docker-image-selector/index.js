@@ -16,13 +16,15 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {
   Alert,
-  Icon,
   Select
 } from 'antd';
+import { RightOutlined } from '@ant-design/icons';
 import DockerImageDetails from '../../../../../../../../cluster/hot-node-pool/docker-image-details';
 
 @inject('dockerRegistries')
@@ -49,7 +51,7 @@ class DockerImageSelector extends React.Component {
               label: (
                 <span>
                   {registry.description || registry.path}
-                  <Icon type="right" />
+                  <RightOutlined />
                   {group.name}
                 </span>
               ),

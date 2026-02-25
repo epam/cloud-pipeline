@@ -16,18 +16,20 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer, inject} from 'mobx-react';
+import {
+  observer,
+  inject} from 'mobx-react';
 import {computed} from 'mobx';
 import {
   Alert,
   Table,
   Row,
   Input,
-  Icon,
   Button,
   Modal,
   message
 } from 'antd';
+import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import RoleRemove from '../../../models/user/RoleRemove';
 import EditRoleDialog from '../forms/EditRoleDialog';
 import LoadingView from '../../special/LoadingView';
@@ -229,7 +231,7 @@ export default class GroupsManagement extends React.Component {
             return (
               <Row className={styles.roleActions} type="flex" justify="end">
                 <Button size="small" onClick={() => this.openEditGroupDialog(role)}>
-                  <Icon type="edit" />
+                  <EditOutlined />
                 </Button>
                 {
                   (this.isAdmin || this.isUsersAdmin) && !predefined && (
@@ -238,7 +240,7 @@ export default class GroupsManagement extends React.Component {
                       type="danger"
                       onClick={(e) => this.deleteRoleConfirm(e, role)}
                     >
-                      <Icon type="delete" />
+                      <DeleteOutlined />
                     </Button>
                   )
                 }
@@ -316,7 +318,7 @@ export default class GroupsManagement extends React.Component {
                   type="primary"
                   onClick={this.openCreateGroupDialog}
                 >
-                  <Icon type="plus" /> Create group
+                  <PlusOutlined /> Create group
                 </Button>
               </div>
             )

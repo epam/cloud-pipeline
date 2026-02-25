@@ -15,7 +15,8 @@
  */
 
 import React from 'react';
-import {Icon, Popover, Tooltip} from 'antd';
+import {Popover, Tooltip} from 'antd';
+import { ClockCircleOutlined, ExclamationCircleOutlined, HourglassOutlined, LoadingOutlined, PlayCircleOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import NATRouteStatuses from './route-statuses';
 import * as portUtilities from './ports-utilities';
@@ -127,25 +128,13 @@ function renderStatusIcon (status, record) {
     case NATRouteStatuses.ACTIVE:
       return (
         <Tooltip title={status}>
-          <Icon
-            className={
-              classNames(
-                styles.routeStatus,
-                'cp-nat-route-status',
-                'cp-primary'
-              )
-            }
-            type="play-circle-o"
-          />
+          <PlayCircleOutlined className={ classNames( styles.routeStatus, 'cp-nat-route-status', 'cp-primary' ) } />
         </Tooltip>
       );
     case NATRouteStatuses.CREATION_SCHEDULED:
       return (
         <Tooltip title={status}>
-          <Icon
-            type="hourglass"
-            className={classNames(styles.routeStatus, 'cp-nat-route-status', 'cp-primary')}
-          />
+          <HourglassOutlined className={classNames(styles.routeStatus, 'cp-nat-route-status', 'cp-primary')} />
         </Tooltip>
       );
     case NATRouteStatuses.PENDING:
@@ -154,10 +143,7 @@ function renderStatusIcon (status, record) {
     case NATRouteStatuses.PORT_FORWARDING_CONFIGURED:
       return (
         <Tooltip title={status}>
-          <Icon
-            type="loading"
-            className={classNames(styles.routeStatus, 'cp-nat-route-status', 'cp-primary')}
-          />
+          <LoadingOutlined className={classNames(styles.routeStatus, 'cp-nat-route-status', 'cp-primary')} />
         </Tooltip>
       );
     case NATRouteStatuses.TERMINATION_SCHEDULED:
@@ -166,17 +152,7 @@ function renderStatusIcon (status, record) {
     case NATRouteStatuses.TERMINATED:
       return (
         <Tooltip title={status}>
-          <Icon
-            className={
-              classNames(
-                styles.routeStatus,
-                'cp-nat-route-status',
-                'cp-warning',
-                styles.blink
-              )
-            }
-            type="clock-circle-o"
-          />
+          <ClockCircleOutlined className={ classNames( styles.routeStatus, 'cp-nat-route-status', 'cp-warning', styles.blink ) } />
         </Tooltip>
       );
     case NATRouteStatuses.FAILED:
@@ -189,38 +165,18 @@ function renderStatusIcon (status, record) {
             ) : null}
           </p>
         )}>
-          <Icon
-            className={classNames(styles.routeStatus, 'cp-nat-route-status', 'cp-error')}
-            type="exclamation-circle-o" />
+          <ExclamationCircleOutlined className={classNames(styles.routeStatus, 'cp-nat-route-status', 'cp-error')} />
         </Tooltip>
       );
     case NATRouteStatuses.UNKNOWN:
       return (
         <Tooltip title={status}>
-          <Icon
-            className={
-              classNames(
-                styles.routeStatus,
-                'cp-nat-route-status',
-                'cp-text-not-important'
-              )
-            }
-            type="question-circle-o" />
+          <QuestionCircleOutlined className={ classNames( styles.routeStatus, 'cp-nat-route-status', 'cp-text-not-important' ) } />
         </Tooltip>
       );
     default:
       return (
-        <Icon
-          className={
-            classNames(
-              styles.routeStatus,
-              'cp-nat-route-status',
-              'cp-text-not-important'
-            )
-          }
-          style={{display: 'none'}}
-          type="question-circle-o"
-        />
+        <QuestionCircleOutlined className={ classNames( styles.routeStatus, 'cp-nat-route-status', 'cp-text-not-important' ) } style={{display: 'none'}} />
       );
   }
 }

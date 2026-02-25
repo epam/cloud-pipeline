@@ -18,10 +18,10 @@ import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
 import {
   Button,
-  Icon,
   ConfigProvider,
   Modal
 } from 'antd';
+import { LoadingOutlined, QuestionCircleFilled } from '@ant-design/icons';
 import enUS from 'antd/lib/locale/en_US';
 import classNames from 'classnames';
 import {observer} from 'mobx-react';
@@ -213,15 +213,7 @@ function ConfirmPauseModal (props) {
         className={styles.body}
       >
         <div className={styles.title}>
-          <Icon
-            type="question-circle"
-            className={
-              classNames(
-                'cp-warning',
-                styles.icon
-              )
-            }
-          />
+          <QuestionCircleFilled className={ classNames( 'cp-warning', styles.icon ) } />
           {
             title
           }
@@ -248,7 +240,7 @@ function ConfirmPauseModal (props) {
         >
           {
             pending && (
-              <Icon type="loading" />
+              <LoadingOutlined />
             )
           }
           PAUSE

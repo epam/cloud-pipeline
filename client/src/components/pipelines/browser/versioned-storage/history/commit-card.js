@@ -17,7 +17,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Icon, message, Button} from 'antd';
+import {message, Button} from 'antd';
+import { DownloadOutlined, RetweetOutlined, TagFilled } from '@ant-design/icons';
 import CommitDiffButton from './commit-diff-button';
 import UserName from '../../../../special/UserName';
 import displayDate from '../../../../../utils/displayDate';
@@ -158,9 +159,7 @@ class CommitCard extends React.PureComponent {
                 style={{marginRight: '2px'}}
                 onClick={this.openRevertDialog}
               >
-                <Icon
-                  type="retweet"
-                />
+                <RetweetOutlined />
               </Button>
             )
           }
@@ -171,9 +170,7 @@ class CommitCard extends React.PureComponent {
                 size="small"
                 style={{marginRight: '2px'}}
               >
-                <Icon
-                  type="download"
-                />
+                <DownloadOutlined />
               </Button>
             )
           }
@@ -208,7 +205,7 @@ class CommitCard extends React.PureComponent {
                 <span
                   className={styles.sha}
                 >
-                  <Icon type="tag" />
+                  <TagFilled />
                   {commit.commit.slice(0, 7)}
                 </span>
               )

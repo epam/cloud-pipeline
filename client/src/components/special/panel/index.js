@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Icon} from 'antd';
+import { CloseOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import styles from './panel.css';
 
@@ -51,12 +51,7 @@ function Panel (
         >
           <div className={styles.panelHeader}>
             <b>{title}</b>
-            <Icon
-              className={styles.closeButton}
-              type="close"
-              size="small"
-              onClick={onClose}
-            />
+            <CloseOutlined className={styles.closeButton} size="small" onClick={onClose} />
           </div>
           <div className={styles.content}>
             {children}

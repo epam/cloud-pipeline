@@ -21,11 +21,11 @@ import {
   Button,
   Checkbox,
   Collapse,
-  Icon,
   Input,
   message,
   Modal
 } from 'antd';
+import { DeleteOutlined, DownOutlined, PlusOutlined, QuestionCircleFilled } from '@ant-design/icons';
 import Dropdown from 'rc-dropdown';
 import Menu, {SubMenu, MenuItem, Divider} from 'rc-menu';
 import {
@@ -353,7 +353,7 @@ class WdlPropertiesForm extends React.Component {
                 size="small"
                 disabled={disabled}
               >
-                Actions <Icon type="down" />
+                Actions <DownOutlined />
               </Button>
             </Dropdown>
           </DropDownWrapper>
@@ -373,7 +373,7 @@ class WdlPropertiesForm extends React.Component {
                   size="small"
                   onClick={() => this.onRemove()}
                 >
-                  <Icon type="delete" /> Remove
+                  <DeleteOutlined /> Remove
                 </Button>
               )
             }
@@ -660,7 +660,7 @@ class WdlPropertiesForm extends React.Component {
           editable && !disabled && (
             <div className={styles.propertiesRow}>
               <a onClick={onAddClick}>
-                <Icon type="plus" /> {addTitle.toLowerCase()}
+                <PlusOutlined /> {addTitle.toLowerCase()}
               </a>
             </div>
           )
@@ -923,10 +923,7 @@ class WdlPropertiesForm extends React.Component {
                         className={styles.deleteButton}
                         onClick={() => onRemoveClick(r)}
                       >
-                        <Icon
-                          type="delete"
-                          className={'cp-danger'}
-                        />
+                        <DeleteOutlined className={'cp-danger'} />
                       </div>
                     )
                   }
@@ -939,7 +936,7 @@ class WdlPropertiesForm extends React.Component {
             !hasDocker && !disabled && runtimeAttributesEditable && (
               <div className={styles.propertiesRow}>
                 <a onClick={() => addRuntime('docker')}>
-                  <Icon type="plus" /> add docker configuration
+                  <PlusOutlined /> add docker configuration
                 </a>
               </div>
             )
@@ -948,14 +945,14 @@ class WdlPropertiesForm extends React.Component {
             !hasNode && !disabled && runtimeAttributesEditable && (
               <div className={styles.propertiesRow}>
                 <a onClick={() => addRuntime('node')}>
-                  <Icon type="plus" /> add compute node configuration
+                  <PlusOutlined /> add compute node configuration
                 </a>
               </div>
             )
           }
           <div className={styles.propertiesRow}>
             <a onClick={addNewRuntime}>
-              <Icon type="plus" /> add runtime configuration
+              <PlusOutlined /> add runtime configuration
             </a>
           </div>
         </Collapse.Panel>
@@ -1074,11 +1071,7 @@ class WdlPropertiesForm extends React.Component {
             alignItems: 'center'
           }}
         >
-          <Icon
-            type="question-circle"
-            className="cp-warning"
-            style={{fontSize: 'x-large'}}
-          />
+          <QuestionCircleFilled className="cp-warning" style={{fontSize: 'x-large'}} />
           <b>
             Are you sure you want to remove {getEntityName(entity, wdlDocument)}?
           </b>

@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Icon, Row, Spin} from 'antd';
+import {Row, Spin} from 'antd';
+import { SettingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import {COMPUTED_DAYS, DAYS, MONTHS, ORDINALS, getOrdinalSuffix} from './forms';
 import {isTimeZoneEqualCurrent, CronConvert, ruleModes} from './cron-convert';
@@ -95,7 +96,7 @@ class RunSchedulingList extends React.Component {
           )
         }
       >
-        <Icon type="setting" />
+        <SettingOutlined />
         Configure
       </a>
     );

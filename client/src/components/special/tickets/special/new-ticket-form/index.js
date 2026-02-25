@@ -21,10 +21,10 @@ import {
   Radio,
   Upload,
   Button,
-  Icon,
   Modal,
   message
 } from 'antd';
+import { UploadOutlined } from '@ant-design/icons';
 import Markdown from '../../../markdown';
 import blobFilesToBase64 from '../utilities/blob-files-to-base64';
 import styles from './new-ticket-form.css';
@@ -244,7 +244,7 @@ class NewTicketForm extends React.Component {
                   className={styles.uploadButton}
                   disabled={pending}
                 >
-                  <Icon type="upload" /> Upload attachment
+                  <UploadOutlined /> Upload attachment
                 </Button>
               </Upload>
             </div>

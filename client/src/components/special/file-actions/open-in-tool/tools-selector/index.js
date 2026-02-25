@@ -18,10 +18,10 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {
-  Icon,
   Menu,
   Dropdown
 } from 'antd';
+import { DownOutlined } from '@ant-design/icons';
 import ToolImage from '../../../../../models/tools/ToolImage';
 import styles from './tool-selector.css';
 
@@ -142,10 +142,7 @@ class ToolsSelector extends React.Component {
               toolName={tools[0].image}
               titleStyle={titleStyle}
             />
-            <Icon
-              type="down"
-              style={{marginLeft: '10px'}}
-            />
+            <DownOutlined style={{marginLeft: '10px'}} />
           </span>
         </Dropdown>
       )

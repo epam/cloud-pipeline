@@ -33,6 +33,7 @@ import {
   Spin,
   Table
 } from 'antd';
+import { AppstoreFilled, AppstoreOutlined, CheckOutlined, DeleteOutlined, DownOutlined, EditOutlined, ExportOutlined, FileOutlined, FolderOutlined, InboxOutlined, LinkOutlined, PlusOutlined, ReloadOutlined, SettingOutlined } from '@ant-design/icons';
 import Dropdown from 'rc-dropdown';
 import Menu, {MenuItem, Divider} from 'rc-menu';
 import moment from 'moment-timezone';
@@ -1350,7 +1351,7 @@ export default class DataStorage extends React.Component {
           key="rename"
           size="small"
           onClick={(event) => this.openRenameItemDialog(event, item)}>
-          <Icon type="edit" />
+          <EditOutlined />
         </Button>
       );
     }
@@ -1362,7 +1363,7 @@ export default class DataStorage extends React.Component {
           size="small"
           onClick={() => this.onRestoreClicked(item, item.isVersion ? item.version : undefined)}
         >
-          <Icon type="reload" />
+          <ReloadOutlined />
         </Button>
       );
     }
@@ -1382,7 +1383,7 @@ export default class DataStorage extends React.Component {
           type="danger"
           size="small"
           onClick={(event) => this.removeItemConfirm(event, item)}>
-          <Icon type="delete" />
+          <DeleteOutlined />
         </Button>
       );
     }
@@ -1662,10 +1663,7 @@ export default class DataStorage extends React.Component {
       if (/^file$/i.test(item.type) && SAMPLE_SHEET_FILE_NAME_REGEXP.test(item.name)) {
         return (
           <RestoreStatusIcon restoreInfo={restoredStatus}>
-            <Icon
-              className={classNames(styles.itemType, 'cp-primary')}
-              type="appstore-o"
-            />
+            <AppstoreOutlined className={classNames(styles.itemType, 'cp-primary')} />
           </RestoreStatusIcon>
         );
       }
@@ -1795,11 +1793,7 @@ export default class DataStorage extends React.Component {
               onClick={(event) => this.openDataStorageItemPreview(item, event)}
               key={item.key}
             >
-              <Icon
-                type="export"
-                className="cp-primary"
-                style={{fontSize: 'larger'}}
-              />
+              <ExportOutlined className="cp-primary" style={{fontSize: 'larger'}} />
             </div>
           );
         }
@@ -1840,14 +1834,11 @@ export default class DataStorage extends React.Component {
           <span>
             {name}
             {item.selectable ? (
-              <Icon
-                className={styles.copyUrl}
-                type="link"
+              <LinkOutlined className={styles.copyUrl}
                 onClick={event => {
                   event.stopPropagation();
                   this.copyPathsToClipboard([item]);
-                }}
-              />) : null
+                }} />) : null
             }
           </span>
         );
@@ -2233,14 +2224,14 @@ export default class DataStorage extends React.Component {
                 className="edit-storage-button"
                 key="edit"
               >
-                <Icon type="edit" /> Edit
+                <EditOutlined /> Edit
               </MenuItem>
               <MenuItem
                 id="convert-storage-button"
                 className="convert-storage-action-button"
                 key="convert"
               >
-                <Icon type="inbox" className="cp-versioned-storage" /> Convert to Versioned Storage
+                <InboxOutlined className="cp-versioned-storage" /> Convert to Versioned Storage
               </MenuItem>
             </Menu>
           }
@@ -2250,13 +2241,7 @@ export default class DataStorage extends React.Component {
             id="edit-storage-button"
             size="small"
           >
-            <Icon
-              type="setting"
-              style={{
-                lineHeight: 'inherit',
-                verticalAlign: 'middle'
-              }}
-            />
+            <SettingOutlined style={{ lineHeight: 'inherit', verticalAlign: 'middle' }} />
           </Button>
         </Dropdown>
       );
@@ -2266,13 +2251,7 @@ export default class DataStorage extends React.Component {
         id="edit-storage-button"
         size="small"
         onClick={() => this.openEditDialog()}>
-        <Icon
-          type="setting"
-          style={{
-            lineHeight: 'inherit',
-            verticalAlign: 'middle'
-          }}
-        />
+        <SettingOutlined style={{ lineHeight: 'inherit', verticalAlign: 'middle' }} />
       </Button>
     );
   };
@@ -2532,7 +2511,7 @@ export default class DataStorage extends React.Component {
           size="small"
         >
           {title}
-          <Icon type="down" />
+          <DownOutlined />
         </Button>
       </Dropdown>
     );
@@ -2632,13 +2611,13 @@ export default class DataStorage extends React.Component {
                         id="create-folder-button"
                         className="create-folder-button"
                         key={folderKey}>
-                        <Icon type="folder" /> Folder
+                        <FolderOutlined /> Folder
                       </MenuItem>
                       <MenuItem
                         id="create-file-button"
                         className="create-file-button"
                         key={fileKey}>
-                        <Icon type="file" /> File
+                        <FileOutlined /> File
                       </MenuItem>
                     </Menu>
                   }
@@ -2647,7 +2626,7 @@ export default class DataStorage extends React.Component {
                     type="primary"
                     id="create-button"
                     size="small">
-                    <Icon type="plus" /> Create <Icon type="down" />
+                    <PlusOutlined /> Create <DownOutlined />
                   </Button>
                 </Dropdown>
               )
@@ -2819,10 +2798,7 @@ export default class DataStorage extends React.Component {
           {action.title}
           {
             action.checked && (
-              <Icon
-                type="check"
-                style={{marginLeft: 'auto'}}
-              />
+              <CheckOutlined style={{marginLeft: 'auto'}} />
             )
           }
         </div>
@@ -2850,7 +2826,7 @@ export default class DataStorage extends React.Component {
           id="presentation-actions"
           size="small"
         >
-          <Icon type="appstore" />
+          <AppstoreFilled />
         </Button>
       </Dropdown>
     );

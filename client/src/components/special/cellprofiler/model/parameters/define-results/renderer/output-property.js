@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
+import {
+  observer} from 'mobx-react';
 import styles from './define-results.css';
 import {
   getObjectProperties,
@@ -28,7 +29,10 @@ import {
   PropertyFunctionHints,
   PropertyFunctionNames
 } from '../property-functions';
-import {Button, Icon, Select} from 'antd';
+import {Button,
+  Select
+} from 'antd';
+import { CloseOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 
 function Statistics (props) {
   const {
@@ -183,7 +187,7 @@ function OutputProperty (props) {
           style={{marginLeft: 5}}
           onClick={removeObject}
         >
-          <Icon type="delete" />
+          <DeleteOutlined />
         </Button>
       </div>
       {
@@ -233,7 +237,7 @@ function OutputProperty (props) {
                 style={{marginLeft: 5}}
                 onClick={removeProperty(index)}
               >
-                <Icon type="close" />
+                <CloseOutlined />
               </Button>
             </div>
           ),
@@ -277,7 +281,7 @@ function OutputProperty (props) {
               size="small"
               onClick={addProperty}
             >
-              <Icon type="plus" />
+              <PlusOutlined />
               <span>Add {object} property</span>
             </Button>
           </div>

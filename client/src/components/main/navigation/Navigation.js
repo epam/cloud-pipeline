@@ -21,6 +21,7 @@ import {computed} from 'mobx';
 import classNames from 'classnames';
 import {SERVER} from '../../../config';
 import {Button, Icon, message, Popover, Tooltip} from 'antd';
+import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import PropTypes from 'prop-types';
 import PipelineRunInfo from '../../../models/pipelines/PipelineRunInfo';
 import CounterMenuItem from './CounterMenuItem';
@@ -348,7 +349,7 @@ export default class Navigation extends React.Component {
               className="cp-navigation-menu-item"
               style={{position: 'absolute', left: 0, bottom: 0, right: 0}}
             >
-              <Icon type={this.props.collapsed ? 'right' : 'left'} />
+              {this.props.collapsed ? <RightOutlined /> : <LeftOutlined />}
             </Button>
           }
         </div>

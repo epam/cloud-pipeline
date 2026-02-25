@@ -17,6 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Card, Icon, Input, Popover, Row} from 'antd';
+import { StarFilled, StarOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import renderSeparator from './renderSeparator';
 import styles from './CardsPanel.css';
@@ -141,8 +142,8 @@ export default class CardsPanel extends React.Component {
         type="flex"
         align="middle"
         justify="center">
-        <Icon className={styles.notFavouriteSelector} type="star-o" style={{fontSize: 'large'}} />
-        <Icon className={styles.favouriteSelector} type="star" style={{fontSize: 'large'}} />
+        <StarOutlined className={styles.notFavouriteSelector} style={{fontSize: 'large'}} />
+        <StarFilled className={styles.favouriteSelector} style={{fontSize: 'large'}} />
       </Row>
     );
   };

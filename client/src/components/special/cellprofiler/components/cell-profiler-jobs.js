@@ -17,7 +17,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Alert, Icon, Pagination} from 'antd';
+import {Alert, Pagination} from 'antd';
+import { LoadingOutlined } from '@ant-design/icons';
 import {filtersAreEqual, getBatchJobs} from '../model/analysis/batch';
 import CellProfilerJob from './components/cell-profiler-job';
 import CellProfilerJobsFilters from './components/cell-profiler-jobs-filters';
@@ -283,7 +284,7 @@ class CellProfilerJobs extends React.Component {
               <div
                 className={styles.cellProfilerJobsRow}
               >
-                <Icon type="loading" />
+                <LoadingOutlined />
                 <span
                   className="cp-text-not-important"
                   style={{marginLeft: 5}}

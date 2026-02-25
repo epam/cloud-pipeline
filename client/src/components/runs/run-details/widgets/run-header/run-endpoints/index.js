@@ -2,11 +2,12 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import styles from './run-endpoints.css';
-import {parseRunServiceUrlConfiguration} from '../../../../../../utils/multizone';
+import {
+  parseRunServiceUrlConfiguration} from '../../../../../../utils/multizone';
 import MultizoneUrl from '../../../../../special/multizone-url';
 import RunSSHButton from '../run-actions/run-ssh-button';
 import RunFsBrowserButton from '../run-actions/run-fs-browser-button';
-import {Icon} from 'antd';
+import { ExportOutlined } from '@ant-design/icons';
 
 function RunEndpoints (props) {
   const {
@@ -35,7 +36,7 @@ function RunEndpoints (props) {
             dropDownIconStyle={{marginTop: 5}}
             className={styles.runEndpoint}
           >
-            <Icon style={{marginRight: 5}} type="export" />
+            <ExportOutlined style={{marginRight: 5}} />
             <span>{regionedUrl.name}</span>
           </MultizoneUrl>
         ))

@@ -16,13 +16,14 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
+import {
+  observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {
   Button,
-  Icon,
   Select
 } from 'antd';
+import { DeleteOutlined } from '@ant-design/icons';
 import {getObjectsForModule} from './object-parameter';
 import styles from './outline-object-configuration.css';
 import ColorPicker from '../../../color-picker';
@@ -157,7 +158,7 @@ class OutlineConfigRenderer extends React.Component {
                 size="small"
                 onClick={this.removeConfiguration(index)}
               >
-                <Icon type="delete" />
+                <DeleteOutlined />
               </Button>
             </div>
           ))

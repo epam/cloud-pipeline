@@ -15,7 +15,9 @@
  */
 
 import React from 'react';
-import {observer, inject} from 'mobx-react';
+import {
+  observer,
+  inject} from 'mobx-react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
@@ -24,11 +26,11 @@ import {
   Row,
   Button,
   message,
-  Icon,
   Table,
   Select,
   Tabs
 } from 'antd';
+import { DeleteOutlined, LoadingOutlined, PlusOutlined } from '@ant-design/icons';
 import UserInfoSummary from './UserInfoSummary';
 import User from '../../../../models/user/User';
 import Roles from '../../../../models/user/Roles';
@@ -286,7 +288,7 @@ export default class EditUserRolesDialog extends React.Component {
               onClick={() => this.removeRole(role.id)}
               disabled={this.state.operationInProgress || !(this.isAdmin || this.isUsersAdmin)}
             >
-              <Icon type="delete" />
+              <DeleteOutlined />
             </Button>
           </Row>
         );
@@ -797,7 +799,7 @@ export default class EditUserRolesDialog extends React.Component {
     } = this.props;
     if (runnersRequest && runnersRequest.pending && !runnersRequest.loaded) {
       return (
-        <Icon type="loading" />
+        <LoadingOutlined />
       );
     }
     const renderRole = (roleName) => {
@@ -1000,7 +1002,7 @@ export default class EditUserRolesDialog extends React.Component {
                   this.state.operationInProgress ||
                   readOnly
                 }>
-                <Icon type="plus" /> Add
+                <PlusOutlined /> Add
               </Button>
             </div>
           </Row>

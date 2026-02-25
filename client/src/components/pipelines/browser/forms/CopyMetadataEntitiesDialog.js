@@ -28,6 +28,7 @@ import {
   Table,
   Tree
 } from 'antd';
+import { FolderOutlined, SolutionOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import {
   formatTreeItems,
@@ -148,9 +149,9 @@ class CopyMetadataEntitiesDialog extends React.Component {
         render: (item) => {
           if (item.isProject || (item.objectMetadata && item.objectMetadata.type &&
             (item.objectMetadata.type.value || '').toLowerCase() === 'project')) {
-            return (<Icon type="solution" />);
+            return (<SolutionOutlined />);
           } else {
-            return (<Icon type="folder" />);
+            return (<FolderOutlined />);
           }
         }
       },

@@ -17,9 +17,13 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
-import {computed, isObservableArray} from 'mobx';
-import {Button, Icon} from 'antd';
+import {
+  observer} from 'mobx-react';
+import {computed,
+  isObservableArray} from 'mobx';
+import {Button
+} from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import generateId from '../../../common/generate-id';
 import OutputProperty from './output-property';
@@ -173,7 +177,7 @@ class DefineResultsRenderer extends React.Component {
             className={styles.action}
             onClick={this.addOutputProperty}
           >
-            <Icon type="plus" />
+            <PlusOutlined />
             <span>Output property</span>
           </Button>
           <Button
@@ -181,7 +185,7 @@ class DefineResultsRenderer extends React.Component {
             className={styles.action}
             onClick={this.addOutputFormula}
           >
-            <Icon type="plus" />
+            <PlusOutlined />
             <span>Output formula</span>
           </Button>
         </div>

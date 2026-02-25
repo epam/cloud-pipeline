@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Icon, Popover} from 'antd';
+import {Popover} from 'antd';
+import { QuestionCircleFilled } from '@ant-design/icons';
 import styles from './parameters.css';
 
 function Hint (props = {}) {
@@ -44,10 +45,7 @@ function Hint (props = {}) {
         )}
         trigger="hover"
       >
-        <Icon
-          type="question-circle"
-          className={styles.button}
-        />
+        <QuestionCircleFilled className={styles.button} />
       </Popover>
     </div>
   );

@@ -25,6 +25,7 @@ import {
   AsyncLayout
 } from './layout';
 import {Button, Checkbox, Col, Icon, Modal, Row, Tooltip} from 'antd';
+import { QuestionCircleFilled } from '@ant-design/icons';
 import {getDisplayOnlyFavourites, setDisplayOnlyFavourites} from './utils/favourites';
 import localization from '../../../utils/localization';
 
@@ -118,7 +119,7 @@ export default class ConfigureHomePage extends localization.LocalizedReactCompon
                       {
                         panel.info &&
                         <Tooltip title={panel.info} placement="left">
-                          <Icon type="question-circle" />
+                          <QuestionCircleFilled />
                         </Tooltip>
                       }
                     </td>

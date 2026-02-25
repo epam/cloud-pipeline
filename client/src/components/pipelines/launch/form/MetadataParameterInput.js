@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Input, Icon} from 'antd';
+import {Input} from 'antd';
+import { AppstoreOutlined } from '@ant-design/icons';
 import MetadataBrowser from './../dialogs/MetadataBrowser';
 import styles from './LaunchPipelineForm.css';
 
@@ -99,7 +100,7 @@ export default class MetadataParameterInput extends React.Component {
               className={styles.pathType}
               onClick={this.showMetadataBrowser}
             >
-              <Icon type="appstore-o" />
+              <AppstoreOutlined />
             </div>
           }
           placeholder="Select metadata"

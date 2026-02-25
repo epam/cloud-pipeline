@@ -16,14 +16,16 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import {
   Button,
-  Icon,
   Popover,
   Row,
   Dropdown
 } from 'antd';
+import { DownOutlined, ExclamationCircleFilled, ExclamationCircleOutlined } from '@ant-design/icons';
 import roleModel from '../../../utils/roleModel';
 import preferences from '../../../models/preferences/PreferencesLoad';
 
@@ -286,11 +288,7 @@ export async function performAsyncCheck (props, state = undefined) {
 export function PermissionErrorsTitle () {
   return (
     <Row style={{fontWeight: 'bold'}}>
-      <Icon
-        type="exclamation-circle-o"
-        style={{marginRight: 5}}
-        className="cp-error"
-      />
+      <ExclamationCircleOutlined style={{marginRight: 5}} className="cp-error" />
       <span>Permission issues</span>
     </Row>
   );
@@ -388,7 +386,7 @@ class SubmitButton extends React.Component {
           disabled={this.props.disabled || pending || errors.length > 0}
           loading={this.props.loading}
         >
-          {errors.length > 0 ? <Icon type="exclamation-circle" /> : null}
+          {errors.length > 0 ? <ExclamationCircleFilled /> : null}
           {children}
         </Button>
         <Dropdown
@@ -405,12 +403,7 @@ class SubmitButton extends React.Component {
             type="primary"
             loading={this.props.loading}
           >
-            <Icon
-              type="down"
-              style={{
-                lineHeight: 'inherit'
-              }}
-            />
+            <DownOutlined style={{ lineHeight: 'inherit' }} />
           </Button>
         </Dropdown>
       </Button.Group>
@@ -425,7 +418,7 @@ class SubmitButton extends React.Component {
         size={size}
         loading={this.props.loading}
       >
-        {errors.length > 0 ? <Icon type="exclamation-circle" /> : null}
+        {errors.length > 0 ? <ExclamationCircleFilled /> : null}
         {children}
       </Button>
     );

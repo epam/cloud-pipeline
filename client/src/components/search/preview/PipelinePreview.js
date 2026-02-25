@@ -19,6 +19,7 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {Icon, Row} from 'antd';
+import { DatabaseOutlined, LoadingOutlined, TagFilled } from '@ant-design/icons';
 import classNames from 'classnames';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
@@ -95,7 +96,7 @@ export default class PipelinePreview extends React.Component {
             type="flex"
             justify="center"
           >
-            <Icon type="loading" />
+            <LoadingOutlined />
           </Row>
         );
       }
@@ -122,7 +123,7 @@ export default class PipelinePreview extends React.Component {
                 versions.map((version, index) => {
                   return (
                     <tr key={index}>
-                      <td style={cellStyle}><Icon type="tag" /> {version.name}</td>
+                      <td style={cellStyle}><TagFilled /> {version.name}</td>
                       <td style={cellStyle}>{version.message}</td>
                       <td style={cellStyle}>{displayDate(version.createdDate, 'LL')}</td>
                     </tr>
@@ -146,7 +147,7 @@ export default class PipelinePreview extends React.Component {
             type="flex"
             justify="center"
           >
-            <Icon type="loading" />
+            <LoadingOutlined />
           </Row>
         );
       }
@@ -171,7 +172,7 @@ export default class PipelinePreview extends React.Component {
         } = run;
         let clusterIcon;
         if (run.nodeCount > 0) {
-          clusterIcon = <Icon type="database" />;
+          clusterIcon = <DatabaseOutlined />;
         }
         return (
           <span><StatusIcon run={run} small /> {clusterIcon} {podId}</span>

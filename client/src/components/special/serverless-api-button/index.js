@@ -16,8 +16,15 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
-import {Alert, Button, Icon, Input, Popover, Row} from 'antd';
+import {
+  observer} from 'mobx-react';
+import {Alert,
+  Button,
+  Input,
+  Popover,
+  Row
+} from 'antd';
+import { LoadingOutlined } from '@ant-design/icons';
 import ServerlessAPIURL from '../../../models/configuration/ServerlessAPIURL';
 
 const CLOSE_POPOVER_DELAY_MS = 200;
@@ -81,7 +88,7 @@ class ServerlessAPIButton extends React.Component {
     if (!url) {
       return (
         <Row className={this.props.overlayClassName}>
-          <Icon type="loading" />
+          <LoadingOutlined />
         </Row>
       );
     }

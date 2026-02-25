@@ -42,6 +42,7 @@ import {
   Table,
   Tooltip
 } from 'antd';
+import { AppstoreFilled, AppstoreOutlined, CheckCircleFilled, ClockCircleOutlined, CopyOutlined, DeleteOutlined, DownOutlined, EditOutlined, FolderOutlined, ForkOutlined, HddOutlined, InboxOutlined, LockOutlined, MessageOutlined, PlusOutlined, QuestionCircleFilled, SettingOutlined, TagFilled, UnlockOutlined } from '@ant-design/icons';
 import Menu, {SubMenu, MenuItem, Divider} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import EditFolderForm from './forms/EditFolderForm';
@@ -196,8 +197,8 @@ export default class Folder extends localization.LocalizedReactComponent {
   };
   renderTreeItemType = (item) => {
     switch (item.type) {
-      case ItemTypes.pipeline: return <Icon type="fork" />;
-      case ItemTypes.versionedStorage: return <Icon type="inbox" className="cp-versioned-storage" />;
+      case ItemTypes.pipeline: return <ForkOutlined />;
+      case ItemTypes.versionedStorage: return <InboxOutlined className="cp-versioned-storage" />;
       case ItemTypes.folder:
         let icon = 'folder';
         if (item.isProject || (item.objectMetadata && item.objectMetadata.type &&
@@ -206,19 +207,18 @@ export default class Folder extends localization.LocalizedReactComponent {
         }
 
         return <Icon type={icon} />;
-      case ItemTypes.version: return <Icon type="tag" />;
+      case ItemTypes.version: return <TagFilled />;
       case ItemTypes.storage:
         const objectStorage = item.storageType && item.storageType.toLowerCase() !== 'nfs';
         return (
-          <Icon
-            type={objectStorage ? 'inbox' : 'hdd'}
-            className={classNames({'cp-sensitive': item.sensitive})}
-          />
+          {objectStorage
+            ? <InboxOutlined className={classNames({'cp-sensitive': item.sensitive})} />
+            : <HddOutlined className={classNames({'cp-sensitive': item.sensitive})} />}
         );
-      case ItemTypes.configuration: return <Icon type="setting" />;
-      case ItemTypes.metadata: return <Icon type="appstore-o" />;
-      case ItemTypes.metadataFolder: return <Icon type="appstore-o" />;
-      case ItemTypes.projectHistory: return <Icon type="clock-circle-o" />;
+      case ItemTypes.configuration: return <SettingOutlined />;
+      case ItemTypes.metadata: return <AppstoreOutlined />;
+      case ItemTypes.metadataFolder: return <AppstoreOutlined />;
+      case ItemTypes.projectHistory: return <ClockCircleOutlined />;
       default: return <div />;
     }
   };
@@ -390,7 +390,7 @@ export default class Folder extends localization.LocalizedReactComponent {
         let nameComponent;
         const boldClassName = this.state.showDescription ? styles.objectNameBold : '';
         if (item.locked) {
-          nameComponent = <span><Icon type="lock" /> <span className={`object-name ${boldClassName}`}>{name}</span></span>;
+          nameComponent = <span><LockOutlined /> <span className={`object-name ${boldClassName}`}>{name}</span></span>;
         } else {
           nameComponent = <span><span className={`object-name ${boldClassName}`}>{name}</span></span>;
         }
@@ -463,7 +463,7 @@ export default class Folder extends localization.LocalizedReactComponent {
         key="issues"
         id={`${item.type}-item-${item.key}-issues-button`}
         size="small">
-        <Icon type="message" />{item.issuesCount > 0 ? ` ${item.issuesCount}` : undefined}
+        <MessageOutlined />{item.issuesCount > 0 ? ` ${item.issuesCount}` : undefined}
       </Button>
     );
     switch (item.type) {
@@ -482,7 +482,7 @@ export default class Folder extends localization.LocalizedReactComponent {
                 size="small"
                 type="danger"
                 onClick={(event) => this.deleteFolderConfirm(item, event)}>
-                <Icon type="delete" />
+                <DeleteOutlined />
               </Button>,
               'delete'
             )
@@ -512,7 +512,7 @@ export default class Folder extends localization.LocalizedReactComponent {
               id={`folder-item-${item.key}-edit-button`}
               size="small"
               onClick={(event) => this.openEditPipelineDialog(item, event)}>
-              <Icon type="edit" />
+              <EditOutlined />
             </Button>
           );
         }
@@ -528,7 +528,7 @@ export default class Folder extends localization.LocalizedReactComponent {
               id={`folder-item-${item.key}-edit-button`}
               size="small"
               onClick={(event) => this.openEditPipelineDialog(item, event)}>
-              <Icon type="edit" />
+              <EditOutlined />
             </Button>
           );
         }
@@ -544,7 +544,7 @@ export default class Folder extends localization.LocalizedReactComponent {
               id={`folder-item-${item.key}-edit-button`}
               size="small"
               onClick={(event) => this.openEditStorageDialog(item, event)}>
-              <Icon type="edit" />
+              <EditOutlined />
             </Button>
           );
         }
@@ -557,7 +557,7 @@ export default class Folder extends localization.LocalizedReactComponent {
               id={`folder-item-${item.key}-edit-button`}
               size="small"
               onClick={(event) => this.openEditConfigurationDialog(item, event)}>
-              <Icon type="edit" />
+              <EditOutlined />
             </Button>
           );
         }
@@ -1613,7 +1613,7 @@ export default class Folder extends localization.LocalizedReactComponent {
                 });
               }}
               key={pipelineKey}
-              title={<span><Icon type="fork" /> {this.localizedString('Pipeline')}</span>}
+              title={<span><ForkOutlined /> {this.localizedString('Pipeline')}</span>}
               className="create-pipeline-sub-menu-button"
             >
               {pipelineTemplatesMenu}
@@ -1625,7 +1625,7 @@ export default class Folder extends localization.LocalizedReactComponent {
               id="create-pipeline-button"
               className="create-pipeline-button"
               key={pipelineKey}>
-              <Icon type="fork" /> {this.localizedString('Pipeline')}
+              <ForkOutlined /> {this.localizedString('Pipeline')}
             </MenuItem>
           );
         }
@@ -1645,7 +1645,7 @@ export default class Folder extends localization.LocalizedReactComponent {
                 this.openCreateStorageDialog(true);
               });
             }}
-            title={<span><Icon type="hdd" /> Storages</span>}
+            title={<span><HddOutlined /> Storages</span>}
             className="create-storage-sub-menu"
           >
             <MenuItem
@@ -1688,7 +1688,7 @@ export default class Folder extends localization.LocalizedReactComponent {
             id="create-configuration-button"
             className="create-configuration-button"
             key={configurationKey}>
-            <Icon type="setting" /> Configuration
+            <SettingOutlined /> Configuration
           </MenuItem>
         );
       }
@@ -1723,7 +1723,7 @@ export default class Folder extends localization.LocalizedReactComponent {
             id="create-folder-button"
             className="create-folder-button"
             key={folderKey}>
-            <Icon type="folder" /> Folder
+            <FolderOutlined /> Folder
           </MenuItem>
         );
         if (folderTemplatesMenu) {
@@ -1786,9 +1786,9 @@ export default class Folder extends localization.LocalizedReactComponent {
               size="small"
               className={styles.dropDownTrigger}
             >
-              <Icon type="plus" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
+              <PlusOutlined style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
               <span style={{lineHeight: 'inherit', verticalAlign: 'middle'}}> Create </span>
-              <Icon type="down" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
+              <DownOutlined style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
             </Button>
           </Dropdown>
         </DropDownWrapper>
@@ -1815,14 +1815,7 @@ export default class Folder extends localization.LocalizedReactComponent {
           key="descriptions">
           <Row type="flex" justify="space-between" align="middle">
             <span>Descriptions</span>
-            <Icon
-              type="check-circle"
-              style={{
-                display: this.state.showDescription
-                  ? 'inherit'
-                  : 'none'
-              }}
-            />
+            <CheckCircleFilled style={{ display: this.state.showDescription ? 'inherit' : 'none' }} />
           </Row>
         </MenuItem>
       );
@@ -1839,7 +1832,7 @@ export default class Folder extends localization.LocalizedReactComponent {
         >
           <Row type="flex" justify="space-between" align="middle">
             <span>Attributes</span>
-            <Icon type="check-circle" style={{display: this.showMetadata ? 'inherit' : 'none'}} />
+            <CheckCircleFilled style={{display: this.showMetadata ? 'inherit' : 'none'}} />
           </Row>
         </MenuItem>
       );
@@ -1856,7 +1849,7 @@ export default class Folder extends localization.LocalizedReactComponent {
         >
           <Row type="flex" justify="space-between" align="middle">
             <span>{this.localizedString('Issue')}s</span>
-            <Icon type="check-circle" style={{display: this.showIssues ? 'inherit' : 'none'}} />
+            <CheckCircleFilled style={{display: this.showIssues ? 'inherit' : 'none'}} />
           </Row>
         </MenuItem>
       );
@@ -1888,7 +1881,7 @@ export default class Folder extends localization.LocalizedReactComponent {
               size="small"
               className={styles.dropDownTrigger}
             >
-              <Icon type="appstore" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
+              <AppstoreFilled style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
             </Button>
           </Dropdown>
         </DropDownWrapper>
@@ -1903,7 +1896,7 @@ export default class Folder extends localization.LocalizedReactComponent {
             id="edit-folder-button"
             key="edit"
           >
-            <Icon type="edit" style={{marginRight: 5}} />
+            <EditOutlined style={{marginRight: 5}} />
             {
               roleModel.writeAllowed(this.props.folder.value)
                 ? 'Edit folder'
@@ -1918,7 +1911,7 @@ export default class Folder extends localization.LocalizedReactComponent {
             key="clone"
             id="clone-folder-button"
           >
-            <Icon type="copy" /> Clone
+            <CopyOutlined /> Clone
           </MenuItem>
         );
       }
@@ -1929,7 +1922,7 @@ export default class Folder extends localization.LocalizedReactComponent {
             id="unlock-button"
             key="unlock"
           >
-            <Icon type="unlock" /> Unlock
+            <UnlockOutlined /> Unlock
           </MenuItem>
         );
       } else if (!folderIsReadOnly && roleModel.writeAllowed(this.props.folder.value)) {
@@ -1938,7 +1931,7 @@ export default class Folder extends localization.LocalizedReactComponent {
             id="lock-button"
             key="lock"
           >
-            <Icon type="lock" /> Lock
+            <LockOutlined /> Lock
           </MenuItem>
         );
       }
@@ -1959,7 +1952,7 @@ export default class Folder extends localization.LocalizedReactComponent {
             key="delete"
             className="cp-danger"
           >
-            <Icon type="delete" /> Delete
+            <DeleteOutlined /> Delete
           </MenuItem>
         );
       }
@@ -2012,7 +2005,7 @@ export default class Folder extends localization.LocalizedReactComponent {
                 size="small"
                 className={styles.dropDownTrigger}
               >
-                <Icon type="setting" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
+                <SettingOutlined style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
               </Button>
             </Dropdown>
           </DropDownWrapper>
@@ -2295,10 +2288,7 @@ export default class Folder extends localization.LocalizedReactComponent {
           }}>
           <Row>
             <Row className={styles.configurationConfirmTitle}>
-              <Icon
-                type="question-circle"
-                className="cp-warning"
-              />
+              <QuestionCircleFilled className="cp-warning" />
               {
                 this.state.folderToDelete &&
                 (!this.deletingFolderIsEmpty

@@ -17,9 +17,17 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {autorun, computed} from 'mobx';
-import {observer, inject} from 'mobx-react';
-import {Alert, Icon, Button, Spin, message} from 'antd';
+import {
+  autorun,
+  computed} from 'mobx';
+import {observer,
+  inject} from 'mobx-react';
+import {Alert,
+  Button,
+  Spin,
+  message
+} from 'antd';
+import { LoadingOutlined } from '@ant-design/icons';
 import {Environment, LaunchFormInfo, ParameterGroup} from './index';
 import LaunchFormStore from './launch-form-store';
 import {getDockerImage} from '../../../../utils/get-docker-image';
@@ -417,7 +425,7 @@ export default class LaunchForm extends React.Component {
             type="primary"
             onClick={this.onLaunch}
             disabled={this.state.launchPending || this.formStore.runLaunched}>
-            {this.state.launchPending ? (<Icon type="loading" />) : null}
+            {this.state.launchPending ? (<LoadingOutlined />) : null}
             {this.formStore.runLaunched ? (
               'LAUNCHED'
             ) : (

@@ -16,16 +16,19 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import classNames from 'classnames';
 import {computed} from 'mobx';
 import {
   Alert,
-  Button, Icon,
+  Button,
   Input,
   Modal,
   Select
 } from 'antd';
+import { CaretRightOutlined, CheckCircleFilled, LoadingOutlined } from '@ant-design/icons';
 import roleModel from '../../../../../utils/roleModel';
 import highlightText from '../../../../special/highlightText';
 import ToolImage from '../../../../../models/tools/ToolImage';
@@ -233,7 +236,7 @@ class LaunchVSForm extends React.Component {
                   : tool.registry
               }
             </span>
-            <Icon type="caret-right" style={{fontSize: 'smaller', margin: '0 2px'}} />
+            <CaretRightOutlined style={{fontSize: 'smaller', margin: '0 2px'}} />
             <span>{highlightText(group, search)}</span>
           </span>
         </div>
@@ -279,9 +282,7 @@ class LaunchVSForm extends React.Component {
             >
               {
                 tagsPending && (
-                  <Icon
-                    type="loading"
-                  />
+                  <LoadingOutlined />
                 )
               }
               {
@@ -318,7 +319,7 @@ class LaunchVSForm extends React.Component {
         <div
           className={styles.checkbox}
         >
-          <Icon type="check-circle" />
+          <CheckCircleFilled />
         </div>
       </div>
     );

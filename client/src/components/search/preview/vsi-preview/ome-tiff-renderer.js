@@ -19,7 +19,8 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {observable} from 'mobx';
 import {Provider, observer} from 'mobx-react';
-import {Button, Icon} from 'antd';
+import {Button} from 'antd';
+import { ArrowsAltOutlined, CloseOutlined, SettingOutlined, ShrinkOutlined } from '@ant-design/icons';
 import HCSImageViewer from '../../../special/hcs-image/hcs-image-viewer';
 import {createObjectStorageWrapper} from '../../../../utils/object-storage';
 import dataStorageAvailable from '../../../../models/dataStorage/DataStorageAvailable';
@@ -237,11 +238,7 @@ class OmeTiffRenderer extends React.Component {
                 }
               >
                 <b>Attributes</b>
-                <Icon
-                  type="close"
-                  className={styles.close}
-                  onClick={hideAttributes}
-                />
+                <CloseOutlined className={styles.close} onClick={hideAttributes} />
               </div>
               <div
                 className={styles.content}
@@ -280,10 +277,9 @@ class OmeTiffRenderer extends React.Component {
                     onClick={onChangeFullScreen}
                     style={{marginRight: 5}}
                   >
-                    <Icon
-                      type={fullscreen ? 'shrink' : 'arrows-alt'}
-                      className="cp-larger"
-                    />
+                    {fullscreen
+                      ? <ShrinkOutlined className="cp-larger" />
+                      : <ArrowsAltOutlined className="cp-larger" />}
                   </Button>
                 )
               }
@@ -291,10 +287,7 @@ class OmeTiffRenderer extends React.Component {
                 size="small"
                 onClick={showControls}
               >
-                <Icon
-                  type="setting"
-                  className="cp-larger"
-                />
+                <SettingOutlined className="cp-larger" />
               </Button>
             </div>
           )
@@ -319,11 +312,7 @@ class OmeTiffRenderer extends React.Component {
                 }
               >
                 <b>Configuration</b>
-                <Icon
-                  type="close"
-                  className={styles.close}
-                  onClick={hideControls}
-                />
+                <CloseOutlined className={styles.close} onClick={hideControls} />
               </div>
               <div
                 className={styles.content}

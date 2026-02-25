@@ -15,16 +15,18 @@
  */
 
 import React from 'react';
-import {computed} from 'mobx';
-import {inject, observer} from 'mobx-react';
+import {
+  computed} from 'mobx';
+import {inject,
+  observer} from 'mobx-react';
 import {
   Alert,
   Button,
-  Icon,
   Input,
   Modal,
   message
 } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 import SystemDictionaryForm from './forms/SystemDictionaryForm';
 import roleModel from '../../utils/roleModel';
 import SystemDictionariesUpdate from '../../models/systemDictionaries/SystemDictionariesUpdate';
@@ -264,7 +266,7 @@ class SystemDictionaries extends React.Component {
             disabled={this.state.pending || this.state.newDictionary}
             onClick={this.addNewDictionary}
           >
-            <Icon type="plus" />
+            <PlusOutlined />
             <span>Add dictionary</span>
           </Button>
         </div>

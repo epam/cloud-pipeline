@@ -17,7 +17,8 @@
 import React from 'react';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
-import {Modal, Button, Spin, Checkbox, Input, Icon, Tabs} from 'antd';
+import {Modal, Button, Spin, Checkbox, Input, Tabs} from 'antd';
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import LocalSyncDtsPreference from './components/local-sync-dts-preference';
 import DtsLogs from './components/dts-logs';
 import {
@@ -245,7 +246,7 @@ class DtsInfo extends React.Component {
             size="small"
             type="danger"
           >
-            <Icon type="delete" />
+            <DeleteOutlined />
           </Button>
         </div>
         {error ? (
@@ -292,7 +293,7 @@ class DtsInfo extends React.Component {
           style={{width: 150}}
           size="small"
         >
-          <Icon type="plus" /> Add preference
+          <PlusOutlined /> Add preference
         </Button>
         <div
           style={{display: 'flex', justifyContent: 'flex-end', gap: 5}}

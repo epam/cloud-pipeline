@@ -15,14 +15,16 @@
  */
 
 import React from 'react';
-import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {computed,
+  observable} from 'mobx';
 import {
   Alert,
   Button,
   Card,
   Col,
-  Icon,
   Input,
   Menu as MenuHorizontal,
   message,
@@ -33,6 +35,7 @@ import {
   Tooltip,
   Upload
 } from 'antd';
+import { AppstoreFilled, ArrowLeftOutlined, CameraOutlined, CheckCircleFilled, DeleteOutlined, DownOutlined, ExclamationCircleFilled, LinkOutlined, LoadingOutlined, SettingOutlined, UploadOutlined } from '@ant-design/icons';
 import Menu, {MenuItem, Divider} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import classNames from 'classnames';
@@ -439,9 +442,7 @@ export default class Tool extends localization.LocalizedReactComponent {
     } else {
       image = (
         <Row type="flex" align="middle" justify="center" className={styles.noImageContainer}>
-          <Icon
-            className={classNames(styles.noImage, 'cp-text-not-important')}
-            type="camera-o" />
+          <CameraOutlined className={classNames(styles.noImage, 'cp-text-not-important')} />
         </Row>
       );
     }
@@ -504,13 +505,7 @@ export default class Tool extends localization.LocalizedReactComponent {
             showUploadList={false}
             beforeUpload={doUpload}>
             <Row type="flex" align="middle" justify="center" className={styles.uploadToolImage}>
-              <Icon
-                type="upload"
-                style={
-                  this.props.tool.value.iconId
-                    ? {fontSize: 'xx-large', color: 'white', textShadow: '1px 1px black'}
-                    : {fontSize: 'xx-large', color: '#888'}
-                } />
+              <UploadOutlined style={ this.props.tool.value.iconId ? {fontSize: 'xx-large', color: 'white', textShadow: '1px 1px black'} : {fontSize: 'xx-large', color: '#888'} } />
             </Row>
           </Upload>
         }
@@ -660,7 +655,7 @@ export default class Tool extends localization.LocalizedReactComponent {
     if (registry && roleModel.readAllowed(this.props.tool.value) && registry.pipelineAuth) {
       const renderPullCommand = () => {
         if (!registry) {
-          return <Icon type="loading" />;
+          return <LoadingOutlined />;
         }
         return `docker pull ${registry.externalUrl || registry.path}/${this.props.tool.value.image}`;
       };
@@ -1158,7 +1153,7 @@ export default class Tool extends localization.LocalizedReactComponent {
                   }}
                   style={{lineHeight: 1}}
                 >
-                  <Icon type="delete" />
+                  <DeleteOutlined />
                 </Button>
               )
             }
@@ -1801,7 +1796,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           >
             {
               tooltip && !notLoaded
-                ? <Icon type="exclamation-circle" style={{marginRight: 5}} />
+                ? <ExclamationCircleFilled style={{marginRight: 5}} />
                 : undefined
             }
             Run
@@ -1832,7 +1827,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           >
             {
               tooltip && !notLoaded
-                ? <Icon type="exclamation-circle" style={{marginRight: 5}} />
+                ? <ExclamationCircleFilled style={{marginRight: 5}} />
                 : undefined
             }
             Run
@@ -1915,7 +1910,7 @@ export default class Tool extends localization.LocalizedReactComponent {
             >
               {
                 tooltip && !notLoaded
-                  ? <Icon type="exclamation-circle" style={{marginRight: 5}} />
+                  ? <ExclamationCircleFilled style={{marginRight: 5}} />
                   : undefined
               }
               <span style={{lineHeight: 'inherit'}}>Run</span>
@@ -1938,7 +1933,7 @@ export default class Tool extends localization.LocalizedReactComponent {
               type="primary"
               style={{lineHeight: 1}}
             >
-              <Icon type="down" style={{lineHeight: 'inherit'}} />
+              <DownOutlined style={{lineHeight: 'inherit'}} />
             </Button>
           </Dropdown>
         </Button.Group>
@@ -1961,7 +1956,7 @@ export default class Tool extends localization.LocalizedReactComponent {
         key="metadata">
         <Row type="flex" justify="space-between" align="middle">
           <span>Attributes</span>
-          <Icon type="check-circle" style={{display: this.state.metadata ? 'inherit' : 'none'}} />
+          <CheckCircleFilled style={{display: this.state.metadata ? 'inherit' : 'none'}} />
         </Row>
       </MenuItem>
     );
@@ -1971,7 +1966,7 @@ export default class Tool extends localization.LocalizedReactComponent {
         key="issues">
         <Row type="flex" justify="space-between" align="middle">
           <span>{this.localizedString('Issue')}s</span>
-          <Icon type="check-circle" style={{display: this.state.showIssuesPanel ? 'inherit' : 'none'}} />
+          <CheckCircleFilled style={{display: this.state.showIssuesPanel ? 'inherit' : 'none'}} />
         </Row>
       </MenuItem>
     );
@@ -1986,9 +1981,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           key="instanceTypeManagement">
           <Row type="flex" justify="space-between" align="middle">
             <span>Instance management</span>
-            <Icon
-              type="check-circle"
-              style={{display: this.state.instanceTypesManagementPanel ? 'inherit' : 'none'}} />
+            <CheckCircleFilled style={{display: this.state.instanceTypesManagementPanel ? 'inherit' : 'none'}} />
           </Row>
         </MenuItem>
       );
@@ -2012,7 +2005,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           size="small"
           style={{lineHeight: 1}}
         >
-          <Icon type="appstore" style={{lineHeight: 'inherit'}} />
+          <AppstoreFilled style={{lineHeight: 'inherit'}} />
         </Button>
       </Dropdown>
     );
@@ -2082,7 +2075,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           onClick={this.openCreateLinkForm}
           style={{lineHeight: 1}}
         >
-          <Icon type="link" />
+          <LinkOutlined />
         </Button>
       );
     }
@@ -2105,18 +2098,18 @@ export default class Tool extends localization.LocalizedReactComponent {
         selectedKeys={[]}
       >
         <MenuItem key={permissionsKey}>
-          <Icon type="setting" /> Permissions
+          <SettingOutlined /> Permissions
         </MenuItem>
         <Divider />
         <MenuItem key={deleteKey} className="cp-danger">
-          <Icon type="delete" /> Delete tool {this.link ? 'link' : false}
+          <DeleteOutlined /> Delete tool {this.link ? 'link' : false}
         </MenuItem>
       </Menu>
     );
     return (
       <Dropdown overlay={menu} placement="bottomRight">
         <Button id="setting-button" size="small" style={{lineHeight: 1}}>
-          <Icon type="setting" style={{lineHeight: 'inherit'}} />
+          <SettingOutlined style={{lineHeight: 'inherit'}} />
         </Button>
       </Dropdown>
     );
@@ -2190,7 +2183,7 @@ export default class Tool extends localization.LocalizedReactComponent {
               onClick={this.navigateBack}
               size="small"
               style={{lineHeight: 1}}>
-              <Icon type="arrow-left" />
+              <ArrowLeftOutlined />
             </Button>
             <ToolLink link={this.link} style={{marginLeft: 5}} />
             <span style={{marginLeft: 5}}>{this.props.tool.value.image}</span>

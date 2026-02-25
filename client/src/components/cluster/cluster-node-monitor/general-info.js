@@ -15,17 +15,18 @@
  */
 
 import React from 'react';
-import {observer} from 'mobx-react';
+import {
+  observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {
   Alert,
   Button,
   Checkbox,
   DatePicker,
-  Icon,
   message,
   Row
 } from 'antd';
+import { DownOutlined, ExportOutlined } from '@ant-design/icons';
 import Menu, {MenuItem, Divider as MenuDivider} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import FileSaver from 'file-saver';
@@ -642,7 +643,7 @@ class GeneralInfoTab extends React.Component {
               </Menu>
             )}>
             <Button>
-              Set range <Icon type="down" />
+              Set range <DownOutlined />
             </Button>
           </Dropdown>
           <Divider />
@@ -696,7 +697,7 @@ class GeneralInfoTab extends React.Component {
                   disabled={!start || exporting}
                   onClick={() => this.onExportClicked()}
                 >
-                  <Icon type="export" />Export
+                  <ExportOutlined />Export
                 </Button>
               </Dropdown>
             )

@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Icon, Alert} from 'antd';
+import {Alert} from 'antd';
+import { CloseOutlined } from '@ant-design/icons';
 import Dropdown from 'rc-dropdown';
 import Menu, {MenuItem, SubMenu} from 'rc-menu';
 import {inject, observer} from 'mobx-react';
@@ -609,11 +610,8 @@ class RunCapabilities extends React.Component {
                     style={tagStyle}
                   >
                     <Capability capability={capability} />
-                    <Icon
-                      type="close"
-                      className={styles.runCapabilitiesInputTagClose}
-                      onClick={(domEvent) => onCapabilityClick({domEvent, key: capability.value})}
-                    />
+                    <CloseOutlined className={styles.runCapabilitiesInputTagClose}
+                      onClick={(domEvent) => onCapabilityClick({domEvent, key: capability.value})} />
                   </div>
                 ))
             }

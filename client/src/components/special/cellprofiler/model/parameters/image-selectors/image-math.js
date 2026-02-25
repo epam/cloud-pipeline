@@ -15,9 +15,14 @@
  */
 
 import React from 'react';
-import {computed} from 'mobx';
+import {
+  computed} from 'mobx';
 import PropTypes from 'prop-types';
-import {Button, Icon, Input, Select} from 'antd';
+import {Button,
+  Input,
+  Select
+} from 'antd';
+import { DeleteOutlined } from '@ant-design/icons';
 import {getFilesForModule} from '../file-parameter';
 import {observer} from 'mobx-react';
 import styles from './image-selectors.css';
@@ -175,7 +180,7 @@ class ImageMathImagesRenderer extends React.Component {
                 size="small"
                 onClick={this.removeConfiguration(index)}
               >
-                <Icon type="delete" />
+                <DeleteOutlined />
               </Button>
             </div>
           ))

@@ -16,16 +16,18 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {computed} from 'mobx';
-import {inject, observer} from 'mobx-react';
+import {
+  computed} from 'mobx';
+import {inject,
+  observer} from 'mobx-react';
 import {Link} from 'react-router';
 import {
   Dropdown,
-  Icon,
   message,
   Button,
   Modal
 } from 'antd';
+import { BarsOutlined, DownloadOutlined } from '@ant-design/icons';
 import Menu, {MenuItem, Divider} from 'rc-menu';
 import FileSaver from 'file-saver';
 import ExportConfigurationModal from './configuration-modal';
@@ -124,11 +126,11 @@ function ExportMenu ({onExport, onExportTemplate, onConfigure, templates, select
       style={{cursor: 'pointer'}}
     >
       <MenuItem key="export">
-        <Icon type="download" style={{marginRight: 10}} />
+        <DownloadOutlined style={{marginRight: 10}} />
         Default configuration
       </MenuItem>
       <MenuItem key="configure">
-        <Icon type="bars" style={{marginRight: 10}} />
+        <BarsOutlined style={{marginRight: 10}} />
         Custom configuration
       </MenuItem>
       {templatesSection}
@@ -390,7 +392,7 @@ class ExportButton extends React.Component {
         onVisibleChange={this.handleDropDownVisible}
         onClick={this.onDefaultExport}
       >
-        <Icon type="download" />
+        <DownloadOutlined />
         Export
         <ExportConfigurationModal
           visible={modalVisible}

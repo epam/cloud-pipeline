@@ -1,7 +1,11 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Link} from 'react-router';
-import {Icon, Popover} from 'antd';
+import {
+  Link} from 'react-router';
+import {
+  Popover
+} from 'antd';
+import { ExclamationCircleFilled, ForkOutlined } from '@ant-design/icons';
 import localization from '../../../../../utils/localization';
 import styles from './run-executable.css';
 import classNames from 'classnames';
@@ -50,7 +54,7 @@ function RunPipeline (props) {
   if (pipelineLink && pipelineDescription) {
     return (
       <div className={className} style={style}>
-        <Icon type="fork" className={styles.toolIcon} />
+        <ForkOutlined className={styles.toolIcon} />
         <Link to={pipelineLink}>
           {pipelineDescription}
         </Link>
@@ -77,15 +81,9 @@ function RunPipeline (props) {
           className={classNames(className, 'cp-danger')}
           style={style}
         >
-          <Icon type="fork" className={styles.toolIcon} />
+          <ForkOutlined className={styles.toolIcon} />
           <span>{pipelineDescription}</span>
-          <Icon
-            type="exclamation-circle"
-            className={styles.toolIcon}
-            style={{
-              marginLeft: 5
-            }}
-          />
+          <ExclamationCircleFilled className={styles.toolIcon} style={{ marginLeft: 5 }} />
         </div>
       </Popover>
     );

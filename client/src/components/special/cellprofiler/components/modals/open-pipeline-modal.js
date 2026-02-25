@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Alert, Button, Checkbox, Icon, message, Modal, Table} from 'antd';
+import {Alert, Button, Checkbox, message, Modal, Table} from 'antd';
+import { LoadingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import {observer} from 'mobx-react';
 import {loadAvailablePipelineGroups} from '../../model/analysis/analysis-pipeline-management';
@@ -114,7 +115,7 @@ class OpenPipelineModal extends React.Component {
         className: classNames(styles.analysisPipelineCell, styles.analysisPipelineCellName),
         render: (name, obj) => {
           if (obj.loading) {
-            return (<Icon type="loading" />);
+            return (<LoadingOutlined />);
           }
           return (
             <span>

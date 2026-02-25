@@ -15,13 +15,18 @@
  */
 
 import React from 'react';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import folders from '../../../models/folders/Folders';
 import pipelines from '../../../models/pipelines/Pipelines';
 import RunTable from '../../runs/run-table';
 import LoadingView from '../../special/LoadingView';
 import EditableField from '../../special/EditableField';
-import {Alert, Icon, Row} from 'antd';
+import {Alert,
+  Row
+} from 'antd';
+import { ClockCircleOutlined, LockOutlined } from '@ant-design/icons';
 import connect from '../../../utils/connect';
 import HiddenObjects from '../../../utils/hidden-objects';
 import styles from './Browser.css';
@@ -60,15 +65,10 @@ export default class ProjectHistory extends React.Component {
             <tr>
               <td>
                 <Row type="flex" className={styles.itemHeader} align="middle">
-                  <Icon
-                    type="clock-circle-o"
-                    className={`${styles.editableControl} ${folderTitleClassName}`}
-                  />
+                  <ClockCircleOutlined className={`${styles.editableControl} ${folderTitleClassName}`} />
                   {
                     this.props.folder.value.locked &&
-                    <Icon
-                      className={`${styles.editableControl} ${folderTitleClassName}`}
-                      type="lock" />
+                    <LockOutlined className={`${styles.editableControl} ${folderTitleClassName}`} />
                   }
                   <EditableField
                     readOnly

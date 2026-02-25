@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
+import {
+  observer} from 'mobx-react';
 import {computed} from 'mobx';
 import classNames from 'classnames';
 import {
@@ -25,11 +26,11 @@ import {
   Checkbox,
   Col,
   Form,
-  Icon,
   Input,
   Row,
   Select
 } from 'antd';
+import { EditOutlined, PictureOutlined } from '@ant-design/icons';
 import CodeEditor from '../../special/CodeEditor';
 import compareArrays from '../../../utils/compareArrays';
 import EmailPreview from './EmailPreview';
@@ -334,13 +335,13 @@ export default class EditEmailNotification extends React.Component {
                 type={this.state.previewMode ? 'default' : 'primary'}
                 style={{width: 80}}
                 onClick={() => this.setPreviewMode(false)}>
-                <Icon type="edit" />Edit
+                <EditOutlined />Edit
               </Button>
               <Button
                 type={!this.state.previewMode ? 'default' : 'primary'}
                 style={{width: 80}}
                 onClick={() => this.setPreviewMode(true)}>
-                <Icon type="picture" />Preview
+                <PictureOutlined />Preview
               </Button>
             </Button.Group>
           </Row>

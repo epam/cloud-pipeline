@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Icon, Spin} from 'antd';
+import {Spin} from 'antd';
+import { InboxOutlined } from '@ant-design/icons';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {
@@ -210,7 +211,7 @@ class ProxyStateChart extends React.Component {
               transform: 'translate(-50%, -50%)'
             }}
           >
-            <Icon type="inbox" style={{fontSize: 'large'}} />
+            <InboxOutlined style={{fontSize: 'large'}} />
             <span>No data</span>
           </div>
         ) : null}

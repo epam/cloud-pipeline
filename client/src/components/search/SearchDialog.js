@@ -26,6 +26,7 @@ import {
   Tooltip,
   Row
 } from 'antd';
+import { FilterOutlined, LoadingOutlined, QuestionOutlined } from '@ant-design/icons';
 import Preview from './preview';
 import {PreviewIcons} from './preview/previewIcons';
 import {SearchItemTypes} from '../../models/search';
@@ -669,7 +670,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
                 )
               }
             >
-              <Icon type="question" />
+              <QuestionOutlined />
             </div>
           </Tooltip>
         </div>
@@ -792,7 +793,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
                 align="middle"
                 justify="center"
               >
-                <Icon type="loading" />
+                <LoadingOutlined />
               </Row>
             )
           }
@@ -810,7 +811,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
           }
           onClick={this.navigateToAdvancedFilter}
         >
-          <Icon className={styles.icon} type="filter" />
+          <FilterOutlined className={styles.icon} />
           <span className={styles.buttonText}>Advanced search</span>
         </div>
       </div>

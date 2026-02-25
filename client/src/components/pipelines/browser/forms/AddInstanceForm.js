@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
+import {
+  observer} from 'mobx-react';
 import {
   Checkbox,
   Modal,
@@ -24,9 +25,9 @@ import {
   Form,
   Row,
   Input,
-  Select,
-  Icon
+  Select
 } from 'antd';
+import { DeleteOutlined, DownOutlined } from '@ant-design/icons';
 import Menu, {MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import SelectMetadataItems from './SelectMetadataItems';
@@ -351,7 +352,7 @@ export default class AddInstanceForm extends React.Component {
               type="danger"
               style={{marginLeft: 5}}
             >
-              <Icon type="delete" />
+              <DeleteOutlined />
             </Button>
           )
         }
@@ -412,7 +413,7 @@ export default class AddInstanceForm extends React.Component {
               onClick={this.onRemoveParameter(f => f.identifier === field.identifier)}
               type="danger"
               style={{marginLeft: 5}}>
-              <Icon type="delete" />
+              <DeleteOutlined />
             </Button>
           )
         }
@@ -485,7 +486,7 @@ export default class AddInstanceForm extends React.Component {
               id="add-parameter-dropdown-button"
               style={{padding: '0px 8px'}}
               disabled={this.props.pending}>
-              <Icon type="down" />
+              <DownOutlined />
             </Button>
           </Dropdown>
         </Button.Group>

@@ -19,7 +19,8 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {observer, Provider} from 'mobx-react';
 import {computed, observable} from 'mobx';
-import {Alert, Button, Icon, Radio} from 'antd';
+import {Alert, Button, Radio} from 'antd';
+import { ApiOutlined, AppstoreFilled, AppstoreOutlined, SettingOutlined } from '@ant-design/icons';
 
 import HCSImageViewer from './hcs-image-viewer';
 import HCSInfo from './utilities/hcs-image-info';
@@ -779,7 +780,7 @@ class HcsImage extends React.Component {
                 size="small"
                 onClick={this.toggleWellView}
               >
-                <Icon type={this.showEntireWell ? 'appstore' : 'appstore-o'} />
+                {this.showEntireWell ? <AppstoreFilled /> : <AppstoreOutlined />}
               </Button>
             )
           }
@@ -816,10 +817,7 @@ class HcsImage extends React.Component {
             size="small"
             onClick={this.showConfiguration}
           >
-            <Icon
-              type="setting"
-              className="cp-larger"
-            />
+            <SettingOutlined className="cp-larger" />
           </Button>
           {
             analysisAvailable && (
@@ -830,10 +828,7 @@ class HcsImage extends React.Component {
                 type={showAnalysis ? 'primary' : 'default'}
                 disabled={this.hcsVideoSource.videoMode}
               >
-                <Icon
-                  type="api"
-                  className="cp-larger"
-                />
+                <ApiOutlined className="cp-larger" />
               </Button>
             )
           }

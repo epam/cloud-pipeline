@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Button, Icon, Modal, Row, Select, TimePicker} from 'antd';
+import {Button, Modal, Row, Select, TimePicker} from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 import {observer} from 'mobx-react';
 import moment from 'moment-timezone';
 import classNames from 'classnames';
@@ -486,7 +487,7 @@ export default class RunScheduleDialog extends React.Component {
           {rules.map(this.renderRule)}
         </Row>
         <Row type="flex" style={{padding: 5}}>
-          <Button size="small" onClick={this.onAddRow}><Icon type="plus" /> Add rule</Button>
+          <Button size="small" onClick={this.onAddRow}><PlusOutlined /> Add rule</Button>
         </Row>
       </Modal>
     );

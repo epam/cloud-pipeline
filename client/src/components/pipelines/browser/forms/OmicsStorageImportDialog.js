@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {computed} from 'mobx';
+import {
+  computed} from 'mobx';
 import {
   Button,
   Form,
@@ -24,9 +25,9 @@ import {
   Modal,
   Row,
   Select,
-  Spin,
-  Icon
+  Spin
 } from 'antd';
+import { FolderOutlined } from '@ant-design/icons';
 import roleModel from '../../../../utils/roleModel';
 import BucketBrowser from '../../launch/dialogs/BucketBrowser';
 import dataStorageRestrictedAccessCheck from '../../../../utils/data-storage-restricted-access';
@@ -270,7 +271,7 @@ export class OmicsStorageImportDialog extends React.Component {
               <div
                 className={styles.pathType}
                 onClick={() => this.openBucketBrowser(field)}>
-                <Icon type="folder" />
+                <FolderOutlined />
               </div>
             }
           />

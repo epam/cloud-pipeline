@@ -17,18 +17,20 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {observer} from 'mobx-react';
-import {observable, computed} from 'mobx';
+import {
+  observer} from 'mobx-react';
+import {observable,
+  computed} from 'mobx';
 import {
   Button,
   Input,
   Form,
   Row,
   Col,
-  Icon,
   Checkbox,
   message
 } from 'antd';
+import { EditOutlined, PictureOutlined } from '@ant-design/icons';
 import UsersRolesSelect from '../../../../../special/users-roles-select';
 import CodeEditor from '../../../../../special/CodeEditor';
 import EmailPreview from '../../../../../../components/settings/forms/EmailPreview';
@@ -171,13 +173,13 @@ class NotificationForm extends React.Component {
                 type={this.state.previewMode ? 'default' : 'primary'}
                 style={{width: 80}}
                 onClick={() => this.setPreviewMode(false)}>
-                <Icon type="edit" />Edit
+                <EditOutlined />Edit
               </Button>
               <Button
                 type={!this.state.previewMode ? 'default' : 'primary'}
                 style={{width: 80}}
                 onClick={() => this.setPreviewMode(true)}>
-                <Icon type="picture" />Preview
+                <PictureOutlined />Preview
               </Button>
             </Button.Group>
           </Col>

@@ -15,18 +15,21 @@
  */
 
 import React from 'react';
-import {observer, inject} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {
+  observer,
+  inject} from 'mobx-react';
+import {computed,
+  observable} from 'mobx';
 import moment from 'moment-timezone';
 import {
   Button,
   Pagination,
-  Icon,
   Modal,
   message,
   Select,
   Spin
 } from 'antd';
+import { MailOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import ReadMessage from '../../../models/notifications/ReadMessage';
 import NotificationsRequest from '../../../models/notifications/CurrentUserNotificationsPaging';
@@ -258,13 +261,7 @@ export default class NotificationBrowser extends React.Component {
                     styles.notificationCell,
                     styles.notificationStatus
                   )}>
-                    <Icon
-                      className={notification.isRead
-                        ? 'cp-disabled'
-                        : 'cp-setting-message'
-                      }
-                      type="mail"
-                    />
+                    <MailOutlined className={notification.isRead ? 'cp-disabled' : 'cp-setting-message' } />
                   </div>
                   <b className={classNames(
                     styles.notificationCell,

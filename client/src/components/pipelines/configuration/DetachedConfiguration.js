@@ -15,10 +15,21 @@
  */
 
 import React from 'react';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import classNames from 'classnames';
-import {computed, observable} from 'mobx';
-import {Row, Col, Modal, Button, Alert, Icon, Tabs, message} from 'antd';
+import {computed,
+  observable} from 'mobx';
+import {Row,
+  Col,
+  Modal,
+  Button,
+  Alert,
+  Tabs,
+  message
+} from 'antd';
+import { PlusOutlined, SettingOutlined } from '@ant-design/icons';
 import LaunchPipelineForm from '../launch/form/LaunchPipelineForm';
 import pipelines from '../../../models/pipelines/Pipelines';
 import pipelinesLibrary from '../../../models/folders/FolderLoadTree';
@@ -999,7 +1010,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
           id="add-configuration-button"
           size="small"
           onClick={this.openCreateConfigurationFormDialog}>
-          <Icon type="plus" style={{lineHeight: 'inherit'}} /> ADD
+          <PlusOutlined style={{lineHeight: 'inherit'}} /> ADD
         </Button>
       );
     }
@@ -1072,7 +1083,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
               configurationId={this.props.configurationId}
             />
             <Button onClick={this.openEditConfigurationForm} size="small">
-              <Icon type="setting" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
+              <SettingOutlined style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
             </Button>
           </Col>
         </Row>

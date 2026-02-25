@@ -20,6 +20,7 @@ import {computed} from 'mobx';
 import PropTypes from 'prop-types';
 import {Link} from 'react-router';
 import {Icon} from 'antd';
+import { CaretRightOutlined, LoadingOutlined, LockOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import EditableField from './EditableField';
 import {
@@ -147,7 +148,7 @@ export default class Breadcrumbs extends React.Component {
 
   render () {
     if (!this.props.pipelinesLibrary.loaded && this.props.pipelinesLibrary.pending) {
-      return <Icon type="loading" />;
+      return <LoadingOutlined />;
     }
     if (this.props.pipelinesLibrary.error) {
       return null;
@@ -171,11 +172,7 @@ export default class Breadcrumbs extends React.Component {
               />
             ) : null;
             const lock = item.lock ? (
-              <Icon
-                type="lock"
-                className={classNames(item.lockClassName, {'cp-sensitive': item.sensitive})}
-                style={{marginRight: 5}}
-              />
+              <LockOutlined className={classNames(item.lockClassName, {'cp-sensitive': item.sensitive})} style={{marginRight: 5}} />
             ) : null;
             if (isLast) {
               return [
@@ -225,16 +222,7 @@ export default class Breadcrumbs extends React.Component {
                   {lock}
                   {item.name}
                 </div>,
-                <Icon
-                  key={`divider-${index}`}
-                  type="caret-right"
-                  style={{
-                    lineHeight: 2,
-                    verticalAlign: 'middle',
-                    margin: '0px 5px',
-                    fontSize: 'small'
-                  }}
-                />
+                <CaretRightOutlined key={`divider-${index}`} style={{ lineHeight: 2, verticalAlign: 'middle', margin: '0px 5px', fontSize: 'small' }} />
               ];
             }
             return [
@@ -249,16 +237,7 @@ export default class Breadcrumbs extends React.Component {
                 {lock}
                 {item.name}
               </Link>,
-              <Icon
-                key={`divider-${index}`}
-                type="caret-right"
-                style={{
-                  lineHeight: 2,
-                  verticalAlign: 'middle',
-                  margin: '0px 5px',
-                  fontSize: 'small'
-                }}
-              />
+              <CaretRightOutlined key={`divider-${index}`} style={{ lineHeight: 2, verticalAlign: 'middle', margin: '0px 5px', fontSize: 'small' }} />
             ];
           }).reduce((result, itemsArray) => {
             result.push(...itemsArray.filter(i => !!i));

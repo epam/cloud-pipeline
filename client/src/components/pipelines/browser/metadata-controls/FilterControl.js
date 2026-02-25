@@ -1,7 +1,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
-import {Popover, Button, Icon, Select, Checkbox} from 'antd';
+import {Popover, Button, Select, Checkbox} from 'antd';
+import { CloseOutlined } from '@ant-design/icons';
 import {defaultSorter} from '../../../../utils/sorting';
 
 function tagsAreEqual (tagsA, tagsB) {
@@ -184,7 +185,7 @@ class FilterControl extends React.Component {
             }}>
             <h4>Specify filter for <span style={{fontWeight: 600}}>{this.props.columnName}</span>
             </h4>
-            <Icon type="close" onClick={() => this.handlePopoverVisibleChange(false)} />
+            <CloseOutlined onClick={() => this.handlePopoverVisibleChange(false)} />
           </div>
         )}
         content={content}

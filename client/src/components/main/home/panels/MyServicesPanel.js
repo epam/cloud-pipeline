@@ -16,11 +16,16 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import ToolImage from '../../../../models/tools/ToolImage';
 import LoadingView from '../../../special/LoadingView';
 import localization from '../../../../utils/localization';
-import {Alert, Icon, Row} from 'antd';
+import {Alert,
+  Row
+} from 'antd';
+import { CaretRightOutlined, RightSquareOutlined } from '@ant-design/icons';
 import CardsPanel from './components/CardsPanel';
 import getServiceActions from './components/getServiceActions';
 import roleModel from '../../../../utils/roleModel';
@@ -86,9 +91,9 @@ export default class MyServicesPanel extends localization.LocalizedReactComponen
         </Row>,
         <Row key="docker image" style={{fontSize: 'smaller'}}>
           <span>{imageRegistry ? imageRegistry.description || imageRegistry.path : reg}</span>
-          <Icon type="caret-right" style={{fontSize: 'smaller', margin: '0 2px'}} />
+          <CaretRightOutlined style={{fontSize: 'smaller', margin: '0 2px'}} />
           <span>{group}</span>
-          <Icon type="caret-right" style={{fontSize: 'smaller', margin: '0 2px'}} />
+          <CaretRightOutlined style={{fontSize: 'smaller', margin: '0 2px'}} />
           <span>{dockerImage}</span>
         </Row>,
         <Row key="run" style={{fontSize: 'smaller'}}>
@@ -101,16 +106,7 @@ export default class MyServicesPanel extends localization.LocalizedReactComponen
         <Row type="flex" align="middle" justify="start" style={{height: '100%'}}>
           <div style={{marginRight: 10, overflow: 'hidden', width: 44, height: 44, position: 'relative'}}>
             <img src={ToolImage.url(tool.id, tool.iconId)} style={{width: '100%'}} />
-            <Icon
-              type="right-square"
-              style={{
-                position: 'absolute',
-                bottom: 0,
-                right: 0,
-                zIndex: 1,
-                fontSize: 'larger',
-                backgroundColor: 'white'
-              }} />
+            <RightSquareOutlined style={{ position: 'absolute', bottom: 0, right: 0, zIndex: 1, fontSize: 'larger', backgroundColor: 'white' }} />
           </div>
           <div style={{flex: 1, display: 'flex', flexDirection: 'column'}}>
             {renderMainInfo()}

@@ -15,18 +15,20 @@
  */
 
 import React from 'react';
-import {observable, computed} from 'mobx';
+import {
+  observable,
+  computed} from 'mobx';
 import {observer} from 'mobx-react';
 import classNames from 'classnames';
 import {
   Select,
   Input,
   Button,
-  Icon,
   Table,
   Badge,
   message
 } from 'antd';
+import { InfoCircleFilled } from '@ant-design/icons';
 import CorePods from '../../../models/cluster/CorePods';
 import highlightText from '../../special/highlightText';
 import styles from '../ClusterNode.css';
@@ -264,11 +266,8 @@ export default class CoreServicesTable extends React.Component {
             ) : null}
             {highlightText(text, filters.name || globalSearch)}
             {!record.isService ? (
-              <Icon
-                onClick={() => this.openInfoModal(record)}
-                style={{marginLeft: 5, cursor: 'pointer'}}
-                type="info-circle"
-              />
+              <InfoCircleFilled onClick={() => this.openInfoModal(record)}
+                style={{marginLeft: 5, cursor: 'pointer'}} />
             ) : null}
           </span>
         ),

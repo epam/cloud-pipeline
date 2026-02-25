@@ -15,8 +15,11 @@
  */
 
 import React from 'react';
-import {observer, inject} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {
+  observer,
+  inject} from 'mobx-react';
+import {computed,
+  observable} from 'mobx';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import moment from 'moment-timezone';
@@ -25,9 +28,9 @@ import {Link} from 'react-router';
 import {
   Button,
   message,
-  Icon,
   Table
 } from 'antd';
+import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import {
   Period,
   getPeriod,
@@ -414,7 +417,7 @@ export default class UserInfoSummary extends React.Component {
           style={{marginRight: 10}}
           disabled={pending}
         >
-          <Icon type="left" />
+          <LeftOutlined />
         </Button>
         <span>
           {`User statistics for ${currentPeriod}`}
@@ -425,7 +428,7 @@ export default class UserInfoSummary extends React.Component {
           style={{marginLeft: 10}}
           disabled={pending || nexNavigationDisabled}
         >
-          <Icon type="right" />
+          <RightOutlined />
         </Button>
       </div>
     );

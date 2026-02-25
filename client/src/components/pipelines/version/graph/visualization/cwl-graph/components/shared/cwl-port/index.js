@@ -18,10 +18,10 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {
   Button,
-  Icon,
   Input,
   Select
 } from 'antd';
+import { DeleteOutlined } from '@ant-design/icons';
 
 const Types = {
   any: 'any',
@@ -123,7 +123,7 @@ class CWLPort extends React.Component {
           onClick={this.onDelete}
           style={{marginLeft: 5}}
         >
-          <Icon type="delete" />
+          <DeleteOutlined />
         </Button>
       </div>
     );

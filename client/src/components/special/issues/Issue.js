@@ -16,9 +16,18 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import {computed} from 'mobx';
-import {Alert, Button, Icon, message, Modal, Row, Tooltip} from 'antd';
+import {Alert,
+  Button,
+  message,
+  Modal,
+  Row,
+  Tooltip
+} from 'antd';
+import { ArrowLeftOutlined, CheckOutlined, CloseOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import IssueCommentPreview from './controls/IssueCommentPreview';
 import IssueComment from './controls/IssueComment';
@@ -281,7 +290,7 @@ export default class Issue extends localization.LocalizedReactComponent {
             onClick={this.onApplyEditCommentClicked}
             size="small"
           >
-            <Icon type="check" />
+            <CheckOutlined />
           </Button>
         );
         actions.push(
@@ -290,7 +299,7 @@ export default class Issue extends localization.LocalizedReactComponent {
             onClick={this.onCancelEditCommentClicked}
             size="small"
           >
-            <Icon type="close" />
+            <CloseOutlined />
           </Button>
         );
       } else {
@@ -303,7 +312,7 @@ export default class Issue extends localization.LocalizedReactComponent {
               onClick={() => this.onEditCommentClicked(comment)}
               size="small"
             >
-              <Icon type="edit" />
+              <EditOutlined />
             </Button>
           );
         }
@@ -316,7 +325,7 @@ export default class Issue extends localization.LocalizedReactComponent {
               size="small"
               type="danger"
             >
-              <Icon type="delete" />
+              <DeleteOutlined />
             </Button>
           );
         }
@@ -486,7 +495,7 @@ export default class Issue extends localization.LocalizedReactComponent {
             size="small"
             onClick={() => this.props.onNavigateBack && this.props.onNavigateBack(false)}
             style={{marginRight: 5}}>
-            <Icon type="arrow-left" />
+            <ArrowLeftOutlined />
           </Button>
           <EditableField
             inputId="issue-name"
@@ -514,7 +523,7 @@ export default class Issue extends localization.LocalizedReactComponent {
               size="small"
               style={{marginLeft: 5}}
             >
-              <Icon type="delete" />
+              <DeleteOutlined />
             </Button>
           }
         </Row>

@@ -20,9 +20,9 @@ import classNames from 'classnames';
 import {
   message,
   Tooltip,
-  Icon,
   Modal
 } from 'antd';
+import { InfoCircleFilled } from '@ant-design/icons';
 import {computed, observable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {STORAGE_CLASSES} from '../../pipelines/browser/data-storage';
@@ -75,11 +75,7 @@ function InfoTooltip ({sizes, isNFS}) {
       title={tooltip}
       placement="top"
     >
-      <Icon
-        type="info-circle"
-        className="cp-text"
-        style={{marginRight: 5, marginLeft: 5}}
-      />
+      <InfoCircleFilled className="cp-text" style={{marginRight: 5, marginLeft: 5}} />
     </Tooltip>
   );
 }

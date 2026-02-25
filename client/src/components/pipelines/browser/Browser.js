@@ -28,7 +28,6 @@ import {
   Alert,
   Button,
   Col,
-  Icon,
   Input,
   message,
   Popover,
@@ -36,6 +35,7 @@ import {
   Table,
   Tooltip
 } from 'antd';
+import { ForkOutlined, HddOutlined, InboxOutlined, LockOutlined } from '@ant-design/icons';
 import dataStorages from '../../../models/dataStorage/DataStorages';
 import {formatTreeItems, generateTreeData, ItemTypes} from '../model/treeStructureFunctions';
 import highlightText from '../../special/highlightText';
@@ -110,16 +110,15 @@ export default class Folder extends localization.LocalizedReactComponent {
 
   renderTreeItemType = (item) => {
     switch (item.type) {
-      case ItemTypes.pipeline: return <Icon type="fork" />;
+      case ItemTypes.pipeline: return <ForkOutlined />;
       case ItemTypes.versionedStorage:
-        return <Icon type="inbox" className="cp-versioned-storage" />;
+        return <InboxOutlined className="cp-versioned-storage" />;
       case ItemTypes.storage:
         const objectStorage = item.storageType && item.storageType.toLowerCase() !== 'nfs';
         return (
-          <Icon
-            type={objectStorage ? 'inbox' : 'hdd'}
-            className={classNames({'cp-sensitive': item.sensitive})}
-          />
+          objectStorage
+            ? <InboxOutlined className={classNames({'cp-sensitive': item.sensitive})} />
+            : <HddOutlined className={classNames({'cp-sensitive': item.sensitive})} />
         );
       default: return <div />;
     }
@@ -280,7 +279,7 @@ export default class Folder extends localization.LocalizedReactComponent {
           if (item.locked) {
             nameComponent = (
               <span>
-                <Icon type="lock" />
+                <LockOutlined />
                 {
                   item.type === ItemTypes.storage && (
                     <AWSRegionTag
@@ -390,11 +389,9 @@ export default class Folder extends localization.LocalizedReactComponent {
       <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
         <Row type="flex" justify="space-between" align="middle" style={{minHeight: 41}}>
           <Col className={styles.itemHeader}>
-            <Icon
-              className={styles.editableControl}
-              style={{marginRight: 5}}
-              type={isStorages ? 'hdd' : 'fork'}
-            />
+            {isStorages
+              ? <HddOutlined className={styles.editableControl} style={{marginRight: 5}} />
+              : <ForkOutlined className={styles.editableControl} style={{marginRight: 5}} />}
             <span>
               {isStorages ? 'All storages' : `All ${this.localizedString('pipeline')}s`}
             </span>

@@ -19,7 +19,6 @@ import PropTypes from 'prop-types';
 import {
   Checkbox,
   Modal,
-  Icon,
   Input,
   Button,
   message,
@@ -27,6 +26,7 @@ import {
   Spin,
   Select
 } from 'antd';
+import { QuestionCircleFilled } from '@ant-design/icons';
 import classNames from 'classnames';
 
 import protocols from '../protocols';
@@ -57,14 +57,7 @@ function Hint ({className, style, children}) {
         </div>
       )}
     >
-      <Icon
-        type="question-circle"
-        className={className}
-        style={{
-          ...(style || {}),
-          cursor: 'pointer'
-        }}
-      />
+      <QuestionCircleFilled className={className} style={{ ...(style || {}), cursor: 'pointer' }} />
     </Popover>
   );
 }

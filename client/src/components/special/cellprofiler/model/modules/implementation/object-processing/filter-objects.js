@@ -16,9 +16,14 @@
 /* eslint-disable max-len */
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
+import {
+  observer} from 'mobx-react';
 import {computed} from 'mobx';
-import {Button, Checkbox, Icon, Input} from 'antd';
+import {Button,
+  Checkbox,
+  Input
+} from 'antd';
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import {AnalysisTypes} from '../../../common/analysis-types';
 import MeasurementSelector, {
   AreaShapeMeasurements,
@@ -213,7 +218,7 @@ class Measurements extends React.Component {
                 size="small"
                 type="danger"
               >
-                <Icon type="delete" />
+                <DeleteOutlined />
               </Button>
             )
           }
@@ -272,7 +277,7 @@ class Measurements extends React.Component {
                 onClick={this.onAddMeasurement}
                 size="small"
               >
-                <Icon type="plus" />
+                <PlusOutlined />
                 Add measurement
               </Button>
             </div>

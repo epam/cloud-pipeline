@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {Icon} from 'antd';
+import { BarsOutlined, CaretDownOutlined, CaretUpOutlined } from '@ant-design/icons';
 import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
 import Export from '../export';
@@ -110,12 +110,11 @@ function BillingTable (
     );
     return (
       <div className={containerClassNames}>
-        {quotaOverrun && (<Icon type="bars" className={styles.quotaOverrunIcon} />)}
+        {quotaOverrun && (<BarsOutlined className={styles.quotaOverrunIcon} />)}
         {percent !== 0 && (
-          <Icon
-            type={percent > 0 ? 'caret-up' : 'caret-down'}
-            className={styles.warningIcon}
-          />
+          {percent > 0
+            ? <CaretUpOutlined className={styles.warningIcon} />
+            : <CaretDownOutlined className={styles.warningIcon} />}
         )}
         {percent !== 0 && <span>{percent > 0 ? '+' : ''}{percent}%</span>}
       </div>

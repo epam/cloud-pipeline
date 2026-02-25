@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Icon, Menu, Dropdown} from 'antd';
+import {Menu, Dropdown} from 'antd';
+import { AppstoreOutlined, CheckOutlined, DownOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import styles from './logs-mode.css';
 
@@ -42,7 +43,7 @@ class LogsModeButton extends React.Component {
                   {mode}
                 </span>
                 {
-                  current === mode && <Icon type="check" />
+                  current === mode && <CheckOutlined />
                 }
               </div>
             </Menu.Item>
@@ -59,10 +60,10 @@ class LogsModeButton extends React.Component {
       >
         <Dropdown overlay={menu}>
           <a className="cp-text cp-text-not-important">
-            <Icon type="appstore-o" style={{marginRight: 3}} />
+            <AppstoreOutlined style={{marginRight: 3}} />
             <b>{current ?? 'view'}</b>
             <span>{' view'}</span>
-            <Icon type="down" />
+            <DownOutlined />
           </a>
         </Dropdown>
       </div>

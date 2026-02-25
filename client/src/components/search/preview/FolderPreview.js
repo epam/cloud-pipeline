@@ -21,6 +21,7 @@ import {computed} from 'mobx';
 import classNames from 'classnames';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import {Icon, Row} from 'antd';
+import { LoadingOutlined } from '@ant-design/icons';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
 import {renderAttributes} from './renderAttributes';
@@ -86,7 +87,7 @@ export default class FolderPreview extends React.Component {
     if (this.props.folder.pending) {
       return (
         <Row className={styles.contentPreview} type="flex" justify="center">
-          <Icon type="loading" />
+          <LoadingOutlined />
         </Row>
       );
     }

@@ -19,6 +19,7 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {Button, Checkbox, Col, Icon, Input, Row, Select} from 'antd';
+import { DownOutlined, MinusCircleOutlined } from '@ant-design/icons';
 import Menu, {MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import classNames from 'classnames';
@@ -163,7 +164,7 @@ export default class EditToolFormParameters extends React.Component {
                 <Button
                   id="add-parameter-dropdown-button"
                   disabled={this.props.readOnly}>
-                  <Icon type="down" />
+                  <DownOutlined />
                 </Button>
               </Dropdown>
             ) : undefined
@@ -396,13 +397,7 @@ export default class EditToolFormParameters extends React.Component {
           {
             !this.props.readOnly &&
             !readOnly &&
-            <Icon
-              id="remove-parameter-button"
-              className="dynamic-delete-button"
-              type="minus-circle-o"
-              style={{cursor: 'pointer', marginLeft: 20, marginTop: 7}}
-              onClick={onRemoveParameter}
-            />
+            <MinusCircleOutlined id="remove-parameter-button" className="dynamic-delete-button" style={{cursor: 'pointer', marginLeft: 20, marginTop: 7}} onClick={onRemoveParameter} />
           }
         </Col>
       </Row>

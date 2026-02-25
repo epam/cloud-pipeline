@@ -16,9 +16,17 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {computed} from 'mobx';
-import {inject, observer} from 'mobx-react';
-import {Alert, Modal, message, Button, Icon, Select} from 'antd';
+import {
+  computed} from 'mobx';
+import {inject,
+  observer} from 'mobx-react';
+import {Alert,
+  Modal,
+  message,
+  Button,
+  Select
+} from 'antd';
+import { ReloadOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import displayDate from '../../../../utils/displayDate';
 import SubSettings from '../../sub-settings';
@@ -283,7 +291,7 @@ class DtsManagement extends React.Component {
           disabled={this.pending}
           onClick={this.dtsListFetch}
         >
-          <Icon type="reload" />
+          <ReloadOutlined />
         </Button>
       </div>
     );

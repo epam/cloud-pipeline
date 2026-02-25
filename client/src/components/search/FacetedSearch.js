@@ -20,12 +20,12 @@ import {inject, observer} from 'mobx-react';
 import {
   Alert,
   Button,
-  Icon,
   Input,
   Dropdown,
   Menu,
   Tabs
 } from 'antd';
+import { CaretDownOutlined, CaretUpOutlined, CloseCircleFilled, CloseOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import LoadingView from '../special/LoadingView';
 import {SearchGroupTypes} from './searchGroupTypes';
@@ -934,24 +934,16 @@ class FacetedSearch extends React.Component {
             className={styles.sortingBtn}
             key={sort.field}
           >
-            <Icon
-              style={{fontSize: '10px'}}
-              type={
-                sort.asc
-                  ? 'caret-up'
-                  : 'caret-down'
-              }
-            />
+            {sort.asc
+              ? <CaretUpOutlined style={{fontSize: '10px'}} />
+              : <CaretDownOutlined style={{fontSize: '10px'}} />}
             {getSortingFieldName(sort.field)}
-            <Icon
-              type="close"
-              className={classNames(
+            <CloseOutlined className={classNames(
                 styles.removeSortingBtn,
                 'cp-icon-button',
                 {'cp-disabled': pending}
               )}
-              onClick={(event) => this.removeSortingByField(sort.field, event)}
-            />
+              onClick={(event) => this.removeSortingByField(sort.field, event)} />
           </Button>
         ))}
         <Dropdown
@@ -960,10 +952,7 @@ class FacetedSearch extends React.Component {
           disabled={pending}
         >
           <Button className={styles.sortingBtn}>
-            <Icon
-              type="plus"
-              style={{fontSize: '14px'}}
-            />
+            <PlusOutlined style={{fontSize: '14px'}} />
           </Button>
         </Dropdown>
       </div>
@@ -1085,11 +1074,7 @@ class FacetedSearch extends React.Component {
     const inputSuffix = (
       <div className={styles.suffixContainer}>
         {query ? (
-          <Icon
-            type="close-circle"
-            className={classNames(styles.clearQuery, 'cp-search-clear-button')}
-            onClick={this.onClearQuery}
-          />
+          <CloseCircleFilled className={classNames(styles.clearQuery, 'cp-search-clear-button')} onClick={this.onClearQuery} />
         ) : null}
         <span
           className={classNames(
@@ -1150,7 +1135,7 @@ class FacetedSearch extends React.Component {
             type="primary"
             onClick={this.onChangeQuery}
           >
-            <Icon type="search" />
+            <SearchOutlined />
             Search
           </Button>
         </div>

@@ -1,7 +1,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Icon, Progress} from 'antd';
+import {Progress} from 'antd';
+import { CheckCircleFilled, ExclamationCircleFilled, LoadingOutlined } from '@ant-design/icons';
 import styles from './upload-files-list.css';
 import displaySize from '../../../../../utils/displaySize';
 
@@ -64,12 +65,12 @@ class UploadFileStatus extends React.PureComponent {
     } = status || {};
     const statusIcon = (() => {
       if (error) {
-        return <Icon type="exclamation-circle" className="cp-error" />;
+        return <ExclamationCircleFilled className="cp-error" />;
       }
       if (!done) {
-        return <Icon type="loading" />;
+        return <LoadingOutlined />;
       }
-      return <Icon type="check-circle" className="cp-success" />;
+      return <CheckCircleFilled className="cp-success" />;
     })();
     return (
       <div

@@ -20,14 +20,14 @@ import {
   Row,
   Upload,
   Button,
-  Icon,
   Modal,
   Form,
   Select,
   Input,
   Tooltip,
-  message,
+  message
 } from 'antd';
+import { CloseOutlined, FolderOutlined, LoadingOutlined, UploadOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import dataStorageRestrictedAccessCheck from '../../utils/data-storage-restricted-access';
 import BucketBrowser from '../pipelines/launch/dialogs/BucketBrowser';
@@ -561,7 +561,7 @@ export class UploadOmicsButton extends React.Component {
               trigger="hover"
             >
               <Button size="small" disabled={this.state.uploading}>
-                <Icon type="folder" />
+                <FolderOutlined />
                 Upload source file
               </Button>
             </Tooltip>
@@ -583,7 +583,7 @@ export class UploadOmicsButton extends React.Component {
                       })
                     }
                     onClick={onRemoveSource}>
-                    <Icon type="close" />
+                    <CloseOutlined />
                   </span>
                 </Tooltip>
               </span>
@@ -631,7 +631,7 @@ export class UploadOmicsButton extends React.Component {
           >
             {
               this.state.uploading
-                ? <Icon type="loading" />
+                ? <LoadingOutlined />
                 : 'Upload'
             }
           </Button>
@@ -659,7 +659,7 @@ export class UploadOmicsButton extends React.Component {
           size="small"
           id="upload-button"
           onClick={() => this.showUploadMenu()}>
-          <Icon type="upload" className={styles.uploadBtn} />
+          <UploadOutlined className={styles.uploadBtn} />
           <span className={styles.uploadBtn}>Upload</span>
         </Button>
         <Modal
@@ -734,7 +734,7 @@ export class UploadOmicsButton extends React.Component {
                     <div
                       className={styles.pathType}
                       onClick={this.openBucketBrowser}>
-                      <Icon type="folder" />
+                      <FolderOutlined />
                     </div>
                   }
                   onChange={this.handleChangeReferenceInput}

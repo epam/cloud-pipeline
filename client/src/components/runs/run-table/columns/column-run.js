@@ -15,7 +15,8 @@
  */
 
 import React from 'react';
-import {Checkbox, Icon, Popover, Row} from 'antd';
+import {Checkbox, Popover, Row} from 'antd';
+import { DatabaseOutlined, ExportOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
 import AWSRegionTag from '../../../special/AWSRegionTag';
@@ -182,9 +183,7 @@ function renderRun (text, run) {
   let clusterIcon;
   if (run.nodeCount > 0) {
     clusterIcon = (
-      <Icon
-        type="database"
-      />
+      <DatabaseOutlined />
     );
   }
   const style = {
@@ -255,7 +254,7 @@ function renderRun (text, run) {
           }
           trigger={['hover']}
         >
-          {clusterIcon} <Icon type="export" />
+          {clusterIcon} <ExportOutlined />
           {name}
           {instanceOrSensitiveFlag && <br />}
           {

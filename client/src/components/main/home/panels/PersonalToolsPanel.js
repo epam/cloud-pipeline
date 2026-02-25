@@ -16,7 +16,9 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import {computed} from 'mobx';
 import LoadTool from '../../../../models/tools/LoadTool';
 import AllowedInstanceTypes from '../../../../models/utils/AllowedInstanceTypes';
@@ -29,7 +31,14 @@ import {getVersionRunningInfo} from '../../../tools/utils';
 import LoadingView from '../../../special/LoadingView';
 import roleModel from '../../../../utils/roleModel';
 import highlightText from '../../../special/highlightText';
-import {Alert, Button, Col, Icon, message, Modal, Row} from 'antd';
+import {Alert,
+  Button,
+  Col,
+  message,
+  Modal,
+  Row
+} from 'antd';
+import { CaretRightOutlined } from '@ant-design/icons';
 import {
   getInputPaths,
   getOutputPaths,
@@ -664,7 +673,7 @@ export default class PersonalToolsPanel extends React.Component {
         <Row key="group">
           <span style={{fontSize: 'smaller'}}>
             <span>{tool.registry.description || tool.registry.path}</span>
-            <Icon type="caret-right" style={{fontSize: 'smaller', margin: '0 2px'}} />
+            <CaretRightOutlined style={{fontSize: 'smaller', margin: '0 2px'}} />
             <span>{highlightText(group, search)}</span>
           </span>
         </Row>

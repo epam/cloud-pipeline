@@ -1,8 +1,12 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import Menu, {MenuItem} from 'rc-menu';
-import {inject, observer} from 'mobx-react';
-import {Button, Icon} from 'antd';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {Button
+} from 'antd';
+import { DownOutlined } from '@ant-design/icons';
 import Dropdown from 'rc-dropdown';
 import classNames from 'classnames';
 import {addParameter, addSystemParameters} from '../utilities/parameter-utilities';
@@ -121,7 +125,7 @@ class AddParameterButton extends React.Component {
             id="add-parameter-dropdown-button"
             style={{padding: '0px 8px'}}
           >
-            <Icon type="down" />
+            <DownOutlined />
           </Button>
         </Dropdown>
       </Button.Group>

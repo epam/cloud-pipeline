@@ -3,7 +3,8 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import GetRunTaskRuntimeData from '../../../../../../../models/run-engines/fetch-task-runtime-data';
 import styles from './runtime-data.css';
-import {Alert, Icon} from 'antd';
+import {Alert} from 'antd';
+import { LoadingOutlined } from '@ant-design/icons';
 import {
   isRunCompleted,
   NO_DATA_AVAILABLE_COMPLETED_JOB_MESSAGE,
@@ -152,7 +153,7 @@ class TaskRuntimeDataDetails extends React.Component {
               className="cp-text-not-important"
               style={{display: 'flex', alignItems: 'center'}}
             >
-              <Icon type="loading" />
+              <LoadingOutlined />
               <span style={{marginLeft: 5}}>Loading data...</span>
             </div>
           </div>

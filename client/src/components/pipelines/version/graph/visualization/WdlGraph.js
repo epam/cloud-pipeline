@@ -42,12 +42,12 @@ import {
   AutoComplete,
   Row,
   Button,
-  Icon,
   message,
   Modal,
   Popover,
   Tooltip
 } from 'antd';
+import { AppstoreOutlined, ArrowsAltOutlined, CloseOutlined, MinusCircleOutlined, PlusCircleOutlined, ReloadOutlined, SaveOutlined, ScanOutlined, SearchOutlined, ShrinkOutlined, SwapOutlined } from '@ant-design/icons';
 import WdlPropertiesForm from './forms/wdl-properties-form';
 import {
   generatePipelineCommand,
@@ -648,10 +648,7 @@ export default class WdlGraph extends Graph {
         <span>{title}</span>
         {
           onPanelClose &&
-          <Icon
-            type="close"
-            onClick={onPanelClose}
-            style={{cursor: 'pointer'}} />
+          <CloseOutlined onClick={onPanelClose} style={{cursor: 'pointer'}} />
         }
       </Row>
     );
@@ -875,7 +872,7 @@ export default class WdlGraph extends Graph {
             className={styles.wdlAppearanceButton}
             shape="circle"
           >
-            <Icon type="search" />
+            <SearchOutlined />
           </Button>
         </Popover>
       </Tooltip>
@@ -907,7 +904,7 @@ export default class WdlGraph extends Graph {
             type="primary"
             shape="circle"
             onClick={this.openCommitFormDialog}>
-            <Icon type="save" />
+            <SaveOutlined />
           </Button>
         </Tooltip>
       }
@@ -925,7 +922,7 @@ export default class WdlGraph extends Graph {
             disabled={!this.state.modified}
             shape="circle"
             onClick={() => this.revertChanges()}>
-            <Icon type="reload" />
+            <ReloadOutlined />
           </Button>
         </Tooltip>
       }
@@ -949,7 +946,7 @@ export default class WdlGraph extends Graph {
           id="wdl-graph-layout-button"
           shape="circle"
           onClick={this.layoutGraph}>
-          <Icon type="appstore-o" />
+          <AppstoreOutlined />
         </Button>
       </Tooltip>
       <Tooltip title="Fit to screen" placement="right">
@@ -958,7 +955,7 @@ export default class WdlGraph extends Graph {
           id="wdl-graph-fit-button"
           shape="circle"
           onClick={this.fitGraph}>
-          <Icon type="scan" />
+          <ScanOutlined />
         </Button>
       </Tooltip>
       <Tooltip
@@ -970,7 +967,7 @@ export default class WdlGraph extends Graph {
           id={`wdl-graph-${this.state.showAllLinks ? 'hide-links' : 'show-links'}-button`}
           shape="circle"
           onClick={this.toggleLinks}>
-          <Icon type="swap" />
+          <SwapOutlined />
         </Button>
       </Tooltip>
       <Tooltip title="Zoom out" placement="right">
@@ -980,7 +977,7 @@ export default class WdlGraph extends Graph {
           shape="circle"
           onClick={this.zoomOut}
           disabled={!this.state.canZoomOut}>
-          <Icon type="minus-circle-o" />
+          <MinusCircleOutlined />
         </Button>
       </Tooltip>
       <Tooltip title="Zoom in" placement="right">
@@ -990,7 +987,7 @@ export default class WdlGraph extends Graph {
           shape="circle"
           onClick={this.zoomIn}
           disabled={!this.state.canZoomIn}>
-          <Icon type="plus-circle-o" />
+          <PlusCircleOutlined />
         </Button>
       </Tooltip>
       {
@@ -1002,7 +999,7 @@ export default class WdlGraph extends Graph {
           id="wdl-graph-fuulscreen-button"
           shape="circle"
           onClick={this.toggleFullScreen}>
-          <Icon type={this.state.fullScreen ? 'shrink' : 'arrows-alt'} />
+          {this.state.fullScreen ? <ShrinkOutlined /> : <ArrowsAltOutlined />}
         </Button>
       </Tooltip>
     </div>

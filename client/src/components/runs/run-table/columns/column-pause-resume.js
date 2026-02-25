@@ -15,8 +15,14 @@
  */
 
 import React from 'react';
-import {computed} from 'mobx';
-import {Icon, message, Modal, Popover} from 'antd';
+import {
+  computed} from 'mobx';
+import {
+  message,
+  Modal,
+  Popover
+} from 'antd';
+import { ExclamationCircleOutlined } from '@ant-design/icons';
 import {inject, observer} from 'mobx-react';
 import roleModel from '../../../../utils/roleModel';
 import {canPauseRun, runPipelineActions} from '../../actions';
@@ -198,13 +204,7 @@ class PauseResumeButtonComponent extends localization.LocalizedReactComponent {
                         </div>
                       }
                     >
-                      <Icon
-                        type="exclamation-circle-o"
-                        className="cp-danger"
-                        style={{
-                          marginRight: 5
-                        }}
-                      />
+                      <ExclamationCircleOutlined className="cp-danger" style={{ marginRight: 5 }} />
                     </Popover>
                   )
                   : null

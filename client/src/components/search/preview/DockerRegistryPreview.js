@@ -19,6 +19,7 @@ import PropTypes from 'prop-types';
 import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {Icon, Row} from 'antd';
+import { LoadingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
@@ -78,7 +79,7 @@ export default class DockerRegistryPreview extends React.Component {
     if (this.props.dockerRegistries.pending) {
       return (
         <Row className={styles.contentPreview} type="flex" justify="center">
-          <Icon type="loading" />
+          <LoadingOutlined />
         </Row>
       );
     }

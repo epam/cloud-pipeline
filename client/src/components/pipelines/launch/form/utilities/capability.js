@@ -15,7 +15,8 @@
  */
 
 import React from 'react';
-import {Icon, Tooltip} from 'antd';
+import {Tooltip} from 'antd';
+import { CheckCircleFilled, EllipsisOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import {inject, observer} from 'mobx-react';
 import parseCapabilityCloudSetting from './capabilities-utilities/parse-cloud-setting';
 
@@ -124,19 +125,16 @@ const Capability = ({capability, selected, style, nested = [], awsRegions}) => {
         >
           <div>
             <span title={description || name}>{name}</span>
-            <Icon
-              type="question-circle-o"
-              style={{marginLeft: 5}}
-            />
+            <QuestionCircleOutlined style={{marginLeft: 5}} />
           </div>
           <div>
             {
               nested.length > 0 && (
-                <Icon type="ellipsis" />
+                <EllipsisOutlined />
               )
             }
             {
-              selected && (<Icon type="check-circle" className="cp-primary" />)
+              selected && (<CheckCircleFilled className="cp-primary" />)
             }
           </div>
         </div>
@@ -158,11 +156,11 @@ const Capability = ({capability, selected, style, nested = [], awsRegions}) => {
       <div>
         {
           nested.length > 0 && (
-            <Icon type="ellipsis" />
+            <EllipsisOutlined />
           )
         }
         {
-          selected && (<Icon type="check-circle" className="cp-primary" />)
+          selected && (<CheckCircleFilled className="cp-primary" />)
         }
       </div>
     </div>

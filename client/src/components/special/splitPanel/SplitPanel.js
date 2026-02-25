@@ -16,9 +16,12 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
+import {
+  observer} from 'mobx-react';
 import {computed} from 'mobx';
-import {Row, Icon} from 'antd';
+import {Row
+} from 'antd';
+import { CloseOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import localization from '../../../utils/localization';
 
@@ -213,9 +216,7 @@ export class SplitPanel extends React.Component {
             <span>{info.title || ''}</span>
             {
               info.closable &&
-              <Icon
-                type="close"
-                onClick={() => this.props.onPanelClose && info && this.props.onPanelClose(info.key)}
+              <CloseOutlined onClick={() => this.props.onPanelClose && info && this.props.onPanelClose(info.key)}
                 style={{cursor: 'pointer'}} />
             }
           </Row>

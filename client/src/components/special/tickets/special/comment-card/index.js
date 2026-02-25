@@ -18,10 +18,10 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {
-  Icon,
   Dropdown,
   Menu
 } from 'antd';
+import { EllipsisOutlined, PaperClipOutlined } from '@ant-design/icons';
 import Markdown from '../../../markdown';
 import displayDate from '../../../../../utils/displayDate';
 import getAuthor from '../utilities/get-author';
@@ -161,15 +161,7 @@ class CommentCard extends React.Component {
                 overlay={messageMenu}
                 trigger={['click']}
               >
-                <Icon
-                  type="ellipsis"
-                  style={{
-                    cursor: 'pointer',
-                    marginRight: 10,
-                    fontSize: 'large',
-                    fontWeight: 'bold'
-                  }}
-                />
+                <EllipsisOutlined style={{ cursor: 'pointer', marginRight: 10, fontSize: 'large', fontWeight: 'bold' }} />
               </Dropdown>
             )
           }
@@ -206,7 +198,7 @@ class CommentCard extends React.Component {
                     href={attachment.link}
                     target="_blank"
                   >
-                    <Icon type="paper-clip" style={{marginRight: 5}} />
+                    <PaperClipOutlined style={{marginRight: 5}} />
                     {attachment.name}
                   </a>
                 ))

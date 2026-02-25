@@ -16,11 +16,14 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, Provider as MobxProvider} from 'mobx-react';
-import {action, observable} from 'mobx';
+import {
+  inject,
+  Provider as MobxProvider} from 'mobx-react';
+import {action,
+  observable} from 'mobx';
 import classNames from 'classnames';
 import GridLayout from 'react-grid-layout';
-import {Icon} from 'antd';
+import { ArrowsAltOutlined } from '@ant-design/icons';
 import * as GeneralReportLayout from './general-report';
 import * as InstanceReportLayout from './instance-report';
 import * as StorageReportLayout from './storage-report';
@@ -68,7 +71,7 @@ function LayoutPanel ({children, containerClassName, containerStyle, className, 
       >
         {children}
         <div className={classNames(styles.panelMove, 'cp-billing-layout-panel-move')}>
-          <Icon type="arrows-alt" />
+          <ArrowsAltOutlined />
         </div>
       </div>
     </div>

@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Icon} from 'antd';
+import { ArrowsAltOutlined, CloseOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import Preview from '../index.js';
 import styles from './preview-modal.css';
@@ -113,26 +113,15 @@ class PreviewModal extends React.Component {
           />
           {
             maximizedAvailable && (
-              <Icon
-                type="arrows-alt"
-                className={classNames(
+              <ArrowsAltOutlined className={classNames(
                   styles.previewButton,
                   styles.maximize,
                   'cp-search-preview-button'
                 )}
-                onClick={() => this.handleMaximizePreview(true)}
-              />
+                onClick={() => this.handleMaximizePreview(true)} />
             )
           }
-          <Icon
-            type="close"
-            className={classNames(
-              styles.previewButton,
-              styles.close,
-              'cp-search-preview-button'
-            )}
-            onClick={handleClosePreview}
-          />
+          <CloseOutlined className={classNames( styles.previewButton, styles.close, 'cp-search-preview-button' )} onClick={handleClosePreview} />
         </div>
       </div>
     );

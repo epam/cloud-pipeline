@@ -15,7 +15,8 @@
  */
 
 import React, {Component} from 'react';
-import {Modal, Button, Icon} from 'antd';
+import {Modal, Button} from 'antd';
+import { QuestionCircleFilled } from '@ant-design/icons';
 
 let openCallback;
 
@@ -110,7 +111,7 @@ export default class RunModal extends Component {
       >
         <div className="ant-confirm-body-wrapper">
           <div className="ant-confirm-body">
-            <Icon type="question-circle" />
+            <QuestionCircleFilled />
             <span className="ant-confirm-title">{title}</span>
             <div className="ant-confirm-content" style={style}>
               {content}

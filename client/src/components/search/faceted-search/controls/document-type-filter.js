@@ -23,6 +23,7 @@ import {
   Icon,
   Menu
 } from 'antd';
+import { CheckCircleFilled, FilterOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import {SearchGroupTypes} from '../../searchGroupTypes';
 import localization from '../../../../utils/localization';
@@ -120,14 +121,7 @@ class DocumentTypeFilter extends localization.LocalizedReactComponent {
                 : undefined
               }
               {filter.enabled ? (
-                <Icon
-                  type="check-circle"
-                  className="cp-icon-larger"
-                  style={{
-                    position: 'absolute',
-                    right: 0
-                  }}
-                />
+                <CheckCircleFilled className="cp-icon-larger" style={{ position: 'absolute', right: 0 }} />
               ) : null}
             </div>
           </Menu.Item>
@@ -147,13 +141,10 @@ class DocumentTypeFilter extends localization.LocalizedReactComponent {
             'cp-search-faceted-button'
           )}
         >
-          <Icon
-            type="filter"
-            className={classNames(
+          <FilterOutlined className={classNames(
               'cp-icon-larger',
               {'selected': this.activeFilters.length > 0}
-            )}
-          />
+            )} />
         </Button>
       </Dropdown>
     );

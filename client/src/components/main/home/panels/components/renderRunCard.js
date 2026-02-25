@@ -16,7 +16,8 @@
 
 import React from 'react';
 import StatusIcon from '../../../../special/run-status-icon';
-import {Icon, Popover, Row} from 'antd';
+import {Popover, Row} from 'antd';
+import { CodeFilled, DatabaseOutlined, ExportOutlined } from '@ant-design/icons';
 import moment from 'moment-timezone';
 import evaluateRunPrice from '../../../../../utils/evaluate-run-price';
 import {getRunSpotTypeName} from '../../../../special/spot-instance-names';
@@ -75,7 +76,7 @@ function renderPipeline (run) {
     run.clusterRun ||
     run.childRunsCount > 0
   ) {
-    clusterIcon = <Icon type="database" />;
+    clusterIcon = <DatabaseOutlined />;
   }
   const runName = (
     <span type="main">
@@ -110,7 +111,7 @@ function renderPipeline (run) {
             </div>
           }
           trigger="hover">
-          <Icon type="export" /> {clusterIcon} {runName}
+          <ExportOutlined /> {clusterIcon} {runName}
         </Popover>
       </span>
     );
@@ -132,10 +133,7 @@ function renderCommitStatus (run) {
     return (
       <Row
         style={{fontStyle: 'italic'}}>
-        <Icon
-          type="code"
-          style={{fontWeight: 'large'}}
-          className={styles.blink} /> <span style={{fontSize: 'smaller'}}>Committing...</span>
+        <CodeFilled style={{fontWeight: 'large'}} className={styles.blink} /> <span style={{fontSize: 'smaller'}}>Committing...</span>
       </Row>
     );
   }

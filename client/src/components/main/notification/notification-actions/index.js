@@ -20,10 +20,10 @@ import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import {
   Dropdown,
-  Icon,
   Menu,
   message
 } from 'antd';
+import { LoadingOutlined, SettingOutlined } from '@ant-design/icons';
 import PipelineRunInfo from '../../../../models/pipelines/PipelineRunInfo';
 import BillingQuota from '../../../../models/billing/quotas/get-quota';
 import {ACTIONS, ENTITY_CLASSES, NOTIFICATION_TYPES} from './actions';
@@ -222,11 +222,9 @@ class NotificationActions extends React.Component {
             disabled={pending}
             onClick={e => e.stopPropagation()}
           >
-            <Icon
-              type={entityRequestPending ? 'loading' : 'setting'}
-              className={styles.controlsIcon}
-              style={style}
-            />
+            {entityRequestPending
+              ? <LoadingOutlined className={styles.controlsIcon} style={style} />
+              : <SettingOutlined className={styles.controlsIcon} style={style} />}
           </Dropdown>
         ) : null}
       </div>

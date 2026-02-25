@@ -19,10 +19,10 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {
   Button,
-  Icon,
   message,
   Modal
 } from 'antd';
+import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import * as diff2html from 'diff2html';
 import VsContentsDiff from '../../../../../models/versioned-storage/vs-contents-diff';
 import styles from './history.css';
@@ -168,8 +168,8 @@ class CommitDiffButton extends React.Component {
           }
           onClick={this.showDiffModal}
         >
-          <Icon type="left" />
-          <Icon type="right" />
+          <LeftOutlined />
+          <RightOutlined />
         </Button>
         <Modal
           title={commit ? `Difference for ${commit}` : undefined}

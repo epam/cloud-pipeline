@@ -15,11 +15,22 @@
  */
 
 import React from 'react';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import {computed} from 'mobx';
 import classNames from 'classnames';
 import LoadingView from '../special/LoadingView';
-import {Alert, Button, Card, Dropdown, Icon, Menu, Modal, Row, Table} from 'antd';
+import {Alert,
+  Button,
+  Card,
+  Dropdown,
+  Menu,
+  Modal,
+  Row,
+  Table
+} from 'antd';
+import { DeleteOutlined, DownOutlined } from '@ant-design/icons';
 import RunTable from './run-table';
 import AdaptedLink from '../special/AdaptedLink';
 import SessionStorageWrapper from '../special/SessionStorageWrapper';
@@ -367,7 +378,7 @@ class RunsFilter extends React.Component {
           type="danger"
           onClick={onDelete(filter)}
           size="small">
-          <Icon type="delete" />
+          <DeleteOutlined />
         </Button>
       )
     }];
@@ -393,7 +404,7 @@ class RunsFilter extends React.Component {
           onVisibleChange={onDropDownVisibilityChanged}
           overlay={menu}
           trigger={['click']}>
-          <Button><Icon type="down" /></Button>
+          <Button><DownOutlined /></Button>
         </Dropdown>
       </td>
     );

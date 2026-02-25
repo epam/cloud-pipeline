@@ -18,7 +18,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import moment from 'moment-timezone';
-import {Icon, message, Popover} from 'antd';
+import {message, Popover} from 'antd';
+import { InfoCircleFilled } from '@ant-design/icons';
 import {inject} from 'mobx-react';
 import Markdown from '../../../markdown';
 import displayDate from '../../../../../utils/displayDate';
@@ -38,10 +39,7 @@ function InfoTooltip ({tooltip}) {
       content={(<Markdown md={tooltip} />)}
       mouseEnterDelay={1}
     >
-      <Icon
-        type="info-circle"
-        className="cp-text"
-      />
+      <InfoCircleFilled className="cp-text" />
     </Popover>
   );
 }

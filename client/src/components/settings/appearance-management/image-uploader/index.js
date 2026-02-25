@@ -18,12 +18,13 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {
   Button,
-  Icon,
   Input,
   message,
   Upload,
-  Tooltip, Checkbox
+  Tooltip,
+  Checkbox
 } from 'antd';
+import { CameraOutlined, DeleteOutlined, ExclamationCircleOutlined, LoadingOutlined, RollbackOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import displaySize from '../../../../utils/displaySize';
 import styles from './image-uploader.css';
@@ -168,10 +169,7 @@ class ImageUploader extends React.PureComponent {
               )
             }
           >
-            <Icon
-              type="camera-o"
-              className="cp-icon-large"
-            />
+            <CameraOutlined className="cp-icon-large" />
           </div>
         </div>
       </Upload>
@@ -248,9 +246,7 @@ class ImageUploader extends React.PureComponent {
     if (check) {
       return (
         <div className={styles.inputInfo}>
-          <Icon
-            type="loading"
-          />
+          <LoadingOutlined />
         </div>
       );
     }
@@ -258,10 +254,7 @@ class ImageUploader extends React.PureComponent {
       return (
         <div className={styles.inputInfo}>
           <Tooltip title={error}>
-            <Icon
-              className="cp-error"
-              type="exclamation-circle-o"
-            />
+            <ExclamationCircleOutlined className="cp-error" />
           </Tooltip>
         </div>
       );
@@ -349,7 +342,7 @@ class ImageUploader extends React.PureComponent {
         }
         onClick={this.onClear}
       >
-        <Icon type="delete" />
+        <DeleteOutlined />
       </Button>
     );
   };
@@ -379,7 +372,7 @@ class ImageUploader extends React.PureComponent {
           }
           onClick={onRevert}
         >
-          <Icon type="rollback" />
+          <RollbackOutlined />
         </Button>
       );
     }

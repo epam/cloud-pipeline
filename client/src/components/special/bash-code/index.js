@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Icon} from 'antd';
+import { LoadingOutlined } from '@ant-design/icons';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
 import styles from './bash-code.css';
@@ -69,7 +69,7 @@ function BashCode (
       style={style}
     >
       {
-        loading && (<Icon type="loading" />)
+        loading && (<LoadingOutlined />)
       }
       {
         !loading && (

@@ -15,10 +15,21 @@
  */
 
 import React from 'react';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import {computed} from 'mobx';
 import connect from '../../../utils/connect';
-import {Checkbox, Modal, Table, Icon, Row, Col, Button, message, Alert} from 'antd';
+import {Checkbox,
+  Modal,
+  Table,
+  Row,
+  Col,
+  Button,
+  message,
+  Alert
+} from 'antd';
+import { AppstoreOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import {ItemTypes, generateTreeData} from '../model/treeStructureFunctions';
 import styles from './Browser.css';
 import roleModel from '../../../utils/roleModel';
@@ -244,7 +255,7 @@ export default class MetadataFolder extends React.Component {
 
   renderTreeItemType = (item) => {
     switch (item.type) {
-      case ItemTypes.metadata: return <Icon type="appstore-o" />;
+      case ItemTypes.metadata: return <AppstoreOutlined />;
       default: return <div />;
     }
   };
@@ -371,7 +382,7 @@ export default class MetadataFolder extends React.Component {
             size="small"
             onClick={this.openAddInstanceForm}
             key="add-metadata">
-            <Icon type="plus" />Add instance
+            <PlusOutlined />Add instance
           </Button>,
           'add-metadata'
         )
@@ -402,7 +413,7 @@ export default class MetadataFolder extends React.Component {
             style={{lineHeight: 1}}
             onClick={this.deleteMetadataConfirm}
             size="small">
-            <Icon type="delete" />
+            <DeleteOutlined />
             Delete metadata
           </Button>,
           'delete-metadata'

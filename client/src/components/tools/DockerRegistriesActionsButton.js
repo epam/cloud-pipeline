@@ -15,10 +15,15 @@
  */
 
 import React from 'react';
-import {observer} from 'mobx-react';
+import {
+  observer} from 'mobx-react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
-import {Icon, message, Button} from 'antd';
+import {
+  message,
+  Button
+} from 'antd';
+import { DeleteOutlined, EditOutlined, PlusOutlined, QuestionCircleOutlined, SettingOutlined } from '@ant-design/icons';
 import Menu, {MenuItem, Divider, SubMenu} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import roleModel from '../../utils/roleModel';
@@ -363,7 +368,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
         <MenuItem
           key="add-registry"
         >
-          <Icon type="plus" /> Create
+          <PlusOutlined /> Create
         </MenuItem>
       );
     }
@@ -372,7 +377,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
         <MenuItem
           key="edit-registry"
         >
-          <Icon type="edit" /> Edit
+          <EditOutlined /> Edit
         </MenuItem>
       );
     }
@@ -385,7 +390,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
         <MenuItem
           key="add-private-group"
         >
-          <Icon type="plus" /> Create personal
+          <PlusOutlined /> Create personal
         </MenuItem>
       );
     }
@@ -404,7 +409,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
         <MenuItem
           key="add-group"
         >
-          <Icon type="plus" /> Create
+          <PlusOutlined /> Create
         </MenuItem>
       );
     }
@@ -419,7 +424,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
         <MenuItem
           key="edit-group"
         >
-          <Icon type="edit" /> Edit
+          <EditOutlined /> Edit
         </MenuItem>
       );
       if (toolGroupAdmin || toolAdmin) {
@@ -428,7 +433,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
             key="delete-group"
             className="cp-danger"
           >
-            <Icon type="delete" /> Delete
+            <DeleteOutlined /> Delete
           </MenuItem>
         );
       }
@@ -439,7 +444,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
         <MenuItem
           key="enable-tool"
         >
-          <Icon type="plus" /> Enable tool
+          <PlusOutlined /> Enable tool
         </MenuItem>
       );
     }
@@ -475,7 +480,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
         <MenuItem
           key="configure-registry"
         >
-          <Icon type="question-circle-o" /> How to configure
+          <QuestionCircleOutlined /> How to configure
         </MenuItem>
       );
     }
@@ -519,10 +524,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
             )}
           >
             <Button size="small" style={{zIndex: 2}}>
-              <Icon type="setting" style={{
-                lineHeight: 'inherit',
-                verticalAlign: 'middle'
-              }} />
+              <SettingOutlined style={{ lineHeight: 'inherit', verticalAlign: 'middle' }} />
               <EditRegistryForm
                 pending={this.state.registryOperationInProgress}
                 onCancel={() => this._closeCreateRegistryForm()}

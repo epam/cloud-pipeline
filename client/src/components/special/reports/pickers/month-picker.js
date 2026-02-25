@@ -18,7 +18,8 @@ import React from 'react';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import moment from 'moment-timezone';
-import {Dropdown, Icon} from 'antd';
+import {Dropdown} from 'antd';
+import { DoubleLeftOutlined, DoubleRightOutlined } from '@ant-design/icons';
 import styles from './pickers.css';
 import PickerButton from './picker-button';
 
@@ -196,19 +197,13 @@ export default class MonthPicker extends React.Component {
           styles.yearsContainer,
           'cp-billing-calendar-years-container'
         )}>
-          <Icon
-            role="button"
+          <DoubleLeftOutlined role="button"
             className={leftClassNames.join(' ')}
-            type="double-left"
-            onClick={(e) => canNavigateLeft ? navigateLeft(e) : undefined}
-          />
+            onClick={(e) => canNavigateLeft ? navigateLeft(e) : undefined} />
           <span role="button">{selectedYear}</span>
-          <Icon
-            role="button"
+          <DoubleRightOutlined role="button"
             className={rightClassNames.join(' ')}
-            type="double-right"
-            onClick={(e) => canNavigateRight ? navigateRight(e) : undefined}
-          />
+            onClick={(e) => canNavigateRight ? navigateRight(e) : undefined} />
         </div>
         <div>
           <div className={classNames(styles.row, 'cp-billing-calendar-row')}>

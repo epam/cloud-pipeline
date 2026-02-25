@@ -17,7 +17,6 @@
 import React from 'react';
 import {
   Button,
-  Icon,
   Input,
   Modal,
   Row,
@@ -26,6 +25,7 @@ import {
   message,
   Popover
 } from 'antd';
+import { TeamOutlined } from '@ant-design/icons';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import DataStorageItemPermissionsForm from './DataStorageItemPermissionsForm';
@@ -57,7 +57,7 @@ const SidInfo = ({sid, style}) => {
     <span
       style={style}
     >
-      <Icon type="team" />
+      <TeamOutlined />
       {sid.name}
     </span>
   );

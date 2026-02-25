@@ -16,9 +16,17 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
-import {Button, Icon, Row, Select, Table} from 'antd';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {computed,
+  observable} from 'mobx';
+import {Button,
+  Row,
+  Select,
+  Table
+} from 'antd';
+import { CheckCircleFilled, SettingOutlined } from '@ant-design/icons';
 import styles from './Browser.css';
 import {ItemTypes} from '../model/treeStructureFunctions';
 import FireCloudMethodSnapshotConfigurationsRequest
@@ -97,7 +105,7 @@ export default class FireCloudMethodSnapshotConfigurations extends React.Compone
     if (this.props.isSelected && item.name === this.props.configuration) {
       return (
         <Row type="flex" justify="end">
-          <Icon type="check-circle" />
+          <CheckCircleFilled />
         </Row>
       );
     }
@@ -107,9 +115,7 @@ export default class FireCloudMethodSnapshotConfigurations extends React.Compone
   renderTreeItemType = (item) => {
     switch (item.type) {
       case ItemTypes.fireCloudMethodConfiguration:
-        return <Icon
-          type="setting"
-          style={{color: '#2796dd', fontSize: 'larger', lineHeight: 'inherit'}} />;
+        return <SettingOutlined style={{color: '#2796dd', fontSize: 'larger', lineHeight: 'inherit'}} />;
       default: return <div />;
     }
   };

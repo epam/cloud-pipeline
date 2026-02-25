@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Icon} from 'antd';
+import { LoadingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import styles from './controls.css';
 
@@ -246,7 +246,7 @@ class InfiniteScroll extends React.Component {
                   marginBottom: rowMargin
                 }}
               >
-                {error || (<Icon type="loading" />)}
+                {error || (<LoadingOutlined />)}
               </div>
             )
           }
@@ -280,7 +280,7 @@ class InfiniteScroll extends React.Component {
                   marginBottom: rowMargin
                 }}
               >
-                {error || (<Icon type="loading" />)}
+                {error || (<LoadingOutlined />)}
               </div>
             )
           }

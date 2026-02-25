@@ -20,13 +20,13 @@ import {
   Alert,
   Button,
   Checkbox,
-  Icon,
   Input,
   Select,
   Spin,
   Table,
   Tabs
 } from 'antd';
+import { ExportOutlined, HomeOutlined, PlayCircleFilled, SearchOutlined } from '@ant-design/icons';
 import Menu, {MenuItem} from 'rc-menu';
 import classNames from 'classnames';
 import {sectionNames} from './utilities/variable-sections';
@@ -204,7 +204,7 @@ const NavigationPanel = ({impersonated}) => (
           )
         }
       >
-        <Icon type="home" />
+        <HomeOutlined />
       </div>
       <div
         className={
@@ -215,12 +215,12 @@ const NavigationPanel = ({impersonated}) => (
           )
         }
       >
-        <Icon type="play-circle" />
+        <PlayCircleFilled />
       </div>
       <div
         className={classNames('cp-navigation-menu-item')}
       >
-        <Icon type="search" />
+        <SearchOutlined />
       </div>
     </div>
   </div>
@@ -378,7 +378,7 @@ class ElementPreview extends React.Component {
         <Input
           value="Input text"
           onChange={() => {}}
-          addonBefore={(<Icon type="export" />)}
+          addonBefore={(<ExportOutlined />)}
         />
       </div>
       <Input

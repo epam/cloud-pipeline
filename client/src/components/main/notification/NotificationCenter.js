@@ -17,10 +17,19 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {inject, observer} from 'mobx-react';
-import {computed, observable, action} from 'mobx';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {computed,
+  observable,
+  action} from 'mobx';
 import SystemNotification from './SystemNotification';
-import {message, Modal, Button, Row, Icon} from 'antd';
+import {message,
+  Modal,
+  Button,
+  Row
+} from 'antd';
+import { CloseCircleOutlined, ExclamationCircleOutlined, InfoCircleOutlined, LoadingOutlined } from '@ant-design/icons';
 import moment from 'moment-timezone';
 import ConfirmNotification from '../../../models/notifications/ConfirmNotification';
 import {DEFAULT_PAGE_SIZE} from '../../../models/notifications/CurrentUserNotifications';
@@ -402,21 +411,15 @@ export default class NotificationCenter extends React.Component {
     switch (notification.severity) {
       case 'INFO':
         return (
-          <Icon
-            className="cp-setting-info"
-            type="info-circle-o" />
+          <InfoCircleOutlined className="cp-setting-info" />
         );
       case 'WARNING':
         return (
-          <Icon
-            className="cp-setting-warning"
-            type="exclamation-circle-o" />
+          <ExclamationCircleOutlined className="cp-setting-warning" />
         );
       case 'CRITICAL':
         return (
-          <Icon
-            className="cp-setting-critical"
-            type="close-circle-o" />
+          <CloseCircleOutlined className="cp-setting-critical" />
         );
       default: return undefined;
     }
@@ -470,11 +473,7 @@ export default class NotificationCenter extends React.Component {
         >
           read all
           {this.state.pending ? (
-            <Icon
-              style={{marginLeft: 5}}
-              type="loading"
-              className={classNames({'cp-disabled': this.state.pending})}
-            />
+            <LoadingOutlined style={{marginLeft: 5}} className={classNames({'cp-disabled': this.state.pending})} />
           ) : null}
         </a>
       </div>

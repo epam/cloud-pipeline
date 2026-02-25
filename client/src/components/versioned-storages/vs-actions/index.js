@@ -16,12 +16,14 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
 import {
-  Icon,
+  observer} from 'mobx-react';
+import {computed,
+  observable} from 'mobx';
+import {
   message
 } from 'antd';
+import { CloudDownloadOutlined, DownOutlined, ExceptionOutlined, ExclamationCircleFilled, ForkOutlined, LoadingOutlined, SaveOutlined, SyncOutlined } from '@ant-design/icons';
 import VsActionsAvailable, {vsAvailabilityCheck} from './vs-actions-available';
 import Menu, {MenuItem, Divider, ItemGroup, SubMenu} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
@@ -639,7 +641,7 @@ class VSActions extends React.Component {
         <MenuItem
           disabled key="loading"
         >
-          <Icon type="loading" />
+          <LoadingOutlined />
           <span>Fetching versioned storage info...</span>
         </MenuItem>
       ));
@@ -667,7 +669,7 @@ class VSActions extends React.Component {
         <MenuItem
           key="clone"
         >
-          <Icon type="cloud-download-o" />
+          <CloudDownloadOutlined />
           <span>Clone</span>
         </MenuItem>
       ));
@@ -705,7 +707,7 @@ class VSActions extends React.Component {
                 {storage.name}
                 {
                   pending && (
-                    <Icon type="loading" />
+                    <LoadingOutlined />
                   )
                 }
               </span>
@@ -718,14 +720,14 @@ class VSActions extends React.Component {
               key={`diff-${storage.id}`}
               disabled={!diffEnabled}
             >
-              <Icon type="exception" />
+              <ExceptionOutlined />
               <span> Diff</span>
             </MenuItem>
             <MenuItem
               key={`save-${storage.id}`}
               disabled={!saveEnabled}
             >
-              <Icon type="save" /> Save
+              <SaveOutlined /> Save
               {
                 storage.detached && (
                   <span style={{marginLeft: 5}}>
@@ -738,14 +740,14 @@ class VSActions extends React.Component {
               key={`refresh-${storage.id}`}
               disabled={!refreshEnabled}
             >
-              <Icon type="sync" /> Refresh
+              <SyncOutlined /> Refresh
             </MenuItem>
             <Divider />
             <MenuItem
               key={`checkout-${storage.id}`}
               disabled={mergeInProgress || unsaved}
             >
-              <Icon type="fork" /> Checkout revision
+              <ForkOutlined /> Checkout revision
             </MenuItem>
             <Divider />
             {
@@ -753,7 +755,7 @@ class VSActions extends React.Component {
                 <MenuItem
                   key={`resolve-${storage.id}`}
                 >
-                  <Icon type="exclamation-circle" /> Resolve conflicts
+                  <ExclamationCircleFilled /> Resolve conflicts
                 </MenuItem>
               )
             }
@@ -844,7 +846,7 @@ class VSActions extends React.Component {
         >
           <a onClick={e => e.stopPropagation()}>
             {children}
-            {showDownIcon && (<Icon type="down" />)}
+            {showDownIcon && (<DownOutlined />)}
             <VSBrowseDialog
               visible={this.state.vsBrowserVisible}
               onClose={this.closeVSBrowser}

@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Icon, Dropdown, Menu} from 'antd';
+import {Dropdown, Menu} from 'antd';
+import { CheckOutlined, SettingOutlined } from '@ant-design/icons';
 import PoolShortDescription from '../../pool-short-description';
 import styles from './pool-selector.css';
 
@@ -38,7 +39,7 @@ function PoolSelector ({
         (pools || []).map((pool) => (
           <Menu.Item key={`${pool.id}`}>
             {Number(pool.id) === Number(value)
-              ? <Icon type="check" />
+              ? <CheckOutlined />
               : undefined
             }
             <span style={{marginLeft: 5}}>
@@ -62,7 +63,7 @@ function PoolSelector ({
           <span className={styles.selectorValue}>
             {pool ? pool.name : `Pool #${value}`}
           </span>
-          <Icon type="setting" style={{marginLeft: 2}} />
+          <SettingOutlined style={{marginLeft: 2}} />
         </div>
       </Dropdown>
       {showPoolDescription && <PoolShortDescription

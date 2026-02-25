@@ -1,6 +1,6 @@
 import React from 'react';
 import classNames from 'classnames';
-import {Icon} from 'antd';
+import { ExclamationCircleOutlined } from '@ant-design/icons';
 import {inject, observer} from 'mobx-react';
 import RunTags, {KNOWN_TAG_NAMES, networkLimitValueRender} from '../../../run-tags';
 import displayDate from '../../../../../utils/displayDate';
@@ -45,7 +45,7 @@ function RunNetworkLimit (props) {
       run={run}
       inline={inline}
     >
-      <Icon type="exclamation-circle-o" />
+      <ExclamationCircleOutlined />
       <span>Network is limited to</span>
       <b>
         {networkLimitValueRender(networkLimitTag)}

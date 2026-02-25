@@ -15,8 +15,10 @@
  */
 
 import React from 'react';
-import {computed} from 'mobx';
-import {observer, inject} from 'mobx-react';
+import {
+  computed} from 'mobx';
+import {observer,
+  inject} from 'mobx-react';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import {
@@ -25,12 +27,12 @@ import {
   Row,
   Button,
   message,
-  Icon,
   Table,
   AutoComplete,
   Select,
   Checkbox
 } from 'antd';
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import Role from '../../../models/user/Role';
 import UserFind from '../../../models/user/UserFind';
 import RoleAssign from '../../../models/user/RoleAssign';
@@ -367,7 +369,7 @@ class EditRoleDialog extends React.Component {
                   type="danger"
                   onClick={() => this.removeRole(user.id)}
                 >
-                  <Icon type="delete" />
+                  <DeleteOutlined />
                 </Button>
               </Row>
             );
@@ -872,7 +874,7 @@ class EditRoleDialog extends React.Component {
                   this.state.operationInProgress ||
                   readOnly
                 }>
-                <Icon type="plus" /> Add user
+                <PlusOutlined /> Add user
               </Button>
             </div>
           </Row>

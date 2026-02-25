@@ -20,12 +20,12 @@ import {
   Alert,
   Button,
   Checkbox,
-  Icon,
   Input,
   message,
   Modal,
   Radio
 } from 'antd';
+import { LeftOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
@@ -596,7 +596,7 @@ class AppearanceManagement extends React.Component {
               size="small"
               onClick={goBack}
             >
-              <Icon type="left" />
+              <LeftOutlined />
             </Button>
             <h2 className="cp-title">
               <span>{cloudPipelineAppName} UI Themes management</span>

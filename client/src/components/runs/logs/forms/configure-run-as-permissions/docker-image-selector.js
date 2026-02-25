@@ -16,13 +16,15 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {
   Button,
-  Icon,
   Select
 } from 'antd';
+import { DeleteOutlined, RightOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import DockerImageDetails from '../../../../cluster/hot-node-pool/docker-image-details';
 import styles from './configure-run-as-permissions.css';
@@ -56,7 +58,7 @@ class DockerImageSelector extends React.Component {
               label: (
                 <span>
                   {registry.description || registry.path}
-                  <Icon type="right" />
+                  <RightOutlined />
                   {group.name}
                 </span>
               ),
@@ -191,7 +193,7 @@ class DockerImageSelector extends React.Component {
             onClick={onRemove}
             className={styles.action}
           >
-            <Icon type="delete" />
+            <DeleteOutlined />
           </Button>
         </div>
       </div>

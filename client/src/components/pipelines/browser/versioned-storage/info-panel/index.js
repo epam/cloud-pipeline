@@ -16,16 +16,17 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
+import {
+  observer} from 'mobx-react';
 import {
   Alert,
   Row,
   Button,
-  Icon,
   Spin,
   Input,
   message
 } from 'antd';
+import { ArrowsAltOutlined, EyeFilled, LeftOutlined } from '@ant-design/icons';
 import localization from '../../../../../utils/localization';
 import {SplitPanel} from '../../../../special/splitPanel';
 import PipelineCodeForm from '../../../version/code/forms/PipelineCodeForm';
@@ -248,7 +249,7 @@ class InfoPanel extends localization.LocalizedReactComponent {
             disabled={!fileEditable}
             className={styles.previewHeaderBtn}
           >
-            <Icon type="arrows-alt" />
+            <ArrowsAltOutlined />
           </Button>
         </Row>
       );
@@ -267,7 +268,7 @@ class InfoPanel extends localization.LocalizedReactComponent {
               className={styles.goBackHeaderBtn}
               onClick={this.handleGoBackClick}
             >
-              <Icon type="left" />
+              <LeftOutlined />
             </Button>
             <b>{file.name}</b>
           </div>
@@ -277,7 +278,7 @@ class InfoPanel extends localization.LocalizedReactComponent {
             className={styles.previewHeaderBtn}
             disabled
           >
-            <Icon type="eye" />
+            <EyeFilled />
           </Button> */}
         </Row>
         {content}

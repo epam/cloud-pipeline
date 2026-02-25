@@ -17,8 +17,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {observer} from 'mobx-react';
-import {Icon} from 'antd';
+import {
+  observer} from 'mobx-react';
+import { RightOutlined } from '@ant-design/icons';
 import styles from './cell-profiler.css';
 
 @observer
@@ -67,10 +68,7 @@ class Collapse extends React.Component {
       >
         {
           !empty && (
-            <Icon
-              type="right"
-              className={styles.expandIndicator}
-            />
+            <RightOutlined className={styles.expandIndicator} />
           )
         }
         {render()}

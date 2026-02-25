@@ -15,18 +15,20 @@
  */
 
 import React, {Component} from 'react';
-import {observer, inject} from 'mobx-react';
+import {
+  observer,
+  inject} from 'mobx-react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
 import {
   Alert,
   Button,
-  Icon,
   Input,
   Modal,
   Row,
   Table
 } from 'antd';
+import { CheckCircleFilled } from '@ant-design/icons';
 import roleModel from '../../../../utils/roleModel';
 import LoadingView from '../../../special/LoadingView';
 import styles from './Browser.css';
@@ -176,7 +178,7 @@ export default class SystemParametersBrowser extends Component {
                 }}>
                   {
                     this.isParameterSelected(parameter) &&
-                    <Icon type="check-circle" style={{width: 20}} />
+                    <CheckCircleFilled style={{width: 20}} />
                   }
                   {name}
                 </Row>
@@ -195,7 +197,7 @@ export default class SystemParametersBrowser extends Component {
             }}>
               {
                 this.isParameterSelected(parameter) &&
-                <Icon type="check-circle" style={{width: 20}} />
+                <CheckCircleFilled style={{width: 20}} />
               }
               {name}
             </span>

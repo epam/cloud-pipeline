@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Icon} from 'antd';
+import { CloseOutlined, DoubleLeftOutlined, DoubleRightOutlined } from '@ant-design/icons';
 import {inject, observer} from 'mobx-react';
 import Caret from './caret';
 import getClassNameForChange from './utilities/class-name-for-change';
@@ -917,24 +917,28 @@ function renderLineNumberWithActions (line, props) {
     )
       ? [
         (
-          <Icon
-            className={classNames(styles.action, 'cp-conflict-action')}
-            key="apply"
-            type={rtl ? 'double-left' : 'double-right'}
-            onMouseDown={e => e.stopPropagation()}
-            onClick={wrapAction(modification, modification.apply, onRefresh)}
-            tabIndex={0}
-          />
+          {rtl
+            ? <DoubleLeftOutlined
+                className={classNames(styles.action, 'cp-conflict-action')}
+                key="apply"
+                onMouseDown={e => e.stopPropagation()}
+                onClick={wrapAction(modification, modification.apply, onRefresh)}
+                tabIndex={0}
+              />
+            : <DoubleRightOutlined
+                className={classNames(styles.action, 'cp-conflict-action')}
+                key="apply"
+                onMouseDown={e => e.stopPropagation()}
+                onClick={wrapAction(modification, modification.apply, onRefresh)}
+                tabIndex={0}
+              />}
         ),
         (
-          <Icon
-            className={classNames(styles.action, 'cp-conflict-action')}
+          <CloseOutlined className={classNames(styles.action, 'cp-conflict-action')}
             key="omit"
-            type="close"
             onMouseDown={e => e.stopPropagation()}
             onClick={wrapAction(modification, modification.discard, onRefresh)}
-            tabIndex={0}
-          />
+            tabIndex={0} />
         )
       ]
       : [];

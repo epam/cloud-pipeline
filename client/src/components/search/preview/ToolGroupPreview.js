@@ -19,6 +19,7 @@ import PropTypes from 'prop-types';
 import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {Icon, Row} from 'antd';
+import { CaretRightOutlined, ExportOutlined, LoadingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
@@ -102,7 +103,7 @@ export default class ToolGroupPreview extends React.Component {
     nameComponent = (
       <span style={nameStyle}>
         {tool.endpoints && tool.endpoints.length > 0
-          ? <Icon type="export" style={{marginRight: 3, fontWeight: 'normal'}} />
+          ? <ExportOutlined style={{marginRight: 3, fontWeight: 'normal'}} />
           : undefined}
         {tool.image}
       </span>
@@ -160,7 +161,7 @@ export default class ToolGroupPreview extends React.Component {
     if (this.props.dockerRegistries.pending) {
       return (
         <Row className={styles.contentPreview} type="flex" justify="center">
-          <Icon type="loading" />
+          <LoadingOutlined />
         </Row>
       );
     }
@@ -217,7 +218,7 @@ export default class ToolGroupPreview extends React.Component {
       };
       return [
         <span key="registry" style={style}>{registryName}</span>,
-        <Icon key="arrow" type="caret-right" style={style} />,
+        <CaretRightOutlined key="arrow" style={style} />,
         <span key="name" style={style}>{this.name}</span>
       ];
     }

@@ -17,9 +17,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {
-  Input,
-  Icon
+  Input
 } from 'antd';
+import { ToolOutlined } from '@ant-design/icons';
 import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import HiddenObjects from '../../../../../../../utils/hidden-objects';
@@ -97,7 +97,7 @@ class WdlRuntimeDocker extends React.Component {
         onChange={onChangeHandler}
         addonAfter={(
           <div onClick={this.onOpenDockerBrowser}>
-            <Icon type="tool" />
+            <ToolOutlined />
             <DockerImageBrowser
               onChange={this.onPickDockerImage}
               dockerImage={this.dockerImage}

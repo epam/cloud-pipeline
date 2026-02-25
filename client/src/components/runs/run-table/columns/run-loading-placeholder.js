@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Icon, Popover} from 'antd';
+import {Popover} from 'antd';
+import { ExclamationCircleOutlined, LoadingOutlined } from '@ant-design/icons';
 
 const RUN_LOADING_PLACEHOLDER_PROPERTY = '___loading_placeholder___';
 const RUN_LOADING_ERROR_PROPERTY = '___loading_error___';
@@ -43,7 +44,7 @@ function RunLoadingPlaceholder (
   };
   if (placeholder) {
     return renderReplacement((
-      <Icon type="loading" />
+      <LoadingOutlined />
     ));
   }
   if (error) {
@@ -51,7 +52,7 @@ function RunLoadingPlaceholder (
       <Popover
         content={error}
       >
-        <Icon type="exclamation-circle-o" className="cp-danger" />
+        <ExclamationCircleOutlined className="cp-danger" />
       </Popover>
     ));
   }

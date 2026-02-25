@@ -15,7 +15,9 @@
  */
 
 import React, {Component} from 'react';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import {computed} from 'mobx';
 import PipelineFileUpdate from '../../../../models/pipelines/PipelineFileUpdate';
 import PipelineFileDelete from '../../../../models/pipelines/PipelineFileDelete';
@@ -28,10 +30,11 @@ import {
   Button,
   Col,
   Table,
-  Icon,
   Row,
   Modal,
-  message} from 'antd';
+  message
+} from 'antd';
+import { DeleteOutlined, FolderOutlined, PlusOutlined } from '@ant-design/icons';
 import styles from './PipelineCode.css';
 import parseQueryParameters from '../../../../utils/queryParameters';
 import roleModel from '../../../../utils/roleModel';
@@ -159,7 +162,7 @@ export default class PipelineCode extends Component {
 
   renderSourceItemType = (item) => {
     return item.type.toLowerCase() === 'tree'
-      ? <Icon type="folder" className={styles.sourceItemType} />
+      ? <FolderOutlined className={styles.sourceItemType} />
       : <div />;
   };
 
@@ -183,7 +186,7 @@ export default class PipelineCode extends Component {
               size="small"
               disabled={this.props.readOnly}
             >
-              <Icon type="delete" /> Delete
+              <DeleteOutlined /> Delete
             </Button>
           </Row>
         );
@@ -205,7 +208,7 @@ export default class PipelineCode extends Component {
               size="small"
               disabled={this.props.readOnly}
             >
-              <Icon type="delete" /> Delete
+              <DeleteOutlined /> Delete
             </Button>
           </Row>
         );
@@ -596,7 +599,7 @@ export default class PipelineCode extends Component {
                 size="small"
                 disabled={this.props.readOnly}
               >
-                <Icon type="plus" />
+                <PlusOutlined />
               </Button>
             );
           }
@@ -668,7 +671,7 @@ export default class PipelineCode extends Component {
                 size="small"
                 disabled={this.props.readOnly}
               >
-                <Icon type="plus" />NEW FILE
+                <PlusOutlined />NEW FILE
               </Button>
               <UploadButton
                 multiple

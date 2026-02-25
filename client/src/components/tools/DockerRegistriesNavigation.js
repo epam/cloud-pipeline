@@ -16,8 +16,14 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
-import {Button, Dropdown, Icon, Input, Row} from 'antd';
+import {
+  observer} from 'mobx-react';
+import {Button,
+  Dropdown,
+  Input,
+  Row
+} from 'antd';
+import { CaretRightOutlined } from '@ant-design/icons';
 import registryName from './registryName';
 import DockerRegistriesGroupsDropdownContent from './DockerRegistriesGroupsDropdownContent';
 import styles from './Tools.css';
@@ -208,9 +214,9 @@ export default class DockerRegistriesNavigation extends React.Component {
       return (
         <Row type="flex" align="middle" style={{flex: 1}}>
           {registrySelector}
-          {groupSelector && <Icon type="caret-right" />}
+          {groupSelector && <CaretRightOutlined />}
           {groupSelector}
-          {groupSelector && <Icon type="caret-right" />}
+          {groupSelector && <CaretRightOutlined />}
           {groupSelector && renderToolSelector}
         </Row>
       );

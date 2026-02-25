@@ -17,6 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Icon, Tooltip} from 'antd';
+import { ExclamationCircleOutlined, LoadingOutlined } from '@ant-design/icons';
 import pipelineRunSSHCache from '../../../../../models/pipelines/PipelineRunSSHCache';
 import MultizoneUrl from '../../../../special/multizone-url';
 
@@ -127,7 +128,7 @@ class RunSSHButton extends React.Component {
               icon && (<Icon type={icon} />)
             }
             SSH
-            <Icon type="exclamation-circle-o" />
+            <ExclamationCircleOutlined />
           </div>
         </Tooltip>
       );
@@ -162,10 +163,7 @@ class RunSSHButton extends React.Component {
         <span>SSH</span>
         {
           pending && (
-            <Icon
-              type="loading"
-              style={{marginLeft: 5}}
-            />
+            <LoadingOutlined style={{marginLeft: 5}} />
           )
         }
       </div>

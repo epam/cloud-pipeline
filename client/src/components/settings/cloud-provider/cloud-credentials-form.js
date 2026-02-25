@@ -16,14 +16,16 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {
   Alert,
   Button,
-  Icon,
   Table
 } from 'antd';
+import { EditOutlined, PlusOutlined } from '@ant-design/icons';
 import CloudCredentialsProfileForm from './cloud-credentials-profile-form';
 import LoadingView from '../../special/LoadingView';
 import styles from './cloud-credentials-form.css';
@@ -80,7 +82,7 @@ class CloudCredentialsForm extends React.Component {
                   this.onEditCredentialsClicked(credentials);
                 }}
               >
-                <Icon type="edit" />
+                <EditOutlined />
               </Button>
             </div>
           );
@@ -144,7 +146,7 @@ class CloudCredentialsForm extends React.Component {
                   size="small"
                   onClick={this.onCreateNewClicked}
                 >
-                  <Icon type="plus" />
+                  <PlusOutlined />
                   <span>Create profile</span>
                 </Button>
               </div>

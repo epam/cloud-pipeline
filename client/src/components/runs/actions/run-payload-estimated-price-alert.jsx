@@ -1,7 +1,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import PipelineRunEstimatedPrice from '../../../models/pipelines/PipelineRunEstimatedPrice';
-import {Alert, Icon} from 'antd';
+import {Alert} from 'antd';
+import { LoadingOutlined } from '@ant-design/icons';
 import JobEstimatedPriceInfo from '../../special/job-estimated-price-info';
 
 class RunPayloadEstimatedPriceAlert extends React.PureComponent {
@@ -126,7 +127,7 @@ class RunPayloadEstimatedPriceAlert extends React.PureComponent {
               }
             </span>
             {
-              pending && <Icon type="loading" />
+              pending && <LoadingOutlined />
             }
             {
               !pending && error && <span>{error}</span>

@@ -23,11 +23,11 @@ import {
   Button,
   Checkbox,
   Form,
-  Icon,
   Input,
   Row,
   Select
 } from 'antd';
+import {CaretRightOutlined, EyeFilled, EyeOutlined} from '@ant-design/icons';
 import CodeEditor from '../../special/CodeEditor';
 import highlightText from '../../special/highlightText';
 import {MANAGEMENT_SECTION} from '../user-profile/appearance';
@@ -295,7 +295,7 @@ class PreferenceInput extends React.Component {
             <span>
               My Profile
             </span>
-            <Icon type="caret-right" />
+            <CaretRightOutlined />
             <span>
               Appearance
             </span>
@@ -371,22 +371,37 @@ class PreferenceInput extends React.Component {
         }
         style={{width: '100%'}}>
         <Row type="flex" align="middle">
-          <Icon
-            className={
-              classNames(
-                {
-                  'cp-text-not-important': !this.state.visible
+          {this.state.visible
+            ? <EyeFilled
+                className={
+                  classNames(
+                    {
+                      'cp-text-not-important': !this.state.visible
+                    }
+                  )
                 }
-              )
-            }
-            type={this.state.visible ? 'eye' : 'eye-o'}
-            onClick={() => !this.props.disabled && this.onVisibilityValueChanged(!this.state.visible)}
-            style={{
-              cursor: 'pointer',
-              fontSize: 'large',
-              marginRight: 5,
-              marginBottom: 2
-            }} />
+                onClick={() => !this.props.disabled && this.onVisibilityValueChanged(!this.state.visible)}
+                style={{
+                  cursor: 'pointer',
+                  fontSize: 'large',
+                  marginRight: 5,
+                  marginBottom: 2
+                }} />
+            : <EyeOutlined
+                className={
+                  classNames(
+                    {
+                      'cp-text-not-important': !this.state.visible
+                    }
+                  )
+                }
+                onClick={() => !this.props.disabled && this.onVisibilityValueChanged(!this.state.visible)}
+                style={{
+                  cursor: 'pointer',
+                  fontSize: 'large',
+                  marginRight: 5,
+                  marginBottom: 2
+                }} />}
           <span>
             {highlightText(this.props.value.name, this.props.search)}
           </span>

@@ -21,6 +21,7 @@ import {computed, observable} from 'mobx';
 import PropTypes from 'prop-types';
 import SplitPane from 'react-split-pane';
 import {Alert, Button, Checkbox, Col, Icon, Input, Modal, Row, Table, Tree, message} from 'antd';
+import { CaretLeftOutlined, CaretRightOutlined } from '@ant-design/icons';
 import dataStorages from '../../../../models/dataStorage/DataStorages';
 import DataStorageRequest from '../../../../models/dataStorage/DataStoragePage';
 import DTSRequest from '../../../../models/dts/DTSItemsPage';
@@ -906,12 +907,12 @@ export default class BucketBrowser extends React.Component {
                     id="prev-page-button"
                     onClick={this.prevPage}
                     disabled={this.state.currentPage === 0}
-                    style={{margin: 3}} size="small"><Icon type="caret-left" /></Button>
+                    style={{margin: 3}} size="small"><CaretLeftOutlined /></Button>
                   <Button
                     id="next-page-button"
                     onClick={this.nextPage}
                     disabled={this.state.pageMarkers.length <= this.state.currentPage + 1}
-                    style={{margin: 3}} size="small"><Icon type="caret-right" /></Button>
+                    style={{margin: 3}} size="small"><CaretRightOutlined /></Button>
                 </Row>
               </div>
           }

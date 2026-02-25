@@ -16,15 +16,17 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import {computed} from 'mobx';
 import classNames from 'classnames';
 import {
   message,
   Popover,
-  Row,
-  Icon
+  Row
 } from 'antd';
+import { CaretLeftOutlined, CloseOutlined } from '@ant-design/icons';
 import ToolsSelector, {ToolIcon} from './tools-selector';
 import OpenToolInfo from './open-tool-info';
 import FileTools from './file-tools';
@@ -282,11 +284,8 @@ class OpenInToolAction extends React.Component {
             >
               Select tool to open:
             </span>
-            <Icon
-              type="close"
-              className={classNames(styles.close, 'cp-close-button')}
-              onClick={() => this.modalVisibilityChanged(false)}
-            />
+            <CloseOutlined className={classNames(styles.close, 'cp-close-button')}
+              onClick={() => this.modalVisibilityChanged(false)} />
           </Row>
           <div className={styles.toolSelectionContainer}>
             {this.filteredFileTools.map(tool => (
@@ -330,7 +329,7 @@ class OpenInToolAction extends React.Component {
                   onClick={this.clearToolSelection}
                   className={styles.tabHeadingBtn}
                 >
-                  <Icon type="caret-left" />
+                  <CaretLeftOutlined />
                 </div>
                 <span className={styles.tabHeading}>
                   <ToolIcon
@@ -344,19 +343,13 @@ class OpenInToolAction extends React.Component {
                   {activeTool.image}
                 </span>
               </div>
-              <Icon
-                type="close"
-                className={classNames(styles.close, 'cp-close-button')}
-                onClick={() => this.modalVisibilityChanged(false)}
-              />
+              <CloseOutlined className={classNames(styles.close, 'cp-close-button')}
+                onClick={() => this.modalVisibilityChanged(false)} />
             </Row>
           )}
           {this.filteredFileTools.length === 1 && (
-            <Icon
-              type="close"
-              className={classNames(styles.close, 'cp-close-button', styles.absolute)}
-              onClick={() => this.modalVisibilityChanged(false)}
-            />
+            <CloseOutlined className={classNames(styles.close, 'cp-close-button', styles.absolute)}
+              onClick={() => this.modalVisibilityChanged(false)} />
           )}
           {this.renderToolInfo()}
         </div>

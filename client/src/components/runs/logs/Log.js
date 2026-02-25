@@ -26,7 +26,6 @@ import {
   Col,
   Collapse,
   Dropdown,
-  Icon,
   Input,
   Menu,
   message,
@@ -35,6 +34,7 @@ import {
   Row,
   Spin
 } from 'antd';
+import { ClockCircleFilled, ClockCircleOutlined, DownOutlined, ExclamationCircleFilled, ExclamationCircleOutlined, LoadingOutlined } from '@ant-design/icons';
 import SplitPane from 'react-split-pane';
 import PausePipeline from '../../../models/pipelines/PausePipeline';
 import ResumePipeline from '../../../models/pipelines/ResumePipeline';
@@ -997,7 +997,7 @@ class Logs extends localization.LocalizedReactComponent {
       return (
         <Dropdown overlay={menu}>
           <a>
-            {title} <Icon type="down" />
+            {title} <DownOutlined />
           </a>
         </Dropdown>
       );
@@ -1363,8 +1363,9 @@ class Logs extends localization.LocalizedReactComponent {
     const SwitchTimingsButton = (
       <div className={styles.timingBtn}>
         <a onClick={this.switchTimings}>
-          <Icon style={{fontSize: 18}}
-            type={timings ? 'clock-circle' : 'clock-circle-o'} />
+          {timings
+            ? <ClockCircleFilled style={{fontSize: 18}} />
+            : <ClockCircleOutlined style={{fontSize: 18}} />}
         </a>
       </div>
     );
@@ -1715,7 +1716,7 @@ class Logs extends localization.LocalizedReactComponent {
           >
             {
               nestedRuns.length === 0 && nestedRunsPending && (
-                <Icon type="loading" />
+                <LoadingOutlined />
               )
             }
             {nestedRuns.map(renderSingleRun)}
@@ -1962,13 +1963,7 @@ class Logs extends localization.LocalizedReactComponent {
                   </span>
                 )}
               >
-                <Icon
-                  type="exclamation-circle"
-                  style={{
-                    marginLeft: 5,
-                    fontSize: 'smaller'
-                  }}
-                />
+                <ExclamationCircleFilled style={{ marginLeft: 5, fontSize: 'smaller' }} />
               </Popover>
             </span>
           );
@@ -2368,7 +2363,7 @@ class Logs extends localization.LocalizedReactComponent {
             case 'committing':
               previousStatus = (
                 <span>
-                  <Icon type="loading" /> COMMITTING...
+                  <LoadingOutlined /> COMMITTING...
                 </span>
               );
               break;
@@ -2396,7 +2391,7 @@ class Logs extends localization.LocalizedReactComponent {
           switch ((commitStatus || '').toLowerCase()) {
             case 'not_committed': break;
             case 'committing':
-              CommitStatusButton = (<span><Icon type="loading" /> COMMITTING...</span>);
+              CommitStatusButton = (<span><LoadingOutlined /> COMMITTING...</span>);
               break;
             case 'failure':
               CommitStatusButton = (<span>COMMIT FAILURE ({commitDate})</span>);
@@ -2484,7 +2479,7 @@ class Logs extends localization.LocalizedReactComponent {
           className="cp-error"
           style={{gap: '5px', fontSize: 'larger'}}
         >
-          <Icon type="exclamation-circle-o" />
+          <ExclamationCircleOutlined />
           Network is limited to
           <b>
             {networkLimitValueRender(networkLimitTag)}

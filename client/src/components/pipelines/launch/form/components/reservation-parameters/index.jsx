@@ -3,12 +3,12 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import styles from './reservation-parameters.css';
 import {
-  Icon,
   InputNumber,
   Modal,
   Select,
   Slider
 } from 'antd';
+import { CheckCircleFilled, CloseCircleFilled, ExclamationCircleFilled, LoadingOutlined } from '@ant-design/icons';
 import {
   getReservationParametersConfig,
   correctReservationParameters,
@@ -402,7 +402,7 @@ class ReservationParameters extends React.PureComponent {
     if (resourcesPending) {
       return (
         <div className="cp-text-not-important" style={{marginBottom: 10}}>
-          <Icon type="loading" />
+          <LoadingOutlined />
           <span
             style={{marginLeft: 5}}
           >
@@ -419,29 +419,17 @@ class ReservationParameters extends React.PureComponent {
         })}>
           {
             type === 'error' && (
-              <Icon
-                type="close-circle"
-                style={{marginRight: 5}}
-                className="cp-error"
-              />
+              <CloseCircleFilled style={{marginRight: 5}} className="cp-error" />
             )
           }
           {
             type === 'warning' && (
-              <Icon
-                type="exclamation-circle"
-                style={{marginRight: 5}}
-                className="cp-warning"
-              />
+              <ExclamationCircleFilled style={{marginRight: 5}} className="cp-warning" />
             )
           }
           {
             type === 'success' && (
-              <Icon
-                type="check-circle"
-                style={{marginRight: 5}}
-                className="cp-success"
-              />
+              <CheckCircleFilled style={{marginRight: 5}} className="cp-success" />
             )
           }
           {content}
@@ -522,8 +510,8 @@ class ReservationParameters extends React.PureComponent {
                           <div>
                             {
                               nd.fits
-                                ? <Icon type="check-circle" className="cp-success" />
-                                : <Icon type="exclamation-circle" className="cp-warning" />
+                                ? <CheckCircleFilled className="cp-success" />
+                                : <ExclamationCircleFilled className="cp-warning" />
                             }
                             <span style={{marginLeft: 5}}>{nd.nodeName}</span>
                           </div>

@@ -16,18 +16,19 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
+import {
+  observer} from 'mobx-react';
 import {observable} from 'mobx';
 import {
   Row,
   Upload,
   Button,
-  Icon,
   Modal,
   Progress,
   Col,
   Tooltip
 } from 'antd';
+import { UploadOutlined } from '@ant-design/icons';
 import S3Storage, {MAX_FILE_SIZE_DESCRIPTION} from '../../models/s3-upload/s3-storage';
 import DataStorageGenerateUploadUrl from '../../models/dataStorage/DataStorageGenerateUploadUrl';
 
@@ -579,7 +580,7 @@ class UploadButton extends React.Component {
         id="upload-button"
         disabled={this.props.disabled || (this.props.uploadToS3 && !!this.s3StorageError)}
       >
-        <Icon type="upload" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
+        <UploadOutlined style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
         <span style={{lineHeight: 'inherit', verticalAlign: 'middle'}}>{this.props.title}</span>
       </Button>
     );

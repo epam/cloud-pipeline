@@ -15,7 +15,8 @@
  */
 
 import React from 'react';
-import {Alert, Icon} from 'antd';
+import {Alert} from 'antd';
+import { DownCircleOutlined } from '@ant-design/icons';
 import {observable, computed} from 'mobx';
 import {observer} from 'mobx-react';
 import classNames from 'classnames';
@@ -247,17 +248,7 @@ export default class AIChat extends React.Component {
           'cp-panel-color', {
             [styles.dropShadow]: !this.scrolledDown
           })}>
-          <Icon
-            type="down-circle-o"
-            className={classNames(
-              'cp-panel-background-color cp-primary',
-              styles.downButton, {
-                [styles.visible]: !this.isScrolling &&
-                !this.scrolledDown
-              }
-            )}
-            onClick={this.scrollToBottom}
-          />
+          <DownCircleOutlined className={classNames( 'cp-panel-background-color cp-primary', styles.downButton, { [styles.visible]: !this.isScrolling && !this.scrolledDown } )} onClick={this.scrollToBottom} />
           {chat.messages?.length ? (
             <a className={styles.clearButton} onClick={() => chat.changeChat()}>
               New chat

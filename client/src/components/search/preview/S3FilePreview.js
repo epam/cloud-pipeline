@@ -20,6 +20,7 @@ import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import {Icon, Row} from 'antd';
+import { CaretRightOutlined, LoadingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
@@ -154,7 +155,7 @@ export default class S3FilePreview extends React.Component {
     if (this.props.dataStorageInfo.pending) {
       return (
         <Row className={styles.info}>
-          <Icon type="loading" />
+          <LoadingOutlined />
         </Row>
       );
     }
@@ -184,7 +185,7 @@ export default class S3FilePreview extends React.Component {
                   path.reduce((result, current, index, arr) => {
                     result.push(<code key={index}>{current}</code>);
                     if (index < arr.length - 1) {
-                      result.push(<Icon key={`sep_${index}`} type="caret-right" />);
+                      result.push(<CaretRightOutlined key={`sep_${index}`} />);
                     }
                     return result;
                   }, [])
@@ -214,7 +215,7 @@ export default class S3FilePreview extends React.Component {
     if (this.props.preview.pending) {
       return (
         <Row type="flex" justify="center">
-          <Icon type="loading" />
+          <LoadingOutlined />
         </Row>
       );
     }
@@ -344,7 +345,7 @@ export default class S3FilePreview extends React.Component {
       if (this.props.downloadUrl.pending) {
         return (
           <Row className={styles.contentPreview} type="flex" justify="center">
-            <Icon type="loading" />
+            <LoadingOutlined />
           </Row>
         );
       }

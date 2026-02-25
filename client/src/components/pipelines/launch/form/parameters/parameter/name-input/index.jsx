@@ -1,7 +1,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Icon, Input, Popover} from 'antd';
+import {Input, Popover} from 'antd';
+import { EditOutlined } from '@ant-design/icons';
 import styles from './parameter-name-input.css';
 
 class ParameterNameInput extends React.PureComponent {
@@ -205,7 +206,7 @@ class ParameterNameInput extends React.PureComponent {
                     ? displayName
                     : '<parameter name>'
                 }
-                <Icon type="edit" className={styles.parameterNameEditIcon} />
+                <EditOutlined className={styles.parameterNameEditIcon} />
               </span>
               {
                 nameError && (

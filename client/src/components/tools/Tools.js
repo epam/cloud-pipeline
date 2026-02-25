@@ -15,17 +15,20 @@
  */
 
 import React from 'react';
-import {observer, inject} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {
+  observer,
+  inject} from 'mobx-react';
+import {computed,
+  observable} from 'mobx';
 import {
   Alert,
   Row,
   Button,
   Card,
-  Icon,
   Col,
   message
 } from 'antd';
+import { InfoCircleOutlined } from '@ant-design/icons';
 import {Link} from 'react-router';
 import classNames from 'classnames';
 import ToolsGroupPrivateCreate from '../../models/tools/ToolsGroupPrivateCreate';
@@ -526,9 +529,7 @@ export default class Tools extends React.Component {
           style={{borderStyle: 'dashed'}}
         >
           <Row style={{fontSize: 'large', margin: 10}}>
-            <Icon
-              type="info-circle-o"
-              style={{fontSize: 'x-large', verticalAlign: 'middle'}} />
+            <InfoCircleOutlined style={{fontSize: 'x-large', verticalAlign: 'middle'}} />
             <span
               style={{marginLeft: 10, marginRight: 10}}>
               Personal tool group was not found in registry.

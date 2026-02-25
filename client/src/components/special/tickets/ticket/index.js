@@ -17,17 +17,19 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {computed} from 'mobx';
-import {observer, inject} from 'mobx-react';
+import {
+  computed} from 'mobx';
+import {observer,
+  inject} from 'mobx-react';
 import {
   Alert,
   Button,
-  Icon,
   message,
   Spin,
   Dropdown,
   Menu
 } from 'antd';
+import { LeftOutlined, PaperClipOutlined } from '@ant-design/icons';
 import moment from 'moment-timezone';
 import CommentCard from '../special/comment-card';
 import CommentEditor from '../special/comment-editor';
@@ -393,7 +395,7 @@ class Ticket extends React.Component {
                   href={attachment.link}
                   target="_blank"
                 >
-                  <Icon type="paper-clip" style={{marginRight: 5}} />
+                  <PaperClipOutlined style={{marginRight: 5}} />
                   {attachment.name}
                 </a>
               ))
@@ -435,7 +437,7 @@ class Ticket extends React.Component {
           size="small"
           className={mainStyles.goBackButton}
         >
-          <Icon type="left" />
+          <LeftOutlined />
         </Button>
         <span
           className={mainStyles.heading}

@@ -16,18 +16,21 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer, Provider} from 'mobx-react';
+import {
+  inject,
+  observer,
+  Provider} from 'mobx-react';
 import {computed} from 'mobx';
 import {
   Button,
   Checkbox,
-  Icon,
   Input,
   InputNumber,
   Modal,
   Popover,
   Select
 } from 'antd';
+import { DeleteOutlined, PlusOutlined, QuestionCircleFilled } from '@ant-design/icons';
 import classNames from 'classnames';
 import InstanceDetails from './instance-details';
 import AddDockerRegistryControl from './add-docker-registry-control';
@@ -910,10 +913,7 @@ class EditHotNodePool extends React.Component {
           content={hint}
           placement="right"
         >
-          <Icon
-            type="question-circle"
-            style={{marginLeft: 5}}
-          />
+          <QuestionCircleFilled style={{marginLeft: 5}} />
         </Popover>
       );
     }
@@ -944,7 +944,7 @@ class EditHotNodePool extends React.Component {
             onClick={this.onAddSchedule}
             type="dashed"
           >
-            <Icon type="plus" />
+            <PlusOutlined />
             Add schedule
           </Button>
         </div>
@@ -1571,7 +1571,7 @@ class EditHotNodePool extends React.Component {
                     onClick={this.onAddDockerImage}
                     type="dashed"
                   >
-                    <Icon type="plus" />
+                    <PlusOutlined />
                     Add docker image
                   </Button>
                 </div>
@@ -1723,7 +1723,7 @@ class EditHotNodePool extends React.Component {
             Monitored
           </Checkbox>
           <Button size="small" onClick={onRemoveNodeLabel} type="danger">
-            <Icon type="delete" />
+            <DeleteOutlined />
           </Button>
         </div>
       );
@@ -1746,7 +1746,7 @@ class EditHotNodePool extends React.Component {
                     onClick={addNodeLabel}
                     type="dashed"
                   >
-                    <Icon type="plus" />
+                    <PlusOutlined />
                     Add node label
                   </Button>
                 </div>

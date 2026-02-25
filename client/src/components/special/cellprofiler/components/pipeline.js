@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Icon} from 'antd';
+import { InfoCircleOutlined } from '@ant-design/icons';
 import {observer} from 'mobx-react';
 import {CellProfilerModule, CellProfilerModuleHeader} from './module';
 import AnalysisPipelineInfo from './info';
@@ -67,13 +67,13 @@ class CellProfilerPipeline extends React.Component {
     }
     let infoHeader = (
       <b className={styles.title}>
-        <Icon type="info-circle-o" /> Info
+        <InfoCircleOutlined /> Info
       </b>
     );
     if (pipeline.name) {
       infoHeader = (
         <b className={styles.title}>
-          <Icon type="info-circle-o" /> Info: {pipeline.name}
+          <InfoCircleOutlined /> Info: {pipeline.name}
         </b>
       );
     }

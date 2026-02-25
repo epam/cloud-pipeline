@@ -15,7 +15,8 @@
  */
 
 import React from 'react';
-import {Button, Icon} from 'antd';
+import {Button} from 'antd';
+import { WarningOutlined } from '@ant-design/icons';
 
 class ErrorBoundary extends React.Component {
   state = {
@@ -49,10 +50,7 @@ class ErrorBoundary extends React.Component {
           padding: 40,
           textAlign: 'center'
         }}>
-          <Icon
-            type="warning"
-            style={{fontSize: 48, color: '#f5222d', marginBottom: 16}}
-          />
+          <WarningOutlined style={{fontSize: 48, color: '#f5222d', marginBottom: 16}} />
           <h2 style={{marginBottom: 8}}>Something went wrong</h2>
           <p style={{color: '#666', marginBottom: 24, maxWidth: 500}}>
             An unexpected error occurred. You can try to recover by clicking

@@ -15,8 +15,15 @@
  */
 
 import React from 'react';
-import {inject, observer} from 'mobx-react';
-import {Button, Icon, Pagination, Table, Tooltip} from 'antd';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {Button,
+  Pagination,
+  Table,
+  Tooltip
+} from 'antd';
+import { CloseOutlined } from '@ant-design/icons';
 import {
   BarChart,
   BillingTable,
@@ -512,7 +519,7 @@ class InstanceReport extends React.Component {
                                     right: 5
                                   }}
                                 >
-                                  <Icon type="close" /> {getInstanceMetricsName(metrics)}
+                                  <CloseOutlined /> {getInstanceMetricsName(metrics)}
                                 </Button>
                               )
                             }

@@ -15,7 +15,9 @@
  */
 
 import React from 'react';
-import {observer, inject} from 'mobx-react';
+import {
+  observer,
+  inject} from 'mobx-react';
 import {computed} from 'mobx';
 import classNames from 'classnames';
 import {
@@ -24,13 +26,13 @@ import {
   Input,
   Dropdown,
   Card,
-  Icon,
   Button,
   message,
   Alert,
   Select,
   Tooltip
 } from 'antd';
+import { BarsOutlined, DownloadOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import Menu, {MenuItem} from 'rc-menu';
 import Roles from '../../../models/user/Roles';
 import UserCreate from '../../../models/user/UserCreate';
@@ -273,11 +275,11 @@ export default class UsersManagement extends React.Component {
         style={{cursor: 'pointer'}}
       >
         <MenuItem key="default">
-          <Icon type="download" style={{marginRight: 10}} />
+          <DownloadOutlined style={{marginRight: 10}} />
           Default configuration
         </MenuItem>
         <MenuItem key="custom">
-          <Icon type="bars" style={{marginRight: 10}} />
+          <BarsOutlined style={{marginRight: 10}} />
           Custom configuration
         </MenuItem>
       </Menu>
@@ -342,7 +344,7 @@ export default class UsersManagement extends React.Component {
               style={{marginLeft: 5}}
               onClick={this.openCreateUserDialog}
             >
-              <Icon type="plus" />Create user
+              <PlusOutlined />Create user
             </Button>
           )
         }
@@ -360,7 +362,7 @@ export default class UsersManagement extends React.Component {
               style={{marginLeft: 5}}
               onClick={() => doExport()}
               overlay={exportUserMenu}
-              icon={<Icon type="download" />}
+              icon={<DownloadOutlined />}
             >
               Export users
             </Dropdown.Button>
@@ -591,7 +593,7 @@ export default class UsersManagement extends React.Component {
                   size="small"
                   onClick={() => this.openEditUserRolesDialog(user)}
                 >
-                  <Icon type="edit" />
+                  <EditOutlined />
                 </Button>
               </Row>
             );

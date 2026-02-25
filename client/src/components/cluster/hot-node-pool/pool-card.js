@@ -15,12 +15,14 @@
  */
 
 import React from 'react';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import {
   Button,
-  Icon,
   Progress
 } from 'antd';
+import { AreaChartOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import moment from 'moment-timezone';
 import classNames from 'classnames';
 import DockerImageDetails from './docker-image-details';
@@ -225,7 +227,7 @@ function PoolCard ({
                   size="small"
                   onClick={onEdit}
                 >
-                  <Icon type="edit" />
+                  <EditOutlined />
                 </Button>
               )}
               <Button
@@ -236,7 +238,7 @@ function PoolCard ({
                   navigate(`/cluster/usage?pool=${id}`);
                 }}
               >
-                <Icon type="area-chart" />
+                <AreaChartOutlined />
               </Button>
               {!readOnly && (
                 <Button
@@ -245,7 +247,7 @@ function PoolCard ({
                   type="danger"
                   onClick={onRemove}
                 >
-                  <Icon type="delete" />
+                  <DeleteOutlined />
                 </Button>
               )}
             </div>

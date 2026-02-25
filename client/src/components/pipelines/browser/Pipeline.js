@@ -16,7 +16,9 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import classNames from 'classnames';
 import connect from '../../../utils/connect';
 import {computed} from 'mobx';
@@ -31,7 +33,16 @@ import {
 } from '../../special/splitPanel';
 import Breadcrumbs from '../../special/Breadcrumbs';
 import GitRepositoryControl from '../../special/git-repository-control';
-import {Alert, Button, Col, Icon, message, Popover, Row, Select, Table} from 'antd';
+import {Alert,
+  Button,
+  Col,
+  message,
+  Popover,
+  Row,
+  Select,
+  Table
+} from 'antd';
+import { AppstoreFilled, CheckCircleFilled, CopyOutlined, EditOutlined, FolderOutlined, ForkOutlined, SettingOutlined, TagFilled } from '@ant-design/icons';
 import Menu, {MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import EditPipelineForm from '../version/forms/EditPipelineForm';
@@ -307,9 +318,9 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       'cp-text-not-important': item.draft
     });
     switch (item.type) {
-      case ItemTypes.pipeline: return <Icon type="fork" className={className} />;
-      case ItemTypes.folder: return <Icon type="folder" className={className} />;
-      case ItemTypes.version: return <Icon type="tag" className={className} />;
+      case ItemTypes.pipeline: return <ForkOutlined className={className} />;
+      case ItemTypes.folder: return <FolderOutlined className={className} />;
+      case ItemTypes.version: return <TagFilled className={className} />;
       default: return <div />;
     }
   };
@@ -326,7 +337,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     ) {
       return (
         <Row type="flex" justify="end">
-          <Icon type="check-circle" />
+          <CheckCircleFilled />
         </Row>
       );
     }
@@ -683,7 +694,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
         >
           <Row type="flex" justify="space-between" align="middle">
             <span>Attributes</span>
-            <Icon type="check-circle" style={{display: this.showMetadata ? 'inherit' : 'none'}} />
+            <CheckCircleFilled style={{display: this.showMetadata ? 'inherit' : 'none'}} />
           </Row>
         </MenuItem>
       );
@@ -695,14 +706,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
         >
           <Row type="flex" justify="space-between" align="middle">
             <span>{this.localizedString('Issue')}s</span>
-            <Icon
-              type="check-circle"
-              style={{
-                display: this.state.showIssuesPanel
-                  ? 'inherit'
-                  : 'none'
-              }}
-            />
+            <CheckCircleFilled style={{ display: this.state.showIssuesPanel ? 'inherit' : 'none' }} />
           </Row>
         </MenuItem>
       );
@@ -725,7 +729,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
             id="display-attributes"
             style={{lineHeight: 1}}
             size="small">
-            <Icon type="appstore" />
+            <AppstoreFilled />
           </Button>
         </Dropdown>
       );
@@ -748,7 +752,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
           key="edit"
           className={styles.menuItem}
         >
-          <Icon type="edit" /> Edit
+          <EditOutlined /> Edit
         </MenuItem>
       );
     }
@@ -759,7 +763,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
           id="clone-pipeline-button"
           className={styles.menuItem}
         >
-          <Icon type="copy" /> Clone
+          <CopyOutlined /> Clone
         </MenuItem>
       );
     }
@@ -782,7 +786,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
             id="edit-pipeline-menu-button"
             style={{lineHeight: 1}}
             size="small">
-            <Icon type="setting" />
+            <SettingOutlined />
           </Button>
         </Dropdown>
       );

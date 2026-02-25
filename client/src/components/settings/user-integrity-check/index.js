@@ -22,7 +22,6 @@ import {
   AutoComplete,
   Button,
   Checkbox,
-  Icon,
   Input,
   message,
   Modal,
@@ -30,6 +29,7 @@ import {
   Select,
   Tooltip
 } from 'antd';
+import { CaretRightOutlined, ExclamationCircleOutlined, InfoCircleFilled, LockOutlined } from '@ant-design/icons';
 import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import updateUserMetadata from './update-user-metadata';
@@ -512,7 +512,7 @@ class UserIntegrityCheck extends React.Component {
               >
                 <span className={styles.userNameCell}>
                   {
-                    blocked && (<Icon type="lock" />)
+                    blocked && (<LockOutlined />)
                   }
                   <UserName userName={user.userName} />
                 </span>
@@ -531,10 +531,7 @@ class UserIntegrityCheck extends React.Component {
                         </ul>
                       )}
                     >
-                      <Icon
-                        type="exclamation-circle-o"
-                        className={classNames(styles.issues, 'cp-setting-warning')}
-                      />
+                      <ExclamationCircleOutlined className={classNames(styles.issues, 'cp-setting-warning')} />
                     </Tooltip>
                   )
                 }
@@ -608,19 +605,14 @@ class UserIntegrityCheck extends React.Component {
                                   <div>This is linked value</div>
                                   <div className={styles.linkDescription}>
                                     <span>{fieldParentLink.from}:{fieldParentLink.fromValue}</span>
-                                    <Icon
-                                      type="caret-right"
-                                    />
+                                    <CaretRightOutlined />
                                     <span>{fieldParentLink.to}:{fieldParentLink.toValue}</span>
                                   </div>
                                 </div>
                               )}
                               getPopupContainer={node => node.parentNode}
                             >
-                              <Icon
-                                className={styles.cellInfo}
-                                type="info-circle"
-                              />
+                              <InfoCircleFilled className={styles.cellInfo} />
                             </Tooltip>
                           )
                         }

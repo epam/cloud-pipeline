@@ -16,9 +16,15 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
+import {
+  observer} from 'mobx-react';
 import classNames from 'classnames';
-import {Row, Button, Dropdown, Input, Icon} from 'antd';
+import {Row,
+  Button,
+  Dropdown,
+  Input
+} from 'antd';
+import { LoadingOutlined } from '@ant-design/icons';
 import styles from './Selectors.css';
 import compareArrays from '../../../utils/compareArrays';
 
@@ -53,7 +59,7 @@ export default class ToolGroupSelector extends React.Component {
 
   render () {
     if (this.props.groups && this.props.groups.length === 0 && !this.state.value) {
-      return <Icon type="loading" />;
+      return <LoadingOutlined />;
     }
     const renderGroupName = (group) => {
       if (group.privateGroup) {

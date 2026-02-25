@@ -22,11 +22,11 @@ import {inject, observer} from 'mobx-react';
 import moment from 'moment-timezone';
 import {
   Alert,
-  Icon,
   Tooltip,
   message,
   Spin
 } from 'antd';
+import {CaretUpOutlined, CaretDownOutlined} from '@ant-design/icons';
 import roleModel from '../../../../utils/roleModel';
 import {GetBillingData} from '../../../../models/billing';
 import {Period, getPeriod} from '../../../special/periods';
@@ -48,10 +48,9 @@ function renderStatistics (percent) {
           'cp-success': percent < 0
         })}
       >
-        <Icon
-          type={percent > 0 ? 'caret-up' : 'caret-down'}
-          style={{marginRight: '5px'}}
-        />
+        {percent > 0
+          ? <CaretUpOutlined style={{marginRight: '5px'}} />
+          : <CaretDownOutlined style={{marginRight: '5px'}} />}
         <span>
           {`${percent > 0 ? '+' : ''}${percent}%`}
         </span>

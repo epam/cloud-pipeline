@@ -15,8 +15,11 @@
  */
 
 import React from 'react';
-import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {computed,
+  observable} from 'mobx';
 import PropTypes from 'prop-types';
 import {
   Button,
@@ -24,13 +27,13 @@ import {
   Col,
   Collapse,
   Form,
-  Icon,
   Input,
   Modal,
   Row,
   Select,
   Tag
 } from 'antd';
+import { SettingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 
 import ToolEndpointsFormItem from '../elements/ToolEndpointsFormItem';
@@ -1679,7 +1682,7 @@ export default class EditToolForm extends React.Component {
                           className={classNames('cp-text', 'underline')}
                           style={{textDecoration: 'underline'}}
                         >
-                          <Icon type="setting" />{' '}
+                          <SettingOutlined />{' '}
                           {ConfigureClusterDialog.getConfigureClusterButtonDescription(this)}
                         </a>
                       </Row>

@@ -17,7 +17,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {
-  Icon,
   Dropdown,
   Menu,
   message,
@@ -26,6 +25,7 @@ import {
   Spin,
   Alert
 } from 'antd';
+import { DownOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import {computed, reaction} from 'mobx';
 import {inject, observer} from 'mobx-react';
@@ -436,7 +436,7 @@ class GPUInfoTab extends React.Component {
             </Menu>
           )}>
           <Button>
-            Set range <Icon type="down" />
+            Set range <DownOutlined />
           </Button>
         </Dropdown>
         <Divider />
@@ -499,7 +499,7 @@ class GPUInfoTab extends React.Component {
               <span>GPU:</span>
               <Dropdown overlay={gpuMenu}>
                 <a>
-                  {this.state.selectedGPU} <Icon type="down" />
+                  {this.state.selectedGPU} <DownOutlined />
                 </a>
               </Dropdown>
             </div> */}
@@ -507,7 +507,7 @@ class GPUInfoTab extends React.Component {
               <span>Measure:</span>
               <Dropdown overlay={menu}>
                 <a>
-                  {`${measure[0].toUpperCase()}${measure.substring(1)}`} <Icon type="down" />
+                  {`${measure[0].toUpperCase()}${measure.substring(1)}`} <DownOutlined />
                 </a>
               </Dropdown>
             </div>

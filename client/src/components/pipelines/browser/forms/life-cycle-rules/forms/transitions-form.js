@@ -23,9 +23,9 @@ import {
   Select,
   Input,
   Button,
-  Icon,
   Alert
 } from 'antd';
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import moment from 'moment-timezone';
 import {DESTINATIONS} from '../modals';
 import styles from './life-cycle-forms.css';
@@ -264,7 +264,7 @@ class TransitionsForm extends React.Component {
                   className={styles.deleteTransitionBtn}
                   disabled={!this.removeTransitionsEnabled}
                 >
-                  <Icon type="delete" />
+                  <DeleteOutlined />
                 </Button>
               </div>
             );
@@ -274,7 +274,7 @@ class TransitionsForm extends React.Component {
             className={styles.addTransitionRuleBtn}
             disabled={this.limitTransitionsReached}
           >
-            <Icon type="plus" />
+            <PlusOutlined />
             Add
           </Button>
         </div>

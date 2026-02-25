@@ -17,9 +17,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {
-  Button,
-  Icon
+  Button
 } from 'antd';
+import { DownOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import {observer, inject} from 'mobx-react';
 import Menu, {MenuItem} from 'rc-menu';
@@ -189,7 +189,7 @@ class Parameters extends React.Component {
               id="add-typed-parameter-button"
               disabled={disabled || !editable}
             >
-              <Icon type="down" />
+              <DownOutlined />
             </Button>
           </Dropdown>
         </Button.Group>

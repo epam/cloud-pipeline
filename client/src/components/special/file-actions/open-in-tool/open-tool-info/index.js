@@ -17,13 +17,15 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
-import {Provider, inject} from 'mobx-react';
+import {
+  Provider,
+  inject} from 'mobx-react';
 import classNames from 'classnames';
 import {
   Button,
-  Icon,
   message
 } from 'antd';
+import { CopyOutlined, LoadingOutlined } from '@ant-design/icons';
 import {getMarkdownRenderer, processLinks} from '../../../markdown';
 import ToolJobLink from '../tool-job-link';
 import styles from './open-tool-info.css';
@@ -123,7 +125,7 @@ class OpenToolInfo extends React.Component {
           className={classNames(styles.part, styles.button)}
           onClick={copy}
         >
-          <Icon type="copy" />
+          <CopyOutlined />
         </div>
       </div>
     );
@@ -146,7 +148,7 @@ class OpenToolInfo extends React.Component {
     return (
       <span>
         {
-          activeJobsFetching && (<Icon type="loading" />)
+          activeJobsFetching && (<LoadingOutlined />)
         }
         {
           !activeJobsFetching && !!activeJob && (

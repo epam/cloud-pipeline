@@ -16,8 +16,13 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
-import {Button, Icon, Input, Select} from 'antd';
+import {
+  observer} from 'mobx-react';
+import {Button,
+  Input,
+  Select
+} from 'antd';
+import { DeleteOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import {
   getObjectProperties, ObjectProperty,
@@ -287,7 +292,7 @@ function OutputFormula (props) {
           style={{marginLeft: 5}}
           onClick={onRemove}
         >
-          <Icon type="delete" />
+          <DeleteOutlined />
         </Button>
       </div>
       {

@@ -16,13 +16,21 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import {computed} from 'mobx';
 import IssuesLoad from '../../../models/issues/IssuesLoad';
 import IssueCreate from '../../../models/issues/IssueCreate';
 import LoadingView from '../../special/LoadingView';
 import moment from 'moment-timezone';
-import {Button, Icon, message, Row, Table, Alert} from 'antd';
+import {Button,
+  message,
+  Row,
+  Table,
+  Alert
+} from 'antd';
+import { ArrowLeftOutlined } from '@ant-design/icons';
 import Issue from './Issue';
 import EditIssueForm from './controls/EditIssueForm';
 import {processUnusedAttachments} from './utilities/UnusedAttachmentsProcessor';
@@ -223,7 +231,7 @@ export default class Issues extends localization.LocalizedReactComponent {
                   size="small"
                   onClick={this.props.onNavigateBack}
                   style={{marginLeft: 2, marginRight: 5}}>
-                  <Icon type="arrow-left" />
+                  <ArrowLeftOutlined />
                 </Button>
               }
               {

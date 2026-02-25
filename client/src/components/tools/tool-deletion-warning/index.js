@@ -17,7 +17,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
-import {Button, Checkbox, Icon, Modal, message, Row} from 'antd';
+import {Button, Checkbox, Modal, message, Row} from 'antd';
+import { ExclamationCircleFilled } from '@ant-design/icons';
 import LoadTool from '../../../models/tools/LoadTool';
 import dockerRegistries from '../../../models/tools/DockerRegistriesTree';
 import PipelineRunSingleFilter from '../../../models/pipelines/PipelineRunSingleFilter';
@@ -178,11 +179,7 @@ class ToolDeletionWarning extends React.Component {
         )}
       >
         <h2 style={{margin: 20}}>
-          <Icon
-            type="exclamation-circle"
-            className="cp-warning"
-            style={{marginRight: 10}}
-          />
+          <ExclamationCircleFilled className="cp-warning" style={{marginRight: 10}} />
           {title}
         </h2>
         {showGroupAlert && this.renderGroupAlert()}

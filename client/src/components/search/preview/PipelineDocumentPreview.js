@@ -19,6 +19,7 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {Icon, Row} from 'antd';
+import { CaretRightOutlined, ForkOutlined, LoadingOutlined, TagFilled } from '@ant-design/icons';
 import classNames from 'classnames';
 import Papa from 'papaparse';
 import VersionFile from '../../../models/pipelines/VersionFile';
@@ -138,7 +139,7 @@ export default class PipelineDocumentPreview extends React.Component {
     if (this.props.pipeline && this.props.pipeline.loaded) {
       paths.push(
         <span>
-          <Icon type="fork" />
+          <ForkOutlined />
           {this.props.pipeline.value.name}
         </span>
       );
@@ -146,7 +147,7 @@ export default class PipelineDocumentPreview extends React.Component {
     if (this.props.version) {
       paths.push(
         <span>
-          <Icon type="tag" />
+          <TagFilled />
           {this.props.version}
         </span>
       );
@@ -155,7 +156,7 @@ export default class PipelineDocumentPreview extends React.Component {
     return paths.reduce((result, current, index, arr) => {
       result.push(<span key={index * 2} style={{marginRight: 0}}>{current}</span>);
       if (index < arr.length - 1) {
-        result.push(<Icon key={index * 2 + 1} type="caret-right" />);
+        result.push(<CaretRightOutlined key={index * 2 + 1} />);
       }
       return result;
     }, []);
@@ -168,7 +169,7 @@ export default class PipelineDocumentPreview extends React.Component {
     if (this.props.preview.pending) {
       return (
         <Row type="flex" justify="center">
-          <Icon type="loading" />
+          <LoadingOutlined />
         </Row>
       );
     }
@@ -270,7 +271,7 @@ export default class PipelineDocumentPreview extends React.Component {
       if (this.props.downloadUrl.pending) {
         return (
           <Row className={styles.contentPreview} type="flex" justify="center">
-            <Icon type="loading" />
+            <LoadingOutlined />
           </Row>
         );
       }

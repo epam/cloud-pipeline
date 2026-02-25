@@ -15,10 +15,19 @@
  */
 
 import React from 'react';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import {computed} from 'mobx';
 import classNames from 'classnames';
-import {Alert, Menu as TabMenu, message, Row, Button, Icon, Col} from 'antd';
+import {Alert,
+  Menu as TabMenu,
+  message,
+  Row,
+  Button,
+  Col
+} from 'antd';
+import { DownOutlined, SettingOutlined } from '@ant-design/icons';
 import Menu, {MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import {graphIsSupportedForLanguage} from './graph/visualization';
@@ -415,7 +424,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
           </Button>
           <Dropdown overlay={configurationsMenu} placement="bottomRight">
             <Button size="small" id="run-dropdown-button" type="primary">
-              <Icon type="down" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
+              <DownOutlined style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
             </Button>
           </Dropdown>
         </Button.Group>
@@ -488,7 +497,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
               onClick={this.toggleModal}
               style={{lineHeight: 1}}
               size="small">
-              <Icon type="setting" />
+              <SettingOutlined />
             </Button>
             <GitRepositoryControl
               overlayClassName={browserStyles.gitRepositoryPopover}

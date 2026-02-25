@@ -22,9 +22,9 @@ import {
   Radio,
   Upload,
   Button,
-  Icon,
   message
 } from 'antd';
+import { UploadOutlined } from '@ant-design/icons';
 import Markdown from '../../../markdown';
 import blobFilesToBase64 from '../utilities/blob-files-to-base64';
 
@@ -219,7 +219,7 @@ export default class CommentEditor extends React.Component {
                 disabled={disabled}
               >
                 <Button style={{borderRadius: '0 0 4px 4px'}}>
-                  <Icon type="upload" /> Upload attachment
+                  <UploadOutlined /> Upload attachment
                 </Button>
               </Upload>
             </div>

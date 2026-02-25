@@ -1,12 +1,16 @@
 import React from 'react';
-import {Link} from 'react-router';
+import {
+  Link} from 'react-router';
 import {generateRunInstanceParameterValueComponent} from './common';
 import {
   CP_CAP_REQUESTS_CPU,
   CP_CAP_REQUESTS_GPU,
   CP_CAP_REQUESTS_RAM
 } from '../../../../../pipelines/launch/form/utilities/parameters';
-import {Dropdown, Icon, Menu} from 'antd';
+import {Dropdown,
+  Menu
+} from 'antd';
+import { DownOutlined } from '@ant-design/icons';
 
 const RunIpAddress = generateRunInstanceParameterValueComponent(
   'nodeIP',
@@ -76,7 +80,7 @@ const RunIpAddress = generateRunInstanceParameterValueComponent(
         return (
           <Dropdown overlay={menu}>
             <a>
-              {content} <Icon type="down" />
+              {content} <DownOutlined />
             </a>
           </Dropdown>
         );

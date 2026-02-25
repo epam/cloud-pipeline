@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Icon} from 'antd';
+import { CloseOutlined } from '@ant-design/icons';
 import styles from './cwl-properties.css';
 
 class CWLProperties extends React.PureComponent {
@@ -82,11 +82,7 @@ class CWLProperties extends React.PureComponent {
           }
         >
           <span>{propertiesConfig.title}</span>
-          <Icon
-            type="close"
-            className={styles.propertiesPanelHeaderCloseButton}
-            onClick={this.closePropertiesPanel}
-          />
+          <CloseOutlined className={styles.propertiesPanelHeaderCloseButton} onClick={this.closePropertiesPanel} />
         </div>
         <div
           className={styles.propertiesPanelContent}

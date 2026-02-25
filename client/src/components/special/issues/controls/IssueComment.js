@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Mentions, Row, Tabs, Icon} from 'antd';
+import {Mentions, Row, Tabs} from 'antd';
+import { ForkOutlined, HddOutlined, InboxOutlined, SettingOutlined, ToolOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import {ItemTypes} from '../../../pipelines/model/treeStructureFunctions';
 import IssueCommentPreview from './IssueCommentPreview';
@@ -87,16 +88,13 @@ export default class IssueComment extends React.Component {
   linkFindPromise = async (search, fetchId) => {
     const renderIcon = (type) => {
       switch (type) {
-        case ItemTypes.pipeline: return <Icon type="fork" />;
+        case ItemTypes.pipeline: return <ForkOutlined />;
         case ItemTypes.versionedStorage: return (
-          <Icon
-            type="inbox"
-            className="cp-versioned-storage"
-          />
+          <InboxOutlined className="cp-versioned-storage" />
         );
-        case ItemTypes.configuration: return <Icon type="setting" />;
-        case ItemTypes.storage: return <Icon type="hdd" />;
-        case 'tool': return <Icon type="tool" />;
+        case ItemTypes.configuration: return <SettingOutlined />;
+        case ItemTypes.storage: return <HddOutlined />;
+        case 'tool': return <ToolOutlined />;
       }
       return undefined;
     };

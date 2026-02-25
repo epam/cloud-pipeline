@@ -16,8 +16,14 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
-import {Button, Dropdown, Icon, message} from 'antd';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {Button,
+  Dropdown,
+  message
+} from 'antd';
+import { CameraFilled, DownloadOutlined } from '@ant-design/icons';
 import Menu, {MenuItem} from 'rc-menu';
 import FileSaver from 'file-saver';
 import {
@@ -156,7 +162,7 @@ class HCSDownloadButton extends React.Component {
           {
             showTitle
               ? ('Download current video')
-              : (<Icon type="download" className="cp-larger" />)
+              : (<DownloadOutlined className="cp-larger" />)
           }
         </Button>
       );
@@ -173,7 +179,7 @@ class HCSDownloadButton extends React.Component {
           {
             showTitle
               ? ('Download current image')
-              : (<Icon type="camera" className="cp-larger" />)
+              : (<CameraFilled className="cp-larger" />)
           }
         </Button>
       );
@@ -240,7 +246,7 @@ class HCSDownloadButton extends React.Component {
           overlay={this.renderScreenshotMenu(menuItems)}
           size={size}
         >
-          <Icon type="camera" className="cp-larger" />
+          <CameraFilled className="cp-larger" />
         </Dropdown.Button>
       );
     }
@@ -252,7 +258,7 @@ class HCSDownloadButton extends React.Component {
         onClick={this.handleDownloadScreenshot}
         size={size}
       >
-        <Icon type="camera" className="cp-larger" />
+        <CameraFilled className="cp-larger" />
       </Button>
     );
   }

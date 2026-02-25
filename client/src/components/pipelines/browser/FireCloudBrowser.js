@@ -16,9 +16,19 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import {computed} from 'mobx';
-import {Alert, Avatar, Button, Col, Icon, Input, Row, Select} from 'antd';
+import {Alert,
+  Avatar,
+  Button,
+  Col,
+  Input,
+  Row,
+  Select
+} from 'antd';
+import { ForkOutlined, LeftOutlined } from '@ant-design/icons';
 import LoadingView from '../../special/LoadingView';
 import FireCloudMethodsBrowser from './FireCloudMethodsBrowser';
 import FireCloudMethodSnapshotConfigurations from './FireCloudMethodSnapshotConfigurations';
@@ -218,9 +228,9 @@ export default class FireCloudBrowser extends React.Component {
                     selectedMethodConfigurationSnapshot: null
                   });
                 }}>
-                <Icon type="left" />
+                <LeftOutlined />
               </Button>
-              <Icon type="fork" style={{color: '#2796dd', margin: '0px 5px'}} />
+              <ForkOutlined style={{color: '#2796dd', margin: '0px 5px'}} />
               {this.state.selectedMethod}
               {
                 this.snapshots &&

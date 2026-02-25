@@ -24,6 +24,7 @@ import {
   InputNumber,
   Select
 } from 'antd';
+import { MinusCircleOutlined } from '@ant-design/icons';
 import {observer} from 'mobx-react';
 import Hint from './hint';
 import BucketBrowser from '../../BucketBrowser';
@@ -348,11 +349,7 @@ class Parameter extends React.Component {
         >
           {
             removeAllowed && (
-              <Icon
-                type="minus-circle-o"
-                className={styles.button}
-                onClick={remove}
-              />
+              <MinusCircleOutlined className={styles.button} onClick={remove} />
             )
           }
           {

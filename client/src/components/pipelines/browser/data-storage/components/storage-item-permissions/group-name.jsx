@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Icon} from 'antd';
+import { TeamOutlined } from '@ant-design/icons';
 
 export function getGroupName (group, removePrefix = false) {
   let groupName = group;
@@ -25,7 +25,7 @@ function GroupName (props) {
   return (
     <span className={className} style={style}>
       {
-        showIcon && <Icon type="team" />
+        showIcon && <TeamOutlined />
       }
       <span>{groupName}</span>
     </span>

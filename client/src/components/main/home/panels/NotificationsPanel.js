@@ -16,10 +16,17 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import {computed} from 'mobx';
 import LoadingView from '../../../special/LoadingView';
-import {Alert, Card, Col, Icon, Row} from 'antd';
+import {Alert,
+  Card,
+  Col,
+  Row
+} from 'antd';
+import { CloseCircleOutlined, ExclamationCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import displayDate from '../../../../utils/displayDate';
 import Markdown from '../../../special/markdown';
 import {PredefinedNotifications} from '../../notification/NotificationCenter';
@@ -57,21 +64,15 @@ export default class NotificationsPanel extends React.Component {
     switch (notification.severity) {
       case 'INFO':
         return (
-          <Icon
-            className="cp-notification-status-info"
-            type="info-circle-o" />
+          <InfoCircleOutlined className="cp-notification-status-info" />
         );
       case 'WARNING':
         return (
-          <Icon
-            className="cp-notification-status-warning"
-            type="exclamation-circle-o" />
+          <ExclamationCircleOutlined className="cp-notification-status-warning" />
         );
       case 'CRITICAL':
         return (
-          <Icon
-            className="cp-notification-status-critical"
-            type="close-circle-o" />
+          <CloseCircleOutlined className="cp-notification-status-critical" />
         );
       default: return undefined;
     }

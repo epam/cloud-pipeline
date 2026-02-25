@@ -40,6 +40,7 @@ import {
   Row,
   Select
 } from 'antd';
+import { ArrowsAltOutlined, CheckOutlined, CloseOutlined, DeleteOutlined, LeftOutlined, PlusOutlined } from '@ant-design/icons';
 import ItemsTable, {isJson} from './items-table';
 import styles from './Metadata.css';
 import {SplitPanel} from '../splitPanel';
@@ -1036,7 +1037,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
                     type="danger"
                     size="small"
                     onClick={() => this.confirmDeleteKey(metadataItem)}>
-                    <Icon type="delete" />
+                    <DeleteOutlined />
                   </Button>
                 </td>
               )
@@ -1461,13 +1462,13 @@ export default class Metadata extends localization.LocalizedReactComponent {
               onClick={this.saveMetadata({})}
               disabled={readOnly}
             >
-              <Icon type="check" /> Add
+              <CheckOutlined /> Add
             </Button>
             <Button
               id="cancel-add-metadata-item-button"
               size="small"
               onClick={addKeyCancelClicked}>
-              <Icon type="close" /> Cancel
+              <CloseOutlined /> Cancel
             </Button>
           </td>
         </tr>
@@ -1568,7 +1569,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
             <Button
               onClick={this.props.openEditFileForm}
               size="small" style={{border: 'none'}}>
-              <Icon type="arrows-alt" />
+              <ArrowsAltOutlined />
             </Button>
           </Col>
         </Row>
@@ -1702,7 +1703,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
             style={{marginRight: 5}}
             size="small"
             onClick={this.props.onNavigateBack}>
-            <Icon type="left" />
+            <LeftOutlined />
           </Button>
         );
         titleParts.push(<b key="entity name">{this.props.entityName}</b>);
@@ -1725,7 +1726,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
             key="add button"
             size="small"
             onClick={addKeyClicked}>
-            <Icon type="plus" /> Add
+            <PlusOutlined /> Add
           </Button>
         );
       }
@@ -1742,7 +1743,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
             size="small"
             type="danger"
             onClick={this.confirmDeleteMetadata}>
-            <Icon type="delete" /> Remove all
+            <DeleteOutlined /> Remove all
           </Button>
         );
       }

@@ -16,9 +16,18 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
-import {computed, isObservableArray} from 'mobx';
-import {Slider, Select, Checkbox, Popover, Button, Icon} from 'antd';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {computed,
+  isObservableArray} from 'mobx';
+import {Slider,
+  Select,
+  Checkbox,
+  Popover,
+  Button
+} from 'antd';
+import { DownOutlined } from '@ant-design/icons';
 import displaySize from '../../../../utils/displaySize';
 import styles from './hcs-3d-button.css';
 import classNames from "classnames";
@@ -276,7 +285,7 @@ export default class HCS3DButton extends React.Component {
             borderBottomLeftRadius: '0px',
             borderTopLeftRadius: '0px'
           }}>
-            <Icon type="down" />
+            <DownOutlined />
           </Button>
         </Popover>
       </div>

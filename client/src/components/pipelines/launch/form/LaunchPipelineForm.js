@@ -35,6 +35,7 @@ import {
   Select,
   Spin
 } from 'antd';
+import { CodeFilled, DownOutlined, ExportOutlined, InfoCircleFilled, PlayCircleOutlined, SettingOutlined } from '@ant-design/icons';
 import styles from './LaunchPipelineForm.css';
 import Menu, {MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
@@ -2137,10 +2138,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             placement="bottom"
             content={infoContent}
             trigger="hover">
-            <Icon
-              className={styles.hint}
-              type="info-circle"
-            />
+            <InfoCircleFilled className={styles.hint} />
           </Popover>
         ) : null}
       </span>
@@ -2439,7 +2437,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               className={styles.pathType}
               onClick={!(this.props.readOnly && !this.props.canExecute) &&
               this.openPipelineBrowser}>
-              <Icon type="export" />
+              <ExportOutlined />
             </div>
           }
           addonAfter={isLatestVersion ? (
@@ -4204,7 +4202,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               this.currentUserName() !== this.props.parameters.run_as
             }
             dockerImage={this.dockerImage}>
-            Run <Icon type="down" />
+            Run <DownOutlined />
           </SubmitButton>
         </Dropdown>
       );
@@ -4812,10 +4810,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         >
           <Checkbox checked={this.state.isRawEditEnabled}>
             Raw edit
-            <Icon
-              type="info-circle"
-              style={{marginLeft: 5}}
-            />
+            <InfoCircleFilled style={{marginLeft: 5}} />
           </Checkbox>
         </Popover>
       </div>
@@ -4925,7 +4920,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                     style={{marginRight: 5}}
                     onClick={this.showLaunchCommands}
                   >
-                    <Icon type="code" />
+                    <CodeFilled />
                   </Button>
                 )
               }
@@ -5028,10 +5023,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             marginRight: 5
           }}
         >
-          <Icon
-            type="play-circle-o"
-            className="cp-primary"
-          />
+          <PlayCircleOutlined className="cp-primary" />
           <span style={{whiteSpace: 'pre'}}>Launch </span>
           <RunName
             style={{fontWeight: 'bold'}}
@@ -5260,7 +5252,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                             className="cp-text underline"
                             style={{marginLeft: 'auto', marginRight: '30px'}}
                           >
-                            <Icon type="setting" />
+                            <SettingOutlined />
                             {ConfigureClusterDialog.getConfigureClusterButtonDescription(this)}
                           </a>
                         ) : null}
