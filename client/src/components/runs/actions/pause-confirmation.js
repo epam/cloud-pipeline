@@ -22,7 +22,7 @@ import {
   ConfigProvider,
   Modal
 } from 'antd';
-import enUS from 'antd/lib/locale-provider/en_US';
+import enUS from 'antd/lib/locale/en_US';
 import classNames from 'classnames';
 import {observer} from 'mobx-react';
 import PipelineRunInfo from '../../../models/pipelines/PipelineRunInfo';
