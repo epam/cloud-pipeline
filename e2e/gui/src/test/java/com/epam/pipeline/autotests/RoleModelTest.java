@@ -779,7 +779,7 @@ public class RoleModelTest
         loginAs(user);
         tools()
                 .performWithin(registry, group, tool, tool ->
-                        tool.ensure(RUN, visible)
+                        tool.ensureVisible(RUN)
                                 .ensure(editButtonFor(FULL_DESCRIPTION), visible)
                                 .ensure(editButtonFor(SHORT_DESCRIPTION), visible)
 
