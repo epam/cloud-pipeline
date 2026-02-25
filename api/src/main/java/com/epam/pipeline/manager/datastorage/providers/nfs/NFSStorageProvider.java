@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,12 +38,19 @@ import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.access.DataAccessEvent;
 import com.epam.pipeline.entity.datastorage.access.DataAccessType;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
+import com.epam.pipeline.entity.metadata.MetadataEntry;
+import com.epam.pipeline.entity.metadata.PipeConfValue;
+import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.exception.ObjectNotFoundException;
+import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.manager.datastorage.FileShareMountManager;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoredListingContainer;
 import com.epam.pipeline.manager.datastorage.providers.StorageEventCollector;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Constants;
+import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -92,6 +99,7 @@ import static com.epam.pipeline.manager.datastorage.providers.nfs.NFSHelper.getN
  */
 @Service
 @Slf4j
+@SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NFSStorageProvider.class);
@@ -101,6 +109,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     private final FileShareMountManager shareMountManager;
     private final NFSStorageMounter nfsStorageMounter;
     private final AuthManager authManager;
+    private final MetadataManager metadataManager;
     private final Set<PosixFilePermission> filePermissions;
     private final Set<PosixFilePermission> folderPermissions;
     private final Integer groupUID;
@@ -110,6 +119,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
                               final FileShareMountManager shareMountManager,
                               final NFSStorageMounter nfsStorageMounter,
                               final AuthManager authManager,
+                              final MetadataManager metadataManager,
                               @Value("${data.storage.nfs.default.umask:0002}") final String fileShareUMask,
                               @Value("${data.storage.nfs.default.group.uid:}") final Integer groupUID,
                               final MessageHelper messageHelper,
@@ -119,6 +129,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
         this.shareMountManager = shareMountManager;
         this.nfsStorageMounter = nfsStorageMounter;
         this.authManager = authManager;
+        this.metadataManager = metadataManager;
         final Set<PosixFilePermission> allowedPermissionsFromUMask =
                 PosixPermissionUtils.getAllowedPermissionsFromUMask(fileShareUMask);
         // default mask for folders 777 -> no need for additional filtering
@@ -398,10 +409,11 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
             Files.setPosixFilePermissions(file.toPath(), permissions);
             if (!preferenceManager.getPreference(SystemPreferences.SYSTEM_SSH_DEFAULT_ROOT_USER_ENABLED)) {
                 Optional.ofNullable(authManager.getCurrentUser())
-                        .ifPresent(user ->
-                                nfsStorageMounter.chown(file, user,
-                                        preferenceManager.getPreference(SystemPreferences.LAUNCH_UID_SEED),
-                                        groupUID));
+                        .ifPresent(user -> {
+                            final Long userUID = resolveUid(user);
+                            final Long userGID = resolveGid(user, userUID);
+                            nfsStorageMounter.chown(file, userUID, userGID);
+                        });
             }
         }
     }
@@ -640,5 +652,77 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
         dataStorageFile.setName(file.getName());
         dataStorageFile.setPath(dataStorageRoot.toURI().relativize(file.toURI()).getPath());
         return dataStorageFile;
+    }
+
+    private Long resolveUid(final PipelineUser user) {
+        final Long defaultUserUID = user.getId() + preferenceManager.getPreference(SystemPreferences.LAUNCH_UID_SEED);
+        if (isExternalIdEnabled()) {
+            final String externalUidFieldName = preferenceManager.getPreference(
+                    SystemPreferences.LAUNCH_EXTERNAL_UID_FIELD_NAME);
+            if (StringUtils.isNotBlank(externalUidFieldName)) {
+                return resolveExternalId(user, externalUidFieldName).orElse(defaultUserUID);
+            }
+        }
+        return defaultUserUID;
+    }
+
+    private Long resolveGid(final PipelineUser user, final Long uid) {
+        final Long defaultGID = Optional.ofNullable(groupUID).map(Integer::longValue).orElse(uid);
+        if (isExternalIdEnabled()) {
+            final String externalGidFieldName = preferenceManager.getPreference(
+                    SystemPreferences.LAUNCH_EXTERNAL_GID_FIELD_NAME);
+            if (StringUtils.isNotBlank(externalGidFieldName)) {
+                return resolveExternalId(user, externalGidFieldName)
+                        .filter(gid -> userHasRoleWithGid(user, externalGidFieldName, gid))
+                        .orElse(defaultGID);
+            }
+        }
+        return defaultGID;
+    }
+
+    private boolean userHasRoleWithGid(final PipelineUser user, final String metadataKey, final Long gid) {
+        final List<Role> roles = user.getRoles();
+        if (roles == null || roles.isEmpty()) {
+            return false;
+        }
+        try {
+            final List<EntityVO> roleEntities = roles.stream()
+                    .map(role -> new EntityVO(role.getId(), AclClass.ROLE))
+                    .collect(Collectors.toList());
+            final List<MetadataEntry> metadata = metadataManager.listMetadataItemsByKey(metadataKey, roleEntities);
+            return metadata.stream()
+                    .filter(entry -> entry.getData() != null && entry.getData().containsKey(metadataKey))
+                    .map(entry -> entry.getData().get(metadataKey))
+                    .map(PipeConfValue::getValue)
+                    .filter(StringUtils::isNotBlank)
+                    .map(Long::parseLong)
+                    .anyMatch(gid::equals);
+        } catch (Exception e) {
+            LOGGER.warn("Failed to get GID {} for '{}' user roles: {}", gid, user.getUserName(), e.getMessage());
+            return false;
+        }
+    }
+
+    private boolean isExternalIdEnabled() {
+        return Boolean.TRUE.equals(preferenceManager.getPreference(SystemPreferences.LAUNCH_EXTERNAL_UID_ENABLE));
+    }
+
+    private Optional<Long> resolveExternalId(final PipelineUser user, final String metadataKey) {
+        try {
+            final EntityVO entityVO = new EntityVO(user.getId(), AclClass.PIPELINE_USER);
+            final List<MetadataEntry> metadata = metadataManager.listMetadataItemsByKey(
+                    metadataKey, Collections.singletonList(entityVO));
+            return metadata.stream()
+                    .filter(entry -> entry.getData() != null && entry.getData().containsKey(metadataKey))
+                    .map(entry -> entry.getData().get(metadataKey))
+                    .map(PipeConfValue::getValue)
+                    .filter(StringUtils::isNotBlank)
+                    .findFirst()
+                    .map(Long::parseLong);
+        } catch (Exception e) {
+            LOGGER.warn("Failed to resolve external ID from metadata key '{}' for user '{}': {}",
+                    metadataKey, user.getUserName(), e.getMessage());
+            return Optional.empty();
+        }
     }
 }
