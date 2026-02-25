@@ -94,7 +94,6 @@ import static com.epam.pipeline.manager.datastorage.providers.nfs.NFSHelper.getN
  */
 @Service
 @Slf4j
-@SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NFSStorageProvider.class);
