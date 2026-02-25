@@ -33,12 +33,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
 
-import static org.hamcrest.ArgumentMatchers.contains;
-import static org.hamcrest.ArgumentMatchers.containsInAnyOrder;
-import static org.hamcrest.ArgumentMatchers.hasSize;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.hamcrest.MatcherassertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 @ExtendWith(SpringExtension.class)
 @DataJpaTest

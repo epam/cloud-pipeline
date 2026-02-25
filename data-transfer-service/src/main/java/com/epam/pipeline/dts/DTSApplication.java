@@ -30,16 +30,15 @@ import org.springframework.boot.autoconfigure.thymeleaf.ThymeleafAutoConfigurati
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Import;
 
-@SpringBootApplication(
-        exclude = {ThymeleafAutoConfiguration.class})
+@SpringBootApplication(exclude = {ThymeleafAutoConfiguration.class})
 @Import({DataSourceConfiguration.class,
-        RestConfiguration.class,
-        CommonConfiguration.class,
-        JWTSecurityConfiguration.class,
-        ListingConfiguration.class,
-        TransferConfiguration.class,
-        SubmissionConfiguration.class,
-        SyncConfiguration.class})
+    RestConfiguration.class,
+    CommonConfiguration.class,
+    JWTSecurityConfiguration.class,
+    ListingConfiguration.class,
+    TransferConfiguration.class,
+    SubmissionConfiguration.class,
+    SyncConfiguration.class})
 @ComponentScan(basePackages = "com.epam.pipeline.dts.configuration")
 @SuppressWarnings("checkstyle:HideUtilityClassConstructor")
 public class DTSApplication {

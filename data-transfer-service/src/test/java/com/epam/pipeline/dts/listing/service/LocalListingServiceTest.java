@@ -44,7 +44,7 @@ import java.util.stream.Stream;
 import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.hamcrest.MatcherassertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class LocalListingServiceTest extends AbstractTransferTest {
     private static final String ROOT_FOLDER = "/root";

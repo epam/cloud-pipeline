@@ -56,8 +56,8 @@ import java.util.stream.Collectors;
 @EntityScan(basePackages = {"com.epam.pipeline.dts.transfer.model"})
 @EnableJpaRepositories(basePackages = {"com.epam.pipeline.dts.transfer.repository"})
 @ComponentScan(excludeFilters = {
-        @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = TransferRestConfiguration.class),
-        @ComponentScan.Filter(type = FilterType.ANNOTATION, value = Controller.class)})
+    @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = TransferRestConfiguration.class),
+    @ComponentScan.Filter(type = FilterType.ANNOTATION, value = Controller.class)})
 public class TransferConfiguration {
 
     @Bean

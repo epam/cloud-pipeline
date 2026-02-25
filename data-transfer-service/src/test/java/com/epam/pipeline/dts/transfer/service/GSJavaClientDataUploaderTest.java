@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 import java.nio.file.Path;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherassertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;

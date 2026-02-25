@@ -21,7 +21,7 @@ import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.authentication.AuthenticationServiceException;
 
-import jakarta.servlet.http.Cookie;
+import javax.servlet.http.Cookie;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 

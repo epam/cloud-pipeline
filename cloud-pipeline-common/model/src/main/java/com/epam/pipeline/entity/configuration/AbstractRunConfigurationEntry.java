@@ -32,14 +32,14 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @JsonTypeInfo(
-        use = JsonTypeInfo.Id.NAME,
-        include = JsonTypeInfo.As.PROPERTY,
-        property = "executionEnvironment",
-        defaultImpl = RunConfigurationEntry.class)
+    use = JsonTypeInfo.Id.NAME,
+    include = JsonTypeInfo.As.PROPERTY,
+    property = "executionEnvironment",
+    defaultImpl = RunConfigurationEntry.class)
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = FirecloudRunConfigurationEntry.class, name = "FIRECLOUD"),
-        @JsonSubTypes.Type(value = RunConfigurationEntry.class, name = "CLOUD_PLATFORM"),
-        @JsonSubTypes.Type(value = DtsRunConfigurationEntry.class, name = "DTS")})
+    @JsonSubTypes.Type(value = FirecloudRunConfigurationEntry.class, name = "FIRECLOUD"),
+    @JsonSubTypes.Type(value = RunConfigurationEntry.class, name = "CLOUD_PLATFORM"),
+    @JsonSubTypes.Type(value = DtsRunConfigurationEntry.class, name = "DTS")})
 public abstract class AbstractRunConfigurationEntry {
     private ExecutionEnvironment executionEnvironment;
     private String name;

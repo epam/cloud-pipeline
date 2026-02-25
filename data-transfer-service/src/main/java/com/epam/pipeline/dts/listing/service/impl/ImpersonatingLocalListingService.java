@@ -34,7 +34,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import jakarta.validation.constraints.NotNull;
+import javax.validation.constraints.NotNull;
 import java.nio.file.Path;
 import java.util.Optional;
 

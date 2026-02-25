@@ -29,8 +29,8 @@ import org.springframework.stereotype.Controller;
 
 @SpringBootConfiguration
 @ComponentScan(excludeFilters = {
-        @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = ListingRestConfiguration.class),
-        @ComponentScan.Filter(type = FilterType.ANNOTATION, value = Controller.class)})
+    @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = ListingRestConfiguration.class),
+    @ComponentScan.Filter(type = FilterType.ANNOTATION, value = Controller.class)})
 public class ListingConfiguration {
 
     @Bean

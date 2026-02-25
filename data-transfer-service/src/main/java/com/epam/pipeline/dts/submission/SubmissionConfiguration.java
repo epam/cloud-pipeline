@@ -42,8 +42,8 @@ import org.thymeleaf.templateresolver.ITemplateResolver;
 @EntityScan(basePackages = {"com.epam.pipeline.dts.submission.model"})
 @EnableJpaRepositories(basePackages = {"com.epam.pipeline.dts.submission.repository"})
 @ComponentScan(excludeFilters = {
-        @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = SubmissionRestConfiguration.class),
-        @ComponentScan.Filter(type = FilterType.ANNOTATION, value = Controller.class)})
+    @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = SubmissionRestConfiguration.class),
+    @ComponentScan.Filter(type = FilterType.ANNOTATION, value = Controller.class)})
 @Import({JWTSecurityConfiguration.class, CommonConfiguration.class})
 @EnableScheduling
 public class SubmissionConfiguration {

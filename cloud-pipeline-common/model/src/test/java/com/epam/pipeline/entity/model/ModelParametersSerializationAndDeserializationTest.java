@@ -30,7 +30,7 @@ import java.util.Collections;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherassertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ModelParametersSerializationAndDeserializationTest {
 

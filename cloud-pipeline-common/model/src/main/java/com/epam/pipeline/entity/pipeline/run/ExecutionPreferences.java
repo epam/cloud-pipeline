@@ -22,14 +22,14 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 @JsonTypeInfo(
-        use = JsonTypeInfo.Id.NAME,
-        include = JsonTypeInfo.As.PROPERTY,
-        property = "environment",
-        defaultImpl = CloudPlatformPreferences.class)
+    use = JsonTypeInfo.Id.NAME,
+    include = JsonTypeInfo.As.PROPERTY,
+    property = "environment",
+    defaultImpl = CloudPlatformPreferences.class)
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = FirecloudPreferences.class, name = "FIRECLOUD"),
-        @JsonSubTypes.Type(value = CloudPlatformPreferences.class, name = "CLOUD_PLATFORM"),
-        @JsonSubTypes.Type(value = DtsExecutionPreferences.class, name = "DTS")})
+    @JsonSubTypes.Type(value = FirecloudPreferences.class, name = "FIRECLOUD"),
+    @JsonSubTypes.Type(value = CloudPlatformPreferences.class, name = "CLOUD_PLATFORM"),
+    @JsonSubTypes.Type(value = DtsExecutionPreferences.class, name = "DTS")})
 public interface ExecutionPreferences {
 
     @JsonIgnore

@@ -21,7 +21,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import jakarta.persistence.Embeddable;
+import javax.persistence.Embeddable;
 
 @Data
 @NoArgsConstructor
