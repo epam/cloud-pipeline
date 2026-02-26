@@ -20,7 +20,7 @@ import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import classNames from 'classnames';
 import {SERVER} from '../../../config';
-import {Button, Icon, message, Popover, Tooltip} from 'antd';
+import {Button, message, Popover, Tooltip} from 'antd';
 import {LeftOutlined, RightOutlined} from '@ant-design/icons';
 import PropTypes from 'prop-types';
 import PipelineRunInfo from '../../../models/pipelines/PipelineRunInfo';
@@ -186,6 +186,7 @@ export default class Navigation extends React.Component {
             />
           );
         }
+        const NavIcon = navigationItem.icon;
         if (navigationItem.key === Pages.billing && !this.props.billingEnabled) {
           return null;
         }
@@ -204,10 +205,7 @@ export default class Navigation extends React.Component {
                 text={this.getNavigationItemTitle(navigationItem.title)}
                 mouseEnterDelay={0.5}
                 overlay={this.getNavigationItemTitle(navigationItem.title)}>
-                <Icon
-                  style={navigationItem.iconStyle}
-                  type={navigationItem.icon}
-                />
+                {NavIcon ? <NavIcon style={navigationItem.iconStyle} /> : null}
               </Tooltip>
             </Link>
           );
@@ -259,10 +257,7 @@ export default class Navigation extends React.Component {
                 text={this.getNavigationItemTitle(navigationItem.title)}
                 mouseEnterDelay={0.5}
                 overlay={this.getNavigationItemTitle(navigationItem.title)}>
-                <Icon
-                  style={navigationItem.iconStyle}
-                  type={navigationItem.icon}
-                />
+                {NavIcon ? <NavIcon style={navigationItem.iconStyle} /> : null}
               </Tooltip>
             </Link>
           );
@@ -280,10 +275,7 @@ export default class Navigation extends React.Component {
               className={this.menuItemClassSelector(navigationItem, activeTabPath)}
               onClick={() => this.navigate(navigationItem)}
             >
-              <Icon
-                style={navigationItem.iconStyle}
-                type={navigationItem.icon}
-              />
+              {NavIcon ? <NavIcon style={navigationItem.iconStyle} /> : null}
             </Button>
           </Tooltip>
         );

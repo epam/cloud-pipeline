@@ -1046,6 +1046,17 @@ class VSIPreview extends React.Component {
             });
         });
     };
+    const icon = fullscreen ? (
+      <ShrinkOutlined
+        onClick={goFullScreen}
+        className={styles.vsiPreviewFullscreenButton}
+      />
+    ) : (
+      <ArrowsAltOutlined
+        onClick={goFullScreen}
+        className={styles.vsiPreviewFullscreenButton}
+      />
+    );
     return (
       <div
         onClick={() => {
@@ -1075,17 +1086,7 @@ class VSIPreview extends React.Component {
         >
         </div>
         {
-          fullScreenAvailable && (
-            {fullscreen
-              ? <ShrinkOutlined
-                  onClick={goFullScreen}
-                  className={styles.vsiPreviewFullscreenButton}
-                />
-              : <ArrowsAltOutlined
-                  onClick={goFullScreen}
-                  className={styles.vsiPreviewFullscreenButton}
-                />}
-          )
+          fullScreenAvailable && icon
         }
         <div
           className={styles.vsiPreviewButtonContainer}

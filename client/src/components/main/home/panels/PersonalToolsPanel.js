@@ -16,9 +16,18 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import {Alert,
+  Button,
+  Col,
+  message,
+  Modal,
+  Row
+} from 'antd';
+import {CaretRightOutlined, PlayCircleOutlined} from '@ant-design/icons';
 import {
   inject,
-  observer} from 'mobx-react';
+  observer
+} from 'mobx-react';
 import {computed} from 'mobx';
 import LoadTool from '../../../../models/tools/LoadTool';
 import AllowedInstanceTypes from '../../../../models/utils/AllowedInstanceTypes';
@@ -31,14 +40,6 @@ import {getVersionRunningInfo} from '../../../tools/utils';
 import LoadingView from '../../../special/LoadingView';
 import roleModel from '../../../../utils/roleModel';
 import highlightText from '../../../special/highlightText';
-import {Alert,
-  Button,
-  Col,
-  message,
-  Modal,
-  Row
-} from 'antd';
-import {CaretRightOutlined} from '@ant-design/icons';
 import {
   getInputPaths,
   getOutputPaths,
@@ -704,7 +705,7 @@ export default class PersonalToolsPanel extends React.Component {
     if (roleModel.executeAllowed(tool)) {
       return [{
         title: 'RUN',
-        icon: 'play-circle-o',
+        icon: PlayCircleOutlined,
         action: this.onRunToolClicked
       }];
     }

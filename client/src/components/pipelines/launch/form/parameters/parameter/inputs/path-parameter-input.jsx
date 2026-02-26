@@ -2,16 +2,16 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import styles from './launch-form-parameter-input.css';
-import {Icon} from 'antd';
+import {DownloadOutlined, FolderOutlined, SelectOutlined, UploadOutlined} from '@ant-design/icons';
 import BucketBrowser from '../../../../dialogs/BucketBrowser';
 import MetadataAutoComplete from './metadata-auto-complete';
 
 function getIcon (pathType) {
   switch (pathType) {
-    case 'input': return 'download';
-    case 'output': return 'upload';
-    case 'common': return 'select';
-    default: return 'folder';
+    case 'input': return DownloadOutlined;
+    case 'output': return UploadOutlined;
+    case 'common': return SelectOutlined;
+    default: return FolderOutlined;
   }
 }
 
@@ -64,7 +64,7 @@ class LaunchFormPathParameterInput extends React.PureComponent {
     if (typeof pathType !== 'string' || !['path', 'common', 'input', 'output'].includes(pathType)) {
       pathType = 'path';
     }
-    const icon = getIcon(pathType);
+    const IconComponent = getIcon(pathType);
     const onPathChange = (path) => {
       if (typeof onChange === 'function') {
         onChange(path || '');
@@ -95,7 +95,7 @@ class LaunchFormPathParameterInput extends React.PureComponent {
             <div
               className={styles.launchParameterPathInputAddon}
               onClick={onAddonClick}>
-              <Icon type={icon} />
+              <IconComponent />
             </div>
           )}
           placeholder="Path"

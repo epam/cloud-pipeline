@@ -19,7 +19,6 @@ import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
 import {Link} from 'react-router';
-import {Icon} from 'antd';
 import {CaretRightOutlined, LoadingOutlined, LockOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import EditableField from './EditableField';
@@ -48,7 +47,7 @@ export default class Breadcrumbs extends React.Component {
     onSaveEditableField: PropTypes.func,
     onNavigate: PropTypes.func,
     displayTextEditableField: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
-    icon: PropTypes.string,
+    icon: PropTypes.elementType,
     iconClassName: PropTypes.string,
     lock: PropTypes.bool,
     lockClassName: PropTypes.string,
@@ -164,10 +163,12 @@ export default class Breadcrumbs extends React.Component {
         {
           this.items.map((item, index, array) => {
             const isLast = index === array.length - 1;
-            const icon = item.icon ? (
-              <Icon
-                type={item.icon}
-                className={classNames(item.iconClassName, {'cp-sensitive': item.sensitive})}
+            const ItemComponent = item.icon;
+            const icon = ItemComponent ? (
+              <ItemComponent
+                className={classNames(item.iconClassName, {
+                  'cp-sensitive': item.sensitive
+                })}
                 style={{marginRight: 5}}
               />
             ) : null;
@@ -222,7 +223,15 @@ export default class Breadcrumbs extends React.Component {
                   {lock}
                   {item.name}
                 </div>,
-                <CaretRightOutlined key={`divider-${index}`} style={{ lineHeight: 2, verticalAlign: 'middle', margin: '0px 5px', fontSize: 'small' }} />
+                <CaretRightOutlined
+                  key={`divider-${index}`}
+                  style={{
+                    lineHeight: 2,
+                    verticalAlign: 'middle',
+                    margin: '0px 5px',
+                    fontSize: 'small'
+                  }}
+                />
               ];
             }
             return [
@@ -237,7 +246,15 @@ export default class Breadcrumbs extends React.Component {
                 {lock}
                 {item.name}
               </Link>,
-              <CaretRightOutlined key={`divider-${index}`} style={{ lineHeight: 2, verticalAlign: 'middle', margin: '0px 5px', fontSize: 'small' }} />
+              <CaretRightOutlined
+                key={`divider-${index}`}
+                style={{
+                  lineHeight: 2,
+                  verticalAlign: 'middle',
+                  margin: '0px 5px',
+                  fontSize: 'small'
+                }}
+              />
             ];
           }).reduce((result, itemsArray) => {
             result.push(...itemsArray.filter(i => !!i));

@@ -19,12 +19,17 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {
   Checkbox,
-  Icon,
   Input,
   InputNumber,
   Select
 } from 'antd';
-import {MinusCircleOutlined} from '@ant-design/icons';
+import {
+  DownloadOutlined,
+  FolderOutlined,
+  MinusCircleOutlined,
+  SelectOutlined,
+  UploadOutlined
+} from '@ant-design/icons';
 import {observer} from 'mobx-react';
 import Hint from './hint';
 import BucketBrowser from '../../BucketBrowser';
@@ -256,12 +261,12 @@ class Parameter extends React.Component {
         case 'path':
         case 'output':
         case 'common':
-          let icon = 'folder';
+          let IconComponent = FolderOutlined;
           switch (typeCorrected) {
-            case 'input': icon = 'download'; break;
-            case 'output': icon = 'upload'; break;
-            case 'common': icon = 'select'; break;
-            default: icon = 'folder'; break;
+            case 'input': IconComponent = DownloadOutlined; break;
+            case 'output': IconComponent = UploadOutlined; break;
+            case 'common': IconComponent = SelectOutlined; break;
+            default: IconComponent = FolderOutlined; break;
           }
           return (
             <div
@@ -280,8 +285,7 @@ class Parameter extends React.Component {
                 error={valueError}
                 onChange={changeValue}
                 addonBefore={(
-                  <Icon
-                    type={icon}
+                  <IconComponent
                     style={{cursor: 'pointer'}}
                     onClick={this.openBucketBrowser}
                   />

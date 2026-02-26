@@ -17,10 +17,10 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
+import {Form} from '@ant-design/compatible';
 import {
   Button,
   Input,
-  Form,
   Modal,
   Row,
   Col,

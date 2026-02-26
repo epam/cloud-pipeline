@@ -334,7 +334,7 @@ PredefinedFilterButton.propTypes = {
   filter: PropTypes.shape({
     name: PropTypes.string,
     scheme: PropTypes.shape({
-      icon: PropTypes.string,
+      icon: PropTypes.node,
       type: PropTypes.string,
       style: PropTypes.object
     }),

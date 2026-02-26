@@ -21,7 +21,15 @@ import connect from '../../../../utils/connect';
 import localization from '../../../../utils/localization';
 import PropTypes from 'prop-types';
 import SplitPane from 'react-split-pane';
-import {Modal, Button, Row, Col, Alert, Icon, Tree, Input} from 'antd';
+import {Modal, Button, Row, Col, Alert, Tree, Input} from 'antd';
+import {
+  CloudOutlined,
+  FolderOutlined,
+  ForkOutlined,
+  HddOutlined,
+  InboxOutlined,
+  TagOutlined
+} from '@ant-design/icons';
 import Folder from '../../browser/Folder';
 import Pipeline from '../../browser/Pipeline';
 import FireCloudBrowser from '../../browser/FireCloudBrowser';
@@ -146,30 +154,30 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
   };
 
   renderItemTitle (item) {
-    let icon;
+    let IconComponent;
     const style = {};
     switch (item.type) {
-      case ItemTypes.pipeline: icon = 'fork'; break;
+      case ItemTypes.pipeline: IconComponent = ForkOutlined; break;
       case ItemTypes.versionedStorage:
         style.color = '#2796dd';
-        icon = 'inbox';
+        IconComponent = InboxOutlined;
         break;
-      case ItemTypes.folder: icon = 'folder'; break;
-      case ItemTypes.version: icon = 'tag'; break;
+      case ItemTypes.folder: IconComponent = FolderOutlined; break;
+      case ItemTypes.version: IconComponent = TagOutlined; break;
       case ItemTypes.storage:
         if (item.storageType && item.storageType.toLowerCase() !== 'nfs') {
-          icon = 'inbox';
+          IconComponent = InboxOutlined;
         } else {
-          icon = 'hdd';
+          IconComponent = HddOutlined;
         }
         break;
       case ItemTypes.fireCloud:
-        icon = 'cloud-o';
+        IconComponent = CloudOutlined;
         style.color = '#2796dd';
         style.fontWeight = 'bold';
         break;
       case ItemTypes.fireCloudMethod:
-        icon = 'fork';
+        IconComponent = ForkOutlined;
         style.color = '#2796dd';
         style.fontWeight = 'bold';
         break;
@@ -195,7 +203,7 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
       <span
         id={`pipelines-library-tree-node-${item.key}-name`}
         className={styles.treeItemTitle}>
-        {icon && <Icon type={icon} style={style} />}{name}
+        {IconComponent && <IconComponent style={style} />}{name}
       </span>
     );
   }

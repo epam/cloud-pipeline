@@ -20,7 +20,7 @@ import connect from '../../../../utils/connect';
 import {computed, observable} from 'mobx';
 import PropTypes from 'prop-types';
 import SplitPane from 'react-split-pane';
-import {Alert, Button, Checkbox, Col, Icon, Input, Modal, Row, Table, Tree, message} from 'antd';
+import {Alert, Button, Checkbox, Col, Input, Modal, Row, Table, Tree, message} from 'antd';
 import {CaretLeftOutlined, CaretRightOutlined} from '@ant-design/icons';
 import dataStorages from '../../../../models/dataStorage/DataStorages';
 import DataStorageRequest from '../../../../models/dataStorage/DataStoragePage';
@@ -49,6 +49,7 @@ import UploadFilesList from './upload-files-list';
 import {
   getAllowedStoragesForCloudRegion
 } from '../../../../utils/limit-mounts/check-cloud-region-rules';
+import OldAntIconsResolver from '../../../../utils/old-ant-icons-resolver';
 
 const PAGE_SIZE = 40;
 const DTS_ITEM_TYPE = 'DTS';
@@ -410,7 +411,7 @@ export default class BucketBrowser extends React.Component {
         key: 'type',
         title: '',
         className: styles.itemTypeCell,
-        render: (text, item) => <Icon className={styles.itemType} type={item.type.toLowerCase()} />,
+        render: (text, item) => <OldAntIconsResolver className={styles.itemType} type={item.type.toLowerCase()} />,
         onCell: (item) => ({onClick: () => this.didSelectDataStorageItem(item)})
       },
       {
@@ -640,7 +641,7 @@ export default class BucketBrowser extends React.Component {
       <span
         id={`pipelines-library-tree-node-${item.key}-name`}
         className={styles.treeItemTitle}>
-        {icon && <Icon type={icon} />}<span className="storage-name">{name}</span>{subTitle}
+        {icon && <OldAntIconsResolver type={icon} />}<span className="storage-name">{name}</span>{subTitle}
       </span>
     );
   }

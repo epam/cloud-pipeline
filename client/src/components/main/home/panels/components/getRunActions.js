@@ -15,6 +15,17 @@
  */
 
 import React from 'react';
+import {
+  ForwardOutlined,
+  PlayCircleOutlined,
+  LinkOutlined,
+  CloseCircleOutlined,
+  ExportOutlined,
+  CodeOutlined,
+  ForkOutlined,
+  PauseCircleOutlined,
+  ExclamationCircleOutlined
+} from '@ant-design/icons';
 import {canPauseRun, canStopRun} from '../../../../runs/actions';
 import VSActions from '../../../../versioned-storages/vs-actions';
 import MultizoneUrl from '../../../../special/multizone-url';
@@ -45,14 +56,14 @@ export default function (
         if (checkRunActionAvailable(run, runActions.rerun)) {
           actions.push({
             title: 'RERUN',
-            icon: 'play-circle-o',
+            icon: PlayCircleOutlined,
             action: callbacks ? callbacks.run : undefined
           });
         }
         if (runSupportsContinue(run) && callbacks && callbacks.continue) {
           actions.push({
             title: 'CONTINUE',
-            icon: 'forward',
+            icon: ForwardOutlined,
             action: callbacks ? callbacks.continue : undefined
           });
         }
@@ -66,7 +77,7 @@ export default function (
             const url = regionedUrl.url[defaultUrlRegion];
             actions.push({
               title: 'OPEN',
-              icon: 'export',
+              icon: ExportOutlined,
               target: regionedUrl.sameTab ? '_top' : '_blank',
               multiZoneUrl: regionedUrl.url,
               action: url && callbacks && callbacks.openUrl
@@ -98,7 +109,7 @@ export default function (
             );
             actions.push({
               title: 'OPEN',
-              icon: 'export',
+              icon: ExportOutlined,
               overlay,
               action: defaultUrl && defaultUrlRegion && callbacks && callbacks.openUrl
                 ? () => callbacks.openUrl(
@@ -119,7 +130,7 @@ export default function (
           if (!isDtsEnvironment) {
             actions.push({
               title: 'SSH',
-              icon: 'code-o',
+              icon: CodeOutlined,
               runSSH: true,
               runId: run.id
             });
@@ -143,7 +154,7 @@ export default function (
                   VSC
                 </VSActions>
               ),
-              icon: 'fork'
+              icon: ForkOutlined
             });
           }
         }
@@ -155,7 +166,7 @@ export default function (
         ) {
           actions.push({
             title: 'PAUSE',
-            icon: 'pause-circle-o',
+            icon: PauseCircleOutlined,
             disabled: disabled || maintenanceMode,
             overlay: maintenanceMode ? MAINTENANCE_MODE_DISCLAIMER : undefined,
             action: callbacks ? callbacks.pause : undefined
@@ -168,7 +179,7 @@ export default function (
         ) {
           actions.push({
             title: 'STOP',
-            icon: 'close-circle-o',
+            icon: CloseCircleOutlined,
             className: 'cp-danger',
             action: callbacks ? callbacks.stop : undefined
           });
@@ -190,7 +201,9 @@ export default function (
           actions.push({
             title: 'RESUME',
             disabled: disabled || maintenanceMode,
-            icon: run.resumeFailureReason ? 'exclamation-circle-o' : 'play-circle-o',
+            icon: run.resumeFailureReason
+              ? ExclamationCircleOutlined
+              : PlayCircleOutlined,
             action: callbacks ? callbacks.resume : undefined,
             overlay: maintenanceMode
               ? MAINTENANCE_MODE_DISCLAIMER
@@ -203,7 +216,7 @@ export default function (
         }
         actions.push({
           title: 'TERMINATE',
-          icon: 'close-circle-o',
+          icon: CloseCircleOutlined,
           className: 'cp-danger',
           action: callbacks ? callbacks.terminate : undefined
         });
@@ -297,7 +310,7 @@ export default function (
         );
         actions.push({
           title: 'LINKS',
-          icon: 'link',
+          icon: LinkOutlined,
           overlay
         });
       }

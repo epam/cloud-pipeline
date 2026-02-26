@@ -26,7 +26,7 @@ import {
   Spin,
   Select
 } from 'antd';
-import {QuestionCircleFilled} from '@ant-design/icons';
+import {QuestionCircleFilled, DeleteOutlined, PlusOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 
 import protocols from '../protocols';
@@ -485,7 +485,7 @@ export default class AddRouteForm extends React.Component {
                         ports.length > 1 && (
                           <Button
                             type="danger"
-                            icon="delete"
+                            icon={<DeleteOutlined />}
                             onClick={() => this.removePortInput(portIdentifier)}
                             style={{marginLeft: 5}}
                           />
@@ -512,7 +512,7 @@ export default class AddRouteForm extends React.Component {
               }
               <div className={styles.addButtonContainer}>
                 <Button
-                  icon="plus"
+                  icon={<PlusOutlined />}
                   onClick={this.addPortInput}
                 >
                   Add port

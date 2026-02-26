@@ -18,7 +18,8 @@ import React, {Component} from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import PropTypes from 'prop-types';
-import {Alert, Collapse, Icon, Row} from 'antd';
+import {Alert, Collapse, Row} from 'antd';
+import {BarsOutlined, CodeOutlined, SettingOutlined} from '@ant-design/icons';
 import LoadingView from '../../special/LoadingView';
 import {getSpotTypeName} from '../../special/spot-instance-names';
 import {instanceInfoString} from '../../special/instance-type-info';
@@ -89,17 +90,17 @@ export default class PreviewConfiguration extends Component {
 
   getPanelHeader = (key) => {
     let title;
-    let icon;
+    let IconComponent;
     switch (key) {
-      case EXEC_ENVIRONMENT: title = 'Exec environment'; icon = 'code-o'; break;
-      case ADVANCED: title = 'Advanced'; icon = 'setting'; break;
-      case SYSTEM_PARAMETERS: title = 'System parameters'; icon = 'bars'; break;
-      case PARAMETERS: title = 'Parameters'; icon = 'bars'; break;
+      case EXEC_ENVIRONMENT: title = 'Exec environment'; IconComponent = CodeOutlined; break;
+      case ADVANCED: title = 'Advanced'; IconComponent = SettingOutlined; break;
+      case SYSTEM_PARAMETERS: title = 'System parameters'; IconComponent = BarsOutlined; break;
+      case PARAMETERS: title = 'Parameters'; IconComponent = BarsOutlined; break;
     }
     return (
       <Row className={styles.panelHeader} type="flex" justify="space-between" align="middle">
         <span className={styles.itemHeader}>
-          <Icon type={icon} /> {title}
+          {IconComponent && <IconComponent />} {title}
         </span>
       </Row>
     );

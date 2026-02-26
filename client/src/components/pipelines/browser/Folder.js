@@ -34,7 +34,6 @@ import {
   Button,
   Checkbox,
   Col,
-  Icon,
   message,
   Modal,
   Popover,
@@ -42,7 +41,7 @@ import {
   Table,
   Tooltip
 } from 'antd';
-import {AppstoreFilled, AppstoreOutlined, CheckCircleFilled, ClockCircleOutlined, CopyOutlined, DeleteOutlined, DownOutlined, EditOutlined, FolderOutlined, ForkOutlined, HddOutlined, InboxOutlined, LockOutlined, MessageOutlined, PlusOutlined, QuestionCircleFilled, SettingOutlined, TagFilled, UnlockOutlined} from '@ant-design/icons';
+import {AppstoreFilled, AppstoreOutlined, CheckCircleFilled, ClockCircleOutlined, CopyOutlined, DeleteOutlined, DownOutlined, EditOutlined, FolderOutlined, ForkOutlined, HddOutlined, InboxOutlined, LockOutlined, MessageOutlined, PlusOutlined, QuestionCircleFilled, SettingOutlined, SolutionOutlined, TagFilled, UnlockOutlined} from '@ant-design/icons';
 import Menu, {SubMenu, MenuItem, Divider} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import EditFolderForm from './forms/EditFolderForm';
@@ -89,7 +88,7 @@ import UploadButton from '../../special/UploadButton';
 import PreviewConfiguration from '../configuration/PreviewConfiguration';
 import Breadcrumbs from '../../special/Breadcrumbs';
 import HiddenObjects from '../../../utils/hidden-objects';
-import { RepositoryTypes } from '../../special/git-repository-control';
+import {RepositoryTypes} from '../../special/git-repository-control';
 
 const MAX_INLINE_METADATA_KEYS = 10;
 const SHOW_SECRET_TAGS_IN_LISTING = false;
@@ -200,21 +199,17 @@ export default class Folder extends localization.LocalizedReactComponent {
       case ItemTypes.pipeline: return <ForkOutlined />;
       case ItemTypes.versionedStorage: return <InboxOutlined className="cp-versioned-storage" />;
       case ItemTypes.folder:
-        let icon = 'folder';
         if (item.isProject || (item.objectMetadata && item.objectMetadata.type &&
           (item.objectMetadata.type.value || '').toLowerCase() === 'project')) {
-          icon = 'solution';
+          return <SolutionOutlined />;
         }
-
-        return <Icon type={icon} />;
+        return <FolderOutlined />;
       case ItemTypes.version: return <TagFilled />;
       case ItemTypes.storage:
         const objectStorage = item.storageType && item.storageType.toLowerCase() !== 'nfs';
-        return (
-          {objectStorage
-            ? <InboxOutlined className={classNames({'cp-sensitive': item.sensitive})} />
-            : <HddOutlined className={classNames({'cp-sensitive': item.sensitive})} />}
-        );
+        return objectStorage
+          ? <InboxOutlined className={classNames({'cp-sensitive': item.sensitive})} />
+          : <HddOutlined className={classNames({'cp-sensitive': item.sensitive})} />;
       case ItemTypes.configuration: return <SettingOutlined />;
       case ItemTypes.metadata: return <AppstoreOutlined />;
       case ItemTypes.metadataFolder: return <AppstoreOutlined />;
@@ -2184,7 +2179,7 @@ export default class Folder extends localization.LocalizedReactComponent {
               classNameEditableField={folderTitleClassName}
               onSaveEditableField={this.renameCurrentFolder}
               editStyleEditableField={{flex: 1}}
-              icon={isProject ? 'solution' : 'folder'}
+              icon={isProject ? SolutionOutlined : FolderOutlined}
               iconClassName={`${styles.editableControl} ${folderTitleClassName}`}
               lock={this.props.folder.value.locked}
               lockClassName={`${styles.editableControl} ${folderTitleClassName}`}

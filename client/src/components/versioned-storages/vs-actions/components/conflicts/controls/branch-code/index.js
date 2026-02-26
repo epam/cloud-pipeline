@@ -910,6 +910,23 @@ function renderLineNumberWithActions (line, props) {
         conflictedFile.registerOperation({apply, revert});
       }
     };
+    const rtlIcon = rtl ? (
+      <DoubleLeftOutlined
+        className={classNames(styles.action, 'cp-conflict-action')}
+        key="apply"
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={wrapAction(modification, modification.apply, onRefresh)}
+        tabIndex={0}
+      />
+    ) : (
+      <DoubleRightOutlined
+        className={classNames(styles.action, 'cp-conflict-action')}
+        key="apply"
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={wrapAction(modification, modification.apply, onRefresh)}
+        tabIndex={0}
+      />
+    );
     const actions = (
       modification &&
       !hideModificationActions &&
@@ -917,21 +934,7 @@ function renderLineNumberWithActions (line, props) {
     )
       ? [
         (
-          {rtl
-            ? <DoubleLeftOutlined
-                className={classNames(styles.action, 'cp-conflict-action')}
-                key="apply"
-                onMouseDown={e => e.stopPropagation()}
-                onClick={wrapAction(modification, modification.apply, onRefresh)}
-                tabIndex={0}
-              />
-            : <DoubleRightOutlined
-                className={classNames(styles.action, 'cp-conflict-action')}
-                key="apply"
-                onMouseDown={e => e.stopPropagation()}
-                onClick={wrapAction(modification, modification.apply, onRefresh)}
-                tabIndex={0}
-              />}
+          {rtlIcon}
         ),
         (
           <CloseOutlined className={classNames(styles.action, 'cp-conflict-action')}

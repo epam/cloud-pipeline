@@ -16,7 +16,19 @@
 
 import React from 'react';
 import PipelinesLibraryContent from './PipelinesLibraryContent';
-import {Card, Icon, Input, message, Row, Tree} from 'antd';
+import {Card, Input, message, Row, Tree} from 'antd';
+import {
+  ForkOutlined,
+  InboxOutlined,
+  SolutionOutlined,
+  FolderOutlined,
+  TagFilled,
+  HddOutlined,
+  SettingOutlined,
+  AppstoreOutlined,
+  ClockCircleOutlined,
+  LockOutlined
+} from '@ant-design/icons';
 import classNames from 'classnames';
 import connect from '../../utils/connect';
 import localization from '../../utils/localization';
@@ -333,36 +345,36 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
   };
 
   renderItemTitle (item) {
-    let icon;
-    const subIcon = item.locked ? 'lock' : undefined;
+    let IconComponent;
+    const showLockIcon = item.locked;
     let sensitive = false;
     let subTitle;
     let iconStyle = {};
     let iconClassName;
     switch (item.type) {
-      case ItemTypes.pipeline: icon = 'fork'; break;
+      case ItemTypes.pipeline: IconComponent = ForkOutlined; break;
       case ItemTypes.versionedStorage:
-        icon = 'inbox';
+        IconComponent = InboxOutlined;
         iconClassName = 'cp-versioned-storage';
         break;
       case ItemTypes.folder:
         if (item.id === 'pipelines') {
-          icon = 'fork';
+          IconComponent = ForkOutlined;
         } else if (item.id === 'storages') {
-          icon = 'inbox';
+          IconComponent = InboxOutlined;
         } else if (item.isProject || (item.objectMetadata && item.objectMetadata.type &&
           (item.objectMetadata.type.value || '').toLowerCase() === 'project')) {
-          icon = 'solution';
+          IconComponent = SolutionOutlined;
         } else {
-          icon = 'folder';
+          IconComponent = FolderOutlined;
         }
         break;
-      case ItemTypes.version: icon = 'tag'; break;
+      case ItemTypes.version: IconComponent = TagFilled; break;
       case ItemTypes.storage:
         if (item.storageType && item.storageType.toLowerCase() !== 'nfs') {
-          icon = 'inbox';
+          IconComponent = InboxOutlined;
         } else {
-          icon = 'hdd';
+          IconComponent = HddOutlined;
         }
         sensitive = item.sensitive;
         subTitle = (
@@ -372,10 +384,10 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
           />
         );
         break;
-      case ItemTypes.configuration: icon = 'setting'; break;
-      case ItemTypes.metadataFolder: icon = 'appstore-o'; break;
-      case ItemTypes.metadata: icon = 'appstore-o'; break;
-      case ItemTypes.projectHistory: icon = 'clock-circle-o'; break;
+      case ItemTypes.configuration: IconComponent = SettingOutlined; break;
+      case ItemTypes.metadataFolder: IconComponent = AppstoreOutlined; break;
+      case ItemTypes.metadata: IconComponent = AppstoreOutlined; break;
+      case ItemTypes.projectHistory: IconComponent = ClockCircleOutlined; break;
     }
     let name = item.type === ItemTypes.metadata ? `${item.name} [${item.amount}]` : item.name;
     if (item.searchResult) {
@@ -403,18 +415,16 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
         id={`pipelines-library-tree-node-${item.key}-name`}
         className={treeItemTitleClassName}>
         {
-          icon && (
-            <Icon
-              type={icon}
+          IconComponent && (
+            <IconComponent
               className={classNames({'cp-sensitive': sensitive}, iconClassName)}
               style={iconStyle}
             />
           )
         }
         {
-          subIcon && (
-            <Icon
-              type={subIcon}
+          showLockIcon && (
+            <LockOutlined
               className={classNames({'cp-sensitive': sensitive}, iconClassName)}
               style={iconStyle}
             />

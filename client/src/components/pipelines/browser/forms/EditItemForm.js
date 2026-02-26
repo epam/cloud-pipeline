@@ -15,7 +15,8 @@
  */
 
 import React from 'react';
-import {Button, Modal, Form, Input, Row, Spin} from 'antd';
+import {Form} from '@ant-design/compatible';
+import {Button, Modal, Input, Row, Spin} from 'antd';
 import PropTypes from 'prop-types';
 
 // eslint-disable-next-line

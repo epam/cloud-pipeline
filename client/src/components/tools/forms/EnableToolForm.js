@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Button, Modal, Form, Input, Row, Spin} from 'antd';
+import {Form} from '@ant-design/compatible';
+import {Button, Modal, Input, Row, Spin} from 'antd';
 
 @Form.create()
 export default class EnableToolForm extends React.Component {

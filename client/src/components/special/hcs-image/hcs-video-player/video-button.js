@@ -17,7 +17,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
-import {Button, Icon} from 'antd';
+import {Button} from 'antd';
+import {PictureOutlined, VideoCameraOutlined} from '@ant-design/icons';
 
 class VideoButton extends React.Component {
   onChangeModeClicked = () => {
@@ -38,9 +39,9 @@ class VideoButton extends React.Component {
     if (!videoSource || !available) {
       return null;
     }
-    const iconType = videoSource.videoMode
-      ? 'picture'
-      : 'video-camera';
+    const IconComponent = videoSource.videoMode
+      ? PictureOutlined
+      : VideoCameraOutlined;
     return (
       <Button
         size="small"
@@ -48,8 +49,7 @@ class VideoButton extends React.Component {
         onClick={this.onChangeModeClicked}
         disabled={!videoSource.initialized}
       >
-        <Icon
-          type={iconType}
+        <IconComponent
           className="cp-larger"
         />
       </Button>

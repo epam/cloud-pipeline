@@ -20,7 +20,6 @@ import {inject, observer} from 'mobx-react';
 import {
   Alert,
   Button,
-  Icon,
   Input,
   message,
   Modal,
@@ -28,7 +27,7 @@ import {
   Table,
   Tree
 } from 'antd';
-import {FolderOutlined, SolutionOutlined} from '@ant-design/icons';
+import {FolderOutlined, LockOutlined, SolutionOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import {
   formatTreeItems,
@@ -172,20 +171,20 @@ class CopyMetadataEntitiesDialog extends React.Component {
         expandedKeys: [...(new Set([...expandedKeys, item.key]))]
       });
     };
-    let icon = 'folder';
+    let IconComponent = FolderOutlined;
     if (
       selectedFolder.isProject ||
       (selectedFolder.objectMetadata && selectedFolder.objectMetadata.type &&
         (selectedFolder.objectMetadata.type.value || '').toLowerCase() === 'project')
     ) {
-      icon = 'solution';
+      IconComponent = SolutionOutlined;
     }
     return (
       <div
         className={styles.treeContainer}
       >
         <div style={{fontSize: 'large', marginLeft: 5}}>
-          <Icon type={icon} />
+          <IconComponent />
           <b style={{marginLeft: 5}}>{selectedFolder.name}</b>
         </div>
         <Table
@@ -196,7 +195,7 @@ class CopyMetadataEntitiesDialog extends React.Component {
           pagination={false}
           rowClassName={() => styles.row}
           showHeader={false}
-          onRow={(record) => ({ onClick: () => onSelect(record) })}
+          onRow={(record) => ({onClick: () => onSelect(record)})}
           size="small"
         />
       </div>
@@ -272,13 +271,12 @@ class CopyMetadataEntitiesDialog extends React.Component {
       });
     };
     const renderItemTitle = (item) => {
-      let icon;
-      const subIcon = item.locked ? 'lock' : undefined;
+      let IconComponent;
       if (item.isProject || (item.objectMetadata && item.objectMetadata.type &&
         (item.objectMetadata.type.value || '').toLowerCase() === 'project')) {
-        icon = 'solution';
+        IconComponent = SolutionOutlined;
       } else {
-        icon = 'folder';
+        IconComponent = FolderOutlined;
       }
       let {name} = item;
       if (item.searchResult) {
@@ -299,8 +297,8 @@ class CopyMetadataEntitiesDialog extends React.Component {
       }
       return (
         <span>
-          {icon && <Icon type={icon} />}
-          {subIcon && <Icon type={subIcon} />}
+          {IconComponent && <IconComponent />}
+          {item.locked ? <LockOutlined /> : null}
           <span className={styles.treeItemName}>{name}</span>
         </span>
       );

@@ -19,14 +19,13 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
 import {action, computed, observable} from 'mobx';
+import {Form} from '@ant-design/compatible';
 import {
   Alert,
   Button,
   Checkbox,
   Col,
   Collapse,
-  Form,
-  Icon,
   Input,
   message,
   Modal,
@@ -35,7 +34,16 @@ import {
   Select,
   Spin
 } from 'antd';
-import {CodeFilled, DownOutlined, ExportOutlined, InfoCircleFilled, PlayCircleOutlined, SettingOutlined} from '@ant-design/icons';
+import {
+  CodeFilled,
+  DownOutlined,
+  ExportOutlined,
+  InfoCircleFilled, PlayCircleOutlined,
+  SettingOutlined,
+  ReloadOutlined,
+  CodeOutlined,
+  BarsOutlined
+} from '@ant-design/icons';
 import styles from './LaunchPipelineForm.css';
 import Menu, {MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
@@ -2539,7 +2547,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       <Col key="reload" style={{textAlign: 'center', width: 30}}>
         <Button
           shape="circle"
-          icon="reload"
+          icon={<ReloadOutlined />}
           size="small"
           onClick={this.loadDtsClusterInfo} />
       </Col>
@@ -4257,11 +4265,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   getPanelHeader = (key) => {
     let title;
-    let icon;
+    let IconComponent;
     switch (key) {
-      case EXEC_ENVIRONMENT: title = 'Exec environment'; icon = 'code-o'; break;
-      case ADVANCED: title = 'Advanced'; icon = 'setting'; break;
-      case PARAMETERS: title = 'Parameters'; icon = 'bars'; break;
+      case EXEC_ENVIRONMENT: title = 'Exec environment'; IconComponent = CodeOutlined; break;
+      case ADVANCED: title = 'Advanced'; IconComponent = SettingOutlined; break;
+      case PARAMETERS: title = 'Parameters'; IconComponent = BarsOutlined; break;
     }
     const onChangeShowOptionalParameters = (e) => {
       this.setState({showOptionalParameters: e.target.checked});
@@ -4273,7 +4281,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         justify={key === PARAMETERS ? 'start' : 'space-between'}
       >
         <span className={styles.itemHeader}>
-          <Icon type={icon} /> {title}
+          {IconComponent && <IconComponent />} {title}
         </span>
         {
           this.getPanelShortDescription(key)

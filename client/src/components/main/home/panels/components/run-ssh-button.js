@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Icon, Tooltip} from 'antd';
+import {Tooltip} from 'antd';
 import {ExclamationCircleOutlined, LoadingOutlined} from '@ant-design/icons';
 import pipelineRunSSHCache from '../../../../../models/pipelines/PipelineRunSSHCache';
 import MultizoneUrl from '../../../../special/multizone-url';
@@ -113,8 +113,9 @@ class RunSSHButton extends React.Component {
       visibilityChanged,
       style,
       className,
-      icon
+      icon = null
     } = this.props;
+    const IconComponent = icon;
     if (error) {
       return (
         <Tooltip
@@ -124,9 +125,7 @@ class RunSSHButton extends React.Component {
             className={className}
             style={style}
           >
-            {
-              icon && (<Icon type={icon} />)
-            }
+            <IconComponent />
             SSH
             <ExclamationCircleOutlined />
           </div>
@@ -142,9 +141,7 @@ class RunSSHButton extends React.Component {
           getPopupContainer={() => document.getElementById('root')}
           visibilityChanged={visibilityChanged}
         >
-          {
-            icon && (<Icon type={icon} />)
-          }
+          <IconComponent />
           <span>SSH</span>
         </MultizoneUrl>
       );
@@ -157,9 +154,7 @@ class RunSSHButton extends React.Component {
         onMouseEnter={this.onMouseEnter}
         onMouseLeave={this.clearLoadRunSSHConfigurationTimer}
       >
-        {
-          icon && (<Icon type={icon} />)
-        }
+        {IconComponent && <IconComponent />}
         <span>SSH</span>
         {
           pending && (
@@ -176,7 +171,7 @@ RunSSHButton.propTypes = {
   style: PropTypes.object,
   runId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   visibilityChanged: PropTypes.func,
-  icon: PropTypes.string
+  icon: PropTypes.elementType
 };
 
 export default RunSSHButton;

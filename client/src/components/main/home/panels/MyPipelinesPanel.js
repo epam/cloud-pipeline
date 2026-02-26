@@ -19,6 +19,7 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {Alert, message, Row} from 'antd';
+import {CompassOutlined, PlayCircleOutlined} from '@ant-design/icons';
 import LoadPipeline from '../../../../models/pipelines/Pipeline';
 import LoadingView from '../../../special/LoadingView';
 import highlightText from '../../../special/highlightText';
@@ -33,7 +34,6 @@ import styles from './Panel.css';
 @localization.localizedComponent
 @observer
 export default class MyPipelinesPanel extends localization.LocalizedReactComponent {
-
   static propTypes = {
     panelKey: PropTypes.string,
     onInitialize: PropTypes.func
@@ -59,8 +59,14 @@ export default class MyPipelinesPanel extends localization.LocalizedReactCompone
         .filter(s => !this.props.hiddenObjects.isParentHidden(s, folders))
         .filter(s => roleModel.writeAllowed(s) || roleModel.readAllowed(s) || roleModel.isOwner(s));
       result.sort((pA, pB) => {
-        const pAisOwner = pA.owner && pA.owner.toLowerCase() === this.props.authenticatedUserInfo.value.userName.toLowerCase();
-        const pBisOwner = pB.owner && pB.owner.toLowerCase() === this.props.authenticatedUserInfo.value.userName.toLowerCase();
+        const pAisOwner =
+          pA.owner &&
+          pA.owner.toLowerCase() ===
+            this.props.authenticatedUserInfo.value.userName.toLowerCase();
+        const pBisOwner =
+          pB.owner &&
+          pB.owner.toLowerCase() ===
+            this.props.authenticatedUserInfo.value.userName.toLowerCase();
         if (pAisOwner !== pBisOwner) {
           if (pAisOwner) {
             return -1;
@@ -81,7 +87,12 @@ export default class MyPipelinesPanel extends localization.LocalizedReactCompone
         key="title"
         type="flex"
         align="middle"
-        style={{fontWeight: 'bold', fontSize: 'larger', height: pipeline.description ? '50%' : '100%'}}>
+        style={{
+          fontWeight: 'bold',
+          fontSize: 'larger',
+          height: pipeline.description ? '50%' : '100%'
+        }}
+      >
         <span type="main">
           {highlightText(pipeline.name, search)}
         </span>
@@ -150,12 +161,12 @@ export default class MyPipelinesPanel extends localization.LocalizedReactCompone
           actions={[
             {
               title: 'RUN',
-              icon: 'play-circle-o',
+              icon: PlayCircleOutlined,
               action: launch
             },
             {
               title: 'HISTORY',
-              icon: 'compass',
+              icon: CompassOutlined,
               action: history
             }
           ]}

@@ -23,6 +23,7 @@ import {
   Tooltip,
   Input
 } from 'antd';
+import {DeleteOutlined, RollbackOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 
 import {NATRules, DeleteRules, SetRules} from '../../../../models/nat';
@@ -534,13 +535,13 @@ export default class NATGateway extends React.Component {
                     return !this.routeIsRemoved(text) ? (
                       <Button
                         type="danger"
-                        icon="delete"
+                        icon={<DeleteOutlined />}
                         onClick={() => this.removeRoute(text)}
                         size="small"
                       />
                     ) : (
                       <Button
-                        icon="rollback"
+                        icon={<RollbackOutlined />}
                         size="small"
                         onClick={() => this.revertRoute(text)}
                       />

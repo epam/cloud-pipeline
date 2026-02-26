@@ -16,8 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Card, Icon, Input, Popover, Row} from 'antd';
-import {StarFilled, StarOutlined} from '@ant-design/icons';
+import {Card, Input, Popover, Row} from 'antd';
+import {StarFilled, StarOutlined, LoadingOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import renderSeparator from './renderSeparator';
 import styles from './CardsPanel.css';
@@ -28,7 +28,7 @@ import RunSSHButton from './run-ssh-button';
 const ACTION = PropTypes.shape({
   title: PropTypes.string,
   overlay: PropTypes.object,
-  icon: PropTypes.string,
+  icon: PropTypes.elementType,
   action: PropTypes.func
 });
 
@@ -160,9 +160,9 @@ export default class CardsPanel extends React.Component {
       const getIconType = (action) => {
         const {actionInProgress, inProgressActionsTitle} = this.state;
         if (actionInProgress && inProgressActionsTitle === action.title) {
-          return 'loading';
+          return LoadingOutlined;
         }
-        return action.icon;
+        return action.icon ?? null;
       };
       const hovered = this.state.popovers.indexOf(index) >= 0 ||
         this.props.hovered === child;
@@ -201,6 +201,7 @@ export default class CardsPanel extends React.Component {
                 runSSH,
                 runId
               } = action;
+              const IconComponent = getIconType(action);
               const containerStyle = {
                 flex: 1.0 / array.length,
                 minHeight: ACTION_MIN_HEIGHT,
@@ -257,17 +258,12 @@ export default class CardsPanel extends React.Component {
                         display: 'inline'
                       }}
                     >
-                      {
-                        icon
-                          ? (
-                            <Icon
-                              style={style}
-                              className={className}
-                              type={getIconType(action)}
-                            />
-                          )
-                          : undefined
-                      }
+                      {IconComponent && (
+                        <IconComponent
+                          style={style}
+                          className={className}
+                        />
+                      )}
                       <span>{title}</span>
                     </div>
                   </MultizoneUrl>
@@ -296,11 +292,12 @@ export default class CardsPanel extends React.Component {
                     minHeight: ACTION_MIN_HEIGHT
                   }}>
                   <Row type="flex" align="middle">
-                    {
-                      icon
-                        ? <Icon style={style} type={getIconType(action)} />
-                        : undefined
-                    }
+                    {IconComponent && (
+                      <IconComponent
+                        style={style}
+                        className={className}
+                      />
+                    )}
                     {
                       overlay && (
                         <Popover

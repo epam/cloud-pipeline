@@ -18,7 +18,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
-import {Button, Modal, Form, Input, Row, Spin, Tabs} from 'antd';
+import {Form} from '@ant-design/compatible';
+import {Button, Modal, Input, Row, Spin, Tabs} from 'antd';
 import PermissionsForm from '../../roleModel/PermissionsForm';
 import roleModel from '../../../utils/roleModel';
 

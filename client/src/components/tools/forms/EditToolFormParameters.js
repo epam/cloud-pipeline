@@ -18,8 +18,15 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
-import {Button, Checkbox, Col, Icon, Input, Row, Select} from 'antd';
-import {DownOutlined, MinusCircleOutlined} from '@ant-design/icons';
+import {Button, Checkbox, Col, Input, Row, Select} from 'antd';
+import {
+  DownloadOutlined,
+  DownOutlined,
+  FolderOutlined,
+  MinusCircleOutlined,
+  SelectOutlined,
+  UploadOutlined
+} from '@ant-design/icons';
 import Menu, {MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import classNames from 'classnames';
@@ -241,12 +248,12 @@ export default class EditToolFormParameters extends React.Component {
   };
 
   renderPathParameterInput = (parameter, index, onChange, isError, readOnly) => {
-    let icon;
+    let IconComponent;
     switch (parameter.type) {
-      case 'input': icon = 'download'; break;
-      case 'output': icon = 'upload'; break;
-      case 'common': icon = 'select'; break;
-      default: icon = 'folder'; break;
+      case 'input': IconComponent = DownloadOutlined; break;
+      case 'output': IconComponent = UploadOutlined; break;
+      case 'common': IconComponent = SelectOutlined; break;
+      default: IconComponent = FolderOutlined; break;
     }
     return (
       <Input
@@ -264,7 +271,7 @@ export default class EditToolFormParameters extends React.Component {
         onChange={onChange}
         addonBefore={
           <div style={{cursor: 'pointer'}} onClick={() => this.openBucketBrowser(index)}>
-            <Icon type={icon} />
+            <IconComponent />
           </div>}
         placeholder="Path"
       />

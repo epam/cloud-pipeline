@@ -27,7 +27,7 @@ import {Alert,
   Button,
   Col
 } from 'antd';
-import {DownOutlined, SettingOutlined} from '@ant-design/icons';
+import {DownOutlined, SettingOutlined, TagFilled} from '@ant-design/icons';
 import Menu, {MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import {graphIsSupportedForLanguage} from './graph/visualization';
@@ -480,7 +480,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
               editStyleEditableField={{flex: 1}}
               displayTextEditableField={`${this.props.pipeline.value.name} (${this.props.version})`}
               textEditableField={this.props.pipeline.value.name}
-              icon="tag"
+              icon={TagFilled}
               iconClassName={browserStyles.editableControl}
               lock={this.props.pipeline.value.locked}
               lockClassName={browserStyles.editableControl}

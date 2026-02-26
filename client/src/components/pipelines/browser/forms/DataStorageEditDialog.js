@@ -18,11 +18,11 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject} from 'mobx-react';
 import {computed} from 'mobx';
+import {Form} from '@ant-design/compatible';
 import {
   Button,
   Checkbox,
   Col,
-  Form,
   Input,
   InputNumber,
   Modal,

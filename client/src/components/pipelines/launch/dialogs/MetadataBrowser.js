@@ -18,7 +18,8 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import PropTypes from 'prop-types';
 import SplitPane from 'react-split-pane';
-import {Alert, AutoComplete, Button, Col, Icon, Input, Modal, Row, Tree} from 'antd';
+import {Alert, AutoComplete, Button, Col, Input, Modal, Row, Tree} from 'antd';
+import {AppstoreOutlined, FolderOutlined} from '@ant-design/icons';
 import Folder from '../../browser/Folder';
 import Metadata from '../../browser/Metadata';
 import MetadataFolder from '../../browser/MetadataFolder';
@@ -165,11 +166,11 @@ export default class MetadataBrowser extends React.Component {
   }
 
   renderItemTitle (item) {
-    let icon;
+    let IconComponent;
     switch (item.type) {
-      case ItemTypes.folder: icon = 'folder'; break;
-      case ItemTypes.metadata: icon = 'appstore-o'; break;
-      case ItemTypes.metadataFolder: icon = 'appstore-o'; break;
+      case ItemTypes.folder: IconComponent = FolderOutlined; break;
+      case ItemTypes.metadata: IconComponent = AppstoreOutlined; break;
+      case ItemTypes.metadataFolder: IconComponent = AppstoreOutlined; break;
     }
     let name = item.name;
     if (item.searchResult) {
@@ -192,7 +193,7 @@ export default class MetadataBrowser extends React.Component {
       <span
         id={`pipelines-library-tree-node-${item.key}-name`}
         className={styles.treeItemTitle}>
-        {icon && <Icon type={icon} />}{name}
+        {IconComponent && <IconComponent />}{name}
       </span>
     );
   }

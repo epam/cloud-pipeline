@@ -16,11 +16,11 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import {Form} from '@ant-design/compatible';
 import {
   Button,
   Input,
   Modal,
-  Form,
   Spin,
   Row,
   Checkbox

@@ -108,14 +108,13 @@ function BillingTable (
         'cp-success': percent < 0
       }
     );
+    const icon = percent > 0
+      ? <CaretUpOutlined className={styles.warningIcon} />
+      : <CaretDownOutlined className={styles.warningIcon} />;
     return (
       <div className={containerClassNames}>
         {quotaOverrun && (<BarsOutlined className={styles.quotaOverrunIcon} />)}
-        {percent !== 0 && (
-          {percent > 0
-            ? <CaretUpOutlined className={styles.warningIcon} />
-            : <CaretDownOutlined className={styles.warningIcon} />}
-        )}
+        {percent !== 0 && icon}
         {percent !== 0 && <span>{percent > 0 ? '+' : ''}{percent}%</span>}
       </div>
     );

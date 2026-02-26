@@ -17,7 +17,8 @@
 import React from 'react';
 import {Link} from 'react-router';
 import PropTypes from 'prop-types';
-import {Button, Checkbox, Col, Form, Input, Modal, Row, Spin, Tabs} from 'antd';
+import {Form} from '@ant-design/compatible';
+import {Button, Checkbox, Col, Input, Modal, Row, Spin, Tabs} from 'antd';
 import PermissionsForm from '../../roleModel/PermissionsForm';
 import roleModel from '../../../utils/roleModel';
 import localization from '../../../utils/localization';

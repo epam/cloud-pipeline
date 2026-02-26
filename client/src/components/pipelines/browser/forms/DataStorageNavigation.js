@@ -120,10 +120,10 @@ export default class DataStorageNavigation extends React.Component {
   };
 
   initializeInput = (input) => {
-    if (!this.control && input && input.refs.input) {
-      input.refs.input.focus();
+    if (!this.control && input && input.input) {
+      input.input.focus();
       this.control = input;
-      this.moveCursorToEnd(input.refs.input);
+      this.moveCursorToEnd(input.input);
     }
   };
 
@@ -185,7 +185,8 @@ export default class DataStorageNavigation extends React.Component {
               })}
             </Breadcrumb>
             {showCopyPath ? (
-              <LinkOutlined className={classNames('cp-primary', styles.copyPath, {
+              <LinkOutlined
+                className={classNames('cp-primary', styles.copyPath, {
                   [styles.hidden]: this.state.editable
                 })}
                 onClick={event => {

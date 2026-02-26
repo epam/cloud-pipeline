@@ -18,9 +18,9 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {
   computed} from 'mobx';
+import {Form} from '@ant-design/compatible';
 import {
   Button,
-  Form,
   Input,
   Modal,
   Row,

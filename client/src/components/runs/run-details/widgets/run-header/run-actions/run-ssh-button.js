@@ -7,7 +7,6 @@ import roleModel from '../../../../../../utils/roleModel';
 import pipelineRunSSHCache from '../../../../../../models/pipelines/PipelineRunSSHCache';
 import MultizoneUrl from '../../../../../special/multizone-url';
 import styles from './run-actions.css';
-import {Icon} from "antd";
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -104,6 +103,7 @@ class RunSSHButton extends React.Component {
     if (!run) {
       return null;
     }
+    const IconComponent = icon || null;
     const {runSSH} = this.state;
     if (this.sshEnabled && runSSH) {
       return (
@@ -116,9 +116,7 @@ class RunSSHButton extends React.Component {
             marginLeft: -2
           }}
         >
-          {
-            icon && <Icon type={icon} style={{marginRight: 5}} />
-          }
+          {IconComponent && <IconComponent style={{marginRight: 5}} />}
           <span>SSH</span>
         </MultizoneUrl>
       );
@@ -131,7 +129,7 @@ RunSSHButton.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
   run: PropTypes.object,
-  icon: PropTypes.string
+  icon: PropTypes.elementType
 };
 
 export default RunSSHButton;

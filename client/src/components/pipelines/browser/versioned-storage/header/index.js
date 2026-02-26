@@ -23,7 +23,7 @@ import {
   Col,
   Button
 } from 'antd';
-import {AppstoreFilled, SettingOutlined} from '@ant-design/icons';
+import {AppstoreFilled, InboxOutlined, SettingOutlined} from '@ant-design/icons';
 import localization from '../../../../../utils/localization';
 import Breadcrumbs from '../../../../special/Breadcrumbs';
 import roleModel from '../../../../../utils/roleModel';
@@ -104,7 +104,7 @@ class VersionedStorageHeader extends localization.LocalizedReactComponent {
               textEditableField={pipeline.value.name}
               onSaveEditableField={this.onRenameStorage}
               editStyleEditableField={{flex: 1}}
-              icon="inbox"
+              icon={InboxOutlined}
               iconClassName="cp-versioned-storage"
               lock={pipeline.value.locked}
               subject={pipeline.value}

@@ -19,10 +19,10 @@ import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
+import {Form} from '@ant-design/compatible';
 import {
   Button,
   Checkbox,
-  Form,
   Input,
   Row,
   Select

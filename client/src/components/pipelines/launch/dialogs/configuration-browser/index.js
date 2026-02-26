@@ -16,8 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Alert, Button, Icon, Modal, Tree} from 'antd';
-import {DownOutlined} from '@ant-design/icons';
+import {Alert, Button, Modal, Tree} from 'antd';
+import {DownOutlined, FolderOutlined, SettingOutlined, SolutionOutlined} from '@ant-design/icons';
 import {inject} from 'mobx-react';
 import classNames from 'classnames';
 import Menu, {MenuItem} from 'rc-menu';
@@ -249,17 +249,17 @@ class ConfigurationBrowser extends React.Component {
       folderStructure
     } = this.state;
     const renderTreeItem = (item) => {
-      let icon;
+      let IconComponent;
       switch (item.type) {
         case ItemTypes.folder:
           if (item.isProject || (item.objectMetadata && item.objectMetadata.type &&
             (item.objectMetadata.type.value || '').toLowerCase() === 'project')) {
-            icon = 'solution';
+            IconComponent = SolutionOutlined;
           } else {
-            icon = 'folder';
+            IconComponent = FolderOutlined;
           }
           break;
-        case ItemTypes.configuration: icon = 'setting'; break;
+        case ItemTypes.configuration: IconComponent = SettingOutlined; break;
       }
       let name = item.name;
       return (
@@ -267,9 +267,8 @@ class ConfigurationBrowser extends React.Component {
           id={`configurations-library-tree-node-${item.key}-name`}
         >
           {
-            icon && (
-              <Icon
-                type={icon}
+            IconComponent && (
+              <IconComponent
                 style={{marginRight: 5}}
               />
             )

@@ -25,7 +25,7 @@ import {
   message,
   Popover
 } from 'antd';
-import {TeamOutlined} from '@ant-design/icons';
+import {TeamOutlined, CopyOutlined} from '@ant-design/icons';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import DataStorageItemPermissionsForm from './DataStorageItemPermissionsForm';
@@ -448,7 +448,7 @@ class SharedItemInfo extends React.Component {
           style={{
             marginLeft: 5
           }}
-          icon="copy"
+          icon={<CopyOutlined />}
         />
       </div>
     );

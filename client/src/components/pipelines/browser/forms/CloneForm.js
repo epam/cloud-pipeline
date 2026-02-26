@@ -15,7 +15,8 @@
  */
 
 import React from 'react';
-import {Button, Form, Input, Modal, Row, Spin} from 'antd';
+import {Form} from '@ant-design/compatible';
+import {Button, Input, Modal, Row, Spin} from 'antd';
 import {inject, observer} from 'mobx-react';
 import connect from '../../../../utils/connect';
 import roleModel from '../../../../utils/roleModel';

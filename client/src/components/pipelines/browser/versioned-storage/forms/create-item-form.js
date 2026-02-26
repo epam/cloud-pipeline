@@ -15,10 +15,10 @@
  */
 
 import React from 'react';
+import {Form} from '@ant-design/compatible';
 import {
   Button,
   Modal,
-  Form,
   Input,
   Row,
   Spin

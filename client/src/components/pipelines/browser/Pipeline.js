@@ -876,7 +876,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
                 textEditableField={this.props.pipeline.value.name}
                 onSaveEditableField={this.renamePipeline}
                 editStyleEditableField={{flex: 1}}
-                icon="fork"
+                icon={ForkOutlined}
                 iconClassName={`${styles.editableControl} ${pipelineTitleClassName}`}
                 lock={this.props.pipeline.value.locked}
                 lockClassName={`${styles.editableControl} ${pipelineTitleClassName}`}

@@ -20,12 +20,12 @@ import {
   observer} from 'mobx-react';
 import {computed} from 'mobx';
 import classNames from 'classnames';
+import {Form} from '@ant-design/compatible';
 import {
   message,
   Button,
   Checkbox,
   Col,
-  Form,
   Input,
   Row,
   Select

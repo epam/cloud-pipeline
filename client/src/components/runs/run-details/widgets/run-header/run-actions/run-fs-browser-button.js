@@ -8,7 +8,6 @@ import cache from '../../../../../../models/pipelines/PipelineRunFSBrowserCache'
 import MultizoneUrl from '../../../../../special/multizone-url';
 import styles from './run-actions.css';
 import {checkRunActionAvailable, runActions} from '../../../../actions/actions-availability';
-import {Icon} from 'antd';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -111,12 +110,13 @@ class RunFsBrowserButton extends React.Component {
       className,
       style,
       run,
-      icon
+      icon = null
     } = this.props;
     if (!run) {
       return null;
     }
     const {runFsBrowser} = this.state;
+    const IconComponent = icon;
     if (this.fsBrowserEnabled && runFsBrowser) {
       return (
         <MultizoneUrl
@@ -128,9 +128,7 @@ class RunFsBrowserButton extends React.Component {
             marginLeft: -2
           }}
         >
-          {
-            icon && <Icon type={icon} style={{marginRight: 5}} />
-          }
+          {IconComponent && <IconComponent style={{marginRight: 5}} />}
           <span>BROWSE</span>
         </MultizoneUrl>
       );
@@ -143,7 +141,7 @@ RunFsBrowserButton.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
   run: PropTypes.object,
-  icon: PropTypes.string
+  icon: PropTypes.elementType
 };
 
 export default RunFsBrowserButton;

@@ -21,12 +21,12 @@ import {
 import {computed,
   observable} from 'mobx';
 import PropTypes from 'prop-types';
+import {Form} from '@ant-design/compatible';
 import {
   Button,
   Checkbox,
   Col,
   Collapse,
-  Form,
   Input,
   Modal,
   Row,

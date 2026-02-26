@@ -18,7 +18,8 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import PropTypes from 'prop-types';
 import SplitPane from 'react-split-pane';
-import {Alert, AutoComplete, Button, Col, Icon, Modal, Row, Tree} from 'antd';
+import {Alert, AutoComplete, Button, Col, Modal, Row, Tree} from 'antd';
+import {FolderOutlined, SettingOutlined} from '@ant-design/icons';
 import Folder from '../../browser/Folder';
 import LoadingView from '../../../special/LoadingView';
 import {
@@ -241,10 +242,10 @@ export default class ConfigurationBrowser extends React.Component {
   }
 
   renderItemTitle (item) {
-    let icon;
+    let IconComponent;
     switch (item.type) {
-      case ItemTypes.folder: icon = 'folder'; break;
-      case ItemTypes.configuration: icon = 'setting'; break;
+      case ItemTypes.folder: IconComponent = FolderOutlined; break;
+      case ItemTypes.configuration: IconComponent = SettingOutlined; break;
     }
     let name = item.name;
     if (item.searchResult) {
@@ -267,7 +268,7 @@ export default class ConfigurationBrowser extends React.Component {
       <span
         id={`pipelines-library-tree-node-${item.key}-name`}
         className={styles.treeItemTitle}>
-        {icon && <Icon type={icon} />}{name}
+        {IconComponent && <IconComponent />}{name}
       </span>
     );
   }

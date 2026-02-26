@@ -1071,7 +1071,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
               onSaveEditableField={this.renameConfiguration}
               editStyleEditableField={{flex: 1}}
               readOnlyEditableField={!this.canModifySources}
-              icon="setting"
+              icon={SettingOutlined}
               iconClassName={`${browserStyles.editableControl} ${configurationTitleClassName}`}
               lock={this.props.configurations.value.locked}
               lockClassName={`${browserStyles.editableControl} ${configurationTitleClassName}`}

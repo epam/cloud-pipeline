@@ -28,14 +28,26 @@ import MetadataEntityLoadExternal from '../../../models/folderMetadata/MetadataE
 import {
   Button,
   Checkbox,
-  Icon,
   Input,
   message,
   Modal,
   Pagination,
   Row
 } from 'antd';
-import {CaretDownOutlined, CaretUpOutlined, CloseOutlined, CloudUploadOutlined, DeleteOutlined, DownOutlined, FilterOutlined, LoadingOutlined, PlusOutlined, SettingOutlined, UploadOutlined} from '@ant-design/icons';
+import {
+  AppstoreOutlined,
+  CaretDownOutlined,
+  CaretUpOutlined,
+  CloseOutlined,
+  CloudUploadOutlined,
+  DeleteOutlined,
+  DownOutlined,
+  FilterOutlined,
+  LoadingOutlined,
+  PlusOutlined,
+  SettingOutlined,
+  UploadOutlined
+} from '@ant-design/icons';
 import Menu, {MenuItem, Divider} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import {
@@ -88,6 +100,7 @@ import {
   getPredefinedFilterForItem,
   parseScheme
 } from './metadata-controls/predefined-filter-utilities';
+import OldAntIconsResolver from '../../../utils/old-ant-icons-resolver';
 
 const AutoFillEntitiesMarker = autoFillEntities.AutoFillEntitiesMarker;
 const AutoFillEntitiesActions = autoFillEntities.AutoFillEntitiesActions;
@@ -668,7 +681,7 @@ export default class Metadata extends React.Component {
           border: 'none'
         }}
       >
-        <FilterOutlined className={ classNames( {'cp-primary': !!values || (key === 'createdDate' && (startDateFrom || endDateTo))} ) } />
+        <FilterOutlined className={classNames({'cp-primary': !!values || (key === 'createdDate' && (startDateFrom || endDateTo))})} />
       </Button>
     );
     if (/^date$/i.test(this.getColumnType(key))) {
@@ -2219,7 +2232,7 @@ export default class Metadata extends React.Component {
             const item = props.original;
             const condition = currentMetadataConditions[props.index];
             const icon = index === 0 && condition && condition.scheme && condition.scheme.icon
-              ? (<Icon type={condition.scheme.icon} style={{marginRight: 5}} />)
+              ? (<OldAntIconsResolver type={condition.scheme.icon} style={{marginRight: 5}} />)
               : undefined;
             if (this.isSampleSheetColumn(key)) {
               return (
@@ -2601,7 +2614,7 @@ export default class Metadata extends React.Component {
               type={ItemTypes.metadata}
               textEditableField={this.props.metadataClass}
               readOnlyEditableField
-              icon="appstore-o"
+              icon={AppstoreOutlined}
               iconClassName={styles.editableControl}
               subject={this.props.folder.value}
               onNavigate={this.props.onNavigate}

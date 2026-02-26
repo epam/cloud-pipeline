@@ -24,7 +24,6 @@ import {
   Button,
   Checkbox,
   Col,
-  Icon,
   Input,
   message,
   Modal,
@@ -33,7 +32,24 @@ import {
   Spin,
   Table
 } from 'antd';
-import {AppstoreFilled, AppstoreOutlined, CheckOutlined, DeleteOutlined, DownOutlined, EditOutlined, ExportOutlined, FileOutlined, FolderOutlined, InboxOutlined, LinkOutlined, PlusOutlined, ReloadOutlined, SettingOutlined} from '@ant-design/icons';
+import {
+  AppstoreFilled,
+  AppstoreOutlined,
+  CheckOutlined,
+  DeleteOutlined,
+  DownloadOutlined,
+  DownOutlined,
+  EditOutlined,
+  ExportOutlined,
+  FileOutlined,
+  FolderOutlined,
+  HddOutlined,
+  InboxOutlined,
+  LinkOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+  SettingOutlined
+} from '@ant-design/icons';
 import Dropdown from 'rc-dropdown';
 import Menu, {MenuItem, Divider} from 'rc-menu';
 import moment from 'moment-timezone';
@@ -1669,10 +1685,11 @@ export default class DataStorage extends React.Component {
       }
       return (
         <RestoreStatusIcon restoreInfo={restoredStatus}>
-          <Icon
-            className={styles.itemType}
-            type={item.type.toLowerCase()}
-          />
+          {/^folder$/i.test(item.type) ? (
+            <FolderOutlined className={styles.itemType} />
+          ) : (
+            <FileOutlined className={styles.itemType} />
+          )}
         </RestoreStatusIcon>
       );
     };
@@ -2303,13 +2320,13 @@ export default class DataStorage extends React.Component {
     const downloadAction = {
       key: Keys.download,
       title: 'Download',
-      icon: 'download',
+      icon: <DownloadOutlined />,
       available: itemsAvailableForDownload.length > 0 && !this.isOmicsStore
     };
     const downloadOmicsAction = {
       key: Keys.downloadOmics,
       title: 'Download',
-      icon: 'download',
+      icon: <DownloadOutlined />,
       available: this.isOmicsStore && omicsItemsForDownload.length > 0 &&
         this.isSequenceStorage
     };
@@ -2318,20 +2335,20 @@ export default class DataStorage extends React.Component {
       title: `Restore transferred item${this.restorableItems.length > 1 ? 's' : ''}`,
       available: this.userLifeCyclePermissions.write &&
         this.restorableItems.length > 0 && !this.isOmicsStore,
-      icon: 'reload'
+      icon: <ReloadOutlined />
     };
     const restoreOmicsAction = {
       key: Keys.restoreOmics,
       title: `Restore transferred item${this.restorableItems.length > 1 ? 's' : ''}`,
       available: this.userLifeCyclePermissions.write &&
         this.restorableItems.length > 0 && this.isSequenceStorage && this.isOmicsFolder,
-      icon: 'reload'
+      icon: <ReloadOutlined />
     };
     const permissionsAction = {
       key: Keys.permissions,
       title: 'Manage permissions',
       available: this.userCanChangeStorageItemsPermissions && selectedItems.length > 0,
-      icon: 'setting'
+      icon: <SettingOutlined />
     };
     const getShareActionTitle = () => {
       if (itemsAvailableForShare.length === 1) {
@@ -2354,7 +2371,7 @@ export default class DataStorage extends React.Component {
       key: Keys.share,
       title: getShareActionTitle(),
       available: this.sharingEnabled && itemsAvailableForShare.length > 0,
-      icon: 'export'
+      icon: <ExportOutlined />
     };
     const generateURLAction = {
       key: Keys.generateUrl,
@@ -2362,12 +2379,12 @@ export default class DataStorage extends React.Component {
       available: this.bulkDownloadEnabled &&
         this.storageAllowSignedUrls &&
         (!this.isOmicsStore || (this.isSequenceStorage && !this.isOmicsFolder)),
-      icon: 'link'
+      icon: <LinkOutlined />
     };
     const copyPathsAction = {
       key: Keys.copyPaths,
       title: 'Copy Paths',
-      icon: 'link',
+      icon: <LinkOutlined />,
       available: this.clearSelectionVisible
     };
     const removeAllAction = {
@@ -2376,7 +2393,7 @@ export default class DataStorage extends React.Component {
       available: this.removeAllSelectedItemsEnabled &&
         (!this.isOmicsStore || (this.isSequenceStorage && this.isOmicsFolder)),
       className: 'cp-danger',
-      icon: 'delete'
+      icon: <DeleteOutlined />
     };
     const divider = {};
     const actions = [];
@@ -2461,7 +2478,7 @@ export default class DataStorage extends React.Component {
           onClick={(event) => doAction(action, event)}
           style={{lineHeight: 1}}
         >
-          {action.icon && (<Icon type={action.icon} style={{marginRight: 5}} />)}
+          {action.icon}
           {action.title}
         </Button>
       );
@@ -2482,7 +2499,7 @@ export default class DataStorage extends React.Component {
           className={classNames(action.className, `selection-action-${action.key}`)}
         >
           <div style={{display: 'flex', alignItems: 'center'}}>
-            {action.icon && (<Icon type={action.icon} style={{marginRight: 5}} />)}
+            {action.icon}
             {action.title}
           </div>
         </MenuItem>
@@ -2794,7 +2811,7 @@ export default class DataStorage extends React.Component {
         className={classNames(action.className, `presentation-action-${action.key}`)}
       >
         <div style={{display: 'flex', alignItems: 'center'}}>
-          {action.icon && (<Icon type={action.icon} style={{marginRight: 5}} />)}
+          {action.icon}
           {action.title}
           {
             action.checked && (
@@ -2898,7 +2915,7 @@ export default class DataStorage extends React.Component {
               onSaveEditableField={this.renameDataStorage}
               readOnlyEditableField={!this.storage.writeAllowed || this.isOmicsStore}
               editStyleEditableField={{flex: 1}}
-              icon={!/^nfs$/i.test(type) ? 'inbox' : 'hdd'}
+              icon={!/^nfs$/i.test(type) ? InboxOutlined : HddOutlined}
               iconClassName={
                 classNames(
                   styles.editableControl,

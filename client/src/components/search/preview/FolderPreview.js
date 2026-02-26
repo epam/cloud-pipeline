@@ -20,8 +20,8 @@ import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import classNames from 'classnames';
 import AWSRegionTag from '../../special/AWSRegionTag';
-import {Icon, Row} from 'antd';
-import {LoadingOutlined} from '@ant-design/icons';
+import {Row} from 'antd';
+import {LoadingOutlined, AppstoreOutlined} from '@ant-design/icons';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
 import {renderAttributes} from './renderAttributes';
@@ -174,7 +174,7 @@ export default class FolderPreview extends React.Component {
       ...(this.props.folder.value.storages || []).map(mapChild),
       ...(this.props.folder.value.pipelines || []).map(mapChild),
       ...(this.props.folder.value.configurations || []).map(mapChild),
-      ...(this.props.folder.value.metadata ? [{name: 'Metadata', icon: 'appstore-o'}] : [])
+      ...(this.props.folder.value.metadata ? [{name: 'Metadata', icon: <AppstoreOutlined />}] : [])
     ];
     const rowStyle = {
       // borderBottom: '1px solid #555'
@@ -187,24 +187,18 @@ export default class FolderPreview extends React.Component {
               (items.length > MAX_ITEMS
                 ? items.slice(0, MAX_ITEMS)
                 : items || []).map((item, index) => {
-                  const ItemIcon = PreviewIcons[item.type];
-                  return (
-                    <tr key={index} style={rowStyle}>
-                      <td className={styles.firstCell}>
-                        {
-                          ItemIcon
-                            ? <ItemIcon className={styles.searchResultItemIcon} />
-                            : item.icon && <Icon
-                              className={styles.searchResultItemIcon}
-                              type={item.icon} />
-                        }
-                      </td>
-                      <td>
-                        {renderName(item)}
-                      </td>
-                    </tr>
-                  );
-                })
+                const ItemIcon = PreviewIcons[item.type];
+                return (
+                  <tr key={index} style={rowStyle}>
+                    <td className={styles.firstCell}>
+                      <ItemIcon className={styles.searchResultItemIcon} />
+                    </td>
+                    <td>
+                      {renderName(item)}
+                    </td>
+                  </tr>
+                );
+              })
             }
           </tbody>
         </table>
@@ -232,7 +226,11 @@ export default class FolderPreview extends React.Component {
         }
       >
         <div className={styles.header}>
-          <Row className={classNames(styles.title, 'cp-search-header-title')} type="flex" align="middle">
+          <Row
+            className={classNames(styles.title, 'cp-search-header-title')}
+            type="flex"
+            align="middle"
+          >
             {HeaderIcon && <HeaderIcon />}
             <span>{this.props.item.name}</span>
           </Row>

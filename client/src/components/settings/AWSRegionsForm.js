@@ -24,6 +24,7 @@ import {computed,
 import classNames from 'classnames';
 import LoadingView from '../special/LoadingView';
 import {SplitPanel} from '../special/splitPanel';
+import {Form} from '@ant-design/compatible';
 import {
   Alert,
   Button,
@@ -32,7 +33,6 @@ import {
   InputNumber,
   Modal,
   message,
-  Form,
   Row,
   Select,
   Table,

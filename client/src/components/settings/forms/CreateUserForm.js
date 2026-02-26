@@ -20,9 +20,9 @@ import {
   observer} from 'mobx-react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
+import {Form} from '@ant-design/compatible';
 import {Button,
   Modal,
-  Form,
   Input,
   Row,
   Table,

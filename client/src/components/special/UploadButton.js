@@ -28,7 +28,7 @@ import {
   Col,
   Tooltip
 } from 'antd';
-import {UploadOutlined} from '@ant-design/icons';
+import {UploadOutlined, ReloadOutlined, CloseOutlined} from '@ant-design/icons';
 import S3Storage, {MAX_FILE_SIZE_DESCRIPTION} from '../../models/s3-upload/s3-storage';
 import DataStorageGenerateUploadUrl from '../../models/dataStorage/DataStorageGenerateUploadUrl';
 
@@ -675,7 +675,7 @@ class UploadButton extends React.Component {
                             <Button
                               size="small"
                               shape="circle"
-                              icon="reload"
+                              icon={<ReloadOutlined />}
                               onClick={() => f.retryCb()} />
                           }
                           {
@@ -684,7 +684,7 @@ class UploadButton extends React.Component {
                               size="small"
                               shape="circle"
                               type="danger"
-                              icon="close"
+                              icon={<CloseOutlined />}
                               onClick={() => f.cancelCb()} />
                           }
                         </Row>

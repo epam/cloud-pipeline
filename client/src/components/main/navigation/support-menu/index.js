@@ -16,6 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import {CustomerServiceOutlined} from '@ant-design/icons';
 import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
 import {computed} from 'mobx';
@@ -23,7 +24,7 @@ import SupportMenuItem from './SupportMenuItem';
 import styles from './SupportMenu.css';
 
 const DEFAULT_MENU_ITEM = {
-  icon: 'customer-service',
+  icon: <CustomerServiceOutlined />,
   entryName: 'defaultMenuItem'
 };
 

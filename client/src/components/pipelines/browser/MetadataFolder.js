@@ -447,7 +447,7 @@ export default class MetadataFolder extends React.Component {
               type={ItemTypes.metadataFolder}
               textEditableField={'Metadata'}
               readOnlyEditableField
-              icon="appstore-o"
+              icon={AppstoreOutlined}
               iconClassName={styles.editableControl}
               subject={folder.value}
               onNavigate={this.navigate}
