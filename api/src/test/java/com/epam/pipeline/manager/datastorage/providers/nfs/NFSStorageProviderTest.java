@@ -587,9 +587,9 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
         final MetadataEntry entry = new MetadataEntry();
         entry.setEntity(roleEntity);
         final Map<String, PipeConfValue> data = new HashMap<>();
-        data.put(NFSStorageProviderTest.GID_FIELD, new PipeConfValue("string", value));
+        data.put(NFSStorageProviderTest.UID_FIELD, new PipeConfValue("string", value));
         entry.setData(data);
-        when(mockMetadataManager.listMetadataItemsByKey(eq(NFSStorageProviderTest.GID_FIELD),
+        when(mockMetadataManager.listMetadataItemsByKey(eq(NFSStorageProviderTest.UID_FIELD),
                 eq(Collections.singletonList(roleEntity)))).thenReturn(Collections.singletonList(entry));
     }
 

@@ -66,11 +66,13 @@ public class ExternalUIDManager {
         }
         final String externalGidFieldName = preferenceManager.getPreference(
                 SystemPreferences.LAUNCH_EXTERNAL_GID_FIELD_NAME);
+        final String externalUidFieldName = preferenceManager.getPreference(
+                SystemPreferences.LAUNCH_EXTERNAL_UID_FIELD_NAME);
         if (StringUtils.isBlank(externalGidFieldName)) {
             return Optional.empty();
         }
         return resolveExternalId(user, externalGidFieldName)
-                .filter(gid -> userHasRoleWithGid(user, externalGidFieldName, gid));
+                .filter(gid -> userHasRoleWithGid(user, externalUidFieldName, gid));
     }
 
     private boolean userHasRoleWithGid(final PipelineUser user, final String metadataKey, final Long gid) {
