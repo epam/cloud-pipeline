@@ -21,8 +21,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Import;
 
 @SpringBootApplication
-@Import({AppConfiguration.class,
-        DBConfiguration.class})
+@Import({AppConfiguration.class, DBConfiguration.class})
 @SuppressWarnings("checkstyle:HideUtilityClassConstructor")
 public class SMTPNotifierApplication {
 
