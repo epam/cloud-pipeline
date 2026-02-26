@@ -29,6 +29,7 @@ RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
 RUN yum install -y \
                 wget \
                 curl \
+                java-21-openjdk \
                 python \
                 zip \
                 unzip \
@@ -40,9 +41,6 @@ RUN yum install -y \
                 samba-client \
                 cifs-utils \
                 gettext
-
-RUN curl -L -o /etc/yum.repos.d/corretto.repo https://yum.corretto.aws/corretto.repo && \
-    yum install -y java-21-amazon-corretto-devel
 
 ARG LUSTRE_VERSION="2.12.5-1.el7.x86_64"
 ARG LUSTRE_CLIENT_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-$LUSTRE_VERSION.tar.gz"
@@ -105,23 +103,27 @@ RUN pip install -I google-api-core==1.32.0 \
 # API distribution
 ARG CP_API_DIST_URL=""
 ENV CP_API_HOME="/opt/api"
-ARG REQUIRED_JARS_REGEX="pipeline|jwt-generator"
+ARG REQUIRED_JARS_REGEX="pipeline|jwt-generator|data-transfer-service"
 
+RUN cd /tmp && \
+    wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
+    tar -zxf cloud-pipeline.tgz && \
+    rm -rf bin/pipe-templates/__SYSTEM && \
+    mkdir -p $CP_API_HOME && \
+    ls -dp bin/* \
+        | grep '\.jar$' \
+        | grep -v -E "/($REQUIRED_JARS_REGEX)\.jar$" \
+        | xargs rm -f && \
+    mv bin/* $CP_API_HOME/ && \
+    rm -f cloud-pipeline.tgz && \
+    rm -rf bin
 ADD config $CP_API_HOME/config
-
-ADD pipeline.jar $CP_API_HOME/pipeline.jar
-ADD jwt-generator.jar $CP_API_HOME/jwt-generator.jar
-COPY pipe-common.tar.gz $CP_API_HOME/pipe-common.tar.gz
-RUN mkdir -p /tmp/pipe-temp/BOOT-INF/classes/static && \
-    cp /opt/api/pipe-common.tar.gz /tmp/pipe-temp/BOOT-INF/classes/static
-
-COPY bin/. $CP_API_HOME/
 
 # Install pipe-common package
 RUN mkdir -p /tmp/pipe-temp && \
     cp /opt/api/pipeline.jar /tmp/pipe-temp/ && \
     cd /tmp/pipe-temp/ && \
-    unzip -qq -n pipeline.jar && \
+    unzip -qq pipeline.jar && \
     pip install -I /tmp/pipe-temp/BOOT-INF/classes/static/pipe-common.tar.gz && \
     cd / && \
     rm -rf /tmp/pipe-temp
