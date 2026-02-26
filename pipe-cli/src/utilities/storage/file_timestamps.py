@@ -18,7 +18,6 @@ import os
 import subprocess
 import time
 
-from src.utilities.encoding_utilities import to_string
 from src.utilities.platform_utilities import is_windows, is_mac
 
 class FileTimestampsManager:
@@ -37,18 +36,16 @@ class FileTimestampsManager:
             mtime = self._to_timestamp(last_modified_datetime)
             if mtime is None:
                 return
-            path_str = to_string(path)
-            os.utime(path_str, (mtime, mtime))
+            os.utime(path, (mtime, mtime))
             if is_windows():
-                self._set_windows_creation_time(path_str, mtime)
+                self._set_windows_creation_time(path, mtime)
             elif is_mac():
-                self._set_macos_creation_time(path_str, mtime)
+                self._set_macos_creation_time(path, mtime)
         except Exception as e:
             logging.debug('Failed to set file timestamps for %s: %s', path, e)
 
     @staticmethod
     def _to_timestamp(last_modified_datetime):
-        """Convert datetime to Unix timestamp. Handles both naive and timezone-aware datetimes."""
         if last_modified_datetime is None:
             return None
         try:
