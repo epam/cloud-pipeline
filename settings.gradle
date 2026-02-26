@@ -20,7 +20,7 @@ include 'data-sharing-service:client'
 include 'fs-browser'
 include 'fs-browser:fs-browser-client'
 // include 'billing-report-agent'  // commented: depends on elasticsearch-common (excluded)
-include 'cloud-pipeline-webdav-client'
+// include 'cloud-pipeline-webdav-client'  // excluded from build
 include 'git-reader'
 include 'monitoring-service'
 include 'storage-lifecycle-service'
