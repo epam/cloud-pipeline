@@ -82,6 +82,7 @@ dependencies {
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.9.6'
     annotationProcessor 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.9.6'
     implementation 'com.fasterxml.woodstox:woodstox-core:5.1.0'
+    annotationProcessor 'com.fasterxml.woodstox:woodstox-core:5.1.0'
     implementation 'javax.xml.bind:jaxb-api:2.3.1'
     implementation 'javax.validation:validation-api:2.0.1.Final'
 
@@ -126,7 +127,7 @@ task customStartScriptsWin(type: CreateStartScripts) {
     mainClassName = 'org.springframework.boot.loader.JarLauncher'
     classpath = files('data-transfer-service.jar')
     defaultJvmOpts = ["-Xms512m", "-Xmx2g"]
-    outputDir = file("$buildDir/scripts")
+    outputDir = file("$buildDir/scripts/win")
     doLast {
         windowsScript.text = windowsScript.text.replace("set JAVA_EXE=%JAVA_HOME%/bin/java.exe",
                 "set JAVA_EXE=%APP_HOME%/jre/bin/java.exe")
@@ -136,19 +137,19 @@ task customStartScriptsWin(type: CreateStartScripts) {
 task downloadJreWin(type: Download) {
     dependsOn bootJar
     src jreURL + windowsJre
-    dest "$buildDir/downloads/$windowsJre"
+    dest "$buildDir/downloads/win/$windowsJre"
     overwrite true
 }
 
 task unpackJreWin(type: Copy) {
     dependsOn downloadJreWin
-    from(zipTree("$buildDir/downloads/$windowsJre"))
-    into("$buildDir/downloads")
+    from(zipTree("$buildDir/downloads/win/$windowsJre"))
+    into("$buildDir/downloads/win")
 }
 
 task bundleWindows(type: Zip) {
     dependsOn unpackJreWin, customStartScriptsWin, bootJar
-    from ("$buildDir/downloads/$windowsJrePath") {
+    from ("$buildDir/downloads/win/$windowsJrePath") {
         include '**/*'
         into('jre')
     }
@@ -156,7 +157,7 @@ task bundleWindows(type: Zip) {
         include '**/*.jar'
         into('lib')
     }
-    from("$buildDir/scripts") {
+    from("$buildDir/scripts/win") {
         into('bin')
     }
     archiveBaseName = 'dts'
@@ -168,7 +169,7 @@ task customStartScriptsLinux(type: CreateStartScripts) {
     mainClassName = 'org.springframework.boot.loader.JarLauncher'
     classpath = files('data-transfer-service.jar')
     defaultJvmOpts = ["-Xms512m", "-Xmx2g"]
-    outputDir = file("$buildDir/scripts")
+    outputDir = file("$buildDir/scripts/linux")
     doLast {
         unixScript.text = unixScript.text.replace("# Determine the Java command to use to start the JVM.",
                 "export JAVA_HOME=\$APP_HOME/jre/")
@@ -178,19 +179,19 @@ task customStartScriptsLinux(type: CreateStartScripts) {
 task downloadJreLinux(type: Download) {
     dependsOn bootJar
     src jreURL + linuxJre
-    dest "$buildDir/downloads/$linuxJre"
+    dest "$buildDir/downloads/linux/$linuxJre"
     overwrite true
 }
 
 task unpackJreLinux(type: Copy) {
     dependsOn downloadJreLinux
-    from(tarTree(resources.gzip("$buildDir/downloads/$linuxJre")))
-    into("$buildDir/downloads")
+    from(tarTree(resources.gzip("$buildDir/downloads/linux/$linuxJre")))
+    into("$buildDir/downloads/linux")
 }
 
 task bundleLinux(type: Zip) {
     dependsOn unpackJreLinux, customStartScriptsLinux, bootJar
-    from ("$buildDir/downloads/$linuxJrePath") {
+    from ("$buildDir/downloads/linux/$linuxJrePath") {
         include '**/*'
         into('jre')
     }
@@ -198,7 +199,7 @@ task bundleLinux(type: Zip) {
         include '**/*.jar'
         into('lib')
     }
-    from("$buildDir/scripts") {
+    from("$buildDir/scripts/linux") {
         into('bin')
     }
     archiveBaseName = 'dts'
