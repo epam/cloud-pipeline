@@ -16,16 +16,15 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {
-  observer} from 'mobx-react';
+import {observer} from 'mobx-react';
 import {computed} from 'mobx';
 import classNames from 'classnames';
-import {Form} from '@ant-design/compatible';
 import {
   message,
   Button,
   Checkbox,
   Col,
+  Form,
   Input,
   Row,
   Select
@@ -48,7 +47,6 @@ const statuses = [
   'RESUMING'
 ];
 
-@Form.create()
 @observer
 export default class EditEmailNotification extends React.Component {
   static propTypes = {
@@ -68,6 +66,8 @@ export default class EditEmailNotification extends React.Component {
     }),
     users: PropTypes.array
   };
+
+  formRef = React.createRef();
 
   formItemLayout = {
     labelCol: {
@@ -100,15 +100,17 @@ export default class EditEmailNotification extends React.Component {
     if (!this.props.template) {
       return false;
     }
+    const form = this.formRef.current;
+    if (!form) return false;
     const checkPropModified = (prop, defaultValue) => {
-      return (this.props.template[prop] || defaultValue) !== (this.props.form.getFieldValue(prop) || defaultValue);
+      return (this.props.template[prop] || defaultValue) !== (form.getFieldValue(prop) || defaultValue);
     };
     const checkIntPropModified = (prop) => {
-      return +this.props.template[prop] !== +this.props.form.getFieldValue(prop);
+      return +this.props.template[prop] !== +form.getFieldValue(prop);
     };
     const checkArrayPropModified = (prop, comparerFn = ((a, b) => a === b)) => {
       return !compareArrays((this.props.template[prop] || []).map(i => i),
-        this.props.form.getFieldValue(prop), comparerFn);
+        form.getFieldValue(prop), comparerFn);
     };
     return this.state.preferences.modified ||
       checkPropModified('enabled') ||
@@ -124,8 +126,8 @@ export default class EditEmailNotification extends React.Component {
 
   handleSubmit = (e) => {
     e.preventDefault();
-    this.props.form.validateFieldsAndScroll(async (err, values) => {
-      if (!err) {
+    this.formRef.current.validateFields()
+      .then(async (values) => {
         let {
           threshold,
           ...restValues
@@ -148,12 +150,12 @@ export default class EditEmailNotification extends React.Component {
         this.setState({
           preferencesSession: this.state.preferencesSession + 1
         });
-      }
-    });
+      })
+      .catch(() => {});
   };
 
   bodyValueChanged = (code) => {
-    this.props.form.setFieldsValue({body: code});
+    this.formRef.current && this.formRef.current.setFieldsValue({body: code});
   };
 
   preferencesChanged = (preferences, modified) => {
@@ -171,6 +173,22 @@ export default class EditEmailNotification extends React.Component {
     });
   };
 
+  get initialValues () {
+    const t = this.props.template;
+    if (!t) return {};
+    return {
+      enabled: t.enabled,
+      keepInformedAdmins: t.keepInformedAdmins,
+      keepInformedOwner: t.keepInformedOwner,
+      informedUserIds: (t.informedUserIds || []).map(u => `${u}`),
+      statusesToInform: (t.statusesToInform || []).map(s => s),
+      threshold: t.threshold,
+      resendDelay: t.resendDelay,
+      subject: t.subject,
+      body: t.body
+    };
+  }
+
   render () {
     if (!this.props.template) {
       return null;
@@ -181,7 +199,7 @@ export default class EditEmailNotification extends React.Component {
       this.props.template.type === 'LONG_PAUSED';
     const renderDelay = ['IDLE_RUN', 'FULL_NODE_POOL'].includes(this.props.template.type);
     const renderStatusesToInform = this.props.template.type === 'PIPELINE_RUN_STATUS';
-    const {getFieldDecorator, resetFields} = this.props.form;
+    const form = this.formRef.current;
     return (
       <div style={{width: '100%', overflowY: 'auto'}}>
         <NotificationPreferences
@@ -189,61 +207,59 @@ export default class EditEmailNotification extends React.Component {
           session={this.state.preferencesSession}
           onChange={this.preferencesChanged}
         />
-        <Form className="edit-email-notification-form" layout="horizontal">
+        <Form
+          key={this.props.template.id}
+          ref={this.formRef}
+          className="edit-email-notification-form"
+          layout="horizontal"
+          initialValues={this.initialValues}
+        >
           <Form.Item
             style={{marginBottom: 0}}
-            className="edit-email-notification-enabled-container">
-            {getFieldDecorator('enabled', {
-              valuePropName: 'checked',
-              initialValue: this.props.template.enabled
-            })(
-              <Checkbox>Enabled</Checkbox>
-            )}
+            className="edit-email-notification-enabled-container"
+            name="enabled"
+            valuePropName="checked"
+          >
+            <Checkbox>Enabled</Checkbox>
           </Form.Item>
           <Form.Item
             style={{marginBottom: 0}}
-            className="edit-email-notification-keep-informed-admins-container">
-            {getFieldDecorator('keepInformedAdmins', {
-              valuePropName: 'checked',
-              initialValue: this.props.template.keepInformedAdmins
-            })(
-              <Checkbox>Keep admins informed</Checkbox>
-            )}
+            className="edit-email-notification-keep-informed-admins-container"
+            name="keepInformedAdmins"
+            valuePropName="checked"
+          >
+            <Checkbox>Keep admins informed</Checkbox>
           </Form.Item>
           <Form.Item
             style={{marginBottom: 0}}
-            className="edit-email-notification-keep-informed-owners-container">
-            {getFieldDecorator('keepInformedOwner', {
-              valuePropName: 'checked',
-              initialValue: this.props.template.keepInformedOwner
-            })(
-              <Checkbox>Keep owners informed</Checkbox>
-            )}
+            className="edit-email-notification-keep-informed-owners-container"
+            name="keepInformedOwner"
+            valuePropName="checked"
+          >
+            <Checkbox>Keep owners informed</Checkbox>
           </Form.Item>
           <Form.Item
             style={{marginBottom: 0}}
             label="Informed users"
-            className="edit-email-notification-keep-informed-users-container">
-            {getFieldDecorator('informedUserIds', {
-              initialValue: (this.props.template.informedUserIds || []).map(u => `${u}`)
-            })(
-              <Select
-                size="small"
-                filterOption={
-                  (input, option) =>
-                    option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0}
-                mode="tags">
-                {
-                  this.props.users.map(u => {
-                    return (
-                      <Select.Option key={u.id} value={`${u.id}`}>
-                        {u.userName}
-                      </Select.Option>
-                    );
-                  })
-                }
-              </Select>
-            )}
+            className="edit-email-notification-keep-informed-users-container"
+            name="informedUserIds"
+          >
+            <Select
+              size="small"
+              filterOption={
+                (input, option) =>
+                  option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0}
+              mode="tags">
+              {
+                this.props.users.map(u => {
+                  return (
+                    <Select.Option key={u.id} value={`${u.id}`}>
+                      {u.userName}
+                    </Select.Option>
+                  );
+                })
+              }
+            </Select>
           </Form.Item>
           <Form.Item
             style={{
@@ -251,27 +267,25 @@ export default class EditEmailNotification extends React.Component {
               display: renderStatusesToInform ? 'inherit' : 'none'
             }}
             label="Statuses to inform:"
-            className="edit-email-notification-statuses-to-inform-container">
-            {getFieldDecorator('statusesToInform', {
-              initialValue: (this.props.template.statusesToInform || []).map(s => s)
-            })(
-              <Select
-                size="small"
-                filterOption={
-                  (input, option) =>
-                    option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0}
-                mode="tags">
-                {
-                  statuses.map(s => {
-                    return (
-                      <Select.Option key={s} value={s}>
-                        {s}
-                      </Select.Option>
-                    );
-                  })
-                }
-              </Select>
-            )}
+            className="edit-email-notification-statuses-to-inform-container"
+            name="statusesToInform"
+          >
+            <Select
+              size="small"
+              filterOption={
+                (input, option) =>
+                  option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0}
+              mode="tags">
+              {
+                statuses.map(s => {
+                  return (
+                    <Select.Option key={s} value={s}>
+                      {s}
+                    </Select.Option>
+                  );
+                })
+              }
+            </Select>
           </Form.Item>
           <Form.Item
             style={{
@@ -279,27 +293,24 @@ export default class EditEmailNotification extends React.Component {
               display: renderThresholdAndDelay ? 'inherit' : 'none'
             }}
             label="Threshold (sec)"
-            className="edit-email-notification-threshold-container">
-            {getFieldDecorator('threshold', {
-              rules: [
-                {
-                  validator: (rule, value, callback) => {
-                    if (!isNaN(value) && (typeof value === 'number' || (value && value.length > 0))) {
-                      if (+value <= 0 && +value !== -1) {
-                        callback('Only positive number or -1 is allowed');
-                        return;
-                      }
-                    } else {
-                      callback('Please enter a valid number');
+            className="edit-email-notification-threshold-container"
+            name="threshold"
+            rules={[
+              {
+                validator: (rule, value) => {
+                  if (!isNaN(value) && (typeof value === 'number' || (value && value.length > 0))) {
+                    if (+value <= 0 && +value !== -1) {
+                      return Promise.reject(new Error('Only positive number or -1 is allowed'));
                     }
-                    callback();
+                  } else {
+                    return Promise.reject(new Error('Please enter a valid number'));
                   }
+                  return Promise.resolve();
                 }
-              ],
-              initialValue: this.props.template.threshold
-            })(
-              <Input size="small" />
-            )}
+              }
+            ]}
+          >
+            <Input size="small" />
           </Form.Item>
           <Form.Item
             style={{
@@ -307,27 +318,24 @@ export default class EditEmailNotification extends React.Component {
               display: renderThresholdAndDelay || renderDelay ? 'inherit' : 'none'
             }}
             label="Resend delay (sec)"
-            className="edit-email-notification-threshold-container">
-            {getFieldDecorator('resendDelay', {
-              rules: [
-                {
-                  validator: (rule, value, callback) => {
-                    if (!isNaN(value)) {
-                      if (+value <= 0 && +value !== -1) {
-                        callback('Only positive number or -1 is allowed');
-                        return;
-                      }
-                    } else {
-                      callback('Please enter a valid number');
+            className="edit-email-notification-threshold-container"
+            name="resendDelay"
+            rules={[
+              {
+                validator: (rule, value) => {
+                  if (!isNaN(value)) {
+                    if (+value <= 0 && +value !== -1) {
+                      return Promise.reject(new Error('Only positive number or -1 is allowed'));
                     }
-                    callback();
+                  } else {
+                    return Promise.reject(new Error('Please enter a valid number'));
                   }
+                  return Promise.resolve();
                 }
-              ],
-              initialValue: this.props.template.resendDelay
-            })(
-              <Input size="small" />
-            )}
+              }
+            ]}
+          >
+            <Input size="small" />
           </Form.Item>
           <Row type="flex" style={{marginTop: 5}}>
             <Button.Group size="small">
@@ -351,18 +359,16 @@ export default class EditEmailNotification extends React.Component {
               display: this.state.previewMode ? 'none' : 'inherit'
             }}
             label="Subject"
-            className="edit-email-notification-subject-container">
-            {getFieldDecorator('subject', {
-              rules: [
-                {
-                  required: true,
-                  message: 'Subject is required'
-                }
-              ],
-              initialValue: this.props.template.subject
-            })(
-              <Input />
-            )}
+            className="edit-email-notification-subject-container"
+            name="subject"
+            rules={[
+              {
+                required: true,
+                message: 'Subject is required'
+              }
+            ]}
+          >
+            <Input />
           </Form.Item>
           <Row type="flex" align="middle" style={{display: this.state.previewMode ? 'flex' : 'none'}}>
             <Col style={{marginBottom: 5}}>Subject:</Col>
@@ -377,7 +383,7 @@ export default class EditEmailNotification extends React.Component {
                   overflow: 'hidden',
                   border: 'none'
                 }}
-                value={this.props.form.getFieldValue('subject')} />
+                value={form ? form.getFieldValue('subject') : undefined} />
             </Col>
           </Row>
           <Form.Item
@@ -386,27 +392,25 @@ export default class EditEmailNotification extends React.Component {
               display: this.state.previewMode ? 'none' : 'inherit'
             }}
             label="Body"
-            className="edit-email-notification-body-container">
-            {getFieldDecorator('body', {
-              rules: [
-                {
-                  required: true,
-                  message: 'Body is required'
-                }
-              ],
-              initialValue: this.props.template.body
-            })(
-              <Input style={{display: 'none'}} />
-            )}
-            <CodeEditor
-              ref={editor => this.editor = editor}
-              className={classNames(styles.codeEditor, 'cp-code-editor')}
-              language="application/x-jsp"
-              onChange={this.bodyValueChanged}
-              lineWrapping
-              defaultCode={this.props.template.body}
-            />
+            className="edit-email-notification-body-container"
+            name="body"
+            rules={[
+              {
+                required: true,
+                message: 'Body is required'
+              }
+            ]}
+          >
+            <Input style={{display: 'none'}} />
           </Form.Item>
+          <CodeEditor
+            ref={editor => { this.editor = editor; }}
+            className={classNames(styles.codeEditor, 'cp-code-editor')}
+            language="application/x-jsp"
+            onChange={this.bodyValueChanged}
+            lineWrapping
+            defaultCode={this.props.template.body}
+          />
           <Row style={{display: this.state.previewMode ? 'flex' : 'none'}}>
             <EmailPreview
               className={classNames(styles.codeEditor, 'cp-code-editor')}
@@ -416,7 +420,7 @@ export default class EditEmailNotification extends React.Component {
                 overflow: 'hidden',
                 width: '100%'
               }}
-              value={this.props.form.getFieldValue('body')} />
+              value={form ? form.getFieldValue('body') : undefined} />
           </Row>
         </Form>
         <Row className={styles.actions} type="flex" justify="end">
@@ -425,7 +429,7 @@ export default class EditEmailNotification extends React.Component {
             disabled={!this.modified}
             size="small"
             onClick={() => {
-              resetFields();
+              this.formRef.current && this.formRef.current.resetFields();
               this.setState({
                 preferencesSession: this.state.preferencesSession + 1
               });
@@ -450,7 +454,9 @@ export default class EditEmailNotification extends React.Component {
 
   resetFormFields = (props) => {
     props = props || this.props;
-    props.form && props.form.resetFields();
+    if (this.formRef.current) {
+      this.formRef.current.resetFields();
+    }
     this.editor && this.editor.setValue(props.template ? props.template.body || '' : '');
     this.setState({
       preferencesSession: this.state.preferencesSession + 1
@@ -463,7 +469,7 @@ export default class EditEmailNotification extends React.Component {
     }
   }
 
-  UNSAFE_componentWillReceiveProps (nextProps) {
+  componentWillReceiveProps (nextProps) {
     if (!nextProps.template || !this.props.template || nextProps.template.id !== this.props.template.id) {
       this.emailNotificationChanged();
       this.resetFormFields(nextProps);

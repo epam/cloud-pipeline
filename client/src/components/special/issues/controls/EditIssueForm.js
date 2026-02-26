@@ -16,8 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Form} from '@ant-design/compatible';
-import {Button, Input, message, Modal, Row} from 'antd';
+import {Button, Form, Input, message, Modal, Row} from 'antd';
 import roleModel from '../../../../utils/roleModel';
 import localization from '../../../../utils/localization';
 import styles from './EditIssueForm.css';
@@ -25,8 +24,9 @@ import IssueComment from './IssueComment';
 
 @roleModel.authenticationInfo
 @localization.localizedComponent
-@Form.create()
 export default class EditIssueForm extends localization.LocalizedReactComponent {
+
+  formRef = React.createRef();
 
   static propTypes = {
     issue: PropTypes.shape({
@@ -49,18 +49,20 @@ export default class EditIssueForm extends localization.LocalizedReactComponent 
   };
   handleSubmit = (e) => {
     e.preventDefault();
-    this.props.form.validateFieldsAndScroll(async (err, values) => {
-      if (!values.comment || !values.comment.text) {
-        message.error(`${this.localizedString('Issue')} description is required`, 3);
-      } else if (!err) {
-        await this.props.onSubmit(values);
-        this.props.form.resetFields();
-      }
-    });
+    this.formRef.current.validateFields()
+      .then(async (values) => {
+        if (!values.comment || !values.comment.text) {
+          message.error(`${this.localizedString('Issue')} description is required`, 3);
+        } else {
+          await this.props.onSubmit(values);
+          this.formRef.current.resetFields();
+        }
+      })
+      .catch(() => {});
   };
 
   onClose = () => {
-    this.props.form.resetFields();
+    this.formRef.current && this.formRef.current.resetFields();
     this.props.onCancel && this.props.onCancel();
   };
 
@@ -152,38 +154,41 @@ export default class EditIssueForm extends localization.LocalizedReactComponent 
 
   render () {
     if (this.props.visible) {
-      const {getFieldDecorator} = this.props.form;
+      const issue = this.props.issue;
       return (
         <div style={{flex: 1, display: 'flex', flexDirection: 'column'}}>
-          <Form className="edit-issue-form">
+          <Form
+            ref={this.formRef}
+            className="edit-issue-form"
+            initialValues={{
+              name: issue ? issue.name : '',
+              comment: {
+                text: issue && issue.text ? issue.text : ''
+              }
+            }}
+          >
             <Form.Item
               key="issue name"
               className="edit-issue-form-name-container"
-              style={{marginBottom: 5}}>
-              {getFieldDecorator('name',
-                {
-                  rules: [{required: true, message: `${this.localizedString('Issue')} title is required`}],
-                  initialValue: `${this.props.issue ? this.props.issue.name : ''}`
-                })(
-                <Input
-                  size="default"
-                  placeholder="Title"
-                  disabled={this.props.pending}
-                  onPressEnter={this.handleSubmit}
-                  ref={this.initializeNameInput} />
-              )}
+              style={{marginBottom: 5}}
+              name="name"
+              rules={[{required: true, message: `${this.localizedString('Issue')} title is required`}]}
+            >
+              <Input
+                size="default"
+                placeholder="Title"
+                disabled={this.props.pending}
+                onPressEnter={this.handleSubmit}
+                ref={this.initializeNameInput}
+              />
             </Form.Item>
             <Form.Item
               key="issue description"
               className="edit-issue-form-description-container"
-              style={{marginBottom: 5}}>
-              {getFieldDecorator('comment',
-                {
-                  initialValue: {
-                    text: `${this.props.issue && this.props.issue.text
-                      ? this.props.issue.text : ''}`
-                  }
-                })(<IssueComment disabled={this.props.pending} />)}
+              style={{marginBottom: 5}}
+              name="comment"
+            >
+              <IssueComment disabled={this.props.pending} />
             </Form.Item>
           </Form>
           {this.renderActions()}

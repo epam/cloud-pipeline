@@ -16,14 +16,13 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Form} from '@ant-design/compatible';
-import {Button, Modal, Input, Row, Col, Spin, Tabs} from 'antd';
+import {Button, Form, Modal, Input, Row, Col, Spin, Tabs} from 'antd';
 import PermissionsForm from '../../../roleModel/PermissionsForm';
 import roleModel from '../../../../utils/roleModel';
 
 @roleModel.authenticationInfo
-@Form.create()
 export default class EditDetachedConfigurationForm extends React.Component {
+  formRef = React.createRef();
 
   state = {
     activeTab: 'info',
@@ -61,15 +60,14 @@ export default class EditDetachedConfigurationForm extends React.Component {
 
   handleSubmit = (e) => {
     e.preventDefault();
-    this.props.form.validateFieldsAndScroll((err, values) => {
-      if (!err) {
+    this.formRef.current.validateFields()
+      .then((values) => {
         this.props.onSubmit(values);
-      }
-    });
+      })
+      .catch(() => {});
   };
 
   renderForm = () => {
-    const {getFieldDecorator} = this.props.form;
     const formItems = [];
     const writeAllowed = this.props.configuration
       ? roleModel.writeAllowed(this.props.configuration)
@@ -78,34 +76,31 @@ export default class EditDetachedConfigurationForm extends React.Component {
       <Form.Item
         key="configuration name"
         className="edit-configuration-form-name-container"
-        {...this.formItemLayout} label="Configuration name">
-        {getFieldDecorator('name',
-          {
-            rules: [{required: true, message: 'Configuration name is required'}],
-            initialValue: `${this.props.configuration ? this.props.configuration.name : ''}`
-          })(
-          <Input
-            disabled={this.props.pending || !writeAllowed}
-            ref={this.initializeNameInput}
-            onPressEnter={this.handleSubmit} />
-        )}
+        {...this.formItemLayout}
+        label="Configuration name"
+        name="name"
+        rules={[{required: true, message: 'Configuration name is required'}]}
+      >
+        <Input
+          disabled={this.props.pending || !writeAllowed}
+          ref={this.initializeNameInput}
+          onPressEnter={this.handleSubmit}
+        />
       </Form.Item>
     ));
     formItems.push((
       <Form.Item
         key="configuration description"
         className="edit-configuration-form-description-container"
-        {...this.formItemLayout} label="Configuration description">
-        {getFieldDecorator('description',
-          {
-            initialValue: `${this.props.configuration && this.props.configuration.description
-              ? this.props.configuration.description : ''}`
-          })(
-          <Input
-            type="textarea"
-            autoSize={{minRows: 2, maxRows: 6}}
-            disabled={this.props.pending || !writeAllowed} />
-        )}
+        {...this.formItemLayout}
+        label="Configuration description"
+        name="description"
+      >
+        <Input
+          type="textarea"
+          autoSize={{minRows: 2, maxRows: 6}}
+          disabled={this.props.pending || !writeAllowed}
+        />
       </Form.Item>
     ));
     return formItems;
@@ -233,10 +228,9 @@ export default class EditDetachedConfigurationForm extends React.Component {
     const isReadOnly = this.props.configuration
       ? this.props.configuration.locked || !roleModel.writeAllowed(this.props.configuration)
       : false;
-    const {resetFields} = this.props.form;
     const modalFooter = this.getModalFooter(isNewConfiguration);
     const onClose = () => {
-      resetFields();
+      this.formRef.current && this.formRef.current.resetFields();
       this.setState({activeTab: 'info'});
     };
     return (
@@ -248,16 +242,24 @@ export default class EditDetachedConfigurationForm extends React.Component {
         title={
           isNewConfiguration
             ? (
-            this.props.pipelineTemplate
-              ? `Create configuration (${this.props.pipelineTemplate.id})`
-              : 'Create configuration'
-          )
+              this.props.pipelineTemplate
+                ? `Create configuration (${this.props.pipelineTemplate.id})`
+                : 'Create configuration'
+            )
             : 'Edit configuration info'
         }
         onCancel={this.props.onCancel}
         footer={this.state.activeTab === 'info' ? modalFooter : false}>
         <Spin spinning={this.props.pending}>
-          <Form className="edit-configuration-form">
+          <Form
+            ref={this.formRef}
+            className="edit-configuration-form"
+            initialValues={{
+              name: this.props.configuration ? this.props.configuration.name : '',
+              description: this.props.configuration && this.props.configuration.description
+                ? this.props.configuration.description : ''
+            }}
+          >
             <Tabs
               size="small"
               activeKey={this.state.activeTab}
@@ -267,8 +269,8 @@ export default class EditDetachedConfigurationForm extends React.Component {
               </Tabs.TabPane>
               {
                 this.props.configuration &&
-                this.props.configuration.id ?
-                  (
+                this.props.configuration.id
+                  ? (
                     <Tabs.TabPane key="permissions" tab="Permissions">
                       <PermissionsForm
                         readonly={isReadOnly}

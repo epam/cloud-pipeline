@@ -16,14 +16,13 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Form} from '@ant-design/compatible';
-import {Button, Modal, Input, Row, Col, Spin, Select, Checkbox, Tabs} from 'antd';
+import {Button, Form, Modal, Input, Row, Col, Spin, Select, Checkbox, Tabs} from 'antd';
 import {CloseCircleOutlined, ExclamationCircleOutlined, InfoCircleOutlined} from '@ant-design/icons';
 import Markdown from '../../special/markdown';
 import styles from './EditSystemNotificationForm.css';
 
-@Form.create()
 export default class EditSystemNotificationForm extends React.Component {
+  formRef = React.createRef();
   static propTypes = {
     notification: PropTypes.shape({
       notificationId: PropTypes.oneOfType([
@@ -54,30 +53,28 @@ export default class EditSystemNotificationForm extends React.Component {
 
   handleSubmit = (e) => {
     e.preventDefault();
-    this.props.form.validateFieldsAndScroll((err, values) => {
-      if (!err) {
+    this.formRef.current.validateFields()
+      .then((values) => {
         values.state = values.state ? 'ACTIVE' : 'INACTIVE';
         this.props.onSubmit(values);
-      }
-    });
+      })
+      .catch(() => {});
   };
 
   renderForm = () => {
-    const {getFieldDecorator, getFieldValue} = this.props.form;
+    const form = this.formRef.current;
+    const notification = this.props.notification;
     const formItems = [];
-    if (this.props.notification) {
+    if (notification) {
       formItems.push((
         <Form.Item
           key="notification id"
           style={{display: 'none'}}
           className="edit-notification-form-id-container"
-          {...this.formItemLayout}>
-          {getFieldDecorator('notificationId',
-            {
-              initialValue: `${this.props.notification ? this.props.notification.notificationId : ''}`
-            })(
-              <Input disabled={true} />
-          )}
+          {...this.formItemLayout}
+          name="notificationId"
+        >
+          <Input disabled />
         </Form.Item>
       ));
     }
@@ -85,47 +82,43 @@ export default class EditSystemNotificationForm extends React.Component {
       <Form.Item
         key="notification title"
         className="edit-notification-form-title-container"
-        {...this.formItemLayout} label="Title">
-        {getFieldDecorator('title',
-          {
-            rules: [{required: true, message: 'Title is required'}],
-            initialValue: `${this.props.notification ? this.props.notification.title : ''}`
-          })(
-          <Input
-            disabled={this.props.pending}
-            onPressEnter={this.handleSubmit}
-            ref={this.initializeNameInput} />
-        )}
+        {...this.formItemLayout}
+        label="Title"
+        name="title"
+        rules={[{required: true, message: 'Title is required'}]}
+      >
+        <Input
+          disabled={this.props.pending}
+          onPressEnter={this.handleSubmit}
+          ref={this.initializeNameInput}
+        />
       </Form.Item>
     ));
     formItems.push((
       <Form.Item
         key="notification body"
         className="edit-notification-form-body-container"
-        {...this.formItemLayout} label="Body">
+        {...this.formItemLayout}
+        label="Body"
+        name="body"
+      >
         <Tabs
           type="card"
           className="cp-tabs-no-padding"
         >
           <Tabs.TabPane tab="Write" key="write">
-            {getFieldDecorator('body',
-              {
-                initialValue: `${this.props.notification && this.props.notification.body
-                  ? this.props.notification.body : ''}`
-              })(
-              <Input
-                type="textarea"
-                autoSize={{minRows: 2, maxRows: 6}}
-                className={styles.notificationBodyInput}
-                disabled={this.props.pending}
-                placeholder="Notification text"
-              />
-            )}
+            <Input
+              type="textarea"
+              autoSize={{minRows: 2, maxRows: 6}}
+              className={styles.notificationBodyInput}
+              disabled={this.props.pending}
+              placeholder="Notification text"
+            />
           </Tabs.TabPane>
           <Tabs.TabPane tab="Preview" key="preview">
             <Markdown
               className={styles.notificationPreviewContainer}
-              md={getFieldValue('body')}
+              md={form ? form.getFieldValue('body') : ''}
             />
           </Tabs.TabPane>
         </Tabs>
@@ -136,33 +129,30 @@ export default class EditSystemNotificationForm extends React.Component {
         key="notification severity"
         className="edit-notification-form-severity-container"
         style={{marginBottom: 10}}
-        {...this.formItemLayout} label="Severity">
-        {getFieldDecorator('severity',
-          {
-            initialValue: `${this.props.notification && this.props.notification.severity
-              ? this.props.notification.severity : 'INFO'}`
-          })(
-          <Select>
-            <Select.Option key="INFO" value="INFO" title="Info">
-              <div className={styles.select}>
-                <InfoCircleOutlined className="cp-setting-info cp-icon-large" />
-                Info
-              </div>
-            </Select.Option>
-            <Select.Option key="WARNING" value="WARNING" title="Warning">
-              <div className={styles.select}>
-                <ExclamationCircleOutlined className="cp-setting-warning cp-icon-large" />
-                Warning
-              </div>
-            </Select.Option>
-            <Select.Option key="CRITICAL" value="CRITICAL" title="Critical">
-              <div className={styles.select}>
-                <CloseCircleOutlined className="cp-setting-critical cp-icon-large" />
-                Critical
-              </div>
-            </Select.Option>
-          </Select>
-        )}
+        {...this.formItemLayout}
+        label="Severity"
+        name="severity"
+      >
+        <Select>
+          <Select.Option key="INFO" value="INFO" title="Info">
+            <div className={styles.select}>
+              <InfoCircleOutlined className="cp-setting-info cp-icon-large" />
+              Info
+            </div>
+          </Select.Option>
+          <Select.Option key="WARNING" value="WARNING" title="Warning">
+            <div className={styles.select}>
+              <ExclamationCircleOutlined className="cp-setting-warning cp-icon-large" />
+              Warning
+            </div>
+          </Select.Option>
+          <Select.Option key="CRITICAL" value="CRITICAL" title="Critical">
+            <div className={styles.select}>
+              <CloseCircleOutlined className="cp-setting-critical cp-icon-large" />
+              Critical
+            </div>
+          </Select.Option>
+        </Select>
       </Form.Item>
     ));
     formItems.push((
@@ -170,15 +160,11 @@ export default class EditSystemNotificationForm extends React.Component {
         <Col xs={24} sm={6} />
         <Col xs={24} sm={18}>
           <Form.Item
-            className="edit-notification-form-blocking-container">
-            {getFieldDecorator('blocking',
-              {
-                valuePropName: 'checked',
-                initialValue: this.props.notification && this.props.notification.state
-                  ? this.props.notification.blocking : false
-              })(
-              <Checkbox>Blocking</Checkbox>
-            )}
+            className="edit-notification-form-blocking-container"
+            name="blocking"
+            valuePropName="checked"
+          >
+            <Checkbox>Blocking</Checkbox>
           </Form.Item>
         </Col>
       </Row>
@@ -187,15 +173,12 @@ export default class EditSystemNotificationForm extends React.Component {
       <Form.Item
         key="notification state"
         className="edit-notification-form-state-container"
-        {...this.formItemLayout} label="State">
-        {getFieldDecorator('state',
-          {
-            valuePropName: 'checked',
-            initialValue: this.props.notification && this.props.notification.state
-              ? this.props.notification.state === 'ACTIVE' : false
-          })(
-          <Checkbox>Active</Checkbox>
-        )}
+        {...this.formItemLayout}
+        label="State"
+        name="state"
+        valuePropName="checked"
+      >
+        <Checkbox>Active</Checkbox>
       </Form.Item>
     ));
     return formItems;
@@ -203,7 +186,7 @@ export default class EditSystemNotificationForm extends React.Component {
 
   render () {
     const isNewNotification = this.props.notification === undefined || this.props.notification === null;
-    const {resetFields} = this.props.form;
+    const notification = this.props.notification;
     const modalFooter = this.props.pending ? false : (
       <Row type="flex" justify="space-between">
         <Button
@@ -218,7 +201,7 @@ export default class EditSystemNotificationForm extends React.Component {
       </Row>
     );
     const onClose = () => {
-      resetFields();
+      this.formRef.current && this.formRef.current.resetFields();
     };
     return (
       <Modal
@@ -234,7 +217,18 @@ export default class EditSystemNotificationForm extends React.Component {
         onCancel={this.props.onCancel}
         footer={modalFooter}>
         <Spin spinning={this.props.pending}>
-          <Form className="edit-notification-form">
+          <Form
+            ref={this.formRef}
+            className="edit-notification-form"
+            initialValues={{
+              notificationId: notification ? `${notification.notificationId}` : '',
+              title: notification ? notification.title : '',
+              body: notification && notification.body ? notification.body : '',
+              severity: notification && notification.severity ? notification.severity : 'INFO',
+              blocking: notification && notification.state ? notification.blocking : false,
+              state: notification && notification.state ? notification.state === 'ACTIVE' : false
+            }}
+          >
             {this.renderForm()}
           </Form>
         </Spin>

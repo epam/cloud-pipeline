@@ -20,8 +20,8 @@ import {
   observer} from 'mobx-react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
-import {Form} from '@ant-design/compatible';
 import {Button,
+  Form,
   Modal,
   Input,
   Row,
@@ -33,10 +33,11 @@ import {DeleteOutlined} from '@ant-design/icons';
 import styles from './UserManagement.css';
 import roleModel from '../../../utils/roleModel';
 
-@Form.create()
 @inject('dataStorages')
 @observer
 export default class CreateUserForm extends React.Component {
+
+  formRef = React.createRef();
 
   static propTypes = {
     onCancel: PropTypes.func,
@@ -63,15 +64,15 @@ export default class CreateUserForm extends React.Component {
 
   handleSubmit = (e) => {
     e.preventDefault();
-    this.props.form.validateFieldsAndScroll((err, values) => {
-      if (!err) {
+    this.formRef.current.validateFields()
+      .then((values) => {
         this.props.onSubmit({
           userName: values.name,
           roleIds: this.state.selectedRoles,
           defaultStorageId: values.defaultStorageId
         });
-      }
-    });
+      })
+      .catch(() => {});
   };
 
   availableRoles = () => {
@@ -166,7 +167,6 @@ export default class CreateUserForm extends React.Component {
   };
 
   render () {
-    const {getFieldDecorator, resetFields} = this.props.form;
     const modalFooter = this.props.pending ? false : (
       <Row>
         <Button
@@ -185,7 +185,7 @@ export default class CreateUserForm extends React.Component {
         selectedRoles: [],
         defaultRolesAssigned: false
       });
-      resetFields();
+      this.formRef.current && this.formRef.current.resetFields();
     };
     return (
       <Modal
@@ -196,53 +196,52 @@ export default class CreateUserForm extends React.Component {
         title="Create user"
         onCancel={this.props.onCancel}
         footer={modalFooter}>
-        <Form className="create-user-form" layout="horizontal">
+        <Form ref={this.formRef} className="create-user-form" layout="horizontal">
           <Form.Item
             style={{marginBottom: 5}}
             className="create-user-form-name-container"
-            label="Name">
-            {getFieldDecorator('name', {
-              rules: [
-                {required: true, message: 'Name is required'}
-              ]
-            })(
-              <Input
-                style={{width: '100%'}}
-                ref={this.initializeNameInput}
-                onPressEnter={this.handleSubmit}
-                disabled={this.props.pending} />
-            )}
+            label="Name"
+            name="name"
+            rules={[{required: true, message: 'Name is required'}]}
+          >
+            <Input
+              style={{width: '100%'}}
+              ref={this.initializeNameInput}
+              onPressEnter={this.handleSubmit}
+              disabled={this.props.pending}
+            />
           </Form.Item>
           <Form.Item
             style={{marginBottom: 5}}
             className="create-user-form-default-data-storage-container"
-            label="Default data storage">
-            {getFieldDecorator('defaultStorageId')(
-              <Select
-                allowClear
-                showSearch
-                disabled={this.props.pending}
-                style={{flex: 1}}
-                filterOption={(input, option) =>
+            label="Default data storage"
+            name="defaultStorageId"
+          >
+            <Select
+              allowClear
+              showSearch
+              disabled={this.props.pending}
+              style={{flex: 1}}
+              filterOption={(input, option) =>
                 option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0 ||
                 option.props.pathMask.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                }>
-                {
-                  this.dataStorages.map(d => {
-                    return (
-                      <Select.Option
-                        key={d.id}
-                        value={`${d.id}`}
-                        name={d.name}
-                        title={d.name}
-                        pathMask={d.pathMask}>
-                        <b>{d.name}</b> ({d.pathMask})
-                      </Select.Option>
-                    );
-                  })
-                }
-              </Select>
-            )}
+              }
+            >
+              {
+                this.dataStorages.map(d => {
+                  return (
+                    <Select.Option
+                      key={d.id}
+                      value={`${d.id}`}
+                      name={d.name}
+                      title={d.name}
+                      pathMask={d.pathMask}>
+                      <b>{d.name}</b> ({d.pathMask})
+                    </Select.Option>
+                  );
+                })
+              }
+            </Select>
           </Form.Item>
           <Row style={{marginTop: 15, paddingLeft: 2, marginBottom: 2}}>
             Assign group or role:

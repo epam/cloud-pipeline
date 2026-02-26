@@ -15,14 +15,13 @@
  */
 
 import React from 'react';
-import {Form} from '@ant-design/compatible';
-import {Button, Modal, Input, Row, Spin} from 'antd';
+import {Button, Form, Modal, Input, Row, Spin} from 'antd';
 import {inject} from 'mobx-react';
 import PropTypes from 'prop-types';
 
 @inject('visible', 'onSubmit', 'onCancel', 'pending', 'title')
-@Form.create()
 export default class PipelineCodeSourceNameDialog extends React.Component {
+  formRef = React.createRef();
 
   static propTypes = {
     onCancel: PropTypes.func,
@@ -41,20 +40,19 @@ export default class PipelineCodeSourceNameDialog extends React.Component {
     wrapperCol: {
       xs: {span: 24},
       sm: {span: 18}
-    },
+    }
   };
 
   handleSubmit = (e) => {
     e.preventDefault();
-    this.props.form.validateFieldsAndScroll((err, values) => {
-      if (!err) {
+    this.formRef.current.validateFields()
+      .then((values) => {
         this.props.onSubmit(values);
-      }
-    });
+      })
+      .catch(() => {});
   };
 
-  render() {
-    const {getFieldDecorator, resetFields} = this.props.form;
+  render () {
     const modalFooter = this.props.pending ? false : (
       <Row>
         <Button onClick={this.props.onCancel}>Cancel</Button>
@@ -62,53 +60,52 @@ export default class PipelineCodeSourceNameDialog extends React.Component {
       </Row>
     );
     const onClose = () => {
-      resetFields();
+      this.formRef.current && this.formRef.current.resetFields();
     };
-    const nameShouldNotBeTheSameValidator = (rule, value, callback) => {
+    const nameShouldNotBeTheSameValidator = (rule, value) => {
       if (this.props.name && value && value.toLowerCase() === this.props.name.toLowerCase()) {
-        callback('Name should not be the same');
-      } else if (this.props.sources && value &&
-        this.props.sources.filter(s => s.name.toLowerCase() === value.toLowerCase()).length > 0){
-        callback(`File or folder '${value}' already exists`);
-      } else {
-        callback();
+        return Promise.reject(new Error('Name should not be the same'));
       }
+      if (this.props.sources && value &&
+        this.props.sources.filter(s => s.name.toLowerCase() === value.toLowerCase()).length > 0) {
+        return Promise.reject(new Error(`File or folder '${value}' already exists`));
+      }
+      return Promise.resolve();
     };
     return (
       <Modal maskClosable={!this.props.pending}
-             afterClose={() => onClose()}
-             closable={!this.props.pending}
-             visible={this.props.visible}
-             title={this.props.title}
-             onCancel={this.props.onCancel}
-             footer={modalFooter}>
+        afterClose={() => onClose()}
+        closable={!this.props.pending}
+        visible={this.props.visible}
+        title={this.props.title}
+        onCancel={this.props.onCancel}
+        footer={modalFooter}>
         <Spin spinning={this.props.pending}>
-          <Form>
-            <Form.Item {...this.formItemLayout} label="Name">
-              {getFieldDecorator('name', {
-                rules: [
-                  {
-                    required: true,
-                    message: 'Name is required'
-                  },
-                  {
-                    pattern: /^[\da-zA-Z._\-@]+$/,
-                    message: 'Name can contain only letters, digits, \'_\', \'-\', \'@\' and \'.\'.'
-                  },
-                  {validator: nameShouldNotBeTheSameValidator}
-                ],
-                initialValue: this.props.name
-              })(
-                <Input
-                  ref={this.initializeNameInput}
-                  onPressEnter={this.handleSubmit}
-                  disabled={this.props.pending} />
-              )}
+          <Form
+            ref={this.formRef}
+            initialValues={{name: this.props.name, comment: undefined}}
+          >
+            <Form.Item
+              {...this.formItemLayout}
+              label="Name"
+              name="name"
+              rules={[
+                {required: true, message: 'Name is required'},
+                {
+                  pattern: /^[\da-zA-Z._\-@]+$/,
+                  message: 'Name can contain only letters, digits, \'_\', \'-\', \'@\' and \'.\'.'
+                },
+                {validator: nameShouldNotBeTheSameValidator}
+              ]}
+            >
+              <Input
+                ref={this.initializeNameInput}
+                onPressEnter={this.handleSubmit}
+                disabled={this.props.pending}
+              />
             </Form.Item>
-            <Form.Item {...this.formItemLayout} label="Comment">
-              {getFieldDecorator('comment')(
-                <Input disabled={this.props.pending} type="textarea" />
-              )}
+            <Form.Item {...this.formItemLayout} label="Comment" name="comment">
+              <Input disabled={this.props.pending} type="textarea" />
             </Form.Item>
           </Form>
         </Spin>

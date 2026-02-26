@@ -15,8 +15,7 @@
  */
 
 import React from 'react';
-import {Form} from '@ant-design/compatible';
-import {Checkbox, Button, Modal, Input, Row, Col, Select, Spin} from 'antd';
+import {Checkbox, Button, Form, Modal, Input, Row, Col, Select, Spin} from 'antd';
 import {inject, observer} from 'mobx-react';
 import connect from '../../../../../utils/connect';
 import localization from '../../../../../utils/localization';
@@ -27,9 +26,10 @@ import pipelines from '../../../../../models/pipelines/Pipelines';
 })
 @localization.localizedComponent
 @inject('pipelines', 'visible', 'onSubmit', 'onCancel', 'pending', 'pipelineId')
-@Form.create()
 @observer
 export default class PipelineStorageRuleCreateDialog extends localization.LocalizedReactComponent {
+
+  formRef = React.createRef();
   formItemLayout = {
     labelCol: {
       xs: {span: 24},
@@ -59,45 +59,40 @@ export default class PipelineStorageRuleCreateDialog extends localization.Locali
 
   handleSubmit = (e) => {
     e.preventDefault();
-    this.props.form.validateFieldsAndScroll((err, values) => {
-      if (!err) {
+    this.formRef.current.validateFields()
+      .then((values) => {
         this.props.onSubmit(values);
-      }
-    });
+      })
+      .catch(() => {});
   };
 
   resetNameToInitialValue = () => {
-      this.props.form.setFieldsValue({
-        name: ''
-      });
-  }
+    this.formRef.current && this.formRef.current.setFieldsValue({name: ''});
+  };
 
   handlePipelineResultsChange = (e) => {
-    const {setFieldsValue, getFieldValue, isFieldTouched} = this.props.form;
+    const form = this.formRef.current;
+    if (!form) return;
 
-    const userAlreadySetMoveToStsTrue = isFieldTouched('moveToSts') && getFieldValue('moveToSts');
+    const userAlreadySetMoveToStsTrue = form.isFieldTouched('moveToSts') && form.getFieldValue('moveToSts');
     const shouldNotChangeTrulyMoveToSts = !e.target.checked && userAlreadySetMoveToStsTrue;
 
-    // We need it to trigger revalidation in case if user already receive 'required' error
-    if(!e.target.checked && !getFieldValue('name')) {
-      this.resetNameToInitialValue()
+    if (!e.target.checked && !form.getFieldValue('name')) {
+      this.resetNameToInitialValue();
     }
 
     if (shouldNotChangeTrulyMoveToSts || userAlreadySetMoveToStsTrue) {
       return;
     }
 
-    setFieldsValue({
-      moveToSts: e.target.checked
-    });
+    form.setFieldsValue({moveToSts: e.target.checked});
   };
 
   handeOnClose = () => {
-    this.props.form.resetFields();
-  }
+    this.formRef.current && this.formRef.current.resetFields();
+  };
 
   render () {
-    const { getFieldDecorator, getFieldValue } = this.props.form;
     const {
       visible,
       onCancel,
@@ -105,14 +100,15 @@ export default class PipelineStorageRuleCreateDialog extends localization.Locali
       pending,
       pipelineId
     } = this.props;
+    const form = this.formRef.current;
     const modalFooter = pending ? false : (
       <Row>
         <Button onClick={onCancel}>Cancel</Button>
         <Button type="primary" htmlType="submit" onClick={this.handleSubmit}>Create</Button>
       </Row>
     );
-    const isMoveToStsDisabled = getFieldValue('isResult') || pending;
-    const isRuleNameRequired = Boolean(getFieldValue('isResult'));
+    const isMoveToStsDisabled = form.getFieldValue('isResult') || pending;
+    const isRuleNameRequired = Boolean(form.getFieldValue('isResult'));
 
     return (
       <Modal
@@ -125,62 +121,77 @@ export default class PipelineStorageRuleCreateDialog extends localization.Locali
         footer={modalFooter}
       >
         <Spin spinning={pending}>
-          <Form>
+          <Form
+            ref={this.formRef}
+            initialValues={{
+              pipelineId: `${pipelineId}`,
+              name: '',
+              fileMask: undefined,
+              isResult: false,
+              moveToSts: false
+            }}
+          >
             <Spin spinning={pipelines.pending}>
-              <Form.Item {...this.formItemLayout} label={this.localizedString('Pipeline')}>
-                {getFieldDecorator('pipelineId',
-                  {
-                    rules: [{
-                      required: true,
-                      message: `Please select ${this.localizedString('pipeline')}`
-                    }],
-                    initialValue: `${pipelineId}`
-                  })(
-                  <Select disabled={pending || pipelineId !== undefined}>
-                      {pipelines?.value.map(pipeline => (
-                          <Select.Option key={pipeline.id}
-                                         value={`${pipeline.id}`}>{pipeline.name}
-                          </Select.Option>
-                        ))}
-                    </Select>
-                )}
+              <Form.Item
+                {...this.formItemLayout}
+                label={this.localizedString('Pipeline')}
+                name="pipelineId"
+                rules={[{
+                  required: true,
+                  message: `Please select ${this.localizedString('pipeline')}`
+                }]}
+              >
+                <Select disabled={pending || pipelineId !== undefined}>
+                  {pipelines?.value.map(pipeline => (
+                    <Select.Option key={pipeline.id} value={`${pipeline.id}`}>
+                      {pipeline.name}
+                    </Select.Option>
+                  ))}
+                </Select>
               </Form.Item>
             </Spin>
-            <Form.Item {...this.formItemLayout} label="Name">
-              {getFieldDecorator('name', {rules: [{required: isRuleNameRequired, message: 'Name is required'}]})(
-                <Input
-                  disabled={pending}
-                  onPressEnter={this.handleSubmit} />
-              )}
+            <Form.Item
+              {...this.formItemLayout}
+              label="Name"
+              name="name"
+              rules={[{required: isRuleNameRequired, message: 'Name is required'}]}
+            >
+              <Input
+                disabled={pending}
+                onPressEnter={this.handleSubmit}
+              />
             </Form.Item>
-            <Form.Item {...this.formItemLayout} label="File mask">
-              {getFieldDecorator('fileMask', {rules: [{required: true, message: 'File mask is required'}]})(
-                <Input
-                  disabled={pending}
-                  ref={this.initializeNameInput}
-                  onPressEnter={this.handleSubmit} />
-              )}
+            <Form.Item
+              {...this.formItemLayout}
+              label="File mask"
+              name="fileMask"
+              rules={[{required: true, message: 'File mask is required'}]}
+            >
+              <Input
+                disabled={pending}
+                ref={this.initializeNameInput}
+                onPressEnter={this.handleSubmit}
+              />
             </Form.Item>
             <Row type={'flex'} justify={'start'} gutter={24}>
               <Col {...this.checkboxWrapperLayout}>
-                <Form.Item {...this.checkboxLayout} label="Pipeline results">
-                  {getFieldDecorator('isResult', {
-                    valuePropName: 'checked',
-                    initialValue: false,
-                    onChange: this.handlePipelineResultsChange
-                  })(
-                    <Checkbox disabled={pending} />
-                  )}
+                <Form.Item
+                  {...this.checkboxLayout}
+                  label="Pipeline results"
+                  name="isResult"
+                  valuePropName="checked"
+                >
+                  <Checkbox disabled={pending} onChange={this.handlePipelineResultsChange} />
                 </Form.Item>
               </Col>
               <Col {...this.checkboxWrapperLayout}>
-                <Form.Item {...this.checkboxLayout} label="Move to STS">
-                  {getFieldDecorator('moveToSts', {
-                    valuePropName: 'checked',
-                    initialValue: false
-                  })(
-                    <Checkbox disabled={isMoveToStsDisabled} />
-                  )}
+                <Form.Item
+                  {...this.checkboxLayout}
+                  label="Move to STS"
+                  name="moveToSts"
+                  valuePropName="checked"
+                >
+                  <Checkbox disabled={isMoveToStsDisabled} />
                 </Form.Item>
               </Col>
             </Row>

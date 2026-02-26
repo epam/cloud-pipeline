@@ -19,10 +19,10 @@ import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Form} from '@ant-design/compatible';
 import {
   Button,
   Checkbox,
+  Form,
   Input,
   Row,
   Select
@@ -49,9 +49,9 @@ const formatJson = (string, presentation = true, catchError = true) => {
   return string;
 };
 
-@Form.create()
 @observer
 export default class PreferenceGroup extends React.Component {
+  formRef = React.createRef();
   static propTypes = {
     onSubmit: PropTypes.func,
     pending: PropTypes.bool,
@@ -63,7 +63,8 @@ export default class PreferenceGroup extends React.Component {
 
   checkPreferenceModified = (name) => {
     const [preference] = this.props.preferences.filter(p => p.name === name);
-    const formPreference = this.props.form.getFieldValue(name.replace(/\./g, '-'));
+    const form = this.formRef.current;
+    const formPreference = form ? form.getFieldValue(name.replace(/\./g, '-')) : undefined;
     if (!preference && !formPreference) {
       return false;
     }
@@ -93,8 +94,8 @@ export default class PreferenceGroup extends React.Component {
 
   handleSubmit = (e) => {
     e.preventDefault();
-    this.props.form.validateFieldsAndScroll((err, values) => {
-      if (!err) {
+    this.formRef.current.validateFields()
+      .then((values) => {
         const payload = [];
         for (let property in values) {
           if (values.hasOwnProperty(property) &&
@@ -103,8 +104,8 @@ export default class PreferenceGroup extends React.Component {
           }
         }
         this.props.onSubmit && this.props.onSubmit(payload);
-      }
-    });
+      })
+      .catch(() => {});
   };
 
   getPreferenceRules = (type) => {
@@ -113,24 +114,23 @@ export default class PreferenceGroup extends React.Component {
       case 'INTEGER':
       case 'LONG':
         rules.push({
-          validator: (rule, {value}, callback) => {
+          validator: (rule, {value}) => {
             if (isNaN(value)) {
-              callback('Please enter a valid number');
+              return Promise.reject(new Error('Please enter a valid number'));
             }
-            callback();
+            return Promise.resolve();
           }
         });
         break;
       case 'OBJECT':
         rules.push({
-          validator: (rule, {value}, callback) => {
+          validator: (rule, {value}) => {
             try {
               formatJson(value, false, false);
+              return Promise.resolve();
             } catch (e) {
-              callback(e.toString());
-              return;
+              return Promise.reject(e.toString());
             }
-            callback();
           }
         });
         break;
@@ -142,32 +142,37 @@ export default class PreferenceGroup extends React.Component {
     if (!this.props.group) {
       return null;
     }
-    const {resetFields, getFieldDecorator} = this.props.form;
+    const preferences = this.props.preferences || [];
+    const initialValues = preferences.reduce((acc, p) => {
+      acc[p.name.replace(/\./g, '-')] = p;
+      return acc;
+    }, {});
     return (
       <div style={{width: '100%', flex: 1, display: 'flex', flexDirection: 'column'}}>
         <div style={{flex: 1, width: '100%', overflowY: 'auto'}}>
-          <Form className="edit-preferences-form" layout="horizontal">
+          <Form
+            ref={this.formRef}
+            className="edit-preferences-form"
+            layout="horizontal"
+            initialValues={initialValues}
+          >
             {
-              (this.props.preferences || []).map((preference, index, array) => {
+              preferences.map((preference, index, array) => {
                 return (
                   <Form.Item
                     key={preference.name}
-                    style={{
-                      marginBottom: 0
-                    }}
-                    className={`edit-preferences-${preference.name}-container`}>
-                    {getFieldDecorator(preference.name.replace(/\./g, '-'), {
-                      initialValue: preference,
-                      rules: this.getPreferenceRules(preference.type)
-                    })(
-                      <PreferenceInput
-                        search={this.props.search}
-                        isEven={index % 2 === 0}
-                        isLast={index === array.length - 1}
-                        disabled={this.props.pending}
-                        router={this.props.router}
-                      />
-                    )}
+                    style={{marginBottom: 0}}
+                    className={`edit-preferences-${preference.name}-container`}
+                    name={preference.name.replace(/\./g, '-')}
+                    rules={this.getPreferenceRules(preference.type)}
+                  >
+                    <PreferenceInput
+                      search={this.props.search}
+                      isEven={index % 2 === 0}
+                      isLast={index === array.length - 1}
+                      disabled={this.props.pending}
+                      router={this.props.router}
+                    />
                   </Form.Item>
                 );
               })
@@ -179,7 +184,7 @@ export default class PreferenceGroup extends React.Component {
             id="edit-preference-form-cancel-button"
             disabled={!this.modified}
             size="small"
-            onClick={() => resetFields()}>Revert</Button>
+            onClick={() => this.formRef.current && this.formRef.current.resetFields()}>Revert</Button>
           <Button
             id="edit-preference-form-ok-button"
             disabled={!this.modified}
@@ -192,7 +197,7 @@ export default class PreferenceGroup extends React.Component {
   }
 
   resetFormFields = () => {
-    this.props.form && this.props.form.resetFields();
+    this.formRef.current && this.formRef.current.resetFields();
   };
 
   componentDidUpdate (prevProps) {
@@ -371,37 +376,39 @@ class PreferenceInput extends React.Component {
         }
         style={{width: '100%'}}>
         <Row type="flex" align="middle">
-          {this.state.visible
-            ? <EyeFilled
-                className={
-                  classNames(
-                    {
-                      'cp-text-not-important': !this.state.visible
-                    }
-                  )
-                }
-                onClick={() => !this.props.disabled && this.onVisibilityValueChanged(!this.state.visible)}
-                style={{
-                  cursor: 'pointer',
-                  fontSize: 'large',
-                  marginRight: 5,
-                  marginBottom: 2
-                }} />
-            : <EyeOutlined
-                className={
-                  classNames(
-                    {
-                      'cp-text-not-important': !this.state.visible
-                    }
-                  )
-                }
-                onClick={() => !this.props.disabled && this.onVisibilityValueChanged(!this.state.visible)}
-                style={{
-                  cursor: 'pointer',
-                  fontSize: 'large',
-                  marginRight: 5,
-                  marginBottom: 2
-                }} />}
+          {this.state.visible ? (
+            <EyeFilled
+              className={
+                classNames(
+                  {
+                    'cp-text-not-important': !this.state.visible
+                  }
+                )
+              }
+              onClick={() => !this.props.disabled && this.onVisibilityValueChanged(!this.state.visible)}
+              style={{
+                cursor: 'pointer',
+                fontSize: 'large',
+                marginRight: 5,
+                marginBottom: 2
+              }} />
+          ) : (
+            <EyeOutlined
+              className={
+                classNames(
+                  {
+                    'cp-text-not-important': !this.state.visible
+                  }
+                )
+              }
+              onClick={() => !this.props.disabled && this.onVisibilityValueChanged(!this.state.visible)}
+              style={{
+                cursor: 'pointer',
+                fontSize: 'large',
+                marginRight: 5,
+                marginBottom: 2
+              }} />
+          )}
           <span>
             {highlightText(this.props.value.name, this.props.search)}
           </span>

@@ -15,15 +15,14 @@
  */
 
 import React from 'react';
-import {Form} from '@ant-design/compatible';
-import {Button, Modal, Input, Row, Spin} from 'antd';
+import {Button, Form, Modal, Input, Row, Spin} from 'antd';
 import PropTypes from 'prop-types';
 
 // eslint-disable-next-line
 const NAME_VALIDATION_TEXT = 'Name can contain only letters, digits, spaces, \'_\', \'-\', \'@\' and \'.\'.';
 
-@Form.create()
 export default class EditItemForm extends React.Component {
+  formRef = React.createRef();
   static propTypes = {
     onCancel: PropTypes.func,
     onSubmit: PropTypes.func,
@@ -48,16 +47,15 @@ export default class EditItemForm extends React.Component {
 
   handleSubmit = (e) => {
     e.preventDefault();
-    this.props.form.validateFieldsAndScroll((err, values) => {
-      if (!err) {
+    this.formRef.current.validateFields()
+      .then((values) => {
         this.props.onSubmit(values);
-      }
-    });
+      })
+      .catch(() => {});
   };
 
   render () {
     const {disclaimerFn} = this.props;
-    const {getFieldDecorator, resetFields} = this.props.form;
     const modalFooter = this.props.pending ? false : (
       <Row>
         <Button onClick={this.props.onCancel}>Cancel</Button>
@@ -65,14 +63,13 @@ export default class EditItemForm extends React.Component {
       </Row>
     );
     const onClose = () => {
-      resetFields();
+      this.formRef.current && this.formRef.current.resetFields();
     };
-    const nameShouldNotBeTheSameValidator = (rule, value, callback) => {
-      let error;
+    const nameShouldNotBeTheSameValidator = (rule, value) => {
       if (this.props.name && value && value.toLowerCase() === this.props.name.toLowerCase()) {
-        error = 'Name should not be the same';
+        return Promise.reject(new Error('Name should not be the same'));
       }
-      callback(error);
+      return Promise.resolve();
     };
     return (
       <Modal
@@ -84,37 +81,35 @@ export default class EditItemForm extends React.Component {
         onCancel={this.props.onCancel}
         footer={modalFooter}>
         <Spin spinning={this.props.pending}>
-          <Form>
-            <Form.Item {...this.formItemLayout} label="Name">
-              {getFieldDecorator('name', {
-                rules: [
-                  {
-                    required: true,
-                    message: 'Name is required'
-                  },
-                  {
-                    pattern: /^[\da-zA-Z._\-@ ]+$/,
-                    message: NAME_VALIDATION_TEXT
-                  },
-                  {validator: nameShouldNotBeTheSameValidator}
-                ],
-                initialValue: this.props.name
-              })(
-                <Input
-                  ref={this.initializeNameInput}
-                  onPressEnter={this.handleSubmit}
-                  disabled={this.props.pending} />
-              )}
+          <Form
+            ref={this.formRef}
+            initialValues={{
+              name: this.props.name, content: undefined
+            }}
+          >
+            <Form.Item
+              {...this.formItemLayout}
+              label="Name"
+              name="name"
+              rules={[
+                {required: true, message: 'Name is required'},
+                {pattern: /^[\da-zA-Z._\-@ ]+$/, message: NAME_VALIDATION_TEXT},
+                {validator: nameShouldNotBeTheSameValidator}
+              ]}
+            >
+              <Input
+                ref={this.initializeNameInput}
+                onPressEnter={this.handleSubmit}
+                disabled={this.props.pending}
+              />
             </Form.Item>
             {
               this.props.includeFileContentField &&
-              <Form.Item {...this.formItemLayout} label="Content">
-                {getFieldDecorator('content')(
-                  <Input
-                    disabled={this.props.pending}
-                    type="textarea"
-                  />
-                )}
+              <Form.Item {...this.formItemLayout} label="Content" name="content">
+                <Input
+                  disabled={this.props.pending}
+                  type="textarea"
+                />
               </Form.Item>
             }
           </Form>

@@ -17,9 +17,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
-import {Form} from '@ant-design/compatible';
 import {
   Button,
+  Form,
   Input,
   Modal,
   Row,
@@ -95,6 +95,8 @@ function FormSection ({
 
 @observer
 class LifeCycleEditModal extends React.Component {
+  formRef = React.createRef();
+
   state={
     initialRule: null,
     useDefaultNotify: undefined,
@@ -116,11 +118,12 @@ class LifeCycleEditModal extends React.Component {
 
   get modified () {
     const {initialRule} = this.state;
-    const {form, createNewRule} = this.props;
+    const {createNewRule} = this.props;
+    const form = this.formRef.current;
     if (createNewRule) {
       return true;
     }
-    if (!initialRule) {
+    if (!initialRule || !form) {
       return false;
     }
     const {notification = {}} = initialRule;
@@ -178,8 +181,8 @@ class LifeCycleEditModal extends React.Component {
   }
 
   get notificationsDisabled () {
-    const {form} = this.props;
-    return form.getFieldValue('notification.disabled');
+    const form = this.formRef.current;
+    return form ? form.getFieldValue('notification.disabled') : undefined;
   }
 
   get useDefaultNotify () {
@@ -194,14 +197,14 @@ class LifeCycleEditModal extends React.Component {
   }
 
   get showMatches () {
-    const {form} = this.props;
-    const criteriaType = form.getFieldValue('transitionCriterion.type');
+    const form = this.formRef.current;
+    const criteriaType = form ? form.getFieldValue('transitionCriterion.type') : undefined;
     return CRITERIA[criteriaType] === CRITERIA.MATCHING_FILES;
   }
 
   get showNotificationsForm () {
-    const {form} = this.props;
-    const method = form.getFieldValue('transitionMethod');
+    const form = this.formRef.current;
+    const method = form ? form.getFieldValue('transitionMethod') : undefined;
     return METHODS[method] !== METHODS.ONE_BY_ONE;
   }
 
@@ -209,8 +212,8 @@ class LifeCycleEditModal extends React.Component {
     ruleNotification = {},
     formNotification = {}
   ) => {
-    const {form} = this.props;
-    const method = form.getFieldValue('transitionMethod');
+    const form = this.formRef.current;
+    const method = form ? form.getFieldValue('transitionMethod') : undefined;
     const notification = {
       ...ruleNotification,
       ...formNotification
@@ -228,17 +231,10 @@ class LifeCycleEditModal extends React.Component {
   };
 
   handleSubmit = (e) => {
-    const {form, onOk} = this.props;
+    const {onOk} = this.props;
     e.preventDefault();
-    form.validateFieldsAndScroll((err, values) => {
-      if (err) {
-        if (err.notification) {
-          this.expandPanel(PANELS.notify);
-        }
-        if (err.transitions) {
-          this.expandPanel(PANELS.transitions);
-        }
-      } else {
+    this.formRef.current.validateFields()
+      .then((values) => {
         const {rule = {}} = this.props;
         const {
           objectGlob,
@@ -280,8 +276,17 @@ class LifeCycleEditModal extends React.Component {
             });
         }
         onOk && onOk(payload, rule.id);
-      }
-    });
+      })
+      .catch((err) => {
+        if (err && err.errorFields) {
+          if (err.errorFields.some(f => f.name && f.name[0] === 'notification')) {
+            this.expandPanel(PANELS.notify);
+          }
+          if (err.errorFields.some(f => f.name && f.name[0] === 'transitions')) {
+            this.expandPanel(PANELS.transitions);
+          }
+        }
+      });
   };
 
   setInitialRule = () => {
@@ -290,8 +295,8 @@ class LifeCycleEditModal extends React.Component {
   };
 
   onCancel = () => {
-    const {onCancel, form} = this.props;
-    form.resetFields();
+    const {onCancel} = this.props;
+    this.formRef.current && this.formRef.current.resetFields();
     onCancel && onCancel();
   };
 
@@ -316,8 +321,9 @@ class LifeCycleEditModal extends React.Component {
   };
 
   onChangeMethod = (key) => {
-    const {form} = this.props;
+    const form = this.formRef.current;
     const {initialRule} = this.state;
+    if (!form) return;
     if (METHODS[key] === METHODS.ONE_BY_ONE) {
       form.setFields({
         'notification.disabled': {
@@ -338,9 +344,8 @@ class LifeCycleEditModal extends React.Component {
   };
 
   onChangeUseDefaultNotify = checked => {
-    const {form} = this.props;
     this.setState({useDefaultNotify: checked}, () => {
-      form.setFieldsValue({});
+      this.formRef.current && this.formRef.current.setFieldsValue({});
     });
   };
 
@@ -348,15 +353,37 @@ class LifeCycleEditModal extends React.Component {
     const {
       visible,
       rule,
-      form,
       createNewRule,
       pending
     } = this.props;
     const {expandedPanels} = this.state;
-    const {getFieldDecorator} = form;
     if (!rule) {
       return null;
     }
+    const notification = rule.notification || {};
+    const transitions = (rule.transitions && rule.transitions.length)
+      ? rule.transitions.map(t => ({
+        ...t,
+        transitionDate: t.transitionDate ? moment(t.transitionDate) : undefined
+      }))
+      : [{}];
+    const initialValues = {
+      pathGlob: rule.pathGlob,
+      objectGlob: rule.objectGlob,
+      transitionMethod: rule.transitionMethod || 'ONE_BY_ONE',
+      'transitionCriterion.type': rule.transitionCriterion ? rule.transitionCriterion.type : 'DEFAULT',
+      'transitionCriterion.value': rule.transitionCriterion ? rule.transitionCriterion.value : undefined,
+      transitions,
+      notification: {
+        disabled: notification.enabled !== undefined ? !notification.enabled : false,
+        recipients: notification.recipients || [],
+        notifyUsers: notification.notifyUsers !== undefined ? notification.notifyUsers : false,
+        notifyBeforeDays: notification.notifyBeforeDays,
+        prolongDays: notification.prolongDays,
+        subject: notification.subject,
+        body: notification.body
+      }
+    };
     return (
       <Modal
         visible={visible}
@@ -380,7 +407,7 @@ class LifeCycleEditModal extends React.Component {
         }
       >
         <Spin spinning={pending}>
-          <Form>
+          <Form ref={this.formRef} initialValues={initialValues}>
             <Row
               type="flex"
               justify="space-between"
@@ -390,39 +417,19 @@ class LifeCycleEditModal extends React.Component {
                   {...formItemLayout}
                   label="Root path"
                   className={styles.formItem}
+                  name="pathGlob"
+                  rules={[{required: true, message: ' '}]}
                 >
-                  {getFieldDecorator('pathGlob', {
-                    initialValue: rule && rule.pathGlob
-                      ? rule.pathGlob
-                      : undefined,
-                    rules: [{
-                      required: true,
-                      message: ' '
-                    }]
-                  })(
-                    <Input
-                      disabled={!createNewRule}
-                    />
-                  )}
+                  <Input disabled={!createNewRule} />
                 </Form.Item>
                 <Form.Item
                   {...formItemLayout}
                   label="Glob"
                   className={styles.formItem}
+                  name="objectGlob"
+                  rules={[{required: true, message: ' '}]}
                 >
-                  {getFieldDecorator('objectGlob', {
-                    initialValue: rule && rule.objectGlob
-                      ? rule.objectGlob
-                      : undefined,
-                    rules: [{
-                      required: true,
-                      message: ' '
-                    }]
-                  })(
-                    <Input
-                      disabled={!createNewRule}
-                    />
-                  )}
+                  <Input disabled={!createNewRule} />
                 </Form.Item>
               </Col>
               <Col style={{width: '50%'}}>
@@ -430,73 +437,41 @@ class LifeCycleEditModal extends React.Component {
                   {...formItemLayout}
                   label="Method"
                   className={styles.formItem}
+                  name="transitionMethod"
+                  rules={[{required: true, message: ' '}]}
                 >
-                  {getFieldDecorator('transitionMethod', {
-                    initialValue: rule && rule.transitionMethod
-                      ? rule.transitionMethod
-                      : 'ONE_BY_ONE',
-                    rules: [{
-                      required: true,
-                      message: ' '
-                    }]
-                  })(
-                    <Select
-                      onChange={this.onChangeMethod}
-                    >
-                      {Object.entries(METHODS).map(([key, description]) => (
-                        <Select.Option
-                          value={key}
-                          key={key}
-                        >
-                          {description}
-                        </Select.Option>
-                      ))}
-                    </Select>
-                  )}
+                  <Select onChange={this.onChangeMethod}>
+                    {Object.entries(METHODS).map(([key, description]) => (
+                      <Select.Option value={key} key={key}>
+                        {description}
+                      </Select.Option>
+                    ))}
+                  </Select>
                 </Form.Item>
                 <Form.Item
                   {...formItemLayout}
                   label="Condition"
                   className={styles.formItem}
+                  name="transitionCriterion.type"
+                  rules={[{required: true, message: ' '}]}
                 >
-                  {getFieldDecorator('transitionCriterion.type', {
-                    initialValue: rule && rule.transitionCriterion
-                      ? rule.transitionCriterion.type
-                      : 'DEFAULT',
-                    rules: [{
-                      required: true,
-                      message: ' '
-                    }]
-                  })(
-                    <Select>
-                      {Object.entries(CRITERIA).map(([key, description]) => (
-                        <Select.Option
-                          value={key}
-                          key={key}
-                        >
-                          {description}
-                        </Select.Option>
-                      ))}
-                    </Select>
-                  )}
+                  <Select>
+                    {Object.entries(CRITERIA).map(([key, description]) => (
+                      <Select.Option value={key} key={key}>
+                        {description}
+                      </Select.Option>
+                    ))}
+                  </Select>
                 </Form.Item>
                 {this.showMatches ? (
                   <Form.Item
                     {...formItemLayout}
                     className={styles.formItem}
                     label="Matches"
+                    name="transitionCriterion.value"
+                    rules={[{required: true, message: ' '}]}
                   >
-                    {getFieldDecorator('transitionCriterion.value', {
-                      initialValue: rule && rule.transitionCriterion
-                        ? rule.transitionCriterion.value
-                        : undefined,
-                      rules: [{
-                        required: true,
-                        message: ' '
-                      }]
-                    })(
-                      <Input />
-                    )}
+                    <Input />
                   </Form.Item>
                 ) : null}
               </Col>
@@ -507,7 +482,7 @@ class LifeCycleEditModal extends React.Component {
               onChange={this.onTogglePanel}
             >
               <TransitionsForm
-                form={form}
+                form={this.formRef.current}
                 rule={rule}
               />
             </FormSection>
@@ -521,7 +496,7 @@ class LifeCycleEditModal extends React.Component {
               onChange={this.onTogglePanel}
             >
               <NotificationForm
-                form={form}
+                form={this.formRef.current}
                 rule={rule}
                 notificationsDisabled={this.notificationsDisabled}
                 useDefaultNotify={this.useDefaultNotify}
@@ -545,4 +520,4 @@ LifeCycleEditModal.propTypes = {
 };
 
 export {DESTINATIONS};
-export default Form.create()(LifeCycleEditModal);
+export default LifeCycleEditModal;

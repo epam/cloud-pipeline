@@ -505,7 +505,7 @@ export default class Tool extends localization.LocalizedReactComponent {
             showUploadList={false}
             beforeUpload={doUpload}>
             <Row type="flex" align="middle" justify="center" className={styles.uploadToolImage}>
-              <UploadOutlined style={ this.props.tool.value.iconId ? {fontSize: 'xx-large', color: 'white', textShadow: '1px 1px black'} : {fontSize: 'xx-large', color: '#888'} } />
+              <UploadOutlined style={this.props.tool.value.iconId ? {fontSize: 'xx-large', color: 'white', textShadow: '1px 1px black'} : {fontSize: 'xx-large', color: '#888'}} />
             </Row>
           </Upload>
         }

@@ -15,9 +15,9 @@
  */
 
 import React from 'react';
-import {Form} from '@ant-design/compatible';
 import {
   Button,
+  Form,
   Modal,
   Input,
   Row,
@@ -29,8 +29,8 @@ import checkFileExistence from '../utils';
 // eslint-disable-next-line
 const NAME_VALIDATION_TEXT = 'Name can contain only letters, digits, "_", "-", and "."';
 
-@Form.create()
 class CreateItemForm extends React.Component {
+  formRef = React.createRef();
   state = {
     checkInProgress: false,
     pathOccupied: false
@@ -48,21 +48,20 @@ class CreateItemForm extends React.Component {
   };
 
   handleSubmit = (e) => {
-    const {onSubmit, form} = this.props;
+    const {onSubmit} = this.props;
     e.preventDefault();
-    form.validateFieldsAndScroll((err, values) => {
-      if (!err) {
-        this.checkPathExistence().then((pathExist) => {
-          if (pathExist) {
-            this.setState({pathOccupied: true});
-          } else {
-            this.setState({pathOccupied: false}, () => {
-              onSubmit && onSubmit(values);
-            });
-          }
-        });
-      }
-    });
+    this.formRef.current.validateFields()
+      .then(async (values) => {
+        const pathExist = await this.checkPathExistence();
+        if (pathExist) {
+          this.setState({pathOccupied: true});
+        } else {
+          this.setState({pathOccupied: false}, () => {
+            onSubmit && onSubmit(values);
+          });
+        }
+      })
+      .catch(() => {});
   };
 
   onNameChange = () => {
@@ -75,13 +74,13 @@ class CreateItemForm extends React.Component {
   checkPathExistence = async () => {
     const {
       pipelineId,
-      path,
-      form
+      path
     } = this.props;
     this.setState({checkInProgress: true});
+    const values = this.formRef.current.getFieldsValue();
     const pathExist = await checkFileExistence(
       pipelineId,
-      `${path || ''}${form.getFieldsValue().name}`
+      `${path || ''}${values.name}`
     );
     this.setState({checkInProgress: false});
     return pathExist;
@@ -90,7 +89,6 @@ class CreateItemForm extends React.Component {
   render () {
     const {pathOccupied, checkInProgress} = this.state;
     const {documentType} = this.props;
-    const {getFieldDecorator, resetFields} = this.props.form;
     const modalFooter = this.props.pending ? false : (
       <Row>
         <Button onClick={this.props.onCancel}>Cancel</Button>
@@ -102,7 +100,7 @@ class CreateItemForm extends React.Component {
         checkInProgress: false,
         pathOccupied: false
       }, () => {
-        resetFields();
+        this.formRef.current && this.formRef.current.resetFields();
       });
     };
     return (
@@ -115,47 +113,40 @@ class CreateItemForm extends React.Component {
         onCancel={this.props.onCancel}
         footer={modalFooter}>
         <Spin spinning={this.props.pending || checkInProgress}>
-          <Form>
+          <Form
+            ref={this.formRef}
+            initialValues={{name: this.props.name, comment: undefined}}
+          >
             <Form.Item
               {...this.formItemLayout}
               label="Name"
+              name="name"
               validateStatus={pathOccupied ? 'error' : undefined}
               help={pathOccupied
                 ? `${documentType} with that name already exists`
                 : undefined
               }
+              rules={[
+                {required: true, message: 'Name is required'},
+                {pattern: /^[\da-zA-Z.\-_]+$/, message: NAME_VALIDATION_TEXT}
+              ]}
             >
-              {getFieldDecorator('name', {
-                rules: [
-                  {
-                    required: true,
-                    message: 'Name is required'
-                  },
-                  {
-                    pattern: /^[\da-zA-Z.\-_]+$/,
-                    message: NAME_VALIDATION_TEXT
-                  }
-                ],
-                initialValue: this.props.name
-              })(
-                <Input
-                  ref={this.initializeNameInput}
-                  onPressEnter={this.handleSubmit}
-                  disabled={this.props.pending}
-                  onChange={this.onNameChange}
-                />
-              )}
+              <Input
+                ref={this.initializeNameInput}
+                onPressEnter={this.handleSubmit}
+                disabled={this.props.pending}
+                onChange={this.onNameChange}
+              />
             </Form.Item>
             <Form.Item
               {...this.formItemLayout}
               label="Comment"
+              name="comment"
             >
-              {getFieldDecorator('comment')(
-                <Input
-                  disabled={this.props.pending}
-                  type="textarea"
-                />
-              )}
+              <Input
+                disabled={this.props.pending}
+                type="textarea"
+              />
             </Form.Item>
           </Form>
         </Spin>

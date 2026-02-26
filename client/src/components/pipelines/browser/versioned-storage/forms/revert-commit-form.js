@@ -15,9 +15,9 @@
  */
 
 import React from 'react';
-import {Form} from '@ant-design/compatible';
 import {
   Button,
+  Form,
   Modal,
   Input,
   Row,
@@ -25,8 +25,9 @@ import {
 } from 'antd';
 import PropTypes from 'prop-types';
 
-@Form.create()
 class RevertCommitForm extends React.Component {
+
+  formRef = React.createRef();
   formItemLayout = {
     labelCol: {
       xs: {span: 24},
@@ -39,32 +40,32 @@ class RevertCommitForm extends React.Component {
   };
 
   handleSubmit = (e) => {
-    const {onRevert, form} = this.props;
+    const {onRevert} = this.props;
     e.preventDefault();
-    form.validateFieldsAndScroll((err, values) => {
-      if (!err) {
+    this.formRef.current.validateFields()
+      .then((values) => {
         onRevert && onRevert(values);
-      }
-    });
+      })
+      .catch(() => {});
   };
 
   render () {
     const {
       path,
       commit,
-      form,
       pending,
       onCancel,
       visible
     } = this.props;
-    const {getFieldDecorator, resetFields} = form;
     const modalFooter = pending ? false : (
       <Row>
         <Button onClick={onCancel}>Cancel</Button>
         <Button type="primary" htmlType="submit" onClick={this.handleSubmit}>Revert</Button>
       </Row>
     );
-    const onClose = () => resetFields();
+    const onClose = () => {
+      this.formRef.current && this.formRef.current.resetFields();
+    };
     const objectName = (path || '').split(/[\\/]/).pop();
     return (
       <Modal
@@ -81,19 +82,18 @@ class RevertCommitForm extends React.Component {
         footer={objectName ? modalFooter : undefined}
       >
         <Spin spinning={pending}>
-          <Form>
+          <Form ref={this.formRef}>
             <Form.Item
               {...this.formItemLayout}
               label="Comment"
+              name="comment"
             >
-              {getFieldDecorator('comment')(
-                <Input
-                  ref={this.initializeCommentInput}
-                  disabled={pending}
-                  onPressEnter={this.handleSubmit}
-                  type="textarea"
-                />
-              )}
+              <Input
+                ref={this.initializeCommentInput}
+                disabled={pending}
+                onPressEnter={this.handleSubmit}
+                type="textarea"
+              />
             </Form.Item>
           </Form>
         </Spin>

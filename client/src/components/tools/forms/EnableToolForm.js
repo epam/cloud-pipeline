@@ -16,11 +16,10 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Form} from '@ant-design/compatible';
-import {Button, Modal, Input, Row, Spin} from 'antd';
+import {Button, Form, Modal, Input, Row, Spin} from 'antd';
 
-@Form.create()
 export default class EnableToolForm extends React.Component {
+  formRef = React.createRef();
 
   static propTypes = {
     onCancel: PropTypes.func,
@@ -43,38 +42,36 @@ export default class EnableToolForm extends React.Component {
 
   handleSubmit = (e) => {
     e.preventDefault();
-    this.props.form.validateFieldsAndScroll((err, values) => {
-      if (!err) {
+    this.formRef.current.validateFields()
+      .then((values) => {
         this.props.onSubmit(values);
-      }
-    });
+      })
+      .catch(() => {});
   };
 
   renderForm = () => {
-    const {getFieldDecorator} = this.props.form;
     const formItems = [];
     formItems.push((
       <Form.Item
         key="tool name"
         className="enable-tool-form-image-container"
-        {...this.formItemLayout} label="Image">
-        {getFieldDecorator('image',
-          {
-            rules: [{required: true, message: 'Image is required'}]
-          })(
-            <Input
-              style={{width: '100%'}}
-              ref={this.initializeNameInput}
-              onPressEnter={this.handleSubmit}
-              addonBefore={this.props.imagePrefix} />
-        )}
+        {...this.formItemLayout}
+        label="Image"
+        name="image"
+        rules={[{required: true, message: 'Image is required'}]}
+      >
+        <Input
+          style={{width: '100%'}}
+          ref={this.initializeNameInput}
+          onPressEnter={this.handleSubmit}
+          addonBefore={this.props.imagePrefix}
+        />
       </Form.Item>
     ));
     return formItems;
   };
 
   render () {
-    const {resetFields} = this.props.form;
     const modalFooter = this.props.pending ? false : (
       <Row type="flex" justify="space-between">
         <Button
@@ -89,7 +86,7 @@ export default class EnableToolForm extends React.Component {
       </Row>
     );
     const onClose = () => {
-      resetFields();
+      this.formRef.current && this.formRef.current.resetFields();
     };
     return (
       <Modal
@@ -102,7 +99,7 @@ export default class EnableToolForm extends React.Component {
         onCancel={this.props.onCancel}
         footer={modalFooter}>
         <Spin spinning={this.props.pending}>
-          <Form className="enable-tool-form">
+          <Form ref={this.formRef} className="enable-tool-form">
             {this.renderForm()}
           </Form>
         </Spin>

@@ -16,8 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Form} from '@ant-design/compatible';
-import {Button, Modal, Input, Row, Col, Spin, Select, Checkbox} from 'antd';
+import {Button, Form, Modal, Input, Row, Col, Spin, Select, Checkbox} from 'antd';
 import connect from '../../../../../utils/connect';
 import localization from '../../../../../utils/localization';
 import pipelines from '../../../../../models/pipelines/Pipelines';
@@ -26,8 +25,8 @@ import pipelines from '../../../../../models/pipelines/Pipelines';
   pipelines
 })
 @localization.localizedComponent
-@Form.create()
 export default class CodeFileCommitForm extends localization.LocalizedReactComponent {
+  formRef = React.createRef();
 
   static propTypes = {
     onCancel: PropTypes.func,
@@ -54,16 +53,16 @@ export default class CodeFileCommitForm extends localization.LocalizedReactCompo
 
   handleSubmit = (e) => {
     e.preventDefault();
-    this.props.form.validateFieldsAndScroll((err, values) => {
-      if (!err) {
+    this.formRef.current.validateFields()
+      .then((values) => {
         if (!this.props.configChanged) {
           values.configName = undefined;
         } else {
           values.updateConfig = this.state.updateConfig;
         }
         this.props.onSubmit(values);
-      }
-    });
+      })
+      .catch(() => {});
   };
 
   getConfigurationsList = () => {
@@ -85,8 +84,6 @@ export default class CodeFileCommitForm extends localization.LocalizedReactCompo
   };
 
   renderChangeConfigFormItems = () => {
-    const {getFieldDecorator} = this.props.form;
-
     const onUpdateConfigChanged = (e) => {
       this.setState({updateConfig: e.target.checked});
     };
@@ -111,38 +108,35 @@ export default class CodeFileCommitForm extends localization.LocalizedReactCompo
           <Col xs={24} sm={6} />
           <Col xs={24} sm={18}>
             <Form.Item className="code-file-commit-form-update-config-container">
-              <Checkbox value={this.state.updateConfig} onChange={onUpdateConfigChanged}>Update configuration</Checkbox>
+              <Checkbox checked={this.state.updateConfig} onChange={onUpdateConfigChanged}>Update configuration</Checkbox>
             </Form.Item>
           </Col>
         </Row>,
-        this.state.updateConfig ? (<Form.Item
-          key="configurations"
-          className="code-file-commit-form-configurations-container"
-          {...this.formItemLayout}
-          label="Configuration">
-          {
-            getFieldDecorator('configName',
-              {
-                initialValue: this.getDefaultConfigurationName()
-              })(
-              <Select>
-                {configurations.map(c => {
-                  return (
-                    <Select.Option key={c} value={c}>
-                      {c}
-                    </Select.Option>
-                  );
-                })}
-              </Select>
-            )}
-        </Form.Item>) : undefined
+        this.state.updateConfig ? (
+          <Form.Item
+            key="configurations"
+            className="code-file-commit-form-configurations-container"
+            {...this.formItemLayout}
+            label="Configuration"
+            name="configName"
+          >
+            <Select>
+              {configurations.map(c => {
+                return (
+                  <Select.Option key={c} value={c}>
+                    {c}
+                  </Select.Option>
+                );
+              })}
+            </Select>
+          </Form.Item>
+        ) : undefined
       ];
     }
     return undefined;
   };
 
   render () {
-    const {getFieldDecorator, resetFields} = this.props.form;
     const modalFooter = this.props.pending ? false : (
       <Row>
         <Button onClick={this.props.onCancel}>Cancel</Button>
@@ -150,7 +144,7 @@ export default class CodeFileCommitForm extends localization.LocalizedReactCompo
       </Row>
     );
     const onClose = () => {
-      resetFields();
+      this.formRef.current && this.formRef.current.resetFields();
     };
     return (
       <Modal
@@ -163,15 +157,22 @@ export default class CodeFileCommitForm extends localization.LocalizedReactCompo
         footer={modalFooter}
       >
         <Spin spinning={this.props.pending}>
-          <Form>
-            <Form.Item {...this.formItemLayout} label="Commit message">
-              {getFieldDecorator('message', {rules: [{required: true, message: 'Commit message is required'}]})(
-                <Input
-                  type="textarea"
-                  ref={this.initializeNameInput}
-                  onPressEnter={this.handleSubmit}
-                  disabled={this.props.pending} />
-              )}
+          <Form
+            ref={this.formRef}
+            initialValues={{configName: this.getDefaultConfigurationName()}}
+          >
+            <Form.Item
+              {...this.formItemLayout}
+              label="Commit message"
+              name="message"
+              rules={[{required: true, message: 'Commit message is required'}]}
+            >
+              <Input
+                type="textarea"
+                ref={this.initializeNameInput}
+                onPressEnter={this.handleSubmit}
+                disabled={this.props.pending}
+              />
             </Form.Item>
             {
               this.renderChangeConfigFormItems()

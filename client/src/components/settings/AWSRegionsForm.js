@@ -1238,59 +1238,58 @@ class AWSRegionForm extends React.Component {
     if (!this._contextualSettingValid) {
       return;
     }
-    this.props.form.validateFieldsAndScroll(async (err, values) => {
-      if (/^azure$/i.test(this.provider) && !values.priceOfferId && !values.enterpriseAgreements) {
-        this.props.form.validateFields(
-          ['storageAccount', 'storageAccountKey'],
-          {force: true}
-        );
-        message.error('Price Offer ID or Enterprise Agreement must be specified', 5);
-        return;
-      }
-      if (/^azure$/i.test(this.provider)) {
-        delete values['authorizeByManagedIdentity'];
-      }
-      this.cloudRegionFileShareMountsComponent &&
-      this.cloudRegionFileShareMountsComponent.validate &&
-      this.cloudRegionFileShareMountsComponent.validate();
-      if (!err && CloudRegionFileShareMountsFormItem.validationPassed(values.fileShareMounts)) {
-        values.storageLifecycleServiceProperties = buildSLSProperties(
-          values.storageLifecycleServiceProperties
-        );
-        values.clusterStateRegionProperties = buildSLSProperties(
-          values.clusterStateRegionProperties
-        );
-        const {
-          contextualSettingValue,
-          contextualSettingInitialValue
-        } = this.state;
-        const settings = [...new Set([
-          ...Object.keys(contextualSettingValue),
-          ...Object.keys(contextualSettingInitialValue)
-        ])];
-        const contextualSettings = settings
-          .map((setting) => {
-            const config = this.getProviderContextualSettingConfiguration(setting);
-            return {
-              setting,
-              value: contextualSettingValue
-                ? contextualSettingValue[setting]
-                : undefined,
-              initial: contextualSettingInitialValue
-                ? contextualSettingInitialValue[setting]
-                : undefined,
-              type: config ? config.type : undefined
-            };
-          })
-          .filter((o) => (o.value || '') !== (o.initial || ''));
-        if (this.props.isNew) {
-          this.props.onCreate && await this.props.onCreate(values, contextualSettings);
-        } else {
-          this.props.onSubmit && await this.props.onSubmit(values, contextualSettings);
-          await this.submitPermissions();
+    this.props.form.validateFields()
+      .then(async (values) => {
+        if (/^azure$/i.test(this.provider) && !values.priceOfferId && !values.enterpriseAgreements) {
+          this.props.form.validateFields(['storageAccount', 'storageAccountKey']).catch(() => {});
+          message.error('Price Offer ID or Enterprise Agreement must be specified', 5);
+          return;
         }
-      }
-    });
+        if (/^azure$/i.test(this.provider)) {
+          delete values['authorizeByManagedIdentity'];
+        }
+        this.cloudRegionFileShareMountsComponent &&
+        this.cloudRegionFileShareMountsComponent.validate &&
+        this.cloudRegionFileShareMountsComponent.validate();
+        if (CloudRegionFileShareMountsFormItem.validationPassed(values.fileShareMounts)) {
+          values.storageLifecycleServiceProperties = buildSLSProperties(
+            values.storageLifecycleServiceProperties
+          );
+          values.clusterStateRegionProperties = buildSLSProperties(
+            values.clusterStateRegionProperties
+          );
+          const {
+            contextualSettingValue,
+            contextualSettingInitialValue
+          } = this.state;
+          const settings = [...new Set([
+            ...Object.keys(contextualSettingValue),
+            ...Object.keys(contextualSettingInitialValue)
+          ])];
+          const contextualSettings = settings
+            .map((setting) => {
+              const config = this.getProviderContextualSettingConfiguration(setting);
+              return {
+                setting,
+                value: contextualSettingValue
+                  ? contextualSettingValue[setting]
+                  : undefined,
+                initial: contextualSettingInitialValue
+                  ? contextualSettingInitialValue[setting]
+                  : undefined,
+                type: config ? config.type : undefined
+              };
+            })
+            .filter((o) => (o.value || '') !== (o.initial || ''));
+          if (this.props.isNew) {
+            this.props.onCreate && await this.props.onCreate(values, contextualSettings);
+          } else {
+            this.props.onSubmit && await this.props.onSubmit(values, contextualSettings);
+            await this.submitPermissions();
+          }
+        }
+      })
+      .catch(() => {});
   };
 
   jsonValidation = (rule, value, callback) => {
