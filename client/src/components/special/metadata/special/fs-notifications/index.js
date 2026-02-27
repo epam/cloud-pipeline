@@ -398,7 +398,7 @@ class FSNotificationsDialog extends React.Component {
           <Button
             disabled={readOnly || recipients.length === 0}
             size="small"
-            type="danger"
+            danger
             onClick={this.clearRecipients}
           >
             <DeleteOutlined /> Clear all recipients
@@ -528,7 +528,7 @@ class FSNotificationsDialog extends React.Component {
                   </Select>
                   <Button
                     size="small"
-                    type="danger"
+                    danger
                     disabled={readOnly}
                     onClick={this.onRemoveNotification(notification.id)}
                   >
@@ -578,7 +578,7 @@ class FSNotificationsDialog extends React.Component {
           </Button>
           <Button
             size="small"
-            type="danger"
+            danger
             onClick={this.clearNotification}
             disabled={readOnly || notifications.length === 0}
           >

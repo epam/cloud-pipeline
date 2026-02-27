@@ -182,7 +182,7 @@ export default class PipelineCode extends Component {
             <Button
               className={styles.sourceItemAction}
               onClick={(event) => this.deleteFolderConfirm(item, event)}
-              type="danger"
+              danger
               size="small"
               disabled={this.props.readOnly}
             >
@@ -204,7 +204,7 @@ export default class PipelineCode extends Component {
             <Button
               className={styles.sourceItemAction}
               onClick={(event) => this.deleteFileConfirm(item, event)}
-              type="danger"
+              danger
               size="small"
               disabled={this.props.readOnly}
             >

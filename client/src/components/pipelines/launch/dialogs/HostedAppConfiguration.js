@@ -215,7 +215,7 @@ class HostedAppConfigurationDialog extends React.Component {
                 configuration
                   ? (
                     <Button
-                      type="danger"
+                      danger
                       onClick={onRemove}
                     >
                       Remove configuration
@@ -350,7 +350,7 @@ class HostedAppConfigurationDialog extends React.Component {
               />
               <Button
                 size="small"
-                type="danger"
+                danger
                 onClick={this.onRemovePorts(index)}
               >
                 <DeleteOutlined />

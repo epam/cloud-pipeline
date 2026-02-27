@@ -244,7 +244,7 @@ class DtsInfo extends React.Component {
           <Button
             onClick={() => this.removePreference(preference)}
             size="small"
-            type="danger"
+            danger
           >
             <DeleteOutlined />
           </Button>
@@ -301,7 +301,7 @@ class DtsInfo extends React.Component {
           <Button
             onClick={this.onDeleteDts}
             size="small"
-            type="danger"
+            danger
             style={{marginRight: 15}}
           >
             Delete

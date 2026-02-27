@@ -202,7 +202,7 @@ class StorageItemPermissionsList extends React.PureComponent {
           <Button
             onClick={() => this.onRemovePermission(item.sid)}
             size="small"
-            type="danger"
+            danger
           >
             <DeleteOutlined />
           </Button>

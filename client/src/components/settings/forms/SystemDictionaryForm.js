@@ -371,7 +371,7 @@ class SystemDictionaryForm extends React.Component {
                   />
                   <Button
                     size="small"
-                    type="danger"
+                    danger
                     onClick={this.onItemRemove(index)}
                   >
                     <DeleteOutlined />

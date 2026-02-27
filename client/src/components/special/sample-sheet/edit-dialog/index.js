@@ -148,7 +148,7 @@ class SampleSheetEditDialog extends React.Component {
               {
                 removable && (
                   <Button
-                    type="danger"
+                    danger
                     onClick={onRemove}
                   >
                     REMOVE

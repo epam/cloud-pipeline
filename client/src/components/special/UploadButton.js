@@ -683,7 +683,7 @@ class UploadButton extends React.Component {
                             <Button
                               size="small"
                               shape="circle"
-                              type="danger"
+                              danger
                               icon={<CloseOutlined />}
                               onClick={() => f.cancelCb()} />
                           }

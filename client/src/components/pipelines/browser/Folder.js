@@ -475,7 +475,7 @@ export default class Folder extends localization.LocalizedReactComponent {
                 key="delete"
                 id={`folder-item-${item.key}-delete-button`}
                 size="small"
-                type="danger"
+                danger
                 onClick={(event) => this.deleteFolderConfirm(item, event)}>
                 <DeleteOutlined />
               </Button>,

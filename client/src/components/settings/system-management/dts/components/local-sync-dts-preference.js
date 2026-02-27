@@ -221,7 +221,7 @@ class LocalSyncDtsPreference extends React.Component {
               <Button
                 onClick={() => this.deleteScheduleRow(scheduleIdx)}
                 size="small"
-                type="danger"
+                danger
               >
                 <DeleteOutlined />
               </Button>

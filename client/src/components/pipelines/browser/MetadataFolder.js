@@ -409,7 +409,7 @@ export default class MetadataFolder extends React.Component {
         roleModel.manager.entities(
           <Button
             key="delete-metadata"
-            type="danger"
+            danger
             style={{lineHeight: 1}}
             onClick={this.deleteMetadataConfirm}
             size="small">

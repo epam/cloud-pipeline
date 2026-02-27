@@ -119,7 +119,7 @@ class CWLPort extends React.Component {
         <Button
           disabled={disabled}
           size="small"
-          type="danger"
+          danger
           onClick={this.onDelete}
           style={{marginLeft: 5}}
         >

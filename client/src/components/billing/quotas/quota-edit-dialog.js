@@ -643,7 +643,7 @@ class EditQuotaDialog extends React.Component {
             {
               !this.isNewQuota && (
                 <Button
-                  type="danger"
+                  danger
                   disabled={disabled}
                   onClick={this.onRemove}
                 >

@@ -287,7 +287,7 @@ function OutputFormula (props) {
           onChange={onChangeFormula}
         />
         <Button
-          type="danger"
+          danger
           size="small"
           style={{marginLeft: 5}}
           onClick={onRemove}

@@ -216,7 +216,7 @@ class Measurements extends React.Component {
                 style={{marginLeft: 5}}
                 onClick={onRemove}
                 size="small"
-                type="danger"
+                danger
               >
                 <DeleteOutlined />
               </Button>

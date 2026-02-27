@@ -244,7 +244,7 @@ function PoolCard ({
                 <Button
                   disabled={disabled}
                   size="small"
-                  type="danger"
+                  danger
                   onClick={onRemove}
                 >
                   <DeleteOutlined />

@@ -1564,7 +1564,7 @@ class AWSRegionForm extends React.Component {
         render: (item) => (
           <Row>
             <Button
-              type="danger"
+              danger
               disabled={this.props.pending}
               onClick={() => this.permissionRemoveClicked(item)}
               size="small">
@@ -2437,7 +2437,7 @@ class AWSRegionForm extends React.Component {
                   id="edit-region-form-remove-button"
                   disabled={this.props.region.default}
                   size="small"
-                  type="danger"
+                  danger
                   style={{marginRight: 10}}><InfoCircleFilled /> Remove</Button>
               </Tooltip>
             }
@@ -2447,7 +2447,7 @@ class AWSRegionForm extends React.Component {
                 id="edit-region-form-remove-button"
                 disabled={this.props.region.default}
                 size="small"
-                type="danger"
+                danger
                 onClick={onRemove}
                 style={{marginRight: 10}}>Remove</Button>
             }
@@ -2886,7 +2886,7 @@ class CloudRegionFileShareMountFormItem extends React.Component {
           <Button
             style={{marginTop: 3, marginLeft: 5}}
             disabled={this.props.disabled}
-            type="danger"
+            danger
             size="small"
             onClick={this.props.onDelete}>
             <CloseOutlined />

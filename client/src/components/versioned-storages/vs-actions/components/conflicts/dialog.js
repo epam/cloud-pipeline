@@ -108,7 +108,7 @@ class ConflictsDialog extends React.Component {
             {
               mergeInProgress && (
                 <Button
-                  type="danger"
+                  danger
                   disabled={disabled}
                   onClick={this.onAbortClicked}
                 >

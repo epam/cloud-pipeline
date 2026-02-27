@@ -105,7 +105,7 @@ function QuotaDescription (
         <Button
           icon={<CloseOutlined />}
           size="small"
-          type="danger"
+          danger
           onClick={onRemoveQuota}
         />
       </div>

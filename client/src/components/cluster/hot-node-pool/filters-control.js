@@ -204,7 +204,7 @@ class FiltersControl extends React.Component {
                     disabled={disabled}
                     style={{marginLeft: 5}}
                     size="small"
-                    type="danger"
+                    danger
                     onClick={this.onRemoveFilter(i)}
                   >
                     <DeleteOutlined />

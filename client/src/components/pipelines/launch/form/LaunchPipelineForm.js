@@ -4828,7 +4828,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                     <Button
                       size="small"
                       id="remove-pipeline-configuration-button"
-                      type="danger"
+                      danger
                       onClick={
                         () => this.props.onRemoveConfiguration && this.props.onRemoveConfiguration()
                       }

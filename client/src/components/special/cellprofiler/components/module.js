@@ -178,7 +178,7 @@ function CellProfilerModuleHeaderRenderer (props) {
           <Button
             className={styles.action}
             size="small"
-            type="danger"
+            danger
             onClick={remove}
           >
             <DeleteOutlined />

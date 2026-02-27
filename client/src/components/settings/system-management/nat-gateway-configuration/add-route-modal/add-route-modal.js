@@ -484,7 +484,7 @@ export default class AddRouteForm extends React.Component {
                       {
                         ports.length > 1 && (
                           <Button
-                            type="danger"
+                            danger
                             icon={<DeleteOutlined />}
                             onClick={() => this.removePortInput(portIdentifier)}
                             style={{marginLeft: 5}}

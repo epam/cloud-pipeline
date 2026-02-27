@@ -323,7 +323,7 @@ export default class Issue extends localization.LocalizedReactComponent {
               disabled={disabled}
               onClick={() => this.onDeleteCommentClicked(comment)}
               size="small"
-              type="danger"
+              danger
             >
               <DeleteOutlined />
             </Button>
@@ -518,7 +518,7 @@ export default class Issue extends localization.LocalizedReactComponent {
             this.canRemoveIssue &&
             <Button
               disabled={this.state.operationInProgress || this.editCommentInAction}
-              type="danger"
+              danger
               onClick={this.deleteIssueConfirm}
               size="small"
               style={{marginLeft: 5}}

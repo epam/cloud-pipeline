@@ -274,7 +274,7 @@ class ElementPreview extends React.Component {
         Primary
       </Button>
       <Button
-        type="danger"
+        danger
         className={styles.button}
       >
         Danger

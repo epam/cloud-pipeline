@@ -155,7 +155,7 @@ class FilterControl extends React.Component {
           marginTop: 10
         }}>
           <Button
-            type="danger"
+            danger
             onClick={this.resetFilter}
             disabled={!value}
           >

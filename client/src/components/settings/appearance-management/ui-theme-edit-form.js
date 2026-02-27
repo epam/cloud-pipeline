@@ -488,7 +488,7 @@ class UIThemeEditForm extends React.PureComponent {
               <div className={styles.remove}>
                 <Button
                   disabled={readOnly}
-                  type="danger"
+                  danger
                   style={{lineHeight: 1}}
                   onClick={this.confirmRemoval}
                 >

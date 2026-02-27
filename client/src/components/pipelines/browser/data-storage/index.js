@@ -1396,7 +1396,7 @@ export default class DataStorage extends React.Component {
         <Button
           id={`remove ${item.name}`}
           key="remove"
-          type="danger"
+          danger
           size="small"
           onClick={(event) => this.removeItemConfirm(event, item)}>
           <DeleteOutlined />
@@ -3287,7 +3287,7 @@ export default class DataStorage extends React.Component {
                 <Row type="flex" justify="end">
                   <Button
                     id="delete-bucket-item-modal-set-deletion-marker-button"
-                    type="danger"
+                    danger
                     onClick={() => this.removeItems(this.state.itemsToDelete, false, false, () => {
                       this.closeDeleteModal();
                       this.setState({selectedItems: []});
@@ -3295,7 +3295,7 @@ export default class DataStorage extends React.Component {
                     })}>Set deletion marker</Button>
                   <Button
                     id="delete-bucket-item-modal-delete-from-bucket-button"
-                    type="danger"
+                    danger
                     onClick={() => this.removeItems(this.state.itemsToDelete, true, false, () => {
                       this.closeDeleteModal();
                       this.setState({selectedItems: []});

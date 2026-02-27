@@ -351,7 +351,7 @@ export default class PipelineDocuments extends Component {
             <span>
               <Button
                 size="small"
-                type="danger"
+                danger
                 onClick={(e) => this.deleteFileConfirm(file, e)}>
                 <DeleteOutlined />
                 Delete

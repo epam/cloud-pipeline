@@ -284,7 +284,7 @@ export default class EditUserRolesDialog extends React.Component {
             <Button
               id="delete-role-button"
               size="small"
-              type="danger"
+              danger
               onClick={() => this.removeRole(role.id)}
               disabled={this.state.operationInProgress || !(this.isAdmin || this.isUsersAdmin)}
             >
@@ -1217,11 +1217,11 @@ export default class EditUserRolesDialog extends React.Component {
             <Button
               disabled={readOnly}
               id="delete-user-button"
-              type="danger"
+              danger
               onClick={this.onDelete}>DELETE</Button>
             <Button
               disabled={readOnly}
-              type="danger"
+              danger
               onClick={() => this.onBlockUnBlock(!blocked)}
             >
               {

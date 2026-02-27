@@ -369,7 +369,7 @@ class WdlPropertiesForm extends React.Component {
             {
               !disabled && canRemoveEntity && (
                 <Button
-                  type="danger"
+                  danger
                   size="small"
                   onClick={() => this.onRemove()}
                 >
@@ -1031,7 +1031,7 @@ class WdlPropertiesForm extends React.Component {
           Cancel
         </Button>
         <Button
-          type="danger"
+          danger
           style={{marginLeft: 5}}
           onClick={() => this.onConfirmRemove()}
         >

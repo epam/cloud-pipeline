@@ -196,7 +196,7 @@ class EditSection extends React.Component {
             <Button
               disabled={readOnly}
               onClick={onRemove}
-              type="danger"
+              danger
             >
               <DeleteOutlined />
             </Button>
@@ -260,7 +260,7 @@ class EditSection extends React.Component {
               <Button
                 disabled={readOnly}
                 onClick={onRemove}
-                type="danger"
+                danger
               >
                 <DeleteOutlined />
               </Button>

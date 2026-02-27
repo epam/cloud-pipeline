@@ -290,7 +290,7 @@ class ScheduleControl extends React.Component {
         </div>
         <Button
           size="small"
-          type="danger"
+          danger
           onClick={onRemove}
         >
           <DeleteOutlined />

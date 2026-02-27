@@ -406,7 +406,7 @@ class ClusterNode extends Component {
             allowToTerminate && (
               <Button
                 id="terminate-cluster-node-button"
-                type="danger"
+                danger
                 disabled={this.props.node.pending || this.chartsData?.pending}
                 style={{marginRight: 5}}
                 onClick={this.nodeTerminationConfirm}

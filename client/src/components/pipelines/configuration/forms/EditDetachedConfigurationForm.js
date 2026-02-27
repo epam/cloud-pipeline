@@ -137,7 +137,7 @@ export default class EditDetachedConfigurationForm extends React.Component {
               roleModel.manager.configuration(
                 <Button
                   id="edit-configuration-delete-dialog-delete-button"
-                  type="danger"
+                  danger
                   onClick={() => this.onDeleteClicked()}>Delete</Button>
               )
             }
@@ -164,7 +164,7 @@ export default class EditDetachedConfigurationForm extends React.Component {
           <Button
             disabled={this.props.pending}
             id="edit-configuration-form-delete-button"
-            type="danger"
+            danger
             onClick={this.openDeleteDialog}>DELETE</Button>
           <div>
             <Button
@@ -185,7 +185,7 @@ export default class EditDetachedConfigurationForm extends React.Component {
           <Button
             disabled={this.props.pending}
             id="edit-configuration-form-delete-button"
-            type="danger"
+            danger
             onClick={this.openDeleteDialog}>DELETE</Button>
           <Button
             disabled={this.props.pending}

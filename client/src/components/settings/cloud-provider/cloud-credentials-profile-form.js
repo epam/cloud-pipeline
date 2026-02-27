@@ -607,7 +607,7 @@ class CloudCredentialsProfileForm extends React.Component {
                   <Button
                     className={styles.button}
                     disabled={loading}
-                    type="danger"
+                    danger
                     onClick={this.onRemoveClicked}
                   >
                     Remove

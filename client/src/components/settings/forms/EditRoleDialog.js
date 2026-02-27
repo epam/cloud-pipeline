@@ -366,7 +366,7 @@ class EditRoleDialog extends React.Component {
                 <Button
                   id="delete-user-button"
                   size="small"
-                  type="danger"
+                  danger
                   onClick={() => this.removeRole(user.id)}
                 >
                   <DeleteOutlined />
@@ -1095,7 +1095,7 @@ class EditRoleDialog extends React.Component {
           <Button
             disabled={readOnly}
             id="edit-user-form-block-unblock"
-            type="danger"
+            danger
             onClick={this.operationWrapper(this.blockUnblockClicked)}>
             {blocked ? 'UNBLOCK' : 'BLOCK'}
           </Button>

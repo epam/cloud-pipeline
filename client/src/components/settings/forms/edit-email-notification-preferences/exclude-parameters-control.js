@@ -101,7 +101,7 @@ function ExcludeParametersControl ({
             onClick={() => onRemoveParameter(index)}
             className={classNames(styles.control, styles.removeBtn)}
             disabled={pending}
-            type="danger"
+            danger
           >
             <DeleteOutlined />
           </Button>

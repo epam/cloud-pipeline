@@ -375,7 +375,7 @@ class RunsFilter extends React.Component {
       className: styles.savedFiltersActionsRow,
       render: (filter) => (
         <Button
-          type="danger"
+          danger
           onClick={onDelete(filter)}
           size="small">
           <DeleteOutlined />

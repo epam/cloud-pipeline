@@ -359,7 +359,7 @@ class VersionedStorageTable extends React.Component {
           Cancel
         </Button>
         <Button
-          type="danger"
+          danger
           onClick={() => {
             onDeleteDocument && onDeleteDocument(deletingDocument, comment);
             this.hideDeleteDialog();

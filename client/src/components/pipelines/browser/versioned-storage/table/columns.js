@@ -63,7 +63,7 @@ const renderActions = (item) => {
       actions.push((
         <Button
           key="delete"
-          type="danger"
+          danger
           className={styles.action}
           data-action="delete"
           size="small"
@@ -88,7 +88,7 @@ const renderActions = (item) => {
       actions.push((
         <Button
           key="delete"
-          type="danger"
+          danger
           className={styles.action}
           data-action="delete"
           size="small"

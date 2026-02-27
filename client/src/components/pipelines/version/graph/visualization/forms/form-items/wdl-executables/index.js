@@ -158,7 +158,7 @@ class WdlExecutables extends React.Component {
             <div className={styles.actions}>
               <Button
                 className={styles.action}
-                type="danger"
+                danger
                 size="small"
                 onClick={this.onRemoveTaskClicked(executable)}
               >

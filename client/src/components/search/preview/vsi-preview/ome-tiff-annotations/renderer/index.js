@@ -637,7 +637,7 @@ class OMETiffAnnotationsRenderer extends React.Component {
                 size="small"
                 className={styles.action}
                 style={{marginLeft: 10}}
-                type="danger"
+                danger
                 onClick={this.removeSelected}
               >
                 Remove

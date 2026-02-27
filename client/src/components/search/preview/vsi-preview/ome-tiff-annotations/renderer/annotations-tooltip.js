@@ -101,7 +101,7 @@ function AnnotationsTooltip () {
             </span>
             <Button
               size="small"
-              type="danger"
+              danger
               className={styles.actionInfo}
             >
               Remove

@@ -47,7 +47,7 @@ function LaunchFormSchemeParameterEntry (props) {
         ))
       }
       <td className={styles.entryAction}>
-        <Button disabled={disabled} onClick={onRemove} type="danger" size="small">
+        <Button disabled={disabled} onClick={onRemove} danger size="small">
           <DeleteOutlined />
         </Button>
       </td>

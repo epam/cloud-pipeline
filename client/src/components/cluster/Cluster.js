@@ -421,7 +421,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
     ) {
       return <Button
         id="terminate-node-button"
-        type="danger"
+        danger
         size="small"
         onClick={(event) => this.nodeTerminationConfirm(item, event)}>TERMINATE</Button>;
     }
@@ -850,7 +850,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
               selectionLength > 0 && (
                 <Button
                   id="cluster-batch-terminate-button"
-                  type="danger"
+                  danger
                   disabled={this.nodesFilter.pending || this.props.clusterNodes.pending}
                   style={{marginRight: 5}}
                   onClick={this.nodesTerminationConfirm}

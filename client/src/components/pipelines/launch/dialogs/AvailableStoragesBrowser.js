@@ -413,7 +413,7 @@ export default class AvailableStoragesBrowser extends Component {
             {
               this.state.selectedStorages.length &&
               <Button
-                type="danger"
+                danger
                 style={{marginLeft: 5}}
                 onClick={this.clearSelection}>
                 Clear selection

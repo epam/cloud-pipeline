@@ -237,7 +237,7 @@ export default class GroupsManagement extends React.Component {
                   (this.isAdmin || this.isUsersAdmin) && !predefined && (
                     <Button
                       size="small"
-                      type="danger"
+                      danger
                       onClick={(e) => this.deleteRoleConfirm(e, role)}
                     >
                       <DeleteOutlined />

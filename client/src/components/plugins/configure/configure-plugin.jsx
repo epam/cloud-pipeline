@@ -106,7 +106,7 @@ function ConfigurePlugin (props) {
         <Button
           disabled={disabled}
           size="small"
-          type="danger"
+          danger
           onClick={onRemoveConfirm}
           style={{marginRight: 10}}>
           <DeleteOutlined />

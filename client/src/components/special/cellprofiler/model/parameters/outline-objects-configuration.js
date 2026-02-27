@@ -154,7 +154,7 @@ class OutlineConfigRenderer extends React.Component {
               }
               <Button
                 style={{marginLeft: 5}}
-                type="danger"
+                danger
                 size="small"
                 onClick={this.removeConfiguration(index)}
               >

@@ -217,7 +217,7 @@ export default class SystemEvents extends Component {
               <Button
                 id="delete-notification-button"
                 size="small"
-                type="danger"
+                danger
                 onClick={() => this.deleteNotificationConfirm(notification)}>
                 <DeleteOutlined />
               </Button>

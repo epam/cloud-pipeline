@@ -482,14 +482,14 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
           <Row type="flex" justify="end">
             <Button
               id="edit-pipeline-delete-dialog-unregister-button"
-              type="danger"
+              danger
               onClick={() => this.onDeleteClicked(true)}
             >
               Unregister
             </Button>
             <Button
               id="edit-pipeline-delete-dialog-delete-button"
-              type="danger"
+              danger
               onClick={() => this.onDeleteClicked(false)}
             >
               Delete
@@ -531,7 +531,7 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
           <Button
             disabled={this.props.pending}
             id="edit-pipeline-form-delete-button"
-            type="danger"
+            danger
             onClick={this.openDeleteDialog}
           >
             DELETE
@@ -564,7 +564,7 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
           <Button
             disabled={this.props.pending}
             id="edit-pipeline-form-delete-button"
-            type="danger"
+            danger
             onClick={this.openDeleteDialog}
           >
             DELETE

@@ -235,7 +235,7 @@ class CWLCommandLineTool extends React.Component {
                   size="small"
                   disabled={this.props.disabled}
                   onClick={onRemoveCode(index)}
-                  type="danger"
+                  danger
                   style={{marginLeft: 5}}
                 >
                   <DeleteOutlined />

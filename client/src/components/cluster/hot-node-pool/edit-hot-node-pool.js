@@ -1722,7 +1722,7 @@ class EditHotNodePool extends React.Component {
           >
             Monitored
           </Checkbox>
-          <Button size="small" onClick={onRemoveNodeLabel} type="danger">
+          <Button size="small" onClick={onRemoveNodeLabel} danger>
             <DeleteOutlined />
           </Button>
         </div>

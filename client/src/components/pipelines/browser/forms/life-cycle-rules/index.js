@@ -200,7 +200,7 @@ class LifeCycleRules extends React.Component {
       !readOnly && (
         <Button
           className={styles.controlBtn}
-          type="danger"
+          danger
           onClick={() => this.deleteRule(rule.id)}
           size="small"
           key="delete"

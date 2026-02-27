@@ -534,7 +534,7 @@ export default class NATGateway extends React.Component {
                     }
                     return !this.routeIsRemoved(text) ? (
                       <Button
-                        type="danger"
+                        danger
                         icon={<DeleteOutlined />}
                         onClick={() => this.removeRoute(text)}
                         size="small"

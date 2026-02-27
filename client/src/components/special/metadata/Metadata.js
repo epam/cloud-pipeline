@@ -1046,7 +1046,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
                 <td style={{minWidth: 30, textAlign: 'right'}}>
                   <Button
                     id={`delete-metadata-key-${metadataItem.key}-button`}
-                    type="danger"
+                    danger
                     size="small"
                     onClick={() => this.confirmDeleteKey(metadataItem)}>
                     <DeleteOutlined />
@@ -1753,7 +1753,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
             id="remove-all-keys-button"
             key="remove all keys button"
             size="small"
-            type="danger"
+            danger
             onClick={this.confirmDeleteMetadata}>
             <DeleteOutlined /> Remove all
           </Button>

@@ -182,7 +182,7 @@ function OutputProperty (props) {
           }
         </Select>
         <Button
-          type="danger"
+          danger
           size="small"
           style={{marginLeft: 5}}
           onClick={removeObject}
@@ -232,7 +232,7 @@ function OutputProperty (props) {
                 }
               </Select>
               <Button
-                type="danger"
+                danger
                 size="small"
                 style={{marginLeft: 5}}
                 onClick={removeProperty(index)}

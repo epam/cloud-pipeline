@@ -1144,7 +1144,7 @@ export default class Tool extends localization.LocalizedReactComponent {
               (
                 <Button
                   size="small"
-                  type="danger"
+                  danger
                   disabled={this.isLastVersion}
                   onClick={(e) => {
                     e.preventDefault();

@@ -126,7 +126,7 @@ class PipelineSelector extends React.Component {
           <Button
             disabled={disabled}
             size="small"
-            type="danger"
+            danger
             onClick={onRemove}
             className={styles.action}
           >
