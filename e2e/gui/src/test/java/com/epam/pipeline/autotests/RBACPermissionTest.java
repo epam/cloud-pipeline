@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,21 +112,22 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
     public void readGrantPermissionsToUserAccount() {
         userPermissionsPreparations();
         loginAsUser(user);
-        navigationMenu()
+        EditUserPopup editUserPopup = navigationMenu()
                 .settings()
                 .ensure(USER_MANAGEMENT_TAB, visible)
                 .switchToUserManagement()
                 .switchToUsers()
                 .searchUserEntry(admin.login)
-                .openEditUserPopUp()
+                .openEditUserPopUp();
+        editUserPopup
                 .ensureNotVisible(IMPERSONATE)
                 .ensureDisable(DELETE, BLOCK)
                 .isListOfRolesBlocked()
                 .isAllowedLaunchOptionsDisable(toolInstanceTypesMask)
                 .showMetadata()
                 .assertKeysArePresent(key1, key2, key3)
-                .assertKeysAreDisabled(key1, key2, key3)
-                .ok();
+                .assertKeysAreDisabled(key1, key2, key3);
+        editUserPopup.ok();
     }
 
     @Test(priority = 1, dependsOnMethods = "readGrantPermissionsToUserAccount")
@@ -169,16 +170,17 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
                 .close()
                 .addKeyWithValue(key4, value4)
                 .ok();
-        navigationMenu()
+        EditUserPopup editUserPopup = navigationMenu()
                 .settings()
                 .switchToUserManagement()
                 .switchToUsers()
                 .searchUserEntry(admin.login)
-                .openEditUserPopUp()
+                .openEditUserPopUp();
+        editUserPopup
                 .showMetadata()
                 .assertKeysAreNotPresent(key1, key2)
-                .assertKeysArePresent(key4, key3)
-                .ok();
+                .assertKeysArePresent(key4, key3);
+        editUserPopup.ok();
     }
 
     @Test(priority = 1, dependsOnMethods = "wtiteGrantPermissionsToUserAccount")
@@ -199,22 +201,21 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
                 .savePermissions()
                 .closeAll();
         loginAsUser(user);
-        navigationMenu()
+        EditUserPopup editUserPopup = navigationMenu()
                 .settings()
                 .ensure(USER_MANAGEMENT_TAB, visible)
                 .switchToUserManagement()
                 .switchToUsers()
                 .searchUserEntry(admin.login)
-                .openEditUserPopUp()
-                .ensureVisible(IMPERSONATE)
+                .openEditUserPopUp();
+        editUserPopup.ensureVisible(IMPERSONATE)
                 .ensureDisable(DELETE, BLOCK)
                 .isListOfRolesBlocked()
                 .isAllowedLaunchOptionsDisable(toolInstanceTypesMask)
                 .showMetadata()
                 .assertKeysArePresent(key3, key4)
-                .assertKeysAreDisabled(key3, key4)
-                .ok()
-                .click(IMPERSONATE);
+                .assertKeysAreDisabled(key3, key4);
+        editUserPopup.click(IMPERSONATE);
         navigationMenu()
                 .settings()
                 .switchToMyProfile()
@@ -238,8 +239,7 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
                 .isAllowedLaunchOptionsDisable(toolInstanceTypesMask)
                 .showMetadata()
                 .assertKeysArePresent(key1, key2, key3)
-                .assertKeysAreDisabled(key1, key2, key3)
-                .ok();
+                .assertKeysAreDisabled(key1, key2, key3);
         editGroupPopup.ok();
     }
 
@@ -289,8 +289,7 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
                 .checkUserExistsInGroup(admin.login)
                 .showMetadata()
                 .assertKeysAreNotPresent(key1, key2)
-                .assertKeysArePresent(key4, key3)
-                .ok();
+                .assertKeysArePresent(key4, key3);
         editGroupPopup.ok();
     }
 
@@ -361,8 +360,7 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
                 .enterGroupName(groupName)
                 .create()
                 .searchGroupBySubstring(groupName)
-                .editGroup(groupName)
-                .ensureVisible(SEARCH);
+                .editGroup(groupName);
         if(account != null) {
             editGroupPopup.addUserIfNonExist(account.login);
         }

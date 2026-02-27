@@ -657,6 +657,7 @@ public class UserManagementAO extends SettingsPageAO {
                     .closest(".ant-table-row-level-0")
                     .find(byClassName("ant-btn-sm"))
                     .click();
+            $(byText("Allowed price types")).shouldBe(visible);
             return new EditGroupPopup(this);
         }
 
@@ -667,6 +668,7 @@ public class UserManagementAO extends SettingsPageAO {
                     .filterBy(visible)
                     .first()
                     .click();
+            $(byText("Allowed price types")).shouldBe(visible);
             return new EditGroupPopup(this);
         }
 
@@ -728,6 +730,7 @@ public class UserManagementAO extends SettingsPageAO {
             public EditGroupPopup(final GroupsTabAO parentAO) {
                 super(parentAO);
                 this.parentAO = parentAO;
+
             }
 
             @Override
