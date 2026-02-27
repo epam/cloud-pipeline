@@ -234,7 +234,8 @@ class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
         return source_path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
+                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False,
+                 source_last_modified=None):
         full_path = path
         destination_path = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -298,7 +299,8 @@ class AzureDownloadManager(AzureManager, AbstractTransferManager):
         return source_path or source_wrapper.path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=None, io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
+                 size=None, tags=None, io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False,
+                 source_last_modified=None):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -330,7 +332,8 @@ class AzureUploadManager(AzureManager, AbstractTransferManager):
             return source_wrapper.path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
+                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False,
+                 source_last_modified=None):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 

@@ -313,6 +313,8 @@ def cli():
                                              a maximum of 10,000 parts per object. Configuring part size is important
                                              for large STREAM transfers, as the final size of the stream cannot
                                              be predicted.
+      CP_CLI_STORAGE_SYNC_MTIME_ENABLED      Enables persisting timestemps from cloud objects to local files
+                                             during CLOUD -> LOCAL trasfers. (Default: True)
     """
     pass
 

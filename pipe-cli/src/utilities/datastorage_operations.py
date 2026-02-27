@@ -910,6 +910,7 @@ class DataStorageOperations(object):
         destination_relative_path = cls._get_tuple_item(item, 5, relative_path)
 
         fail_after_exception = None
+        source_last_modified = cls._get_tuple_item(item, 4)
         try:
             transfer_result = transfer_params.manager.transfer(transfer_params.source_wrapper,
                                                                transfer_params.destination_wrapper,
@@ -921,7 +922,8 @@ class DataStorageOperations(object):
                                                                tags=transfer_params.tags,
                                                                io_threads=transfer_params.io_threads, lock=lock,
                                                                checksum_algorithm=transfer_params.checksum_algorithm,
-                                                               checksum_skip=transfer_params.checksum_skip)
+                                                               checksum_skip=transfer_params.checksum_skip,
+                                                               source_last_modified=source_last_modified)
             if not transfer_params.destination_wrapper.is_local() and transfer_result:
                 transfer_results.append(transfer_result)
                 transfer_results = cls._flush_transfer_results(transfer_params.source_wrapper,
