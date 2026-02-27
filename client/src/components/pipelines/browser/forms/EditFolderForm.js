@@ -137,8 +137,8 @@ export default class EditFolderForm extends React.Component {
   }
 
   initializeNameInput = (input) => {
-    if (input && input.refs && input.refs.input) {
-      this.nameInput = input.refs.input;
+    if (input) {
+      this.nameInput = input;
       this.nameInput.onfocus = function () {
         setTimeout(() => {
           this.selectionStart = (this.value || '').length;

@@ -60,11 +60,11 @@ class ParameterNameInput extends React.PureComponent {
   onUnSetEditMode = () => this.setState({editMode: false});
 
   onInitNameInput = (input) => {
-    this.input = input && input.refs ? input.refs.input : undefined;
+    this.input = input;
   }
 
   onInitPrettyNameInput = (input) => {
-    this.prettyNameInput = input && input.refs ? input.refs.input : undefined;
+    this.prettyNameInput = input;
   }
 
   onBlur = () => {

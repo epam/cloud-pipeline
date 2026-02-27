@@ -119,10 +119,10 @@ export default class EditableField extends React.Component {
       options.style = style;
     }
     const ref = (control) => {
-      if (!this.control && control && control.refs && control.refs.input) {
+      if (!this.control && control) {
         this.control = control;
-        control.refs.input.focus();
-        this.moveCursorToEnd(control.refs.input);
+        control.focus();
+        this.moveCursorToEnd(control);
       }
     };
     return (

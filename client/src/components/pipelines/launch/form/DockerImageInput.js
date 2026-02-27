@@ -44,11 +44,7 @@ export default class DockerImageInput extends React.Component {
   input;
 
   refInput = (input) => {
-    if (input && input.refs.input) {
-      this.input = input.refs.input;
-    } else {
-      this.input = null;
-    }
+    this.input = input;
   };
 
   openBrowser = () => {

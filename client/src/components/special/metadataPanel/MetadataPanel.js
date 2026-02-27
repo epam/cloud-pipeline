@@ -205,8 +205,8 @@ export default class MetadataPanel extends React.Component {
   }
 
   autoFocusInputRef = (input) => {
-    if (input && input.refs && input.refs.input && input.refs.input.focus) {
-      input.refs.input.focus();
+    if (input && input.focus) {
+      input.focus();
     }
   }
 
@@ -291,8 +291,8 @@ export default class MetadataPanel extends React.Component {
       const refKeyInput = (input) => {
         if (this.state.addKey &&
           !this.state.addKey.autofocused &&
-          input && input.refs && input.refs.input && input.refs.input.focus) {
-          input.refs.input.focus();
+          input && input.focus) {
+          input.focus();
           const addKey = this.state.addKey;
           addKey.autofocused = true;
           this.setState({addKey});

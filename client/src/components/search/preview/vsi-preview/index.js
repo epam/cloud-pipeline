@@ -842,11 +842,9 @@ class VSIPreview extends React.Component {
       e.preventDefault();
       if (
         this.pathElement &&
-        this.pathElement.refs &&
-        this.pathElement.refs.input &&
-        this.pathElement.refs.input.select
+        this.pathElement.select
       ) {
-        this.pathElement.refs.input.select();
+        this.pathElement.select();
         if (document.execCommand('copy')) {
           message.info('Copied to clipboard', 3);
           window.getSelection().removeAllRanges();

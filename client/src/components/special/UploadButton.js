@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
 import {
   observer} from 'mobx-react';
@@ -72,15 +73,17 @@ class UploadButton extends React.Component {
   }
 
   triggerClick = () => {
-    if (
-      this.uploadButton &&
-      this.uploadButton.refs &&
-      this.uploadButton.refs.upload &&
-      this.uploadButton.refs.upload.uploader &&
-      this.uploadButton.refs.upload.uploader.fileInput &&
-      this.uploadButton.refs.upload.uploader.fileInput.click
-    ) {
-      this.uploadButton.refs.upload.uploader.fileInput.click();
+    // In antd 4.x, we need to find the file input through the DOM
+    // since refs no longer expose internal component structure
+    if (this.uploadButton) {
+      // Try to find the file input element in the Upload component
+      const uploadNode = ReactDOM.findDOMNode(this.uploadButton);
+      if (uploadNode) {
+        const fileInput = uploadNode.querySelector('input[type="file"]');
+        if (fileInput && fileInput.click) {
+          fileInput.click();
+        }
+      }
     }
   };
 

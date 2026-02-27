@@ -102,8 +102,8 @@ class RevertCommitForm extends React.Component {
   }
 
   initializeCommentInput = (input) => {
-    if (input && input.refs && input.refs.input) {
-      this.commentInput = input.refs.input;
+    if (input) {
+      this.commentInput = input;
       this.commentInput.onfocus = function () {
         setTimeout(() => {
           this.selectionStart = (this.value || '').length;

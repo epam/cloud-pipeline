@@ -2453,9 +2453,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       }
     }
     const ref = (input) => {
-      if (input && input.refs && input.refs.input) {
-        this.pipelineInput = input.refs.input;
-      }
+      this.pipelineInput = input;
     };
     return (
       <FormItem

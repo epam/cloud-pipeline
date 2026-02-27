@@ -317,10 +317,10 @@ export default class Metadata extends localization.LocalizedReactComponent {
   };
 
   autoFocusInputRef = (input, password = false) => {
-    if (input && input.refs && input.refs.input && input.refs.input.focus) {
-      input.refs.input.focus();
+    if (input && input.focus) {
+      input.focus();
       if (password) {
-        input.refs.input.type = 'password';
+        input.input.type = 'password';
       }
     }
   };
