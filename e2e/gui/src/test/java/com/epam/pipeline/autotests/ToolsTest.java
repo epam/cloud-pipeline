@@ -439,7 +439,7 @@ public class ToolsTest
                 .ensure(LAUNCH, visible)
                 .ensure(PIPELINE, text(nameWithoutGroup(toolWithoutDefaultSettings)))
                 .ensure(TOOL_VERSION, text("latest"))
-                .checkEstimatedPriceValue("-")
+                .checkEstimatedPriceValue("—")
                 .ensure(INFORMATION_ICON, visible)
                 .checkEstimatedPriceTooltip("Price cannot be estimated for the selected node type / disk configuration")
                 .expandTabs(execEnvironmentTab, advancedTab, parametersTab)
