@@ -16,9 +16,9 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import {Dropdown} from 'antd';
 import {DownOutlined} from '@ant-design/icons';
 import Menu, {MenuItem} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
 import {inject, observer} from 'mobx-react';
 import AWSRegionTag from '../AWSRegionTag';
 import styles from './multizone-url.css';

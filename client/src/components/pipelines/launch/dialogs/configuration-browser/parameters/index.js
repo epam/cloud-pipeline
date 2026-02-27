@@ -17,13 +17,13 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {
-  Button
+  Button,
+  Dropdown
 } from 'antd';
 import {DownOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import {observer, inject} from 'mobx-react';
 import Menu, {MenuItem} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
 import {
   getAllSkippedSystemParametersList
 } from '../../../form/utilities/launch-cluster';

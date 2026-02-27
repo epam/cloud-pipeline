@@ -1,8 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Alert} from 'antd';
+import {Alert, Dropdown} from 'antd';
 import {CloseOutlined} from '@ant-design/icons';
-import Dropdown from 'rc-dropdown';
 import Menu, {MenuItem, SubMenu} from 'rc-menu';
 import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';

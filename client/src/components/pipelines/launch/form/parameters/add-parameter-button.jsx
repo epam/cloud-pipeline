@@ -4,10 +4,10 @@ import Menu, {MenuItem} from 'rc-menu';
 import {
   inject,
   observer} from 'mobx-react';
-import {Button
+import {Button,
+  Dropdown
 } from 'antd';
 import {DownOutlined} from '@ant-design/icons';
-import Dropdown from 'rc-dropdown';
 import classNames from 'classnames';
 import {addParameter, addSystemParameters} from '../utilities/parameter-utilities';
 import {

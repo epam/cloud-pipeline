@@ -16,12 +16,11 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Alert, Button, Modal, Tree} from 'antd';
+import {Alert, Button, Dropdown, Modal, Tree} from 'antd';
 import {DownOutlined, FolderOutlined, SettingOutlined, SolutionOutlined} from '@ant-design/icons';
 import {inject} from 'mobx-react';
 import classNames from 'classnames';
 import Menu, {MenuItem} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
 import {
   generateTreeData,
   ItemTypes,

@@ -21,12 +21,12 @@ import {
   Button,
   Checkbox,
   Collapse,
+  Dropdown,
   Input,
   message,
   Modal
 } from 'antd';
 import {DeleteOutlined, DownOutlined, PlusOutlined, QuestionCircleFilled} from '@ant-design/icons';
-import Dropdown from 'rc-dropdown';
 import Menu, {SubMenu, MenuItem, Divider} from 'rc-menu';
 import {
   ContextTypes,

@@ -25,6 +25,7 @@ import {
   Button,
   Card,
   Col,
+  Dropdown,
   Input,
   Menu as MenuHorizontal,
   message,
@@ -37,7 +38,6 @@ import {
 } from 'antd';
 import {AppstoreFilled, ArrowLeftOutlined, CameraOutlined, CheckCircleFilled, DeleteOutlined, DownOutlined, ExclamationCircleFilled, LinkOutlined, LoadingOutlined, SettingOutlined, UploadOutlined} from '@ant-design/icons';
 import Menu, {MenuItem, Divider} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
 import classNames from 'classnames';
 import LoadTool from '../../models/tools/LoadTool';
 import ToolImage from '../../models/tools/ToolImage';

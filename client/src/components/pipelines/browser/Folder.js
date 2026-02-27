@@ -34,6 +34,7 @@ import {
   Button,
   Checkbox,
   Col,
+  Dropdown,
   message,
   Modal,
   Popover,
@@ -43,7 +44,6 @@ import {
 } from 'antd';
 import {AppstoreFilled, AppstoreOutlined, CheckCircleFilled, ClockCircleOutlined, CopyOutlined, DeleteOutlined, DownOutlined, EditOutlined, FolderOutlined, ForkOutlined, HddOutlined, InboxOutlined, LockOutlined, MessageOutlined, PlusOutlined, QuestionCircleFilled, SettingOutlined, SolutionOutlined, TagFilled, UnlockOutlined} from '@ant-design/icons';
 import Menu, {SubMenu, MenuItem, Divider} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
 import EditFolderForm from './forms/EditFolderForm';
 import EditPipelineForm from '../version/forms/EditPipelineForm';
 import {DataStorageEditDialog, ServiceTypes} from './forms/DataStorageEditDialog';

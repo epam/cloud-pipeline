@@ -28,6 +28,7 @@ import {
   Alert,
   Button,
   Checkbox,
+  Dropdown,
   Input,
   InputNumber,
   Modal,
@@ -51,7 +52,6 @@ import {
   UsergroupAddOutlined
 } from '@ant-design/icons';
 import Menu, {MenuItem} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
 import AWSRegionUpdate from '../../models/dataStorage/AWSRegionUpdate';
 import AWSRegionDelete from '../../models/dataStorage/AWSRegionDelete';
 import AWSRegionCreate from '../../models/dataStorage/AWSRegionCreate';

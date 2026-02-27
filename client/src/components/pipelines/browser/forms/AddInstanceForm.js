@@ -20,6 +20,7 @@ import {
   observer} from 'mobx-react';
 import {
   Checkbox,
+  Dropdown,
   Form,
   Modal,
   Button,
@@ -29,7 +30,6 @@ import {
 } from 'antd';
 import {DeleteOutlined, DownOutlined} from '@ant-design/icons';
 import Menu, {MenuItem} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
 import SelectMetadataItems from './SelectMetadataItems';
 import compareArrays from '../../../../utils/compareArrays';
 import styles from './AddInstanceForm.css';

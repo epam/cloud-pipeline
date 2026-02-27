@@ -20,7 +20,6 @@ import 'regenerator-runtime/runtime';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import Root from './components/main/Root';
-import 'rc-dropdown/assets/index.css';
 import 'rc-menu/assets/index.css';
 import 'rc-slider/assets/index.css';
 import './index.css';

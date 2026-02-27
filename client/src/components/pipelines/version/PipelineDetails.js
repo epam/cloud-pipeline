@@ -25,11 +25,11 @@ import {Alert,
   message,
   Row,
   Button,
-  Col
+  Col,
+  Dropdown
 } from 'antd';
 import {DownOutlined, SettingOutlined, TagFilled} from '@ant-design/icons';
 import Menu, {MenuItem} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
 import {graphIsSupportedForLanguage} from './graph/visualization';
 import pipelines from '../../../models/pipelines/Pipelines';
 import pipelinesLibrary from '../../../models/folders/FolderLoadTree';

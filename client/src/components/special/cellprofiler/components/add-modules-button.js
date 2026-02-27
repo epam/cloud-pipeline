@@ -19,11 +19,11 @@ import PropTypes from 'prop-types';
 import {
   observer} from 'mobx-react';
 import {Button,
+  Dropdown,
   Input
 } from 'antd';
 import {PlusOutlined} from '@ant-design/icons';
 import Menu, {MenuItem, SubMenu} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
 import classNames from 'classnames';
 import allModules from '../model/modules';
 import styles from './cell-profiler.css';

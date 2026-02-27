@@ -22,11 +22,11 @@ import {inject,
   observer} from 'mobx-react';
 import {
   Badge,
-  Button
+  Button,
+  Dropdown
 } from 'antd';
 import {ExportOutlined} from '@ant-design/icons';
 import RcMenu, {MenuItem, SubMenu, Divider as MenuDivider} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
 import SharedItemInfo
 from '../../../../pipelines/browser/forms/data-storage-item-sharing/SharedItemInfo';
 import SelectionPreview from '../selection-preview';

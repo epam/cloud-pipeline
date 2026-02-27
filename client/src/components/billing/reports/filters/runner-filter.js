@@ -327,8 +327,9 @@ class RunnerFilter extends React.Component {
   };
 
   changeRunner = (keys) => {
-    const runners = (keys || []).map(({key}) => {
-      const [type, ...rest] = key.split('_');
+    const runners = (keys || []).map((item) => {
+      const key = item.value !== undefined ? item.value : item.key;
+      const [type, ...rest] = String(key).split('_');
       return {type, id: rest.join('_')};
     });
     let [runnersType] = runners.filter(r => r.type !== this.currentType).map(r => r.type);

@@ -36,6 +36,7 @@ import GitRepositoryControl from '../../special/git-repository-control';
 import {Alert,
   Button,
   Col,
+  Dropdown,
   message,
   Popover,
   Row,
@@ -44,7 +45,6 @@ import {Alert,
 } from 'antd';
 import {AppstoreFilled, CheckCircleFilled, CopyOutlined, EditOutlined, FolderOutlined, ForkOutlined, SettingOutlined, TagFilled} from '@ant-design/icons';
 import Menu, {MenuItem} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
 import EditPipelineForm from '../version/forms/EditPipelineForm';
 import PipelineConfigurations from '../../../models/pipelines/PipelineConfigurations';
 import folders from '../../../models/folders/Folders';

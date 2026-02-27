@@ -15,9 +15,8 @@
  */
 
 import React from 'react';
-import Dropdown from 'rc-dropdown';
+import {Button, Dropdown} from 'antd';
 import Menu, {MenuItem, Divider} from 'rc-menu';
-import {Button} from 'antd';
 import {SettingOutlined} from '@ant-design/icons';
 import {inject, observer} from 'mobx-react';
 import roleModel from '../../../../utils/roleModel';

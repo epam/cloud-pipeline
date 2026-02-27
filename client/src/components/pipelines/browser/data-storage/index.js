@@ -24,6 +24,7 @@ import {
   Button,
   Checkbox,
   Col,
+  Dropdown,
   Input,
   message,
   Modal,
@@ -50,7 +51,6 @@ import {
   ReloadOutlined,
   SettingOutlined
 } from '@ant-design/icons';
-import Dropdown from 'rc-dropdown';
 import Menu, {MenuItem, Divider} from 'rc-menu';
 import moment from 'moment-timezone';
 import LoadingView from '../../../special/LoadingView';

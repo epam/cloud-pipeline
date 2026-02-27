@@ -26,6 +26,7 @@ import {
   Checkbox,
   Col,
   Collapse,
+  Dropdown,
   Input,
   message,
   Modal,
@@ -46,7 +47,6 @@ import {
 } from '@ant-design/icons';
 import styles from './LaunchPipelineForm.css';
 import Menu, {MenuItem} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
 import BucketBrowser from './../dialogs/BucketBrowser';
 import PipelineBrowser from './../dialogs/PipelineBrowser';
 import DockerImageInput from './DockerImageInput';

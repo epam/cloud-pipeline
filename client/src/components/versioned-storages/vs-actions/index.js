@@ -21,12 +21,12 @@ import {
 import {computed,
   observable} from 'mobx';
 import {
+  Dropdown,
   message
 } from 'antd';
 import {CloudDownloadOutlined, DownOutlined, ExceptionOutlined, ExclamationCircleFilled, ForkOutlined, LoadingOutlined, SaveOutlined, SyncOutlined} from '@ant-design/icons';
 import VsActionsAvailable, {vsAvailabilityCheck} from './vs-actions-available';
 import Menu, {MenuItem, Divider, ItemGroup, SubMenu} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
 import VSBrowseDialog from '../vs-browse-dialog';
 import GitDiffModal from './components/diff/modal';
 import VSList from '../../../models/versioned-storage/list';

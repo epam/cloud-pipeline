@@ -28,6 +28,7 @@ import MetadataEntityLoadExternal from '../../../models/folderMetadata/MetadataE
 import {
   Button,
   Checkbox,
+  Dropdown,
   Input,
   message,
   Modal,
@@ -49,7 +50,6 @@ import {
   UploadOutlined
 } from '@ant-design/icons';
 import Menu, {MenuItem, Divider} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
 import {
   ContentMetadataPanel,
   CONTENT_PANEL_KEY,

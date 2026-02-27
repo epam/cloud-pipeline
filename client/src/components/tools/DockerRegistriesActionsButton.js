@@ -20,12 +20,12 @@ import {
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
 import {
+  Dropdown,
   message,
   Button
 } from 'antd';
 import {DeleteOutlined, EditOutlined, PlusOutlined, QuestionCircleOutlined, SettingOutlined} from '@ant-design/icons';
 import Menu, {MenuItem, Divider, SubMenu} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
 import roleModel from '../../utils/roleModel';
 import AddRegistry from '../../models/tools/RegistryCreate';
 import UpdateRegistry from '../../models/tools/RegistryUpdate';
