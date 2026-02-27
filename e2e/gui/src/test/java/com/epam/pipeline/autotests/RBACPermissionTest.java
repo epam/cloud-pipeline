@@ -16,25 +16,8 @@
 
 package com.epam.pipeline.autotests;
 
-import static com.codeborne.selenide.Condition.exist;
-import static com.codeborne.selenide.Condition.not;
-import static com.codeborne.selenide.Condition.visible;
-import static com.codeborne.selenide.Selectors.byId;
-import static com.codeborne.selenide.Selenide.$;
-import static com.epam.pipeline.autotests.ao.Primitive.BLOCK;
-import static com.epam.pipeline.autotests.ao.Primitive.DELETE;
-import static com.epam.pipeline.autotests.ao.Primitive.IMPERSONATE;
-import static com.epam.pipeline.autotests.ao.Primitive.PROFILE;
-import static com.epam.pipeline.autotests.ao.Primitive.USER_MANAGEMENT_TAB;
 import com.epam.pipeline.autotests.ao.UserManagementAO.GroupsTabAO.EditGroupPopup;
 import com.epam.pipeline.autotests.ao.UserManagementAO.UsersTabAO.UserEntry;
-import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
-import static com.epam.pipeline.autotests.utils.Privilege.EXECUTE;
-import static com.epam.pipeline.autotests.utils.Privilege.READ;
-import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
-import static com.epam.pipeline.autotests.utils.PrivilegeValue.ALLOW;
-import static com.epam.pipeline.autotests.utils.PrivilegeValue.INHERIT;
-import static java.lang.String.format;
 import com.epam.pipeline.autotests.ao.UserManagementAO.UsersTabAO.UserEntry.EditUserPopup;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.TestCase;
@@ -43,6 +26,20 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.util.stream.Stream;
+
+import static com.codeborne.selenide.Condition.visible;
+import static com.epam.pipeline.autotests.ao.Primitive.BLOCK;
+import static com.epam.pipeline.autotests.ao.Primitive.DELETE;
+import static com.epam.pipeline.autotests.ao.Primitive.IMPERSONATE;
+import static com.epam.pipeline.autotests.ao.Primitive.PROFILE;
+import static com.epam.pipeline.autotests.ao.Primitive.SEARCH;
+import static com.epam.pipeline.autotests.ao.Primitive.USER_MANAGEMENT_TAB;
+import static com.epam.pipeline.autotests.utils.Privilege.EXECUTE;
+import static com.epam.pipeline.autotests.utils.Privilege.READ;
+import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
+import static com.epam.pipeline.autotests.utils.PrivilegeValue.ALLOW;
+import static com.epam.pipeline.autotests.utils.PrivilegeValue.INHERIT;
+import static java.lang.String.format;
 
 public class RBACPermissionTest extends AbstractBfxPipelineTest implements Authorization {
 
@@ -364,7 +361,8 @@ public class RBACPermissionTest extends AbstractBfxPipelineTest implements Autho
                 .enterGroupName(groupName)
                 .create()
                 .searchGroupBySubstring(groupName)
-                .editGroup(groupName);
+                .editGroup(groupName)
+                .ensureVisible(SEARCH);
         if(account != null) {
             editGroupPopup.addUserIfNonExist(account.login);
         }
