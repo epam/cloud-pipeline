@@ -38,7 +38,7 @@ import pools from '../../models/cluster/HotNodePools';
 import TerminateNodeRequest from '../../models/cluster/TerminateNode';
 import displayDate from '../../utils/displayDate';
 import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import connect from '../../utils/connect';
 import roleModel from '../../utils/roleModel';
 import localization from '../../utils/localization';
@@ -120,10 +120,18 @@ export default class Cluster extends localization.LocalizedReactComponent {
     selection: []
   };
 
-  @observable
   nodesFilterRequest = new NodesFilter(this.props.machineType);
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      nodesFilterRequest: observable,
+      nodesFilter: computed,
+      currentNodePool: computed,
+      uiStandaloneNodesAllowTerminate: computed
+    });
+  }
+
   get nodesFilter () {
     return this.nodesFilterRequest;
   }
@@ -133,9 +141,8 @@ export default class Cluster extends localization.LocalizedReactComponent {
     return authenticatedUserInfo.loaded
       ? authenticatedUserInfo.value.admin
       : false;
-  };
+  }
 
-  @computed
   get currentNodePool () {
     const {filter, pools} = this.props;
     if (filter && filter.pool_id && pools.loaded) {
@@ -144,7 +151,6 @@ export default class Cluster extends localization.LocalizedReactComponent {
     return undefined;
   }
 
-  @computed
   get uiStandaloneNodesAllowTerminate () {
     const {preferences} = this.props;
     if (preferences) {

@@ -16,8 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {
-  computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {
   Button,
   Form,
@@ -131,12 +130,18 @@ export class OmicsStorageImportDialog extends React.Component {
     }
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      sourceFileTypes: computed,
+      storageType: computed
+    });
+  }
+
   get sourceFileTypes () {
     return Object.values(FileTypes[this.storageType] || {}) || [];
   }
 
-  @computed
   get storageType () {
     return this.props.dataStorage && this.props.dataStorage.type;
   }

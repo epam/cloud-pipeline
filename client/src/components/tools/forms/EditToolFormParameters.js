@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {Button, Checkbox, Col, Dropdown, Input, Row, Select} from 'antd';
 import {
   DownloadOutlined,
@@ -56,7 +56,17 @@ export default class EditToolFormParameters extends React.Component {
     systemParameterBrowserVisible: false
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      skippedSystemParameters: computed,
+      authenticatedUserRolesNames: computed,
+      isAdmin: computed,
+      isValid: computed,
+      modified: computed
+    });
+  }
+
   get skippedSystemParameters () {
     if (this.props.skippedSystemParameters && this.props.skippedSystemParameters.length) {
       return this.props.skippedSystemParameters;
@@ -64,7 +74,6 @@ export default class EditToolFormParameters extends React.Component {
     return [];
   }
 
-  @computed
   get authenticatedUserRolesNames () {
     if (!this.props.authenticatedUserInfo.loaded) {
       return [];
@@ -75,7 +84,6 @@ export default class EditToolFormParameters extends React.Component {
     return roles.map(r => r.name);
   }
 
-  @computed
   get isAdmin () {
     if (!this.props.authenticatedUserInfo.loaded) {
       return false;
@@ -249,10 +257,14 @@ export default class EditToolFormParameters extends React.Component {
   renderPathParameterInput = (parameter, index, onChange, isError, readOnly) => {
     let IconComponent;
     switch (parameter.type) {
-      case 'input': IconComponent = DownloadOutlined; break;
-      case 'output': IconComponent = UploadOutlined; break;
-      case 'common': IconComponent = SelectOutlined; break;
-      default: IconComponent = FolderOutlined; break;
+      case 'input': IconComponent = DownloadOutlined;
+        break;
+      case 'output': IconComponent = UploadOutlined;
+        break;
+      case 'common': IconComponent = SelectOutlined;
+        break;
+      default: IconComponent = FolderOutlined;
+        break;
     }
     return (
       <Input
@@ -567,12 +579,10 @@ export default class EditToolFormParameters extends React.Component {
     return (this.state.parameters || []).map(mapParameter);
   };
 
-  @computed
   get isValid () {
     return this.state.validation.filter(v => !!v.error || !!v.errorValue).length === 0;
   }
 
-  @computed
   get modified () {
     const propsValue = (this.props.value || []).filter(this.filterPropsParameter.bind(this));
     const currentValue = this.state.parameters || [];

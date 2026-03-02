@@ -18,8 +18,7 @@ import React from 'react';
 import {
   inject,
   observer} from 'mobx-react';
-import {computed,
-  observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import {
   Alert,
   Button,
@@ -136,9 +135,34 @@ export default class Tool extends localization.LocalizedReactComponent {
     launchPending: undefined
   };
 
-  @observable defaultVersionSettings;
+  defaultVersionSettings;
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      defaultVersionSettings: observable,
+      awsRegions: computed,
+      defaultCloudRegionId: computed,
+      defaultVersionSettingsConfiguration: computed,
+      defaultVersionPlatform: computed,
+      defaultVersionAllowCommit: computed,
+      registries: computed,
+      dockerImageWithoutVersion: computed,
+      dockerRegistry: computed,
+      toolGroup: computed,
+      toolImage: computed,
+      link: computed,
+      hasWritableToolGroups: computed,
+      permissionsRestrictions: computed,
+      isLastVersion: computed,
+      toolVersionScanResults: computed,
+      hasPendingScanning: computed,
+      versionsScanResObject: computed,
+      defaultTag: computed,
+      anyTag: computed
+    });
+  }
+
   get awsRegions () {
     if (this.props.awsRegions.loaded) {
       return (this.props.awsRegions.value || []).map(r => r);
@@ -146,7 +170,6 @@ export default class Tool extends localization.LocalizedReactComponent {
     return [];
   }
 
-  @computed
   get defaultCloudRegionId () {
     const [defaultRegion] = this.awsRegions.filter(r => r.default);
     if (defaultRegion) {
@@ -155,7 +178,6 @@ export default class Tool extends localization.LocalizedReactComponent {
     return null;
   }
 
-  @computed
   get defaultVersionSettingsConfiguration () {
     if (this.defaultVersionSettings && this.defaultVersionSettings.loaded) {
       if ((this.defaultVersionSettings.value || []).length > 0 &&
@@ -171,7 +193,6 @@ export default class Tool extends localization.LocalizedReactComponent {
     return null;
   }
 
-  @computed
   get defaultVersionPlatform () {
     if (this.defaultVersionSettings && this.defaultVersionSettings.loaded) {
       if ((this.defaultVersionSettings.value || []).length > 0) {
@@ -181,7 +202,6 @@ export default class Tool extends localization.LocalizedReactComponent {
     return undefined;
   }
 
-  @computed
   get defaultVersionAllowCommit () {
     let allowCommit;
     if (this.defaultVersionSettings && this.defaultVersionSettings.loaded) {
@@ -195,7 +215,6 @@ export default class Tool extends localization.LocalizedReactComponent {
     return allowCommit;
   }
 
-  @computed
   get registries () {
     if (this.props.docker.loaded) {
       return this.props.hiddenToolsTreeFilter(this.props.docker.value)
@@ -204,7 +223,6 @@ export default class Tool extends localization.LocalizedReactComponent {
     return [];
   }
 
-  @computed
   get dockerImageWithoutVersion () {
     const {tool} = this.props;
     if (!tool?.loaded) {
@@ -217,7 +235,6 @@ export default class Tool extends localization.LocalizedReactComponent {
       : `${image}`;
   }
 
-  @computed
   get dockerRegistry () {
     if (this.registries.length > 0 && this.props.tool.loaded) {
       return this.registries
@@ -226,7 +243,6 @@ export default class Tool extends localization.LocalizedReactComponent {
     return null;
   }
 
-  @computed
   get toolGroup () {
     const {tool} = this.props;
     const {dockerRegistry} = this;
@@ -242,7 +258,6 @@ export default class Tool extends localization.LocalizedReactComponent {
     return undefined;
   }
 
-  @computed
   get toolImage () {
     if (this.props.tool.loaded) {
       return `${this.props.tool.value.registry}/${this.props.tool.value.image}`;
@@ -250,7 +265,6 @@ export default class Tool extends localization.LocalizedReactComponent {
     return null;
   }
 
-  @computed
   get link () {
     if (this.props.tool.loaded) {
       return !!this.props.tool.value.link;
@@ -258,7 +272,6 @@ export default class Tool extends localization.LocalizedReactComponent {
     return false;
   }
 
-  @computed
   get hasWritableToolGroups () {
     if (this.registries.length > 0 && this.props.tool.loaded) {
       const toolGroupId = +(this.props.tool.value.toolGroupId);
@@ -272,7 +285,6 @@ export default class Tool extends localization.LocalizedReactComponent {
     return false;
   }
 
-  @computed
   get permissionsRestrictions () {
     const {
       preferences
@@ -319,8 +331,8 @@ export default class Tool extends localization.LocalizedReactComponent {
       message.error(updateToolVersionParametersRequest.error, 5);
     } else {
       await this.props.tool.fetch();
-      this.defaultVersionSettings && await this.defaultVersionSettings.fetch();
-      this.props.versionSettings && await this.props.versionSettings.fetch();
+      this.defaultVersionSettings && (await this.defaultVersionSettings.fetch());
+      this.props.versionSettings && (await this.props.versionSettings.fetch());
     }
   };
 
@@ -850,7 +862,6 @@ export default class Tool extends localization.LocalizedReactComponent {
     return null;
   };
 
-  @computed
   get isLastVersion () {
     if (this.props.versions.loaded) {
       return this.props.versions.value.versions.length === 1;
@@ -858,7 +869,6 @@ export default class Tool extends localization.LocalizedReactComponent {
     return false;
   }
 
-  @computed
   get toolVersionScanResults () {
     const data = [];
     if (this.props.versions.loaded &&
@@ -922,7 +932,6 @@ export default class Tool extends localization.LocalizedReactComponent {
     return data;
   }
 
-  @computed
   get hasPendingScanning () {
     return this.toolVersionScanResults.filter(i => i.status === ScanStatuses.pending).length > 0;
   }
@@ -1686,16 +1695,14 @@ export default class Tool extends localization.LocalizedReactComponent {
     this.props.router.push(`/tools/${this.props.tool.value.registryId}/${this.props.tool.value.toolGroupId}`);
   };
 
-  @computed
   get versionsScanResObject () {
     const versions = {};
     this.props.versions.value.versions.forEach(version => {
       versions[version.version] = version;
     });
     return versions;
-  };
+  }
 
-  @computed
   get defaultTag () {
     if (this.props.versions.loaded &&
       this.props.versions.value && this.props.versions.value.versions) {
@@ -1709,7 +1716,6 @@ export default class Tool extends localization.LocalizedReactComponent {
     return null;
   }
 
-  @computed
   get anyTag () {
     if (this.props.versions.loaded &&
       this.props.versions.value &&
@@ -1839,8 +1845,10 @@ export default class Tool extends localization.LocalizedReactComponent {
       const runCustomKey = 'custom';
       const onSelect = ({key}) => {
         switch (key) {
-          case runDefaultKey: this.runToolDefault(version); break;
-          case runCustomKey: this.runTool(version); break;
+          case runDefaultKey: this.runToolDefault(version);
+            break;
+          case runCustomKey: this.runTool(version);
+            break;
         }
       };
       const runMenu = (
@@ -1944,9 +1952,12 @@ export default class Tool extends localization.LocalizedReactComponent {
   renderDisplayOptionsMenu = () => {
     const onSelectDisplayOption = ({key}) => {
       switch (key) {
-        case 'metadata': this.toggleMetadataChange(); break;
-        case 'issues': this.toggleShowIssuesChange(); break;
-        case 'instanceTypeManagement': this.toggleInstanceTypesManagementPanelChange(); break;
+        case 'metadata': this.toggleMetadataChange();
+          break;
+        case 'issues': this.toggleShowIssuesChange();
+          break;
+        case 'instanceTypeManagement': this.toggleInstanceTypesManagementPanelChange();
+          break;
       }
     };
     const displayOptionsMenuItems = [];
@@ -2087,8 +2098,10 @@ export default class Tool extends localization.LocalizedReactComponent {
     const deleteKey = 'delete';
     const onClick = ({key}) => {
       switch (key) {
-        case permissionsKey: this.openPermissionsForm(); break;
-        case deleteKey: this.deleteToolConfirm(); break;
+        case permissionsKey: this.openPermissionsForm();
+          break;
+        case deleteKey: this.deleteToolConfirm();
+          break;
       }
     };
     const menu = (

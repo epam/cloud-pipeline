@@ -17,8 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {
-  computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {observer,
   inject} from 'mobx-react';
 import {
@@ -80,9 +79,16 @@ class Ticket extends React.Component {
 
   editorRef;
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      predefinedLabels: computed
+    });
+  }
+
   componentDidMount () {
     (this.fetchTicket)();
-  };
+  }
 
   componentDidUpdate (prevProps) {
     if (this.props.ticketId !== prevProps.ticketId) {
@@ -90,7 +96,6 @@ class Ticket extends React.Component {
     }
   }
 
-  @computed
   get predefinedLabels () {
     const {preferences} = this.props;
     if (preferences && preferences.loaded) {

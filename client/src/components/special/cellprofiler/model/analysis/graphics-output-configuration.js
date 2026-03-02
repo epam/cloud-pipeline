@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {action, observable} from 'mobx';
+import {action, observable, makeObservable, override} from 'mobx';
 import {fadeoutHex} from '../../../../../themes/utilities/color-utilities';
 
 const PALETTE = [
@@ -45,14 +45,22 @@ class OutlineObjectConfiguration {
   static importConfiguration (options) {
     return new OutlineObjectConfiguration(options);
   }
-  @observable object;
-  @observable visible;
-  @observable color;
-  @observable url;
-  @observable backgroundUrl;
+  object;
+  visible;
+  color;
+  url;
+  backgroundUrl;
   fetchUrl;
   fetchBackgroundUrl;
+
   constructor (options = {}) {
+    makeObservable(this, {
+      object: observable,
+      visible: observable,
+      color: observable,
+      url: observable,
+      backgroundUrl: observable
+    });
     const {
       object,
       visible,
@@ -107,14 +115,22 @@ export default class GraphicsOutputConfiguration {
   /**
    * @type {OutlineObjectConfiguration[]}
    */
-  @observable configurations = [];
-  @observable hidden = false;
+  configurations = [];
+  hidden = false;
   /**
    * @type {AnalysisOutputResult}
    * @private
    */
-  @observable _overlayImage = undefined;
+  _overlayImage = undefined;
   constructor (analysisOutputs = []) {
+    makeObservable(this, {
+      configurations: observable,
+      hidden: observable,
+      _overlayImage: observable,
+      update: override,
+      moveDown: action,
+      moveUp: action
+    });
     this.update(analysisOutputs);
   }
 
@@ -175,7 +191,6 @@ export default class GraphicsOutputConfiguration {
     (this.renderOutlines)(hcsImageViewer);
   };
 
-  @action
   moveDown (idx, viewer) {
     const current = this.configurations[idx];
     const next = this.configurations[idx + 1];
@@ -187,7 +202,6 @@ export default class GraphicsOutputConfiguration {
     }
   }
 
-  @action
   moveUp (idx, viewer) {
     if (idx === 0) {
       return;

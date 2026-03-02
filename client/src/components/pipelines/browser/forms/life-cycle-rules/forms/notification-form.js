@@ -19,8 +19,7 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {
   observer} from 'mobx-react';
-import {observable,
-  computed} from 'mobx';
+import {observable, computed, makeObservable} from 'mobx';
 import {
   Button,
   Input,
@@ -64,11 +63,19 @@ class NotificationForm extends React.Component {
   state = {
     previewMode: false,
     pending: false
-  }
-
-  @observable systemTemplate;
+  };
+  systemTemplate;
 
   notifyFormContainer;
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      systemTemplate: observable,
+      initialBody: computed,
+      initialSubject: computed
+    });
+  }
 
   componentDidMount () {
     this.fetchEmailSettings();
@@ -83,7 +90,6 @@ class NotificationForm extends React.Component {
     }
   }
 
-  @computed
   get initialBody () {
     const {rule} = this.props;
     if (rule.notification && rule.notification.body) {
@@ -95,7 +101,6 @@ class NotificationForm extends React.Component {
     return undefined;
   }
 
-  @computed
   get initialSubject () {
     const {rule} = this.props;
     if (rule.notification && rule.notification.subject) {

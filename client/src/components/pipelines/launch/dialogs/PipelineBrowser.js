@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {observer, inject} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import connect from '../../../../utils/connect';
 import localization from '../../../../utils/localization';
 import PropTypes from 'prop-types';
@@ -153,6 +153,14 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
     }
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      libraryItems: computed,
+      fireCloudItems: computed
+    });
+  }
+
   renderItemTitle (item) {
     let IconComponent;
     const style = {};
@@ -257,7 +265,6 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
     }
   };
 
-  @computed
   get libraryItems () {
     if (this.props.library.loaded) {
       return this.props.library.value;
@@ -265,7 +272,6 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
     return {};
   }
 
-  @computed
   get fireCloudItems () {
     if (this.props.fireCloudMethods.loaded) {
       return (this.props.fireCloudMethods.value || []).map(m => m);

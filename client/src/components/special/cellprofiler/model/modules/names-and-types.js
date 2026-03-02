@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import {AnalysisModule} from './base';
 import {HCSSourceFile, sourceFileOptionsSetsEqual} from '../common/analysis-file';
 import {AnalysisTypes} from '../common/analysis-types';
@@ -25,29 +25,39 @@ class NamesAndTypes extends AnalysisModule {
   /**
    * @type {HCSSourceFileOptions[]}
    */
-  @observable sourceFiles = [];
-  @observable mergeZPlanes = false;
+  sourceFiles = [];
+  mergeZPlanes = false;
 
   /**
    * @param {HCSSourceFileOptions[]} sources
    */
   constructor (sources) {
     super(undefined);
+    makeObservable(this, {
+      sourceFiles: observable,
+      mergeZPlanes: observable,
+      available: computed,
+      sourceDirectory: computed,
+      multipleFields: computed,
+      wells: computed,
+      timePoints: computed,
+      zCoordinates: computed,
+      wellFields: computed,
+      commonFields: computed,
+      outputs: computed
+    });
     this.title = 'Input';
     this.changeFiles(sources);
   }
 
-  @computed
   get available () {
     return this.sourceFiles.length > 0 && HCSSourceFile.check(...this.sourceFiles);
   }
 
-  @computed
   get sourceDirectory () {
     return [...(new Set(this.sourceFiles.map(aFile => aFile.sourceDirectory)))].pop();
   }
 
-  @computed
   get multipleFields () {
     return this.wells.length > 1 ||
       this.timePoints.length > 1 ||
@@ -55,7 +65,6 @@ class NamesAndTypes extends AnalysisModule {
       this.wellFields.some(({fields = []}) => fields.length > 1);
   }
 
-  @computed
   get wells () {
     return [...new Set(
       this.sourceFiles
@@ -73,17 +82,14 @@ class NamesAndTypes extends AnalysisModule {
       }));
   }
 
-  @computed
   get timePoints () {
     return [...new Set(this.sourceFiles.map(aFile => aFile.t))];
   }
 
-  @computed
   get zCoordinates () {
     return [...new Set(this.sourceFiles.map(aFile => aFile.z))];
   }
 
-  @computed
   get wellFields () {
     return this.wells.map(aWell => {
       const fields = [...new Set(this.sourceFiles
@@ -98,7 +104,6 @@ class NamesAndTypes extends AnalysisModule {
     });
   }
 
-  @computed
   get commonFields () {
     const all = new Set(
       this.wellFields
@@ -115,7 +120,6 @@ class NamesAndTypes extends AnalysisModule {
     return [...all];
   }
 
-  @computed
   get outputs () {
     if (this.sourceFiles && HCSSourceFile.check(...this.sourceFiles)) {
       let channels = [...new Set(this.sourceFiles.map(a => a.channel))];

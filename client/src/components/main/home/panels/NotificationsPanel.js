@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import {
   inject,
   observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import LoadingView from '../../../special/LoadingView';
 import {Alert,
   Card,
@@ -39,7 +39,13 @@ export default class NotificationsPanel extends React.Component {
     onInitialize: PropTypes.func
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      notifications: computed
+    });
+  }
+
   get notifications () {
     const {notifications, preferences} = this.props;
     const list = notifications && notifications.loaded

@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {Alert, Checkbox, Select} from 'antd';
 import {inject, observer} from 'mobx-react';
-import {observable} from 'mobx';
+import {observable, makeObservable} from 'mobx';
 import FileSaver from 'file-saver';
 import LoadingView from '../../../LoadingView';
 import {generateResourceUrl} from '../../model/analysis/output-utilities';
@@ -92,14 +92,26 @@ class CellProfilerJobZScore extends React.Component {
   };
 
   token = 0;
+  primaryColor = [0, 0, 0, 1];
+  selectedColor = [0, 0, 0, 1];
+  backgroundColor = [0, 0, 0, 1];
+  defaultColor = [0, 0, 0, 1];
+  negativeColor = [0, 0, 1, 1];
+  positiveColor = [1, 0, 0, 1];
+  zeroColor = [1, 1, 1, 1];
 
-  @observable primaryColor = [0, 0, 0, 1];
-  @observable selectedColor = [0, 0, 0, 1];
-  @observable backgroundColor = [0, 0, 0, 1];
-  @observable defaultColor = [0, 0, 0, 1];
-  @observable negativeColor = [0, 0, 1, 1];
-  @observable positiveColor = [1, 0, 0, 1];
-  @observable zeroColor = [1, 1, 1, 1];
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      primaryColor: observable,
+      selectedColor: observable,
+      backgroundColor: observable,
+      defaultColor: observable,
+      negativeColor: observable,
+      positiveColor: observable,
+      zeroColor: observable
+    });
+  }
 
   componentDidMount () {
     this.updateFromProps();

@@ -18,7 +18,7 @@ import React from 'react';
 import {
   inject,
   observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import connect from '../../../utils/connect';
 import {Checkbox,
   Modal,
@@ -83,6 +83,16 @@ export default class MetadataFolder extends React.Component {
     operationInProgress: false
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      parentFolderLinkItem: computed,
+      metadataFolderClassEntities: computed,
+      listingItems: computed,
+      entityTypes: computed
+    });
+  }
+
   componentDidUpdate (prevProps, prevState, snapshot) {
     if (prevProps.folderId !== this.props.folderId) {
       this.clearSelection();
@@ -136,7 +146,6 @@ export default class MetadataFolder extends React.Component {
     };
   }
 
-  @computed
   get metadataFolderClassEntities () {
     const {folder} = this.props;
     if (folder && folder.loaded) {
@@ -159,7 +168,6 @@ export default class MetadataFolder extends React.Component {
     ];
   }
 
-  @computed
   get entityTypes () {
     const {
       entityFields: entityFieldsRequest,

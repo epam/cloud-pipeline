@@ -16,8 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {
-  observable} from 'mobx';
+import {observable, makeObservable} from 'mobx';
 import {inject,
   observer,
   Provider} from 'mobx-react';
@@ -42,14 +41,18 @@ class Conflicts extends React.Component {
     filesWidth: 200
   };
 
-  @observable session = new ConflictsSession();
-  @observable changesDisplayConfig;
+  session = new ConflictsSession();
+  changesDisplayConfig;
   ideContainer;
   ide;
   resizeInfo;
 
   constructor (props) {
     super(props);
+    makeObservable(this, {
+      session: observable,
+      changesDisplayConfig: observable
+    });
     this.changesDisplayConfig = new ChangesDisplayConfig(this.props.themes);
   }
 
@@ -216,7 +219,7 @@ class Conflicts extends React.Component {
             {[styles.selectedFile]: file.name === current}
           )
         }
-        onRow={(file) => ({ onClick: () => this.setState({current: file.name}) })}
+        onRow={(file) => ({onClick: () => this.setState({current: file.name})})}
       />
     );
   };

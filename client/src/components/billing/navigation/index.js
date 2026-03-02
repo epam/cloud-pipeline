@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observable} from 'mobx';
+import {observable, makeObservable} from 'mobx';
 import {inject, observer, Provider} from 'mobx-react';
 import classNames from 'classnames';
 import {Menu} from 'antd';
@@ -73,7 +73,15 @@ class BillingNavigation extends React.Component {
     }
   };
 
-  @observable filterStore = new FilterStore();
+  filterStore = new FilterStore();
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      filterStore: observable
+    });
+  }
+
   UNSAFE_componentWillReceiveProps (nextProps, nextContext) {
     this.filterStore.rebuild(this.props);
   }

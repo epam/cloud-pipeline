@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {observable} from 'mobx';
+import {observable, makeObservable} from 'mobx';
 import {inject, observer, Provider} from 'mobx-react';
 import {Alert} from 'antd';
 import buildLayout from './layout';
@@ -25,7 +25,6 @@ export default class AsyncLayout {
   static inject (loader) {
     return Component => observer(
       class extends React.Component {
-        @observable asyncLayout;
         constructor (props) {
           super(props);
           this.asyncLayout = new AsyncLayout(loader(props));
@@ -53,13 +52,18 @@ export default class AsyncLayout {
   }
 
   static use (...opts) {
-    return inject('layout')(observer(...opts));
+    return inject('layout')(...opts);
   }
 
-  @observable loaded = false;
-  @observable error = undefined;
-  @observable layout;
+  loaded = false;
+  error = undefined;
+  layout;
   constructor (layoutOptionsLoader) {
+    makeObservable(this, {
+      loaded: observable,
+      error: observable,
+      layout: observable
+    });
     if (layoutOptionsLoader && layoutOptionsLoader.then) {
       layoutOptionsLoader
         .then(options => {

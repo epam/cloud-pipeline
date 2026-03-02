@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {observable, computed} from 'mobx';
+import {observable, computed, makeObservable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {Row, Menu} from 'antd';
 import classNames from 'classnames';
@@ -103,8 +103,16 @@ const SettingsTabs = [
 @roleModel.authenticationInfo
 @observer
 export default class extends React.Component {
-  @observable
   _roles = new Roles();
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      _roles: observable,
+      users: computed,
+      roles: computed
+    });
+  }
 
   componentDidMount () {
     this._roles.fetch();
@@ -121,14 +129,12 @@ export default class extends React.Component {
     }
   }
 
-  @computed
   get users () {
     return this.props.users?.loaded
       ? (this.props.users.value || [])
       : [];
   }
 
-  @computed
   get roles () {
     return this._roles.loaded
       ? (this._roles.value || [])
@@ -140,7 +146,7 @@ export default class extends React.Component {
     return authenticatedUserInfo.loaded
       ? authenticatedUserInfo.value
       : undefined;
-  };
+  }
 
   renderSettingsNavigation = () => {
     const {router: {location}} = this.props;
@@ -196,5 +202,5 @@ export default class extends React.Component {
         {children}
       </div>
     );
-  };
+  }
 }

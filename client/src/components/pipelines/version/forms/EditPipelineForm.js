@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {Button, Form, Modal, Input, Row, Col, Spin, Tabs, Select} from 'antd';
 import PermissionsForm from '../../../roleModel/PermissionsForm';
 import roleModel from '../../../../utils/roleModel';
@@ -92,6 +92,14 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
     marginBottom: 5
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      latestConfigurationsTools: computed,
+      tools: computed
+    });
+  }
+
   /**
    * @returns {{docs: string, src: string}}
    */
@@ -116,7 +124,6 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
     );
   }
 
-  @computed
   get latestConfigurationsTools () {
     if (this.props.configurations && this.props.configurations.loaded) {
       return (this.props.configurations.value || [])
@@ -126,7 +133,6 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
     return [];
   }
 
-  @computed
   get tools () {
     if (
       this.props.dockerRegistries.loaded &&

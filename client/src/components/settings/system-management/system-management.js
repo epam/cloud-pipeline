@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {observer} from 'mobx-react';
 import {Modal} from 'antd';
 
@@ -34,6 +34,14 @@ export default class SystemManagement extends React.Component {
     changesCanBeSkipped: false
   }
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      isAdmin: computed,
+      dtsAllowed: computed
+    });
+  }
+
   componentDidMount () {
     const {route, router} = this.props;
     if (route && router) {
@@ -45,7 +53,6 @@ export default class SystemManagement extends React.Component {
     this.resetChangesStateTimeout && clearTimeout(this.resetChangesStateTimeout);
   }
 
-  @computed
   get isAdmin () {
     const {authenticatedUserInfo} = this.props;
     if (authenticatedUserInfo &&
@@ -55,7 +62,6 @@ export default class SystemManagement extends React.Component {
     return false;
   }
 
-  @computed
   get dtsAllowed () {
     const {authenticatedUserInfo} = this.props;
     if (authenticatedUserInfo &&

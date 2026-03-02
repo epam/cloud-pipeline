@@ -14,18 +14,23 @@
  *  limitations under the License.
  */
 
-import {action, observable} from 'mobx';
-import { fade } from "../../../../../../themes/utilities/color-utilities";
+import {action, observable, makeObservable} from 'mobx';
+import {fade} from '../../../../../../themes/utilities/color-utilities';
 
 class ChangeConfig {
-  @observable applied;
-  @observable background;
-  @observable color;
+  applied;
+  background;
+  color;
   constructor (defaultConfig) {
+    makeObservable(this, {
+      applied: observable,
+      background: observable,
+      color: observable,
+      update: action
+    });
     this.update(defaultConfig);
   }
 
-  @action
   update (colors) {
     const {
       applied = 'transparent',
@@ -39,29 +44,29 @@ class ChangeConfig {
 }
 
 export default class ChangesDisplayConfig {
-  @observable background = 'transparent';
-  @observable insertion = new ChangeConfig(
+  background = 'transparent';
+  insertion = new ChangeConfig(
     {
       applied: 'rgba(9, 171, 90, 0.4)',
       background: 'rgba(9, 171, 90, 0.4)',
       color: '#b4e2b4'
     }
   );
-  @observable deletion = new ChangeConfig(
+  deletion = new ChangeConfig(
     {
       applied: '#d9d9d9',
       background: 'rgba(217, 217, 217, 0.4)',
       color: '#9e9e9e'
     }
   );
-  @observable edition = new ChangeConfig(
+  edition = new ChangeConfig(
     {
       applied: 'rgba(252, 230, 162, 0.4)',
       background: 'rgba(252, 230, 162, 0.4)',
       color: '#f5e3aa'
     }
   );
-  @observable conflict = new ChangeConfig(
+  conflict = new ChangeConfig(
     {
       applied: 'rgb(237, 75, 48, 0.4)',
       background: 'rgba(237, 75, 48, 0.4)',
@@ -72,6 +77,14 @@ export default class ChangesDisplayConfig {
    * @param {CloudPipelineThemes} themes
    */
   constructor (themes) {
+    makeObservable(this, {
+      background: observable,
+      insertion: observable,
+      deletion: observable,
+      edition: observable,
+      conflict: observable,
+      onChangeThemes: action
+    });
     this.themes = themes;
     this.listeners = [];
     if (this.themes) {
@@ -88,7 +101,6 @@ export default class ChangesDisplayConfig {
     this.listeners = this.listeners.filter(o => o !== listener);
   }
 
-  @action
   onChangeThemes () {
     const getColor = (name) => this.themes
       ? this.themes.currentThemeConfiguration[name]

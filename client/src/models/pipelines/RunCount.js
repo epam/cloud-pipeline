@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import {action, computed, observable} from 'mobx';
+import {action, computed, observable, makeObservable} from 'mobx';
 import RemotePost from '../basic/RemotePost';
 import preferencesLoad from '../preferences/PreferencesLoad';
 import continuousFetch from '../../utils/continuous-fetch';
@@ -69,13 +69,13 @@ class UserRunCount extends RemotePost {
 }
 
 class RunCount extends RemotePost {
-  @observable usePreferenceValue = false;
-  @observable onlyMasterJobs = true;
-  @observable statuses = DEFAULT_STATUSES;
-  @observable pipelineIds = [];
-  @observable parentId;
+  usePreferenceValue = false;
+  onlyMasterJobs = true;
+  statuses = DEFAULT_STATUSES;
+  pipelineIds = [];
+  parentId;
 
-  @observable _runsCount = 0;
+  _runsCount = 0;
 
   listeners = [];
 
@@ -94,6 +94,16 @@ class RunCount extends RemotePost {
    */
   constructor (options) {
     super();
+    makeObservable(this, {
+      usePreferenceValue: observable,
+      onlyMasterJobs: observable,
+      statuses: observable,
+      pipelineIds: observable,
+      parentId: observable,
+      _runsCount: observable,
+      isDefault: computed,
+      runsCount: computed
+    });
     this.url = '/run/count';
     const {
       usePreferenceValue,
@@ -125,7 +135,6 @@ class RunCount extends RemotePost {
     this.listeners = this.listeners.filter((aListener) => aListener !== listener);
   };
 
-  @computed
   get isDefault () {
     return filtersAreEqual(
       this,
@@ -147,7 +156,6 @@ class RunCount extends RemotePost {
     return filtersAreEqual(this, otherRequest);
   }
 
-  @computed
   get runsCount () {
     return this._runsCount || 0;
   }
@@ -192,6 +200,9 @@ class RunCountDefault extends RunCount {
       onlyMasterJobs,
       usePreferenceValue: false
     });
+    makeObservable(this, {
+      fetch: action
+    });
     this.globalCounter = globalCounter;
     this.updateFromGlobalCounter();
     if (globalCounter && globalCounter.filtersEquals(this)) {
@@ -211,7 +222,6 @@ class RunCountDefault extends RunCount {
     }
   }
 
-  @action
   async fetch () {
     if (this.globalCounter && this.globalCounter.filtersEquals(this)) {
       this._runsCount = this.globalCounter.runsCount;

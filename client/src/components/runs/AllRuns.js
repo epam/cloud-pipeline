@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {Alert, Card, Menu, message, Popover, Row} from 'antd';
 import FileSaver from 'file-saver';
 import classNames from 'classnames';
@@ -90,6 +90,14 @@ class AllRuns extends React.Component {
 
   countersManagementToken = 0;
   counters = {};
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      uiRunsFilters: computed,
+      runsInfoChartsAvailable: computed
+    });
+  }
 
   componentDidMount () {
     (this.manageCounters)();
@@ -177,7 +185,6 @@ class AllRuns extends React.Component {
     });
   };
 
-  @computed
   get uiRunsFilters () {
     const {preferences} = this.props;
     let runsFilters = [];
@@ -199,7 +206,6 @@ class AllRuns extends React.Component {
     return runsFilters;
   }
 
-  @computed
   get runsInfoChartsAvailable () {
     const {
       authenticatedUserInfo
@@ -380,7 +386,7 @@ class AllRuns extends React.Component {
       preferences
     } = this.props;
     this.setState({exportPending: true}, async () => {
-      const hide = message.loading('Exporting runs...')
+      const hide = message.loading('Exporting runs...');
       try {
         const {runTableFilters = {}} = this.state;
         await preferences.fetchIfNeededOrWait();

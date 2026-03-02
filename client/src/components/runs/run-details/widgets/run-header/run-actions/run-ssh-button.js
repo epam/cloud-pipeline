@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject} from 'mobx-react';
 import classNames from 'classnames';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import roleModel from '../../../../../../utils/roleModel';
 import pipelineRunSSHCache from '../../../../../../models/pipelines/PipelineRunSSHCache';
 import MultizoneUrl from '../../../../../special/multizone-url';
@@ -16,6 +16,16 @@ class RunSSHButton extends React.Component {
   state = {
     runSSH: undefined
   };
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      isDtsEnvironment: computed,
+      isFireCloudEnvironment: computed,
+      initializeEnvironmentFinished: computed,
+      sshEnabled: computed
+    });
+  }
 
   componentDidMount () {
     this.updateRunSSH();
@@ -52,27 +62,23 @@ class RunSSHButton extends React.Component {
     }
   };
 
-  @computed
   get isDtsEnvironment () {
     const {run} = this.props;
     return run && run.executionPreferences &&
       run.executionPreferences.environment === DTS_ENVIRONMENT;
   }
 
-  @computed
   get isFireCloudEnvironment () {
     const {run} = this.props;
     return run && run.executionPreferences &&
       run.executionPreferences.environment === FIRE_CLOUD_ENVIRONMENT;
   }
 
-  @computed
   get initializeEnvironmentFinished () {
     const {run} = this.props;
     return run && run.initialized;
   }
 
-  @computed
   get sshEnabled () {
     const {run} = this.props;
     const {runSSH} = this.state;

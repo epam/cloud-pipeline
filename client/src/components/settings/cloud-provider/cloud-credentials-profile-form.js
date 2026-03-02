@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import {
   Alert,
@@ -66,9 +66,18 @@ class CloudCredentialsProfileForm extends React.Component {
     initialPolicy: undefined,
     pending: false
   };
-  @observable profileRequest;
 
-  @computed
+  profileRequest;
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      profileRequest: observable,
+      providers: computed,
+      otherProfiles: computed
+    });
+  }
+
   get providers () {
     const {cloudProviders} = this.props;
     if (cloudProviders.loaded) {
@@ -94,7 +103,6 @@ class CloudCredentialsProfileForm extends React.Component {
       formatJson(policy, false) !== formatJson(initialPolicy, false);
   }
 
-  @computed
   get otherProfiles () {
     const {
       isNew,

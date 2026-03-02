@@ -17,30 +17,36 @@
 import {DataStorageRulesList} from './rules/DataStorageRulesList';
 import {DataStorageRuleRegister} from './rules/DataStorageRuleRegister';
 import {DataStorageRuleDelete} from './rules/DataStorageRuleDelete';
-import {observable, action, computed} from 'mobx';
+import {observable, action, computed, makeObservable} from 'mobx';
 
 export default class DataStorageRules {
-
   pipelineId = undefined;
   dataStorageRulesListRequest = null;
-
-  @observable _createRuleLastError = null;
-  @observable _deleteRuleLastError = null;
-  @observable _createRuleIsPending = false;
-  @observable _deleteRuleIsPending = false;
+  _createRuleLastError = null;
+  _deleteRuleLastError = null;
+  _createRuleIsPending = false;
+  _deleteRuleIsPending = false;
 
   constructor (pipelineId) {
+    makeObservable(this, {
+      _createRuleLastError: observable,
+      _deleteRuleLastError: observable,
+      _createRuleIsPending: observable,
+      _deleteRuleIsPending: observable,
+      pending: computed,
+      list: computed,
+      createRuleLastError: computed,
+      deleteRuleLastError: computed
+    });
     this.pipelineId = pipelineId;
     this.dataStorageRulesListRequest = new DataStorageRulesList(this.pipelineId);
     this.refresh();
   }
 
-  @computed
   get pending () {
     return this.dataStorageRulesListRequest.pending || this._createRuleIsPending || this._deleteRuleIsPending;
   }
 
-  @computed
   get list () {
     if (this.dataStorageRulesListRequest.value && this.dataStorageRulesListRequest.value.length) {
       return this.dataStorageRulesListRequest.value;
@@ -48,25 +54,19 @@ export default class DataStorageRules {
       return [];
     }
   }
-
-  @action
   async refresh () {
     if (!this.dataStorageRulesListRequest.pending) {
       await this.dataStorageRulesListRequest.fetch();
     }
   }
 
-  @computed
   get createRuleLastError () {
     return this._createRuleLastError;
   }
 
-  @computed
   get deleteRuleLastError () {
     return this._deleteRuleLastError;
   }
-
-  @action
   async createRule (rule) {
     this._createRuleIsPending = true;
     const dataStorageRuleRegisterRequest = new DataStorageRuleRegister();
@@ -78,8 +78,6 @@ export default class DataStorageRules {
     this._createRuleIsPending = false;
     await this.refresh();
   }
-
-  @action
   async deleteRule (rule) {
     this._deleteRuleIsPending = true;
     const dataStorageRuleDeleteRequest = new DataStorageRuleDelete(rule.pipelineId, rule.fileMask);
@@ -88,5 +86,4 @@ export default class DataStorageRules {
     this._deleteRuleIsPending = false;
     await this.refresh();
   }
-
 }

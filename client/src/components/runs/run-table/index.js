@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
 import {Alert, Pagination, Table, Row, Button} from 'antd';
-import {isObservableArray, observable} from 'mobx';
+import {isObservableArray, observable, makeObservable} from 'mobx';
 import {
   filtersAreEqual,
   getFiltersPayload,
@@ -238,7 +238,14 @@ class RunTable extends localization.LocalizedReactComponent {
   /**
    * @type {ChildRuns[]}
    */
-  @observable childrenRunsCollection = [];
+  childrenRunsCollection = [];
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      childrenRunsCollection: observable
+    });
+  }
 
   get estimatedPriceVisible () {
     const {uiNavigation} = this.props;
@@ -704,7 +711,7 @@ class RunTable extends localization.LocalizedReactComponent {
           }
         )}
         dataSource={runs}
-        onRow={(record) => ({ onClick: () => (onRunClick || this.onRunClick)(record) })}
+        onRow={(record) => ({onClick: () => (onRunClick || this.onRunClick)(record)})}
         pagination={false}
         loading={pending}
         size="small"

@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {Row, Select} from 'antd';
 import Base from './base';
 import {AxisDataType, formatters} from './controls/utilities';
@@ -28,7 +28,14 @@ class NetworkUsageChart extends Base {
     selectedInterface: null
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      interfaces: computed,
+      selectedInterface: computed
+    });
+  }
+
   get interfaces () {
     const {data} = this.props;
     if (data && data.groups && data.groups.length > 0) {
@@ -37,7 +44,6 @@ class NetworkUsageChart extends Base {
     return [];
   }
 
-  @computed
   get selectedInterface () {
     let {selectedInterface} = this.state;
     if (!selectedInterface && this.interfaces.length > 0) {

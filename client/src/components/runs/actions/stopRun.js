@@ -16,8 +16,7 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom';
-import {
-  observable} from 'mobx';
+import {observable, makeObservable} from 'mobx';
 import {Provider,
   observer} from 'mobx-react';
 import PropTypes from 'prop-types';
@@ -259,13 +258,25 @@ class TerminateRunDialog extends React.Component {
   static propTypes = {
     onInitialized: PropTypes.func
   };
+
   state = {
     pending: false,
     visible: false
   };
-  @observable run;
-  @observable onClose;
-  @observable displayPromiseResolve;
+
+  run;
+  onClose;
+  displayPromiseResolve;
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      run: observable,
+      onClose: observable,
+      displayPromiseResolve: observable
+    });
+  }
+
   onTerminateClicked = () => {
     this.setState({
       pending: true
@@ -281,6 +292,7 @@ class TerminateRunDialog extends React.Component {
       });
     });
   };
+
   display = async (run) => {
     this.run = run;
     this.setState({
@@ -291,6 +303,7 @@ class TerminateRunDialog extends React.Component {
       this.displayPromiseResolve = resolve;
     });
   };
+
   hide = () => {
     this.setState({
       visible: false,
@@ -299,9 +312,11 @@ class TerminateRunDialog extends React.Component {
       this.displayPromiseResolve && this.displayPromiseResolve(true);
     });
   };
+
   componentDidMount () {
     this.props.onInitialized && this.props.onInitialized(this);
   }
+
   render () {
     if (!this.run) {
       return null;

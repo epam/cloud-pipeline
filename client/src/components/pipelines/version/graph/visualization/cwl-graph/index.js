@@ -15,9 +15,7 @@
  */
 
 import React from 'react';
-import {
-  observable,
-  computed} from 'mobx';
+import {observable, computed, makeObservable} from 'mobx';
 import {inject,
   observer} from 'mobx-react';
 import {
@@ -70,10 +68,19 @@ const readOnly = true;
 }))
 @observer
 export default class CwlGraph extends Graph {
-  @observable _fileRequest;
+  _fileRequest;
+  model;
+  selected;
 
-  @observable model;
-  @observable selected;
+  constructor (...args) {
+    super(...args);
+    makeObservable(this, {
+      _fileRequest: observable,
+      model: observable,
+      selected: observable,
+      commandLineTool: computed
+    });
+  }
 
   componentDidMount () {
     this.loadFile();
@@ -125,7 +132,6 @@ export default class CwlGraph extends Graph {
     this._fileRequest = null;
   }
 
-  @computed
   get commandLineTool () {
     if (!this.selected || !this.selected.run) {
       return undefined;

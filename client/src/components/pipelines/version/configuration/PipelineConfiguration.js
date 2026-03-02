@@ -20,8 +20,7 @@ import {
   observer} from 'mobx-react';
 import classNames from 'classnames';
 import connect from '../../../../utils/connect';
-import {computed,
-  observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import {Row,
   Tabs,
   Modal,
@@ -63,9 +62,8 @@ import styles from './PipelineConfiguration.css';
 })
 @observer
 export default class PipelineConfiguration extends React.Component {
-  @observable allowedInstanceTypes;
-
-  @observable configurationModified;
+  allowedInstanceTypes;
+  configurationModified;
 
   navigationBlockedListener;
   navigationBlocker;
@@ -76,6 +74,20 @@ export default class PipelineConfiguration extends React.Component {
     configurationsListCollapsed: false,
     pending: false
   };
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      allowedInstanceTypes: observable,
+      configurationModified: observable,
+      selectedConfiguration: computed,
+      selectedConfigurationName: computed,
+      selectedConfigurationIsDefault: computed,
+      defaultConfigurationName: computed,
+      isBitBucket: computed,
+      canModifySources: computed
+    });
+  }
 
   componentDidMount () {
     this.navigationBlockedListener = this.props.history.listenBefore((location, callback) => {
@@ -138,7 +150,6 @@ export default class PipelineConfiguration extends React.Component {
     }
   }
 
-  @computed
   get selectedConfiguration () {
     if (this.props.configurations.loaded) {
       const [configuration] = this.props.configurations.value.filter(c => c.name === this.selectedConfigurationName);
@@ -147,7 +158,6 @@ export default class PipelineConfiguration extends React.Component {
     return null;
   }
 
-  @computed
   get selectedConfigurationName () {
     if (this.props.currentConfiguration) {
       return this.props.currentConfiguration;
@@ -163,7 +173,6 @@ export default class PipelineConfiguration extends React.Component {
     return null;
   }
 
-  @computed
   get selectedConfigurationIsDefault () {
     if (!this.props.currentConfiguration) {
       return true;
@@ -178,7 +187,6 @@ export default class PipelineConfiguration extends React.Component {
     return false;
   }
 
-  @computed
   get defaultConfigurationName () {
     if (this.props.configurations.loaded &&
       this.props.configurations.value.length > 0) {
@@ -193,7 +201,6 @@ export default class PipelineConfiguration extends React.Component {
     return undefined;
   }
 
-  @computed
   get isBitBucket () {
     const {pipeline} = this.props;
     if (!pipeline || !pipeline.loaded) {
@@ -203,14 +210,13 @@ export default class PipelineConfiguration extends React.Component {
     return /^bitbucket$/i.test(repositoryType);
   }
 
-  @computed
   get canModifySources () {
     if (this.props.readOnly || this.props.pipeline.pending || this.isBitBucket) {
       return false;
     }
     return roleModel.writeAllowed(this.props.pipeline.value) &&
       this.props.version === this.props.pipeline.value.currentVersion.name;
-  };
+  }
 
   onConfigurationModified = (modified) => {
     this.configurationModified = modified;

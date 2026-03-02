@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {inject, observer} from 'mobx-react';
+import {inject} from 'mobx-react';
 import {HIDDEN_OBJECTS_INJECTION} from './hoc';
 import * as filters from './tools-filter';
 
@@ -26,7 +26,7 @@ export default function injectToolsFilters (WrappedComponent) {
       hiddenToolRegistriesFilter: filters.toolRegistriesFilter(hiddenObjects),
       hiddenToolsTreeFilter: filters.toolsTreeFilter(hiddenObjects)
     }))(
-      observer(WrappedComponent)
+      WrappedComponent
     )
   );
 }

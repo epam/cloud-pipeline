@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {
   Button,
   Checkbox,
@@ -100,7 +100,29 @@ export class DataStorageEditDialog extends React.Component {
     }
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      storageVersioningAllowed: computed,
+      isAdvancedUser: computed,
+      isUserDefaultStorage: computed,
+      permissionsRestrictions: computed,
+      isNfsMount: computed,
+      omicsStore: computed,
+      transitionRulesAvailable: computed,
+      awsRegions: computed,
+      omicsTypes: computed,
+      fileShareMountsList: computed,
+      defaultAwsRegion: computed,
+      currentRegion: computed,
+      currentRegionSupportsPolicy: computed,
+      currentRegionSupportsStoragePermissions: computed,
+      isStoragePathValid: computed,
+      isAliasValid: computed,
+      toolsToMount: computed
+    });
+  }
+
   get storageVersioningAllowed () {
     const {
       dataStorage,
@@ -124,7 +146,6 @@ export class DataStorageEditDialog extends React.Component {
     return false;
   }
 
-  @computed
   get isAdvancedUser () {
     const {
       authenticatedUserInfo
@@ -138,7 +159,6 @@ export class DataStorageEditDialog extends React.Component {
     return false;
   }
 
-  @computed
   get isUserDefaultStorage () {
     const {
       authenticatedUserInfo,
@@ -153,7 +173,6 @@ export class DataStorageEditDialog extends React.Component {
     return undefined;
   }
 
-  @computed
   get permissionsRestrictions () {
     const {
       preferences,
@@ -204,6 +223,7 @@ export class DataStorageEditDialog extends React.Component {
       this.props.onDelete(cloud);
     }
   };
+
   handleSubmit = (e) => {
     e && e.preventDefault();
     this.formRef.current.validateFields()
@@ -247,7 +267,6 @@ export class DataStorageEditDialog extends React.Component {
       .catch(() => {});
   };
 
-  @computed
   get isNfsMount () {
     return this.props.dataStorage
       ? this.props.dataStorage.storageType
@@ -256,7 +275,6 @@ export class DataStorageEditDialog extends React.Component {
       : this.props.isNfsMount;
   }
 
-  @computed
   get omicsStore () {
     return this.props.dataStorage
       ? this.props.dataStorage.storageType
@@ -287,7 +305,6 @@ export class DataStorageEditDialog extends React.Component {
     };
   }
 
-  @computed
   get transitionRulesAvailable () {
     const {
       dataStorage
@@ -302,28 +319,23 @@ export class DataStorageEditDialog extends React.Component {
     return this.userPermissions.read && !this.userPermissions.write;
   }
 
-  @computed
   get awsRegions () {
     return this.props.awsRegions.loaded ? (this.props.awsRegions.value || []).map(r => r) : [];
   }
 
-  @computed
   get omicsTypes () {
     return Object.entries(OmicsServiceTypes || []);
   }
 
-  @computed
   get fileShareMountsList () {
     return extractFileShareMountList(this.awsRegions);
   }
 
-  @computed
   get defaultAwsRegion () {
     const region = this.awsRegions.filter(region => region.default === true)[0];
     return region || undefined;
   }
 
-  @computed
   get currentRegion () {
     const form = this.formRef.current;
     const formValue = form ? form.getFieldValue('regionId') : undefined;
@@ -331,27 +343,22 @@ export class DataStorageEditDialog extends React.Component {
     return region || this.defaultAwsRegion;
   }
 
-  @computed
   get currentRegionSupportsPolicy () {
     return this.currentRegion && ['AWS', 'GCP'].indexOf(this.currentRegion.provider) >= 0;
   }
 
-  @computed
   get currentRegionSupportsStoragePermissions () {
     return this.currentRegion && ['AWS'].indexOf(this.currentRegion.provider) >= 0;
   }
 
-  @computed
   get isStoragePathValid () {
     return this.state.nfsStoragePathValid || false;
   }
 
-  @computed
   get isAliasValid () {
     return this.state.aliasValid || false;
   }
 
-  @computed
   get toolsToMount () {
     const {dataStorage} = this.props;
     if (dataStorage) {

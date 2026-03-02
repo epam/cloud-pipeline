@@ -17,7 +17,7 @@
 import React from 'react';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import moment from 'moment-timezone';
 import {
@@ -119,8 +119,16 @@ export default class UserCostsPanel extends React.Component {
     pending: false
   }
 
-  @observable
   _billingRequests;
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      _billingRequests: observable,
+      billingInfo: computed,
+      disclaimer: computed
+    });
+  }
 
   componentDidMount () {
     this.updateFromProps();
@@ -142,7 +150,6 @@ export default class UserCostsPanel extends React.Component {
       .then(this.fetchBillingInfo.bind(this));
   };
 
-  @computed
   get billingInfo () {
     if (this._billingRequests && this._billingRequests.length) {
       return this._billingRequests
@@ -158,7 +165,6 @@ export default class UserCostsPanel extends React.Component {
     return [];
   }
 
-  @computed
   get disclaimer () {
     const {preferences} = this.props;
     if (preferences.loaded) {

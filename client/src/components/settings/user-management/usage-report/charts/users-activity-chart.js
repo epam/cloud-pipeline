@@ -23,7 +23,7 @@ import {
 import classNames from 'classnames';
 import ChartJS from 'chart.js';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import moment from 'moment-timezone';
 import UsageNavigation, {runnersEqual, RunnerTypes} from '../navigation';
 import {getPeriod, Period} from '../../../../special/periods';
@@ -300,7 +300,17 @@ class UsersActivityChart extends React.Component {
     tooltip: undefined
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      chartColor: computed,
+      backgroundColor: computed,
+      lineColor: computed,
+      textColor: computed,
+      errorColor: computed
+    });
+  }
+
   get chartColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
@@ -309,7 +319,6 @@ class UsersActivityChart extends React.Component {
     return DEFAULT_COLOR;
   }
 
-  @computed
   get backgroundColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
@@ -319,7 +328,6 @@ class UsersActivityChart extends React.Component {
     return DEFAULT_BACKGROUND_COLOR;
   }
 
-  @computed
   get lineColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
@@ -328,7 +336,6 @@ class UsersActivityChart extends React.Component {
     return DEFAULT_LINE_COLOR;
   }
 
-  @computed
   get textColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
@@ -337,7 +344,6 @@ class UsersActivityChart extends React.Component {
     return DEFAULT_TEXT_COLOR;
   }
 
-  @computed
   get errorColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {

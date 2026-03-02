@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {action, computed, observable} from 'mobx';
+import {makeAutoObservable} from 'mobx';
 import HCSBaseState from './base-state';
 
 class DelayedSliceValue {
@@ -49,14 +49,14 @@ function shallowCompareArrays (array1, array2) {
 }
 
 class ChannelState {
-  @observable index = 0;
-  @observable identifier = 'Channel';
-  @observable name = 'Channel';
-  @observable visible = true;
-  @observable domain = [];
-  @observable contrastLimits = [];
-  @observable color = [];
-  @observable pixels;
+  index = 0;
+  identifier = 'Channel';
+  name = 'Channel';
+  visible = true;
+  domain = [];
+  contrastLimits = [];
+  color = [];
+  pixels;
 
   /**
    * @typedef {Object} ChannelOptions
@@ -74,6 +74,7 @@ class ChannelState {
    * @param {ChannelOptions} options
    */
   constructor (options) {
+    makeAutoObservable(this);
     this.update(options);
   }
 
@@ -81,7 +82,6 @@ class ChannelState {
    * Updates channel state
    * @param {ChannelOptions} options
    */
-  @action
   update (options) {
     const {
       index = 0,
@@ -105,43 +105,42 @@ class ChannelState {
 }
 
 class ViewerState extends HCSBaseState {
-  @observable loader;
-  @observable use3D = false;
-  @observable volumetricViewerAvailable = false;
-  @observable useLens = false;
-  @observable useColorMap = false;
-  @observable colorMap = '';
-  @observable lensEnabled = false;
-  @observable lensChannel = 0;
-  @observable pending = false;
-  @observable isRGB = false;
-  @observable xSlice = [0, 0];
-  @observable xSliceRange = [0, 0];
-  @observable ySlice = [0, 0];
-  @observable ySliceRange = [0, 0];
-  @observable zSlice = [0, 0];
-  @observable zSliceRange = [0, 0];
-  @observable xSliceEnabled = false;
-  @observable ySliceEnabled = false;
-  @observable zSliceEnabled = false;
-  @observable selection = [];
-  @observable dimensions = [];
-  @observable downsamplingModes = [];
-  @observable downsamplingMode = 0;
-  @observable renderingModes = [];
-  @observable renderingMode = 0;
+  loader;
+  use3D = false;
+  volumetricViewerAvailable = false;
+  useLens = false;
+  useColorMap = false;
+  colorMap = '';
+  lensEnabled = false;
+  lensChannel = 0;
+  pending = false;
+  isRGB = false;
+  xSlice = [0, 0];
+  xSliceRange = [0, 0];
+  ySlice = [0, 0];
+  ySliceRange = [0, 0];
+  zSlice = [0, 0];
+  zSliceRange = [0, 0];
+  xSliceEnabled = false;
+  ySliceEnabled = false;
+  zSliceEnabled = false;
+  selection = [];
+  dimensions = [];
+  downsamplingModes = [];
+  downsamplingMode = 0;
+  renderingModes = [];
+  renderingMode = 0;
   /**
    * Channels state
    * @type {ChannelState[]}
    */
-  @observable channels = [];
-  @observable lockedChannels = [];
-  @observable imageZPosition = 0;
-  @observable fieldID;
-  @observable videoPayload;
+  channels = [];
+  lockedChannels = [];
+  imageZPosition = 0;
+  fieldID;
+  videoPayload;
   listeners = [];
 
-  @computed
   get allChannelsLocked () {
     const lockedChannels = this.lockedChannels || [];
     return !(this.channels || []).some((channel) => !lockedChannels.includes(channel.name));
@@ -149,6 +148,7 @@ class ViewerState extends HCSBaseState {
 
   constructor (viewer) {
     super(viewer, 'viewerStateChanged');
+    makeAutoObservable(this);
     this.xSliceDelayed = new DelayedSliceValue(this.set3D.bind(this), 'xSlice');
     this.ySliceDelayed = new DelayedSliceValue(this.set3D.bind(this), 'ySlice');
     this.zSliceDelayed = new DelayedSliceValue(this.set3D.bind(this), 'zSlice');
@@ -168,7 +168,6 @@ class ViewerState extends HCSBaseState {
       .forEach(aListener => aListener(this));
   };
 
-  @action
   onStateChanged (viewer, newState) {
     const {
       loader,
@@ -291,7 +290,6 @@ class ViewerState extends HCSBaseState {
     this.emitOnChange();
   }
 
-  @action
   changeChannelVisibility = (channel, visible) => {
     if (this.viewer && typeof this.viewer.setChannelProperties === 'function') {
       const channelIndex = typeof channel === 'number' ? channel : this.channels.indexOf(channel);
@@ -309,7 +307,6 @@ class ViewerState extends HCSBaseState {
     this.emitOnChange();
   };
 
-  @action
   changeChannelContrastLimits = (channel, contrastLimits) => {
     if (this.viewer && typeof this.viewer.setChannelProperties === 'function') {
       const channelIndex = typeof channel === 'number' ? channel : this.channels.indexOf(channel);
@@ -327,7 +324,6 @@ class ViewerState extends HCSBaseState {
     this.emitOnChange();
   };
 
-  @action
   changeChannelColor = (channel, color) => {
     if (this.viewer && typeof this.viewer.setChannelProperties === 'function') {
       const channelIndex = typeof channel === 'number' ? channel : this.channels.indexOf(channel);
@@ -345,7 +341,6 @@ class ViewerState extends HCSBaseState {
     this.emitOnChange();
   };
 
-  @action
   setChannelLocked = (channel, locked) => {
     if (this.viewer && typeof this.viewer.setLockChannels === 'function') {
       let channelName = channel;
@@ -359,7 +354,6 @@ class ViewerState extends HCSBaseState {
     }
   };
 
-  @action
   setChannelsLocked = (locked) => {
     if (this.viewer && typeof this.viewer.setLockChannels === 'function') {
       this.lockedChannels = locked
@@ -369,7 +363,6 @@ class ViewerState extends HCSBaseState {
     }
   };
 
-  @action
   changeColorMap = (colorMap) => {
     if (this.viewer && typeof this.viewer.setColorMap === 'function') {
       this.colorMap = colorMap;
@@ -377,7 +370,6 @@ class ViewerState extends HCSBaseState {
     }
   };
 
-  @action
   set3D = (opts = {}) => {
     if (this.use3D) {
       const slice = (o) => [o[0], o[1]];
@@ -399,7 +391,6 @@ class ViewerState extends HCSBaseState {
     }
   }
 
-  @action
   change3dMode = (enabled) => {
     if (this.viewer) {
       this.use3D = enabled;
@@ -407,7 +398,6 @@ class ViewerState extends HCSBaseState {
     }
   };
 
-  @action
   changeDownsamplingMode = (mode) => {
     if (this.viewer) {
       this.downsamplingMode = mode;
@@ -415,7 +405,6 @@ class ViewerState extends HCSBaseState {
     }
   };
 
-  @action
   changeRenderingMode = (mode) => {
     if (this.viewer) {
       this.renderingMode = mode;
@@ -423,7 +412,6 @@ class ViewerState extends HCSBaseState {
     }
   };
 
-  @action
   changeXSlice = (slice) => {
     if (this.viewer) {
       this.xSlice = slice;
@@ -431,7 +419,6 @@ class ViewerState extends HCSBaseState {
     }
   };
 
-  @action
   changeYSlice = (slice) => {
     if (this.viewer) {
       this.ySlice = slice;
@@ -439,7 +426,6 @@ class ViewerState extends HCSBaseState {
     }
   };
 
-  @action
   changeZSlice = (slice) => {
     if (this.viewer) {
       this.zSlice = slice;
@@ -447,7 +433,6 @@ class ViewerState extends HCSBaseState {
     }
   };
 
-  @action
   changeLensMode = (mode) => {
     if (this.viewer && typeof this.viewer.setLensEnabled === 'function') {
       this.lensEnabled = mode;
@@ -455,7 +440,6 @@ class ViewerState extends HCSBaseState {
     }
   };
 
-  @action
   changeLensChannel = (channelIndex) => {
     if (
       this.useLens &&
@@ -470,7 +454,6 @@ class ViewerState extends HCSBaseState {
     }
   };
 
-  @action
   changeGlobalZPosition = (z) => {
     if (this.viewer && typeof this.viewer.setGlobalZPosition === 'function') {
       this.imageZPosition = Number(z);

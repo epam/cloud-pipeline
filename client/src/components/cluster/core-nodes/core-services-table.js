@@ -15,9 +15,7 @@
  */
 
 import React from 'react';
-import {
-  observable,
-  computed} from 'mobx';
+import {observable, computed, makeObservable} from 'mobx';
 import {observer} from 'mobx-react';
 import classNames from 'classnames';
 import {
@@ -55,17 +53,29 @@ export default class CoreServicesTable extends React.Component {
     expandedRows: [],
     podInfoModal: undefined,
     containerLogsModal: undefined
-  }
+  };
 
-  @observable _pods;
-  @observable _pending;
-  @observable _globalSearchInputValue = '';
+  _pods;
+  _pending;
+  _globalSearchInputValue = '';
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      _pods: observable,
+      _pending: observable,
+      _globalSearchInputValue: observable,
+      pods: computed,
+      filteredPods: computed,
+      pending: computed,
+      globalSearchInputValue: computed
+    });
+  }
 
   componentDidMount () {
     this.fetchCorePods();
   }
 
-  @computed
   get pods () {
     if (!this._pods) {
       return [];
@@ -73,7 +83,6 @@ export default class CoreServicesTable extends React.Component {
     return this._pods;
   }
 
-  @computed
   get filteredPods () {
     const {filters} = this.state;
     return filterPods(this.pods, filters);
@@ -106,12 +115,10 @@ export default class CoreServicesTable extends React.Component {
       });
   }
 
-  @computed
   get pending () {
     return this._pending;
   }
 
-  @computed
   get globalSearchInputValue () {
     return this._globalSearchInputValue;
   }

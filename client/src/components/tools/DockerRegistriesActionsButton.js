@@ -17,7 +17,7 @@
 import React from 'react';
 import {
   observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
 import {
   Dropdown,
@@ -61,7 +61,13 @@ export default class DockerRegistriesActionsButton extends React.Component {
     registryOperationInProgress: false
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      groupHasChildTools: computed
+    });
+  }
+
   get groupHasChildTools () {
     return this.props.group
       ? (this.props.group.tools || []).length > 0
@@ -114,7 +120,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
       this._closeCreateRegistryForm();
     } else {
       this._closeCreateRegistryForm();
-      this.props.onRefresh && await this.props.onRefresh();
+      this.props.onRefresh && (await this.props.onRefresh());
       this.props.onNavigate && this.props.onNavigate(request.value.id);
     }
   };
@@ -177,7 +183,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
         hide();
       }
       this._closeEditRegistryForm();
-      this.props.onRefresh && await this.props.onRefresh();
+      this.props.onRefresh && (await this.props.onRefresh());
     }
   };
 
@@ -190,7 +196,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
       message.error(request.error);
     } else {
       this._closeEditRegistryForm();
-      this.props.onRefresh && await this.props.onRefresh();
+      this.props.onRefresh && (await this.props.onRefresh());
       this.props.onNavigate && this.props.onNavigate();
     }
   };
@@ -227,7 +233,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
     } else {
       this._closeEditGroupForm();
       hide();
-      this.props.onRefresh && await this.props.onRefresh();
+      this.props.onRefresh && (await this.props.onRefresh());
     }
   };
 
@@ -240,7 +246,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
       const request = new ToolsGroupPrivateCreate(this.props.registry.id);
       await request.send({});
       if (!request.error) {
-        this.props.onRefresh && await this.props.onRefresh();
+        this.props.onRefresh && (await this.props.onRefresh());
         this.props.onNavigate && this.props.onNavigate(this.props.registry.id, request.value.id);
       }
       hide();
@@ -273,7 +279,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
     } else {
       this._closeCreateToolGroupForm();
       hide();
-      this.props.onRefresh && await this.props.onRefresh();
+      this.props.onRefresh && (await this.props.onRefresh());
       this.props.onNavigate && this.props.onNavigate(this.props.registry.id, request.value.id);
     }
   };
@@ -294,7 +300,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
       message.error(request.error, 5);
     } else {
       this._closeEnableToolForm();
-      this.props.onRefresh && await this.props.onRefresh();
+      this.props.onRefresh && (await this.props.onRefresh());
     }
   };
 
@@ -315,7 +321,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
       message.error(request.error, 5);
     } else {
       hide();
-      this.props.onRefresh && await this.props.onRefresh();
+      this.props.onRefresh && (await this.props.onRefresh());
       this.props.onNavigate && this.props.onNavigate(this.props.registry.id);
     }
   };
@@ -342,14 +348,22 @@ export default class DockerRegistriesActionsButton extends React.Component {
       overlayVisible: false
     }, () => {
       switch (key) {
-        case 'add-registry': this._openCreateRegistryForm(); break;
-        case 'edit-registry': this._openEditRegistryForm(); break;
-        case 'configure-registry': this._openDockerConfigurationForm(); break;
-        case 'add-private-group': this._createPrivateGroup(); break;
-        case 'add-group': this._openCreateToolGroupForm(); break;
-        case 'edit-group': this._openEditGroupForm(); break;
-        case 'delete-group': this._confirmDeleteGroup(); break;
-        case 'enable-tool': this._openEnableToolForm(); break;
+        case 'add-registry': this._openCreateRegistryForm();
+          break;
+        case 'edit-registry': this._openEditRegistryForm();
+          break;
+        case 'configure-registry': this._openDockerConfigurationForm();
+          break;
+        case 'add-private-group': this._createPrivateGroup();
+          break;
+        case 'add-group': this._openCreateToolGroupForm();
+          break;
+        case 'edit-group': this._openEditGroupForm();
+          break;
+        case 'delete-group': this._confirmDeleteGroup();
+          break;
+        case 'enable-tool': this._openEnableToolForm();
+          break;
       }
     });
   };
@@ -524,7 +538,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
             )}
           >
             <Button size="small" style={{zIndex: 2}}>
-              <SettingOutlined style={{ lineHeight: 'inherit', verticalAlign: 'middle' }} />
+              <SettingOutlined style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
               <EditRegistryForm
                 pending={this.state.registryOperationInProgress}
                 onCancel={() => this._closeCreateRegistryForm()}

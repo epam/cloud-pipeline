@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {ModuleParameter} from './base';
 import {AnalysisTypes} from '../common/analysis-types';
 
@@ -43,9 +43,11 @@ class ObjectParameter extends ModuleParameter {
       type: AnalysisTypes.object,
       isList: true
     });
+    makeObservable(this, {
+      values: computed
+    });
   }
 
-  @computed
   get values () {
     return this.wrapValuesWithEmptyValue(
       getObjectsForModule(this.cpModule)

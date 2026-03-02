@@ -16,9 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {
-  computed,
-  observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import {inject,
   observer} from 'mobx-react';
 import classNames from 'classnames';
@@ -59,9 +57,19 @@ class Filters extends React.Component {
     showAdvanced: false
   };
 
-  @observable dictionaries = new SystemLogsFilterDictionaries();
+  dictionaries = new SystemLogsFilterDictionaries();
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      dictionaries: observable,
+      hostNames: computed,
+      serviceNames: computed,
+      types: computed,
+      myUserName: computed
+    });
+  }
+
   get hostNames () {
     if (this.dictionaries && this.dictionaries.loaded) {
       return ((this.dictionaries.value || {}).hostnames || []).map(o => o);
@@ -69,7 +77,6 @@ class Filters extends React.Component {
     return [];
   }
 
-  @computed
   get serviceNames () {
     if (this.dictionaries && this.dictionaries.loaded) {
       return ((this.dictionaries.value || {}).serviceNames || []).map(o => o);
@@ -77,7 +84,6 @@ class Filters extends React.Component {
     return [];
   }
 
-  @computed
   get types () {
     if (this.dictionaries && this.dictionaries.loaded) {
       return ((this.dictionaries.value || {}).types || []).map(o => o);
@@ -85,7 +91,6 @@ class Filters extends React.Component {
     return [];
   }
 
-  @computed
   get myUserName () {
     if (this.props.authenticatedUserInfo.loaded) {
       return this.props.authenticatedUserInfo.value.userName;

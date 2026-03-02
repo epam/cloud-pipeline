@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
 import {Link} from 'react-router';
 import {CaretRightOutlined, LoadingOutlined, LockOutlined} from '@ant-design/icons';
@@ -55,7 +55,15 @@ export default class Breadcrumbs extends React.Component {
     subject: PropTypes.object
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      inlineMetadataEntities: computed,
+      rootItems: computed,
+      items: computed
+    });
+  }
+
   get inlineMetadataEntities () {
     const {
       preferences
@@ -63,7 +71,6 @@ export default class Breadcrumbs extends React.Component {
     return preferences.inlineMetadataEntities;
   }
 
-  @computed
   get rootItems () {
     const {
       pipelinesLibrary,
@@ -86,7 +93,6 @@ export default class Breadcrumbs extends React.Component {
     );
   }
 
-  @computed
   get items () {
     let items = [];
     const rootItems = this.rootItems;

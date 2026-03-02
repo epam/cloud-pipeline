@@ -16,8 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {
-  computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {inject,
   observer} from 'mobx-react';
 import {Alert,
@@ -54,7 +53,15 @@ class DtsManagement extends React.Component {
     statusFilter: STATUS_FILTERS.all
   }
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      dtsList: computed,
+      filteredDtsList: computed,
+      pending: computed
+    });
+  }
+
   get dtsList () {
     const {dtsList} = this.props;
     if (dtsList.loaded && dtsList.value && dtsList.value.length) {
@@ -63,7 +70,6 @@ class DtsManagement extends React.Component {
     return [];
   }
 
-  @computed
   get filteredDtsList () {
     const {statusFilter} = this.state;
     if (statusFilter === STATUS_FILTERS.all) {
@@ -84,7 +90,6 @@ class DtsManagement extends React.Component {
     }
   };
 
-  @computed
   get pending () {
     const {dtsList} = this.props;
     return (dtsList && dtsList.pending) || this.state.pending;

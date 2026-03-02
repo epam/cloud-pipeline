@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import {
   Modal,
@@ -51,7 +51,13 @@ class ItemsTable extends React.Component {
     value: null
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      items: computed
+    });
+  }
+
   get items () {
     const {value} = this.props;
     return parse(value);

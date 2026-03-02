@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import {API_PATH, SERVER} from '../../config';
 import {
@@ -89,26 +89,35 @@ export default class CLIForm extends React.Component {
     }
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      driveMappintAuthUrl: computed,
+      pipeDriveMapping: computed,
+      fileBrowserApp: computed,
+      hasWritableNFSStorages: computed,
+      isAdmin: computed,
+      jwtTokenExpirationUserLimitSeconds: computed,
+      jwtTokenDateTo: computed
+    });
+  }
+
   componentDidMount () {
     this.recalculateDefaultValidTillDate();
   }
 
-  @computed
   get driveMappintAuthUrl () {
     return this.props.preferences.getPreferenceValue(DRIVE_MAPPING_URL_PREFERENCE);
   }
 
-  @computed
   get pipeDriveMapping () {
     return this.props.preferences.getPreferenceValue(DRIVE_MAPPING_KEY) || '{}';
   }
 
-  @computed
   get fileBrowserApp () {
     return this.props.preferences.getPreferenceValue(FILE_BROWSER_KEY) || '{}';
   }
 
-  @computed
   get hasWritableNFSStorages () {
     if (this.props.dataStorages.loaded) {
       return (this.props.dataStorages.value || [])
@@ -118,7 +127,6 @@ export default class CLIForm extends React.Component {
     return false;
   }
 
-  @computed
   get isAdmin () {
     const {authenticatedUserInfo} = this.props;
     if (authenticatedUserInfo.loaded) {
@@ -127,16 +135,14 @@ export default class CLIForm extends React.Component {
     return false;
   }
 
-  @computed
   get jwtTokenExpirationUserLimitSeconds () {
     if (this.isAdmin) {
       return 0;
     }
     const {preferences} = this.props;
     return preferences.launchJWTTokenExpirationUserLimit;
-  };
+  }
 
-  @computed
   get jwtTokenDateTo () {
     const {jwtTokenExpirationUserLimitSeconds: seconds} = this;
     if (seconds > 0) {
@@ -144,7 +150,7 @@ export default class CLIForm extends React.Component {
       return now.add(seconds, 'seconds').endOf('day');
     }
     return undefined;
-  };
+  }
 
   recalculateDefaultValidTillDate = () => {
     (async () => {

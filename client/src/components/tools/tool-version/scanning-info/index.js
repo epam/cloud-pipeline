@@ -24,7 +24,7 @@ import {
   Table,
   Popover
 } from 'antd';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import LoadingView from '../../../special/LoadingView';
 import VersionScanResult from '../../elements/VersionScanResult';
 import roleModel from '../../../../utils/roleModel';
@@ -52,6 +52,16 @@ export default class ToolScanningInfo extends React.Component {
     severitySortOrder: DESCEND
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      toolPlatform: computed,
+      dockerRegistry: computed,
+      scanningInfo: computed,
+      groupingVulnerabilities: computed
+    });
+  }
+
   componentDidMount () {
     this.checkToolPlatform();
   }
@@ -73,7 +83,6 @@ export default class ToolScanningInfo extends React.Component {
     }
   }
 
-  @computed
   get toolPlatform () {
     const {versions} = this.props;
     if (
@@ -86,7 +95,6 @@ export default class ToolScanningInfo extends React.Component {
     return undefined;
   }
 
-  @computed
   get dockerRegistry () {
     if (this.props.dockerRegistries.loaded && this.props.tool.loaded) {
       return (this.props.dockerRegistries.value.registries || [])
@@ -95,7 +103,6 @@ export default class ToolScanningInfo extends React.Component {
     return null;
   }
 
-  @computed
   get scanningInfo () {
     if (this.props.versions.loaded &&
       this.props.versions.value &&
@@ -106,7 +113,6 @@ export default class ToolScanningInfo extends React.Component {
     return null;
   }
 
-  @computed
   get groupingVulnerabilities () {
     let groupingVulnerabilities = [];
     if (this.scanningInfo && this.scanningInfo.vulnerabilities) {

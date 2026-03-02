@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {observer, inject} from 'mobx-react';
 import {Button, Dropdown, Input, Row, Tooltip} from 'antd';
 import classNames from 'classnames';
@@ -99,7 +99,16 @@ export class DataStoragePathInput extends React.Component {
     storagePath: undefined
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      storageObjectPrefix: computed,
+      cloudRegions: computed,
+      fileShareMountsList: computed,
+      currentFileShareMount: computed
+    });
+  }
+
   get storageObjectPrefix () {
     if (this.props.preferences.loaded) {
       return this.props.preferences.getPreferenceValue('storage.object.prefix');
@@ -108,12 +117,10 @@ export class DataStoragePathInput extends React.Component {
     return null;
   }
 
-  @computed
   get cloudRegions () {
     return this.props.cloudRegions;
   }
 
-  @computed
   get fileShareMountsList () {
     if (!this.cloudRegions) {
       return [];
@@ -121,7 +128,6 @@ export class DataStoragePathInput extends React.Component {
     return extractFileShareMountList(this.cloudRegions);
   }
 
-  @computed
   get currentFileShareMount () {
     return this.state.fileShareMountId
       ? this.fileShareMountsList.filter(r => r.id === this.state.fileShareMountId)[0]

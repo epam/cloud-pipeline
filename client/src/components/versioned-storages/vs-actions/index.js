@@ -18,8 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {
   observer} from 'mobx-react';
-import {computed,
-  observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import {
   Dropdown,
   message
@@ -40,7 +39,7 @@ import VSTaskStatus from '../../../models/versioned-storage/status';
 import VSConflictError from '../../../models/versioned-storage/conflict-error';
 import resolveFileConflict from '../../../models/versioned-storage/resolve-file-conflict';
 import VSResolveRepoAfterRefresh from
-  '../../../models/versioned-storage/resolve-repo-after-refresh';
+'../../../models/versioned-storage/resolve-repo-after-refresh';
 import {
   CheckoutDialog,
   GitCommitDialog,
@@ -61,11 +60,19 @@ class VSActions extends React.Component {
   };
 
   menuContainerRef;
-
-  @observable vsList;
+  vsList;
   statuses = [];
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      vsList: observable,
+      isDtsEnvironment: computed,
+      fsBrowserAvailable: computed,
+      repositories: computed
+    });
+  }
+
   get isDtsEnvironment () {
     const {run} = this.props;
     return run &&
@@ -73,7 +80,6 @@ class VSActions extends React.Component {
       run.executionPreferences.environment === 'DTS';
   }
 
-  @computed
   get fsBrowserAvailable () {
     const {run} = this.props;
     return run &&
@@ -83,7 +89,6 @@ class VSActions extends React.Component {
       !this.isDtsEnvironment;
   }
 
-  @computed
   get repositories () {
     if (this.vsList && this.vsList.loaded) {
       return Array.from(this.vsList.value || []);

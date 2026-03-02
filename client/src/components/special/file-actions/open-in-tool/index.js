@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import {
   inject,
   observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import {
   message,
@@ -33,7 +33,7 @@ import FileTools from './file-tools';
 import fetchActiveJobs from './fetch-active-jobs';
 import {PipelineRunner} from '../../../../models/pipelines/PipelineRunner';
 import getToolLaunchingOptions
-  from '../../../pipelines/launch/utilities/get-tool-launching-options';
+from '../../../pipelines/launch/utilities/get-tool-launching-options';
 import styles from './open-in-tool.css';
 
 const fileToolsRequest = new FileTools();
@@ -49,6 +49,18 @@ class OpenInToolAction extends React.Component {
     activeJobsFetching: false,
     activeTool: undefined,
     activeJob: undefined
+  }
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      openInFileTools: computed,
+      tools: computed,
+      filteredFileTools: computed,
+      activeToolTemplate: computed,
+      storage: computed,
+      toolLaunchingStores: computed
+    });
   }
 
   componentDidMount () {
@@ -73,7 +85,6 @@ class OpenInToolAction extends React.Component {
     return undefined;
   }
 
-  @computed
   get openInFileTools () {
     const {openInFileTools} = this.props;
     if (openInFileTools.loaded) {
@@ -82,7 +93,6 @@ class OpenInToolAction extends React.Component {
     return undefined;
   }
 
-  @computed
   get tools () {
     const {dockerRegistries} = this.props;
     if (dockerRegistries.loaded) {
@@ -105,7 +115,6 @@ class OpenInToolAction extends React.Component {
     return [];
   }
 
-  @computed
   get filteredFileTools () {
     if (this.openInFileTools) {
       return this.openInFileTools
@@ -115,7 +124,6 @@ class OpenInToolAction extends React.Component {
     return [];
   }
 
-  @computed
   get activeToolTemplate () {
     const {activeTool} = this.state;
     if (!activeTool) {
@@ -126,7 +134,6 @@ class OpenInToolAction extends React.Component {
     return (tool || {}).template;
   }
 
-  @computed
   get storage () {
     const {storageId, dataStorages} = this.props;
     if (storageId && dataStorages.loaded) {
@@ -135,7 +142,6 @@ class OpenInToolAction extends React.Component {
     return undefined;
   }
 
-  @computed
   get toolLaunchingStores () {
     const {preferences, awsRegions} = this.props;
     return {

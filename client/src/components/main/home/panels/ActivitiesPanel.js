@@ -20,7 +20,7 @@ import {
   inject,
   observer} from 'mobx-react';
 import {Link} from 'react-router';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import IssueCommentPreview from '../../../special/issues/controls/IssueCommentPreview';
 import LoadingView from '../../../special/LoadingView';
@@ -133,7 +133,13 @@ export default class ActivitiesPanel extends localization.LocalizedReactComponen
     }
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      issuesEvents: computed
+    });
+  }
+
   get issuesEvents () {
     if (this.props.issues.loaded) {
       const events = [];

@@ -28,7 +28,7 @@ import {
 import {LeftOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import roleModel from '../../../utils/roleModel';
 import LoadingView from '../../special/LoadingView';
 import UIThemeEditForm from './ui-theme-edit-form';
@@ -59,13 +59,19 @@ class AppearanceManagement extends React.Component {
     mode: undefined
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      themes: computed
+    });
+  }
+
   componentWillUnmount () {
     if (this.injectEditableThemeStylesDelayed) {
       clearTimeout(this.injectEditableThemeStylesDelayed);
     }
   }
 
-  @computed
   get themes () {
     const {
       themes: themesStore

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import {inject, observer} from 'mobx-react';
+import {inject} from 'mobx-react';
 
 export default function runPipelineActions (WrappedComponent) {
   return inject(
@@ -26,5 +26,5 @@ export default function runPipelineActions (WrappedComponent) {
     'pipelines',
     'hiddenObjects',
     'authenticatedUserInfo'
-  )(observer(WrappedComponent));
+  )(WrappedComponent);
 }

@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {
   Select,
   message,
@@ -57,6 +57,13 @@ class RunsInfo extends React.Component {
     topEntriesFilters: getTopEntriesFilters(0)
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      users: computed
+    });
+  }
+
   componentDidMount () {
     (this.fetchFiltersConfiguration)();
     (this.fetchStatistics)();
@@ -72,7 +79,6 @@ class RunsInfo extends React.Component {
     return this.state.pending;
   }
 
-  @computed
   get users () {
     const {usersInfo} = this.props;
     if (usersInfo.loaded) {

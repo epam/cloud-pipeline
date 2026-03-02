@@ -17,7 +17,7 @@
 import React from 'react';
 import {Alert} from 'antd';
 import {DownCircleOutlined} from '@ant-design/icons';
-import {observable, computed} from 'mobx';
+import {observable, computed, makeObservable} from 'mobx';
 import {observer} from 'mobx-react';
 import classNames from 'classnames';
 import AIChatEngine from './ai-chat-engine';
@@ -43,14 +43,24 @@ export default class AIChat extends React.Component {
     userInput: ''
   };
 
-  @observable chatEngine = getSharedChatEngine();
+  chatEngine = getSharedChatEngine();
   answersContainerRef;
   scrollContainerRef;
   scrollPositionRAF;
   isScrollingTimeout;
+  _scrolledDown = true;
+  _isScrolling = false;
 
-  @observable _scrolledDown = true;
-  @observable _isScrolling = false;
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      chatEngine: observable,
+      _scrolledDown: observable,
+      _isScrolling: observable,
+      isScrolling: computed,
+      scrolledDown: computed
+    });
+  }
 
   componentDidMount () {
     (this.chatEngine.reloadMessages)();
@@ -64,12 +74,10 @@ export default class AIChat extends React.Component {
     }
   }
 
-  @computed
   get isScrolling () {
     return this._isScrolling;
   }
 
-  @computed
   get scrolledDown () {
     return this._scrolledDown;
   }
@@ -79,7 +87,7 @@ export default class AIChat extends React.Component {
     return authenticatedUserInfo.loaded
       ? authenticatedUserInfo.value
       : undefined;
-  };
+  }
 
   get scrollContainerHeight () {
     if (!this.scrollContainerRef) {
@@ -248,7 +256,7 @@ export default class AIChat extends React.Component {
           'cp-panel-color', {
             [styles.dropShadow]: !this.scrolledDown
           })}>
-          <DownCircleOutlined className={classNames( 'cp-panel-background-color cp-primary', styles.downButton, { [styles.visible]: !this.isScrolling && !this.scrolledDown } )} onClick={this.scrollToBottom} />
+          <DownCircleOutlined className={classNames('cp-panel-background-color cp-primary', styles.downButton, {[styles.visible]: !this.isScrolling && !this.scrolledDown})} onClick={this.scrollToBottom} />
           {chat.messages?.length ? (
             <a className={styles.clearButton} onClick={() => chat.changeChat()}>
               New chat

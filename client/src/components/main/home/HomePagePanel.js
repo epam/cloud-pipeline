@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import {observer} from 'mobx-react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import styles from './HomePage.css';
@@ -56,6 +57,7 @@ const PanelComponent = {
 
 @localization.localizedComponent
 @AsyncLayout.use
+@observer
 export default class HomePagePanel extends localization.LocalizedReactComponent {
   static propTypes = {
     onInitialize: PropTypes.func,

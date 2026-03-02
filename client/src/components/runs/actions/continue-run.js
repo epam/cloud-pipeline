@@ -17,7 +17,7 @@ import React from 'react';
 import {Button, message, Modal} from 'antd';
 import {QuestionCircleFilled} from '@ant-design/icons';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import RunName from '../run-name';
 import roleModel from '../../../utils/roleModel';
 import {PipelineRunner} from '../../../models/pipelines/PipelineRunner';
@@ -34,7 +34,13 @@ function createRunContinuationConfirmationDialog () {
     promise = undefined;
     resolve = undefined;
 
-    @computed
+    constructor (props) {
+      super(props);
+      makeObservable(this, {
+        continueRunMessage: computed
+      });
+    }
+
     get continueRunMessage () {
       const {preferences} = this.props;
       return preferences.uiContinueRunConfirmation;

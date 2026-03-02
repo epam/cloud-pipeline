@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {Row} from 'antd';
 import {LoadingOutlined} from '@ant-design/icons';
@@ -44,7 +44,16 @@ export default class DockerRegistryPreview extends React.Component {
     })
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      registries: computed,
+      currentRegistry: computed,
+      groups: computed,
+      name: computed
+    });
+  }
+
   get registries () {
     if (this.props.dockerRegistries.loaded) {
       return (this.props.dockerRegistries.value.registries || []).map(r => r);
@@ -52,7 +61,6 @@ export default class DockerRegistryPreview extends React.Component {
     return [];
   }
 
-  @computed
   get currentRegistry () {
     if (!this.props.item.id) {
       return null;
@@ -60,7 +68,6 @@ export default class DockerRegistryPreview extends React.Component {
     return this.registries.filter(r => `${r.id}` === `${this.props.item.id}`)[0];
   }
 
-  @computed
   get groups () {
     let groups = [];
     if (this.currentRegistry) {
@@ -117,8 +124,7 @@ export default class DockerRegistryPreview extends React.Component {
     );
   };
 
-  @computed
-  get name() {
+  get name () {
     if (this.currentRegistry) {
       return this.currentRegistry.description || this.currentRegistry.externalUrl || this.currentRegistry.path;
     }
@@ -158,5 +164,4 @@ export default class DockerRegistryPreview extends React.Component {
       </div>
     );
   }
-
 }

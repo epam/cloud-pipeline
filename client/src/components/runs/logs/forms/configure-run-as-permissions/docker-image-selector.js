@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import {
   inject,
   observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {
   Button,
   Select
@@ -36,7 +36,13 @@ class DockerImageSelector extends React.Component {
     search: undefined
   }
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      tools: computed
+    });
+  }
+
   get tools () {
     const {dockerRegistries, imagesToExclude} = this.props;
     const isDisabled = (tool) => {

@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer, Provider} from 'mobx-react';
-import {computed, isObservableArray} from 'mobx';
+import {computed, isObservableArray, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
 import {
   Alert,
@@ -717,21 +717,32 @@ export class RunConfirmation extends React.Component {
     onDemandSelectionAvailable: true
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      currentRegion: computed,
+      currentCloudProvider: computed,
+      gpuEnabled: computed,
+      dataStorages: computed,
+      initialSelectedDataStorages: computed,
+      conflicting: computed,
+      notConflictingIndecis: computed,
+      initialLimitMountsHaveConflicts: computed
+    });
+  }
+
   get currentRegion () {
     const [currentRegion] = (this.props.cloudRegions || [])
       .filter(p => +p.id === +this.props.cloudRegionId);
     return currentRegion;
   }
 
-  @computed
   get currentCloudProvider () {
     const [currentProvider] = (this.props.cloudRegions || [])
       .filter(p => +p.id === +this.props.cloudRegionId);
     return currentProvider ? currentProvider.provider : null;
   }
 
-  @computed
   get gpuEnabled () {
     const [currentInstanceType] = (this.props.instanceTypes || [])
       .filter(i => i.name === this.state.instanceType);
@@ -739,7 +750,6 @@ export class RunConfirmation extends React.Component {
       +currentInstanceType.gpu > 0;
   }
 
-  @computed
   get dataStorages () {
     const {cloudRegions = []} = this.props;
     const cloudRegion = this.currentRegion;
@@ -747,13 +757,11 @@ export class RunConfirmation extends React.Component {
     return getAllowedStoragesForCloudRegion(storages, cloudRegion, cloudRegions);
   }
 
-  @computed
   get initialSelectedDataStorages () {
     const {limitMounts} = this.props;
     return this.getStoragesByIdentifiersString(limitMounts);
   }
 
-  @computed
   get conflicting () {
     const {initialSelectedDataStorages} = this;
     const mountPoints = initialSelectedDataStorages.map((s) => s.mountPoint);
@@ -762,7 +770,6 @@ export class RunConfirmation extends React.Component {
       .filter((d) => !!d.mountPoint && conflictingMountPoints.has(d.mountPoint));
   }
 
-  @computed
   get notConflictingIndecis () {
     const {initialSelectedDataStorages} = this;
     const mountPoints = initialSelectedDataStorages.map((s) => s.mountPoint);
@@ -774,7 +781,6 @@ export class RunConfirmation extends React.Component {
       .map(d => +d.id);
   }
 
-  @computed
   get initialLimitMountsHaveConflicts () {
     const {initialSelectedDataStorages} = this;
     const mountPoints = initialSelectedDataStorages.map((s) => s.mountPoint);

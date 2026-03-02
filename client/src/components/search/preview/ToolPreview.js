@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {Row} from 'antd';
 import {CaretRightOutlined, LoadingOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
@@ -54,7 +54,17 @@ export default class ToolPreview extends React.Component {
     })
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      dockerRegistry: computed,
+      name: computed,
+      path: computed,
+      description: computed,
+      toolVersionScanResults: computed
+    });
+  }
+
   get dockerRegistry () {
     if (this.props.dockerRegistries.loaded && this.props.tool.loaded) {
       return (this.props.dockerRegistries.value.registries || [])
@@ -63,7 +73,6 @@ export default class ToolPreview extends React.Component {
     return null;
   }
 
-  @computed
   get name () {
     if (this.props.tool && this.props.tool.loaded && this.props.dockerRegistries.loaded) {
       const [, tool] = this.props.tool.value.image.split('/');
@@ -72,7 +81,6 @@ export default class ToolPreview extends React.Component {
     return this.props.item.name;
   }
 
-  @computed
   get path () {
     if (this.props.tool && this.props.tool.loaded && this.props.dockerRegistries.loaded) {
       const {registries} = this.props.dockerRegistries.value;
@@ -96,7 +104,6 @@ export default class ToolPreview extends React.Component {
     return null;
   }
 
-  @computed
   get description () {
     if (this.props.tool && this.props.tool.loaded) {
       return this.props.tool.value.shortDescription || this.props.item.description;
@@ -115,7 +122,6 @@ export default class ToolPreview extends React.Component {
     return null;
   };
 
-  @computed
   get toolVersionScanResults () {
     const data = [];
     if (this.props.versions.loaded &&

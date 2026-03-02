@@ -17,7 +17,7 @@
 import React from 'react';
 import {Link} from 'react-router';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import {SERVER} from '../../../config';
 import {Button, message, Popover, Tooltip} from 'antd';
@@ -58,7 +58,16 @@ export default class Navigation extends React.Component {
     versionInfoVisible: false
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      notificationsEnabled: computed,
+      navigationItems: computed,
+      runsCount: computed,
+      notificationsCount: computed
+    });
+  }
+
   get notificationsEnabled () {
     const {preferences} = this.props;
     if (preferences.loaded) {
@@ -67,14 +76,12 @@ export default class Navigation extends React.Component {
     return false;
   }
 
-  @computed
   get navigationItems () {
     const {uiNavigation} = this.props;
     return uiNavigation.navigationItems
       .filter(item => !item.hidden);
   }
 
-  @computed
   get runsCount () {
     const {counter} = this.props;
     if (counter && counter.loaded) {
@@ -83,7 +90,6 @@ export default class Navigation extends React.Component {
     return 0;
   }
 
-  @computed
   get notificationsCount () {
     const {userNotifications} = this.props;
     if (userNotifications && userNotifications.loaded) {

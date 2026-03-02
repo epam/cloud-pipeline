@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {
   Button,
   Modal,
@@ -32,6 +32,13 @@ class CreateLinkForm extends React.Component {
     selectedRegistryId: undefined,
     selectedGroupId: undefined
   };
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      registries: computed
+    });
+  }
 
   componentDidMount () {
     this.reset();
@@ -62,7 +69,6 @@ class CreateLinkForm extends React.Component {
     });
   };
 
-  @computed
   get registries () {
     if (this.props.dockerRegistries.loaded) {
       return (this.props.dockerRegistries.value.registries || [])

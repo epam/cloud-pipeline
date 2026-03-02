@@ -16,7 +16,7 @@
 
 import {SERVER, API_PATH} from '../../config';
 import defer from '../../utils/defer';
-import {observable, action, computed} from 'mobx';
+import {observable, action, computed, makeObservable} from 'mobx';
 import {authorization} from './Authorization';
 import maintenanceCheck from './maintenance-check';
 
@@ -31,52 +31,68 @@ class Remote {
   static isJson = true;
 
   url;
-
-  @observable failed = false;
-  @observable error = undefined;
-  @observable networkError = undefined;
+  failed = false;
+  error = undefined;
+  networkError = undefined;
 
   constructor () {
+    makeObservable(this, {
+      failed: observable,
+      error: observable,
+      networkError: observable,
+      _pending: observable,
+      _loaded: observable,
+      _value: observable,
+      _response: observable,
+      responseStatus: observable,
+      responseStatusText: observable,
+      responseError: observable,
+      pending: computed,
+      loaded: computed,
+      value: computed,
+      response: computed,
+      update: action
+    });
     if (this.constructor.auto) {
       this.fetch();
     }
   }
 
-  @observable _pending = true;
-  @computed
+  _pending = true;
+
   get pending () {
     const fetchIfNeeded = this._fetchIfNeeded.bind(this);
     setTimeout(fetchIfNeeded, 0);
     return this._pending;
   }
 
-  @observable _loaded = false;
-  @computed
+  _loaded = false;
+
   get loaded () {
     const fetchIfNeeded = this._fetchIfNeeded.bind(this);
     setTimeout(fetchIfNeeded, 0);
     return this._loaded;
   }
 
-  @observable _value = this.constructor.defaultValue;
-  @computed
+  _value = this.constructor.defaultValue;
+
   get value () {
     const fetchIfNeeded = this._fetchIfNeeded.bind(this);
     setTimeout(fetchIfNeeded, 0);
     return this._value;
   }
 
-  @observable _response = undefined;
-  @computed
+  _response = undefined;
+
   get response () {
     const fetchIfNeeded = this._fetchIfNeeded.bind(this);
     setTimeout(fetchIfNeeded, 0);
     return this._response;
   }
 
-  @observable responseStatus = undefined;
-  @observable responseStatusText = undefined;
-  @observable responseError = false;
+  responseStatus = undefined;
+  responseStatusText = undefined;
+  responseError = false;
 
   _loadRequired = !this.constructor.auto;
 
@@ -171,7 +187,6 @@ class Remote {
     return value.payload;
   }
 
-  @action
   update (value) {
     this._response = value;
     if (value.status && value.status === 401) {

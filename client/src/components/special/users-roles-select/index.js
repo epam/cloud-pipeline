@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import {
   inject,
   observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {Select
 } from 'antd';
 import {TeamOutlined} from '@ant-design/icons';
@@ -78,7 +78,14 @@ class UsersRolesSelect extends React.Component {
     adGroups: []
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      users: computed,
+      roles: computed
+    });
+  }
+
   get users () {
     const {users} = this.props;
     if (users && users.loaded) {
@@ -93,7 +100,6 @@ class UsersRolesSelect extends React.Component {
     return [];
   }
 
-  @computed
   get roles () {
     const {roles} = this.props;
     if (roles && roles.loaded) {

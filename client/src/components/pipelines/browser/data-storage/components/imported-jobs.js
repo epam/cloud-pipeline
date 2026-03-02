@@ -15,8 +15,7 @@
  */
 
 import React from 'react';
-import {
-  observable} from 'mobx';
+import {observable, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import moment from 'moment-timezone';
@@ -59,6 +58,7 @@ const getDisabledDate = ({min, max}) => (date) => {
   if (min) {
     disabled = disabled || date < min;
   }
+
   if (max) {
     disabled = disabled || date > max;
   }
@@ -69,6 +69,7 @@ function Filter ({addonBefore, label, children, display = true}) {
   if (!display) {
     return null;
   }
+
   return (
     <div className={classNames(styles.jobFilter)}>
       {addonBefore}
@@ -79,7 +80,7 @@ function Filter ({addonBefore, label, children, display = true}) {
 }
 
 export default class JobList extends React.Component {
-  @observable list = [];
+ list = [];
 
   static propTypes = {
     storageId: PropTypes.oneOfType([
@@ -94,6 +95,13 @@ export default class JobList extends React.Component {
     pages: [undefined],
     emptyPlaceholder: undefined
   };
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      list: observable
+    });
+  }
 
   get pageSize () {
     return PAGE_SIZE;
@@ -393,7 +401,7 @@ export default class JobList extends React.Component {
         {this.renderPagination()}
       </div>
     );
-  };
+  }
 
   clearPagination = () => {
     this.setState({
@@ -405,7 +413,7 @@ export default class JobList extends React.Component {
   componentDidMount () {
     this.setDefaultFilter();
     this.setJobList();
-  };
+  }
 
   componentDidUpdate (prevProps, prevState) {
     if (!this.state.filters) {

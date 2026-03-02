@@ -18,7 +18,7 @@ import React, {Component} from 'react';
 import {
   inject,
   observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import {
   Alert,
@@ -103,6 +103,13 @@ export default class PipelineDocuments extends Component {
   fetchToken;
   fetchFileToken;
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      docsFolder: computed
+    });
+  }
+
   componentDidMount () {
     this.updateDocsPath();
     this.updateDocuments();
@@ -126,7 +133,6 @@ export default class PipelineDocuments extends Component {
     this.fetchFileToken = increaseToken(this.fetchFileToken);
   }
 
-  @computed
   get docsFolder () {
     const {pipeline} = this.props;
     if (pipeline && pipeline.loaded) {
@@ -567,7 +573,7 @@ export default class PipelineDocuments extends Component {
       this.props.version === this.props.pipeline.value.currentVersion.name &&
       !!this.docsFolder &&
       this.docsFolder.length;
-  };
+  }
 
   renderMarkdownControls = () => {
     if (!this.canModifySources) {

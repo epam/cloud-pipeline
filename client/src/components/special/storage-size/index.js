@@ -23,7 +23,7 @@ import {
   Modal
 } from 'antd';
 import {InfoCircleFilled} from '@ant-design/icons';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {STORAGE_CLASSES} from '../../pipelines/browser/data-storage';
 import DataStoragePathUsage from '../../../models/dataStorage/DataStoragePathUsage';
@@ -85,9 +85,16 @@ function InfoTooltip ({sizes, isNFS}) {
 class StorageSize extends React.Component {
   state = {
     showDetailedInfo: false
-  };
+  }; info;
 
-  @observable info;
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      info: observable,
+      usageInfo: computed,
+      hasArchivedData: computed
+    });
+  }
 
   componentDidMount () {
     this.updateStorageSize();
@@ -102,7 +109,6 @@ class StorageSize extends React.Component {
     }
   }
 
-  @computed
   get usageInfo () {
     if (!this.info) {
       return null;
@@ -148,7 +154,6 @@ class StorageSize extends React.Component {
     };
   }
 
-  @computed
   get hasArchivedData () {
     const {storage} = this.props;
     if (!storage || !this.usageInfo) {

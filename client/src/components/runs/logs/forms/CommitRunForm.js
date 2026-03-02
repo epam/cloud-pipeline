@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
 import {Form, Modal, Row, Col, Spin, Checkbox, Alert} from 'antd';
 import roleModel from '../../../../utils/roleModel';
@@ -50,22 +50,29 @@ class CommitRunForm extends localization.LocalizedReactComponent {
     toolValid: true
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      toolValid: computed,
+      layersCheckPassed: computed,
+      commitCheckPassed: computed,
+      allowCommitToOtherPersonalGroups: computed,
+      registries: computed
+    });
+  }
+
   get toolValid () {
     return this.state.toolValid;
   }
 
-  @computed
   get layersCheckPassed () {
     return LayersCheckProvider.getCheckResult(this.props);
   }
 
-  @computed
   get commitCheckPassed () {
     return CommitCheckProvider.getCheckResult(this.props);
   }
 
-  @computed
   get allowCommitToOtherPersonalGroups () {
     return this.props.preferences.loaded
       ? this.props.preferences.allowCommitToOtherPersonalGroups
@@ -141,7 +148,6 @@ class CommitRunForm extends localization.LocalizedReactComponent {
     return {newTool: true};
   };
 
-  @computed
   get registries () {
     if (!this.props.dockerRegistries.loaded) {
       return [];

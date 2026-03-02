@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {
@@ -91,21 +91,29 @@ export default class DataStorageCodeForm extends React.Component {
   };
 
   _modifiedCode = null;
-  @observable
   _originalCode = null;
-  @observable
   _fileContents = null;
-  @observable
   _generateDownloadUrl = null;
-  @observable
   _errors = null;
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      _originalCode: observable,
+      _fileContents: observable,
+      _generateDownloadUrl: observable,
+      _errors: observable,
+      codeTruncated: computed,
+      downloadUrl: computed,
+      errors: computed,
+      isEditable: computed
+    });
+  }
+
   get codeTruncated () {
     return this._fileContents && this._fileContents.loaded && this._fileContents.value.truncated;
   }
 
-  @computed
   get downloadUrl () {
     if (this._generateDownloadUrl && this._generateDownloadUrl.loaded) {
       return this._generateDownloadUrl.value.url;
@@ -113,7 +121,6 @@ export default class DataStorageCodeForm extends React.Component {
     return undefined;
   }
 
-  @computed
   get errors () {
     return this._errors;
   }
@@ -309,7 +316,6 @@ export default class DataStorageCodeForm extends React.Component {
     this.setState({editTabularAsText});
   };
 
-  @computed
   get isEditable () {
     return !!(this._fileContents.loaded && !this.codeTruncated && this.props.file.editable);
   }

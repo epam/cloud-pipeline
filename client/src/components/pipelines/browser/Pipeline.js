@@ -21,7 +21,7 @@ import {
   observer} from 'mobx-react';
 import classNames from 'classnames';
 import connect from '../../../utils/connect';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import LoadingView from '../../special/LoadingView';
 import Issues from '../../special/issues/Issues';
 import Metadata from '../../special/metadata/Metadata';
@@ -125,7 +125,14 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     clonePipelineVisible: false
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      showMetadata: computed,
+      repositoryType: computed
+    });
+  }
+
   get showMetadata () {
     if (this.props.listingMode) {
       return false;
@@ -137,7 +144,6 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     return !!this.state.metadata;
   }
 
-  @computed
   get repositoryType () {
     const {pipeline} = this.props;
     if (pipeline && pipeline.loaded) {
@@ -706,7 +712,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
         >
           <Row type="flex" justify="space-between" align="middle">
             <span>{this.localizedString('Issue')}s</span>
-            <CheckCircleFilled style={{ display: this.state.showIssuesPanel ? 'inherit' : 'none' }} />
+            <CheckCircleFilled style={{display: this.state.showIssuesPanel ? 'inherit' : 'none'}} />
           </Row>
         </MenuItem>
       );

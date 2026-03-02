@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import {
   inject,
   observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {
   Button,
   InputNumber,
@@ -66,7 +66,15 @@ class EditQuotaDialog extends React.Component {
     adGroups: []
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      users: computed,
+      groups: computed,
+      billingCenters: computed
+    });
+  }
+
   get users () {
     const {users} = this.props;
     if (users && users.loaded) {
@@ -75,7 +83,6 @@ class EditQuotaDialog extends React.Component {
     return [];
   }
 
-  @computed
   get groups () {
     const {roles} = this.props;
     const {adGroups = []} = this.state;
@@ -88,7 +95,6 @@ class EditQuotaDialog extends React.Component {
     return adGroups;
   }
 
-  @computed
   get billingCenters () {
     const {billingCenters} = this.props;
     if (billingCenters && billingCenters.loaded) {

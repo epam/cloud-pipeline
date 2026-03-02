@@ -19,8 +19,7 @@ import PropTypes from 'prop-types';
 import {
   inject,
   Provider as MobxProvider} from 'mobx-react';
-import {action,
-  observable} from 'mobx';
+import {action, observable, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import GridLayout from 'react-grid-layout';
 import {ArrowsAltOutlined} from '@ant-design/icons';
@@ -33,19 +32,23 @@ import styles from './layout.css';
 const UPDATE_SIZE_TIMER_MS = 500;
 
 class GridLayoutContainerStore {
-  @observable width;
-  @observable height;
+ width;
+ height;
 
-  constructor (width, height) {
-    this.width = width;
-    this.height = height;
-  }
+ constructor (width, height) {
+   makeObservable(this, {
+     width: observable,
+     height: observable,
+     setSize: action
+   });
+   this.width = width;
+   this.height = height;
+ }
 
-  @action
-  setSize (width, height) {
-    this.width = width;
-    this.height = height;
-  }
+ setSize (width, height) {
+   this.width = width;
+   this.height = height;
+ }
 }
 
 function LayoutPanel ({children, containerClassName, containerStyle, className, style}) {

@@ -18,7 +18,7 @@ import React from 'react';
 import {
   inject,
   observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import LoadTool from '../../../models/tools/LoadTool';
 import {
@@ -49,7 +49,13 @@ import LoadToolVersionSettings from '../../../models/tools/LoadToolVersionSettin
 })
 @observer
 export default class ToolVersion extends React.Component {
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      dockerRegistry: computed
+    });
+  }
+
   get dockerRegistry () {
     if (this.props.dockerRegistries.loaded && this.props.tool.loaded) {
       return (this.props.dockerRegistries.value.registries || [])

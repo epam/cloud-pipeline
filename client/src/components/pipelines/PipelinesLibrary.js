@@ -32,7 +32,7 @@ import {
 import classNames from 'classnames';
 import connect from '../../utils/connect';
 import localization from '../../utils/localization';
-import {observable} from 'mobx';
+import {observable, makeObservable} from 'mobx';
 import SplitPane from 'react-split-pane';
 import {inject, observer} from 'mobx-react';
 import {
@@ -73,15 +73,16 @@ const EXPANDED_KEYS_STORAGE_KEY = 'expandedKeys';
   dataStorages
 })
 @roleModel.authenticationInfo
-@inject('uiNavigation', 'preferences')
-@inject(({pipelinesLibrary, pipelines, folders, configurations, dataStorages}, {location}) => {
-  let path = location.pathname;
+@inject('uiNavigation', 'preferences', 'routing')
+@inject(({pipelinesLibrary, pipelines, folders, configurations, dataStorages, routing}) => {
+  const location = routing && routing.location ? routing.location : {};
+  let path = (location.pathname || '');
   if (path.startsWith('/')) {
     path = path.substring(1);
   }
   return {
     path,
-    query: location.search,
+    query: (location.search || ''),
     pipelines,
     pipelinesLibrary,
     folders,
@@ -98,6 +99,13 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
     selectedKeys: []
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      _paneWidth: observable
+    });
+  }
+
   get dragEnabled () {
     const {authenticatedUserInfo, preferences} = this.props;
     const dragEnabled = preferences.getPreferenceValue('ui.library.drag');
@@ -108,7 +116,7 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
   }
 
   onExpand = (expandedKeys, {expanded, node}) => {
-    const item = getTreeItemByKey(node.props.eventKey, this.state.rootItems);
+    const item = getTreeItemByKey(node.key, this.state.rootItems);
     if (item) {
       expandItem(item, expanded);
     }
@@ -120,9 +128,9 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
   onSelect = (selectedKeys, opts) => {
     const {node, selected} = opts;
     if (!selected) {
-      selectedKeys.push(node.props.eventKey);
+      selectedKeys.push(node.key);
     }
-    const item = getTreeItemByKey(node.props.eventKey, this.state.rootItems);
+    const item = getTreeItemByKey(node.key, this.state.rootItems);
     if (item) {
       expandItem(item, true);
     }
@@ -142,7 +150,7 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
   };
 
   onDragStart = ({event, node}) => {
-    const item = getTreeItemByKey(node.props.eventKey, this.state.rootItems || []);
+    const item = getTreeItemByKey(node.key, this.state.rootItems || []);
     if (!this.dragEnabled) {
       const emptyImage = document.getElementById('drag-placeholder');
       event.dataTransfer.setDragImage(emptyImage, 0, 0);
@@ -155,7 +163,7 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
         `${ItemTypes.pipeline}_${item.parent.id}_${item.name}`
       );
     } else {
-      event.dataTransfer.setData('dropDataKey', node.props.eventKey);
+      event.dataTransfer.setData('dropDataKey', node.key);
     }
   };
 
@@ -163,8 +171,8 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
     if (!this.dragEnabled) {
       return;
     }
-    const dragItem = getTreeItemByKey(dragNode.props.eventKey, this.state.rootItems);
-    const dropItem = getTreeItemByKey(node.props.eventKey, this.state.rootItems);
+    const dragItem = getTreeItemByKey(dragNode.key, this.state.rootItems);
+    const dropItem = getTreeItemByKey(node.key, this.state.rootItems);
     if (['pipelines', 'storages'].indexOf(dropItem.id) >= 0) {
       message.error(`You cannot drop items to the ${dropItem.id} folder`);
     } else if (dragItem.type === ItemTypes.version) {
@@ -301,7 +309,7 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
 
   loadData = (node) => {
     const rootItems = this.state.rootItems;
-    const item = getTreeItemByKey(node.props.eventKey, rootItems);
+    const item = getTreeItemByKey(node.key, rootItems);
     const setState = (state) => this.setState(state);
     return new Promise(async (resolve) => {
       if (item.type === ItemTypes.pipeline && item.children.length === 0) {
@@ -486,7 +494,7 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
     this.setState({expandedKeys});
   };
 
-  @observable _paneWidth;
+  _paneWidth;
 
   initializeSplitPane = (splitPane) => {
     if (!splitPane) {
@@ -869,11 +877,11 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
     try {
       localStorage.setItem(EXPANDED_KEYS_STORAGE_KEY, JSON.stringify(keys));
     } catch (___) {}
-  };
+  }
 
   componentDidUpdate (prevProps) {
-    if (prevProps.path !== this.props.path) {
-      return this.reloadTree(false);
+    if (prevProps.path !== this.props.path || prevProps.query !== this.props.query) {
+      this.reloadTree(false);
     }
   }
 

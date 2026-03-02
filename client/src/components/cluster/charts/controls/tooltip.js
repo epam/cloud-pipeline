@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import moment from 'moment-timezone';
 import {getThemedPlotColors} from './utilities';
 
@@ -30,7 +30,16 @@ class TooltipRenderer extends React.Component {
     sizes: {}
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      color: computed,
+      backgroundColor: computed,
+      borderColor: computed,
+      tooltips: computed
+    });
+  }
+
   get color () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
@@ -39,7 +48,6 @@ class TooltipRenderer extends React.Component {
     return '#666';
   }
 
-  @computed
   get backgroundColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
@@ -48,7 +56,6 @@ class TooltipRenderer extends React.Component {
     return 'white';
   }
 
-  @computed
   get borderColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
@@ -63,7 +70,6 @@ class TooltipRenderer extends React.Component {
     }
   }
 
-  @computed
   get tooltips () {
     const {xPoint, tooltips} = this.props;
     if (tooltips && xPoint) {
@@ -242,9 +248,16 @@ TooltipRenderer.defaultProps = {
 @inject('data', 'plot', 'timeline', 'themes')
 @observer
 class Tooltip extends React.Component {
-  @observable hoveredItem;
+  hoveredItem;
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      hoveredItem: observable,
+      plotColors: computed
+    });
+  }
+
   get plotColors () {
     return getThemedPlotColors(this);
   }

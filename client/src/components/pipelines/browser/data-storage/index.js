@@ -18,7 +18,7 @@ import React from 'react';
 import {inject, observer, Observer} from 'mobx-react';
 import {Link} from 'react-router';
 import classNames from 'classnames';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import {
   Alert,
   Button,
@@ -217,12 +217,26 @@ export default class DataStorage extends React.Component {
     importedJobs: false
   };
 
-  @observable storage = new DataStorageListing({
+  storage = new DataStorageListing({
     keepPagesHistory: true
   });
 
-  @observable generateDownloadUrls;
-  @observable filterDropdownVisible;
+  generateDownloadUrls;
+  filterDropdownVisible;
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      storage: observable,
+      generateDownloadUrls: observable,
+      filterDropdownVisible: observable,
+      storageAllowSignedUrls: computed,
+      isAdmin: computed,
+      fileShareMountList: computed,
+      storageVersioningAllowed: computed,
+      lifeCycleRestoreInfo: computed
+    });
+  }
 
   get showMetadata () {
     if (this.state.metadata === undefined && this.storage.info) {
@@ -267,7 +281,6 @@ export default class DataStorage extends React.Component {
     return /^azure$/i.test(this.provider) && this.storageAllowSignedUrls;
   }
 
-  @computed
   get storageAllowSignedUrls () {
     return this.props.authenticatedUserInfo.loaded
       ? (
@@ -277,7 +290,6 @@ export default class DataStorage extends React.Component {
       : false;
   }
 
-  @computed
   get isAdmin () {
     return this.props.authenticatedUserInfo.loaded
       ? this.props.authenticatedUserInfo.value.admin
@@ -296,7 +308,6 @@ export default class DataStorage extends React.Component {
     return undefined;
   }
 
-  @computed
   get fileShareMountList () {
     const {awsRegions} = this.props;
     if (awsRegions && awsRegions.loaded) {
@@ -330,7 +341,6 @@ export default class DataStorage extends React.Component {
       preferences.dataSharingEnabled;
   }
 
-  @computed
   get storageVersioningAllowed () {
     const {
       preferences,
@@ -403,7 +413,6 @@ export default class DataStorage extends React.Component {
     ) && showArchives;
   }
 
-  @computed
   get lifeCycleRestoreInfo () {
     const {
       restoreInfo,
@@ -738,7 +747,7 @@ export default class DataStorage extends React.Component {
       };
     }));
     return items;
-  };
+  }
 
   refreshList = async (keepCurrentPage = false) => {
     await Promise.all([
@@ -1965,7 +1974,7 @@ export default class DataStorage extends React.Component {
       labelsColumn,
       actionsColumn
     ].filter(Boolean);
-  };
+  }
 
   didSelectDataStorageItem = (item) => {
     if (item.type.toLowerCase() === 'folder') {
@@ -2125,7 +2134,7 @@ export default class DataStorage extends React.Component {
       .find(file => file.name === this.state.selectedFile.name);
 
     return !selectedFile || selectedFile.size === 0 || !(selectedFile.size);
-  };
+  }
 
   openConvertToVersionedStorageDialog = (callback) => {
     this.setState({
@@ -2258,7 +2267,7 @@ export default class DataStorage extends React.Component {
             id="edit-storage-button"
             size="small"
           >
-            <SettingOutlined style={{ lineHeight: 'inherit', verticalAlign: 'middle' }} />
+            <SettingOutlined style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
           </Button>
         </Dropdown>
       );
@@ -2268,7 +2277,7 @@ export default class DataStorage extends React.Component {
         id="edit-storage-button"
         size="small"
         onClick={() => this.openEditDialog()}>
-        <SettingOutlined style={{ lineHeight: 'inherit', verticalAlign: 'middle' }} />
+        <SettingOutlined style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
       </Button>
     );
   };
@@ -2783,10 +2792,14 @@ export default class DataStorage extends React.Component {
         return;
       }
       switch (action.key) {
-        case 'attributes': this.onToggleMetadata(); break;
-        case 'jobs': this.onToggleJobs(); break;
-        case 'archive': this.showArchivedFilesChanged(!this.showArchives); break;
-        case 'version': this.showFilesVersionsChanged(!this.showVersions); break;
+        case 'attributes': this.onToggleMetadata();
+          break;
+        case 'jobs': this.onToggleJobs();
+          break;
+        case 'archive': this.showArchivedFilesChanged(!this.showArchives);
+          break;
+        case 'version': this.showFilesVersionsChanged(!this.showVersions);
+          break;
         default:
           break;
       }

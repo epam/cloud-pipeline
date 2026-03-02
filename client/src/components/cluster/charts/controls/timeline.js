@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import moment from 'moment-timezone';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {inject, observer, Provider} from 'mobx-react';
 import DateTimeTicksRules from './ticks/date-time-rules';
 import attachMoveHandler from './utilities/attach-move-handler';
@@ -41,7 +41,22 @@ class Timeline extends React.Component {
   detachMoveHandler;
   detachZoomHandler;
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      backgroundColor: computed,
+      lineColor: computed,
+      tickColor: computed,
+      dataRange: computed,
+      size: computed,
+      plotToCanvasRatio: computed,
+      canvasToPlotRatio: computed,
+      ticks: computed,
+      baseTicksCount: computed,
+      baseTickRule: computed
+    });
+  }
+
   get backgroundColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
@@ -50,7 +65,6 @@ class Timeline extends React.Component {
     return '#ccc';
   }
 
-  @computed
   get lineColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
@@ -59,7 +73,6 @@ class Timeline extends React.Component {
     return 'rgba(0, 0, 0, 0.65)';
   }
 
-  @computed
   get tickColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
@@ -68,7 +81,6 @@ class Timeline extends React.Component {
     return '#777';
   }
 
-  @computed
   get dataRange () {
     const {from, to} = this.state;
     if (!from || !to) {
@@ -77,14 +89,12 @@ class Timeline extends React.Component {
     return to - from;
   }
 
-  @computed
   get size () {
     const {plot} = this.props;
     const {chartArea, width} = plot.props;
     return width - chartArea.left - chartArea.right;
   }
 
-  @computed
   get plotToCanvasRatio () {
     if (this.dataRange === 0) {
       return 0;
@@ -92,7 +102,6 @@ class Timeline extends React.Component {
     return this.size / this.dataRange;
   }
 
-  @computed
   get canvasToPlotRatio () {
     if (this.plotToCanvasRatio === 0) {
       return 0;
@@ -100,7 +109,6 @@ class Timeline extends React.Component {
     return 1.0 / this.plotToCanvasRatio;
   }
 
-  @computed
   get ticks () {
     if (this.baseTickRule === null) {
       return [];
@@ -112,12 +120,10 @@ class Timeline extends React.Component {
     return this.baseTickRule.fillRange(moment.unix(from), moment.unix(to), true);
   }
 
-  @computed
   get baseTicksCount () {
     return Math.floor(this.size / SizePerTickPx);
   }
 
-  @computed
   get baseTickRule () {
     if (this.dataRange === 0) {
       return null;

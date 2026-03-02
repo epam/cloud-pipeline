@@ -18,7 +18,7 @@ import React, {Component} from 'react';
 import {
   inject,
   observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import PipelineFileUpdate from '../../../../models/pipelines/PipelineFileUpdate';
 import PipelineFileDelete from '../../../../models/pipelines/PipelineFileDelete';
 import PipelineFolderUpdate from '../../../../models/pipelines/PipelineFolderUpdate';
@@ -111,6 +111,16 @@ export default class PipelineCode extends Component {
     return false;
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      isBitBucket: computed,
+      configurationPath: computed,
+      canModifySources: computed,
+      rootFolder: computed
+    });
+  }
+
   componentDidMount () {
     this.reloadCodeIfFolderChanged();
   }
@@ -119,7 +129,6 @@ export default class PipelineCode extends Component {
     this.reloadCodeIfFolderChanged();
   }
 
-  @computed
   get isBitBucket () {
     const {pipeline} = this.props;
     if (pipeline && pipeline.loaded) {
@@ -129,7 +138,6 @@ export default class PipelineCode extends Component {
     return false;
   }
 
-  @computed
   get configurationPath () {
     const {pipeline} = this.props;
     if (pipeline && pipeline.loaded) {
@@ -141,16 +149,14 @@ export default class PipelineCode extends Component {
     return 'config.json';
   }
 
-  @computed
   get canModifySources () {
     if (this.props.readOnly || !this.props.pipeline.loaded || this.isBitBucket) {
       return false;
     }
     return roleModel.writeAllowed(this.props.pipeline.value) &&
       this.props.version === this.props.pipeline.value.currentVersion?.name;
-  };
+  }
 
-  @computed
   get rootFolder () {
     const {pipeline} = this.props;
     if (pipeline && pipeline.loaded) {
@@ -707,7 +713,7 @@ export default class PipelineCode extends Component {
           dataSource={this.createScriptsTableData()}
           pagination={false}
           showHeader={false}
-          onRow={(record) => ({ onClick: () => this.didSelectSourceItem(record) })}
+          onRow={(record) => ({onClick: () => this.didSelectSourceItem(record)})}
           rowKey={file => file.path}
           rowClassName={() => styles.sourceItemRow}
           title={() => header}

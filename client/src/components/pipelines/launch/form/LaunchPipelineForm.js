@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
-import {action, computed, observable} from 'mobx';
+import {action, computed, observable, makeObservable} from 'mobx';
 import {
   Form,
   Alert,
@@ -460,31 +460,76 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   parametersNavigationRef;
   parametersNavigationIsSticky = false;
   checkRAF;
-
-  @observable modified = false;
-  @observable inputPaths = [];
-  @observable outputPaths = [];
-  @observable dockerImage = null;
-  @observable cmdTemplateValue;
-  @observable launchCommandPayload;
-  @observable _toolSettings;
-  @observable toolSettingsPending = false;
-  @observable toolDefaultCmd;
-  @observable regionDisabledByToolSettings = false;
-  @observable toolCloudRegion = null;
-  @observable toolPlatform = null;
-  @observable toolAllowSensitive = true;
-
-  @observable rescheduleRun = undefined;
-  @observable rescheduleRunInitialValue = undefined;
+  modified = false;
+  inputPaths = [];
+  outputPaths = [];
+  dockerImage = null;
+  cmdTemplateValue;
+  launchCommandPayload;
+  _toolSettings;
+  toolSettingsPending = false;
+  toolDefaultCmd;
+  regionDisabledByToolSettings = false;
+  toolCloudRegion = null;
+  toolPlatform = null;
+  toolAllowSensitive = true;
+  rescheduleRun = undefined;
+  rescheduleRunInitialValue = undefined;
 
   _customValidators = {}
+
+  constructor (props) {
+    super(props);
+    // TODO: consider external store/viewModel with makeAutoObservable?
+    makeObservable(this, {
+      modified: observable,
+      inputPaths: observable,
+      outputPaths: observable,
+      dockerImage: observable,
+      cmdTemplateValue: observable,
+      launchCommandPayload: observable,
+      _toolSettings: observable,
+      toolSettingsPending: observable,
+      toolDefaultCmd: observable,
+      regionDisabledByToolSettings: observable,
+      toolCloudRegion: observable,
+      toolPlatform: observable,
+      toolAllowSensitive: observable,
+      rescheduleRun: observable,
+      rescheduleRunInitialValue: observable,
+      _fireCloudConfigurations: observable,
+      _fireCloudParameters: observable,
+      _dtsClusterInfo: observable,
+      isWindowsPlatform: computed,
+      isFireCloudSelected: computed,
+      selectedFireCloudConfiguration: computed,
+      selectedFireCloudParameters: computed,
+      dtsList: computed,
+      awsRegions: computed,
+      defaultCloudRegionId: computed,
+      currentCloudRegion: computed,
+      currentCloudRegionId: computed,
+      currentCloudRegionProvider: computed,
+      pipelinesLibrary: computed,
+      instanceTypesLoaded: computed,
+      instanceTypes: computed,
+      instanceTypesMergedForRegions: computed,
+      priceTypes: computed,
+      authenticatedUserRolesNames: computed,
+      isAdmin: computed,
+      isAdvancedUser: computed,
+      multiplyValueBy: computed,
+      maxMultiplyValueBy: computed,
+      disableAutoPauseEnabled: computed,
+      prettyUrlSSHMode: computed,
+      formFieldsChanged: action
+    });
+  }
 
   get customValidators () {
     return this._customValidators || {};
   }
 
-  @action
   formFieldsChanged = () => {
     const token = this.__formFieldsChangedToken = {};
     class FormFieldChangedAbortedError extends Error {}
@@ -591,7 +636,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       .indexOf(RUN_CAPABILITIES.disableHyperThreading) >= 0;
   }
 
-  @computed
   get isWindowsPlatform () {
     return /^windows$/i.test(this.toolPlatform);
   }
@@ -626,18 +670,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     }
   }
 
-  @observable
   _fireCloudConfigurations = null;
-  @observable
   _fireCloudParameters = null;
-
-  @computed
   get isFireCloudSelected () {
     return !!(this.state.fireCloudMethodName && this.state.fireCloudMethodNamespace &&
       this.state.fireCloudMethodSnapshot);
   }
 
-  @computed
   get selectedFireCloudConfiguration () {
     if (this.isFireCloudSelected &&
       this._fireCloudConfigurations && this._fireCloudConfigurations.loaded) {
@@ -650,7 +689,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return null;
   }
 
-  @computed
   get selectedFireCloudParameters () {
     if (this.isFireCloudSelected &&
       this._fireCloudParameters && this._fireCloudParameters.loaded) {
@@ -797,7 +835,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return null;
   };
 
-  @computed
   get dtsList () {
     if (this.props.dtsList.loaded) {
       return (this.props.dtsList.value || []).filter(dts => dts.schedulable === true).map(i => i);
@@ -805,7 +842,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return [];
   }
 
-  @computed
   get awsRegions () {
     if (this.props.awsRegions.loaded) {
       return (this.props.awsRegions.value || []).map(r => r);
@@ -813,7 +849,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return [];
   }
 
-  @computed
   get defaultCloudRegionId () {
     const [defaultRegion] = this.awsRegions.filter(r => r.default);
     if (defaultRegion) {
@@ -822,14 +857,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return null;
   }
 
-  @computed
   get currentCloudRegion () {
     const formValue = this.getSectionFieldValue(EXEC_ENVIRONMENT)('cloudRegionId') ||
       this.getDefaultValue('cloudRegionId') || this.defaultCloudRegionId;
     return this.awsRegions.filter(r => `${r.id}` === `${formValue}`)[0];
   }
 
-  @computed
   get currentCloudRegionId () {
     if (this.currentCloudRegion) {
       return this.currentCloudRegion.id;
@@ -837,7 +870,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return null;
   }
 
-  @computed
   get currentCloudRegionProvider () {
     if (this.currentCloudRegion) {
       return this.currentCloudRegion.provider;
@@ -845,7 +877,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return null;
   }
 
-  @computed
   get pipelinesLibrary () {
     if (this.props.pipelinesLibrary.loaded) {
       return this.props.pipelinesLibrary.value || {};
@@ -1845,12 +1876,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     });
   };
 
-  @computed
   get instanceTypesLoaded () {
     return this.props.allowedInstanceTypes && this.props.allowedInstanceTypes.loaded;
   }
 
-  @computed
   get instanceTypes () {
     const request = this.props.allowedInstanceTypes && this.props.allowedInstanceTypes.loaded
       ? this.props.allowedInstanceTypes
@@ -1865,13 +1894,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return [];
   }
 
-  @computed
   get instanceTypesMergedForRegions () {
     return this.props.allowedInstanceTypes &&
       this.props.allowedInstanceTypes.regionsMerged;
   }
 
-  @computed
   get priceTypes () {
     let availableMasterNodeTypes = [true, false];
     if (this.state.launchCluster && this.props.preferences.loaded) {
@@ -2003,7 +2030,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     }
     if (!type) {
       this.props.allowedInstanceTypes &&
-      await this.props.allowedInstanceTypes.fetchIfNeededOrWait();
+      (await this.props.allowedInstanceTypes.fetchIfNeededOrWait());
       type = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type') ||
         this.correctInstanceTypeValue(this.getDefaultValue('instance_size'));
     }
@@ -2127,6 +2154,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         </Row>
       </Spin>);
   };
+
   renderEstimatedPriceInfo = () => {
     const {
       pricePerHour,
@@ -2177,6 +2205,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       </span>
     );
   };
+
   selectBucketPath = (path) => {
     const key = this.state.bucketPathParameterKey;
     const sectionName = this.state.bucketPathParameterSection;
@@ -2532,7 +2561,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     );
   };
 
-  @observable
   _dtsClusterInfo = null;
   _dtsCoresTotal = 0;
   _dtsCoresAvailable = 0;
@@ -2695,8 +2723,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       resolve(!result || result.length === 0);
     });
   });
-
-  @computed
   get authenticatedUserRolesNames () {
     if (!this.props.authenticatedUserInfo.loaded) {
       return [];
@@ -2707,7 +2733,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return roles.map(r => r.name);
   }
 
-  @computed
   get isAdmin () {
     if (!this.props.authenticatedUserInfo.loaded) {
       return false;
@@ -2718,7 +2743,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return admin;
   }
 
-  @computed
   get isAdvancedUser () {
     if (!this.props.authenticatedUserInfo.loaded) {
       return false;
@@ -2818,7 +2842,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     ];
   };
 
-  @computed
   get multiplyValueBy () {
     if (this.state.launchCluster) {
       return (this.state.nodesCount || 0) + 1;
@@ -2827,7 +2850,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     }
   }
 
-  @computed
   get maxMultiplyValueBy () {
     if (this.state.launchCluster) {
       let value = this.state.maxNodesCount;
@@ -2866,7 +2888,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     );
   };
 
-  @computed
   get disableAutoPauseEnabled () {
     return !this.state.fireCloudMethodName &&
       !this.props.detached &&
@@ -2877,7 +2898,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return !this.state.fireCloudMethodName && !this.props.detached;
   }
 
-  @computed
   get prettyUrlSSHMode () {
     const {dockerRegistries} = this.props;
     if (!this.prettyUrlEnabled) {
@@ -4112,7 +4132,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       this.cmdTemplateValue = undefined;
     }
     this.resetState(keepPipeline);
-  };
+  }
 
   initializeParametersNavigationCheck = () => {
     const padding = 20; // Should be equals to .parametersNavigation.sticky top
@@ -4234,9 +4254,15 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     let title;
     let IconComponent;
     switch (key) {
-      case EXEC_ENVIRONMENT: title = 'Exec environment'; IconComponent = CodeOutlined; break;
-      case ADVANCED: title = 'Advanced'; IconComponent = SettingOutlined; break;
-      case PARAMETERS: title = 'Parameters'; IconComponent = BarsOutlined; break;
+      case EXEC_ENVIRONMENT: title = 'Exec environment';
+        IconComponent = CodeOutlined;
+        break;
+      case ADVANCED: title = 'Advanced';
+        IconComponent = SettingOutlined;
+        break;
+      case PARAMETERS: title = 'Parameters';
+        IconComponent = BarsOutlined;
+        break;
     }
     const onChangeShowOptionalParameters = (e) => {
       this.setState({showOptionalParameters: e.target.checked});

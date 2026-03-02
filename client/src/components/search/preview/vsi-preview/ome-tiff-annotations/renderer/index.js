@@ -17,9 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {
-  computed
-} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {
   inject,
   observer
@@ -64,6 +62,13 @@ class OMETiffAnnotationsRenderer extends React.Component {
 
   container;
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      selectedAnnotation: computed
+    });
+  }
+
   componentDidMount () {
     this.initializeListeners();
   }
@@ -95,7 +100,6 @@ class OMETiffAnnotationsRenderer extends React.Component {
     }
   };
 
-  @computed
   get selectedAnnotation () {
     const {
       annotations,
@@ -588,7 +592,7 @@ class OMETiffAnnotationsRenderer extends React.Component {
             onClick={toggleModeCallback(MODES.arrow)}
             type={actionType(MODES.arrow)}
           >
-            <ArrowUpOutlined style={{ transform: 'rotate(-45deg)' }} />
+            <ArrowUpOutlined style={{transform: 'rotate(-45deg)'}} />
           </Button>
           <Button
             size="small"

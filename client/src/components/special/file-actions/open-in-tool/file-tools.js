@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {action, observable} from 'mobx';
+import {action, observable, makeObservable} from 'mobx';
 import wrapRequest from './wrap-request';
 import MetadataSearch from '../../../../models/metadata/MetadataSearch';
 import MetadataMultiLoad from '../../../../models/metadata/MetadataMultiLoad';
@@ -31,12 +31,20 @@ function getFileTypes (metadata = {}) {
 }
 
 class FileTools {
-  @observable loaded = false;
-  @observable error = undefined;
-  @observable tools = undefined;
+  loaded = false;
+  error = undefined;
+  tools = undefined;
   promise = undefined;
 
-  @action
+  constructor () {
+    makeObservable(this, {
+      loaded: observable,
+      error: observable,
+      tools: observable,
+      fetch: action
+    });
+  }
+
   fetch () {
     if (this.promise) {
       return this.promise;

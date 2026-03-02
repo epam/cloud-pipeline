@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import { computed, makeObservable } from 'mobx';
 import {
   Alert,
   message,
@@ -155,9 +155,17 @@ class VersionedStorage extends localization.LocalizedReactComponent {
 
   updateVSRequest = new UpdatePipeline();
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      lastCommitId: computed,
+      writeAllowed: computed
+    });
+  }
+
   componentDidMount () {
     this.pathWasChanged();
-  };
+  }
 
   componentDidUpdate (prevProps) {
     if (
@@ -167,9 +175,8 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       this.clearSelectedFile();
       this.pathWasChanged();
     }
-  };
+  }
 
-  @computed
   get lastCommitId () {
     const {pipeline} = this.props;
     if (
@@ -181,9 +188,8 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       return pipeline.value.currentVersion.commitId;
     }
     return null;
-  };
+  }
 
-  @computed
   get writeAllowed () {
     const {pipeline} = this.props;
     if (
@@ -194,7 +200,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       return roleModel.writeAllowed(pipeline.value);
     }
     return false;
-  };
+  }
 
   get filteredContents () {
     const {contents} = this.state;
@@ -202,7 +208,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       return [];
     }
     return contents.filter(generateItemsFilter(this.props.preferences));
-  };
+  }
 
   get actions () {
     return {
@@ -212,7 +218,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       runVersionedStorage: this.runVersionedStorage,
       openGenerateReportDialog: this.openGenerateReportDialog
     };
-  };
+  }
 
   get parentPath () {
     const {path} = this.props;
@@ -224,7 +230,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       parentPath = `${parentPath}/`;
     }
     return parentPath || '';
-  };
+  }
 
   folderOperationWrapper = (operation) => (...props) => {
     this.setState({

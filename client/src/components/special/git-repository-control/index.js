@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {
   observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {Button,
   Dropdown,
   Input,
@@ -70,13 +70,24 @@ class GitRepositoryControl extends React.Component {
     ssh: PropTypes.string,
     repositoryType: PropTypes.string
   };
+
   static defaultProps = {
     cloneType: CloneOption.https
   };
+
   state = {
     cloneType: undefined,
     visible: false
   };
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      availableCloneOptions: computed,
+      defaultCloneOption: computed
+    });
+  }
+
   UNSAFE_componentWillReceiveProps (nextProps) {
     if (this.props.ssh !== nextProps.ssh || this.props.https !== nextProps.https) {
       this.setState({
@@ -85,17 +96,17 @@ class GitRepositoryControl extends React.Component {
     }
   }
 
-  @computed
   get availableCloneOptions () {
     return [
       this.props.https ? CloneOption.https : undefined,
       this.props.ssh ? CloneOption.ssh : undefined
     ].filter(Boolean);
-  };
-  @computed
+  }
+
   get defaultCloneOption () {
     return this.availableCloneOptions[0];
-  };
+  }
+
   getGitRepositoryPopoverTitle = () => {
     const cloneType = this.state.cloneType || this.defaultCloneOption;
     if (!cloneType) {
@@ -125,6 +136,7 @@ class GitRepositoryControl extends React.Component {
       </Row>
     );
   };
+
   getGitRepositoryPopoverContent = () => {
     const cloneType = this.state.cloneType || this.defaultCloneOption;
     const currentValue = this.props[cloneType];
@@ -136,6 +148,7 @@ class GitRepositoryControl extends React.Component {
       </Row>
     );
   };
+
   onDropdownVisibilityChanged = (visibility) => {
     if (!visibility && this.closePopoverTimeout) {
       clearTimeout(this.closePopoverTimeout);
@@ -159,6 +172,7 @@ class GitRepositoryControl extends React.Component {
       }, CLOSE_POPOVER_DELAY_MS);
     }
   };
+
   render () {
     if (this.availableCloneOptions.length === 0) {
       return null;

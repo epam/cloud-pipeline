@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import moment from 'moment-timezone';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {
   Radio,
   InputNumber,
@@ -43,6 +43,13 @@ class InputFilter extends React.Component {
     value: undefined
   }
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      storage: computed
+    });
+  }
+
   componentDidMount () {
     this.rebuildState();
   }
@@ -53,7 +60,6 @@ class InputFilter extends React.Component {
     }
   }
 
-  @computed
   get storage () {
     return this.props.storage;
   }
@@ -146,6 +152,13 @@ class SizeFilter extends React.Component {
     [FILTER_FIELDS.sizeLessThan]: undefined
   }
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      storage: computed
+    });
+  }
+
   componentDidMount () {
     this.rebuildState();
   }
@@ -156,7 +169,6 @@ class SizeFilter extends React.Component {
     }
   }
 
-  @computed
   get storage () {
     return this.props.storage;
   }
@@ -257,6 +269,13 @@ class DateFilter extends React.Component {
 
   containerRef;
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      storage: computed
+    });
+  }
+
   componentDidMount () {
     this.rebuildState();
   }
@@ -267,7 +286,6 @@ class DateFilter extends React.Component {
     }
   }
 
-  @computed
   get storage () {
     return this.props.storage;
   }

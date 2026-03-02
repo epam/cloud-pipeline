@@ -20,7 +20,7 @@ import classNames from 'classnames';
 import {
   inject,
   observer} from 'mobx-react';
-import {observable} from 'mobx';
+import {observable, makeObservable} from 'mobx';
 import {
   Select,
   Tooltip
@@ -119,14 +119,12 @@ class HcsCellSelector extends React.Component {
 
   maxColumnLabelSize = 20;
   maxRowLabelSize = 20;
-
-  @observable _hoveredElement = undefined;
+  _hoveredElement = undefined;
   _scrollBarHovered = {vertical: false, horizontal: false};
-
-  @observable zoomOutAvailable;
-  @observable zoomInAvailable;
-  @observable fitScale;
-  @observable fitCenter;
+  zoomOutAvailable;
+  zoomInAvailable;
+  fitScale;
+  fitCenter;
 
   backgroundColor = [1.0, 1.0, 1.0, 1.0];
   textColor = [0, 0, 0, 0.65];
@@ -172,6 +170,17 @@ class HcsCellSelector extends React.Component {
     this.selectedHoverColor = colorToVec4(selectedHoverColor);
     this.setNeedRedraw();
   };
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      _hoveredElement: observable,
+      zoomOutAvailable: observable,
+      zoomInAvailable: observable,
+      fitScale: observable,
+      fitCenter: observable
+    });
+  }
 
   get center () {
     return this._center;
@@ -1757,20 +1766,20 @@ class HcsCellSelector extends React.Component {
             {
               this.fitScale &&
               this.fitCenter && (
-                <ShrinkOutlined className={classNames( 'cp-hcs-zoom-button', styles.zoomControlBtn )} onClick={this.fit} />
+                <ShrinkOutlined className={classNames('cp-hcs-zoom-button', styles.zoomControlBtn)} onClick={this.fit} />
               )
             }
             <MinusCircleOutlined className={classNames(
-                'cp-hcs-zoom-button',
-                {'cp-disabled': !this.zoomOutAvailable},
-                styles.zoomControlBtn
-              )}
+              'cp-hcs-zoom-button',
+              {'cp-disabled': !this.zoomOutAvailable},
+              styles.zoomControlBtn
+            )}
               onClick={() => this.zoom(-1)} />
             <PlusCircleOutlined className={classNames(
-                'cp-hcs-zoom-button',
-                {'cp-disabled': !this.zoomInAvailable},
-                styles.zoomControlBtn
-              )}
+              'cp-hcs-zoom-button',
+              {'cp-disabled': !this.zoomInAvailable},
+              styles.zoomControlBtn
+            )}
               onClick={() => this.zoom(1)} />
           </div>
         </div>

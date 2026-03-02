@@ -19,6 +19,7 @@ import 'regenerator-runtime/runtime';
 
 import React from 'react';
 import ReactDOM from 'react-dom';
+import {configure} from 'mobx';
 import Root from './components/main/Root';
 import 'rc-menu/assets/index.css';
 import 'rc-slider/assets/index.css';
@@ -26,6 +27,7 @@ import './index.css';
 import './staticStyles/rc-menu.css';
 import './staticStyles/antd-extensions.css';
 import './staticStyles/markdown.css';
+configure({enforceActions: 'never'});
 
 ReactDOM.render(
   <Root />,

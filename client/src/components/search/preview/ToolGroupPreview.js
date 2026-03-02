@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {Row} from 'antd';
 import {CaretRightOutlined, ExportOutlined, LoadingOutlined} from '@ant-design/icons';
@@ -40,7 +40,6 @@ const SHOW_DESCRIPTIONS = true;
 })
 @observer
 export default class ToolGroupPreview extends React.Component {
-
   static propTypes = {
     item: PropTypes.shape({
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
@@ -50,7 +49,17 @@ export default class ToolGroupPreview extends React.Component {
     })
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      registries: computed,
+      currentGroup: computed,
+      tools: computed,
+      name: computed,
+      path: computed
+    });
+  }
+
   get registries () {
     if (this.props.dockerRegistries.loaded) {
       return (this.props.dockerRegistries.value.registries || []).map(r => r);
@@ -58,7 +67,6 @@ export default class ToolGroupPreview extends React.Component {
     return [];
   }
 
-  @computed
   get currentGroup () {
     if (!this.props.item.id || this.registries.length === 0) {
       return null;
@@ -75,7 +83,6 @@ export default class ToolGroupPreview extends React.Component {
     return null;
   }
 
-  @computed
   get tools () {
     let tools = [];
 
@@ -200,7 +207,6 @@ export default class ToolGroupPreview extends React.Component {
     );
   };
 
-  @computed
   get name () {
     if (this.currentGroup) {
       return this.currentGroup.name;
@@ -208,7 +214,6 @@ export default class ToolGroupPreview extends React.Component {
     return this.props.item.name;
   }
 
-  @computed
   get path () {
     if (this.currentGroup) {
       const {registry} = this.currentGroup;
@@ -267,5 +272,4 @@ export default class ToolGroupPreview extends React.Component {
       </div>
     );
   }
-
 }

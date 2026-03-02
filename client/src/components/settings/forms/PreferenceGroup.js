@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {
@@ -79,7 +79,13 @@ export default class PreferenceGroup extends React.Component {
     return initialValue !== value || preference.visible !== formPreference.visible;
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      modified: computed
+    });
+  }
+
   get modified () {
     if (!this.props.preferences || this.props.preferences.length === 0) {
       return false;

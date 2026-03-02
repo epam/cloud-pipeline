@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {observable, isObservableArray} from 'mobx';
+import {observable, isObservableArray, makeObservable} from 'mobx';
 import {Card, Modal, message, Alert} from 'antd';
 import classNames from 'classnames';
 import localization from '../../../utils/localization';
@@ -98,9 +98,16 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
     pending: false
   };
 
-  @observable allowedInstanceTypes;
+  allowedInstanceTypes;
 
   loadingUtilities = new LoadingUtilities();
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      allowedInstanceTypes: observable
+    });
+  }
 
   get currentMetadataEntity () {
     const {currentMetadataEntity} = this.state;
@@ -149,7 +156,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
       return defaultConfiguration;
     }
     return undefined;
-  };
+  }
 
   getCurrentProject = async () => {
     const folderProjectRequest = new FolderProject(this.runConfigurationId, 'CONFIGURATION');

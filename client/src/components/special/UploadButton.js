@@ -19,7 +19,7 @@ import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
 import {
   observer} from 'mobx-react';
-import {observable} from 'mobx';
+import {observable, makeObservable} from 'mobx';
 import {
   Row,
   Upload,
@@ -63,9 +63,17 @@ class UploadButton extends React.Component {
     synchronousUploadingFiles: []
   };
 
-  @observable s3Storage;
-  @observable s3StorageError;
+  s3Storage;
+  s3StorageError;
   uploadButton;
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      s3Storage: observable,
+      s3StorageError: observable
+    });
+  }
 
   componentDidMount () {
     const {onInitialized} = this.props;

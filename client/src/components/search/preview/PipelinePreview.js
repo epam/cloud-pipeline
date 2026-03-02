@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {Row} from 'antd';
 import {DatabaseOutlined, LoadingOutlined, TagFilled} from '@ant-design/icons';
 import classNames from 'classnames';
@@ -65,7 +65,14 @@ export default class PipelinePreview extends React.Component {
     })
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      name: computed,
+      description: computed
+    });
+  }
+
   get name () {
     if (!this.props.item) {
       return null;
@@ -76,7 +83,6 @@ export default class PipelinePreview extends React.Component {
     return this.props.item.name;
   }
 
-  @computed
   get description () {
     if (!this.props.item) {
       return null;

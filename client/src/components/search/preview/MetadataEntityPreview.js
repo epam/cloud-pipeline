@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {Row} from 'antd';
 import {LoadingOutlined} from '@ant-design/icons';
@@ -39,7 +39,6 @@ import MetadataEntityLoad from '../../../models/folderMetadata/MetadataEntityLoa
 })
 @observer
 export default class MetadataEntityPreview extends React.Component {
-
   static propTypes = {
     item: PropTypes.shape({
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
@@ -49,7 +48,14 @@ export default class MetadataEntityPreview extends React.Component {
     })
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      description: computed,
+      rowData: computed
+    });
+  }
+
   get description () {
     if (!this.props.item) {
       return null;
@@ -61,7 +67,6 @@ export default class MetadataEntityPreview extends React.Component {
     return this.props.item.description;
   }
 
-  @computed
   get rowData () {
     if (this.props.metadataEntity.loaded) {
       return this.props.metadataEntity.value.data || null;
@@ -156,5 +161,4 @@ export default class MetadataEntityPreview extends React.Component {
       </div>
     );
   }
-
 }

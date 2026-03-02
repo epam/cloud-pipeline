@@ -22,7 +22,7 @@ import {AccessTypes} from '../../../../models/pipelines/PipelineRunUpdateSids';
 import UserFind from '../../../../models/user/UserFind';
 import GroupFind from '../../../../models/user/GroupFind';
 import {observer} from 'mobx-react';
-import {observable} from 'mobx';
+import {observable, makeObservable} from 'mobx';
 import styles from './ShareWithForm.css';
 import UserName from '../../../special/UserName';
 import ConfigureRunAsPermissions from './configure-run-as-permissions';
@@ -112,6 +112,14 @@ export default class ShareWithForm extends React.Component {
     operationInProgress: false
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      userFind: observable,
+      groupFind: observable
+    });
+  }
+
   get hasDetailsConfiguration () {
     const {runAsUserConfiguration} = this.props;
     return runAsUserConfiguration;
@@ -126,8 +134,8 @@ export default class ShareWithForm extends React.Component {
     };
   }
 
-  @observable userFind;
-  @observable groupFind;
+  userFind;
+  groupFind;
 
   onUserFindInputChanged = (value) => {
     if (value) {
@@ -427,7 +435,7 @@ export default class ShareWithForm extends React.Component {
           overflowY: 'auto'
         }}
         rowClassName={getRowClassName}
-        onRow={(record) => ({ onClick: () => selectPermission(record) })}
+        onRow={(record) => ({onClick: () => selectPermission(record)})}
         title={() => title}
         showHeader={false}
         size="small"

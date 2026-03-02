@@ -17,7 +17,7 @@
 import React from 'react';
 import {
   observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
 import {Modal,
   Row,
@@ -61,7 +61,16 @@ export default class DockerImageBrowser extends React.Component {
     }
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      currentRegistry: computed,
+      groups: computed,
+      currentGroup: computed,
+      tools: computed
+    });
+  }
+
   get currentRegistry () {
     const [currentRegistry] = this.state.registry
       ? this.props.registries.filter(g => g.path === this.state.registry)
@@ -123,7 +132,6 @@ export default class DockerImageBrowser extends React.Component {
     );
   };
 
-  @computed
   get groups () {
     if (!this.currentRegistry) {
       return [];
@@ -131,7 +139,6 @@ export default class DockerImageBrowser extends React.Component {
     return (this.currentRegistry.groups || []).map(g => g);
   }
 
-  @computed
   get currentGroup () {
     const [currentGroup] = this.state.group ? this.groups.filter(g => g.name === this.state.group) : [null];
     return currentGroup;
@@ -271,7 +278,6 @@ export default class DockerImageBrowser extends React.Component {
     return null;
   };
 
-  @computed
   get tools () {
     if (!this.currentGroup) {
       return [];

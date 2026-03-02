@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import {
   inject,
   observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import IssuesLoad from '../../../models/issues/IssuesLoad';
 import IssueCreate from '../../../models/issues/IssueCreate';
 import LoadingView from '../../special/LoadingView';
@@ -81,6 +81,13 @@ export default class Issues extends localization.LocalizedReactComponent {
     selectedIssue: null
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      issues: computed
+    });
+  }
+
   operationWrapper = (operation) => (...props) => {
     this.setState({
       operationInProgress: true
@@ -91,6 +98,7 @@ export default class Issues extends localization.LocalizedReactComponent {
       });
     });
   };
+
   renderLabels = (labels) => {
     return (labels || []).map((label, index) => {
       return (
@@ -100,6 +108,7 @@ export default class Issues extends localization.LocalizedReactComponent {
       );
     });
   };
+
   issuesColumns = [
     {
       dataIndex: 'name',
@@ -148,11 +157,13 @@ export default class Issues extends localization.LocalizedReactComponent {
       createNewIssueDialogVisible: true
     });
   };
+
   closeCreateIssueDialog = () => {
     this.setState({
       createNewIssueDialogVisible: false
     });
   };
+
   createIssue = async (values) => {
     const hide = message.loading(`Creating ${this.localizedString('issue')}...`, 0);
     const request = new IssueCreate();
@@ -173,10 +184,11 @@ export default class Issues extends localization.LocalizedReactComponent {
       message.error(request.error, 5);
     } else {
       this.closeCreateIssueDialog();
-      this.props.issues && await this.props.issues.fetch();
-      this.props.onReloadIssues && await this.props.onReloadIssues();
+      this.props.issues && (await this.props.issues.fetch());
+      this.props.onReloadIssues && (await this.props.onReloadIssues());
     }
   };
+
   onSelectIssue = (issue, shouldReload) => {
     this.setState({
       selectedIssue: issue,
@@ -191,7 +203,6 @@ export default class Issues extends localization.LocalizedReactComponent {
     });
   };
 
-  @computed
   get issues () {
     if (this.props.issues && this.props.issues.loaded) {
       return (this.props.issues.value || []).map(i => i);
@@ -272,7 +283,7 @@ export default class Issues extends localization.LocalizedReactComponent {
               rowKey="id"
               rowClassName={() => styles.issueRow}
               showHeader={false}
-              onRow={(item) => ({ onClick: () => this.onSelectIssue(item) })}
+              onRow={(item) => ({onClick: () => this.onSelectIssue(item)})}
               columns={this.issuesColumns}
               dataSource={this.issues}
               pagination={false}

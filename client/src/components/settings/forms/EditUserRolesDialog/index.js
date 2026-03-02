@@ -18,7 +18,7 @@ import React from 'react';
 import {
   observer,
   inject} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {
@@ -123,6 +123,16 @@ export default class EditUserRolesDialog extends React.Component {
 
   instanceTypesForm;
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      isAdmin: computed,
+      dataStorages: computed,
+      cloudCredentialProfiles: computed,
+      restrictedMetadataKeys: computed
+    });
+  }
+
   componentDidMount () {
     this.updateValues();
   }
@@ -135,7 +145,6 @@ export default class EditUserRolesDialog extends React.Component {
     }
   }
 
-  @computed
   get isAdmin () {
     if (!this.props.authenticatedUserInfo.loaded) {
       return false;
@@ -374,7 +383,6 @@ export default class EditUserRolesDialog extends React.Component {
     return true;
   }
 
-  @computed
   get dataStorages () {
     if (this.props.dataStorages.loaded) {
       return (this.props.dataStorages.value || [])
@@ -383,7 +391,6 @@ export default class EditUserRolesDialog extends React.Component {
     return [];
   }
 
-  @computed
   get cloudCredentialProfiles () {
     if (this.props.cloudCredentialProfiles.loaded) {
       return (this.props.cloudCredentialProfiles.value || [])
@@ -438,7 +445,6 @@ export default class EditUserRolesDialog extends React.Component {
       instanceTypesChanged;
   }
 
-  @computed
   get restrictedMetadataKeys () {
     if (this.isAdmin || this.isUsersAdmin) {
       return [];
@@ -562,7 +568,7 @@ export default class EditUserRolesDialog extends React.Component {
           mainHide();
           return;
         } else {
-          this.props.userInfo && await this.props.userInfo.fetch();
+          this.props.userInfo && (await this.props.userInfo.fetch());
           hide();
         }
       }

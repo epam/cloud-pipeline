@@ -18,7 +18,7 @@ import React from 'react';
 import {
   inject,
   observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
 import {Button,
   Form,
@@ -26,8 +26,7 @@ import {Button,
   Input,
   Row,
   Table,
-  Select,
-  message
+  Select
 } from 'antd';
 import {DeleteOutlined} from '@ant-design/icons';
 import styles from './UserManagement.css';
@@ -36,7 +35,6 @@ import roleModel from '../../../utils/roleModel';
 @inject('dataStorages')
 @observer
 export default class CreateUserForm extends React.Component {
-
   formRef = React.createRef();
 
   static propTypes = {
@@ -54,7 +52,13 @@ export default class CreateUserForm extends React.Component {
     search: null
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      dataStorages: computed
+    });
+  }
+
   get dataStorages () {
     if (this.props.dataStorages.loaded) {
       return (this.props.dataStorages.value || []).filter(d => roleModel.writeAllowed(d)).map(d => d);
@@ -251,7 +255,7 @@ export default class CreateUserForm extends React.Component {
               value={this.state.selectedRole}
               showSearch
               style={{flex: 1}}
-              allowClear={true}
+              allowClear
               placeholder="Add role"
               optionFilterProp="children"
               onSelect={this.assignRole}

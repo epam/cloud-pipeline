@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {Checkbox} from 'antd';
 
 @observer
@@ -29,7 +29,13 @@ export default class BooleanParameterInput extends React.Component {
     disabled: PropTypes.bool
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      checked: computed
+    });
+  }
+
   get checked () {
     return this.props.value === 'true';
   }
@@ -49,5 +55,5 @@ export default class BooleanParameterInput extends React.Component {
         Enabled
       </Checkbox>
     );
-  };
+  }
 }

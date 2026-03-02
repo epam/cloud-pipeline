@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {getThemedPlotColors} from './utilities';
 
 function plotsMapper (plot, index) {
@@ -137,7 +137,15 @@ class ChartRendererWithOffset extends React.Component {
     plots: []
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      backgroundColor: computed,
+      plotColors: computed,
+      data: computed
+    });
+  }
+
   get backgroundColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
@@ -146,12 +154,10 @@ class ChartRendererWithOffset extends React.Component {
     return 'white';
   }
 
-  @computed
   get plotColors () {
     return getThemedPlotColors(this);
   }
 
-  @computed
   get data () {
     const {canvasYStart, data, xRatio, yFrom, yRatio, plots} = this.state;
     const getXCoordinate = (plotX) => {

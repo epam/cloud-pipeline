@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import LoadTool from '../../../../models/tools/LoadTool';
 import LoadToolVersionSettings from '../../../../models/tools/LoadToolVersionSettings';
 import UpdateToolVersionSettings from '../../../../models/tools/UpdateToolVersionSettings';
@@ -43,16 +43,27 @@ import HiddenObjects from '../../../../utils/hidden-objects';
     versions: new LoadToolAttributes(params.id)
   };
 })
-
 @observer
 export default class ToolSetttings extends React.Component {
   state = {
     operationInProgress: false
   };
 
-  @observable versionSettingsForm;
+  versionSettingsForm;
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      versionSettingsForm: observable,
+      registries: computed,
+      dockerImage: computed,
+      toolVersionOS: computed,
+      settings: computed,
+      allowCommit: computed,
+      platform: computed
+    });
+  }
+
   get registries () {
     if (this.props.docker.loaded) {
       return this.props.hiddenToolsTreeFilter(this.props.docker.value)
@@ -61,7 +72,6 @@ export default class ToolSetttings extends React.Component {
     return [];
   }
 
-  @computed
   get dockerImage () {
     const {tool, version} = this.props;
     if (!tool?.loaded) {
@@ -74,7 +84,6 @@ export default class ToolSetttings extends React.Component {
       : `${image}${version ? `:${version}` : ''}`;
   }
 
-  @computed
   get toolVersionOS () {
     const {versions, version} = this.props;
     if (versions.loaded) {
@@ -113,7 +122,6 @@ export default class ToolSetttings extends React.Component {
     });
   };
 
-  @computed
   get settings () {
     if (this.props.settings.loaded) {
       if ((this.props.settings.value || []).length > 0 &&
@@ -127,7 +135,6 @@ export default class ToolSetttings extends React.Component {
     return null;
   }
 
-  @computed
   get allowCommit () {
     const {settings} = this.props;
     if (settings.loaded) {
@@ -139,7 +146,6 @@ export default class ToolSetttings extends React.Component {
     return false;
   }
 
-  @computed
   get platform () {
     if (this.props.settings.loaded) {
       if ((this.props.settings.value || []).length > 0) {

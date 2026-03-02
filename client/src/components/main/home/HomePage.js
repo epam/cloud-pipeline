@@ -15,9 +15,7 @@
  */
 
 import React from 'react';
-import {
-  inject,
-  observer} from 'mobx-react';
+import {inject, observer} from 'mobx-react';
 import GridLayout from 'react-grid-layout';
 import classNames from 'classnames';
 import HomePagePanel from './HomePagePanel';

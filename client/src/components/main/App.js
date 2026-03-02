@@ -18,7 +18,7 @@ import React, {Component} from 'react';
 import {Layout, ConfigProvider} from 'antd';
 import enUS from 'antd/lib/locale/en_US';
 import {observer, Provider, inject} from 'mobx-react';
-import {observable} from 'mobx';
+import {observable, makeObservable} from 'mobx';
 import styles from './App.css';
 import Navigation from './navigation/Navigation';
 import RunModal from './RunModal';
@@ -40,7 +40,7 @@ export default class App extends Component {
     searchFormVisible: false
   };
 
-  @observable info = {
+  info = {
     searchFormVisible: false
   };
 
@@ -65,6 +65,13 @@ export default class App extends Component {
       searchFormVisible: visible
     });
   };
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      info: observable
+    });
+  }
 
   render () {
     const {

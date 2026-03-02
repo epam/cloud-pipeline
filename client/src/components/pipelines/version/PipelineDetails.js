@@ -18,7 +18,7 @@ import React from 'react';
 import {
   inject,
   observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import {Alert,
   Menu as TabMenu,
@@ -73,7 +73,20 @@ import HiddenObjects from '../../../utils/hidden-objects';
 export default class PipelineDetails extends localization.LocalizedReactComponent {
   state = {isModalVisible: false, updating: false, deleting: false};
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      repositoryType: computed,
+      codePath: computed,
+      docsPath: computed,
+      displayGraph: computed,
+      isCWLPipeline: computed,
+      tabs: computed,
+      readOnly: computed,
+      configurations: computed
+    });
+  }
+
   get repositoryType () {
     const {pipeline} = this.props;
     if (pipeline && pipeline.loaded) {
@@ -83,7 +96,6 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
     return undefined;
   }
 
-  @computed
   get codePath () {
     const {pipeline} = this.props;
     if (pipeline && pipeline.loaded) {
@@ -95,7 +107,6 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
     return undefined;
   }
 
-  @computed
   get docsPath () {
     const {pipeline} = this.props;
     if (pipeline && pipeline.loaded) {
@@ -107,7 +118,6 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
     return undefined;
   }
 
-  @computed
   get displayGraph () {
     const {language} = this.props;
     if (language && language.loaded) {
@@ -116,7 +126,6 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
     return false;
   }
 
-  @computed
   get isCWLPipeline () {
     const {language} = this.props;
     if (language && language.loaded) {
@@ -133,7 +142,6 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
     return activeTab ? activeTab.toLowerCase() : undefined;
   }
 
-  @computed
   get tabs () {
     const {
       pipelineId: id,
@@ -195,7 +203,6 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
     }
   }
 
-  @computed
   get readOnly () {
     const {pipeline} = this.props;
     return pipeline?.value?.repositoryType === RepositoryTypes.AzureDevOps;
@@ -339,7 +346,6 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
     });
   };
 
-  @computed
   get configurations () {
     if (this.props.configurations.loaded) {
       return (this.props.configurations.value || []).map(c => c).sort((cA, cB) => {

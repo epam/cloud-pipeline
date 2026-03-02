@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {Alert, message, Row} from 'antd';
 import {CompassOutlined, PlayCircleOutlined} from '@ant-design/icons';
 import LoadPipeline from '../../../../models/pipelines/Pipeline';
@@ -44,7 +44,13 @@ export default class MyPipelinesPanel extends localization.LocalizedReactCompone
       pipeline.name.toLowerCase().indexOf(search.toLowerCase()) >= 0;
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      pipelines: computed
+    });
+  }
+
   get pipelines () {
     if (
       this.props.pipelines.loaded &&

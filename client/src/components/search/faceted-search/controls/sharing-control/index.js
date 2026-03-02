@@ -16,8 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {
-  computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {inject,
   observer} from 'mobx-react';
 import {
@@ -45,12 +44,18 @@ class SharingControl extends React.Component {
     dropDownVisible: false
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      dataStorages: computed
+    });
+  }
+
   componentDidMount () {
     const {dataStorages} = this.props;
     dataStorages.fetchIfNeededOrWait();
   }
 
-  @computed
   get dataStorages () {
     if (this.props.dataStorages.loaded) {
       return this.props.dataStorages.value || [];

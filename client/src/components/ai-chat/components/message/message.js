@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {observer} from 'mobx-react';
 import classNames from 'classnames';
 import {Alert} from 'antd';
@@ -31,12 +31,18 @@ const showContextData = false;
 
 @observer
 export default class Message extends React.Component {
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      message: computed,
+      pending: computed
+    });
+  }
+
   get message () {
     return this.props.message;
   }
 
-  @computed
   get pending () {
     return this.props.message.pending;
   }

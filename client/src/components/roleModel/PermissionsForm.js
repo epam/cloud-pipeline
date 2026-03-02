@@ -29,7 +29,7 @@ import {
   Select
 } from 'antd';
 import {DeleteOutlined, TeamOutlined, UserAddOutlined, UserOutlined, UsergroupAddOutlined} from '@ant-design/icons';
-import {isObservableArray, observable, computed} from 'mobx';
+import {isObservableArray, observable, computed, makeObservable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
 import GrantGet from '../../models/grant/GrantGet';
@@ -118,8 +118,6 @@ export default class PermissionsForm extends React.Component {
     originalOwner: undefined,
     entity: undefined
   };
-
-  @observable
   groupFind;
 
   static propTypes = {
@@ -169,7 +167,14 @@ export default class PermissionsForm extends React.Component {
     availablePermissions: [PERMISSIONS.read, PERMISSIONS.write, PERMISSIONS.execute]
   }
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      groupFind: observable,
+      allUsers: computed
+    });
+  }
+
   get allUsers () {
     if (this.props.usersInfo.loaded) {
       return this.props.usersInfo.value || [];
@@ -781,7 +786,7 @@ export default class PermissionsForm extends React.Component {
           overflowY: 'auto'
         }}
         rowClassName={getRowClassName}
-        onRow={(record) => ({ onClick: () => selectPermission(record) })}
+        onRow={(record) => ({onClick: () => selectPermission(record)})}
         loading={pending}
         title={() => title}
         showHeader={false}

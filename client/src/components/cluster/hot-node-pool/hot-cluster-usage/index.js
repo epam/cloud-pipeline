@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {Alert} from 'antd';
 import classNames from 'classnames';
 import OverallPoolChart from './charts/overall-pool-chart';
@@ -62,7 +62,23 @@ class HotClusterUsage extends React.Component {
     currentPoolId: undefined
   }
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      colors: computed,
+      pendingBarColor: computed,
+      totalBarColor: computed,
+      runsColors: computed,
+      cpuColors: computed,
+      ramColors: computed,
+      gpuColors: computed,
+      limitColor: computed,
+      backgroundColor: computed,
+      lineColor: computed,
+      textColor: computed
+    });
+  }
+
   get colors () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
@@ -83,7 +99,6 @@ class HotClusterUsage extends React.Component {
     return colors;
   }
 
-  @computed
   get pendingBarColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
@@ -92,7 +107,6 @@ class HotClusterUsage extends React.Component {
     return getColor(1);
   }
 
-  @computed
   get totalBarColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
@@ -101,7 +115,6 @@ class HotClusterUsage extends React.Component {
     return getColor(2);
   }
 
-  @computed
   get runsColors () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
@@ -118,7 +131,6 @@ class HotClusterUsage extends React.Component {
     };
   }
 
-  @computed
   get cpuColors () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
@@ -135,7 +147,6 @@ class HotClusterUsage extends React.Component {
     };
   }
 
-  @computed
   get ramColors () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
@@ -152,7 +163,6 @@ class HotClusterUsage extends React.Component {
     };
   }
 
-  @computed
   get gpuColors () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
@@ -169,7 +179,6 @@ class HotClusterUsage extends React.Component {
     };
   }
 
-  @computed
   get limitColor () {
     const {themes} = this.props;
     const defaultLimitColor = '#ff4d4f';
@@ -179,7 +188,6 @@ class HotClusterUsage extends React.Component {
     return defaultLimitColor;
   }
 
-  @computed
   get backgroundColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
@@ -189,7 +197,6 @@ class HotClusterUsage extends React.Component {
     return backgroundColor;
   }
 
-  @computed
   get lineColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
@@ -198,7 +205,6 @@ class HotClusterUsage extends React.Component {
     return lineColor;
   }
 
-  @computed
   get textColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {

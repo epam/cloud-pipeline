@@ -15,7 +15,7 @@
  */
 
 import React, {Component} from 'react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
 import {Link} from 'react-router';
 import styles from './TaskLink.css';
@@ -38,12 +38,20 @@ export class TaskLink extends Component {
     searchText: PropTypes.string
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      runningFor: computed,
+      startDelay: computed,
+      waitingFor: computed,
+      runningTime: computed
+    });
+  }
+
   get runningFor () {
     return displayDuration(this.props.task.started);
   }
 
-  @computed
   get startDelay () {
     return displayDuration(
       this.props.task.created || this.props.task.started,
@@ -51,12 +59,10 @@ export class TaskLink extends Component {
     );
   }
 
-  @computed
   get waitingFor () {
     return displayDuration(this.props.task.created);
   }
 
-  @computed
   get runningTime () {
     return displayDuration(this.props.task.started, this.props.task.finished);
   }

@@ -14,49 +14,57 @@
  * limitations under the License.
  */
 
-import {observable, computed} from 'mobx';
+import {observable, computed, makeObservable} from 'mobx';
 import defer from '../../utils/defer';
 import GenerateRefreshToken from './GenerateRefreshToken';
 
 const REFRESH_TOKEN_KEY = 'refreshToken';
 
 export default class GoogleApi {
-
-  @observable _loaded = false;
-  @computed
+  _loaded = false;
   get loaded () {
     this.initialize();
     return this._loaded;
   }
 
-  @observable _error = false;
-  @computed
+  _error = false;
   get error () {
     return this._error;
   }
 
-  @observable _pending = false;
-  @computed
+  _pending = false;
   get pending () {
     this.initialize();
     return this._pending;
   }
 
-  @observable _isSignedIn = false;
-  @computed
+  _isSignedIn = false;
   get isSignedIn () {
     this.initialize();
     return !this.userAuthEnabled || this._isSignedIn;
   }
 
-  @observable _userAuthEnabled = false;
-  @computed
+  _userAuthEnabled = false;
   get userAuthEnabled () {
     this.initialize();
     return this._userAuthEnabled;
   }
 
   constructor (preferences) {
+    makeObservable(this, {
+      _loaded: observable,
+      _error: observable,
+      _pending: observable,
+      _isSignedIn: observable,
+      _userAuthEnabled: observable,
+      loaded: computed,
+      error: computed,
+      pending: computed,
+      isSignedIn: computed,
+      userAuthEnabled: computed,
+      authenticatedGoogleUser: computed,
+      authenticatedGoogleUserAvatarUrl: computed
+    });
     this.gapi = window.gapi;
     this.preferences = preferences;
   }
@@ -167,7 +175,6 @@ export default class GoogleApi {
     return localStorage.setItem(REFRESH_TOKEN_KEY, token);
   };
 
-  @computed
   get authenticatedGoogleUser () {
     if (!this.userAuthEnabled) {
       return null;
@@ -178,7 +185,6 @@ export default class GoogleApi {
     return null;
   }
 
-  @computed
   get authenticatedGoogleUserAvatarUrl () {
     if (!this.userAuthEnabled) {
       return null;

@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {Alert, Input, message, Modal, Row} from 'antd';
 import PreferencesUpdate from '../../models/preferences/PreferencesUpdate';
 import PreferenceGroup from './forms/PreferenceGroup';
@@ -32,13 +32,22 @@ export default class Preferences extends React.Component {
     changesCanBeSkipped: false
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      preferencesGroups: computed,
+      preferences: computed,
+      templateModified: computed
+    });
+  }
+
   componentDidMount () {
     const {route, router, preferences} = this.props;
     if (route && router) {
       router.setRouteLeaveHook(route, this.checkSettingsBeforeLeave);
     }
     preferences.fetch();
-  };
+  }
 
   operationWrapper = (operation) => (...props) => {
     this.setState({
@@ -51,7 +60,6 @@ export default class Preferences extends React.Component {
     });
   };
 
-  @computed
   get preferencesGroups () {
     if (this.props.preferences.loaded) {
       return (this.props.preferences.value || [])
@@ -71,7 +79,6 @@ export default class Preferences extends React.Component {
     return [];
   }
 
-  @computed
   get preferences () {
     if (this.props.preferences.loaded) {
       return (this.props.preferences.value || []).slice();
@@ -149,7 +156,6 @@ export default class Preferences extends React.Component {
     this.preferenceGroupForm = wrappedComponent;
   };
 
-  @computed
   get templateModified () {
     if (!this.preferenceGroupForm) {
       return false;

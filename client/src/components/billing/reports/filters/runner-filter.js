@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {observer, inject} from 'mobx-react';
-import {computed, isObservableArray} from 'mobx';
+import {computed, isObservableArray, makeObservable} from 'mobx';
 import {Row, Select} from 'antd';
 import roleModel from '../../../../utils/roleModel';
 import BillingNavigation, {RunnerTypes} from '../../navigation';
@@ -124,6 +124,16 @@ class RunnerFilter extends React.Component {
     filteredCenters: undefined
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      myUserName: computed,
+      users: computed,
+      adGroups: computed,
+      centers: computed
+    });
+  }
+
   componentDidMount () {
     this.updateFilter();
   }
@@ -156,7 +166,6 @@ class RunnerFilter extends React.Component {
     });
   }
 
-  @computed
   get myUserName () {
     const {authenticatedUserInfo} = this.props;
     return authenticatedUserInfo && authenticatedUserInfo.loaded
@@ -222,7 +231,6 @@ class RunnerFilter extends React.Component {
     return currentType;
   }
 
-  @computed
   get users () {
     const {
       usersInfo: usersRequest
@@ -246,7 +254,6 @@ class RunnerFilter extends React.Component {
     }));
   }
 
-  @computed
   get adGroups () {
     const adGroups = this.users.reduce((acc, user) => {
       acc.push(...(user.groups || []));
@@ -255,7 +262,6 @@ class RunnerFilter extends React.Component {
     return [...new Set(adGroups)];
   }
 
-  @computed
   get centers () {
     const {
       billingCenters: billingCentersRequest

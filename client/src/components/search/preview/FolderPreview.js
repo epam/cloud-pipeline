@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import {Row} from 'antd';
@@ -47,7 +47,13 @@ export default class FolderPreview extends React.Component {
     })
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      folderMetadataTags: computed
+    });
+  }
+
   get folderMetadataTags () {
     const matadataValue = {};
     for (let tag in this.props.folder.value.objectMetadata || {}) {

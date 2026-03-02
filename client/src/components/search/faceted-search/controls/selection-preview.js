@@ -24,7 +24,7 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import DocumentListPresentation from '../document-presentation/list';
 import * as elasticItemUtilities from '../../utilities/elastic-item-utilities';
 import SelectionDownloadCommand from './selection-download-command';
@@ -39,6 +39,13 @@ class SelectionPreview extends React.Component {
     removedItems: [],
     downloadCommandVisible: false
   };
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      commandGenerationAvailable: computed
+    });
+  }
 
   get actualSelection () {
     const {
@@ -57,7 +64,6 @@ class SelectionPreview extends React.Component {
     );
   }
 
-  @computed
   get commandGenerationAvailable () {
     const {preferences} = this.props;
     const {

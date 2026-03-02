@@ -25,7 +25,7 @@ import {
   Select
 } from 'antd';
 import {CloseOutlined} from '@ant-design/icons';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {
   LaunchClusterTooltip,
@@ -513,6 +513,14 @@ class ConfigureClusterDialog extends React.Component {
       maxNodesCount: null
     }
   };
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      launchMaxScheduledNumber: computed,
+      launchMaxAutoScaledNumber: computed
+    });
+  }
 
   get displayConfig () {
     return this.props.displayConfig || {
@@ -1356,7 +1364,6 @@ class ConfigureClusterDialog extends React.Component {
     );
   }
 
-  @computed
   get launchMaxScheduledNumber () {
     if (this.props.preferences && this.props.preferences.loaded) {
       return +this.props.preferences.getPreferenceValue('launch.max.scheduled.number') - 1;
@@ -1364,7 +1371,6 @@ class ConfigureClusterDialog extends React.Component {
     return undefined;
   }
 
-  @computed
   get launchMaxAutoScaledNumber () {
     const scheduledMaxPreferenceValue = this.launchMaxScheduledNumber;
     if (this.props.preferences && this.props.preferences.loaded) {

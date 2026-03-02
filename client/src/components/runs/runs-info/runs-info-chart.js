@@ -8,7 +8,7 @@ import {
 } from 'antd';
 import {InboxOutlined} from '@ant-design/icons';
 import Chart from 'chart.js';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {BarchartDataLabelPlugin, ChartClickPlugin} from '../../billing/reports/charts/extensions';
 import ThemedReport from '../../billing/reports/themed-report';
 import 'chart.js/dist/Chart.css';
@@ -24,6 +24,13 @@ class RunsInfoChart extends Component {
     onEntryClick: PropTypes.func
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      fontColor: computed
+    });
+  }
+
   componentDidMount () {
     const {themes} = this.props;
     if (themes) {
@@ -38,7 +45,6 @@ class RunsInfoChart extends Component {
     }
   }
 
-  @computed
   get fontColor () {
     const {reportThemes} = this.props;
     return reportThemes ? reportThemes.subTextColor : undefined;

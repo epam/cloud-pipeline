@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {Alert} from 'antd';
 import LoadToolInfo from '../../../../models/tools/LoadToolInfo';
@@ -29,6 +29,13 @@ export default class CudaWarning extends React.Component {
     versionInfo: undefined
   }
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      tools: computed
+    });
+  }
+
   componentDidMount () {
     this.fetchToolInfo();
   }
@@ -39,7 +46,6 @@ export default class CudaWarning extends React.Component {
     }
   }
 
-  @computed
   get tools () {
     const {dockerRegistries} = this.props;
     const result = [];

@@ -19,8 +19,7 @@ import {
   inject,
   observer} from 'mobx-react';
 import classNames from 'classnames';
-import {computed,
-  observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import {Row,
   Col,
   Modal,
@@ -90,9 +89,8 @@ const DTS_ENVIRONMENT = 'DTS';
 })
 @observer
 export default class DetachedConfiguration extends localization.LocalizedReactComponent {
-  @observable allowedInstanceTypes;
-
-  @observable configurationModified;
+  allowedInstanceTypes;
+  configurationModified;
 
   navigationBlockedListener;
   navigationBlocker;
@@ -108,7 +106,19 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
     selectedPipelineParametersIsLoading: true
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      allowedInstanceTypes: observable,
+      configurationModified: observable,
+      selectedConfiguration: computed,
+      selectedConfigurationName: computed,
+      selectedConfigurationIsDefault: computed,
+      defaultConfigurationName: computed,
+      selectedFireCloudMethod: computed
+    });
+  }
+
   get selectedConfiguration () {
     if (this.props.configurations.loaded &&
       this.props.configurations.value.entries) {
@@ -118,7 +128,6 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
     return null;
   }
 
-  @computed
   get selectedConfigurationName () {
     if (this.props.currentConfiguration) {
       return this.props.currentConfiguration;
@@ -135,7 +144,6 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
     return null;
   }
 
-  @computed
   get selectedConfigurationIsDefault () {
     if (!this.props.currentConfiguration) {
       return true;
@@ -150,7 +158,6 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
     return false;
   }
 
-  @computed
   get defaultConfigurationName () {
     if (this.props.configurations.loaded &&
       this.props.configurations.value.entries.length > 0) {
@@ -168,14 +175,14 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
       return false;
     }
     return roleModel.writeAllowed(this.props.configurations.value);
-  };
+  }
 
   get canExecute () {
     if (!this.props.configurations.loaded) {
       return false;
     }
     return roleModel.executeAllowed(this.props.configurations.value);
-  };
+  }
 
   onSelectConfiguration = (key) => {
     if (key !== this.props.currentConfiguration) {
@@ -329,7 +336,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
       this.props.configurations.value.entries.length > 0) {
       const entries = this.props.configurations.value.entries;
       if (entries
-          .filter(c => c.name.toLowerCase() !== this.selectedConfigurationName.toLowerCase() &&
+        .filter(c => c.name.toLowerCase() !== this.selectedConfigurationName.toLowerCase() &&
           c.name === opts.configuration.name).length > 0) {
         message.error(`Configuration ${opts.configuration.name} already exists`, 5);
         return false;
@@ -437,7 +444,6 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
     return false;
   };
 
-  @computed
   get selectedFireCloudMethod () {
     if (this.selectedConfiguration) {
       const configuration = this.selectedConfiguration;
@@ -490,7 +496,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
       }
       return {
         ...extractEndpointNameAndStopAfter(this.state.overriddenConfiguration),
-        ...this.state.overriddenConfiguration.configuration || this.state.overriddenConfiguration,
+        ...(this.state.overriddenConfiguration.configuration || this.state.overriddenConfiguration),
         parameters
       };
     }
@@ -525,7 +531,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
 
     return {
       ...extractEndpointNameAndStopAfter(configuration),
-      ...configuration.configuration || configuration,
+      ...(configuration.configuration || configuration),
       parameters
     };
   };
@@ -1184,7 +1190,6 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
           okText: 'Yes',
           cancelText: 'No'
         });
-
       } else {
         callback();
       }

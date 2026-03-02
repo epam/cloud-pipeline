@@ -18,8 +18,7 @@ import React from 'react';
 import {
   observer,
   inject} from 'mobx-react';
-import {computed,
-  observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import {
   Alert,
   Row,
@@ -82,18 +81,35 @@ export default class Tools extends React.Component {
     showIssuesPanel: false
   };
 
-  @observable
   _toolsWithIssues;
-  @observable
   _completedRunsRequest;
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      _toolsWithIssues: observable,
+      _completedRunsRequest: observable,
+      isPrivate: computed,
+      filters: computed,
+      filter: computed,
+      registries: computed,
+      currentRegistry: computed,
+      groups: computed,
+      hasPersonalGroup: computed,
+      completedRuns: computed,
+      allTools: computed,
+      currentGroup: computed,
+      defaultGroup: computed,
+      tools: computed,
+      globalSearchTools: computed
+    });
+  }
+
   get isPrivate () {
     return this.props.groupId === PERSONAL_GROUP_ID ||
     (this.currentGroup && this.currentGroup.privateGroup);
   }
 
-  @computed
   get filters () {
     const {preferences} = this.props;
     if (preferences.loaded && preferences.uiToolsFilters) {
@@ -108,7 +124,6 @@ export default class Tools extends React.Component {
     return DEFAULT_FILTER;
   }
 
-  @computed
   get filter () {
     const {groupId} = this.props;
     if (
@@ -122,7 +137,6 @@ export default class Tools extends React.Component {
     return null;
   }
 
-  @computed
   get registries () {
     if (this.props.dockerRegistries.loaded) {
       return this.props.hiddenToolsTreeFilter(this.props.dockerRegistries.value)
@@ -131,12 +145,10 @@ export default class Tools extends React.Component {
     return [];
   }
 
-  @computed
   get currentRegistry () {
     return this.registries.find(r => `${r.id}` === `${this.props.registryId}`);
   }
 
-  @computed
   get groups () {
     if (this.currentRegistry) {
       const groups = (this.currentRegistry.groups || []).map(g => g);
@@ -159,12 +171,10 @@ export default class Tools extends React.Component {
     return [];
   }
 
-  @computed
   get hasPersonalGroup () {
     return this.groups.filter(g => g.privateGroup && !g.missing).length === 1;
   }
 
-  @computed
   get completedRuns () {
     if (this._completedRunsRequest && this._completedRunsRequest.loaded) {
       return this._completedRunsRequest.value.map(run => run);
@@ -172,7 +182,6 @@ export default class Tools extends React.Component {
     return null;
   }
 
-  @computed
   get allTools () {
     return (this.groups || [])
       .reduce((acc, current) => {
@@ -181,7 +190,6 @@ export default class Tools extends React.Component {
       }, []);
   }
 
-  @computed
   get currentGroup () {
     if (this.filter) {
       let tools;
@@ -221,12 +229,10 @@ export default class Tools extends React.Component {
     )[0];
   }
 
-  @computed
   get defaultGroup () {
     return this.getDefaultGroup(this.groups, false);
   }
 
-  @computed
   get tools () {
     if (this.currentGroup) {
       const checkIssues = (tool = {}) => {
@@ -257,7 +263,6 @@ export default class Tools extends React.Component {
     return [];
   }
 
-  @computed
   get globalSearchTools () {
     const tools = [];
     if (this.currentGroup) {
@@ -399,7 +404,8 @@ export default class Tools extends React.Component {
                 this.currentGroup
                   ? this.currentGroup.id
                   : undefined
-              } entityClass="TOOL_GROUP" />
+              }
+              entityClass="TOOL_GROUP" />
           }
         </ContentIssuesMetadataPanel>
       );

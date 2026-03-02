@@ -15,7 +15,7 @@
  */
 
 import React, {Component} from 'react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import displayDuration from '../../../../../utils/displayDuration';
@@ -25,12 +25,20 @@ import displayDate from '../../../../../utils/displayDate';
 import styles from './run-logs.css';
 
 class RunTask extends Component {
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      runningFor: computed,
+      startDelay: computed,
+      waitingFor: computed,
+      runningTime: computed
+    });
+  }
+
   get runningFor () {
     return displayDuration(this.props.task.started);
   }
 
-  @computed
   get startDelay () {
     return displayDuration(
       this.props.task.created || this.props.task.started,
@@ -38,12 +46,10 @@ class RunTask extends Component {
     );
   }
 
-  @computed
   get waitingFor () {
     return displayDuration(this.props.task.created);
   }
 
-  @computed
   get runningTime () {
     return displayDuration(this.props.task.started, this.props.task.finished);
   }

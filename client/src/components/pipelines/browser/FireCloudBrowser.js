@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import {
   inject,
   observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {Alert,
   Avatar,
   Button,
@@ -37,7 +37,6 @@ import styles from './Browser.css';
 @inject('googleApi', 'fireCloudMethods')
 @observer
 export default class FireCloudBrowser extends React.Component {
-
   static propTypes = {
     namespace: PropTypes.string,
     method: PropTypes.string,
@@ -57,7 +56,16 @@ export default class FireCloudBrowser extends React.Component {
     methodSearchString: undefined
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      methods: computed,
+      currentMethodIsSelected: computed,
+      currentMethod: computed,
+      snapshots: computed
+    });
+  }
+
   get methods () {
     if (this.props.fireCloudMethods.loaded) {
       return (this.props.fireCloudMethods.value || []).map(m => m);
@@ -65,7 +73,6 @@ export default class FireCloudBrowser extends React.Component {
     return [];
   }
 
-  @computed
   get currentMethodIsSelected () {
     return this.props.namespace === this.state.selectedNameSpace &&
       this.props.method === this.state.selectedMethod &&
@@ -145,7 +152,6 @@ export default class FireCloudBrowser extends React.Component {
     this.setState({methodSearchString: text});
   };
 
-  @computed
   get currentMethod () {
     if (this.state.selectedMethod) {
       return this.methods
@@ -157,7 +163,6 @@ export default class FireCloudBrowser extends React.Component {
     return null;
   }
 
-  @computed
   get snapshots () {
     if (this.currentMethod) {
       return (this.currentMethod.snapshotIds || [])
@@ -304,5 +309,4 @@ export default class FireCloudBrowser extends React.Component {
       });
     }
   }
-
 }

@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import {Alert, message} from 'antd';
 import roleModel from '../../../../../utils/roleModel';
 import LaunchLimits from '../../../../../models/user/LaunchLimits';
@@ -32,20 +32,29 @@ const WARNING_TYPES = {
 @roleModel.authenticationInfo
 @observer
 export default class AllowedInstancesCountWarning extends React.Component {
-  @observable userLimits;
-  @observable userRunsCount;
+  userLimits;
+  userRunsCount;
   userRunsCountToken;
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      userLimits: observable,
+      userRunsCount: observable,
+      runningInstancesCount: computed,
+      isAdmin: computed
+    });
+  }
 
   componentDidMount () {
     (this.fetchData)();
     (this.fetchUserRuns)();
-  };
+  }
 
   componentWillUnmount () {
     this.clearUserRunsToken();
   }
 
-  @computed
   get runningInstancesCount () {
     if (this.userRunsCount && this.userRunsCount.loaded) {
       return this.userRunsCount.value;
@@ -53,7 +62,6 @@ export default class AllowedInstancesCountWarning extends React.Component {
     return undefined;
   }
 
-  @computed
   get isAdmin () {
     const {authenticatedUserInfo} = this.props;
     if (authenticatedUserInfo.loaded) {

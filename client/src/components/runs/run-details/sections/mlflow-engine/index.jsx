@@ -5,7 +5,7 @@ import styles from './mlflow-engine.css';
 import {inject, observer} from 'mobx-react';
 import {Alert, Button, message, Modal} from 'antd';
 import {PUBLIC_URL} from '../../../../../config';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import LoadingView from '../../../../special/LoadingView';
 
 function getStaticResourcePath (url) {
@@ -32,6 +32,13 @@ class MLFlowEngine extends React.Component {
     confirmation: undefined
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      uiMlflowSettings: computed
+    });
+  }
+
   get currentThemeIsDark () {
     const {themes} = this.props;
     if (themes && themes.currentTheme && themes.themes) {
@@ -57,7 +64,6 @@ class MLFlowEngine extends React.Component {
     return tags[cpMlFlowExperimentIdTagName];
   }
 
-  @computed
   get uiMlflowSettings () {
     const {preferences} = this.props;
     return preferences.uiMlflowSettings;

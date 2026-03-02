@@ -18,7 +18,7 @@ import React from 'react';
 import {
   inject,
   observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {
   Button
 } from 'antd';
@@ -196,6 +196,18 @@ class StorageReports extends React.Component {
     dataSampleKey: StorageFilters.value.key
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      tiersData: computed,
+      summaryDatasets: computed,
+      summaryTableDataExtractors: computed,
+      detailsDatasets: computed,
+      extraTooltipForItemCallback: computed,
+      getExportProperties: computed
+    });
+  }
+
   get layout () {
     const {type} = this.props;
     if (/^object$/i.test(type)) {
@@ -256,7 +268,6 @@ class StorageReports extends React.Component {
     return 'Storages';
   };
 
-  @computed
   get tiersData () {
     const {
       filters = {},
@@ -333,7 +344,6 @@ class StorageReports extends React.Component {
     };
   }
 
-  @computed
   get summaryDatasets () {
     const {
       type,
@@ -352,7 +362,6 @@ class StorageReports extends React.Component {
     return getSummaryDatasetsByStorageClass(storageClass);
   }
 
-  @computed
   get summaryTableDataExtractors () {
     const {
       type,
@@ -371,7 +380,6 @@ class StorageReports extends React.Component {
     return getSummaryDataExtractorsByStorageClass(storageClass);
   }
 
-  @computed
   get detailsDatasets () {
     const {
       type,
@@ -391,7 +399,6 @@ class StorageReports extends React.Component {
     return getDetailsDatasetsByStorageClassAndMetrics(storageClass, metrics);
   }
 
-  @computed
   get extraTooltipForItemCallback () {
     const {
       type,
@@ -406,7 +413,6 @@ class StorageReports extends React.Component {
     return (dataItem) => getItemDetailsByMetrics(dataItem, metrics);
   }
 
-  @computed
   get getExportProperties () {
     const {
       type,

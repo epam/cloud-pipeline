@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {getThemedPlotColors} from './utilities';
 
 const maxHeight = 40;
@@ -25,12 +25,19 @@ const maxHeight = 40;
 @inject('themes')
 @observer
 class UsagePlot extends React.Component {
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      plotColors: computed,
+      backgroundColor: computed,
+      fontColor: computed
+    });
+  }
+
   get plotColors () {
     return getThemedPlotColors(this);
   }
 
-  @computed
   get backgroundColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
@@ -39,7 +46,6 @@ class UsagePlot extends React.Component {
     return '#ccc';
   }
 
-  @computed
   get fontColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {

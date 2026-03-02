@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import connect from '../../../utils/connect';
 import classNames from 'classnames';
 import roleModel from '../../../utils/roleModel';
@@ -74,6 +74,13 @@ export default class Folder extends localization.LocalizedReactComponent {
     filter: undefined
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      items: computed
+    });
+  }
+
   componentDidUpdate (prevProps) {
     if (prevProps.browserLocation !== this.props.browserLocation) {
       // eslint-disable-next-line
@@ -85,7 +92,6 @@ export default class Folder extends localization.LocalizedReactComponent {
     this.setState({filter: e.target.value});
   };
 
-  @computed
   get items () {
     const {folder, browserLocation} = this.props;
     if (folder.loaded) {

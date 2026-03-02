@@ -20,9 +20,7 @@ import classNames from 'classnames';
 import {
   inject,
   observer} from 'mobx-react';
-import {computed,
-  observable,
-  action} from 'mobx';
+import {computed, observable, action, makeObservable} from 'mobx';
 import SystemNotification from './SystemNotification';
 import {message,
   Modal,
@@ -101,27 +99,38 @@ export default class NotificationCenter extends React.Component {
     initialized: false,
     previewNotification: null,
     pending: false
-  };
-
-  @observable _notificationsBottomBound = 0;
-  @observable _notificationsOnScreen = 0;
-  @observable readUserNotifications = 0;
+  }; _notificationsBottomBound = 0; _notificationsOnScreen = 0; readUserNotifications = 0;
 
   layoutInfoTimeout;
   resizeTimeout;
   fetchNotificationsTimeout;
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      _notificationsBottomBound: observable,
+      _notificationsOnScreen: observable,
+      readUserNotifications: observable,
+      notificationsBottomBound: computed,
+      notificationsOnScreen: computed,
+      userNotifications: computed,
+      systemNotifications: computed,
+      unreadCount: computed,
+      allNotifications: computed,
+      nonBlockingNotifications: computed,
+      userNotificationsEnabled: computed,
+      setVisibleNotificationsInfo: action
+    });
+  }
+
   get notificationsBottomBound () {
     return this._notificationsBottomBound;
   }
 
-  @computed
   get notificationsOnScreen () {
     return this._notificationsOnScreen;
   }
 
-  @computed
   get userNotifications () {
     const {userNotifications} = this.props;
     if (!userNotifications.loaded || !this.state.initialized || !this.userNotificationsEnabled) {
@@ -139,7 +148,6 @@ export default class NotificationCenter extends React.Component {
       .sort(dateSorter);
   }
 
-  @computed
   get systemNotifications () {
     if (!this.props.notifications.loaded || !this.state.initialized) {
       return [];
@@ -160,7 +168,6 @@ export default class NotificationCenter extends React.Component {
     return notifications.sort(dateSorter);
   }
 
-  @computed
   get unreadCount () {
     const {userNotifications} = this.props;
     if (userNotifications.loaded) {
@@ -169,12 +176,10 @@ export default class NotificationCenter extends React.Component {
     return 0;
   }
 
-  @computed
   get allNotifications () {
     return [...this.systemNotifications, ...this.userNotifications];
   }
 
-  @computed
   get nonBlockingNotifications () {
     return this.allNotifications
       .filter(n => !n.blocking);
@@ -187,7 +192,6 @@ export default class NotificationCenter extends React.Component {
       .slice(0, MAX_NOTIFICATIONS);
   }
 
-  @computed
   get userNotificationsEnabled () {
     const {
       userNotifications,
@@ -202,7 +206,6 @@ export default class NotificationCenter extends React.Component {
     return false;
   }
 
-  @action
   setVisibleNotificationsInfo = (notificationsBottomBound, notifications) => {
     if (this.layoutInfoTimeout) {
       clearTimeout(this.layoutInfoTimeout);

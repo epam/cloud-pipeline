@@ -20,7 +20,7 @@ import {
   Input
 } from 'antd';
 import {ToolOutlined} from '@ant-design/icons';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import HiddenObjects from '../../../../../../../utils/hidden-objects';
 import DockerImageBrowser from '../../../../../launch/dialogs/DockerImageBrowser';
@@ -33,7 +33,13 @@ class WdlRuntimeDocker extends React.Component {
     browser: false
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      registries: computed
+    });
+  }
+
   get registries () {
     const {
       dockerRegistries,

@@ -15,8 +15,7 @@
  */
 
 import React from 'react';
-import {
-  computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {
   message,
   Modal,
@@ -39,7 +38,13 @@ import {checkRunActionAvailable, runActions} from '../../actions/actions-availab
 const getColumnFilter = () => {};
 
 class PauseResumeButtonComponent extends localization.LocalizedReactComponent {
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      maintenanceMode: computed
+    });
+  }
+
   get maintenanceMode () {
     const {preferences} = this.props;
     if (preferences && preferences.loaded) {
@@ -204,7 +209,7 @@ class PauseResumeButtonComponent extends localization.LocalizedReactComponent {
                         </div>
                       }
                     >
-                      <ExclamationCircleOutlined className="cp-danger" style={{ marginRight: 5 }} />
+                      <ExclamationCircleOutlined className="cp-danger" style={{marginRight: 5}} />
                     </Popover>
                   )
                   : null

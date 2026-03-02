@@ -17,7 +17,7 @@
 import React from 'react';
 import {
   observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {
   Alert,
   Button,
@@ -125,6 +125,18 @@ class GeneralInfoTab extends React.Component {
     exportWindowVisible: false
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      windowsOS: computed,
+      wholeRangeEnabled: computed,
+      lastWeekEnabled: computed,
+      lastDayEnabled: computed,
+      lastHourEnabled: computed,
+      retentionPeriodExceeded: computed
+    });
+  }
+
   componentDidMount () {
     this.initializeRange();
     this.checkWindowsBasedNode();
@@ -143,7 +155,6 @@ class GeneralInfoTab extends React.Component {
     this.stopContinuousMonitorUpdate();
   }
 
-  @computed
   get windowsOS () {
     const {node} = this.props;
     if (node.loaded) {
@@ -159,13 +170,11 @@ class GeneralInfoTab extends React.Component {
     return false;
   }
 
-  @computed
   get wholeRangeEnabled () {
     const {chartsData} = this.props;
     return !!chartsData.instanceFrom;
   }
 
-  @computed
   get lastWeekEnabled () {
     const {chartsData} = this.props;
     return !chartsData.rangeEndIsFixed && (
@@ -175,7 +184,6 @@ class GeneralInfoTab extends React.Component {
     );
   }
 
-  @computed
   get lastDayEnabled () {
     const {chartsData} = this.props;
     return !chartsData.rangeEndIsFixed && (
@@ -185,7 +193,6 @@ class GeneralInfoTab extends React.Component {
     );
   }
 
-  @computed
   get lastHourEnabled () {
     const {chartsData} = this.props;
     return !chartsData.rangeEndIsFixed && (
@@ -195,7 +202,6 @@ class GeneralInfoTab extends React.Component {
     );
   }
 
-  @computed
   get retentionPeriodExceeded () {
     const {preferences, chartsData} = this.props;
     const {end} = this.state;

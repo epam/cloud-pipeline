@@ -18,8 +18,7 @@ import React from 'react';
 import {
   observer,
   inject} from 'mobx-react';
-import {computed,
-  observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import moment from 'moment-timezone';
 import {
   Button,
@@ -67,16 +66,22 @@ export default class NotificationBrowser extends React.Component {
     pending: false,
     mode: MODES.new
   }
-
-  @observable
   _notifications;
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      _notifications: observable,
+      notifications: computed,
+      totalNotifications: computed
+    });
+  }
 
   componentDidMount () {
     const {currentPage, mode} = this.state;
     this.fetchPage(currentPage, mode === MODES.read);
   }
 
-  @computed
   get notifications () {
     if (!this._notifications) {
       return [];
@@ -84,7 +89,6 @@ export default class NotificationBrowser extends React.Component {
     return [...(this._notifications.elements || [])].sort(dateSorter);
   }
 
-  @computed
   get totalNotifications () {
     if (!this._notifications) {
       return 0;
@@ -261,7 +265,7 @@ export default class NotificationBrowser extends React.Component {
                     styles.notificationCell,
                     styles.notificationStatus
                   )}>
-                    <MailOutlined className={notification.isRead ? 'cp-disabled' : 'cp-setting-message' } />
+                    <MailOutlined className={notification.isRead ? 'cp-disabled' : 'cp-setting-message'} />
                   </div>
                   <b className={classNames(
                     styles.notificationCell,

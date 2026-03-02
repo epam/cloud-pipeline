@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import {
   inject,
   observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {
   Alert,
   Button,
@@ -46,6 +46,13 @@ class AddDockerRegistryControl extends React.Component {
     versionsHash: undefined,
     dockerImageField: undefined,
     dockerImageVersionField: undefined
+  }
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      tools: computed
+    });
   }
 
   componentDidMount () {
@@ -84,7 +91,6 @@ class AddDockerRegistryControl extends React.Component {
     }
   };
 
-  @computed
   get tools () {
     const {dockerRegistries} = this.props;
     const result = [];

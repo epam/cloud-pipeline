@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {LoadingOutlined, MinusCircleOutlined, PlusCircleOutlined} from '@ant-design/icons';
 import styles from './chart.css';
 
@@ -48,7 +48,13 @@ class Chart extends React.Component {
 
   state = {};
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      canZoomIn: computed,
+      canZoomOut: computed
+    });
+  }
   get canZoomIn () {
     let {start, end} = this.state;
     if (!start || !end) {
@@ -57,7 +63,6 @@ class Chart extends React.Component {
     return (end - start) > MINUTE;
   }
 
-  @computed
   get canZoomOut () {
     const {data} = this.props;
     let {start, end} = this.state;

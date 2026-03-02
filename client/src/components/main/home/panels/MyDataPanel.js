@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {Alert, Row} from 'antd';
 import classNames from 'classnames';
 import LoadingView from '../../../special/LoadingView';
@@ -47,7 +47,13 @@ export default class MyDataPanel extends React.Component {
       (item.pathMask && item.pathMask.toLowerCase().indexOf(search.toLowerCase()) >= 0);
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      storages: computed
+    });
+  }
+
   get storages () {
     if (
       this.props.dataStorages.loaded &&

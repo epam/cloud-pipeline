@@ -25,7 +25,7 @@ import {
   Modal
 } from 'antd';
 import {PlusOutlined} from '@ant-design/icons';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import LoadingView from '../../special/LoadingView';
 import EditHotNodePool from './edit-hot-node-pool';
 import clusterNodes from '../../../models/cluster/ClusterNodes';
@@ -87,7 +87,13 @@ class HotCluster extends React.Component {
     });
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      isReadOnly: computed
+    });
+  }
+
   get isReadOnly () {
     const {authenticatedUserInfo} = this.props;
     return !authenticatedUserInfo.loaded || !isAdmin(authenticatedUserInfo.value);

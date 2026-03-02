@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {observable, computed} from 'mobx';
+import {observable, computed, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import {
   Input,
@@ -44,7 +44,13 @@ const INSTANT_SEARCH_DELAY = 1000;
 const PREVIEW_AVAILABLE_DELAY = 500;
 
 class SearchDialogBlocker {
-  @observable blocked = false;
+  blocked = false;
+
+  constructor () {
+    makeObservable(this, {
+      blocked: observable
+    });
+  }
 }
 
 const searchDialogBlocker = new SearchDialogBlocker();
@@ -76,9 +82,16 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
 
   inputControl;
 
-  @observable delayedSearch;
+  delayedSearch;
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      delayedSearch: observable,
+      quickSearchDisabled: computed
+    });
+  }
+
   get quickSearchDisabled () {
     const {preferences} = this.props;
     return preferences.uiQuickSearchDisabled;

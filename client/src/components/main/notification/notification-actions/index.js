@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import {
   Dropdown,
   Menu,
@@ -38,7 +38,6 @@ class NotificationActions extends React.Component {
     entityRequestPending: false
   };
 
-  @observable
   entityInfoRequest;
 
   groupedActions = {
@@ -99,7 +98,14 @@ class NotificationActions extends React.Component {
     ]
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      entityInfoRequest: observable,
+      actions: computed
+    });
+  }
+
   get actions () {
     const {preferences} = this.props;
     const {type} = this.notificationDetails;

@@ -2,7 +2,7 @@ import React from 'react';
 import {Modal, Button} from 'antd';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import UIRunUserTag from './ui-run-user-tag';
 import {
   getRequiredUserTags,
@@ -20,6 +20,13 @@ class CustomTagsEditor extends React.Component {
     visible: [],
     tagsTouched: []
   };
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      uiRunsUserTags: computed
+    });
+  }
 
   componentDidMount () {
     this.updateFromProps();
@@ -101,7 +108,6 @@ class CustomTagsEditor extends React.Component {
     })();
   };
 
-  @computed
   get uiRunsUserTags () {
     const {preferences} = this.props;
     const {visible: visibleTags = []} = this.state;

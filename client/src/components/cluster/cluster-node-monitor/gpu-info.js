@@ -27,7 +27,7 @@ import {
 } from 'antd';
 import {DownOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
-import {computed, reaction} from 'mobx';
+import {computed, reaction, makeObservable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import moment from 'moment-timezone';
 import ClusterNodeGPUUsage from '../../../models/cluster/ClusterNodeGPUUsage';
@@ -101,6 +101,15 @@ class GPUInfoTab extends React.Component {
     () => this.initRanges(false)
   );
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      themeConfiguration: computed,
+      chartsData: computed,
+      chartsBounds: computed
+    });
+  }
+
   componentDidMount () {
     this.initRanges();
   }
@@ -121,7 +130,6 @@ class GPUInfoTab extends React.Component {
     }
   }
 
-  @computed
   get themeConfiguration () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
@@ -130,13 +138,11 @@ class GPUInfoTab extends React.Component {
     return {};
   }
 
-  @computed
   get chartsData () {
     const {chartsData} = this.props;
     return chartsData;
   }
 
-  @computed
   get chartsBounds () {
     return {
       min: this.chartsData.instanceFrom,

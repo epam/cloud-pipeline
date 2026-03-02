@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import { computed, makeObservable } from 'mobx';
 import {Alert, Button, Input, Modal} from 'antd';
 import roleModel from '../../../../../utils/roleModel';
 import LoadingView from '../../../../special/LoadingView';
@@ -34,7 +34,13 @@ class StorageSharedLinkButton extends React.Component {
     visible: false
   };
 
-  @computed
+  constructor(props) {
+    super(props);
+    makeObservable(this, {
+      dataStorageShareLinkDisclaimer: computed
+    });
+  }
+
   get dataStorageShareLinkDisclaimer () {
     if (this.props.preferences.loaded) {
       let code = (this.props.preferences.getPreferenceValue('data.sharing.disclaimer') || '');

@@ -16,7 +16,7 @@
 
 import React, {Component} from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
 import {Alert, Collapse, Row} from 'antd';
 import {BarsOutlined, CodeOutlined, SettingOutlined} from '@ant-design/icons';
@@ -65,16 +65,23 @@ export default class PreviewConfiguration extends Component {
   state = {
     openedPanels: [PARAMETERS]
   };
-  @observable
+
   selectedEntry = null;
-  @observable
   selectedPipeline = null;
-  @observable
   selectedPipelineConfiguration = null;
-  @observable
   selectedRootEntity = null;
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      selectedEntry: observable,
+      selectedPipeline: observable,
+      selectedPipelineConfiguration: observable,
+      selectedRootEntity: observable,
+      currentCloudProvider: computed
+    });
+  }
+
   get currentCloudProvider () {
     if (
       this.selectedEntry &&
@@ -92,10 +99,22 @@ export default class PreviewConfiguration extends Component {
     let title;
     let IconComponent;
     switch (key) {
-      case EXEC_ENVIRONMENT: title = 'Exec environment'; IconComponent = CodeOutlined; break;
-      case ADVANCED: title = 'Advanced'; IconComponent = SettingOutlined; break;
-      case SYSTEM_PARAMETERS: title = 'System parameters'; IconComponent = BarsOutlined; break;
-      case PARAMETERS: title = 'Parameters'; IconComponent = BarsOutlined; break;
+      case EXEC_ENVIRONMENT:
+        title = 'Exec environment';
+        IconComponent = CodeOutlined;
+        break;
+      case ADVANCED:
+        title = 'Advanced';
+        IconComponent = SettingOutlined;
+        break;
+      case SYSTEM_PARAMETERS:
+        title = 'System parameters';
+        IconComponent = BarsOutlined;
+        break;
+      case PARAMETERS:
+        title = 'Parameters';
+        IconComponent = BarsOutlined;
+        break;
     }
     return (
       <Row className={styles.panelHeader} type="flex" justify="space-between" align="middle">
@@ -497,6 +516,7 @@ export default class PreviewConfiguration extends Component {
       </tr>
     );
   };
+
   initialize = () => {
     if (!this.props.configuration.pending && this.props.configuration.loaded) {
       [this.selectedEntry] = this.props.configuration.value.entries.filter(e => e.default);

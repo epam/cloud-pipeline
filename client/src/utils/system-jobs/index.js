@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {action, observable} from 'mobx';
+import {observable, makeObservable, action} from 'mobx';
 import preferencesLoad from '../../models/preferences/PreferencesLoad';
 import Pipeline from '../../models/pipelines/Pipeline';
 import PipelineFiles from '../../models/pipelines/Source';
@@ -56,19 +56,29 @@ class SystemJobs {
   /**
    * @type {boolean}
    */
-  @observable pending = true;
+  pending = true;
   /**
    * @type {string}
    */
-  @observable error = undefined;
+  error = undefined;
   /**
    * @type {boolean}
    */
-  @observable loaded = false;
+  loaded = false;
   /**
    * @type {SystemJob[]}
    */
-  @observable jobs = [];
+  jobs = [];
+
+  constructor () {
+    makeObservable(this, {
+      pending: observable,
+      error: observable,
+      loaded: observable,
+      jobs: observable,
+      update: action
+    });
+  }
 
   /**
    * @param {SystemJob} job
@@ -131,8 +141,6 @@ class SystemJobs {
       throw new Error(request.error);
     }
   }
-
-  @action
   async update () {
     this.pending = true;
     try {

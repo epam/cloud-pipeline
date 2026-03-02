@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {
   Alert,
   Input,
@@ -46,6 +46,16 @@ export default class Packages extends React.Component {
     selectedEcosystem: null
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      toolPlatform: computed,
+      ecosystems: computed,
+      dependencies: computed,
+      filteredDependencies: computed
+    });
+  }
+
   componentDidMount () {
     this.checkToolPlatform();
   }
@@ -72,7 +82,6 @@ export default class Packages extends React.Component {
     }
   }
 
-  @computed
   get toolPlatform () {
     const {versions} = this.props;
     if (
@@ -85,7 +94,6 @@ export default class Packages extends React.Component {
     return undefined;
   }
 
-  @computed
   get ecosystems () {
     if (this.props.versions.loaded &&
         this.props.versions.value &&
@@ -115,7 +123,6 @@ export default class Packages extends React.Component {
     return 0;
   };
 
-  @computed
   get dependencies () {
     if (this.props.versions.loaded &&
         this.state.selectedEcosystem &&
@@ -128,7 +135,6 @@ export default class Packages extends React.Component {
     return [];
   }
 
-  @computed
   get filteredDependencies () {
     if (this.state.filterDependencies && this.props.versions.loaded &&
       this.props.versions.value &&
@@ -143,7 +149,7 @@ export default class Packages extends React.Component {
       return result;
     }
     return [];
-  };
+  }
 
   onChangeEcoSystem = (e) => {
     this.setState({

@@ -18,7 +18,7 @@ import React from 'react';
 import {
   observer,
   inject} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import {
   Table,
@@ -94,22 +94,31 @@ export default class UsersManagement extends React.Component {
     filterUsers: USERS_FILTERS.all
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      userHasReadPermissions: computed,
+      dataStorages: computed,
+      users: computed,
+      usersPending: computed
+    });
+  }
+
   get isAdmin () {
     const {authenticatedUserInfo} = this.props;
     return authenticatedUserInfo.loaded
       ? authenticatedUserInfo.value.admin
       : false;
-  };
+  }
 
   get isReader () {
     return roleModel.hasRole(roleModel.ROLES.ROLE_USER_READER)(this);
-  };
+  }
 
   get isUsersAdmin () {
     return roleModel.hasRole(roleModel.ROLES.ROLE_USER_ADMIN)(this);
   }
 
-  @computed
   get userHasReadPermissions () {
     const {
       users
@@ -141,7 +150,6 @@ export default class UsersManagement extends React.Component {
     key === 'default' && doExport();
   };
 
-  @computed
   get dataStorages () {
     if (this.props.dataStorages.loaded) {
       return (this.props.dataStorages.value || [])
@@ -195,7 +203,6 @@ export default class UsersManagement extends React.Component {
     };
   };
 
-  @computed
   get users () {
     const {users} = this.props;
     if (users && users.loaded) {
@@ -206,7 +213,6 @@ export default class UsersManagement extends React.Component {
     return [];
   }
 
-  @computed
   get usersPending () {
     const {users} = this.props;
     return users.pending;
@@ -610,7 +616,7 @@ export default class UsersManagement extends React.Component {
         dataSource={this.filteredUsers}
         onChange={this.handleUserTableChange}
         rowClassName={user => `user-${user.id}`}
-        onRow={(user) => ({ onClick: () => this.openEditUserRolesDialog(user) })}
+        onRow={(user) => ({onClick: () => this.openEditUserRolesDialog(user)})}
         pagination={{
           total: this.filteredUsers.length,
           PAGE_SIZE,

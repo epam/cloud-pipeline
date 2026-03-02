@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {Row} from 'antd';
 import {CaretRightOutlined, ForkOutlined, LoadingOutlined, TagFilled} from '@ant-design/icons';
 import classNames from 'classnames';
@@ -67,7 +67,16 @@ export default class PipelineDocumentPreview extends React.Component {
     imageError: null
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      filePreview: computed,
+      structuredTableData: computed,
+      parentFolders: computed,
+      fileName: computed
+    });
+  }
+
   get filePreview () {
     if (this.props.preview) {
       if (this.props.preview.pending) {
@@ -95,7 +104,6 @@ export default class PipelineDocumentPreview extends React.Component {
     return null;
   }
 
-  @computed
   get structuredTableData () {
     if (this.filePreview && this.filePreview.preview &&
       this.props.item && this.props.item.path.split('.').pop().toLowerCase() === 'csv') {
@@ -113,7 +121,6 @@ export default class PipelineDocumentPreview extends React.Component {
     return null;
   }
 
-  @computed
   get parentFolders () {
     if (this.props.item.path) {
       return this.props.item.path.split('/').slice(0, -1);
@@ -121,7 +128,6 @@ export default class PipelineDocumentPreview extends React.Component {
     return [];
   }
 
-  @computed
   get fileName () {
     if (this.props.item.path || this.props.item.name) {
       const ItemIcon = PreviewIcons[this.props.item.type];

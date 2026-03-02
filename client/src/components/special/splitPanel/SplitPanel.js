@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {
   observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {Row
 } from 'antd';
 import {CloseOutlined} from '@ant-design/icons';
@@ -37,7 +37,6 @@ const filterRealChild = child => !!child;
 
 @observer
 export class SplitPanel extends React.Component {
-
   static propTypes = {
     onPanelClose: PropTypes.func,
     onPanelResize: PropTypes.func,
@@ -65,15 +64,28 @@ export class SplitPanel extends React.Component {
       })
     }))
   };
+
   static defaultProps = {
     onPanelResizeDelay: 250
   };
+
   state = {
     sizes: {},
     container: undefined,
     activeResizer: null,
     activeResizerInfo: null
   };
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      isVertical: computed,
+      resizerSize: computed,
+      contentPadding: computed,
+      totalSize: computed
+    });
+  }
+
   getChildKey = (childIndex, children) => {
     children = children || (this.props.children || []).filter(filterRealChild);
     const child = children[childIndex];
@@ -90,9 +102,11 @@ export class SplitPanel extends React.Component {
     }
     return {key};
   };
+
   getResizerIndentifier = (resizerIndex) => {
     return `resizer_${resizerIndex};`;
   };
+
   renderResizer = (resizerIndex) => {
     const onMouseDown = (e) => {
       if (this.state.container) {
@@ -128,6 +142,7 @@ export class SplitPanel extends React.Component {
       </div>
     );
   };
+
   getChildMinimumSizePx = (childIndex) => {
     const info = this.getContentInfo(this.getChildKey(childIndex));
     if (info && info.size) {
@@ -139,6 +154,7 @@ export class SplitPanel extends React.Component {
     }
     return MINIMUM_CONTENT_SIZE;
   };
+
   getChildMaximumSizePx = (childIndex) => {
     const info = this.getContentInfo(this.getChildKey(childIndex));
     if (info && info.size) {
@@ -150,6 +166,7 @@ export class SplitPanel extends React.Component {
     }
     return this.totalSize;
   };
+
   getChildSize = (childIndex) => {
     const childrenCount = (this.props.children || []).filter(filterRealChild).length;
     const key = this.getChildKey(childIndex);
@@ -163,6 +180,7 @@ export class SplitPanel extends React.Component {
     }
     return size;
   };
+
   setChildSize = (childIndex, size, sizes, push = false) => {
     const key = this.getChildKey(childIndex);
     sizes = sizes || this.state.sizes;
@@ -177,6 +195,7 @@ export class SplitPanel extends React.Component {
     }
     return sizes;
   };
+
   renderChild = (childIndex) => {
     const content = (this.props.children || []).filter(filterRealChild)[childIndex];
     const key = this.getChildKey(childIndex);
@@ -225,6 +244,7 @@ export class SplitPanel extends React.Component {
       </div>
     );
   };
+
   renderSplitPaneContent = () => {
     const children = [];
     const length = (this.props.children || []).filter(filterRealChild).length;
@@ -236,6 +256,7 @@ export class SplitPanel extends React.Component {
     }
     return children;
   };
+
   initializeSplitPane = (div) => {
     this.setState({
       container: div
@@ -245,6 +266,7 @@ export class SplitPanel extends React.Component {
       }
     });
   };
+
   toPercentSize = (px) => {
     if (!px) {
       return 0;
@@ -258,6 +280,7 @@ export class SplitPanel extends React.Component {
     }
     return this.totalSize * percent;
   };
+
   resetWidthsState = (children, infos) => {
     const sizes = {};
     const getChildSizePriority = (key) => {
@@ -369,6 +392,7 @@ export class SplitPanel extends React.Component {
       this.panelResizeTimeout = undefined;
     }, this.props.onPanelResizeDelay);
   };
+
   updateState = (e) => {
     if (this.state.activeResizer !== null && this.state.activeResizerInfo) {
       if (e.stopPropagation) {
@@ -410,9 +434,11 @@ export class SplitPanel extends React.Component {
     }
     return true;
   };
+
   onMouseMove = (e) => {
     return this.updateState(e);
   };
+
   onMouseUp = (e) => {
     this.updateState(e);
     if (this.state.activeResizer !== null && this.state.activeResizerInfo) {
@@ -423,22 +449,18 @@ export class SplitPanel extends React.Component {
     }
   };
 
-  @computed
   get isVertical () {
     return this.props.orientation === 'vertical';
   }
 
-  @computed
   get resizerSize () {
     return this.props.resizerSize || RESIZER_SIZE;
   }
 
-  @computed
   get contentPadding () {
     return this.props.contentPadding;
   }
 
-  @computed
   get totalSize () {
     if (this.state.container) {
       return this.isVertical
@@ -493,10 +515,9 @@ export class SplitPanel extends React.Component {
 
 @localization.localizedComponent
 export class ContentIssuesMetadataPanel extends localization.LocalizedReactComponent {
-
   static propTypes = {
     onPanelClose: PropTypes.func,
-    style: PropTypes.object,
+    style: PropTypes.object
   };
 
   render () {
@@ -551,7 +572,6 @@ export class ContentIssuesMetadataPanel extends localization.LocalizedReactCompo
 }
 
 export class ContentMetadataPanel extends React.Component {
-
   static propTypes = {
     onPanelClose: PropTypes.func,
     contentContainerStyle: PropTypes.object,

@@ -19,8 +19,7 @@ import PropTypes from 'prop-types';
 import {
   inject,
   observer} from 'mobx-react';
-import {computed,
-  observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import LoadingView from '../special/LoadingView';
 import {SplitPanel} from '../special/splitPanel';
@@ -141,8 +140,21 @@ export default class AWSRegionsForm extends React.Component {
     changesCanBeSkipped: false
   };
 
-  @observable awsRegionForm;
-  @observable awsRegionIds;
+  awsRegionForm;
+  awsRegionIds;
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      awsRegionForm: observable,
+      awsRegionIds: observable,
+      regions: computed,
+      cloudProviders: computed,
+      availableRegionIds: computed,
+      currentRegion: computed,
+      regionModified: computed
+    });
+  }
 
   componentDidMount () {
     const {route, router} = this.props;
@@ -150,14 +162,14 @@ export default class AWSRegionsForm extends React.Component {
     if (route && router) {
       router.setRouteLeaveHook(route, this.checkSettingsBeforeLeave);
     }
-  };
+  }
 
   componentDidUpdate () {
     const {currentRegionId, currentProvider} = this.state;
     if (!currentRegionId && !currentProvider && this.regions.length > 0) {
       this.selectDefaultRegion();
     }
-  };
+  }
 
   operationWrapper = (fn) => {
     return (...opts) => {
@@ -172,7 +184,6 @@ export default class AWSRegionsForm extends React.Component {
     };
   };
 
-  @computed
   get regions () {
     if (this.props.awsRegions.loaded) {
       const searchFn = (region) => {
@@ -199,7 +210,6 @@ export default class AWSRegionsForm extends React.Component {
     return [];
   }
 
-  @computed
   get cloudProviders () {
     if (this.props.cloudProviders.loaded) {
       return this.props.cloudProviders.value || [];
@@ -216,7 +226,6 @@ export default class AWSRegionsForm extends React.Component {
     }
   };
 
-  @computed
   get availableRegionIds () {
     if (!this.awsRegionIds) {
       return [];
@@ -229,14 +238,12 @@ export default class AWSRegionsForm extends React.Component {
     return [];
   }
 
-  @computed
   get currentRegion () {
     return this.regions
       .filter(r => r.id === this.state.currentRegionId)
       .map(r => ({...r, customInstanceTypes: toJSON(r.customInstanceTypes, [])}))[0];
-  };
+  }
 
-  @computed
   get regionModified () {
     if (!this.awsRegionForm) {
       return false;
@@ -889,21 +896,42 @@ class AWSRegionForm extends React.Component {
     LOCAL: [launchCommonMountsSetting]
   };
 
-  @observable _modified = false;
-  @observable _contextualSettingValid = true;
+  _modified = false;
+  _contextualSettingValid = true;
 
-  @observable permissions = null;
+  permissions = null;
 
-  @observable userFind;
-  @observable groupFind;
+  userFind;
+  groupFind;
   selectedUser = null;
   selectedGroup = null;
-  @observable usersToAddPermission = [];
-  @observable groupsToAddPermission = [];
-  @observable usersToRemovePermissions = [];
-  @observable groupsToRemovePermissions = [];
+  usersToAddPermission = [];
+  groupsToAddPermission = [];
+  usersToRemovePermissions = [];
+  groupsToRemovePermissions = [];
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      _modified: observable,
+      _contextualSettingValid: observable,
+      permissions: observable,
+      userFind: observable,
+      groupFind: observable,
+      usersToAddPermission: observable,
+      groupsToAddPermission: observable,
+      usersToRemovePermissions: observable,
+      groupsToRemovePermissions: observable,
+      provider: computed,
+      permissionsModified: computed,
+      modified: computed,
+      contextualSettingsValid: computed,
+      permissionsDisplayList: computed,
+      addedUserPermissions: computed,
+      addedGroupPermissions: computed
+    });
+  }
+
   get provider () {
     return this.props.region ? this.props.region.provider : null;
   }
@@ -1121,7 +1149,6 @@ class AWSRegionForm extends React.Component {
       checkRunShiftPolicy();
   };
 
-  @computed
   get permissionsModified () {
     return (this.usersToAddPermission && this.usersToAddPermission.length) ||
       (this.groupsToAddPermission && this.groupsToAddPermission.length) ||
@@ -1129,12 +1156,10 @@ class AWSRegionForm extends React.Component {
       (this.groupsToRemovePermissions && this.groupsToRemovePermissions.length);
   }
 
-  @computed
   get modified () {
     return this._modified || this.permissionsModified;
   }
 
-  @computed
   get contextualSettingsValid () {
     return this._contextualSettingValid;
   }
@@ -1149,7 +1174,6 @@ class AWSRegionForm extends React.Component {
     }
   };
 
-  @computed
   get permissionsDisplayList () {
     let permissions = [];
     if (this.permissions && this.permissions.loaded) {
@@ -1183,7 +1207,6 @@ class AWSRegionForm extends React.Component {
     return filteredPermissions.filter(permission => !this.isRemovingPermission(permission.sid));
   }
 
-  @computed
   get addedUserPermissions () {
     const res = [];
     this.permissionsDisplayList.forEach(permission => {
@@ -1195,7 +1218,6 @@ class AWSRegionForm extends React.Component {
     return res;
   }
 
-  @computed
   get addedGroupPermissions () {
     const res = [];
     this.permissionsDisplayList.forEach(permission => {
@@ -1294,9 +1316,9 @@ class AWSRegionForm extends React.Component {
             })
             .filter((o) => (o.value || '') !== (o.initial || ''));
           if (this.props.isNew) {
-            this.props.onCreate && await this.props.onCreate(values, contextualSettings);
+            this.props.onCreate && (await this.props.onCreate(values, contextualSettings));
           } else {
-            this.props.onSubmit && await this.props.onSubmit(values, contextualSettings);
+            this.props.onSubmit && (await this.props.onSubmit(values, contextualSettings));
             await this.submitPermissions();
           }
         }
@@ -1712,7 +1734,7 @@ class AWSRegionForm extends React.Component {
       this.props.onCancelCreate && this.props.onCancelCreate();
     };
     const onRemove = async () => {
-      this.props.onRemove && await this.props.onRemove();
+      this.props.onRemove && (await this.props.onRemove());
     };
     const managedIdentityAvailable = /^azure$/i.test(this.provider);
     const authorizeByManagedIdentity = this.props.form.getFieldValue('authorizeByManagedIdentity');

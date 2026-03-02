@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {
   observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {
   Button,
   Select
@@ -35,6 +35,16 @@ const displayModes = {
 };
 
 class OutlineConfigRenderer extends React.Component {
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      value: computed,
+      displayMode: computed,
+      objectsToOutline: computed,
+      objects: computed
+    });
+  }
+
   get parameter () {
     const {parameterValue} = this.props;
     if (!parameterValue) {
@@ -42,7 +52,7 @@ class OutlineConfigRenderer extends React.Component {
     }
     return parameterValue.parameter;
   }
-  @computed
+
   get value () {
     const {parameterValue} = this.props;
     if (!parameterValue) {
@@ -50,30 +60,32 @@ class OutlineConfigRenderer extends React.Component {
     }
     return parameterValue.value;
   }
+
   get cpModule () {
     if (!this.parameter) {
       return undefined;
     }
     return this.parameter.cpModule;
   }
-  @computed
+
   get displayMode () {
     if (!this.cpModule) {
       return displayModes.color;
     }
     return this.cpModule.getParameterValue('displayMode') || displayModes.color;
   }
-  @computed
+
   get objectsToOutline () {
     if (!this.value) {
       return [];
     }
     return this.value;
   }
-  @computed
+
   get objects () {
     return getObjectsForModule(this.cpModule);
   }
+
   setValue = (newValue) => {
     const {parameterValue} = this.props;
     if (parameterValue) {
@@ -81,6 +93,7 @@ class OutlineConfigRenderer extends React.Component {
       parameterValue.reportChanged();
     }
   };
+
   addConfiguration = () => {
     const current = this.objectsToOutline;
     this.setValue([...current, {
@@ -88,6 +101,7 @@ class OutlineConfigRenderer extends React.Component {
       color: colorList[current.length % colorList.length]
     }]);
   };
+
   changeConfigurationObject = (index) => (object) => {
     const objectToOutline = this.objectsToOutline[index] || {};
     objectToOutline.name = object;
@@ -95,6 +109,7 @@ class OutlineConfigRenderer extends React.Component {
     newValue.splice(index, 1, objectToOutline);
     this.setValue(newValue);
   }
+
   changeConfigurationColor = (index) => (color) => {
     const objectToOutline = this.objectsToOutline[index] || {};
     objectToOutline.color = color;
@@ -102,6 +117,7 @@ class OutlineConfigRenderer extends React.Component {
     newValue.splice(index, 1, objectToOutline);
     this.setValue(newValue);
   }
+
   removeConfiguration = (index) => (event) => {
     if (event) {
       event.stopPropagation();
@@ -110,6 +126,7 @@ class OutlineConfigRenderer extends React.Component {
     newValue.splice(index, 1);
     this.setValue(newValue);
   };
+
   render () {
     const {
       className,

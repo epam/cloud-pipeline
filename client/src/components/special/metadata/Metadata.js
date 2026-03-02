@@ -19,7 +19,7 @@ import {inject, observer} from 'mobx-react';
 import {Link} from 'react-router';
 import classNames from 'classnames';
 import connect from '../../../utils/connect';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
 import dataStorageCache from '../../../models/dataStorage/DataStorageCache';
 import MetadataUpdateKeys from '../../../models/metadata/MetadataUpdateKeys';
@@ -273,6 +273,15 @@ export default class Metadata extends localization.LocalizedReactComponent {
   state = {
     addKey: null
   };
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      metadata: computed,
+      filePreview: computed,
+      downloadUrl: computed
+    });
+  }
 
   confirmDeleteMetadata = () => {
     Modal.confirm({
@@ -1208,7 +1217,6 @@ export default class Metadata extends localization.LocalizedReactComponent {
     );
   };
 
-  @computed
   get metadata () {
     if (!this.props.value && !this.props.metadata.loaded) {
       return [];
@@ -1281,7 +1289,6 @@ export default class Metadata extends localization.LocalizedReactComponent {
     return value.map((value, index) => { return {...value, index}; });
   }
 
-  @computed
   get filePreview () {
     if (this.props.preview) {
       if (this.props.preview.pending) {
@@ -1315,7 +1322,6 @@ export default class Metadata extends localization.LocalizedReactComponent {
     return null;
   }
 
-  @computed
   get downloadUrl () {
     if (this.props.downloadUrl) {
       if (this.props.downloadUrl.error || this.props.downloadUrl.pending) {

@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import {
   inject,
   observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {
   Alert,
   Button,
@@ -36,12 +36,18 @@ class CloudCredentialsForm extends React.Component {
     createNew: false
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      allCredentialProfiles: computed
+    });
+  }
+
   get readOnly () {
     const {provider} = this.props;
     return !/^aws$/i.test(provider);
   }
 
-  @computed
   get allCredentialProfiles () {
     if (this.props.cloudCredentialProfiles.loaded) {
       return (this.props.cloudCredentialProfiles.value || []).map(c => c);
@@ -158,7 +164,7 @@ class CloudCredentialsForm extends React.Component {
             size="small"
             rowKey="id"
             rowClassName={() => styles.credentialsRow}
-            onRow={(o) => ({ onClick: () => this.onEditCredentialsClicked(o) })}
+            onRow={(o) => ({onClick: () => this.onEditCredentialsClicked(o)})}
           />
           <CloudCredentialsProfileForm
             visible={createNew || !!currentCredentials}

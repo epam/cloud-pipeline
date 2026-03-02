@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import {
   Alert,
@@ -34,7 +34,14 @@ class CWLToolsRepository extends React.Component {
     search: undefined
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      toolGroups: computed,
+      tools: computed
+    });
+  }
+
   get toolGroups () {
     const {
       preferences
@@ -45,7 +52,6 @@ class CWLToolsRepository extends React.Component {
     return [];
   }
 
-  @computed
   get tools () {
     const {
       dockerRegistries

@@ -15,8 +15,7 @@
  */
 
 import React from 'react';
-import {
-  computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {observer,
   inject} from 'mobx-react';
 import classNames from 'classnames';
@@ -114,6 +113,16 @@ class EditRoleDialog extends React.Component {
 
   instanceTypesForm;
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      isAdmin: computed,
+      restrictedMetadataKeys: computed,
+      dataStorages: computed,
+      cloudCredentialProfiles: computed
+    });
+  }
+
   componentDidMount () {
     this.updateValues();
   }
@@ -126,7 +135,6 @@ class EditRoleDialog extends React.Component {
     }
   }
 
-  @computed
   get isAdmin () {
     const {authenticatedUserInfo} = this.props;
     if (authenticatedUserInfo.loaded) {
@@ -137,9 +145,8 @@ class EditRoleDialog extends React.Component {
 
   get isUsersAdmin () {
     return roleModel.hasRole(roleModel.ROLES.ROLE_USER_ADMIN)(this);
-  };
+  }
 
-  @computed
   get restrictedMetadataKeys () {
     if (this.isAdmin || this.isUsersAdmin) {
       return [];
@@ -435,7 +442,6 @@ class EditRoleDialog extends React.Component {
     return true;
   }
 
-  @computed
   get dataStorages () {
     if (this.props.dataStorages.loaded) {
       return (this.props.dataStorages.value || [])
@@ -444,7 +450,6 @@ class EditRoleDialog extends React.Component {
     return [];
   }
 
-  @computed
   get cloudCredentialProfiles () {
     if (this.props.cloudCredentialProfiles.loaded) {
       return (this.props.cloudCredentialProfiles.value || [])
@@ -541,7 +546,7 @@ class EditRoleDialog extends React.Component {
           mainHide();
           return;
         } else {
-          this.props.userInfo && await this.props.userInfo.fetch();
+          this.props.userInfo && (await this.props.userInfo.fetch());
           hide();
         }
       }

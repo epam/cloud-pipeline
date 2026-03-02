@@ -18,8 +18,7 @@ import React from 'react';
 import {
   inject,
   observer} from 'mobx-react';
-import {computed,
-  observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
 import {
   Button,
@@ -221,14 +220,33 @@ export default class EditToolForm extends React.Component {
     initialReservationParameters: undefined
   };
 
-  @observable defaultLimitMounts;
-  @observable defaultCommand;
-  @observable defaultProperties;
-  @observable defaultSystemProperties;
+  defaultLimitMounts;
+  defaultCommand;
+  defaultProperties;
+  defaultSystemProperties;
 
   endpointControl;
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      defaultLimitMounts: observable,
+      defaultCommand: observable,
+      defaultProperties: observable,
+      defaultSystemProperties: observable,
+      toolFormParameters: observable,
+      toolFormSystemParameters: observable,
+      isAdmin: computed,
+      isAdvancedUser: computed,
+      awsRegions: computed,
+      instanceTypes: computed,
+      allowedInstanceTypes: computed,
+      allowedPriceTypes: computed,
+      multiplyValueBy: computed,
+      maxMultiplyValueBy: computed
+    });
+  }
+
   get isAdmin () {
     if (!this.props.authenticatedUserInfo.loaded) {
       return false;
@@ -239,7 +257,6 @@ export default class EditToolForm extends React.Component {
     return admin;
   }
 
-  @computed
   get isAdvancedUser () {
     if (!this.props.authenticatedUserInfo.loaded) {
       return false;
@@ -250,7 +267,6 @@ export default class EditToolForm extends React.Component {
     return roles.find(r => /^ROLE_ADVANCED_USER$/i.test(r.name));
   }
 
-  @computed
   get awsRegions () {
     if (this.props.awsRegions.loaded) {
       return (this.props.awsRegions.value || []).map(r => r);
@@ -799,7 +815,6 @@ export default class EditToolForm extends React.Component {
     this.editor = editor;
   };
 
-  @computed
   get instanceTypes () {
     const isSpot = this.formRef.current.getFieldValue('is_spot') !== undefined
       ? `${this.formRef.current.getFieldValue('is_spot')}` === 'true'
@@ -829,7 +844,6 @@ export default class EditToolForm extends React.Component {
     });
   }
 
-  @computed
   get allowedInstanceTypes () {
     if (
       !this.props.allowedInstanceTypes.loaded ||
@@ -857,7 +871,6 @@ export default class EditToolForm extends React.Component {
     });
   }
 
-  @computed
   get allowedPriceTypes () {
     let availableMasterNodeTypes = [true, false];
     if (this.state.launchCluster && this.props.preferences.loaded) {
@@ -893,7 +906,6 @@ export default class EditToolForm extends React.Component {
     return Boolean(findReservationParameterConfig(instanceTypeValue, preferences));
   }
 
-  @computed
   get multiplyValueBy () {
     if (this.state.launchCluster) {
       return (this.state.nodesCount || 0) + 1;
@@ -902,7 +914,6 @@ export default class EditToolForm extends React.Component {
     }
   }
 
-  @computed
   get maxMultiplyValueBy () {
     if (this.state.launchCluster) {
       let value = this.state.maxNodesCount;
@@ -1077,8 +1088,8 @@ export default class EditToolForm extends React.Component {
     this.endpointControl = control;
   };
 
-  @observable toolFormParameters;
-  @observable toolFormSystemParameters;
+  toolFormParameters;
+  toolFormSystemParameters;
 
   onEditToolFormParametersInitialized = (form) => {
     this.toolFormParameters = form;

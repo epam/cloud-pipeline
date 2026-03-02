@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {observer, Provider} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import {Alert, Button, Radio} from 'antd';
 import {ApiOutlined, AppstoreFilled, AppstoreOutlined, SettingOutlined} from '@ant-design/icons';
 
@@ -69,15 +69,30 @@ class HcsImage extends React.Component {
     selectedFields: [],
     zSelectorMode: Z_SELECTOR_MODES.badge
   };
+  hcsInfo;
+  container;
+  hcsViewerState = new ViewerState();
+  hcsSourceState = new SourceState();
+  hcsVideoSource = new HcsVideoSource();
+  hcsMergedImageSource = new HcsMergedImageSource();
+  hcsImageViewer;
+  hcsAnalysis = new Analysis();
 
-  @observable hcsInfo;
-  @observable container;
-  @observable hcsViewerState = new ViewerState();
-  @observable hcsSourceState = new SourceState();
-  @observable hcsVideoSource = new HcsVideoSource();
-  @observable hcsMergedImageSource = new HcsMergedImageSource();
-  @observable hcsImageViewer;
-  @observable hcsAnalysis = new Analysis();
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      hcsInfo: observable,
+      container: observable,
+      hcsViewerState: observable,
+      hcsSourceState: observable,
+      hcsVideoSource: observable,
+      hcsMergedImageSource: observable,
+      hcsImageViewer: observable,
+      hcsAnalysis: observable,
+      sequences: computed,
+      viewSettings: computed
+    });
+  }
 
   componentDidMount () {
     this.hcsVideoSource.attachViewerState(this.hcsViewerState);
@@ -112,7 +127,6 @@ class HcsImage extends React.Component {
     }
   }
 
-  @computed
   get sequences () {
     if (!this.hcsInfo) {
       return [];
@@ -120,7 +134,6 @@ class HcsImage extends React.Component {
     return (this.hcsInfo.sequences || []).map(s => s);
   }
 
-  @computed
   get viewSettings () {
     return this.hcsInfo?.viewSettings || {
       video: true,

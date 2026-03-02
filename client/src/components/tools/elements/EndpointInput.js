@@ -18,7 +18,7 @@ import React from 'react';
 import {
   inject,
   observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
 import {
   Button,
@@ -94,7 +94,13 @@ export default class EndpointInput extends React.Component {
     validation: {}
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      additionalConfigurationEditable: computed
+    });
+  }
+
   get additionalConfigurationEditable () {
     const {
       authenticatedUserInfo

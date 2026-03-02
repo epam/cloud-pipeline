@@ -18,7 +18,7 @@ import React from 'react';
 import classNames from 'classnames';
 import Graph from './Graph';
 import {inject, observer} from 'mobx-react';
-import {observable} from 'mobx';
+import {observable, makeObservable} from 'mobx';
 import VersionFile from '../../../../../models/pipelines/VersionFile';
 import AllowedInstanceTypes from '../../../../../models/utils/AllowedInstanceTypes';
 import {
@@ -109,7 +109,14 @@ export default class WdlGraph extends Graph {
   wdlProject;
   workflow;
   workflowParameters;
-  @observable previousSuccessfulCode;
+  previousSuccessfulCode;
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      previousSuccessfulCode: observable
+    });
+  }
 
   initializeContainer = async (container) => {
     if (container && !this.wdlVisualizer) {

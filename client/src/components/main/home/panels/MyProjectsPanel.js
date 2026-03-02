@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {Alert, Row} from 'antd';
 import {HddOutlined, CompassOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
@@ -41,6 +41,13 @@ export default class MyProjectsPanel extends localization.LocalizedReactComponen
     onInitialize: PropTypes.func
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      projects: computed
+    });
+  }
+
   searchProjectFn = (project, search) => {
     return (
       !search ||
@@ -52,7 +59,6 @@ export default class MyProjectsPanel extends localization.LocalizedReactComponen
     );
   };
 
-  @computed
   get projects () {
     if (this.props.projects.loaded && this.props.hiddenObjects.loaded) {
       return (this.props.projects.value.childFolders || []).map(project => {

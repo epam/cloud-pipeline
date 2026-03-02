@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {
   Alert,
   Checkbox,
@@ -100,6 +100,13 @@ class ConfigurationPayload extends React.Component {
     rootEntityId: undefined
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      cloudRegions: computed
+    });
+  }
+
   get pending () {
     const {
       pending,
@@ -137,7 +144,6 @@ class ConfigurationPayload extends React.Component {
     return !!pipelineId;
   }
 
-  @computed
   get cloudRegions () {
     const {cloudRegionsInfo} = this.props;
     if (cloudRegionsInfo.loaded) {
@@ -1082,7 +1088,7 @@ class ConfigurationPayload extends React.Component {
         </Collapse>
       </Parameters.Provider>
     );
-  };
+  }
 }
 
 ConfigurationPayload.propTypes = {

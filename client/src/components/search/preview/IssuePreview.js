@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {Row, Tooltip} from 'antd';
 import {LoadingOutlined} from '@ant-design/icons';
@@ -50,7 +50,15 @@ export default class IssuePreview extends React.Component {
     })
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      description: computed,
+      issue: computed,
+      comments: computed
+    });
+  }
+
   get description () {
     if (!this.issue) {
       return null;
@@ -70,7 +78,6 @@ export default class IssuePreview extends React.Component {
     return description || this.props.item.description;
   }
 
-  @computed
   get issue () {
     if (this.props.issueInfo && this.props.issueInfo.loaded) {
       return {
@@ -82,7 +89,6 @@ export default class IssuePreview extends React.Component {
     return null;
   }
 
-  @computed
   get comments () {
     if (this.props.issueInfo && this.props.issueInfo.loaded) {
       return (this.props.issueInfo.value.comments || []).map(c => c);
@@ -275,5 +281,4 @@ export default class IssuePreview extends React.Component {
       </div>
     );
   }
-
 }

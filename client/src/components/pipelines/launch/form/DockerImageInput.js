@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import {
   observer,
   inject} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {Input
 } from 'antd';
 import {ToolOutlined} from '@ant-design/icons';
@@ -69,7 +69,13 @@ export default class DockerImageInput extends React.Component {
     }
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      registries: computed
+    });
+  }
+
   get registries () {
     if (this.props.dockerRegistries.loaded) {
       return this.props.hiddenToolsTreeFilter(this.props.dockerRegistries.value)

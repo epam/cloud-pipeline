@@ -1,4 +1,4 @@
-import {action, computed, observable} from 'mobx';
+import {computed, observable, makeObservable, action} from 'mobx';
 import {ContextualPreferenceSearch, names as ContextualPreferences} from './ContextualPreference';
 
 async function getGcpSpotInstanceTypeName () {
@@ -31,18 +31,21 @@ async function getGcpSpotInstanceTypeName () {
 export class GcpSpotInstanceType {
   static PREEMPTIBLE = 'PREEMPTIBLE';
   static SPOT = 'SPOT';
-  @observable value = GcpSpotInstanceType.PREEMPTIBLE;
+  value = GcpSpotInstanceType.PREEMPTIBLE;
 
   constructor () {
+    makeObservable(this, {
+      value: observable,
+      spotName: computed,
+      fetch: action
+    });
     (this.fetch)();
   }
 
-  @action
   async fetch () {
     this.value = (await getGcpSpotInstanceTypeName()) || GcpSpotInstanceType.SPOT;
   }
 
-  @computed
   get spotName () {
     return this.value === GcpSpotInstanceType.PREEMPTIBLE ? 'Preemptible' : 'Spot';
   }

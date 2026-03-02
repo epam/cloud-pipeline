@@ -17,7 +17,7 @@
 import React from 'react';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import {Link} from 'react-router';
 import FileSaver from 'file-saver';
 import {
@@ -191,7 +191,26 @@ class Logs extends localization.LocalizedReactComponent {
     runPreviousStatus: undefined
   };
 
-  @observable runScheduleRequest;
+  runScheduleRequest;
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      runScheduleRequest: observable,
+      runSchedule: computed,
+      runPayload: computed,
+      maintenanceMode: computed,
+      dtsList: computed,
+      timeFromStart: computed,
+      runningTime: computed,
+      isDtsEnvironment: computed,
+      isFireCloudEnvironment: computed,
+      initializeEnvironmentFinished: computed,
+      sshEnabled: computed,
+      fsBrowserEnabled: computed,
+      endpointAvailable: computed
+    });
+  }
 
   componentDidMount () {
     this.updateFromProps();
@@ -359,7 +378,6 @@ class Logs extends localization.LocalizedReactComponent {
     }
   }
 
-  @computed
   get runSchedule () {
     if (!this.runScheduleRequest || !this.runScheduleRequest.loaded) {
       return [];
@@ -368,7 +386,6 @@ class Logs extends localization.LocalizedReactComponent {
     return (this.runScheduleRequest.value || []).map(i => i);
   }
 
-  @computed
   get runPayload () {
     const {preferences} = this.props;
     const {run} = this.state;
@@ -416,7 +433,6 @@ class Logs extends localization.LocalizedReactComponent {
     return null;
   }
 
-  @computed
   get maintenanceMode () {
     const {preferences} = this.props;
     if (preferences && preferences.loaded) {
@@ -728,7 +744,6 @@ class Logs extends localization.LocalizedReactComponent {
     );
   };
 
-  @computed
   get dtsList () {
     if (this.props.dtsList.loaded) {
       return (this.props.dtsList.value || []).map(i => i);
@@ -1299,7 +1314,7 @@ class Logs extends localization.LocalizedReactComponent {
     } else {
       return this.renderContentPlainMode();
     }
-  };
+  }
 
   getTaskUrl = (task) => {
     let url = '';
@@ -1449,7 +1464,6 @@ class Logs extends localization.LocalizedReactComponent {
     }
   }
 
-  @computed
   get timeFromStart () {
     const {run} = this.state;
     if (!run) {
@@ -1459,7 +1473,6 @@ class Logs extends localization.LocalizedReactComponent {
     return displayDuration(startDate);
   }
 
-  @computed
   get runningTime () {
     const {
       runTasks = [],
@@ -1536,27 +1549,23 @@ class Logs extends localization.LocalizedReactComponent {
     }
   };
 
-  @computed
   get isDtsEnvironment () {
     const {run} = this.state;
     return run && run.executionPreferences &&
       run.executionPreferences.environment === DTS_ENVIRONMENT;
   }
 
-  @computed
   get isFireCloudEnvironment () {
     const {run} = this.state;
     return run && run.executionPreferences &&
       run.executionPreferences.environment === FIRE_CLOUD_ENVIRONMENT;
   }
 
-  @computed
   get initializeEnvironmentFinished () {
     const {run} = this.state;
     return run && run.initialized;
   }
 
-  @computed
   get sshEnabled () {
     const {run} = this.state;
     if (
@@ -1576,7 +1585,6 @@ class Logs extends localization.LocalizedReactComponent {
     return false;
   }
 
-  @computed
   get fsBrowserEnabled () {
     const {run} = this.state;
     if (
@@ -1607,7 +1615,6 @@ class Logs extends localization.LocalizedReactComponent {
     return false;
   }
 
-  @computed
   get endpointAvailable () {
     const {run} = this.state;
     if (run && this.initializeEnvironmentFinished) {
@@ -1963,7 +1970,7 @@ class Logs extends localization.LocalizedReactComponent {
                   </span>
                 )}
               >
-                <ExclamationCircleFilled style={{ marginLeft: 5, fontSize: 'smaller' }} />
+                <ExclamationCircleFilled style={{marginLeft: 5, fontSize: 'smaller'}} />
               </Popover>
             </span>
           );

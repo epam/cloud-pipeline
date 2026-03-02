@@ -17,20 +17,25 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {Row, Table} from 'antd';
 import styles from './Browser.css';
 
 @inject('fireCloudMethods')
 @observer
 export default class FireCloudMethodsBrowser extends React.Component {
-
   static propTypes = {
     methodSearchString: PropTypes.string,
     onMethodSelect: PropTypes.func
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      methods: computed
+    });
+  }
+
   get methods () {
     if (this.props.fireCloudMethods.loaded) {
       let methods = this.props.fireCloudMethods.value || [];
@@ -78,7 +83,7 @@ export default class FireCloudMethodsBrowser extends React.Component {
         <Table
           className={styles.childrenContainer}
           rowClassName={() => styles.fireCloudMethodRow}
-          onRow={(record) => ({ onClick: () => this.onMethodSelect(record) })}
+          onRow={(record) => ({onClick: () => this.onMethodSelect(record)})}
           style={{width: '100%'}}
           columns={this.columns}
           dataSource={this.methods}

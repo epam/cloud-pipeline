@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observer, inject} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import PipelineRunCmd from '../../../../../models/pipelines/PipelineRunCmd';
 import {Alert, Modal, Row, Select, Tabs} from 'antd';
 import {applyCustomCapabilitiesParameters} from './run-capabilities';
@@ -72,7 +72,13 @@ class LaunchCommand extends React.Component {
     osType: DEFAULT_OS
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      launchCommandTemplate: computed
+    });
+  }
+
   get launchCommandTemplate () {
     const {preferences} = this.props;
     return preferences.getPreferenceValue('ui.launch.command.template');

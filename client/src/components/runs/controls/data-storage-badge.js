@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import {Link} from 'react-router';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
 import styles from './data-storage-badge.css';
@@ -26,7 +26,13 @@ import styles from './data-storage-badge.css';
 @inject('dataStorages')
 @observer
 class DataStorageBadge extends React.Component {
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      storageInfo: computed
+    });
+  }
+
   get storageInfo () {
     const {dataStorages, storageId, storage} = this.props;
     if (typeof storage === 'object' && storage !== null && Object.keys(storage).length) {

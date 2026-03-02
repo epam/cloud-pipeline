@@ -25,7 +25,7 @@ import pools from '../../models/cluster/HotNodePools';
 import TerminateNodeRequest from '../../models/cluster/TerminateNode';
 import {ChartsData} from './charts';
 import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import styles from './ClusterNode.css';
 import parentStyles from './Cluster.css';
 import {renderNodeLabels as generateNodeLabels} from './renderers';
@@ -53,11 +53,20 @@ class ClusterNode extends Component {
   state = {
     labelsToShow: undefined
   };
-
-  @observable _chartsData;
+  _chartsData;
 
   resizeListener;
   labelRefs = [];
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      _chartsData: observable,
+      chartsData: computed,
+      windowsOS: computed,
+      uiStandaloneNodesAllowTerminate: computed
+    });
+  }
 
   componentDidMount () {
     this.resizeListener = window.addEventListener('resize', this.onResize);
@@ -81,12 +90,10 @@ class ClusterNode extends Component {
     window.removeEventListener('resize', this.onResize);
   }
 
-  @computed
   get chartsData () {
     return this._chartsData;
   }
 
-  @computed
   get windowsOS () {
     const {node} = this.props;
     if (node.loaded) {
@@ -107,13 +114,12 @@ class ClusterNode extends Component {
     return authenticatedUserInfo.loaded
       ? authenticatedUserInfo.value.admin
       : false;
-  };
+  }
 
   get isCloudNode () {
     return this.props.machineType === MACHINE_TYPES.cloud;
   }
 
-  @computed
   get uiStandaloneNodesAllowTerminate () {
     const {preferences} = this.props;
     if (preferences) {

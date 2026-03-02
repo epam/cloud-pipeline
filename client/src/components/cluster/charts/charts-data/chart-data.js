@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import {action, computed, observable} from 'mobx';
+import {observable, makeAutoObservable} from 'mobx';
 import moment from 'moment-timezone';
 import NodeUsage from '../../../../models/cluster/ClusterNodeUsage';
 import {alphabeticalSorter} from '../../../../utils/sorting';
@@ -87,35 +87,29 @@ async function loadData (node, from, to, instanceFrom, instanceTo, runId) {
 }
 
 class ChartData {
-  @observable data = {};
-  @observable groups = [];
-  @observable xPoints = [];
-  @observable xMin = 0;
-  @observable xMax = 0;
-
-  @observable noData = true;
-
-  @observable _pending = true;
-  @observable error;
-  @observable networkError;
-  @observable instanceFrom;
-  @observable instanceTo;
-  @observable from;
-  @observable to;
-  @observable rangeEndIsFixed = false;
-
-  @observable _refreshToken = 0;
-  @observable ranges = {};
+  data = {};
+  groups = [];
+  xPoints = [];
+  xMin = 0;
+  xMax = 0;
+  noData = true;
+  _pending = true;
+  error;
+  networkError;
+  instanceFrom;
+  instanceTo;
+  from;
+  to;
+  rangeEndIsFixed = false;
+  _refreshToken = 0;
+  ranges = {};
   listeners = [];
-
   nodeName;
 
-  @computed
   get pending () {
     return this._pending;
   }
 
-  @computed
   get refreshToken () {
     return this._refreshToken;
   }
@@ -125,6 +119,7 @@ class ChartData {
   }
 
   constructor (nodeName, instanceFrom, instanceTo, runId) {
+    makeAutoObservable(this);
     this.nodeName = nodeName;
     this.instanceFrom = instanceFrom;
     this.instanceTo = instanceTo;
@@ -148,7 +143,6 @@ class ChartData {
     }
   };
 
-  @action
   loadData = () => {
     this.pending = true;
     return new Promise((resolve) => {
@@ -174,12 +168,10 @@ class ChartData {
     });
   };
 
-  @action
   async fetch () {
     return this.loadData();
   }
 
-  @action
   updateRange = () => {
     if (!this.rangeEndIsFixed) {
       this.instanceTo = moment().unix();
@@ -196,7 +188,6 @@ class ChartData {
     );
   };
 
-  @action
   processValues (values) {
     this.apply(values);
     this.updateRange();
@@ -211,7 +202,7 @@ class ChartData {
     }];
   }
 
-  @action apply = (responseData) => {
+  apply = (responseData) => {
     if (!responseData || responseData.length === 0) {
       this.noData = true;
       return;

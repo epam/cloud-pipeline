@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {
   Alert,
@@ -125,6 +125,16 @@ class FacetedSearch extends React.Component {
 
   abortController;
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      dataStorageSharingEnabled: computed,
+      nameTag: computed,
+      downloadFileTag: computed,
+      searchColumnsOrder: computed
+    });
+  }
+
   componentDidMount () {
     const {facetedFilters} = this.props;
     this.initAbortController();
@@ -148,14 +158,12 @@ class FacetedSearch extends React.Component {
     }
   }
 
-  @computed
   get dataStorageSharingEnabled () {
     const {preferences} = this.props;
     return preferences && preferences.loaded &&
         preferences.sharedStoragesSystemDirectory && preferences.dataSharingEnabled;
   }
 
-  @computed
   get nameTag () {
     const {preferences} = this.props;
     if (preferences && preferences.loaded) {
@@ -164,7 +172,6 @@ class FacetedSearch extends React.Component {
     return undefined;
   }
 
-  @computed
   get downloadFileTag () {
     const {preferences} = this.props;
     if (preferences && preferences.loaded) {
@@ -204,7 +211,7 @@ class FacetedSearch extends React.Component {
           )
         ))
     };
-  };
+  }
 
   get filters () {
     const {
@@ -288,7 +295,6 @@ class FacetedSearch extends React.Component {
       }));
   }
 
-  @computed
   get searchColumnsOrder () {
     const {
       preferences,
@@ -939,10 +945,10 @@ class FacetedSearch extends React.Component {
               : <CaretDownOutlined style={{fontSize: '10px'}} />}
             {getSortingFieldName(sort.field)}
             <CloseOutlined className={classNames(
-                styles.removeSortingBtn,
-                'cp-icon-button',
-                {'cp-disabled': pending}
-              )}
+              styles.removeSortingBtn,
+              'cp-icon-button',
+              {'cp-disabled': pending}
+            )}
               onClick={(event) => this.removeSortingByField(sort.field, event)} />
           </Button>
         ))}

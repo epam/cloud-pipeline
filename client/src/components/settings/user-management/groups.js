@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import {
   observer,
   inject} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {
   Alert,
   Table,
@@ -62,6 +62,15 @@ export default class GroupsManagement extends React.Component {
     createGroupDialogVisible: null
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      groupsSharedPermissions: computed,
+      roles: computed,
+      rolesPending: computed
+    });
+  }
+
   componentDidUpdate (prevProps, prevState, snapshot) {
     if (prevProps.predefined !== this.props.predefined) {
       this.prepare();
@@ -80,17 +89,16 @@ export default class GroupsManagement extends React.Component {
     return authenticatedUserInfo.loaded
       ? authenticatedUserInfo.value.admin
       : false;
-  };
+  }
 
   get isReader () {
     return roleModel.hasRole(roleModel.ROLES.ROLE_USER_READER)(this);
-  };
+  }
 
   get isUsersAdmin () {
     return roleModel.hasRole(roleModel.ROLES.ROLE_USER_ADMIN)(this);
-  };
+  }
 
-  @computed
   get groupsSharedPermissions () {
     return {
       read: this.roles.some(r => roleModel.readAllowed(r)),
@@ -107,7 +115,6 @@ export default class GroupsManagement extends React.Component {
     });
   };
 
-  @computed
   get roles () {
     const {roles, predefined = false} = this.props;
     if (roles.loaded) {
@@ -121,7 +128,6 @@ export default class GroupsManagement extends React.Component {
     return [];
   }
 
-  @computed
   get rolesPending () {
     const {roles} = this.props;
     return roles.pending;
@@ -258,7 +264,7 @@ export default class GroupsManagement extends React.Component {
         columns={columns}
         dataSource={this.filteredRoles}
         onChange={this.handleGroupsTableChange}
-        onRow={(group) => ({ onClick: () => this.openEditGroupDialog(group) })}
+        onRow={(group) => ({onClick: () => this.openEditGroupDialog(group)})}
         pagination={{
           total: this.filteredRoles.length,
           PAGE_SIZE,

@@ -15,18 +15,19 @@
  */
 
 import Remote from '../basic/Remote';
-import {action} from 'mobx';
+import {makeObservable, override} from 'mobx';
 
 class PipelineFile extends Remote {
-
   static isJson = false;
 
   constructor (id, version, path) {
     super();
+    makeObservable(this, {
+      update: override
+    });
     this.url = `/pipeline/${id}/file/download?version=${version}&path=${path}`;
   }
 
-  @action
   update (value) {
     this._response = value;
     this._value = this.postprocess(value);

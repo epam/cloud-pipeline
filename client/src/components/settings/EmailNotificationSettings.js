@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import NotificationSettings from '../../models/settings/NotificationSettings';
 import NotificationSettingUpdate from '../../models/settings/NotificationSettingUpdate';
 import NotificationTemplateUpdate from '../../models/settings/NotificationTemplateUpdate';
@@ -40,6 +40,16 @@ export default class EmailNotificationSettings extends React.Component {
     changesCanBeSkipped: false
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      templates: computed,
+      emailTemplates: computed,
+      users: computed,
+      templateModified: computed
+    });
+  }
+
   componentDidMount () {
     const {
       route,
@@ -52,14 +62,13 @@ export default class EmailNotificationSettings extends React.Component {
     }
     notificationSettings.fetch();
     emailTemplates.fetch();
-  };
+  }
 
   reload = () => {
     this.props.notificationSettings.fetch();
     this.props.emailTemplates.fetch();
   };
 
-  @computed
   get templates () {
     if (this.props.notificationSettings.loaded) {
       return (this.props.notificationSettings.value || [])
@@ -76,7 +85,6 @@ export default class EmailNotificationSettings extends React.Component {
     return [];
   }
 
-  @computed
   get emailTemplates () {
     if (this.props.emailTemplates.loaded) {
       return (this.props.emailTemplates.value || []).map(t => t);
@@ -84,7 +92,6 @@ export default class EmailNotificationSettings extends React.Component {
     return [];
   }
 
-  @computed
   get users () {
     if (this.props.users.loaded) {
       return (this.props.users.value || []).map(u => u);
@@ -188,7 +195,6 @@ export default class EmailNotificationSettings extends React.Component {
     this.editEmailNotificationForm = form;
   };
 
-  @computed
   get templateModified () {
     if (!this.editEmailNotificationForm) {
       return false;

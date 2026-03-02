@@ -15,8 +15,7 @@
  */
 
 import React from 'react';
-import {
-  computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {inject,
   observer} from 'mobx-react';
 import {
@@ -63,19 +62,25 @@ class SystemDictionaries extends React.Component {
     currentDictionaryKey: undefined
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      dictionaries: computed
+    });
+  }
+
   componentDidMount () {
     const {route, router, systemDictionaries} = this.props;
     if (route && router) {
       router.setRouteLeaveHook(route, this.checkModifiedBeforeLeave);
     }
     systemDictionaries.fetch();
-  };
+  }
 
   componentWillUnmount () {
     this.resetChangesStateTimeout && clearTimeout(this.resetChangesStateTimeout);
   }
 
-  @computed
   get dictionaries () {
     const {systemDictionaries} = this.props;
     if (!systemDictionaries.loaded) {

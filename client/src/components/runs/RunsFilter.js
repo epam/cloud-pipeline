@@ -18,7 +18,7 @@ import React from 'react';
 import {
   inject,
   observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import LoadingView from '../special/LoadingView';
 import {Alert,
@@ -61,6 +61,14 @@ class RunsFilter extends React.Component {
     appliedFilter: null,
     savedFiltersDropDownVisible: false
   };
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      savedFilters: computed,
+      keywords: computed
+    });
+  }
 
   componentDidMount () {
     if (this.props.query) {
@@ -314,7 +322,6 @@ class RunsFilter extends React.Component {
     } catch (___) {}
   };
 
-  @computed
   get savedFilters () {
     const savedFiltersStr = localStorage.getItem('filters');
     if (savedFiltersStr) {
@@ -392,7 +399,7 @@ class RunsFilter extends React.Component {
           showHeader={false}
           columns={columns}
           rowClassName={() => styles.savedFiltersRow}
-          onRow={(record) => ({ onClick: () => onSelect(record) })}
+          onRow={(record) => ({onClick: () => onSelect(record)})}
           size="small" />
       </Row>
     );
@@ -410,7 +417,6 @@ class RunsFilter extends React.Component {
     );
   };
 
-  @computed
   get keywords () {
     if (this.props.keywords.pending || this.props.keywords.error) {
       return [];

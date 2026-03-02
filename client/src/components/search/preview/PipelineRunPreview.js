@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {Row} from 'antd';
 import {
   ClockCircleOutlined,
@@ -81,7 +81,19 @@ export default class PipelineRunPreview extends React.Component {
     })
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      runName: computed,
+      timeFromStart: computed,
+      runningTime: computed,
+      timings: computed,
+      isDtsEnvironment: computed,
+      isFireCloudEnvironment: computed,
+      dtsList: computed
+    });
+  }
+
   get runName () {
     if (this.props.item) {
       const runIdentifier = this.props.item.id || this.props.item.elasticId;
@@ -105,7 +117,6 @@ export default class PipelineRunPreview extends React.Component {
     return null;
   }
 
-  @computed
   get timeFromStart () {
     if (!this.props.runInfo.loaded) {
       return '';
@@ -114,7 +125,6 @@ export default class PipelineRunPreview extends React.Component {
     return moment.utc(startDate).fromNow(true);
   }
 
-  @computed
   get runningTime () {
     if (this.props.runTasks.pending || this.props.runTasks.value.length === 0) {
       return '';
@@ -122,7 +132,6 @@ export default class PipelineRunPreview extends React.Component {
     return moment.utc(this.props.runTasks.value[0].started).fromNow(true);
   }
 
-  @computed
   get timings () {
     if (this.props.runInfo && this.props.runInfo.loaded) {
       const result = [];
@@ -170,19 +179,16 @@ export default class PipelineRunPreview extends React.Component {
     return [];
   }
 
-  @computed
   get isDtsEnvironment () {
     return this.props.runInfo.loaded && this.props.runInfo.value.executionPreferences &&
       this.props.runInfo.value.executionPreferences.environment === DTS_ENVIRONMENT;
   }
 
-  @computed
   get isFireCloudEnvironment () {
     return this.props.runInfo.loaded && this.props.runInfo.value.executionPreferences &&
       this.props.runInfo.value.executionPreferences.environment === FIRE_CLOUD_ENVIRONMENT;
   }
 
-  @computed
   get dtsList () {
     if (this.props.dtsList.loaded) {
       return (this.props.dtsList.value || []).map(i => i);

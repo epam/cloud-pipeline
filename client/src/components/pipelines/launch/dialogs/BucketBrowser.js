@@ -17,7 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import connect from '../../../../utils/connect';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
 import SplitPane from 'react-split-pane';
 import {Alert, Button, Checkbox, Col, Input, Modal, Row, Table, Tree, message} from 'antd';
@@ -145,7 +145,6 @@ export default class BucketBrowser extends React.Component {
     filterNonObjectStorages: PropTypes.bool
   };
 
-  @observable
   storage = null;
   rootItems = [];
 
@@ -165,7 +164,17 @@ export default class BucketBrowser extends React.Component {
 
   tableData = [];
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      storage: observable,
+      uploadFilesEnabled: computed,
+      awsRegions: computed,
+      currentCloudRegion: computed,
+      storages: computed
+    });
+  }
+
   get uploadFilesEnabled () {
     const {uiLaunchParametersConfiguration, uploadFilesAllowed} = this.props;
     return uploadFilesAllowed &&
@@ -173,7 +182,6 @@ export default class BucketBrowser extends React.Component {
       uiLaunchParametersConfiguration.localFiles.enabled;
   }
 
-  @computed
   get awsRegions () {
     if (this.props.awsRegions.loaded) {
       return (this.props.awsRegions.value || []).map(r => r);
@@ -181,7 +189,6 @@ export default class BucketBrowser extends React.Component {
     return [];
   }
 
-  @computed
   get currentCloudRegion () {
     const {
       cloudRegionId
@@ -191,7 +198,6 @@ export default class BucketBrowser extends React.Component {
       : undefined;
   }
 
-  @computed
   get storages () {
     const {storages} = this.props;
     return storages.loaded ? (storages.value || []).map(r => r) : [];

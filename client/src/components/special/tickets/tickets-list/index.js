@@ -19,7 +19,7 @@ import classNames from 'classnames';
 import {
   inject,
   observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {
   Button,
   Select,
@@ -88,6 +88,14 @@ class TicketsList extends React.Component {
     newTicketPending: false
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      enableControls: computed,
+      predefinedLabels: computed
+    });
+  }
+
   componentDidMount () {
     this.fetchCurrentPage();
   }
@@ -98,7 +106,6 @@ class TicketsList extends React.Component {
     }
   }
 
-  @computed
   get enableControls () {
     const {authenticatedUserInfo} = this.props;
     if (authenticatedUserInfo && authenticatedUserInfo.loaded) {
@@ -107,7 +114,6 @@ class TicketsList extends React.Component {
     return false;
   }
 
-  @computed
   get predefinedLabels () {
     const {preferences} = this.props;
     if (preferences && preferences.loaded) {

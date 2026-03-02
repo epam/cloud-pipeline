@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import getThemes, {
   DefaultDarkThemeIdentifier,
@@ -73,18 +73,17 @@ function applyClassNameToBody (className, themes = []) {
 }
 
 class CloudPipelineThemes {
-  @observable themes = [];
-  @observable mode = ThemesPreferenceModes.payload;
-  @observable themesURL;
-  @observable loaded = false;
-  @observable currentTheme = DefaultLightThemeIdentifier;
-  @observable synchronizeWithSystem = false;
-  @observable singleTheme = DefaultDarkThemeIdentifier;
-  @observable systemLightTheme = DefaultLightThemeIdentifier;
-  @observable systemDarkTheme = DefaultDarkThemeIdentifier;
-  @observable isSystemDarkMode = false;
+  themes = [];
+  mode = ThemesPreferenceModes.payload;
+  themesURL;
+  loaded = false;
+  currentTheme = DefaultLightThemeIdentifier;
+  synchronizeWithSystem = false;
+  singleTheme = DefaultDarkThemeIdentifier;
+  systemLightTheme = DefaultLightThemeIdentifier;
+  systemDarkTheme = DefaultDarkThemeIdentifier;
+  isSystemDarkMode = false;
 
-  @computed
   get currentThemeConfiguration () {
     const theme = this.themes.find(o => o.identifier === this.currentTheme);
     if (theme) {
@@ -93,12 +92,25 @@ class CloudPipelineThemes {
     return undefined;
   }
 
-  @computed
   get currentThemeObject () {
     return this.themes.find(o => o.identifier === this.currentTheme);
   }
 
   constructor () {
+    makeObservable(this, {
+      themes: observable,
+      mode: observable,
+      themesURL: observable,
+      loaded: observable,
+      currentTheme: observable,
+      synchronizeWithSystem: observable,
+      singleTheme: observable,
+      systemLightTheme: observable,
+      systemDarkTheme: observable,
+      isSystemDarkMode: observable,
+      currentThemeConfiguration: computed,
+      currentThemeObject: computed
+    });
     this.listeners = [];
     (this.initialize)();
     if (window.matchMedia) {

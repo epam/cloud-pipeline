@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import {Row} from 'antd';
 import {LoadingOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
@@ -65,10 +65,28 @@ export default class ConfigurationPreview extends React.Component {
     })
   };
 
-  @observable
   _pipeline = null;
 
   _systemParams = null;
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      _pipeline: observable,
+      pipeline: computed,
+      name: computed,
+      description: computed,
+      configurationEntry: computed,
+      isSpot: computed,
+      currentCloudProvider: computed,
+      configurationEntryParameters: computed,
+      dtsList: computed,
+      isDtsEnvironment: computed,
+      isFireCloudEnvironment: computed,
+      ExecEnvString: computed,
+      pipelineRow: computed
+    });
+  }
 
   componentDidUpdate () {
     if (this.configurationEntry &&
@@ -81,7 +99,6 @@ export default class ConfigurationPreview extends React.Component {
     }
   }
 
-  @computed
   get pipeline () {
     if (!this._pipeline || !this._pipeline.loaded) {
       return null;
@@ -90,7 +107,6 @@ export default class ConfigurationPreview extends React.Component {
     return this._pipeline.value;
   }
 
-  @computed
   get name () {
     if (!this.props.item) {
       return null;
@@ -98,7 +114,6 @@ export default class ConfigurationPreview extends React.Component {
     return this.props.item.name;
   }
 
-  @computed
   get description () {
     if (!this.props.item) {
       return null;
@@ -110,7 +125,6 @@ export default class ConfigurationPreview extends React.Component {
     return this.props.item.description;
   }
 
-  @computed
   get configurationEntry () {
     if (!this.props.configuration || !this.props.configuration.loaded || !this.props.entryName) {
       return null;
@@ -120,7 +134,6 @@ export default class ConfigurationPreview extends React.Component {
       .filter(e => e.name === this.props.entryName)[0];
   }
 
-  @computed
   get isSpot () {
     if (this.configurationEntry && this.configurationEntry.configuration) {
       return this.configurationEntry.configuration.is_spot;
@@ -128,7 +141,6 @@ export default class ConfigurationPreview extends React.Component {
     return null;
   }
 
-  @computed
   get currentCloudProvider () {
     if (this.configurationEntry && this.configurationEntry.configuration && this.props.cloudProviders.loaded) {
       const [provider] = (this.props.cloudProviders.value || [])
@@ -138,7 +150,6 @@ export default class ConfigurationPreview extends React.Component {
     return null;
   }
 
-  @computed
   get configurationEntryParameters () {
     if (!this.configurationEntry ||
       (!this.configurationEntry.configuration && !this.configurationEntry.parameters)) {
@@ -150,7 +161,6 @@ export default class ConfigurationPreview extends React.Component {
     ) || this.configurationEntry.parameters;
   }
 
-  @computed
   get dtsList () {
     if (this.props.dtsList.loaded) {
       return (this.props.dtsList.value || []).map(i => i);
@@ -158,19 +168,16 @@ export default class ConfigurationPreview extends React.Component {
     return [];
   }
 
-  @computed
   get isDtsEnvironment () {
     return this.configurationEntry &&
       this.configurationEntry.executionEnvironment === DTS_ENVIRONMENT;
   }
 
-  @computed
   get isFireCloudEnvironment () {
     return this.configurationEntry &&
       this.configurationEntry.executionEnvironment === FIRE_CLOUD_ENVIRONMENT;
   }
 
-  @computed
   get ExecEnvString () {
     if (!this.configurationEntry) {
       return null;
@@ -186,9 +193,8 @@ export default class ConfigurationPreview extends React.Component {
     }
 
     return environment;
-  };
+  }
 
-  @computed
   get pipelineRow () {
     if (!this.configurationEntry) {
       return null;

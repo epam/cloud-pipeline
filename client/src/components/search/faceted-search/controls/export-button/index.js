@@ -16,8 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {
-  computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {inject,
   observer} from 'mobx-react';
 import {Link} from 'react-router';
@@ -147,7 +146,14 @@ class ExportButton extends React.Component {
     dropdownVisible: false
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      exportTemplates: computed,
+      isAdmin: computed
+    });
+  }
+
   get exportTemplates () {
     const {preferences} = this.props;
     if (preferences?.loaded) {
@@ -156,7 +162,6 @@ class ExportButton extends React.Component {
     return undefined;
   }
 
-  @computed
   get isAdmin () {
     const {authenticatedUserInfo} = this.props;
     if (authenticatedUserInfo.loaded) {

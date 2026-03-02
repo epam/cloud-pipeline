@@ -6,7 +6,7 @@ import styles from './launch-command.css';
 import {getOS, OperationSystems} from '../../../../../utils/OSDetection';
 import {API_PATH, SERVER} from '../../../../../config';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import LoadingView from '../../../../special/LoadingView';
 import BashCode from '../../../../special/bash-code';
 
@@ -59,7 +59,13 @@ class RunLaunchCommandSection extends React.Component {
     tab: defaultCliCommand
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      launchCommandTemplate: computed
+    });
+  }
+
   get launchCommandTemplate () {
     const {preferences} = this.props;
     return preferences.getPreferenceValue('ui.launch.command.template');

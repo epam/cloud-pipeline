@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import PropTypes from 'prop-types';
 import LaunchFormParameter from './parameter';
@@ -57,6 +57,13 @@ class Parameters extends Component {
 
   sectionDivs = {};
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      userInfo: computed
+    });
+  }
+
   componentDidMount () {
     this.checkResolvedValues();
   }
@@ -71,7 +78,6 @@ class Parameters extends Component {
     clearTimeout(this.highlightSectionTimeout);
   }
 
-  @computed
   get userInfo () {
     if (!this.props.authenticatedUserInfo.loaded) {
       return undefined;

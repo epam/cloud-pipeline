@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Provider, inject, observer} from 'mobx-react';
-import {observable} from 'mobx';
+import {observable, makeObservable} from 'mobx';
 import {RunOperationWarningAlert} from './warning';
 
 let storeIndex = 0;
@@ -86,12 +86,19 @@ export default function generateProvider (options) {
    * @type {React.ComponentClass & RunOperationCheckProviderType}
    */
   const RunOperationCheckProvider = class extends React.PureComponent {
-    @observable storeObj = {
+    storeObj = {
       pending: false,
       checkResult: {result: false},
       objectId: undefined,
       options: undefined
     };
+
+    constructor (props) {
+      super(props);
+      makeObservable(this, {
+        storeObj: observable
+      });
+    }
 
     componentDidMount () {
       this.checkRun();

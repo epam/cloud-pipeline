@@ -18,7 +18,7 @@ import React, {Component} from 'react';
 import {
   observer,
   inject} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
 import {
   Alert,
@@ -76,7 +76,15 @@ export default class SystemParametersBrowser extends Component {
       this.state.selectedParameters.filter(p => p.name === parameter.name).length > 0;
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      authenticatedUserRolesNames: computed,
+      isAdmin: computed,
+      systemParameters: computed
+    });
+  }
+
   get authenticatedUserRolesNames () {
     if (!this.props.authenticatedUserInfo.loaded) {
       return [];
@@ -87,7 +95,6 @@ export default class SystemParametersBrowser extends Component {
     return roles.map(r => r.name);
   }
 
-  @computed
   get isAdmin () {
     if (!this.props.authenticatedUserInfo.loaded) {
       return false;
@@ -98,7 +105,6 @@ export default class SystemParametersBrowser extends Component {
     return admin;
   }
 
-  @computed
   get systemParameters () {
     const {runDefaultParameters} = this.props;
     if (!runDefaultParameters.loaded) {

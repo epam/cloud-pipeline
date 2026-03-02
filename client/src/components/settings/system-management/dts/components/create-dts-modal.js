@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {observable, computed} from 'mobx';
+import {observable, computed, makeObservable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {Row, Modal, message, Button, Input, Checkbox} from 'antd';
 import styles from './create-dts-modal.css';
@@ -31,9 +31,17 @@ export default class CreateDtsModal extends React.Component {
     name: '',
     schedulable: true,
     prefixes: ''
-  }
+  };
 
-  @observable errors = {}
+  errors = {};
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      errors: observable,
+      hasErrors: computed
+    });
+  }
 
   componentDidMount () {
     this.validate();
@@ -78,7 +86,6 @@ export default class CreateDtsModal extends React.Component {
     };
   };
 
-  @computed
   get hasErrors () {
     return Object.values(this.errors).filter(Boolean).length > 0;
   }

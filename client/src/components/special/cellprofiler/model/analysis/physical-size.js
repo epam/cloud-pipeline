@@ -14,13 +14,17 @@
  *  limitations under the License.
  */
 
-import {observable} from 'mobx';
+import {observable, makeObservable} from 'mobx';
 
 export default class PhysicalSize {
-  @observable unitsInPixel = 1;
-  @observable unit = 'px';
+  unitsInPixel = 1;
+  unit = 'px';
 
   constructor (unitsInPixel, unit) {
+    makeObservable(this, {
+      unitsInPixel: observable,
+      unit: observable
+    });
     this.update(unitsInPixel, unit);
   }
 

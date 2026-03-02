@@ -1,24 +1,28 @@
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import preferences from '../../models/preferences/PreferencesLoad';
 import LocalFilesConfiguration from './local-files';
 
 class UILaunchParametersConfiguration {
-  @observable localFiles = new LocalFilesConfiguration();
-  constructor () {
-    (this.update)();
-  }
+ localFiles = new LocalFilesConfiguration();
 
-  @computed
-  get loaded () {
-    return preferences.loaded;
-  }
+ constructor () {
+   makeObservable(this, {
+     localFiles: observable,
+     loaded: computed
+   });
+   (this.update)();
+ }
 
-  async update () {
-    await Promise.all([
-      preferences.fetchIfNeededOrWait(),
-      this.localFiles.update()
-    ]);
-  }
+ get loaded () {
+   return preferences.loaded;
+ }
+
+ async update () {
+   await Promise.all([
+     preferences.fetchIfNeededOrWait(),
+     this.localFiles.update()
+   ]);
+ }
 }
 
 const uiLaunchParametersConfiguration = new UILaunchParametersConfiguration();

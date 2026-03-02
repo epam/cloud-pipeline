@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer, Provider} from 'mobx-react';
-import {action, computed, observable} from 'mobx';
+import {observable, makeObservable, makeAutoObservable} from 'mobx';
 import {colors} from './charts';
 import {fadeout, darken, lighten, parseColor} from '../../../themes/utilities/color-utilities';
 
@@ -29,13 +29,16 @@ function undefinedOnInherit (o) {
 }
 
 class ThemedReportConfiguration {
-  @observable themes;
-  @action
+  themes;
+
+  constructor () {
+    makeAutoObservable(this);
+  }
+
   attachThemes (themes) {
     this.themes = themes;
   }
 
-  @computed
   get backgroundColor () {
     if (this.themes && this.themes.currentThemeConfiguration) {
       return this.themes.currentThemeConfiguration['@card-background-color'] || colors.white;
@@ -43,7 +46,6 @@ class ThemedReportConfiguration {
     return colors.white;
   }
 
-  @computed
   get lineColor () {
     if (this.themes && this.themes.currentThemeConfiguration) {
       return this.themes.currentThemeConfiguration['@card-border-color'] || colors.grey;
@@ -51,7 +53,6 @@ class ThemedReportConfiguration {
     return colors.grey;
   }
 
-  @computed
   get textColor () {
     if (this.themes && this.themes.currentThemeConfiguration) {
       return this.themes.currentThemeConfiguration['@application-color'] || colors.black;
@@ -59,7 +60,6 @@ class ThemedReportConfiguration {
     return colors.black;
   }
 
-  @computed
   get errorColor () {
     if (this.themes && this.themes.currentThemeConfiguration) {
       return this.themes.currentThemeConfiguration['@color-red'] || colors.red;
@@ -67,7 +67,6 @@ class ThemedReportConfiguration {
     return colors.red;
   }
 
-  @computed
   get subTextColor () {
     if (this.themes && this.themes.currentThemeConfiguration) {
       return this.themes.currentThemeConfiguration['@application-color-faded'] || colors.grey;
@@ -75,7 +74,6 @@ class ThemedReportConfiguration {
     return colors.grey;
   }
 
-  @computed
   get quota () {
     if (this.themes && this.themes.currentThemeConfiguration) {
       return this.themes.currentThemeConfiguration['@color-sensitive'] || colors.quota;
@@ -83,7 +81,6 @@ class ThemedReportConfiguration {
     return colors.quota;
   }
 
-  @computed
   get current () {
     if (this.themes && this.themes.currentThemeConfiguration) {
       return this.themes.currentThemeConfiguration['@color-green'] || colors.current;
@@ -91,17 +88,14 @@ class ThemedReportConfiguration {
     return colors.current;
   }
 
-  @computed
   get lightCurrent () {
     return fadeout(this.current, 0.75);
   }
 
-  @computed
   get darkCurrent () {
     return darken(this.current, 0.05);
   }
 
-  @computed
   get previous () {
     if (this.themes && this.themes.currentThemeConfiguration) {
       return this.themes.currentThemeConfiguration['@primary-color'] || colors.previous;
@@ -109,12 +103,10 @@ class ThemedReportConfiguration {
     return colors.previous;
   }
 
-  @computed
   get lightPrevious () {
     return fadeout(this.previous, 0.5);
   }
 
-  @computed
   get blue () {
     if (this.themes && this.themes.currentThemeConfiguration) {
       return undefinedOnInherit(
@@ -126,12 +118,10 @@ class ThemedReportConfiguration {
     return colors.blue;
   }
 
-  @computed
   get lightBlue () {
     return lighten(this.blue, 0.1);
   }
 
-  @computed
   get colors () {
     if (this.themes && this.themes.currentThemeConfiguration) {
       return [
@@ -149,7 +139,6 @@ class ThemedReportConfiguration {
     ];
   }
 
-  @computed
   get otherColors () {
     if (this.themes && this.themes.currentThemeConfiguration) {
       return [
@@ -188,7 +177,15 @@ class ThemedReportConfiguration {
 }
 
 class ThemedReport extends React.Component {
-  @observable configuration = new ThemedReportConfiguration();
+  configuration = new ThemedReportConfiguration();
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      configuration: observable
+    });
+  }
+
   componentDidMount () {
     const {themes} = this.props;
     this.configuration.attachThemes(themes);

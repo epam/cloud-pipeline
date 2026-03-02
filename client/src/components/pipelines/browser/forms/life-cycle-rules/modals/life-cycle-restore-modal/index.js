@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {observer} from 'mobx-react';
 import {
   Modal,
@@ -27,7 +27,7 @@ import {
   Button
 } from 'antd';
 import {STATUS}
-  from '../../../../../../../models/dataStorage/lifeCycleRules/DataStorageLifeCycleRulesLoad';
+from '../../../../../../../models/dataStorage/lifeCycleRules/DataStorageLifeCycleRulesLoad';
 import UsersRolesSelect from '../../../../../../special/users-roles-select';
 import styles from './life-cycle-restore-modal.css';
 
@@ -62,7 +62,13 @@ class LifeCycleRestoreModal extends React.Component {
     force: false
   }
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      showForceRestore: computed
+    });
+  }
+
   get showForceRestore () {
     const {
       items = [],

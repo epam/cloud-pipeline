@@ -13,7 +13,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-import {action, computed, observable} from 'mobx';
+import {action, computed, observable, makeObservable} from 'mobx';
 import Branches, {
   HeadBranch,
   RemoteBranch,
@@ -26,9 +26,15 @@ import ChangeStatuses from '../changes/statuses';
 const ConflictedFileStart = Symbol('conflicted file');
 
 class ConflictedFile {
-  @observable changesHash = 0;
-  @observable changes = [];
+  changesHash = 0;
+  changes = [];
   constructor () {
+    makeObservable(this, {
+      changesHash: observable,
+      changes: observable,
+      notify: action,
+      resolved: computed
+    });
     this[ConflictedFileStart] = new ConflictedFileLine('', {start: true});
     this[ConflictedFileStart].file = this;
     this.items = [];
@@ -73,7 +79,6 @@ class ConflictedFile {
     }
   }
 
-  @action
   notify () {
     this.changesHash += 1;
   }
@@ -90,7 +95,6 @@ class ConflictedFile {
     return this[ConflictedFileStart];
   }
 
-  @computed
   get resolved () {
     return !(this.changes || []).find(change => !change.resolved);
   }
@@ -706,15 +710,18 @@ class ConflictedFile {
 }
 
 class BinaryConflictedFile extends ConflictedFile {
-  @observable acceptedBranch;
+  acceptedBranch;
   binary = true;
 
   constructor (info) {
     super();
+    makeObservable(this, {
+      acceptedBranch: observable,
+      resolved: computed
+    });
     this.info = info;
   }
 
-  @computed
   get resolved () {
     return !!this.acceptedBranch && this.acceptedBranch !== Merged;
   }

@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {Alert, Button, Row} from 'antd';
 
 const DRIVE_MAPPING_URL_PREFERENCE = 'base.dav.auth.url';
@@ -24,8 +24,13 @@ const DRIVE_MAPPING_URL_PREFERENCE = 'base.dav.auth.url';
 @inject('preferences')
 @observer
 export default class DriveMappingWindowsForm extends React.Component {
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      driveMappintAuthUrl: computed
+    });
+  }
 
-  @computed
   get driveMappintAuthUrl () {
     return this.props.preferences.getPreferenceValue(DRIVE_MAPPING_URL_PREFERENCE);
   }

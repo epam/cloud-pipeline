@@ -17,9 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {
-  autorun,
-  computed} from 'mobx';
+import {autorun, computed, makeObservable} from 'mobx';
 import {observer,
   inject} from 'mobx-react';
 import {Alert,
@@ -59,6 +57,14 @@ const DEFAULT_REGISTRY_ID = 1;
 export default class LaunchForm extends React.Component {
   constructor (props) {
     super(props);
+    makeObservable(this, {
+      isAdmin: computed,
+      registries: computed,
+      dockerRegistry: computed,
+      defaultTag: computed,
+      awsRegions: computed,
+      defaultCloudRegionId: computed
+    });
     this.formStore = new LaunchFormStore();
   }
 
@@ -89,7 +95,6 @@ export default class LaunchForm extends React.Component {
     }
   }
 
-  @computed
   get isAdmin () {
     const {authenticatedUserInfo} = this.props;
     if (authenticatedUserInfo.loaded) {
@@ -98,7 +103,6 @@ export default class LaunchForm extends React.Component {
     return false;
   }
 
-  @computed
   get registries () {
     if (this.props.dockerRegistries.loaded) {
       return this.props.dockerRegistries.value.registries;
@@ -106,7 +110,6 @@ export default class LaunchForm extends React.Component {
     return [];
   }
 
-  @computed
   get dockerRegistry () {
     if (this.registries.length > 0 && this.formStore.toolInfo) {
       return this.registries
@@ -115,7 +118,6 @@ export default class LaunchForm extends React.Component {
     return null;
   }
 
-  @computed
   get defaultTag () {
     if (this.fotmStore.versions?.length) {
       const latest = this.formStore.versions.find(v => v.version === 'latest');
@@ -128,7 +130,6 @@ export default class LaunchForm extends React.Component {
     return null;
   }
 
-  @computed
   get awsRegions () {
     if (this.props.awsRegions.loaded) {
       return (this.props.awsRegions.value || []).map(r => r);
@@ -136,7 +137,6 @@ export default class LaunchForm extends React.Component {
     return [];
   }
 
-  @computed
   get defaultCloudRegionId () {
     const [defaultRegion] = this.awsRegions.filter(r => r.default);
     if (defaultRegion) {

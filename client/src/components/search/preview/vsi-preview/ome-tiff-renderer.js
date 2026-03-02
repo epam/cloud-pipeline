@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {observable} from 'mobx';
+import {observable, makeObservable} from 'mobx';
 import {Provider, observer} from 'mobx-react';
 import {Button} from 'antd';
 import {ArrowsAltOutlined, CloseOutlined, SettingOutlined, ShrinkOutlined} from '@ant-design/icons';
@@ -47,14 +47,23 @@ class OmeTiffRenderer extends React.Component {
     controlsVisible: false
   };
 
-  @observable hcsViewerState = new ViewerState();
-  @observable hcsSourceState = new SourceState();
+  csViewerState = new ViewerState(); hcsSourceState = new SourceState();
+
   /**
    * @type {ImagesAnnotations}
    */
-  @observable imagesAnnotations;
+  imagesAnnotations;
 
   hcsImageViewer;
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      hcsViewerState: observable,
+      hcsSourceState: observable,
+      imagesAnnotations: observable
+    });
+  }
 
   componentDidMount () {
     this.fetchURLs();

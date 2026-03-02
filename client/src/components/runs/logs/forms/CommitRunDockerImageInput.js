@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import {Input, Row, AutoComplete} from 'antd';
 import classNames from 'classnames';
 import roleModel from '../../../../utils/roleModel';
@@ -53,7 +53,7 @@ export default class CommitRunDockerImageInput extends React.Component {
 
   state = {};
 
-  @observable _tags;
+  _tags;
 
   updateGroups = () => {
     if (this.currentRegistry && this.groups.length > 0 && !this.state.group) {
@@ -164,7 +164,21 @@ export default class CommitRunDockerImageInput extends React.Component {
     }, this.handleOnChange);
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      _tags: observable,
+      isAdmin: computed,
+      toolVersions: computed,
+      tags: computed,
+      registries: computed,
+      groups: computed,
+      tools: computed,
+      currentRegistry: computed,
+      currentGroup: computed
+    });
+  }
+
   get isAdmin () {
     const {authenticatedUserInfo} = this.props;
     if (!authenticatedUserInfo || !authenticatedUserInfo.loaded) {
@@ -173,7 +187,6 @@ export default class CommitRunDockerImageInput extends React.Component {
     return authenticatedUserInfo.value.admin;
   }
 
-  @computed
   get toolVersions () {
     if (this._tags && this._tags.loaded) {
       return (this._tags.value || []).map(t => t);
@@ -181,7 +194,6 @@ export default class CommitRunDockerImageInput extends React.Component {
     return [];
   }
 
-  @computed
   get tags () {
     const tags = this.toolVersions.map(tag => {
       return {
@@ -222,12 +234,10 @@ export default class CommitRunDockerImageInput extends React.Component {
     this.validateTool();
   };
 
-  @computed
   get registries () {
     return this.props.registries;
   }
 
-  @computed
   get groups () {
     const {showOtherPersonalGroups} = this.props;
     if (!this.currentRegistry) {
@@ -244,7 +254,6 @@ export default class CommitRunDockerImageInput extends React.Component {
       });
   }
 
-  @computed
   get tools () {
     if (!this.currentGroup) {
       return [];
@@ -281,7 +290,6 @@ export default class CommitRunDockerImageInput extends React.Component {
     return tools;
   }
 
-  @computed
   get currentRegistry () {
     const [currentRegistry] = this.state.registry
       ? this.registries.filter(g => g.path === this.state.registry)
@@ -289,7 +297,6 @@ export default class CommitRunDockerImageInput extends React.Component {
     return currentRegistry;
   }
 
-  @computed
   get currentGroup () {
     const [currentGroup] = this.state.group
       ? this.groups.filter(g => g.name === this.state.group)

@@ -20,7 +20,7 @@ import {
   inject,
   observer,
   Provider} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {
   Button,
   Checkbox,
@@ -146,6 +146,13 @@ class EditHotNodePool extends React.Component {
 
   roles = new Roles();
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      regions: computed
+    });
+  }
+
   componentDidMount () {
     this.updateFromProps();
   }
@@ -172,7 +179,6 @@ class EditHotNodePool extends React.Component {
     return allowedPriceTypes.map(p => /^spot$/i.test(p));
   }
 
-  @computed
   get regions () {
     const {awsRegions} = this.props;
     if (awsRegions.loaded) {

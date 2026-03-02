@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {observable} from 'mobx';
+import {observable, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import {Switch, Alert, Button, Row, Col, Modal, Spin} from 'antd';
@@ -64,7 +64,14 @@ class PipelineCodeForm extends React.Component {
   };
 
   _modifiedCode = null;
-  @observable _originalCode = null;
+  _originalCode = null;
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      _originalCode: observable
+    });
+  }
 
   componentDidMount () {
     if (this.props.visible) {

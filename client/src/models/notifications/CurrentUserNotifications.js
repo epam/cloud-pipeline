@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import {action, computed, observable} from 'mobx';
+import {action, computed, observable, makeObservable} from 'mobx';
 import moment from 'moment-timezone';
 import whoAmI from '../user/WhoAmI';
 import continuousFetch from '../../utils/continuous-fetch';
@@ -76,13 +76,21 @@ const USER_NOTIFICATIONS_CONFIGURATION_ATTRIBUTE = 'ui.notifications.mute';
 export {USER_NOTIFICATIONS_CONFIGURATION_ATTRIBUTE};
 
 class CurrentUserNotifications extends CurrentUserNotificationsPaging {
-  @observable _hideNotificationsTill;
-  @observable _muteNotifications = true;
+  _hideNotificationsTill;
+  _muteNotifications = true;
 
   userNotificationsConfigurationPromise;
 
   constructor () {
     super(0, DEFAULT_PAGE_SIZE, false);
+    makeObservable(this, {
+      _hideNotificationsTill: observable,
+      _muteNotifications: observable,
+      hideNotificationsTill: computed,
+      muted: computed,
+      hideNotifications: action,
+      setUserConfiguration: action
+    });
     this.userNotificationsConfigurationPromise = this.readUserConfiguration();
     continuousFetch({
       request: this,
@@ -90,17 +98,14 @@ class CurrentUserNotifications extends CurrentUserNotificationsPaging {
     });
   }
 
-  @computed
   get hideNotificationsTill () {
     return this._hideNotificationsTill;
   }
 
-  @computed
   get muted () {
     return this._muteNotifications;
   }
 
-  @action
   hideNotifications (date = moment.utc()) {
     this._hideNotificationsTill = date;
     const attributeValue = buildMuteEmailNotificationValue({
@@ -138,7 +143,6 @@ class CurrentUserNotifications extends CurrentUserNotificationsPaging {
     })();
   }
 
-  @action
   setUserConfiguration = (muted = false, displayAfter) => {
     this._muteNotifications = muted;
     if (displayAfter) {

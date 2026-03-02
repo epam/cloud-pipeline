@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import {
   inject,
   observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {
   Row,
   Tooltip
@@ -76,7 +76,13 @@ export default class UserName extends React.Component {
     tooltipPlacement: PropTypes.string
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      user: computed
+    });
+  }
+
   get user () {
     if (this.props.usersInfo.loaded && this.props.userName) {
       const user = (this.props.usersInfo.value || [])

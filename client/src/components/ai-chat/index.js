@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer, Provider} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import AIChat from './ai-chat';
 import styles from './ai-chat.css';
 import {Alert} from 'antd';
@@ -25,7 +25,13 @@ import LoadingView from '../special/LoadingView';
 @inject('preferences')
 @observer
 class AIChatPage extends React.Component {
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      aiChatBotAvailable: computed
+    });
+  }
+
   get aiChatBotAvailable () {
     const {preferences} = this.props;
     if (!preferences.loaded) {

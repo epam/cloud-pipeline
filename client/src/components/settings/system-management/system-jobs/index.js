@@ -16,9 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {
-  observable,
-  computed} from 'mobx';
+import {observable, computed, makeObservable} from 'mobx';
 import {inject,
   observer} from 'mobx-react';
 import {Alert,
@@ -57,8 +55,16 @@ class SystemJobs extends React.Component {
     selectedJobId: undefined
   }
 
-  @observable
   jobScriptParameters = {};
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      jobScriptParameters: observable,
+      currentJobParameters: computed,
+      currentJobHasRequiredParameters: computed
+    });
+  }
 
   componentDidMount () {
     const {
@@ -84,7 +90,6 @@ class SystemJobs extends React.Component {
     return jobs;
   }
 
-  @computed
   get currentJobParameters () {
     const {selectedJobId} = this.state;
     return Object
@@ -96,7 +101,6 @@ class SystemJobs extends React.Component {
       }));
   }
 
-  @computed
   get currentJobHasRequiredParameters () {
     return this.currentJobParameters
       .some(parameter => parameter.required);
@@ -210,7 +214,8 @@ class SystemJobs extends React.Component {
     const onRefresh = () => this.setState({refreshToken: refreshToken + 1});
     const handleLaunchMenu = ({key}) => {
       switch (key) {
-        case 'default': this.launchJob(job); break;
+        case 'default': this.launchJob(job);
+          break;
         case 'custom':
           this.openLaunchParametersModal(job);
           break;

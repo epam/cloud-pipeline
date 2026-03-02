@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {action, computed, observable} from 'mobx';
+import {action, computed, observable, makeObservable} from 'mobx';
 import {AnalysisTypes} from '../common/analysis-types';
 import generateId from '../common/generate-id';
 import {BooleanParameter} from '../parameters';
@@ -28,10 +28,19 @@ class AnalysisModuleOutput {
   /**
    * @type {AnalysisTypes}
    */
-  @observable type = AnalysisTypes.void;
-  @observable value;
-  @observable name;
-  @observable cpModule;
+  type = AnalysisTypes.void;
+  value;
+  name;
+  cpModule;
+
+  constructor () {
+    makeObservable(this, {
+      type: observable,
+      value: observable,
+      name: observable,
+      cpModule: observable
+    });
+  }
 }
 
 /**
@@ -68,35 +77,35 @@ class AnalysisModule {
   id;
   name;
   title;
-  @observable outputsConfiguration;
-  @observable syncInfo;
-  @observable changed = false;
-  @observable hidden = false;
-  @observable sourceImageParameter;
+  outputsConfiguration;
+  syncInfo;
+  changed = false;
+  hidden = false;
+  sourceImageParameter;
   static predefined = false;
   get predefined () { return this.constructor.predefined; };
   /***
    * @type {ModuleParameterValue[]}
    */
-  @observable parameters = [];
-  @observable extraParameters = {};
+  parameters = [];
+  extraParameters = {};
   /***
    * @type {ModuleParameter[]}
    */
-  @observable parametersConfigurations = [];
-  @observable hiddenModules = [];
+  parametersConfigurations = [];
+  hiddenModules = [];
   /**
    * @type {AnalysisPipeline}
    */
-  @observable pipeline;
+  pipeline;
   subModules;
   /**
    * @type {AnalysisModule}
    */
   parentModule;
-  @observable pending = false;
-  @observable done = false;
-  @observable statusReporting = false;
+  pending = false;
+  done = false;
+  statusReporting = false;
   composed = false;
 
   /**
@@ -117,6 +126,38 @@ class AnalysisModule {
    * @param {AnalysisInitializationOptions} [options]
    */
   constructor (pipeline, options = {}) {
+    // TODO: consider makeAutoObservable
+    makeObservable(this, {
+      outputsConfiguration: observable,
+      syncInfo: observable,
+      changed: observable,
+      hidden: observable,
+      sourceImageParameter: observable,
+      parameters: observable,
+      extraParameters: observable,
+      parametersConfigurations: observable,
+      hiddenModules: observable,
+      pipeline: observable,
+      pending: observable,
+      done: observable,
+      statusReporting: observable,
+      analysis: computed,
+      channels: computed,
+      outputs: computed,
+      fileInputParameters: computed,
+      outputParameters: computed,
+      sourceImage: computed,
+      modules: computed,
+      order: computed,
+      modulesBefore: computed,
+      modulesAfter: computed,
+      isFirst: computed,
+      isLast: computed,
+      update: action,
+      moveUp: action,
+      moveDown: action,
+      remove: action
+    });
     const {
       hidden = false,
       name,
@@ -164,7 +205,6 @@ class AnalysisModule {
   /**
    * @returns {Analysis}
    */
-  @computed
   get analysis () {
     if (!this.pipeline) {
       return undefined;
@@ -175,7 +215,6 @@ class AnalysisModule {
   /**
    * @returns {string[]}
    */
-  @computed
   get channels () {
     if (!this.pipeline) {
       return [];
@@ -183,7 +222,6 @@ class AnalysisModule {
     return this.pipeline.channels;
   }
 
-  @computed
   get outputs () {
     return this.outputsConfiguration.map((outputConfiguration) => {
       const {
@@ -206,7 +244,6 @@ class AnalysisModule {
   /**
    * @returns {ModuleParameterValue[]}
    */
-  @computed
   get fileInputParameters () {
     return (this.parameters || [])
       .filter(
@@ -214,7 +251,6 @@ class AnalysisModule {
       );
   }
 
-  @computed
   get outputParameters () {
     return this.outputsConfiguration.map((outputConfiguration) => {
       const {
@@ -229,13 +265,13 @@ class AnalysisModule {
     }).filter(Boolean);
   }
 
-  @computed
   get sourceImage () {
     if (!this.pipeline || !this.sourceImageParameter) {
       return undefined;
     }
     return this.getParameterValue(this.sourceImageParameter);
   }
+
   get displayName () {
     if (this.predefined || !this.pipeline) {
       return this.title;
@@ -246,9 +282,11 @@ class AnalysisModule {
     }
     return `#${idx} ${this.title}`;
   }
+
   get payload () {
     return this.getPayload();
   }
+
   initialize () {
     this.parametersConfigurations.push(new BooleanParameter({
       name: 'advanced',
@@ -282,6 +320,7 @@ class AnalysisModule {
     return this.parameters.find(searchParameterByName(name)) ||
       this.parameters.find(searchParameterByParameterName(name));
   }
+
   getParameterValue (name, ...modifier) {
     if (/^uuid$/i.test(name)) {
       return this.uuid;
@@ -297,9 +336,11 @@ class AnalysisModule {
     }
     return undefined;
   }
+
   getBooleanParameterValue (name) {
     return ['true', 'on', 'yes'].includes(`${this.getParameterValue(name)}`.toLowerCase());
   }
+
   setParameterValue (name, value) {
     const parameterValue = this.parameters.find(searchParameterByName(name)) ||
       this.parameters.find(searchParameterByParameterName(name));
@@ -309,16 +350,16 @@ class AnalysisModule {
       console.log(`module["${this.name}"].setParameterValue(${name},`, value, '): NOT FOUND');
     }
   }
+
   getAllVisibleParameters () {
     return this.parameters.filter(parameter => parameter.parameter.visible);
   }
-  @action
+
   update () {}
 
   /**
    * @returns {AnalysisModule[]}
    */
-  @computed
   get modules () {
     if (this.pipeline) {
       return (this.pipeline.modules || []);
@@ -326,7 +367,6 @@ class AnalysisModule {
     return [];
   }
 
-  @computed
   get order () {
     return this.modules.indexOf(this);
   }
@@ -334,7 +374,6 @@ class AnalysisModule {
   /**
    * @returns {AnalysisModule[]}
    */
-  @computed
   get modulesBefore () {
     const order = this.order;
     if (order < 0) {
@@ -345,7 +384,6 @@ class AnalysisModule {
   /**
    * @returns {AnalysisModule[]}
    */
-  @computed
   get modulesAfter () {
     const order = this.order;
     if (order < 0) {
@@ -353,15 +391,15 @@ class AnalysisModule {
     }
     return this.modules.slice(order + 1);
   }
-  @computed
+
   get isFirst () {
     return this.modulesBefore.filter(cpModule => !cpModule.hidden).length === 0;
   }
-  @computed
+
   get isLast () {
     return this.modulesAfter.filter(cpModule => !cpModule.hidden).length === 0;
   }
-  @action
+
   moveUp () {
     if (this.pipeline && !this.isFirst) {
       const modules = collapseModules([...this.pipeline.modules]);
@@ -377,7 +415,7 @@ class AnalysisModule {
       }
     }
   }
-  @action
+
   moveDown () {
     if (this.pipeline && !this.isLast) {
       const modules = collapseModules([...this.pipeline.modules]);
@@ -393,7 +431,7 @@ class AnalysisModule {
       }
     }
   }
-  @action
+
   remove () {
     if (this.pipeline) {
       const modules = collapseModules([...this.pipeline.modules]);

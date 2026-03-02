@@ -18,7 +18,7 @@ import {SERVER} from '../../config';
 import Remote from '../basic/Remote';
 import MetadataFolder from '../metadata/MetadataFolder';
 import defer from '../../utils/defer';
-import {action, observable} from 'mobx';
+import {override, observable, makeObservable} from 'mobx';
 import {authorization} from '../basic/Authorization';
 import mapFolderChildrenMetadata from './mapFolderChildrenMetadata';
 
@@ -33,11 +33,16 @@ function getPlainFolders (root = {}) {
 }
 
 class FolderLoadTree extends Remote {
-  @observable folders = [];
   constructor () {
     super();
+    makeObservable(this, {
+      folders: observable,
+      update: override
+    });
     this.url = '/folder/loadTree';
   }
+
+  folders = [];
 
   async fetch () {
     this._loadRequired = false;
@@ -81,7 +86,6 @@ class FolderLoadTree extends Remote {
     return this._fetchPromise;
   }
 
-  @action
   update (value, metadataRequest) {
     this._response = value;
     if (value.status && value.status === 401) {

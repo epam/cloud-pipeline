@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {
   observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {Button,
   Checkbox,
   Input
@@ -44,10 +44,22 @@ const DEFAULT_MEASUREMENT = {
 
 @observer
 class Measurements extends React.Component {
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      parameter: computed,
+      cpModule: computed,
+      physicalSize: computed,
+      units: computed,
+      method: computed,
+      multiple: computed,
+      measurements: computed
+    });
+  }
+
   /**
    * @returns {ModuleParameter}
    */
-  @computed
   get parameter () {
     const {
       parameterValue
@@ -57,11 +69,11 @@ class Measurements extends React.Component {
     }
     return undefined;
   }
-  @computed
+
   get cpModule () {
     return this.parameter ? this.parameter.cpModule : undefined;
   }
-  @computed
+
   get physicalSize () {
     if (
       this.cpModule &&
@@ -71,21 +83,21 @@ class Measurements extends React.Component {
     }
     return undefined;
   }
-  @computed
+
   get units () {
     if (this.physicalSize) {
       return this.physicalSize.unit;
     }
     return 'px';
   }
-  @computed
+
   get method () {
     if (!this.cpModule) {
       return false;
     }
     return this.cpModule.getParameterValue('method');
   }
-  @computed
+
   get multiple () {
     if (!this.cpModule) {
       return false;
@@ -93,7 +105,7 @@ class Measurements extends React.Component {
     return this.cpModule.getParameterValue('mode') === 'Measurements' &&
       this.method === 'Limits';
   }
-  @computed
+
   get measurements () {
     const {
       parameterValue
@@ -107,6 +119,7 @@ class Measurements extends React.Component {
     }
     return value;
   }
+
   setValue (newValue = []) {
     const {
       parameterValue
@@ -116,6 +129,7 @@ class Measurements extends React.Component {
       parameterValue.reportChanged();
     }
   }
+
   renderMeasurementConfiguration = (measurement, index) => {
     const {
       measurement: value
@@ -246,9 +260,11 @@ class Measurements extends React.Component {
       </div>
     );
   };
+
   onAddMeasurement = () => {
     this.setValue([...this.measurements, {...DEFAULT_MEASUREMENT}]);
   };
+
   render () {
     const {
       className,

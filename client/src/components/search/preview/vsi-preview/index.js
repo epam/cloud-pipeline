@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import {
   Button,
   Tabs,
@@ -245,9 +245,17 @@ class VSIPreview extends React.Component {
     showAttributes: false
   };
 
-  @observable s3Storage;
+  s3Storage;
   map;
   pathElement;
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      s3Storage: observable,
+      storage: computed
+    });
+  }
 
   componentDidMount () {
     this.createS3Storage();
@@ -278,7 +286,6 @@ class VSIPreview extends React.Component {
     }
   }
 
-  @computed
   get storage () {
     const {storageId, dataStorages} = this.props;
     if (storageId && dataStorages.loaded) {

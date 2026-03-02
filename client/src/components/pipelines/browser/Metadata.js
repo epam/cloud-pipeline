@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import connect from '../../../utils/connect';
 import folders from '../../../models/folders/Folders';
@@ -231,7 +231,7 @@ export default class Metadata extends React.Component {
     readOnly: PropTypes.bool
   };
 
-  @observable keys;
+  keys;
 
   metadataRequest = {};
   externalMetadataEntity = {};
@@ -278,7 +278,19 @@ export default class Metadata extends React.Component {
 
   uploadButton;
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      keys: observable,
+      entityTypes: computed,
+      transferJobId: computed,
+      transferJobVersion: computed,
+      currentClassEntityFields: computed,
+      currentClassEntityPathFields: computed,
+      currentMetadataClassId: computed
+    });
+  }
+
   get entityTypes () {
     const {entityFields, metadataClasses} = this.props;
     if (entityFields.loaded && metadataClasses.loaded) {
@@ -299,7 +311,6 @@ export default class Metadata extends React.Component {
     return [];
   }
 
-  @computed
   get transferJobId () {
     const {preferences} = this.props;
     if (preferences.loaded) {
@@ -308,7 +319,6 @@ export default class Metadata extends React.Component {
     return null;
   }
 
-  @computed
   get transferJobVersion () {
     const {preferences} = this.props;
     if (preferences.loaded) {
@@ -317,7 +327,6 @@ export default class Metadata extends React.Component {
     return null;
   }
 
-  @computed
   get currentClassEntityFields () {
     if (!this.keys) {
       return [];
@@ -334,7 +343,6 @@ export default class Metadata extends React.Component {
     return [];
   }
 
-  @computed
   get currentClassEntityPathFields () {
     if (!this.keys) {
       return [];
@@ -351,7 +359,6 @@ export default class Metadata extends React.Component {
     return [];
   }
 
-  @computed
   get currentMetadataClassId () {
     const [metadataClassObj] = this.entityTypes
       .map(e => e.metadataClass)
@@ -1336,6 +1343,7 @@ export default class Metadata extends React.Component {
       );
     }
   };
+
   getCurrentSelection = () => {
     const {cellsSelection} = this.state;
     if (cellsSelection) {
@@ -1358,6 +1366,7 @@ export default class Metadata extends React.Component {
     }
     return undefined;
   }
+
   getSpreadSelection = () => {
     const selection = this.getCurrentSelection();
     if (selection && selection.spread) {
@@ -1380,6 +1389,7 @@ export default class Metadata extends React.Component {
     }
     return undefined;
   }
+
   handleStartSelection = (opts) => {
     if (this.props.readOnly || this.state.filterComponentVisible) {
       return;
@@ -1556,10 +1566,12 @@ export default class Metadata extends React.Component {
       });
     }
   }
+
   isHoveredCell = (row, column) => {
     const {hoveredCell} = this.state;
     return hoveredCell && hoveredCell.row === row && hoveredCell.column === column;
   }
+
   handleCellSelection = (opts) => {
     if (this.props.readOnly || this.state.filterComponentVisible) {
       return;
@@ -1661,6 +1673,7 @@ export default class Metadata extends React.Component {
       }
     }
   }
+
   resetSelection = (e) => {
     if (e.key === 'Escape') {
       this.setState({
@@ -1670,9 +1683,11 @@ export default class Metadata extends React.Component {
       });
     }
   }
+
   clearHovering = () => {
     this.setState({hoveredCell: undefined});
   }
+
   clearSelection = () => {
     this.setState({
       cellsSelection: undefined,
@@ -2317,7 +2332,7 @@ export default class Metadata extends React.Component {
           })
         };
       })];
-  };
+  }
 
   renderTableActions = () => {
     const {
@@ -2686,7 +2701,7 @@ export default class Metadata extends React.Component {
         />
       </div>
     );
-  };
+  }
 
   getParents = async () => {
     const {folderId, pipelinesLibrary} = this.props;
@@ -2744,7 +2759,7 @@ export default class Metadata extends React.Component {
       .then(() => this.fetchDefaultMetadataProperties());
     document.addEventListener('keydown', this.resetSelection);
     window.addEventListener('mouseup', this.handleFinishSelection);
-  };
+  }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
     const metadataClassChanged = prevProps.metadataClass !== this.props.metadataClass;
@@ -2929,7 +2944,7 @@ export default class Metadata extends React.Component {
       });
       return false;
     }
-  };
+  }
 
   componentWillUnmount () {
     this.resetSelectedItemsTimeout && clearTimeout(this.resetSelectedItemsTimeout);

@@ -20,7 +20,7 @@ import {
   inject,
   observer} from 'mobx-react';
 import classNames from 'classnames';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {
   Alert,
   Button,
@@ -79,7 +79,14 @@ class LaunchVSForm extends React.Component {
     tag: undefined
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      groups: computed,
+      tools: computed
+    });
+  }
+
   get groups () {
     const {dockerRegistries} = this.props;
     if (dockerRegistries.loaded) {
@@ -94,7 +101,6 @@ class LaunchVSForm extends React.Component {
     return [];
   }
 
-  @computed
   get tools () {
     const {dockerRegistries} = this.props;
     if (dockerRegistries.loaded) {

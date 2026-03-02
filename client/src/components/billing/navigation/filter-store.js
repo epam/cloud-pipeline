@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {observable, isObservableArray} from 'mobx';
+import {observable, isObservableArray, makeObservable} from 'mobx';
 import {Period, getPeriod} from '../../special/periods';
 import RunnerType from './runner-types';
 import ReportsRouting from './reports-routing';
@@ -24,12 +24,23 @@ import {parseStorageAggregate, StorageAggregate} from './aggregate';
 class Filter {
   static RUNNER_SEPARATOR = '|';
   static REGION_SEPARATOR = '|';
-  @observable period;
-  @observable range;
-  @observable report;
-  @observable runner;
-  @observable metrics;
-  @observable storageAggregate;
+  period;
+  range;
+  report;
+  runner;
+  metrics;
+  storageAggregate;
+
+  constructor () {
+    makeObservable(this, {
+      period: observable,
+      range: observable,
+      report: observable,
+      runner: observable,
+      metrics: observable,
+      storageAggregate: observable
+    });
+  }
 
   rebuild = ({location, router}) => {
     this.router = router;

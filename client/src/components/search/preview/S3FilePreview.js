@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import {Row} from 'antd';
 import {CaretRightOutlined, LoadingOutlined} from '@ant-design/icons';
@@ -94,7 +94,14 @@ export default class S3FilePreview extends React.Component {
     hideInfo: false
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      filePreview: computed,
+      structuredTableData: computed
+    });
+  }
+
   get filePreview () {
     if (this.props.preview) {
       if (this.props.preview.pending) {
@@ -120,7 +127,6 @@ export default class S3FilePreview extends React.Component {
     return null;
   }
 
-  @computed
   get structuredTableData () {
     if (this.filePreview && this.filePreview.preview &&
       this.props.item && this.props.item.id &&
