@@ -264,7 +264,7 @@ def transfer_async(chunk, with_file_list=True):
     else:
         file_list_path = None
     bucket = S3Bucket()
-    rule_patterns = [rule.file_mask for rule in chunk.rules]
+    rule_patterns = [rule.file_mask for rule in chunk.rules] if chunk.rules else []
     cmd = bucket.build_pipe_cp_command(chunk.source, chunk.destination, file_list=file_list_path, include=rule_patterns)
     if chunk.hostname != 'localhost':
         cmd = '(ssh %s API=$API API_TOKEN=$API_TOKEN RUN_ID=$RUN_ID "%s") & _CHUNK_PID=$! && wait $_CHUNK_PID' % \
