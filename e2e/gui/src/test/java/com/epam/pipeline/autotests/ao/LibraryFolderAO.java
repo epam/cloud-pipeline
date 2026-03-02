@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import static com.codeborne.selenide.Selectors.withText;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
@@ -128,6 +129,7 @@ public class LibraryFolderAO implements AccessObject<LibraryFolderAO> {
         sleep(5, SECONDS);
         ensure(UPLOAD_METADATA, visible);
         $(byClassName("ant-upload-select")).find(tagName("input")).should(exist).uploadFile(file);
+        $(withText("Uploading files...")).should(disappear);
         return this;
     }
 
