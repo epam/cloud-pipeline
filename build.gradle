@@ -82,7 +82,8 @@ task buildAllFast(dependsOn: [":core:build", "client:buildUI", buildPipe, buildD
                           // ":data-sharing-service:buildFast",  // commented: project excluded in settings.gradle
                           ":fs-browser:build", ":workflows:buildGpuStat",
                           // ":billing-report-agent:bootJar",  // commented: project excluded (depends on elasticsearch-common)
-                          ":cloud-pipeline-webdav-client:buildWin", ":cloud-pipeline-webdav-client:buildLinux", ":cloud-pipeline-webdav-client:buildCli",
+                          // ":cloud-pipeline-webdav-client:buildWin",  // commented: requires node-wine image
+                          ":cloud-pipeline-webdav-client:buildLinux", ":cloud-pipeline-webdav-client:buildCli",
                           ":git-reader:build", ":monitoring-service:build", ":storage-lifecycle-service:build"]) {
     group = 'build'
 }
@@ -97,7 +98,8 @@ task buildAll(dependsOn: [":core:build", "client:buildUI", buildPipe, buildDoc,
                           // ":data-sharing-service:buildAll",  // commented: project excluded in settings.gradle
                           ":fs-browser:build", ":workflows:buildGpuStat",
                           // ":billing-report-agent:build",  // commented: project excluded (depends on elasticsearch-common)
-                          ":cloud-pipeline-webdav-client:buildWin", ":cloud-pipeline-webdav-client:buildLinux", ":cloud-pipeline-webdav-client:buildCli",
+                          // ":cloud-pipeline-webdav-client:buildWin",  // commented: requires node-wine image
+                          ":cloud-pipeline-webdav-client:buildLinux", ":cloud-pipeline-webdav-client:buildCli",
                           ":git-reader:build", ":monitoring-service:build", ":storage-lifecycle-service:build"]) {
     group = 'build'
 }
