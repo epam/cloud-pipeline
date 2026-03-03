@@ -29,7 +29,7 @@ RUN apt-get install -y wget \
 RUN rm -f ~/.config/bg_sakuli.png
 
 # Install Chrome
-RUN wget https://storage.googleapis.com/chrome-for-testing-public/126.0.6478.182/linux64/chrome-linux64.zip && \
+RUN wget https://storage.googleapis.com/chrome-for-testing-public/120.0.6099.109/linux64/chrome-linux64.zip && \
     apt-get install -y unzip && \
     unzip chrome-linux64.zip && \
     rm chrome-linux64.zip && \
@@ -37,7 +37,7 @@ RUN wget https://storage.googleapis.com/chrome-for-testing-public/126.0.6478.182
     ln -s /opt/chrome/chrome /usr/local/bin/
 
 # Install ChromeDriver. Version: 126
-RUN wget https://storage.googleapis.com/chrome-for-testing-public/126.0.6478.182/linux64/chromedriver-linux64.zip && \
+RUN wget https://storage.googleapis.com/chrome-for-testing-public/120.0.6099.109/linux64/chromedriver-linux64.zip && \
     unzip -j chromedriver-linux64.zip && \
     rm LICENSE.chromedriver && \
     rm chromedriver-linux64.zip && \
