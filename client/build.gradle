@@ -3,19 +3,12 @@ plugins {
   id "com.github.node-gradle.node" version "7.0.2"
 }
 
-/*task npmPrune(type: NpmTask) {
-  args = ['prune']
-}*/
 tasks.register("npmPrune", NpmTask) {
   args.set(["prune"])
 }
 
-/*task clean(type: Delete) {
-   delete("$project.buildDir")
-}*/
-
 tasks.register("clean", Delete) {
-  delete("$project.buildDir")
+  delete(project.layout.buildDirectory)
 }
 
 npmInstall.dependsOn npmPrune
@@ -37,10 +30,8 @@ tasks.register("buildUI", NpmTask) {
   args = ['run', 'build']
   doLast {
     copy {
-      from("${layout.buildDirectory}")
+      from(project.layout.buildDirectory)
       into("$rootDir/api/src/main/resources/static/")
     }
   }
-
-
 }
