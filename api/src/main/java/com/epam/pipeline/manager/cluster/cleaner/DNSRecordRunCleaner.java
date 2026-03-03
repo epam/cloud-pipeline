@@ -19,6 +19,7 @@ import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.manager.cloud.CloudFacade;
+import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.utils.UtilsManager;
@@ -40,13 +41,21 @@ public class DNSRecordRunCleaner implements RunCleaner {
     private static final String DELIMITER = "/";
     private static final String PORT_DELIMITER = ":";
 
+    // Additional fix during cherry-pick process. Since RunCleaner interface was migrated earlier to release/0.16-g
+    // and now we need to implement cleanResources(final Long runId) method.
+    // in dev branch we have different realization because it includes multi-region edge feature, and as result
+    // different object model for run service urls. If this feature will be migrated too,
+    // this additional code can be replaced.
+    private final PipelineRunManager runManager;
     private final PreferenceManager preferenceManager;
     private final UtilsManager utilsManager;
     private final CloudFacade cloudFacade;
 
-    public DNSRecordRunCleaner(final PreferenceManager preferenceManager,
+    public DNSRecordRunCleaner(final PipelineRunManager runManager,
+                               final PreferenceManager preferenceManager,
                                final UtilsManager utilsManager,
                                final CloudFacade cloudFacade) {
+        this.runManager = runManager;
         this.preferenceManager = preferenceManager;
         this.utilsManager = utilsManager;
         this.cloudFacade = cloudFacade;
@@ -82,6 +91,11 @@ public class DNSRecordRunCleaner implements RunCleaner {
                         new InstanceDNSRecord(unify(url), utilsManager.getEdgeDomainNameOrIP(), null));
             }
         });
+    }
+
+    @Override
+    public void cleanResources(final Long runId) {
+        runManager.findRun(runId).ifPresent(this::cleanResources);
     }
 
     private static String unify(final String url) {
