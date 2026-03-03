@@ -45,6 +45,8 @@ function renderCloudRestriction (cloudSetting, awsRegions) {
   return null;
 }
 
+const DISABLED_BY_RESERVATION_MESSAGE = 'Disabled by instance type security policy';
+
 const Capability = ({capability, selected, style, nested = [], awsRegions}) => {
   if (!capability) {
     return null;
@@ -54,9 +56,12 @@ const Capability = ({capability, selected, style, nested = [], awsRegions}) => {
     disabled,
     os = [],
     cloud = [],
-    description
+    description,
+    disabledByReservationConfig = false
   } = capability;
-  if (disabled && (os.length > 0 || cloud.length > 0)) {
+  const hasOSOrCloudRestriction = os.length > 0 || cloud.length > 0;
+  const showDisabledTooltip = disabled && (hasOSOrCloudRestriction || disabledByReservationConfig);
+  if (showDisabledTooltip) {
     return (
       <Tooltip
         title={(
@@ -66,6 +71,13 @@ const Capability = ({capability, selected, style, nested = [], awsRegions}) => {
             >
               <b>This capability is not allowed</b>
             </div>
+            {
+              disabledByReservationConfig && (
+                <div style={{marginBottom: hasOSOrCloudRestriction ? 10 : 0}}>
+                  {DISABLED_BY_RESERVATION_MESSAGE}
+                </div>
+              )
+            }
             {
               os.length > 0 && (
                 <div>

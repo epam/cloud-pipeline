@@ -599,6 +599,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   renderAdditionalRunCapabilities = () => {
     if (hasPlatformSpecificCapabilities(this.toolPlatform, this.props.preferences)) {
+      const instanceTypeValue = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
       return (
         <FormItem
           className={getFormItemClassName(styles.formItem, 'runCapabilities')}
@@ -615,6 +616,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             provider={this.currentCloudRegionProvider}
             region={this.currentCloudRegion}
             mode={RUN_CAPABILITIES_MODE.launch}
+            instanceType={instanceTypeValue}
           />
         </FormItem>
       );

@@ -22,6 +22,7 @@ import fetchToolOS from './fetch-tool-os';
 import Capability from './capability';
 import {mergeUserRoleAttributes} from '../../../../../utils/attributes/merge-user-role-attributes';
 import fetchToolDefaultParameters from './fetch-tool-default-parameters';
+import {getReservationParametersConfig} from '../components/reservation-parameters/utilities';
 import {RUN_CAPABILITIES} from '../../../../../models/preferences/PreferencesLoad';
 import styles from './run-capabilities.css';
 import parseCapabilityCloudSetting from './capabilities-utilities/parse-cloud-setting';
@@ -102,12 +103,15 @@ function getAllPlatformCapabilities (preferences, platformInfo = {}) {
     platform,
     os,
     provider,
-    region
+    region,
+    reservationConfig
   } = platformInfo;
   const capabilities = platform && PLATFORM_SPECIFIC_CAPABILITIES.hasOwnProperty(platform)
     ? PLATFORM_SPECIFIC_CAPABILITIES[platform]
     : PLATFORM_SPECIFIC_CAPABILITIES.default;
-  const custom = preferences ? preferences.launchCapabilities : [];
+  const launchCapabilities = preferences ? preferences.launchCapabilities : [];
+  const systemOverrides = (launchCapabilities || []).filter(c => c.custom === false);
+  const custom = (launchCapabilities || []).filter(c => c.custom !== false);
   const filterCustomCapability = capability => (capability.platforms || []).length === 0 ||
     platform === undefined ||
     !capability.platforms ||
@@ -147,19 +151,38 @@ function getAllPlatformCapabilities (preferences, platformInfo = {}) {
     } = capability;
     const enabledByOS = filterByOS(capability);
     const enabledByCloudProvider = filterByCloudProvider(capability);
+    const enabledByReservationConfig = !isDisabledByReservationConfig(
+      capability,
+      reservationConfig
+    );
     return {
       ...capabilityInfo,
       capabilities: capabilities.map(c => mapCapability(c, capability)),
-      disabled: !enabledByOS || !enabledByCloudProvider,
+      disabled: !enabledByOS || !enabledByCloudProvider || !enabledByReservationConfig,
+      disabledByReservationConfig: !enabledByReservationConfig,
       parentValue: parent?.value
     };
   };
-  return capabilities.map(o => ({
-    value: o,
-    name: o,
-    os: CAPABILITIES_OS_FILTERS[o],
-    cloud: CAPABILITIES_CLOUD_FILTERS[o]
-  }))
+  const systemCapabilities = capabilities.map(o => {
+    const override = systemOverrides.find(ov => ov.value === o);
+    const base = {
+      value: o,
+      name: o,
+      os: CAPABILITIES_OS_FILTERS[o],
+      cloud: CAPABILITIES_CLOUD_FILTERS[o]
+    };
+    if (!override) {
+      return base;
+    }
+    const {value: _v, custom: _c, ...overrideFields} = override;
+    return {
+      ...base,
+      ...overrideFields,
+      value: o,
+      custom: false
+    };
+  });
+  return systemCapabilities
     .concat((custom || []).filter(filterCustomCapability))
     .map(capability => mapCapability(capability));
 }
@@ -186,6 +209,23 @@ function getPlatformSpecificCapabilities (preferences, platformInfo = {}) {
   );
 }
 
+export function isDisabledByReservationConfig (capability, reservationConfig) {
+  if (!reservationConfig || !capability.checkPrivileged) {
+    return false;
+  }
+  const {
+    kube_assign_policy: _kubeAssignPolicy = {},
+    kubeAssignPolicy = _kubeAssignPolicy
+  } = reservationConfig || {};
+  if (!kubeAssignPolicy) {
+    return false;
+  }
+  const {securityContext} = kubeAssignPolicy;
+  return securityContext
+    ? securityContext.privileged !== true
+    : false;
+}
+
 @inject('preferences', 'dockerRegistries')
 @observer
 class RunCapabilities extends React.Component {
@@ -203,7 +243,8 @@ class RunCapabilities extends React.Component {
     region: PropTypes.object,
     mode: PropTypes.string,
     showError: PropTypes.bool,
-    getPopupContainer: PropTypes.func
+    getPopupContainer: PropTypes.func,
+    instanceType: PropTypes.string
   };
 
   static defaultProps = {
@@ -213,12 +254,14 @@ class RunCapabilities extends React.Component {
   };
 
   state = {
-    os: undefined
+    os: undefined,
+    reservationConfig: undefined
   };
 
   componentDidMount () {
     this.fetchDockerImageOS();
     this.setInitialRequiredCapabilities();
+    this.setReservationConfig();
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
@@ -233,6 +276,12 @@ class RunCapabilities extends React.Component {
     }
     if (this.props.values && !prevProps.values) {
       this.setInitialRequiredCapabilities();
+    }
+    if (prevProps.instanceType !== this.props.instanceType) {
+      this.setReservationConfig();
+    }
+    if (prevState.reservationConfig !== this.state.reservationConfig) {
+      this.correctCapabilitiesSelection();
     }
   }
 
@@ -258,6 +307,21 @@ class RunCapabilities extends React.Component {
       });
   };
 
+  setReservationConfig = async () => {
+    const {instanceType} = this.props;
+    if (!instanceType || typeof instanceType !== 'string') {
+      this.setState({reservationConfig: undefined});
+      return;
+    }
+    try {
+      const config = await getReservationParametersConfig(instanceType);
+      this.setState({reservationConfig: config});
+    } catch (error) {
+      console.error('Error retrieving reservation config:', error);
+      this.setState({reservationConfig: undefined});
+    }
+  };
+
   get allCapabilities () {
     const {
       platform,
@@ -266,7 +330,8 @@ class RunCapabilities extends React.Component {
       preferences
     } = this.props;
     const {
-      os
+      os,
+      reservationConfig
     } = this.state;
     return getAllPlatformCapabilities(
       preferences,
@@ -274,7 +339,8 @@ class RunCapabilities extends React.Component {
         platform,
         os,
         provider,
-        region
+        region,
+        reservationConfig
       }
     );
   }
@@ -288,7 +354,8 @@ class RunCapabilities extends React.Component {
       values
     } = this.props;
     const {
-      os
+      os,
+      reservationConfig
     } = this.state;
     const capabilities = getPlatformSpecificCapabilities(
       preferences,
@@ -296,7 +363,8 @@ class RunCapabilities extends React.Component {
         platform,
         os,
         provider,
-        region
+        region,
+        reservationConfig
       }
     );
     return (values || [])
@@ -347,14 +415,15 @@ class RunCapabilities extends React.Component {
       preferences,
       onChange
     } = this.props;
-    const {os} = this.state;
+    const {os, reservationConfig} = this.state;
     const capabilities = getPlatformSpecificCapabilities(
       preferences,
       {
         platform,
         os,
         provider,
-        region
+        region,
+        reservationConfig
       }
     );
     const filtered = (values || [])
@@ -501,13 +570,14 @@ class RunCapabilities extends React.Component {
       ) {
         return null;
       }
+      const isDisabled = capability.disabled;
       if (capabilities.length === 0) {
         return (
           <MenuItem
             key={capability.value}
             value={capability.value}
             title={capability.description || capability.name}
-            disabled={capability.disabled}
+            disabled={isDisabled}
           >
             <Capability
               capability={capability}
@@ -536,7 +606,7 @@ class RunCapabilities extends React.Component {
               }
             />
           )}
-          disabled={capability.disabled}
+          disabled={isDisabled}
           onTitleClick={onCapabilityClick}
         >
           {

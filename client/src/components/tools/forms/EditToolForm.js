@@ -1396,6 +1396,7 @@ export default class EditToolForm extends React.Component {
         allowSensitive = this.getAllowSensitiveInitialValue();
       }
       const limitMountsValue = getFieldValue('limitMounts');
+      const instanceTypeValue = this.getInstanceTypeValue();
       return (
         <div>
           {this.renderSeparator('Execution defaults')}
@@ -1801,6 +1802,7 @@ export default class EditToolForm extends React.Component {
                       provider={this.getCloudProvider()}
                       region={this.getCloudRegion()}
                       mode={RUN_CAPABILITIES_MODE.edit}
+                      instanceType={instanceTypeValue?.name}
                     />
                   </Form.Item>
                 )
