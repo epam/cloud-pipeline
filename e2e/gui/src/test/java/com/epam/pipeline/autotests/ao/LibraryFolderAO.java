@@ -15,7 +15,6 @@
  */
 package com.epam.pipeline.autotests.ao;
 
-import static com.codeborne.selenide.Selectors.withText;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
@@ -27,6 +26,7 @@ import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
+import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_NEW_RULE;
