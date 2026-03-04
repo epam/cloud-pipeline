@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import connect from '../../../utils/connect';
 import roleModel from '../../../utils/roleModel';
@@ -180,9 +180,16 @@ export default class Folder extends localization.LocalizedReactComponent {
   };
   _currentFolder = null;
   highlightedItem = null;
-
-  @observable
   _folderToDeleteInfo;
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      _folderToDeleteInfo: observable,
+      deletingFolderIsEmpty: computed,
+      showMetadata: computed
+    });
+  }
 
   folderOperationWrapper = (operation) => (...props) => {
     this.setState({
@@ -618,7 +625,6 @@ export default class Folder extends localization.LocalizedReactComponent {
     }
   };
 
-  @computed
   get deletingFolderIsEmpty () {
     if (!this._folderToDeleteInfo || !this._folderToDeleteInfo.loaded) {
       return true;
@@ -2054,7 +2060,6 @@ export default class Folder extends localization.LocalizedReactComponent {
       this.highlightedItem.type === ItemTypes.configuration);
   }
 
-  @computed
   get showMetadata () {
     if (this.props.listingMode) {
       return false;

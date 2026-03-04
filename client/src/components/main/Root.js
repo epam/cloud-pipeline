@@ -17,7 +17,7 @@
 import React from 'react';
 import {hashHistory} from 'react-router';
 import {Provider} from 'mobx-react';
-import {RouterStore, syncHistoryWithStore} from 'mobx-react-router';
+import {RouterStore, syncHistoryWithStore} from '../../utils/routing-store';
 import GoogleApi from '../../models/google/GoogleApi';
 import authenticatedUserInfo from '../../models/user/WhoAmI';
 import preferences from '../../models/preferences/PreferencesLoad';
