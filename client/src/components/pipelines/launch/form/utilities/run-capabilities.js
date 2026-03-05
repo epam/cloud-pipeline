@@ -136,7 +136,7 @@ function getAllPlatformCapabilities (preferences, platformInfo = {}) {
     } = capability;
     const enabledByOS = filterByOS(capability);
     const enabledByCloudProvider = filterByCloudProvider(capability);
-    const enabledByReservationConfig = !isDisabledByReservationConfig(
+    const enabledByReservationConfig = isEnabledByReservationConfig(
       capability,
       reservationConfig
     );
@@ -194,21 +194,31 @@ function getPlatformSpecificCapabilities (preferences, platformInfo = {}) {
   );
 }
 
-export function isDisabledByReservationConfig (capability, reservationConfig) {
-  if (!reservationConfig || !capability.checkPrivileged) {
-    return false;
+export function isEnabledByReservationConfig (capability, reservationConfig) {
+  // If capability does not specify "check privileged" flag, allow
+  if (!capability.privileged) {
+    return true;
+  }
+  // If reservation config is not specified, allow
+  if (!reservationConfig) {
+    return true;
   }
   const {
     kube_assign_policy: _kubeAssignPolicy = {},
     kubeAssignPolicy = _kubeAssignPolicy
   } = reservationConfig || {};
+  // If kube assign policy is not overridden, allow
   if (!kubeAssignPolicy) {
-    return false;
+    return true;
   }
   const {securityContext} = kubeAssignPolicy;
-  return securityContext
-    ? securityContext.privileged !== true
-    : false;
+  // If kube assign policy is overridden, but the security context is not overridden, allow
+  if (!securityContext) {
+    return true;
+  }
+  const {privileged} = securityContext;
+  // Allow only if the privileged flag is specified
+  return privileged === true;
 }
 
 @inject('preferences', 'dockerRegistries')

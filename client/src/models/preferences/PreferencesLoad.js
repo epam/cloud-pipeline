@@ -430,8 +430,8 @@ class PreferencesLoad extends Remote {
               ...(entry?.disclaimer !== undefined
                 ? {disclaimer: entry.disclaimer}
                 : {}),
-              ...(entry?.checkPrivileged !== undefined
-                ? {checkPrivileged: entry.checkPrivileged}
+              ...(entry?.privileged !== undefined
+                ? {privileged: entry.privileged}
                 : {})
             };
           }
@@ -451,7 +451,7 @@ class PreferencesLoad extends Remote {
             capabilities: Object.entries(childCapabilities)
               .map(mapCapability),
             multiple: Boolean(entry?.multiple),
-            checkPrivileged: entry?.checkPrivileged
+            privileged: entry?.privileged
           };
         };
         return Object

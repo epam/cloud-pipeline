@@ -45,7 +45,7 @@ function renderCloudRestriction (cloudSetting, awsRegions) {
   return null;
 }
 
-const DISABLED_BY_RESERVATION_MESSAGE = 'Disabled by instance type security policy';
+const DISABLED_BY_RESERVATION_MESSAGE = 'Disabled by instance type security context';
 
 const Capability = ({capability, selected, style, nested = [], awsRegions}) => {
   if (!capability) {
