@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import ReactDOM from 'react-dom';
+import {createRoot} from 'react-dom/client';
 import PropTypes from 'prop-types';
 import {
   Provider,
@@ -198,25 +198,42 @@ class OpenToolInfo extends React.Component {
         .concat(result.slice(r.index + r[0].length));
       r = /\{(.*?)\}/g.exec(result);
     }
+    const placeholderRoots = this.placeholderRoots || (this.placeholderRoots = new Map());
     const initialized = (div) => {
       if (div) {
         const placeholders = document.getElementsByClassName('open-in-placeholder');
+        const currentPlaceholders = new Set(placeholders);
+        for (const [placeholder, root] of Array.from(placeholderRoots.entries())) {
+          if (!currentPlaceholders.has(placeholder)) {
+            root.unmount();
+            placeholderRoots.delete(placeholder);
+          }
+        }
         for (let p = 0; p < placeholders.length; p += 1) {
           const placeholder = placeholders[p];
           if (placeholder.dataset && placeholder.dataset['type']) {
             const {attribute = '', type} = placeholder.dataset;
             if (renderers.hasOwnProperty(type)) {
-              ReactDOM.render(
+              let root = placeholderRoots.get(placeholder);
+              if (!root) {
+                root = createRoot(placeholder);
+                placeholderRoots.set(placeholder, root);
+              }
+              root.render(
                 (
                   <Provider {...this.props}>
                     {renderers[type](attribute)}
                   </Provider>
-                ),
-                placeholder
+                )
               );
             }
           }
         }
+      } else {
+        for (const root of placeholderRoots.values()) {
+          root.unmount();
+        }
+        placeholderRoots.clear();
       }
     };
     return (

@@ -25,6 +25,8 @@ import roleModel from '../../utils/roleModel';
 function billing ({children, location, router, preferences, authenticatedUserInfo}) {
   const isBillingPrivilegedUser = authenticatedUserInfo && authenticatedUserInfo.loaded &&
     roleModel.isManager.billing(this);
+  // TODO: 'this' in fn components is undefined, fix this and check other places
+  // TODO: consider add linting rule
   if (
     !authenticatedUserInfo ||
     !authenticatedUserInfo.loaded ||

@@ -334,8 +334,16 @@ const management = (roleName) => (WrappedComponent, key) => {
   return <Component key={key} />;
 };
 
-const hasRole = (roleName) => ({props}) => {
-  const {authenticatedUserInfo} = props;
+const hasRole = (roleName) => (propsOrComponent) => {
+  let authenticatedUserInfo;
+  if (!propsOrComponent) {
+    return false;
+  }
+  if (propsOrComponent.props?.authenticatedUserInfo) {
+    authenticatedUserInfo = propsOrComponent.props.authenticatedUserInfo;
+  } else if (propsOrComponent.authenticatedUserInfo) {
+    authenticatedUserInfo = propsOrComponent.authenticatedUserInfo;
+  }
   if (authenticatedUserInfo && authenticatedUserInfo.loaded) {
     return authenticatedUserInfo.value.admin ||
       (authenticatedUserInfo.value.roles || []).filter(r => r.name === roleName).length === 1;

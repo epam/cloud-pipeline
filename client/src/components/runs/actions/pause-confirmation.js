@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 import React from 'react';
-import ReactDOM from 'react-dom';
+import {createRoot} from 'react-dom/client';
 import PropTypes from 'prop-types';
 import {
   Button,
@@ -272,13 +272,13 @@ function registerCallback (callback) {
   confirmPauseCallback = callback;
 }
 
-ReactDOM.render(
+const pauseRunDialogRoot = createRoot(pauseRunDialogContainer);
+pauseRunDialogRoot.render(
   (
     <ConfigProvider locale={enUS}>
       <ConfirmPauseContainer onRegisterCallback={registerCallback} />
     </ConfigProvider>
-  ),
-  pauseRunDialogContainer
+  )
 );
 
 /**

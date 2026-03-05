@@ -18,7 +18,7 @@ import 'core-js/stable';
 import 'regenerator-runtime/runtime';
 
 import React from 'react';
-import ReactDOM from 'react-dom';
+import {createRoot} from 'react-dom/client';
 import {configure} from 'mobx';
 import Root from './components/main/Root';
 import 'rc-menu/assets/index.css';
@@ -29,7 +29,6 @@ import './staticStyles/antd-extensions.css';
 import './staticStyles/markdown.css';
 configure({enforceActions: 'never'});
 
-ReactDOM.render(
-  <Root />,
-  document.getElementById('root')
-);
+const container = document.getElementById('root');
+const root = createRoot(container);
+root.render(<Root />);

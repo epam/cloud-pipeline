@@ -66,6 +66,15 @@ export default class Navigation extends React.Component {
       runsCount: computed,
       notificationsCount: computed
     });
+    this._isMounted = false;
+  }
+
+  componentDidMount () {
+    this._isMounted = true;
+  }
+
+  componentWillUnmount () {
+    this._isMounted = false;
   }
 
   get notificationsEnabled () {
@@ -124,6 +133,7 @@ export default class Navigation extends React.Component {
     } else if (key === 'logout') {
       invalidateEdgeTokens()
         .then(() => {
+          if (!this._isMounted) return;
           let url = `${SERVER}/saml/logout`;
           if (SERVER.endsWith('/')) {
             url = `${SERVER}saml/logout`;
@@ -138,16 +148,21 @@ export default class Navigation extends React.Component {
   };
 
   closeVersionInfoControl = () => {
-    this.setState({versionInfoVisible: false});
+    if (this._isMounted) {
+      this.setState({versionInfoVisible: false});
+    }
   };
 
   handleVersionInfoVisible = (visible) => {
-    this.setState({versionInfoVisible: visible});
+    if (this._isMounted) {
+      this.setState({versionInfoVisible: visible});
+    }
   };
 
   async navigateToRun (runId) {
     const info = new PipelineRunInfo(runId);
     await info.fetch();
+    if (!this._isMounted) return;
     if (info.error) {
       message.error(info.error, 5);
     } else {

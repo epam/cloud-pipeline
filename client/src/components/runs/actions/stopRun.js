@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import ReactDOM from 'react-dom';
+import {createRoot} from 'react-dom/client';
 import {observable, makeObservable} from 'mobx';
 import {Provider,
   observer} from 'mobx-react';
@@ -369,9 +369,9 @@ const initializeTerminateRunDialog = (dialog) => {
 const terminateRunDialogContainer = document.createElement('div');
 document.body.appendChild(terminateRunDialogContainer);
 
-ReactDOM.render(
-  <TerminateRunDialog onInitialized={initializeTerminateRunDialog} />,
-  terminateRunDialogContainer
+const terminateRunDialogRoot = createRoot(terminateRunDialogContainer);
+terminateRunDialogRoot.render(
+  <TerminateRunDialog onInitialized={initializeTerminateRunDialog} />
 );
 
 function terminateRunFn (run, callback) {

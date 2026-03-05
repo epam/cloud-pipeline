@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import ReactDOM from 'react-dom';
+import {createRoot} from 'react-dom/client';
 import PropTypes from 'prop-types';
 import {Button, Checkbox, Modal, message, Row} from 'antd';
 import {ExclamationCircleFilled} from '@ant-design/icons';
@@ -209,9 +209,9 @@ const initializeToolDeletionWarningDialog = (dialog) => {
 const toolDeletionWarningDialogContainer = document.createElement('div');
 document.body.appendChild(toolDeletionWarningDialogContainer);
 
-ReactDOM.render(
-  <ToolDeletionWarning onInitialized={initializeToolDeletionWarningDialog} />,
-  toolDeletionWarningDialogContainer
+const toolDeletionWarningDialogRoot = createRoot(toolDeletionWarningDialogContainer);
+toolDeletionWarningDialogRoot.render(
+  <ToolDeletionWarning onInitialized={initializeToolDeletionWarningDialog} />
 );
 
 const PAGE_SIZE = 5;
