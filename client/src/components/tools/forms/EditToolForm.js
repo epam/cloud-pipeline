@@ -72,11 +72,11 @@ import {
   CP_CAP_AUTOSCALE_WORKERS,
   CP_CAP_AUTOSCALE_HYBRID,
   CP_CAP_AUTOSCALE_PRICE_TYPE,
-  CP_CAP_RESCHEDULE_RUN
+  CP_CAP_RESCHEDULE_RUN,
+  RUN_CAPABILITIES
 } from '../../pipelines/launch/form/utilities/parameters';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import RunCapabilities, {
-  RUN_CAPABILITIES,
   RUN_CAPABILITIES_MODE,
   getEnabledCapabilities,
   applyCapabilities,
@@ -1396,6 +1396,7 @@ export default class EditToolForm extends React.Component {
         allowSensitive = this.getAllowSensitiveInitialValue();
       }
       const limitMountsValue = getFieldValue('limitMounts');
+      const instanceTypeValue = this.getInstanceTypeValue();
       return (
         <div>
           {this.renderSeparator('Execution defaults')}
@@ -1801,6 +1802,7 @@ export default class EditToolForm extends React.Component {
                       provider={this.getCloudProvider()}
                       region={this.getCloudRegion()}
                       mode={RUN_CAPABILITIES_MODE.edit}
+                      instanceType={instanceTypeValue?.name}
                     />
                   </Form.Item>
                 )

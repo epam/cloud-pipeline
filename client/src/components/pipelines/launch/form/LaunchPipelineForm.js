@@ -107,7 +107,6 @@ import RunCapabilities, {
   getEnabledCapabilities,
   getUserCapabilities,
   hasPlatformSpecificCapabilities,
-  RUN_CAPABILITIES,
   RUN_CAPABILITIES_MODE
 } from './utilities/run-capabilities';
 import {
@@ -122,7 +121,8 @@ import {
   CP_CAP_AUTOSCALE_WORKERS,
   CP_CAP_AUTOSCALE_HYBRID,
   CP_CAP_AUTOSCALE_PRICE_TYPE,
-  CP_CAP_RESCHEDULE_RUN
+  CP_CAP_RESCHEDULE_RUN,
+  RUN_CAPABILITIES,
 } from './utilities/parameters';
 import OOMCheck from './utilities/oom-check';
 import AllowedInstancesCountWarning from
@@ -599,6 +599,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   renderAdditionalRunCapabilities = () => {
     if (hasPlatformSpecificCapabilities(this.toolPlatform, this.props.preferences)) {
+      const instanceTypeValue = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
       return (
         <FormItem
           className={getFormItemClassName(styles.formItem, 'runCapabilities')}
@@ -615,6 +616,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             provider={this.currentCloudRegionProvider}
             region={this.currentCloudRegion}
             mode={RUN_CAPABILITIES_MODE.launch}
+            instanceType={instanceTypeValue}
           />
         </FormItem>
       );

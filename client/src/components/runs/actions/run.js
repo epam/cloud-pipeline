@@ -1316,6 +1316,7 @@ export class RunConfirmation extends React.Component {
                     style={{padding: '2px'}}
                     showError={false}
                     getPopupContainer={node => node}
+                    instanceType={this.state.instanceType?.name}
                   />
                 </Provider>
               </div>
