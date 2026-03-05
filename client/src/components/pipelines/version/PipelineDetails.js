@@ -561,7 +561,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
           onSubmit={this.updatePipeline}
           onCancel={this.toggleModal}
           onDelete={this.deletePipeline}
-          visible={this.state.isModalVisible}
+          open={this.state.isModalVisible}
           pending={this.state.updating || this.state.deleting}
           pipeline={this.props.pipeline.value}
         />

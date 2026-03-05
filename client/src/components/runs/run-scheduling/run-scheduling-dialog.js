@@ -20,6 +20,7 @@ import {Button, Modal, Row, Select, TimePicker} from 'antd';
 import {PlusOutlined, DeleteOutlined, ReloadOutlined} from '@ant-design/icons';
 import {observer} from 'mobx-react';
 import moment from 'moment-timezone';
+import dayjs from 'dayjs';
 import classNames from 'classnames';
 import {
   DailyForm,
@@ -323,7 +324,7 @@ export default class RunScheduleDialog extends React.Component {
   };
 
   renderTimePicker = ({removed, schedule}, i) => {
-    const onTimeChange = (moment, timeString) => {
+    const onTimeChange = (time, timeString) => {
       const {rules} = this.state;
       const [hours, minutes] = timeString.split(':');
 
@@ -331,6 +332,8 @@ export default class RunScheduleDialog extends React.Component {
       this.setState({rules});
     };
     const format = 'HH:mm';
+    const valueMoment = moment(`${schedule.time.hours}:${schedule.time.minutes}`, format);
+    const valueDayjs = valueMoment.isValid() ? dayjs(valueMoment.valueOf()) : null;
     return (
       <div style={{marginRight: 15, marginLeft: 'auto'}}>
         at
@@ -349,7 +352,7 @@ export default class RunScheduleDialog extends React.Component {
             return disabledMinutes;
           }}
           onChange={onTimeChange}
-          value={moment(`${schedule.time.hours}:${schedule.time.minutes}`, format)}
+          value={valueDayjs}
           size="small"
           style={{marginLeft: 10, width: 70}}
         />

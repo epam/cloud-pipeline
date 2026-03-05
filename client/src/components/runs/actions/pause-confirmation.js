@@ -22,7 +22,7 @@ import {
   Modal
 } from 'antd';
 import {LoadingOutlined, QuestionCircleFilled} from '@ant-design/icons';
-import enUS from 'antd/lib/locale/en_US';
+import enUS from 'antd/locale/en_US';
 import classNames from 'classnames';
 import {observer} from 'mobx-react';
 import PipelineRunInfo from '../../../models/pipelines/PipelineRunInfo';
@@ -179,7 +179,7 @@ class ConfirmPauseContainer extends React.Component {
           <ConfirmPause
             onCancel={this.onCancel}
             onConfirm={this.onConfirm}
-            visible={visible}
+            open={visible}
             title={this.renderTitle()}
           />
         </CommitCheckProvider>
@@ -204,7 +204,7 @@ function ConfirmPauseModal (props) {
       title={false}
       closable={false}
       maskClosable={false}
-      visible={visible}
+      open={visible}
       onCancel={onCancel}
       footer={false}
       width={450}
@@ -213,7 +213,7 @@ function ConfirmPauseModal (props) {
         className={styles.body}
       >
         <div className={styles.title}>
-          <QuestionCircleFilled className={ classNames( 'cp-warning', styles.icon ) } />
+          <QuestionCircleFilled className={classNames('cp-warning', styles.icon)} />
           {
             title
           }

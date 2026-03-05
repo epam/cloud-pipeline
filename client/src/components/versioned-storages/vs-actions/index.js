@@ -843,8 +843,8 @@ class VSActions extends React.Component {
       <DropDownWrapper visible={dropDownVisible}>
         <Dropdown
           overlay={this.renderOverlay()}
-          visible={dropDownVisible}
-          onVisibleChange={this.onDropDownVisibilityChange}
+          open={dropDownVisible}
+          onOpenChange={this.onDropDownVisibilityChange}
           trigger={trigger}
           placement={placement}
           getPopupContainer={getPopupContainer}

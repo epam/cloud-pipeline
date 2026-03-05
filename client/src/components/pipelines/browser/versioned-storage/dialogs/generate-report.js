@@ -28,6 +28,7 @@ import {
   Radio
 } from 'antd';
 import moment from 'moment-timezone';
+import {momentToDayjs, dayjsToMoment} from '../../../../../utils/antd-date-utils';
 import UserName from '../../../../special/UserName';
 import Divider from '../../../../special/Divider';
 import localization from '../../../../../utils/localization';
@@ -128,12 +129,12 @@ class GenerateReportDialog extends localization.LocalizedReactComponent {
   };
 
   onDateChange = (fieldType, startOfTheDate) => (date) => {
-    let dateCorrected = date;
+    let dateCorrected = date ? dayjsToMoment(date) : undefined;
     if (dateCorrected) {
       if (startOfTheDate) {
-        dateCorrected = moment(dateCorrected).startOf('D');
+        dateCorrected.startOf('day');
       } else {
-        dateCorrected = moment(dateCorrected).endOf('D');
+        dateCorrected.endOf('day');
       }
     }
     this.setState({
@@ -227,7 +228,7 @@ class GenerateReportDialog extends localization.LocalizedReactComponent {
             className={this.getHtmlId('date-from')}
             format="YYYY-MM-DD"
             placeholder="From"
-            value={dateFrom}
+            value={momentToDayjs(dateFrom)}
             onChange={this.onDateChange('dateFrom', true)}
             style={{width: '50%', marginRight: '10px'}}
           />
@@ -235,7 +236,7 @@ class GenerateReportDialog extends localization.LocalizedReactComponent {
             className={this.getHtmlId('date-to')}
             format="YYYY-MM-DD"
             placeholder="To"
-            value={dateTo}
+            value={momentToDayjs(dateTo)}
             onChange={this.onDateChange('dateTo')}
             style={{width: '50%'}}
           />

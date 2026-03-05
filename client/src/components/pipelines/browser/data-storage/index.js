@@ -2238,8 +2238,8 @@ export default class DataStorage extends React.Component {
         <Dropdown
           placement="bottomRight"
           trigger={['click']}
-          visible={editDropdownVisible}
-          onVisibleChange={visible => this.setState({editDropdownVisible: visible})}
+          open={editDropdownVisible}
+          onOpenChange={open => this.setState({editDropdownVisible: open})}
           overlay={
             <Menu
               selectedKeys={[]}
@@ -3172,7 +3172,7 @@ export default class DataStorage extends React.Component {
         <Modal
           title="Download file url"
           width="80%"
-          visible={this.state.downloadUrlModalVisible}
+          open={this.state.downloadUrlModalVisible}
           onOk={() => this.closeDownloadUrlModal(true)}
           onCancel={() => this.closeDownloadUrlModal()}
           afterClose={() => { this.generateDownloadUrls = null; }}
@@ -3284,7 +3284,7 @@ export default class DataStorage extends React.Component {
           )
         }
         <Modal
-          visible={!!this.state.itemsToDelete}
+          open={!!this.state.itemsToDelete}
           onCancel={this.closeDeleteModal}
           title="Do you want to delete item(s) from object storage or set 'Deletion' marker?"
           footer={

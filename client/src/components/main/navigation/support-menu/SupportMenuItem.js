@@ -272,8 +272,8 @@ class SupportMenuItem extends React.Component {
         }
         placement="rightBottom"
         trigger="click"
-        onVisibleChange={onVisibilityChanged}
-        visible={visible}
+        onOpenChange={onVisibilityChanged}
+        open={visible}
       >
         <Button
           id={id}

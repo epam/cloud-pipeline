@@ -74,9 +74,12 @@ class SubSettings extends React.Component {
     const {
       router
     } = this.props;
-    this.setState({
-      sub: router && router.params ? router.params.sub : undefined
-    });
+    const newSub = router && router.params ? router.params.sub : undefined;
+    if (this.state.sub !== newSub) {
+      this.setState({
+        sub: newSub
+      });
+    }
   };
 
   selectDefaultSection = () => {

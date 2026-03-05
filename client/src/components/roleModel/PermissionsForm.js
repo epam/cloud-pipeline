@@ -981,7 +981,7 @@ export default class PermissionsForm extends React.Component {
               </Button>
             </Row>
           )}
-          visible={this.state.findUserVisible}>
+          open={this.state.findUserVisible}>
           <Select
             disabled={!this.props.usersInfo.loaded}
             placeholder="Enter the account info"
@@ -1044,7 +1044,7 @@ export default class PermissionsForm extends React.Component {
               </Button>
             </Row>
           )}
-          visible={this.state.findGroupVisible}>
+          open={this.state.findGroupVisible}>
           <AutoComplete
             value={this.selectedGroup}
             style={{width: '100%'}}

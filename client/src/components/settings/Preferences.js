@@ -150,17 +150,13 @@ export default class Preferences extends React.Component {
     });
   };
 
-  preferenceGroupForm;
-
-  initializePreferenceGroupForm = (wrappedComponent) => {
-    this.preferenceGroupForm = wrappedComponent;
-  };
+  preferenceGroupFormRef = React.createRef();
 
   get templateModified () {
-    if (!this.preferenceGroupForm) {
+    if (!this.preferenceGroupFormRef.current) {
       return false;
     }
-    return this.preferenceGroupForm.modified;
+    return this.preferenceGroupFormRef.current.modified;
   }
 
   updatePreferences = async (preferences) => {
@@ -172,7 +168,7 @@ export default class Preferences extends React.Component {
       message.error(request.error, 5);
     } else {
       await this.props.preferences.fetch();
-      this.preferenceGroupForm && this.preferenceGroupForm.resetFormFields();
+      this.preferenceGroupFormRef.current && this.preferenceGroupFormRef.current.resetFormFields();
       hide();
     }
   };
@@ -238,7 +234,7 @@ export default class Preferences extends React.Component {
                 onSubmit={this.operationWrapper(this.updatePreferences)}
                 group={group.key}
                 preferences={this.getPreferencesForGroup(group.key)}
-                wrappedComponentRef={this.initializePreferenceGroupForm}
+                ref={this.preferenceGroupFormRef}
                 search={this.state.search}
                 router={this.props.router}
               />

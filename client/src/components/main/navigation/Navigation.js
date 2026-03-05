@@ -318,8 +318,8 @@ export default class Navigation extends React.Component {
             }
             placement="right"
             trigger="click"
-            onVisibleChange={this.handleVersionInfoVisible}
-            visible={this.state.versionInfoVisible}>
+            onOpenChange={this.handleVersionInfoVisible}
+            open={this.state.versionInfoVisible}>
             <Button
               id="navigation-button-logo"
               className="cp-navigation-menu-item">

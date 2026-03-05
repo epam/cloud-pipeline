@@ -405,7 +405,7 @@ export default class ConfigurationBrowser extends React.Component {
             </Col>
           </Row>
         }
-        visible={this.props.visible}>
+        open={this.props.visible}>
         <Row style={{height: 450}}>
           {content}
         </Row>

@@ -26,7 +26,7 @@ import {
   Alert
 } from 'antd';
 import {DeleteOutlined, PlusOutlined} from '@ant-design/icons';
-import moment from 'moment-timezone';
+import {momentToDayjs, dayjsToMoment} from '../../../../../../utils/antd-date-utils';
 import {DESTINATIONS} from '../modals';
 import styles from './life-cycle-forms.css';
 
@@ -239,6 +239,8 @@ class TransitionsForm extends React.Component {
                       <Form.Item
                         className={styles.transitionFormItem}
                         name={['transitions', index, 'transitionDate']}
+                        getValueProps={(v) => ({value: momentToDayjs(v)})}
+                        getValueFromEvent={(d) => dayjsToMoment(d)}
                         rules={[{
                           required: this.getTransitionDateType(index) === TRANSITION_PERIOD.at,
                           message: ' '

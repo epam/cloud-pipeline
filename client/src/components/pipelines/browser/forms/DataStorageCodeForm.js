@@ -575,7 +575,7 @@ export default class DataStorageCodeForm extends React.Component {
       : null;
     return (
       <Modal
-        visible={!!this.props.file}
+        open={!!this.props.file}
         onCancel={this.onClose}
         width="80%"
         title={title}

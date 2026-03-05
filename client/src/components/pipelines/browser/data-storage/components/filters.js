@@ -18,6 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import moment from 'moment-timezone';
+import {momentToDayjs, dayjsToMoment} from '../../../../../utils/antd-date-utils';
 import {computed, makeObservable} from 'mobx';
 import {
   Radio,
@@ -355,19 +356,13 @@ class DateFilter extends React.Component {
   };
 
   onChangeFrom = (date) => {
-    let dateString;
-    if (date) {
-      dateString = moment(date).startOf('d');
-    }
-    this.setState({[FILTER_FIELDS.dateAfter]: dateString});
+    const m = date ? dayjsToMoment(date) : null;
+    this.setState({[FILTER_FIELDS.dateAfter]: m ? m.clone().startOf('day') : undefined});
   };
 
   onChangeTo = (date) => {
-    let dateString;
-    if (date) {
-      dateString = moment(date).endOf('d');
-    }
-    this.setState({[FILTER_FIELDS.dateBefore]: dateString});
+    const m = date ? dayjsToMoment(date) : null;
+    this.setState({[FILTER_FIELDS.dateBefore]: m ? m.clone().endOf('day') : undefined});
   };
 
   onKeyDown = event => {
@@ -394,7 +389,7 @@ class DateFilter extends React.Component {
           <DatePicker
             getCalendarContainer={node => node.parentNode}
             onChange={this.onChangeFrom}
-            value={this.state[FILTER_FIELDS.dateAfter]}
+            value={momentToDayjs(this.state[FILTER_FIELDS.dateAfter])}
             onOpenChange={this.onOpenChange}
           />
         </div>
@@ -404,7 +399,7 @@ class DateFilter extends React.Component {
             getCalendarContainer={node => node.parentNode}
             onChange={this.onChangeTo}
             onOpenChange={this.onOpenChange}
-            value={this.state[FILTER_FIELDS.dateBefore]}
+            value={momentToDayjs(this.state[FILTER_FIELDS.dateBefore])}
           />
         </div>
       </div>

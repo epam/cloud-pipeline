@@ -157,8 +157,8 @@ export default class DockerRegistriesNavigation extends React.Component {
       return (
         <Dropdown
           trigger={['click']}
-          visible={this.state.groupsDropDownVisible}
-          onVisibleChange={onDropDownVisibleChanged}
+          open={this.state.groupsDropDownVisible}
+          onOpenChange={onDropDownVisibleChanged}
           overlay={
             <DockerRegistriesGroupsDropdownContent
               groups={groups}

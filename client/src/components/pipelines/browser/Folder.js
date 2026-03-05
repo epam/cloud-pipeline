@@ -1761,8 +1761,8 @@ export default class Folder extends localization.LocalizedReactComponent {
         >
           <Dropdown
             trigger={['click']}
-            visible={this.state.createDropDownVisible}
-            onVisibleChange={(visible) => this.setState({createDropDownVisible: visible})}
+            open={this.state.createDropDownVisible}
+            onOpenChange={(open) => this.setState({createDropDownVisible: open})}
             minOverlayWidthMatchTrigger={false}
             placement="bottomRight"
             overlay={
@@ -1874,8 +1874,8 @@ export default class Folder extends localization.LocalizedReactComponent {
           <Dropdown
             trigger={['click']}
             overlay={displayOptionsMenu}
-            visible={this.state.displayOptionsDropDownVisible}
-            onVisibleChange={(visible) => this.setState({displayOptionsDropDownVisible: visible})}
+            open={this.state.displayOptionsDropDownVisible}
+            onOpenChange={(open) => this.setState({displayOptionsDropDownVisible: open})}
           >
             <Button
               id="display-attributes"
@@ -1997,8 +1997,8 @@ export default class Folder extends localization.LocalizedReactComponent {
                   {editActions}
                 </Menu>
               }
-              visible={this.state.editDropDownVisible}
-              onVisibleChange={(visible) => this.setState({editDropDownVisible: visible})}
+              open={this.state.editDropDownVisible}
+              onOpenChange={(open) => this.setState({editDropDownVisible: open})}
             >
               <Button
                 key="edit"
@@ -2275,7 +2275,7 @@ export default class Folder extends localization.LocalizedReactComponent {
           onCancel={this.closeCloneFolderDialog}
           onSubmit={this.folderOperationWrapper(this.cloneFolder)} />
         <Modal
-          visible={!!this.state.folderToDelete}
+          open={!!this.state.folderToDelete}
           load
           title={false}
           closable={false}

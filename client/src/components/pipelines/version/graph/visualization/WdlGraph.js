@@ -864,15 +864,15 @@ export default class WdlGraph extends Graph {
     return (
       <Tooltip
         title="Search element"
-        onVisibleChange={onTooltipVisibleChange}
-        visible={this.state.tooltipVisible}
+        onOpenChange={onTooltipVisibleChange}
+        open={this.state.tooltipVisible}
         placement="right">
         <Popover
           content={searchControl}
           placement="rightTop"
           trigger="click"
-          onVisibleChange={this.handleSearchControlVisible}
-          visible={this.state.searchControlVisible}
+          onOpenChange={this.handleSearchControlVisible}
+          open={this.state.searchControlVisible}
         >
           <Button
             id="wdl-graph-search-button"

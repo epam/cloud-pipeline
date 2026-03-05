@@ -393,8 +393,8 @@ class ExportButton extends React.Component {
         size={size}
         type={type}
         trigger={['click']}
-        visible={dropdownVisible}
-        onVisibleChange={this.handleDropDownVisible}
+        open={dropdownVisible}
+        onOpenChange={this.handleDropDownVisible}
         onClick={this.onDefaultExport}
       >
         <DownloadOutlined />
@@ -407,7 +407,7 @@ class ExportButton extends React.Component {
         />
         <Modal
           title={null}
-          visible={!!this.state.savedExport}
+          open={!!this.state.savedExport}
           onCancel={this.closeExportResultModal}
           width="fit-content"
           style={{

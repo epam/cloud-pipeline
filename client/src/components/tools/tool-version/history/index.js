@@ -72,7 +72,7 @@ export default class History extends React.Component {
     } = this.state;
     return (
       <Modal
-        visible={generateDockerfileModalVisible}
+        open={generateDockerfileModalVisible}
         onCancel={this.closeGenerateDockerfileModal}
         title="Dockerfile"
         footer={(

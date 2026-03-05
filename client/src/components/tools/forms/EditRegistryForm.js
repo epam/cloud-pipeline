@@ -230,7 +230,7 @@ export default class EditRegistryForm extends localization.LocalizedReactCompone
         maskClosable={!this.props.pending}
         afterClose={() => onClose()}
         closable={!this.props.pending}
-        visible={this.props.visible}
+        open={this.props.visible}
         title={title}
         onCancel={this.props.onCancel}
         footer={this.state.activeTab === 'info' ? modalFooter : false}>

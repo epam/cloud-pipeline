@@ -598,7 +598,7 @@ export default class MetadataBrowser extends React.Component {
             </Col>
           </Row>
         }
-        visible={this.props.visible}
+        open={this.props.visible}
       >
         <Row style={{height: 450}}>
           {this.renderContent()}

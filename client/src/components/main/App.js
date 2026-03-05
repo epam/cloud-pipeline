@@ -16,7 +16,7 @@
 
 import React, {Component} from 'react';
 import {Layout, ConfigProvider} from 'antd';
-import enUS from 'antd/lib/locale/en_US';
+import enUS from 'antd/locale/en_US';
 import {observer, Provider, inject} from 'mobx-react';
 import {observable, makeObservable} from 'mobx';
 import styles from './App.css';

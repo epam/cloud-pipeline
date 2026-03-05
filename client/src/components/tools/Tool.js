@@ -2238,7 +2238,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           title="Permissions"
           footer={false}
           onCancel={this.closePermissionsForm}
-          visible={this.state.permissionsFormVisible}>
+          open={this.state.permissionsFormVisible}>
           <PermissionsForm
             objectIdentifier={this.props.toolId}
             objectType="TOOL"

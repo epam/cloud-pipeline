@@ -529,8 +529,8 @@ export default class DockerRegistriesActionsButton extends React.Component {
           <Dropdown
             trigger={['click']}
             overlayStyle={{zIndex: 2}}
-            visible={overlayVisible}
-            onVisibleChange={this.handleOverlayVisibility}
+            open={overlayVisible}
+            onOpenChange={this.handleOverlayVisibility}
             overlay={(
               <div>
                 {menu}

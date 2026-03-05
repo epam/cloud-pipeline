@@ -191,15 +191,13 @@ export default class EmailNotificationSettings extends React.Component {
 
   editEmailNotificationForm;
 
-  initializeEditEmailNotificationForm = (form) => {
-    this.editEmailNotificationForm = form;
-  };
+  editEmailNotificationFormRef = React.createRef();
 
   get templateModified () {
-    if (!this.editEmailNotificationForm) {
+    if (!this.editEmailNotificationFormRef.current) {
       return false;
     }
-    return this.editEmailNotificationForm.modified;
+    return this.editEmailNotificationFormRef.current.modified;
   }
 
   renderTemplateForm = (template) => {
@@ -214,7 +212,7 @@ export default class EmailNotificationSettings extends React.Component {
         <EditEmailNotification
           users={this.users}
           onSubmit={(values) => this.updateTemplate(template, values)}
-          wrappedComponentRef={this.initializeEditEmailNotificationForm}
+          ref={this.editEmailNotificationFormRef}
           template={
             Object.assign(
               {},

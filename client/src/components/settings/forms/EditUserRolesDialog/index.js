@@ -1390,7 +1390,7 @@ export default class EditUserRolesDialog extends React.Component {
         maskClosable={activeTab === 'permissions'}
         onCancel={this.onClose}
         footer={activeTab === 'permissions' ? false : this.renderFooter()}
-        visible={this.props.visible}
+        open={this.props.visible}
       >
         <div className={styles.modalContainer}>
           {this.renderTabs()}

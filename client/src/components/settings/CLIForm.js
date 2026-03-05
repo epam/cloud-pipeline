@@ -32,6 +32,7 @@ import UserToken from '../../models/user/UserToken';
 import PipelineGitCredentials from '../../models/pipelines/PipelineGitCredentials';
 import Notifications from '../../models/notifications/Notifications';
 import moment from 'moment-timezone';
+import {momentToDayjs, dayjsToMoment} from '../../utils/antd-date-utils';
 import LoadingView from '../special/LoadingView';
 import DriveMappingWindowsForm from './DriveMappingWindowsForm';
 import {getOS} from '../../utils/OSDetection';
@@ -362,9 +363,9 @@ export default class CLIForm extends React.Component {
             className="valid-till-date-picker"
             allowClear={false}
             disabled={!validTill}
-            disabledDate={jwtTokenDateTo ? (dt) => dt.isAfter(jwtTokenDateTo) : undefined}
-            onChange={onValidTillChanged}
-            value={validTill} />
+            disabledDate={jwtTokenDateTo ? (dt) => dt.isAfter(momentToDayjs(jwtTokenDateTo)) : undefined}
+            onChange={(d) => onValidTillChanged(dayjsToMoment(d))}
+            value={momentToDayjs(validTill)} />
           <Button
             id="generate-access-key-button"
             disabled={!validTill}

@@ -19,6 +19,7 @@ import {observable, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import moment from 'moment-timezone';
+import {momentToDayjs, dayjsToMoment} from '../../../../../utils/antd-date-utils';
 import {
   message,
   DatePicker,
@@ -55,12 +56,11 @@ const momentDateConverter = (d) => {
 };
 const getDisabledDate = ({min, max}) => (date) => {
   let disabled = false;
-  if (min) {
-    disabled = disabled || date < min;
+  if (min && date) {
+    disabled = disabled || date.isBefore(momentToDayjs(min), 'day');
   }
-
-  if (max) {
-    disabled = disabled || date > max;
+  if (max && date) {
+    disabled = disabled || date.isAfter(momentToDayjs(max), 'day');
   }
   return disabled;
 };
@@ -262,8 +262,8 @@ export default class JobList extends React.Component {
             format="YYYY-MM-DD HH:mm:ss"
             placeholder="From"
             style={commonStyle}
-            value={momentDateParser(timestampFrom)}
-            onChange={onFieldChanged('timestampFrom', momentDateConverter)}
+            value={momentToDayjs(momentDateParser(timestampFrom))}
+            onChange={(date) => onFieldChanged('timestampFrom', momentDateConverter)(dayjsToMoment(date))}
             disabledDate={getDisabledDate({max: momentDateParser(timestampTo)})}
           />
         </Filter>
@@ -274,8 +274,8 @@ export default class JobList extends React.Component {
             format="YYYY-MM-DD HH:mm:ss"
             placeholder="To"
             style={commonStyle}
-            value={momentDateParser(timestampTo)}
-            onChange={onFieldChanged('timestampTo', momentDateConverter)}
+            value={momentToDayjs(momentDateParser(timestampTo))}
+            onChange={(date) => onFieldChanged('timestampTo', momentDateConverter)(dayjsToMoment(date))}
             disabledDate={getDisabledDate({min: momentDateParser(timestampFrom)})}
           />
         </Filter>

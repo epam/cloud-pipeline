@@ -104,7 +104,7 @@ class CorrectInputsModal extends React.Component {
       <Modal
         className={className}
         style={style}
-        visible={visible}
+        open={visible}
         onCancel={onCancel}
         maskClosable={false}
         closable={false}

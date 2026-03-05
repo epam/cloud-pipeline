@@ -99,8 +99,8 @@ export default class ToolGroupSelector extends React.Component {
     };
     return (
       <Dropdown
-        visible={this.state.groupsDropDownVisible}
-        onVisibleChange={onDropDownVisibleChanged}
+        open={this.state.groupsDropDownVisible}
+        onOpenChange={onDropDownVisibleChanged}
         key="group"
         trigger={['click']}
         overlay={
