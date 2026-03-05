@@ -77,10 +77,12 @@ public class UserAspect {
         try {
             final PipelineUser user = userManager.load(id);
             if (user.getDefaultStorageId() == null) {
+                LOG.debug("Default NFS storage for user {} not found", user.getUserName());
                 return;
             }
             final AbstractDataStorage storage = dataStorageManager.load(user.getDefaultStorageId());
             if (!DataStorageType.NFS.equals(storage.getType())) {
+                LOG.debug("Default storage for user {} is not NFS", user.getUserName());
                 return;
             }
             nfsStorageProvider.chownUserStorageRoot(user, (NFSDataStorage) storage);
