@@ -54,6 +54,7 @@ import com.epam.pipeline.utils.PosixPermissionUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.slf4j.Logger;
@@ -399,17 +400,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     }
 
     private void initFile(final File file, final Set<PosixFilePermission> permissions) throws IOException {
-        if (!SystemUtils.IS_OS_WINDOWS) {
-            Files.setPosixFilePermissions(file.toPath(), permissions);
-            if (!preferenceManager.getPreference(SystemPreferences.SYSTEM_SSH_DEFAULT_ROOT_USER_ENABLED)) {
-                Optional.ofNullable(authManager.getCurrentUser())
-                        .ifPresent(user -> {
-                            final Long userUID = resolveUid(user);
-                            final Long userGID = resolveGid(user, userUID);
-                            nfsStorageMounter.chown(file, userUID, userGID);
-                        });
-            }
-        }
+        setPermissionsAndOwnership(file, permissions, authManager.getCurrentUser(), false);
     }
 
     private Long resolveUid(final PipelineUser user) {
@@ -420,6 +411,49 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     private Long resolveGid(final PipelineUser user, final Long uid) {
         final Long defaultGID = Optional.ofNullable(groupUID).map(Integer::longValue).orElse(uid);
         return externalUIDManager.resolveExternalGid(user).orElse(defaultGID);
+    }
+
+    private boolean shouldApplyUserOwnership() {
+        return !BooleanUtils.toBoolean(
+                preferenceManager.getPreference(SystemPreferences.SYSTEM_SSH_DEFAULT_ROOT_USER_ENABLED));
+    }
+
+    /**
+     * Sets posix permissions on the file, then if user ownership is enabled
+     * chowns the file to userUID:userGID.
+     *
+     * @param file          target file or directory
+     * @param permissions   posix permissions to set
+     * @param user          user for ownership; if null, only permissions are set
+     * @param useUidAsGid   if true, use UID as GID (user:user); otherwise use {@link #resolveGid}
+     */
+    private void setPermissionsAndOwnership(final File file, final Set<PosixFilePermission> permissions,
+                                            final PipelineUser user, final boolean useUidAsGid) {
+        if (SystemUtils.IS_OS_WINDOWS) {
+            return;
+        }
+        try {
+            Files.setPosixFilePermissions(file.toPath(), permissions);
+        } catch (IOException e) {
+            LOGGER.warn("Failed to set posix permissions on {}: {}", file.getAbsolutePath(), e.getMessage());
+        }
+        if (shouldApplyUserOwnership() && user != null) {
+            final Long uid = resolveUid(user);
+            final Long gid = useUidAsGid ? uid : resolveGid(user, uid);
+            nfsStorageMounter.chown(file, uid, gid);
+        }
+    }
+
+    /**
+     * Sets posix permissions and chowns the NFS storage mount root folder to userUID:userUID, using
+     * the same UID resolution as {@link #resolveUid(PipelineUser)} and the same folder permissions
+     * as in {@link #initFile}. Ownership is applied only when not Windows and root user is disabled
+     * (same as {@link #initFile} via {@link #setPermissionsAndOwnership}). Used when user's default
+     * storage is set so the mount root has correct ownership and permissions.
+     */
+    public void chownUserStorageRoot(final PipelineUser user, final NFSDataStorage dataStorage) {
+        final File mountRoot = nfsStorageMounter.mount(dataStorage);
+        setPermissionsAndOwnership(mountRoot, folderPermissions, user, true);
     }
 
     @Override
