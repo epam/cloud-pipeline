@@ -41,7 +41,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
-@Tag(name = "Folders")
+@Tag(name = "folder-controller", description = "Folders")
 public class FolderController  extends AbstractRestController {
 
     @Autowired

@@ -60,7 +60,7 @@ import java.util.List;
 import java.util.Set;
 
 @Controller
-@Tag(name = "Tools")
+@Tag(name = "tool-controller", description = "Tools")
 public class ToolController extends AbstractRestController {
 
     public static final String REGISTRY_PARAM = "registry";

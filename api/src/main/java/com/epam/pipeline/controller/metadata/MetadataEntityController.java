@@ -45,7 +45,7 @@ import java.util.Map;
 import java.util.Set;
 
 @Controller
-@Tag(name = "MetadataEntities")
+@Tag(name = "metadata-entity-controller", description = "MetadataEntities")
 public class MetadataEntityController extends AbstractRestController {
 
     private static final String ID = "id";

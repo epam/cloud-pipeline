@@ -38,7 +38,7 @@ import java.util.List;
 import java.util.Map;
 
 @Controller
-@Tag(name = "Entities")
+@Tag(name = "entity-controller", description = "Entities")
 public class EntityController extends AbstractRestController {
 
     @Autowired

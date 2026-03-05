@@ -40,7 +40,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import java.util.List;
 
 @Controller
-@Tag(name = "Detached configuration scheduling")
+@Tag(name = "detached-configuration-schedule-controller", description = "Detached configuration scheduling")
 @RequestMapping(value = "/schedule/configuration")
 @RequiredArgsConstructor
 public class DetachedConfigurationScheduleController extends AbstractRestController {

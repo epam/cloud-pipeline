@@ -80,7 +80,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 @Controller
-@Tag(name = "Pipelines")
+@Tag(name = "pipeline-controller", description = "Pipelines")
 public class PipelineController extends AbstractRestController {
 
     private static final int BYTES_IN_KB = 1024;

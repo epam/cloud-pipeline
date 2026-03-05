@@ -42,7 +42,7 @@ import java.util.List;
 import java.util.Set;
 
 @RestController
-@Tag(name = "Cloud profile credentials management methods")
+@Tag(name = "cloud-profile-credentials-controller", description = "Cloud profile credentials management methods")
 @RequestMapping(value = "/cloud/credentials")
 @RequiredArgsConstructor
 public class CloudProfileCredentialsController extends AbstractRestController {

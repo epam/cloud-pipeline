@@ -35,7 +35,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@Tag(name = "Listing Data Transfer Service items management")
+@Tag(name = "dts-operations-controller", description = "Listing Data Transfer Service items management")
 @RequestMapping(value = "/dts")
 @RequiredArgsConstructor
 public class DtsOperationsController extends AbstractRestController {

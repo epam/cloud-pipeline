@@ -33,7 +33,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
-@Tag(name = "Templates")
+@Tag(name = "templates-controller", description = "Templates")
 public class TemplatesController extends AbstractRestController {
 
     @Autowired

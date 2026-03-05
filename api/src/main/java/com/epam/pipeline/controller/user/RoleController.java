@@ -39,7 +39,7 @@ import java.util.Collection;
 import java.util.List;
 
 @Controller
-@Tag(name = "Users")
+@Tag(name = "role-controller", description = "Users")
 @RequestMapping("/role")
 public class RoleController extends AbstractRestController {
 

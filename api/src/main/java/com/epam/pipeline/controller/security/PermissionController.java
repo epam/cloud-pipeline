@@ -37,7 +37,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
-@Tag(name = "Permissions")
+@Tag(name = "permission-controller", description = "Permissions")
 public class PermissionController extends AbstractRestController {
 
     @Autowired

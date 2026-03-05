@@ -48,7 +48,7 @@ import java.util.List;
 import java.util.Set;
 
 @Controller
-@Tag(name = "Metadata")
+@Tag(name = "metadata-controller", description = "Metadata Controller")
 public class MetadataController extends AbstractRestController {
 
     @Autowired

@@ -45,7 +45,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@Tag(name = "Firecloud methods")
+@Tag(name = "firecloud-controller", description = "Firecloud methods")
 @RequestMapping(value = "/firecloud")
 @Slf4j
 @AllArgsConstructor

@@ -41,7 +41,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
-@Tag(name = "System notifications")
+@Tag(name = "system-notification-controller", description = "System notifications")
 public class SystemNotificationController  extends AbstractRestController {
 
     private static final String ID = "id";

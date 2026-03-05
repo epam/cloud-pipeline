@@ -42,7 +42,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@Tag(name = "Data storage paths permissions management methods")
+@Tag(name = "storage-path-permissions-controller", description = "Data storage paths permissions management methods")
 @RequiredArgsConstructor
 public class StoragePathPermissionsController extends AbstractRestController {
 

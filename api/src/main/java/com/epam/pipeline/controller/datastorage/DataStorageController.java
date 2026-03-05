@@ -79,7 +79,7 @@ import java.util.Map;
 import java.util.Set;
 
 @Controller
-@Tag(name = "Datastorage methods")
+@Tag(name = "data-storage-controller", description = "Datastorage methods")
 public class DataStorageController extends AbstractRestController {
 
     private static final String ID = "id";

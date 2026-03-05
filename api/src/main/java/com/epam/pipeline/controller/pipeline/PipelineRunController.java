@@ -84,7 +84,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@Tag(name = "Pipeline runs")
+@Tag(name = "pipeline-run-controller", description = "Pipeline runs")
 public class PipelineRunController extends AbstractRestController {
 
     private static final String RUN_ID = "runId";

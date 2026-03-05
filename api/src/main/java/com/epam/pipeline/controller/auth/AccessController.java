@@ -36,7 +36,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
-@Tag(name = "Methods to support applications (like pipe-cli) login via authorization code.")
+@Tag(name = "access-controller",
+     description = "Methods to support applications (like pipe-cli) login via authorization code.")
 @RequestMapping(value = "/access")
 public class AccessController extends AbstractRestController {
 

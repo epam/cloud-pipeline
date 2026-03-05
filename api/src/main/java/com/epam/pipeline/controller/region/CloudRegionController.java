@@ -42,7 +42,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@Tag(name = "Cloud regions management")
+@Tag(name = "cloud-region-controller", description = "Cloud regions management")
 @RequestMapping(value = "/cloud/region")
 @RequiredArgsConstructor
 public class CloudRegionController extends AbstractRestController {

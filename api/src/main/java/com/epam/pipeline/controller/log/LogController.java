@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.log.LogPagination;
 import com.epam.pipeline.acl.log.LogApiService;
 import com.epam.pipeline.entity.log.LogRequest;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +38,7 @@ import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
+@Tag(name = "log-controller", description = "Log Controller")
 public class LogController extends AbstractRestController {
 
     private final LogApiService logApiService;

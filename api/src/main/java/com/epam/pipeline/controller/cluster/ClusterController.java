@@ -66,7 +66,7 @@ import java.util.Map;
 import jakarta.servlet.http.HttpServletResponse;
 
 @RestController
-@Tag(name = "Cluster methods")
+@Tag(name = "cluster-controller", description = "Cluster methods")
 @RequiredArgsConstructor
 public class ClusterController extends AbstractRestController {
 

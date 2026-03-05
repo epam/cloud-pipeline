@@ -35,7 +35,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@Tag(name = "Lustre FS management methods")
+@Tag(name = "lustre-fs-controller", description = "Lustre FS management methods")
 @RequestMapping(value = "/lustre")
 @RequiredArgsConstructor
 public class LustreFSController extends AbstractRestController {

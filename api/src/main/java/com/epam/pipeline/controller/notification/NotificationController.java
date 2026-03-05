@@ -22,6 +22,7 @@ import com.epam.pipeline.controller.vo.notification.NotificationMessageVO;
 import com.epam.pipeline.entity.notification.NotificationMessage;
 import com.epam.pipeline.acl.notification.NotificationApiService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/notification")
 @RequiredArgsConstructor
+@Tag(name = "notification-controller", description = "Notification Controller")
 public class NotificationController extends AbstractRestController {
 
     private final NotificationApiService notificationApiService;

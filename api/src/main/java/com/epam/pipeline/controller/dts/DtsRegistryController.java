@@ -41,7 +41,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import java.util.List;
 
 @Controller
-@Tag(name = "Data Transfer Service registry")
+@Tag(name = "dts-registry-controller", description = "Data Transfer Service registry")
 @RequestMapping(value = "/dts")
 @AllArgsConstructor
 public class DtsRegistryController extends AbstractRestController {

@@ -48,7 +48,7 @@ import java.util.Optional;
 
 @RestController
 @RequiredArgsConstructor
-@Tag(name = "Static resources API")
+@Tag(name = "static-resources-controller", description = "Static resources API")
 public class StaticResourcesController extends AbstractRestController {
 
     private static final FileNameMap FILE_NAME_MAP = URLConnection.getFileNameMap();

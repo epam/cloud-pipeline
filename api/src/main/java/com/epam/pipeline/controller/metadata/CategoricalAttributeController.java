@@ -37,7 +37,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@Tag(name = "CategoricalAttributes")
+@Tag(name = "categorical-attribute-controller", description = "Categorical Attributes Controller")
 @RequiredArgsConstructor
 @RequestMapping(value = "/categoricalAttribute")
 public class CategoricalAttributeController extends AbstractRestController {

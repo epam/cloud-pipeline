@@ -43,7 +43,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@Tag(name = "Datastorage lifecycle methods")
+@Tag(name = "data-storage-lifecycle-controller", description = "Datastorage lifecycle methods")
 public class DataStorageLifecycleController extends AbstractRestController {
 
     public static final String DATASTORAGE_ID = "datastorageId";

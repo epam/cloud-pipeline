@@ -32,7 +32,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@Tag(name = "LDAP search")
+@Tag(name = "ldap-controller", description = "LDAP search")
 @RequestMapping(value = "/ldap/search")
 @RequiredArgsConstructor
 public class LdapController extends AbstractRestController {

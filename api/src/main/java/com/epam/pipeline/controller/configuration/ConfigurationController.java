@@ -40,7 +40,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import java.util.List;
 
 @Controller
-@Tag(name = "Run Configuration methods")
+@Tag(name = "configuration-controller", description = "Run Configuration methods")
 public class ConfigurationController extends AbstractRestController {
 
     @Autowired

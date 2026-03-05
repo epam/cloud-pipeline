@@ -51,7 +51,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
-@Tag(name = "Issues")
+@Tag(name = "issue-controller", description = "Issues Controller")
 public class IssueController extends AbstractRestController {
 
     private static final String ISSUE_ID = "issueId";

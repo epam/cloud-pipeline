@@ -64,7 +64,7 @@ import java.util.List;
 import java.util.Map;
 
 @Controller
-@Tag(name = "Users")
+@Tag(name = "user-controller", description = "Users")
 public class UserController extends AbstractRestController {
 
     @Autowired

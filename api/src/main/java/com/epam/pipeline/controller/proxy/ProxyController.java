@@ -23,8 +23,10 @@ import org.springframework.web.bind.annotation.RestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.manager.security.AuthManager;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
+@Tag(name = "proxy-controller", description = "Proxy Controller")
 public class ProxyController {
     private AuthManager authManager;
 

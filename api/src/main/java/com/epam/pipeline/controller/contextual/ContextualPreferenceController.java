@@ -40,7 +40,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@Tag(name = "Contextual preference")
+@Tag(name = "contextual-preference-controller", description = "Contextual preference")
 @RequestMapping(value = "/contextual/preference")
 @RequiredArgsConstructor
 public class ContextualPreferenceController extends AbstractRestController {

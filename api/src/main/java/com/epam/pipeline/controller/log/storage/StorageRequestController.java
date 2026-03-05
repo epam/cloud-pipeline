@@ -22,6 +22,7 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.log.storage.StorageRequestStat;
 import com.epam.pipeline.entity.log.storage.StorageStatsRequest;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
+@Tag(name = "storage-request-controller", description = "Storage Request Controller")
 public class StorageRequestController extends AbstractRestController {
 
     private final StorageRequestApiService storageRequestService;

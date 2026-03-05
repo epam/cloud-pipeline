@@ -36,7 +36,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@Tag(name = "Statistics reporting")
+@Tag(name = "report-controller", description = "Statistics reporting")
 @RequestMapping(value = "/report")
 @RequiredArgsConstructor
 public class ReportController extends AbstractRestController {

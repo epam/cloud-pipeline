@@ -38,7 +38,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@Tag(name = "Ontologies management methods")
+@Tag(name = "ontology-controller", description = "Ontologies management methods")
 @RequestMapping(value = "/ontologies")
 @RequiredArgsConstructor
 public class OntologyController extends AbstractRestController {

@@ -30,7 +30,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 @Controller
-@Tag(name = "AWS Omics store methods")
+@Tag(name = "aws-omics-controller", description = "AWS Omics store methods")
 @RequestMapping(value = "/omicsstore")
 public class AWSOmicsController extends AbstractRestController {
 

@@ -22,6 +22,7 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.cluster.nat.NatRoute;
 import com.epam.pipeline.entity.cluster.nat.NatRoutingRulesRequest;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +39,7 @@ import java.util.Set;
 
 @RestController("/nat")
 @RequiredArgsConstructor
+@Tag(name = "nat-gateway-controller", description = "Nat Gateway Controller")
 public class NatGatewayController extends AbstractRestController {
 
     private final NatGatewayApiService natGatewayApiService;

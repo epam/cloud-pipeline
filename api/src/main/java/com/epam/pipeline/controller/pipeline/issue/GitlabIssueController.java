@@ -47,7 +47,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/issue/gitlab")
-@Tag(name = "Gitlab Issues")
+@Tag(name = "gitlab-issue-controller", description = "Gitlab Issues Controller")
 @RequiredArgsConstructor
 public class GitlabIssueController extends AbstractRestController {
 

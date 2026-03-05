@@ -30,7 +30,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@Tag(name = "Application info methods")
+@Tag(name = "application-info-controller", description = "Application info methods")
 @RequestMapping(value = "/app")
 @RequiredArgsConstructor
 public class ApplicationInfoController extends AbstractRestController {

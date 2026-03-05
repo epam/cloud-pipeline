@@ -39,7 +39,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import java.util.List;
 
 @Controller
-@Tag(name = "Pipeline run scheduling")
+@Tag(name = "pipeline-run-schedule-controller", description = "Pipeline run scheduling")
 @RequestMapping(value = "/schedule/run")
 @RequiredArgsConstructor
 public class PipelineRunScheduleController extends AbstractRestController {

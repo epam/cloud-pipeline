@@ -34,7 +34,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @Controller
-@Tag(name = "Node Schedule Management")
+@Tag(name = "node-schedule-controller", description = "Node Schedule Management")
 @RequiredArgsConstructor
 @RequestMapping("/cluster/nodeSchedule")
 @ResponseBody

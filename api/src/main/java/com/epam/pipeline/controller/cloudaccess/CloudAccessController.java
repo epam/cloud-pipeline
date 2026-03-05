@@ -41,7 +41,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 
 @RestController
-@Tag(name = "Cloud access management methods")
+@Tag(name = "cloud-access-controller", description = "Cloud access management methods")
 @RequestMapping(value = "/cloud/access")
 @RequiredArgsConstructor
 public class CloudAccessController extends AbstractRestController {

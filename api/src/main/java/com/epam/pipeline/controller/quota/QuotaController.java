@@ -38,7 +38,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@Tag(name = "Quotas management")
+@Tag(name = "quota-controller", description = "Quotas management")
 @RequestMapping("/quotas")
 @RequiredArgsConstructor
 public class QuotaController extends AbstractRestController {

@@ -38,7 +38,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import java.util.List;
 
 @Controller
-@Tag(name = "Pipeline Configurations")
+@Tag(name = "pipeline-config-controller", description = "Pipeline Configurations")
 public class PipelineConfigController extends AbstractRestController {
 
     private static final String ID = "id";

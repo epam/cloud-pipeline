@@ -35,7 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(value = "/preprocessing")
-@Tag(name = "NGS Project Preprocessing")
+@Tag(name = "ngs-preprocessing-controller", description = "NGS Project Preprocessing")
 public class NgsPreprocessingController extends AbstractRestController {
 
     private final NgsPreprocessingApiService preprocessingApiService;

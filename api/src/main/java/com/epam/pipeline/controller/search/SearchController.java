@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.search.SearchTemplateExportInfo;
 import com.epam.pipeline.manager.search.SearchExportManager;
 import com.epam.pipeline.manager.search.SearchManager;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +46,7 @@ import java.time.LocalDateTime;
 
 @RestController
 @RequiredArgsConstructor
+@Tag(name = "search-controller", description = "Search Controller")
 public class SearchController extends AbstractRestController {
 
     private final SearchManager searchManager;

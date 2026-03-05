@@ -49,7 +49,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Controller
-@Tag(name = "DockerRegistry")
+@Tag(name = "docker-registry-controller", description = "Docker Registry Controller")
 public class DockerRegistryController extends AbstractRestController {
 
     public static final String CERTIFICATE_NAME = "ca.crt";

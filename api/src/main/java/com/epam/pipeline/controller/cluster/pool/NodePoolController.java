@@ -45,7 +45,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Controller
-@Tag(name = "Node Pool Management")
+@Tag(name = "node-pool-controller", description = "Node Pool Management")
 @RequiredArgsConstructor
 @RequestMapping("/cluster/pool")
 @ResponseBody

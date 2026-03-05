@@ -35,7 +35,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
-@Tag(name = "FileShareMount methods")
+@Tag(name = "file-share-mount-controller", description = "FileShareMount methods")
 @RequestMapping(value = "/filesharemount")
 public class FileShareMountController extends AbstractRestController {
 

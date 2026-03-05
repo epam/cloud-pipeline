@@ -31,7 +31,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
-@Tag(name = "Datastorage usage methods")
+@Tag(name = "storage-usage-controller", description = "Datastorage usage methods")
 @RequiredArgsConstructor
 public class StorageUsageController extends AbstractRestController {
 

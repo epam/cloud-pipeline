@@ -49,7 +49,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/plugins")
 @RequiredArgsConstructor
-@Tag(name = "UI Plugins API", description = "Endpoints for managing UI plugins and assignments")
+@Tag(name = "plugin-controller", description = "UI Plugins API")
 public class PluginController extends AbstractRestController {
 
     private final PluginService pluginService;

@@ -22,6 +22,7 @@ import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.dto.notification.UserNotification;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +41,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/user-notification")
 @RequiredArgsConstructor
+@Tag(name = "user-notification-controller", description = "User Notification Controller")
 public class UserNotificationController extends AbstractRestController {
 
     private final UserNotificationApiService notificationApiService;

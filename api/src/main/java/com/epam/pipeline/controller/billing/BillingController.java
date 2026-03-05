@@ -23,6 +23,7 @@ import com.epam.pipeline.controller.vo.billing.BillingChartRequest;
 import com.epam.pipeline.controller.vo.billing.BillingExportRequest;
 import com.epam.pipeline.entity.billing.BillingChartInfo;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +40,7 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
+@Tag(name = "billing-controller", description = "Billing Controller")
 public class BillingController extends AbstractRestController {
 
     private final BillingApiService billingApi;

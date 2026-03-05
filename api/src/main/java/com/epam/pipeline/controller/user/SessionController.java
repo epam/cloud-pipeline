@@ -32,7 +32,7 @@ import jakarta.servlet.http.HttpSession;
 
 @RestController
 @RequiredArgsConstructor
-@Tag(name = "Session API")
+@Tag(name = "session-controller", description = "Session API")
 public class SessionController extends AbstractRestController {
 
     @GetMapping(value = "/session")

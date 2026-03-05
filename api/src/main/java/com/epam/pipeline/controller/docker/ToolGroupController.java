@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.pipeline.ToolGroupWithIssues;
 import com.epam.pipeline.acl.docker.ToolGroupApiService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +37,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 @RestController
+@Tag(name = "tool-group-controller", description = "Tool Group Controller")
 public class ToolGroupController extends AbstractRestController {
     private static final String TOOL_GROUP_URL = "/toolGroup";
 

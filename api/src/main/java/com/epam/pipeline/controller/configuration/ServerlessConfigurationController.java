@@ -38,7 +38,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import jakarta.servlet.http.HttpServletRequest;
 
 @Controller
-@Tag(name = "Serverless configuration methods")
+@Tag(name = "serverless-configuration-controller", description = "Serverless configuration methods")
 @RequiredArgsConstructor
 public class ServerlessConfigurationController extends AbstractRestController {
 

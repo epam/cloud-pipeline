@@ -42,7 +42,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import java.util.List;
 
 @Controller
-@Tag(name = "Data storage object tag batch methods. " +
+@Tag(name = "data-storage-tag-batch-controller", description = "Data storage object tag batch methods. " +
         "NOTE: all these methods assume that client provide absolute path for a storage object " +
         "(path from datastorage root object and not from storage itself) within BatchRequest")
 public class DataStorageTagBatchController extends AbstractRestController {

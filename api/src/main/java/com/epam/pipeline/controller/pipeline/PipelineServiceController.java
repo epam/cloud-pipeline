@@ -36,7 +36,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import java.util.List;
 
 @Controller
-@Tag(name = "Pipeline services")
+@Tag(name = "pipeline-service-controller", description = "Pipeline services")
 public class PipelineServiceController extends AbstractRestController {
 
     @Autowired
