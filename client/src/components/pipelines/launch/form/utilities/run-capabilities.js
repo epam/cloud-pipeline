@@ -7,38 +7,23 @@ import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
 import {booleanParameterIsSetToValue} from './parameter-utilities';
 import {
-  CP_CAP_DIND_CONTAINER,
   CP_CAP_SYSTEMD_CONTAINER,
-  CP_CAP_SINGULARITY,
-  CP_CAP_DESKTOP_NM,
-  CP_CAP_MODULES,
-  CP_DISABLE_HYPER_THREADING,
-  CP_CAP_DCV,
   CP_CAP_DCV_WEB,
   CP_CAP_DCV_DESKTOP,
-  CP_CAP_RUN_CAPABILITIES
+  CP_CAP_RUN_CAPABILITIES,
+  RUN_CAPABILITIES,
+  RUN_CAPABILITIES_PARAMETERS
 } from './parameters';
 import fetchToolOS from './fetch-tool-os';
 import Capability from './capability';
 import {mergeUserRoleAttributes} from '../../../../../utils/attributes/merge-user-role-attributes';
 import fetchToolDefaultParameters from './fetch-tool-default-parameters';
 import {getReservationParametersConfig} from '../components/reservation-parameters/utilities';
-import {RUN_CAPABILITIES} from '../../../../../models/preferences/PreferencesLoad';
 import styles from './run-capabilities.css';
 import parseCapabilityCloudSetting from './capabilities-utilities/parse-cloud-setting';
 import {defaultSorter} from '../../../../../utils/sorting';
 
 export {RUN_CAPABILITIES};
-
-export const RUN_CAPABILITIES_PARAMETERS = {
-  [RUN_CAPABILITIES.dinD]: CP_CAP_DIND_CONTAINER,
-  [RUN_CAPABILITIES.singularity]: CP_CAP_SINGULARITY,
-  [RUN_CAPABILITIES.systemD]: CP_CAP_SYSTEMD_CONTAINER,
-  [RUN_CAPABILITIES.noMachine]: CP_CAP_DESKTOP_NM,
-  [RUN_CAPABILITIES.module]: CP_CAP_MODULES,
-  [RUN_CAPABILITIES.disableHyperThreading]: CP_DISABLE_HYPER_THREADING,
-  [RUN_CAPABILITIES.dcv]: CP_CAP_DCV
-};
 
 export const RUN_CAPABILITIES_MODE = {
   launch: 'launch',

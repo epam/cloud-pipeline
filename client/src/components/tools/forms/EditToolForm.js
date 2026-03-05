@@ -72,11 +72,11 @@ import {
   CP_CAP_AUTOSCALE_WORKERS,
   CP_CAP_AUTOSCALE_HYBRID,
   CP_CAP_AUTOSCALE_PRICE_TYPE,
-  CP_CAP_RESCHEDULE_RUN
+  CP_CAP_RESCHEDULE_RUN,
+  RUN_CAPABILITIES
 } from '../../pipelines/launch/form/utilities/parameters';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import RunCapabilities, {
-  RUN_CAPABILITIES,
   RUN_CAPABILITIES_MODE,
   getEnabledCapabilities,
   applyCapabilities,

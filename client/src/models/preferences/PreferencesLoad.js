@@ -20,39 +20,20 @@ import escapeRegExp, {ESCAPE_CHARACTERS} from '../../utils/escape-reg-exp';
 import {parsePermissionsRestrictionsConfig} from './utilities/parse-permissions-restrictions';
 import {parseRunActionCriteria} from '../../components/runs/actions/actions-availability/utilities';
 import {
-  CP_CAP_DIND_CONTAINER,
-  CP_CAP_SINGULARITY,
-  CP_CAP_SYSTEMD_CONTAINER,
-  CP_CAP_DESKTOP_NM,
-  CP_CAP_MODULES,
-  CP_DISABLE_HYPER_THREADING,
-  CP_CAP_DCV,
-  systemCapabilitiesParameters
+  systemCapabilitiesParameters,
+  RUN_CAPABILITIES,
+  RUN_CAPABILITIES_PARAMETERS
 } from '../../components/pipelines/launch/form/utilities/parameters';
 
 const FETCH_ID_SYMBOL = Symbol('Fetch id');
 // eslint-disable-next-line max-len
 const MAINTENANCE_MODE_DISCLAIMER = 'Platform is in a maintenance mode, operation is temporary unavailable';
 
-export const RUN_CAPABILITIES = {
-  dinD: 'DinD',
-  singularity: 'Singularity',
-  systemD: 'SystemD',
-  noMachine: 'NoMachine',
-  module: 'Module',
-  disableHyperThreading: 'Disable Hyper-Threading',
-  dcv: 'NICE DCV'
-};
-
-const SYSTEM_CAPABILITY_PARAMETER_TO_DISPLAY = {
-  [CP_CAP_DIND_CONTAINER]: RUN_CAPABILITIES.dinD,
-  [CP_CAP_SINGULARITY]: RUN_CAPABILITIES.singularity,
-  [CP_CAP_SYSTEMD_CONTAINER]: RUN_CAPABILITIES.systemD,
-  [CP_CAP_DESKTOP_NM]: RUN_CAPABILITIES.noMachine,
-  [CP_CAP_MODULES]: RUN_CAPABILITIES.module,
-  [CP_DISABLE_HYPER_THREADING]: RUN_CAPABILITIES.disableHyperThreading,
-  [CP_CAP_DCV]: RUN_CAPABILITIES.dcv
-};
+const SYSTEM_CAPABILITY_PARAMETER_TO_DISPLAY = Object.entries(RUN_CAPABILITIES_PARAMETERS)
+  .reduce((acc, [name, parameter]) => ({
+    ...acc,
+    [parameter]: name
+  }), {});
 
 class PreferencesLoad extends Remote {
   constructor () {
