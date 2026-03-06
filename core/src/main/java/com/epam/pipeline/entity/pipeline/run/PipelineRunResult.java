@@ -21,10 +21,12 @@ import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
-import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Validate;
 
 import java.util.List;
+import java.util.Objects;
 
 @Value
 @Builder
@@ -44,13 +46,14 @@ public class PipelineRunResult {
 
     @JsonIgnore
     public void validate() {
-        Assert.notNull(this.getRunId(), "Run ID should be provided for run result object!");
-        Assert.isTrue(this.getRunId() > 0, "Run ID should be > 0 for run result object!");
-        Assert.isTrue(StringUtils.hasText(this.getName()), "Name should be provided!");
-        Assert.isTrue(StringUtils.hasText(this.getFileMask()), "File mask should be provided!");
-        Assert.notEmpty(this.getItems(), "Items should be provided for PipelineRunResult object!");
+        Validate.isTrue(Objects.nonNull(this.getRunId()), "Run ID should be provided for run result object!");
+        Validate.isTrue(this.getRunId() > 0, "Run ID should be > 0 for run result object!");
+        Validate.isTrue(StringUtils.isNotBlank(this.getName()), "Name should be provided!");
+        Validate.isTrue(StringUtils.isNotBlank(this.getFileMask()), "File mask should be provided!");
+        Validate.isTrue(CollectionUtils.isNotEmpty(this.getItems()),
+                "Items should be provided for PipelineRunResult object!");
         this.getItems().forEach(
-            path -> Assert.isTrue(StringUtils.hasText(path), "Item path should not be empty!")
+            path -> Validate.isTrue(StringUtils.isNotBlank(path), "Item path should not be empty!")
         );
     }
 

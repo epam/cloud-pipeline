@@ -24,8 +24,8 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -55,9 +55,9 @@ public class FirecloudRunConfigurationEntry extends AbstractRunConfigurationEntr
 
     @Override
     public boolean checkConfigComplete() {
-        return StringUtils.hasText(methodName) &&
-                StringUtils.hasText(methodSnapshot) &&
-                (StringUtils.hasText(methodConfigurationName) ||
+        return StringUtils.isNotBlank(methodName) &&
+                StringUtils.isNotBlank(methodSnapshot) &&
+                (StringUtils.isNotBlank(methodConfigurationName) ||
                         !CollectionUtils.isEmpty(methodInputs) ||
                         !CollectionUtils.isEmpty(methodOutputs));
     }

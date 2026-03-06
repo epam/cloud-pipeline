@@ -1,8 +1,6 @@
 plugins {
     id 'java'
     id 'jacoco'
-    id 'org.springframework.boot' version '3.3.13'
-    id 'io.spring.dependency-management' version '1.1.7'
     id 'org.sonarqube' version '2.6.1'
 }
 
@@ -15,10 +13,6 @@ repositories {
     mavenCentral()
 }
 
-ext {
-    springBootVersion = '3.3.13'
-}
-
 jar {
     archiveFileName = 'core.pipeline.jar'
     manifest {
@@ -28,13 +22,9 @@ jar {
     }
 }
 
-tasks.named('bootJar') {
-    enabled = false // Disable bootJar task
-}
-
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'jakarta.persistence:jakarta.persistence-api:3.2.0'
+    implementation 'org.slf4j:slf4j-api:2.0.13'
     implementation 'com.fasterxml.jackson.core:jackson-annotations:2.8.7'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.8.7'
     implementation 'joda-time:joda-time:2.9.9'
@@ -44,13 +34,9 @@ dependencies {
 
     annotationProcessor 'org.projectlombok:lombok:1.18.34'
 
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-}
-
-dependencyManagement {
-    imports {
-        mavenBom "org.springframework.boot:spring-boot-dependencies:${springBootVersion}"
-    }
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-params:5.10.2'
+    testImplementation 'org.hamcrest:hamcrest:2.2'
 }
 
 test {

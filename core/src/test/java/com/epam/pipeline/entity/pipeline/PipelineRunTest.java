@@ -18,7 +18,7 @@ package com.epam.pipeline.entity.pipeline;
 
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import org.junit.jupiter.api.Test;
-import org.springframework.util.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.Arrays;
 import java.util.List;
@@ -103,7 +103,7 @@ public class PipelineRunTest {
 
     private String glueParam(String name, String value, String type) {
         String result = name + PipelineRun.KEY_VALUE_DELIMITER + value;
-        if (StringUtils.hasText(type)) {
+        if (StringUtils.isNotBlank(type)) {
             result += PipelineRun.KEY_VALUE_DELIMITER + type;
         }
         return result;

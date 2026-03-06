@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.entity.git;
 
-import org.springframework.util.Assert;
+import org.apache.commons.lang3.Validate;
 
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -195,7 +195,7 @@ public final class GitRepositoryUrl {
 
     private static String ensureMatches(final String value, final String pattern, final boolean matchesIfAbsent) {
         final Boolean matches = Optional.ofNullable(value).map(v -> v.matches(pattern)).orElse(matchesIfAbsent);
-        Assert.isTrue(matches, "Should match pattern " + pattern);
+        Validate.isTrue(matches, "Should match pattern " + pattern);
         return value;
     }
 
@@ -212,7 +212,7 @@ public final class GitRepositoryUrl {
     }
 
     private static GitRepositoryUrl parseUrl(final Matcher matcher, final boolean hasRepository) {
-        Assert.isTrue(matcher.matches(), INVALID_URL_FORMAT_MESSAGE);
+        Validate.isTrue(matcher.matches(), INVALID_URL_FORMAT_MESSAGE);
         return new GitRepositoryUrl(
                 matcher.group("protocol"),
                 matcher.group("username"),
