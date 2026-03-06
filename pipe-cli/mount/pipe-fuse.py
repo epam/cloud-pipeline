@@ -90,6 +90,7 @@ _xattrs_include_prefix = 'user'
 def start(mountpoint, webdav, bucket,
           read_buffer_size, read_ahead_min_size, read_ahead_max_size, read_ahead_size_multiplier,
           read_disk_buffer_path, read_disk_buffer_read_ahead_size, read_disk_buffer_ttl, read_disk_buffer_ttl_delay,
+          read_disk_buffer_download_workers,
           write_buffer_size, trunc_buffer_size, chunk_size,
           listing_cache_ttl, listing_cache_size,
           xattrs_include_prefixes, xattrs_exclude_prefixes,
@@ -112,10 +113,13 @@ def start(mountpoint, webdav, bucket,
     read_ahead_size_multiplier = int(os.getenv('CP_PIPE_FUSE_READ_AHEAD_SIZE_MULTIPLIER',
                                                read_ahead_size_multiplier))
     read_disk_buffer_path = os.getenv('CP_PIPE_FUSE_READ_DISK_BUFFER_PATH', read_disk_buffer_path)
-    read_disk_buffer_read_ahead_size = int(os.getenv('CP_PIPE_FUSE_READ_DISK_BUFFER_READ_AHEAD_SIZE',
-                                                     read_disk_buffer_read_ahead_size))
+    _env_read_ahead = os.getenv('CP_PIPE_FUSE_READ_DISK_BUFFER_READ_AHEAD_SIZE')
+    if _env_read_ahead not in (None, ''):
+        read_disk_buffer_read_ahead_size = int(_env_read_ahead)
     read_disk_buffer_ttl = int(os.getenv('CP_PIPE_FUSE_READ_DISK_BUFFER_TTL', read_disk_buffer_ttl))
     read_disk_buffer_ttl_delay = int(os.getenv('CP_PIPE_FUSE_READ_DISK_BUFFER_TTL_DELAY', read_disk_buffer_ttl_delay))
+    read_disk_buffer_download_workers = int(os.getenv('CP_PIPE_FUSE_READ_DISK_BUFFER_DOWNLOAD_WORKERS',
+                                                       read_disk_buffer_download_workers))
     audit_buffer_ttl = int(os.getenv('CP_PIPE_FUSE_AUDIT_BUFFER_TTL', audit_buffer_ttl))
     audit_buffer_size = int(os.getenv('CP_PIPE_FUSE_AUDIT_BUFFER_SIZE', audit_buffer_size))
     path_permissions_disabled = os.getenv('CP_PIPE_FUSE_PATH_PERMISSIONS_DISABLED', 'false').lower() == 'true'
@@ -186,10 +190,18 @@ def start(mountpoint, webdav, bucket,
         else:
             logging.info('Extended attributes caching is disabled.')
     if read_disk_buffer_path:
+        # Auto chunk size when not set and workers > 1: split each file into download_workers equal chunks
+        if read_disk_buffer_read_ahead_size is None and read_disk_buffer_download_workers > 1:
+            _effective_read_ahead = 0  # auto
+        elif read_disk_buffer_read_ahead_size is not None:
+            _effective_read_ahead = read_disk_buffer_read_ahead_size
+        else:
+            _effective_read_ahead = 512 * MB  # default when workers == 1 and not set
         logging.info('Disk buffering read is enabled.')
         client = DiskBufferingReadAllFileSystemClient(client,
-                                                      read_ahead_size=read_disk_buffer_read_ahead_size,
-                                                      path=read_disk_buffer_path)
+                                                      read_ahead_size=_effective_read_ahead,
+                                                      path=read_disk_buffer_path,
+                                                      download_workers=read_disk_buffer_download_workers)
         if read_disk_buffer_ttl > 0:
             logging.info('Disk buffering read ttl is enabled.')
             daemons.append(DiskBufferTTLDaemon(path=read_disk_buffer_path,
@@ -398,12 +410,17 @@ if __name__ == '__main__':
                              "Can be configured via CP_PIPE_FUSE_READ_AHEAD_SIZE_MULTIPLIER environment variable.")
     parser.add_argument("--read-disk-buffer-path", required=False, default='',
                         help="Read disk buffer path")
-    parser.add_argument("--read-disk-buffer-read-ahead-size", type=int, required=False, default=512 * MB,
-                        help="Read disk buffer read size")
+    parser.add_argument("--read-disk-buffer-read-ahead-size", type=int, required=False, default=None,
+                        help="Read disk buffer chunk size in bytes. If not set and download-workers > 1, "
+                             "chunk size is auto-calculated per file (equal chunks). "
+                             "Can be set via CP_PIPE_FUSE_READ_DISK_BUFFER_READ_AHEAD_SIZE.")
     parser.add_argument("--read-disk-buffer-ttl", type=int, required=False, default=1 * HOUR,
                         help="Read disk buffer time to live, seconds")
     parser.add_argument("--read-disk-buffer-ttl-delay", type=int, required=False, default=2 * HOUR,
                         help="Read disk buffer time to live polling delay, seconds")
+    parser.add_argument("--read-disk-buffer-download-workers", type=int, required=False, default=8,
+                        help="Number of parallel workers for disk buffer full-file download (1=sequential). "
+                             "Can be configured via CP_PIPE_FUSE_READ_DISK_BUFFER_DOWNLOAD_WORKERS.")
     parser.add_argument("-wb", "--write-buffer-size", type=int, required=False, default=512 * MB,
                         help="Write buffer size for a single file")
     parser.add_argument("-r", "--trunc-buffer-size", type=int, required=False, default=512 * MB,
@@ -484,6 +501,7 @@ if __name__ == '__main__':
               read_disk_buffer_read_ahead_size=args.read_disk_buffer_read_ahead_size,
               read_disk_buffer_ttl=args.read_disk_buffer_ttl,
               read_disk_buffer_ttl_delay=args.read_disk_buffer_ttl_delay,
+              read_disk_buffer_download_workers=args.read_disk_buffer_download_workers,
               write_buffer_size=args.write_buffer_size, trunc_buffer_size=args.trunc_buffer_size,
               chunk_size=args.chunk_size,
               listing_cache_ttl=args.listing_cache_ttl, listing_cache_size=args.listing_cache_size,
