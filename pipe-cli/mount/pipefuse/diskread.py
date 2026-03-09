@@ -120,12 +120,8 @@ class DiskBufferingReadAllFileSystemClient(FileSystemClientDecorator):
                             # Collect results in offset order for sequential write
                             results_by_offset = {}
                             for future in as_completed(future_to_chunk):
-                                co, cl = future_to_chunk[future]
-                                try:
-                                    range_offset, data = future.result()
-                                    results_by_offset[range_offset] = data
-                                except Exception:
-                                    raise
+                                range_offset, data = future.result()
+                                results_by_offset[range_offset] = data
                             for range_offset, range_length in chunks:
                                 data = results_by_offset[range_offset]
                                 logging.info('Persisting buffer range %d-%d for %d:%s'
