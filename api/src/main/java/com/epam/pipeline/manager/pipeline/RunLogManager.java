@@ -132,15 +132,25 @@ public class RunLogManager {
             return;
         }
 
-        final List<RunLog> allLogs = runLogDao.loadAllLogsForRun(runId);
-        if (allLogs.isEmpty()) {
+        final List<RunLog> runLogs = runLogDao.loadAllLogsForRun(runId);
+        if (runLogs.isEmpty()) {
             log.debug("No logs found in DB for run {}, skipping migration.", runId);
             return;
         }
 
-        final Map<String, List<RunLog>> logsByTask = allLogs.stream()
-                .collect(Collectors.groupingBy(
-                        logEntry -> StringUtils.defaultString(logEntry.getTaskName(), "default")));
+        final List<PipelineTask> tasks = loadTasksByRunId(runId);
+        final Map<String, PipelineTask> tasksByName = tasks.stream()
+                .collect(Collectors.toMap(
+                        task -> PipelineTask.buildTaskId(task.getName(), task.getParameters()),
+                        task -> task,
+                        (existing, duplicate) -> existing));
+
+        final Map<PipelineTask, List<RunLog>> logsByTask = runLogs.stream()
+                .collect(Collectors.groupingBy(logEntry -> {
+                    // using consoleLogTask as default task for logs without task name
+                    final String taskId = StringUtils.defaultString(logEntry.getTaskName(), consoleLogTask);
+                    return tasksByName.getOrDefault(taskId, new PipelineTask(taskId));
+                }));
 
         runLogStorageManager.saveLogsToStorage(runId, logsByTask);
         runLogDao.deleteTaskByRunIdsIn(Collections.singletonList(runId), false);
@@ -196,15 +206,15 @@ public class RunLogManager {
     @Transactional(propagation = Propagation.SUPPORTS)
     public List<PipelineTask> loadTasksByRunId(Long runId) {
         PipelineRun run = runCRUDService.loadRunById(runId);
-        List<PipelineTask> tasks = runLogDao.loadTasksForRun(runId);
 
-        if (tasks.isEmpty() && run.getStatus().isFinal()) {
+        if (run.getStatus().isFinal()) {
             final List<PipelineTask> storageTasks = runLogStorageManager.loadTasksFromStorage(runId);
             if (!storageTasks.isEmpty()) {
                 return storageTasks;
             }
         }
 
+        List<PipelineTask> tasks = runLogDao.loadTasksForRun(runId);
         tasks.forEach(task -> {
             if (run.getStatus().isFinal() && !task.getStatus().isFinal()) {
                 task.setStatus(run.getStatus());

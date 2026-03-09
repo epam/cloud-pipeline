@@ -18,22 +18,50 @@ package com.epam.pipeline.manager.pipeline;
 
 import java.io.ByteArrayOutputStream;
 import java.io.Writer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.ResultWriter;
+import com.epam.pipeline.controller.vo.run.OffsetPagingFilter;
+import com.epam.pipeline.dao.pipeline.RunLogDao;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.PipelineTask;
+import com.epam.pipeline.entity.pipeline.RunLog;
+import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.manager.AbstractManagerTest;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.stubbing.Answer;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class RunLogManagerTest extends AbstractManagerTest {
+
+    private static final Long RUN_ID = 1L;
+    private static final String TASK_NAME = "testTask";
+    private static final String CONSOLE_LOG_TASK = "Console";
 
     @Mock
     private PipelineRunCRUDService runCRUDServiceMock;
@@ -41,17 +69,34 @@ public class RunLogManagerTest extends AbstractManagerTest {
     @Mock
     private RunLogExporter logExporter;
 
+    @Mock
+    private RunLogDao runLogDao;
+
+    @Mock
+    private RunLogStorageManager runLogStorageManager;
+
+    @Mock
+    private MessageHelper messageHelper;
+
+    @Mock
+    private PreferenceManager preferenceManager;
+
     @InjectMocks
     private RunLogManager logManager;
 
     @Before
     public void setup() {
-        MockitoAnnotations.initMocks(this.getClass());
+        MockitoAnnotations.initMocks(this);
+        ReflectionTestUtils.setField(logManager, "consoleLogTask", CONSOLE_LOG_TASK);
+        when(messageHelper.getMessage(any(String.class))).thenReturn("test message");
+        when(messageHelper.getMessage(any(String.class), any())).thenReturn("test message");
+        when(preferenceManager.findPreference(SystemPreferences.SYSTEM_LIMIT_LOG_LINES))
+                .thenReturn(Optional.of(100));
     }
 
     @Test
     public void downloadLogs() throws Exception {
-        PipelineRun run = new PipelineRun(1L, "");
+        PipelineRun run = new PipelineRun(RUN_ID, "");
         Mockito.doReturn(run).when(runCRUDServiceMock).loadRunById(run.getId());
         Mockito.doAnswer((Answer<Void>) invocation -> {
             final Writer writer = invocation.getArgumentAt(1, Writer.class);
@@ -66,5 +111,248 @@ public class RunLogManagerTest extends AbstractManagerTest {
         String result = os.toString();
         Assert.assertNotNull(result);
         Assert.assertTrue(!result.isEmpty());
+    }
+
+    @Test
+    public void migrateRunLogsToStorageShouldMigrateSuccessfully() {
+        when(runLogStorageManager.isRunLogMigrationConfigured()).thenReturn(true);
+        final List<RunLog> logs = Arrays.asList(
+                buildRunLog(RUN_ID, TASK_NAME, TaskStatus.RUNNING, "line 1"),
+                buildRunLog(RUN_ID, TASK_NAME, TaskStatus.SUCCESS, "line 2"));
+        when(runLogDao.loadAllLogsForRun(RUN_ID)).thenReturn(logs);
+
+        final PipelineRun run = buildRun(RUN_ID, TaskStatus.SUCCESS);
+        when(runCRUDServiceMock.loadRunById(RUN_ID)).thenReturn(run);
+
+        final PipelineTask task = buildPipelineTask(TASK_NAME, TaskStatus.SUCCESS);
+        when(runLogDao.loadTasksForRun(RUN_ID)).thenReturn(Collections.singletonList(task));
+
+        logManager.migrateRunLogsToStorage(RUN_ID);
+
+        verify(runLogStorageManager).saveLogsToStorage(eq(RUN_ID), any());
+        verify(runLogDao).deleteTaskByRunIdsIn(Collections.singletonList(RUN_ID), false);
+    }
+
+    @Test
+    public void migrateRunLogsToStorageShouldSkipWhenNotConfigured() {
+        when(runLogStorageManager.isRunLogMigrationConfigured()).thenReturn(false);
+
+        logManager.migrateRunLogsToStorage(RUN_ID);
+
+        verify(runLogDao, never()).loadAllLogsForRun(anyLong());
+        verify(runLogStorageManager, never()).saveLogsToStorage(anyLong(), any());
+    }
+
+    @Test
+    public void migrateRunLogsToStorageShouldSkipWhenNoLogs() {
+        when(runLogStorageManager.isRunLogMigrationConfigured()).thenReturn(true);
+        when(runLogDao.loadAllLogsForRun(RUN_ID)).thenReturn(Collections.emptyList());
+
+        logManager.migrateRunLogsToStorage(RUN_ID);
+
+        verify(runLogStorageManager, never()).saveLogsToStorage(anyLong(), any());
+        verify(runLogDao, never()).deleteTaskByRunIdsIn(any(), eq(false));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void migrateRunLogsToStorageShouldHandleParameterizedTasks() {
+        final String taskName = "mainTask";
+        final String taskParams = "param1";
+        final String taskId = PipelineTask.buildTaskId(taskName, taskParams);
+
+        when(runLogStorageManager.isRunLogMigrationConfigured()).thenReturn(true);
+
+        final List<RunLog> logs = Arrays.asList(
+                buildRunLog(RUN_ID, taskId, TaskStatus.RUNNING, "starting"),
+                buildRunLog(RUN_ID, taskId, TaskStatus.SUCCESS, "done"));
+        when(runLogDao.loadAllLogsForRun(RUN_ID)).thenReturn(logs);
+
+        final PipelineRun run = buildRun(RUN_ID, TaskStatus.SUCCESS);
+        when(runCRUDServiceMock.loadRunById(RUN_ID)).thenReturn(run);
+        when(runLogStorageManager.loadTasksFromStorage(RUN_ID)).thenReturn(Collections.emptyList());
+
+        final PipelineTask task = new PipelineTask();
+        task.setName(taskName);
+        task.setParameters(taskParams);
+        task.setStatus(TaskStatus.SUCCESS);
+        when(runLogDao.loadTasksForRun(RUN_ID)).thenReturn(Collections.singletonList(task));
+
+        logManager.migrateRunLogsToStorage(RUN_ID);
+
+        @SuppressWarnings("rawtypes")
+        final ArgumentCaptor<Map> mapCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(runLogStorageManager).saveLogsToStorage(eq(RUN_ID), mapCaptor.capture());
+
+        final Map<PipelineTask, List<RunLog>> capturedMap = mapCaptor.getValue();
+        assertEquals(1, capturedMap.size());
+
+        final Map.Entry<PipelineTask, List<RunLog>> entry = capturedMap.entrySet().iterator().next();
+        assertEquals(taskName, entry.getKey().getName());
+        assertEquals(taskParams, entry.getKey().getParameters());
+        assertEquals(TaskStatus.SUCCESS, entry.getKey().getStatus());
+        assertEquals(2, entry.getValue().size());
+    }
+
+    @Test
+    public void loadLogsByRunIdShouldReturnStorageLogsForFinalRun() {
+        final PipelineRun run = buildRun(RUN_ID, TaskStatus.SUCCESS);
+        when(runCRUDServiceMock.loadRunById(RUN_ID)).thenReturn(run);
+
+        final List<RunLog> storageLogs = Collections.singletonList(
+                buildRunLog(RUN_ID, TASK_NAME, TaskStatus.SUCCESS, "storage log"));
+        when(runLogStorageManager.loadLogsFromStorage(RUN_ID)).thenReturn(storageLogs);
+
+        final OffsetPagingFilter filter = OffsetPagingFilter.builder()
+                .offset(0).limit(100).build();
+        final List<RunLog> result = logManager.loadLogsByRunId(RUN_ID, filter);
+
+        assertEquals(1, result.size());
+        assertEquals("storage log", result.get(0).getLogText());
+        verify(runLogDao, never()).loadLogsForRun(anyLong(), any());
+    }
+
+    @Test
+    public void loadLogsByRunIdShouldReturnDaoLogsForRunningRun() {
+        final PipelineRun run = buildRun(RUN_ID, TaskStatus.RUNNING);
+        when(runCRUDServiceMock.loadRunById(RUN_ID)).thenReturn(run);
+
+        final List<RunLog> daoLogs = Collections.singletonList(
+                buildRunLog(RUN_ID, TASK_NAME, TaskStatus.RUNNING, "db log"));
+        when(runLogDao.loadLogsForRun(eq(RUN_ID), any())).thenReturn(daoLogs);
+
+        final OffsetPagingFilter filter = OffsetPagingFilter.builder()
+                .offset(0).limit(100).build();
+        final List<RunLog> result = logManager.loadLogsByRunId(RUN_ID, filter);
+
+        assertEquals(1, result.size());
+        assertEquals("db log", result.get(0).getLogText());
+        verify(runLogStorageManager, never()).loadLogsFromStorage(anyLong());
+    }
+
+    @Test
+    public void loadLogsByRunIdShouldFallBackToDaoWhenStorageEmpty() {
+        final PipelineRun run = buildRun(RUN_ID, TaskStatus.SUCCESS);
+        when(runCRUDServiceMock.loadRunById(RUN_ID)).thenReturn(run);
+        when(runLogStorageManager.loadLogsFromStorage(RUN_ID)).thenReturn(Collections.emptyList());
+
+        final List<RunLog> daoLogs = Collections.singletonList(
+                buildRunLog(RUN_ID, TASK_NAME, TaskStatus.SUCCESS, "db log"));
+        when(runLogDao.loadLogsForRun(eq(RUN_ID), any())).thenReturn(daoLogs);
+
+        final OffsetPagingFilter filter = OffsetPagingFilter.builder()
+                .offset(0).limit(100).build();
+        final List<RunLog> result = logManager.loadLogsByRunId(RUN_ID, filter);
+
+        assertEquals(1, result.size());
+        assertEquals("db log", result.get(0).getLogText());
+    }
+
+    @Test
+    public void loadLogsForTaskShouldReturnStorageLogsForFinalRun() {
+        final PipelineRun run = buildRun(RUN_ID, TaskStatus.SUCCESS);
+        when(runCRUDServiceMock.loadRunById(RUN_ID)).thenReturn(run);
+
+        final List<RunLog> storageLogs = Collections.singletonList(
+                buildRunLog(RUN_ID, TASK_NAME, TaskStatus.SUCCESS, "storage task log"));
+        when(runLogStorageManager.loadTaskLogsFromStorage(RUN_ID, TASK_NAME)).thenReturn(storageLogs);
+
+        final List<RunLog> result = logManager.loadLogsForTask(RUN_ID, TASK_NAME);
+
+        assertEquals(1, result.size());
+        assertEquals("storage task log", result.get(0).getLogText());
+        verify(runLogDao, never()).loadLogsForTask(anyLong(), any(), any());
+    }
+
+    @Test
+    public void loadLogsForTaskShouldFallBackToDaoWhenStorageEmpty() {
+        final PipelineRun run = buildRun(RUN_ID, TaskStatus.SUCCESS);
+        when(runCRUDServiceMock.loadRunById(RUN_ID)).thenReturn(run);
+        when(runLogStorageManager.loadTaskLogsFromStorage(RUN_ID, TASK_NAME))
+                .thenReturn(Collections.emptyList());
+
+        final List<RunLog> daoLogs = Collections.singletonList(
+                buildRunLog(RUN_ID, TASK_NAME, TaskStatus.SUCCESS, "db task log"));
+        when(runLogDao.loadLogsForTask(eq(RUN_ID), eq(TASK_NAME), any())).thenReturn(daoLogs);
+
+        final List<RunLog> result = logManager.loadLogsForTask(RUN_ID, TASK_NAME);
+
+        assertEquals(1, result.size());
+        assertEquals("db task log", result.get(0).getLogText());
+    }
+
+    @Test
+    public void loadTasksByRunIdShouldReturnStorageTasksWhenDbEmpty() {
+        final PipelineRun run = buildRun(RUN_ID, TaskStatus.SUCCESS);
+        when(runCRUDServiceMock.loadRunById(RUN_ID)).thenReturn(run);
+        when(runLogDao.loadTasksForRun(RUN_ID)).thenReturn(Collections.emptyList());
+
+        final PipelineTask storageTask = buildPipelineTask(TASK_NAME, TaskStatus.SUCCESS);
+        when(runLogStorageManager.loadTasksFromStorage(RUN_ID))
+                .thenReturn(Collections.singletonList(storageTask));
+
+        final List<PipelineTask> result = logManager.loadTasksByRunId(RUN_ID);
+
+        assertEquals(1, result.size());
+        assertEquals(TASK_NAME, result.get(0).getName());
+    }
+
+    @Test
+    public void loadTasksByRunIdShouldFallBackToDbWhenStorageEmpty() {
+        final PipelineRun run = buildRun(RUN_ID, TaskStatus.SUCCESS);
+        run.setPipelineName("pipeline");
+        run.setStartDate(new Date());
+        when(runCRUDServiceMock.loadRunById(RUN_ID)).thenReturn(run);
+        when(runLogStorageManager.loadTasksFromStorage(RUN_ID)).thenReturn(Collections.emptyList());
+
+        final PipelineTask dbTask = buildPipelineTask(TASK_NAME, TaskStatus.SUCCESS);
+        dbTask.setCreated(new Date());
+        dbTask.setFinished(new Date());
+        when(runLogDao.loadTasksForRun(RUN_ID)).thenReturn(Collections.singletonList(dbTask));
+
+        final List<PipelineTask> result = logManager.loadTasksByRunId(RUN_ID);
+
+        assertEquals(1, result.size());
+        assertEquals(TASK_NAME, result.get(0).getName());
+        verify(runLogStorageManager).loadTasksFromStorage(RUN_ID);
+        verify(runLogDao).loadTasksForRun(RUN_ID);
+    }
+
+    @Test
+    public void loadTasksByRunIdShouldNotCheckStorageForRunningRun() {
+        final PipelineRun run = buildRun(RUN_ID, TaskStatus.RUNNING);
+        run.setStartDate(new Date());
+        when(runCRUDServiceMock.loadRunById(RUN_ID)).thenReturn(run);
+        when(runLogDao.loadTasksForRun(RUN_ID)).thenReturn(new ArrayList<>());
+
+        final List<PipelineTask> result = logManager.loadTasksByRunId(RUN_ID);
+
+        assertTrue(result.stream().anyMatch(t -> CONSOLE_LOG_TASK.equals(t.getName())));
+        verify(runLogStorageManager, never()).loadTasksFromStorage(anyLong());
+    }
+
+    private static RunLog buildRunLog(final Long runId, final String taskName,
+                                      final TaskStatus status, final String logText) {
+        return RunLog.builder()
+                .runId(runId)
+                .date(new Date())
+                .status(status)
+                .taskName(taskName)
+                .logText(logText)
+                .build();
+    }
+
+    private static PipelineTask buildPipelineTask(final String name, final TaskStatus status) {
+        final PipelineTask task = new PipelineTask();
+        task.setName(name);
+        task.setStatus(status);
+        return task;
+    }
+
+    private static PipelineRun buildRun(final Long runId, final TaskStatus status) {
+        final PipelineRun run = new PipelineRun(runId, "");
+        run.setStatus(status);
+        run.setEndDate(new Date());
+        return run;
     }
 }
