@@ -192,35 +192,45 @@ class ClusterNode extends Component {
         </div>
       );
     }
+    const menuItems = [
+      {
+        key: 'info',
+        label: (
+          <AdaptedLink
+            id="cluster-node-tab-info"
+            to={`/cluster/${this.props.name}/info`}
+            location={this.props.router.location}>General info</AdaptedLink>
+        )
+      },
+      {
+        key: 'jobs',
+        label: (
+          <AdaptedLink
+            id="cluster-node-tab-jobs"
+            to={`/cluster/${this.props.name}/jobs`}
+            location={this.props.router.location}>Jobs</AdaptedLink>
+        )
+      },
+      ...(!this.windowsOS
+        ? [{
+            key: 'monitor',
+            label: (
+              <AdaptedLink
+                id="cluster-node-tab-monitor"
+                to={`/cluster/${this.props.name}/monitor`}
+                location={this.props.router.location}>Monitor</AdaptedLink>
+            )
+          }]
+        : [])
+    ];
     return (
       <Row gutter={16} type="flex" className={styles.rowMenu} key="menu">
         <Menu
           mode="horizontal"
           selectedKeys={[activeTab]}
-          className={styles.tabsMenu}>
-          <Menu.Item key="info">
-            <AdaptedLink
-              id="cluster-node-tab-info"
-              to={`/cluster/${this.props.name}/info`}
-              location={this.props.router.location}>General info</AdaptedLink>
-          </Menu.Item>
-          <Menu.Item key="jobs">
-            <AdaptedLink
-              id="cluster-node-tab-jobs"
-              to={`/cluster/${this.props.name}/jobs`}
-              location={this.props.router.location}>Jobs</AdaptedLink>
-          </Menu.Item>
-          {
-            !this.windowsOS && (
-              <Menu.Item key="monitor">
-                <AdaptedLink
-                  id="cluster-node-tab-monitor"
-                  to={`/cluster/${this.props.name}/monitor`}
-                  location={this.props.router.location}>Monitor</AdaptedLink>
-              </Menu.Item>
-            )
-          }
-        </Menu>
+          className={styles.tabsMenu}
+          items={menuItems}
+        />
       </Row>
     );
   };

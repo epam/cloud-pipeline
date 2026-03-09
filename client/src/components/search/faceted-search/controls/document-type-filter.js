@@ -78,54 +78,53 @@ class DocumentTypeFilter extends localization.LocalizedReactComponent {
   render () {
     const {disabled, size, showCounts} = this.props;
     const {overlayVisible} = this.state;
+    const filterMenuItems = this.filters.map(filter => {
+      const FilterIcon = filter.icon;
+      return {
+        key: filter.key,
+        style: {
+          cursor: !filter.enabled && filter.count === 0
+            ? 'default'
+            : 'pointer'
+        },
+        label: (
+          <div
+            className={
+              classNames(
+                styles.documentFilter,
+                'cp-search-faceted-button',
+                {
+                  'selected': filter.enabled,
+                  'disabled': (!filter.enabled && showCounts && filter.count === 0) || disabled
+                }
+              )
+            }
+          >
+            {FilterIcon && <FilterIcon className={classNames('cp-icon-larger', styles.icon)} />}
+            {filter.title(this.localizedString)()}
+            {filter.count > 0 && showCounts
+              ? (
+                <span
+                  className={styles.count}
+                >
+                  ({displayCount(filter.count, true)})
+                </span>
+              )
+              : undefined
+            }
+            {filter.enabled ? (
+              <CheckCircleFilled className="cp-icon-larger" style={{position: 'absolute', right: 0}} />
+            ) : null}
+          </div>
+        )
+      };
+    });
     const filterMenu = (
       <Menu
         onClick={this.handleFilterClick}
         className={styles.azaza}
-      >
-        {this.filters.map(filter => {
-          const FilterIcon = filter.icon;
-          return (
-            <Menu.Item
-              key={filter.key}
-              style={{
-                cursor: !filter.enabled && filter.count === 0
-                  ? 'default'
-                  : 'pointer'
-              }}
-            >
-              <div
-                className={
-                  classNames(
-                    styles.documentFilter,
-                    'cp-search-faceted-button',
-                    {
-                      'selected': filter.enabled,
-                      'disabled': (!filter.enabled && showCounts && filter.count === 0) || disabled
-                    }
-                  )
-                }
-              >
-                {FilterIcon && <FilterIcon className={classNames('cp-icon-larger', styles.icon)} />}
-                {filter.title(this.localizedString)()}
-                {filter.count > 0 && showCounts
-                  ? (
-                    <span
-                      className={styles.count}
-                    >
-                      ({displayCount(filter.count, true)})
-                    </span>
-                  )
-                  : undefined
-                }
-                {filter.enabled ? (
-                  <CheckCircleFilled className="cp-icon-larger" style={{position: 'absolute', right: 0}} />
-                ) : null}
-              </div>
-            </Menu.Item>
-          );
-        })}
-      </Menu>
+        items={filterMenuItems}
+      />
     );
     return (
       <Dropdown

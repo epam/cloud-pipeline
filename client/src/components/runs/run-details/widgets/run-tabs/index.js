@@ -28,26 +28,22 @@ function RunTabs (props) {
         style={{cursor: 'pointer'}}
         mode="horizontal"
         onClick={onChange}
-      >
-        {
-          tabs.map((tab) => (
-            <Menu.Item
-              key={tab.tab}
-              id={tab.tab}
-            >
-              <div className={styles.runTabsMenuItem}>
-                {tab.icon}
-                <span>{tab.title}</span>
-                {tab.action && (
-                  <div style={{display: 'inline-flex', alignItems: 'center', marginLeft: 10}}>
-                    {typeof tab.action === 'function' ? tab.action({run}) : tab.action}
-                  </div>
-                )}
-              </div>
-            </Menu.Item>
-          ))
-        }
-      </Menu>
+        items={tabs.map((tab) => ({
+          key: tab.tab,
+          id: tab.tab,
+          label: (
+            <div className={styles.runTabsMenuItem}>
+              {tab.icon}
+              <span>{tab.title}</span>
+              {tab.action && (
+                <div style={{display: 'inline-flex', alignItems: 'center', marginLeft: 10}}>
+                  {typeof tab.action === 'function' ? tab.action({run}) : tab.action}
+                </div>
+              )}
+            </div>
+          )
+        }))}
+      />
     </div>
   );
 }

@@ -173,20 +173,16 @@ class RunLaunchCommandSection extends React.Component {
             style={{cursor: 'pointer'}}
             mode="horizontal"
             onClick={this.onTabChange}
-          >
-            {
-              tabs.map((tab) => (
-                <Menu.Item
-                  key={tab.tab}
-                  id={tab.tab}
-                >
-                  <div className={styles.runLaunchCommandTabsMenuItem}>
-                    <span>{tab.title}</span>
-                  </div>
-                </Menu.Item>
-              ))
-            }
-          </Menu>
+            items={tabs.map((t) => ({
+              key: t.tab,
+              id: t.tab,
+              label: (
+                <div className={styles.runLaunchCommandTabsMenuItem}>
+                  <span>{t.title}</span>
+                </div>
+              )
+            }))}
+          />
         </div>
         <div
           className={classNames(

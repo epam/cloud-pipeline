@@ -20,8 +20,9 @@ import {
   observer} from 'mobx-react';
 import {computed, makeObservable} from 'mobx';
 import classNames from 'classnames';
-import {Alert,
-  Menu as TabMenu,
+import {
+  Alert,
+  Menu,
   message,
   Row,
   Button,
@@ -519,23 +520,21 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
             )
           }
         >
-          <TabMenu
+          <Menu
             mode="horizontal"
             selectedKeys={[activeTab]}
             className={styles.tabsMenu}
-          >
-            {
-              this.tabs.map((tab) => (
-                <TabMenu.Item key={tab.key}>
-                  <AdaptedLink
-                    to={tab.link}
-                    location={location}>
-                    {tab.title}
-                  </AdaptedLink>
-                </TabMenu.Item>
-              ))
-            }
-          </TabMenu>
+            items={this.tabs.map((tab) => ({
+              key: tab.key,
+              label: (
+                <AdaptedLink
+                  to={tab.link}
+                  location={location}>
+                  {tab.title}
+                </AdaptedLink>
+              )
+            }))}
+          />
         </Row>
         <div
           className={styles.fullHeightContainer} style={{overflow: 'auto'}}>

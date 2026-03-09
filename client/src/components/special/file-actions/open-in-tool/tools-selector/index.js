@@ -82,25 +82,26 @@ class ToolsSelector extends React.Component {
     if (!tools || !tools.length) {
       return null;
     }
+    const items = tools.map(tool => ({
+      key: tool.id,
+      className: styles.dropdownItem,
+      label: (
+        <>
+          <ToolIcon
+            toolId={tool.id}
+            iconId={tool.iconId}
+          />
+          <span className={styles.toolName}>
+            {tool.image}
+          </span>
+        </>
+      )
+    }));
     return (
       <Menu
         onClick={this.onMenuClick}
-      >
-        {tools.map(tool => (
-          <Menu.Item
-            key={tool.id}
-            className={styles.dropdownItem}
-          >
-            <ToolIcon
-              toolId={tool.id}
-              iconId={tool.iconId}
-            />
-            <span className={styles.toolName}>
-              {tool.image}
-            </span>
-          </Menu.Item>)
-        )}
-      </Menu>
+        items={items}
+      />
     );
   };
 

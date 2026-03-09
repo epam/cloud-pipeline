@@ -366,11 +366,10 @@ class ImportUsersButton extends React.Component {
     const dropdownMenu = (
       <Menu
         onClick={this.onDropdownMenuClick}
-      >
-        <Menu.Item key={DROPDOWN_KEYS.checkUsers}>
-          Check users integrity
-        </Menu.Item>
-      </Menu>
+        items={[
+          {key: DROPDOWN_KEYS.checkUsers, label: 'Check users integrity'}
+        ]}
+      />
     );
     return (
       <div

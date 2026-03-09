@@ -249,42 +249,41 @@ class RunsFilter extends React.Component {
       const highlightedKey = isNaN(this.state.autocomplete.hovered)
         ? undefined
         : `${this.state.autocomplete.hovered}`;
+      const menuItems = this.state.autocomplete.filter.map((f, index) => {
+        let fieldDescription;
+        if (f.fieldDescription) {
+          fieldDescription = (
+            <span style={{marginLeft: 5}}>
+              -
+              <i
+                className="cp-text-not-important"
+                style={{
+                  fontSize: 'smaller',
+                  marginLeft: 2
+                }}
+              >
+                {f.fieldDescription}
+              </i>
+            </span>
+          );
+        }
+        return {
+          key: String(index),
+          className: classNames(styles.autocompleteItem, 'cp-runs-autocomplete-menu-item'),
+          label: (
+            <div onMouseOver={() => onHover(index)}>
+              <span>{f.fieldName} - {fieldDescription}</span>
+            </div>
+          )
+        };
+      });
       return (
         <Menu
           onClick={onClick}
           className={classNames(styles.autocompleteMenu, 'cp-runs-autocomplete-menu')}
           selectedKeys={[highlightedKey]}
-        >
-          {this.state.autocomplete.filter.map((f, index) => {
-            let fieldDescription;
-            if (f.fieldDescription) {
-              fieldDescription = (
-                <span style={{marginLeft: 5}}>
-                  -
-                  <i
-                    className="cp-text-not-important"
-                    style={{
-                      fontSize: 'smaller',
-                      marginLeft: 2
-                    }}
-                  >
-                    {f.fieldDescription}
-                  </i>
-                </span>
-              );
-            }
-            return (
-              <Menu.Item
-                className={classNames(styles.autocompleteItem, 'cp-runs-autocomplete-menu-item')}
-                key={index}
-              >
-                <div onMouseOver={() => onHover(index)}>
-                  <span>{f.fieldName} - {fieldDescription}</span>
-                </div>
-              </Menu.Item>
-            );
-          })}
-        </Menu>
+          items={menuItems}
+        />
       );
     }
     return undefined;

@@ -131,9 +131,10 @@ class UploadParametersButton extends React.PureComponent {
         {this.showDownload ? (
           <Dropdown.Button
             overlay={(
-              <Menu onClick={this.onMenuClick}>
-                <Menu.Item key="download">Download template</Menu.Item>
-              </Menu>
+              <Menu
+                onClick={this.onMenuClick}
+                items={[{key: 'download', label: 'Download template'}]}
+              />
             )}
             onClick={this.onClick}
             size="small"

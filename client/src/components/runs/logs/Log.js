@@ -1348,27 +1348,28 @@ class Logs extends localization.LocalizedReactComponent {
       status
     } = run || {};
     const selectedTask = this.props.task ? this.getTaskUrl(this.props.task) : null;
-    let Tasks;
+    let taskItems;
 
     if (pending) {
-      Tasks = <Menu.Item key={-3}>...Loading</Menu.Item>;
+      taskItems = [{key: '-3', label: '...Loading'}];
     } else if (runTasks.length === 0) {
-      Tasks = <Menu.Item key={-2}>No tasks</Menu.Item>;
+      taskItems = [{key: '-2', label: 'No tasks'}];
     } else {
-      Tasks = runTasks
+      taskItems = runTasks
         .filter(task => searchTasks
           ? (task.name || '').toLowerCase().includes((searchTasks || '').toLowerCase())
           : true
-        ).map((task, index) => (
-          <Menu.Item key={this.getTaskUrl(task, index)}>
+        ).map((task, index) => ({
+          key: this.getTaskUrl(task, index),
+          label: (
             <TaskLink
               to={`/run/${runId}/${this.props.mode}/${this.getTaskUrl(task)}`}
               location={location}
               task={task}
               searchText={searchTasks}
               timings={timings} />
-          </Menu.Item>
-        ));
+          )
+        }));
     }
 
     const SwitchTimingsButton = (
@@ -1416,9 +1417,9 @@ class Logs extends localization.LocalizedReactComponent {
               <Menu
                 selectedKeys={selectedTask ? [selectedTask] : []}
                 mode="inline"
-                className={this.state.timings ? styles.taskListTimings : styles.taskList}>
-                {Tasks}
-              </Menu>
+                className={this.state.timings ? styles.taskListTimings : styles.taskList}
+                items={taskItems}
+              />
             </div>
           </div>
           <div

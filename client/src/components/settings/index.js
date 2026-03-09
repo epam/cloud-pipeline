@@ -168,19 +168,17 @@ export default class extends React.Component {
           mode="horizontal"
           selectedKeys={[activeTab]}
           className={styles.tabsMenu}
-        >
-          {
-            tabs.map(tab => (
-              <Menu.Item key={tab.key}>
-                <AdaptedLink
-                  to={tab.path}
-                  location={location}>
-                  {tab.title}
-                </AdaptedLink>
-              </Menu.Item>
-            ))
-          }
-        </Menu>
+          items={tabs.map(tab => ({
+            key: tab.key,
+            label: (
+              <AdaptedLink
+                to={tab.path}
+                location={location}>
+                {tab.title}
+              </AdaptedLink>
+            )
+          }))}
+        />
       </Row>
     );
   };

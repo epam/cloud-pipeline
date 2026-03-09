@@ -457,10 +457,10 @@ class AllRuns extends React.Component {
             mode="horizontal"
             selectedKeys={selectedKeys}
             className={styles.tabsMenu}
-          >
-            {
-              this.uiRunsFilters.map((filter) => (
-                <Menu.Item key={filter.key}>
+            items={[
+              ...this.uiRunsFilters.map((filter) => ({
+                key: filter.key,
+                label: (
                   <Popover
                     content={(
                       <RunsFilterDescription
@@ -482,34 +482,36 @@ class AllRuns extends React.Component {
                       }
                     </Link>
                   </Popover>
-                </Menu.Item>
-              ))
-            }
-            {
-              this.runsInfoChartsAvailable && (
-                <Menu.Item key="info">
-                  <Link
-                    id={`runs-info-charts-button`}
-                    to={SessionStorageWrapper.getRunsLink(CHARTS_INFO_TAB)}
-                  >
-                    Info
-                  </Link>
-                </Menu.Item>
-              )
-            }
-            {
-              this.runsInfoChartsAvailable && isRunsInfoChartsDetailsPage && (
-                <Menu.Item key="details">
-                  <Link
-                    id={`runs-info-charts-details-button`}
-                    to={SessionStorageWrapper.getRunsLink(CHARTS_INFO_DETAILS)}
-                  >
-                    Details
-                  </Link>
-                </Menu.Item>
-              )
-            }
-          </Menu>
+                )
+              })),
+              ...(this.runsInfoChartsAvailable
+                ? [{
+                    key: 'info',
+                    label: (
+                      <Link
+                        id="runs-info-charts-button"
+                        to={SessionStorageWrapper.getRunsLink(CHARTS_INFO_TAB)}
+                      >
+                        Info
+                      </Link>
+                    )
+                  }]
+                : []),
+              ...(this.runsInfoChartsAvailable && isRunsInfoChartsDetailsPage
+                ? [{
+                    key: 'details',
+                    label: (
+                      <Link
+                        id="runs-info-charts-details-button"
+                        to={SessionStorageWrapper.getRunsLink(CHARTS_INFO_DETAILS)}
+                      >
+                        Details
+                      </Link>
+                    )
+                  }]
+                : [])
+            ]}
+          />
           <div style={{
             textTransform: 'uppercase',
             height: 36,

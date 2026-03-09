@@ -31,24 +31,25 @@ function PoolSelector ({
   const onSelectChange = ({key}) => {
     onChange && onChange(Number(key));
   };
+  const menuItems = (pools || []).map((pool) => ({
+    key: `${pool.id}`,
+    label: (
+      <>
+        {Number(pool.id) === Number(value)
+          ? <CheckOutlined />
+          : undefined
+        }
+        <span style={{marginLeft: 5}}>
+          {pool.name}
+        </span>
+      </>
+    )
+  }));
   const renderOverlay = () => (
     <Menu
       onClick={onSelectChange}
-    >
-      {
-        (pools || []).map((pool) => (
-          <Menu.Item key={`${pool.id}`}>
-            {Number(pool.id) === Number(value)
-              ? <CheckOutlined />
-              : undefined
-            }
-            <span style={{marginLeft: 5}}>
-              {pool.name}
-            </span>
-          </Menu.Item>
-        ))
-      }
-    </Menu>
+      items={menuItems}
+    />
   );
   const pool = pools.find(p => Number(p.id) === Number(value));
   return (

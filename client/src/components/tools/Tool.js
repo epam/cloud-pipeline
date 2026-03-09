@@ -1444,29 +1444,20 @@ export default class Tool extends localization.LocalizedReactComponent {
     const onChangeSection = ({key}) => {
       this.props.router.push(`/tool/${this.props.toolId}/${key}`);
     };
+    const menuItems = [
+      {key: 'description', label: 'DESCRIPTION'},
+      {key: 'versions', label: 'VERSIONS'},
+      {key: 'settings', label: 'SETTINGS'},
+      ...(this.historyAvailableForUser() ? [{key: 'history', label: 'HISTORY'}] : [])
+    ];
     return (
       <MenuHorizontal
         className={styles.toolMenu}
         onClick={onChangeSection}
         mode="horizontal"
-        selectedKeys={[this.props.section]}>
-        <MenuHorizontal.Item key="description">
-          DESCRIPTION
-        </MenuHorizontal.Item>
-        <MenuHorizontal.Item key="versions">
-          VERSIONS
-        </MenuHorizontal.Item>
-        <MenuHorizontal.Item key="settings">
-          SETTINGS
-        </MenuHorizontal.Item>
-        {
-          this.historyAvailableForUser() && (
-            <MenuHorizontal.Item key="history">
-              HISTORY
-            </MenuHorizontal.Item>
-          )
-        }
-      </MenuHorizontal>
+        selectedKeys={[this.props.section]}
+        items={menuItems}
+      />
     );
   };
 
