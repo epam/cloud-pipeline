@@ -195,7 +195,7 @@ class StorageSharedLinkButton extends React.Component {
         <Modal
           title="Share storage link"
           width="80%"
-          visible={visible}
+          open={visible}
           onOk={this.closeModal}
           onCancel={this.closeModal}
           footer={(

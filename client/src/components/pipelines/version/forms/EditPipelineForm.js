@@ -646,10 +646,10 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
     };
     return (
       <Modal
-        maskClosable={!this.props.pending}
+        mask={{closable: !this.props.pending}}
         afterClose={() => onClose()}
         closable={!this.props.pending}
-        visible={this.props.visible}
+        open={this.props.visible}
         title={
           isNewPipeline
             ? this.props.pipelineTemplate
@@ -720,7 +720,7 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
         </Spin>
         <Modal
           onCancel={this.closeDeleteDialog}
-          visible={this.state.deleteDialogVisible}
+          open={this.state.deleteDialogVisible}
           title={deleteConfirmTitle}
           footer={this.getDeleteModalFooter()}
         >

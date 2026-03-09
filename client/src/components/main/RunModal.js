@@ -97,16 +97,16 @@ export default class RunModal extends Component {
     return (
       <Modal
         className="ant-confirm ant-confirm-confirm"
-        visible={visible}
+        open={visible}
         onCancel={this.handleCancel}
         okText={okText}
         title={false}
         width={width}
         closable={closable}
-        maskClosable={maskClosable}
+        mask={{closable: maskClosable}}
         onOk={this.handleOk}
         confirmLoading={loading}
-        bodyStyle={bodyStyle}
+        styles={bodyStyle ? {body: bodyStyle} : undefined}
         footer={false}
       >
         <div className="ant-confirm-body-wrapper">

@@ -93,7 +93,7 @@ class SavePipelineModal extends React.Component {
     } = this.state;
     return (
       <Modal
-        visible={visible}
+        open={visible}
         onCancel={onClose}
         title="Specify pipeline name"
         footer={(

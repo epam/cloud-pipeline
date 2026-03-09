@@ -1051,7 +1051,7 @@ class WdlPropertiesForm extends React.Component {
       (entity.executable.executions || []).length === 1;
     return (
       <Modal
-        visible={
+        open={
           !disabled &&
           !!entity &&
           !isWorkflow(entity) &&

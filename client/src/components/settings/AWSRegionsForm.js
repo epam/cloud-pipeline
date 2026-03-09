@@ -1629,7 +1629,7 @@ class AWSRegionForm extends React.Component {
           title="Select user"
           onCancel={this.closeFindUserDialog}
           onOk={this.onSelectUser}
-          visible={this.state.findUserVisible}>
+          open={this.state.findUserVisible}>
           <AutoComplete
             value={this.selectedUser}
             optionLabelProp="text"
@@ -1651,7 +1651,7 @@ class AWSRegionForm extends React.Component {
           title="Select group"
           onCancel={this.closeFindGroupDialog}
           onOk={this.onSelectGroup}
-          visible={this.state.findGroupVisible}>
+          open={this.state.findGroupVisible}>
           <AutoComplete
             value={this.selectedGroup}
             style={{width: '100%'}}

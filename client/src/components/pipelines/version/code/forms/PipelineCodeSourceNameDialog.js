@@ -73,10 +73,10 @@ export default class PipelineCodeSourceNameDialog extends React.Component {
       return Promise.resolve();
     };
     return (
-      <Modal maskClosable={!this.props.pending}
+      <Modal mask={{closable: !this.props.pending}}
         afterClose={() => onClose()}
         closable={!this.props.pending}
-        visible={this.props.visible}
+        open={this.props.visible}
         title={this.props.title}
         onCancel={this.props.onCancel}
         footer={modalFooter}>

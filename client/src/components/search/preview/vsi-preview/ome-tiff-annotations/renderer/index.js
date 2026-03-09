@@ -649,7 +649,7 @@ class OMETiffAnnotationsRenderer extends React.Component {
             )
           }
           <Modal
-            visible={!!label}
+            open={!!label}
             title="Add text annotation"
             onCancel={this.onCancelTextAnnotation}
             footer={(

@@ -168,7 +168,7 @@ class StorageItemPermissions extends React.PureComponent {
         <Modal
           className={className}
           style={style}
-          visible={visible}
+          open={visible}
           title={titleComponent}
           onCancel={this.onClose}
           footer={(

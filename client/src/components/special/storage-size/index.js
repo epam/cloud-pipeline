@@ -322,7 +322,7 @@ class StorageSize extends React.Component {
     return (
       <Modal
         onCancel={this.closeDetailedInfo}
-        visible={showDetailedInfo}
+        open={showDetailedInfo}
         footer={false}
         title="Usage details"
         width={600}

@@ -386,7 +386,7 @@ class LifeCycleEditModal extends React.Component {
     };
     return (
       <Modal
-        visible={visible}
+        open={visible}
         onCancel={this.onCancel}
         title={`${createNewRule ? 'Create' : 'Edit'} transition rule`}
         width="70%"

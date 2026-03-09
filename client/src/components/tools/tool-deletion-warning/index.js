@@ -153,10 +153,10 @@ class ToolDeletionWarning extends React.Component {
     const {visible, title, resolve, showGroupAlert, groupAlertConfirmed} = this.state;
     return (
       <Modal
-        visible={visible}
+        open={visible}
         closable={false}
         title={false}
-        bodyStyle={{wordWrap: 'break-word'}}
+        styles={{body: {wordWrap: 'break-word'}}}
         zIndex={1001}
         footer={(
           <Row type="flex" align="center" justify="end">

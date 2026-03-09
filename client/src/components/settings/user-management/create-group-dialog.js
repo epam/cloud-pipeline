@@ -145,7 +145,7 @@ export default class CreateGroupDialog extends React.Component {
       <Modal
         title="Create group"
         closable={!pending}
-        maskClosable={!pending}
+        mask={{closable: !pending}}
         footer={
           <Row type="flex" justify="space-between">
             <Button
@@ -163,7 +163,7 @@ export default class CreateGroupDialog extends React.Component {
           </Row>
         }
         onCancel={() => onClose(false)}
-        visible={visible}
+        open={visible}
       >
         <Row type="flex" align="middle">
           <div style={{flex: 1}}>

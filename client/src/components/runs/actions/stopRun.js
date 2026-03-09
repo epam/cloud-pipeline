@@ -327,7 +327,7 @@ class TerminateRunDialog extends React.Component {
         closable={false}
         title={null}
         width="50%"
-        visible={this.state.visible}>
+        open={this.state.visible}>
         <div>
           <Row style={{marginBottom: 10}} type="flex" align="middle">
             <QuestionCircleFilled className="cp-stop-run-modal-confirm-icon" style={{fontSize: 'x-large', marginLeft: 20}} />

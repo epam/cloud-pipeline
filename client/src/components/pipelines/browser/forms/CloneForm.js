@@ -117,10 +117,10 @@ export default class CloneForm extends React.Component {
     };
     return (
       <Modal
-        maskClosable={!this.props.pending}
+        mask={{closable: !this.props.pending}}
         afterClose={onClose}
         closable={!this.props.pending}
-        visible={this.props.visible}
+        open={this.props.visible}
         title="Select destination folder"
         width="50%"
         onCancel={this.props.onCancel}

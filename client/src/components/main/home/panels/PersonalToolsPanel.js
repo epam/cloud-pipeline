@@ -918,7 +918,7 @@ export default class PersonalToolsPanel extends React.Component {
         {this.renderContent()}
         <Modal
           title={modalTitle}
-          visible={!!this.state.runToolInfo}
+          open={!!this.state.runToolInfo}
           onCancel={this.cancelRunTool}
           width="50%"
           footer={

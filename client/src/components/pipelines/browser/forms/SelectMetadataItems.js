@@ -372,7 +372,7 @@ class SelectMetadataItems extends React.Component {
     const disabled = fieldsPending || pending;
     return (
       <Modal
-        visible={visible}
+        open={visible}
         title={`Select ${type} entities`}
         onCancel={onClose}
         width="80%"

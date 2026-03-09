@@ -278,10 +278,10 @@ class HistoryFilter extends localization.LocalizedReactComponent {
       </Row>);
     return (
       <Modal
-        visible={visible}
+        open={visible}
         onOk={this.handleOk}
         onCancel={this.handleCancel}
-        bodyStyle={{padding: '40px 20px'}}
+        styles={{body: {padding: '40px 20px'}}}
         footer={footer}
       >
         {this.renderUserRow()}

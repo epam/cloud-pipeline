@@ -639,7 +639,7 @@ class EditQuotaDialog extends React.Component {
     return (
       <Modal
         width="50%"
-        visible={visible}
+        open={visible}
         onCancel={onCancel}
         footer={(
           <Row

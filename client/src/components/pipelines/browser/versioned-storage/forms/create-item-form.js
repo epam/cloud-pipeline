@@ -105,10 +105,10 @@ class CreateItemForm extends React.Component {
     };
     return (
       <Modal
-        maskClosable={!this.props.pending}
+        mask={{closable: !this.props.pending}}
         afterClose={() => onClose()}
         closable={!this.props.pending && !pathOccupied}
-        visible={this.props.visible}
+        open={this.props.visible}
         title={this.props.title}
         onCancel={this.props.onCancel}
         footer={modalFooter}>

@@ -83,7 +83,7 @@ export default class ConfigureHomePage extends localization.LocalizedReactCompon
         width="33%"
         className="cp-dashboard-configure"
         title="Configure dashboard"
-        visible={this.props.visible}
+        open={this.props.visible}
         onCancel={this.props.onCancel}
         footer={
           <Row type="flex" justify="space-between">

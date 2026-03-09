@@ -225,7 +225,7 @@ class LifeCycleHistoryModal extends React.Component {
     }
     return (
       <Modal
-        visible={visible}
+        open={visible}
         onCancel={onOk}
         onOk={onOk}
         title="History"

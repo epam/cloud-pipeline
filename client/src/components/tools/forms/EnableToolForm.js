@@ -91,10 +91,10 @@ export default class EnableToolForm extends React.Component {
     return (
       <Modal
         width="50%"
-        maskClosable={!this.props.pending}
+        mask={{closable: !this.props.pending}}
         afterClose={() => onClose()}
         closable={!this.props.pending}
-        visible={this.props.visible}
+        open={this.props.visible}
         title="Enable tool"
         onCancel={this.props.onCancel}
         footer={modalFooter}>

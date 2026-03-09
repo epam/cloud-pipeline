@@ -256,7 +256,7 @@ class JobNotifications extends React.Component {
         </Checkbox>
         {this.renderTitle()}
         <Modal
-          visible={visible}
+          open={visible}
           title={`Configure job notification${multiple ? 's' : ''}`}
           onCancel={this.cancelClicked}
           width="75%"

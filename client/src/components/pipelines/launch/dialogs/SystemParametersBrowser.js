@@ -246,7 +246,7 @@ export default class SystemParametersBrowser extends Component {
       <Modal
         width="50%"
         title="Select system parameter to override"
-        visible={this.props.visible}
+        open={this.props.visible}
         onCancel={this.onCancel}
         footer={
           <Row type="flex" justify="end">

@@ -538,14 +538,16 @@ class SharedItemInfo extends React.Component {
     );
     return (
       <Modal
-        visible={this.props.visible}
+        open={this.props.visible}
         title={
           editPermissionsMode ? selectUsersTitle : defaultTitle
         }
         onCancel={this.closeShareDialog}
         footer={this.renderModalFooter()}
-        bodyStyle={{
-          padding: 10
+        styles={{
+          body: {
+            padding: 10
+          }
         }}
       >
         <div>

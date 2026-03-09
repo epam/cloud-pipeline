@@ -148,10 +148,10 @@ export default class CodeFileCommitForm extends localization.LocalizedReactCompo
     };
     return (
       <Modal
-        maskClosable={!this.props.pending}
+        mask={{closable: !this.props.pending}}
         afterClose={() => onClose()}
         closable={!this.props.pending}
-        visible={this.props.visible}
+        open={this.props.visible}
         title="Commit"
         onCancel={this.props.onCancel}
         footer={modalFooter}

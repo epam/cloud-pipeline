@@ -601,9 +601,9 @@ class CloudCredentialsProfileForm extends React.Component {
     const loading = pending || (!isNew && this.profileRequest && this.profileRequest.pending);
     return (
       <Modal
-        maskClosable={!loading}
+        mask={{closable: !loading}}
         closable={!loading}
-        visible={visible}
+        open={visible}
         width="80%"
         title={title}
         onCancel={onClose}

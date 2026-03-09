@@ -517,7 +517,7 @@ class ConfigurationBrowser extends React.Component {
         onCancel={onCancel}
         title="Select configuration"
         width="80%"
-        bodyStyle={{padding: 0}}
+        styles={{body: {padding: 0}}}
         footer={(
           <div
             className={styles.footer}

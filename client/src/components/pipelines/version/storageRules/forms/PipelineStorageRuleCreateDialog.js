@@ -112,10 +112,10 @@ export default class PipelineStorageRuleCreateDialog extends localization.Locali
 
     return (
       <Modal
-        maskClosable={!pending}
+        mask={{closable: !pending}}
         afterClose={this.handeOnClose}
         closable={!pending}
-        visible={visible}
+        open={visible}
         title="Create new rule"
         onCancel={onCancel}
         footer={modalFooter}

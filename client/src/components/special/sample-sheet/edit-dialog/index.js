@@ -108,16 +108,18 @@ class SampleSheetEditDialog extends React.Component {
     } = this.state;
     return (
       <Modal
-        visible={visible}
+        open={visible}
         onCancel={onClose}
         closable={false}
         width="80%"
         style={{
           top: 50
         }}
-        bodyStyle={{
-          height: 'calc(100vh - 200px)',
-          overflow: 'auto'
+        styles={{
+          body: {
+            height: 'calc(100vh - 200px)',
+            overflow: 'auto'
+          }
         }}
         title={(
           <div

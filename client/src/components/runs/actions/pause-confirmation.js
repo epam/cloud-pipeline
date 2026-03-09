@@ -203,7 +203,7 @@ function ConfirmPauseModal (props) {
     <Modal
       title={false}
       closable={false}
-      maskClosable={false}
+      mask={{closable: false}}
       open={visible}
       onCancel={onCancel}
       footer={false}

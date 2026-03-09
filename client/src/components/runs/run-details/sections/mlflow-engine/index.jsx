@@ -235,7 +235,7 @@ class MLFlowEngine extends React.Component {
           />)
         }
         <Modal
-          visible={deployModel !== undefined}
+          open={deployModel !== undefined}
           title="Model deployment has been started"
           onCancel={this.onCloseDeployedModelAlert}
           footer={(

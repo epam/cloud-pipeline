@@ -235,10 +235,10 @@ export default class EditDetachedConfigurationForm extends React.Component {
     };
     return (
       <Modal
-        maskClosable={!this.props.pending}
+        mask={{closable: !this.props.pending}}
         afterClose={() => onClose()}
         closable={!this.props.pending}
-        visible={this.props.visible}
+        open={this.props.visible}
         title={
           isNewConfiguration
             ? (
@@ -284,7 +284,7 @@ export default class EditDetachedConfigurationForm extends React.Component {
         </Spin>
         <Modal
           onCancel={this.closeDeleteDialog}
-          visible={this.state.deleteDialogVisible}
+          open={this.state.deleteDialogVisible}
           title="Are you sure you want to delete configuration?"
           footer={this.getDeleteModalFooter()}>
           <p>This operation cannot be undone.</p>

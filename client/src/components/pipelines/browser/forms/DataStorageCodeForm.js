@@ -580,10 +580,10 @@ export default class DataStorageCodeForm extends React.Component {
         width="80%"
         title={title}
         closable={false}
-        maskClosable={false}
+        mask={{closable: false}}
         footer={false}
         style={{top: 20}}
-        bodyStyle={{padding: 8}}
+        styles={{body: {padding: 8}}}
       >
         <Spin spinning={this._fileContents && this._fileContents.pending}>
           <div className={`${styles.editorContainer} ${tableClassName}`}>

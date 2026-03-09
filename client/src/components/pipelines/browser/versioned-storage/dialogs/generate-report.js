@@ -332,10 +332,10 @@ class GenerateReportDialog extends localization.LocalizedReactComponent {
       </Row>);
     return (
       <Modal
-        visible={visible}
+        open={visible}
         onOk={this.handleOk}
         onCancel={this.handleCancel}
-        bodyStyle={{padding: '20px'}}
+        styles={{body: {padding: '20px'}}}
         footer={footer}
         title="Generate report"
       >

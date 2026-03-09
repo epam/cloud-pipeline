@@ -235,7 +235,7 @@ class LifeCycleRestoreModal extends React.Component {
     return (
       <Modal
         width="400px"
-        visible={visible}
+        open={visible}
         onCancel={onCancel}
         title={`Restore ${mode === 'file'
           ? 'files in folder.'

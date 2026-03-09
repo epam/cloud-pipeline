@@ -213,7 +213,7 @@ class LaunchCommand extends React.Component {
       <Modal
         onCancel={onClose}
         title="Launch commands"
-        visible={visible}
+        open={visible}
         width="50%"
         footer={false}
       >

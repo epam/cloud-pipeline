@@ -474,7 +474,7 @@ export default class ShareWithForm extends React.Component {
   render () {
     return (
       <Modal
-        visible={this.props.visible}
+        open={this.props.visible}
         onOk={this.onSave}
         onCancel={this.props.onClose}
         footer={this.props.pending ? false : undefined}
@@ -486,7 +486,7 @@ export default class ShareWithForm extends React.Component {
             title="Select user"
             onCancel={this.closeFindUserDialog}
             onOk={this.onSelectUser}
-            visible={this.state.findUserVisible}>
+            open={this.state.findUserVisible}>
             <AutoComplete
               value={this.state.userSearchString}
               optionLabelProp="text"
@@ -508,7 +508,7 @@ export default class ShareWithForm extends React.Component {
             title="Select group"
             onCancel={this.closeFindGroupDialog}
             onOk={this.onSelectGroup}
-            visible={this.state.findGroupVisible}>
+            open={this.state.findGroupVisible}>
             <AutoComplete
               value={this.state.groupSearchString}
               style={{width: '100%'}}

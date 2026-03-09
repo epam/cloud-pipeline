@@ -55,9 +55,9 @@ export default class RegisterVersionFormDialog extends Component {
     );
     return (
       <Modal
-        maskClosable={!this.props.pending}
+        mask={{closable: !this.props.pending}}
         closable={!this.props.pending}
-        visible={this.props.visible}
+        open={this.props.visible}
         title={this.props.title}
         onCancel={this.props.onCancel} footer={modalFooter}>
         <Spin spinning={this.props.pending}>

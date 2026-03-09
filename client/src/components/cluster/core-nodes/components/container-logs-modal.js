@@ -132,10 +132,10 @@ export default class ContainerLogsModal extends React.Component {
     const {scrollToLineToken, page} = this.state;
     return (
       <Modal
-        visible={!!container}
+        open={!!container}
         onCancel={this.onCancel}
         width={'60vw'}
-        bodyStyle={{paddingTop: '5px'}}
+        styles={{body: {paddingTop: '5px'}}}
         title={`Container ${container?.name || ''} logs`}
         footer={
           <Button

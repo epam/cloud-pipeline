@@ -516,7 +516,7 @@ export default class AddInstanceForm extends React.Component {
       );
     return (
       <Modal
-        visible={this.props.visible}
+        open={this.props.visible}
         closable={!this.props.pending}
         onCancel={this.props.onCancel}
         title="Add instance"

@@ -227,7 +227,7 @@ export default class EditRegistryForm extends localization.LocalizedReactCompone
     }
     return (
       <Modal
-        maskClosable={!this.props.pending}
+        mask={{closable: !this.props.pending}}
         afterClose={() => onClose()}
         closable={!this.props.pending}
         open={this.props.visible}

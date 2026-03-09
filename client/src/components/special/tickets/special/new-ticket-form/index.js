@@ -262,7 +262,7 @@ class NewTicketForm extends React.Component {
       return (
         <Modal
           title={title}
-          visible={modalVisible}
+          open={modalVisible}
           onCancel={this.onCancelClick}
           width="50%"
           footer={(

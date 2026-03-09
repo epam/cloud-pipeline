@@ -116,10 +116,10 @@ export default class CommitRunDialog extends localization.LocalizedReactComponen
     return (
       <Modal
         width="50%"
-        maskClosable={!this.props.pending}
+        mask={{closable: !this.props.pending}}
         afterClose={() => onClose()}
         closable={!this.props.pending}
-        visible={this.props.visible}
+        open={this.props.visible}
         title={`Commit ${this.localizedString('pipeline')} run`}
         onCancel={this.props.onCancel}
         footer={modalFooter}

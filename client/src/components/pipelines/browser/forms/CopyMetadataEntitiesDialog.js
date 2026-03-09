@@ -579,7 +579,7 @@ class CopyMetadataEntitiesDialog extends React.Component {
             </div>
           </div>
         )}
-        visible={visible}
+        open={visible}
       >
         {this.renderContent()}
       </Modal>

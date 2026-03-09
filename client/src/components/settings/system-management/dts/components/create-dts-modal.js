@@ -146,7 +146,7 @@ export default class CreateDtsModal extends React.Component {
     return (
       <Modal
         title="Create DTS"
-        visible={visible}
+        open={visible}
         onOk={this.onOk}
         footer={(
           <Row type="flex" align="center" justify="end">

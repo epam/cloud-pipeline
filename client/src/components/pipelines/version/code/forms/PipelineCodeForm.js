@@ -416,12 +416,12 @@ class PipelineCodeForm extends React.Component {
       : null;
     return (
       <Modal
-        visible={visible && !!path}
+        open={visible && !!path}
         onCancel={this.onClose}
         width="80%"
         title={title}
         closable={false}
-        maskClosable={false}
+        mask={{closable: false}}
         footer={false}
         style={{top: 20}}
       >

@@ -549,10 +549,10 @@ export class DataStorageEditDialog extends React.Component {
 
     return (
       <Modal
-        maskClosable={!this.props.pending && !this.state.restrictedAccessCheckInProgress}
+        mask={{closable: !this.props.pending && !this.state.restrictedAccessCheckInProgress}}
         afterClose={() => onClose()}
         closable={!this.props.pending && !this.state.restrictedAccessCheckInProgress}
-        visible={this.props.visible}
+        open={this.props.visible}
         title={
           this.props.dataStorage
             ? (this.isNfsMount
@@ -864,7 +864,7 @@ export class DataStorageEditDialog extends React.Component {
           </Tabs>
         </Spin>
         <Modal
-          visible={this.state.deleteDialogVisible}
+          open={this.state.deleteDialogVisible}
           onCancel={this.closeDeleteDialog}
           title="Do you want to delete a storage itself or only unregister it?"
           footer={this.getDeleteModalFooter()}>

@@ -173,7 +173,7 @@ class CommitDiffButton extends React.Component {
         </Button>
         <Modal
           title={commit ? `Difference for ${commit}` : undefined}
-          visible={visible}
+          open={visible}
           onCancel={this.hideDiffModal}
           footer={false}
           width="80%"

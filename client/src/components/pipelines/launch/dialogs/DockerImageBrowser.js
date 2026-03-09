@@ -465,7 +465,7 @@ export default class DockerImageBrowser extends React.Component {
       <Modal
         width="50%"
         title="Select docker image"
-        visible={this.props.visible}
+        open={this.props.visible}
         onCancel={this.props.onCancel}
         onOk={this.onSave}>
         <Row type="flex" align="middle" style={{marginBottom: 10}}>

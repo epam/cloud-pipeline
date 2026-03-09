@@ -1346,10 +1346,12 @@ export default class EditUserRolesDialog extends React.Component {
         style={{
           top: 20
         }}
-        bodyStyle={{
-          height: '80vh'
+        styles={{
+          body: {
+            height: '80vh'
+          }
         }}
-        maskClosable={activeTab === 'permissions'}
+        mask={{closable: activeTab === 'permissions'}}
         onCancel={this.onClose}
         footer={activeTab === 'permissions' ? false : this.renderFooter()}
         open={this.props.visible}

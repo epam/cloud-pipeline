@@ -478,7 +478,7 @@ class ReservationParameters extends React.PureComponent {
               {content}
             </span>
             <Modal
-              visible={resourcesDetailsVisible}
+              open={resourcesDetailsVisible}
               title={false}
               footer={false}
               closable

@@ -106,7 +106,7 @@ class CorrectInputsModal extends React.Component {
         style={style}
         open={visible}
         onCancel={onCancel}
-        maskClosable={false}
+        mask={{closable: false}}
         closable={false}
         width={600}
         title="Correct inputs for pipeline"

@@ -800,7 +800,7 @@ class UserIntegrityCheck extends React.Component {
           title="Integrity check results"
           footer={false}
           onCancel={onClose}
-          visible={visible}
+          open={visible}
         >
           <Alert
             type="success"
@@ -814,9 +814,9 @@ class UserIntegrityCheck extends React.Component {
       <Modal
         className={styles.modal}
         title="Integrity check results"
-        visible={visible}
+        open={visible}
         onCancel={onClose}
-        bodyStyle={{padding: '10px'}}
+        styles={{body: {padding: '10px'}}}
         width={'90vw'}
         footer={(
           <div className={styles.footer}>

@@ -1109,11 +1109,13 @@ class EditRoleDialog extends React.Component {
         style={{
           top: 20
         }}
-        bodyStyle={{
-          height: '80vh'
+        styles={{
+          body: {
+            height: '80vh'
+          }
         }}
         closable={activeTab === 'permissions'}
-        maskClosable={activeTab === 'permissions'}
+        mask={{closable: activeTab === 'permissions'}}
         onCancel={this.onClose}
         footer={activeTab === 'permissions' ? false : this.renderFooter()}
         open={this.props.visible}

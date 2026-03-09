@@ -399,10 +399,10 @@ class ImportUsersButton extends React.Component {
           </div>
         </Upload>
         <Modal
-          visible={dialogVisible && !!file}
+          open={dialogVisible && !!file}
           title="Import settings"
           closable={!pending}
-          maskClosable={!pending}
+          mask={{closable: !pending}}
           onCancel={this.onCancel}
           footer={(
             <div

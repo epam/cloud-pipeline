@@ -636,7 +636,7 @@ class UploadButton extends React.Component {
           title="Uploading files..."
           closable={this.state.uploadInfoClosable}
           onCancel={this.hideUploadInfo}
-          visible={this.state.uploadInfoVisible}>
+          open={this.state.uploadInfoVisible}>
           {
             this.state.uploadingFiles.map(f => {
               let status = 'active';

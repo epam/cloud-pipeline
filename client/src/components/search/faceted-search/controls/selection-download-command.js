@@ -246,7 +246,7 @@ class SelectionDownloadCommand extends React.Component {
     }
     return (
       <Modal
-        visible={visible}
+        open={visible}
         onCancel={this.onClose}
         title="Generate download command"
         width="50vw"

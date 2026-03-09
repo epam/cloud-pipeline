@@ -69,10 +69,10 @@ class RevertCommitForm extends React.Component {
     const objectName = (path || '').split(/[\\/]/).pop();
     return (
       <Modal
-        maskClosable={!pending}
+        mask={{closable: !pending}}
         afterClose={() => onClose()}
         closable={!pending}
-        visible={visible}
+        open={visible}
         title={
           objectName
             ? (<span>Revert <b>{objectName}</b> to revision <b>{commit}</b></span>)

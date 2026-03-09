@@ -194,7 +194,7 @@ export default class EditIssueForm extends localization.LocalizedReactComponent 
           {this.renderActions()}
           <Modal
             onCancel={this.closeDeleteDialog}
-            visible={this.state.deleteDialogVisible}
+            open={this.state.deleteDialogVisible}
             title={`Are you sure you want to delete ${this.localizedString('issue')}?`}
             footer={this.getDeleteModalFooter()}>
             <p>This operation cannot be undone.</p>

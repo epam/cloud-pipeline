@@ -160,7 +160,7 @@ class DiscountsModalComponent extends React.Component {
     return (
       <Modal
         onCancel={onClose}
-        visible={visible}
+        open={visible}
         footer={false}
         title="Configure discounts"
       >

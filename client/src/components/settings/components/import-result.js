@@ -65,7 +65,7 @@ function ImportResult (
       onCancel={onClose}
       footer={null}
       title="Import logs"
-      visible={visible}
+      open={visible}
       width="80%"
     >
       <div className={styles.logs}>

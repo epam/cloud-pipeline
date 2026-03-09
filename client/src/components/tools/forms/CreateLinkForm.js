@@ -130,11 +130,11 @@ class CreateLinkForm extends React.Component {
     return (
       <Modal
         title="Create tool link"
-        visible={visible}
+        open={visible}
         okText="Link"
         onCancel={onClose}
         closable={!disabled}
-        maskClosable={!disabled}
+        mask={{closable: !disabled}}
         footer={(
           <Row type="flex" justify="end" align="middle">
             <Button

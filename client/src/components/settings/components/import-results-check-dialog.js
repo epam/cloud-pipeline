@@ -113,9 +113,9 @@ class ImportResultsCheckDialog extends React.Component {
     return (
       <Modal
         title={false}
-        visible={visible}
+        open={visible}
         onCancel={onClose}
-        bodyStyle={{padding: '10px'}}
+        styles={{body: {padding: '10px'}}}
         width={'90vw'}
         footer={(
           <div className={styles.footer}>

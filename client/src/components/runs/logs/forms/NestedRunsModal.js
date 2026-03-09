@@ -460,7 +460,7 @@ function NestedRunsModal (props) {
     <Modal
       width="70%"
       title="Cluster usage"
-      visible={visible}
+      open={visible}
       onCancel={onCancel}
       footer={null}
     >

@@ -1813,10 +1813,10 @@ class EditHotNodePool extends React.Component {
     return (
       <Modal
         title={`${isNew ? 'Create' : 'Edit'} hot node pool`}
-        visible={visible}
+        open={visible}
         onCancel={disabled ? undefined : onCancel}
         closable={!disabled}
-        maskClosable={!disabled}
+        mask={{closable: !disabled}}
         width="80vw"
         footer={(
           <div className={styles.modalFooter}>

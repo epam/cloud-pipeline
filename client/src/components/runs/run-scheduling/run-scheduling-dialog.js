@@ -483,7 +483,7 @@ export default class RunScheduleDialog extends React.Component {
         title={title}
         onCancel={onClose}
         onOk={this.onOkClicked}
-        visible={visible}
+        open={visible}
         width={showActionType ? '800px' : '700px'}
       >
         <Row type="flex" className={styles.rulesContainer}>

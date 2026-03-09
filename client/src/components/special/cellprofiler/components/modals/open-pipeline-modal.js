@@ -245,12 +245,12 @@ class OpenPipelineModal extends React.Component {
     } = this.state;
     return (
       <Modal
-        visible={visible}
+        open={visible}
         width="50%"
         title="Open analysis pipeline"
         onCancel={onClose}
         closable={!opening}
-        maskClosable={!opening}
+        mask={{closable: !opening}}
         footer={(
           <div className={styles.modalFooter}>
             <Button

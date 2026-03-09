@@ -376,7 +376,7 @@ export default class AddRouteForm extends React.Component {
     return (
       <Modal
         title="Add new route"
-        visible={visible}
+        open={visible}
         onCancel={onCancel}
         footer={this.renderFooter()}
       >

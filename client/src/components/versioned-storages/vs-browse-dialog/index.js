@@ -267,10 +267,10 @@ class VSBrowseDialog extends React.Component {
       <Modal
         width="60%"
         title="Select Version Storage"
-        visible={visible}
+        open={visible}
         onCancel={onClose}
         closable={!disabled}
-        maskClosable={!disabled}
+        mask={{closable: !disabled}}
         footer={(
           <div
             className={styles.footer}

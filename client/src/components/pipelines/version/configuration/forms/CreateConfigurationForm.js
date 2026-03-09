@@ -70,10 +70,10 @@ export default class CreateConfigurationForm extends React.Component {
       : '';
     return (
       <Modal
-        maskClosable={!this.props.pending}
+        mask={{closable: !this.props.pending}}
         afterClose={() => this.formRef.current && this.formRef.current.resetFields()}
         closable={!this.props.pending}
-        visible={this.props.visible}
+        open={this.props.visible}
         title="Create configuration"
         onCancel={this.props.onCancel}
         footer={modalFooter}>

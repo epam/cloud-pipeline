@@ -152,7 +152,7 @@ class CustomTagsEditor extends React.Component {
 
     return (
       <Modal
-        visible={visible}
+        open={visible}
         title="Specify job tags"
         onCancel={this.handleCancel}
         footer={[
@@ -161,7 +161,7 @@ class CustomTagsEditor extends React.Component {
             Save
           </Button>
         ]}
-        bodyStyle={{maxHeight: 'max(50vh, 300px)', overflow: 'auto'}}
+        styles={{body: {maxHeight: 'max(50vh, 300px)', overflow: 'auto'}}}
       >
         {
           this.uiRunsUserTags.map((tag) => (

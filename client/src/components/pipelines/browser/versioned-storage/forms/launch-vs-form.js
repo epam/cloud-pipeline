@@ -440,7 +440,7 @@ class LaunchVSForm extends React.Component {
     return (
       <Modal
         title="Select a tool to launch Versioned Storage"
-        visible={visible}
+        open={visible}
         width="75%"
         onCancel={onClose}
         footer={(

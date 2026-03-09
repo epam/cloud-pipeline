@@ -204,7 +204,7 @@ class HostedAppConfigurationDialog extends React.Component {
     return (
       <Modal
         title="Configure internal DNS"
-        visible={visible}
+        open={visible}
         onCancel={onClose}
         footer={(
           <div

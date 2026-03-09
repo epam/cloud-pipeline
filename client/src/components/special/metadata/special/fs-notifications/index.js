@@ -344,7 +344,7 @@ class FSNotificationsDialog extends React.Component {
     return (
       <Modal
         title="Configure FS mount notifications"
-        visible={visible}
+        open={visible}
         onCancel={onClose}
         width="800px"
         footer={(

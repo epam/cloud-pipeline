@@ -231,7 +231,7 @@ class ConfigurePlugins extends React.PureComponent {
     const modal = (
       <Modal
         title="Configure UI plugins"
-        visible={modalVisible}
+        open={modalVisible}
         onCancel={this.onClose}
         footer={footer}
         width="620px"

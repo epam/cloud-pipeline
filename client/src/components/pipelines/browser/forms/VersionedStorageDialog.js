@@ -93,7 +93,7 @@ class VersionedStorageDialog extends React.Component {
     );
     return (
       <Modal
-        visible={visible}
+        open={visible}
         onCancel={onCancel}
         onOk={this.handleSubmit}
         title="Create versioned storage"

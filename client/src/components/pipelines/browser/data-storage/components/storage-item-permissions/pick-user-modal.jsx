@@ -73,7 +73,7 @@ class PickUserModal extends React.Component {
       <Modal
         className={className}
         style={style}
-        visible={visible}
+        open={visible}
         title="Select user"
         onCancel={onClose}
         footer={(

@@ -327,10 +327,10 @@ export class OmicsStorageImportDialog extends React.Component {
     const form = this.formRef.current;
     return (
       <Modal
-        maskClosable={!this.props.pending && !this.state.restrictedAccessCheckInProgress}
+        mask={{closable: !this.props.pending && !this.state.restrictedAccessCheckInProgress}}
         afterClose={() => this.formRef.current && this.formRef.current.resetFields()}
         closable={!this.props.pending && !this.state.restrictedAccessCheckInProgress}
-        visible={this.props.visible}
+        open={this.props.visible}
         title={title}
         onCancel={this.props.onCancel}
         style={{transition: 'width 0.2s ease'}}

@@ -104,7 +104,7 @@ function createRunContinuationConfirmationDialog () {
         <Modal
           className="ant-confirm ant-confirm-confirm"
           onCancel={this.close}
-          visible={run !== undefined}
+          open={run !== undefined}
           footer={false}
         >
           {

@@ -19,7 +19,7 @@ export default class EditSystemDictionaryPermissions extends React.Component {
       return (
         <Modal
           closable
-          visible={this.state.visible}
+          open={this.state.visible}
           title="Permissions"
           onCancel={this.closeModalWindow}
           footer={false}

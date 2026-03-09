@@ -211,7 +211,7 @@ export default class PodInfoModal extends React.Component {
     ].filter(tab => tab.visible());
     return (
       <Modal
-        visible={!!pod}
+        open={!!pod}
         onCancel={this.onCancel}
         width={'60vw'}
         cancelText={null}

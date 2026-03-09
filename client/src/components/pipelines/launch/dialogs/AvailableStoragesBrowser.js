@@ -377,7 +377,7 @@ export default class AvailableStoragesBrowser extends Component {
       <Modal
         width="80%"
         title="Select data storages to limit mounts"
-        visible={this.props.visible}
+        open={this.props.visible}
         onCancel={this.onCancel}
         footer={
           <Row type="flex" justify="end">

@@ -88,10 +88,10 @@ export default class EditFolderForm extends React.Component {
     const isEditPermissions = !!this.props.folderId && roleModel.isOwner({mask: this.props.mask});
     return (
       <Modal
-        maskClosable={!this.props.pending}
+        mask={{closable: !this.props.pending}}
         afterClose={() => onClose()}
         closable={!this.props.pending}
-        visible={this.props.visible}
+        open={this.props.visible}
         title={this.props.title}
         onCancel={this.props.onCancel}
         footer={modalFooter}>

@@ -2275,9 +2275,11 @@ export default class Folder extends localization.LocalizedReactComponent {
           footer={false}
           width={416}
           onCancel={this.closeDeleteFolderDialog}
-          bodyStyle={{
-            wordWrap: 'break-word',
-            padding: '30px 40px'
+          styles={{
+            body: {
+              wordWrap: 'break-word',
+              padding: '30px 40px'
+            }
           }}>
           <Row>
             <Row className={styles.configurationConfirmTitle}>

@@ -376,7 +376,7 @@ class VersionedStorageTable extends React.Component {
     );
     return (
       <Modal
-        visible={!!deletingDocument}
+        open={!!deletingDocument}
         title={`Remove ${type}`}
         onCancel={this.hideDeleteDialog}
         footer={footer}

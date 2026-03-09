@@ -253,7 +253,7 @@ class SystemDictionaryLinksForm extends React.Component {
     });
     return (
       <Modal
-        visible={visible}
+        open={visible}
         title="Linked dictionaries"
         onCancel={onClose}
         footer={null}

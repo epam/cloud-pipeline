@@ -196,7 +196,7 @@ class SelectionPreview extends React.Component {
     const skipped = this.notAllowedToDownload.length;
     return (
       <Modal
-        visible={visible}
+        open={visible}
         onCancel={onClose}
         title={title}
         width="50vw"

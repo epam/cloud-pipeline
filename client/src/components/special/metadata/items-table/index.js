@@ -264,7 +264,7 @@ class ItemsTable extends React.Component {
           {plural(this.items.length, 'item')}
         </a>
         <Modal
-          visible={expanded}
+          open={expanded}
           closable={false}
           title={title}
           footer={this.renderFooter()}
