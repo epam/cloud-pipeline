@@ -133,7 +133,7 @@ export default class NotificationsPanel extends React.Component {
             return (
               <Card
                 key={index}
-                bodyStyle={{padding: 2}}
+                styles={{body: {padding: 2}}}
                 className="cp-panel-card"
               >
                 {this.renderNotification(notification)}

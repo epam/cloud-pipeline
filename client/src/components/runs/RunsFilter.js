@@ -438,7 +438,7 @@ class RunsFilter extends React.Component {
             'cp-panel-borderless'
           )
         }
-        bodyStyle={{padding: 15}}
+        styles={{body: {padding: 15}}}
       >
         <Row type="flex" align="middle">
           <table style={{width: '100%', marginBottom: 10}}>

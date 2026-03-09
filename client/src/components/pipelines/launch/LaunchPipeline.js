@@ -693,7 +693,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
     }
     return (
       <Card
-        bodyStyle={{padding: 0, margin: 0}}
+        styles={{body: {padding: 0, margin: 0}}}
         className={
           classNames(
             styles.container,

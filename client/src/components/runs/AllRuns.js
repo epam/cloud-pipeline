@@ -450,7 +450,7 @@ class AllRuns extends React.Component {
             'cp-panel-borderless'
           )
         }
-        bodyStyle={{padding: 15}}
+        styles={{body: {padding: 15}}}
       >
         <div className={styles.headerRow}>
           <Menu
@@ -486,29 +486,29 @@ class AllRuns extends React.Component {
               })),
               ...(this.runsInfoChartsAvailable
                 ? [{
-                    key: 'info',
-                    label: (
-                      <Link
-                        id="runs-info-charts-button"
-                        to={SessionStorageWrapper.getRunsLink(CHARTS_INFO_TAB)}
-                      >
-                        Info
-                      </Link>
-                    )
-                  }]
+                  key: 'info',
+                  label: (
+                    <Link
+                      id="runs-info-charts-button"
+                      to={SessionStorageWrapper.getRunsLink(CHARTS_INFO_TAB)}
+                    >
+                      Info
+                    </Link>
+                  )
+                }]
                 : []),
               ...(this.runsInfoChartsAvailable && isRunsInfoChartsDetailsPage
                 ? [{
-                    key: 'details',
-                    label: (
-                      <Link
-                        id="runs-info-charts-details-button"
-                        to={SessionStorageWrapper.getRunsLink(CHARTS_INFO_DETAILS)}
-                      >
-                        Details
-                      </Link>
-                    )
-                  }]
+                  key: 'details',
+                  label: (
+                    <Link
+                      id="runs-info-charts-details-button"
+                      to={SessionStorageWrapper.getRunsLink(CHARTS_INFO_DETAILS)}
+                    >
+                      Details
+                    </Link>
+                  )
+                }]
                 : [])
             ]}
           />

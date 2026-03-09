@@ -499,7 +499,7 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
             'cp-panel-borderless'
           )
         }
-        bodyStyle={{padding: 0}}>
+        styles={{body: {padding: 0}}}>
         <Row
           type="flex"
           justify="space-between"
@@ -545,7 +545,6 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
       );
     }
 
-    console.log('QQQQ', this.props.children)
     return (
       <Row id="pipelines-library-container" className={styles.container}>
         <Splitter

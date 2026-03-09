@@ -355,7 +355,7 @@ export default class CardsPanel extends React.Component {
             }
           )
         }
-        bodyStyle={{padding: 10, height: '100%'}}
+        styles={{body: {padding: 10, height: '100%'}}}
         style={Object.assign({
           width: 'initial',
           margin: 2,

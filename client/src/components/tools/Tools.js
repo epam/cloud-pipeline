@@ -647,7 +647,7 @@ export default class Tools extends React.Component {
             'cp-panel-borderless'
           )
         }
-        bodyStyle={{padding: 5, height: '100%', display: 'flex', flexDirection: 'column'}}>
+        styles={{body: {padding: 5, height: '100%', display: 'flex', flexDirection: 'column'}}}>
         {this.renderHeader()}
         {this.renderContent(content, isError)}
       </Card>

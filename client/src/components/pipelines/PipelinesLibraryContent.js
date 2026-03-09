@@ -47,8 +47,8 @@ export default class PipelinesLibraryContent extends React.Component {
             'cp-panel-borderless'
           )
         }
-        bodyStyle={
-          Object.assign(
+        styles={{
+          body: Object.assign(
             {
               padding: 5,
               height: '99%',
@@ -58,7 +58,7 @@ export default class PipelinesLibraryContent extends React.Component {
             },
             this.props.style || {}
           )
-        }
+        }}
       >
         {
           React.Children.map(

@@ -326,7 +326,7 @@ export default class ActivitiesPanel extends localization.LocalizedReactComponen
                   )
                 }
                 key={index}
-                bodyStyle={{padding: 0}} style={{margin: 2, marginBottom: 5}}>
+                styles={{body: {padding: 0}}} style={{margin: 2, marginBottom: 5}}>
                 {this.renderEvent(event)}
               </Card>
             );

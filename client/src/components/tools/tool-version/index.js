@@ -90,7 +90,7 @@ export default class ToolVersion extends React.Component {
               'cp-panel-borderless'
             )
           }
-          bodyStyle={{padding: 15, height: '100%', display: 'flex', flexDirection: 'column'}}>
+          styles={{body: {padding: 15, height: '100%', display: 'flex', flexDirection: 'column'}}}>
           <Alert type="error" title="You have no permissions to view tool details" />
         </Card>
       );
@@ -124,7 +124,7 @@ export default class ToolVersion extends React.Component {
             'cp-panel-borderless'
           )
         }
-        bodyStyle={{padding: 15, height: '100%', display: 'flex', flexDirection: 'column'}}>
+        styles={{body: {padding: 15, height: '100%', display: 'flex', flexDirection: 'column'}}}>
         <Row>
           <Row className={styles.title}>
             <Button

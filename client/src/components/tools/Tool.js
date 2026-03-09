@@ -1383,53 +1383,53 @@ export default class Tool extends localization.LocalizedReactComponent {
     };
     const contentInfo = [{
       key: CONTENT_PANEL_KEY,
-      size: { percentMinimum: 33, percentDefault: 75 }
+      size: {percentMinimum: 33, percentDefault: 75}
     }, {
       key: ISSUES_PANEL_KEY,
       title: `${this.localizedString('Issue')}s`,
       closable: true,
-      containerStyle: { display: 'flex', flexDirection: 'column' },
-      size: { percentDefault: 25, pxMinimum: 200 }
+      containerStyle: {display: 'flex', flexDirection: 'column'},
+      size: {percentDefault: 25, pxMinimum: 200}
     }, {
       key: METADATA_PANEL_KEY,
       title: 'Attributes',
       closable: true,
-      containerStyle: { display: 'flex', flexDirection: 'column' },
-      size: { percentDefault: 25, pxMinimum: 200 }
+      containerStyle: {display: 'flex', flexDirection: 'column'},
+      size: {percentDefault: 25, pxMinimum: 200}
     }, {
       key: INSTANCE_MANAGEMENT_PANEL_KEY,
       title: 'Instance management',
       closable: true,
-      containerStyle: { display: 'flex', flexDirection: 'column' },
-      size: { percentDefault: 25, pxMinimum: 200 }
+      containerStyle: {display: 'flex', flexDirection: 'column'},
+      size: {percentDefault: 25, pxMinimum: 200}
     }];
     const panels = [
-      { key: CONTENT_PANEL_KEY, info: contentInfo[0], content: (<div key={CONTENT_PANEL_KEY} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>{this.renderToolContent()}</div>) },
-      this.state.showIssuesPanel && { key: ISSUES_PANEL_KEY, info: contentInfo[1], content: (<Issues key={ISSUES_PANEL_KEY} readOnly={!!this.link} canNavigateBack={false} onCloseIssuePanel={this.closeIssuesPanel} entityId={this.props.toolId} entityClass="TOOL" entity={this.props.tool.value} />) },
-      this.state.metadata && { key: METADATA_PANEL_KEY, info: contentInfo[2], content: (<Metadata key={METADATA_PANEL_KEY} readOnly={!roleModel.isOwner(this.props.tool.value) || !!this.link} entityId={this.props.toolId} entityClass="TOOL" />) },
-      this.state.instanceTypesManagementPanel && (roleModel.isOwner(this.props.tool.value) || this.isAdmin()) && { key: INSTANCE_MANAGEMENT_PANEL_KEY, info: contentInfo[3], content: (<InstanceTypesManagementForm key={INSTANCE_MANAGEMENT_PANEL_KEY} level="TOOL" resourceId={this.props.toolId} disabled={!!this.link} />) }
+      {key: CONTENT_PANEL_KEY, info: contentInfo[0], content: (<div key={CONTENT_PANEL_KEY} style={{height: '100%', display: 'flex', flexDirection: 'column'}}>{this.renderToolContent()}</div>)},
+      this.state.showIssuesPanel && {key: ISSUES_PANEL_KEY, info: contentInfo[1], content: (<Issues key={ISSUES_PANEL_KEY} readOnly={!!this.link} canNavigateBack={false} onCloseIssuePanel={this.closeIssuesPanel} entityId={this.props.toolId} entityClass="TOOL" entity={this.props.tool.value} />)},
+      this.state.metadata && {key: METADATA_PANEL_KEY, info: contentInfo[2], content: (<Metadata key={METADATA_PANEL_KEY} readOnly={!roleModel.isOwner(this.props.tool.value) || !!this.link} entityId={this.props.toolId} entityClass="TOOL" />)},
+      this.state.instanceTypesManagementPanel && (roleModel.isOwner(this.props.tool.value) || this.isAdmin()) && {key: INSTANCE_MANAGEMENT_PANEL_KEY, info: contentInfo[3], content: (<InstanceTypesManagementForm key={INSTANCE_MANAGEMENT_PANEL_KEY} level="TOOL" resourceId={this.props.toolId} disabled={!!this.link} />)}
     ].filter(Boolean);
     if (panels.length <= 1) {
       return (
-        <div style={{ flex: 1, overflow: 'auto' }}>
+        <div style={{flex: 1, overflow: 'auto'}}>
           {panels.length === 1 ? panels[0].content : this.renderToolContent()}
         </div>
       );
     }
     return (
-      <Splitter style={{ flex: 1, overflow: 'auto' }}>
-        {panels.map(({ key, info, content }) => (
+      <Splitter style={{flex: 1, overflow: 'auto'}}>
+        {panels.map(({key, info, content}) => (
           <Splitter.Panel
             key={key}
             defaultSize={info.size?.percentDefault != null ? `${info.size.percentDefault}%` : (info.size?.pxDefault ?? undefined)}
             min={info.size?.percentMinimum != null ? `${info.size.percentMinimum}%` : (info.size?.pxMinimum ?? 200)}
             resizable
           >
-            <div className="cp-split-panel-panel" style={{ height: '100%', overflow: 'auto', ...info.containerStyle }}>
+            <div className="cp-split-panel-panel" style={{height: '100%', overflow: 'auto', ...info.containerStyle}}>
               {(info.title || info.closable) && (
-                <Row type="flex" justify="space-between" align="middle" className="cp-split-panel-header" style={{ padding: '0px 5px' }}>
+                <Row type="flex" justify="space-between" align="middle" className="cp-split-panel-header" style={{padding: '0px 5px'}}>
                   <span>{info.title || ''}</span>
-                  {info.closable && <CloseOutlined onClick={() => onPanelClose && onPanelClose(key)} style={{ cursor: 'pointer' }} />}
+                  {info.closable && <CloseOutlined onClick={() => onPanelClose && onPanelClose(key)} style={{cursor: 'pointer'}} />}
                 </Row>
               )}
               {content}
@@ -2096,7 +2096,7 @@ export default class Tool extends localization.LocalizedReactComponent {
               'cp-panel-borderless'
             )
           }
-          bodyStyle={{padding: 15, height: '100%', display: 'flex', flexDirection: 'column'}}>
+          styles={{body: {padding: 15, height: '100%', display: 'flex', flexDirection: 'column'}}}>
           <Alert type="error" title="You have no permissions to view tool details" />
         </Card>
       );
@@ -2131,7 +2131,7 @@ export default class Tool extends localization.LocalizedReactComponent {
             'cp-panel-borderless'
           )
         }
-        bodyStyle={{padding: 15, height: '100%', display: 'flex', flexDirection: 'column'}}>
+        styles={{body: {padding: 15, height: '100%', display: 'flex', flexDirection: 'column'}}}>
         <div className={classNames(styles.toolsHeader, 'cp-tool-header')}>
           <div className={styles.title} style={{flex: 1}}>
             <Button

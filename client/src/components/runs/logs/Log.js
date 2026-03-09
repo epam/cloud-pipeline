@@ -2506,12 +2506,14 @@ class Logs extends localization.LocalizedReactComponent {
             'cp-panel-borderless'
           )
         }
-        bodyStyle={{
-          padding: 10,
-          display: 'flex',
-          flexDirection: 'column',
-          flex: 1,
-          overflowY: 'auto'
+        styles={{
+          body: {
+            padding: 10,
+            display: 'flex',
+            flexDirection: 'column',
+            flex: 1,
+            overflowY: 'auto'
+          }
         }}>
         <Row type="flex">
           <div style={{flex: 1}}>
