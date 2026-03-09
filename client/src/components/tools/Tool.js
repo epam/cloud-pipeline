@@ -31,11 +31,12 @@ import {
   Modal,
   Popover,
   Row,
+  Splitter,
   Table,
   Tooltip,
   Upload
 } from 'antd';
-import {AppstoreFilled, ArrowLeftOutlined, CameraOutlined, CheckCircleFilled, DeleteOutlined, DownOutlined, ExclamationCircleFilled, LinkOutlined, LoadingOutlined, SettingOutlined, UploadOutlined} from '@ant-design/icons';
+import {AppstoreFilled, ArrowLeftOutlined, CameraOutlined, CheckCircleFilled, CloseOutlined, DeleteOutlined, DownOutlined, ExclamationCircleFilled, LinkOutlined, LoadingOutlined, SettingOutlined, UploadOutlined} from '@ant-design/icons';
 import Menu, {MenuItem, Divider} from 'rc-menu';
 import classNames from 'classnames';
 import LoadTool from '../../models/tools/LoadTool';
@@ -57,8 +58,7 @@ import {
 import {
   CONTENT_PANEL_KEY,
   METADATA_PANEL_KEY,
-  ISSUES_PANEL_KEY,
-  SplitPanel
+  ISSUES_PANEL_KEY
 } from '../special/splitPanel';
 import Owner from '../special/owner';
 import styles from './Tools.css';
@@ -1382,98 +1382,62 @@ export default class Tool extends localization.LocalizedReactComponent {
           break;
       }
     };
-    return (
-      <SplitPanel
-        style={{flex: 1, overflow: 'auto'}}
-        onPanelClose={onPanelClose}
-        contentInfo={[{
-          key: CONTENT_PANEL_KEY,
-          size: {
-            priority: 0,
-            percentMinimum: 33,
-            percentDefault: 75
-          }
-        }, {
-          key: ISSUES_PANEL_KEY,
-          title: `${this.localizedString('Issue')}s`,
-          closable: true,
-          containerStyle: {
-            display: 'flex',
-            flexDirection: 'column'
-          },
-          size: {
-            keepPreviousSize: true,
-            priority: 1,
-            percentDefault: 25,
-            pxMinimum: 200
-          }
-        }, {
-          key: METADATA_PANEL_KEY,
-          title: 'Attributes',
-          closable: true,
-          containerStyle: {
-            display: 'flex',
-            flexDirection: 'column'
-          },
-          size: {
-            keepPreviousSize: true,
-            priority: 2,
-            percentDefault: 25,
-            pxMinimum: 200
-          }
-        }, {
-          key: INSTANCE_MANAGEMENT_PANEL_KEY,
-          title: 'Instance management',
-          closable: true,
-          containerStyle: {
-            display: 'flex',
-            flexDirection: 'column'
-          },
-          size: {
-            keepPreviousSize: true,
-            priority: 2,
-            percentDefault: 25,
-            pxMinimum: 200
-          }
-        }]}>
-        <div
-          key={CONTENT_PANEL_KEY}
-          style={{
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column'
-          }}>
-          {this.renderToolContent()}
+    const contentInfo = [{
+      key: CONTENT_PANEL_KEY,
+      size: { percentMinimum: 33, percentDefault: 75 }
+    }, {
+      key: ISSUES_PANEL_KEY,
+      title: `${this.localizedString('Issue')}s`,
+      closable: true,
+      containerStyle: { display: 'flex', flexDirection: 'column' },
+      size: { percentDefault: 25, pxMinimum: 200 }
+    }, {
+      key: METADATA_PANEL_KEY,
+      title: 'Attributes',
+      closable: true,
+      containerStyle: { display: 'flex', flexDirection: 'column' },
+      size: { percentDefault: 25, pxMinimum: 200 }
+    }, {
+      key: INSTANCE_MANAGEMENT_PANEL_KEY,
+      title: 'Instance management',
+      closable: true,
+      containerStyle: { display: 'flex', flexDirection: 'column' },
+      size: { percentDefault: 25, pxMinimum: 200 }
+    }];
+    const panels = [
+      { key: CONTENT_PANEL_KEY, info: contentInfo[0], content: (<div key={CONTENT_PANEL_KEY} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>{this.renderToolContent()}</div>) },
+      this.state.showIssuesPanel && { key: ISSUES_PANEL_KEY, info: contentInfo[1], content: (<Issues key={ISSUES_PANEL_KEY} readOnly={!!this.link} canNavigateBack={false} onCloseIssuePanel={this.closeIssuesPanel} entityId={this.props.toolId} entityClass="TOOL" entity={this.props.tool.value} />) },
+      this.state.metadata && { key: METADATA_PANEL_KEY, info: contentInfo[2], content: (<Metadata key={METADATA_PANEL_KEY} readOnly={!roleModel.isOwner(this.props.tool.value) || !!this.link} entityId={this.props.toolId} entityClass="TOOL" />) },
+      this.state.instanceTypesManagementPanel && (roleModel.isOwner(this.props.tool.value) || this.isAdmin()) && { key: INSTANCE_MANAGEMENT_PANEL_KEY, info: contentInfo[3], content: (<InstanceTypesManagementForm key={INSTANCE_MANAGEMENT_PANEL_KEY} level="TOOL" resourceId={this.props.toolId} disabled={!!this.link} />) }
+    ].filter(Boolean);
+    if (panels.length <= 1) {
+      return (
+        <div style={{ flex: 1, overflow: 'auto' }}>
+          {panels.length === 1 ? panels[0].content : this.renderToolContent()}
         </div>
-        {
-          this.state.showIssuesPanel &&
-          <Issues
-            key={ISSUES_PANEL_KEY}
-            readOnly={!!this.link}
-            canNavigateBack={false}
-            onCloseIssuePanel={this.closeIssuesPanel}
-            entityId={this.props.toolId}
-            entityClass="TOOL"
-            entity={this.props.tool.value} />
-        }
-        {
-          this.state.metadata &&
-          <Metadata
-            key={METADATA_PANEL_KEY}
-            readOnly={!roleModel.isOwner(this.props.tool.value) || !!this.link}
-            entityId={this.props.toolId}
-            entityClass="TOOL" />
-        }
-        {
-          this.state.instanceTypesManagementPanel && (roleModel.isOwner(this.props.tool.value) || this.isAdmin()) &&
-          <InstanceTypesManagementForm
-            key={INSTANCE_MANAGEMENT_PANEL_KEY}
-            level="TOOL"
-            resourceId={this.props.toolId}
-            disabled={!!this.link}
-          />
-        }
-      </SplitPanel>
+      );
+    }
+    return (
+      <Splitter style={{ flex: 1, overflow: 'auto' }}>
+        {panels.map(({ key, info, content }) => (
+          <Splitter.Panel
+            key={key}
+            defaultSize={info.size?.percentDefault != null ? `${info.size.percentDefault}%` : (info.size?.pxDefault ?? undefined)}
+            min={info.size?.percentMinimum != null ? `${info.size.percentMinimum}%` : (info.size?.pxMinimum ?? 200)}
+            resizable
+          >
+            <div className="cp-split-panel-panel" style={{ height: '100%', overflow: 'auto', ...info.containerStyle }}>
+              {(info.title || info.closable) && (
+                <Row type="flex" justify="space-between" align="middle" className="cp-split-panel-header" style={{ padding: '0px 5px' }}>
+                  <span>{info.title || ''}</span>
+                  {info.closable && <CloseOutlined onClick={() => onPanelClose && onPanelClose(key)} style={{ cursor: 'pointer' }} />}
+                </Row>
+              )}
+              {content}
+            </div>
+          </Splitter.Panel>
+        ))}
+      </Splitter>
     );
   };
 
@@ -1851,50 +1815,32 @@ export default class Tool extends localization.LocalizedReactComponent {
             break;
         }
       };
-      const runMenu = (
-        <Menu
-          selectedKeys={[]}
-          onClick={onSelect}
-          style={{cursor: 'pointer'}}
-        >
-          <MenuItem
-            id="run-default-button"
-            key={runDefaultKey}
-            disabled={!!this.state.launchPending}
-          >
-            {
-              tooltip && !notLoaded
-                ? (
-                  <Tooltip
-                    placement="left"
-                    title={tooltip}
-                    trigger="hover">
-                    Default settings
-                  </Tooltip>
-                )
-                : 'Default settings'
-            }
-          </MenuItem>
-          <MenuItem
-            id="run-custom-button"
-            key={runCustomKey}
-            disabled={!!this.state.launchPending}
-          >
-            {
-              tooltip && !notLoaded
-                ? (
-                  <Tooltip
-                    placement="left"
-                    title={tooltip}
-                    trigger="hover">
-                    Custom settings
-                  </Tooltip>
-                )
-                : 'Custom settings'
-            }
-          </MenuItem>
-        </Menu>
-      );
+      const runMenuItems = [
+        {
+          id: 'run-default-button',
+          key: runDefaultKey,
+          disabled: !!this.state.launchPending,
+          label: tooltip && !notLoaded
+            ? (
+              <Tooltip placement="left" title={tooltip} trigger="hover">
+                <span>Default settings</span>
+              </Tooltip>
+            )
+            : 'Default settings'
+        },
+        {
+          id: 'run-custom-button',
+          key: runCustomKey,
+          disabled: !!this.state.launchPending,
+          label: tooltip && !notLoaded
+            ? (
+              <Tooltip placement="left" title={tooltip} trigger="hover">
+                <span>Custom settings</span>
+              </Tooltip>
+            )
+            : 'Custom settings'
+        }
+      ];
       return (
         <Button.Group className={styles.runButton}>
           <Tooltip
@@ -1928,7 +1874,11 @@ export default class Tool extends localization.LocalizedReactComponent {
             disabled={!!this.state.launchPending ||
               (!allowedToExecute && !this.isAdmin())
             }
-            overlay={runMenu}
+            menu={{
+              items: runMenuItems,
+              onClick: onSelect,
+              style: {cursor: 'pointer'}
+            }}
             placement="bottomRight">
             <Button
               disabled={!!this.state.launchPending}
@@ -1960,57 +1910,52 @@ export default class Tool extends localization.LocalizedReactComponent {
           break;
       }
     };
-    const displayOptionsMenuItems = [];
-    displayOptionsMenuItems.push(
-      <MenuItem
-        id={this.state.metadata ? 'hide-metadata-button' : 'show-metadata-button'}
-        key="metadata">
-        <Row type="flex" justify="space-between" align="middle">
-          <span>Attributes</span>
-          <CheckCircleFilled style={{display: this.state.metadata ? 'inherit' : 'none'}} />
-        </Row>
-      </MenuItem>
-    );
-    displayOptionsMenuItems.push(
-      <MenuItem
-        id={this.state.showIssuesPanel ? 'hide-issues-panel-button' : 'show-issues-panel-button'}
-        key="issues">
-        <Row type="flex" justify="space-between" align="middle">
-          <span>{this.localizedString('Issue')}s</span>
-          <CheckCircleFilled style={{display: this.state.showIssuesPanel ? 'inherit' : 'none'}} />
-        </Row>
-      </MenuItem>
-    );
+    const displayOptionsMenuItems = [
+      {
+        id: this.state.metadata ? 'hide-metadata-button' : 'show-metadata-button',
+        key: 'metadata',
+        label: (
+          <Row type="flex" justify="space-between" align="middle">
+            <span>Attributes</span>
+            <CheckCircleFilled style={{display: this.state.metadata ? 'inherit' : 'none'}} />
+          </Row>
+        )
+      },
+      {
+        id: this.state.showIssuesPanel ? 'hide-issues-panel-button' : 'show-issues-panel-button',
+        key: 'issues',
+        label: (
+          <Row type="flex" justify="space-between" align="middle">
+            <span>{this.localizedString('Issue')}s</span>
+            <CheckCircleFilled style={{display: this.state.showIssuesPanel ? 'inherit' : 'none'}} />
+          </Row>
+        )
+      }
+    ];
     if (roleModel.isOwner(this.props.tool.value) || this.isAdmin()) {
-      displayOptionsMenuItems.push(
-        <MenuItem
-          id={
-            this.state.instanceTypesManagementPanel
-              ? 'hide-instance-types-management-panel-button'
-              : 'show-instance-types-management-panel-button'
-          }
-          key="instanceTypeManagement">
+      displayOptionsMenuItems.push({
+        id: this.state.instanceTypesManagementPanel
+          ? 'hide-instance-types-management-panel-button'
+          : 'show-instance-types-management-panel-button',
+        key: 'instanceTypeManagement',
+        label: (
           <Row type="flex" justify="space-between" align="middle">
             <span>Instance management</span>
             <CheckCircleFilled style={{display: this.state.instanceTypesManagementPanel ? 'inherit' : 'none'}} />
           </Row>
-        </MenuItem>
-      );
+        )
+      });
     }
-    const displayOptionsMenu = (
-      <Menu
-        onClick={onSelectDisplayOption}
-        style={{width: 150, cursor: 'pointer'}}
-        selectedKeys={[]}
-      >
-        {displayOptionsMenuItems}
-      </Menu>
-    );
 
     return (
       <Dropdown
         key="display attributes"
-        overlay={displayOptionsMenu}>
+        menu={{
+          items: displayOptionsMenuItems,
+          onClick: onSelectDisplayOption,
+          style: {width: 150, cursor: 'pointer'}
+        }}
+      >
         <Button
           id="display-attributes"
           size="small"
@@ -2104,23 +2049,30 @@ export default class Tool extends localization.LocalizedReactComponent {
           break;
       }
     };
-    const menu = (
-      <Menu
-        onClick={onClick}
-        style={{cursor: 'pointer'}}
-        selectedKeys={[]}
-      >
-        <MenuItem key={permissionsKey}>
-          <SettingOutlined /> Permissions
-        </MenuItem>
-        <Divider />
-        <MenuItem key={deleteKey} className="cp-danger">
-          <DeleteOutlined /> Delete tool {this.link ? 'link' : false}
-        </MenuItem>
-      </Menu>
-    );
+    const menuItems = [
+      {
+        key: permissionsKey,
+        label: (
+          <span>
+            <SettingOutlined /> Permissions
+          </span>
+        )
+      },
+      {type: 'divider', key: 'divider'},
+      {
+        key: deleteKey,
+        label: (
+          <span className="cp-danger">
+            <DeleteOutlined /> Delete tool {this.link ? 'link' : false}
+          </span>
+        )
+      }
+    ];
     return (
-      <Dropdown overlay={menu} placement="bottomRight">
+      <Dropdown
+        menu={{items: menuItems, onClick, style: {cursor: 'pointer'}}}
+        placement="bottomRight"
+      >
         <Button id="setting-button" size="small" style={{lineHeight: 1}}>
           <SettingOutlined style={{lineHeight: 'inherit'}} />
         </Button>

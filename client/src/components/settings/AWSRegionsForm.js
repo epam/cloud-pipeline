@@ -22,7 +22,6 @@ import {
 import {computed, observable, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import LoadingView from '../special/LoadingView';
-import {SplitPanel} from '../special/splitPanel';
 import {
   Alert,
   Button,
@@ -35,6 +34,7 @@ import {
   message,
   Row,
   Select,
+  Splitter,
   Table,
   Tooltip,
   Col,
@@ -638,31 +638,25 @@ export default class AWSRegionsForm extends React.Component {
             onSearch={this.onSearch} />
           {this.renderAddNewRegionButton()}
         </Row>
-        <SplitPanel
-          contentInfo={[
-            {
-              key: 'regions',
-              size: {
-                pxDefault: 200
-              }
-            }
-          ]}
+        <Splitter
           style={{flex: 1, minHeight: 0}}
-          className={'cp-transparent-background'}
+          className="cp-transparent-background"
         >
-          <div key="regions">
+          <Splitter.Panel
+            defaultSize={200}
+            min={100}
+            style={{overflow: 'auto'}}
+          >
             {this.renderAwsRegionsTable()}
-          </div>
-          <div
-            key="content"
-            style={{
-              display: 'flex',
-              flexDirection: 'column'
-            }}>
+          </Splitter.Panel>
+          <Splitter.Panel
+            min={200}
+            style={{display: 'flex', flexDirection: 'column', overflow: 'auto'}}
+          >
             {this.renderProviderForm()}
             {this.renderRegionForm()}
-          </div>
-        </SplitPanel>
+          </Splitter.Panel>
+        </Splitter>
       </div>
     );
   }

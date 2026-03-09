@@ -24,11 +24,11 @@ import {
   Button,
   Spin,
   Input,
-  message
+  message,
+  Splitter
 } from 'antd';
 import {ArrowsAltOutlined, EyeFilled, LeftOutlined} from '@ant-design/icons';
 import localization from '../../../../../utils/localization';
-import {SplitPanel} from '../../../../special/splitPanel';
 import PipelineCodeForm from '../../../version/code/forms/PipelineCodeForm';
 import VSHistory from '../history';
 import downloadPipelineFile from '../../../version/utilities/download-pipeline-file';
@@ -37,29 +37,6 @@ import PipelineFileUpdate from '../../../../../models/pipelines/PipelineFileUpda
 import styles from './info-panel.css';
 
 const MAX_SIZE_TO_PREVIEW = 1024 * 75; // 75kb
-const CONTENT_INFO = [{
-  key: 'preview',
-  containerStyle: {
-    display: 'flex',
-    flexDirection: 'column'
-  },
-  size: {
-    priority: 0,
-    percentDefault: 33,
-    pxMinimum: 100
-  }
-}, {
-  key: 'history',
-  containerStyle: {
-    display: 'flex',
-    flexDirection: 'column'
-  },
-  size: {
-    priority: 2,
-    percentDefault: 66,
-    pxMinimum: 200
-  }
-}];
 
 function fillEmptyCells (count, cb) {
   const result = [];
@@ -426,35 +403,62 @@ class InfoPanel extends localization.LocalizedReactComponent {
     const {
       filePreviewVisible
     } = this.state;
+    const historyPanel = (
+      <VSHistory
+        path={file ? file.path : path}
+        versionedStorageId={pipelineId}
+        revision={lastCommitId}
+        isFolder={!file}
+        onRefresh={onRefresh}
+        readOnly={readOnly}
+        style={{flex: 1}}
+      />
+    );
+
+    if (!file) {
+      return (
+        <>
+          <div style={{overflow: 'auto', display: 'flex', flexDirection: 'column', height: '100%'}}>
+            {historyPanel}
+          </div>
+          <PipelineCodeForm
+            visible={filePreviewVisible && !!file}
+            path={file ? file.path : undefined}
+            pipelineId={pipelineId}
+            editable={!readOnly}
+            download
+            cancel={this.closeFilePreview}
+            save={this.saveFile}
+            version={lastCommitId}
+          />
+        </>
+      );
+    }
+
     return (
-      <SplitPanel
-        style={{overflow: 'auto'}}
-        contentInfo={CONTENT_INFO}
-        orientation="vertical"
-      >
-        {
-          file && (
-            <div
-              key="preview"
-              className={styles.previewContainer}
-            >
+      <>
+        <Splitter
+          style={{overflow: 'auto'}}
+          orientation="vertical"
+        >
+          <Splitter.Panel
+            defaultSize="33%"
+            min={100}
+            style={{display: 'flex', flexDirection: 'column', overflow: 'hidden'}}
+          >
+            <div className={styles.previewContainer}>
               {this.renderPreviewHeader()}
               {this.renderFilePreview()}
             </div>
-          )
-        }
-        <VSHistory
-          key="history"
-          path={file ? file.path : path}
-          versionedStorageId={pipelineId}
-          revision={lastCommitId}
-          isFolder={!file}
-          onRefresh={onRefresh}
-          readOnly={readOnly}
-          style={{
-            flex: 1
-          }}
-        />
+          </Splitter.Panel>
+          <Splitter.Panel
+            defaultSize="66%"
+            min={200}
+            style={{display: 'flex', flexDirection: 'column', overflow: 'hidden'}}
+          >
+            {historyPanel}
+          </Splitter.Panel>
+        </Splitter>
         <PipelineCodeForm
           visible={filePreviewVisible && !!file}
           path={file ? file.path : undefined}
@@ -465,7 +469,7 @@ class InfoPanel extends localization.LocalizedReactComponent {
           save={this.saveFile}
           version={lastCommitId}
         />
-      </SplitPanel>
+      </>
     );
   }
 }

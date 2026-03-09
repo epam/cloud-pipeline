@@ -999,18 +999,14 @@ class Logs extends localization.LocalizedReactComponent {
         }
         router.push(nodeUrl);
       };
-      const menu = (
-        <Menu onClick={onNavigate}>
-          <Menu.Item key="run">
-            <span><b>Run</b> statistics</span>
-          </Menu.Item>
-          <Menu.Item key="node">
-            <span><b>Node</b> statistics</span>
-          </Menu.Item>
-        </Menu>
-      );
+      const menuItems = [
+        {key: 'run', label: <span><b>Run</b> statistics</span>},
+        {key: 'node', label: <span><b>Node</b> statistics</span>}
+      ];
       return (
-        <Dropdown overlay={menu}>
+        <Dropdown
+          menu={{items: menuItems, onClick: onNavigate}}
+        >
           <a>
             {title} <DownOutlined />
           </a>

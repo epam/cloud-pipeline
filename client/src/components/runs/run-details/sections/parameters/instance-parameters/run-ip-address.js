@@ -7,9 +7,7 @@ import {
   CP_CAP_REQUESTS_GPU,
   CP_CAP_REQUESTS_RAM
 } from '../../../../../pipelines/launch/form/utilities/parameters';
-import {Dropdown,
-  Menu
-} from 'antd';
+import {Dropdown} from 'antd';
 import {DownOutlined} from '@ant-design/icons';
 
 const RunIpAddress = generateRunInstanceParameterValueComponent(
@@ -63,22 +61,14 @@ const RunIpAddress = generateRunInstanceParameterValueComponent(
             routing.push(urlConfig.url);
           }
         };
-        const menu = (
-          <Menu onClick={onNavigate}>
-            {
-              urls.map(url => (
-                <Menu.Item key={url.key}>
-                  <Link to={url.url} onClick={event => event.preventDefault()}>
-                    {url.title}
-                  </Link>
-                </Menu.Item>
-              ))
-            }
-          </Menu>
-        );
-        console.log(menu);
+        const menuItems = urls.map(url => ({
+          key: url.key,
+          label: <Link to={url.url} onClick={event => event.preventDefault()}>{url.title}</Link>
+        }));
         return (
-          <Dropdown overlay={menu}>
+          <Dropdown
+            menu={{items: menuItems, onClick: onNavigate}}
+          >
             <a>
               {content} <DownOutlined />
             </a>

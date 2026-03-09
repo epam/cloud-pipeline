@@ -78,7 +78,8 @@ import {
   ContentIssuesMetadataPanel,
   CONTENT_PANEL_KEY,
   METADATA_PANEL_KEY,
-  ISSUES_PANEL_KEY
+  ISSUES_PANEL_KEY,
+  PREVIEW_PANEL_KEY
 } from '../../special/splitPanel';
 import DropDownWrapper from '../../special/dropdown-wrapper';
 import {formatTreeItems, generateTreeData, ItemTypes} from '../model/treeStructureFunctions';
@@ -186,8 +187,7 @@ export default class Folder extends localization.LocalizedReactComponent {
     super(props);
     makeObservable(this, {
       _folderToDeleteInfo: observable,
-      deletingFolderIsEmpty: computed,
-      showMetadata: computed
+      deletingFolderIsEmpty: computed
     });
   }
 
@@ -1400,11 +1400,15 @@ export default class Folder extends localization.LocalizedReactComponent {
     return (
       <ContentIssuesMetadataPanel
         style={{flex: 1, overflow: 'auto'}}
-        onPanelClose={onPanelClose}>
+        onPanelClose={onPanelClose}
+      >
         <Table
           key={CONTENT_PANEL_KEY}
           className={`${styles.childrenContainer} ${styles.childrenContainerLarger}`}
-          dataSource={formatTreeItems(this._currentFolder.data, {preferences: this.props.preferences})}
+          dataSource={formatTreeItems(
+            this._currentFolder.data,
+            {preferences: this.props.preferences}
+          )}
           columns={this.columns}
           rowKey={(item) => item.key}
           title={null}
@@ -1464,7 +1468,7 @@ export default class Folder extends localization.LocalizedReactComponent {
         {
           this.showConfigurationPreview &&
           <PreviewConfiguration
-            key="configuration-preview"
+            key={PREVIEW_PANEL_KEY}
             configurationId={this.highlightedItem.id} />
         }
       </ContentIssuesMetadataPanel>
@@ -1765,7 +1769,10 @@ export default class Folder extends localization.LocalizedReactComponent {
             onOpenChange={(open) => this.setState({createDropDownVisible: open})}
             minOverlayWidthMatchTrigger={false}
             placement="bottomRight"
-            overlay={
+            menu={{
+              items: [{key: '_', label: ''}]
+            }}
+            dropdownRender={() => (
               <div>
                 <Menu
                   mode="vertical"
@@ -1779,7 +1786,7 @@ export default class Folder extends localization.LocalizedReactComponent {
                   {createActions}
                 </Menu>
               </div>
-            }
+            )}
           >
             <Button
               type="primary"
@@ -1797,8 +1804,11 @@ export default class Folder extends localization.LocalizedReactComponent {
     }
     const onSelectDisplayOption = ({key}) => {
       switch (key) {
-        case 'descriptions': this.showHideDescription(); break;
-        case 'metadata': this.setState({metadata: !this.showMetadata}); break;
+        case 'descriptions': this.showHideDescription();
+          break;
+        case 'metadata':
+          this.setState((state) => ({metadata: !state.metadata}));
+          break;
         case 'issues':
           if (this.showIssues) {
             this.closeIssuesPanel();
@@ -1810,62 +1820,42 @@ export default class Folder extends localization.LocalizedReactComponent {
     };
     const displayOptionsMenuItems = [];
     if (!this.props.listingMode) {
-      displayOptionsMenuItems.push(
-        <MenuItem
-          id="show-hide-descriptions"
-          key="descriptions">
-          <Row type="flex" justify="space-between" align="middle">
+      displayOptionsMenuItems.push({
+        id: 'show-hide-descriptions',
+        key: 'descriptions',
+        label: (
+          <Row type="flex" justify="space-between" align="middle" style={{gap: 8}}>
             <span>Descriptions</span>
-            <CheckCircleFilled style={{ display: this.state.showDescription ? 'inherit' : 'none' }} />
+            <CheckCircleFilled style={{display: this.state.showDescription ? 'inherit' : 'none'}} />
           </Row>
-        </MenuItem>
-      );
+        )
+      });
     }
     if (this.props.folderId !== undefined && !this.props.listingMode) {
-      displayOptionsMenuItems.push(
-        <MenuItem
-          id={
-            this.showMetadata
-              ? 'hide-metadata-button'
-              : 'show-metadata-button'
-          }
-          key="metadata"
-        >
-          <Row type="flex" justify="space-between" align="middle">
+      displayOptionsMenuItems.push({
+        id: this.showMetadata ? 'hide-metadata-button' : 'show-metadata-button',
+        key: 'metadata',
+        label: (
+          <Row type="flex" justify="space-between" align="middle" style={{gap: 8}}>
             <span>Attributes</span>
             <CheckCircleFilled style={{display: this.showMetadata ? 'inherit' : 'none'}} />
           </Row>
-        </MenuItem>
-      );
+        )
+      });
     }
     if ((this.showIssues || this.props.folderId !== undefined) && !this.props.listingMode) {
-      displayOptionsMenuItems.push(
-        <MenuItem
-          id={
-            this.showIssues
-              ? 'hide-issues-panel-button'
-              : 'show-issues-panel-button'
-          }
-          key="issues"
-        >
-          <Row type="flex" justify="space-between" align="middle">
+      displayOptionsMenuItems.push({
+        id: this.showIssues ? 'hide-issues-panel-button' : 'show-issues-panel-button',
+        key: 'issues',
+        label: (
+          <Row type="flex" justify="space-between" align="middle" style={{gap: 8}}>
             <span>{this.localizedString('Issue')}s</span>
             <CheckCircleFilled style={{display: this.showIssues ? 'inherit' : 'none'}} />
           </Row>
-        </MenuItem>
-      );
+        )
+      });
     }
     if (displayOptionsMenuItems.length > 0) {
-      const displayOptionsMenu = (
-        <Menu
-          onClick={onSelectDisplayOption}
-          style={{width: 125}}
-          selectedKeys={[]}
-        >
-          {displayOptionsMenuItems}
-        </Menu>
-      );
-
       actions.push(
         <DropDownWrapper
           key="display attributes"
@@ -1873,9 +1863,9 @@ export default class Folder extends localization.LocalizedReactComponent {
         >
           <Dropdown
             trigger={['click']}
-            overlay={displayOptionsMenu}
             open={this.state.displayOptionsDropDownVisible}
             onOpenChange={(open) => this.setState({displayOptionsDropDownVisible: open})}
+            menu={{items: displayOptionsMenuItems, onClick: onSelectDisplayOption}}
           >
             <Button
               id="display-attributes"
@@ -1892,49 +1882,53 @@ export default class Folder extends localization.LocalizedReactComponent {
     if (!this.props.isRoot && !this.props.listingMode) {
       const editActions = [];
       if (roleModel.readAllowed(this.props.folder.value)) {
-        editActions.push(
-          <MenuItem
-            id="edit-folder-button"
-            key="edit"
-          >
-            <EditOutlined style={{marginRight: 5}} />
-            {
-              roleModel.writeAllowed(this.props.folder.value)
-                ? 'Edit folder'
-                : 'Permissions'
-            }
-          </MenuItem>
-        );
+        editActions.push({
+          id: 'edit-folder-button',
+          key: 'edit',
+          label: (
+            <span>
+              <EditOutlined style={{marginRight: 5}} />
+              {
+                roleModel.writeAllowed(this.props.folder.value)
+                  ? 'Edit folder'
+                  : 'Permissions'
+              }
+            </span>
+          )
+        });
       }
       if (!this.props.readOnly && roleModel.isOwner(this.props.folder.value)) {
-        editActions.push(
-          <MenuItem
-            key="clone"
-            id="clone-folder-button"
-          >
-            <CopyOutlined /> Clone
-          </MenuItem>
-        );
+        editActions.push({
+          key: 'clone',
+          id: 'clone-folder-button',
+          label: (
+            <span>
+              <CopyOutlined /> Clone
+            </span>
+          )
+        });
       }
       const folderIsReadOnly = this.props.folder.value.locked;
       if (folderIsReadOnly && roleModel.isOwner(this.props.folder.value)) {
-        editActions.push(
-          <MenuItem
-            id="unlock-button"
-            key="unlock"
-          >
-            <UnlockOutlined /> Unlock
-          </MenuItem>
-        );
+        editActions.push({
+          id: 'unlock-button',
+          key: 'unlock',
+          label: (
+            <span>
+              <UnlockOutlined /> Unlock
+            </span>
+          )
+        });
       } else if (!folderIsReadOnly && roleModel.writeAllowed(this.props.folder.value)) {
-        editActions.push(
-          <MenuItem
-            id="lock-button"
-            key="lock"
-          >
-            <LockOutlined /> Lock
-          </MenuItem>
-        );
+        editActions.push({
+          id: 'lock-button',
+          key: 'lock',
+          label: (
+            <span>
+              <LockOutlined /> Lock
+            </span>
+          )
+        });
       }
       if (
         !this.props.readOnly && (
@@ -1945,17 +1939,17 @@ export default class Folder extends localization.LocalizedReactComponent {
         )
       ) {
         if (editActions.length > 0) {
-          editActions.push(<Divider key="divider" />);
+          editActions.push({type: 'divider', key: 'divider'});
         }
-        editActions.push(
-          <MenuItem
-            id="delete-folder-button"
-            key="delete"
-            className="cp-danger"
-          >
-            <DeleteOutlined /> Delete
-          </MenuItem>
-        );
+        editActions.push({
+          id: 'delete-folder-button',
+          key: 'delete',
+          label: (
+            <span className="cp-danger">
+              <DeleteOutlined /> Delete
+            </span>
+          )
+        });
       }
       if (editActions.length > 0) {
         const onClick = ({key}) => {
@@ -1989,14 +1983,11 @@ export default class Folder extends localization.LocalizedReactComponent {
             <Dropdown
               placement="bottomRight"
               trigger={['click']}
-              overlay={
-                <Menu
-                  selectedKeys={[]}
-                  onClick={onClick}
-                  style={{width: 100}}>
-                  {editActions}
-                </Menu>
-              }
+              menu={{
+                items: editActions,
+                onClick,
+                style: {width: 100}
+              }}
               open={this.state.editDropDownVisible}
               onOpenChange={(open) => this.setState({editDropDownVisible: open})}
             >
@@ -2064,11 +2055,13 @@ export default class Folder extends localization.LocalizedReactComponent {
     if (this.props.listingMode) {
       return false;
     }
-    if (this.state.metadata === undefined &&
-      this.props.folder.loaded) {
+    if (this.state.metadata !== undefined) {
+      return this.state.metadata;
+    }
+    if (this.props.folder.loaded) {
       return this.props.folder.value.hasMetadata && roleModel.readAllowed(this.props.folder.value);
     }
-    return !!this.state.metadata;
+    return false;
   }
 
   get showIssues () {

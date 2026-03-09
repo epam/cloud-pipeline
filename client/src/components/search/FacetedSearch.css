@@ -85,6 +85,11 @@
   overflow: auto;
 }
 
+.container .content .content-splitter {
+  height: 100%;
+  min-height: 0;
+}
+
 .faceted-filters .filter {
   width: 100%;
 }

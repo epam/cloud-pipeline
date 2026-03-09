@@ -389,7 +389,7 @@ class RunsFilter extends React.Component {
         </Button>
       )
     }];
-    const menu = (
+    const menuContent = (
       <Row style={{minWidth: 200}}>
         <Table
           className={styles.table}
@@ -407,9 +407,10 @@ class RunsFilter extends React.Component {
       <td style={{width: 50, textAlign: 'center', textTransform: 'uppercase'}}>
         <Dropdown
           placement="bottomRight"
-          visible={this.state.savedFiltersDropDownVisible}
-          onVisibleChange={onDropDownVisibilityChanged}
-          overlay={menu}
+          open={this.state.savedFiltersDropDownVisible}
+          onOpenChange={onDropDownVisibilityChanged}
+          menu={{items: [{key: '_', label: ''}]}}
+          dropdownRender={() => menuContent}
           trigger={['click']}>
           <Button><DownOutlined /></Button>
         </Dropdown>

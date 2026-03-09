@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Alert, Button, Dropdown, Modal, Tree} from 'antd';
+import {Alert, Button, Dropdown, Modal, Splitter, Tree} from 'antd';
 import {DownOutlined, FolderOutlined, SettingOutlined, SolutionOutlined} from '@ant-design/icons';
 import {inject} from 'mobx-react';
 import classNames from 'classnames';
@@ -27,7 +27,6 @@ import {
   getTreeItemByKey
 } from '../../../model/treeStructureFunctions';
 import HiddenObjects from '../../../../../utils/hidden-objects';
-import SplitPanel from '../../../../special/splitPanel/split-panel';
 import ConfigurationPayload from './configuration-payload';
 import {getProjectEntityTypeByName} from './utilities/project-utilities';
 import {ParameterName, ParameterRow, ParameterValue} from './parameters/parameter';
@@ -236,10 +235,22 @@ class ConfigurationBrowser extends React.Component {
       );
     }
     return (
-      <SplitPanel>
-        {this.renderConfigurationsTree()}
-        {this.renderConfiguration()}
-      </SplitPanel>
+      <Splitter>
+        <Splitter.Panel
+          defaultSize="200px"
+          min={100}
+          className={styles.treePanel}
+        >
+          {this.renderConfigurationsTree()}
+        </Splitter.Panel>
+        <Splitter.Panel
+          min={200}
+          className={styles.panel}
+          style={{overflow: 'auto'}}
+        >
+          {this.renderConfigurationContent()}
+        </Splitter.Panel>
+      </Splitter>
     );
   };
 
@@ -325,19 +336,13 @@ class ConfigurationBrowser extends React.Component {
       this.setState({selection: newSelection, entryName});
     };
     return (
-      <SplitPanel.Pane
-        className={styles.treePanel}
-        key="configurations-tree"
-        defaultSize={200}
+      <Tree
+        checkStrictly
+        onSelect={onSelect}
+        selectedKeys={selection}
       >
-        <Tree
-          checkStrictly
-          onSelect={onSelect}
-          selectedKeys={selection}
-        >
-          {generateTreeItems(folderStructure)}
-        </Tree>
-      </SplitPanel.Pane>
+        {generateTreeItems(folderStructure)}
+      </Tree>
     );
   };
 
@@ -455,7 +460,7 @@ class ConfigurationBrowser extends React.Component {
     );
   };
 
-  renderConfiguration = () => {
+  renderConfigurationContent = () => {
     const {
       folderId
     } = this.props;
@@ -467,10 +472,7 @@ class ConfigurationBrowser extends React.Component {
       valid
     });
     return (
-      <SplitPanel.Pane
-        className={styles.panel}
-        key="configuration"
-      >
+      <>
         {this.renderConfigurationHeader()}
         <ConfigurationPayload
           rootEntityDisabled
@@ -481,7 +483,7 @@ class ConfigurationBrowser extends React.Component {
           onChange={onChange}
         />
         {this.renderExpression()}
-      </SplitPanel.Pane>
+      </>
     );
   };
 
@@ -511,7 +513,7 @@ class ConfigurationBrowser extends React.Component {
     return (
       <Modal
         className={className}
-        visible={visible}
+        open={visible}
         onCancel={onCancel}
         title="Select configuration"
         width="80%"

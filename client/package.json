@@ -3,10 +3,10 @@
   "version": "0.15.0",
   "private": true,
   "dependencies": {
-    "@ant-design/icons": "^5.5.0",
+    "@ant-design/icons": "^6.0.0",
     "@aws-sdk/client-omics": "3.565.0",
     "ansi_up": "^2.0.2",
-    "antd": "^5.22.0",
+    "antd": "^6.0.0",
     "dayjs": "^1.11.0",
     "aws-sdk": "^2.770.0",
     "chart.js": "^2.9.3",

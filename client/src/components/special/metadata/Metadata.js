@@ -37,7 +37,8 @@ import {
   message,
   Modal,
   Row,
-  Select
+  Select,
+  Splitter
 } from 'antd';
 import {
   ArrowsAltOutlined,
@@ -55,7 +56,6 @@ import {
 } from '@ant-design/icons';
 import ItemsTable, {isJson} from './items-table';
 import styles from './Metadata.css';
-import {SplitPanel} from '../splitPanel';
 import localization from '../../../utils/localization';
 import {
   RunCapabilitiesMetadataPreference,
@@ -1848,25 +1848,32 @@ export default class Metadata extends localization.LocalizedReactComponent {
     const result = [header];
     if ((this.props.dataStorageTags && this.props.showContent) ||
       this.props.jobList) {
-      result.push(
-        <SplitPanel
-          key="split"
-          style={{flex: 1, overflow: 'auto'}}
-          orientation="vertical">
-          {
-            (this.props.dataStorageTags && this.props.showContent) &&
-            <div key="file preview" style={{
-              display: 'flex',
-              flexDirection: 'column',
-              height: '100%'
-            }}>
-              {this.renderFilePreview()}
-            </div>
-          }
-          {this.props.showMetadata && !this.props.hideMetadataTags ? metadata : null}
-          {this.props.jobList ? this.props.jobList : null}
-        </SplitPanel>
-      );
+      const panels = [];
+      (this.props.dataStorageTags && this.props.showContent) &&
+        panels.push(
+          <div key="file preview" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+            {this.renderFilePreview()}
+          </div>
+        );
+      this.props.showMetadata && !this.props.hideMetadataTags && panels.push(metadata);
+      this.props.jobList && panels.push(this.props.jobList);
+      if (panels.length <= 1) {
+        result.push(panels.length === 1 ? panels[0] : metadata);
+      } else {
+        result.push(
+          <Splitter
+            key="split"
+            style={{ flex: 1, overflow: 'auto' }}
+            orientation="vertical"
+          >
+            {panels.map((panel, i) => (
+              <Splitter.Panel key={i} resizable>
+                {panel}
+              </Splitter.Panel>
+            ))}
+          </Splitter>
+        );
+      }
     } else {
       result.push(metadata);
     }

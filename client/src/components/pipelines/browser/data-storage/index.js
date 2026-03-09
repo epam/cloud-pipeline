@@ -51,7 +51,6 @@ import {
   ReloadOutlined,
   SettingOutlined
 } from '@ant-design/icons';
-import Menu, {MenuItem, Divider} from 'rc-menu';
 import moment from 'moment-timezone';
 import LoadingView from '../../../special/LoadingView';
 import Breadcrumbs from '../../../special/Breadcrumbs';
@@ -2234,33 +2233,39 @@ export default class DataStorage extends React.Component {
           }
         });
       };
+      const editMenuItems = [
+        {
+          id: 'edit-storage-action-button',
+          key: 'edit',
+          className: 'edit-storage-button',
+          label: (
+            <span>
+              <EditOutlined /> Edit
+            </span>
+          )
+        },
+        {
+          id: 'convert-storage-button',
+          key: 'convert',
+          className: 'convert-storage-action-button',
+          label: (
+            <span>
+              <InboxOutlined className="cp-versioned-storage" /> Convert to Versioned Storage
+            </span>
+          )
+        }
+      ];
       return (
         <Dropdown
           placement="bottomRight"
           trigger={['click']}
           open={editDropdownVisible}
           onOpenChange={open => this.setState({editDropdownVisible: open})}
-          overlay={
-            <Menu
-              selectedKeys={[]}
-              onClick={editActionSelect}
-              style={{width: 200, cursor: 'pointer'}}>
-              <MenuItem
-                id="edit-storage-action-button"
-                className="edit-storage-button"
-                key="edit"
-              >
-                <EditOutlined /> Edit
-              </MenuItem>
-              <MenuItem
-                id="convert-storage-button"
-                className="convert-storage-action-button"
-                key="convert"
-              >
-                <InboxOutlined className="cp-versioned-storage" /> Convert to Versioned Storage
-              </MenuItem>
-            </Menu>
-          }
+          menu={{
+            items: editMenuItems,
+            onClick: editActionSelect,
+            style: {width: 200, cursor: 'pointer'}
+          }}
           key="edit actions"
         >
           <Button
@@ -2495,42 +2500,39 @@ export default class DataStorage extends React.Component {
     const title = selectedItems && selectedItems.length > 0
       ? `${selectedItems.length} item${selectedItems.length === 1 ? '' : 's'} selected`
       : 'Selection';
-    const renderAction = (action, idx) => {
+    const menuItems = actions.map((action, idx) => {
       if (action === divider) {
-        return (
-          <Divider key={`divider-${idx}`} />
-        );
+        return {type: 'divider', key: `divider-${idx}`};
       }
-      return (
-        <MenuItem
-          id={`selection-action-${action.key}`}
-          key={action.key}
-          className={classNames(action.className, `selection-action-${action.key}`)}
-        >
+      return {
+        id: `selection-action-${action.key}`,
+        key: action.key,
+        className: classNames(action.className, `selection-action-${action.key}`),
+        label: (
           <div style={{display: 'flex', alignItems: 'center'}}>
             {action.icon}
             {action.title}
           </div>
-        </MenuItem>
-      );
+        )
+      };
+    });
+    const onMenuClick = ({key}) => {
+      const action = actions.find(a => a !== divider && a.key === key);
+      if (action) {
+        doAction(action);
+      }
     };
     return (
       <Dropdown
         placement="bottomRight"
         trigger={['click']}
         overlayClassName="selection-actions-dropdown"
-        overlay={
-          <Menu
-            selectedKeys={[]}
-            onClick={doAction}
-            style={{width: 200, cursor: 'pointer'}}
-            className="selection-actions-menu"
-          >
-            {
-              actions.map(renderAction)
-            }
-          </Menu>
-        }
+        menu={{
+          items: menuItems,
+          onClick: onMenuClick,
+          style: {width: 200, cursor: 'pointer'},
+          className: 'selection-actions-menu'
+        }}
         key="create actions">
         <Button
           id="selection-actions"
@@ -2628,25 +2630,32 @@ export default class DataStorage extends React.Component {
                 <Dropdown
                   placement="bottomRight"
                   trigger={['hover']}
-                  overlay={
-                    <Menu
-                      selectedKeys={[]}
-                      onClick={onCreateActionSelect}
-                      style={{width: 200, cursor: 'pointer'}}>
-                      <MenuItem
-                        id="create-folder-button"
-                        className="create-folder-button"
-                        key={folderKey}>
-                        <FolderOutlined /> Folder
-                      </MenuItem>
-                      <MenuItem
-                        id="create-file-button"
-                        className="create-file-button"
-                        key={fileKey}>
-                        <FileOutlined /> File
-                      </MenuItem>
-                    </Menu>
-                  }
+                  menu={{
+                    items: [
+                      {
+                        id: 'create-folder-button',
+                        key: folderKey,
+                        className: 'create-folder-button',
+                        label: (
+                          <span>
+                            <FolderOutlined /> Folder
+                          </span>
+                        )
+                      },
+                      {
+                        id: 'create-file-button',
+                        key: fileKey,
+                        className: 'create-file-button',
+                        label: (
+                          <span>
+                            <FileOutlined /> File
+                          </span>
+                        )
+                      }
+                    ],
+                    onClick: onCreateActionSelect,
+                    style: {width: 200, cursor: 'pointer'}
+                  }}
                   key="create actions">
                   <Button
                     type="primary"
@@ -2817,12 +2826,11 @@ export default class DataStorage extends React.Component {
     if (actions.length === 0) {
       return null;
     }
-    const renderAction = (action) => (
-      <MenuItem
-        id={`presentation-action-${action.key}`}
-        key={action.key}
-        className={classNames(action.className, `presentation-action-${action.key}`)}
-      >
+    const menuItems = actions.map((action) => ({
+      id: `presentation-action-${action.key}`,
+      key: action.key,
+      className: classNames(action.className, `presentation-action-${action.key}`),
+      label: (
         <div style={{display: 'flex', alignItems: 'center'}}>
           {action.icon}
           {action.title}
@@ -2832,25 +2840,25 @@ export default class DataStorage extends React.Component {
             )
           }
         </div>
-      </MenuItem>
-    );
+      )
+    }));
+    const onMenuClick = ({key}) => {
+      const action = actions.find(a => a.key === key);
+      if (action) {
+        doAction(action);
+      }
+    };
     return (
       <Dropdown
         placement="bottomRight"
         trigger={['click']}
         overlayClassName="presentation-actions-dropdown"
-        overlay={
-          <Menu
-            selectedKeys={[]}
-            onClick={doAction}
-            style={{width: 150, cursor: 'pointer'}}
-            className="presentation-actions-menu"
-          >
-            {
-              actions.map(renderAction)
-            }
-          </Menu>
-        }
+        menu={{
+          items: menuItems,
+          onClick: onMenuClick,
+          style: {width: 150, cursor: 'pointer'},
+          className: 'presentation-actions-menu'
+        }}
         key="create actions">
         <Button
           id="presentation-actions"

@@ -1865,6 +1865,7 @@ export default class Metadata extends React.Component {
       <ContentMetadataPanel
         className={'cp-transparent-background'}
         style={{flex: 1, overflow: 'auto'}}
+        attributesVisible={this.state.metadata}
         onPanelClose={onPanelClose}>
         <div key={CONTENT_PANEL_KEY}>
           {this.renderTableActions()}
@@ -1982,76 +1983,66 @@ export default class Metadata extends React.Component {
             break;
         }
       };
-      const menuItems = [];
-      menuItems.push((
-        <MenuItem
-          key={Actions.addMetadata}
-          className={classNames(styles.menuItem, Actions.addMetadata)}
-        >
-          <PlusOutlined style={{marginRight: 5}} />
-          Add instance
-        </MenuItem>
-      ));
-      menuItems.push((
-        <MenuItem
-          key={Actions.upload}
-          className={classNames(styles.menuItem, Actions.upload)}
-        >
-          <UploadOutlined style={{marginRight: 5}} />
-          Upload metadata
-        </MenuItem>
-      ));
+      const menuItems = [
+        {
+          key: Actions.addMetadata,
+          className: classNames(styles.menuItem, Actions.addMetadata),
+          label: (
+            <span>
+              <PlusOutlined style={{marginRight: 5}} />
+              Add instance
+            </span>
+          )
+        },
+        {
+          key: Actions.upload,
+          className: classNames(styles.menuItem, Actions.upload),
+          label: (
+            <span>
+              <UploadOutlined style={{marginRight: 5}} />
+              Upload metadata
+            </span>
+          )
+        }
+      ];
       if (
         this.transferJobId &&
         this.transferJobVersion &&
         this.currentClassEntityPathFields.length > 0
       ) {
-        menuItems.push((
-          <MenuItem
-            key={Actions.transfer}
-            className={classNames(styles.menuItem, Actions.transfer)}
-          >
-            <CloudUploadOutlined style={{marginRight: 5}} />
-            Transfer to the cloud
-          </MenuItem>
-        ));
-        menuItems.push((
-          <Divider key="divider-1" />
-        ));
+        menuItems.push({
+          key: Actions.transfer,
+          className: classNames(styles.menuItem, Actions.transfer),
+          label: (
+            <span>
+              <CloudUploadOutlined style={{marginRight: 5}} />
+              Transfer to the cloud
+            </span>
+          )
+        });
+        menuItems.push({type: 'divider', key: 'divider-1'});
       }
-      menuItems.push((
-        <MenuItem
-          key={Actions.deleteClass}
-          className={classNames(styles.menuItem, Actions.deleteClass, 'cp-danger')}
-        >
-          <DeleteOutlined style={{marginRight: 5}} />
-          Delete class
-        </MenuItem>
-      ));
-      menuItems.push((
-        <Divider key="divider-2" />
-      ));
-      menuItems.push((
-        <MenuItem
-          key={Actions.showAttributes}
-          className={classNames(styles.menuItem, Actions.showAttributes)}
-        >
-          {
-            this.state.metadata ? 'Hide attributes' : 'Show attributes'
-          }
-        </MenuItem>
-      ));
-      const menu = (
-        <Menu
-          onClick={triggerMenuItem}
-          selectedKeys={[]}
-        >
-          {menuItems}
-        </Menu>
+      menuItems.push(
+        {
+          key: Actions.deleteClass,
+          className: classNames(styles.menuItem, Actions.deleteClass, 'cp-danger'),
+          label: (
+            <span>
+              <DeleteOutlined style={{marginRight: 5}} />
+              Delete class
+            </span>
+          )
+        },
+        {type: 'divider', key: 'divider-2'},
+        {
+          key: Actions.showAttributes,
+          className: classNames(styles.menuItem, Actions.showAttributes),
+          label: this.state.metadata ? 'Hide attributes' : 'Show attributes'
+        }
       );
       return (
         <Dropdown
-          overlay={menu}
+          menu={{items: menuItems, onClick: triggerMenuItem}}
           trigger={['click']}
         >
           <Button
@@ -2407,46 +2398,32 @@ export default class Metadata extends React.Component {
             break;
         }
       };
-      const menuItems = [(
-        <MenuItem
-          key={Actions.clearSelection}
-          className={classNames(styles.menuItem, Actions.clearSelection)}
-        >
-          Clear selection
-        </MenuItem>
-      )];
+      const menuItems = [
+        {
+          key: Actions.clearSelection,
+          className: classNames(styles.menuItem, Actions.clearSelection),
+          label: 'Clear selection'
+        }
+      ];
       if (
         roleModel.writeAllowed(this.props.folder.value) &&
         !this.props.readOnly &&
         roleModel.isManager.entities(this)
       ) {
-        menuItems.push((
-          <MenuItem
-            key={Actions.copySelection}
-            className={classNames(styles.menuItem, Actions.copySelection)}
-          >
-            Copy
-          </MenuItem>
-        ));
-        menuItems.push((<Divider key="divider" />));
-        menuItems.push((
-          <MenuItem
-            key={Actions.delete}
-            className={classNames(styles.menuItem, Actions.delete, 'cp-danger')}
-          >
-            Delete
-          </MenuItem>
-        ));
+        menuItems.push(
+          {
+            key: Actions.copySelection,
+            className: classNames(styles.menuItem, Actions.copySelection),
+            label: 'Copy'
+          },
+          {type: 'divider', key: 'divider'},
+          {
+            key: Actions.delete,
+            className: classNames(styles.menuItem, Actions.delete, 'cp-danger'),
+            label: 'Delete'
+          }
+        );
       }
-      const menu = (
-        <Menu
-          onClick={triggerMenuItem}
-          style={{width: 150}}
-          selectedKeys={[]}
-        >
-          {menuItems}
-        </Menu>
-      );
       return (
         <Button.Group style={{margin: '0 5px'}}>
           <Button
@@ -2460,7 +2437,7 @@ export default class Metadata extends React.Component {
             }
           </Button>
           <Dropdown
-            overlay={menu}
+            menu={{items: menuItems, onClick: triggerMenuItem, style: {width: 150}}}
             trigger={['click']}
           >
             <Button

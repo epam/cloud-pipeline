@@ -293,25 +293,30 @@ class VersionedStorageTable extends React.Component {
               <Dropdown
                 placement="bottomRight"
                 trigger={['hover']}
-                overlay={
-                  <Menu
-                    selectedKeys={[]}
-                    onClick={this.onCreateActionSelect}
-                    style={{width: 200}}>
-                    <MenuItem
-                      key={TABLE_MENU_KEYS.folder}
-                      disabled={!controlsEnabled}
-                    >
-                      <FolderOutlined /> Folder
-                    </MenuItem>
-                    <MenuItem
-                      key={TABLE_MENU_KEYS.file}
-                      disabled={!controlsEnabled}
-                    >
-                      <FileOutlined /> File
-                    </MenuItem>
-                  </Menu>
-                }
+                menu={{
+                  items: [
+                    {
+                      key: TABLE_MENU_KEYS.folder,
+                      disabled: !controlsEnabled,
+                      label: (
+                        <span>
+                          <FolderOutlined /> Folder
+                        </span>
+                      )
+                    },
+                    {
+                      key: TABLE_MENU_KEYS.file,
+                      disabled: !controlsEnabled,
+                      label: (
+                        <span>
+                          <FileOutlined /> File
+                        </span>
+                      )
+                    }
+                  ],
+                  onClick: this.onCreateActionSelect,
+                  style: {width: 200}
+                }}
                 key="create actions">
                 <Button
                   type="primary"

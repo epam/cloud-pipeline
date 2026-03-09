@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Menu, Dropdown} from 'antd';
+import {Dropdown} from 'antd';
 import {AppstoreOutlined, CheckOutlined, DownOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import styles from './logs-mode.css';
@@ -31,26 +31,17 @@ class LogsModeButton extends React.Component {
         onChangeMode(key);
       }
     };
-    const menu = (
-      <Menu onClick={onClick}>
-        {
-          modes.map((mode) => (
-            <Menu.Item key={mode}>
-              <div
-                style={{display: 'flex', alignItems: 'center', minWidth: 120}}
-              >
-                <span style={current === mode ? {fontWeight: 'bold', flex: 1} : {flex: 1}}>
-                  {mode}
-                </span>
-                {
-                  current === mode && <CheckOutlined />
-                }
-              </div>
-            </Menu.Item>
-          ))
-        }
-      </Menu>
-    );
+    const menuItems = modes.map((mode) => ({
+      key: mode,
+      label: (
+        <div style={{display: 'flex', alignItems: 'center', minWidth: 120}}>
+          <span style={current === mode ? {fontWeight: 'bold', flex: 1} : {flex: 1}}>
+            {mode}
+          </span>
+          {current === mode && <CheckOutlined />}
+        </div>
+      )
+    }));
     return (
       <div
         className={classNames(className, styles.logsModeButton, {
@@ -58,7 +49,7 @@ class LogsModeButton extends React.Component {
         })}
         style={style}
       >
-        <Dropdown overlay={menu}>
+        <Dropdown menu={{items: menuItems, onClick}}>
           <a className="cp-text cp-text-not-important">
             <AppstoreOutlined style={{marginRight: 3}} />
             <b>{current ?? 'view'}</b>

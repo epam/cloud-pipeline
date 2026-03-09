@@ -4176,15 +4176,17 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           this.run({key});
         }
       };
-      const dropDownMenu = (
-        <Menu onClick={onDropDownSelect} selectedKeys={[]} style={{cursor: 'pointer'}}>
-          <MenuItem key={RUN_SELECTED_KEY}>Run selected</MenuItem>
-          <MenuItem key={RUN_CLUSTER_KEY}>Run cluster</MenuItem>
-        </Menu>
-      );
+      const dropDownMenuItems = [
+        {key: RUN_SELECTED_KEY, label: 'Run selected'},
+        {key: RUN_CLUSTER_KEY, label: 'Run cluster'}
+      ];
       return (
         <Dropdown
-          overlay={dropDownMenu}
+          menu={{
+            items: dropDownMenuItems,
+            onClick: onDropDownSelect,
+            style: {cursor: 'pointer'}
+          }}
           placement="bottomRight"
           trigger={['click']}>
           <SubmitButton

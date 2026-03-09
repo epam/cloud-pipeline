@@ -403,21 +403,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
       const onSelectConfiguration = ({key}) => {
         this.runPipelineConfiguration(key);
       };
-      const configurationsMenu = (
-        <Menu
-          onClick={onSelectConfiguration}
-          style={{cursor: 'pointer'}}
-          selectedKeys={[]}
-        >
-          {
-            configurations.map(c => {
-              return (
-                <MenuItem key={c.name}>{c.name}</MenuItem>
-              );
-            })
-          }
-        </Menu>
-      );
+      const configurationItems = configurations.map(c => ({key: c.name, label: c.name}));
       return (
         <Button.Group style={{display: 'inline-flex'}}>
           <Button
@@ -428,7 +414,14 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
             onClick={() => this.runPipeline()}>
             RUN
           </Button>
-          <Dropdown overlay={configurationsMenu} placement="bottomRight">
+          <Dropdown
+            menu={{
+              items: configurationItems,
+              onClick: onSelectConfiguration,
+              style: {cursor: 'pointer'}
+            }}
+            placement="bottomRight"
+          >
             <Button size="small" id="run-dropdown-button" type="primary">
               <DownOutlined style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
             </Button>

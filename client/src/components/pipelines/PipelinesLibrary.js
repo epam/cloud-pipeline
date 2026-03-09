@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PipelinesLibraryContent from './PipelinesLibraryContent';
-import {Card, Input, message, Row, Tree} from 'antd';
+import {Card, Input, message, Row, Tree, Splitter} from 'antd';
 import {
   ForkOutlined,
   InboxOutlined,
@@ -33,7 +33,6 @@ import classNames from 'classnames';
 import connect from '../../utils/connect';
 import localization from '../../utils/localization';
 import {observable, makeObservable} from 'mobx';
-import SplitPane from 'react-split-pane';
 import {inject, observer} from 'mobx-react';
 import {
   expandFirstParentWithManyChildren,
@@ -98,13 +97,6 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
     expandedKeys: [],
     selectedKeys: []
   };
-
-  constructor (props) {
-    super(props);
-    makeObservable(this, {
-      _paneWidth: observable
-    });
-  }
 
   get dragEnabled () {
     const {authenticatedUserInfo, preferences} = this.props;
@@ -494,15 +486,6 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
     this.setState({expandedKeys});
   };
 
-  _paneWidth;
-
-  initializeSplitPane = (splitPane) => {
-    if (!splitPane) {
-      return;
-    }
-    this._paneWidth = splitPane.splitPane.offsetWidth;
-  };
-
   renderLibrary () {
     return (
       <Card
@@ -562,35 +545,36 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
       );
     }
 
+    console.log('QQQQ', this.props.children)
     return (
       <Row id="pipelines-library-container" className={styles.container}>
-        <SplitPane
-          className="pipelines-library-split-pane"
-          ref={this.initializeSplitPane}
-          split="vertical"
-          minSize={100}
-          maxSize={this._paneWidth ? this._paneWidth / 2.0 : 400}
-          defaultSize="15%"
-          pane1Style={{overflowY: 'auto', display: 'flex', flexDirection: 'column'}}
-          pane2Style={{
-            overflowY: 'auto',
-            overflowX: 'hidden',
-            display: 'flex',
-            flexDirection: 'column'
-          }}
-          resizerClassName="cp-split-panel-resizer"
-          resizerStyle={{
-            width: 8,
-            margin: 0,
-            cursor: 'col-resize',
-            boxSizing: 'border-box',
-            backgroundClip: 'padding',
-            zIndex: 1
-          }}>
-          <div id="pipelines-library-split-pane-left" className={styles.subContainer}>
+        <Splitter
+          // className="pipelines-library-split-pane"
+          // style={{height: '100%', width: '100%'}}
+        >
+          <Splitter.Panel
+            // id="pipelines-library-split-pane-left"
+            // className={styles.subContainer}
+            defaultSize="20%"
+            min="100px"
+            // style={{
+            //   overflowY: 'auto',
+            //   display: 'flex',
+            //   flexDirection: 'column'
+            // }}
+          >
             {this.renderLibrary()}
-          </div>
-          <div id="pipelines-library-split-pane-right" className={styles.subContainer}>
+          </Splitter.Panel>
+          <Splitter.Panel
+            // id="pipelines-library-split-pane-right"
+            // className={styles.subContainer}
+            // style={{
+            //   overflowY: 'auto',
+            //   overflowX: 'hidden',
+            //   display: 'flex',
+            //   flexDirection: 'column'
+            // }}
+          >
             <PipelinesLibraryContent
               location={this.props.path}
               query={this.props.query}
@@ -603,8 +587,8 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
             >
               {this.props.children}
             </PipelinesLibraryContent>
-          </div>
-        </SplitPane>
+          </Splitter.Panel>
+        </Splitter>
       </Row>
     );
   }

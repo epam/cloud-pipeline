@@ -19,7 +19,9 @@ import PropTypes from 'prop-types';
 import {Card} from 'antd';
 import classNames from 'classnames';
 import styles from './PipelinesLibrary.css';
+import {observer} from 'mobx-react';
 
+@observer
 export default class PipelinesLibraryContent extends React.Component {
   static propTypes = {
     onReloadTree: PropTypes.func,
@@ -28,10 +30,10 @@ export default class PipelinesLibraryContent extends React.Component {
     style: PropTypes.object
   };
 
-  shouldComponentUpdate (nextProps) {
-    return nextProps.location !== this.props.location ||
-      nextProps.query !== this.props.query;
-  }
+  // shouldComponentUpdate (nextProps) {
+  //   return nextProps.location !== this.props.location ||
+  //     nextProps.query !== this.props.query;
+  // }
 
   render () {
     return (

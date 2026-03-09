@@ -44,7 +44,6 @@ import {Alert,
   Table
 } from 'antd';
 import {AppstoreFilled, CheckCircleFilled, CopyOutlined, EditOutlined, FolderOutlined, ForkOutlined, SettingOutlined, TagFilled} from '@ant-design/icons';
-import Menu, {MenuItem} from 'rc-menu';
 import EditPipelineForm from '../version/forms/EditPipelineForm';
 import PipelineConfigurations from '../../../models/pipelines/PipelineConfigurations';
 import folders from '../../../models/folders/Folders';
@@ -692,45 +691,37 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     };
     const displayOptionsMenuItems = [];
     if (!this.props.listingMode) {
-      displayOptionsMenuItems.push(
-        <MenuItem
-          id={this.showMetadata ? 'hide-metadata-button' : 'show-metadata-button'}
-          key="metadata"
-          className={styles.menuItem}
-        >
+      displayOptionsMenuItems.push({
+        id: this.showMetadata ? 'hide-metadata-button' : 'show-metadata-button',
+        key: 'metadata',
+        label: (
           <Row type="flex" justify="space-between" align="middle">
             <span>Attributes</span>
             <CheckCircleFilled style={{display: this.showMetadata ? 'inherit' : 'none'}} />
           </Row>
-        </MenuItem>
-      );
-      displayOptionsMenuItems.push(
-        <MenuItem
-          id={this.state.showIssuesPanel ? 'hide-issues-panel-button' : 'show-issues-panel-button'}
-          key="issues"
-          className={styles.menuItem}
-        >
+        )
+      });
+      displayOptionsMenuItems.push({
+        id: this.state.showIssuesPanel ? 'hide-issues-panel-button' : 'show-issues-panel-button',
+        key: 'issues',
+        label: (
           <Row type="flex" justify="space-between" align="middle">
             <span>{this.localizedString('Issue')}s</span>
             <CheckCircleFilled style={{display: this.state.showIssuesPanel ? 'inherit' : 'none'}} />
           </Row>
-        </MenuItem>
-      );
+        )
+      });
     }
     if (displayOptionsMenuItems.length > 0) {
-      const displayOptionsMenu = (
-        <Menu
-          onClick={onSelectDisplayOption}
-          style={{width: 125}}
-          selectedKeys={[]}
-        >
-          {displayOptionsMenuItems}
-        </Menu>
-      );
       return (
         <Dropdown
           key="display attributes"
-          overlay={displayOptionsMenu}>
+          menu={{
+            items: displayOptionsMenuItems,
+            onClick: onSelectDisplayOption,
+            style: {width: 125}
+          }}
+        >
           <Button
             id="display-attributes"
             style={{lineHeight: 1}}
@@ -752,41 +743,38 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       }
     };
     if (!this.props.readOnly) {
-      actions.push(
-        <MenuItem
-          id="edit-pipeline-button"
-          key="edit"
-          className={styles.menuItem}
-        >
-          <EditOutlined /> Edit
-        </MenuItem>
-      );
+      actions.push({
+        id: 'edit-pipeline-button',
+        key: 'edit',
+        label: (
+          <span>
+            <EditOutlined /> Edit
+          </span>
+        )
+      });
     }
     if (!this.props.readOnly && roleModel.isOwner(this.props.pipeline.value)) {
-      actions.push(
-        <MenuItem
-          key="clone"
-          id="clone-pipeline-button"
-          className={styles.menuItem}
-        >
-          <CopyOutlined /> Clone
-        </MenuItem>
-      );
+      actions.push({
+        key: 'clone',
+        id: 'clone-pipeline-button',
+        label: (
+          <span>
+            <CopyOutlined /> Clone
+          </span>
+        )
+      });
     }
     if (actions.length > 0) {
       return (
         <Dropdown
           placement="bottomRight"
-          overlay={
-            <Menu
-              selectedKeys={[]}
-              onClick={onClick}
-              style={{width: 100}}
-            >
-              {actions}
-            </Menu>
-          }
-          key="edit">
+          menu={{
+            items: actions,
+            onClick,
+            style: {width: 100}
+          }}
+          key="edit"
+        >
           <Button
             key="edit"
             id="edit-pipeline-menu-button"

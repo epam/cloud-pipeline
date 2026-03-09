@@ -23,9 +23,17 @@ import {
   Input,
   Dropdown,
   Menu,
-  Tabs
+  Tabs,
+  Splitter
 } from 'antd';
-import {CaretDownOutlined, CaretUpOutlined, CloseCircleFilled, CloseOutlined, PlusOutlined, SearchOutlined} from '@ant-design/icons';
+import {
+  CaretDownOutlined,
+  CaretUpOutlined,
+  CloseCircleFilled,
+  CloseOutlined,
+  PlusOutlined,
+  SearchOutlined
+} from '@ant-design/icons';
 import classNames from 'classnames';
 import LoadingView from '../special/LoadingView';
 import {SearchGroupTypes} from './searchGroupTypes';
@@ -54,7 +62,6 @@ import {
   toggleSortingByField,
   removeSortingByField
 } from './faceted-search/utilities';
-import {SplitPanel} from '../special/splitPanel';
 import {filterNonMatchingItemsFn} from './utilities/elastic-item-utilities';
 import styles from './FacetedSearch.css';
 import handleDownloadItems from '../special/download-storage-items';
@@ -1147,97 +1154,91 @@ class FacetedSearch extends React.Component {
         </div>
         <div className={styles.content}>
           {!noFilters ? (
-            <SplitPanel
-              contentInfo={[{
-                key: 'faceted-filter',
-                size: {
-                  pxMinimum: 300,
-                  percentMaximum: 50,
-                  percentDefault: 25
-                }
-              }, {
-                key: 'search-results',
-                containerStyle: {
-                  overflow: 'hidden'
-                }
-              }]}
-              resizerSize={8}
-              className={'cp-transparent-background'}
+            <Splitter
+              className={classNames('cp-transparent-background', styles.contentSplitter)}
+              style={{height: '100%'}}
             >
-              <div
-                key="faceted-filter"
-                className={classNames(styles.panel, styles.facetedFiltersContainer)}
+              <Splitter.Panel
+                defaultSize="25%"
+                min={300}
+                max="50%"
               >
-                {
-                  this.filterDomains.length > 1 && (
-                    <Tabs
-                      className={
-                        classNames(
-                          'cp-tabs-no-content',
-                          'cp-faceted-filters'
-                        )
-                      }
-                      hideAdd
-                      type="card"
-                      activeKey={getDomainKey(domain)}
-                      onChange={this.handleDomainSelection}
-                    >
-                      {
-                        this.filterDomains.map((domain) => (
-                          <Tabs.TabPane
-                            key={getDomainKey(domain)}
-                            closable={false}
-                            tab={domain || otherDomainName}
-                          />
-                        ))
-                      }
-                    </Tabs>
-                  )
-                }
                 <div
-                  className={
-                    classNames(
-                      styles.facetedFilters,
-                      {
-                        [styles.singleGroup]: this.filterDomains.length <= 1,
-                        'cp-tabs-content': this.filterDomains.length > 1
-                      }
+                  className={classNames(styles.panel, styles.facetedFiltersContainer)}
+                >
+                  {
+                    this.filterDomains.length > 1 && (
+                      <Tabs
+                        className={
+                          classNames(
+                            'cp-tabs-no-content',
+                            'cp-faceted-filters'
+                          )
+                        }
+                        hideAdd
+                        type="card"
+                        activeKey={getDomainKey(domain)}
+                        onChange={this.handleDomainSelection}
+                      >
+                        {
+                          this.filterDomains.map((domain) => (
+                            <Tabs.TabPane
+                              key={getDomainKey(domain)}
+                              closable={false}
+                              tab={domain || otherDomainName}
+                            />
+                          ))
+                        }
+                      </Tabs>
                     )
                   }
-                >
-                  <span
-                    className={classNames(
-                      styles.clearFiltersBtn,
-                      'cp-search-clear-filters-button',
-                      {
-                        [styles.disabled]: this.activeFiltersIsEmpty
-                      }
-                    )}
-                    onClick={this.onClearFilters}
+                  <div
+                    className={
+                      classNames(
+                        styles.facetedFilters,
+                        {
+                          [styles.singleGroup]: this.filterDomains.length <= 1,
+                          'cp-tabs-content': this.filterDomains.length > 1
+                        }
+                      )
+                    }
                   >
-                    Clear filters
-                  </span>
-                  {
-                    this.filters
-                      .filter(filterFacetByDomain)
-                      .map((filter) => (
-                        <FacetedFilter
-                          key={filter.name}
-                          name={filter.name}
-                          className={styles.filter}
-                          values={filter.values}
-                          selection={(activeFilters || {})[filter.name]}
-                          onChange={this.onChangeFilter(filter.name)}
-                          preferences={this.getFilterPreferences(filter.name)}
-                          showEmptyValues={!FacetedSearch.HIDE_VALUE_IF_EMPTY || disableCounts}
-                          showCounts={!disableCounts}
-                        />
-                      ))
-                  }
+                    <span
+                      className={classNames(
+                        styles.clearFiltersBtn,
+                        'cp-search-clear-filters-button',
+                        {
+                          [styles.disabled]: this.activeFiltersIsEmpty
+                        }
+                      )}
+                      onClick={this.onClearFilters}
+                    >
+                      Clear filters
+                    </span>
+                    {
+                      this.filters
+                        .filter(filterFacetByDomain)
+                        .map((filter) => (
+                          <FacetedFilter
+                            key={filter.name}
+                            name={filter.name}
+                            className={styles.filter}
+                            values={filter.values}
+                            selection={(activeFilters || {})[filter.name]}
+                            onChange={this.onChangeFilter(filter.name)}
+                            preferences={this.getFilterPreferences(filter.name)}
+                            showEmptyValues={!FacetedSearch.HIDE_VALUE_IF_EMPTY || disableCounts}
+                            showCounts={!disableCounts}
+                          />
+                        ))
+                    }
+                  </div>
                 </div>
-              </div>
-              {this.renderSearchResults()}
-            </SplitPanel>
+              </Splitter.Panel>
+              <Splitter.Panel style={{overflow: 'hidden', minWidth: 0}}>
+                {this.renderSearchResults()}
+              </Splitter.Panel>
+            </Splitter>
           ) : (
             this.renderSearchResults()
           )

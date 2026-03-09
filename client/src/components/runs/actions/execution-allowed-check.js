@@ -390,7 +390,8 @@ class SubmitButton extends React.Component {
           {children}
         </Button>
         <Dropdown
-          overlay={dropdownRenderer()}
+          menu={{items: [{key: '_', label: ''}]}}
+          dropdownRender={() => dropdownRenderer()}
           placement="bottomRight"
           disabled={this.props.disabled || pending || errors.length > 0}
         >

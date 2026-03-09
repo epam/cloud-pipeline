@@ -24,6 +24,7 @@ import {
   message,
   Modal,
   Spin,
+  Splitter,
   Table,
   Tree
 } from 'antd';
@@ -37,7 +38,6 @@ import {
   ItemTypes,
   search
 } from '../../model/treeStructureFunctions';
-import {SplitPanel} from '../../../special/splitPanel';
 import LoadingView from '../../../special/LoadingView';
 import MetadataEntityFilter from '../../../../models/folderMetadata/MetadataEntityFilter';
 import MetadataClassLoadAll from '../../../../models/folderMetadata/MetadataClassLoadAll';
@@ -332,43 +332,36 @@ class CopyMetadataEntitiesDialog extends React.Component {
         }
       });
     return (
-      <SplitPanel
-        contentInfo={[{
-          key: 'library',
-          size: {
-            pxDefault: 300
-          }
-        }]}
-      >
-        <div
-          key="library"
-        >
-          <div>
-            <Input.Search
-              value={searchValue}
-              onChange={this.onSearchChanged}
-            />
+      <Splitter>
+        <Splitter.Panel defaultSize={300} min={200} resizable>
+          <div key="library">
+            <div>
+              <Input.Search
+                value={searchValue}
+                onChange={this.onSearchChanged}
+              />
+            </div>
+            <div className={styles.treeContainer}>
+              <Spin spinning={pending}>
+                <Tree
+                  disabled={disabled}
+                  onSelect={onSelect}
+                  onExpand={onExpand}
+                  checkStrictly
+                  expandedKeys={expandedKeys}
+                  selectedKeys={selectedKeys} >
+                  {generateTreeItems(tree)}
+                </Tree>
+              </Spin>
+            </div>
           </div>
-          <div className={styles.treeContainer}>
-            <Spin spinning={pending}>
-              <Tree
-                disabled={disabled}
-                onSelect={onSelect}
-                onExpand={onExpand}
-                checkStrictly
-                expandedKeys={expandedKeys}
-                selectedKeys={selectedKeys} >
-                {generateTreeItems(tree)}
-              </Tree>
-            </Spin>
+        </Splitter.Panel>
+        <Splitter.Panel resizable>
+          <div key="content">
+            {this.renderFolderContent()}
           </div>
-        </div>
-        <div
-          key="content"
-        >
-          {this.renderFolderContent()}
-        </div>
-      </SplitPanel>
+        </Splitter.Panel>
+      </Splitter>
     );
   };
 
