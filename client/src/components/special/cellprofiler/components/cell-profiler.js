@@ -18,7 +18,6 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {Alert, Button, Checkbox, Dropdown, message} from 'antd';
 import {BarsOutlined, CaretRightOutlined, DownloadOutlined, FileOutlined, FolderOpenOutlined, LoadingOutlined} from '@ant-design/icons';
-import Menu, {MenuItem} from 'rc-menu';
 import {observer} from 'mobx-react';
 import classNames from 'classnames';
 import CellProfilerPipeline from './pipeline';
@@ -164,32 +163,17 @@ class CellProfiler extends React.Component {
       }
       handleVisibility(false);
     };
-    const menu = (
-      <div>
-        <Menu
-          selectedKeys={[]}
-          onClick={onSelect}
-        >
-          <MenuItem key="New" disabled={disabled}>
-            <FileOutlined /> New
-          </MenuItem>
-          <MenuItem key="Open" disabled={disabled}>
-            <FolderOpenOutlined /> Open
-          </MenuItem>
-          <MenuItem key="Save" disabled={disabled}>
-            <DownloadOutlined /> Save
-          </MenuItem>
-          <MenuItem key="SaveAsNew" disabled={disabled}>
-            <DownloadOutlined /> Save as new
-          </MenuItem>
-        </Menu>
-      </div>
-    );
+    const menuItems = [
+      {key: 'New', label: <><FileOutlined /> New</>, disabled},
+      {key: 'Open', label: <><FolderOpenOutlined /> Open</>, disabled},
+      {key: 'Save', label: <><DownloadOutlined /> Save</>, disabled},
+      {key: 'SaveAsNew', label: <><DownloadOutlined /> Save as new</>, disabled}
+    ];
     return (
       <Dropdown
-        overlay={menu}
+        menu={{items: menuItems, onClick: onSelect}}
         trigger={['click']}
-        onVisibleChange={handleVisibility}
+        onOpenChange={handleVisibility}
       >
         <Button
           size="small"

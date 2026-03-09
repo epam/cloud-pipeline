@@ -25,8 +25,7 @@ import {
   Button,
   message,
   Spin,
-  Dropdown,
-  Menu
+  Dropdown
 } from 'antd';
 import {LeftOutlined, PaperClipOutlined} from '@ant-design/icons';
 import moment from 'moment-timezone';
@@ -299,26 +298,15 @@ class Ticket extends React.Component {
     const filteredLabels = labels
       .filter((aLabel) => this.predefinedLabels.includes(aLabel));
     const [currentLabel] = filteredLabels;
-    const menu = (
-      <Menu
-        onClick={({key}) => this.onSelectMenu(key, ticket)}
-        selectedKeys={[]}
-        style={{cursor: 'default', minWidth: '120px'}}
-      >
-        <Menu.ItemGroup title="Select new status">
-          <Menu.Divider />
-          {
-            this.predefinedLabels
-              .filter(label => label !== currentLabel)
-              .map(label => (
-                <Menu.Item key={label} style={{cursor: 'pointer'}}>
-                  {label}
-                </Menu.Item>
-              ))
-          }
-        </Menu.ItemGroup>
-      </Menu>
-    );
+    const statusMenuItems = [
+      {
+        type: 'group',
+        label: 'Select new status',
+        children: this.predefinedLabels
+          .filter(label => label !== currentLabel)
+          .map(label => ({key: label, label, style: {cursor: 'pointer'}}))
+      }
+    ];
     return (
       <div className={styles.infoSection}>
         <div className={classNames(
@@ -346,7 +334,11 @@ class Ticket extends React.Component {
         >
           <span>Status:</span>
           <Dropdown
-            overlay={menu}
+            menu={{
+              items: statusMenuItems,
+              onClick: ({key}) => this.onSelectMenu(key, ticket),
+              style: {cursor: 'default', minWidth: '120px'}
+            }}
             trigger={['click']}
             disabled={pending}
           >

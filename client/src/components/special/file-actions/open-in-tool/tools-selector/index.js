@@ -130,7 +130,9 @@ class ToolsSelector extends React.Component {
           />
         </span>
       ) : (
-        <Dropdown overlay={this.renderDropdownMenu()}>
+        <Dropdown
+          popupRender={() => this.renderDropdownMenu()}
+        >
           <span
             className={classNames(styles.selectorBtn, className)}
             onClick={(e) => this.onClick(tools[0].id, e)}

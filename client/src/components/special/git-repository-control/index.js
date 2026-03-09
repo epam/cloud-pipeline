@@ -118,17 +118,14 @@ class GitRepositoryControl extends React.Component {
         preventPopoverFromClosing: true
       });
     };
-    const menu = (
-      <Menu onClick={onSelectOption}>
-        {this.availableCloneOptions.map(o => (
-          <Menu.Item key={o}>{o.toUpperCase()}</Menu.Item>
-        ))}
-      </Menu>
-    );
+    const menuItems = this.availableCloneOptions.map(o => ({
+      key: o,
+      label: o.toUpperCase()
+    }));
     return (
       <Row type="flex" align="middle">
         <b style={{marginRight: 5}}>Clone repository via</b>
-        <Dropdown overlay={menu}>
+        <Dropdown menu={{items: menuItems, onClick: onSelectOption}}>
           <a style={{lineHeight: 1}}>
             <b>{cloneType.toUpperCase()}<DownOutlined /></b>
           </a>

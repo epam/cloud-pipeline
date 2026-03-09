@@ -18,7 +18,6 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {
   Dropdown,
-  Menu,
   message,
   DatePicker,
   Button,
@@ -304,15 +303,11 @@ class GPUInfoTab extends React.Component {
         : [...hideDatasets, key]
       });
     };
-    const menu = (
-      <Menu onClick={onMeasureChange}>
-        {Object.values(MEASURES).map(value => (
-          <Menu.Item style={{minWidth: 80}} key={value}>
-            {`${value[0].toUpperCase()}${value.substring(1)}`}
-          </Menu.Item>
-        ))}
-      </Menu>
-    );
+    const measureMenuItems = Object.values(MEASURES).map(value => ({
+      key: value,
+      label: `${value[0].toUpperCase()}${value.substring(1)}`,
+      style: {minWidth: 80}
+    }));
     // const gpuKeys = Object.keys((metrics?.charts || [])[0]?.gpuDetails || {});
     // const gpuMenu = (
     //   <Menu onClick={onGPUChange}>
@@ -426,21 +421,13 @@ class GPUInfoTab extends React.Component {
     const renderRangeControls = () => (
       <div className={styles.rangeControls}>
         <Dropdown
-          overlay={(
-            <Menu
-              onClick={setRange}
-              style={{cursor: 'pointer'}}
-              selectedKeys={[]}
-            >
-              {Object.keys(RANGES).map(rangeKey => (
-                <Menu.Item
-                  key={rangeKey}
-                >
-                  {`Last ${rangeKey}`}
-                </Menu.Item>
-              ))}
-            </Menu>
-          )}>
+          menu={{
+            items: Object.keys(RANGES)
+              .map(rangeKey => ({key: rangeKey, label: `Last ${rangeKey}`})),
+            onClick: setRange,
+            style: {cursor: 'pointer'}
+          }}
+        >
           <Button>
             Set range <DownOutlined />
           </Button>
@@ -511,7 +498,7 @@ class GPUInfoTab extends React.Component {
             </div> */}
             <div style={{display: 'flex', gap: '5px'}}>
               <span>Measure:</span>
-              <Dropdown overlay={menu}>
+              <Dropdown menu={{items: measureMenuItems, onClick: onMeasureChange}}>
                 <a>
                   {`${measure[0].toUpperCase()}${measure.substring(1)}`} <DownOutlined />
                 </a>

@@ -18,8 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {
-  Dropdown,
-  Menu
+  Dropdown
 } from 'antd';
 import {EllipsisOutlined, PaperClipOutlined} from '@ant-design/icons';
 import Markdown from '../../../markdown';
@@ -97,20 +96,10 @@ class CommentCard extends React.Component {
       .map(parseAttachment)
       .filter(Boolean)
       .filter((attachment) => attachment.link);
-    const messageMenu = (
-      <Menu
-        onClick={({key}) => this.onSelectMenu(key, comment)}
-        selectedKeys={[]}
-        style={{cursor: 'pointer'}}
-      >
-        <Menu.Item key="edit">
-          Edit
-        </Menu.Item>
-        <Menu.Item key="delete">
-          Delete
-        </Menu.Item>
-      </Menu>
-    );
+    const messageMenuItems = [
+      {key: 'edit', label: 'Edit'},
+      {key: 'delete', label: 'Delete'}
+    ];
     return (
       <div
         style={{
@@ -158,10 +147,15 @@ class CommentCard extends React.Component {
           {
             !!onSelectMenu && (
               <Dropdown
-                overlay={messageMenu}
+                menu={{
+                  items: messageMenuItems,
+                  onClick: ({key}) => this.onSelectMenu(key, comment)
+                }}
                 trigger={['click']}
               >
-                <EllipsisOutlined style={{ cursor: 'pointer', marginRight: 10, fontSize: 'large', fontWeight: 'bold' }} />
+                <EllipsisOutlined
+                  style={{cursor: 'pointer', marginRight: 10, fontSize: 'large', fontWeight: 'bold'}}
+                />
               </Dropdown>
             )
           }

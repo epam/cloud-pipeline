@@ -49,7 +49,6 @@ import {
   SettingOutlined,
   UploadOutlined
 } from '@ant-design/icons';
-import Menu, {MenuItem, Divider} from 'rc-menu';
 import {
   ContentMetadataPanel,
   CONTENT_PANEL_KEY,

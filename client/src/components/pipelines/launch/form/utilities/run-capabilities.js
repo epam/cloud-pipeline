@@ -2,7 +2,6 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {Alert, Dropdown} from 'antd';
 import {CloseOutlined} from '@ant-design/icons';
-import Menu, {MenuItem, SubMenu} from 'rc-menu';
 import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
 import {booleanParameterIsSetToValue} from './parameter-utilities';
@@ -371,6 +370,52 @@ class RunCapabilities extends React.Component {
     onChange && onChange(filtered);
   };
 
+  buildCapabilityMenuItems = (capabilities) => {
+    const {mode} = this.props;
+    return (capabilities || [])
+      .filter(capability => {
+        if (
+          !capability.custom &&
+          this.props.preferences.hiddenRunCapabilities.includes(capability.value)
+        ) {
+          return false;
+        }
+        return true;
+      })
+      .map(capability => {
+        const {capabilities: nested = []} = capability;
+        const selectable = this.capabilityIsRequired(capability.value)
+          ? mode === RUN_CAPABILITIES_MODE.edit
+          : true;
+        const label = nested.length === 0 ? (
+          <Capability
+            capability={capability}
+            selected={this.filteredValues.includes(capability.value)}
+            style={{width: '100%'}}
+          />
+        ) : (
+          <Capability
+            capability={capability}
+            selected={selectable && this.filteredValues.includes(capability.value)}
+            style={{width: '100%', paddingRight: 20}}
+            nested={nested
+              .filter(child => this.filteredValues.includes(child.value))
+              .map(child => child.value)}
+          />
+        );
+        const item = {
+          key: capability.value,
+          label,
+          disabled: capability.disabled,
+          title: capability.description || capability.name
+        };
+        if (nested.length > 0) {
+          item.children = this.buildCapabilityMenuItems(nested);
+        }
+        return item;
+      });
+  };
+
   getCapabilityByValue = (value) => {
     return plainList(this.allCapabilities)
       .find(capability => capability.value === value);
@@ -497,81 +542,19 @@ class RunCapabilities extends React.Component {
       domEvent.preventDefault();
       this.toggleValue(key);
     };
-    const renderCapability = (capability) => {
-      const {
-        capabilities = []
-      } = capability;
-      const selectable = this.capabilityIsRequired(capability.value)
-        ? mode === RUN_CAPABILITIES_MODE.edit
-        : true;
-      if (
-        !capability.custom &&
-        this.props.preferences.hiddenRunCapabilities.includes(capability.value)
-      ) {
-        return null;
-      }
-      if (capabilities.length === 0) {
-        return (
-          <MenuItem
-            key={capability.value}
-            value={capability.value}
-            title={capability.description || capability.name}
-            disabled={capability.disabled}
-          >
-            <Capability
-              capability={capability}
-              selected={this.filteredValues.includes(capability.value)}
-              style={{width: '100%'}}
-            />
-          </MenuItem>
-        );
-      }
-      return (
-        <SubMenu
-          key={capability.value}
-          value={capability.value}
-          title={(
-            <Capability
-              capability={capability}
-              selected={
-                selectable &&
-                this.filteredValues.includes(capability.value)
-              }
-              style={{width: '100%', paddingRight: 20}}
-              nested={
-                capabilities
-                  .filter(child => this.filteredValues.includes(child.value))
-                  .map(child => child.value)
-              }
-            />
-          )}
-          disabled={capability.disabled}
-          onTitleClick={onCapabilityClick}
-        >
-          {
-            capabilities.map(renderCapability)
-          }
-        </SubMenu>
-      );
-    };
+    const capabilityMenuItems = this.buildCapabilityMenuItems(this.allCapabilities);
+    // TODO: doublecheck Dropdown menu working
     return (
       <div
         className={className}
       >
         <Dropdown
           disabled={disabled}
-          overlay={(
-            <div>
-              <Menu
-                mode="vertical"
-                selectedKeys={[]}
-                onClick={onCapabilityClick}
-                getPopupContainer={getPopupContainer}
-              >
-                {this.allCapabilities.map(renderCapability)}
-              </Menu>
-            </div>
-          )}
+          menu={{
+            items: capabilityMenuItems,
+            onClick: onCapabilityClick
+          }}
+          getPopupContainer={getPopupContainer}
           trigger={[disabled ? undefined : 'click']}
         >
           <div

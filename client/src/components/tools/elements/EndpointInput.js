@@ -17,7 +17,8 @@
 import React from 'react';
 import {
   inject,
-  observer} from 'mobx-react';
+  observer
+} from 'mobx-react';
 import {computed, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
 import {
@@ -25,7 +26,6 @@ import {
   Col,
   Dropdown,
   Input,
-  Menu,
   Row
 } from 'antd';
 import {CheckOutlined, SettingOutlined} from '@ant-design/icons';
@@ -365,28 +365,12 @@ export default class EndpointInput extends React.Component {
           break;
       }
     };
-    const overlay = (
-      <Menu
-        onClick={onChange}
-      >
-        <Menu.Item key="isDefault">
-          {this.isDefault ? (<CheckOutlined />) : undefined}
-          <span style={{marginLeft: 5}}>Default</span>
-        </Menu.Item>
-        <Menu.Item key="sslBackend">
-          {this.sslBackend ? (<CheckOutlined />) : undefined}
-          <span style={{marginLeft: 5}}>SSL backend</span>
-        </Menu.Item>
-        <Menu.Item key="customDNS">
-          {this.customDNS ? (<CheckOutlined />) : undefined}
-          <span style={{marginLeft: 5}}>Use sub-domain</span>
-        </Menu.Item>
-        <Menu.Item key="sameTab">
-          {this.sameTab ? (<CheckOutlined />) : undefined}
-          <span style={{marginLeft: 5}}>Open in same tab</span>
-        </Menu.Item>
-      </Menu>
-    );
+    const overlayMenuItems = [
+      {key: 'isDefault', label: <>{this.isDefault ? <CheckOutlined /> : null}<span style={{marginLeft: 5}}>Default</span></>},
+      {key: 'sslBackend', label: <>{this.sslBackend ? <CheckOutlined /> : null}<span style={{marginLeft: 5}}>SSL backend</span></>},
+      {key: 'customDNS', label: <>{this.customDNS ? <CheckOutlined /> : null}<span style={{marginLeft: 5}}>Use sub-domain</span></>},
+      {key: 'sameTab', label: <>{this.sameTab ? <CheckOutlined /> : null}<span style={{marginLeft: 5}}>Open in same tab</span></>}
+    ];
     return (
       <div
         className={classNames({'cp-tool-add-endpoint': this.props.even})}
@@ -473,7 +457,7 @@ export default class EndpointInput extends React.Component {
           </Col>
           <Col style={{paddingLeft: 5, flex: 1, textAlign: 'right'}}>
             <Dropdown
-              overlay={overlay}
+              menu={{items: overlayMenuItems, onClick: onChange}}
               trigger={['click']}
             >
               <a>

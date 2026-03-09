@@ -18,7 +18,6 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {Dropdown} from 'antd';
 import {DownOutlined} from '@ant-design/icons';
-import Menu, {MenuItem} from 'rc-menu';
 import {inject, observer} from 'mobx-react';
 import AWSRegionTag from '../AWSRegionTag';
 import styles from './multizone-url.css';
@@ -58,37 +57,26 @@ export default class MultizoneUrl extends React.Component {
       return null;
     }
     const defaultRegion = regions[0];
-    const menu = (
-      <Menu
-        style={{minWidth: 150, cursor: 'pointer'}}
-        selectedKeys={[]}
-      >
-        {
-          regions
-            .map(({region, url}) => (
-              <MenuItem key={region} style={{display: 'flex'}}>
-                <AWSRegionTag
-                  style={{verticalAlign: 'top', marginLeft: -3, fontSize: 'larger'}}
-                  regionUID={region}
-                />
-                <a
-                  className={styles.menuLink}
-                  target={target}
-                  href={url}
-                  onClick={this.onUrlClicked}
-                >
-                  {region || (<i>Unknown region</i>)}
-                  {
-                    region === defaultRegion.region
-                      ? (<i style={{marginLeft: 5}}>(best)</i>)
-                      : false
-                  }
-                </a>
-              </MenuItem>
-            ))
-        }
-      </Menu>
-    );
+    const menuItems = regions.map(({region, url}) => ({
+      key: region,
+      label: (
+        <span style={{display: 'flex'}}>
+          <AWSRegionTag
+            style={{verticalAlign: 'top', marginLeft: -3, fontSize: 'larger'}}
+            regionUID={region}
+          />
+          <a
+            className={styles.menuLink}
+            target={target}
+            href={url}
+            onClick={this.onUrlClicked}
+          >
+            {region || (<i>Unknown region</i>)}
+            {region === defaultRegion.region ? (<i style={{marginLeft: 5}}>(best)</i>) : null}
+          </a>
+        </span>
+      )
+    }));
     return (
       <div
         className={className}
@@ -106,11 +94,11 @@ export default class MultizoneUrl extends React.Component {
           regions.length > 1 && (
             <Dropdown
               trigger={['click']}
-              overlay={menu}
+              menu={{ items: menuItems }}
               placement="bottomRight"
               style={{minWidth: '150px'}}
-              onVisibleChange={this.handleVisibilityChange}
-              visible={this.state.visible}
+              onOpenChange={this.handleVisibilityChange}
+              open={this.state.visible}
               getPopupContainer={getPopupContainer}
               onClick={(e) => e.stopPropagation()}
             >

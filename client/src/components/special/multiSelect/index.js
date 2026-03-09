@@ -160,11 +160,11 @@ class MultiSelect extends React.Component {
     const {dropdownVisible} = this.state;
     return (
       <Dropdown
-        overlay={this.renderDropdown()}
+        popupRender={() => this.renderDropdown()}
         trigger={['click']}
-        visible={dropdownVisible}
+        open={dropdownVisible}
         disabled={disabled || pending}
-        onVisibleChange={this.onVisibleChange}
+        onOpenChange={this.onVisibleChange}
         placement="bottomLeft"
       >
         <div
@@ -182,7 +182,13 @@ class MultiSelect extends React.Component {
               size="small"
             />) : this.renderTags()
           }
-          <DownOutlined className={classNames( styles.inputArrow, {[styles.expanded]: dropdownVisible} )} style={{fontSize: '10px'}} />
+          <DownOutlined
+            className={classNames(
+              styles.inputArrow, {
+                [styles.expanded]: dropdownVisible})
+            }
+            style={{fontSize: '10px'}}
+          />
         </div>
       </Dropdown>
     );

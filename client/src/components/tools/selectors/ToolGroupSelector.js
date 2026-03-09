@@ -103,7 +103,7 @@ export default class ToolGroupSelector extends React.Component {
         onOpenChange={onDropDownVisibleChanged}
         key="group"
         trigger={['click']}
-        overlay={
+        popupRender={() => (
           <div
             className={
               classNames(
@@ -148,7 +148,8 @@ export default class ToolGroupSelector extends React.Component {
               }
             </div>
           </div>
-        }>
+        )}
+      >
         <Button size="small" style={{border: 'none', fontWeight: 'bold', backgroundColor: 'transparent'}}>
           {this.currentGroup ? renderGroupName(this.currentGroup) : this.state.value || 'Unknown group'}
         </Button>

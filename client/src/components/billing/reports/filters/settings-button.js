@@ -16,13 +16,12 @@
 
 import React from 'react';
 import {Button, Dropdown} from 'antd';
-import Menu, {MenuItem, Divider} from 'rc-menu';
 import {SettingOutlined} from '@ant-design/icons';
 import {inject, observer} from 'mobx-react';
 import roleModel from '../../../../utils/roleModel';
 import {restoreLayoutConsumer} from '../layout';
 import {DiscountsModal} from '../discounts';
-import {exportStores, renderExportMenu, onExport} from '../export';
+import {exportStores, getExportMenuItems, onExport} from '../export';
 import BillingNavigation from '../../navigation';
 import styles from './settings-button.css';
 
@@ -124,59 +123,46 @@ class SettingsButton extends React.Component {
     const {layoutContext, filters, quotas} = this.props;
     const restoreLayoutDisabled = !layoutContext;
     const quotasEnabled = quotas?.enabled;
+    const exportItems = getExportMenuItems(filters, {exportKeyPrefix: MENU_ACTIONS.export});
+    const menuItems = [
+      ...(isBillingManager
+        ? [{
+          key: MENU_ACTIONS.configureDiscounts,
+          label: this.getConfigureDiscountsButtonTitle(),
+          id: 'configure-discounts',
+          className: 'configure-discounts-button'
+        }]
+        : []),
+      {
+        key: MENU_ACTIONS.restoreLayout,
+        label: 'Restore layout',
+        disabled: restoreLayoutDisabled,
+        id: 'restore-layout',
+        className: 'restore-layout-button'
+      },
+      {type: 'divider', key: 'd1'},
+      {
+        key: MENU_ACTIONS.quotas,
+        label: quotasEnabled ? 'Hide quotas' : 'Show quotas',
+        id: 'toggle-quotas',
+        className: 'toggle-quotas-button'
+      },
+      {type: 'divider', key: 'd2'},
+      ...(exportItems.length > 0
+        ? [{key: 'export', label: 'Export', children: exportItems}]
+        : [])
+    ];
+
     return (
       <Dropdown
         trigger={['click']}
-        overlay={(
-          <div>
-            <Menu
-              mode="vertical"
-              subMenuOpenDelay={0.2}
-              subMenuCloseDelay={0.2}
-              openAnimation="zoom"
-              getPopupContainer={node => node.parentNode}
-              onClick={this.onMenuClick}
-              selectedKeys={[]}
-            >
-              {
-                isBillingManager && (
-                  <MenuItem
-                    id="configure-discounts"
-                    className="configure-discounts-button"
-                    key={MENU_ACTIONS.configureDiscounts}
-                  >
-                    {this.getConfigureDiscountsButtonTitle()}
-                  </MenuItem>
-                )
-              }
-              <MenuItem
-                id="restore-layout"
-                disabled={restoreLayoutDisabled}
-                className="restore-layout-button"
-                key={MENU_ACTIONS.restoreLayout}
-              >
-                Restore layout
-              </MenuItem>
-              <Divider />
-              <MenuItem
-                id="toggle-quotas"
-                className="toggle-quotas-button"
-                key={MENU_ACTIONS.quotas}
-              >
-                {quotasEnabled ? 'Hide' : 'Show'} quotas
-              </MenuItem>
-              <Divider />
-              {
-                renderExportMenu(
-                  filters,
-                  {
-                    exportKeyPrefix: MENU_ACTIONS.export
-                  }
-                )
-              }
-            </Menu>
-          </div>
-        )}
+        menu={{
+          items: menuItems,
+          onClick: this.onMenuClick,
+          mode: 'vertical',
+          subMenuOpenDelay: 0.2,
+          subMenuCloseDelay: 0.2
+        }}
       >
         <Button
           style={{

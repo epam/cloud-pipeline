@@ -20,7 +20,6 @@ import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
 import {Dropdown, message} from 'antd';
 import {DownloadOutlined, LoadingOutlined} from '@ant-design/icons';
-import Menu, {MenuItem} from 'rc-menu';
 import GenerateDownloadUrlRequest from '../../../../../models/dataStorage/GenerateDownloadUrl';
 import DataStorageTags from '../../../../../models/dataStorage/tags/DataStorageTags';
 import auditStorageAccessManager from '../../../../../utils/audit-storage-access';
@@ -199,29 +198,25 @@ class DownloadFileButton extends React.Component {
     return (
       <Dropdown
         trigger={['click']}
-        visible={visible}
-        onVisibleChange={this.handleDropdownVisibility}
-        overlay={
-          <Menu
-            selectedKeys={[]}
-            onClick={this.handleMenuClick}
-            style={{minWidth: 150, cursor: 'pointer'}}>
-            <MenuItem
-              id={`menu-item-download-${path}`}
-              className={`menu-item-download-${path}`}
-              key="original"
-            >
-              {this.fileName}
-            </MenuItem>
-            <MenuItem
-              id={`menu-item-download-${downloadOtherFilePath}`}
-              className={`menu-item-download-${downloadOtherFilePath}`}
-              key="other"
-            >
-              {(downloadOtherFilePath || '').split('/').pop()}
-            </MenuItem>
-          </Menu>
-        }
+        open={visible}
+        onOpenChange={this.handleDropdownVisibility}
+        menu={{
+          items: [
+            {
+              key: 'original',
+              label: this.fileName,
+              id: `menu-item-download-${path}`,
+              className: `menu-item-download-${path}`
+            }, {
+              key: 'other',
+              label: (downloadOtherFilePath || '').split('/').pop(),
+              id: `menu-item-download-${downloadOtherFilePath}`,
+              className: `menu-item-download-${downloadOtherFilePath}`
+            }
+          ],
+          onClick: this.handleMenuClick,
+          style: {minWidth: 150, cursor: 'pointer'}
+        }}
       >
         <a
           id={`download-${path}`}

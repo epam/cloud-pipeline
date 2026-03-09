@@ -288,7 +288,7 @@ export class DataStoragePathInput extends React.Component {
             ) : (
               <Dropdown
                 id="edit-storage-storage-path-nfs-mount"
-                overlay={
+                popupRender={() => (
                   <div
                     className={styles.navigationDropdownContainer}
                   >
@@ -311,7 +311,8 @@ export class DataStoragePathInput extends React.Component {
                         })
                     }
                   </div>
-                }>
+                )}
+              >
                 <Button
                   size="small"
                   style={{

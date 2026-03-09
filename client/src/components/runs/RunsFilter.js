@@ -410,7 +410,7 @@ class RunsFilter extends React.Component {
           open={this.state.savedFiltersDropDownVisible}
           onOpenChange={onDropDownVisibilityChanged}
           menu={{items: [{key: '_', label: ''}]}}
-          dropdownRender={() => menuContent}
+          popupRender={() => menuContent}
           trigger={['click']}>
           <Button><DownOutlined /></Button>
         </Dropdown>

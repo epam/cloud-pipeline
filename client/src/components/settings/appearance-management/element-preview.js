@@ -21,13 +21,13 @@ import {
   Button,
   Checkbox,
   Input,
+  Menu,
   Select,
   Spin,
   Table,
   Tabs
 } from 'antd';
 import {ExportOutlined, HomeOutlined, PlayCircleFilled, SearchOutlined} from '@ant-design/icons';
-import Menu, {MenuItem} from 'rc-menu';
 import classNames from 'classnames';
 import {sectionNames} from './utilities/variable-sections';
 import StatusIcon from '../../special/run-status-icon';
@@ -336,22 +336,16 @@ class ElementPreview extends React.Component {
     return (
       <PreviewContainer>
         <div style={{marginBottom: 5}}>
-          <Menu>
-            <MenuItem style={{minWidth: 180}}>Pipeline</MenuItem>
-            <MenuItem
-              style={{minWidth: 180}}
-              className="rc-menu-item-active"
-            >
-              Storage (hovered)
-            </MenuItem>
-            <MenuItem style={{minWidth: 180}}>Folder</MenuItem>
-            <MenuItem
-              style={{minWidth: 180}}
-              className="ant-select-dropdown-menu-item-selected"
-            >
-              Configuration (selected)
-            </MenuItem>
-          </Menu>
+          <Menu
+            selectedKeys={['config']}
+            style={{minWidth: 180}}
+            items={[
+              {key: 'pipeline', label: 'Pipeline'},
+              {key: 'storage', label: 'Storage (hovered)', className: 'ant-menu-item-active'},
+              {key: 'folder', label: 'Folder'},
+              {key: 'config', label: 'Configuration (selected)'}
+            ]}
+          />
         </div>
         <Table
           style={{width: '100%'}}

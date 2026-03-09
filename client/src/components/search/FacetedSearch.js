@@ -22,7 +22,6 @@ import {
   Button,
   Input,
   Dropdown,
-  Menu,
   Tabs,
   Splitter
 } from 'antd';
@@ -926,17 +925,10 @@ class FacetedSearch extends React.Component {
       }
       return document.name;
     };
-    const menu = (
-      <Menu onClick={({key}) => {
-        this.changeSortingOrder(key);
-      }}>
-        {this.filteredSortingFields.map(sortingKey => (
-          <Menu.Item key={sortingKey}>
-            {getSortingFieldName(sortingKey)}
-          </Menu.Item>
-        ))}
-      </Menu>
-    );
+    const menuItems = this.filteredSortingFields.map(sortingKey => ({
+      key: sortingKey,
+      label: getSortingFieldName(sortingKey)
+    }));
     return (
       <div className={styles.sortingControlsContainer}>
         <span style={{marginRight: '5px'}}>Sort by: </span>
@@ -951,16 +943,17 @@ class FacetedSearch extends React.Component {
               ? <CaretUpOutlined style={{fontSize: '10px'}} />
               : <CaretDownOutlined style={{fontSize: '10px'}} />}
             {getSortingFieldName(sort.field)}
-            <CloseOutlined className={classNames(
-              styles.removeSortingBtn,
-              'cp-icon-button',
-              {'cp-disabled': pending}
-            )}
+            <CloseOutlined
+              className={classNames(
+                styles.removeSortingBtn,
+                'cp-icon-button',
+                {'cp-disabled': pending}
+              )}
               onClick={(event) => this.removeSortingByField(sort.field, event)} />
           </Button>
         ))}
         <Dropdown
-          overlay={menu}
+          menu={{items: menuItems, onClick: ({key}) => this.changeSortingOrder(key)}}
           placement="bottomLeft"
           disabled={pending}
         >

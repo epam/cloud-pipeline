@@ -33,7 +33,6 @@ import {
   Tooltip
 } from 'antd';
 import {BarsOutlined, DownloadOutlined, EditOutlined, PlusOutlined} from '@ant-design/icons';
-import Menu, {MenuItem} from 'rc-menu';
 import Roles from '../../../models/user/Roles';
 import UserCreate from '../../../models/user/UserCreate';
 import UserDelete from '../../../models/user/UserDelete';
@@ -274,22 +273,18 @@ export default class UsersManagement extends React.Component {
   };
 
   renderUsersTableControls = () => {
-    const exportUserMenu = (
-      <Menu
-        onClick={this.handleExportUsersMenu}
-        selectedKeys={[]}
-        style={{cursor: 'pointer'}}
-      >
-        <MenuItem key="default">
-          <DownloadOutlined style={{marginRight: 10}} />
-          Default configuration
-        </MenuItem>
-        <MenuItem key="custom">
-          <BarsOutlined style={{marginRight: 10}} />
-          Custom configuration
-        </MenuItem>
-      </Menu>
-    );
+    const exportUserMenuItems = [
+      {
+        key: 'default',
+        icon: <DownloadOutlined style={{marginRight: 10}} />,
+        label: 'Default configuration'
+      },
+      {
+        key: 'custom',
+        icon: <BarsOutlined style={{marginRight: 10}} />,
+        label: 'Custom configuration'
+      }
+    ];
     return (
       <Row type="flex" style={{marginBottom: 10}}>
         <Input.Search
@@ -367,7 +362,11 @@ export default class UsersManagement extends React.Component {
             <Dropdown.Button
               style={{marginLeft: 5}}
               onClick={() => doExport()}
-              overlay={exportUserMenu}
+              menu={{
+                items: exportUserMenuItems,
+                onClick: this.handleExportUsersMenu,
+                style: {cursor: 'pointer'}
+              }}
               icon={<DownloadOutlined />}
             >
               Export users
@@ -403,14 +402,10 @@ export default class UsersManagement extends React.Component {
               ...tags.slice(0, maxTagItems - 1).map(tagRenderer),
               <Dropdown
                 key="more"
-                overlay={
+                popupRender={() => (
                   <Card
                     className="all-tags-container"
-                    bodyStyle={{
-                      padding: 5,
-                      overflowY: 'auto',
-                      maxHeight: '30vh'
-                    }}>
+                    styles={{body: {padding: 5, overflowY: 'auto', maxHeight: '30vh'}}}>
                     {tags.map((tag, index) => (
                       <Row
                         className={
@@ -422,10 +417,11 @@ export default class UsersManagement extends React.Component {
                         key={index}
                         type="flex">
                         {tag.displayName}
-                      </Row>))
-                    }
+                      </Row>
+                    ))}
                   </Card>
-                }>
+                )}
+              >
                 <a
                   id="more-info-link"
                   className={styles.moreInfoLabel}

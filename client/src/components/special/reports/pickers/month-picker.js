@@ -236,11 +236,11 @@ export default class MonthPicker extends React.Component {
     const {opened} = this.state;
     return (
       <Dropdown
-        visible={opened}
+        open={opened}
         trigger={['click']}
-        onVisibleChange={this.handleVisibility}
+        onOpenChange={this.handleVisibility}
         placement="bottomLeft"
-        overlay={this.renderOverlay()}
+        popupRender={() => this.renderOverlay()}
       >
         <PickerButton
           className={styles.buttonContainer}

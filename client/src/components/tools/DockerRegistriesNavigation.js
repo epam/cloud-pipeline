@@ -61,8 +61,8 @@ export default class DockerRegistriesNavigation extends React.Component {
       return (
         <Dropdown
           trigger={['click']}
-          overlayClassName="registry-dropdown-container"
-          overlay={
+          classNames={{root: 'registry-dropdown-container'}}
+          popupRender={() => (
             <div
               id="registries-dropdown"
               className={styles.navigationDropdownContainer}
@@ -83,7 +83,8 @@ export default class DockerRegistriesNavigation extends React.Component {
                 })
               }
             </div>
-          }>
+          )}
+        >
           <Button
             id="current-registry-button"
             size="small"
@@ -159,7 +160,7 @@ export default class DockerRegistriesNavigation extends React.Component {
           trigger={['click']}
           open={this.state.groupsDropDownVisible}
           onOpenChange={onDropDownVisibleChanged}
-          overlay={
+          popupRender={() => (
             <DockerRegistriesGroupsDropdownContent
               groups={groups}
               filter={this.props.filter}
@@ -180,7 +181,8 @@ export default class DockerRegistriesNavigation extends React.Component {
                 });
               }}
             />
-          }>
+          )}
+        >
           <Button
             id="current-group-button"
             size="small"

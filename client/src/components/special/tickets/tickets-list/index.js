@@ -25,7 +25,6 @@ import {
   Select,
   Dropdown,
   Pagination,
-  Menu,
   Input,
   Spin,
   Alert,
@@ -413,26 +412,15 @@ class TicketsList extends React.Component {
     const getLabel = (labels) => (labels || [])
       .find(label => this.predefinedLabels.includes(label));
     const currentLabel = getLabel(ticket.labels);
-    const menu = (
-      <Menu
-        onClick={({key}) => this.onSelectNewStatus(key, ticket)}
-        selectedKeys={[]}
-        style={{cursor: 'default', minWidth: '120px'}}
-      >
-        <Menu.ItemGroup title="Select new status">
-          <Menu.Divider />
-          {
-            this.predefinedLabels
-              .filter(label => label !== currentLabel)
-              .map(label => (
-                <Menu.Item key={label} style={{cursor: 'pointer'}}>
-                  {label}
-                </Menu.Item>
-              ))
-          }
-        </Menu.ItemGroup>
-      </Menu>
-    );
+    const statusMenuItems = [
+      {
+        type: 'group',
+        label: 'Select new status',
+        children: this.predefinedLabels
+          .filter(label => label !== currentLabel)
+          .map(label => ({key: label, label, style: {cursor: 'pointer'}}))
+      }
+    ];
     return (
       <div
         key={ticket.iid}
@@ -484,7 +472,11 @@ class TicketsList extends React.Component {
           {
             this.enableControls && (
               <Dropdown
-                overlay={menu}
+                menu={{
+                  items: statusMenuItems,
+                  onClick: ({key}) => this.onSelectNewStatus(key, ticket),
+                  style: {cursor: 'default', minWidth: '120px'}
+                }}
                 trigger={['click']}
                 onClick={e => e.stopPropagation()}
                 disabled={pending}

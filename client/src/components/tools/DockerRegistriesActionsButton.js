@@ -25,7 +25,6 @@ import {
   Button
 } from 'antd';
 import {DeleteOutlined, EditOutlined, PlusOutlined, QuestionCircleOutlined, SettingOutlined} from '@ant-design/icons';
-import Menu, {MenuItem, Divider, SubMenu} from 'rc-menu';
 import roleModel from '../../utils/roleModel';
 import AddRegistry from '../../models/tools/RegistryCreate';
 import UpdateRegistry from '../../models/tools/RegistryUpdate';
@@ -368,7 +367,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
     });
   };
 
-  _renderActionsMenu = () => {
+  _getActionsMenuItems = () => {
     const registryActions = [];
     const toolAdmin = roleModel.isManager.toolAdmin(this);
     const toolGroupAdmin = roleModel.isManager.toolGroup(this);
@@ -378,35 +377,29 @@ export default class DockerRegistriesActionsButton extends React.Component {
         roleModel.writeAllowed(this.props.group) || toolAdmin
       );
     if (roleModel.writeAllowed(this.props.docker) || toolAdmin) {
-      registryActions.push(
-        <MenuItem
-          key="add-registry"
-        >
-          <PlusOutlined /> Create
-        </MenuItem>
-      );
+      registryActions.push({
+        key: 'add-registry',
+        icon: <PlusOutlined />,
+        label: 'Create'
+      });
     }
     if (this.props.registry && roleModel.writeAllowed(this.props.registry)) {
-      registryActions.push(
-        <MenuItem
-          key="edit-registry"
-        >
-          <EditOutlined /> Edit
-        </MenuItem>
-      );
+      registryActions.push({
+        key: 'edit-registry',
+        icon: <EditOutlined />,
+        label: 'Edit'
+      });
     }
     const groupActions = [];
 
     if (this.props.registry &&
       this.props.registry.privateGroupAllowed &&
       !this.props.hasPersonalGroup) {
-      groupActions.push(
-        <MenuItem
-          key="add-private-group"
-        >
-          <PlusOutlined /> Create personal
-        </MenuItem>
-      );
+      groupActions.push({
+        key: 'add-private-group',
+        icon: <PlusOutlined />,
+        label: 'Create personal'
+      });
     }
     if (this.props.registry &&
       (
@@ -419,99 +412,68 @@ export default class DockerRegistriesActionsButton extends React.Component {
         )
       )
     ) {
-      groupActions.push(
-        <MenuItem
-          key="add-group"
-        >
-          <PlusOutlined /> Create
-        </MenuItem>
-      );
+      groupActions.push({
+        key: 'add-group',
+        icon: <PlusOutlined />,
+        label: 'Create'
+      });
     }
 
     if (canEditGroup) {
       if (groupActions.length > 0) {
-        groupActions.push(
-          <Divider key="group-divider" />
-        );
+        groupActions.push({type: 'divider', key: 'group-divider'});
       }
-      groupActions.push(
-        <MenuItem
-          key="edit-group"
-        >
-          <EditOutlined /> Edit
-        </MenuItem>
-      );
+      groupActions.push({
+        key: 'edit-group',
+        icon: <EditOutlined />,
+        label: 'Edit'
+      });
       if (toolGroupAdmin || toolAdmin) {
-        groupActions.push(
-          <MenuItem
-            key="delete-group"
-            className="cp-danger"
-          >
-            <DeleteOutlined /> Delete
-          </MenuItem>
-        );
+        groupActions.push({
+          key: 'delete-group',
+          icon: <DeleteOutlined />,
+          label: 'Delete',
+          danger: true
+        });
       }
     }
     const toolActions = [];
     if (canEditGroup) {
-      toolActions.push(
-        <MenuItem
-          key="enable-tool"
-        >
-          <PlusOutlined /> Enable tool
-        </MenuItem>
-      );
+      toolActions.push({
+        key: 'enable-tool',
+        icon: <PlusOutlined />,
+        label: 'Enable tool'
+      });
     }
-    const subMenus = [];
+    const menuItems = [];
     if (registryActions.length > 0) {
-      subMenus.push(
-        <SubMenu
-          key="registry"
-          title="Registry"
-        >
-          {registryActions}
-        </SubMenu>
-      );
+      menuItems.push({
+        key: 'registry',
+        label: 'Registry',
+        children: registryActions
+      });
     }
     if (groupActions.length > 0) {
-      subMenus.push(
-        <SubMenu
-          key="group"
-          title="Group"
-        >
-          {groupActions}
-        </SubMenu>
-      );
+      menuItems.push({
+        key: 'group',
+        label: 'Group',
+        children: groupActions
+      });
     }
     if (toolActions.length > 0) {
-      subMenus.push(...toolActions);
+      menuItems.push(...toolActions);
     }
     if (this.props.registry && this.props.registry.pipelineAuth) {
-      if (subMenus.length > 0) {
-        subMenus.push(<Divider key="divider" />);
+      if (menuItems.length > 0) {
+        menuItems.push({type: 'divider', key: 'divider'});
       }
-      subMenus.push(
-        <MenuItem
-          key="configure-registry"
-        >
-          <QuestionCircleOutlined /> How to configure
-        </MenuItem>
-      );
+      menuItems.push({
+        key: 'configure-registry',
+        icon: <QuestionCircleOutlined />,
+        label: 'How to configure'
+      });
     }
-    if (subMenus.length > 0) {
-      return (
-        <Menu
-          mode="vertical"
-          selectedKeys={[]}
-          onClick={this._onMenuSelect}
-          openAnimation="zoom"
-          getPopupContainer={node => node.parentNode}
-        >
-          {subMenus}
-        </Menu>
-      );
-    }
-    return null;
+    return menuItems.length > 0 ? menuItems : null;
   };
 
   handleOverlayVisibility = (visible) => {
@@ -521,21 +483,21 @@ export default class DockerRegistriesActionsButton extends React.Component {
   }
 
   render () {
-    const menu = this._renderActionsMenu();
+    const menuItems = this._getActionsMenuItems();
     const {overlayVisible} = this.state;
-    if (menu) {
+    if (menuItems) {
       return (
         <DropDownWrapper visible={overlayVisible}>
           <Dropdown
             trigger={['click']}
-            overlayStyle={{zIndex: 2}}
+            styles={{root: {zIndex: 2}}}
             open={overlayVisible}
             onOpenChange={this.handleOverlayVisibility}
-            overlay={(
-              <div>
-                {menu}
-              </div>
-            )}
+            menu={{
+              items: menuItems,
+              onClick: this._onMenuSelect,
+              style: {minWidth: 160}
+            }}
           >
             <Button size="small" style={{zIndex: 2}}>
               <SettingOutlined style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />

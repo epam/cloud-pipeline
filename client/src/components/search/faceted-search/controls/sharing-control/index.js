@@ -25,7 +25,6 @@ import {
   Dropdown
 } from 'antd';
 import {ExportOutlined} from '@ant-design/icons';
-import RcMenu, {MenuItem, SubMenu, Divider as MenuDivider} from 'rc-menu';
 import SharedItemInfo
 from '../../../../pipelines/browser/forms/data-storage-item-sharing/SharedItemInfo';
 import SelectionPreview from '../selection-preview';
@@ -179,7 +178,7 @@ class SharingControl extends React.Component {
     }
   };
 
-  renderMenuOverlay = () => {
+  getMenuItems = () => {
     const {dataStorageSharingEnabled} = this.props;
     const isMultipleStorageItems = this.groupedItems.length > 1;
     const getStorageName = id => {
@@ -188,78 +187,67 @@ class SharingControl extends React.Component {
         ? storage.name
         : id;
     };
-    const shareSubMenu = isMultipleStorageItems
-      ? (
-        <SubMenu
-          title={(
+    const items = [];
+    if (dataStorageSharingEnabled && this.shareableItems.length > 0) {
+      if (isMultipleStorageItems) {
+        items.push({
+          key: 'share',
+          label: (
             <span>
-              <b style={{marginRight: 3}}>
-                Share
-              </b>
-              selected
+              <b style={{marginRight: 3}}>Share</b> selected
             </span>
-          )}
-        >
-          {
-            this.groupedItems.map((group) => (
-              <MenuItem key={`shareGroup|${group.storageId}`}>
+          ),
+          children: this.groupedItems.map((group) => ({
+            key: `shareGroup|${group.storageId}`,
+            label: (
+              <span>
                 Share <b>{group.items.length}</b> item{group.items.length > 1 ? 's' : ''}
                 &nbsp;from <b>{getStorageName(group.storageId)}</b>
-              </MenuItem>
-            ))
-          }
-        </SubMenu>
-      ) : (
-        <MenuItem key="share">
-          <b>Share</b> selected
-        </MenuItem>
-      );
+              </span>
+            )
+          }))
+        });
+      } else {
+        items.push({
+          key: 'share',
+          label: <span><b>Share</b> selected</span>
+        });
+      }
+    }
     const skipDownloadCount = this.items.length - this.downloadableItems.length;
-    return (
-      <RcMenu
-        onClick={this.handleMenuClick}
-        selectedKeys={[]}
-        subMenuOpenDelay={0.2}
-        subMenuCloseDelay={0.2}
-        openAnimation="zoom"
-        getPopupContainer={node => node.parentNode}
-      >
-        {dataStorageSharingEnabled && this.shareableItems.length > 0 && shareSubMenu}
-        {
-          this.downloadableItems.length > 0 && (
-            <MenuItem key="download">
-              <b>Download</b> selected
-              {
-                skipDownloadCount > 0 && ` (${this.downloadableItems.length})`
-              }
-              {
-                skipDownloadCount > 0 && (
-                  <div
-                    style={{lineHeight: '12px', fontSize: 'smaller'}}
-                    className="cp-text-not-important"
-                  >
-                    {skipDownloadCount} file{skipDownloadCount === 1 ? ' is' : 's are'} not allowed
-                    to be downloaded
-                    <br />
-                    and therefore will be skipped
-                  </div>
-                )
-              }
-            </MenuItem>
-          )
-        }
-        <MenuItem key="show">
-          <b>Display</b> selected
-        </MenuItem>
-        <MenuDivider />
-        <MenuItem
-          key="clear"
-          className="cp-danger"
-        >
-          Clear selection
-        </MenuItem>
-      </RcMenu>
-    );
+    if (this.downloadableItems.length > 0) {
+      items.push({
+        key: 'download',
+        label: (
+          <span>
+            <b>Download</b> selected
+            {skipDownloadCount > 0 && ` (${this.downloadableItems.length})`}
+            {skipDownloadCount > 0 && (
+              <div
+                style={{lineHeight: '12px', fontSize: 'smaller'}}
+                className="cp-text-not-important"
+              >
+                {skipDownloadCount} file{skipDownloadCount === 1 ? ' is' : 's are'} not allowed
+                to be downloaded
+                <br />
+                and therefore will be skipped
+              </div>
+            )}
+          </span>
+        )
+      });
+    }
+    items.push({
+      key: 'show',
+      label: <span><b>Display</b> selected</span>
+    });
+    items.push({type: 'divider', key: 'divider'});
+    items.push({
+      key: 'clear',
+      label: 'Clear selection',
+      danger: true
+    });
+    return items;
   };
 
   render () {
@@ -278,10 +266,13 @@ class SharingControl extends React.Component {
       <div style={{margin: '0 5px'}}>
         <Badge count={(items || []).length} style={{zIndex: 999}}>
           <Dropdown
-            overlay={<div>{this.renderMenuOverlay()}</div>}
+            menu={{
+              items: this.getMenuItems(),
+              onClick: this.handleMenuClick
+            }}
             trigger={['click']}
-            visible={dropDownVisible}
-            onVisibleChange={this.setDropDownVisibility}
+            open={dropDownVisible}
+            onOpenChange={this.setDropDownVisibility}
           >
             <Button
               size={size}

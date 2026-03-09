@@ -107,31 +107,31 @@ class DocumentTypeFilter extends localization.LocalizedReactComponent {
                 }
               >
                 {FilterIcon && <FilterIcon className={classNames('cp-icon-larger', styles.icon)} />}
-              {filter.title(this.localizedString)()}
-              {filter.count > 0 && showCounts
-                ? (
-                  <span
-                    className={styles.count}
-                  >
-                    ({displayCount(filter.count, true)})
-                  </span>
-                )
-                : undefined
-              }
-              {filter.enabled ? (
-                <CheckCircleFilled className="cp-icon-larger" style={{ position: 'absolute', right: 0 }} />
-              ) : null}
-            </div>
-          </Menu.Item>
+                {filter.title(this.localizedString)()}
+                {filter.count > 0 && showCounts
+                  ? (
+                    <span
+                      className={styles.count}
+                    >
+                      ({displayCount(filter.count, true)})
+                    </span>
+                  )
+                  : undefined
+                }
+                {filter.enabled ? (
+                  <CheckCircleFilled className="cp-icon-larger" style={{position: 'absolute', right: 0}} />
+                ) : null}
+              </div>
+            </Menu.Item>
           );
         })}
       </Menu>
     );
     return (
       <Dropdown
-        overlay={filterMenu}
-        onVisibleChange={this.onFilterVisibleChange}
-        visible={overlayVisible}
+        popupRender={() => filterMenu}
+        onOpenChange={this.onFilterVisibleChange}
+        open={overlayVisible}
       >
         <Button
           size={size}
@@ -141,9 +141,9 @@ class DocumentTypeFilter extends localization.LocalizedReactComponent {
           )}
         >
           <FilterOutlined className={classNames(
-              'cp-icon-larger',
-              {'selected': this.activeFilters.length > 0}
-            )} />
+            'cp-icon-larger',
+            {'selected': this.activeFilters.length > 0}
+          )} />
         </Button>
       </Dropdown>
     );

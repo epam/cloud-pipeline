@@ -29,7 +29,6 @@ import {
   Select
 } from 'antd';
 import {DeleteOutlined, DownOutlined} from '@ant-design/icons';
-import Menu, {MenuItem} from 'rc-menu';
 import SelectMetadataItems from './SelectMetadataItems';
 import compareArrays from '../../../../utils/compareArrays';
 import styles from './AddInstanceForm.css';
@@ -453,22 +452,10 @@ export default class AddInstanceForm extends React.Component {
       customFields.push(field);
       this.setState({customFields});
     };
-    const parameterTypeMenu = (
-      <Menu
-        onClick={onSelect}
-        style={{cursor: 'pointer'}}
-        selectedKeys={[]}
-      >
-        <MenuItem key="string">String parameter</MenuItem>
-        {
-          this.ownEntityTypes().map(e => {
-            return (
-              <MenuItem key={e.name}>Link to '{e.name}' instance</MenuItem>
-            );
-          })
-        }
-      </Menu>
-    );
+    const parameterTypeMenuItems = [
+      {key: 'string', label: 'String parameter'},
+      ...this.ownEntityTypes().map(e => ({key: e.name, label: `Link to '${e.name}' instance`}))
+    ];
     return (
       <Row type="flex" justify="space-around" style={{marginTop: 10, cursor: 'pointer'}}>
         <Button.Group>
@@ -479,7 +466,7 @@ export default class AddInstanceForm extends React.Component {
             Add parameter
           </Button>
           <Dropdown
-            overlay={parameterTypeMenu}
+            menu={{items: parameterTypeMenuItems, onClick: onSelect}}
             placement="bottomRight"
             style={{minWidth: 200}}
             trigger={this.props.pending ? [] : ['hover']}

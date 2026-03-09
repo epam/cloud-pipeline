@@ -108,7 +108,7 @@ export default class DockerImageBrowser extends React.Component {
     return (
       <Dropdown
         trigger={['click']}
-        overlay={
+        popupRender={() => (
           <div className={styles.navigationDropdownContainer}>
             {
               registries.map(registry => {
@@ -124,7 +124,8 @@ export default class DockerImageBrowser extends React.Component {
               })
             }
           </div>
-        }>
+        )}
+      >
         <Button size="small" style={{border: 'none', fontWeight: 'bold'}}>
           {this.currentRegistry ? registryName(this.currentRegistry) : 'Unknown registry'}
         </Button>
@@ -208,11 +209,11 @@ export default class DockerImageBrowser extends React.Component {
     return [
       <CaretRightOutlined key="group-arrow" />,
       <Dropdown
-        visible={this.state.groupsDropDownVisible}
-        onVisibleChange={onDropDownVisibleChanged}
+        open={this.state.groupsDropDownVisible}
+        onOpenChange={onDropDownVisibleChanged}
         key="group"
         trigger={['click']}
-        overlay={
+        popupRender={() => (
           <Row className={styles.navigationDropdownContainer}>
             <Row type="flex">
               <Input.Search
@@ -250,7 +251,8 @@ export default class DockerImageBrowser extends React.Component {
               }
             </div>
           </Row>
-        }>
+        )}
+      >
         <Button size="small" style={{border: 'none', fontWeight: 'bold'}}>
           {renderGroupName(this.currentGroup)}
         </Button>

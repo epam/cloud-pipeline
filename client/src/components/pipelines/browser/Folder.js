@@ -43,7 +43,6 @@ import {
   Tooltip
 } from 'antd';
 import {AppstoreFilled, AppstoreOutlined, CheckCircleFilled, ClockCircleOutlined, CopyOutlined, DeleteOutlined, DownOutlined, EditOutlined, FolderOutlined, ForkOutlined, HddOutlined, InboxOutlined, LockOutlined, MessageOutlined, PlusOutlined, QuestionCircleFilled, SettingOutlined, SolutionOutlined, TagFilled, UnlockOutlined} from '@ant-design/icons';
-import Menu, {SubMenu, MenuItem, Divider} from 'rc-menu';
 import EditFolderForm from './forms/EditFolderForm';
 import EditPipelineForm from '../version/forms/EditPipelineForm';
 import {DataStorageEditDialog, ServiceTypes} from './forms/DataStorageEditDialog';
@@ -1476,7 +1475,6 @@ export default class Folder extends localization.LocalizedReactComponent {
   };
   renderActions = () => {
     const actions = [];
-    const createActions = [];
     const pipelineKey = 'pipeline';
     const storageKey = 'storage';
     const versionedStorageKey = 'versioned';
@@ -1563,7 +1561,7 @@ export default class Folder extends localization.LocalizedReactComponent {
       !this.props.readOnly &&
       !this.props.listingMode
     ) {
-      let pipelineTemplatesMenu;
+      let pipelineTemplatesMenuItems;
       if (
         !this.props.templates.pending &&
         (
@@ -1572,67 +1570,74 @@ export default class Folder extends localization.LocalizedReactComponent {
         )
       ) {
         if (!this.props.templates.error && (this.props.templates.value || []).length > 0) {
-          const templates = (this.props.templates.value || [])
+          const templatesList = (this.props.templates.value || [])
             .filter(template => !template.defaultTemplate);
-          pipelineTemplatesMenu = [
-            <MenuItem
-              id="create-pipeline-button"
-              className="create-pipeline-button"
-              key={pipelineKey}>
-              <Row>
-                DEFAULT
-              </Row>
-              <Row style={{fontSize: 'smaller'}}>
-                Create {this.localizedString('pipeline')} without template
-              </Row>
-            </MenuItem>,
-            <Divider key="divider" />,
-            ...templates.map(t => {
-              return (
-                <MenuItem
-                  id={`create-pipeline-by-template-button-${t.id.toLowerCase()}`}
-                  className={`create-pipeline-by-template-button-${t.id.toLowerCase()}`}
-                  key={`${pipelineKey}_${t.id}`}>
-                  <Row>
-                    {t.id.toUpperCase()}
-                  </Row>
+          pipelineTemplatesMenuItems = [
+            {
+              key: pipelineKey,
+              label: (
+                <>
+                  <Row>DEFAULT</Row>
                   <Row style={{fontSize: 'smaller'}}>
-                    {t.description}
+                    Create {this.localizedString('pipeline')} without template
                   </Row>
-                </MenuItem>
-              );
-            })
+                </>
+              ),
+              id: 'create-pipeline-button',
+              className: 'create-pipeline-button'
+            },
+            {type: 'divider', key: 'pipeline-divider'},
+            ...templatesList.map(t => ({
+              key: `${pipelineKey}_${t.id}`,
+              label: (
+                <>
+                  <Row>{t.id.toUpperCase()}</Row>
+                  <Row style={{fontSize: 'smaller'}}>{t.description}</Row>
+                </>
+              ),
+              id: `create-pipeline-by-template-button-${t.id.toLowerCase()}`,
+              className: `create-pipeline-by-template-button-${t.id.toLowerCase()}`
+            }))
           ];
         }
       }
+      let folderTemplatesMenuItems;
+      if (
+        !this.props.folderTemplates.pending &&
+        roleModel.isManager.folder(this) &&
+        !this.props.folderTemplates.error &&
+        (this.props.folderTemplates.value || []).length > 0
+      ) {
+        folderTemplatesMenuItems = (this.props.folderTemplates.value || []).map(t => ({
+          key: `${folderKey}_${t.id}`,
+          label: (
+            <>
+              <Row>{t.id.toUpperCase()}</Row>
+              <Row style={{fontSize: 'smaller'}}>{t.description}</Row>
+            </>
+          ),
+          id: `create-folder-by-template-button-${t.id.toLowerCase()}`,
+          className: `create-folder-by-template-button-${t.id.toLowerCase()}`
+        }));
+      }
+
+      const createMenuItems = [];
       if (roleModel.isManager.pipeline(this) || roleModel.isManager.pipelineAdmin(this)) {
-        if (pipelineTemplatesMenu) {
-          createActions.push(
-            <SubMenu
-              id="create-pipeline-sub-menu-button"
-              onTitleClick={() => {
-                this.setState({
-                  createDropDownVisible: false
-                }, () => {
-                  this.openCreatePipelineDialog(null);
-                });
-              }}
-              key={pipelineKey}
-              title={<span><ForkOutlined /> {this.localizedString('Pipeline')}</span>}
-              className="create-pipeline-sub-menu-button"
-            >
-              {pipelineTemplatesMenu}
-            </SubMenu>
-          );
+        if (pipelineTemplatesMenuItems && pipelineTemplatesMenuItems.length > 0) {
+          createMenuItems.push({
+            key: pipelineKey,
+            label: <span><ForkOutlined /> {this.localizedString('Pipeline')}</span>,
+            id: 'create-pipeline-sub-menu-button',
+            className: 'create-pipeline-sub-menu-button',
+            children: pipelineTemplatesMenuItems
+          });
         } else {
-          createActions.push(
-            <MenuItem
-              id="create-pipeline-button"
-              className="create-pipeline-button"
-              key={pipelineKey}>
-              <ForkOutlined /> {this.localizedString('Pipeline')}
-            </MenuItem>
-          );
+          createMenuItems.push({
+            key: pipelineKey,
+            label: <><ForkOutlined /> {this.localizedString('Pipeline')}</>,
+            id: 'create-pipeline-button',
+            className: 'create-pipeline-button'
+          });
         }
       }
       if (roleModel.isManager.storage(this) ||
@@ -1640,167 +1645,112 @@ export default class Folder extends localization.LocalizedReactComponent {
       ) {
         const fsMountsAvailable = this.props.awsRegions.loaded &&
           extractFileShareMountList(this.props.awsRegions.value).length > 0;
-        createActions.push(
-          <SubMenu
-            key={storageKey}
-            onTitleClick={() => {
-              this.setState({
-                createDropDownVisible: false
-              }, () => {
-                this.openCreateStorageDialog(true);
-              });
-            }}
-            title={<span><HddOutlined /> Storages</span>}
-            className="create-storage-sub-menu"
-          >
-            <MenuItem
-              id="create-new-storage-button"
-              className="create-new-storage-button"
-              key={`${storageKey}_new`}>
-              Create new object storage
-            </MenuItem>
+        createMenuItems.push({
+          key: storageKey,
+          label: <span><HddOutlined /> Storages</span>,
+          className: 'create-storage-sub-menu',
+          children: [
             {
-              this.isAnyAwsRegion && (
-                <MenuItem
-                  id="create-omics-store-button"
-                  className="create-omics-store-button"
-                  key={`${storageKey}_${omicsStoreKey}`}>
-                  Create AWS HealthOmics Store
-                </MenuItem>
-              )
-            }
-            <MenuItem
-              id="add-existing-storage-button"
-              className="add-existing-storage-button"
-              key={`${storageKey}_existing`}>
-              Add existing object storage
-            </MenuItem>
-            {fsMountsAvailable && (<Divider key="storages_divider" />)}
-            {fsMountsAvailable && (
-              <MenuItem
-                id="create-new-nfs-mount"
-                className="create-new-nfs-mount"
-                key={`${storageKey}_${nfsStorageKey}`}>
-                Create new FS mount
-              </MenuItem>
-            )}
-          </SubMenu>
-        );
+              key: `${storageKey}_new`,
+              label: 'Create new object storage',
+              id: 'create-new-storage-button',
+              className: 'create-new-storage-button'
+            },
+            ...(this.isAnyAwsRegion ? [{
+              key: `${storageKey}_${omicsStoreKey}`,
+              label: 'Create AWS HealthOmics Store',
+              id: 'create-omics-store-button',
+              className: 'create-omics-store-button'
+            }] : []),
+            {
+              key: `${storageKey}_existing`,
+              label: 'Add existing object storage',
+              id: 'add-existing-storage-button',
+              className: 'add-existing-storage-button'
+            },
+            ...(fsMountsAvailable ? [
+              {type: 'divider', key: 'storages_divider'},
+              {
+                key: `${storageKey}_${nfsStorageKey}`,
+                label: 'Create new FS mount',
+                id: 'create-new-nfs-mount',
+                className: 'create-new-nfs-mount'
+              }
+            ] : [])
+          ]
+        });
       }
       if (roleModel.isManager.configuration(this)) {
-        createActions.push(
-          <MenuItem
-            id="create-configuration-button"
-            className="create-configuration-button"
-            key={configurationKey}>
-            <SettingOutlined /> Configuration
-          </MenuItem>
-        );
-      }
-      let folderTemplatesMenu;
-      if (
-        !this.props.folderTemplates.pending &&
-        roleModel.isManager.folder(this) &&
-        !this.props.folderTemplates.error &&
-        (this.props.folderTemplates.value || []).length > 0
-      ) {
-        folderTemplatesMenu =
-          (this.props.folderTemplates.value || []).map(t => {
-            return (
-              <MenuItem
-                id={`create-folder-by-template-button-${t.id.toLowerCase()}`}
-                className={`create-folder-by-template-button-${t.id.toLowerCase()}`}
-                key={`${folderKey}_${t.id}`}>
-                <Row>
-                  {t.id.toUpperCase()}
-                </Row>
-                <Row style={{fontSize: 'smaller'}}>
-                  {t.description}
-                </Row>
-              </MenuItem>
-            );
-          });
+        createMenuItems.push({
+          key: configurationKey,
+          label: <><SettingOutlined /> Configuration</>,
+          id: 'create-configuration-button',
+          className: 'create-configuration-button'
+        });
       }
       if (roleModel.isManager.folder(this)) {
-        let divider;
-        createActions.push(
-          <MenuItem
-            id="create-folder-button"
-            className="create-folder-button"
-            key={folderKey}>
-            <FolderOutlined /> Folder
-          </MenuItem>
-        );
-        if (folderTemplatesMenu) {
-          divider = <Divider key="divider one" />;
-          createActions.push(divider);
-          createActions.push(...folderTemplatesMenu);
+        createMenuItems.push({
+          key: folderKey,
+          label: <><FolderOutlined /> Folder</>,
+          id: 'create-folder-button',
+          className: 'create-folder-button'
+        });
+        if (folderTemplatesMenuItems && folderTemplatesMenuItems.length > 0) {
+          createMenuItems.push({type: 'divider', key: 'divider one'});
+          createMenuItems.push(...folderTemplatesMenuItems);
         }
       }
       if (roleModel.isManager.versionedStorage(this)) {
-        if (!folderTemplatesMenu) {
-          createActions.push(<Divider key="divider versioned storages" />);
+        if (!folderTemplatesMenuItems || folderTemplatesMenuItems.length === 0) {
+          createMenuItems.push({type: 'divider', key: 'divider versioned storages'});
         }
-        createActions.push(
-          <MenuItem
-            id="create-versioned-storage-button"
-            className="create-versioned-storage-button"
-            key={versionedStorageKey}
+        createMenuItems.push({
+          key: versionedStorageKey,
+          label: (
+            <>
+              <Row style={{textTransform: 'uppercase'}}>versioned storage</Row>
+              <Row style={{fontSize: 'smaller'}}>storage with revision control</Row>
+            </>
+          ),
+          id: 'create-versioned-storage-button',
+          className: 'create-versioned-storage-button'
+        });
+      }
+
+      if (createMenuItems.length > 0) {
+        actions.push(
+          <DropDownWrapper
+            key="create actions"
+            visible={this.state.createDropDownVisible}
           >
-            <Row style={{textTransform: 'uppercase'}}>
-              versioned storage
-            </Row>
-            <Row style={{fontSize: 'smaller'}}>
-              storage with revision control
-            </Row>
-          </MenuItem>
+            <Dropdown
+              trigger={['click']}
+              open={this.state.createDropDownVisible}
+              onOpenChange={(open) => this.setState({createDropDownVisible: open})}
+              minOverlayWidthMatchTrigger={false}
+              placement="bottomRight"
+              menu={{
+                items: createMenuItems,
+                onClick: onCreateActionSelect,
+                mode: 'vertical',
+                subMenuOpenDelay: 0.2,
+                subMenuCloseDelay: 0.2
+              }}
+            >
+              <Button
+                type="primary"
+                id="create-button"
+                size="small"
+                className={styles.dropDownTrigger}
+              >
+                <PlusOutlined style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
+                <span style={{lineHeight: 'inherit', verticalAlign: 'middle'}}> Create </span>
+                <DownOutlined style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
+              </Button>
+            </Dropdown>
+          </DropDownWrapper>
         );
       }
-    }
-    if (createActions.filter(action => !!action).length > 0) {
-      actions.push(
-        <DropDownWrapper
-          key="create actions"
-          visible={this.state.createDropDownVisible}
-        >
-          <Dropdown
-            trigger={['click']}
-            open={this.state.createDropDownVisible}
-            onOpenChange={(open) => this.setState({createDropDownVisible: open})}
-            minOverlayWidthMatchTrigger={false}
-            placement="bottomRight"
-            menu={{
-              items: [{key: '_', label: ''}]
-            }}
-            dropdownRender={() => (
-              <div>
-                <Menu
-                  mode="vertical"
-                  selectedKeys={[]}
-                  onClick={onCreateActionSelect}
-                  subMenuOpenDelay={0.2}
-                  subMenuCloseDelay={0.2}
-                  openAnimation="zoom"
-                  getPopupContainer={node => node.parentNode}
-                >
-                  {createActions}
-                </Menu>
-              </div>
-            )}
-          >
-            <Button
-              type="primary"
-              id="create-button"
-              size="small"
-              className={styles.dropDownTrigger}
-            >
-              <PlusOutlined style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
-              <span style={{lineHeight: 'inherit', verticalAlign: 'middle'}}> Create </span>
-              <DownOutlined style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
-            </Button>
-          </Dropdown>
-        </DropDownWrapper>
-      );
     }
     const onSelectDisplayOption = ({key}) => {
       switch (key) {

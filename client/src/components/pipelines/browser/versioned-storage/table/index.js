@@ -26,7 +26,6 @@ import {
   Row
 } from 'antd';
 import {DownOutlined, FileOutlined, FolderOutlined, PlusOutlined} from '@ant-design/icons';
-import Menu, {MenuItem} from 'rc-menu';
 import classNames from 'classnames';
 import UploadButton from '../../../../special/UploadButton';
 import VSTableNavigation from './vs-table-navigation';

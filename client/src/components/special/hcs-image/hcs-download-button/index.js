@@ -24,7 +24,6 @@ import {Button,
   message
 } from 'antd';
 import {CameraFilled, DownloadOutlined} from '@ant-design/icons';
-import Menu, {MenuItem} from 'rc-menu';
 import FileSaver from 'file-saver';
 import {
   downloadAvailable as downloadCurrentTiffAvailable, downloadCurrentTiff
@@ -103,32 +102,22 @@ class HCSDownloadButton extends React.Component {
       .then(blob => FileSaver.saveAs(blob, hcsVideoSource.getVideoFileName(videoUrl)));
   };
 
-  renderScreenshotMenu = (items) => {
-    const handle = ({key}) => {
-      switch (key) {
-        case 'tiff':
-        case 'png':
-          (this.handleHighResolutionScreenshotDownload)(key);
-          break;
-        case 'default':
-        default:
-          this.handleDownloadScreenshot();
-          break;
-      }
-    };
-    return (
-      <Menu
-        onClick={handle}
-        selectedKeys={[]}
-        style={{cursor: 'pointer'}}
-      >
-        {items.map(item => (
-          <MenuItem key={item.key}>
-            {item.text}
-          </MenuItem>
-        ))}
-      </Menu>
-    );
+  getScreenshotMenuItems = (items) => items.map(item => ({
+    key: item.key,
+    label: item.text
+  }));
+
+  handleScreenshotMenuClick = ({key}) => {
+    switch (key) {
+      case 'tiff':
+      case 'png':
+        this.handleHighResolutionScreenshotDownload(key);
+        break;
+      case 'default':
+      default:
+        this.handleDownloadScreenshot();
+        break;
+    }
   };
 
   render () {
@@ -243,7 +232,11 @@ class HCSDownloadButton extends React.Component {
           style={style}
           disabled={!downloadCurrentTiffAvailable(hcsImageViewer)}
           onClick={this.handleDownloadScreenshot}
-          overlay={this.renderScreenshotMenu(menuItems)}
+          menu={{
+            items: this.getScreenshotMenuItems(menuItems),
+            onClick: this.handleScreenshotMenuClick,
+            style: {cursor: 'pointer'}
+          }}
           size={size}
         >
           <CameraFilled className="cp-larger" />

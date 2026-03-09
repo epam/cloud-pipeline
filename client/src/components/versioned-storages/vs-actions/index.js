@@ -25,7 +25,6 @@ import {
 } from 'antd';
 import {CloudDownloadOutlined, DownOutlined, ExceptionOutlined, ExclamationCircleFilled, ForkOutlined, LoadingOutlined, SaveOutlined, SyncOutlined} from '@ant-design/icons';
 import VsActionsAvailable, {vsAvailabilityCheck} from './vs-actions-available';
-import Menu, {MenuItem, Divider, ItemGroup, SubMenu} from 'rc-menu';
 import VSBrowseDialog from '../vs-browse-dialog';
 import GitDiffModal from './components/diff/modal';
 import VSList from '../../../models/versioned-storage/list';
@@ -59,7 +58,6 @@ class VSActions extends React.Component {
     conflicts: undefined
   };
 
-  menuContainerRef;
   vsList;
   statuses = [];
 
@@ -637,187 +635,174 @@ class VSActions extends React.Component {
     });
   };
 
-  renderOverlay = () => {
+  getOverlayMenuItems = () => {
     const {storagesStatuses} = this.state;
-    const menuItems = [];
-    let onChange;
+    const items = [];
     if (!this.vsList || (!this.vsList.loaded && this.vsList.pending)) {
-      menuItems.push((
-        <MenuItem
-          disabled key="loading"
-        >
-          <LoadingOutlined />
-          <span>Fetching versioned storage info...</span>
-        </MenuItem>
-      ));
-    } else if (this.vsList.error) {
-      menuItems.push((
-        <MenuItem
-          disabled
-          key="error"
-        >
-          <i>VCS not configured</i>
-        </MenuItem>
-      ));
-    } else if (!this.vsList.loaded) {
-      menuItems.push((
-        <MenuItem
-          disabled
-          key="error"
-        >
-          <i>Error fetching versioned storages</i>
-        </MenuItem>
-      ));
-    } else {
-      const storages = this.repositories;
-      menuItems.push((
-        <MenuItem
-          key="clone"
-        >
-          <CloudDownloadOutlined />
-          <span>Clone</span>
-        </MenuItem>
-      ));
-      if (storages.length > 0) {
-        menuItems.push((<Divider key="clone-divider" />));
-      }
-      storages.forEach((storage, index, array) => {
-        const status = storagesStatuses.hasOwnProperty(storage.id)
-          ? storagesStatuses[storage.id]
-          : {};
-        const {
-          files = [],
-          merge_in_progress: mergeInProgress = false,
-          pending = false,
-          unsaved = false
-        } = status;
-        const notIgnoredFiles = files.filter(f => !/^ignored$/i.test(f.status));
-        const hasConflicts = !!files.find(f => /^conflicts$/i.test(f.status));
-        const hasModifications = !!notIgnoredFiles.find(f => !/^conflicts$/i.test(f.status));
-        const diffEnabled = !pending && files.length > 0;
-        const saveEnabled = !storage.detached &&
-          !pending &&
-          !mergeInProgress &&
-          (
-            (hasModifications && !hasConflicts) ||
-            unsaved
-          );
-        const refreshEnabled = !hasConflicts && !mergeInProgress && !pending;
-        const Container = array.length === 1 ? ItemGroup : SubMenu;
-        menuItems.push((
-          <Container
-            key={`-${storage.id}`}
-            title={(
-              <span>
-                {storage.name}
-                {
-                  pending && (
-                    <LoadingOutlined />
-                  )
-                }
-              </span>
-            )}
-            ref={(el) => {
-              this.menuContainerRef = el;
-            }}
-          >
-            <MenuItem
-              key={`diff-${storage.id}`}
-              disabled={!diffEnabled}
-            >
-              <ExceptionOutlined />
-              <span> Diff</span>
-            </MenuItem>
-            <MenuItem
-              key={`save-${storage.id}`}
-              disabled={!saveEnabled}
-            >
-              <SaveOutlined /> Save
-              {
-                storage.detached && (
-                  <span style={{marginLeft: 5}}>
-                    (current revision is not the latest)
-                  </span>
-                )
-              }
-            </MenuItem>
-            <MenuItem
-              key={`refresh-${storage.id}`}
-              disabled={!refreshEnabled}
-            >
-              <SyncOutlined /> Refresh
-            </MenuItem>
-            <Divider />
-            <MenuItem
-              key={`checkout-${storage.id}`}
-              disabled={mergeInProgress || unsaved}
-            >
-              <ForkOutlined /> Checkout revision
-            </MenuItem>
-            <Divider />
-            {
-              hasConflicts && (
-                <MenuItem
-                  key={`resolve-${storage.id}`}
-                >
-                  <ExclamationCircleFilled /> Resolve conflicts
-                </MenuItem>
-              )
-            }
-          </Container>
-        ));
+      items.push({
+        key: 'loading',
+        disabled: true,
+        icon: <LoadingOutlined />,
+        label: <span>Fetching versioned storage info...</span>
       });
-      onChange = ({key}) => {
-        const [action, storageId] = key.split('-');
-        const storage = storages.find(s => +(s.id) === +(storageId));
-        switch (action) {
-          case 'clone':
-            this.openVSBrowser();
-            break;
-          case 'refresh':
-            if (storage) {
-              this.onFetchVS(storage);
-            }
-            break;
-          case 'save':
-            if (storage) {
-              this.onCommitVS(storage);
-            }
-            break;
-          case 'diff':
-            if (storage) {
-              this.onDiffVS(storage);
-            }
-            break;
-          case 'resolve':
-            if (storage) {
-              this.onResolveConflictsVS(storage);
-            }
-            break;
-          case 'checkout':
-            if (storage) {
-              this.openGitCheckoutModal(storage);
-            }
-            break;
-        }
-        this.setState({dropDownVisible: false});
-      };
+      return items;
     }
-    return (
-      <div>
-        <Menu
-          onClick={onChange}
-          openTransition="none"
-          subMenuOpenDelay={0.2}
-          subMenuCloseDelay={0.2}
-          openAnimation="zoom"
-          getPopupContainer={node => node.parentNode}
-          selectedKeys={[]}
-        >
-          {menuItems}
-        </Menu>
-      </div>
-    );
+    if (this.vsList.error) {
+      items.push({
+        key: 'error',
+        disabled: true,
+        label: <i>VCS not configured</i>
+      });
+      return items;
+    }
+    if (!this.vsList.loaded) {
+      items.push({
+        key: 'error',
+        disabled: true,
+        label: <i>Error fetching versioned storages</i>
+      });
+      return items;
+    }
+    const storages = this.repositories;
+    items.push({
+      key: 'clone',
+      icon: <CloudDownloadOutlined />,
+      label: <span>Clone</span>
+    });
+    if (storages.length > 0) {
+      items.push({type: 'divider', key: 'clone-divider'});
+    }
+    storages.forEach((storage, index, array) => {
+      const status = storagesStatuses.hasOwnProperty(storage.id)
+        ? storagesStatuses[storage.id]
+        : {};
+      const {
+        files = [],
+        merge_in_progress: mergeInProgress = false,
+        pending = false,
+        unsaved = false
+      } = status;
+      const notIgnoredFiles = files.filter(f => !/^ignored$/i.test(f.status));
+      const hasConflicts = !!files.find(f => /^conflicts$/i.test(f.status));
+      const hasModifications = !!notIgnoredFiles.find(f => !/^conflicts$/i.test(f.status));
+      const diffEnabled = !pending && files.length > 0;
+      const saveEnabled = !storage.detached &&
+        !pending &&
+        !mergeInProgress &&
+        (
+          (hasModifications && !hasConflicts) ||
+          unsaved
+        );
+      const refreshEnabled = !hasConflicts && !mergeInProgress && !pending;
+      const storageChildren = [
+        {
+          key: `diff-${storage.id}`,
+          disabled: !diffEnabled,
+          icon: <ExceptionOutlined />,
+          label: <span> Diff</span>
+        },
+        {
+          key: `save-${storage.id}`,
+          disabled: !saveEnabled,
+          icon: <SaveOutlined />,
+          label: (
+            <span>
+              Save
+              {storage.detached && (
+                <span style={{marginLeft: 5}}>
+                  (current revision is not the latest)
+                </span>
+              )}
+            </span>
+          )
+        },
+        {
+          key: `refresh-${storage.id}`,
+          disabled: !refreshEnabled,
+          icon: <SyncOutlined />,
+          label: 'Refresh'
+        },
+        {type: 'divider', key: `div1-${storage.id}`},
+        {
+          key: `checkout-${storage.id}`,
+          disabled: mergeInProgress || unsaved,
+          icon: <ForkOutlined />,
+          label: 'Checkout revision'
+        },
+        {type: 'divider', key: `div2-${storage.id}`}
+      ];
+      if (hasConflicts) {
+        storageChildren.push({
+          key: `resolve-${storage.id}`,
+          icon: <ExclamationCircleFilled />,
+          label: 'Resolve conflicts'
+        });
+      }
+      if (array.length === 1) {
+        items.push({
+          type: 'group',
+          key: `-${storage.id}`,
+          label: (
+            <span>
+              {storage.name}
+              {pending && <LoadingOutlined />}
+            </span>
+          ),
+          children: storageChildren
+        });
+      } else {
+        items.push({
+          key: `-${storage.id}`,
+          label: (
+            <span>
+              {storage.name}
+              {pending && <LoadingOutlined />}
+            </span>
+          ),
+          children: storageChildren
+        });
+      }
+    });
+    return items;
+  };
+
+  handleOverlayMenuClick = ({key}) => {
+    const storages = this.repositories;
+    const [action, storageId] = key.split('-');
+    const storage = storages.find(s => +(s.id) === +(storageId));
+    switch (action) {
+      case 'clone':
+        this.openVSBrowser();
+        break;
+      case 'refresh':
+        if (storage) {
+          this.onFetchVS(storage);
+        }
+        break;
+      case 'save':
+        if (storage) {
+          this.onCommitVS(storage);
+        }
+        break;
+      case 'diff':
+        if (storage) {
+          this.onDiffVS(storage);
+        }
+        break;
+      case 'resolve':
+        if (storage) {
+          this.onResolveConflictsVS(storage);
+        }
+        break;
+      case 'checkout':
+        if (storage) {
+          this.openGitCheckoutModal(storage);
+        }
+        break;
+      default:
+        break;
+    }
+    this.setState({dropDownVisible: false});
   };
 
   render () {
@@ -842,7 +827,11 @@ class VSActions extends React.Component {
     return (
       <DropDownWrapper visible={dropDownVisible}>
         <Dropdown
-          overlay={this.renderOverlay()}
+          menu={{
+            items: this.getOverlayMenuItems(),
+            onClick: this.handleOverlayMenuClick,
+            style: {maxHeight: '80vh', overflow: 'auto'}
+          }}
           open={dropDownVisible}
           onOpenChange={this.onDropDownVisibilityChange}
           trigger={trigger}

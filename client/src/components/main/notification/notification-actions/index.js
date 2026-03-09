@@ -20,7 +20,6 @@ import {inject, observer} from 'mobx-react';
 import {computed, observable, makeObservable} from 'mobx';
 import {
   Dropdown,
-  Menu,
   message
 } from 'antd';
 import {LoadingOutlined, SettingOutlined} from '@ant-design/icons';
@@ -189,42 +188,28 @@ class NotificationActions extends React.Component {
       style
     } = this.props;
     const {visible, entityRequestPending} = this.state;
-    const menu = (
-      <Menu
-        selectedKeys={[]}
-        style={{cursor: 'default', minWidth: '120px'}}
-        onClick={({key}) => {
-          const action = this.actions.find(action => action.key === key);
-          action && action.actionFn({
-            notification,
-            entity: (this.entityInfoRequest || {}).value,
-            router: this.props.router,
-            callback: this.hideMenu
-          });
-          this.hideMenu();
-        }}
-      >
-        {this.actions.length > 0 ? (
-          this.actions.map(action => (
-            <Menu.Item
-              key={action.key}
-            >
-              {action.key}
-            </Menu.Item>
-          ))
-        ) : (
-          <Menu.Item key="empty" disabled>No actions available</Menu.Item>
-        )}
-      </Menu>
-    );
     return (
       <div>
         {this.showActionsControl ? (
           <Dropdown
-            overlay={menu}
+            menu={{
+              items: this.actions.length > 0
+                ? this.actions.map(action => ({key: action.key, label: action.key}))
+                : [{key: 'empty', label: 'No actions available', disabled: true}],
+              onClick: ({key}) => {
+                const action = this.actions.find(a => a.key === key);
+                action && action.actionFn({
+                  notification,
+                  entity: (this.entityInfoRequest || {}).value,
+                  router: this.props.router,
+                  callback: this.hideMenu
+                });
+                this.hideMenu();
+              }
+            }}
             trigger={['click']}
-            onVisibleChange={this.handleVisibleChange}
-            visible={visible}
+            onOpenChange={this.handleVisibleChange}
+            open={visible}
             disabled={pending}
             onClick={e => e.stopPropagation()}
           >

@@ -37,7 +37,6 @@ import {
   Upload
 } from 'antd';
 import {AppstoreFilled, ArrowLeftOutlined, CameraOutlined, CheckCircleFilled, CloseOutlined, DeleteOutlined, DownOutlined, ExclamationCircleFilled, LinkOutlined, LoadingOutlined, SettingOutlined, UploadOutlined} from '@ant-design/icons';
-import Menu, {MenuItem, Divider} from 'rc-menu';
 import classNames from 'classnames';
 import LoadTool from '../../models/tools/LoadTool';
 import ToolImage from '../../models/tools/ToolImage';

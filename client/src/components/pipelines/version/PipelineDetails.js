@@ -29,7 +29,6 @@ import {Alert,
   Dropdown
 } from 'antd';
 import {DownOutlined, SettingOutlined, TagFilled} from '@ant-design/icons';
-import Menu, {MenuItem} from 'rc-menu';
 import {graphIsSupportedForLanguage} from './graph/visualization';
 import pipelines from '../../../models/pipelines/Pipelines';
 import pipelinesLibrary from '../../../models/folders/FolderLoadTree';

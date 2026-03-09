@@ -20,7 +20,6 @@ import {Alert, Button, Dropdown, Modal, Splitter, Tree} from 'antd';
 import {DownOutlined, FolderOutlined, SettingOutlined, SolutionOutlined} from '@ant-design/icons';
 import {inject} from 'mobx-react';
 import classNames from 'classnames';
-import Menu, {MenuItem} from 'rc-menu';
 import {
   generateTreeData,
   ItemTypes,
@@ -361,27 +360,16 @@ class ConfigurationBrowser extends React.Component {
     const onChangeConfigName = ({key}) => this.setState({
       entryName: key
     });
-    const menu = (
-      <div>
-        <Menu
-          selectedKeys={[]}
-          onSelect={onChangeConfigName}
-        >
-          {
-            entries.map(anEntry => (
-              <MenuItem key={anEntry.name} title={anEntry.name}>
-                {anEntry.name}
-              </MenuItem>
-            ))
-          }
-        </Menu>
-      </div>
-    );
+    const menuItems = entries.map(anEntry => ({
+      key: anEntry.name,
+      label: anEntry.name,
+      title: anEntry.name
+    }));
     let configNameComponent = (<span>{entryName}</span>);
     if (entries.length > 1) {
       configNameComponent = (
         <Dropdown
-          overlay={menu}
+          menu={{items: menuItems, onClick: onChangeConfigName}}
           trigger={['click']}
         >
           <a className="cp-text">

@@ -27,7 +27,6 @@ import {
   SelectOutlined,
   UploadOutlined
 } from '@ant-design/icons';
-import Menu, {MenuItem} from 'rc-menu';
 import classNames from 'classnames';
 import BucketBrowser from '../../pipelines/launch/dialogs/BucketBrowser';
 import SystemParametersBrowser from '../../pipelines/launch/dialogs/SystemParametersBrowser';
@@ -152,16 +151,14 @@ export default class EditToolFormParameters extends React.Component {
       );
     };
 
-    const parameterTypeMenu = (
-      <Menu selectedKeys={[]} onClick={onSelect} style={{cursor: 'pointer'}}>
-        <MenuItem id="add-string-parameter" key="string">String parameter</MenuItem>
-        <MenuItem id="add-boolean-parameter" key="boolean">Boolean parameter</MenuItem>
-        <MenuItem id="add-path-parameter" key="path">Path parameter</MenuItem>
-        <MenuItem id="add-input-parameter" key="input">Input path parameter</MenuItem>
-        <MenuItem id="add-output-parameter" key="output">Output path parameter</MenuItem>
-        <MenuItem id="add-common-parameter" key="common">Common path parameter</MenuItem>
-      </Menu>
-    );
+    const parameterTypeMenuItems = [
+      {key: 'string', label: 'String parameter', id: 'add-string-parameter'},
+      {key: 'boolean', label: 'Boolean parameter', id: 'add-boolean-parameter'},
+      {key: 'path', label: 'Path parameter', id: 'add-path-parameter'},
+      {key: 'input', label: 'Input path parameter', id: 'add-input-parameter'},
+      {key: 'output', label: 'Output path parameter', id: 'add-output-parameter'},
+      {key: 'common', label: 'Common path parameter', id: 'add-common-parameter'}
+    ];
 
     return (
       <Button.Group>
@@ -174,7 +171,10 @@ export default class EditToolFormParameters extends React.Component {
         {
           !this.props.readOnly
             ? (
-              <Dropdown overlay={parameterTypeMenu} placement="bottomRight">
+              <Dropdown
+                menu={{items: parameterTypeMenuItems, onClick: onSelect}}
+                placement="bottomRight"
+              >
                 <Button
                   id="add-parameter-dropdown-button"
                   disabled={this.props.readOnly}>

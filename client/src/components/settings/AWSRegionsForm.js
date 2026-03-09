@@ -50,7 +50,6 @@ import {
   UserOutlined,
   UsergroupAddOutlined
 } from '@ant-design/icons';
-import Menu, {MenuItem} from 'rc-menu';
 import AWSRegionUpdate from '../../models/dataStorage/AWSRegionUpdate';
 import AWSRegionDelete from '../../models/dataStorage/AWSRegionDelete';
 import AWSRegionCreate from '../../models/dataStorage/AWSRegionCreate';
@@ -532,26 +531,10 @@ export default class AWSRegionsForm extends React.Component {
 
   renderAddNewRegionButton = () => {
     if (this.cloudProviders.length > 1) {
-      const menu = (
-        <Menu
-          onClick={({key}) => this.onAddNewRegionClicked(key)}
-          selectedKeys={[]}
-          style={{cursor: 'pointer'}}
-        >
-          {
-            this.cloudProviders.map(c => {
-              return (
-                <MenuItem key={c}>
-                  {c}
-                </MenuItem>
-              );
-            })
-          }
-        </Menu>
-      );
+      const menuItems = this.cloudProviders.map(c => ({key: c, label: c}));
       return (
         <Dropdown
-          overlay={menu}
+          menu={{items: menuItems, onClick: ({key}) => this.onAddNewRegionClicked(key)}}
           disabled={this.regionModified || !!this.state.newRegion}>
           <Button
             disabled={this.regionModified || !!this.state.newRegion}

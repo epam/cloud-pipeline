@@ -2526,7 +2526,7 @@ export default class DataStorage extends React.Component {
       <Dropdown
         placement="bottomRight"
         trigger={['click']}
-        overlayClassName="selection-actions-dropdown"
+        classNames={{root: 'selection-actions-dropdown'}}
         menu={{
           items: menuItems,
           onClick: onMenuClick,
@@ -2852,7 +2852,7 @@ export default class DataStorage extends React.Component {
       <Dropdown
         placement="bottomRight"
         trigger={['click']}
-        overlayClassName="presentation-actions-dropdown"
+        classNames={{root: 'presentation-actions-dropdown'}}
         menu={{
           items: menuItems,
           onClick: onMenuClick,

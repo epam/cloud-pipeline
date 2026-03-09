@@ -77,6 +77,7 @@ class AppearanceManagement extends React.Component {
       themes: themesStore
     } = this.props;
     return (themesStore.themes || [])
+      .slice()
       .sort((a, b) => Number(b.predefined) - Number(a.predefined));
   }
 

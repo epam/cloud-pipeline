@@ -46,7 +46,6 @@ import {
   BarsOutlined
 } from '@ant-design/icons';
 import styles from './LaunchPipelineForm.css';
-import Menu, {MenuItem} from 'rc-menu';
 import BucketBrowser from './../dialogs/BucketBrowser';
 import PipelineBrowser from './../dialogs/PipelineBrowser';
 import DockerImageInput from './DockerImageInput';
@@ -4897,21 +4896,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           </div>
         );
       } else if (!this.props.pipeline || roleModel.executeAllowed(this.props.pipeline)) {
-        const KEYS = {
-          selectMetadata: 'select metadata'
-        };
-        const onDropDownClick = ({key}) => {
-          if (key === KEYS.selectMetadata) {
+        const launchDropdownMenuItems = [
+          {key: 'select metadata', label: 'Select metadata entries and launch'}
+        ];
+        const onLaunchDropdownClick = ({key}) => {
+          if (key === 'select metadata') {
             this.run({key: RUN_SELECTED_KEY});
           }
         };
-        const dropdownRenderer = () => (
-          <Menu onClick={onDropDownClick} selectedKeys={[]} style={{cursor: 'pointer'}}>
-            <MenuItem key={KEYS.selectMetadata}>
-              Select metadata entries and launch
-            </MenuItem>
-          </Menu>
-        );
         return (
           <div className={styles.actions}>
             <FormItem style={{margin: 0, marginRight: 10}}>
@@ -4939,7 +4931,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 type="primary"
                 htmlType="submit"
                 dropdown={!!this.props.runConfigurationId}
-                dropdownRenderer={dropdownRenderer}
+                dropdownMenuItems={launchDropdownMenuItems}
+                dropdownMenuOnClick={onLaunchDropdownClick}
                 dropdownId="launch-metadata"
                 loading={this.props.pending}
                 disabled={this.props.pending || this.state.pending}

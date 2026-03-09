@@ -67,7 +67,7 @@ function checkPermission (parameter, storageList, permissionChecker, permissionN
 function getPaths (parameters, types) {
   return Object.entries(parameters || {})
     .map(([name, param]) => ({name, ...param}))
-    .filter(p => types.indexOf(p.type) >= 0)
+    .filter(p => types.indexOf(p.type) >= 0);
 }
 
 export function getInputPaths (parameters) {
@@ -321,7 +321,15 @@ class SubmitButton extends React.Component {
     style: PropTypes.object,
     skipCheck: PropTypes.bool,
     disabled: PropTypes.bool,
-    loading: PropTypes.bool
+    loading: PropTypes.bool,
+    dropdown: PropTypes.bool,
+    dropdownId: PropTypes.string,
+    dropdownRenderer: PropTypes.func,
+    dropdownMenuItems: PropTypes.arrayOf(PropTypes.shape({
+      key: PropTypes.string,
+      label: PropTypes.node
+    })),
+    dropdownMenuOnClick: PropTypes.func
   };
 
   state = {
@@ -366,14 +374,17 @@ class SubmitButton extends React.Component {
       type,
       dropdown,
       dropdownRenderer,
-      dropdownId
+      dropdownId,
+      dropdownMenuItems,
+      dropdownMenuOnClick
     } = this.props;
     const {
       errors
     } = this.state;
     const pending = (dataStorages.pending && !dataStorages.loaded) ||
       (dockerRegistries.pending && !dockerRegistries.loaded);
-    const submitButton = dropdown && dropdownRenderer ? (
+    const hasDropdownMenu = dropdown && (dropdownMenuItems?.length > 0 || dropdownRenderer);
+    const submitButton = hasDropdownMenu ? (
       <Button.Group
         size={size}
       >
@@ -390,8 +401,10 @@ class SubmitButton extends React.Component {
           {children}
         </Button>
         <Dropdown
-          menu={{items: [{key: '_', label: ''}]}}
-          dropdownRender={() => dropdownRenderer()}
+          menu={dropdownMenuItems?.length > 0
+            ? {items: dropdownMenuItems, onClick: dropdownMenuOnClick, style: {cursor: 'pointer'}}
+            : {items: [{key: '_', label: ''}]}}
+          popupRender={dropdownRenderer ? () => dropdownRenderer() : undefined}
           placement="bottomRight"
           disabled={this.props.disabled || pending || errors.length > 0}
         >
@@ -404,7 +417,7 @@ class SubmitButton extends React.Component {
             type="primary"
             loading={this.props.loading}
           >
-            <DownOutlined style={{ lineHeight: 'inherit' }} />
+            <DownOutlined style={{lineHeight: 'inherit'}} />
           </Button>
         </Dropdown>
       </Button.Group>

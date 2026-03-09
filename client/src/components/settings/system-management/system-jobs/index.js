@@ -25,7 +25,6 @@ import {Alert,
   message
 } from 'antd';
 import {CodeOutlined} from '@ant-design/icons';
-import Menu, {MenuItem} from 'rc-menu';
 import LoadingView from '../../../special/LoadingView';
 import SubSettings from '../../sub-settings';
 import RunTable, {Columns} from '../../../runs/run-table';
@@ -221,17 +220,9 @@ class SystemJobs extends React.Component {
           break;
       }
     };
-    const launchMenu = (
-      <Menu
-        onClick={handleLaunchMenu}
-        selectedKeys={[]}
-        style={{cursor: 'pointer'}}
-      >
-        <MenuItem key="custom">
-          Launch with parameters
-        </MenuItem>
-      </Menu>
-    );
+    const launchMenuItems = [
+      {key: 'custom', label: 'Launch with parameters'}
+    ];
     return (
       <div className={styles.systemJobContainer}>
         <div
@@ -268,7 +259,11 @@ class SystemJobs extends React.Component {
                   size="small"
                   style={{marginLeft: 5}}
                   onClick={() => this.launchJob(job)}
-                  overlay={launchMenu}
+                  menu={{
+                    items: launchMenuItems,
+                    onClick: handleLaunchMenu,
+                    style: {cursor: 'pointer'}
+                  }}
                 >
                   LAUNCH
                 </Dropdown.Button>

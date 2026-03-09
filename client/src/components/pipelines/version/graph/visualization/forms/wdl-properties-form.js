@@ -27,7 +27,6 @@ import {
   Modal
 } from 'antd';
 import {DeleteOutlined, DownOutlined, PlusOutlined, QuestionCircleFilled} from '@ant-design/icons';
-import Menu, {SubMenu, MenuItem, Divider} from 'rc-menu';
 import {
   ContextTypes,
   isCall,
@@ -282,6 +281,31 @@ class WdlPropertiesForm extends React.Component {
       };
       let actionButton;
       if (canAddSubAction && !disabled) {
+        const callItems = (executables || []).length > 0
+          ? [
+            {key: 'call', label: <>Add <b>new task</b> call</>},
+            {type: 'divider', key: 'call-divider'},
+            ...executables.map((executable) => ({
+              key: `call_${executable.name}`,
+              label: <>Add {getEntityName(executable, wdlDocument)} call</>
+            }))
+          ]
+          : [];
+        const actionsMenuItems = (executables || []).length > 0
+          ? [
+            {
+              key: 'call-submenu',
+              label: <span>Add <b>call</b></span>,
+              children: callItems
+            },
+            {key: 'scatter', label: <>Add <b>scatter</b></>},
+            {key: 'conditional', label: <>Add <b>conditional</b></>}
+          ]
+          : [
+            {key: 'call', label: <>Add <b>call</b></>},
+            {key: 'scatter', label: <>Add <b>scatter</b></>},
+            {key: 'conditional', label: <>Add <b>conditional</b></>}
+          ];
         actionButton = (
           <DropDownWrapper
             key="create actions"
@@ -290,63 +314,18 @@ class WdlPropertiesForm extends React.Component {
             <Dropdown
               placement="bottomRight"
               trigger={['click']}
-              visible={actionsDropdownVisible}
-              onVisibleChange={visible => this.setState({actionsDropdownVisible: visible})}
+              open={actionsDropdownVisible}
+              onOpenChange={open => this.setState({actionsDropdownVisible: open})}
               minOverlayWidthMatchTrigger={false}
-              overlay={
-                <div>
-                  <Menu
-                    mode="vertical"
-                    selectedKeys={[]}
-                    subMenuOpenDelay={0.2}
-                    subMenuCloseDelay={0.2}
-                    openAnimation="zoom"
-                    getPopupContainer={node => node.parentNode}
-                    onClick={actionSelect}
-                    style={{width: 200, cursor: 'pointer'}}
-                  >
-                    {
-                      (executables || []).length > 0 && (
-                        <SubMenu
-                          onTitleClick={() => actionSelect({key: 'call'})}
-                          key="call-submenu"
-                          title={(
-                            <span>
-                              Add <b>call</b>
-                            </span>
-                          )}
-                          style={{width: 200, cursor: 'pointer'}}
-                        >
-                          <MenuItem key="call">
-                            Add <b>new task</b> call
-                          </MenuItem>
-                          <Divider />
-                          {
-                            executables.map((executable) => (
-                              <MenuItem key={`call_${executable.name}`}>
-                                Add {getEntityName(executable, wdlDocument)} call
-                              </MenuItem>
-                            ))
-                          }
-                        </SubMenu>
-                      )
-                    }
-                    {
-                      (executables || []).length === 0 && (
-                        <MenuItem key="call">
-                          Add <b>call</b>
-                        </MenuItem>
-                      )
-                    }
-                    <MenuItem key="scatter">
-                      Add <b>scatter</b>
-                    </MenuItem>
-                    <MenuItem key="conditional">
-                      Add <b>conditional</b>
-                    </MenuItem>
-                  </Menu>
-                </div>
-              }
+              menu={{
+                items: actionsMenuItems,
+                onClick: actionSelect,
+                mode: 'vertical',
+                subMenuOpenDelay: 0.2,
+                subMenuCloseDelay: 0.2,
+                style: {width: 200, cursor: 'pointer'}
+              }}
+              getPopupContainer={node => node.parentNode}
               key="actions"
             >
               <Button

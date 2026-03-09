@@ -56,7 +56,7 @@ function PoolSelector ({
       className={styles.container}
     >
       <Dropdown
-        overlay={renderOverlay()}
+        popupRender={() => renderOverlay()}
         trigger={['click']}
       >
         <div className={styles.selector}>
