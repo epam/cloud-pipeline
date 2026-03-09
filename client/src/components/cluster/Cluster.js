@@ -603,9 +603,11 @@ export default class Cluster extends localization.LocalizedReactComponent {
     );
     return {
       filterDropdown,
-      filterDropdownVisible: this.state.filter[parameter].visible,
+      filterDropdownProps: {
+        open: this.state.filter[parameter].visible,
+        onOpenChange: this.onFilterDropdownVisibleChange(parameter)
+      },
       filtered: this.state.filter[parameter].filtered(),
-      onFilterDropdownVisibleChange: this.onFilterDropdownVisibleChange(parameter),
       filteredValue: this.state.filter[parameter].filtered()
         ? [this.state.filter[parameter].value] : []
     };

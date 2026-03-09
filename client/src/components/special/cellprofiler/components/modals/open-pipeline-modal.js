@@ -170,9 +170,11 @@ class OpenPipelineModal extends React.Component {
         size="small"
         rowClassName={() => classNames(styles.analysisPipelineRow)}
         onRow={(pipeline) => ({ onClick: (event) => togglePipeline(pipeline, event) })}
-        onExpand={onExpand}
-        expandedRowKeys={expandedKeys}
-        onExpandedRowsChange={keys => this.setState({expandedKeys: keys})}
+        expandable={{
+          onExpand,
+          expandedRowKeys: expandedKeys,
+          onExpandedRowsChange: keys => this.setState({expandedKeys: keys})
+        }}
         bordered={false}
         pagination={{
           total: pipelineFiles.length,

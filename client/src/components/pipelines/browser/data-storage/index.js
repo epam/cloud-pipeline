@@ -1878,9 +1878,11 @@ export default class DataStorage extends React.Component {
           submitDisabled={value => (value || '').length < 3}
         />
       ),
-      filterDropdownVisible: this.filterDropdownVisible === 'name',
-      onFilterDropdownVisibleChange: (visible) => {
-        this.filterDropdownVisible = visible ? 'name' : undefined;
+      filterDropdownProps: {
+        open: this.filterDropdownVisible === 'name',
+        onOpenChange: (visible) => {
+          this.filterDropdownVisible = visible ? 'name' : undefined;
+        }
       },
       ...filteredStatus([FILTER_FIELDS.name]),
       onCell: (item) => ({onClick: () => this.didSelectDataStorageItem(item)})
@@ -1901,9 +1903,11 @@ export default class DataStorage extends React.Component {
           visible={this.filterDropdownVisible === 'size'}
         />
       ),
-      filterDropdownVisible: this.filterDropdownVisible === 'size',
-      onFilterDropdownVisibleChange: (visible) => {
-        this.filterDropdownVisible = visible ? 'size' : undefined;
+      filterDropdownProps: {
+        open: this.filterDropdownVisible === 'size',
+        onOpenChange: (visible) => {
+          this.filterDropdownVisible = visible ? 'size' : undefined;
+        }
       },
       ...filteredStatus([FILTER_FIELDS.sizeGreaterThan, FILTER_FIELDS.sizeLessThan]),
       onCell: (item) => ({onClick: () => this.didSelectDataStorageItem(item)})
@@ -1924,9 +1928,11 @@ export default class DataStorage extends React.Component {
           visible={this.filterDropdownVisible === 'date'}
         />
       ),
-      filterDropdownVisible: this.filterDropdownVisible === 'date',
-      onFilterDropdownVisibleChange: (visible) => {
-        this.filterDropdownVisible = visible ? 'date' : undefined;
+      filterDropdownProps: {
+        open: this.filterDropdownVisible === 'date',
+        onOpenChange: (visible) => {
+          this.filterDropdownVisible = visible ? 'date' : undefined;
+        }
       },
       ...filteredStatus([FILTER_FIELDS.dateAfter, FILTER_FIELDS.dateBefore]),
       onCell: (item) => ({onClick: () => this.didSelectDataStorageItem(item)})

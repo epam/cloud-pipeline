@@ -827,7 +827,6 @@ export default class Pipeline extends localization.LocalizedReactComponent {
           title={null}
           showHeader={false}
           rowClassName={(item) => `folder-item-${item.key}`}
-          expandedRowRender={null}
           loading={this.props.versions.pending}
           pagination={{pageSize: 40}}
           size="small" />

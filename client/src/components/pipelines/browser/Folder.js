@@ -1413,7 +1413,6 @@ export default class Folder extends localization.LocalizedReactComponent {
           title={null}
           showHeader={false}
           rowClassName={getRowClassName}
-          expandedRowRender={null}
           loading={this.props.folder.pending}
           pagination={{pageSize: 40}}
           locale={{emptyText: 'Folder is empty'}}

@@ -212,7 +212,6 @@ export default class FireCloudMethodSnapshotConfigurations extends React.Compone
               this.props.fireCloudMethods.pending ||
               (!!this._configurations && this._configurations.pending)
             }
-            expandedRowRender={null}
             pagination={false}
             showHeader={false}
             title={null}

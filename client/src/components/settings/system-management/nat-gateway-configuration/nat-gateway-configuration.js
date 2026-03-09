@@ -477,8 +477,10 @@ export default class NATGateway extends React.Component {
                 'cp-disabled': this.routeIsRemoved(record),
                 'cp-primary': !this.routeIsRemoved(record) && record.isNew
               })}
-              expandedRowKeys={expandedRowKeys}
-              onExpandedRowsChange={this.onChangeExpandedRows}
+              expandable={{
+                expandedRowKeys,
+                onExpandedRowsChange: this.onChangeExpandedRows
+              }}
             >
               <ColumnGroup title="External resources">
                 {columns.external.map((col) => (

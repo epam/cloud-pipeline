@@ -245,13 +245,15 @@ export default class CoreServicesTable extends React.Component {
       .map(pod => pod.namespace))
     ];
     const getFiltersState = (key) => ({
-      filterDropdownVisible: this.state.filterDropdownVisible === key,
-      onFilterDropdownVisibleChange: (visible) => {
-        this.setState({
-          filterDropdownVisible: visible
-            ? key
-            : undefined
-        });
+      filterDropdownProps: {
+        open: this.state.filterDropdownVisible === key,
+        onOpenChange: (visible) => {
+          this.setState({
+            filterDropdownVisible: visible
+              ? key
+              : undefined
+          });
+        }
       },
       filtered: filters[key] !== this._initialFilters[key],
       filteredValue: filters[key] !== this._initialFilters[key]
@@ -454,8 +456,10 @@ export default class CoreServicesTable extends React.Component {
         rowKey="uid"
         bordered
         pagination={false}
-        expandedRowKeys={expandedRows}
-        onExpandedRowsChange={this.onExpandedRowsChanged}
+        expandable={{
+          expandedRowKeys: expandedRows,
+          onExpandedRowsChange: this.onExpandedRowsChanged
+        }}
         rowClassName={(row, index) => index % 2 === 0
           ? ''
           : 'cp-cluster-node-even-row'

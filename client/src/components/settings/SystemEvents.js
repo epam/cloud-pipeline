@@ -256,11 +256,10 @@ export default class SystemEvents extends Component {
           loading={this.props.notifications.pending}
           columns={columns}
           dataSource={data}
-          expandedRowClassName={
-            notification => `notification-${notification.notificationId}-expanded-row`
-          }
-          expandedRowRender={
-            notification =>
+          expandable={{
+            expandedRowClassName: notification =>
+              `notification-${notification.notificationId}-expanded-row`,
+            expandedRowRender: notification =>
               (
                 <p
                   className={`notification-${notification.notificationId}-body`}
@@ -268,7 +267,7 @@ export default class SystemEvents extends Component {
                   {notification.body}
                 </p>
               )
-          }
+          }}
           size="small" />
         <EditSystemNotificationForm
           pending={false}

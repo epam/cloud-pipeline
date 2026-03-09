@@ -348,7 +348,6 @@ export default class MetadataFolder extends React.Component {
           title={null}
           showHeader={false}
           rowClassName={(item) => `folder-item-${item.key}`}
-          expandedRowRender={null}
           loading={false}
           pagination={{pageSize: 40}}
           locale={{emptyText: 'Metadata is empty'}}

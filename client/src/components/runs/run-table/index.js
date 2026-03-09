@@ -717,8 +717,10 @@ class RunTable extends localization.LocalizedReactComponent {
         size="small"
         indentSize={10}
         locale={{emptyText: emptyDataMessage, filterConfirm: 'OK', filterReset: 'Clear'}}
-        expandedRowKeys={expandedRows}
-        onExpandedRowsChange={this.onExpandedRowsChanged}
+        expandable={{
+          expandedRowKeys: expandedRows,
+          onExpandedRowsChange: this.onExpandedRowsChanged
+        }}
       />
     );
   };

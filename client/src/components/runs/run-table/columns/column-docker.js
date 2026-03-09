@@ -211,9 +211,11 @@ function getColumnFilter (state, setState) {
         onClear={clear}
       />
     ),
-    filterDropdownVisible,
-    filtered,
-    onFilterDropdownVisibleChange
+    filterDropdownProps: {
+      open: filterDropdownVisible,
+      onOpenChange: onFilterDropdownVisibleChange
+    },
+    filtered
   };
 }
 
