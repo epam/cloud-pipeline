@@ -196,6 +196,7 @@ class UsersRolesSelect extends React.Component {
     const {
       className,
       style,
+      styles,
       disabled: disabledProp,
       users,
       roles,
@@ -217,6 +218,7 @@ class UsersRolesSelect extends React.Component {
         disabled={disabled}
         className={className}
         style={style}
+        styles={styles}
         mode="multiple"
         value={value.map(getDataSourceItemValue)}
         onChange={this.onChange}
@@ -280,6 +282,7 @@ UsersRolesSelect.propTypes = {
   placeholder: PropTypes.string,
   className: PropTypes.string,
   style: PropTypes.object,
+  styles: PropTypes.object,
   disabled: PropTypes.bool,
   value: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   onChange: PropTypes.func,

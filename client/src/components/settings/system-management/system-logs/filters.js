@@ -308,7 +308,7 @@ class Filters extends React.Component {
           <Select
             allowClear
             showSearch
-            dropdownMatchSelectWidth={false}
+            popupMatchSelectWidth={false}
             optionLabelProp="label"
             mode="multiple"
             placeholder="User"

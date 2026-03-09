@@ -1706,7 +1706,7 @@ class HcsCellSelector extends React.Component {
           allowClear
           mode="multiple"
           className={styles.tagsSelector}
-          dropdownClassName={styles.tagDropdown}
+          classNames={{popup: {root: styles.tagDropdown}}}
           placeholder={searchPlaceholder}
           notFoundContent="Not found"
           value={selectedTags}

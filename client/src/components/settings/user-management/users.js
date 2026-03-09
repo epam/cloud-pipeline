@@ -298,7 +298,7 @@ export default class UsersManagement extends React.Component {
           value={this.state.filterUsers}
           style={{width: 175, marginLeft: 5}}
           onChange={this.onChangeUsersFilters}
-          dropdownMatchSelectWidth={false}
+          popupMatchSelectWidth={false}
         >
           <Select.Option
             key={USERS_FILTERS.all}

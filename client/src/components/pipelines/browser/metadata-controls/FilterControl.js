@@ -142,7 +142,7 @@ class FilterControl extends React.Component {
             mode="tags"
             style={{width: 280}}
             placeholder="Type filter and press enter"
-            dropdownStyle={{display: 'none'}}
+            styles={{popup: {root: {display: 'none'}}}}
             onChange={this.onChange}
             getPopupContainer={triggerNode => triggerNode.parentNode}
           />

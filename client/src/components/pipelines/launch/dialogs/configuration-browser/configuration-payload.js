@@ -575,7 +575,7 @@ class ConfigurationPayload extends React.Component {
           }
           style={{flex: 1, maxWidth: 300}}
           value={instanceType}
-          dropdownMatchSelectWidth={false}
+          popupMatchSelectWidth={false}
           disabled={disabled || (instanceTypesPending && instanceTypes.length === 0)}
           onChange={onChange}
         >
@@ -619,7 +619,7 @@ class ConfigurationPayload extends React.Component {
           }
           style={{flex: 1, maxWidth: 300}}
           value={cloudRegionId ? `${cloudRegionId}` : undefined}
-          dropdownMatchSelectWidth={false}
+          popupMatchSelectWidth={false}
           disabled={disabled}
           onChange={onChange}
         >

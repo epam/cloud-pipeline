@@ -320,7 +320,7 @@ class NotificationForm extends React.Component {
             <UsersRolesSelect
               disabled={notificationsDisabled || pending}
               style={{flex: 1}}
-              dropdownStyle={{maxHeight: '80%'}}
+              styles={{popup: {root: {maxHeight: '80%'}}}}
               popupContainerFn={() => this.notifyFormContainer}
               onChange={this.checkRequiredFields}
             />

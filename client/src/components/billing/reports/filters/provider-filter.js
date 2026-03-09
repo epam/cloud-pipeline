@@ -136,7 +136,7 @@ class ProviderFilter extends React.Component {
       const {value} = this.state;
       const {cloudRegionsInfo, filters = {}} = this.props;
       const {region, buildNavigationFn = () => {}} = filters;
-      const onChange = buildNavigationFn('region')
+      const onChange = buildNavigationFn('region');
       await cloudRegionsInfo.fetchIfNeededOrWait();
       if (cloudRegionsInfo.loaded) {
         const payload = value.map(mapRegion);
@@ -205,9 +205,9 @@ class ProviderFilter extends React.Component {
         mode="multiple"
         placeholder="All regions / providers"
         showSearch
-        dropdownMatchSelectWidth={false}
+        popupMatchSelectWidth={false}
         className={styles.providerSelect}
-        dropdownClassName={styles.dropdown}
+        classNames={{popup: {root: styles.dropdown}}}
         filterOption={
           (input, option) => option.props.filter.some(f => f.indexOf(input.toUpperCase()) >= 0)
         }

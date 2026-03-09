@@ -99,7 +99,7 @@ class CheckoutDialog extends React.Component {
       >
         <VSVersions
           className={styles.versionsSelect}
-          dropdownMatchSelectWidth
+          popupMatchSelectWidth
           repository={repository ? repository.id : undefined}
           onChange={this.onChange}
           value={version}

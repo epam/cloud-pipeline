@@ -580,7 +580,7 @@ class UserIntegrityCheck extends React.Component {
                               ? userMetadata[column]
                               : undefined
                           }
-                          dropdownMatchSelectWidth={false}
+                          popupMatchSelectWidth={false}
                         >
                           {
                             this.isNewValue(dictionary, userMetadata[column]) && (
@@ -701,7 +701,7 @@ class UserIntegrityCheck extends React.Component {
           onChange={onChangeFilters}
           mode="multiple"
           getPopupContainer={node => node.parentNode}
-          dropdownStyle={{zIndex: 1054}}
+          styles={{popup: {root: {zIndex: 1054}}}}
         >
           <Select.Option key={FILTERS.blocked} value={FILTERS.blocked}>
             Blocked users

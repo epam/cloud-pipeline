@@ -284,7 +284,7 @@ export default class JobList extends React.Component {
             size="small"
             allowClear
             showSearch
-            dropdownMatchSelectWidth={false}
+            popupMatchSelectWidth={false}
             optionLabelProp="label"
             placeholder="Status"
             style={commonStyle}

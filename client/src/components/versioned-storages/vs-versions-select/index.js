@@ -170,7 +170,7 @@ class VSVersions extends React.Component {
       onChange,
       style,
       rowClassName,
-      dropdownMatchSelectWidth
+      popupMatchSelectWidth
     } = this.props;
     const {
       versions,
@@ -189,7 +189,7 @@ class VSVersions extends React.Component {
         value={value}
         onChange={onChange}
         size="small"
-        dropdownMatchSelectWidth={dropdownMatchSelectWidth}
+        popupMatchSelectWidth={popupMatchSelectWidth}
         style={style}
         showSearch
         filterOption={
@@ -264,7 +264,7 @@ class VSVersions extends React.Component {
 VSVersions.propTypes = {
   className: PropTypes.string,
   rowClassName: PropTypes.string,
-  dropdownMatchSelectWidth: PropTypes.bool,
+  popupMatchSelectWidth: PropTypes.bool,
   setFirstVersionByDefault: PropTypes.bool,
   repository: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   value: PropTypes.string,
@@ -273,7 +273,7 @@ VSVersions.propTypes = {
 };
 
 VSVersions.defaultProps = {
-  dropdownMatchSelectWidth: false,
+  popupMatchSelectWidth: false,
   setFirstVersionByDefault: false
 };
 

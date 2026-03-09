@@ -409,9 +409,9 @@ class RunnerFilter extends React.Component {
         mode="multiple"
         labelInValue
         showSearch
-        dropdownMatchSelectWidth={false}
+        popupMatchSelectWidth={false}
         className={styles.runnerSelect}
-        dropdownClassName={styles.dropdown}
+        classNames={{popup: {root: styles.dropdown}}}
         style={{width: 200}}
         placeholder="All billing centers / users / groups"
         notFoundContent={
