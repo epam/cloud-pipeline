@@ -15,6 +15,7 @@
 import io
 import logging
 import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from threading import Thread
 
 import errno
@@ -37,7 +38,7 @@ def mkdir(path):
 
 class DiskBufferingReadAllFileSystemClient(FileSystemClientDecorator):
 
-    def __init__(self, inner, read_ahead_size, path):
+    def __init__(self, inner, read_ahead_size, path, download_workers=1):
         """
         Disk buffering read all file system client decorator.
 
@@ -46,12 +47,25 @@ class DiskBufferingReadAllFileSystemClient(FileSystemClientDecorator):
 
         :param inner: Decorating file system client.
         :param read_ahead_size: Amount of bytes that will be read ahead from an inner file system client at once.
+                               Use 0 or None for auto: when download_workers > 1, split each file into
+                               download_workers equal chunks; when download_workers == 1, one chunk per file.
         :param path: Local file system path to persist files.
+        :param download_workers: Number of parallel workers for full-file download (1 = sequential).
         """
         super(DiskBufferingReadAllFileSystemClient, self).__init__(inner)
         self._inner = inner
         self._path = path
         self._read_ahead_size = read_ahead_size
+        self._download_workers = max(1, int(download_workers))
+        self._auto_chunk = read_ahead_size is None or read_ahead_size == 0
+
+    def _download_one_range(self, fh, path, range_offset, range_length):
+        """Download a single range from the inner client. Returns (range_offset, bytes)."""
+        with io.BytesIO() as current_buf:
+            logging.info('Downloading buffer range %d-%d for %d:%s'
+                         % (range_offset, range_offset + range_length, fh, path))
+            self._inner.download_range(fh, current_buf, path, range_offset, length=range_length)
+            return (range_offset, current_buf.getvalue())
 
     def download_range(self, fh, buf, path, offset=0, length=0):
         try:
@@ -61,20 +75,60 @@ class DiskBufferingReadAllFileSystemClient(FileSystemClientDecorator):
                 if not file_size or offset >= file_size:
                     return
                 mkdir(os.path.dirname(file_buf_path))
-                with open(file_buf_path, 'wb') as f:
-                    remaining_size = file_size
+
+                # Build list of (offset, length) chunks for the whole file
+                if self._auto_chunk and self._download_workers > 1:
+                    # Auto: split file into equal chunks according to download_workers
+                    desired_chunks = max(1, min(self._download_workers, file_size))
+                    chunks = []
+                    for i in range(desired_chunks):
+                        chunk_start = (i * file_size) // desired_chunks
+                        chunk_end = ((i + 1) * file_size) // desired_chunks
+                        chunk_len = chunk_end - chunk_start
+                        if chunk_len > 0:
+                            chunks.append((chunk_start, chunk_len))
+                elif self._auto_chunk and self._download_workers == 1:
+                    # Auto with one worker: single chunk (whole file)
+                    chunks = [(0, file_size)]
+                else:
+                    # User-defined read_ahead_size: fixed-size chunks
+                    chunks = []
                     current_offset = 0
+                    remaining_size = file_size
                     while remaining_size:
-                        current_length = min(remaining_size, self._read_ahead_size)
-                        with io.BytesIO() as current_buf:
-                            logging.info('Downloading buffer range %d-%d for %d:%s'
-                                         % (current_offset, current_offset + current_length, fh, path))
-                            self._inner.download_range(fh, current_buf, path, current_offset, length=current_length)
+                        chunk_length = min(remaining_size, self._read_ahead_size)
+                        chunks.append((current_offset, chunk_length))
+                        remaining_size -= chunk_length
+                        current_offset += chunk_length
+
+                with open(file_buf_path, 'wb') as f:
+                    if self._download_workers <= 1 or len(chunks) <= 1:
+                        # Sequential download
+                        for range_offset, range_length in chunks:
+                            _, data = self._download_one_range(fh, path, range_offset, range_length)
                             logging.info('Persisting buffer range %d-%d for %d:%s'
-                                         % (current_offset, current_offset + current_length, fh, path))
-                            f.write(current_buf.getvalue())
-                        remaining_size -= current_length
-                        current_offset += current_length
+                                         % (range_offset, range_offset + len(data), fh, path))
+                            f.write(data)
+                    else:
+                        # Parallel download: submit all ranges, then write in offset order
+                        workers = min(self._download_workers, len(chunks))
+                        with ThreadPoolExecutor(max_workers=workers) as executor:
+                            future_to_chunk = {
+                                executor.submit(self._download_one_range, fh, path, co, cl): (co, cl)
+                                for co, cl in chunks
+                            }
+                            # Collect results in offset order for sequential write
+                            results_by_offset = {}
+                            for future in as_completed(future_to_chunk):
+                                range_offset, data = future.result()
+                                results_by_offset[range_offset] = data
+                            for range_offset, range_length in chunks:
+                                data = results_by_offset[range_offset]
+                                logging.info('Persisting buffer range %d-%d for %d:%s'
+                                             % (range_offset, range_offset + len(data), fh, path))
+                                f.seek(range_offset)
+                                f.write(data)
+
             file_size = os.path.getsize(file_buf_path)
             if not file_size or offset >= file_size:
                 return
