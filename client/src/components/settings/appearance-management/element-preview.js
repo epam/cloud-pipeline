@@ -473,10 +473,11 @@ class ElementPreview extends React.Component {
         <Tabs
           activeKey="tab1"
           style={{margin: '0 10px'}}
-        >
-          <Tabs.TabPane key="tab1" tab="Active tab" />
-          <Tabs.TabPane key="tab2" tab="Another tab" />
-        </Tabs>
+          items={[
+            {key: 'tab1', label: 'Active tab', children: null},
+            {key: 'tab2', label: 'Another tab', children: null}
+          ]}
+        />
         <div className={classNames('cp-panel', styles.mainPanel)}>
           <div className={styles.elementName}>Panel</div>
           <TextPreview style={{margin: 10}} />

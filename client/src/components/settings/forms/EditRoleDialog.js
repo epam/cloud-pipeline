@@ -777,10 +777,10 @@ class EditRoleDialog extends React.Component {
     const pending = this.props.credentialProfiles ? this.props.credentialProfiles.pending : false;
     const roleType = predefined ? 'role' : 'group';
     const rightPanel = (
-      <Splitter orientation="vertical" style={{ height: '100%' }}>
+      <Splitter orientation="vertical" style={{height: '100%'}}>
         <Splitter.Panel defaultSize="50%" min={200} resizable>
-          <div className="cp-split-panel-panel" style={{ height: '100%', overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-            <Row type="flex" justify="space-between" align="middle" className="cp-split-panel-header" style={{ padding: '0px 5px' }}>
+          <div className="cp-split-panel-panel" style={{height: '100%', overflow: 'auto', display: 'flex', flexDirection: 'column'}}>
+            <Row type="flex" justify="space-between" align="middle" className="cp-split-panel-header" style={{padding: '0px 5px'}}>
               <span>Attributes</span>
             </Row>
             <Metadata
@@ -797,8 +797,8 @@ class EditRoleDialog extends React.Component {
           </div>
         </Splitter.Panel>
         <Splitter.Panel defaultSize="50%" min={200} resizable>
-          <div className="cp-split-panel-panel" style={{ height: '100%', overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-            <Row type="flex" justify="space-between" align="middle" className="cp-split-panel-header" style={{ padding: '0px 5px' }}>
+          <div className="cp-split-panel-panel" style={{height: '100%', overflow: 'auto', display: 'flex', flexDirection: 'column'}}>
+            <Row type="flex" justify="space-between" align="middle" className="cp-split-panel-header" style={{padding: '0px 5px'}}>
               <span>Launch options</span>
             </Row>
             <div key="INSTANCE_MANAGEMENT">
@@ -910,84 +910,84 @@ class EditRoleDialog extends React.Component {
             style={{display: 'flex', flexDirection: 'column', height: '100%', overflowX: 'hidden'}}
             key={CONTENT_PANEL_KEY}
           >
-          <Row type="flex" style={{marginBottom: 8}} align="middle">
-            <Checkbox
-              checked={this.state.userDefault}
-              onChange={this.onChangeUserDefault}
-            >
-              <b>Default {roleType}</b>
-            </Checkbox>
-            <p className="cp-text-not-important" style={{fontSize: 'smaller'}}>
-              This {roleType} will be assigned to all new users upon the registration
-            </p>
-          </Row>
-          <Row type="flex" style={{marginBottom: 10}} align="middle">
-            <span style={{marginRight: 5, fontWeight: 'bold'}}>Default data storage:</span>
-            <Select
-              allowClear
-              showSearch
-              disabled={this.state.operationInProgress || readOnly}
-              value={this.defaultStorageId}
-              style={{flex: 1, textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden'}}
-              onChange={this.onChangeDefaultStorageId}
-              size="small"
-              filterOption={(input, option) =>
-                option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0 ||
-                (option.props.pathmask || '').toLowerCase().indexOf(input.toLowerCase()) >= 0
-              }>
-              {
-                this.dataStorages.map(d => {
-                  return (
-                    <Select.Option
-                      key={d.id}
-                      value={`${d.id}`}
-                      title={d.name}
-                      name={d.name}
-                      pathmask={d.pathMask}
-                    >
-                      <b>{d.name}</b> ({d.pathMask})
-                    </Select.Option>
-                  );
-                })
-              }
-            </Select>
-          </Row>
-          <Row type="flex" style={{marginBottom: 10}} align="middle">
-            <div style={{flex: 1}} id="find-user-autocomplete-container">
-              <AutoComplete
+            <Row type="flex" style={{marginBottom: 8}} align="middle">
+              <Checkbox
+                checked={this.state.userDefault}
+                onChange={this.onChangeUserDefault}
+              >
+                <b>Default {roleType}</b>
+              </Checkbox>
+              <p className="cp-text-not-important" style={{fontSize: 'smaller'}}>
+                This {roleType} will be assigned to all new users upon the registration
+              </p>
+            </Row>
+            <Row type="flex" style={{marginBottom: 10}} align="middle">
+              <span style={{marginRight: 5, fontWeight: 'bold'}}>Default data storage:</span>
+              <Select
+                allowClear
+                showSearch
                 disabled={this.state.operationInProgress || readOnly}
+                value={this.defaultStorageId}
+                style={{flex: 1, textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden'}}
+                onChange={this.onChangeDefaultStorageId}
                 size="small"
-                style={{width: '100%'}}
-                placeholder="Search user"
-                optionLabelProp="text"
-                value={this.state.search}
-                onSelect={this.onUserSelect}
-                onSearch={this.findUser}>
+                filterOption={(input, option) =>
+                  option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0 ||
+                (option.props.pathmask || '').toLowerCase().indexOf(input.toLowerCase()) >= 0
+                }>
                 {
-                  this.state.fetchedUsers.map(user => {
-                    return <AutoComplete.Option key={user.id} text={user.userName}>
-                      {this.renderUserName(user)}
-                    </AutoComplete.Option>;
+                  this.dataStorages.map(d => {
+                    return (
+                      <Select.Option
+                        key={d.id}
+                        value={`${d.id}`}
+                        title={d.name}
+                        name={d.name}
+                        pathmask={d.pathMask}
+                      >
+                        <b>{d.name}</b> ({d.pathMask})
+                      </Select.Option>
+                    );
                   })
                 }
-              </AutoComplete>
-            </div>
-            <div style={{paddingLeft: 10, textAlign: 'right'}}>
-              <Button
-                id="add-user-button"
-                size="small"
-                onClick={this.assignRole}
-                disabled={
-                  this.state.selectedUser === null ||
+              </Select>
+            </Row>
+            <Row type="flex" style={{marginBottom: 10}} align="middle">
+              <div style={{flex: 1}} id="find-user-autocomplete-container">
+                <AutoComplete
+                  disabled={this.state.operationInProgress || readOnly}
+                  size="small"
+                  style={{width: '100%'}}
+                  placeholder="Search user"
+                  optionLabelProp="text"
+                  value={this.state.search}
+                  onSelect={this.onUserSelect}
+                  onSearch={this.findUser}>
+                  {
+                    this.state.fetchedUsers.map(user => {
+                      return <AutoComplete.Option key={user.id} text={user.userName}>
+                        {this.renderUserName(user)}
+                      </AutoComplete.Option>;
+                    })
+                  }
+                </AutoComplete>
+              </div>
+              <div style={{paddingLeft: 10, textAlign: 'right'}}>
+                <Button
+                  id="add-user-button"
+                  size="small"
+                  onClick={this.assignRole}
+                  disabled={
+                    this.state.selectedUser === null ||
                   this.state.selectedUser === undefined ||
                   this.state.operationInProgress ||
                   readOnly
-                }>
-                <PlusOutlined /> Add user
-              </Button>
-            </div>
-          </Row>
-          {this.renderUsersList()}
+                  }>
+                  <PlusOutlined /> Add user
+                </Button>
+              </div>
+            </Row>
+            {this.renderUsersList()}
           </div>
         </Splitter.Panel>
         <Splitter.Panel defaultSize="40%" min={200} resizable>
@@ -996,7 +996,6 @@ class EditRoleDialog extends React.Component {
       </Splitter>
     );
   };
-
 
   renderTabs = () => {
     const {activeTab} = this.state;
@@ -1047,9 +1046,12 @@ class EditRoleDialog extends React.Component {
       <Tabs
         activeKey={activeTab}
         onChange={onChangeTab}
-      >
-        {tabsConfig.map(config => <Tabs.TabPane {...config} />)}
-      </Tabs>
+        items={tabsConfig.map(config => ({
+          key: config.key,
+          label: config.tab,
+          children: null
+        }))}
+      />
     );
   };
 

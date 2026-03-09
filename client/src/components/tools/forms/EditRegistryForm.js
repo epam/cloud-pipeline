@@ -24,7 +24,6 @@ import localization from '../../../utils/localization';
 
 @localization.localizedComponent
 export default class EditRegistryForm extends localization.LocalizedReactComponent {
-
   formRef = React.createRef();
 
   state = {
@@ -238,74 +237,83 @@ export default class EditRegistryForm extends localization.LocalizedReactCompone
           <Tabs
             size="small"
             activeKey={this.state.activeTab}
-            onChange={this.onSectionChange}>
-            <Tabs.TabPane key="info" tab="Info">
-              <Form
-                ref={this.formRef}
-                initialValues={{
-                  path: this.props.registry ? this.props.registry.path : undefined,
-                  description: this.props.registry ? this.props.registry.description : undefined,
-                  securityScanEnabled: this.props.registry ? this.props.registry.securityScanEnabled : true,
-                  userName: this.props.registry ? this.props.registry.userName : undefined,
-                  password: this.props.registry ? this.props.registry.password : undefined,
-                  externalUrl: this.props.registry ? this.props.registry.externalUrl : undefined,
-                  pipelineAuth: this.props.registry ? this.props.registry.pipelineAuth : undefined
-                }}
-              >
-                <Form.Item
-                  {...this.formItemLayout}
-                  label="Path"
-                  name="path"
-                  rules={[{required: true, message: 'Path is required'}]}
-                >
-                  <Input
-                    ref={!this.props.registry ? this.initializeNameInput : null}
-                    onPressEnter={this.handleSubmit}
-                    disabled={this.props.pending || !!this.props.registry}
-                  />
-                </Form.Item>
-                <Form.Item
-                  {...this.formItemLayout}
-                  style={{marginBottom: 10}}
-                  label="Description"
-                  name="description"
-                >
-                  <Input
-                    ref={!!this.props.registry ? this.initializeNameInput : null}
-                    onPressEnter={this.handleSubmit}
-                    disabled={this.props.pending}
-                  />
-                </Form.Item>
-                <Row key="security scan enabled">
-                  <Col xs={24} sm={6} />
-                  <Col xs={24} sm={18}>
+            onChange={this.onSectionChange}
+            items={[
+              {
+                key: 'info',
+                label: 'Info',
+                children: (
+                  <Form
+                    ref={this.formRef}
+                    initialValues={{
+                      path: this.props.registry ? this.props.registry.path : undefined,
+                      description: this.props.registry ? this.props.registry.description : undefined,
+                      securityScanEnabled: this.props.registry ? this.props.registry.securityScanEnabled : true,
+                      userName: this.props.registry ? this.props.registry.userName : undefined,
+                      password: this.props.registry ? this.props.registry.password : undefined,
+                      externalUrl: this.props.registry ? this.props.registry.externalUrl : undefined,
+                      pipelineAuth: this.props.registry ? this.props.registry.pipelineAuth : undefined
+                    }}
+                  >
                     <Form.Item
-                      style={{marginBottom: 10}}
-                      name="securityScanEnabled"
-                      valuePropName="checked"
+                      {...this.formItemLayout}
+                      label="Path"
+                      name="path"
+                      rules={[{required: true, message: 'Path is required'}]}
                     >
-                      <Checkbox>Require security scanning</Checkbox>
+                      <Input
+                        ref={!this.props.registry ? this.initializeNameInput : null}
+                        onPressEnter={this.handleSubmit}
+                        disabled={this.props.pending || !!this.props.registry}
+                      />
                     </Form.Item>
-                  </Col>
-                </Row>
-                {this.renderCredentialsSection()}
-              </Form>
-            </Tabs.TabPane>
-            {
-              this.props.registry &&
-              (roleModel.isOwner(this.props.registry) || roleModel.isManager.toolAdmin(this)) &&
-              <Tabs.TabPane key="permissions" tab="Permissions">
-                <PermissionsForm
-                  objectIdentifier={this.props.registry.id}
-                  objectType="DOCKER_REGISTRY"
-                  editOwnerAvailable={
-                    roleModel.isOwner(this.props.registry) ||
-                    roleModel.isManager.toolAdmin(this)
-                  }
-                />
-              </Tabs.TabPane>
-            }
-          </Tabs>
+                    <Form.Item
+                      {...this.formItemLayout}
+                      style={{marginBottom: 10}}
+                      label="Description"
+                      name="description"
+                    >
+                      <Input
+                        ref={this.props.registry ? this.initializeNameInput : null}
+                        onPressEnter={this.handleSubmit}
+                        disabled={this.props.pending}
+                      />
+                    </Form.Item>
+                    <Row key="security scan enabled">
+                      <Col xs={24} sm={6} />
+                      <Col xs={24} sm={18}>
+                        <Form.Item
+                          style={{marginBottom: 10}}
+                          name="securityScanEnabled"
+                          valuePropName="checked"
+                        >
+                          <Checkbox>Require security scanning</Checkbox>
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                    {this.renderCredentialsSection()}
+                  </Form>
+                )
+              },
+              ...(this.props.registry &&
+              (roleModel.isOwner(this.props.registry) || roleModel.isManager.toolAdmin(this))
+                ? [{
+                  key: 'permissions',
+                  label: 'Permissions',
+                  children: (
+                    <PermissionsForm
+                      objectIdentifier={this.props.registry.id}
+                      objectType="DOCKER_REGISTRY"
+                      editOwnerAvailable={
+                        roleModel.isOwner(this.props.registry) ||
+                          roleModel.isManager.toolAdmin(this)
+                      }
+                    />
+                  )
+                }]
+                : [])
+            ]}
+          />
         </Spin>
       </Modal>
     );

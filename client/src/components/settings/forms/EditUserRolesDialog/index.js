@@ -905,10 +905,10 @@ export default class EditUserRolesDialog extends React.Component {
       ? this.props.runners.pending
       : false;
     const rightPanel = (
-      <Splitter orientation="vertical" style={{ height: '100%' }}>
+      <Splitter orientation="vertical" style={{height: '100%'}}>
         <Splitter.Panel defaultSize="50%" min={200} resizable>
-          <div className="cp-split-panel-panel" style={{ height: '100%', overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-            <Row type="flex" justify="space-between" align="middle" className="cp-split-panel-header" style={{ padding: '0px 5px' }}>
+          <div className="cp-split-panel-panel" style={{height: '100%', overflow: 'auto', display: 'flex', flexDirection: 'column'}}>
+            <Row type="flex" justify="space-between" align="middle" className="cp-split-panel-header" style={{padding: '0px 5px'}}>
               <span>Attributes</span>
             </Row>
             <Metadata
@@ -925,8 +925,8 @@ export default class EditUserRolesDialog extends React.Component {
           </div>
         </Splitter.Panel>
         <Splitter.Panel defaultSize="50%" min={200} resizable>
-          <div className="cp-split-panel-panel" style={{ height: '100%', overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-            <Row type="flex" justify="space-between" align="middle" className="cp-split-panel-header" style={{ padding: '0px 5px' }}>
+          <div className="cp-split-panel-panel" style={{height: '100%', overflow: 'auto', display: 'flex', flexDirection: 'column'}}>
+            <Row type="flex" justify="space-between" align="middle" className="cp-split-panel-header" style={{padding: '0px 5px'}}>
               <span>Launch options</span>
             </Row>
             <div key="INSTANCE_MANAGEMENT">
@@ -1248,42 +1248,42 @@ export default class EditUserRolesDialog extends React.Component {
       <Tabs
         activeKey={activeTab}
         onChange={this.onChangeTab}
-      >
-        <Tabs.TabPane
-          tab={(
-            <div>
-              <span>
-                PROFILE
-              </span>
-              {
-                blocked &&
-                <span
-                  style={{fontStyle: 'italic', marginLeft: 5}}
-                >
-                  - blocked
+        items={[
+          {
+            key: 'user',
+            label: (
+              <div>
+                <span>
+                  PROFILE
                 </span>
-              }
-            </div>
-          )}
-          key="user"
-        />
-        {
-          (this.isAdmin || this.isUsersAdmin) && (
-            <Tabs.TabPane
-              tab="STATISTICS"
-              key="user-statistics"
-            />
-          )
-        }
-        {
-          (this.isAdmin || this.isUsersAdmin) && (
-            <Tabs.TabPane
-              tab="PERMISSIONS"
-              key="permissions"
-            />
-          )
-        }
-      </Tabs>
+                {
+                  blocked &&
+                  <span
+                    style={{fontStyle: 'italic', marginLeft: 5}}
+                  >
+                    - blocked
+                  </span>
+                }
+              </div>
+            ),
+            children: null
+          },
+          ...((this.isAdmin || this.isUsersAdmin)
+            ? [{
+              key: 'user-statistics',
+              label: 'STATISTICS',
+              children: null
+            }]
+            : []),
+          ...((this.isAdmin || this.isUsersAdmin)
+            ? [{
+              key: 'permissions',
+              label: 'PERMISSIONS',
+              children: null
+            }]
+            : [])
+        ]}
+      />
     );
   };
 

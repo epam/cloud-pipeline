@@ -221,53 +221,64 @@ export default class IssueComment extends React.Component {
     }
     return (
       <div className={styles.container} style={this.props.style}>
-        <Tabs type="card">
-          <Tabs.TabPane tab="Write" key="write">
-            <FileDropContainer
-              onFilesLoaded={this.onAttachmentsLoaded}
-              action={IssueAttachmentUpload.url}>
-              {
-                !this.state.clear &&
-                <Mentions
-                  ref={this.initializeMentionControl}
-                  placeholder={this.props.placeholder || 'Description'}
-                  disabled={this.props.disabled}
-                  defaultValue={
-                    this.props.value ? (this.props.value.text || '') : ''
-                  }
-                  loading={this.state.pending}
-                  className={classNames(styles.issueDescription, 'cp-mention')}
-                  style={{height: this.props.height || 300}}
-                  onSearch={this.onSearch}
-                  onSelect={this.onSelect}
-                  onChange={this.onChange}
-                  notFoundContent={notFoundContent}
-                  rows={10}
-                  prefix={['@', '#']}
-                >
+        <Tabs
+          type="card"
+          items={[
+            {
+              key: 'write',
+              label: 'Write',
+              children: (
+                <FileDropContainer
+                  onFilesLoaded={this.onAttachmentsLoaded}
+                  action={IssueAttachmentUpload.url}>
                   {
-                    this.state.suggestions.map((suggestion, index) => (
-                      <Mentions.Option key={index} value={suggestion.value}>
-                        {suggestion.label}
-                      </Mentions.Option>
-                    ))
+                    !this.state.clear &&
+                    <Mentions
+                      ref={this.initializeMentionControl}
+                      placeholder={this.props.placeholder || 'Description'}
+                      disabled={this.props.disabled}
+                      defaultValue={
+                        this.props.value ? (this.props.value.text || '') : ''
+                      }
+                      loading={this.state.pending}
+                      className={classNames(styles.issueDescription, 'cp-mention')}
+                      style={{height: this.props.height || 300}}
+                      onSearch={this.onSearch}
+                      onSelect={this.onSelect}
+                      onChange={this.onChange}
+                      notFoundContent={notFoundContent}
+                      rows={10}
+                      prefix={['@', '#']}
+                    >
+                      {
+                        this.state.suggestions.map((suggestion, index) => (
+                          <Mentions.Option key={index} value={suggestion.value}>
+                            {suggestion.label}
+                          </Mentions.Option>
+                        ))
+                      }
+                    </Mentions>
                   }
-                </Mentions>
-              }
-            </FileDropContainer>
-          </Tabs.TabPane>
-          <Tabs.TabPane tab="Preview" key="preview">
-            <div
-              className={styles.issueDescription}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                height: this.props.height || 300
-              }}>
-              <IssueCommentPreview text={this.state.rawText} />
-            </div>
-          </Tabs.TabPane>
-        </Tabs>
+                </FileDropContainer>
+              )
+            },
+            {
+              key: 'preview',
+              label: 'Preview',
+              children: (
+                <div
+                  className={styles.issueDescription}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    height: this.props.height || 300
+                  }}>
+                  <IssueCommentPreview text={this.state.rawText} />
+                </div>
+              )
+            }
+          ]}
+        />
       </div>
     );
   }

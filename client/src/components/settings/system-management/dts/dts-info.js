@@ -330,20 +330,34 @@ class DtsInfo extends React.Component {
     const {pending} = this.props;
     const {logsFolder} = this.state;
     return (
-      <Tabs className={styles.tabs} defaultActiveKey="dts" size="small" onChange={this.onChangeTab}>
-        <Tabs.TabPane tab="DTS" key="dts">
-          <Spin spinning={pending}>
-            {this.renderDtsTab()}
-          </Spin>
-        </Tabs.TabPane>
-        {logsFolder ? (
-          <Tabs.TabPane tab="LOGS" key="logs" style={{height: '100%'}}>
-            <DtsLogs
-              folder={logsFolder}
-            />
-          </Tabs.TabPane>
-        ) : null}
-      </Tabs>
+      <Tabs
+        className={styles.tabs}
+        defaultActiveKey="dts"
+        size="small"
+        onChange={this.onChangeTab}
+        items={[
+          {
+            key: 'dts',
+            label: 'DTS',
+            children: (
+              <Spin spinning={pending}>
+                {this.renderDtsTab()}
+              </Spin>
+            )
+          },
+          ...(logsFolder
+            ? [{
+              key: 'logs',
+              label: 'LOGS',
+              children: (
+                <div style={{height: '100%'}}>
+                  <DtsLogs folder={logsFolder} />
+                </div>
+              )
+            }]
+            : [])
+        ]}
+      />
     );
   }
 }

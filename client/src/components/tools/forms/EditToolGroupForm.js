@@ -233,30 +233,36 @@ export default class EditToolGroupForm extends React.Component {
             <Tabs
               size="small"
               activeKey={this.state.activeTab}
-              onChange={this.onSectionChange}>
-              <Tabs.TabPane key="info" tab="Info">
-                {this.renderForm()}
-              </Tabs.TabPane>
-              {
-                this.props.toolGroup &&
+              onChange={this.onSectionChange}
+              items={[
+                {
+                  key: 'info',
+                  label: 'Info',
+                  children: this.renderForm()
+                },
+                ...(this.props.toolGroup &&
                 this.props.toolGroup.id &&
-                roleModel.isOwner(this.props.toolGroup) && (
-                  <Tabs.TabPane key="permissions" tab="Permissions">
-                    <PermissionsForm
-                      objectIdentifier={this.props.toolGroup.id}
-                      objectType="TOOL_GROUP"
-                      defaultMask={defaultMask}
-                      enabledMask={enabledMask}
-                      readOnlyRoles={readOnlyRoles}
-                      editOwnerAvailable={
-                        roleModel.isOwner(this.props.toolGroup) ||
-                        roleModel.isManager.toolAdmin(this)
-                      }
-                    />
-                  </Tabs.TabPane>
-                )
-              }
-            </Tabs>
+                roleModel.isOwner(this.props.toolGroup)
+                  ? [{
+                    key: 'permissions',
+                    label: 'Permissions',
+                    children: (
+                      <PermissionsForm
+                        objectIdentifier={this.props.toolGroup.id}
+                        objectType="TOOL_GROUP"
+                        defaultMask={defaultMask}
+                        enabledMask={enabledMask}
+                        readOnlyRoles={readOnlyRoles}
+                        editOwnerAvailable={
+                          roleModel.isOwner(this.props.toolGroup) ||
+                            roleModel.isManager.toolAdmin(this)
+                        }
+                      />
+                    )
+                  }]
+                  : [])
+              ]}
+            />
           </Form>
         </Spin>
       </Modal>

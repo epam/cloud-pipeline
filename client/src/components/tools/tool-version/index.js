@@ -145,23 +145,20 @@ export default class ToolVersion extends React.Component {
         <Tabs
           activeKey={activeKey}
           onChange={this.navigateTo}
-          size="small">
-          {
-            this.props.settings.loaded &&
+          size="small"
+          items={[
+            ...(this.props.settings.loaded &&
             !isWindowsPlatform &&
-            this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) && (
-              <Tabs.TabPane key="scaninfo" tab="VULNERABILITIES REPORT" />
-            )
-          }
-          <Tabs.TabPane key="settings" tab="SETTINGS" />
-          {
-            this.props.settings.loaded &&
-            !isWindowsPlatform && (
-              <Tabs.TabPane key="packages" tab="PACKAGES" />
-            )
-          }
-          <Tabs.TabPane key="history" tab="IMAGE HISTORY" />
-        </Tabs>
+            this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry)
+              ? [{key: 'scaninfo', label: 'VULNERABILITIES REPORT', children: null}]
+              : []),
+            {key: 'settings', label: 'SETTINGS', children: null},
+            ...(this.props.settings.loaded && !isWindowsPlatform
+              ? [{key: 'packages', label: 'PACKAGES', children: null}]
+              : []),
+            {key: 'history', label: 'IMAGE HISTORY', children: null}
+          ]}
+        />
         <div style={{flex: 1, overflow: 'auto'}}>
           {this.props.children}
         </div>

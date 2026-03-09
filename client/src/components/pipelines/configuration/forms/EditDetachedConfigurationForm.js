@@ -263,23 +263,28 @@ export default class EditDetachedConfigurationForm extends React.Component {
             <Tabs
               size="small"
               activeKey={this.state.activeTab}
-              onChange={this.onSectionChange}>
-              <Tabs.TabPane key="info" tab="Info">
-                {this.renderForm()}
-              </Tabs.TabPane>
-              {
-                this.props.configuration &&
-                this.props.configuration.id
-                  ? (
-                    <Tabs.TabPane key="permissions" tab="Permissions">
+              onChange={this.onSectionChange}
+              items={[
+                {
+                  key: 'info',
+                  label: 'Info',
+                  children: this.renderForm()
+                },
+                ...(this.props.configuration && this.props.configuration.id
+                  ? [{
+                    key: 'permissions',
+                    label: 'Permissions',
+                    children: (
                       <PermissionsForm
                         readonly={isReadOnly}
                         objectIdentifier={this.props.configuration.id}
-                        objectType="configuration" />
-                    </Tabs.TabPane>
-                  ) : undefined
-              }
-            </Tabs>
+                        objectType="configuration"
+                      />
+                    )
+                  }]
+                  : [])
+              ]}
+            />
           </Form>
         </Spin>
         <Modal

@@ -229,15 +229,16 @@ export default class PodInfoModal extends React.Component {
             activeKey={activeTabKey}
             onChange={this.onChangeTab}
             size="small"
-          >
-            {tabs.map(tab => (
-              <Tabs.TabPane tab={tab.title} key={tab.key}>
+            items={tabs.map(tab => ({
+              key: tab.key,
+              label: tab.title,
+              children: (
                 <Spin spinning={this.pending}>
                   {tab.render()}
                 </Spin>
-              </Tabs.TabPane>
-            ))}
-          </Tabs>
+              )
+            }))}
+          />
         </div>
       </Modal>
     );

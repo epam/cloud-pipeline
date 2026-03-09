@@ -673,49 +673,56 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
               size="small"
               activeKey={this.state.activeTab}
               onChange={this.onSectionChange}
-            >
-              <Tabs.TabPane key="info" tab="Info">
-                {this.renderForm()}
-              </Tabs.TabPane>
-              {this.props.pipeline &&
+              items={[
+                {
+                  key: 'info',
+                  label: 'Info',
+                  children: this.renderForm()
+                },
+                ...(this.props.pipeline &&
                 this.props.pipeline.id &&
-                roleModel.readAllowed(this.props.pipeline) && (
-                <Tabs.TabPane key="permissions" tab="Permissions">
-                  <PermissionsForm
-                    readonly={isReadOnly || !roleModel.writeAllowed(this.props.pipeline)}
-                    objectIdentifier={this.props.pipeline.id}
-                    objectType="pipeline"
-                    subObjectsPermissionsMaskToCheck={roleModel.buildPermissionsMask(
-                      1,
-                      1,
-                      0,
-                      0,
-                      1,
-                      1
-                    )}
-                    subObjectsToCheck={this.tools.map(
-                      ({aclClass: entityClass, id: entityId, image}) => ({
-                        entityId,
-                        entityClass,
-                        name: <b>{image}</b>
-                      })
-                    )}
-                    subObjectsPermissionsErrorTitle={
-                      <span>
-                        Users shall have Read and Execute permissions for the
-                        docker images, used in a current{' '}
-                        {this.localizedString(objectName)}. Please review and
-                        fix permissions issues below:
-                      </span>
-                    }
-                    editOwnerAvailable={
-                      roleModel.isOwner(this.props.pipeline) ||
-                      roleModel.isManager.pipelineAdmin(this)
-                    }
-                  />
-                </Tabs.TabPane>
-              )}
-            </Tabs>
+                roleModel.readAllowed(this.props.pipeline)
+                  ? [{
+                    key: 'permissions',
+                    label: 'Permissions',
+                    children: (
+                      <PermissionsForm
+                        readonly={isReadOnly || !roleModel.writeAllowed(this.props.pipeline)}
+                        objectIdentifier={this.props.pipeline.id}
+                        objectType="pipeline"
+                        subObjectsPermissionsMaskToCheck={roleModel.buildPermissionsMask(
+                          1,
+                          1,
+                          0,
+                          0,
+                          1,
+                          1
+                        )}
+                        subObjectsToCheck={this.tools.map(
+                          ({aclClass: entityClass, id: entityId, image}) => ({
+                            entityId,
+                            entityClass,
+                            name: <b>{image}</b>
+                          })
+                        )}
+                        subObjectsPermissionsErrorTitle={
+                          <span>
+                            Users shall have Read and Execute permissions for the
+                            docker images, used in a current{' '}
+                            {this.localizedString(objectName)}. Please review and
+                            fix permissions issues below:
+                          </span>
+                        }
+                        editOwnerAvailable={
+                          roleModel.isOwner(this.props.pipeline) ||
+                            roleModel.isManager.pipelineAdmin(this)
+                        }
+                      />
+                    )
+                  }]
+                  : [])
+              ]}
+            />
           </Form>
         </Spin>
         <Modal

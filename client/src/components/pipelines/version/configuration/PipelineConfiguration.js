@@ -466,24 +466,21 @@ export default class PipelineConfiguration extends React.Component {
           onChange={this.onSelectConfiguration}
           activeKey={this.selectedConfigurationName}
           tabBarExtraContent={addButton}
-          type="editable-card">
-          {
-            (this.props.configurations.value || []).sort((cA, cB) => {
-              if (cA.name > cB.name) {
-                return 1;
-              } else if (cA.name < cB.name) {
-                return -1;
-              }
-              return 0;
-            }).map(c => (
-              <Tabs.TabPane
-                closable={false}
-                tab={c.default ? <i>{c.name}</i> : c.name}
-                key={c.name}
-              />
-            ))
-          }
-        </Tabs>
+          type="editable-card"
+          items={(this.props.configurations.value || []).sort((cA, cB) => {
+            if (cA.name > cB.name) {
+              return 1;
+            } else if (cA.name < cB.name) {
+              return -1;
+            }
+            return 0;
+          }).map(c => ({
+            key: c.name,
+            label: c.default ? <i>{c.name}</i> : c.name,
+            closable: false,
+            children: null
+          }))}
+        />
       </Row>
     );
   };

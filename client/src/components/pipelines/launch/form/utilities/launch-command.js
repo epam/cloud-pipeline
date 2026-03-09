@@ -217,14 +217,12 @@ class LaunchCommand extends React.Component {
         width="50%"
         footer={false}
       >
-        <Tabs>
-          <Tabs.TabPane key="CLI" tab="CLI">
-            {this.renderCLICommand()}
-          </Tabs.TabPane>
-          <Tabs.TabPane key="API" tab="API">
-            {this.renderAPICommand()}
-          </Tabs.TabPane>
-        </Tabs>
+        <Tabs
+          items={[
+            {key: 'CLI', label: 'CLI', children: this.renderCLICommand()},
+            {key: 'API', label: 'API', children: this.renderAPICommand()}
+          ]}
+        />
       </Modal>
     );
   }

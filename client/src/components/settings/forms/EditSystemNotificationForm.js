@@ -105,23 +105,32 @@ export default class EditSystemNotificationForm extends React.Component {
         <Tabs
           type="card"
           className="cp-tabs-no-padding"
-        >
-          <Tabs.TabPane tab="Write" key="write">
-            <Input
-              type="textarea"
-              autoSize={{minRows: 2, maxRows: 6}}
-              className={styles.notificationBodyInput}
-              disabled={this.props.pending}
-              placeholder="Notification text"
-            />
-          </Tabs.TabPane>
-          <Tabs.TabPane tab="Preview" key="preview">
-            <Markdown
-              className={styles.notificationPreviewContainer}
-              md={form ? form.getFieldValue('body') : ''}
-            />
-          </Tabs.TabPane>
-        </Tabs>
+          items={[
+            {
+              key: 'write',
+              label: 'Write',
+              children: (
+                <Input
+                  type="textarea"
+                  autoSize={{minRows: 2, maxRows: 6}}
+                  className={styles.notificationBodyInput}
+                  disabled={this.props.pending}
+                  placeholder="Notification text"
+                />
+              )
+            },
+            {
+              key: 'preview',
+              label: 'Preview',
+              children: (
+                <Markdown
+                  className={styles.notificationPreviewContainer}
+                  md={form ? form.getFieldValue('body') : ''}
+                />
+              )
+            }
+          ]}
+        />
       </Form.Item>
     ));
     formItems.push((

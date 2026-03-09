@@ -674,16 +674,12 @@ class VSIPreview extends React.Component {
         defaultActiveKey={active}
         onChange={this.onChangePreview}
         className={styles.tabs}
-      >
-        {
-          items.map(item => (
-            <Tabs.TabPane
-              tab={getItemName(item)}
-              key={item.path}
-            />
-          ))
-        }
-      </Tabs>
+        items={items.map(item => ({
+          key: item.path,
+          label: getItemName(item),
+          children: null
+        }))}
+      />
     );
   };
 

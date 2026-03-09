@@ -86,6 +86,29 @@ export default class EditFolderForm extends React.Component {
       !!this.props.folderId &&
       (roleModel.isOwner({mask: this.props.mask}) || roleModel.writeAllowed({mask: this.props.mask}));
     const isEditPermissions = !!this.props.folderId && roleModel.isOwner({mask: this.props.mask});
+
+    const InfoContent = (
+      <Form
+        ref={this.formRef}
+        className="folder-edit-form"
+        initialValues={{name: this.props.name}}
+      >
+        <Form.Item
+          className="folder-edit-form-name-container"
+          {...this.formItemLayout}
+          label="Name"
+          name="name"
+          rules={[{required: true, message: 'Name is required'}]}
+        >
+          <Input
+            ref={this.initializeNameInput}
+            onPressEnter={this.handleSubmit}
+            disabled={this.props.pending || (!isEditInfo && !!this.props.folderId)}
+          />
+        </Form.Item>
+      </Form>
+    );
+
     return (
       <Modal
         mask={{closable: !this.props.pending}}
@@ -99,38 +122,28 @@ export default class EditFolderForm extends React.Component {
           <Tabs
             size="small"
             activeKey={this.state.activeTab}
-            onChange={this.onSectionChange}>
-            <Tabs.TabPane key="info" tab="Info">
-              <Form
-                ref={this.formRef}
-                className="folder-edit-form"
-                initialValues={{name: this.props.name}}
-              >
-                <Form.Item
-                  className="folder-edit-form-name-container"
-                  {...this.formItemLayout}
-                  label="Name"
-                  name="name"
-                  rules={[{required: true, message: 'Name is required'}]}
-                >
-                  <Input
-                    ref={this.initializeNameInput}
-                    onPressEnter={this.handleSubmit}
-                    disabled={this.props.pending || (!isEditInfo && !!this.props.folderId)}
-                  />
-                </Form.Item>
-              </Form>
-            </Tabs.TabPane>
-            {
-              this.props.folderId &&
-              <Tabs.TabPane key="permissions" tab="Permissions">
-                <PermissionsForm
-                  readonly={this.props.locked || !isEditPermissions}
-                  objectIdentifier={this.props.folderId}
-                  objectType="FOLDER" />
-              </Tabs.TabPane>
-            }
-          </Tabs>
+            onChange={this.onSectionChange}
+            items={[
+              {
+                key: 'info',
+                label: 'Info',
+                children: InfoContent
+              },
+              ...(this.props.folderId
+                ? [{
+                  key: 'permissions',
+                  label: 'Permissions',
+                  children: (
+                    <PermissionsForm
+                      readonly={this.props.locked || !isEditPermissions}
+                      objectIdentifier={this.props.folderId}
+                      objectType="FOLDER"
+                    />
+                  )
+                }]
+                : [])
+            ]}
+          />
         </Spin>
       </Modal>
     );

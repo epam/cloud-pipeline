@@ -1028,19 +1028,14 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
           onChange={this.onSelectConfiguration}
           activeKey={this.selectedConfigurationName}
           tabBarExtraContent={addButton}
-          type="editable-card">
-          {
-            (this.props.configurations.value.entries || [])
-              .map(c => {
-                return (
-                  <Tabs.TabPane
-                    closable={false}
-                    tab={c.default ? <i>{c.name}</i> : c.name}
-                    key={c.name} />
-                );
-              })
-          }
-        </Tabs>
+          type="editable-card"
+          items={(this.props.configurations.value.entries || []).map(c => ({
+            key: c.name,
+            label: c.default ? <i>{c.name}</i> : c.name,
+            closable: false,
+            children: null
+          }))}
+        />
       </Row>
     );
   };

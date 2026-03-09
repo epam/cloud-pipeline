@@ -196,16 +196,19 @@ class HcsImageAnalysis extends React.Component {
           size="small"
           activeKey={this.activeTab}
           onChange={key => this.onChangeTab(key)}
-        >
-          <Tabs.TabPane
-            key={HcsAnalysisTabs.analysis}
-            tab={HcsAnalysisTabName[HcsAnalysisTabs.analysis]}
-          />
-          <Tabs.TabPane
-            key={HcsAnalysisTabs.batch}
-            tab={HcsAnalysisTabName[HcsAnalysisTabs.batch]}
-          />
-        </Tabs>
+          items={[
+            {
+              key: HcsAnalysisTabs.analysis,
+              label: HcsAnalysisTabName[HcsAnalysisTabs.analysis],
+              children: null
+            },
+            {
+              key: HcsAnalysisTabs.batch,
+              label: HcsAnalysisTabName[HcsAnalysisTabs.batch],
+              children: null
+            }
+          ]}
+        />
         {this.renderContent()}
       </div>
     );

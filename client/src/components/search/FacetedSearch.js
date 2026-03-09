@@ -1172,17 +1172,13 @@ class FacetedSearch extends React.Component {
                         type="card"
                         activeKey={getDomainKey(domain)}
                         onChange={this.handleDomainSelection}
-                      >
-                        {
-                          this.filterDomains.map((domain) => (
-                            <Tabs.TabPane
-                              key={getDomainKey(domain)}
-                              closable={false}
-                              tab={domain || otherDomainName}
-                            />
-                          ))
-                        }
-                      </Tabs>
+                        items={this.filterDomains.map((domainItem) => ({
+                          key: getDomainKey(domainItem),
+                          label: domainItem || otherDomainName,
+                          closable: false,
+                          children: null
+                        }))}
+                      />
                     )
                   }
                   <div
