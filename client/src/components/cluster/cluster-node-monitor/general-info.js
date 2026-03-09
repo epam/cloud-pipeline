@@ -561,7 +561,7 @@ class GeneralInfoTab extends React.Component {
     } = this.props;
     if (chartsData?.error) {
       return (
-        <Alert type={'error'} message={chartsData.error} />
+        <Alert type={'error'} title={chartsData.error} />
       );
     }
     if (!chartsData || !chartsData.initialized) {

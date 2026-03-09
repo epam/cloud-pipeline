@@ -52,7 +52,7 @@ export default class ProjectHistory extends React.Component {
       return <LoadingView />;
     }
     if (!this.props.folder.pending && this.props.folder.error) {
-      return <Alert message={this.props.folder.error} type="error" />;
+      return <Alert title={this.props.folder.error} type="error" />;
     }
     const folderTitleClassName = this.props.folder.value.locked ? styles.readonly : undefined;
     const {

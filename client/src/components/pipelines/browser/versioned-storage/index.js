@@ -966,7 +966,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     }
     if (pipeline.error) {
       return (
-        <Alert type="error" message={pipeline.error} />
+        <Alert type="error" title={pipeline.error} />
       );
     }
     const tableContent = (
@@ -1022,7 +1022,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
         {
           error && (
             <Alert
-              message={error}
+              title={error}
               type="error"
             />
           )

@@ -128,7 +128,7 @@ class EstimatedDiskSizeWarning extends React.Component {
           type="info"
           showIcon
           style={{margin: 2}}
-          message={(
+          title={(
             <div>
               <p>
                 <LoadingOutlined />
@@ -144,7 +144,7 @@ class EstimatedDiskSizeWarning extends React.Component {
         <Alert
           type="error"
           style={{margin: 2}}
-          message={`Required disk size estimation error: ${sizeRequest.error}`}
+          title={`Required disk size estimation error: ${sizeRequest.error}`}
         />
       );
     }
@@ -158,7 +158,7 @@ class EstimatedDiskSizeWarning extends React.Component {
           type="info"
           showIcon
           style={{margin: 2}}
-          message={(
+          title={(
             <div>
               <p>
                 The disk size is set to {displaySize(this.suggestedSize, false)}.
@@ -174,7 +174,7 @@ class EstimatedDiskSizeWarning extends React.Component {
           type="warning"
           showIcon
           style={{margin: 2}}
-          message={(
+          title={(
             <div>
               <p>
                 <span>The requested disk size for this run is </span>
@@ -207,7 +207,7 @@ class EstimatedDiskSizeWarning extends React.Component {
         type="warning"
         showIcon
         style={{margin: 2}}
-        message={(
+        title={(
           <div>
             <p>
               <span>The requested disk size for this run is </span>

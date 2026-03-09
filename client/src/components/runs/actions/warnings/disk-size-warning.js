@@ -95,7 +95,7 @@ function DiskSizeWarning (
       preferences={preferences}
     >
       <Alert
-        message={(
+        title={(
           <Markdown
             className="no-margin-markdown"
             md={formatMessage(match, disk)}

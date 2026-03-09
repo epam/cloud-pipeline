@@ -42,7 +42,7 @@ function HOC (...objects) {
           .find(o => hiddenObjects.isHidden(o.type, o.identifier));
         if (hidden) {
           return (
-            <Alert type="warning" message="Access denied" />
+            <Alert type="warning" title="Access denied" />
           );
         }
         return (<WrappedComponent {...props} />);

@@ -232,14 +232,14 @@ export default class EmailNotificationSettings extends React.Component {
     }
     if (!this.props.authenticatedUserInfo.value.admin) {
       return (
-        <Alert type="error" message="Access is denied" />
+        <Alert type="error" title="Access is denied" />
       );
     }
     if (!this.props.notificationSettings.loaded && this.props.notificationSettings.pending) {
       return <LoadingView />;
     }
     if (this.props.notificationSettings.error) {
-      return <Alert type="warning" message={this.props.notificationSettings.error} />;
+      return <Alert type="warning" title={this.props.notificationSettings.error} />;
     }
     return (
       <SubSettings

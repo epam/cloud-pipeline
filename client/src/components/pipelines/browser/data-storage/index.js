@@ -2575,7 +2575,7 @@ export default class DataStorage extends React.Component {
         >
           <br />
           <Alert
-            message={`Error retrieving data storage items: ${this.storage.pageError}`}
+            title={`Error retrieving data storage items: ${this.storage.pageError}`}
             type="error"
           />
         </div>
@@ -2878,10 +2878,10 @@ export default class DataStorage extends React.Component {
       return <LoadingView />;
     }
     if (this.storage.infoError) {
-      return <Alert message={this.storage.infoError} type="error" />;
+      return <Alert title={this.storage.infoError} type="error" />;
     }
     if (this.props.authenticatedUserInfo.error) {
-      return <Alert message={this.props.authenticatedUserInfo.error} type="error" />;
+      return <Alert title={this.props.authenticatedUserInfo.error} type="error" />;
     }
     const {
       name,
@@ -3037,7 +3037,7 @@ export default class DataStorage extends React.Component {
             {this.storage.resultsFilteredAndTruncated || this.storage.resultsSortedAndTruncated ? (
               <Alert
                 style={{marginBottom: 3}}
-                message={`Current folder contains too many objects.
+                title={`Current folder contains too many objects.
                 Filtered data does not include all of them.`}
                 type="info"
               />
@@ -3214,7 +3214,7 @@ export default class DataStorage extends React.Component {
           }
           {
             this.generateDownloadUrls && this.generateDownloadUrls.error && (
-              <Alert type="error" message={this.generateDownloadUrls.error} />
+              <Alert type="error" title={this.generateDownloadUrls.error} />
             )
           }
           {
@@ -3270,7 +3270,7 @@ export default class DataStorage extends React.Component {
             );
             return text ? (
               <Alert
-                message={text}
+                title={text}
                 type="info"
               />
             ) : null;

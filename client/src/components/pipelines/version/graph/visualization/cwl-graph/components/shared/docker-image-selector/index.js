@@ -167,7 +167,7 @@ class DockerImageSelector extends React.Component {
     const pending = dockerRegistries.pending;
     if (dockerRegistries.error) {
       return (
-        <Alert type="error" message={dockerRegistries.error} />
+        <Alert type="error" title={dockerRegistries.error} />
       );
     }
     const notFoundContent = !search

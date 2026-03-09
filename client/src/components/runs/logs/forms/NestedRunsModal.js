@@ -376,7 +376,7 @@ class NestedRunsChart extends React.Component {
     if (error) {
       return (
         <div>
-          <Alert message={error} type="error" />
+          <Alert title={error} type="error" />
         </div>
       );
     }

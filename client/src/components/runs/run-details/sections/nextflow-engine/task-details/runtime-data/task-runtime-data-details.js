@@ -169,7 +169,7 @@ class TaskRuntimeDataDetails extends React.Component {
           <div style={{display: 'flex', alignItems: 'center'}}>
             <Alert
               type="warning"
-              message={completed ? errorMessage : errorMessageRunning}
+              title={completed ? errorMessage : errorMessageRunning}
             />
           </div>
         </div>

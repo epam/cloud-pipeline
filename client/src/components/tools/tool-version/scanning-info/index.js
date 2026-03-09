@@ -315,14 +315,14 @@ export default class ToolScanningInfo extends React.Component {
       return <LoadingView />;
     }
     if (this.props.versions.error) {
-      return <Alert type="error" message={this.props.versions.error} />;
+      return <Alert type="error" title={this.props.versions.error} />;
     }
     if (this.props.tool.error) {
-      return <Alert type="error" message={this.props.tool.error} />;
+      return <Alert type="error" title={this.props.tool.error} />;
     }
     if (!roleModel.readAllowed(this.props.tool.value)) {
       return (
-        <Alert type="error" message="You have no permissions to view tool details" />
+        <Alert type="error" title="You have no permissions to view tool details" />
       );
     }
     if (/^windows$/i.test(this.toolPlatform)) {

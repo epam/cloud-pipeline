@@ -197,7 +197,7 @@ class SampleSheetEditForm extends React.Component {
           }
           style={style}
         >
-          <Alert type="error" message={error} />
+          <Alert type="error" title={error} />
         </div>
       );
     }

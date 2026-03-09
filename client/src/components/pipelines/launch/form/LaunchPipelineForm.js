@@ -2575,7 +2575,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       return infoString;
     }
     if (this._dtsClusterInfo.error) {
-      infoString = <Alert type="error" message={this._dtsClusterInfo.error} />;
+      infoString = <Alert type="error" title={this._dtsClusterInfo.error} />;
     }
     const nodes = this._dtsClusterInfo.value.nodes;
     if (!this._dtsClusterInfo.error && nodes && nodes.length) {
@@ -3870,7 +3870,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 <Alert
                   type="warning"
                   showIcon
-                  message="Tool configuration restricts selection of sensitive storages"
+                  title="Tool configuration restricts selection of sensitive storages"
                 />
               )
             }
@@ -4452,14 +4452,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (this._fireCloudParameters && this._fireCloudParameters.error) {
       return (
         <Row style={{marginTop: 20}}>
-          <Alert type="warning" message={this._fireCloudParameters.error} />
+          <Alert type="warning" title={this._fireCloudParameters.error} />
         </Row>
       );
     }
     if (this._fireCloudParameters && this._fireCloudParameters.googleApi.error) {
       return (
         <Row style={{marginTop: 20}}>
-          <Alert type="warning" message="Google auth initialization error" />
+          <Alert type="warning" title="Google auth initialization error" />
         </Row>
       );
     }
@@ -4647,7 +4647,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               key={type}
               type={type}
               style={{marginBottom: '4px'}}
-              message={getMessagesList(messages)}
+              title={getMessagesList(messages)}
             />) : null;
         })}
       </Row>
@@ -5195,7 +5195,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 <Row>
                   <Alert
                     type="warning"
-                    message={`You have no permissions to launch ${this.props.pipeline.name}`} />
+                    title={`You have no permissions to launch ${this.props.pipeline.name}`} />
                   <br />
                 </Row>
               ) : undefined

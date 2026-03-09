@@ -150,7 +150,7 @@ class TabularDataRenderer extends React.PureComponent {
           className={classNames(className, styles.filePreviewRenderer)}
           style={style}
         >
-          <Alert message={error} type="error" showIcon />
+          <Alert title={error} type="error" showIcon />
         </div>
       );
     }

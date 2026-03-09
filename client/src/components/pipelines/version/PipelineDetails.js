@@ -454,7 +454,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
       return <LoadingView />;
     }
     if (pipeline.error) {
-      return <Alert type="error" message={this.props.pipeline.error} />;
+      return <Alert type="error" title={this.props.pipeline.error} />;
     }
 
     const {description, pipelineType} = this.props.pipeline.value;

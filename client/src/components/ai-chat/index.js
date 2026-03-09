@@ -49,7 +49,7 @@ class AIChatPage extends React.Component {
       return (<AIChat />);
     }
     return (
-      <Alert message="Chat not available" type="warning" />
+      <Alert title="Chat not available" type="warning" />
     );
   };
 

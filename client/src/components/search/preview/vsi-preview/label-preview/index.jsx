@@ -108,7 +108,7 @@ class LabelPreview extends Component {
         }
         {
           !url && !pending && error && (
-            <Alert message={<div>Error loading label: {error}</div>} type="error" />
+            <Alert title={<div>Error loading label: {error}</div>} type="error" />
           )
         }
       </div>

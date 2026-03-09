@@ -128,14 +128,14 @@ export default class MyServicesPanel extends localization.LocalizedReactComponen
     if (!this.props.services.loaded && this.props.services.pending) {
       content = <LoadingView />;
     } else if (this.props.services.error) {
-      content = <Alert type="warning" message={this.props.services.error} />;
+      content = <Alert type="warning" title={this.props.services.error} />;
     } else if (
       !this.props.authenticatedUserInfo.loaded &&
       this.props.authenticatedUserInfo.pending
     ) {
       content = <LoadingView />;
     } else if (this.props.authenticatedUserInfo.error) {
-      content = <Alert type="warning" message={this.props.authenticatedUserInfo.error} />;
+      content = <Alert type="warning" title={this.props.authenticatedUserInfo.error} />;
     } else {
       const userName = this.props.authenticatedUserInfo.value;
       const services = (this.props.services.value || [])
@@ -200,7 +200,7 @@ export default class MyServicesPanel extends localization.LocalizedReactComponen
       return <LoadingView />;
     }
     if (this.props.authenticatedUserInfo.error) {
-      return (<Alert type="warning" message={this.props.authenticatedUserInfo.error} />);
+      return (<Alert type="warning" title={this.props.authenticatedUserInfo.error} />);
     }
     return (
       <div className={styles.container}>

@@ -245,7 +245,7 @@ class SystemDictionaries extends React.Component {
     }
     if (!authenticatedUserInfo.value.admin) {
       return (
-        <Alert type="error" message="Access is denied" />
+        <Alert type="error" title="Access is denied" />
       );
     }
     const {systemDictionaries} = this.props;
@@ -253,7 +253,7 @@ class SystemDictionaries extends React.Component {
       return <LoadingView />;
     }
     if (systemDictionaries.error) {
-      return <Alert type="warning" message={systemDictionaries.error} />;
+      return <Alert type="warning" title={systemDictionaries.error} />;
     }
     return (
       <div className={styles.container}>

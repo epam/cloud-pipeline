@@ -180,7 +180,7 @@ class VSVersions extends React.Component {
     } = this.state;
     if (error) {
       return (
-        <Alert type="error" message={error} />
+        <Alert type="error" title={error} />
       );
     }
     return (

@@ -243,12 +243,12 @@ class SearchResults extends React.Component {
     } = this.props;
     if (error) {
       return (
-        <Alert type="error" message={error} />
+        <Alert type="error" title={error} />
       );
     }
     if (showResults && (documents || []).length === 0) {
       return (
-        <Alert type="info" message="Nothing found" />
+        <Alert type="info" title="Nothing found" />
       );
     }
     return (
@@ -554,12 +554,12 @@ class SearchResults extends React.Component {
     } = this.props;
     if (error) {
       return (
-        <Alert type="error" message={error} />
+        <Alert type="error" title={error} />
       );
     }
     if (showResults && (documents || []).length === 0) {
       return (
-        <Alert type="info" message="Nothing found" />
+        <Alert type="info" title="Nothing found" />
       );
     }
     return (

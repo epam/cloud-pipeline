@@ -53,7 +53,7 @@ export default class EmbeddedMiew extends React.Component {
 
   render () {
     if (this.state.error) {
-      return <Alert type="error" message={this.state.error} />;
+      return <Alert type="error" title={this.state.error} />;
     }
     if (!this.state.pdb) {
       return <LoadingView />;

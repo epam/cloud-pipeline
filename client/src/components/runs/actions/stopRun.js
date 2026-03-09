@@ -338,7 +338,7 @@ class TerminateRunDialog extends React.Component {
             <Alert
               type="info"
               showIcon
-              message="Once a run is terminated - all local data will be deleted (that is not stored within shared data storages)" />
+              title="Once a run is terminated - all local data will be deleted (that is not stored within shared data storages)" />
           </Row>
           <Row type="flex" justify="end" style={{marginTop: 10}}>
             <Button
@@ -447,7 +447,7 @@ class StopRunConfirmation extends React.Component {
           <Alert
             type="info"
             showIcon
-            message={`Once a run is ${this.props.isTermination ? 'terminated' : 'stopped'} - all local data will be deleted (that is not stored within shared data storages)`} />
+            title={`Once a run is ${this.props.isTermination ? 'terminated' : 'stopped'} - all local data will be deleted (that is not stored within shared data storages)`} />
         </Row>
         {
           this.props.canCommitRun && commitAllowed && !maintenanceMode &&

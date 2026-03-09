@@ -234,7 +234,7 @@ class CloudCredentialsProfileForm extends React.Component {
     } = this.props;
     if (!isNew && this.profileRequest && this.profileRequest.error) {
       return (
-        <Alert type="error" message={this.profileRequest.error} />
+        <Alert type="error" title={this.profileRequest.error} />
       );
     }
     if (

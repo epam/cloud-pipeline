@@ -348,7 +348,7 @@ class CommitRunForm extends localization.LocalizedReactComponent {
           <Row>
             <Alert
               type="warning"
-              message="You don't have permission to write in registries" />
+              title="You don't have permission to write in registries" />
             <br />
           </Row>
         )}

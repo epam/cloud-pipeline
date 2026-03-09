@@ -632,7 +632,7 @@ class RunTable extends localization.LocalizedReactComponent {
       >
         {
           runs.length === 0 && !pending && (
-            <Alert message={emptyDataMessage} type="info" />
+            <Alert title={emptyDataMessage} type="info" />
           )
         }
         {
@@ -780,7 +780,7 @@ class RunTable extends localization.LocalizedReactComponent {
         {
           error && (
             <Alert
-              message={error}
+              title={error}
               type="error"
               style={{
                 margin: '5px 0'

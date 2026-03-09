@@ -127,7 +127,7 @@ class RunLaunchCommandSection extends React.Component {
     } = this.props;
     if (!pending && error) {
       return (
-        <Alert type="error" message={error} />
+        <Alert type="error" title={error} />
       );
     }
     const {tab} = this.state;

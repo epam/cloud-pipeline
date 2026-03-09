@@ -384,7 +384,7 @@ export default class Folder extends localization.LocalizedReactComponent {
 
   render () {
     if (!this.props.folder.pending && this.props.folder.error) {
-      return <Alert message={this.props.folder.error} type="error" />;
+      return <Alert title={this.props.folder.error} type="error" />;
     }
     if (!this.props.folder.loaded && this.props.folder.pending) {
       return <LoadingView />;

@@ -302,7 +302,7 @@ export default class GroupsManagement extends React.Component {
       !this.groupsSharedPermissions.write
     ) {
       return (
-        <Alert type="error" message="Access is denied" />
+        <Alert type="error" title="Access is denied" />
       );
     }
     const {predefined} = this.props;

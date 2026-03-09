@@ -85,7 +85,7 @@ class ProfileSettings extends React.Component {
       return (
         <Alert
           type="error"
-          message={authenticatedUserInfo.error}
+          title={authenticatedUserInfo.error}
         />
       );
     }

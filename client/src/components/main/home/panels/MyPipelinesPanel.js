@@ -189,13 +189,13 @@ export default class MyPipelinesPanel extends localization.LocalizedReactCompone
       return <LoadingView />;
     }
     if (this.props.pipelines.error) {
-      return <Alert type="warning" message={this.props.pipelines.error} />;
+      return <Alert type="warning" title={this.props.pipelines.error} />;
     }
     if (!this.props.authenticatedUserInfo.loaded && this.props.authenticatedUserInfo.pending) {
       return <LoadingView />;
     }
     if (this.props.authenticatedUserInfo.error) {
-      return (<Alert type="warning" message={this.props.authenticatedUserInfo.error} />);
+      return (<Alert type="warning" title={this.props.authenticatedUserInfo.error} />);
     }
     return (
       <div className={styles.container} style={{display: 'flex', flexDirection: 'column'}}>

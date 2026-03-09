@@ -184,17 +184,17 @@ export default class ToolSetttings extends React.Component {
       return <LoadingView />;
     }
     if (this.props.settings.error) {
-      return <Alert type="error" message={this.props.settings.error} />;
+      return <Alert type="error" title={this.props.settings.error} />;
     }
     if (this.props.tool.error) {
-      return <Alert type="error" message={this.props.tool.error} />;
+      return <Alert type="error" title={this.props.tool.error} />;
     }
     if (this.props.preferences.error) {
-      return <Alert type="error" message={this.props.preferences.error} />;
+      return <Alert type="error" title={this.props.preferences.error} />;
     }
     if (!roleModel.readAllowed(this.props.tool.value)) {
       return (
-        <Alert type="error" message="You have no permissions to view tool details" />
+        <Alert type="error" title="You have no permissions to view tool details" />
       );
     }
     return (

@@ -581,7 +581,7 @@ class AppearanceManagement extends React.Component {
     ) {
       return (
         <div className={styles.appearanceManagement}>
-          <Alert message="Access denied" type="error" />
+          <Alert title="Access denied" type="error" />
         </div>
       );
     }

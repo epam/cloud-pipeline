@@ -1022,7 +1022,7 @@ export default class WdlGraph extends Graph {
       return <LoadingView />;
     }
     if (loadError) {
-      return <Alert type="warning" message={loadError} />;
+      return <Alert type="warning" title={loadError} />;
     }
     if (error) {
       const errorText = error.message || error;
@@ -1035,7 +1035,7 @@ export default class WdlGraph extends Graph {
       return (
         <Alert
           type="warning"
-          message={errorContent} />
+          title={errorContent} />
       );
     }
     return (

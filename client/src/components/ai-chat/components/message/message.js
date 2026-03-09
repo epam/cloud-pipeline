@@ -124,7 +124,7 @@ export default class Message extends React.Component {
       contentParts.push(
         <Alert
           key={`${identifier}-errors`}
-          message={(
+          title={(
             <div>
               {errors.map((err, idx) => (<Markdown key={`error-${idx}`} md={err} />))}
             </div>
@@ -138,7 +138,7 @@ export default class Message extends React.Component {
       contentParts.push(
         <Alert
           key={`${identifier}-warnings`}
-          message={(
+          title={(
             <div>
               {warnings.map((warn, idx) => (<Markdown key={`error-${idx}`} md={warn} />))}
             </div>

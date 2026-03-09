@@ -281,7 +281,7 @@ export default class ClusterNodePods extends Component {
       return (
         <Row>
           <Alert
-            message="The node doesn't contain non-terminated pods"
+            title="The node doesn't contain non-terminated pods"
             type="info"
           />
         </Row>

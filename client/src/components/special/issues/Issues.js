@@ -213,7 +213,7 @@ export default class Issues extends localization.LocalizedReactComponent {
   render () {
     if (!roleModel.readAllowed(this.props.entity)) {
       return (
-        <Alert type="error" message={`You have no permissions to view ${this.localizedString('issue')}s`} />
+        <Alert type="error" title={`You have no permissions to view ${this.localizedString('issue')}s`} />
       );
     }
     if (this.props.issues && this.props.issues.pending && !this.props.issues.loaded) {

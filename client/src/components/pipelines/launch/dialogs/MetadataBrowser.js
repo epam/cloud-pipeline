@@ -499,7 +499,7 @@ export default class MetadataBrowser extends React.Component {
 
   renderContent = () => {
     if (!this.props.tree.pending && this.props.tree.error) {
-      return <Alert message="Error retrieving library" type="error" />;
+      return <Alert title="Error retrieving library" type="error" />;
     }
     let listingContent;
     if (this.state.isMetadataFolder) {

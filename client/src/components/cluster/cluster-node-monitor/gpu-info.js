@@ -600,7 +600,7 @@ class GPUInfoTab extends React.Component {
     const {gpuStatisticsAvailable} = this.props;
     if (!gpuStatisticsAvailable) {
       return (
-        <Alert type="warning" message="GPU statistics is not available for this node" />
+        <Alert type="warning" title="GPU statistics is not available for this node" />
       );
     }
     return (

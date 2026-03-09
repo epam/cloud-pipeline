@@ -1080,7 +1080,7 @@ class FacetedSearch extends React.Component {
     }
     if (systemDictionaries.error) {
       return (
-        <Alert message={systemDictionaries.error} type="error" />
+        <Alert title={systemDictionaries.error} type="error" />
       );
     }
     const noFilters = this.filters.filter(f => f.name !== DocumentTypeFilterName).length === 0;

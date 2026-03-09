@@ -169,7 +169,7 @@ class RestartedRunsInfo extends React.Component {
           key="initial-run-alert"
           className={styles.restartedRunInfoAlert}
           type="info"
-          message={(
+          title={(
             <div className={styles.restartedRunInfoAlertContent}>
               This run was launched instead of
               <RunLink
@@ -187,7 +187,7 @@ class RestartedRunsInfo extends React.Component {
           key="restarted-runs-alert"
           type="info"
           className={styles.restartedRunInfoAlert}
-          message={(
+          title={(
             <div className={styles.restartedRunInfoAlertContent}>
               The following run{restartedRuns.length > 1 ? 's' : ''}
               {restartedRuns.length > 1 ? ' were launched' : ' was launched'}

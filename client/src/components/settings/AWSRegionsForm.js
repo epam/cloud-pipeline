@@ -618,14 +618,14 @@ export default class AWSRegionsForm extends React.Component {
     }
     if (!this.props.authenticatedUserInfo.value.admin) {
       return (
-        <Alert type="error" message="Access is denied" />
+        <Alert type="error" title="Access is denied" />
       );
     }
     if (this.props.awsRegions.pending && !this.props.awsRegions.loaded) {
       return <LoadingView />;
     }
     if (this.props.awsRegions.error) {
-      return <Alert type="error" message={this.props.awsRegions.error} />;
+      return <Alert type="error" title={this.props.awsRegions.error} />;
     }
 
     return (
@@ -1541,7 +1541,7 @@ class AWSRegionForm extends React.Component {
 
   renderPermissionsTable = () => {
     if (this.permissions && this.permissions.error) {
-      return <Alert type="warning" message={this.permissions.error} />;
+      return <Alert type="warning" title={this.permissions.error} />;
     }
 
     const rolesList = (this.props.roles.loaded ? (this.props.roles.value || []) : []).map(r => r);

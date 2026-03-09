@@ -400,7 +400,7 @@ export default class CLIForm extends React.Component {
       return <LoadingView />;
     }
     if (this.props.pipelineGitCredentials.error) {
-      return <Alert type="error" message={this.props.pipelineGitCredentials.error} />;
+      return <Alert type="error" title={this.props.pipelineGitCredentials.error} />;
     }
     const {email, userName, url, token} = this.props.pipelineGitCredentials.value;
     const getSettingsValue = (key) => {
@@ -445,7 +445,7 @@ export default class CLIForm extends React.Component {
         <Row>
           <Alert
             type="info"
-            message={
+            title={
               <div>
                 <center><b>No supported data storage available</b></center>
                 <center style={{marginTop: '10px'}}><b>Drive mapping</b> feature allows to mount a cloud data storage to your local workstation and manage files/folders as with any general hard drive</center>

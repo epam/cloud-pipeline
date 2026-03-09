@@ -247,7 +247,7 @@ export default class DataStorageCodeForm extends React.Component {
             </span>
             {this.props.onSaveDisclaimer ? (
               <Alert
-                message={this.props.onSaveDisclaimer}
+                title={this.props.onSaveDisclaimer}
                 style={{
                   marginTop: '20px',
                   marginBottom: '-10px',
@@ -452,7 +452,7 @@ export default class DataStorageCodeForm extends React.Component {
         )
         : (
           <Alert
-            message={`Error parsing tabular file ${this.props.file.name}:
+            title={`Error parsing tabular file ${this.props.file.name}:
               ${this._tableData.message}`}
             type="error"
           />
@@ -564,7 +564,7 @@ export default class DataStorageCodeForm extends React.Component {
             this.errors.map(error => (
               <Alert
                 key={error}
-                message={error}
+                title={error}
                 type="error"
                 style={{marginTop: '5px'}}
               />

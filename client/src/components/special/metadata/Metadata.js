@@ -1563,7 +1563,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
     if (error) {
       previewRes.push(
         <div key="body" style={{width: '100%', flex: 1, overflowY: 'auto', paddingTop: 10}}>
-          <Alert type="error" message={error} />
+          <Alert type="error" title={error} />
         </div>
       );
       return previewRes;
@@ -1800,7 +1800,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
     if (this.props.metadata.error) {
       metadata = (
         <div key="body" style={{width: '100%', flex: 1, overflowY: 'auto', paddingTop: 10}}>
-          <Alert type="error" message={this.props.metadata.error} />
+          <Alert type="error" title={this.props.metadata.error} />
         </div>
       );
     } else if (!this.props.hideMetadataTags || !this.props.dataStorageTags) {

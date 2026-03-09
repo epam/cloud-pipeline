@@ -562,7 +562,7 @@ export default class PreviewConfiguration extends Component {
         <Row type="flex" style={{padding: 7, flex: 1, display: 'flex', flexDirection: 'column'}}>
           <Alert
             type="error"
-            message={
+            title={
               <ul style={{listStyle: 'disc'}}>
                 {
                   errors.filter(e => !!e).map(

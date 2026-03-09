@@ -553,7 +553,7 @@ class AllRuns extends React.Component {
         {
           (isRunsInfoChartsPage || isRunsInfoChartsDetailsPage) &&
           !this.runsInfoChartsAvailable && (
-            <Alert message="Access denied" type="warning" />
+            <Alert title="Access denied" type="warning" />
           )
         }
       </Card>

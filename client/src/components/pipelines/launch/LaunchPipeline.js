@@ -667,7 +667,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
       return <LoadingView />;
     }
     if (error) {
-      return <Alert type="error" message={error} />;
+      return <Alert type="error" title={error} />;
     }
     const alerts = errors.map((er) => ({
       message: er,

@@ -572,19 +572,19 @@ export default class Tools extends React.Component {
       content = <Alert
         style={{width: '100%'}}
         type="error"
-        message={this.props.dockerRegistries.error} />;
+        title={this.props.dockerRegistries.error} />;
       isError = true;
     } else if (this.registries.length === 0) {
       content = <Alert
         style={{width: '100%'}}
         type="warning"
-        message="No registries configured" />;
+        title="No registries configured" />;
       isError = true;
     } else if (this.currentRegistry && this.groups.length === 0) {
       content = <Alert
         style={{width: '100%'}}
         type="warning"
-        message="No groups configured" />;
+        title="No groups configured" />;
       isError = true;
     } else if (this.state.createPrivateGroupInProgress) {
       content = <LoadingView />;
@@ -613,7 +613,7 @@ export default class Tools extends React.Component {
       content = <Alert
         style={{width: '100%'}}
         type="info"
-        message={noToolsMessage()} />;
+        title={noToolsMessage()} />;
       isError = true;
     } else if (
       this.filter &&

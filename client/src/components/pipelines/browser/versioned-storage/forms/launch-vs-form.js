@@ -295,7 +295,7 @@ class LaunchVSForm extends React.Component {
                 tagsError && (
                   <Alert
                     type="error"
-                    message={tagsError}
+                    title={tagsError}
                   />
                 )
               }
@@ -343,7 +343,7 @@ class LaunchVSForm extends React.Component {
       return (
         <Alert
           type="warning"
-          message="Tools not found"
+          title="Tools not found"
         />
       );
     }
@@ -487,7 +487,7 @@ class LaunchVSForm extends React.Component {
           error && (
             <Alert
               type="error"
-              message={error}
+              title={error}
             />
           )
         }

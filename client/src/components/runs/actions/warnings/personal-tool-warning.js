@@ -72,7 +72,7 @@ function PersonalToolWarning (
             className={className}
             style={style}
             showIcon={showIcon}
-            message={(
+            title={(
               <div>
                 <div>
                   The

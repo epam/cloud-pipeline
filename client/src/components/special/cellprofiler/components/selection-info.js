@@ -38,7 +38,7 @@ const Wrapper = ({className, style, children, showAsAlert}) => {
   if (showAsAlert) {
     return (
       <Alert
-        message={children}
+        title={children}
         type="info"
         showIcon
         className={className}

@@ -216,7 +216,7 @@ export default class Packages extends React.Component {
       return <LoadingView />;
     }
     if (this.props.versions.error) {
-      return <Alert type="error" message={this.props.versions.error} />;
+      return <Alert type="error" title={this.props.versions.error} />;
     }
     if (/^windows$/i.test(this.toolPlatform)) {
       return null;

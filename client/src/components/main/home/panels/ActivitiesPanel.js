@@ -341,25 +341,25 @@ export default class ActivitiesPanel extends localization.LocalizedReactComponen
       return <LoadingView />;
     }
     if (this.props.issues.error) {
-      return <Alert type="warning" message={this.props.issues.error} />;
+      return <Alert type="warning" title={this.props.issues.error} />;
     }
     if (!this.props.pipelinesLibrary.loaded && this.props.pipelinesLibrary.pending) {
       return <LoadingView />;
     }
     if (this.props.pipelinesLibrary.error) {
-      return <Alert type="warning" message={this.props.pipelinesLibrary.error} />;
+      return <Alert type="warning" title={this.props.pipelinesLibrary.error} />;
     }
     if (!this.props.dockerRegistries.loaded && this.props.dockerRegistries.pending) {
       return <LoadingView />;
     }
     if (this.props.dockerRegistries.error) {
-      return <Alert type="warning" message={this.props.dockerRegistries.error} />;
+      return <Alert type="warning" title={this.props.dockerRegistries.error} />;
     }
     if (!this.props.authenticatedUserInfo.loaded && this.props.authenticatedUserInfo.pending) {
       return <LoadingView />;
     }
     if (this.props.authenticatedUserInfo.error) {
-      return (<Alert type="warning" message={this.props.authenticatedUserInfo.error} />);
+      return (<Alert type="warning" title={this.props.authenticatedUserInfo.error} />);
     }
     return (
       <div className={styles.container}>

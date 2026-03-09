@@ -113,7 +113,7 @@ class RunPayloadEstimatedPriceAlert extends React.PureComponent {
         style={style}
         showIcon={showIcon}
         type={error ? 'warning' : 'success'}
-        message={(
+        title={(
           <div
             style={{
               display: 'flex',

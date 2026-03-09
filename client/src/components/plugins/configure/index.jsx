@@ -181,12 +181,12 @@ class ConfigurePlugins extends React.PureComponent {
       <div>
         {
           error && (
-            <Alert message={error} type="error" />
+            <Alert title={error} type="error" />
           )
         }
         {
           generalError && (
-            <Alert message={generalError} type="error" />
+            <Alert title={generalError} type="error" />
           )
         }
         <ConfigurePluginsControl

@@ -988,7 +988,7 @@ export class RunConfirmation extends React.Component {
             key="allowed-warning"
             type="warning"
             showIcon
-            message={allowedWarning}
+            title={allowedWarning}
           />
         ) : null}
         {!hard && soft ? (
@@ -998,7 +998,7 @@ export class RunConfirmation extends React.Component {
             type="warning"
             showIcon
             // eslint-disable-next-line max-len
-            message="Сontainer size is too large and may lead to unpredictable run behavior."
+            title="Сontainer size is too large and may lead to unpredictable run behavior."
           />
         ) : null}
         {hard ? (
@@ -1007,7 +1007,7 @@ export class RunConfirmation extends React.Component {
             key="error"
             type="error"
             showIcon
-            message="Container size exceeds limit."
+            title="Container size exceeds limit."
           />
         ) : null}
         {
@@ -1017,7 +1017,7 @@ export class RunConfirmation extends React.Component {
             key="general-warning"
             type="warning"
             showIcon
-            message={this.props.warning} />
+            title={this.props.warning} />
         }
         {
           this.props.onDemandSelectionAvailable &&
@@ -1029,7 +1029,7 @@ export class RunConfirmation extends React.Component {
             key="spot warning"
             type="info"
             showIcon
-            message={
+            title={
               <div>
                 <Row style={{marginBottom: 5}}>
                   <b>
@@ -1075,7 +1075,7 @@ export class RunConfirmation extends React.Component {
             key="spot warning"
             type="info"
             showIcon
-            message={
+            title={
               <div>
                 <Row style={{marginBottom: 5}}>
                   <b>
@@ -1107,7 +1107,7 @@ export class RunConfirmation extends React.Component {
             type="info"
             style={{margin: 2}}
             showIcon
-            message={
+            title={
               <Row>
                 Note that clusters cannot be paused, even
                 if {getSpotTypeName(false, this.currentCloudProvider)
@@ -1122,7 +1122,7 @@ export class RunConfirmation extends React.Component {
             type="info"
             style={{margin: 2}}
             showIcon
-            message={
+            title={
               <Row>
                 {/* eslint-disable-next-line max-len */}
                 Note that you will not be able to commit a cluster. Commit feature is only available for single-node runs
@@ -1137,7 +1137,7 @@ export class RunConfirmation extends React.Component {
             type="info"
             style={{margin: 2}}
             showIcon
-            message={
+            title={
               <Row>
                 <Row style={{marginBottom: 5}}>
                   {/* eslint-disable-next-line max-len */}
@@ -1161,7 +1161,7 @@ export class RunConfirmation extends React.Component {
             key="instance type warning"
             type="info"
             showIcon
-            message={
+            title={
               <div>
                 <Row>
                   <b>You should select instance type:</b>
@@ -1192,7 +1192,7 @@ export class RunConfirmation extends React.Component {
             key="instance type missing warning"
             type="warning"
             showIcon
-            message={
+            title={
               <div>
                 <Row>
                   <b>You have no instance types available.</b>
@@ -1206,7 +1206,7 @@ export class RunConfirmation extends React.Component {
               style={{margin: 2}}
               type={hasStorageConflicts ? 'warning' : 'success'}
               showIcon
-              message={
+              title={
                 <div>
                   <Row style={{marginBottom: 5}}>
                     {/* eslint-disable-next-line max-len */}
@@ -1238,7 +1238,7 @@ export class RunConfirmation extends React.Component {
               <Alert
                 type="error"
                 style={{margin: 2}}
-                message={
+                title={
                   <div>
                     <PermissionErrorsTitle />
                     <PermissionErrors errors={this.props.permissionErrors} />
@@ -1254,7 +1254,7 @@ export class RunConfirmation extends React.Component {
               type="error"
               style={{margin: 2}}
               showIcon
-              message={
+              title={
                 <div>
                   <b>Cloud region not available.</b>
                 </div>
@@ -1297,7 +1297,7 @@ export class RunConfirmation extends React.Component {
             type={this.runCapabilitiesErrorSolved ? 'info' : 'error'}
             style={{margin: 2}}
             showIcon
-            message={
+            title={
               <div style={{display: 'flex', flexDirection: 'column'}}>
                 <span style={{marginBottom: 5}}>
                   {this.runCapabilitiesErrorSolved

@@ -509,10 +509,10 @@ export default class PipelineConfiguration extends React.Component {
       return <LoadingView />;
     }
     if (this.props.configurations.error) {
-      return <Alert type="error" message={this.props.configurations.error} />;
+      return <Alert type="error" title={this.props.configurations.error} />;
     }
     if (!this.getParameters()) {
-      return <Alert type="error" message="Error loading configurations" />;
+      return <Alert type="error" title="Error loading configurations" />;
     }
     let defaultPriceTypeIsSpot = false;
     if (this.props.preferences.loaded) {

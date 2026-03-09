@@ -159,7 +159,7 @@ export default class SystemParametersBrowser extends Component {
       authenticatedUserInfo
     } = this.props;
     if (runDefaultParameters.error) {
-      return <Alert type="error" message={runDefaultParameters.error} />;
+      return <Alert type="error" title={runDefaultParameters.error} />;
     }
     if (
       (authenticatedUserInfo.pending && !authenticatedUserInfo.loaded) ||

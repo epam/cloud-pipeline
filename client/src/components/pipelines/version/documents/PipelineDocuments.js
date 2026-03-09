@@ -638,7 +638,7 @@ export default class PipelineDocuments extends Component {
     if (defaultFileError) {
       return (
         <Alert
-          message={defaultFileError}
+          title={defaultFileError}
           type="error"
         />
       );
@@ -699,7 +699,7 @@ export default class PipelineDocuments extends Component {
     }
     if (error) {
       return (
-        <Alert message={error} type="error" />
+        <Alert title={error} type="error" />
       );
     }
     const tableData = this.createDocumentsTable();

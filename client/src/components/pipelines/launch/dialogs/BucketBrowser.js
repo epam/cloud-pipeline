@@ -864,7 +864,7 @@ export default class BucketBrowser extends React.Component {
     }
     let content = <LoadingView />;
     if (!this.props.storages.pending && this.props.storages.error) {
-      content = <Alert message="Error retrieving data storages" type="error" />;
+      content = <Alert title="Error retrieving data storages" type="error" />;
     } else if (!this.props.storages.pending) {
       const table = this.getStorageItemsTable();
       content = (
@@ -894,7 +894,7 @@ export default class BucketBrowser extends React.Component {
           </div>
           {
             !this.state.bucket
-              ? <Alert type="info" message="Select data storage" />
+              ? <Alert type="info" title="Select data storage" />
               : <div>
                 <Table
                   className={styles.table}

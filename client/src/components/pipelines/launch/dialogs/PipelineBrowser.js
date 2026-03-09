@@ -449,7 +449,7 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
   render () {
     let content = <LoadingView />;
     if (!this.props.library.pending && this.props.library.error) {
-      content = <Alert message="Error retrieving library" type="error" />;
+      content = <Alert title="Error retrieving library" type="error" />;
     } else if (!this.props.library.pending) {
       let listingContent;
       const listingContainerStyle = {};

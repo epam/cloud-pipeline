@@ -683,7 +683,7 @@ class TicketsList extends React.Component {
           error && (
             (
               <Alert
-                message={`Error retrieving tickets: ${error}`}
+                title={`Error retrieving tickets: ${error}`}
                 type="error"
               />
             )

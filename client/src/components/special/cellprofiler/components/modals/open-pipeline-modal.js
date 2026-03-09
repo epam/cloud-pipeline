@@ -81,7 +81,7 @@ class OpenPipelineModal extends React.Component {
     } = this.state;
     if (error) {
       return (
-        <Alert message={error} type="error" />
+        <Alert title={error} type="error" />
       );
     }
     if (pipelineFiles.length === 0 && pending) {
@@ -89,7 +89,7 @@ class OpenPipelineModal extends React.Component {
     }
     if (pipelineFiles.length === 0) {
       return (
-        <Alert message="Analysis pipelines not found" type="info" />
+        <Alert title="Analysis pipelines not found" type="info" />
       );
     }
     const pipelineIsSelected = pipeline => pipeline &&

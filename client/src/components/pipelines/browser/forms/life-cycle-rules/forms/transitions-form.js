@@ -142,7 +142,7 @@ class TransitionsForm extends React.Component {
     if (this.formDestinations.some(value => DESTINATIONS[value] === DESTINATIONS.GLACIER_IR)) {
       return (
         <Alert
-          message={(
+          title={(
             <p>
               Due to the AWS restrictions, files smaller
               than <b>128 kB</b> will not be transitioned to

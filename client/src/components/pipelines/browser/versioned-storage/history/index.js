@@ -315,7 +315,7 @@ class VSHistory extends React.Component {
           error && (
             <Alert
               type="error"
-              message={error}
+              title={error}
             />
           )
         }

@@ -528,7 +528,7 @@ export default class PermissionsForm extends React.Component {
           <Alert
             showIcon
             style={{marginBottom: 5}}
-            message={(
+            title={(
               <div>
                 {title}
                 {
@@ -557,7 +557,7 @@ export default class PermissionsForm extends React.Component {
         <Alert
           showIcon
           style={{marginBottom: 5}}
-          message={(
+          title={(
             <div>
               {title}
               {content}
@@ -707,7 +707,7 @@ export default class PermissionsForm extends React.Component {
       selectedPermission
     } = this.state;
     if (error) {
-      return <Alert type="warning" message={error} />;
+      return <Alert type="warning" title={error} />;
     }
     const getSidName = (name, principal) => {
       const {roles: rolesRequest} = this.props;

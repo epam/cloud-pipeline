@@ -198,7 +198,7 @@ export default class AllowedInstancesCountWarning extends React.Component {
     return (
       <div>
         <Alert
-          message={this.warningMessage}
+          title={this.warningMessage}
           type="warning"
           showIcon
           style={style}

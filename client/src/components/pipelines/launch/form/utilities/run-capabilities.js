@@ -1004,7 +1004,7 @@ function CapabilitiesDisclaimerRenderer (
           type="warning"
           className={className}
           style={style}
-          message={
+          title={
             <div>
               {filteredValuesDisclaimers.map((disclaimer, idx) => (
                 <p

@@ -166,7 +166,7 @@ export default class LuigiGraph extends Graph {
       return <LoadingView />;
     }
     if (this._error) {
-      return <Alert type="warning" message={this.props.graph.error} />;
+      return <Alert type="warning" title={this.props.graph.error} />;
     }
     return <div className={styles.luigiGraphStyle} ref={this.initializeGraph} />;
   }

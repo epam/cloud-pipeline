@@ -136,7 +136,7 @@ class AnalysisOutputTable extends React.Component {
     } = this.props;
     if (error) {
       return (
-        <Alert message={error} type="error" />
+        <Alert title={error} type="error" />
       );
     }
     if (pending) {

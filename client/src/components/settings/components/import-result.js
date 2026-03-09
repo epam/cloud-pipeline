@@ -37,7 +37,7 @@ function ImportResult (
     content = (
       <Alert
         type="info"
-        message="No logs are available"
+        title="No logs are available"
       />
     );
   } else {

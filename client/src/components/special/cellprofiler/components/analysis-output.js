@@ -318,7 +318,7 @@ class AnalysisOutputWithDownload extends React.Component {
         {
           !pending && (!url || !data) ? (
             <Alert
-              message="Analysis results not found."
+              title="Analysis results not found."
               type="info"
             />
           ) : null

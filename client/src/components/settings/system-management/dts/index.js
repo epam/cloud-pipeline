@@ -264,7 +264,7 @@ class DtsManagement extends React.Component {
       name: 'empty',
       render: () => (
         <Alert
-          message="DTS not found."
+          title="DTS not found."
           type="info"
         />)
     }];

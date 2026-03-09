@@ -101,7 +101,7 @@ class RunsFilter extends React.Component {
         <Alert
           style={{marginBottom: 10}}
           type="error"
-          message={lines.map((line, index) => <pre key={index}>{line}</pre>)} />
+          title={lines.map((line, index) => <pre key={index}>{line}</pre>)} />
       );
     }
     return undefined;

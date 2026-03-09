@@ -143,7 +143,7 @@ class ConfigurePluginsControl extends React.PureComponent {
         {
           !pending && error && (
             <div className={styles.error}>
-              <Alert message={error} type="error" />
+              <Alert title={error} type="error" />
             </div>
           )
         }

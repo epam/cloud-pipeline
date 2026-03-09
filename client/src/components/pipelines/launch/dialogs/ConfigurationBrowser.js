@@ -331,7 +331,7 @@ export default class ConfigurationBrowser extends React.Component {
   render () {
     let content = <LoadingView />;
     if (!this.props.tree || (!this.props.tree.pending && this.props.tree.error)) {
-      content = <Alert message="Error retrieving configurations" type="error" />;
+      content = <Alert title="Error retrieving configurations" type="error" />;
     } else if (!this.props.tree.pending) {
       content = (
         <SplitPane

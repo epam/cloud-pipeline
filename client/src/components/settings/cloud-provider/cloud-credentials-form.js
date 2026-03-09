@@ -134,7 +134,7 @@ class CloudCredentialsForm extends React.Component {
     if (this.props.cloudCredentialProfiles.pending && !this.props.cloudCredentialProfiles.loaded) {
       content = (<LoadingView />);
     } else if (this.props.cloudCredentialProfiles.error) {
-      content = (<Alert type="error" message={this.props.cloudCredentialProfiles.error} />);
+      content = (<Alert type="error" title={this.props.cloudCredentialProfiles.error} />);
     } else {
       const {
         currentCredentials,

@@ -129,7 +129,7 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
     if (!this.props.activeRuns.loaded && this.props.activeRuns.pending) {
       content = <LoadingView />;
     } else if (this.props.activeRuns.error) {
-      content = <Alert type="warning" message={this.props.activeRuns.error} />;
+      content = <Alert type="warning" title={this.props.activeRuns.error} />;
     } else {
       content = [
         <Row key="runs" style={{flex: 1, overflowY: 'auto'}}>
@@ -209,7 +209,7 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
       return <LoadingView />;
     }
     if (this.props.authenticatedUserInfo.error) {
-      return (<Alert type="warning" message={this.props.authenticatedUserInfo.error} />);
+      return (<Alert type="warning" title={this.props.authenticatedUserInfo.error} />);
     }
     return (
       <div className={styles.container}>

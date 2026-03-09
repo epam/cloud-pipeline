@@ -296,7 +296,7 @@ class PipelineCodeForm extends React.Component {
     if (error) {
       return (
         <Alert
-          message={error}
+          title={error}
           type="error"
         />
       );
@@ -339,7 +339,7 @@ class PipelineCodeForm extends React.Component {
         )
         : (
           <Alert
-            message={`Error parsing tabular file ${this.fileName || ''}:
+            title={`Error parsing tabular file ${this.fileName || ''}:
               ${this._tableData.message}`}
             type="error" />
         );

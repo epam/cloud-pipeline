@@ -137,7 +137,7 @@ export default class PodInfoModal extends React.Component {
         {this.events.map((podEvent) => (
           <Alert
             key={`${podEvent.message}-${podEvent.type}`}
-            message={(
+            title={(
               <div style={{
                 display: 'flex',
                 justifyContent: 'space-between'

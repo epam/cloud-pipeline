@@ -434,7 +434,7 @@ class TasksTable extends React.PureComponent {
             >
               {
                 error && (
-                  <Alert message={error} showIcon type="warning" />
+                  <Alert title={error} showIcon type="warning" />
                 )
               }
               {

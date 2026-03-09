@@ -132,7 +132,7 @@ class CorrectInputsModal extends React.Component {
           showIcon
           type="info"
           style={{marginBottom: 5}}
-          message={(
+          title={(
             <p>
               There are inputs (image channels)
               that are not available for the current image.<br />

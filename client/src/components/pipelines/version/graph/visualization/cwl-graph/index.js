@@ -462,10 +462,10 @@ export default class CwlGraph extends Graph {
       return <LoadingView />;
     }
     if (parameters.error) {
-      return <Alert type="warning" message={parameters.error} />;
+      return <Alert type="warning" title={parameters.error} />;
     }
     if (this._fileRequest && this._fileRequest.error) {
-      return <Alert type="warning" message={this._fileRequest.error} />;
+      return <Alert type="warning" title={this._fileRequest.error} />;
     }
     return (
       <div className={styles.cwlGraph}>

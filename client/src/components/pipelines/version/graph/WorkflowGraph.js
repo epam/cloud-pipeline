@@ -117,7 +117,7 @@ export default class WorkflowGraph extends localization.LocalizedReactComponent 
       } else {
         return (
           <Row ref={() => this.props.onGraphReady && this.props.onGraphReady(null)}>
-            <Alert type="warning" message={
+            <Alert type="warning" title={
               <div>
                 <span>Graph is not supported for current {this.localizedString('pipeline')}</span>
               </div>

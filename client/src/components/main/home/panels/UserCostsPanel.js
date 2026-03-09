@@ -224,7 +224,7 @@ export default class UserCostsPanel extends React.Component {
     );
     return (
       <Alert
-        message={message}
+        title={message}
         type="warning"
         style={{padding: '8px 15px', marginBottom: '10px'}}
       />

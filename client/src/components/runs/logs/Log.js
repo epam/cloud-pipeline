@@ -1767,7 +1767,7 @@ class Logs extends localization.LocalizedReactComponent {
       return (
         <Alert
           type="error"
-          message={error}
+          title={error}
         />
       );
     }
@@ -1936,7 +1936,7 @@ class Logs extends localization.LocalizedReactComponent {
           <Alert
             type="warning"
             style={{margin: '5px 0'}}
-            message={resumeFailureReason}
+            title={resumeFailureReason}
           />
         );
       }
@@ -2456,7 +2456,7 @@ class Logs extends localization.LocalizedReactComponent {
     ) {
       NodePendingAlert = (
         <Alert
-          message={(<div>{runStatusTooltips[RunStatuses.nodePending].description}</div>)}
+          title={(<div>{runStatusTooltips[RunStatuses.nodePending].description}</div>)}
           type="warning"
         />
       );
@@ -2521,7 +2521,7 @@ class Logs extends localization.LocalizedReactComponent {
             {
               stateReasonMessage && (
                 <Alert
-                  message={`Server failure reason: ${stateReasonMessage}`}
+                  title={`Server failure reason: ${stateReasonMessage}`}
                   type="error"
                 />
               )

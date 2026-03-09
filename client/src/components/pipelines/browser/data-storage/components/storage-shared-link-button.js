@@ -163,7 +163,7 @@ class StorageSharedLinkButton extends React.Component {
     if (error) {
       return (
         <Alert
-          message={error}
+          title={error}
           type="error"
         />
       );

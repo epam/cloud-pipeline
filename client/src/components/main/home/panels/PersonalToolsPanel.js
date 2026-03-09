@@ -881,13 +881,13 @@ export default class PersonalToolsPanel extends React.Component {
       return <LoadingView />;
     }
     if (this.props.dockerRegistries.error) {
-      return <Alert type="warning" message={this.props.dockerRegistries.error} />;
+      return <Alert type="warning" title={this.props.dockerRegistries.error} />;
     }
     if (!this.props.authenticatedUserInfo.loaded && this.props.authenticatedUserInfo.pending) {
       return <LoadingView />;
     }
     if (this.props.authenticatedUserInfo.error) {
-      return (<Alert type="warning" message={this.props.authenticatedUserInfo.error} />);
+      return (<Alert type="warning" title={this.props.authenticatedUserInfo.error} />);
     }
     let toolImage;
     let toolVersion;

@@ -793,7 +793,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       return (<LoadingView />);
     }
     if (this.props.pipeline.error) {
-      return <Alert message={this.props.pipeline.error} type="error" />;
+      return <Alert title={this.props.pipeline.error} type="error" />;
     }
     const {pipelineType} = this.props.pipeline.value;
     if (/^versioned_storage$/i.test(pipelineType) && !this.props.listingMode) {
@@ -835,7 +835,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     } else if (this.props.versions.error) {
       this._versions = [];
       versionsContent = (
-        <Alert key={CONTENT_PANEL_KEY} type="error" message={this.props.versions.error} />
+        <Alert key={CONTENT_PANEL_KEY} type="error" title={this.props.versions.error} />
       );
     }
     if (!this._versions || (!this.props.versions.loaded && this.props.versions.pending)) {

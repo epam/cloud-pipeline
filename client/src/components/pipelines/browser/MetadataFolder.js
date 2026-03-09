@@ -437,7 +437,7 @@ export default class MetadataFolder extends React.Component {
       return null;
     }
     if (folder.error) {
-      return (<Alert message={folder.error} type="error" />);
+      return (<Alert title={folder.error} type="error" />);
     }
     if (folder.pending && !folder.loaded) {
       return (<LoadingView />);

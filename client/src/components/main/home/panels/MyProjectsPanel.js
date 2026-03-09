@@ -213,13 +213,13 @@ export default class MyProjectsPanel extends localization.LocalizedReactComponen
       return <LoadingView />;
     }
     if (this.props.projects.error) {
-      return <Alert type="warning" message={this.props.projects.error} />;
+      return <Alert type="warning" title={this.props.projects.error} />;
     }
     if (!this.props.authenticatedUserInfo.loaded && this.props.authenticatedUserInfo.pending) {
       return <LoadingView />;
     }
     if (this.props.authenticatedUserInfo.error) {
-      return (<Alert type="warning" message={this.props.authenticatedUserInfo.error} />);
+      return (<Alert type="warning" title={this.props.authenticatedUserInfo.error} />);
     }
     return (
       <div className={styles.container} style={{display: 'flex', flexDirection: 'column'}}>

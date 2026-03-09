@@ -133,7 +133,7 @@ class CopyMetadataEntitiesDialog extends React.Component {
       return (
         <Alert
           type="info"
-          message={(
+          title={(
             <div>
               Select folder to copy entities
             </div>
@@ -219,12 +219,12 @@ class CopyMetadataEntitiesDialog extends React.Component {
     }
     if (pipelinesLibrary.error) {
       return (
-        <Alert type="error" message={pipelinesLibrary.error} />
+        <Alert type="error" title={pipelinesLibrary.error} />
       );
     }
     if (!pipelinesLibrary.loaded) {
       return (
-        <Alert type="error" message="Error fetching library" />
+        <Alert type="error" title="Error fetching library" />
       );
     }
     const onSelect = (selection) => {

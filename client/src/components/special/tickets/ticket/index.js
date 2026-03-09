@@ -483,7 +483,7 @@ class Ticket extends React.Component {
         {
           error && (
             <Alert
-              message={error}
+              title={error}
               type="error"
               style={{margin: '5px 0'}}
             />
@@ -497,7 +497,7 @@ class Ticket extends React.Component {
         {
           !pending && !ticket && !error && (
             <Alert
-              message="Ticket not found"
+              title="Ticket not found"
               type="error"
               style={{margin: '5px 0'}}
             />

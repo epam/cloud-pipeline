@@ -120,7 +120,7 @@ export default class SystemEvents extends Component {
     }
     if (!this.props.authenticatedUserInfo.value.admin) {
       return (
-        <Alert type="error" message="Access is denied" />
+        <Alert type="error" title="Access is denied" />
       );
     }
     const {notifications} = this.props;

@@ -396,7 +396,7 @@ class SelectMetadataItems extends React.Component {
       >
         {
           (error || fieldsError) && (
-            <Alert type="error" message={error || fieldsError} />
+            <Alert type="error" title={error || fieldsError} />
           )
         }
         {

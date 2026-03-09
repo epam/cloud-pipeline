@@ -121,7 +121,7 @@ class TasksGroupList extends React.Component {
                   justifyContent: 'center'
                 }}
               >
-                <Alert message={error} type="warning" showIcon />
+                <Alert title={error} type="warning" showIcon />
               </div>
             )
           }

@@ -261,7 +261,7 @@ class CellProfilerJobs extends React.Component {
           error && (
             <Alert
               className={styles.cellProfilerJobsRow}
-              message={error}
+              title={error}
               type="error"
             />
           )
@@ -270,7 +270,7 @@ class CellProfilerJobs extends React.Component {
           !pending && !total && (
             <Alert
               className={styles.cellProfilerJobsRow}
-              message="Jobs not found"
+              title="Jobs not found"
               type="warning"
             />
           )

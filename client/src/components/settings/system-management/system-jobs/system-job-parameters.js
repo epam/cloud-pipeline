@@ -79,7 +79,7 @@ class SystemJobParameters extends React.Component {
           alerts.map(alert => (
             <Alert
               key={alert.parameter}
-              message={(
+              title={(
                 <p>
                   <b>{alert.parameter}: </b>
                   <span>

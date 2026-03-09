@@ -81,7 +81,7 @@ class ServerlessAPIButton extends React.Component {
     if (error) {
       return (
         <Row className={this.props.overlayClassName}>
-          <Alert type="error" message={error} />
+          <Alert type="error" title={error} />
         </Row>
       );
     }

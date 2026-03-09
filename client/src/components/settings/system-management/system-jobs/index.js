@@ -354,13 +354,13 @@ class SystemJobs extends React.Component {
     }
     if (!pending && error) {
       return (
-        <Alert message={error} type="error" />
+        <Alert title={error} type="error" />
       );
     }
     if (!jobs || !jobs.length) {
       return (
         <Alert
-          message="System jobs not configured"
+          title="System jobs not configured"
           type="info"
         />
       );

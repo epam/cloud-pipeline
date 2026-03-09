@@ -245,7 +245,7 @@ class HotCluster extends React.Component {
       return (
         <Alert
           type="error"
-          message={poolsRequest.error || 'Error fetching hot node pools'}
+          title={poolsRequest.error || 'Error fetching hot node pools'}
         />
       );
     }
@@ -253,7 +253,7 @@ class HotCluster extends React.Component {
       return (
         <Alert
           type="error"
-          message={nodes.error || 'Error fetching cluster nodes'}
+          title={nodes.error || 'Error fetching cluster nodes'}
         />
       );
     }

@@ -499,7 +499,7 @@ class CellProfilerJobResults extends React.PureComponent {
         {
           error && (
             <Alert
-              message={error}
+              title={error}
               type="error"
             />
           )

@@ -409,7 +409,7 @@ export default class LaunchForm extends React.Component {
 
   render () {
     if (this.formStore?.error) {
-      return <Alert type="error" message={this.formStore.error} />;
+      return <Alert type="error" title={this.formStore.error} />;
     }
     if (this.formStore.pending) {
       return <Spin />;

@@ -163,7 +163,7 @@ export default class CudaWarning extends React.Component {
         className={className}
         style={style}
         showIcon={showIcon}
-        message={getMessage()}
+        title={getMessage()}
       />
     );
   }

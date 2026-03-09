@@ -177,7 +177,7 @@ export default class FireCloudBrowser extends React.Component {
 
   render () {
     if (this.props.googleApi.error) {
-      return <Alert type="warning" message="Google auth initialization error" />;
+      return <Alert type="warning" title="Google auth initialization error" />;
     }
     if (!this.props.googleApi.loaded) {
       return <LoadingView />;

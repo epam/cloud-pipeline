@@ -205,7 +205,7 @@ class MLFlowEngine extends React.Component {
       return (
         <div className={classNames(className, styles.mlflowEngineContainer)} style={style}>
           <div className={styles.centered}>
-            <Alert type="warning" message="MLflow server endpoint not specified" />
+            <Alert type="warning" title="MLflow server endpoint not specified" />
           </div>
         </div>
       );

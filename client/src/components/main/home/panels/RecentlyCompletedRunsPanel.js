@@ -131,7 +131,7 @@ export default class RecentlyCompletedRunsPanel extends localization.LocalizedRe
     if (!this.props.completedRuns.loaded && this.props.completedRuns.pending) {
       content = <LoadingView />;
     } else if (this.props.completedRuns.error) {
-      content = <Alert type="warning" message={this.props.completedRuns.error} />;
+      content = <Alert type="warning" title={this.props.completedRuns.error} />;
     } else {
       content = [
         <Row key="runs" style={{flex: 1, overflowY: 'auto'}}>
@@ -196,7 +196,7 @@ export default class RecentlyCompletedRunsPanel extends localization.LocalizedRe
       return <LoadingView />;
     }
     if (this.props.authenticatedUserInfo.error) {
-      return (<Alert type="warning" message={this.props.authenticatedUserInfo.error} />);
+      return (<Alert type="warning" title={this.props.authenticatedUserInfo.error} />);
     }
     return (
       <div className={styles.container}>

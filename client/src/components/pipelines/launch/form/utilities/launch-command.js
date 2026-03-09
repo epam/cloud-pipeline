@@ -149,7 +149,7 @@ class LaunchCommand extends React.Component {
     } = this.state;
     if (error) {
       return (
-        <Alert type="warning" message={error} />
+        <Alert type="warning" title={error} />
       );
     }
     const onChangeOS = (os) => {
@@ -189,7 +189,7 @@ class LaunchCommand extends React.Component {
     const {payload} = this.state;
     if (!payload) {
       return (
-        <Alert type="warning" message="Payload is not set" />
+        <Alert type="warning" title="Payload is not set" />
       );
     }
     return (

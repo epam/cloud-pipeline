@@ -206,7 +206,7 @@ export default class AIChat extends React.Component {
                   data-id={message.id}
                 >
                   <Message
-                    message={message}
+                    title={message}
                     onRunLaunchSuccess={this.onRunLaunchSuccess}
                     first={index === 0}
                     last={index === chat.messages.length - 1}
@@ -221,7 +221,7 @@ export default class AIChat extends React.Component {
           chat.error && (
             <div className={classNames(styles.chatError, styles.chatArea)}>
               <Alert
-                message={(
+                title={(
                   <div>
                     <span>{chat.error}</span>
                     <a style={{marginLeft: 5}} onClick={() => chat.reload()}>
@@ -239,14 +239,14 @@ export default class AIChat extends React.Component {
         {
           chat.socketError && (
             <div className={classNames(styles.chatError, styles.chatArea)}>
-              <Alert message={chat.socketError} type="error" showIcon style={{width: '100%'}} />
+              <Alert title={chat.socketError} type="error" showIcon style={{width: '100%'}} />
             </div>
           )
         }
         {
           chat.messageError && (
             <div className={classNames(styles.chatError, styles.chatArea)}>
-              <Alert message={chat.messageError} type="error" showIcon style={{width: '100%'}} />
+              <Alert title={chat.messageError} type="error" showIcon style={{width: '100%'}} />
             </div>
           )
         }

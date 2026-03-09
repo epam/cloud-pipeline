@@ -1014,7 +1014,7 @@ class HcsImage extends React.Component {
               <Alert
                 className={styles.alert}
                 type="error"
-                message={error}
+                title={error}
               />
             </div>
           )

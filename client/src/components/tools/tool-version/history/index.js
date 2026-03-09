@@ -93,7 +93,7 @@ export default class History extends React.Component {
         <div>
           <Alert
             type="info"
-            message={(
+            title={(
               <div style={{textAlign: 'justify'}}>
                 Please specify a docker image name, which is going to be used as a base layer to generate a Dockerfile. This name will be used in the "FROM" instruction.
               </div>
@@ -117,7 +117,7 @@ export default class History extends React.Component {
       return <LoadingView />;
     }
     if (this.props.history.error) {
-      return <Alert type="error" message={this.props.history.error} />;
+      return <Alert type="error" title={this.props.history.error} />;
     }
     const selectedLayer = (this.props.history.value || [])[this.state.selectedLayer];
     return (

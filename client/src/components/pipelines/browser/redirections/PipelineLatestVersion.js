@@ -116,7 +116,7 @@ class PipelineLatestVersion extends React.PureComponent {
     } = this.state;
     if (error) {
       return (
-        <Alert type="error" message={error} />
+        <Alert type="error" title={error} />
       );
     }
     return (

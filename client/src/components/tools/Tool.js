@@ -738,7 +738,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           <Alert
             style={{marginBottom: 10, marginTop: 5}}
             type="warning"
-            message={warningForLatestVersion} />
+            title={warningForLatestVersion} />
         }
         <Row type="flex" style={{marginBottom: 10}}>
           {this.renderToolImageControl()}
@@ -1189,7 +1189,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           this.props.versions.error &&
           <Alert
             type="error"
-            message={this.props.versions.error}
+            title={this.props.versions.error}
             style={{margin: '5px 0 10px 0'}} />
         }
         <Input
@@ -1272,14 +1272,14 @@ export default class Tool extends localization.LocalizedReactComponent {
           <Alert
             style={{marginBottom: 10, marginTop: 5}}
             type="warning"
-            message={warningForLatestVersion} />
+            title={warningForLatestVersion} />
         }
         {
           !this.defaultTag && this.props.versions.loaded &&
           <Alert
             style={{marginBottom: 10, marginTop: 5}}
             type="info"
-            message={
+            title={
               <div>
                 <Row>
                   <b>{image}</b> has no default <b><i>latest</i></b> version.
@@ -1295,7 +1295,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           <Alert
             style={{marginBottom: 10, marginTop: 5}}
             type="info"
-            message={
+            title={
               <div>
                 <Row>
                   <b>{image}</b> has no (<b><i>latest</i></b>) version.
@@ -2087,13 +2087,13 @@ export default class Tool extends localization.LocalizedReactComponent {
       return <LoadingView />;
     }
     if (this.props.tool.error) {
-      return <Alert type="error" message={this.props.tool.error} />;
+      return <Alert type="error" title={this.props.tool.error} />;
     }
     if (this.props.docker.error) {
-      return <Alert type="error" message={this.props.docker.error} />;
+      return <Alert type="error" title={this.props.docker.error} />;
     }
     if (this.props.versionSettings.error) {
-      return <Alert type="error" message={this.props.versionSettings.error} />;
+      return <Alert type="error" title={this.props.versionSettings.error} />;
     }
     if (!roleModel.readAllowed(this.props.tool.value)) {
       return (
@@ -2107,7 +2107,7 @@ export default class Tool extends localization.LocalizedReactComponent {
             )
           }
           bodyStyle={{padding: 15, height: '100%', display: 'flex', flexDirection: 'column'}}>
-          <Alert type="error" message="You have no permissions to view tool details" />
+          <Alert type="error" title="You have no permissions to view tool details" />
         </Card>
       );
     }

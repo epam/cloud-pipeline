@@ -449,7 +449,7 @@ class AddDockerRegistryControl extends React.Component {
     if (dockerRegistries.error) {
       if (showError) {
         return (
-          <Alert type="error" message={dockerRegistries.error} />
+          <Alert type="error" title={dockerRegistries.error} />
         );
       }
       return null;

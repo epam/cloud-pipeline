@@ -167,7 +167,7 @@ class ClusterNode extends Component {
         <div key="error">
           <br />
           <Alert
-            message={`The node '${this.props.name}' was not found or was removed`}
+            title={`The node '${this.props.name}' was not found or was removed`}
             type="warning"
           />
         </div>

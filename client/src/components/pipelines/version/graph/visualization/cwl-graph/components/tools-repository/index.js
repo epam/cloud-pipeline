@@ -168,13 +168,13 @@ class CWLToolsRepository extends React.Component {
     }
     if (error) {
       return (
-        <Alert message={error} type="error" />
+        <Alert title={error} type="error" />
       );
     }
     const {tools = []} = this;
     if (tools.length === 0) {
       return (
-        <Alert message="Tools not found" type="info" />
+        <Alert title="Tools not found" type="info" />
       );
     }
     const {
@@ -187,7 +187,7 @@ class CWLToolsRepository extends React.Component {
     if (filtered.length === 0 && search && search.length) {
       return (
         <Alert
-          message={(
+          title={(
             <div>
               Nothing found for <b>{search}</b>
             </div>

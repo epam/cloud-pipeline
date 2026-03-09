@@ -281,7 +281,7 @@ class SelectionDownloadCommand extends React.Component {
                 type="info"
                 showIcon
                 style={{marginBottom: 5}}
-                message={(
+                title={(
                   <div>
                     {
                       skipped > 0 && (

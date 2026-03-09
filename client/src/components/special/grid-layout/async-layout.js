@@ -34,7 +34,7 @@ export default class AsyncLayout {
           if (this.asyncLayout.loaded) {
             if (this.asyncLayout.error) {
               return (
-                <Alert type="error" message={this.asyncLayout.error} />
+                <Alert type="error" title={this.asyncLayout.error} />
               );
             }
             return (

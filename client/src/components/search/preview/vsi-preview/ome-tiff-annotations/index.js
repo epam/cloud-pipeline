@@ -96,7 +96,7 @@ class OMETiffAnnotations extends React.Component {
           }
           {
             !annotations.pending && annotations.error && (
-              <Alert type="error" message={annotations.error} />
+              <Alert type="error" title={annotations.error} />
             )
           }
           {

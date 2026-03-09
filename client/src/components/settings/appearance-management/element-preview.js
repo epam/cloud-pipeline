@@ -420,25 +420,25 @@ class ElementPreview extends React.Component {
       <Alert
         type="info"
         showIcon
-        message="Info alert"
+        title="Info alert"
         className={styles.alert}
       />
       <Alert
         type="success"
         showIcon
-        message="Success alert"
+        title="Success alert"
         className={styles.alert}
       />
       <Alert
         type="warning"
         showIcon
-        message="Warning alert"
+        title="Warning alert"
         className={styles.alert}
       />
       <Alert
         type="error"
         showIcon
-        message="Error alert"
+        title="Error alert"
         className={styles.alert}
       />
     </PreviewContainer>

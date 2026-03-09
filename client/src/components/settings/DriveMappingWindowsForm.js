@@ -75,7 +75,7 @@ export default class DriveMappingWindowsForm extends React.Component {
         <Row>
           <Alert
             type="info"
-            message={
+            title={
               <div>
                 <center><b>Web browser not supported</b></center>
                 <center style={{marginTop: '10px'}}><b>Drive mapping</b> feature allows to mount a cloud data storage to your local workstation and manage files/folders as with any general hard drive</center>
@@ -92,7 +92,7 @@ export default class DriveMappingWindowsForm extends React.Component {
         <Row>
           <Alert
             type="info"
-            message={
+            title={
               <div>
                 <center><b>Authenticate to proceed</b></center>
                 <center style={{marginTop: '10px'}}><b>Drive mapping</b> feature allows to mount a cloud data storage to your local workstation and manage files/folders as with any general hard drive</center>

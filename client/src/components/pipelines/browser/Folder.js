@@ -2081,7 +2081,7 @@ export default class Folder extends localization.LocalizedReactComponent {
 
   render () {
     if (!this.props.folder.pending && this.props.folder.error) {
-      return <Alert message={this.props.folder.error} type="error" />;
+      return <Alert title={this.props.folder.error} type="error" />;
     }
     if (this.props.folder.loaded) {
       if (!this.props.isRoot && roleModel.readDenied(this.props.folder.value) &&
@@ -2089,7 +2089,7 @@ export default class Folder extends localization.LocalizedReactComponent {
         (!this.props.folder.value.storages || !this.props.folder.value.storages.length) &&
         (!this.props.folder.value.pipelines || !this.props.folder.value.pipelines.length) &&
         (!this.props.folder.value.configurations || !this.props.folder.value.configurations.length)) {
-        return <Alert message="Access denied" type="error" />;
+        return <Alert title="Access denied" type="error" />;
       }
       let data = generateTreeData(
         this.props.folder.value,

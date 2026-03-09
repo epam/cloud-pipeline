@@ -822,7 +822,7 @@ class CellProfilerJobZScore extends React.Component {
     } = this.state;
     if (error) {
       return (
-        <Alert message={error} type="error" />
+        <Alert title={error} type="error" />
       );
     }
     if (pending) {

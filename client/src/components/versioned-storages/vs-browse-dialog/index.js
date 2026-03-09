@@ -295,7 +295,7 @@ class VSBrowseDialog extends React.Component {
       >
         {
           pipelines && pipelines.error && (
-            <Alert type="error" message={pipelines.error} />
+            <Alert type="error" title={pipelines.error} />
           )
         }
         {

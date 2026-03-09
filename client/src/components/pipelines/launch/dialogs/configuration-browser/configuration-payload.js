@@ -546,7 +546,7 @@ class ConfigurationPayload extends React.Component {
     if (instanceTypesError) {
       return (
         <Alert
-          message={instanceTypesError}
+          title={instanceTypesError}
           type="error"
         />
       );
@@ -1011,7 +1011,7 @@ class ConfigurationPayload extends React.Component {
     if (!entry) {
       return (
         <Alert
-          message="Select configuration"
+          title="Select configuration"
           type="info"
         />
       );

@@ -102,7 +102,7 @@ class Quotas extends React.Component {
    if (authenticatedUserInfo.error) {
      return (
        <Alert
-         message={authenticatedUserInfo.error}
+         title={authenticatedUserInfo.error}
          type="error"
        />
      );
@@ -110,7 +110,7 @@ class Quotas extends React.Component {
    if (!roleModel.isManager.billing(this)) {
      return (
        <Alert
-         message="Access denied"
+         title="Access denied"
          type="error"
        />
      );

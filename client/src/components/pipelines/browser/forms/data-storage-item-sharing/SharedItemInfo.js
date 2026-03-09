@@ -555,7 +555,7 @@ class SharedItemInfo extends React.Component {
             error && (
               <Alert
                 type="error"
-                message={error}
+                title={error}
                 style={{marginBottom: 5}}
               />
             )

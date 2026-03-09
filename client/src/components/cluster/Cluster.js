@@ -878,7 +878,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
             <Row>
               <br />
               <Alert
-                message={`Error retrieving cluster nodes: ${error}`}
+                title={`Error retrieving cluster nodes: ${error}`}
                 type="error" />
             </Row>
           )

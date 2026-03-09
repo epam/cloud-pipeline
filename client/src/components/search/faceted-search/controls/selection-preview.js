@@ -255,7 +255,7 @@ class SelectionPreview extends React.Component {
                 type="info"
                 showIcon
                 style={{marginBottom: 5}}
-                message={(
+                title={(
                   <div>
                     {skipped} file{skipped === 1 ? ' is' : 's are'} not allowed
                     to be downloaded and therefore will be skipped

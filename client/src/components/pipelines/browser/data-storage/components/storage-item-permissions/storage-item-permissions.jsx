@@ -152,7 +152,7 @@ class StorageItemPermissions extends React.PureComponent {
       modified
     } = this.state;
     const errorComponent = error && !pending ? (
-      <Alert message={error} showIcon type="error" />
+      <Alert title={error} showIcon type="error" />
     ) : undefined;
 
     const titleComponent = (

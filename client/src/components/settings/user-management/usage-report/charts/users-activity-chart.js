@@ -562,7 +562,7 @@ class UsersActivityChart extends React.Component {
     if (error) {
       return (
         <div className={className} style={style}>
-          <Alert message={error} type="error" />
+          <Alert title={error} type="error" />
         </div>
       );
     }

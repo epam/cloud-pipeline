@@ -188,7 +188,7 @@ class InfoPanel extends localization.LocalizedReactComponent {
         >
           <Alert
             type="error"
-            message={(
+            title={(
               <Row>
                 <span style={{marginRight: 5}}>
                   {fileFetchingError}

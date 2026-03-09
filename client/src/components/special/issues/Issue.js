@@ -497,7 +497,7 @@ export default class Issue extends localization.LocalizedReactComponent {
     if (this.props.issueInfo && this.props.issueInfo.pending && !this.props.issueInfo.loaded) {
       content = <LoadingView />;
     } else if (this.props.issueInfo && this.props.issueInfo.error) {
-      content = <Alert type="warning" message={this.props.issueInfo.error} />;
+      content = <Alert type="warning" title={this.props.issueInfo.error} />;
     } else {
       content = this.comments.map(this.renderComment);
     }

@@ -366,7 +366,7 @@ class CellProfiler extends React.Component {
           analysis.pipeline.defineResultsAreEmpty && (
             <Alert
               className={styles.block}
-              message={(
+              title={(
                 <div>
                   To run evaluation please specify output at the <b>Define Results</b> section
                 </div>

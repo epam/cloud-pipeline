@@ -51,7 +51,7 @@ export default class CloudNodes extends React.Component {
     if (error) {
       return (
         <div style={{width: '100%', height: '100%'}}>
-          <Alert message={error} type="error" />
+          <Alert title={error} type="error" />
         </div>
       );
     }

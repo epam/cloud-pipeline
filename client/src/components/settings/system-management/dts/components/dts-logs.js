@@ -134,7 +134,7 @@ class DtsLogs extends React.Component {
     if (error) {
       return (
         <Alert
-          message={error}
+          title={error}
           type="error"
         />
       );
@@ -142,7 +142,7 @@ class DtsLogs extends React.Component {
     if (!pending && sizeExceeded) {
       return (
         <Alert
-          message={(
+          title={(
             <p>
               Logs size is more than <b>{SIZE_THRESHOLD_MB}mb</b> and cannot be viewed.
               {this.downloadAvailable ? (
@@ -161,7 +161,7 @@ class DtsLogs extends React.Component {
     if (!pending && !logsString) {
       return (
         <Alert
-          message={(<p>Logs are not available or empty.</p>)}
+          title={(<p>Logs are not available or empty.</p>)}
           type="error"
         />
       );

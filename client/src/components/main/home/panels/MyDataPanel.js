@@ -150,13 +150,13 @@ export default class MyDataPanel extends React.Component {
       return <LoadingView />;
     }
     if (this.props.dataStorages.error) {
-      return <Alert type="warning" message={this.props.dataStorages.error} />;
+      return <Alert type="warning" title={this.props.dataStorages.error} />;
     }
     if (!this.props.authenticatedUserInfo.loaded && this.props.authenticatedUserInfo.pending) {
       return <LoadingView />;
     }
     if (this.props.authenticatedUserInfo.error) {
-      return (<Alert type="warning" message={this.props.authenticatedUserInfo.error} />);
+      return (<Alert type="warning" title={this.props.authenticatedUserInfo.error} />);
     }
     return (
       <div className={styles.container} style={{display: 'flex', flexDirection: 'column'}}>

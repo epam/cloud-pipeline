@@ -332,7 +332,7 @@ class HotClusterUsage extends React.Component {
         {
           error && (
             <div>
-              <Alert type="error" message={error} />
+              <Alert type="error" title={error} />
             </div>
           )
         }

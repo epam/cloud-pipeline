@@ -1054,7 +1054,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
       return <LoadingView />;
     }
     if (this.props.configurations.error) {
-      return <Alert type="error" message={this.props.configurations.error} />;
+      return <Alert type="error" title={this.props.configurations.error} />;
     }
     let defaultPriceTypeIsSpot = false;
     if (this.props.preferences.loaded) {

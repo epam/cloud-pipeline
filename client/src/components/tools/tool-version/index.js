@@ -77,7 +77,7 @@ export default class ToolVersion extends React.Component {
       return <LoadingView />;
     }
     if (this.props.tool.error) {
-      return <Alert type="error" message={this.props.tool.error} />;
+      return <Alert type="error" title={this.props.tool.error} />;
     }
     if (!roleModel.readAllowed(this.props.tool.value)) {
       return (
@@ -91,7 +91,7 @@ export default class ToolVersion extends React.Component {
             )
           }
           bodyStyle={{padding: 15, height: '100%', display: 'flex', flexDirection: 'column'}}>
-          <Alert type="error" message="You have no permissions to view tool details" />
+          <Alert type="error" title="You have no permissions to view tool details" />
         </Card>
       );
     }
