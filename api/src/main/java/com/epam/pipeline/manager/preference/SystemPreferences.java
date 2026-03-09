@@ -259,6 +259,12 @@ public class SystemPreferences {
     public static final StringPreference DATA_STORAGE_SYSTEM_DATA_STORAGE_NAME = new StringPreference(
         "storage.system.storage.name", null, DATA_STORAGE_GROUP, null);
 
+    public static final StringPreference DATA_STORAGE_SYSTEM_RUN_LOGS_PATH_PREFIX = new StringPreference(
+            "storage.system.run.logs.path.prefix", "logs/runs/", DATA_STORAGE_GROUP, pass);
+
+    public static final BooleanPreference DATA_STORAGE_SYSTEM_RUN_LOGS_TRANSFER_ENABLE = new BooleanPreference(
+            "storage.system.run.logs.transfer.enabled", true, DATA_STORAGE_GROUP, pass);
+
     public static final StringPreference DATA_STORAGE_RUN_SHARED_STORAGE_NAME = new StringPreference(
             "storage.system.run.shared.storage.name", null, DATA_STORAGE_GROUP, pass);
     public static final StringPreference DATA_STORAGE_RUN_SHARED_FOLDER_PATTERN = new StringPreference(

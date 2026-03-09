@@ -222,6 +222,9 @@ public class PodMonitor extends AbstractSchedulingManager {
                         }
                     }
                     pipelineRunManager.updatePipelineStatus(run);
+                    if (run.getStatus().isFinal() && !run.isTerminating()) {
+                        tryMigrateRunLogs(run.getId());
+                    }
                 } catch (Exception e) {
                     LOGGER.error(e.getMessage(), e);
                 }
@@ -555,6 +558,20 @@ public class PodMonitor extends AbstractSchedulingManager {
         private void finishRun(PipelineRun pipelineRun) {
             pipelineRun.setTerminating(false);
             pipelineRunManager.updatePipelineStatus(pipelineRun);
+            tryMigrateRunLogs(pipelineRun.getId());
+        }
+
+        private void tryMigrateRunLogs(final Long runId) {
+            try {
+                runLogManager.migrateRunLogsToStorage(runId);
+            } catch (Exception e) {
+                LOGGER.error(
+                        messageHelper.getMessage(
+                            MessageConstants.ERROR_RUN_LOG_MIGRATION_FAILED,
+                            runId, e.getMessage(), e
+                        )
+                );
+            }
         }
 
         private boolean killChildrenPods(String podId, PipelineRun run) {
