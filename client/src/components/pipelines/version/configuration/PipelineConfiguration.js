@@ -467,7 +467,7 @@ export default class PipelineConfiguration extends React.Component {
           activeKey={this.selectedConfigurationName}
           tabBarExtraContent={addButton}
           type="editable-card"
-          items={(this.props.configurations.value || []).sort((cA, cB) => {
+          items={(this.props.configurations.value || []).slice().sort((cA, cB) => {
             if (cA.name > cB.name) {
               return 1;
             } else if (cA.name < cB.name) {

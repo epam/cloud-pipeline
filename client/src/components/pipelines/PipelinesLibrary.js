@@ -548,31 +548,31 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
     return (
       <Row id="pipelines-library-container" className={styles.container}>
         <Splitter
-          // className="pipelines-library-split-pane"
-          // style={{height: '100%', width: '100%'}}
+          className="pipelines-library-split-pane"
+          style={{height: '100%', width: '100%'}}
         >
           <Splitter.Panel
-            // id="pipelines-library-split-pane-left"
-            // className={styles.subContainer}
+            id="pipelines-library-split-pane-left"
+            className={styles.subContainer}
             defaultSize="20%"
             min="100px"
-            // style={{
-            //   overflowY: 'auto',
-            //   display: 'flex',
-            //   flexDirection: 'column'
-            // }}
+            style={{
+              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column'
+            }}
           >
             {this.renderLibrary()}
           </Splitter.Panel>
           <Splitter.Panel
-            // id="pipelines-library-split-pane-right"
-            // className={styles.subContainer}
-            // style={{
-            //   overflowY: 'auto',
-            //   overflowX: 'hidden',
-            //   display: 'flex',
-            //   flexDirection: 'column'
-            // }}
+            id="pipelines-library-split-pane-right"
+            className={styles.subContainer}
+            style={{
+              overflowY: 'auto',
+              overflowX: 'hidden',
+              display: 'flex',
+              flexDirection: 'column'
+            }}
           >
             <PipelinesLibraryContent
               location={this.props.path}
