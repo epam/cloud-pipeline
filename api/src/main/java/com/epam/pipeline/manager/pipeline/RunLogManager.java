@@ -128,7 +128,14 @@ public class RunLogManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public void migrateRunLogsToStorage(final Long runId) {
         if (!runLogStorageManager.isRunLogMigrationConfigured()) {
-            log.warn(messageHelper.getMessage(MessageConstants.ERROR_RUN_LOG_STORAGE_NOT_CONFIGURED));
+            log.warn(messageHelper.getMessage(MessageConstants.WARN_RUN_LOG_STORAGE_NOT_CONFIGURED));
+            return;
+        }
+
+        final PipelineRun run = runCRUDService.loadRunById(runId);
+
+        if (StringUtils.isNotBlank(run.getLogsStoragePath())) {
+            log.warn(messageHelper.getMessage(MessageConstants.WARN_RUN_LOG_MIGRATED, runId, run.getLogsStoragePath()));
             return;
         }
 
@@ -141,9 +148,9 @@ public class RunLogManager {
         final List<PipelineTask> tasks = loadTasksByRunId(runId);
         final Map<String, PipelineTask> tasksByName = tasks.stream()
                 .collect(Collectors.toMap(
-                        task -> PipelineTask.buildTaskId(task.getName(), task.getParameters()),
-                        task -> task,
-                        (existing, duplicate) -> existing));
+                    task -> PipelineTask.buildTaskId(task.getName(), task.getParameters()),
+                    task -> task,
+                    (existing, duplicate) -> existing));
 
         final Map<PipelineTask, List<RunLog>> logsByTask = runLogs.stream()
                 .collect(Collectors.groupingBy(logEntry -> {
@@ -153,7 +160,9 @@ public class RunLogManager {
                 }));
 
         runLogStorageManager.saveLogsToStorage(runId, logsByTask);
+        runCRUDService.updatePipelineRunLogStoragePath(run, runLogStorageManager.buildLogsStoragePath(runId));
         runLogDao.deleteTaskByRunIdsIn(Collections.singletonList(runId), false);
+
         log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_LOG_MIGRATED, runId));
     }
 
@@ -165,7 +174,7 @@ public class RunLogManager {
     @Transactional(propagation = Propagation.SUPPORTS)
     public List<RunLog> loadLogsByRunId(Long runId, OffsetPagingFilter filter) {
         final PipelineRun run = runCRUDService.loadRunById(runId);
-        if (run.getStatus().isFinal()) {
+        if (StringUtils.isNotBlank(run.getLogsStoragePath())) {
             final List<RunLog> storageLogs = runLogStorageManager.loadLogsFromStorage(runId);
             if (!storageLogs.isEmpty()) {
                 return storageLogs;
@@ -188,7 +197,7 @@ public class RunLogManager {
         }
         String taskId = PipelineTask.buildTaskId(taskName, parameters);
 
-        if (run.getStatus().isFinal()) {
+        if (StringUtils.isNotBlank(run.getLogsStoragePath())) {
             final List<RunLog> storageLogs = runLogStorageManager.loadTaskLogsFromStorage(runId, taskId);
             if (!storageLogs.isEmpty()) {
                 return storageLogs;
@@ -207,7 +216,7 @@ public class RunLogManager {
     public List<PipelineTask> loadTasksByRunId(Long runId) {
         PipelineRun run = runCRUDService.loadRunById(runId);
 
-        if (run.getStatus().isFinal()) {
+        if (StringUtils.isNotBlank(run.getLogsStoragePath())) {
             final List<PipelineTask> storageTasks = runLogStorageManager.loadTasksFromStorage(runId);
             if (!storageTasks.isEmpty()) {
                 return storageTasks;

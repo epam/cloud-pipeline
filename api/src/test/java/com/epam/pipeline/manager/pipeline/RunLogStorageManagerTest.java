@@ -45,6 +45,7 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
@@ -111,6 +112,21 @@ public class RunLogStorageManagerTest {
         when(preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_SYSTEM_RUN_LOGS_TRANSFER_ENABLE))
                 .thenReturn(false);
         assertFalse(runLogStorageManager.isRunLogMigrationConfigured());
+    }
+
+    @Test
+    public void buildLogsStoragePathShouldReturnFullCloudPath() {
+        final String result = runLogStorageManager.buildLogsStoragePath(RUN_ID);
+
+        assertEquals(testStorage.getPathMask() + "/" + PATH_PREFIX + RUN_ID, result);
+    }
+
+    @Test
+    public void buildLogsStoragePathShouldReturnNullWhenStorageNotResolved() {
+        when(preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_SYSTEM_DATA_STORAGE_NAME))
+                .thenReturn(null);
+
+        assertNull(runLogStorageManager.buildLogsStoragePath(RUN_ID));
     }
 
     @Test

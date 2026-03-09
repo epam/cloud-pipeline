@@ -44,6 +44,7 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 @RequiredArgsConstructor
+@SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class RunLogStorageManager {
 
     private static final String LOG_FILE_NAME = "log";
@@ -63,6 +64,14 @@ public class RunLogStorageManager {
                 SystemPreferences.DATA_STORAGE_SYSTEM_RUN_LOGS_TRANSFER_ENABLE);
         return migrationEnabled &&
                 StringUtils.isNotBlank(systemStorageName) && StringUtils.isNotBlank(pathPrefix);
+    }
+
+    public String buildLogsStoragePath(final Long runId) {
+        final AbstractDataStorage storage = resolveStorage();
+        if (storage == null) {
+            return null;
+        }
+        return storage.getPathMask() + "/" + resolvePathPrefix() + runId;
     }
 
     public void saveLogsToStorage(final Long runId,

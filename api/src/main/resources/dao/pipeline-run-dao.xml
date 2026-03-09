@@ -79,7 +79,8 @@
                         pipeline_name,
                         node_start_date,
                         project_id,
-                        parameters_json)
+                        parameters_json,
+                        logs_storage_path)
                     VALUES (
                         :RUN_ID,
                         :PIPELINE_ID,
@@ -136,7 +137,8 @@
                         :PIPELINE_NAME,
                         :NODE_START_DATE,
                         :PROJECT_ID,
-                        :PARAMETERS_JSON::jsonb)
+                        :PARAMETERS_JSON::jsonb,
+                        :LOGS_STORAGE_PATH)
                 ]]>
             </value>
         </property>
@@ -203,6 +205,7 @@
                         r.node_start_date,
 				        r.project_id,
 				        r.parameters_json,
+				        r.logs_storage_path,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
@@ -303,7 +306,8 @@
                         node_pool_id,
                         node_start_date,
                         project_id,
-                        parameters_json
+                        parameters_json,
+                        logs_storage_path
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -375,7 +379,8 @@
                         node_pool_id,
                         node_start_date,
                         project_id,
-                        parameters_json
+                        parameters_json,
+                        logs_storage_path
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -447,7 +452,8 @@
                         node_pool_id,
                         node_start_date,
                         project_id,
-                        parameters_json
+                        parameters_json,
+                        logs_storage_path
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -585,7 +591,8 @@
                         pipeline_name = :PIPELINE_NAME,
                         node_start_date = :NODE_START_DATE,
                         project_id = :PROJECT_ID,
-                        parameters_json = :PARAMETERS_JSON::jsonb
+                        parameters_json = :PARAMETERS_JSON::jsonb,
+                        logs_storage_path = :LOGS_STORAGE_PATH
                     WHERE
                         run_id = :RUN_ID
                 ]]>
@@ -699,7 +706,8 @@
                       r.node_pool_id,
                       r.node_start_date,
                       r.project_id,
-                      r.parameters_json
+                      r.parameters_json,
+                      r.logs_storage_path
                     FROM
                       pipeline.pipeline_run r
                     WHERE
@@ -773,7 +781,8 @@
                       r.node_pool_id,
                       r.node_start_date,
                       r.project_id,
-                      r.parameters_json
+                      r.parameters_json,
+                      r.logs_storage_path
                     FROM
                       pipeline.pipeline_run r
                     WHERE
@@ -845,6 +854,7 @@
                       r.node_start_date,
                       r.project_id,
                       r.parameters_json,
+                      r.logs_storage_path,
                       CASE
                         WHEN EXISTS (
                             SELECT 1 FROM pipeline.pipeline_run_service_url su
@@ -917,6 +927,7 @@
                       active_run.node_start_date,
                       active_run.project_id,
                       active_run.parameters_json,
+                      active_run.logs_storage_path,
                       CASE
                         WHEN EXISTS (
                             SELECT 1 FROM pipeline.pipeline_run_service_url su
@@ -999,6 +1010,7 @@
                       r.node_pool_id,
                       r.node_start_date,
                       r.parameters_json,
+                      r.logs_storage_path,
                       CASE
                         WHEN EXISTS (
                             SELECT 1 FROM pipeline.pipeline_run_service_url su
@@ -1067,6 +1079,7 @@
                       active_run.node_pool_id,
                       active_run.node_start_date,
                       active_run.parameters_json,
+                      active_run.logs_storage_path,
                       CASE
                         WHEN EXISTS (
                             SELECT 1 FROM pipeline.pipeline_run_service_url su
@@ -1149,7 +1162,8 @@
                         r.node_pool_id,
                         r.node_start_date,
                         r.project_id,
-                        r.parameters_json
+                        r.parameters_json,
+                        r.logs_storage_path
                     FROM
                         pipeline.pipeline_run r
                     WHERE
@@ -1219,7 +1233,8 @@
                         r.node_pool_id,
                         r.node_start_date,
                         r.project_id,
-                        r.parameters_json
+                        r.parameters_json,
+                        r.logs_storage_path
                     FROM
                         pipeline.pipeline_run r
                     WHERE
@@ -1290,6 +1305,7 @@
                         r.node_start_date,
                         r.project_id,
                         r.parameters_json,
+                        r.logs_storage_path,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
@@ -1386,6 +1402,7 @@
                         runs.node_start_date,
                         runs.project_id,
                         runs.parameters_json,
+                        runs.logs_storage_path,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
@@ -1471,7 +1488,8 @@
                             p.node_pool_id,
                             p.node_start_date,
                             p.project_id,
-                            p.parameters_json
+                            p.parameters_json,
+                            p.logs_storage_path
                         FROM (SELECT *
                             FROM pipeline.pipeline_run r
                             WHERE parent_id ISNULL @WHERE@
@@ -1537,7 +1555,8 @@
                             c.node_pool_id,
                             c.node_start_date,
                             c.project_id,
-                            c.parameters_json
+                            c.parameters_json,
+                            c.logs_storage_path
                         FROM
                             pipeline.pipeline_run c
                         INNER JOIN runs ON runs.run_id = c.parent_id
@@ -1601,6 +1620,7 @@
                         runs.node_start_date,
                         runs.project_id,
                         runs.parameters_json,
+                        runs.logs_storage_path,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
@@ -1684,6 +1704,7 @@
                         r.node_start_date,
                         r.project_id,
                         r.parameters_json,
+                        r.logs_storage_path,
                         (
                             SELECT count(*)
                             FROM pipeline.pipeline_run cr
@@ -1862,7 +1883,8 @@
                         node_pool_id,
                         node_start_date,
                         project_id,
-                        parameters_json
+                        parameters_json,
+                        logs_storage_path
                     FROM
                         pipeline.pipeline_run r
                     INNER JOIN (SELECT DISTINCT ON (run_id) run_id, status
@@ -1938,7 +1960,8 @@
                         node_pool_id,
                         node_start_date,
                         project_id,
-                        parameters_json
+                        parameters_json,
+                        logs_storage_path
                     FROM
                         pipeline.pipeline_run r
                     INNER JOIN (SELECT DISTINCT ON (run_id) run_id, status
@@ -2009,7 +2032,8 @@
                         ar.node_pool_id,
                         ar.node_start_date,
                         null as project_id,
-                        ar.parameters_json
+                        ar.parameters_json,
+                        ar.logs_storage_path
                     FROM
                         pipeline.archive_run ar
                     WHERE ar.end_date BETWEEN :PERIOD_START AND :PERIOD_END
@@ -2088,7 +2112,8 @@
                         node_pool_id,
                         node_start_date,
                         project_id,
-                        parameters_json
+                        parameters_json,
+                        logs_storage_path
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -2160,7 +2185,8 @@
                         node_pool_id,
                         node_start_date,
                         project_id,
-                        parameters_json
+                        parameters_json,
+                        logs_storage_path
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -2232,7 +2258,8 @@
                         node_pool_id,
                         node_start_date,
                         project_id,
-                        parameters_json
+                        parameters_json,
+                        logs_storage_path
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -2304,7 +2331,8 @@
                         node_pool_id,
                         node_start_date,
                         project_id,
-                        parameters_json
+                        parameters_json,
+                        logs_storage_path
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -2386,7 +2414,8 @@
                         node_pool_id,
                         node_start_date,
                         project_id,
-                        parameters_json
+                        parameters_json,
+                        logs_storage_path
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -2458,7 +2487,8 @@
                         node_pool_id,
                         node_start_date,
                         project_id,
-                        parameters_json
+                        parameters_json,
+                        logs_storage_path
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -2573,7 +2603,8 @@
                         node_pool_id,
                         node_start_date,
                         project_id,
-                        parameters_json
+                        parameters_json,
+                        logs_storage_path
                     FROM
                         pipeline.pipeline_run
                     WHERE parent_id ISNULL AND status IN (:list) AND ( @WHERE@ )

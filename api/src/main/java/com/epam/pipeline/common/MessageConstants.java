@@ -584,12 +584,10 @@ public final class MessageConstants {
         "error.attachment.system.data.storage.not.configured";
 
     // Run Logs Storage
-    public static final String ERROR_RUN_LOG_STORAGE_NOT_CONFIGURED =
-        "error.run.log.storage.not.configured";
-    public static final String ERROR_RUN_LOG_MIGRATION_FAILED =
-        "error.run.log.migration.failed";
-    public static final String INFO_RUN_LOG_MIGRATED =
-        "info.run.log.migrated";
+    public static final String WARN_RUN_LOG_STORAGE_NOT_CONFIGURED = "warn.run.log.storage.not.configured";
+    public static final String ERROR_RUN_LOG_MIGRATION_FAILED = "error.run.log.migration.failed";
+    public static final String INFO_RUN_LOG_MIGRATED = "info.run.log.migrated";
+    public static final String WARN_RUN_LOG_MIGRATED = "warn.run.log.already.migrated";
 
     //Preferences
     public static final String ERROR_PREFERENCE_NAME_NOT_SPECIFIED = "error.preference.name.not.specified";
