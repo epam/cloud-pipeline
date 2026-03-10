@@ -27,7 +27,8 @@ import {
   Row,
   Button,
   Col,
-  Dropdown
+  Dropdown,
+  Space
 } from 'antd';
 import {DownOutlined, SettingOutlined, TagFilled} from '@ant-design/icons';
 import {graphIsSupportedForLanguage} from './graph/visualization';
@@ -405,7 +406,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
       };
       const configurationItems = configurations.map(c => ({key: c.name, label: c.name}));
       return (
-        <Button.Group style={{display: 'inline-flex'}}>
+        <Space.Compact style={{display: 'inline-flex'}}>
           <Button
             id="launch-pipeline-button"
             size="small"
@@ -426,7 +427,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
               <DownOutlined style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
             </Button>
           </Dropdown>
-        </Button.Group>
+        </Space.Compact>
       );
     } else {
       return (

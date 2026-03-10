@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Button} from 'antd';
+import {Button, Space} from 'antd';
 import {CalendarOutlined, CloseCircleFilled, LeftOutlined, RightOutlined} from '@ant-design/icons';
 import styles from './pickers.css';
 import '../../../../staticStyles/billing-calendar.css';
@@ -74,7 +74,7 @@ class PickerButton extends React.Component {
       hovered ? styles.hovered : undefined
     ].filter(Boolean).join(' ');
     return (
-      <Button.Group
+      <Space.Compact
         className={className}
         style={style}
       >
@@ -121,7 +121,7 @@ class PickerButton extends React.Component {
             </Button>
           )
         }
-      </Button.Group>
+      </Space.Compact>
     );
   }
 }

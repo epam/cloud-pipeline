@@ -26,7 +26,8 @@ import {
   Button,
   Row,
   Input,
-  Select
+  Select,
+  Space
 } from 'antd';
 import {DeleteOutlined, DownOutlined} from '@ant-design/icons';
 import SelectMetadataItems from './SelectMetadataItems';
@@ -458,7 +459,7 @@ export default class AddInstanceForm extends React.Component {
     ];
     return (
       <Row type="flex" justify="space-around" style={{marginTop: 10, cursor: 'pointer'}}>
-        <Button.Group>
+        <Space.Compact>
           <Button
             disabled={this.props.pending}
             id="add-parameter-button"
@@ -478,7 +479,7 @@ export default class AddInstanceForm extends React.Component {
               <DownOutlined />
             </Button>
           </Dropdown>
-        </Button.Group>
+        </Space.Compact>
       </Row>
     );
   };

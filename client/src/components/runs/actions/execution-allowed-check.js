@@ -23,7 +23,8 @@ import {
   Button,
   Popover,
   Row,
-  Dropdown
+  Dropdown,
+  Space
 } from 'antd';
 import {DownOutlined, ExclamationCircleFilled, ExclamationCircleOutlined} from '@ant-design/icons';
 import roleModel from '../../../utils/roleModel';
@@ -385,7 +386,7 @@ class SubmitButton extends React.Component {
       (dockerRegistries.pending && !dockerRegistries.loaded);
     const hasDropdownMenu = dropdown && (dropdownMenuItems?.length > 0 || dropdownRenderer);
     const submitButton = hasDropdownMenu ? (
-      <Button.Group
+      <Space.Compact
         size={size}
       >
         <Button
@@ -420,7 +421,7 @@ class SubmitButton extends React.Component {
             <DownOutlined style={{lineHeight: 'inherit'}} />
           </Button>
         </Dropdown>
-      </Button.Group>
+      </Space.Compact>
     ) : (
       <Button
         id={id}

@@ -33,7 +33,8 @@ import {
   message,
   Modal,
   Pagination,
-  Row
+  Row,
+  Space
 } from 'antd';
 import {
   AppstoreOutlined,
@@ -2424,7 +2425,7 @@ export default class Metadata extends React.Component {
         );
       }
       return (
-        <Button.Group style={{margin: '0 5px'}}>
+        <Space.Compact style={{margin: '0 5px'}}>
           <Button
             size="small"
             onClick={this.handleClickShowSelectedItems}
@@ -2445,7 +2446,7 @@ export default class Metadata extends React.Component {
               <DownOutlined />
             </Button>
           </Dropdown>
-        </Button.Group>
+        </Space.Compact>
       );
     };
     const renderRunButton = () => {

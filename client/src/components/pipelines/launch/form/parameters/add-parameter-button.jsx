@@ -4,7 +4,8 @@ import {
   inject,
   observer} from 'mobx-react';
 import {Button,
-  Dropdown
+  Dropdown,
+  Space
 } from 'antd';
 import {DownOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
@@ -120,7 +121,7 @@ class AddParameterButton extends React.Component {
     ];
 
     return (
-      <Button.Group className={className} style={style}>
+      <Space.Compact className={className} style={style}>
         <Button
           disabled={disabled}
           id="add-parameter-button"
@@ -140,7 +141,7 @@ class AddParameterButton extends React.Component {
             <DownOutlined />
           </Button>
         </Dropdown>
-      </Button.Group>
+      </Space.Compact>
     );
   };
   render () {

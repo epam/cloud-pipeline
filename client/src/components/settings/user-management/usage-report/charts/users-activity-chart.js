@@ -18,7 +18,9 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {
   Alert,
-  Button, Popover
+  Button,
+  Popover,
+  Space
 } from 'antd';
 import classNames from 'classnames';
 import ChartJS from 'chart.js';
@@ -578,7 +580,7 @@ class UsersActivityChart extends React.Component {
         style={style}
       >
         <div className={styles.modeSwitcher}>
-          <Button.Group>
+          <Space.Compact>
             {
               availableModes.length > 1 && availableModes.map(mode => (
                 <Button
@@ -591,7 +593,7 @@ class UsersActivityChart extends React.Component {
                 </Button>
               ))
             }
-          </Button.Group>
+          </Space.Compact>
         </div>
         <div className={styles.chartContainer}>
           <Chart

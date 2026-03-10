@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed, makeObservable} from 'mobx';
-import {Button, Checkbox, Col, Dropdown, Input, Row, Select} from 'antd';
+import {Button, Checkbox, Col, Dropdown, Input, Row, Select, Space} from 'antd';
 import {
   DownloadOutlined,
   DownOutlined,
@@ -161,7 +161,7 @@ export default class EditToolFormParameters extends React.Component {
     ];
 
     return (
-      <Button.Group>
+      <Space.Compact>
         <Button
           disabled={this.props.readOnly}
           onClick={() => this.addParameter({type: 'string'})}
@@ -183,7 +183,7 @@ export default class EditToolFormParameters extends React.Component {
               </Dropdown>
             ) : undefined
         }
-      </Button.Group>
+      </Space.Compact>
     );
   };
 

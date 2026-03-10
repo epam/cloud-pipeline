@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {Button} from 'antd';
+import {Button, Space} from 'antd';
 import {BarsOutlined, LayoutOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
@@ -47,7 +47,7 @@ function TogglePresentationMode (
         className
       )}
     >
-      <Button.Group size={size}>
+      <Space.Compact size={size}>
         <Button
           type={mode === Modes.list ? 'primary' : 'default'}
           style={{width: 80}}
@@ -62,7 +62,7 @@ function TogglePresentationMode (
           <LayoutOutlined />
           Table
         </Button>
-      </Button.Group>
+      </Space.Compact>
     </div>
   );
 }

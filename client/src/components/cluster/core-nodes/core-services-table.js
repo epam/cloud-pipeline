@@ -24,7 +24,8 @@ import {
   Button,
   Table,
   Badge,
-  message
+  message,
+  Space
 } from 'antd';
 import {InfoCircleFilled} from '@ant-design/icons';
 import CorePods from '../../../models/cluster/CorePods';
@@ -480,7 +481,7 @@ export default class CoreServicesTable extends React.Component {
           gap: 5,
           alignItems: 'center'
         }}>
-          <Button.Group
+          <Space.Compact
             size="small"
           >
             <Button
@@ -501,7 +502,7 @@ export default class CoreServicesTable extends React.Component {
             >
               <Badge status="error" />Unhealthy
             </Button>
-          </Button.Group>
+          </Space.Compact>
           <Input
             value={this.globalSearchInputValue}
             onChange={this.onChangeGlobalSearch}

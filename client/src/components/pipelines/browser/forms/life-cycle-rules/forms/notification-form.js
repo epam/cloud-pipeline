@@ -26,7 +26,8 @@ import {
   Form,
   Row,
   Col,
-  Checkbox
+  Checkbox,
+  Space
 } from 'antd';
 import {EditOutlined, PictureOutlined} from '@ant-design/icons';
 import UsersRolesSelect from '../../../../../special/users-roles-select';
@@ -170,7 +171,7 @@ class NotificationForm extends React.Component {
           style={{marginBottom: 5}}
         >
           <Col offset={3}>
-            <Button.Group size="small">
+            <Space.Compact size="small">
               <Button
                 type={this.state.previewMode ? 'default' : 'primary'}
                 style={{width: 80}}
@@ -183,7 +184,7 @@ class NotificationForm extends React.Component {
                 onClick={() => this.setPreviewMode(true)}>
                 <PictureOutlined />Preview
               </Button>
-            </Button.Group>
+            </Space.Compact>
           </Col>
         </Row>
         <Row>

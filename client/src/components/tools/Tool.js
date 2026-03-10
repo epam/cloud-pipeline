@@ -31,6 +31,7 @@ import {
   Modal,
   Popover,
   Row,
+  Space,
   Splitter,
   Table,
   Tooltip,
@@ -1832,7 +1833,7 @@ export default class Tool extends localization.LocalizedReactComponent {
         }
       ];
       return (
-        <Button.Group className={styles.runButton}>
+        <Space.Compact className={styles.runButton}>
           <Tooltip
             placement="left"
             title={tooltip}
@@ -1884,7 +1885,7 @@ export default class Tool extends localization.LocalizedReactComponent {
               <DownOutlined style={{lineHeight: 'inherit'}} />
             </Button>
           </Dropdown>
-        </Button.Group>
+        </Space.Compact>
       );
     }
   };

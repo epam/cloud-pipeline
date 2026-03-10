@@ -27,7 +27,8 @@ import {
   Form,
   Input,
   Row,
-  Select
+  Select,
+  Space
 } from 'antd';
 import {EditOutlined, PictureOutlined} from '@ant-design/icons';
 import CodeEditor from '../../special/CodeEditor';
@@ -344,7 +345,7 @@ export default class EditEmailNotification extends React.Component {
             <Input size="small" />
           </Form.Item>
           <Row type="flex" style={{marginTop: 5}}>
-            <Button.Group size="small">
+            <Space.Compact size="small">
               <Button
                 type={this.state.previewMode ? 'default' : 'primary'}
                 style={{width: 80}}
@@ -357,7 +358,7 @@ export default class EditEmailNotification extends React.Component {
                 onClick={() => this.setPreviewMode(true)}>
                 <PictureOutlined />Preview
               </Button>
-            </Button.Group>
+            </Space.Compact>
           </Row>
           <Form.Item
             style={{

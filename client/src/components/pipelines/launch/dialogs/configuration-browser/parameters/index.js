@@ -18,7 +18,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {
   Button,
-  Dropdown
+  Dropdown,
+  Space
 } from 'antd';
 import {DownOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
@@ -164,7 +165,7 @@ class Parameters extends React.Component {
         {key: 'common', label: 'Common path parameter'}
       ];
       button = (
-        <Button.Group>
+        <Space.Compact>
           <Button
             id="add-parameter-button"
             disabled={disabled || !editable}
@@ -184,7 +185,7 @@ class Parameters extends React.Component {
               <DownOutlined />
             </Button>
           </Dropdown>
-        </Button.Group>
+        </Space.Compact>
       );
     }
     return (

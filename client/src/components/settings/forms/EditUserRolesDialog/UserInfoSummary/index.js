@@ -27,7 +27,8 @@ import {Link} from 'react-router';
 import {
   Button,
   message,
-  Table
+  Table,
+  Space
 } from 'antd';
 import {LeftOutlined, RightOutlined} from '@ant-design/icons';
 import {
@@ -378,7 +379,7 @@ export default class UserInfoSummary extends React.Component {
           Detailed usage data
         </p>
         <div className={styles.tableControls}>
-          <Button.Group>
+          <Space.Compact>
             <Button
               type={tableMode === TABLE_MODES.computed ? 'primary' : 'default'}
               onClick={() => this.setTableMode(TABLE_MODES.computed)}
@@ -393,7 +394,7 @@ export default class UserInfoSummary extends React.Component {
             >
               Storages
             </Button>
-          </Button.Group>
+          </Space.Compact>
         </div>
         <Table
           dataSource={this.filteredTableData}
