@@ -16,6 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
+import {withRouter} from '../../../utils/with-router';
 import {computed, observable, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import connect from '../../../utils/connect';
@@ -200,7 +201,9 @@ function makeCurrentOrderSort (array) {
     // Router renderer
     componentParameters = params.params;
     filters = routing && routing.location
-      ? metadataFilterUtilities.parse(routing.location.query)
+      ? metadataFilterUtilities.parse(
+        Object.fromEntries(new URLSearchParams(routing.location.search || ''))
+      )
       : [];
   }
   return {
@@ -222,7 +225,7 @@ function makeCurrentOrderSort (array) {
 @ngsProjectMachineRuns
 @ngsProjectSamples
 @observer
-export default class Metadata extends React.Component {
+class Metadata extends React.Component {
   static propTypes = {
     onSelectItems: PropTypes.func,
     onNavigate: PropTypes.func,
@@ -2929,3 +2932,5 @@ export default class Metadata extends React.Component {
     window.removeEventListener('mouseup', this.handleFinishSelection);
   }
 }
+
+export default withRouter(Metadata);

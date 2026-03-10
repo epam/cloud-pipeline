@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import {computed, makeObservable} from 'mobx';
 import {inject,
   observer} from 'mobx-react';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
 import {
   Dropdown,
   message,

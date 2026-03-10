@@ -16,7 +16,8 @@
 
 import React from 'react';
 import {inject, observer, Observer} from 'mobx-react';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
+import {withRouter} from '../../../../utils/with-router';
 import classNames from 'classnames';
 import {computed, observable, makeObservable} from 'mobx';
 import {
@@ -188,7 +189,7 @@ const SUBMITTED_STATUS = 'SUBMITTED';
   };
 })
 @observer
-export default class DataStorage extends React.Component {
+class DataStorage extends React.Component {
   state = {
     editDialogVisible: false,
     restoreDialogVisible: false,
@@ -3426,3 +3427,4 @@ export default class DataStorage extends React.Component {
 }
 
 export {STORAGE_CLASSES, isStandardClass};
+export default withRouter(DataStorage);

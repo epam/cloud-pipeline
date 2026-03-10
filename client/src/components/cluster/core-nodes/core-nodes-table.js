@@ -16,6 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
+import {withRouter} from '../../../utils/with-router';
 import moment from 'moment-timezone';
 import classNames from 'classnames';
 import {
@@ -51,7 +52,7 @@ import styles from '../Cluster.css';
   };
 })
 @observer
-export default class CoreNodesTable extends localization.LocalizedReactComponent {
+class CoreNodesTable extends localization.LocalizedReactComponent {
   state = {
     appliedFilter: {
       haveRunId: null,
@@ -512,4 +513,6 @@ export default class CoreNodesTable extends localization.LocalizedReactComponent
       </div>
     );
   }
-};
+}
+
+export default withRouter(CoreNodesTable);

@@ -45,17 +45,17 @@ import {GeneralReportLayout, Layout} from './layout';
 import roleModel from '../../../utils/roleModel';
 import QuotaTypes from '../quotas/utilities/quota-types';
 import styles from './reports.css';
+import {withRouter} from '../../../utils/with-router';
 
 function injection (stores, props) {
   const {location} = props;
-  const {
-    user: userQ,
-    'billing-group': billingGroupQ,
-    group: groupQ,
-    period = Period.month,
-    range,
-    region: regionQ
-  } = location.query;
+  const q = new URLSearchParams(location?.search || '');
+  const userQ = q.get('user');
+  const billingGroupQ = q.get('billing-group');
+  const groupQ = q.get('group');
+  const period = q.get('period') ?? Period.month;
+  const range = q.get('range');
+  const regionQ = q.get('region');
   const {users, preferences} = stores;
   users.fetchIfNeededOrWait();
   preferences.fetchIfNeededOrWait();
@@ -355,7 +355,7 @@ class BillingCentersTable extends React.Component {
             columns={tableColumns}
             loading={pending}
             pagination={false}
-            onRow={(record) => ({ onClick: () => onUserSelect({key: record.name}) })}
+            onRow={(record) => ({onClick: () => onUserSelect({key: record.name})})}
             size="small"
           />
         </div>
@@ -744,7 +744,7 @@ function DefaultReport (props) {
   return GeneralReport(props);
 }
 
-export default inject('billingCenters', 'users', 'preferences', 'reportThemes')(
+export default withRouter(inject('billingCenters', 'users', 'preferences', 'reportThemes')(
   inject(injection)(
     BillingNavigation.attach(
       roleModel.authenticationInfo(
@@ -752,4 +752,4 @@ export default inject('billingCenters', 'users', 'preferences', 'reportThemes')(
       )
     )
   )
-);
+));

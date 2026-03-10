@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-import React from 'react';
+import React, {useState} from 'react';
 import {
   inject,
   observer} from 'mobx-react';
+import {withRouter} from '../../../../utils/with-router';
+import {withBlocker} from '../../../../utils/with-blocker';
 import classNames from 'classnames';
 import connect from '../../../../utils/connect';
 import {computed, observable, makeObservable} from 'mobx';
@@ -45,9 +47,8 @@ import styles from './PipelineConfiguration.css';
 @connect({
   pipelines, preferences
 })
-@inject(({history, pipelines, routing, preferences}, {onReloadTree, params}) => {
+@inject(({pipelines, routing, preferences}, {onReloadTree, params}) => {
   return {
-    history,
     onReloadTree,
     currentConfiguration: params.configuration,
     pipeline: pipelines.getPipeline(params.id),
@@ -61,13 +62,11 @@ import styles from './PipelineConfiguration.css';
   };
 })
 @observer
-export default class PipelineConfiguration extends React.Component {
+class PipelineConfiguration extends React.Component {
   allowedInstanceTypes;
   configurationModified;
 
-  navigationBlockedListener;
-  navigationBlocker;
-  allowedNavigation;
+  blockerModalRef;
 
   state = {
     createConfigurationForm: false,
@@ -90,48 +89,6 @@ export default class PipelineConfiguration extends React.Component {
   }
 
   componentDidMount () {
-    this.navigationBlockedListener = this.props.history.listenBefore((location, callback) => {
-      const locationBefore = this.props.routing.location.pathname;
-      if (location.pathname === locationBefore) {
-        callback();
-        return;
-      }
-      const clearBlocker = () => {
-        setTimeout(() => {
-          this.navigationBlocker = null;
-        }, 0);
-      };
-      if (
-        !this.isBitBucket &&
-        this.configurationModified &&
-        !this.navigationBlocker &&
-        location.pathname !== this.allowedNavigation
-      ) {
-        const cancel = () => {
-          if (this.props.history.getCurrentLocation().pathname !== locationBefore) {
-            this.props.history.replace(locationBefore);
-          }
-          clearBlocker();
-        };
-        this.navigationBlocker = Modal.confirm({
-          title: 'You have unsaved changes. Continue?',
-          style: {
-            wordWrap: 'break-word'
-          },
-          onOk () {
-            callback();
-            clearBlocker();
-          },
-          onCancel () {
-            cancel();
-          },
-          okText: 'Yes',
-          cancelText: 'No'
-        });
-      } else {
-        callback();
-      }
-    });
     const parameters = this.getParameters();
     if (!this.allowedInstanceTypes) {
       this.allowedInstanceTypes = new AllowedInstanceTypes();
@@ -144,9 +101,38 @@ export default class PipelineConfiguration extends React.Component {
     }
   }
 
-  componentWillUnmount () {
-    if (this.navigationBlockedListener) {
-      this.navigationBlockedListener();
+  componentDidUpdate () {
+    const {blocker} = this.props;
+    if (blocker?.state !== 'blocked') {
+      this.blockerModalRef = null;
+    } else if (!this.blockerModalRef) {
+      this.blockerModalRef = true;
+      Modal.confirm({
+        title: 'You have unsaved changes. Continue?',
+        style: {
+          wordWrap: 'break-word'
+        },
+        onOk: () => {
+          blocker.proceed();
+          this.blockerModalRef = null;
+        },
+        onCancel: () => {
+          blocker.reset();
+          this.blockerModalRef = null;
+        },
+        okText: 'Yes',
+        cancelText: 'No'
+      });
+    }
+    const parameters = this.getParameters();
+    if (!this.allowedInstanceTypes) {
+      this.allowedInstanceTypes = new AllowedInstanceTypes();
+    }
+    if (this.allowedInstanceTypes && parameters) {
+      this.allowedInstanceTypes.setParameters({
+        isSpot: parameters.is_spot,
+        regionId: parameters.cloudRegionId
+      });
     }
   }
 
@@ -220,6 +206,9 @@ export default class PipelineConfiguration extends React.Component {
 
   onConfigurationModified = (modified) => {
     this.configurationModified = modified;
+    if (this.props.onBlockingChange) {
+      this.props.onBlockingChange(modified && !this.isBitBucket);
+    }
   };
 
   onSelectConfiguration = (key) => {
@@ -271,7 +260,10 @@ export default class PipelineConfiguration extends React.Component {
     } else {
       url = `/${this.props.pipelineId}/${this.props.pipeline.value.currentVersion.name}/configuration`;
     }
-    this.allowedNavigation = url;
+    this.configurationModified = false;
+    if (this.props.onBlockingChange) {
+      this.props.onBlockingChange(false);
+    }
     this.props.router.push(url);
   };
 
@@ -485,19 +477,6 @@ export default class PipelineConfiguration extends React.Component {
     );
   };
 
-  componentDidUpdate () {
-    const parameters = this.getParameters();
-    if (!this.allowedInstanceTypes) {
-      this.allowedInstanceTypes = new AllowedInstanceTypes();
-    }
-    if (this.allowedInstanceTypes && parameters) {
-      this.allowedInstanceTypes.setParameters({
-        isSpot: parameters.is_spot,
-        regionId: parameters.cloudRegionId
-      });
-    }
-  }
-
   render () {
     if (
       (!this.props.configurations.loaded && this.props.configurations.pending) ||
@@ -556,3 +535,18 @@ export default class PipelineConfiguration extends React.Component {
     );
   }
 }
+
+const PipelineConfigurationWithBlocker = withBlocker(PipelineConfiguration);
+
+function PipelineConfigurationWithBlockerState (props) {
+  const [navigationBlocked, setNavigationBlocked] = useState(false);
+  return (
+    <PipelineConfigurationWithBlocker
+      {...props}
+      navigationBlocked={navigationBlocked}
+      onBlockingChange={setNavigationBlocked}
+    />
+  );
+}
+
+export default withRouter(PipelineConfigurationWithBlockerState);

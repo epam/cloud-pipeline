@@ -15,6 +15,8 @@
  */
 
 import React from 'react';
+import {Outlet} from 'react-router-dom';
+import {withRouter} from '../../utils/with-router';
 import PipelinesLibraryContent from './PipelinesLibraryContent';
 import {Card, Input, message, Row, Tree, Splitter} from 'antd';
 import {
@@ -91,7 +93,7 @@ const EXPANDED_KEYS_STORAGE_KEY = 'expandedKeys';
 })
 @HiddenObjects.injectTreeFilter
 @observer
-export default class PipelinesLibrary extends localization.LocalizedReactComponent {
+class PipelinesLibrary extends localization.LocalizedReactComponent {
   state = {
     rootItems: [],
     expandedKeys: [],
@@ -527,7 +529,11 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
           }
           style={{overflow: 'auto'}}
         >
-          {this.props.children}
+          <Outlet context={{
+            onReloadTree: (reloadRoot, folder) => this.reloadTree(
+              reloadRoot === undefined ? true : reloadRoot,
+              folder
+            )}} />
         </PipelinesLibraryContent>
       );
     }
@@ -571,7 +577,11 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
                 )
               }
             >
-              {this.props.children}
+              <Outlet context={{
+                onReloadTree: (reloadRoot, folder) => this.reloadTree(
+                  reloadRoot === undefined ? true : reloadRoot,
+                  folder
+                )}} />
             </PipelinesLibraryContent>
           </Splitter.Panel>
         </Splitter>
@@ -871,3 +881,5 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
     })();
   }
 }
+
+export default withRouter(PipelinesLibrary);

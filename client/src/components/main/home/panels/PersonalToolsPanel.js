@@ -16,6 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import {withRouter} from '../../../../utils/with-router';
 import {Alert,
   Button,
   Col,
@@ -101,7 +102,7 @@ const findGroupByName = (groups, name) => {
 @runPipelineActions
 @withCurrentUserAttributes()
 @observer
-export default class PersonalToolsPanel extends React.Component {
+class PersonalToolsPanel extends React.Component {
   static propTypes = {
     completedRuns: PropTypes.object,
     panelKey: PropTypes.string,
@@ -1032,3 +1033,5 @@ export default class PersonalToolsPanel extends React.Component {
     this.props.dockerRegistries.fetch();
   }
 }
+
+export default withRouter(PersonalToolsPanel);

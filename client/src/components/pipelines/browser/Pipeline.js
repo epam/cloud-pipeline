@@ -19,6 +19,7 @@ import PropTypes from 'prop-types';
 import {
   inject,
   observer} from 'mobx-react';
+import {withRouter} from '../../../utils/with-router';
 import classNames from 'classnames';
 import connect from '../../../utils/connect';
 import {computed, makeObservable} from 'mobx';
@@ -97,7 +98,7 @@ const LATEST_VERSION_PLACEHOLDER = {
 })
 @roleModel.authenticationInfo
 @observer
-export default class Pipeline extends localization.LocalizedReactComponent {
+class Pipeline extends localization.LocalizedReactComponent {
   _versions = null;
 
   static propTypes = {
@@ -1010,3 +1011,5 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     this.redirectToVersionedStorage();
   }
 }
+
+export default withRouter(Pipeline);

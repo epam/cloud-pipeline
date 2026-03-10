@@ -31,7 +31,8 @@ import highlightText from '../../../special/highlightText';
 import {defaultSorter} from '../../../../utils/sorting';
 import styles from './packages.css';
 
-@inject((stores, {params}) => {
+@inject(({routing}) => {
+  const {params} = routing;
   return {
     toolId: params.id,
     version: params.version,

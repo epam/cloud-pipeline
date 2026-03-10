@@ -17,6 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
+import {withRouter} from '../../../../utils/with-router';
 import {computed, makeObservable} from 'mobx';
 import {Alert, Row} from 'antd';
 import classNames from 'classnames';
@@ -31,7 +32,7 @@ import styles from './Panel.css';
 @roleModel.authenticationInfo
 @inject('dataStorages', 'hiddenObjects', 'pipelinesLibrary')
 @observer
-export default class MyDataPanel extends React.Component {
+class MyDataPanel extends React.Component {
   static propTypes = {
     panelKey: PropTypes.string,
     onInitialize: PropTypes.func
@@ -174,3 +175,5 @@ export default class MyDataPanel extends React.Component {
     this.props.dataStorages.fetch();
   }
 }
+
+export default withRouter(MyDataPanel);

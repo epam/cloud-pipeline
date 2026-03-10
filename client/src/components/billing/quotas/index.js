@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import {withRouter} from '../../../utils/with-router';
 import QuotasSection from './quotas-section';
 import {computed, observable, makeObservable} from 'mobx';
 import {observer, Provider} from 'mobx-react';
@@ -138,4 +139,4 @@ class Quotas extends React.Component {
  }
 }
 
-export default Quotas;
+export default withRouter(Quotas);

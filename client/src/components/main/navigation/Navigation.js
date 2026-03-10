@@ -15,8 +15,9 @@
  */
 
 import React from 'react';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
 import {inject, observer} from 'mobx-react';
+import {withRouter} from '../../../utils/with-router';
 import {computed, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import {SERVER} from '../../../config';
@@ -41,7 +42,7 @@ import RunsFilterDescription from '../../runs/run-table/runs-filter-description'
   'userNotifications'
 )
 @observer
-export default class Navigation extends React.Component {
+class Navigation extends React.Component {
   static propTypes = {
     router: PropTypes.object,
     onLibraryCollapsedChange: PropTypes.func,
@@ -370,3 +371,5 @@ export default class Navigation extends React.Component {
     );
   }
 }
+
+export default withRouter(Navigation);

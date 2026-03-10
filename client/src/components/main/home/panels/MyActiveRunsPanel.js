@@ -16,8 +16,9 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
 import {inject, observer} from 'mobx-react';
+import {withRouter} from '../../../../utils/with-router';
 import classNames from 'classnames';
 import {Alert, message, Modal, Row} from 'antd';
 import PausePipeline from '../../../../models/pipelines/PausePipeline';
@@ -41,7 +42,7 @@ import styles from './Panel.css';
 @inject('pipelines', 'multiZoneManager', 'preferences', 'uiNavigation')
 @VSActions.check
 @observer
-export default class MyActiveRunsPanel extends localization.LocalizedReactComponent {
+class MyActiveRunsPanel extends localization.LocalizedReactComponent {
   static propTypes = {
     panelKey: PropTypes.string,
     activeRuns: PropTypes.object,
@@ -226,3 +227,5 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
     this.props.onInitialize && this.props.onInitialize(this);
   }
 }
+
+export default withRouter(MyActiveRunsPanel);

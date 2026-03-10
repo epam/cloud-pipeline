@@ -15,9 +15,11 @@
  */
 
 import React from 'react';
+import {Outlet} from 'react-router-dom';
 import {
   inject,
   observer} from 'mobx-react';
+import {withRouter} from '../../../utils/with-router';
 import {computed, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import {
@@ -71,7 +73,7 @@ import HiddenObjects from '../../../utils/hidden-objects';
   pipelinesLibrary
 }))
 @observer
-export default class PipelineDetails extends localization.LocalizedReactComponent {
+class PipelineDetails extends localization.LocalizedReactComponent {
   state = {isModalVisible: false, updating: false, deleting: false};
 
   constructor (props) {
@@ -539,15 +541,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
         </Row>
         <div
           className={styles.fullHeightContainer} style={{overflow: 'auto'}}>
-          {
-            React.Children.map(
-              this.props.children,
-              (child) => React.cloneElement(child, {
-                onReloadTree: this.props.onReloadTree,
-                readOnly: this.readOnly
-              })
-            )
-          }
+          <Outlet context={{onReloadTree: this.props.onReloadTree, readOnly: this.readOnly}} />
         </div>
         <EditPipelineForm
           onSubmit={this.updatePipeline}
@@ -561,3 +555,5 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
     );
   }
 }
+
+export default withRouter(PipelineDetails);

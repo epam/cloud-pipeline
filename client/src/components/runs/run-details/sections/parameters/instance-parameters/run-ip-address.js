@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  Link} from 'react-router';
+  Link} from 'react-router-dom';
 import {generateRunInstanceParameterValueComponent} from './common';
 import {
   CP_CAP_REQUESTS_CPU,

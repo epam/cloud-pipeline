@@ -67,6 +67,7 @@ import {clearQuotes} from './forms/utilities/string-utilities';
 import buildWdlContentsResolver from './utilities/wdl-contents-resolver';
 import getPipelineFilePath from './utilities/get-pipeline-file-path';
 import {base64toString} from '../../../../../utils/base64';
+import {withBlocker} from '../../../../../utils/with-blocker';
 
 const graphFitContentOpts = {
   padding: 24,
@@ -92,8 +93,7 @@ function reportWDLError (error) {
 }
 
 @inject('runDefaultParameters')
-@inject(({history, routing, pipelines}, params) => ({
-  history,
+@inject(({routing, pipelines}, params) => ({
   routing,
   parameters: pipelines.getVersionParameters(params.pipelineId, params.version),
   pipeline: pipelines.getPipeline(params.pipelineId),
@@ -103,7 +103,7 @@ function reportWDLError (error) {
   allowedInstanceTypes: new AllowedInstanceTypes()
 }))
 @observer
-export default class WdlGraph extends Graph {
+class WdlGraph extends Graph {
   wdlVisualizer;
   wdlDocument;
   wdlProject;
@@ -380,7 +380,10 @@ export default class WdlGraph extends Graph {
             canZoomIn: true,
             canZoomOut: true,
             error: null,
+            modified: false,
             modifiedConfig: null
+          }, () => {
+            this.props.onBlockingChange && this.props.onBlockingChange(false);
           });
         } else {
           this.setState({
@@ -511,12 +514,16 @@ export default class WdlGraph extends Graph {
           ? params
           : undefined,
         wdlError
+      }, () => {
+        this.props.onBlockingChange && this.props.onBlockingChange(this.state.modified);
       });
     } else {
       this.setState({
         modified,
         modifiedParameters: undefined,
         wdlError
+      }, () => {
+        this.props.onBlockingChange && this.props.onBlockingChange(this.state.modified);
       });
     }
   };
@@ -574,6 +581,8 @@ export default class WdlGraph extends Graph {
       modified: false,
       wdlError: undefined,
       modifiedParameters: undefined
+    }, () => {
+      this.props.onBlockingChange && this.props.onBlockingChange(false);
     });
   }
 
@@ -1060,17 +1069,6 @@ export default class WdlGraph extends Graph {
     );
   }
 
-  componentDidUpdate (prevProps, prevState, snapshot) {
-    if (
-      prevProps.pipelineId !== this.props.pipelineId ||
-      prevProps.pipelineVersion !== this.props.pipelineVersion
-    ) {
-      console.log('pipeline id or version changed');
-      this.loadMainFile();
-    }
-    super.componentDidUpdate(prevProps, prevState, snapshot);
-  }
-
   renderBottomGraphControls = () => {
     return null;
   };
@@ -1080,46 +1078,48 @@ export default class WdlGraph extends Graph {
       this.setState({
         modified: false,
         wdlError: undefined
-      }, () => resolve());
+      }, () => {
+        this.props.onBlockingChange && this.props.onBlockingChange(false);
+        resolve();
+      });
     });
   }
 
-  _removeRouterListener = null;
-  _routeChangeConfirm = null;
+  blockerModalRef = null;
 
   componentDidMount () {
     this.loadMainFile();
-    this._removeRouterListener = this.props.history.listenBefore((location, callback) => {
-      const locationBefore = this.props.routing.location.pathname;
-      if (this.state.modified && !this._routeChangeConfirm) {
-        const onOk = () => {
-          callback();
-          setTimeout(() => {
-            this._routeChangeConfirm = null;
-          }, 0);
-        };
-        const onCancel = () => {
-          if (this.props.history.getCurrentLocation().pathname !== locationBefore) {
-            this.props.history.replace(locationBefore);
-          }
-          setTimeout(() => {
-            this._routeChangeConfirm = null;
-          }, 0);
-        };
-
-        this._routeChangeConfirm = this.unsavedChangesConfirm(onOk, onCancel);
-      } else {
-        callback();
-      }
-    });
     this.props.onGraphReady && this.props.onGraphReady(this);
+  }
+
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    const {blocker} = this.props;
+    if (blocker?.state !== 'blocked') {
+      this.blockerModalRef = null;
+    } else if (!this.blockerModalRef) {
+      this.blockerModalRef = true;
+      this.unsavedChangesConfirm(
+        () => {
+          blocker.proceed();
+          this.blockerModalRef = null;
+        },
+        () => {
+          blocker.reset();
+          this.blockerModalRef = null;
+        }
+      );
+    }
+    if (
+      prevProps.pipelineId !== this.props.pipelineId ||
+      prevProps.pipelineVersion !== this.props.pipelineVersion
+    ) {
+      this.loadMainFile();
+    }
+    super.componentDidUpdate(prevProps, prevState, snapshot);
   }
 
   componentWillUnmount () {
     this._loadMainFileToken = {};
-    if (this._removeRouterListener) {
-      this._removeRouterListener();
-    }
   }
 
   loadMainFile = () => {
@@ -1187,3 +1187,5 @@ export default class WdlGraph extends Graph {
     });
   };
 }
+
+export default withBlocker(WdlGraph);

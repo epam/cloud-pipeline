@@ -44,16 +44,15 @@ class Filter {
 
   rebuild = ({location, router}) => {
     this.router = router;
-    const {
-      period = Period.month,
-      user,
-      group,
-      'billing-group': billingGroup,
-      range,
-      region,
-      metrics,
-      layer: storageAggregate
-    } = (location || {}).query || {};
+    const q = new URLSearchParams((location || {}).search || '');
+    const period = q.get('period') ?? Period.month;
+    const user = q.get('user');
+    const group = q.get('group');
+    const billingGroup = q.get('billing-group');
+    const range = q.get('range');
+    const region = q.get('region');
+    const metrics = q.get('metrics');
+    const storageAggregate = q.get('layer');
     if (billingGroup) {
       this.runner = {
         type: RunnerType.billingGroup,

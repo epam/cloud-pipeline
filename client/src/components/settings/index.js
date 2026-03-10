@@ -15,7 +15,9 @@
  */
 
 import React from 'react';
+import {Outlet} from 'react-router-dom';
 import {observable, computed, makeObservable} from 'mobx';
+import {withRouter} from '../../utils/with-router';
 import {inject, observer} from 'mobx-react';
 import {Row, Menu} from 'antd';
 import classNames from 'classnames';
@@ -102,7 +104,7 @@ const SettingsTabs = [
 @inject('users')
 @roleModel.authenticationInfo
 @observer
-export default class extends React.Component {
+class SettingsForm extends React.Component {
   _roles = new Roles();
 
   constructor (props) {
@@ -184,7 +186,6 @@ export default class extends React.Component {
   };
 
   render () {
-    const {children} = this.props;
     return (
       <div
         className={
@@ -197,8 +198,10 @@ export default class extends React.Component {
         }
       >
         {this.renderSettingsNavigation()}
-        {children}
+        <Outlet />
       </div>
     );
   }
 }
+
+export default withRouter(SettingsForm);

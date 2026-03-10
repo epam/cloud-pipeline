@@ -17,6 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
+import {withRouter} from '../../../../utils/with-router';
 import {computed, makeObservable} from 'mobx';
 import {Alert, Row} from 'antd';
 import {HddOutlined, CompassOutlined} from '@ant-design/icons';
@@ -35,7 +36,7 @@ const MAX_TAGS = 5;
 @inject('projects', 'hiddenObjects')
 @localization.localizedComponent
 @observer
-export default class MyProjectsPanel extends localization.LocalizedReactComponent {
+class MyProjectsPanel extends localization.LocalizedReactComponent {
   static propTypes = {
     panelKey: PropTypes.string,
     onInitialize: PropTypes.func
@@ -237,3 +238,5 @@ export default class MyProjectsPanel extends localization.LocalizedReactComponen
     this.props.projects.fetch();
   }
 }
+
+export default withRouter(MyProjectsPanel);

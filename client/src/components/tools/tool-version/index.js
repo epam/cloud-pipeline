@@ -15,9 +15,11 @@
  */
 
 import React from 'react';
+import {Outlet} from 'react-router-dom';
 import {
   inject,
   observer} from 'mobx-react';
+
 import {computed, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import LoadTool from '../../../models/tools/LoadTool';
@@ -38,7 +40,8 @@ import styles from './ToolVersion.css';
 import LoadToolVersionSettings from '../../../models/tools/LoadToolVersionSettings';
 
 @inject('preferences', 'dockerRegistries')
-@inject((stores, {params}) => {
+@inject(({routing, ...stores}) => {
+  const {params} = routing;
   return {
     ...stores,
     toolId: params.id,
@@ -48,7 +51,7 @@ import LoadToolVersionSettings from '../../../models/tools/LoadToolVersionSettin
   };
 })
 @observer
-export default class ToolVersion extends React.Component {
+class ToolVersion extends React.Component {
   constructor (props) {
     super(props);
     makeObservable(this, {
@@ -105,10 +108,8 @@ export default class ToolVersion extends React.Component {
 
     const isWindowsPlatform = /^windows$/i.test(platform);
 
-    let activeKey = 'scaninfo';
-    if (this.props.routes) {
-      activeKey = this.props.routes[this.props.routes.length - 1].tabKey;
-    }
+    const pathSegments = (this.props.location?.pathname || '').split('/').filter(Boolean);
+    let activeKey = (pathSegments[pathSegments.length - 1]) || 'scaninfo';
 
     if (isWindowsPlatform && ['scaninfo', 'packages'].indexOf(activeKey) >= 0) {
       activeKey = 'settings';
@@ -160,9 +161,11 @@ export default class ToolVersion extends React.Component {
           ]}
         />
         <div style={{flex: 1, overflow: 'auto'}}>
-          {this.props.children}
+          <Outlet />
         </div>
       </Card>
     );
   }
 }
+
+export default ToolVersion;

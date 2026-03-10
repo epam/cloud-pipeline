@@ -20,7 +20,7 @@ import {computed, makeObservable} from 'mobx';
 import {Alert, Card, Menu, message, Popover, Row} from 'antd';
 import FileSaver from 'file-saver';
 import classNames from 'classnames';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
 import RunTable, {Columns} from './run-table';
 import PipelineRunExport from '../../models/pipelines/PipelineRunExport';
 import {getFiltersPayload} from '../../models/pipelines/pipeline-runs-filter';
@@ -68,10 +68,10 @@ const CHARTS_INFO_DETAILS = 'details';
 
 @roleModel.authenticationInfo
 @inject('counter', 'preferences')
-@inject(({routing}, {params}) => {
+@inject(({routing}) => {
   const {
     status = 'active'
-  } = params;
+  } = routing.params;
   const query = parseQueryParameters(routing);
   const all = query.hasOwnProperty('all') && /^(true|undefined)$/i.test(`${query.all}`);
   return {

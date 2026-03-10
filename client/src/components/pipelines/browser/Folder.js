@@ -17,6 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
+import {withRouter} from '../../../utils/with-router';
 import {computed, observable, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import connect from '../../../utils/connect';
@@ -136,7 +137,7 @@ function splitFolderPaths (foldersStructure) {
   };
 })
 @observer
-export default class Folder extends localization.LocalizedReactComponent {
+class Folder extends localization.LocalizedReactComponent {
   static propTypes = {
     id: PropTypes.oneOfType([
       PropTypes.string,
@@ -2307,3 +2308,5 @@ export default class Folder extends localization.LocalizedReactComponent {
     }
   }
 }
+
+export default withRouter(Folder);

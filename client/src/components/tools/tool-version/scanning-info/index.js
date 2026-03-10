@@ -36,7 +36,8 @@ const DESCEND = 'descend';
 const PAGE_SIZE = 40;
 
 @inject('preferences', 'dockerRegistries')
-@inject((stores, {params}) => {
+@inject(({routing, ...stores}) => {
+  const {params} = routing;
   return {
     ...stores,
     toolId: params.id,

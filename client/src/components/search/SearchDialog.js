@@ -17,6 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
+import {withRouter} from '../../utils/with-router';
 import {observable, computed, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import {
@@ -60,7 +61,7 @@ export {searchDialogBlocker};
 @localization.localizedComponent
 @inject('searchEngine', 'preferences')
 @observer
-export default class SearchDialog extends localization.LocalizedReactComponent {
+class SearchDialog extends localization.LocalizedReactComponent {
   static propTypes = {
     onInitialized: PropTypes.func,
     onVisibilityChanged: PropTypes.func,
@@ -917,3 +918,5 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
     this.props.onInitialized && this.props.onInitialized(null);
   }
 }
+
+export default withRouter(SearchDialog);

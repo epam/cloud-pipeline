@@ -21,12 +21,15 @@ import parentStyles from '../PipelineDetails.css';
 import WorkflowGraph from './WorkflowGraph';
 import PipelineConfigurations from '../../../../models/pipelines/PipelineConfigurations';
 
-@inject(({pipelines}, {params}) => ({
-  pipelineId: params.id,
-  version: params.version,
-  pipeline: pipelines.getPipeline(params.id),
-  configurations: new PipelineConfigurations(params.id, params.version)
-}))
+@inject(({routing, pipelines}) => {
+  const {params} = routing;
+  return {
+    pipelineId: params.id,
+    version: params.version,
+    pipeline: pipelines.getPipeline(params.id),
+    configurations: new PipelineConfigurations(params.id, params.version)
+  };
+})
 @observer
 export default class PipelineGraph extends Component {
 

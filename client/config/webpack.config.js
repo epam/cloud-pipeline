@@ -226,7 +226,8 @@ module.exports = function (webpackEnv) {
         url: false,
         assert: false,
         buffer: false,
-        util: false
+        util: false,
+        'process/browser': require.resolve('process/browser.js')
       },
       // These are the reasonable defaults supported by the Node ecosystem.
       // We also include JSX as a common component filename extension to support
@@ -265,6 +266,14 @@ module.exports = function (webpackEnv) {
               },
               generator: {
                 filename: 'static/[name].[contenthash:8][ext]'
+              }
+            },
+            // Allow node_modules ESM (.mjs) to resolve imports without requiring extensions (e.g. process/browser)
+            {
+              test: /\.m?js$/,
+              include: /node_modules/,
+              resolve: {
+                fullySpecified: false
               }
             },
             // Process application JS with Babel.
@@ -361,7 +370,7 @@ module.exports = function (webpackEnv) {
 
     plugins: [
       new webpack.ProvidePlugin({
-        process: 'process/browser'
+        process: require.resolve('process/browser.js')
       }),
       new webpack.DefinePlugin(Object.assign(
         {},

@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import {withRouter} from '../../utils/with-router';
 import {
   inject,
   observer} from 'mobx-react';
@@ -102,13 +103,14 @@ const DEFAULT_FILE_SIZE_KB = 50;
 @HiddenObjects.injectToolsFilters
 @HiddenObjects.checkTools(props => props?.params?.id)
 @inject('awsRegions', 'dockerRegistries', 'preferences', 'usersInfo')
-@inject(({allowedInstanceTypes, dockerRegistries, authenticatedUserInfo, preferences}, {params}) => {
+@inject(({routing, allowedInstanceTypes, dockerRegistries, authenticatedUserInfo, preferences}) => {
+  const {params} = routing;
   return {
     allowedInstanceTypesCache: allowedInstanceTypes,
     toolId: params.id,
     tool: new LoadTool(params.id),
     versions: new LoadToolAttributes(params.id),
-    section: params.section.toLowerCase(),
+    section: params.section ? params.section.toLowerCase() : undefined,
     preferences,
     docker: dockerRegistries,
     scanPolicy: new LoadToolScanPolicy(),
@@ -118,7 +120,7 @@ const DEFAULT_FILE_SIZE_KB = 50;
 })
 @withCurrentUserAttributes()
 @observer
-export default class Tool extends localization.LocalizedReactComponent {
+class Tool extends localization.LocalizedReactComponent {
   state = {
     metadata: false,
     editDescriptionMode: false,
@@ -2221,3 +2223,5 @@ export default class Tool extends localization.LocalizedReactComponent {
     this.props.versions.clearInterval();
   }
 }
+
+export default withRouter(Tool);

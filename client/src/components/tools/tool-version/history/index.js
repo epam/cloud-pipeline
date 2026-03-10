@@ -25,7 +25,8 @@ import styles from './history.css';
 import BashCode from '../../../special/bash-code';
 import GenerateDockerfile from '../../../../models/tools/GenerateDockerfile';
 
-@inject((stores, {params}) => {
+@inject(({routing}) => {
+  const {params} = routing;
   return {
     toolId: params.id,
     version: params.version,

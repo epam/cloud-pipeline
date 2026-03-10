@@ -32,7 +32,8 @@ import HiddenObjects from '../../../../utils/hidden-objects';
 
 @HiddenObjects.injectToolsFilters
 @inject('preferences', 'dockerRegistries')
-@inject((stores, {params}) => {
+@inject(({routing, ...stores}) => {
+  const {params} = routing;
   return {
     toolId: params.id,
     version: params.version,

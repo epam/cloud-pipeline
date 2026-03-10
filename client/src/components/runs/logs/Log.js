@@ -17,8 +17,9 @@
 import React from 'react';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
+import {withRouter} from '../../../utils/with-router';
 import {computed, observable, makeObservable} from 'mobx';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
 import FileSaver from 'file-saver';
 import {
   Alert,
@@ -2629,4 +2630,4 @@ class Logs extends localization.LocalizedReactComponent {
   }
 }
 
-export default Logs;
+export default withRouter(Logs);

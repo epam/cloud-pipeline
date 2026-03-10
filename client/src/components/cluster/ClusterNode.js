@@ -15,11 +15,12 @@
  */
 
 import React, {Component} from 'react';
+import {Outlet, Link} from 'react-router-dom';
 import {Alert, Menu, Row, Button, Modal, message, Popover} from 'antd';
+import {withRouter} from '../../utils/with-router';
 import {ArrowLeftOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import AdaptedLink from '../special/AdaptedLink';
-import {Link} from 'react-router';
 import clusterNodes, {MACHINE_TYPES} from '../../models/cluster/ClusterNodes';
 import pools from '../../models/cluster/HotNodePools';
 import TerminateNodeRequest from '../../models/cluster/TerminateNode';
@@ -36,7 +37,11 @@ import PipelineRunInfo from '../../models/pipelines/PipelineRunInfo';
 
 @inject('authenticatedUserInfo', 'preferences')
 @inject((stores, {params, location}) => {
-  const {type, runId, from, to} = location?.query;
+  const _q = new URLSearchParams(location?.search || '');
+  const type = _q.get('type');
+  const runId = _q.get('runId');
+  const from = _q.get('from');
+  const to = _q.get('to');
   return {
     pools,
     name: params.nodeName,
@@ -130,7 +135,10 @@ class ClusterNode extends Component {
 
   initializeChartsData = async () => {
     const {location, name, stores} = this.props;
-    const {from: queryFrom, to: queryTo, runId} = location.query;
+    const _q = new URLSearchParams(location?.search || '');
+    const queryFrom = _q.get('from');
+    const queryTo = _q.get('to');
+    const runId = _q.get('runId');
     let from = queryFrom;
     let to = queryTo;
     if (runId) {
@@ -318,20 +326,16 @@ class ClusterNode extends Component {
 
   render () {
     const {labelsToShow} = this.state;
+    const outletContext = {
+      node: this.props.node,
+      chartsData: this.chartsData,
+      nodeName: this.props.name,
+      isCloudNode: this.isCloudNode
+    };
     const result = [
       this.renderError(),
       this.renderMenu(),
-      React.Children.map(this.props.children,
-        (child) => React.cloneElement(
-          child,
-          {
-            node: this.props.node,
-            chartsData: this.chartsData,
-            nodeName: this.props.name,
-            isCloudNode: this.isCloudNode
-          }
-        )
-      )
+      <Outlet key="outlet" context={outletContext} />
     ];
     const nodeLabels = this.renderNodeLabels().filter(label => label !== ' ');
     let allowToTerminate = this.props.node.loaded &&
@@ -444,4 +448,4 @@ class ClusterNode extends Component {
   }
 }
 
-export default ClusterNode;
+export default withRouter(ClusterNode);

@@ -15,6 +15,8 @@
  */
 
 import React from 'react';
+import {Outlet} from 'react-router-dom';
+import {inject} from 'mobx-react';
 import Filters from './filters';
 import Discounts from './discounts';
 import {Container, RestoreLayoutProvider} from './layout';
@@ -22,7 +24,8 @@ import ThemedReport from './themed-report';
 import styles from './reports.css';
 import QuotaProvider from '../quotas/quota-provider';
 
-function Reports ({children, location, router}) {
+function Reports ({router}) {
+  const location = router?.location || {};
   return (
     <QuotaProvider>
       <ThemedReport>
@@ -30,7 +33,7 @@ function Reports ({children, location, router}) {
           <RestoreLayoutProvider>
             <Filters location={location} router={router}>
               <Container className={styles.chartsLayout}>
-                {children}
+                <Outlet />
               </Container>
             </Filters>
           </RestoreLayoutProvider>
@@ -40,7 +43,7 @@ function Reports ({children, location, router}) {
   );
 }
 
-export default Reports;
+export default inject('router')(Reports);
 export {default as InstanceReport} from './instance-report';
 export {default as StorageReport} from './storage-report';
 export {default as GeneralReport} from './general-report';

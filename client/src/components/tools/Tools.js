@@ -18,6 +18,7 @@ import React from 'react';
 import {
   observer,
   inject} from 'mobx-react';
+import {withRouter} from '../../utils/with-router';
 import {computed, observable, makeObservable} from 'mobx';
 import {
   Alert,
@@ -28,7 +29,7 @@ import {
   message
 } from 'antd';
 import {InfoCircleOutlined} from '@ant-design/icons';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
 import classNames from 'classnames';
 import ToolsGroupPrivateCreate from '../../models/tools/ToolsGroupPrivateCreate';
 import LoadingView from '../special/LoadingView';
@@ -63,14 +64,15 @@ const PERSONAL_GROUP_ID = 'create-personal-group';
 @roleModel.authenticationInfo
 @inject('dockerRegistries', 'authenticatedUserInfo', 'preferences')
 @HiddenObjects.injectToolsFilters
-@inject((stores, {params}) => {
+@inject(({routing}) => {
+  const {params} = routing;
   return {
     registryId: params.registryId,
     groupId: params.groupId
   };
 })
 @observer
-export default class Tools extends React.Component {
+class Tools extends React.Component {
   state = {
     metadata: false,
     redirected: false,
@@ -694,6 +696,14 @@ export default class Tools extends React.Component {
   };
 
   redirectIfNeeded = () => {
+    const pathname = (this.props.router?.location?.pathname || '');
+    if (!pathname.startsWith('/tools')) {
+      return;
+    }
+    const pathSegments = pathname.replace(/^\/+/, '').split('/').filter(Boolean);
+    if (pathSegments.length >= 3) {
+      return;
+    }
     if (!this.state.redirected &&
       this.props.dockerRegistries.loaded &&
       this.props.preferences.loaded &&
@@ -756,7 +766,11 @@ export default class Tools extends React.Component {
   }
 
   componentDidUpdate (prevProps) {
-    this.redirectIfNeeded();
+    // Проверяем, изменился ли registryId или groupId в params маршрута
+    if (prevProps.registryId !== this.props.registryId ||
+      prevProps.groupId !== this.props.groupId) {
+      this.redirectIfNeeded();
+    }
   }
 
   UNSAFE_componentWillReceiveProps (nextProps) {
@@ -782,3 +796,5 @@ export default class Tools extends React.Component {
     this.props.dockerRegistries.invalidateCache();
   }
 }
+
+export default withRouter(Tools);

@@ -16,6 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
+import {withRouter} from '../../../../utils/with-router';
 import {computed, makeObservable} from 'mobx';
 import {Alert} from 'antd';
 import classNames from 'classnames';
@@ -41,8 +42,8 @@ import ResourseSharingPoolTable from './resourse-sharing-pool-table';
   const {
     location = {}
   } = params || {};
-  const {query} = location;
-  const {pool: poolString} = query;
+  const {search = ''} = location;
+  const poolString = new URLSearchParams(search).get('pool');
   return {
     currentPoolId: Number.isNaN(Number(poolString))
       ? undefined
@@ -497,4 +498,4 @@ class HotClusterUsage extends React.Component {
   }
 }
 
-export default HotClusterUsage;
+export default withRouter(HotClusterUsage);

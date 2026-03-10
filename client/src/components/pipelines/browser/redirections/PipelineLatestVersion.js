@@ -18,6 +18,7 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {Alert} from 'antd';
 import LoadingView from '../../../special/LoadingView';
+import {withRouter} from '../../../../utils/with-router';
 
 class PipelineLatestVersion extends React.PureComponent {
   state = {
@@ -56,8 +57,7 @@ class PipelineLatestVersion extends React.PureComponent {
       section,
       subSection
     } = routeParams;
-    let queryString = Object
-      .entries(location.query || {})
+    let queryString = [...new URLSearchParams(location?.search || '')]
       .map(([key, value]) => `${key}=${value}`)
       .join('&');
     if (queryString) {
@@ -125,4 +125,4 @@ class PipelineLatestVersion extends React.PureComponent {
   }
 }
 
-export default inject('pipelines')(observer(PipelineLatestVersion));
+export default withRouter(inject('pipelines')(observer(PipelineLatestVersion)));

@@ -75,6 +75,7 @@ import {
   getSummaryDatasetsByStorageClass
 } from './charts/object-storage/get-datasets-by-storage-class';
 import StorageTable from './storage-table';
+import {withRouter} from '../../../utils/with-router';
 
 const tablePageSize = 10;
 
@@ -88,16 +89,15 @@ const LAYERS_LABELS = {
 function injection (stores, props) {
   const {location, params} = props;
   const {type} = params || {};
-  const {
-    user: userQ,
-    group: groupQ,
-    'billing-group': billingGroupQ,
-    period = Period.month,
-    range,
-    region: regionQ,
-    metrics: metricsQ,
-    layer: aggregateQ
-  } = location.query;
+  const q = new URLSearchParams(location?.search || '');
+  const userQ = q.get('user');
+  const groupQ = q.get('group');
+  const billingGroupQ = q.get('billing-group');
+  const period = q.get('period') ?? Period.month;
+  const range = q.get('range');
+  const regionQ = q.get('region');
+  const metricsQ = q.get('metrics');
+  const aggregateQ = q.get('layer');
   const metrics = parseStorageMetrics(metricsQ);
   const aggregate = /^object$/i.test(type)
     ? parseStorageAggregate(aggregateQ)
@@ -658,10 +658,10 @@ class StorageReports extends React.Component {
   }
 }
 
-export default inject('reportThemes')(
+export default withRouter(inject('reportThemes')(
   inject(injection)(
     BillingNavigation.attach(
       observer(StorageReports)
     )
   )
-);
+));

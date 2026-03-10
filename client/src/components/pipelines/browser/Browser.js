@@ -16,6 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
+import {withRouter} from '../../../utils/with-router';
 import {computed, makeObservable} from 'mobx';
 import connect from '../../../utils/connect';
 import classNames from 'classnames';
@@ -69,7 +70,7 @@ const MAX_INLINE_METADATA_KEYS = 10;
   };
 })
 @observer
-export default class Folder extends localization.LocalizedReactComponent {
+class Folder extends localization.LocalizedReactComponent {
   state = {
     filter: undefined
   };
@@ -422,3 +423,5 @@ export default class Folder extends localization.LocalizedReactComponent {
     );
   }
 }
+
+export default withRouter(Folder);

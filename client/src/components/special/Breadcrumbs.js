@@ -18,7 +18,7 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
 import {CaretRightOutlined, LoadingOutlined, LockOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import EditableField from './EditableField';

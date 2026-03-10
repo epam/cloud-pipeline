@@ -16,6 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import {withRouter} from '../../utils/with-router';
 import moment from 'moment-timezone';
 import classNames from 'classnames';
 import {
@@ -72,7 +73,7 @@ const isCloudNode = (node = {}) => node.machineType === MACHINE_TYPES.all ||
   };
 })
 @observer
-export default class Cluster extends localization.LocalizedReactComponent {
+class Cluster extends localization.LocalizedReactComponent {
   static propTypes = {
     machineType: PropTypes.string,
     highlightCloudNodes: PropTypes.bool,
@@ -896,4 +897,6 @@ export default class Cluster extends localization.LocalizedReactComponent {
       </div>
     );
   }
-};
+}
+
+export default withRouter(Cluster);

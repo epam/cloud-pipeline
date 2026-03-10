@@ -17,7 +17,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import { computed, makeObservable } from 'mobx';
+import {withRouter} from '../../../../utils/with-router';
+import {computed, makeObservable} from 'mobx';
 import {
   Alert,
   message,
@@ -127,8 +128,8 @@ function generateItemsFilter (preferences) {
 @inject(({pipelines}, params) => {
   const {location} = params;
   let path;
-  if (location && location.query.path) {
-    path = location.query.path;
+  if (location) {
+    path = new URLSearchParams(location.search || '').get('path') || undefined;
   }
   let componentParameters = params;
   if (params.params) {
@@ -1131,4 +1132,4 @@ VersionedStorage.propTypes = {
   path: PropTypes.string
 };
 
-export default VersionedStorage;
+export default withRouter(VersionedStorage);

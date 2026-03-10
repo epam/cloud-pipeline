@@ -17,6 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
+import {withRouter} from '../../../../utils/with-router';
 import {computed, makeObservable} from 'mobx';
 import {Alert, message, Row} from 'antd';
 import {CompassOutlined, PlayCircleOutlined} from '@ant-design/icons';
@@ -33,7 +34,7 @@ import styles from './Panel.css';
 @inject('pipelines', 'hiddenObjects', 'pipelinesLibrary')
 @localization.localizedComponent
 @observer
-export default class MyPipelinesPanel extends localization.LocalizedReactComponent {
+class MyPipelinesPanel extends localization.LocalizedReactComponent {
   static propTypes = {
     panelKey: PropTypes.string,
     onInitialize: PropTypes.func
@@ -213,3 +214,5 @@ export default class MyPipelinesPanel extends localization.LocalizedReactCompone
     this.props.pipelines.fetch();
   }
 }
+
+export default withRouter(MyPipelinesPanel);

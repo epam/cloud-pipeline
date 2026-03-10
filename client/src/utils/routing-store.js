@@ -1,22 +1,26 @@
 /*
- * MobX 6–compatible replacement for mobx-react-router.
- * mobx-react-router uses observe(store, 'location', ...), which in MobX 6
- * throws "Cannot obtain atom from undefined" when the store uses the old
- * decorator-based API. This module provides the same RouterStore + syncHistoryWithStore
- * API using makeObservable and reaction() instead of observe().
+ * MobX store synced with React Router 7 (createHashRouter).
+ * RouterStore receives the router via setRouter(); it subscribes to router.state
+ * and exposes location, action, params and navigation methods (push, replace, go, etc.).
  */
 
-import {action, makeObservable, observable, reaction} from 'mobx';
+import {action, makeObservable, observable} from 'mobx';
 
 export class RouterStore {
   location = null;
-  history = null;
+  action = null;
+  params = {};
 
   constructor () {
     makeObservable(this, {
       location: observable,
-      _updateLocation: action
+      action: observable,
+      params: observable,
+      _updateLocation: action,
+      updateParams: action,
+      setRouter: action
     });
+    this._router = null;
     this.push = this.push.bind(this);
     this.replace = this.replace.bind(this);
     this.go = this.go.bind(this);
@@ -24,57 +28,61 @@ export class RouterStore {
     this.goForward = this.goForward.bind(this);
   }
 
-  _updateLocation (newState) {
-    this.location = newState;
+  _updateLocation ({action: historyAction, location}) {
+    this.location = location;
+    this.action = historyAction;
   }
 
-  push (location) {
-    this.history.push(location);
+  updateParams (params) {
+    this.params = params || {};
   }
 
-  replace (location) {
-    this.history.replace(location);
+  setRouter (router) {
+    this._router = router;
+    const state = router.state;
+    this._updateLocation({action: state.historyAction, location: state.location});
+    const params = state.matches.reduce(
+      (acc, m) => ({...acc, ...m.params}),
+      {}
+    );
+    this.updateParams(params);
+    router.subscribe((state) => {
+      this._updateLocation({action: state.historyAction, location: state.location});
+      const nextParams = state.matches.reduce(
+        (acc, m) => ({...acc, ...m.params}),
+        {}
+      );
+      this.updateParams(nextParams);
+    });
+  }
+
+  push (to) {
+    if (this._router) {
+      this._router.navigate(to);
+    }
+  }
+
+  replace (to) {
+    if (this._router) {
+      this._router.navigate(to, {replace: true});
+    }
   }
 
   go (n) {
-    this.history.go(n);
+    if (this._router) {
+      this._router.navigate(n);
+    }
   }
 
   goBack () {
-    this.history.goBack();
+    if (this._router) {
+      this._router.navigate(-1);
+    }
   }
 
   goForward () {
-    this.history.goForward();
-  }
-}
-
-/**
- * Syncs history with RouterStore and returns an enhanced history object.
- * Uses reaction() instead of observe() for MobX 6 compatibility.
- */
-export function syncHistoryWithStore (history, store) {
-  store.history = history;
-
-  const handleLocationChange = (location) => {
-    store._updateLocation(location);
-  };
-
-  const unsubscribeFromHistory = history.listen(handleLocationChange);
-  handleLocationChange(history.getCurrentLocation());
-
-  return {
-    ...history,
-    listen (listener) {
-      const dispose = reaction(
-        () => store.location,
-        (location) => listener(location),
-        {fireImmediately: true}
-      );
-      return () => dispose();
-    },
-    unsubscribe () {
-      unsubscribeFromHistory();
+    if (this._router) {
+      this._router.navigate(1);
     }
-  };
+  }
 }

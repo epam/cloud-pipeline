@@ -36,7 +36,8 @@ import styles from './Browser.css';
   pipelines
 })
 @HiddenObjects.checkFolders(p => (p.params ? p.params.id : p.id))
-@inject(({folders}, {params}) => {
+@inject(({routing, folders}) => {
+  const {params} = routing;
   return {
     folder: folders.load(params.id),
     folderId: params.id ? Number(params.id) : undefined,

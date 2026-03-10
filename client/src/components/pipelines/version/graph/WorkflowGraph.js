@@ -55,6 +55,10 @@ export default class WorkflowGraph extends localization.LocalizedReactComponent 
     configurations: PropTypes.object
   };
 
+  state = {
+    navigationBlocked: false
+  };
+
   constructor (props) {
     super(props);
     makeObservable(this, {
@@ -130,6 +134,8 @@ export default class WorkflowGraph extends localization.LocalizedReactComponent 
       <GraphComponent
         {...this.props}
         language={this.language}
+        navigationBlocked={this.state.navigationBlocked}
+        onBlockingChange={(value) => this.setState({navigationBlocked: value})}
         onGraphReady={this.onGraphReady} />
     );
   }

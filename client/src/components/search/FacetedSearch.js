@@ -17,6 +17,7 @@
 import React from 'react';
 import {computed, makeObservable} from 'mobx';
 import {inject, observer} from 'mobx-react';
+import {withRouter} from '../../utils/with-router';
 import {
   Alert,
   Button,
@@ -1238,4 +1239,4 @@ class FacetedSearch extends React.Component {
   }
 }
 
-export default FacetedSearch;
+export default withRouter(FacetedSearch);

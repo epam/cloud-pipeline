@@ -16,14 +16,15 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
 import {Row} from 'antd';
 import RunTable, {Columns} from '../../../runs/run-table';
 import parseQueryParameters from '../../../../utils/queryParameters';
 import styles from './PipelineHistory.css';
 
-@inject(({routing}, {params}) => {
+@inject(({routing}) => {
   const queryParameters = parseQueryParameters(routing);
+  const {params} = routing;
   const allVersions = queryParameters.hasOwnProperty('all')
     ? (queryParameters.all === undefined ? true : queryParameters.all === 'true')
     : false;

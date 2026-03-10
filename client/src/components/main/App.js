@@ -15,7 +15,9 @@
  */
 
 import React, {Component} from 'react';
+import {Outlet} from 'react-router-dom';
 import {Layout, ConfigProvider} from 'antd';
+import {withRouter} from '../../utils/with-router';
 import enUS from 'antd/locale/en_US';
 import {observer, Provider, inject} from 'mobx-react';
 import {observable, makeObservable} from 'mobx';
@@ -33,7 +35,7 @@ import ErrorBoundary from './ErrorBoundary';
 @inject('preferences', 'uiNavigation')
 @roleModel.authenticationInfo
 @observer
-export default class App extends Component {
+class App extends Component {
   state = {
     navigationCollapsed: true,
     documentTitleSet: false,
@@ -91,7 +93,7 @@ export default class App extends Component {
     const isSearch = /[\\/]+search\/advanced/i.test(this.props.router.location.pathname);
     let content;
     if (isExternalApp) {
-      content = this.props.children;
+      content = <Outlet />;
     } else {
       const searchStyle = [searchStyles.searchBlur];
       if (this.state.searchFormVisible) {
@@ -126,7 +128,7 @@ export default class App extends Component {
             className={`${styles.contentWrapper} ${searchStyle.join(' ')}`}>
             <ErrorBoundary>
               <Provider displayInfo={this.info}>
-                {this.props.children}
+                <Outlet />
               </Provider>
             </ErrorBoundary>
           </Layout.Content>
@@ -167,3 +169,5 @@ export default class App extends Component {
     document.title = this.props.preferences.deploymentName || 'Loading...';
   }
 }
+
+export default withRouter(App);

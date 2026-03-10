@@ -17,7 +17,7 @@
 import React, {Component} from 'react';
 import {computed, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
 import styles from './TaskLink.css';
 import StatusIcon from '../../../special/run-status-icon';
 import displayDate from '../../../../utils/displayDate';

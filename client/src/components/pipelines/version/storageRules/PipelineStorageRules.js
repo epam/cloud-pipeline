@@ -23,11 +23,14 @@ import DataStorageRules from '../../../../models/dataStorage/DataStorageRules';
 import styles from './PipelineStorageRules.css';
 import roleModel from '../../../../utils/roleModel';
 
-@inject(({pipelines, routing}, {params}) => ({
-  rules: new DataStorageRules(params.id),
-  pipelineId: params.id,
-  pipeline: pipelines.getPipeline(params.id)
-}))
+@inject(({routing, pipelines}) => {
+  const {params} = routing;
+  return {
+    rules: new DataStorageRules(params.id),
+    pipelineId: params.id,
+    pipeline: pipelines.getPipeline(params.id)
+  };
+})
 @observer
 export default class PipelineStorageRules extends React.Component {
   state = {createRuleDialogVisible: false};

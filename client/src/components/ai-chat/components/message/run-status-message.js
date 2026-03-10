@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import {Spin} from 'antd';
 import {computed, observable, makeObservable} from 'mobx';
 import {Observer, observer} from 'mobx-react';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
 import StatusIcon from '../../../special/run-status-icon';
 import PipelineRunInfo from '../../../../models/pipelines/PipelineRunInfo';
 import RunStatuses, {getRunStatus} from '../../../special/run-status-icon/run-statuses';

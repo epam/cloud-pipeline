@@ -55,11 +55,10 @@ class Filter {
 
   rebuild = ({location, router}) => {
     this.router = router;
-    const {
-      period = Period.day,
-      users,
-      range
-    } = (location || {}).query || {};
+    const q = new URLSearchParams((location || {}).search || '');
+    const period = q.get('period') ?? Period.day;
+    const users  = q.get('users');
+    const range  = q.get('range');
     this.runner = (users || '')
       .split(Filter.RUNNER_SEPARATOR)
       .filter(o => !!o && o.length)

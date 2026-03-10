@@ -23,7 +23,7 @@ import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import moment from 'moment-timezone';
 import FileSaver from 'file-saver';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
 import {
   Button,
   message,

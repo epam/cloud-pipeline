@@ -32,9 +32,15 @@ function HOC (...objects) {
       render () {
         const {props} = this;
         const {
-          hiddenObjects
+          hiddenObjects,
+          routing
         } = props;
-        const objectsToCheck = objects.map(mapObjectConfiguration(props));
+        // Merge routing.params so identifier functions like
+        // (props => props?.params?.id) keep working without withRouter.
+        const propsWithParams = routing
+          ? {...props, params: routing.params}
+          : props;
+        const objectsToCheck = objects.map(mapObjectConfiguration(propsWithParams));
         if (hiddenObjects && !hiddenObjects.loaded) {
           return null;
         }
@@ -48,7 +54,7 @@ function HOC (...objects) {
         return (<WrappedComponent {...props} />);
       }
     }
-    return inject(HIDDEN_OBJECTS_INJECTION)(observer(Component));
+    return inject(HIDDEN_OBJECTS_INJECTION, 'routing')(observer(Component));
   };
 }
 

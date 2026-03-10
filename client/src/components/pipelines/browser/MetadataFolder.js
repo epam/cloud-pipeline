@@ -18,6 +18,7 @@ import React from 'react';
 import {
   inject,
   observer} from 'mobx-react';
+import {withRouter} from '../../../utils/with-router';
 import {computed, makeObservable} from 'mobx';
 import connect from '../../../utils/connect';
 import {Checkbox,
@@ -68,7 +69,7 @@ import LoadingView from '../../special/LoadingView';
   };
 })
 @observer
-export default class MetadataFolder extends React.Component {
+class MetadataFolder extends React.Component {
   static propTypes = {
     selectionAvailable: PropTypes.bool,
     hideUploadMetadataBtn: PropTypes.bool,
@@ -476,3 +477,5 @@ export default class MetadataFolder extends React.Component {
     );
   }
 }
+
+export default withRouter(MetadataFolder);

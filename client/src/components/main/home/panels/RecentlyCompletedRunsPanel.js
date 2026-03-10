@@ -16,8 +16,9 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
 import {inject, observer} from 'mobx-react';
+import {withRouter} from '../../../../utils/with-router';
 import LoadingView from '../../../special/LoadingView';
 import localization from '../../../../utils/localization';
 import {Alert, message, Modal, Row} from 'antd';
@@ -39,7 +40,7 @@ import {confirmRunContinuation, continueRun} from "../../../runs/actions/continu
 @inject('pipelines', 'multiZoneManager', 'preferences')
 @VSActions.check
 @observer
-export default class RecentlyCompletedRunsPanel extends localization.LocalizedReactComponent {
+class RecentlyCompletedRunsPanel extends localization.LocalizedReactComponent {
   static propTypes = {
     panelKey: PropTypes.string,
     completedRuns: PropTypes.object,
@@ -213,3 +214,5 @@ export default class RecentlyCompletedRunsPanel extends localization.LocalizedRe
     this.props.onInitialize && this.props.onInitialize(this);
   }
 }
+
+export default withRouter(RecentlyCompletedRunsPanel);

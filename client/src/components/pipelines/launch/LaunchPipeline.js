@@ -59,8 +59,9 @@ const PAYLOAD_STATE_KEY = 'parameters';
 @runPipelineActions
 @roleModel.authenticationInfo
 @inject('awsRegions', 'pipelines', 'preferences', 'dockerRegistries', 'usersInfo')
-@inject(({allowedInstanceTypes, routing, pipelines, preferences}, {params}) => {
+@inject(({allowedInstanceTypes, routing, pipelines, preferences}) => {
   const components = queryParameters(routing);
+  const {params} = routing;
   const isVersionedStorage = components.vs;
   let versionedStorageLaunchInfo;
   if (isVersionedStorage) {

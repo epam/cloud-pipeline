@@ -15,7 +15,15 @@
  */
 
 import React from 'react';
-import {IndexRoute, Redirect, Route, Router} from 'react-router';
+import {
+  createHashRouter,
+  createRoutesFromElements,
+  Navigate,
+  Route,
+  RouterProvider,
+  useOutletContext,
+  useParams
+} from 'react-router-dom';
 import {inject, observer} from 'mobx-react';
 import HomePageLoader from './home/HomePageLoader';
 import PipelinesLibrary from '../pipelines/PipelinesLibrary';
@@ -83,6 +91,34 @@ import TicketPage from '../special/tickets/ticket';
 import NewTicketPage from '../special/tickets/new-ticket-page';
 import CloudNodes from '../cluster/cloud-nodes';
 import AIChatPage from '../ai-chat';
+import {
+  GeneralReport,
+  InstanceReport,
+  StorageReport
+} from '../billing/reports';
+import {withRouter} from '../../utils/with-router';
+
+function withContext (Component) {
+  function WithContext () {
+    const context = useOutletContext();
+    const params = useParams();
+    return <Component {...context} params={params} />;
+  }
+  WithContext.displayName = `WithContext(${Component.displayName || Component.name || 'Component'})`;
+  return WithContext;
+}
+
+function withRedirect (pathFn) {
+  function WithRedirect () {
+    const params = useParams();
+    return <Navigate to={pathFn(params)} replace />;
+  }
+  return WithRedirect;
+}
+
+const ClusterNodeRedirect = withRedirect(({nodeName}) => `/cluster/${nodeName}/info`);
+const ToolIdRedirect = withRedirect(({id}) => `/tool/${id}/description`);
+const ToolVersionRedirect = withRedirect(({id, version}) => `/tool/${id}/info/${version}/scaninfo`);
 
 function HomePageRedirectionComponent ({router, uiNavigation}) {
   if (uiNavigation.loaded && router) {
@@ -99,129 +135,157 @@ function HomePageRedirectionComponent ({router, uiNavigation}) {
   return null;
 }
 
-const HomePageRedirection = inject('uiNavigation')(observer(HomePageRedirectionComponent));
+const HomePageRedirection = inject('uiNavigation')(observer(withRouter(HomePageRedirectionComponent)));
 
-function AppRouterComponent ({history, uiNavigation}) {
+const ClusterNodeGeneralInfoWithContext = withContext(ClusterNodeGeneralInfo);
+const ClusterNodePodsWithContext = withContext(ClusterNodePods);
+const ClusterNodeMonitorWithContext = withContext(ClusterNodeMonitor);
+
+const PipelineDetailsWithContext = withContext(PipelineDetails);
+const PipelineCodeWithContext = withContext(PipelineCode);
+const PipelineConfigurationWithContext = withContext(PipelineConfiguration);
+const PipelineDocumentsWithContext = withContext(PipelineDocuments);
+const PipelineHistoryWithContext = withContext(PipelineHistory);
+const PipelineGraphWithContext = withContext(PipelineGraph);
+const PipelineStorageRulesWithContext = withContext(PipelineStorageRules);
+
+const routeConfig = createRoutesFromElements(
+  <Route path="/" element={<App />}>
+    <Route path=":pipeline/refs/heads/master" element={<PipelineLatestVersion />} />
+    <Route path=":pipeline/refs/heads/master/:section" element={<PipelineLatestVersion />} />
+    <Route path=":pipeline/refs/heads/master/:section/:subSection" element={<PipelineLatestVersion />} />
+    <Route path="folder/:folder/metadata/:entity/redirect" element={<MetadataClassEntityRedirection />} />
+    <Route path="tickets/new" element={<NewTicketPage />} />
+    <Route path="tickets/:id" element={<TicketPage />} />
+    <Route path="tickets" element={<TicketsBrowser />} />
+    <Route path="search/advanced" element={<FacetedSearchPage />} />
+    <Route path="search" element={<RunsSearch />} />
+    <Route path="settings" element={<SettingsForm />}>
+      <Route index element={<Navigate to="cli" replace />} />
+      <Route path="cli" element={<CLIForm />} />
+      <Route path="cli/:section" element={<CLIForm />} />
+      <Route path="events" element={<SystemEvents />} />
+      <Route path="user" element={<UserManagementForm />} />
+      <Route path="user/:section" element={<UserManagementForm />} />
+      <Route path="email" element={<EmailNotificationSettings />} />
+      <Route path="email/:section" element={<EmailNotificationSettings />} />
+      <Route path="preferences" element={<Preferences />} />
+      <Route path="regions" element={<AWSRegionsForm />} />
+      <Route path="system" element={<SystemManagement />} />
+      <Route path="system/:section" element={<SystemManagement />} />
+      <Route path="dictionaries" element={<SystemDictionaries />} />
+      <Route path="dictionaries/:currentDictionary" element={<SystemDictionaries />} />
+      <Route path="profile" element={<UserProfile />} />
+      <Route path="profile/:section" element={<UserProfile />} />
+      <Route path="profile/:section/:sub" element={<UserProfile />} />
+    </Route>
+    <Route path="cluster" element={<ClusterRoot />}>
+      <Route index element={<Cluster />} />
+      <Route path="core-nodes" element={<CoreNodes />} />
+      <Route path="cloud-nodes" element={<CloudNodes />} />
+      <Route path="hot" element={<HotCluster />} />
+      <Route path="usage" element={<HotClusterUsage />} />
+    </Route>
+    <Route path="cluster/:nodeName" element={<ClusterNode />}>
+      <Route index element={<ClusterNodeRedirect />} />
+      <Route path="info" element={<ClusterNodeGeneralInfoWithContext />} />
+      <Route path="jobs" element={<ClusterNodePodsWithContext />} />
+      <Route path="monitor" element={<ClusterNodeMonitorWithContext />} />
+    </Route>
+    <Route path="runs/filter" element={<RunsFilter />} />
+    <Route path="runs" element={<Navigate to="/runs/active" replace />} />
+    <Route path="runs/:status" element={<AllRuns />} />
+    <Route path="run/:runId" element={<LogsRedirect />} />
+    <Route path="run/:runId/:mode" element={<LogsRedirect />} />
+    <Route path="run/:runId/:mode/:taskName" element={<LogsRedirect />} />
+    <Route path="run/:runId/:taskName" element={<LogsRedirect />} />
+    <Route path="tool/:id" element={<ToolIdRedirect />} />
+    <Route path="tool/:id/:section" element={<Tool />} />
+    <Route path="tool/:id/info/:version" element={<ToolVersion />}>
+      <Route index element={<ToolVersionRedirect />} />
+      <Route path="scaninfo" element={<ToolScanningInfo />} />
+      <Route path="settings" element={<ToolSettings />} />
+      <Route path="packages" element={<ToolPackages />} />
+      <Route path="history" element={<ToolHistory />} />
+    </Route>
+    <Route path="tools" element={<Tools />} />
+    <Route path="tools/:registryId" element={<Tools />} />
+    <Route path="tools/:registryId/:groupId" element={<Tools />} />
+    <Route path="launch" element={<LaunchPipeline />} />
+    <Route path="launch/tool/:image" element={<LaunchPipeline />} />
+    <Route path="launch/:runId" element={<LaunchPipeline />} />
+    <Route path="launch/:id/:version" element={<LaunchPipeline />} />
+    <Route path="launch/:id/:version/:configuration" element={<LaunchPipeline />} />
+    <Route path="launch/:id/:version/:configuration/:runId" element={<LaunchPipeline />} />
+    <Route path="billing" element={<Billing />}>
+      <Route index element={<Navigate to="reports" replace />} />
+      <Route path="quotas" element={<BillingQuotas />} />
+      <Route path="quotas/:type" element={<BillingQuotas />} />
+      <Route path="reports" element={<BillingReports />}>
+        <Route index element={<GeneralReport />} />
+        <Route path="instance" element={<InstanceReport />} />
+        <Route path="instance/:type" element={<InstanceReport />} />
+        <Route path="storage" element={<StorageReport />} />
+        <Route path="storage/:type" element={<StorageReport />} />
+      </Route>
+    </Route>
+    <Route path="chat" element={<AIChatPage />} />
+    <Route path="notifications" element={<NotificationBrowser />} />
+    <Route path="miew" element={<MiewPage />} />
+    <Route path="wsi" element={<VSIPreviewPage />} />
+    <Route path="hcs" element={<HcsImagePage />} />
+    <Route path="library" element={<PipelinesLibrary />}>
+      <Route index element={<FolderBrowser />} />
+    </Route>
+    <Route path="pipelines" element={<PipelinesLibrary />}>
+      <Route index element={<Browser />} />
+    </Route>
+    <Route path="storages" element={<PipelinesLibrary />}>
+      <Route index element={<Browser />} />
+    </Route>
+    <Route path="folder" element={<PipelinesLibrary />}>
+      <Route path=":id" element={<FolderBrowser />} />
+      <Route path=":id/history" element={<ProjectHistory />} />
+      <Route path=":id/metadata" element={<MetadataFolderBrowser />} />
+      <Route path=":id/metadata/:class" element={<MetadataBrowser />} />
+    </Route>
+    <Route path="storage" element={<PipelinesLibrary />}>
+      <Route path=":id" element={<StorageBrowser />} />
+    </Route>
+    <Route path="configuration" element={<PipelinesLibrary />}>
+      <Route path=":id" element={<DetachedConfiguration />} />
+      <Route path=":id/:name" element={<DetachedConfiguration />} />
+    </Route>
+    <Route path="vs/:id" element={<PipelinesLibrary />}>
+      <Route index element={<VersionedStorageBrowser />} />
+    </Route>
+    <Route path="dashboard" element={<HomePageLoader />} />
+    <Route path=":id" element={<PipelinesLibrary />}>
+      <Route index element={<PipelineBrowser />} />
+      <Route path=":version" element={<PipelineDetailsWithContext />}>
+        <Route path="history" element={<PipelineHistoryWithContext />} />
+        <Route path="code" element={<PipelineCodeWithContext />} />
+        <Route path="configuration" element={<PipelineConfigurationWithContext />} />
+        <Route path="configuration/:configuration" element={<PipelineConfigurationWithContext />} />
+        <Route path="graph" element={<PipelineGraphWithContext />} />
+        <Route path="workflow" element={<PipelineGraphWithContext />} />
+        <Route path="documents" element={<PipelineDocumentsWithContext />} />
+        <Route path="storage" element={<PipelineStorageRulesWithContext />} />
+      </Route>
+    </Route>
+    <Route index element={<HomePageRedirection />} />
+  </Route>
+);
+
+export const router = createHashRouter(routeConfig);
+
+function AppRouterComponent ({uiNavigation}) {
   if (!uiNavigation.loaded) {
     return null;
   }
-  return (
-    <Router history={history}>
-      <Route component={App}>
-        <Route
-          path="/:pipeline/refs/heads/master(/:section(/:subSection))"
-          component={PipelineLatestVersion}
-        />
-        <Route
-          path="/folder/:folder/metadata/:entity/redirect"
-          component={MetadataClassEntityRedirection}
-        />
-        <Route path="/tickets/new" component={NewTicketPage} />
-        <Route path="/tickets/:id" component={TicketPage} />
-        <Route path="/tickets" component={TicketsBrowser} />
-        <Route path="search/advanced" component={FacetedSearchPage} />
-        <Route path="search" component={RunsSearch} />
-        <Redirect from="/settings" to="/settings/cli" />
-        <Route path="/settings" component={SettingsForm}>
-          <Route path="cli(/:section)" component={CLIForm} />
-          <Route path="events" component={SystemEvents} />
-          <Route path="user(/:section)" component={UserManagementForm} />
-          <Route path="email(/:section)" component={EmailNotificationSettings} />
-          <Route path="preferences" component={Preferences} />
-          <Route path="regions" component={AWSRegionsForm} />
-          <Route path="system(/:section)" component={SystemManagement} />
-          <Route path="dictionaries(/:currentDictionary)" component={SystemDictionaries} />
-          <Route path="profile(/:section(/:sub))" component={UserProfile} />
-        </Route>
-        <Route path="/cluster" component={ClusterRoot}>
-          <IndexRoute component={Cluster} />
-          <Route path="core-nodes" component={CoreNodes} />
-          <Route path="cloud-nodes" component={CloudNodes} />
-          <Route path="hot" component={HotCluster} />
-          <Route path="usage" component={HotClusterUsage} />
-        </Route>
-        <Redirect from="/cluster/:nodeName" to="/cluster/:nodeName/info" />
-        <Route path="/cluster/:nodeName" component={ClusterNode}>
-          <Route path="info" component={ClusterNodeGeneralInfo} />
-          <Route path="jobs" component={ClusterNodePods} />
-          <Route path="monitor" component={ClusterNodeMonitor} />
-        </Route>
-        <Route path="/runs/filter" component={RunsFilter} />
-        <Redirect from="/runs" to="runs/active" />
-        <Route path="/runs/:status" component={AllRuns} />
-        <Route path="/run/:runId(/:mode)(/:taskName)" component={LogsRedirect} />
-        <Redirect from="/tool/:id" to="/tool/:id/description" />
-        <Route path="/tool/:id/:section" component={Tool} />
-        <Redirect from="/tool/:id/info/:version" to="/tool/:id/info/:version/scaninfo" />
-        <Route path="/tool/:id/info/:version" component={ToolVersion}>
-          <Route path="scaninfo" component={ToolScanningInfo} tabKey="scaninfo" />
-          <Route path="settings" component={ToolSettings} tabKey="settings" />
-          <Route path="packages" component={ToolPackages} tabKey="packages" />
-          <Route path="history" component={ToolHistory} tabKey="history" />
-        </Route>
-        <Route path="/tools(/:registryId(/:groupId))" component={Tools} />
-        <Route path="/launch" component={LaunchPipeline} />
-        <Route path="/launch/tool/:image" component={LaunchPipeline} />
-        <Route path="/launch/:runId" component={LaunchPipeline} />
-        <Route path="/launch/:id/:version(/:configuration)" component={LaunchPipeline} />
-        <Route path="/launch/:id/:version/:configuration(/:runId)" component={LaunchPipeline} />
-        <Redirect from="/billing" to="/billing/reports" />
-        <Route path="/billing" component={Billing}>
-          <Route path="quotas(/:type)" component={BillingQuotas} />
-          <Route path="reports" component={BillingReports.default}>
-            <IndexRoute component={BillingReports.GeneralReport} />
-            <Route path="instance(/:type)" component={BillingReports.InstanceReport} />
-            <Route path="storage(/:type)" component={BillingReports.StorageReport} />
-          </Route>
-        </Route>
-        <Route path="/chat" component={AIChatPage} />
-        <Route path="/notifications" component={NotificationBrowser} />
-        <Route path="/miew" component={MiewPage} />
-        <Route path="/wsi" component={VSIPreviewPage} />
-        <Route path="/hcs" component={HcsImagePage} />
-        <Route path="/library" component={PipelinesLibrary}>
-          <IndexRoute component={FolderBrowser} />
-        </Route>
-        <Route path="/pipelines" component={PipelinesLibrary}>
-          <IndexRoute component={Browser} />
-        </Route>
-        <Route path="/storages" component={PipelinesLibrary}>
-          <IndexRoute component={Browser} />
-        </Route>
-        <Route path="/folder" component={PipelinesLibrary}>
-          <Route path=":id" component={FolderBrowser} />
-          <Route path=":id/history" component={ProjectHistory} />
-          <Route path=":id/metadata" component={MetadataFolderBrowser} />
-          <Route path=":id/metadata/:class" component={MetadataBrowser} />
-        </Route>
-        <Route path="/storage" component={PipelinesLibrary}>
-          <Route path=":id" component={StorageBrowser} />
-        </Route>
-        <Route path="/configuration" component={PipelinesLibrary}>
-          <Route path=":id(/:name)" component={DetachedConfiguration} />
-        </Route>
-        <Route path="/vs/:id" component={PipelinesLibrary}>
-          <IndexRoute component={VersionedStorageBrowser} />
-        </Route>
-        <Route path="/dashboard" component={HomePageLoader} />
-        <Route path="/:id" component={PipelinesLibrary}>
-          <IndexRoute component={PipelineBrowser} />
-          <Route path=":version" component={PipelineDetails}>
-            <Route path="history" component={PipelineHistory} />
-            <Route path="code" component={PipelineCode} />
-            <Route path="configuration(/:configuration)" component={PipelineConfiguration} />
-            <Route path="graph" component={PipelineGraph} />
-            <Route path="workflow" component={PipelineGraph} />
-            <Route path="documents" component={PipelineDocuments} />
-            <Route path="storage" component={PipelineStorageRules} />
-          </Route>
-        </Route>
-        <Route path="/" component={HomePageRedirection} />
-      </Route>
-    </Router>
-  );
+  return <RouterProvider router={router} />;
 }
 
-const AppRouter = inject('history', 'uiNavigation')(observer(AppRouterComponent));
+const AppRouter = inject('uiNavigation')(observer(AppRouterComponent));
 
 export default AppRouter;
