@@ -293,7 +293,7 @@ class ReservationParameters extends React.PureComponent {
                 max={Math.floor(max / step) * step}
                 value={value}
                 onChange={onChange}
-                tipFormatter={formatter}
+                tooltip={{formatter}}
                 step={step}
               />
               <InputNumber

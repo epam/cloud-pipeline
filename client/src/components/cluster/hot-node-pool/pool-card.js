@@ -191,7 +191,7 @@ function PoolCard ({
               type="circle"
               status={runs > 0 ? 'success' : 'active'}
               percent={(runs / (total || 1)) * 100.0}
-              width={55}
+              size={55}
               strokeWidth={8}
               showInfo={false}
             />
