@@ -1,7 +1,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Button, Dropdown, Menu, message} from 'antd';
+import {Button, Dropdown, message, Space} from 'antd';
+import {DownOutlined} from '@ant-design/icons';
 import {readParametersFile} from './utilities';
 import styles from './upload-parameters-button.css';
 import {downloadParametersTemplate} from '../../utilities/parameter-utilities';
@@ -129,20 +130,30 @@ class UploadParametersButton extends React.PureComponent {
         style={style}
       >
         {this.showDownload ? (
-          <Dropdown.Button
-            overlay={(
-              <Menu
-                onClick={this.onMenuClick}
-                items={[{key: 'download', label: 'Download template'}]}
+          <Space.Compact>
+            <Button
+              onClick={this.onClick}
+              size="small"
+              disabled={disabled}
+              type="primary"
+            >
+              {children}
+            </Button>
+            <Dropdown
+              menu={{
+                items: [{key: 'download', label: 'Download template'}],
+                onClick: this.onMenuClick
+              }}
+              trigger={['click']}
+            >
+              <Button
+                size="small"
+                disabled={disabled}
+                type="primary"
+                icon={<DownOutlined />}
               />
-            )}
-            onClick={this.onClick}
-            size="small"
-            disabled={disabled}
-            type="primary"
-          >
-            {children}
-          </Dropdown.Button>
+            </Dropdown>
+          </Space.Compact>
         ) : (
           <Button
             onClick={this.onClick}

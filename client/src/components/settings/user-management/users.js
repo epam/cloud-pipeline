@@ -30,9 +30,10 @@ import {
   message,
   Alert,
   Select,
+  Space,
   Tooltip
 } from 'antd';
-import {BarsOutlined, DownloadOutlined, EditOutlined, PlusOutlined} from '@ant-design/icons';
+import {BarsOutlined, DownloadOutlined, DownOutlined, EditOutlined, PlusOutlined} from '@ant-design/icons';
 import Roles from '../../../models/user/Roles';
 import UserCreate from '../../../models/user/UserCreate';
 import UserDelete from '../../../models/user/UserDelete';
@@ -359,18 +360,24 @@ export default class UsersManagement extends React.Component {
         }
         {
           (this.isReader || this.isAdmin || this.isUsersAdmin) && (
-            <Dropdown.Button
-              style={{marginLeft: 5}}
-              onClick={() => doExport()}
-              menu={{
-                items: exportUserMenuItems,
-                onClick: this.handleExportUsersMenu,
-                style: {cursor: 'pointer'}
-              }}
-              icon={<DownloadOutlined />}
-            >
-              Export users
-            </Dropdown.Button>
+            <Space.Compact style={{marginLeft: 5}}>
+              <Button
+                onClick={() => doExport()}
+                icon={<DownloadOutlined />}
+              >
+                Export users
+              </Button>
+              <Dropdown
+                menu={{
+                  items: exportUserMenuItems,
+                  onClick: this.handleExportUsersMenu,
+                  style: {cursor: 'pointer'}
+                }}
+                trigger={['click']}
+              >
+                <Button icon={<DownOutlined />} />
+              </Dropdown>
+            </Space.Compact>
           )
         }
       </Row>

@@ -397,24 +397,33 @@ class ExportButton extends React.Component {
       templates
     });
     return (
-      <Dropdown.Button
-        menu={{
-          items: exportMenuItems,
-          onClick: exportMenuClick,
-          style: {cursor: 'pointer'}
-        }}
-        className={className}
-        style={style}
-        size={size}
-        type={type}
-        trigger={['click']}
-        open={dropdownVisible}
-        onOpenChange={this.handleDropDownVisible}
-        onClick={this.onDefaultExport}
-        icon={<DownOutlined />}
-      >
-        <DownloadOutlined />
-        Export
+      <>
+        <Space.Compact className={className} style={style}>
+          <Button
+            size={size}
+            type={type}
+            onClick={this.onDefaultExport}
+            icon={<DownloadOutlined />}
+          >
+            Export
+          </Button>
+          <Dropdown
+            menu={{
+              items: exportMenuItems,
+              onClick: exportMenuClick,
+              style: {cursor: 'pointer'}
+            }}
+            trigger={['click']}
+            open={dropdownVisible}
+            onOpenChange={this.handleDropDownVisible}
+          >
+            <Button
+              size={size}
+              type={type}
+              icon={<DownOutlined />}
+            />
+          </Dropdown>
+        </Space.Compact>
         <ExportConfigurationModal
           visible={modalVisible}
           onCancel={this.closeModal}
@@ -440,7 +449,7 @@ class ExportButton extends React.Component {
         >
           {this.renderSavedExportContent()}
         </Modal>
-      </Dropdown.Button>
+      </>
     );
   }
 }

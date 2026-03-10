@@ -21,9 +21,10 @@ import {
   observer} from 'mobx-react';
 import {Button,
   Dropdown,
-  message
+  message,
+  Space
 } from 'antd';
-import {CameraFilled, DownloadOutlined} from '@ant-design/icons';
+import {CameraFilled, DownloadOutlined, DownOutlined} from '@ant-design/icons';
 import FileSaver from 'file-saver';
 import {
   downloadAvailable as downloadCurrentTiffAvailable, downloadCurrentTiff
@@ -227,20 +228,29 @@ class HCSDownloadButton extends React.Component {
     }].filter(item => item.visible());
     if (menuItems.length > 1) {
       return (
-        <Dropdown.Button
-          className={className}
-          style={style}
-          disabled={!downloadCurrentTiffAvailable(hcsImageViewer)}
-          onClick={this.handleDownloadScreenshot}
-          menu={{
-            items: this.getScreenshotMenuItems(menuItems),
-            onClick: this.handleScreenshotMenuClick,
-            style: {cursor: 'pointer'}
-          }}
-          size={size}
-        >
-          <CameraFilled className="cp-larger" />
-        </Dropdown.Button>
+        <Space.Compact className={className} style={style}>
+          <Button
+            disabled={!downloadCurrentTiffAvailable(hcsImageViewer)}
+            onClick={this.handleDownloadScreenshot}
+            size={size}
+          >
+            <CameraFilled className="cp-larger" />
+          </Button>
+          <Dropdown
+            menu={{
+              items: this.getScreenshotMenuItems(menuItems),
+              onClick: this.handleScreenshotMenuClick,
+              style: {cursor: 'pointer'}
+            }}
+            trigger={['click']}
+          >
+            <Button
+              disabled={!downloadCurrentTiffAvailable(hcsImageViewer)}
+              size={size}
+              icon={<DownOutlined />}
+            />
+          </Dropdown>
+        </Space.Compact>
       );
     }
     return (

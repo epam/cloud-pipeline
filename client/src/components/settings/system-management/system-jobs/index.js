@@ -22,9 +22,10 @@ import {inject,
 import {Alert,
   Button,
   Dropdown,
-  message
+  message,
+  Space
 } from 'antd';
-import {CodeOutlined} from '@ant-design/icons';
+import {CodeOutlined, DownOutlined} from '@ant-design/icons';
 import LoadingView from '../../../special/LoadingView';
 import SubSettings from '../../sub-settings';
 import RunTable, {Columns} from '../../../runs/run-table';
@@ -254,19 +255,29 @@ class SystemJobs extends React.Component {
                   LAUNCH
                 </Button>
               ) : (
-                <Dropdown.Button
-                  type="primary"
-                  size="small"
-                  style={{marginLeft: 5}}
-                  onClick={() => this.launchJob(job)}
-                  menu={{
-                    items: launchMenuItems,
-                    onClick: handleLaunchMenu,
-                    style: {cursor: 'pointer'}
-                  }}
-                >
-                  LAUNCH
-                </Dropdown.Button>
+                <Space.Compact style={{marginLeft: 5}}>
+                  <Button
+                    type="primary"
+                    size="small"
+                    onClick={() => this.launchJob(job)}
+                  >
+                    LAUNCH
+                  </Button>
+                  <Dropdown
+                    menu={{
+                      items: launchMenuItems,
+                      onClick: handleLaunchMenu,
+                      style: {cursor: 'pointer'}
+                    }}
+                    trigger={['click']}
+                  >
+                    <Button
+                      type="primary"
+                      size="small"
+                      icon={<DownOutlined />}
+                    />
+                  </Dropdown>
+                </Space.Compact>
               )
             }
           </div>
