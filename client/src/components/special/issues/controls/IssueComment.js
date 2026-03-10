@@ -249,15 +249,8 @@ export default class IssueComment extends React.Component {
                       notFoundContent={notFoundContent}
                       rows={10}
                       prefix={['@', '#']}
-                    >
-                      {
-                        this.state.suggestions.map((suggestion, index) => (
-                          <Mentions.Option key={index} value={suggestion.value}>
-                            {suggestion.label}
-                          </Mentions.Option>
-                        ))
-                      }
-                    </Mentions>
+                      options={this.state.suggestions}
+                    />
                   }
                 </FileDropContainer>
               )
