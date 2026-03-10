@@ -35,10 +35,8 @@ import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.nio.file.Paths;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -66,24 +64,23 @@ public class RunLogStorageManager {
                 StringUtils.isNotBlank(systemStorageName) && StringUtils.isNotBlank(pathPrefix);
     }
 
-    public String buildLogsStoragePath(final Long runId) {
-        final AbstractDataStorage storage = resolveStorage();
+    public String saveLogsToStorage(final Long runId,
+                                  final Map<PipelineTask, List<RunLog>> logsByTask) {
+        final AbstractDataStorage storage = resolveStorage().orElse(null);
+
         if (storage == null) {
+            log.warn("Failed to resolve system storage to store run logs");
             return null;
         }
-        return storage.getPathMask() + "/" + resolvePathPrefix() + runId;
-    }
 
-    public void saveLogsToStorage(final Long runId,
-                                  final Map<PipelineTask, List<RunLog>> logsByTask) {
-        final AbstractDataStorage storage = resolveStorage();
         final String runFolder = resolvePathPrefix() + runId;
 
         for (Map.Entry<PipelineTask, List<RunLog>> entry : logsByTask.entrySet()) {
             final PipelineTask task = entry.getKey();
             final List<RunLog> taskLogs = entry.getValue();
-            final String taskFolder = runFolder + "/"
-                    + PipelineTask.buildTaskId(task.getName(), task.getParameters());
+            final String taskFolder = buildPath(
+                    runFolder, PipelineTask.buildTaskId(task.getName(), task.getParameters())
+            );
 
             final byte[] logContent = serializeLogs(taskLogs);
             dataStorageManager.createDataStorageFile(
@@ -93,28 +90,25 @@ public class RunLogStorageManager {
             dataStorageManager.createDataStorageFile(
                     storage.getId(), taskFolder, METADATA_FILE_NAME, new ByteArrayInputStream(metaContent));
         }
+        return buildLogsStoragePath(runId);
     }
 
     public List<RunLog> loadLogsFromStorage(final Long runId) {
-        final AbstractDataStorage storage = resolveStorage();
-        if (storage == null) {
-            return Collections.emptyList();
-        }
-        final String runFolder = resolvePathPrefix() + runId;
-        return loadAllTaskLogs(storage, runFolder);
+        return resolveStorage().map(storage -> {
+            final String runFolder = buildPath(resolvePathPrefix(), runId.toString());
+            return loadAllTaskLogs(storage, runFolder);
+        }).orElse(Collections.emptyList());
     }
 
     public List<RunLog> loadTaskLogsFromStorage(final Long runId, final String taskName) {
-        final AbstractDataStorage storage = resolveStorage();
-        if (storage == null) {
-            return Collections.emptyList();
-        }
-        final String logPath = resolvePathPrefix() + runId + "/" + taskName + "/" + LOG_FILE_NAME;
-        return loadLogsFromFile(storage, logPath);
+        return resolveStorage().map(storage -> {
+            final String logPath = buildPath(resolvePathPrefix(), runId.toString(), taskName, LOG_FILE_NAME);
+            return loadLogsFromFile(storage, logPath);
+        }).orElse(Collections.emptyList());
     }
 
     public List<PipelineTask> loadTasksFromStorage(final Long runId) {
-        final AbstractDataStorage storage = resolveStorage();
+        final AbstractDataStorage storage = resolveStorage().orElse(null);
         if (storage == null) {
             return Collections.emptyList();
         }
@@ -127,13 +121,20 @@ public class RunLogStorageManager {
             }
             return listing.getResults().stream()
                     .filter(item -> DataStorageItemType.Folder.equals(item.getType()))
-                    .map(item -> loadTaskMetadata(storage, runLogStorageFolder + "/" + item.getName()))
+                    .map(item -> loadTaskMetadata(storage, buildPath(runLogStorageFolder, item.getName())))
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());
         } catch (Exception e) {
             log.warn("Failed to load tasks from storage for run {}: {}", runId, e.getMessage());
             return Collections.emptyList();
         }
+    }
+
+    String buildLogsStoragePath(final Long runId) {
+        return resolveStorage()
+                .map(storage -> buildPath(storage.getPathMask(), resolvePathPrefix(), runId.toString()))
+                .orElse(null);
+
     }
 
     private List<RunLog> loadAllTaskLogs(final AbstractDataStorage storage, final String runFolder) {
@@ -146,7 +147,7 @@ public class RunLogStorageManager {
             return listing.getResults().stream()
                     .filter(item -> DataStorageItemType.Folder.equals(item.getType()))
                     .flatMap(item -> loadLogsFromFile(
-                            storage, runFolder + "/" + item.getName() + "/" + LOG_FILE_NAME).stream())
+                            storage, buildPath(runFolder, item.getName(), LOG_FILE_NAME)).stream())
                     .collect(Collectors.toList());
         } catch (Exception e) {
             log.warn("Failed to list logs from storage folder {}: {}", runFolder, e.getMessage());
@@ -155,7 +156,7 @@ public class RunLogStorageManager {
     }
 
     private PipelineTask loadTaskMetadata(final AbstractDataStorage storage, final String taskFolder) {
-        final String metaPath = taskFolder + "/" + METADATA_FILE_NAME;
+        final String metaPath = buildPath(taskFolder, METADATA_FILE_NAME);
         try {
             final DataStorageItemContent content = dataStorageManager.getDataStorageItemContent(
                     storage.getId(), metaPath, null);
@@ -211,23 +212,30 @@ public class RunLogStorageManager {
         }
     }
 
-    private AbstractDataStorage resolveStorage() {
+    private Optional<AbstractDataStorage> resolveStorage() {
         final String systemStorageName = preferenceManager.getPreference(
                 SystemPreferences.DATA_STORAGE_SYSTEM_DATA_STORAGE_NAME);
         if (StringUtils.isBlank(systemStorageName)) {
-            return null;
+            return Optional.empty();
         }
         try {
-            return dataStorageManager.loadByNameOrId(systemStorageName);
+            return Optional.ofNullable(dataStorageManager.loadByNameOrId(systemStorageName));
         } catch (Exception e) {
-            log.warn("Failed to resolve system storage: {}", e.getMessage());
-            return null;
+            return  Optional.empty();
         }
     }
 
+    private static String buildPath(String... parts) {
+        return Arrays.stream(parts)
+                        .map(part -> {
+                            if (part.endsWith("/")) {
+                                return part.substring(0, part.length() - 1);
+                            }
+                            return part;
+                        }).collect(Collectors.joining("/"));
+    }
+
     private String resolvePathPrefix() {
-        return StringUtils.defaultString(
-                preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_SYSTEM_RUN_LOGS_PATH_PREFIX),
-                "logs/runs/");
+        return preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_SYSTEM_RUN_LOGS_PATH_PREFIX);
     }
 }

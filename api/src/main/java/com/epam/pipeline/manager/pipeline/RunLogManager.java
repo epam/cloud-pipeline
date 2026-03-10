@@ -159,8 +159,8 @@ public class RunLogManager {
                     return tasksByName.getOrDefault(taskId, new PipelineTask(taskId));
                 }));
 
-        runLogStorageManager.saveLogsToStorage(runId, logsByTask);
-        runCRUDService.updatePipelineRunLogStoragePath(run, runLogStorageManager.buildLogsStoragePath(runId));
+        String runLogStoragePath = runLogStorageManager.saveLogsToStorage(runId, logsByTask);
+        runCRUDService.updatePipelineRunLogStoragePath(run, runLogStoragePath);
         runLogDao.deleteTaskByRunIdsIn(Collections.singletonList(runId), false);
 
         log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_LOG_MIGRATED, runId));

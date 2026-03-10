@@ -115,7 +115,7 @@ public class RunLogManagerTest extends AbstractManagerTest {
     public void migrateRunLogsToStorageShouldMigrateSuccessfully() {
         final String expectedPath = "s3://test-bucket/logs/runs/" + RUN_ID;
         when(runLogStorageManager.isRunLogMigrationConfigured()).thenReturn(true);
-        when(runLogStorageManager.buildLogsStoragePath(RUN_ID)).thenReturn(expectedPath);
+        when(runLogStorageManager.saveLogsToStorage(eq(RUN_ID), any())).thenReturn(expectedPath);
 
         final List<RunLog> logs = Arrays.asList(
                 buildRunLog(RUN_ID, TASK_NAME, TaskStatus.RUNNING, "line 1"),
@@ -167,7 +167,7 @@ public class RunLogManagerTest extends AbstractManagerTest {
         final String taskId = PipelineTask.buildTaskId(taskName, taskParams);
 
         when(runLogStorageManager.isRunLogMigrationConfigured()).thenReturn(true);
-        when(runLogStorageManager.buildLogsStoragePath(RUN_ID)).thenReturn("s3://bucket/logs/runs/" + RUN_ID);
+        when(runLogStorageManager.saveLogsToStorage(eq(RUN_ID), any())).thenReturn("s3://bucket/logs/runs/" + RUN_ID);
 
         final List<RunLog> logs = Arrays.asList(
                 buildRunLog(RUN_ID, taskId, TaskStatus.RUNNING, "starting"),
