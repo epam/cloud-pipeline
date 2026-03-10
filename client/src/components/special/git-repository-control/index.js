@@ -179,11 +179,11 @@ class GitRepositoryControl extends React.Component {
     } = this.props;
     return (
       <Popover
-        overlayClassName="git-repository-popover"
+        classNames={{root: 'git-repository-popover'}}
         title={this.getGitRepositoryPopoverTitle()}
         content={this.getGitRepositoryPopoverContent()}
-        visible={this.state.visible}
-        onVisibleChange={this.onDropdownVisibilityChanged}
+        open={this.state.visible}
+        onOpenChange={this.onDropdownVisibilityChanged}
         trigger={['click']}
         placement="bottomLeft">
         <Button

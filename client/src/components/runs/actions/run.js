@@ -885,7 +885,7 @@ export class RunConfirmation extends React.Component {
           g.storages.map(s => (
             <Select.Option key={s.id} value={s.id.toString()} name={s.name} pathmask={s.pathMask}>
               <Tooltip
-                overlayClassName="limit-mounts-warning"
+                classNames={{root: 'limit-mounts-warning'}}
                 title={s.pathMask}>
                 <div
                   style={{

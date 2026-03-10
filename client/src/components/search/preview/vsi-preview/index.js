@@ -1102,12 +1102,12 @@ class VSIPreview extends React.Component {
           {
             shareAvailable && (
               <Popover
-                visible={shareUrl !== undefined && shareUrl !== null}
+                open={shareUrl !== undefined && shareUrl !== null}
                 trigger={['click']}
                 title={false}
                 content={this.renderShareUrl()}
-                onVisibleChange={this.shareUrlVisibilityChanged}
-                overlayClassName={styles.shareUrlPopover}
+                onOpenChange={this.shareUrlVisibilityChanged}
+                classNames={{root: styles.shareUrlPopover}}
                 align={fullscreen ? {
                   points: ['tl', 'bl'],
                   offset: ['-10px']

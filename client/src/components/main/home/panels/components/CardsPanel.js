@@ -301,7 +301,7 @@ export default class CardsPanel extends React.Component {
                     {
                       overlay && (
                         <Popover
-                          onVisibleChange={onVisibleChange}
+                          onOpenChange={onVisibleChange}
                           content={overlay}>
                           <span style={style}>{title}</span>
                         </Popover>

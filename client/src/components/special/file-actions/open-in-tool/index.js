@@ -384,17 +384,17 @@ class OpenInToolAction extends React.Component {
     }
     return (
       <Popover
-        onVisibleChange={this.modalVisibilityChanged}
-        visible={modalVisible}
+        onOpenChange={this.modalVisibilityChanged}
+        open={modalVisible}
         trigger={['click']}
         title={false}
         content={this.renderModalContent()}
         placement="left"
-        overlayStyle={{
+        styles={{root: {
           width: '35vw',
           minWidth: 200
-        }}
-        overlayClassName={styles.modalOverlay}
+        }}}
+        classNames={{root: styles.modalOverlay}}
       >
         <ToolsSelector
           className={classNames(styles.link, className)}

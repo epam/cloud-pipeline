@@ -276,8 +276,8 @@ class ParametersPayloadSelector extends React.PureComponent {
     })();
     return (
       <Popover
-        visible={opened}
-        onVisibleChange={this.onOpenChange}
+        open={opened}
+        onOpenChange={this.onOpenChange}
         content={this.renderSelectorContent()}
         trigger="click"
         placement="bottomLeft"

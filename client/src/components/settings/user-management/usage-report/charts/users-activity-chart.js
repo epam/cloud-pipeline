@@ -621,8 +621,8 @@ class UsersActivityChart extends React.Component {
             {
               tooltip && (
                 <Popover
-                  visible={!!tooltip}
-                  onVisibleChange={this.tooltipVisibilityChange}
+                  open={!!tooltip}
+                  onOpenChange={this.tooltipVisibilityChange}
                   trigger={['click']}
                   content={this.renderTooltipInfo()}
                 >

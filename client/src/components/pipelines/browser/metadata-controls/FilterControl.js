@@ -190,8 +190,8 @@ class FilterControl extends React.Component {
         )}
         content={content}
         trigger={['click']}
-        visible={popoverVisible}
-        onVisibleChange={this.handlePopoverVisibleChange}
+        open={popoverVisible}
+        onOpenChange={this.handlePopoverVisibleChange}
       >
         {this.props.children}
       </Popover>

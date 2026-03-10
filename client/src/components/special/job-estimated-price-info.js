@@ -29,7 +29,7 @@ export default function JobEstimatedPriceInfo ({children}) {
           <div>This additional information will be reflected in the "Billing Reports".</div>
         </div>
       )}
-      overlayClassName="job-estimated-price-info"
+      classNames={{root: 'job-estimated-price-info'}}
       mouseEnterDelay={1}
     >
       <span className={styles.info}>

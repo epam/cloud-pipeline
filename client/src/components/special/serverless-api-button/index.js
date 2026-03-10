@@ -131,11 +131,11 @@ class ServerlessAPIButton extends React.Component {
   render () {
     return (
       <Popover
-        overlayClassName="serverless-api-popover"
+        classNames={{root: 'serverless-api-popover'}}
         title="Serverless API"
         content={this.getServerlessAPIPopoverContent()}
-        visible={this.state.visible}
-        onVisibleChange={this.onDropdownVisibilityChanged}
+        open={this.state.visible}
+        onOpenChange={this.onDropdownVisibilityChanged}
         trigger={['click']}
         placement="bottomLeft"
       >

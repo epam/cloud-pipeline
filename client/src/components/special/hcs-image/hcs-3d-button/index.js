@@ -270,17 +270,17 @@ export default class HCS3DButton extends React.Component {
         </Button>
         <Popover
           getPopupContainer={triggerNode => triggerNode.parentNode}
-          onVisibleChange={this.visibilityChanged}
-          visible={modalVisible}
+          onOpenChange={this.visibilityChanged}
+          open={modalVisible}
           trigger="click"
           title={false}
           content={this.renderDropdownContent()}
           placement="bottom"
-          overlayStyle={{
+          styles={{root: {
             width: '35vw',
             minWidth: 350
-          }}
-          overlayClassName={styles.modalOverlay}
+          }}}
+          classNames={{root: styles.modalOverlay}}
           maskClosable={false}
         >
           <Button size={size} style={{

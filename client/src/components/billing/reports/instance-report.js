@@ -189,7 +189,7 @@ function renderResourcesSubData (
           return (
             <Tooltip
               title={fullName}
-              overlayStyle={{wordWrap: 'break-word'}}
+              styles={{root: {wordWrap: 'break-word'}}}
             >
               {value}
             </Tooltip>

@@ -668,7 +668,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
           }
         >
           <Tooltip
-            overlayClassName="search-hints-overlay"
+            classNames={{root: 'search-hints-overlay'}}
             placement={hintsTooltipPlacement}
             title={this.renderHints()}>
             <div

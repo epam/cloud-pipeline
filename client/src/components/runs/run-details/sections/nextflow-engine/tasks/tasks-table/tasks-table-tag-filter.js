@@ -80,8 +80,8 @@ class TasksTableTagFilter extends React.Component {
     return (
       <Popover
         content={filterContent}
-        visible={visible}
-        onVisibleChange={this.onTableFilterVisibilityChanged}
+        open={visible}
+        onOpenChange={this.onTableFilterVisibilityChanged}
         trigger="click"
       >
         <div

@@ -49,7 +49,7 @@ const StatusIcon = (props) => {
       );
       return (
         <Tooltip
-          overlayClassName="run-status-tooltip-container"
+          classNames={{root: 'run-status-tooltip-container'}}
           title={tooltip}
           mouseEnterDelay={1}
           placement={props.tooltipPlacement}>

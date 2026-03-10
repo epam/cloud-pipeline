@@ -1769,17 +1769,19 @@ class HcsCellSelector extends React.Component {
                 <ShrinkOutlined className={classNames('cp-hcs-zoom-button', styles.zoomControlBtn)} onClick={this.fit} />
               )
             }
-            <MinusCircleOutlined className={classNames(
-              'cp-hcs-zoom-button',
-              {'cp-disabled': !this.zoomOutAvailable},
-              styles.zoomControlBtn
-            )}
+            <MinusCircleOutlined
+              className={classNames(
+                'cp-hcs-zoom-button',
+                {'cp-disabled': !this.zoomOutAvailable},
+                styles.zoomControlBtn
+              )}
               onClick={() => this.zoom(-1)} />
-            <PlusCircleOutlined className={classNames(
-              'cp-hcs-zoom-button',
-              {'cp-disabled': !this.zoomInAvailable},
-              styles.zoomControlBtn
-            )}
+            <PlusCircleOutlined
+              className={classNames(
+                'cp-hcs-zoom-button',
+                {'cp-disabled': !this.zoomInAvailable},
+                styles.zoomControlBtn
+              )}
               onClick={() => this.zoom(1)} />
           </div>
         </div>
@@ -1795,9 +1797,9 @@ class HcsCellSelector extends React.Component {
           {
             this.hoveredElement && showElementHint && (
               <Tooltip
-                visible
+                open
                 title={(<ElementHint element={this.hoveredElement} />)}
-                overlayStyle={{pointerEvents: 'none'}}
+                styles={{root: {pointerEvents: 'none'}}}
               >
                 <div
                   className={styles.tooltipPoint}

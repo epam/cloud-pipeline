@@ -99,7 +99,7 @@ function RestrictedImagesInfo ({
     <div className={styles.container}>
       <Popover
         content={renderContent()}
-        overlayClassName={styles.overlay}
+        classNames={{root: styles.overlay}}
       >
         <ExclamationCircleOutlined className={classNames('cp-icon-larger', 'cp-danger')} />
       </Popover>

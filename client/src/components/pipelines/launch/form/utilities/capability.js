@@ -112,7 +112,7 @@ const Capability = ({capability, selected, style, nested = [], awsRegions}) => {
           </div>
         )}
         trigger={['hover']}
-        overlayStyle={{zIndex: 1071}}
+        styles={{root: {zIndex: 1071}}}
         placement="left"
       >
         <div
