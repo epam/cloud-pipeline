@@ -490,7 +490,7 @@ class GPUInfoTab extends React.Component {
             {/* //TODO: wait for API support */}
             {/* <div style={{display: 'flex', gap: '5px'}}>
               <span>GPU:</span>
-              <Dropdown overlay={gpuMenu}>
+              <Dropdown menu={{items: ['All', ...gpuKeys].map(key => ({key, label: key})), onClick: onGPUChange}}>
                 <a>
                   {this.state.selectedGPU} <DownOutlined />
                 </a>

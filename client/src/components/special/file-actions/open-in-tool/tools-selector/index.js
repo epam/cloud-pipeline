@@ -17,10 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {
-  Menu,
-  Dropdown
-} from 'antd';
+import {Dropdown} from 'antd';
 import {DownOutlined} from '@ant-design/icons';
 import ToolImage from '../../../../../models/tools/ToolImage';
 import styles from './tool-selector.css';
@@ -77,12 +74,12 @@ class ToolsSelector extends React.Component {
     this.onClick(Number(key), domEvent);
   };
 
-  renderDropdownMenu = () => {
+  getMenuItems = () => {
     const {tools} = this.props;
     if (!tools || !tools.length) {
-      return null;
+      return [];
     }
-    const items = tools.map(tool => ({
+    return tools.map(tool => ({
       key: tool.id,
       className: styles.dropdownItem,
       label: (
@@ -97,12 +94,6 @@ class ToolsSelector extends React.Component {
         </>
       )
     }));
-    return (
-      <Menu
-        onClick={this.onMenuClick}
-        items={items}
-      />
-    );
   };
 
   render () {
@@ -132,7 +123,7 @@ class ToolsSelector extends React.Component {
         </span>
       ) : (
         <Dropdown
-          popupRender={() => this.renderDropdownMenu()}
+          menu={{items: this.getMenuItems(), onClick: this.onMenuClick}}
         >
           <span
             className={classNames(styles.selectorBtn, className)}
