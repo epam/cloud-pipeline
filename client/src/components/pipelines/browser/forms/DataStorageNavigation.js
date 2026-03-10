@@ -163,27 +163,20 @@ export default class DataStorageNavigation extends React.Component {
         onClick={this.setEditableMode(true)}>
         {!this.state.editable ? (
           <div className={styles.breadcrumbsContainer}>
-            <Breadcrumb style={{padding: 5, marginLeft: 3}}>
-              {this.getComponents().map(part => {
-                if (part.canNavigate) {
-                  return (
-                    <Breadcrumb.Item
-                      className={styles.breadcrumbItem}
-                      key={part.key}>
-                      <a onClick={(event) => this.navigate(event, part.url)}>
-                        {decodeURIComponent(part.title)}
-                      </a>
-                    </Breadcrumb.Item>
-                  );
-                } else {
-                  return (
-                    <Breadcrumb.Item
-                      className={styles.breadcrumbItem}
-                      key={part.key}>{decodeURIComponent(part.title)}</Breadcrumb.Item>
-                  );
-                }
-              })}
-            </Breadcrumb>
+            <Breadcrumb
+              style={{padding: 5, marginLeft: 3}}
+              items={this.getComponents().map(part => ({
+                key: part.key,
+                className: styles.breadcrumbItem,
+                title: part.canNavigate
+                  ? (
+                    <a onClick={(event) => this.navigate(event, part.url)}>
+                      {decodeURIComponent(part.title)}
+                    </a>
+                  )
+                  : decodeURIComponent(part.title)
+              }))}
+            />
             {showCopyPath ? (
               <LinkOutlined
                 className={classNames('cp-primary', styles.copyPath, {

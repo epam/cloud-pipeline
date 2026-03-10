@@ -592,29 +592,27 @@ export default class PipelineCode extends Component {
         isCurrent: false
       });
     }
+    const items = navigationParts.map((part, index) => {
+      let title;
+      if (part.isCurrent) {
+        title = <b>{part.name}</b>;
+      } else if (part.isCreateNewFolder) {
+        title = (
+          <Button
+            onClick={() => this.openCreateFolderDialog()}
+            size="small"
+            disabled={this.props.readOnly}
+          >
+            <PlusOutlined />
+          </Button>
+        );
+      } else {
+        title = <a onClick={() => this.navigateToFolder(part)}>{part.name}</a>;
+      }
+      return {key: `navigation_${index}`, title};
+    });
     return (
-      <Breadcrumb className={styles.navigationItem}>
-        {navigationParts.map((part, index) => {
-          let breadcrumbContent = <a onClick={() => this.navigateToFolder(part)}>{part.name}</a>;
-          if (part.isCurrent) {
-            breadcrumbContent = <b>{part.name}</b>;
-          } else if (part.isCreateNewFolder) {
-            breadcrumbContent = (
-              <Button
-                onClick={() => this.openCreateFolderDialog()}
-                size="small"
-                disabled={this.props.readOnly}
-              >
-                <PlusOutlined />
-              </Button>
-            );
-          }
-          return (
-            <Breadcrumb.Item key={`navigation_${index}`}>
-              {breadcrumbContent}
-            </Breadcrumb.Item>);
-        })}
-      </Breadcrumb>
+      <Breadcrumb className={styles.navigationItem} items={items} />
     );
   };
 
