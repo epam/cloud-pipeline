@@ -21,7 +21,7 @@ import {
   Provider as MobxProvider} from 'mobx-react';
 import {action, observable, makeObservable} from 'mobx';
 import classNames from 'classnames';
-import GridLayout from 'react-grid-layout';
+import GridLayout from 'react-grid-layout/legacy';
 import {ArrowsAltOutlined} from '@ant-design/icons';
 import * as GeneralReportLayout from './general-report';
 import * as InstanceReportLayout from './instance-report';
