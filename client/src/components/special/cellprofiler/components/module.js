@@ -52,8 +52,8 @@ function Circle ({className, pending, empty}) {
 function CellProfilerModuleHeaderRenderer (props) {
   const {
     cpModule,
-    movable,
-    removable,
+    movable = true,
+    removable = true,
     hasErrors = false
   } = props;
   if (!cpModule) {
@@ -216,11 +216,6 @@ CellProfilerModuleHeaderRenderer.propTypes = {
   cpModule: PropTypes.object,
   removable: PropTypes.bool,
   movable: PropTypes.bool
-};
-
-CellProfilerModuleHeaderRenderer.defaultProps = {
-  removable: true,
-  movable: true
 };
 
 const CellProfilerModule = observer(CellProfilerModuleRenderer);

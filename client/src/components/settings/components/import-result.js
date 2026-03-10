@@ -29,7 +29,7 @@ function ImportResult (
     logs,
     onClose,
     visible,
-    mode
+    mode = 'modal'
   }
 ) {
   let content;
@@ -80,10 +80,6 @@ ImportResult.propTypes = {
   onClose: PropTypes.func,
   visible: PropTypes.bool,
   mode: PropTypes.oneOf(['inline', 'modal'])
-};
-
-ImportResult.defaultProps = {
-  mode: 'modal'
 };
 
 export default ImportResult;

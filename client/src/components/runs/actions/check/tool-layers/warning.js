@@ -38,10 +38,12 @@ const WarningMessage = (opts) => {
   );
 };
 
-function ToolLayersCheckWarning (props) {
+function ToolLayersCheckWarning ({type = 'warning', skip = false, ...props}) {
   return (
     <RunOperationWarning
       {...props}
+      type={type}
+      skip={skip}
       objectId={props.toolId}
       check={checkToolLayers}
       warning={WarningMessage}
@@ -56,11 +58,6 @@ ToolLayersCheckWarning.propTypes = {
   skip: PropTypes.bool,
   type: PropTypes.string,
   showIcon: PropTypes.bool
-};
-
-ToolLayersCheckWarning.defaultProps = {
-  type: 'warning',
-  skip: false
 };
 
 export {WarningMessage};

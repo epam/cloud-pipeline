@@ -72,8 +72,4 @@ Panel.propTypes = {
   visible: PropTypes.bool
 };
 
-Panel.defaultProps = {
-  visible: true
-};
-
 export default Panel;

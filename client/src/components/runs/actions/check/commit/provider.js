@@ -29,10 +29,11 @@ const {
   getCheckResult
 } = generateProvider({
   check: commitCheck,
-  warning: WarningMessage
+  warning: WarningMessage,
+  warningDefaultType: 'warning'
 });
 
-function CommitCheckProvider ({active, children, runId, skipContainerCheck}) {
+function CommitCheckProvider ({active = true, children, runId, skipContainerCheck}) {
   return (
     <CheckProvider
       active={active}
@@ -49,9 +50,6 @@ CommitCheckProvider.propTypes = {
   children: PropTypes.node,
   active: PropTypes.bool
 };
-CommitCheckProvider.defaultProps = {
-  active: true
-};
 CommitCheckProvider.inject = inject;
 CommitCheckProvider.store = store;
 CommitCheckProvider.getCheckInfo = getCheckInfo;
@@ -61,9 +59,6 @@ CommitCheckProvider.Warning.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
   type: PropTypes.string
-};
-CommitCheckProvider.Warning.defaultProps = {
-  type: 'warning'
 };
 
 export default CommitCheckProvider;

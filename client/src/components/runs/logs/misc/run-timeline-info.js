@@ -225,10 +225,6 @@ RunTimelineInfo.propTypes = {
   dateFormat: PropTypes.string
 };
 
-RunTimelineInfo.defaultProps = {
-  showDetails: true
-};
-
 RunTimelineInfo.Details = observer(RunTimelineInfoDetails);
 
 export default observer(RunTimelineInfo);

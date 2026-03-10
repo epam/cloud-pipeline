@@ -364,12 +364,18 @@ class CommitRunForm extends localization.LocalizedReactComponent {
 function CommitRunFormHOC (props) {
   const {
     runId,
-    visible
+    visible,
+    displayDeleteRuntimeFilesSelector = true,
+    displayStopPipelineSelector = true
   } = props;
   return (
     <LayersCheckProvider runId={runId} active={visible}>
       <CommitCheckProvider runId={runId} active={visible}>
-        <CommitRunForm {...props} />
+        <CommitRunForm
+          {...props}
+          displayDeleteRuntimeFilesSelector={displayDeleteRuntimeFilesSelector}
+          displayStopPipelineSelector={displayStopPipelineSelector}
+        />
       </CommitCheckProvider>
     </LayersCheckProvider>
   );
@@ -383,11 +389,6 @@ CommitRunFormHOC.propTypes = {
   visible: PropTypes.bool,
   defaultDockerImage: PropTypes.string
 };
-CommitRunFormHOC.defaultProps = {
-  displayDeleteRuntimeFilesSelector: true,
-  displayStopPipelineSelector: true
-};
 CommitRunForm.propTypes = CommitRunFormHOC.propTypes;
-CommitRunForm.defaultProps = CommitRunFormHOC.defaultProps;
 
 export default CommitRunFormHOC;

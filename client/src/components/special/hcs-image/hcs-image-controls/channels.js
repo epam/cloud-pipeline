@@ -28,7 +28,7 @@ import styles from './hcs-image-controls.css';
 
 function HcsImageChannelsControl (
   {
-    allowLockChannels,
+    allowLockChannels = true,
     hcsViewerState
   }
 ) {
@@ -103,10 +103,6 @@ function HcsImageChannelsControl (
 
 HcsImageChannelsControl.propTypes = {
   allowLockChannels: PropTypes.bool
-};
-
-HcsImageChannelsControl.defaultProps = {
-  allowLockChannels: true
 };
 
 export default inject('hcsViewerState')(observer(HcsImageChannelsControl));

@@ -80,6 +80,7 @@ export default function generateProvider (options) {
     check,
     checkOptionsComparator = ((a, b) => a === b),
     warning,
+    warningDefaultType = 'error',
     storeName = `checkRunStore${storeIndex}`
   } = options || {};
   /**
@@ -188,7 +189,7 @@ export default function generateProvider (options) {
     const {
       className,
       style,
-      type = 'error',
+      type = warningDefaultType,
       showIcon
     } = props;
     const {
@@ -221,9 +222,6 @@ export default function generateProvider (options) {
     style: PropTypes.object,
     type: PropTypes.string,
     showIcon: PropTypes.bool
-  };
-  WrappedWarning.defaultProps = {
-    type: 'error'
   };
 
   return {

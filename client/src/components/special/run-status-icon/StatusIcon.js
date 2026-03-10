@@ -23,7 +23,7 @@ import StatusTooltips from './run-status-tooltips';
 import {getStatus} from './run-statuses';
 import '../../../staticStyles/tooltip-without-arrow.css';
 
-const StatusIcon = (props) => {
+const StatusIcon = ({displayTooltip = true, ...props}) => {
   const status = getStatus(props);
   const IconComponent = getRunStatusIcon(status, props.iconSet);
   const className = [props.className, DefaultStyles[status]].filter(Boolean).join(' ');
@@ -38,7 +38,7 @@ const StatusIcon = (props) => {
   const result = IconComponent
     ? <IconComponent className={className} style={iconStyle} />
     : null;
-  if (props.displayTooltip && StatusTooltips.hasOwnProperty(status)) {
+  if (displayTooltip && StatusTooltips.hasOwnProperty(status)) {
     const {description, title} = StatusTooltips[status];
     if (!!title || !!description) {
       const tooltip = (
@@ -83,10 +83,6 @@ StatusIcon.propTypes = {
   run: PropTypes.object,
   status: PropTypes.string,
   small: PropTypes.bool
-};
-
-StatusIcon.defaultProps = {
-  displayTooltip: true
 };
 
 export default StatusIcon;

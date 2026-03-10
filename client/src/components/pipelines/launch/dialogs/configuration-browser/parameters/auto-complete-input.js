@@ -162,22 +162,21 @@ AutoCompleteInput.defaultProps = {
   size: 'default'
 };
 
-function ParametersAutoCompleteInputComponent (props) {
-  const {
-    className,
-    style,
-    value,
-    disabled,
-    size,
-    error,
-    addonBefore,
-    addonAfter,
-    parametersStore,
-    autoCompleteOptions = {},
-    useEntityFields = true,
-    useProjectFields = true,
-    onChange
-  } = props;
+function ParametersAutoCompleteInputComponent ({
+  className,
+  style,
+  value,
+  disabled,
+  size,
+  error,
+  addonBefore,
+  addonAfter,
+  parametersStore,
+  autoCompleteOptions = {},
+  useEntityFields = true,
+  useProjectFields = true,
+  onChange
+}) {
   const options = {
     ...autoCompleteOptions,
     this: useEntityFields ? parametersStore.entityTypeFields : [],
@@ -212,10 +211,6 @@ ParametersAutoCompleteInputComponent.propTypes = {
   autoCompleteOptions: PropTypes.object,
   useEntityFields: PropTypes.bool,
   useProjectFields: PropTypes.bool
-};
-ParametersAutoCompleteInputComponent.defaultProps = {
-  useEntityFields: true,
-  useProjectFields: true
 };
 
 const ParametersAutoCompleteInput = injectParametersStore(
