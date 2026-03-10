@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {computed, observable, makeObservable} from 'mobx';
+import {computed, observable, makeObservable, override} from 'mobx';
 import {AnalysisModule} from './base';
 import {HCSSourceFile, sourceFileOptionsSetsEqual} from '../common/analysis-file';
 import {AnalysisTypes} from '../common/analysis-types';
@@ -44,7 +44,7 @@ class NamesAndTypes extends AnalysisModule {
       zCoordinates: computed,
       wellFields: computed,
       commonFields: computed,
-      outputs: computed
+      outputs: override
     });
     this.title = 'Input';
     this.changeFiles(sources);

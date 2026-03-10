@@ -303,34 +303,20 @@ class CopyMetadataEntitiesDialog extends React.Component {
         </span>
       );
     };
-    const generateTreeItems = (items) => formatTreeItems(
+    const getTreeData = (items) => formatTreeItems(
       items,
       {preferences: this.props.preferences}
     )
       .filter(item => item.searchHit)
-      .map(item => {
-        if (item.isLeaf) {
-          return (
-            <Tree.TreeNode
-              className={styles.treeItem}
-              title={renderItemTitle(item)}
-              key={item.key}
-              isLeaf={item.isLeaf}
-            />
-          );
-        } else {
-          return (
-            <Tree.TreeNode
-              className={styles.treeItem}
-              title={renderItemTitle(item)}
-              key={item.key}
-              isLeaf={item.isLeaf}
-            >
-              {generateTreeItems(item.children)}
-            </Tree.TreeNode>
-          );
-        }
-      });
+      .map(item => ({
+        key: item.key,
+        title: renderItemTitle(item),
+        isLeaf: item.isLeaf,
+        className: styles.treeItem,
+        ...(item.children && !item.isLeaf
+          ? {children: getTreeData(item.children)}
+          : {})
+      }));
     return (
       <Splitter>
         <Splitter.Panel defaultSize={300} min={200} resizable>
@@ -345,13 +331,13 @@ class CopyMetadataEntitiesDialog extends React.Component {
               <Spin spinning={pending}>
                 <Tree
                   disabled={disabled}
+                  treeData={getTreeData(tree)}
                   onSelect={onSelect}
                   onExpand={onExpand}
                   checkStrictly
                   expandedKeys={expandedKeys}
-                  selectedKeys={selectedKeys} >
-                  {generateTreeItems(tree)}
-                </Tree>
+                  selectedKeys={selectedKeys}
+                />
               </Spin>
             </div>
           </div>

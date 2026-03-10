@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {action, observable, makeObservable, override} from 'mobx';
+import {action, observable, makeObservable} from 'mobx';
 import {fadeoutHex} from '../../../../../themes/utilities/color-utilities';
 
 const PALETTE = [
@@ -127,7 +127,7 @@ export default class GraphicsOutputConfiguration {
       configurations: observable,
       hidden: observable,
       _overlayImage: observable,
-      update: override,
+      update: action,
       moveDown: action,
       moveUp: action
     });

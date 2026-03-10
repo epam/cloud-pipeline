@@ -286,40 +286,19 @@ class ConfigurationBrowser extends React.Component {
         </span>
       );
     };
-    const generateTreeItems = (items) => {
-      return (items || [])
-        .map(item => {
-          if (item.isLeaf) {
-            return (
-              <Tree.TreeNode
-                className={
-                  classNames(
-                    `configurations-library-tree-node-${item.key}`,
-                    styles.treeItem
-                  )
-                }
-                title={renderTreeItem(item)}
-                key={item.key}
-                isLeaf={item.isLeaf}
-              />
-            );
-          }
-          return (
-            <Tree.TreeNode
-              className={
-                classNames(
-                  `configurations-library-tree-node-${item.key}`,
-                  styles.treeItem
-                )
-              }
-              title={renderTreeItem(item)}
-              key={item.key}
-              isLeaf={item.isLeaf}
-            >
-              {generateTreeItems(item.children)}
-            </Tree.TreeNode>
-          );
-        });
+    const getTreeData = (items) => {
+      return (items || []).map(item => ({
+        key: item.key,
+        title: renderTreeItem(item),
+        isLeaf: item.isLeaf,
+        className: classNames(
+          `configurations-library-tree-node-${item.key}`,
+          styles.treeItem
+        ),
+        ...(item.children && !item.isLeaf
+          ? {children: getTreeData(item.children)}
+          : {})
+      }));
     };
     const {selection = []} = this.state;
     const onSelect = (keys = []) => {
@@ -337,11 +316,10 @@ class ConfigurationBrowser extends React.Component {
     return (
       <Tree
         checkStrictly
+        treeData={getTreeData(folderStructure)}
         onSelect={onSelect}
         selectedKeys={selection}
-      >
-        {generateTreeItems(folderStructure)}
-      </Tree>
+      />
     );
   };
 

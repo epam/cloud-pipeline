@@ -1083,7 +1083,7 @@ class HcsImage extends React.Component {
       if (viewSettings.plate) {
         parts.push((
           <HcsCellSelector
-            we
+            key="plate"
             className={styles.selectorContainer}
             title="Plate"
             cells={sequenceInfo.wells}

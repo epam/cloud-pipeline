@@ -198,45 +198,32 @@ export default class MetadataBrowser extends React.Component {
     );
   }
 
-  generateTreeItems (items) {
+  getTreeData (items) {
     if (!items) {
       return [];
     }
     return formatTreeItems(items, {preferences: this.props.preferences})
-      .map(item => {
-        if (item.isLeaf) {
-          return (
-            <Tree.TreeNode
-              className={`pipelines-library-tree-node-${item.key}`}
-              title={this.renderItemTitle(item)}
-              key={item.key}
-              isLeaf={item.isLeaf}
-            />
-          );
-        } else {
-          return (
-            <Tree.TreeNode
-              className={`pipelines-library-tree-node-${item.key}`}
-              title={this.renderItemTitle(item)}
-              key={item.key}
-              isLeaf={item.isLeaf}>
-              {this.generateTreeItems(item.children)}
-            </Tree.TreeNode>
-          );
-        }
-      });
+      .map(item => ({
+        key: item.key,
+        title: this.renderItemTitle(item),
+        isLeaf: item.isLeaf,
+        className: `pipelines-library-tree-node-${item.key}`,
+        ...(item.children && !item.isLeaf
+          ? {children: this.getTreeData(item.children)}
+          : {})
+      }));
   }
 
   onExpand = (expandedKeys, {expanded, node}) => {
-    const item = getTreeItemByKey(node.props.eventKey, this.rootItems);
+    const item = getTreeItemByKey(node.key, this.rootItems);
     if (item) {
       expandItem(item, expanded);
     }
     this.setState({expandedKeys: getExpandedKeys(this.rootItems)});
   };
 
-  onSelect = (selectedKeys, node) => {
-    const item = getTreeItemByKey(node.node.props.eventKey, this.rootItems);
+  onSelect = (selectedKeys, {node}) => {
+    const item = getTreeItemByKey(node.key, this.rootItems);
     if (item.type === ItemTypes.metadataFolder) {
       this.onSelectMetadataFolder(item.id);
     } else if (item.type === ItemTypes.metadata) {
@@ -247,8 +234,8 @@ export default class MetadataBrowser extends React.Component {
     this.onExpand(
       this.state.expandedKeys,
       {
-        expanded: !node.node.props.expanded,
-        node: node.node
+        expanded: !node.isLeaf && !this.state.expandedKeys.includes(node.key),
+        node
       }
     );
   };
@@ -300,14 +287,13 @@ export default class MetadataBrowser extends React.Component {
     return (
       <Tree
         className={styles.libraryTree}
+        treeData={this.getTreeData(this.rootItems)}
         onSelect={this.onSelect}
         onExpand={this.onExpand}
         checkStrictly
         expandedKeys={this.state.expandedKeys}
         selectedKeys={this.state.selectedKeys}
-      >
-        {this.generateTreeItems(this.rootItems)}
-      </Tree>
+      />
     );
   }
 

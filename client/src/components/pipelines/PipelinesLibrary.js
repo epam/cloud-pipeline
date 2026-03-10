@@ -436,36 +436,24 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
     );
   }
 
-  generateTreeItems (items) {
+  getTreeData (items) {
     return formatTreeItems(items, {preferences: this.props.preferences})
-      .map(item => {
-        if (item.isLeaf) {
-          return (
-            <Tree.TreeNode
-              className={`pipelines-library-tree-node-${item.key}`}
-              title={this.renderItemTitle(item)}
-              key={item.key}
-              isLeaf={item.isLeaf}
-            />
-          );
-        } else {
-          return (
-            <Tree.TreeNode
-              className={`pipelines-library-tree-node-${item.key}`}
-              title={this.renderItemTitle(item)}
-              key={item.key}
-              isLeaf={item.isLeaf}>
-              {this.generateTreeItems(item.children)}
-            </Tree.TreeNode>
-          );
-        }
-      });
+      .map(item => ({
+        key: item.key,
+        title: this.renderItemTitle(item),
+        isLeaf: item.isLeaf,
+        className: `pipelines-library-tree-node-${item.key}`,
+        ...(item.children && !item.isLeaf
+          ? {children: this.getTreeData(item.children)}
+          : {})
+      }));
   }
 
   generateTree () {
     return (
       <Tree
         className={`${styles.libraryTree} pipeline-library`}
+        treeData={this.getTreeData(this.state.rootItems)}
         onSelect={this.onSelect}
         onExpand={this.onExpand}
         checkStrictly
@@ -474,9 +462,8 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
         onDragStart={this.onDragStart}
         onDrop={this.onDrop}
         expandedKeys={this.state.expandedKeys}
-        selectedKeys={this.state.selectedKeys} >
-        {this.generateTreeItems(this.state.rootItems)}
-      </Tree>
+        selectedKeys={this.state.selectedKeys}
+      />
     );
   }
 

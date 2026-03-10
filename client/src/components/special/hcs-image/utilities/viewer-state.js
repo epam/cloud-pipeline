@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {makeAutoObservable} from 'mobx';
+import {makeObservable, observable, computed, action} from 'mobx';
 import HCSBaseState from './base-state';
 
 class DelayedSliceValue {
@@ -74,7 +74,17 @@ class ChannelState {
    * @param {ChannelOptions} options
    */
   constructor (options) {
-    makeAutoObservable(this);
+    makeObservable(this, {
+      index: observable,
+      identifier: observable,
+      name: observable,
+      visible: observable,
+      domain: observable,
+      contrastLimits: observable,
+      color: observable,
+      pixels: observable,
+      update: action
+    });
     this.update(options);
   }
 
@@ -148,10 +158,66 @@ class ViewerState extends HCSBaseState {
 
   constructor (viewer) {
     super(viewer, 'viewerStateChanged');
-    makeAutoObservable(this);
     this.xSliceDelayed = new DelayedSliceValue(this.set3D.bind(this), 'xSlice');
     this.ySliceDelayed = new DelayedSliceValue(this.set3D.bind(this), 'ySlice');
     this.zSliceDelayed = new DelayedSliceValue(this.set3D.bind(this), 'zSlice');
+    makeObservable(this, {
+      loader: observable,
+      use3D: observable,
+      volumetricViewerAvailable: observable,
+      useLens: observable,
+      useColorMap: observable,
+      colorMap: observable,
+      lensEnabled: observable,
+      lensChannel: observable,
+      pending: observable,
+      isRGB: observable,
+      xSlice: observable,
+      xSliceRange: observable,
+      ySlice: observable,
+      ySliceRange: observable,
+      zSlice: observable,
+      zSliceRange: observable,
+      xSliceEnabled: observable,
+      ySliceEnabled: observable,
+      zSliceEnabled: observable,
+      selection: observable,
+      dimensions: observable,
+      downsamplingModes: observable,
+      downsamplingMode: observable,
+      renderingModes: observable,
+      renderingMode: observable,
+      channels: observable,
+      lockedChannels: observable,
+      imageZPosition: observable,
+      fieldID: observable,
+      videoPayload: observable,
+      listeners: observable,
+      xSliceDelayed: observable,
+      ySliceDelayed: observable,
+      zSliceDelayed: observable,
+      allChannelsLocked: computed,
+      addEventListener: action,
+      removeEventListener: action,
+      emitOnChange: action,
+      onStateChanged: action,
+      changeChannelVisibility: action,
+      changeChannelContrastLimits: action,
+      changeChannelColor: action,
+      setChannelLocked: action,
+      setChannelsLocked: action,
+      changeColorMap: action,
+      set3D: action,
+      change3dMode: action,
+      changeDownsamplingMode: action,
+      changeRenderingMode: action,
+      changeXSlice: action,
+      changeYSlice: action,
+      changeZSlice: action,
+      changeLensMode: action,
+      changeLensChannel: action,
+      changeGlobalZPosition: action
+    });
   }
 
   addEventListener = (listener) => {
