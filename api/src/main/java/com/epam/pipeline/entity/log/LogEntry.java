@@ -17,12 +17,14 @@
 package com.epam.pipeline.entity.log;
 
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
 @Data
 @Builder
+@Jacksonized
 public class LogEntry {
     private Long eventId;
     private String hostname;

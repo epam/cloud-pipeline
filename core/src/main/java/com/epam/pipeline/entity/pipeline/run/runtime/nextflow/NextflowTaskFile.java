@@ -18,11 +18,13 @@ package com.epam.pipeline.entity.pipeline.run.runtime.nextflow;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 import lombok.Getter;
 
 @Data
 @Builder
+@Jacksonized
 @AllArgsConstructor
 public class NextflowTaskFile {
 

@@ -20,6 +20,7 @@ import com.epam.pipeline.dto.PermissionVO;
 import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 import java.util.List;
@@ -27,6 +28,7 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @Builder
+@Jacksonized
 public class StoragePathPermissionsVO {
     /**
      * Full path for storage item from storage root.

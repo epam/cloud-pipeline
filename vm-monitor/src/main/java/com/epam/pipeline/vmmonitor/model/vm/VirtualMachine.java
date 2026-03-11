@@ -18,6 +18,7 @@ package com.epam.pipeline.vmmonitor.model.vm;
 
 import com.epam.pipeline.entity.region.CloudProvider;
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -25,6 +26,7 @@ import java.util.Map;
 
 @Data
 @Builder
+@Jacksonized
 public class VirtualMachine {
 
     private String instanceId;

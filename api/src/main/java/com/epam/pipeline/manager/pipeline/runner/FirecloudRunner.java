@@ -38,6 +38,7 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.utils.PasswordGenerator;
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
@@ -235,6 +236,7 @@ public class FirecloudRunner implements ExecutionRunner<FirecloudRunConfiguratio
 
     @Data
     @Builder
+    @Jacksonized
     private static final class FirecloudConfiguration {
 
         private String firecloudLauncherCmd;

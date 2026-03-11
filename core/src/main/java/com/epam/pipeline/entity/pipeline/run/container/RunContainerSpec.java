@@ -40,6 +40,7 @@ import java.util.stream.Collectors;
  * */
 @Data
 @Builder
+@Jacksonized
 @ToString
 public class RunContainerSpec {
 

@@ -35,6 +35,7 @@ import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.Revision;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -247,6 +248,7 @@ public class PipelineSynchronizer implements ElasticsearchSynchronizer {
     @Data
     @AllArgsConstructor
     @Builder
+    @Jacksonized
     private static class PipelineDocRequests {
 
         private List<DocWriteRequest> pipelineRequests;

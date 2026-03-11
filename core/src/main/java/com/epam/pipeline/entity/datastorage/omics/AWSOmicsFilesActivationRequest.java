@@ -18,12 +18,14 @@ package com.epam.pipeline.entity.datastorage.omics;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 import java.util.List;
 
 @Data
 @Builder
+@Jacksonized
 @AllArgsConstructor
 public class AWSOmicsFilesActivationRequest {
     private final List<String> readSetIds;

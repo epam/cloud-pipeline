@@ -16,10 +16,12 @@
 package com.epam.pipeline.entity.datastorage;
 
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 @Data
 @Builder
+@Jacksonized
 public class LustreFS {
 
     private String id;

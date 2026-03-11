@@ -17,18 +17,21 @@
 package com.epam.pipeline.entity.log.storage;
 
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 import java.util.List;
 
 @Data
 @Builder
+@Jacksonized
 public class StorageRequestStat {
     private Long userId;
     private List<Entry> statistics;
 
     @Data
     @Builder
+    @Jacksonized
     public static class Entry {
         private Integer id;
         private String storageName;

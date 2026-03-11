@@ -17,12 +17,14 @@
 package com.epam.pipeline.entity.pipeline;
 
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 import java.util.List;
 
 @Data
 @Builder
+@Jacksonized
 public class ToolFingerprint {
 
     private Long id;

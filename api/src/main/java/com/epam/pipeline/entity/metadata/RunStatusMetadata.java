@@ -18,6 +18,7 @@ package com.epam.pipeline.entity.metadata;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 import java.util.Date;
@@ -25,6 +26,7 @@ import java.util.Date;
 @Data
 @AllArgsConstructor
 @Builder
+@Jacksonized
 public class RunStatusMetadata {
     private Long runId;
     private String status;

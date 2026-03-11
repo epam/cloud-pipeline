@@ -19,6 +19,7 @@ package com.epam.pipeline.entity.git.report;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
 import io.reflectoring.diffparser.api.model.Diff;
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 
@@ -27,6 +28,7 @@ import lombok.Data;
  */
 @Data
 @Builder
+@Jacksonized
 public class GitParsedDiffEntry {
     private GitReaderRepositoryCommit commit;
     private Diff diff;

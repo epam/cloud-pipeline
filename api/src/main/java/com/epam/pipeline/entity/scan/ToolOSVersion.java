@@ -17,6 +17,7 @@
 package com.epam.pipeline.entity.scan;
 
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -25,6 +26,7 @@ import java.util.Arrays;
 
 @Data
 @Builder
+@Jacksonized
 @RequiredArgsConstructor
 public class ToolOSVersion {
     private final String distribution;

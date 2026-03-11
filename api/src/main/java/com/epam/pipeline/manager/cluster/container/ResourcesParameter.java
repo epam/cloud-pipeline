@@ -17,10 +17,12 @@
 package com.epam.pipeline.manager.cluster.container;
 
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 @Data
 @Builder
+@Jacksonized
 public class ResourcesParameter {
     private final String name;
     private final boolean limits;

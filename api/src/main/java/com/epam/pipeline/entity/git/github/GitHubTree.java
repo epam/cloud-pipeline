@@ -17,12 +17,14 @@
 package com.epam.pipeline.entity.git.github;
 
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 import java.util.List;
 
 @Data
 @Builder
+@Jacksonized
 public class GitHubTree {
     private String sha;
     private List<GitHubTreeContent> tree;

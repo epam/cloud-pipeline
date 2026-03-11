@@ -19,11 +19,13 @@ package com.epam.pipeline.entity.git.bitbucketcloud;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 @Data
 @AllArgsConstructor
 @Builder
+@Jacksonized
 public class BitbucketCloudUser {
     private String uuid;
     @JsonProperty("display_name")
