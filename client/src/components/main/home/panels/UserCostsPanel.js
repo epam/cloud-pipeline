@@ -337,7 +337,7 @@ export default class UserCostsPanel extends React.Component {
     return (
       <Spin
         spinning={pending}
-        wrapperClassName={styles.spinner}
+        classNames={{root: styles.spinner}}
       >
         <div className={styles.container}>
           {showDisclaimer ? this.renderDisclaimer() : null}

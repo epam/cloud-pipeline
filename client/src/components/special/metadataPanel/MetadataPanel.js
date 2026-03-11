@@ -335,7 +335,7 @@ export default class MetadataPanel extends React.Component {
             Value:
           </td>
           <td colSpan={2}>
-            <Input
+            <Input.TextArea
               onPressEnter={onEnter}
               onKeyDown={(e) => {
                 if (e.key && e.key === 'Escape') {
@@ -345,7 +345,6 @@ export default class MetadataPanel extends React.Component {
               value={this.state.addKey.value}
               onChange={onChange('value')}
               size="small"
-              type="textarea"
               autoSize
             />
           </td>
@@ -603,9 +602,8 @@ export default class MetadataPanel extends React.Component {
               }
             >
               <td colSpan={6}>
-                <Input
+                <Input.TextArea
                   {...inputOptions('value', key, metadataItem[key].value)}
-                  type="textarea"
                   autoSize
                 />
               </td>

@@ -27,7 +27,16 @@ export default class AsyncLayout {
       class extends React.Component {
         constructor (props) {
           super(props);
-          this.asyncLayout = new AsyncLayout(loader(props));
+          this._mounted = false;
+          this.asyncLayout = new AsyncLayout(loader(props), () => this._mounted);
+        }
+
+        componentDidMount () {
+          this._mounted = true;
+        }
+
+        componentWillUnmount () {
+          this._mounted = false;
         }
 
         render () {
@@ -58,7 +67,7 @@ export default class AsyncLayout {
   loaded = false;
   error = undefined;
   layout;
-  constructor (layoutOptionsLoader) {
+  constructor (layoutOptionsLoader, isMounted = () => true) {
     makeObservable(this, {
       loaded: observable,
       error: observable,
@@ -67,14 +76,20 @@ export default class AsyncLayout {
     if (layoutOptionsLoader && layoutOptionsLoader.then) {
       layoutOptionsLoader
         .then(options => {
-          this.layout = buildLayout(options);
-          this.loaded = true;
+          if (isMounted()) {
+            this.layout = buildLayout(options);
+            this.loaded = true;
+          }
         })
         .catch(e => {
-          this.error = e.message;
+          if (isMounted()) {
+            this.error = e.message;
+          }
         })
         .then(() => {
-          this.error = undefined;
+          if (isMounted()) {
+            this.error = undefined;
+          }
         });
     } else {
       this.layout = buildLayout(layoutOptionsLoader);

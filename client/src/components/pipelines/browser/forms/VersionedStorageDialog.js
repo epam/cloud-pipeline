@@ -134,8 +134,7 @@ class VersionedStorageDialog extends React.Component {
               {...formItemLayout}
               name="description"
             >
-              <Input
-                type="textarea"
+              <Input.TextArea
                 autoSize={{minRows: 2, maxRows: 6}}
                 disabled={pending}
                 onPressEnter={this.handleSubmit}
@@ -158,8 +157,7 @@ class VersionedStorageDialog extends React.Component {
                   }
                 ]}
               >
-                <Input
-                  type="textarea"
+                <Input.TextArea
                   disabled={pending}
                   autoSize={{minRows: 5}}
                   placeholder={[

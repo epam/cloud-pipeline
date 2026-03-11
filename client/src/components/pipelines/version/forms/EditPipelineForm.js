@@ -257,8 +257,7 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
         label={descriptionLabel}
         name="description"
       >
-        <Input
-          type="textarea"
+        <Input.TextArea
           autoSize={{minRows: 2, maxRows: 6}}
           disabled={this.props.pending || readOnly}
         />
@@ -389,6 +388,7 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
           <Input
             onPressEnter={this.handleSubmit}
             type="password"
+            autoComplete="off"
             disabled={this.props.pending || readOnly}
           />
         </Form.Item>

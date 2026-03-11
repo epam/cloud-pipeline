@@ -75,7 +75,7 @@ class SupportMenuItem extends React.Component {
     visible: PropTypes.bool,
     style: PropTypes.object,
     content: PropTypes.string,
-    icon: PropTypes.oneOfType(PropTypes.string, PropTypes.node),
+    icon: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
     url: PropTypes.string,
     action: PropTypes.string,
     target: PropTypes.string,

@@ -2296,16 +2296,16 @@ class Folder extends localization.LocalizedReactComponent {
     }
   }
 
-  UNSAFE_componentWillMount () {
-    let showDescriptionInfo = localStorage.getItem('show_description');
-    if (showDescriptionInfo) {
-      try {
-        showDescriptionInfo = JSON.parse(showDescriptionInfo);
-        this.setState({
-          showDescription: showDescriptionInfo.value
-        });
-      } catch (___) {}
-    }
+  componentDidMount () {
+    try {
+      const stored = localStorage.getItem('show_description');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && typeof parsed.value === 'boolean') {
+          this.setState({showDescription: parsed.value});
+        }
+      }
+    } catch (___) {}
   }
 }
 

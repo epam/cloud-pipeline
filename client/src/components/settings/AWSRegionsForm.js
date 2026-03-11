@@ -1615,14 +1615,13 @@ class AWSRegionForm extends React.Component {
           open={this.state.findUserVisible}>
           <AutoComplete
             value={this.selectedUser}
-            optionLabelProp="text"
             style={{width: '100%'}}
             onChange={this.onUserFindInputChanged}
             placeholder="Enter the account name">
             {
               (this.findUserDataSource() || []).map(user => {
                 return (
-                  <AutoComplete.Option key={user.userName} text={user.userName}>
+                  <AutoComplete.Option key={user.userName} value={user.userName}>
                     {this.renderUserName(user)}
                   </AutoComplete.Option>
                 );
@@ -1805,6 +1804,8 @@ class AWSRegionForm extends React.Component {
               initialValue={undefined}
               rules={[{required: this.props.isNew && this.providerSupportsField('password'), message: 'Password is required'}]}>
               <Input
+                type="password"
+                autoComplete="off"
                 size="small"
                 disabled={this.props.pending} />
             </Form.Item>

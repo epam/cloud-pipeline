@@ -645,10 +645,9 @@ export default class PipelineDocuments extends Component {
     }
     if (editMode) {
       return (
-        <Input
+        <Input.TextArea
           value={defaultFileModifiedContent}
           onChange={(e) => this.onDefaultFileContentChange(e.target.value)}
-          type="textarea"
           onKeyDown={(e) => {
             if (e.key && e.key === 'Escape') {
               this.toggleEditMode(false);

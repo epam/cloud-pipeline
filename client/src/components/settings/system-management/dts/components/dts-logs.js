@@ -167,7 +167,7 @@ class DtsLogs extends React.Component {
       );
     }
     return (
-      <Spin wrapperClassName={styles.spin} spinning={pending}>
+      <Spin classNames={{root: styles.spin}} spinning={pending}>
         <div className={styles.logsContainer}>
           <div className={styles.controls}>
             {this.downloadAvailable ? (

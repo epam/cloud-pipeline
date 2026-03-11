@@ -110,8 +110,7 @@ export default class EditSystemNotificationForm extends React.Component {
               key: 'write',
               label: 'Write',
               children: (
-                <Input
-                  type="textarea"
+                <Input.TextArea
                   autoSize={{minRows: 2, maxRows: 6}}
                   className={styles.notificationBodyInput}
                   disabled={this.props.pending}

@@ -96,8 +96,7 @@ export default class EditDetachedConfigurationForm extends React.Component {
         label="Configuration description"
         name="description"
       >
-        <Input
-          type="textarea"
+        <Input.TextArea
           autoSize={{minRows: 2, maxRows: 6}}
           disabled={this.props.pending || !writeAllowed}
         />

@@ -522,7 +522,7 @@ class Ticket extends React.Component {
 }
 
 Ticket.propTypes = {
-  ticketId: PropTypes.oneOfType(PropTypes.string, PropTypes.number)
+  ticketId: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
 };
 
 export default Ticket;

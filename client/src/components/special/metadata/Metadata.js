@@ -1138,19 +1138,25 @@ export default class Metadata extends localization.LocalizedReactComponent {
         >
           <td colSpan={6}>
             <div>
-              <Input
-                {...inputOptions('value')}
-                {...(isSecret ? {
-                  style: {height: '24px'}
-                } : {
-                  type: 'textarea',
-                  autoSize: MetadataDisplayOptions.edit.autoSize
-                })}
-                className={classNames(
-                  'qa-metadata-item-value-input',
-                  `qa-metadata-item-value-input-${metadataItem.index}`
-                )}
-              />
+              {isSecret ? (
+                <Input
+                  {...inputOptions('value')}
+                  style={{height: '24px'}}
+                  className={classNames(
+                    'qa-metadata-item-value-input',
+                    `qa-metadata-item-value-input-${metadataItem.index}`
+                  )}
+                />
+              ) : (
+                <Input.TextArea
+                  {...inputOptions('value')}
+                  autoSize={MetadataDisplayOptions.edit.autoSize}
+                  className={classNames(
+                    'qa-metadata-item-value-input',
+                    `qa-metadata-item-value-input-${metadataItem.index}`
+                  )}
+                />
+              )}
             </div>
             {
               isSecret && (
@@ -1399,7 +1405,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
         );
       } else {
         valueItem = (
-          <Input
+          <Input.TextArea
             disabled={readOnly}
             onPressEnter={readOnly ? undefined : onEnter}
             onKeyDown={(e) => {
@@ -1410,7 +1416,6 @@ export default class Metadata extends localization.LocalizedReactComponent {
             value={this.state.addKey.value}
             onChange={onChange('value')}
             size="small"
-            type="textarea"
             autoSize
           />
         );
@@ -1851,7 +1856,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
       const panels = [];
       (this.props.dataStorageTags && this.props.showContent) &&
         panels.push(
-          <div key="file preview" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <div key="file preview" style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
             {this.renderFilePreview()}
           </div>
         );
@@ -1863,7 +1868,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
         result.push(
           <Splitter
             key="split"
-            style={{ flex: 1, overflow: 'auto' }}
+            style={{flex: 1, overflow: 'auto'}}
             orientation="vertical"
           >
             {panels.map((panel, i) => (

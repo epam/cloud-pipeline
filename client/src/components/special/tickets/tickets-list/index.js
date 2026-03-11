@@ -689,7 +689,7 @@ class TicketsList extends React.Component {
               {this.renderTableHeader()}
               <Spin
                 spinning={pending}
-                wrapperClassName={styles.tableSpin}
+                classNames={{root: styles.tableSpin}}
               >
                 {tickets.map(this.renderTicket)}
               </Spin>

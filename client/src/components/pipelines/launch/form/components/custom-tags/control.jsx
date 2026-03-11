@@ -63,8 +63,8 @@ CustomTagsControl.propTypes = {
   style: PropTypes.object,
   disabled: PropTypes.bool,
   tags: PropTypes.object,
-  validation: PropTypes.oneOfType(PropTypes.object, PropTypes.array),
-  visibleTags: PropTypes.oneOfType(PropTypes.object, PropTypes.array),
+  validation: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
+  visibleTags: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   payload: PropTypes.object,
   onChange: PropTypes.func,
   buttonText: PropTypes.node

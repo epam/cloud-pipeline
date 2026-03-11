@@ -181,8 +181,8 @@ CorrectInputsModal.propTypes = {
   onCorrect: PropTypes.func,
   onCancel: PropTypes.func,
   visible: PropTypes.bool,
-  inputs: PropTypes.oneOfType(PropTypes.object, PropTypes.arrayOf(PropTypes.string)),
-  availableInputs: PropTypes.oneOfType(PropTypes.object, PropTypes.arrayOf(PropTypes.string))
+  inputs: PropTypes.oneOfType([PropTypes.object, PropTypes.arrayOf(PropTypes.string)]),
+  availableInputs: PropTypes.oneOfType([PropTypes.object, PropTypes.arrayOf(PropTypes.string)])
 };
 
 export default CorrectInputsModal;

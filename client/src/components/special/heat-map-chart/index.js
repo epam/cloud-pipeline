@@ -338,8 +338,8 @@ HeatMapChart.propTypes = {
     data: PropTypes.arrayOf(PropTypes.shape({
       name: PropTypes.string,
       records: PropTypes.arrayOf(PropTypes.shape({
-        start: PropTypes.oneOfType(PropTypes.number, PropTypes.string),
-        end: PropTypes.oneOfType(PropTypes.number, PropTypes.string),
+        start: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+        end: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
         value: PropTypes.number
       }))
     }))

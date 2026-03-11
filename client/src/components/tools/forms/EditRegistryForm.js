@@ -125,6 +125,7 @@ export default class EditRegistryForm extends localization.LocalizedReactCompone
           >
             <Input
               type="password"
+              autoComplete="off"
               disabled={this.props.pending}
             />
           </Form.Item>,
@@ -153,10 +154,9 @@ export default class EditRegistryForm extends localization.LocalizedReactCompone
           <Row key="certificate input" type="flex">
             <Col xs={24} sm={6} />
             <Col xs={24} sm={18}>
-              <Input
+              <Input.TextArea
                 value={this.state.certificateValue}
                 onChange={(e) => this.setState({certificateValue: e.target.value})}
-                type="textarea"
                 autoSize={{minRows: 4}}
               />
             </Col>

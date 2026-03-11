@@ -112,8 +112,7 @@ export default class CreateConfigurationForm extends React.Component {
               label="Description"
               name="description"
             >
-              <Input
-                type="textarea"
+              <Input.TextArea
                 autoSize={{minRows: 2, maxRows: 6}}
                 disabled={this.props.pending}
               />

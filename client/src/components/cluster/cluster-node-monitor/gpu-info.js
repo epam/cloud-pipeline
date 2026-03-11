@@ -592,7 +592,7 @@ class GPUInfoTab extends React.Component {
     }
     return (
       <div className={styles.container}>
-        <Spin wrapperClassName={styles.spin} spinning={this.state.pending}>
+        <Spin classNames={{root: styles.spin}} spinning={this.state.pending}>
           {this.renderOverallMetrics()}
           {this.renderTelemetry()}
         </Spin>
