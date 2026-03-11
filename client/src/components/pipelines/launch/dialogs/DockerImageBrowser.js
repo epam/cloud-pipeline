@@ -17,7 +17,6 @@
 import React from 'react';
 import {
   observer} from 'mobx-react';
-import {computed, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
 import {Modal,
   Row,
@@ -63,16 +62,18 @@ export default class DockerImageBrowser extends React.Component {
 
   constructor (props) {
     super(props);
-    makeObservable(this, {
-      currentRegistry: computed,
-      groups: computed,
-      currentGroup: computed,
-      tools: computed
-    });
+  }
+
+  componentDidMount () {
+    if (!this.state.registry && this.props.registries && this.props.registries.length > 0) {
+      this.setState({
+        registry: this.props.registries[0].path
+      }, this.updateGroups);
+    }
   }
 
   get currentRegistry () {
-    const [currentRegistry] = this.state.registry
+    const [currentRegistry] = this.state.registry && this.props.registries
       ? this.props.registries.filter(g => g.path === this.state.registry)
       : [null];
     return currentRegistry;
@@ -538,10 +539,10 @@ export default class DockerImageBrowser extends React.Component {
   };
 
   UNSAFE_componentWillReceiveProps (nextProps) {
-    if (nextProps.dockerImage !== this.props.dockerImage || nextProps.visible) {
+    if (nextProps.dockerImage !== this.props.dockerImage || (nextProps.visible && !this.props.visible)) {
       this.parseDockerImage(nextProps.dockerImage);
     }
-    if (nextProps.visible) {
+    if (nextProps.visible && !this.props.visible) {
       this.loadToolTags();
     }
   }
@@ -586,9 +587,15 @@ export default class DockerImageBrowser extends React.Component {
     }
   };
 
-  componentDidUpdate (nextProps, nextState) {
-    if (nextState.registry !== this.state.registry || nextProps.registries !== this.props.registries) {
-      this.updateGroups();
+  componentDidUpdate (prevProps, prevState) {
+    if (prevProps.registries !== this.props.registries) {
+      if (!this.state.registry && this.props.registries && this.props.registries.length > 0) {
+        this.setState({
+          registry: this.props.registries[0].path
+        }, this.updateGroups);
+      } else {
+        this.updateGroups();
+      }
     } else if (!this.state.registry && this.props.registries && this.props.registries.length > 0) {
       this.setState({
         registry: this.props.registries[0].path
@@ -612,7 +619,7 @@ export default class DockerImageBrowser extends React.Component {
         }
       }
     }
-    if (this.state.group && nextState.group !== this.state.group) {
+    if (this.state.group && prevState.group !== this.state.group) {
       this.updateTools();
     }
   }

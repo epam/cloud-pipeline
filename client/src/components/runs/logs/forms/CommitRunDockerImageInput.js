@@ -170,12 +170,8 @@ export default class CommitRunDockerImageInput extends React.Component {
       _tags: observable,
       isAdmin: computed,
       toolVersions: computed,
-      tags: computed,
       registries: computed,
-      groups: computed,
-      tools: computed,
-      currentRegistry: computed,
-      currentGroup: computed
+      groups: computed
     });
   }
 

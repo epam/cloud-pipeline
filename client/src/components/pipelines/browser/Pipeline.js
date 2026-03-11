@@ -128,7 +128,6 @@ class Pipeline extends localization.LocalizedReactComponent {
   constructor (props) {
     super(props);
     makeObservable(this, {
-      showMetadata: computed,
       repositoryType: computed
     });
   }

@@ -17,18 +17,12 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed, makeObservable} from 'mobx';
+import {computed} from 'mobx';
 import IssuesLoad from '../../../models/issues/IssuesLoad';
 import IssueCreate from '../../../models/issues/IssueCreate';
 import LoadingView from '../../special/LoadingView';
 import moment from 'moment-timezone';
-import {Button,
-  message,
-  Row,
-  Table,
-  Alert
-} from 'antd';
-import {ArrowLeftOutlined} from '@ant-design/icons';
+import {Button, message, Row, Table, Alert} from 'antd';
 import Issue from './Issue';
 import EditIssueForm from './controls/EditIssueForm';
 import {processUnusedAttachments} from './utilities/UnusedAttachmentsProcessor';

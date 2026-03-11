@@ -722,7 +722,6 @@ export class RunConfirmation extends React.Component {
     makeObservable(this, {
       currentRegion: computed,
       currentCloudProvider: computed,
-      gpuEnabled: computed,
       dataStorages: computed,
       initialSelectedDataStorages: computed,
       conflicting: computed,

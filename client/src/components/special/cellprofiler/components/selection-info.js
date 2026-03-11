@@ -171,9 +171,10 @@ SelectionInfo.propTypes = {
   onOpenEvaluations: PropTypes.func
 };
 
-const hcsAnalysisInjected = inject('hcsAnalysis')(observer(SelectionInfo));
+const ObservedSelectionInfo = observer(SelectionInfo);
+const hcsAnalysisInjected = inject('hcsAnalysis')(ObservedSelectionInfo);
 
 export {
   hcsAnalysisInjected as HcsAnalysisSelectionInfo
 };
-export default observer(SelectionInfo);
+export default ObservedSelectionInfo;

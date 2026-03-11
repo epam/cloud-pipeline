@@ -113,8 +113,6 @@ export default class NotificationCenter extends React.Component {
       readUserNotifications: observable,
       notificationsBottomBound: computed,
       notificationsOnScreen: computed,
-      userNotifications: computed,
-      systemNotifications: computed,
       unreadCount: computed,
       allNotifications: computed,
       nonBlockingNotifications: computed,

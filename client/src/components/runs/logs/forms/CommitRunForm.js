@@ -53,7 +53,6 @@ class CommitRunForm extends localization.LocalizedReactComponent {
   constructor (props) {
     super(props);
     makeObservable(this, {
-      toolValid: computed,
       layersCheckPassed: computed,
       commitCheckPassed: computed,
       allowCommitToOtherPersonalGroups: computed,

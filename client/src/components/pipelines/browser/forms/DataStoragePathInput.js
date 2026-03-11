@@ -104,8 +104,7 @@ export class DataStoragePathInput extends React.Component {
     makeObservable(this, {
       storageObjectPrefix: computed,
       cloudRegions: computed,
-      fileShareMountsList: computed,
-      currentFileShareMount: computed
+      fileShareMountsList: computed
     });
   }
 

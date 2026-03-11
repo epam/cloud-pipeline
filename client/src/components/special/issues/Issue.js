@@ -97,8 +97,7 @@ export default class Issue extends localization.LocalizedReactComponent {
       canAddComment: computed,
       canEditIssue: computed,
       canRemoveIssue: computed,
-      comments: computed,
-      editCommentInAction: computed
+      comments: computed
     });
   }
 

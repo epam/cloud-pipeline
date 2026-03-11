@@ -117,8 +117,6 @@ export class DataStorageEditDialog extends React.Component {
       currentRegion: computed,
       currentRegionSupportsPolicy: computed,
       currentRegionSupportsStoragePermissions: computed,
-      isStoragePathValid: computed,
-      isAliasValid: computed,
       toolsToMount: computed
     });
   }

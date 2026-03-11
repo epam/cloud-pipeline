@@ -51,9 +51,7 @@ export default class Packages extends React.Component {
     super(props);
     makeObservable(this, {
       toolPlatform: computed,
-      ecosystems: computed,
-      dependencies: computed,
-      filteredDependencies: computed
+      ecosystems: computed
     });
   }
 

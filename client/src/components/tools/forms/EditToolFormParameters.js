@@ -60,9 +60,7 @@ export default class EditToolFormParameters extends React.Component {
     makeObservable(this, {
       skippedSystemParameters: computed,
       authenticatedUserRolesNames: computed,
-      isAdmin: computed,
-      isValid: computed,
-      modified: computed
+      isAdmin: computed
     });
   }
 

@@ -19,7 +19,6 @@ import {Button, Dropdown} from 'antd';
 import {SettingOutlined} from '@ant-design/icons';
 import {inject, observer} from 'mobx-react';
 import roleModel from '../../../../utils/roleModel';
-import {restoreLayoutConsumer} from '../layout';
 import {DiscountsModal} from '../discounts';
 import {exportStores, getExportMenuItems, onExport} from '../export';
 import BillingNavigation from '../../navigation';
@@ -187,8 +186,8 @@ export default inject(
   'quotas',
   ...exportStores
 )(
-  restoreLayoutConsumer(
-    BillingNavigation.attach(
+  BillingNavigation.attach(
+    inject('layoutContext')(
       observer(SettingsButton)
     )
   )

@@ -147,11 +147,8 @@ export default class AWSRegionsForm extends React.Component {
     makeObservable(this, {
       awsRegionForm: observable,
       awsRegionIds: observable,
-      regions: computed,
       cloudProviders: computed,
-      availableRegionIds: computed,
-      currentRegion: computed,
-      regionModified: computed
+      availableRegionIds: computed
     });
   }
 

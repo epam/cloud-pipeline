@@ -60,8 +60,6 @@ export default class FireCloudBrowser extends React.Component {
     super(props);
     makeObservable(this, {
       methods: computed,
-      currentMethodIsSelected: computed,
-      currentMethod: computed,
       snapshots: computed
     });
   }

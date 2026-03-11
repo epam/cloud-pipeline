@@ -56,9 +56,7 @@ class DtsManagement extends React.Component {
   constructor (props) {
     super(props);
     makeObservable(this, {
-      dtsList: computed,
-      filteredDtsList: computed,
-      pending: computed
+      dtsList: computed
     });
   }
 

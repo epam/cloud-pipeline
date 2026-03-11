@@ -101,9 +101,7 @@ class Tools extends React.Component {
       completedRuns: computed,
       allTools: computed,
       currentGroup: computed,
-      defaultGroup: computed,
-      tools: computed,
-      globalSearchTools: computed
+      defaultGroup: computed
     });
   }
 

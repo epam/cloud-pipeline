@@ -240,10 +240,7 @@ export default class EditToolForm extends React.Component {
       isAdvancedUser: computed,
       awsRegions: computed,
       instanceTypes: computed,
-      allowedInstanceTypes: computed,
-      allowedPriceTypes: computed,
-      multiplyValueBy: computed,
-      maxMultiplyValueBy: computed
+      allowedInstanceTypes: computed
     });
   }
 
@@ -899,6 +896,9 @@ export default class EditToolForm extends React.Component {
   }
 
   get isInstanceTypeWithReservation () {
+    if (!this.formRef.current) {
+      return false;
+    }
     const {
       preferences
     } = this.props;
@@ -929,6 +929,9 @@ export default class EditToolForm extends React.Component {
   }
 
   modified = () => {
+    if (!this.formRef.current) {
+      return false;
+    }
     const arrayIsNullOrEmpty = (array) => {
       return !array || !array.length;
     };
@@ -1169,6 +1172,9 @@ export default class EditToolForm extends React.Component {
     : cpu;
 
   renderExecutionEnvironmentSummary = () => {
+    if (!this.formRef.current) {
+      return null;
+    }
     const instanceTypeValue = this.formRef.current.getFieldValue('instanceType');
     const [instanceType] = this.instanceTypes.filter(t => t.name === instanceTypeValue);
     let cpu = 0;
@@ -1882,6 +1888,9 @@ export default class EditToolForm extends React.Component {
 
   endpointsAreValid () {
     try {
+      if (!this.formRef.current) {
+        return false;
+      }
       const endpoints = this.formRef.current.getFieldValue('endpoints') || [];
       return !endpoints.some((endpoint) => getValidationError(endpoint));
     } catch (error) {
