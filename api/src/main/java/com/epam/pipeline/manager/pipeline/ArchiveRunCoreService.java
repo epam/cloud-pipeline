@@ -15,6 +15,8 @@
 
 package com.epam.pipeline.manager.pipeline;
 
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.pipeline.ArchiveRunDao;
 import com.epam.pipeline.dao.pipeline.EngineRunTaskDao;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
@@ -33,7 +35,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +56,7 @@ public class ArchiveRunCoreService {
     private final RunStatusDao runStatusDao;
     private final StopServerlessRunDao stopServerlessRunDao;
     private final EngineRunTaskDao engineRunTaskDao;
+    private final MessageHelper messageHelper;
 
     @Transactional(propagation = Propagation.REQUIRED)
     public void archiveRuns(final Map<String, Date> ownersAndDates, final List<Long> terminalStates,
@@ -69,6 +74,32 @@ public class ArchiveRunCoreService {
         });
 
         log.debug("Transferring runs to archive completed. Total archived runs count: '{}'", counter.get());
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void archiveRunsByIds(final Collection<Long> masterRunIds) {
+        if (CollectionUtils.isEmpty(masterRunIds)) {
+            log.debug(messageHelper.getMessage(MessageConstants.DEBUG_ARCHIVE_RUN_NO_IDS));
+            return;
+        }
+        final List<Long> masterIdsList = new ArrayList<>(masterRunIds);
+        log.debug(messageHelper.getMessage(MessageConstants.DEBUG_ARCHIVE_RUN_LOADING_MASTER_BY_IDS,
+                masterIdsList.stream().map(String::valueOf).collect(Collectors.joining(", "))));
+        final List<PipelineRun> runsToArchive = new ArrayList<>(
+                ListUtils.emptyIfNull(pipelineRunDao.loadRunByIdIn(masterIdsList)));
+        log.debug(messageHelper.getMessage(MessageConstants.DEBUG_ARCHIVE_RUN_LOADED_MASTER, runsToArchive.size()));
+        log.debug(messageHelper.getMessage(MessageConstants.DEBUG_ARCHIVE_RUN_LOADING_CHILDREN));
+        final List<PipelineRun> children = ListUtils.emptyIfNull(
+                pipelineRunDao.loadRunsByParentRuns(masterIdsList));
+        log.debug(messageHelper.getMessage(MessageConstants.DEBUG_ARCHIVE_RUN_LOADED_CHILDREN, children.size()));
+        runsToArchive.addAll(children);
+        final List<Long> allRunIds = runsToArchive.stream().map(PipelineRun::getId).collect(Collectors.toList());
+        log.debug(messageHelper.getMessage(MessageConstants.DEBUG_ARCHIVE_RUN_LOADING_STATUSES));
+        final List<RunStatus> runStatuses = runStatusDao.loadRunStatus(allRunIds, false, false);
+        log.debug(messageHelper.getMessage(MessageConstants.DEBUG_ARCHIVE_RUN_LOADED_STATUSES, runStatuses.size()));
+        batchInsertToArchive(runsToArchive, runStatuses, false);
+        deleteRunsAndDependents(allRunIds, false);
+        log.debug(messageHelper.getMessage(MessageConstants.DEBUG_ARCHIVE_RUN_COMPLETED, allRunIds.size()));
     }
 
     private void archiveRunsChunk(final Map<String, Date> ownersAndDates, final List<Long> terminalStates,

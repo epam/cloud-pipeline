@@ -413,6 +413,11 @@ public class RunApiService {
     }
 
     @PreAuthorize(ADMIN_ONLY + OR + RUN_ADMIN_ONLY)
+    public void archiveRuns(final List<Long> runIds) {
+        archiveRunService.archiveRuns(runIds);
+    }
+
+    @PreAuthorize(ADMIN_ONLY + OR + RUN_ADMIN_ONLY)
     public void archiveRuns(final String name, final boolean principal, final Integer days) {
         archiveRunService.archiveRuns(name, principal, days);
     }
