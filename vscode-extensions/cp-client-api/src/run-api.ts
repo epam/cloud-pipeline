@@ -32,44 +32,27 @@ export class RunAPI extends BaseAPI {
    * @param options - Filter options
    * @returns Pipeline run filter result
    */
-  async listRuns(options: RunFilterOptions = {}): Promise<PipelineRunFilterModel> {
+  async listRuns(options?: RunFilterOptions): Promise<PipelineRunFilterModel> {
     this.logger?.debug(`Listing pipeline runs with options:`, options);
 
-    const data: any = {
-      page: options.page ?? 1,
-      pageSize: options.pageSize ?? 100,
+    // Only include defined/non-empty fields in body, same as pipe-cli PipelineRun.list() (pipeline_run.py).
+    const data: RunFilterOptions = {
+      page: options?.page ?? 1,
+      pageSize: options?.pageSize ?? 100,
+      ...(options?.statuses?.length && { statuses: options.statuses }),
+      ...(options?.startDateFrom && { startDateFrom: options.startDateFrom }),
+      ...(options?.endDateTo && { endDateTo: options.endDateTo }),
+      ...(options?.pipelineIds?.length && { pipelineIds: options.pipelineIds }),
+      ...(options?.versions?.length && { versions: options.versions }),
+      ...(options?.parentId !== undefined && { parentId: options.parentId }),
+      ...(options?.partialParameters && { partialParameters: options.partialParameters }),
+      ...(options?.owners?.length && { owners: options.owners }),
     };
 
-    if (options.statuses && options.statuses.length > 0) {
-      data.statuses = options.statuses;
-    }
-    if (options.startDateFrom) {
-      data.startDateFrom = options.startDateFrom;
-    }
-    if (options.endDateTo) {
-      data.endDateTo = options.endDateTo;
-    }
-    if (options.pipelineIds && options.pipelineIds.length > 0) {
-      data.pipelineIds = options.pipelineIds;
-    }
-    if (options.versions && options.versions.length > 0) {
-      data.versions = options.versions;
-    }
-    if (options.parentId !== undefined) {
-      data.parentId = options.parentId;
-    }
-    if (options.partialParameters) {
-      data.partialParameters = options.partialParameters;
-    }
-    if (options.owners && options.owners.length > 0) {
-      data.owners = options.owners;
-    }
-
     const result = await this.call<PipelineRunFilterModel>('run/filter', 'POST', data);
-
     // Ensure page and pageSize are set in the result
-    result.page = data.page;
-    result.pageSize = data.pageSize;
+    result.page = data.page!;
+    result.pageSize = data.pageSize!;
 
     return result;
   }

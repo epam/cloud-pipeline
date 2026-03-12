@@ -132,7 +132,7 @@ export class CpRunTreeDataProvider
       return treeItem;
     } else if (element instanceof RunInfo) {
       const runInfo = element as RunInfo;
-      const runLabel = `${runInfo.pipeline} (${runInfo.runId})`;
+      const runLabel = `${runInfo.pipelineName} (${runInfo.id})`;
       const treeItem = new vscode.TreeItem(runLabel);
       treeItem.collapsibleState = element.locations?.length
         ? vscode.TreeItemCollapsibleState.Collapsed
@@ -187,8 +187,8 @@ export class CpRunTreeDataProvider
         }
         if (
           this.filterValue == null ||
-          runInfo.pipeline.includes(this.filterValue) ||
-          runInfo.runId.toString().includes(this.filterValue) ||
+          runInfo.pipelineName.includes(this.filterValue) ||
+          runInfo.id.toString().includes(this.filterValue) ||
           runInfo.owner.includes(this.filterValue)
         ) {
           ownerRuns.push(runInfo);
@@ -215,16 +215,16 @@ export class CpRunTreeDataProvider
       for (const rI of oI.runs) {
         if (
           !this.filterValue ||
-          rI.runId.toString().includes(this.filterValue) ||
-          rI.pipeline.includes(this.filterValue)
+          rI.id.toString().includes(this.filterValue) ||
+          rI.pipelineName.includes(this.filterValue)
         ) {
           const runItem = new RunInfo(
-            rI.runId,
-            rI.parentRunId,
-            rI.pipeline,
+            rI.id,
+            rI.parentId,
+            rI.pipelineName,
             rI.version,
             rI.status,
-            rI.started,
+            rI.startDate,
             rI.owner,
           );
           ownerRuns.push(runItem);
@@ -283,7 +283,7 @@ export class CpRunTreeDataProvider
 
   private async deleteHostLocation(runLocation: LocationInfo) {
     await this.locationHistory.removeLocation(
-      `pipeline-${runLocation.run.runId}`,
+      `pipeline-${runLocation.run.id}`,
       runLocation.path,
     );
     this.filterChanged = true;
@@ -292,7 +292,7 @@ export class CpRunTreeDataProvider
 
   private async openRemoteCpWindow(element: RunInfo, reuseWindow: boolean) {
     const logPfx = `${this.toLog()}.openRemoteCpWindow()`;
-    const sshDest = new SSHDestination(`pipeline-${element.runId}`);
+    const sshDest = new SSHDestination(`pipeline-${element.id}`);
     const onStartV = await this.cpExtConfig.getOnStart();
     await this.cpExtConfig.setOnStart([
       ...onStartV,
@@ -309,7 +309,7 @@ export class CpRunTreeDataProvider
     element: LocationInfo,
     reuseWindow: boolean,
   ) {
-    const sshDest = new SSHDestination(`pipeline-${element.run.runId}`);
+    const sshDest = new SSHDestination(`pipeline-${element.run.id}`);
     openRemoteCpLocationWindow(
       sshDest.toEncodedString(),
       element.path,

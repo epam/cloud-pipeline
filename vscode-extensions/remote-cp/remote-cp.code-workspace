@@ -76,6 +76,15 @@
       "path": "../../pipe-cli",
     },
   ],
+  "extensions": {
+    "recommendations": [
+      "xyz.local-history",
+      "dbaeumer.vscode-eslint",
+      "connor4312.esbuild-problem-matchers",
+      "ms-vscode.extension-test-runner",
+      "arcanis.vscode-zipfs",
+    ]
+  },
   "settings": {
     "jest.autoRun": "off",
     "chat.tools.terminal.autoApprove": {

@@ -1,11 +1,11 @@
 import * as vscode from "vscode";
-import * as cp from "child_process";
+import * as cp from "node:child_process";
 
 import { ILogger } from "../common/logger";
 import { pipeParse } from "./pipeParse";
 import { PipeTunnel } from "../pipeTunnel";
 import { Disposable } from "../common/disposable";
-import { ICpExtConfig as ICpExtConfig } from "../config";
+import { CpClientMode, ICpExtConfig } from "../config";
 import { fileExists, readJsonFile } from "../common/files/file";
 import { ICpClientConfig } from "./cp-client-config";
 import {
@@ -34,47 +34,60 @@ import {
   quickPickWithCountdown,
 } from "../common/quick-pick-with-countdown";
 import { parsePipeTunnelStartCommandLine } from "./tunnel/parse-pipe-tunnel-start";
+import { IRunInfo, RunAPI } from "cp-client-api";
+
+function pipelineRunToRunInfo(r: IRunInfo): RunInfo {
+  return new RunInfo(
+    r.id,
+    r.parentId,
+    r.pipelineName,
+    r.version,
+    r.status,
+    r.startDate,
+    r.owner,
+  );
+}
 
 export enum PipeRunCols {
-  runId = "RunID",
-  parentRunId = "Parent RunID",
-  pipeline = "Pipeline",
+  id = "RunID",
+  parentId = "Parent RunID",
+  pipelineName = "Pipeline",
   version = "Version",
   status = "Status",
-  started = "Started",
+  startDate = "Started",
   owner = "Owner",
 }
 
-export class RunInfo {
+export class RunInfo implements IRunInfo {
   public locations?: RunLocation[];
 
   constructor(
-    public runId: number,
-    public parentRunId: number | null,
-    public pipeline: string,
+    public id: number,
+    public parentId: number | null,
+    public pipelineName: string,
     public version: string | null,
     public status: string,
-    public started: string,
+    public startDate: string,
     public owner: string,
-  ) {}
+  ) { }
 }
 
 export class RunLocation {
   constructor(
     public run: RunInfo,
     public path: string,
-  ) {}
+  ) { }
 }
 
 export function pipeParseRunList(table: string): RunInfo[] {
   return pipeParse<RunInfo>(table, (cells, _header: string[]) => {
     const res = new RunInfo(
-      /* runId: */ parseInt(cells[0]),
-      /* parentRunId: */ cells[1] === "None" ? null : parseInt(cells[1]),
-      /* pipeline: */ cells[2],
+      /* id: */ Number.parseInt(cells[0]),
+      /* parentId: */ cells[1] === "None" ? null : Number.parseInt(cells[1]),
+      /* pipelineName: */ cells[2],
       /* version: */ cells[3] === "None" ? null : cells[3],
       /* status: */ cells[4],
-      /* started: */ cells[5],
+      /* startDate: */ cells[5],
       /* owner: */ cells[6],
     );
     return res;
@@ -89,7 +102,7 @@ export class PipeTunnelInfo {
     /* Host */ public runId: number,
     public localPort: number,
     public remotePort: number,
-  ) {}
+  ) { }
 }
 
 export interface ExecPipeTunnelInfo {
@@ -101,12 +114,12 @@ export interface ExecPipeTunnelInfo {
 export function pipeParseTunnelList(table: string): PipeTunnelInfo[] {
   return pipeParse<PipeTunnelInfo>(table, (cells, _header: string[]) => {
     const res = new PipeTunnelInfo(
-      /* PID: */ parseInt(cells[0]),
-      /* PPID: */ cells[1] === "None" ? null : parseInt(cells[1]),
+      /* PID: */ Number.parseInt(cells[0]),
+      /* PPID: */ cells[1] === "None" ? null : Number.parseInt(cells[1]),
       /* Owner: */ cells[2],
-      /* Host: */ parseInt(cells[3]),
-      /* LocalPorts: */ parseInt(cells[4]),
-      /* RemotePorts: */ parseInt(cells[5]),
+      /* Host: */ Number.parseInt(cells[3]),
+      /* LocalPorts: */ Number.parseInt(cells[4]),
+      /* RemotePorts: */ Number.parseInt(cells[5]),
     );
     return res;
   });
@@ -121,7 +134,7 @@ export class CpVersionInfo {
     public tokenOwner: string,
     public tokenIssuedAt: string,
     public tokenExpiresAt: string,
-  ) {}
+  ) { }
 }
 
 /**
@@ -131,7 +144,7 @@ export class CpVersionInfo {
  */
 export abstract class CpClientBase extends Disposable {
   private static objCounter = 0;
-  private objId = CpClientBase.objCounter++;
+  private readonly objId = CpClientBase.objCounter++;
 
   protected toLog(): string {
     return `${this.constructor.name}<${this.objId}>`;
@@ -154,22 +167,23 @@ export abstract class CpClientBase extends Disposable {
     super.dispose();
   }
 
-  // TODO: Reset {@link this.version} on change
+  // TODO: Reset `this.version` on change
   private version: CpVersionInfo | null = null;
 
   async getVersion(): Promise<CpVersionInfo> {
     if (this.version) return this.version;
 
     const output = await this.execPipeCommand("--version");
-    const apiM = output.match(
-      /^Cloud Pipeline API, version (\d+\.\d+\.\d+\.\d+)\.([0-9a-f]{40})/m,
+    const apiM = /^Cloud Pipeline API, version (\d+\.\d+\.\d+\.\d+)\.([0-9a-f]{40})/m.exec(
+      output,
     );
-    const cliM = output.match(
-      /^Cloud Pipeline CLI, version (\d+\.\d+\.\d+\.\d+)\.([0-9a-f]{40})/m,
+    const cliM = /^Cloud Pipeline CLI, version (\d+\.\d+\.\d+\.\d+)\.([0-9a-f]{40})/m.exec(
+      output,
     );
-    const tokenM = output.match(
-      /^Access token info:\s*\nIssued to: (\w+)\s*\nIssued at: (\d{4}-\d{2}-\d{2} \d{2}:\d{2})\s*\nExpires at: (\d{4}-\d{2}-\d{2} \d{2}:\d{2})/m,
-    );
+    const tokenM =
+      /^Access token info:\s*\nIssued to: (\w+)\s*\nIssued at: (\d{4}-\d{2}-\d{2} \d{2}:\d{2})\s*\nExpires at: (\d{4}-\d{2}-\d{2} \d{2}:\d{2})/m.exec(
+        output,
+      );
     if (!apiM && cliM && tokenM) {
       throw new CpTokenExpiredError(`Access token is expired: ${tokenM[3]}`);
     } else if (!apiM || !cliM || !tokenM) {
@@ -177,12 +191,12 @@ export abstract class CpClientBase extends Disposable {
     }
 
     // prettier-ignore
-    const res = new CpVersionInfo(
+    this.version = new CpVersionInfo(
       apiM[1], apiM[2],
       cliM[1], cliM[2],
       tokenM[1], tokenM[2], tokenM[3],
     );
-    return (this.version = res);
+    return this.version;
   }
 
   protected resetVersion(): undefined {
@@ -190,16 +204,30 @@ export abstract class CpClientBase extends Disposable {
   }
 
   /**
-   * Gets run list with `pipe view-runs` command
+   * Gets run list: from CLI (`pipe view-runs`) when cpClientMode is cli, otherwise from API.
    */
   async getRunList(): Promise<RunInfo[]> {
     const logPfx = `${this.toLog()}.getRunList()`;
     this.logger.info(`${logPfx}, start`);
     try {
-      const output = await this.execPipeCommand(`view-runs`);
-      const res = await pipeParseRunList(output);
-      this.logger.info(`${logPfx}, end`);
-      return res;
+      if (this.cpExtConfig.cpClientMode === CpClientMode.cli) {
+        const output = await this.execPipeCommand(`view-runs`);
+        const res = pipeParseRunList(output);
+        this.logger.info(`${logPfx}, end`);
+        return res;
+      } else {
+        const config = await this.cpExtConfig.getClientConfig();
+        if (!config)
+          throw new Error("API config is not set (TODO)");
+        const runApi = new RunAPI(
+          { url: config.apiUri, token: config.apiToken },
+          this.logger,
+        );
+        const result = await runApi.listRuns();
+        const res = result.elements.map(pipelineRunToRunInfo);
+        this.logger.info(`${logPfx}, end (API, ${res.length} runs)`);
+        return res;
+      }
     } finally {
       await this.cpExtConfig.save(logPfx);
       this.logger.info(`${logPfx}, finally`);
@@ -220,7 +248,7 @@ export abstract class CpClientBase extends Disposable {
       });
       return [resProcess, version!];
     } catch (err) {
-      const _m = err.message.match(CpTokenExpiredError.re);
+      const _m = CpTokenExpiredError.re.exec(err.message);
       throw err;
     }
   }
@@ -242,7 +270,7 @@ export abstract class CpClientBase extends Disposable {
         );
         const fltStderrList = [];
         for (const stderrLine of stderr.split("\n")) {
-          const m = stderrLine.match(CpTokenExpiredError.soonRe);
+          const m = CpTokenExpiredError.soonRe.exec(stderrLine);
           if (m) {
             vscode.window.showInformationMessage(
               `${this.cpExtConfig.prefix} pipe client: ${stderrLine}`,
@@ -254,12 +282,12 @@ export abstract class CpClientBase extends Disposable {
         const fltStderr = fltStderrList.join("\n");
         if (error || fltStderr) {
           const m =
-            error?.message.match(CpTokenExpiredError.re) ||
-            fltStderr.match(CpTokenExpiredError.re);
+            CpTokenExpiredError.re.exec(error?.message ?? "") ??
+            CpTokenExpiredError.re.exec(fltStderr);
           if (m) {
             reject(new CpTokenExpiredError(m[0]));
           } else {
-            reject(error || new Error(fltStderr));
+            reject(error ?? new Error(fltStderr));
           }
         } else {
           resolve(stdout);
@@ -369,7 +397,6 @@ export abstract class CpClientBase extends Disposable {
         (ti) => ti.runId === cpRunId,
       );
 
-      // let resPipeTunnel: PipeTunnelBase | undefined;
       const pipeTunnelUserResp = await askUserForPipeTunnel(
         cpRunId,
         runTunnelList,
@@ -461,8 +488,8 @@ export abstract class CpClientBase extends Disposable {
         const portStr = await vscode.window.showInputBox({
           title: "Enter local port number",
           validateInput: (value) => {
-            const port = parseInt(value);
-            if (isNaN(port) || port < 1 || port > 65535) {
+            const port = Number.parseInt(value);
+            if (Number.isNaN(port) || port < 1 || port > 65535) {
               return "Enter a valid port number (1-65535)";
             }
             return "";
@@ -471,7 +498,7 @@ export abstract class CpClientBase extends Disposable {
         if (!portStr) {
           throw new Error("User cancelled port entry");
         }
-        const localPort = parseInt(portStr);
+        const localPort = Number.parseInt(portStr);
         resPipeTunnel = new ReusedPipeTunnel(
           new PipeTunnelInfo(
             -1,         // pid: manual entry, no process
@@ -508,17 +535,16 @@ export abstract class CpClientBase extends Disposable {
   }
 
   private async ensurePipeExecInternal(): Promise<CpVersionInfo | null> {
-    if (!this.ensurePipeExecActive) {
-      this.ensurePipeExecActive = true;
-      this.codeContext.isUpdatingPipeClient = true;
-      try {
-        return await this.ensurePipeExec();
-      } finally {
-        this.codeContext.isUpdatingPipeClient = false;
-        this.ensurePipeExecActive = false;
-      }
-    } else {
+    if (this.ensurePipeExecActive)
       return null;
+
+    this.ensurePipeExecActive = true;
+    this.codeContext.isUpdatingPipeClient = true;
+    try {
+      return await this.ensurePipeExec();
+    } finally {
+      this.codeContext.isUpdatingPipeClient = false;
+      this.ensurePipeExecActive = false;
     }
   }
 

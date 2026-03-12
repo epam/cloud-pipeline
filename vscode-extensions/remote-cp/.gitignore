@@ -7,3 +7,4 @@
 /onStart.json
 /*.vsix
 /*.tsbuildinfo
+!/.vscode

@@ -6,7 +6,9 @@
     "cp-client-common",
     "cp-client-api",
     "cp-client-tunnel",
-    "cp-client"
+    "cp-client",
+    "remote-cp",
+    "remote-cp-helper"
   ],
   "scripts": {
     "clean": "npm run clean -ws --if-present",
@@ -21,7 +23,10 @@
     "build:cp-client-tunnel": "npm run build -w cp-client-tunnel",
     "build:cp-client": "npm run build -w cp-client",
     "build:remote-cp": "npm run compile -w remote-cp",
-    "package:remote-cp": "npm run compile -w remote-cp && npm run package -w remote-cp",
+    "build:remote-cp-helper": "npm run compile -w remote-cp-helper",
+    "build:remote-cp-both": "npm run prebuild:remote-cp && npm run build:this -w remote-cp && npm run build:this -w remote-cp-helper",
+    "package:remote-cp": "npm run build:remote-cp-both && npm run package -w remote-cp",
+    "package:remote-cp-helper": "npm run build:remote-cp-helper && npm run package -w remote-cp-helper",
     "lint": "npm run lint -ws --if-present",
     "check": "npm run check -ws --if-present"
   }

@@ -1,5 +1,6 @@
 import { ILogger } from "cp-client-common";
 import { IApiOptions, IApiResponse } from "./types/api";
+import { fetchWithHooks as fetchWithHook } from "./fetch-with-hook";
 
 /**
  * Base API client class.
@@ -40,7 +41,19 @@ export class BaseAPI {
       options.body = JSON.stringify(data);
     }
 
-    const response = await fetch(url, options);
+    const response = await fetchWithHook(url, options,
+      (_response: Response, _from: string | URL, to: URL, _step: number) => {
+        // const responseTxt = JSON.stringify({
+        //   status: response.status,
+        //   type: response.type,
+        //   headers: Object.fromEntries(response.headers.entries()),
+        // }, null, 2);
+        // this.logger.debug(`Redirect:\n${indent(2, responseTxt)}`);
+        // return true;
+        if (to.pathname.includes('saml/discovery'))
+          throw new Error('SAML discovery redirect detected. API token failed to authenticate.');
+        return true;
+      });
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => response.statusText);

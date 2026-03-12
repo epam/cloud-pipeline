@@ -284,6 +284,7 @@
   "scripts": {
     "clean": "rimraf ./dist",
     "check": "npm run check-types && npm run lint && npm run validate-commands",
+    "build:both": "npm run --prefix .. build:remote-cp-both",
     "build:this": "npm run check && npx webpack --mode development",
     "build": "npm run --prefix .. prebuild:remote-cp && npm run build:this",
     "validate-commands": "npx tsx ./validate/commands.ts",
@@ -349,6 +350,7 @@
     "@vscode/extension-telemetry": "^0.9.0",
     "@vscode/prompt-tsx": "^0.3.0-alpha.13",
     "commander": "^14.0.2",
+    "cp-client-api": "file:../cp-client-api",
     "cp-client-tunnel": "file:../cp-client-tunnel",
     "dotenv": "^17.2.3",
     "glob": "^10.3.10",

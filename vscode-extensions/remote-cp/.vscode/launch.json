@@ -6,23 +6,28 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "CP both",
+      "name": "remote-cp-both",
       "type": "extensionHost",
       "request": "launch",
       "args": [
         "--extensionDevelopmentPath=${workspaceFolder:remote-cp}",
         "--extensionDevelopmentPath=${workspaceFolder:remote-cp-helper}",
-        "--trace-deprecation"
+        // "--trace-deprecation",
+        "--enable-proposed-api", "epam.remote-cp"
       ],
       "env": {
         "NODE_ENV": "development",
+        "CP_PLATFORM_URL": "https://aws.cloud-pipeline.com/"
       },
       "outFiles": [
         "${workspaceFolder:remote-cp-helper}/dist/**/*.js",
-        "${workspaceFolder:remote-cp}/dist/**/*.js"
+        "${workspaceFolder:remote-cp}/dist/**/*.js",
+        "${workspaceFolder:cp-client-tunnel}/dist/**/*.js",
+        "${workspaceFolder:cp-client-api}/dist/**/*.js",
+        "${workspaceFolder:cp-client-common}/dist/**/*.js",
       ],
       "sourceMaps": true,
-      "preLaunchTask": "CP both: compile"
+      "preLaunchTask": "rcp-compile-both-dev"
     },
     {
       "name": "remote-cp ext new",
@@ -35,15 +40,16 @@
       ],
       "env": {
         "NODE_ENV": "development",
+        "CP_PLATFORM_URL": "https://aws.cloud-pipeline.com/"
       },
       "sourceMaps": true,
       "outFiles": [
-        "${workspaceFolder}/dist/**/*.js",
-        "${workspaceFolder}/../cp-client-tunnel/dist/**/*.js",
-        "${workspaceFolder}/../cp-client-api/dist/**/*.js",
-        "${workspaceFolder}/../cp-client-common/dist/**/*.js",
+        "${workspaceFolder:remote-cp}/dist/**/*.js",
+        "${workspaceFolder:cp-client-tunnel}/dist/**/*.js",
+        "${workspaceFolder:cp-client-api}/dist/**/*.js",
+        "${workspaceFolder:cp-client-common}/dist/**/*.js",
       ],
-      //"preLaunchTask": "rcp-compile-watch"
+      "preLaunchTask": "rcph-compile-watch"
     },
     {
       "name": "remote-cp ext",

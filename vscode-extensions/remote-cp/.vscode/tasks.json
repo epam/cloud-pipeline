@@ -4,12 +4,14 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "CP both: compile",
-      "dependsOn": [
-        "rcph-compile",
-        "rcp-compile"
-      ],
-      "dependsOrder": "sequence"
+      "label": "rcp-compile-both-dev",
+      "type": "npm",
+      "script": "build:both",
+      "group": "build",
+      "problemMatcher": [
+        "$tsc",
+        "$eslint-compact",
+      ]
     },
     {
       "label": "rcp-compile-watch",
@@ -20,13 +22,13 @@
       "dependsOrder": "sequence",
     },
     {
-      "label": "rcp-compile dev",
+      "label": "rcp-compile-dev",
       "type": "npm",
       "script": "build", // "webpack"
       "group": "build",
       "problemMatcher": [
-        "$esbuild",
-        "$tsc"
+        "$tsc",
+        "$eslint-compact",
       ],
       "options": {
         "env": {

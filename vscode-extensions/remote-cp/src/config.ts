@@ -116,7 +116,7 @@ export class CpExtConfig implements ICpExtConfig {
           }
           this.logger.info(
             `${logPfx}, key: '${key}', saving...\n` +
-              `  value: '${valueToSave}'`,
+            `  value: '${valueToSave}'`,
           );
           await this.configData.update(key, valueToSave, this.cfgTarget);
           this.logger.info(`${logPfx}, key: '${key}' saved.`);
@@ -141,10 +141,8 @@ export class CpExtConfig implements ICpExtConfig {
     if (res === undefined)
       res =
         /* this.data.platformUrl = */
-        this.configData.get<string | undefined>(
-          CpExtConfigKeys.platformUrl,
-          process.env.CP_PLATFORM_URL,
-        ) ??
+        this.configData.get<string>(CpExtConfigKeys.platformUrl) ??
+        process.env.CP_PLATFORM_URL ??
         this.defaults[CpExtConfigKeys.platformUrl] ??
         "";
 
@@ -348,12 +346,12 @@ export class CpExtConfig implements ICpExtConfig {
   public async setClientConfig(config: ICpClientConfig | null): Promise<void> {
     const logPfx = `${this.toLog()}.setClientConfig()`;
     this.logger.trace(`${logPfx}, start`);
-    try{
+    try {
       this.pipeApiUri = config?.apiUri ?? null;
       this.pipeApiToken = config?.apiToken ?? null;
     } finally {
       this.logger.trace(`${logPfx}, end`);
-     }
+    }
   }
 
   public async activate(logger: IOutputLogger): Promise<void> {

@@ -9,6 +9,7 @@ export {
 } from './cluster'
 
 export {
+    type IRunInfo,
     type PipelineRunModel,
     type PipelineRunFilterModel,
 } from './pipeline-run'

@@ -1,60 +1,10 @@
 /// <reference types="jest" />
 
-import { ILogger } from "../../common/logger";
-import { ICpExtConfig, CpClientMode } from "../../config";
-import { CpClientBase, CpVersionInfo, RunInfo } from "../../cp-client";
-import { ICpCodeContext } from "../../cp-ext/code-context";
+import { pipeParseRunList, RunInfo } from "../../cp-client";
 
-interface IClient {
-  parseRunListTable(tableStr: string): RunInfo[];
-}
-
-class CpClientTest extends CpClientBase {
-  static create(
-    cpExtConfig: ICpExtConfig,
-    codeContext: ICpCodeContext,
-    logger: ILogger,
-  ): CpClientTest {
-    return new CpClientTest(cpExtConfig, codeContext, logger);
-  }
-
-  public override ensurePipeExecDo(): Promise<CpVersionInfo> {
-    throw new Error("Not implemented");
-  }
-}
-
-describe("CloudPipelineClient.parseRunListTable", () => {
-  const notImplementedStubFunc = () => {
-    throw new Error("Not implemented");
-  };
-  const cpConfig: ICpExtConfig = {
-    globalStoragePath: "",
-    platformUrl: "https://cora.company.com",
-    prefix: "CP:",
-    apiEndpoint: "/pipeline/restapi",
-    authEndpoint: "/pipeline/restapi/route",
-    pipeApiUri: null,
-    pipeApiToken: null,
-    pipeSnoozeUpdate: null,
-    logLevel: "trace",
-    cpClientMode: CpClientMode.both,
-
-    getClientConfig: notImplementedStubFunc,
-    setClientConfig: notImplementedStubFunc,
-
-    getOnStart: notImplementedStubFunc,
-    setOnStart: notImplementedStubFunc,
-
-    save: notImplementedStubFunc,
-  };
-  const codeContext: ICpCodeContext = {
-    isUpdatingPipeClient: false,
-  };
-  const client = CpClientTest.create(
-    cpConfig,
-    codeContext,
-    console,
-  ) as any as IClient;
+describe("pipeParseRunList", () => {
+  const parseRunListTable = (tableStr: string): RunInfo[] =>
+    pipeParseRunList(tableStr);
 
   it("parses valid table with multiple runs", () => {
     const table = `\
@@ -66,34 +16,34 @@ describe("CloudPipelineClient.parseRunListTable", () => {
 | 128   | None         | pipe2:4.0.0  | None    | SUCCESS| 2024-06-01 12:00 | user2 |
 +-------+--------------+--------------+---------+--------+------------------+-------+        
 `;
-    const result = client.parseRunListTable(table);
+    const result = parseRunListTable(table);
     expect(result).toEqual([
       {
-        runId: 124,
-        parentRunId: 123,
-        pipeline: "pipe1:latest",
+        id: 124,
+        parentId: 123,
+        pipelineName: "pipe1:latest",
         version: "v1.0",
         status: "SUCCESS",
-        started: "2024-06-01 11:00",
+        startDate: "2024-06-01 11:00",
         owner: "user2",
       },
       {
-        runId: 123,
-        parentRunId: null,
-        pipeline: "pipe1:latest",
+        id: 123,
+        parentId: null,
+        pipelineName: "pipe1:latest",
         version: "v1.0",
         status: "RUNNING",
-        started: "2024-06-01 10:00",
+        startDate: "2024-06-01 10:00",
         owner: "user1",
       },
 
       {
-        runId: 128,
-        parentRunId: null,
-        pipeline: "pipe2:4.0.0",
+        id: 128,
+        parentId: null,
+        pipelineName: "pipe2:4.0.0",
         version: null,
         status: "SUCCESS",
-        started: "2024-06-01 12:00",
+        startDate: "2024-06-01 12:00",
         owner: "user2",
       },
     ]);
@@ -101,7 +51,7 @@ describe("CloudPipelineClient.parseRunListTable", () => {
 
   it("returns empty array for empty table", () => {
     const table = "";
-    const result = client.parseRunListTable(table);
+    const result = parseRunListTable(table);
     expect(result).toEqual([]);
   });
 
@@ -109,7 +59,7 @@ describe("CloudPipelineClient.parseRunListTable", () => {
     const table = `
 | RunID | Parent RunID | Pipeline | Version | Status | Started | Owner |
 `;
-    const result = client.parseRunListTable(table);
+    const result = parseRunListTable(table);
     expect(result).toEqual([]);
   });
 
@@ -121,16 +71,16 @@ describe("CloudPipelineClient.parseRunListTable", () => {
 | 125   | 101          | pipe3    | v2.0    | FAILED | 2024-06-01 12:00 |
 +-------+--------------+--------------+---------+--------+------------------+-------+        
 `;
-    const result = client.parseRunListTable(table);
+    const result = parseRunListTable(table);
     // Should still parse, but missing owner will be undefined
     expect(result).toEqual([
       {
-        runId: 125,
-        parentRunId: 101,
-        pipeline: "pipe3",
+        id: 125,
+        parentId: 101,
+        pipelineName: "pipe3",
         version: "v2.0",
         status: "FAILED",
-        started: "2024-06-01 12:00",
+        startDate: "2024-06-01 12:00",
         owner: undefined,
       },
     ]);
@@ -143,15 +93,15 @@ describe("CloudPipelineClient.parseRunListTable", () => {
 +-------+--------------+--------------+---------+--------+------------------+-------+        
 | 126  | None         | pipe4    | v3.0    | QUEUED | 2024-06-01 13:00 | user3 |
 `;
-    const result = client.parseRunListTable(table);
+    const result = parseRunListTable(table);
     expect(result).toEqual([
       {
-        runId: 126,
-        parentRunId: null,
-        pipeline: "pipe4",
+        id: 126,
+        parentId: null,
+        pipelineName: "pipe4",
         version: "v3.0",
         status: "QUEUED",
-        started: "2024-06-01 13:00",
+        startDate: "2024-06-01 13:00",
         owner: "user3",
       },
     ]);

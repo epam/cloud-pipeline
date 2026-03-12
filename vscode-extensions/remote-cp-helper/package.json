@@ -42,10 +42,13 @@
   "contributes": {},
   "scripts": {
     "clean": "rimraf ./dist",
-    "compile": "npx webpack --mode development",
+    "check": "npm run check-types && npm run lint",
+    "build:this": "npm run check && npx webpack --mode development",
+    "build": "npm run --prefix .. prebuild:remote-cp-helper && npm run build:this",
     "package": "npx vsce package --allow-missing-repository",
     "vscode:prepublish": "npx webpack --mode development",
     "webpack": "npx webpack --mode development",
+    "check-types": "tsc --noEmit",
     "lint": "eslint src"
   },
   "devDependencies": {
@@ -65,6 +68,5 @@
     "typescript-eslint": "^8.43.0",
     "webpack": "^5.101.3",
     "webpack-cli": "^6.0.1"
-  },
-  "dependencies": {}
+  }
 }

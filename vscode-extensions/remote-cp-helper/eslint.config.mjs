@@ -1,7 +1,7 @@
 import { fileURLToPath } from "url";
 import path from "path";
 
-import baseConfig from "../cp-client-common/eslint-base.config.mjs";
+import baseConfig from "../eslint-base.config.mjs";
 import reactPlugin from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
 

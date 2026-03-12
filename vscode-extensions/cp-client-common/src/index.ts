@@ -17,6 +17,9 @@ export { findRandomPort, findFreePort, findFreePortFaster } from "./ports";
 // File utilities
 export { exists, untildify, normalizeToSlash } from "./files";
 
+// String utilities
+export { indent } from "./string-utils";
+
 // Platform detection
 export { isWindows, isMacintosh, isLinux } from "./platform";
 
