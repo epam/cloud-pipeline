@@ -1,0 +1,31 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: cp-pipeline-run-cleanup-job
+  namespace: default
+spec:
+  schedule: "${CP_CLEANUP_CRON_SCHEDULE}"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: cp-pipeline-run-cleanup-job
+            image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:pipeline-run-cleanup-job-${CP_VERSION}
+            imagePullPolicy: Always
+            envFrom:
+            - configMapRef:
+                name: cp-config-global
+            volumeMounts:
+            - name: cp-pipeline-run-cleanup-job-state
+              mountPath: /opt/cp-pipeline-run-cleanup-job
+          volumes:
+          - name: cp-pipeline-run-cleanup-job-state
+            hostPath:
+              path: /opt/cp-pipeline-run-cleanup-job
+          imagePullSecrets:
+          - name: cp-distr-docker-registry-secret
