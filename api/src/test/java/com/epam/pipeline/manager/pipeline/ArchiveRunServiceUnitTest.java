@@ -46,6 +46,7 @@ import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.times;
 
 public class ArchiveRunServiceUnitTest {
     private static final String TEST = "test";
@@ -67,9 +68,10 @@ public class ArchiveRunServiceUnitTest {
     private final MetadataDao metadataDao = mock(MetadataDao.class);
     private final UserManager userManager = mock(UserManager.class);
     private final RoleManager roleManager = mock(RoleManager.class);
+    private final ArchiveRunCoreService archiveRunCoreService = mock(ArchiveRunCoreService.class);
     private final ArchiveRunAsynchronousService archiveRunAsyncService = mock(ArchiveRunAsynchronousService.class);
     private final ArchiveRunService archiveRunService = new ArchiveRunService(preferenceManager, messageHelper,
-            metadataDao, userManager, roleManager, archiveRunAsyncService);
+            metadataDao, userManager, roleManager, archiveRunCoreService, archiveRunAsyncService);
 
     @Before
     public void setUp() {
@@ -188,6 +190,38 @@ public class ArchiveRunServiceUnitTest {
 
         archiveRunService.archiveRuns();
         verifyDays(INPUT_DAYS);
+    }
+
+    @Test
+    public void shouldArchiveRunsByIds() {
+        final List<Long> runIds = Arrays.asList(1L, 2L);
+
+        archiveRunService.archiveRuns(runIds);
+
+        verify(archiveRunCoreService).archiveRunsByIds(runIds);
+    }
+
+    @Test
+    public void shouldPartitionRunsByIdsAccordingToChunkSize() {
+        final List<Long> runIds = Arrays.asList(1L, 2L, 3L, 4L);
+
+        archiveRunService.archiveRuns(runIds);
+
+        verify(archiveRunCoreService, times(2)).archiveRunsByIds(any());
+    }
+
+    @Test
+    public void shouldNotArchiveByIdsIfListIsEmpty() {
+        archiveRunService.archiveRuns(Collections.emptyList());
+
+        notInvoked(archiveRunCoreService).archiveRunsByIds(any());
+    }
+
+    @Test
+    public void shouldNotArchiveByIdsIfListIsNull() {
+        archiveRunService.archiveRuns(null);
+
+        notInvoked(archiveRunCoreService).archiveRunsByIds(any());
     }
 
     @Test

@@ -637,6 +637,17 @@ public class PipelineRunController extends AbstractRestController {
         return Result.success(true);
     }
 
+    @PostMapping(value = "/runs/archive/explicit")
+    @ApiOperation(
+            value = "Archive specified runs by their IDs",
+            notes = "Migrate specified pipeline runs (by ID) to the archive table.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<Boolean> archiveRunsByIds(@RequestBody final List<Long> runIds) {
+        runApiService.archiveRuns(runIds);
+        return Result.success(true);
+    }
+
     @PostMapping("/runs/archive/owners")
     @ApiOperation(
             value = "Migrate runs to archive table for specified user (or group).",
