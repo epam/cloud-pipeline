@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 _DATE_FORMAT = '%Y-%m-%d %H:%M:%S.000'
 
 
-def read_last_run_date(state_file):
+def read_last_processed_date(state_file):
     """
     Returns the date string stored from the previous successful run,
     or None if the file doesn't exist or can't be read.
@@ -37,7 +37,7 @@ def read_last_run_date(state_file):
         return None
 
 
-def write_last_run_date(state_file, date_str):
+def write_last_processed_date(state_file, date_str):
     """
     Persists date_str to state_file so the next run can resume from there.
     """

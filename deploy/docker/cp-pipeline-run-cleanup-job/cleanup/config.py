@@ -37,14 +37,14 @@ class CleanupConfig:
         if not self.jwt_token or not self.api_url:
             raise EnvironmentError('API_TOKEN and API environment variables are required')
 
-        self.cleanup_days = _int_env('CP_CLEANUP_DAYS', 30)
-        self.cleanup_statuses = _list_env('CP_CLEANUP_STATUSES', 'FAILURE')
-        self.output_param_names = _list_env('CP_CLEANUP_OUTPUT_PARAM_NAMES', '')
-        self.archive_runs = _bool_env('CP_CLEANUP_ARCHIVE_RUNS', 'false')
-        self.dry_run = _bool_env('CP_CLEANUP_DRY_RUN', 'false')
-        self.page_size = _int_env('CP_CLEANUP_PAGE_SIZE', 100)
-        self.archive_batch_size = _int_env('CP_CLEANUP_ARCHIVE_BATCH_SIZE', 100)
-        self.delete_totally = _bool_env('CP_CLEANUP_DELETE_TOTALLY', 'false')
+        self.cleanup_days_after = _int_env('CP_CLEANUP_RUNS_DAYS_AFTER', 30)
+        self.cleanup_statuses = _list_env('CP_CLEANUP_RUNS_STATUSES', 'FAILURE')
+        self.output_param_names = _list_env('CP_CLEANUP_RUNS_OUTPUT_PARAM_NAMES', '')
+        self.archive_runs = _bool_env('CP_CLEANUP_RUNS_ARCHIVE_RUNS', 'false')
+        self.dry_run = _bool_env('CP_CLEANUP_RUNS_DRY_RUN', 'true')
+        self.page_size = _int_env('CP_CLEANUP_RUNS_PAGE_SIZE', 100)
+        self.archive_batch_size = _int_env('CP_CLEANUP_RUNS_ARCHIVE_BATCH_SIZE', 100)
+        self.delete_data_totally = _bool_env('CP_CLEANUP_RUNS_DELETE_DATA_TOTALLY', 'false')
         self.state_file = os.environ.get(
-            'CP_CLEANUP_STATE_FILE', '/opt/cp-pipeline-run-cleanup-job/last_run.txt'
+            'CP_CLEANUP_RUNS_STATE_FILE', '/opt/cp-pipeline-run-cleanup-job/last_run.txt'
         )

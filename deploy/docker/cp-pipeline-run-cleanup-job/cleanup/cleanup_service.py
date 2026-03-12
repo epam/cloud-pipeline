@@ -15,7 +15,7 @@
 import logging
 from datetime import datetime, timedelta, timezone
 
-from cleanup.state import read_last_run_date, write_last_run_date
+from cleanup.state import read_last_processed_date, write_last_processed_date
 
 logger = logging.getLogger(__name__)
 
@@ -61,9 +61,9 @@ class CleanupService:
         if cfg.dry_run:
             logger.info('DRY RUN MODE — no data will be deleted or archived')
 
-        cutoff = datetime.now(tz=timezone.utc) - timedelta(days=cfg.cleanup_days)
+        cutoff = datetime.now(tz=timezone.utc) - timedelta(days=cfg.cleanup_days_after)
         end_date_to = cutoff.strftime('%Y-%m-%d %H:%M:%S.000')
-        start_date_from = read_last_run_date(cfg.state_file)
+        start_date_from = read_last_processed_date(cfg.state_file)
         logger.info(
             'Starting cleanup: statuses=%s, window=[%s, %s], dry_run=%s',
             cfg.cleanup_statuses, start_date_from or 'beginning', end_date_to, cfg.dry_run,
@@ -114,7 +114,7 @@ class CleanupService:
                         )
                     else:
                         try:
-                            self._api.delete_datastorage_items(storage_id, items, cfg.delete_totally)
+                            self._api.delete_datastorage_items(storage_id, items, cfg.delete_data_totally)
                             logger.info(
                                 'Deleted %s %s from storage %s (run %s)',
                                 item_type, relative_path, storage_id, run_id,
@@ -149,7 +149,7 @@ class CleanupService:
                         logger.exception('Failed to archive batch of %d runs', len(batch))
 
         if not cfg.dry_run:
-            write_last_run_date(cfg.state_file, end_date_to)
+            write_last_processed_date(cfg.state_file, end_date_to)
 
         logger.info(
             'Cleanup complete: runs_processed=%d, paths_deleted=%d, paths_failed=%d, runs_archived=%d',

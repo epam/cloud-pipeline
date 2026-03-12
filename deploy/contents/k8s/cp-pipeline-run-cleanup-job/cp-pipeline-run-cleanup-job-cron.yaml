@@ -4,10 +4,10 @@ metadata:
   name: cp-pipeline-run-cleanup-job
   namespace: default
 spec:
-  schedule: "${CP_CLEANUP_CRON_SCHEDULE}"
+  schedule: "${CP_CLEANUP_RUNS_CRON_SCHEDULE}"
   concurrencyPolicy: Forbid
-  successfulJobsHistoryLimit: 3
-  failedJobsHistoryLimit: 3
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
   jobTemplate:
     spec:
       template:
@@ -17,9 +17,27 @@ spec:
           - name: cp-pipeline-run-cleanup-job
             image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:pipeline-run-cleanup-job-${CP_VERSION}
             imagePullPolicy: Always
+            command: ["/init"]
             envFrom:
             - configMapRef:
                 name: cp-config-global
+            env:
+              - name: CP_CLEANUP_RUNS_DAYS_AFTER
+                value: "30"
+              - name: CP_CLEANUP_RUNS_STATUSES
+                value: "FAILURE,STOPPED"
+              - name: CP_CLEANUP_RUNS_OUTPUT_PARAM_NAMES
+                value: ""
+              - name: CP_CLEANUP_RUNS_ARCHIVE_RUNS
+                value: "false"
+              - name: CP_CLEANUP_RUNS_DRY_RUN
+                value: "true"
+              - name: CP_CLEANUP_RUNS_PAGE_SIZE
+                value: "100"
+              - name: CP_CLEANUP_RUNS_ARCHIVE_BATCH_SIZE
+                value: "100"
+              - name: CP_CLEANUP_RUNS_DELETE_DATA_TOTALLY
+                value: "true"
             volumeMounts:
             - name: cp-pipeline-run-cleanup-job-state
               mountPath: /opt/cp-pipeline-run-cleanup-job
