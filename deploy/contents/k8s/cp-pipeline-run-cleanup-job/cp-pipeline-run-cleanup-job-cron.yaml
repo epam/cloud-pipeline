@@ -40,10 +40,10 @@ spec:
                 value: "true"
             volumeMounts:
             - name: cp-pipeline-run-cleanup-job-state
-              mountPath: /opt/cp-pipeline-run-cleanup-job
+              mountPath: /opt/cp-pipeline-run-cleanup-job/state
           volumes:
           - name: cp-pipeline-run-cleanup-job-state
             hostPath:
-              path: /opt/cp-pipeline-run-cleanup-job
+              path: /opt/cp-pipeline-run-cleanup-job/state
           imagePullSecrets:
           - name: cp-distr-docker-registry-secret

@@ -46,5 +46,5 @@ class CleanupConfig:
         self.archive_batch_size = _int_env('CP_CLEANUP_RUNS_ARCHIVE_BATCH_SIZE', 100)
         self.delete_data_totally = _bool_env('CP_CLEANUP_RUNS_DELETE_DATA_TOTALLY', 'false')
         self.state_file = os.environ.get(
-            'CP_CLEANUP_RUNS_STATE_FILE', '/opt/cp-pipeline-run-cleanup-job/last_run.txt'
+            'CP_CLEANUP_RUNS_STATE_FILE', '/opt/cp-pipeline-run-cleanup-job/state/last_run.txt'
         )
