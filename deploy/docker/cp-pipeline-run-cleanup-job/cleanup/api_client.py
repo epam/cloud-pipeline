@@ -12,10 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import re
+
 from pipeline.api import PipelineAPI
+from pipeline.api.datastorage import DataStorage
 from pipeline.api.token import StaticToken
 
 _RUNS_ARCHIVE_URL = 'runs/archive'
+_DATASTORAGE_FIND_BY_PATH_URL = 'datastorage/findByPath?id={path}'
+_CLOUD_PATH_PREFIX_RE = re.compile(r'^(?:s3|az|gs|cp)://')
 
 
 class CloudPipelineAPIClient(PipelineAPI):
@@ -36,6 +41,11 @@ class CloudPipelineAPIClient(PipelineAPI):
         elements = result.get('elements', []) if result else []
         total_count = result.get('totalCount', 0) if result else 0
         return elements, total_count
+
+    def find_datastorage_by_path(self, path):
+        result = self._request(http_method='get',
+                               endpoint=_DATASTORAGE_FIND_BY_PATH_URL.format(path=path))
+        return DataStorage.from_json(result) if result else None
 
     def delete_datastorage_items(self, storage_id, items, totally=False):
         endpoint = '{}?totally={}'.format(

@@ -13,14 +13,18 @@
 # limitations under the License.
 
 import logging
+import re
 from datetime import datetime, timedelta, timezone
 
 from cleanup.state import read_last_processed_date, write_last_processed_date
 
+
 logger = logging.getLogger(__name__)
 
 _OUTPUT_PARAM_TYPE = 'output'
-
+_CLOUD_PATH_PREFIX = r'^(?:s3|az|gs|cp)://'
+_CLOUD_PATH_PREFIX_RE = re.compile(_CLOUD_PATH_PREFIX)
+CLOUD_DATA_MOUNT_POINT_RE = re.compile("/cloud-data/([^/]+)/(.*)")
 
 def _get_output_paths(run, extra_names):
     """Extract output storage paths from a run's parameters."""
@@ -29,7 +33,7 @@ def _get_output_paths(run, extra_names):
     for param in params:
         name = param.get('name', '')
         ptype = param.get('type', '')
-        value = param.get('value') or ''
+        value = param.get('resolvedValue') or param.get('value') or ''
         if not value:
             continue
         if ptype.lower() == _OUTPUT_PARAM_TYPE or name in extra_names:
@@ -90,8 +94,9 @@ class CleanupService:
                 output_paths = _get_output_paths(run, set(cfg.output_param_names))
 
                 for path in output_paths:
+                    stripped_path = _CLOUD_PATH_PREFIX_RE.sub('', path)
                     try:
-                        storage = self._api.find_datastorage(path)
+                        storage = self.find_datastorage(path)
                     except Exception:
                         logger.warning('Could not find storage for path %s (run %s)', path, run_id)
                         paths_failed += 1
@@ -103,8 +108,9 @@ class CleanupService:
                         continue
 
                     storage_id = storage.id
-                    relative_path = _strip_storage_prefix(path, storage.path)
-                    item_type = 'Folder' if path.endswith('/') else 'File'
+                    relative_path = _strip_storage_prefix(stripped_path, storage.path)
+                    # TODO: define item type correctly, by using
+                    item_type = 'Folder' if stripped_path.endswith('/') else 'File'
                     items = [{'path': relative_path, 'type': item_type}]
 
                     if cfg.dry_run:
@@ -155,3 +161,23 @@ class CleanupService:
             'Cleanup complete: runs_processed=%d, paths_deleted=%d, paths_failed=%d, runs_archived=%d',
             runs_processed, paths_deleted, paths_failed, runs_archived,
         )
+
+    def find_datastorage(self, path):
+        # Path is the cloud object path
+        if re.match(_CLOUD_PATH_PREFIX, path):
+            stripped_path = _CLOUD_PATH_PREFIX_RE.sub('', path)
+            return self._api.find_datastorage_by_path(stripped_path)
+        # Path is the NFS path
+        else:
+            default_mount_path_match = CLOUD_DATA_MOUNT_POINT_RE.match(path)
+            # if path is a default nfs storage mount path, we can restore real storage path from it
+            if default_mount_path_match:
+                storage_host_name = default_mount_path_match.group(1)
+                storage_internal_path = default_mount_path_match.group(2)
+                nfs_storage_path = storage_host_name + ":/" + storage_internal_path
+                return self._api.find_datastorage_by_path(nfs_storage_path)
+            # in this case we need to ask api-srv to seach storage by it mount path
+            else:
+                return None
+
+
