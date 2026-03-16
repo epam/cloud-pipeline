@@ -178,6 +178,7 @@ class CleanupService:
                 return self._api.find_datastorage_by_path(nfs_storage_path)
             # in this case we need to ask api-srv to seach storage by it mount path
             else:
+                # TODO: implement search of the NFS storage in case of custom mount point
                 return None
 
 
