@@ -83,7 +83,7 @@ public class StoragePermissionManager {
 
     public boolean isStorageAdmin() {
         return authManager.isAdmin()
-            && permissionHelper.isScopedAdmin(AclClass.DATA_STORAGE);
+            || permissionHelper.isScopedAdmin(AclClass.DATA_STORAGE);
     }
 
     public boolean storagePermission(final AbstractDataStorage storage,

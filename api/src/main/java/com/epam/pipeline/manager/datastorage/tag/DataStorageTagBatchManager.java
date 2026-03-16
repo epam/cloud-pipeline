@@ -243,7 +243,7 @@ public class DataStorageTagBatchManager {
     private <T> List<String> getAllowedPaths(final Long storageId, final List<T> requests,
                                              final Function<T, String> getPathFunction,
                                              final int mask) {
-        if (authManager.isAdmin()) {
+        if (storagePermissionManager.isStorageAdmin()) {
             return null;
         }
         final AbstractDataStorage storage = storageDao.loadDataStorage(storageId);
@@ -251,8 +251,7 @@ public class DataStorageTagBatchManager {
             log.debug("Storage '{}' was not found.", storageId);
             return Collections.emptyList();
         }
-        if (storagePermissionManager.isStorageAdmin()
-                || !(storage.isPathPermissionsEnabled() && DataStorageType.S3.equals(storage.getType())
+        if (!(storage.isPathPermissionsEnabled() && DataStorageType.S3.equals(storage.getType())
                 && !authManager.getAuthorizedUser().equalsIgnoreCase(storage.getOwner()))) {
             return null;
         }
