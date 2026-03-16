@@ -36,6 +36,7 @@ import com.epam.pipeline.entity.datastorage.tag.DataStorageTagUpsertBatchRequest
 import com.epam.pipeline.entity.datastorage.tag.DataStorageTagUpsertRequest;
 import com.epam.pipeline.manager.datastorage.permissions.StoragePathPermissionsService;
 import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.security.storage.StoragePermissionManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -71,6 +72,7 @@ public class DataStorageTagBatchManager {
     private final DataStorageTagDao tagDao;
     private final DataStorageDao storageDao;
     private final AuthManager authManager;
+    private final StoragePermissionManager storagePermissionManager;
     private final StoragePathPermissionsService storagePathPermissionsService;
 
     @Transactional
@@ -249,7 +251,8 @@ public class DataStorageTagBatchManager {
             log.debug("Storage '{}' was not found.", storageId);
             return Collections.emptyList();
         }
-        if (!(storage.isPathPermissionsEnabled() && DataStorageType.S3.equals(storage.getType())
+        if (storagePermissionManager.isStorageAdmin()
+                || !(storage.isPathPermissionsEnabled() && DataStorageType.S3.equals(storage.getType())
                 && !authManager.getAuthorizedUser().equalsIgnoreCase(storage.getOwner()))) {
             return null;
         }
