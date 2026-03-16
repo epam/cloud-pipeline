@@ -1576,7 +1576,8 @@ public class DataStorageManager implements SecuredEntityManager {
 
     private boolean needToLoadPathPermissions(final AbstractDataStorage storage) {
         return storage.isPathPermissionsEnabled() && DataStorageType.S3.equals(storage.getType())
-                && !authManager.isAdmin() && !authManager.getAuthorizedUser().equalsIgnoreCase(storage.getOwner());
+                && !storagePermissionManager.isStorageAdmin()
+                && !authManager.getAuthorizedUser().equalsIgnoreCase(storage.getOwner());
     }
 
     private DataStorageListing addPathsMasks(final AbstractDataStorage storage,
