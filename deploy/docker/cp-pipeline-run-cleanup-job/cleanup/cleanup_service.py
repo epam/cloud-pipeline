@@ -109,16 +109,16 @@ class CleanupService:
 
                     storage_id = storage.id
                     relative_path = _strip_storage_prefix(stripped_path, storage.path)
-                    # TODO: define item type correctly, by using
-                    item_type = 'Folder' if stripped_path.endswith('/') else 'File'
-                    items = [{'path': relative_path, 'type': item_type}]
+
+                    item_type = self.find_item_type(storage_id, relative_path)
+                    items = [{'path': relative_path, 'type': item_type}] if item_type else None
 
                     if cfg.dry_run:
                         logger.info(
                             '[DRY RUN] Would delete %s %s from storage %s (run %s)',
                             item_type, relative_path, storage_id, run_id,
                         )
-                    else:
+                    elif items:
                         try:
                             self._api.delete_datastorage_items(storage_id, items, cfg.delete_data_totally)
                             logger.info(
@@ -176,9 +176,16 @@ class CleanupService:
                 storage_internal_path = default_mount_path_match.group(2)
                 nfs_storage_path = storage_host_name + ":/" + storage_internal_path
                 return self._api.find_datastorage_by_path(nfs_storage_path)
-            # in this case we need to ask api-srv to seach storage by it mount path
+            # in this case we need to ask api-srv to search storage by it mount path
             else:
                 # TODO: implement search of the NFS storage in case of custom mount point
                 return None
 
-
+    def find_item_type(self, storage_id, relative_path):
+        if relative_path.endswith('/'):
+            return 'Folder'
+        try:
+            return self._api.get_storage_item_type(storage_id, relative_path)
+        except Exception:
+            logger.debug('Could not find item type for path %s', relative_path)
+            return None
