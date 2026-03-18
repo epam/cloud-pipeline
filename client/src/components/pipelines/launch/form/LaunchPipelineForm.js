@@ -5699,7 +5699,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   onParametersChange = (newParameters) => {
-    console.log('NEW', newParameters)
     const current = this.getCurrentParametersPayload();
     const prevCount = (current.parameters || []).length;
     const parameterAdded = newParameters.length > prevCount;
