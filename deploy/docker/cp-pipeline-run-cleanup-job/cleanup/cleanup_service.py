@@ -1,4 +1,4 @@
-# Copyright 2024 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,10 +17,11 @@ import re
 from datetime import datetime, timedelta, timezone
 
 from cleanup.state import read_last_processed_date, write_last_processed_date
-
+from cleanup.pipe_cli_service import PipeCLIService
 
 logger = logging.getLogger(__name__)
 
+_PARAMS_PLACEHOLDER = '$'
 _OUTPUT_PARAM_TYPE = 'output'
 _CLOUD_PATH_PREFIX = r'^(?:s3|az|gs|cp)://'
 _CLOUD_PATH_PREFIX_RE = re.compile(_CLOUD_PATH_PREFIX)
@@ -59,6 +60,7 @@ class CleanupService:
     def __init__(self, config, api_client):
         self._cfg = config
         self._api = api_client
+        self._cli = PipeCLIService()
 
     def run(self):
         cfg = self._cfg
@@ -91,9 +93,13 @@ class CleanupService:
             for run in runs:
                 run_id = run.get('id')
                 collected_ids.append(run_id)
-                output_paths = _get_output_paths(run, set(cfg.output_param_names))
+                output_paths = self.find_output_paths(run, set(cfg.output_param_names))
 
                 for path in output_paths:
+                    _is_object_storage = re.match(_CLOUD_PATH_PREFIX, path)
+                    if not self._cfg.nfs_support and not _is_object_storage:
+                        logger.info('Skipping path %s since object storages supported only (run %s)', path, run_id)
+                        continue
                     stripped_path = _CLOUD_PATH_PREFIX_RE.sub('', path)
                     try:
                         storage = self.find_datastorage(path)
@@ -113,14 +119,28 @@ class CleanupService:
                     item_type = self.find_item_type(storage_id, relative_path)
                     items = [{'path': relative_path, 'type': item_type}] if item_type else None
 
-                    if cfg.dry_run:
+                    if not items:
+                        logger.debug(f'No items found via {path} for storage #{storage_id} (run {run_id})')
+                        paths_failed += 1
+                    elif cfg.dry_run:
                         logger.info(
                             '[DRY RUN] Would delete %s %s from storage %s (run %s)',
                             item_type, relative_path, storage_id, run_id,
                         )
-                    elif items:
+                    else:
                         try:
-                            self._api.delete_datastorage_items(storage_id, items, cfg.delete_data_totally)
+                            if not _is_object_storage:
+                                logger.info(
+                                    'Deleting %s %s from storage #%s (run %s) via API..',
+                                    item_type, relative_path, storage_id, run_id,
+                                )
+                                self._api.delete_datastorage_items(storage_id, items, cfg.delete_data_totally)
+                            else:
+                                logger.info(
+                                    'Deleting %s %s from storage #%s (run %s) via CLI..',
+                                    item_type, relative_path, storage_id, run_id,
+                                )
+                                self._cli.delete_storage_items(path, cfg.delete_data_totally, item_type == 'Folder')
                             logger.info(
                                 'Deleted %s %s from storage %s (run %s)',
                                 item_type, relative_path, storage_id, run_id,
@@ -148,6 +168,7 @@ class CleanupService:
                     logger.info('[DRY RUN] Would archive run IDs: %s', batch)
                 else:
                     try:
+                        logger.debug('Would archive run IDs: %s', batch)
                         self._api.archive_runs_by_ids(batch)
                         logger.info('Archived %d runs', len(batch))
                         runs_archived += len(batch)
@@ -168,7 +189,7 @@ class CleanupService:
             stripped_path = _CLOUD_PATH_PREFIX_RE.sub('', path)
             return self._api.find_datastorage_by_path(stripped_path)
         # Path is the NFS path
-        else:
+        elif self._cfg.nfs_support:
             default_mount_path_match = CLOUD_DATA_MOUNT_POINT_RE.match(path)
             # if path is a default nfs storage mount path, we can restore real storage path from it
             if default_mount_path_match:
@@ -180,6 +201,9 @@ class CleanupService:
             else:
                 # TODO: implement search of the NFS storage in case of custom mount point
                 return None
+        else:
+            logger.info('Skipping path %s since NFS storages cleaning not supported', path)
+            return None
 
     def find_item_type(self, storage_id, relative_path):
         if relative_path.endswith('/'):
@@ -189,3 +213,21 @@ class CleanupService:
         except Exception:
             logger.debug('Could not find item type for path %s', relative_path)
             return None
+
+    @staticmethod
+    def _has_params_placeholder(output_paths):
+        for opath in output_paths:
+            if _PARAMS_PLACEHOLDER in opath:
+                return True
+        return False
+
+    def find_output_paths(self, run, output_param_names):
+        resolved_output_paths = _get_output_paths(run, output_param_names)
+        # run/filter API method does not return `resolvedValue` for old runs
+        # this way we need to fetch run (but only if operation truly required):
+        if self._has_params_placeholder(resolved_output_paths):
+            run = self._api.load_run(run.get('id'))
+            # replace params with new values
+            return _get_output_paths(run, output_param_names)
+        return resolved_output_paths
+

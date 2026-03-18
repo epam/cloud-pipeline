@@ -1,4 +1,4 @@
-# Copyright 2024 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -48,3 +48,4 @@ class CleanupConfig:
         self.state_file = os.environ.get(
             'CP_CLEANUP_RUNS_STATE_FILE', '/opt/cp-pipeline-run-cleanup-job/state/last_run.txt'
         )
+        self.nfs_support = _bool_env('CP_CLEANUP_RUNS_NFS_SUPPORT', 'false')

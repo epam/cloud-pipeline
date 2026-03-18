@@ -1,4 +1,4 @@
-# Copyright 2024 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ from pipeline.api import PipelineAPI
 from pipeline.api.datastorage import DataStorage
 from pipeline.api.token import StaticToken
 
-_RUNS_ARCHIVE_URL = 'runs/archive'
+_RUNS_ARCHIVE_URL = 'runs/archive/explicit'
 _DATASTORAGE_FIND_BY_PATH_URL = 'datastorage/findByPath?id={path}'
 _CLOUD_PATH_PREFIX_RE = re.compile(r'^(?:s3|az|gs|cp)://')
 
