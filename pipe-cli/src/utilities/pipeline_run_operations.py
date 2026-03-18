@@ -133,6 +133,7 @@ class PipelineRunOperations(object):
                                                              price_type=price_type,
                                                              region_id=region_id)
                     instance_type = instance_type or run_price.instance_type
+
                     if not quiet:
                         click.echo('done.', nl=True)
                         price_table = prettytable.PrettyTable()

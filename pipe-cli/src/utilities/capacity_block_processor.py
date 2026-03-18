@@ -25,7 +25,8 @@ class CapacityBlockProcessor:
     def __init__(self, instance_type):
         self._config = None
         if not instance_type:
-            pass
+            # instance type is None, we can not to check further
+            return
         self._instance_type = instance_type
         config = self._find_capacity_block_config()
         self._config = config.get(self._instance_type)
@@ -60,7 +61,11 @@ class CapacityBlockProcessor:
         preference_value = preference.value
         if not preference_value:
             return {}
-        return json.loads(preference_value)
+        try:
+            return json.loads(preference_value)
+        except json.JSONDecodeError:
+            click.echo('Cannot parse preference %s, not a valid json.' % self.CONFIG_PREFERENCE, err=True)
+            return {}
 
     def _validate_parameter(self, config_marker_name, parameters, parameter_name):
         if not self._config.get(config_marker_name):
