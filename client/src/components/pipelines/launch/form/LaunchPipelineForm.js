@@ -4700,6 +4700,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               };
             }));
           await this.registerParametersPayloads(paramsPayloads);
+          if (
+            this.showOptionalParametersFilter &&
+            !this.state.showOptionalParameters
+          ) {
+            this.setState({showOptionalParameters: true});
+          }
         } catch (error) {
           message.error(
             <div>Error applying parameters: {error.message}</div>,
@@ -5694,6 +5700,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   onParametersChange = (newParameters) => {
     const current = this.getCurrentParametersPayload();
+    const prevCount = (current.parameters || []).length;
+    const parameterAdded = newParameters.length > prevCount;
+    const shouldShowOptional = parameterAdded &&
+      this.showOptionalParametersFilter &&
+      !this.state.showOptionalParameters;
     const payload = {
       ...current,
       parameters: newParameters
@@ -5707,7 +5718,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       updated.push(payload);
     }
     this.setState({
-      parametersPayloads: updated
+      parametersPayloads: updated,
+      ...(shouldShowOptional ? {showOptionalParameters: true} : {})
     }, () => {
       this.onValidateParameters();
       this.formFieldsChanged();
