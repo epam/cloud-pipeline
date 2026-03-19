@@ -71,8 +71,9 @@ class CleanupService:
         end_date_to = cutoff.strftime('%Y-%m-%d %H:%M:%S.000')
         start_date_from = read_last_processed_date(cfg.state_file)
         logger.info(
-            'Starting cleanup: statuses=%s, window=[%s, %s], dry_run=%s',
-            cfg.cleanup_statuses, start_date_from or 'beginning', end_date_to, cfg.dry_run,
+            'Starting cleanup: pipeline_id=%s, statuses=%s, window=[%s, %s], dry_run=%s',
+            cfg.pipeline_id, cfg.cleanup_statuses,
+            start_date_from or 'beginning', end_date_to, cfg.dry_run,
         )
 
         collected_ids = []
@@ -85,6 +86,7 @@ class CleanupService:
             try:
                 runs, total = self._api.filter_runs_by_statuses(
                     cfg.cleanup_statuses, end_date_to, page, cfg.page_size, start_date_from,
+                    pipeline_ids=[cfg.pipeline_id],
                 )
             except Exception:
                 logger.exception('Failed to fetch runs page %d', page)

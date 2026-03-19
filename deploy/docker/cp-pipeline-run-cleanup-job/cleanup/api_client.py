@@ -28,7 +28,8 @@ class CloudPipelineAPIClient(PipelineAPI):
     def __init__(self, api_url, jwt_token):
         super(CloudPipelineAPIClient, self).__init__(api_url=api_url, token=StaticToken(jwt_token))
 
-    def filter_runs_by_statuses(self, statuses, end_date_to, page, page_size, start_date_from=None):
+    def filter_runs_by_statuses(self, statuses, end_date_to, page, page_size,
+                                start_date_from=None, pipeline_ids=None):
         data = {
             'statuses': statuses,
             'endDateTo': end_date_to,
@@ -37,6 +38,8 @@ class CloudPipelineAPIClient(PipelineAPI):
         }
         if start_date_from is not None:
             data['startDateFrom'] = start_date_from
+        if pipeline_ids is not None:
+            data['pipelineIds'] = pipeline_ids
         result = self._request(endpoint=self.FILTER_RUNS, http_method='post', data=data)
         elements = result.get('elements', []) if result else []
         total_count = result.get('totalCount', 0) if result else 0

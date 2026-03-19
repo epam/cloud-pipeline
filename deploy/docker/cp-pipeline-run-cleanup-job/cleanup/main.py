@@ -18,10 +18,9 @@ import sys
 
 from cleanup.api_client import CloudPipelineAPIClient
 from cleanup.cleanup_service import CleanupService
-from cleanup.config import CleanupConfig
+from cleanup.config import GlobalConfig, load_pipeline_configs
 
 logging.basicConfig(
-    # getting constant value from logging by its name (logging values) if value isn't correct one - fallback to INFO
     level=getattr(logging, os.getenv('CP_CLEANUP_RUNS_LOG_LEVEL', 'INFO').upper(), logging.INFO),
     format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
     stream=sys.stdout,
@@ -32,15 +31,27 @@ logger = logging.getLogger(__name__)
 
 def main():
     try:
-        config = CleanupConfig()
-        service = CleanupService(config, CloudPipelineAPIClient(config.api_url, config.jwt_token))
+        global_config = GlobalConfig()
+        pipeline_configs = load_pipeline_configs(global_config.config_file)
+        logger.info('Loaded %d pipeline configuration(s) from %s',
+                     len(pipeline_configs), global_config.config_file)
+    except (EnvironmentError, ValueError, IOError) as e:
+        logger.error('Configuration error: %s', e)
+        sys.exit(1)
+
+    api_client = CloudPipelineAPIClient(global_config.api_url, global_config.jwt_token)
+
+    failed = False
+    for pipeline_config in pipeline_configs:
+        logger.info('--- Processing pipeline %s ---', pipeline_config.pipeline_id)
         try:
+            service = CleanupService(pipeline_config, api_client)
             service.run()
         except Exception:
-            logger.exception('Cleanup service failed')
-            sys.exit(1)
-    except EnvironmentError as e:
-        logger.error('Configuration error: %s', e)
+            logger.exception('Cleanup failed for pipeline %s', pipeline_config.pipeline_id)
+            failed = True
+
+    if failed:
         sys.exit(1)
 
 
