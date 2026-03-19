@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import logging
+import os
 import sys
 
 from cleanup.api_client import CloudPipelineAPIClient
@@ -20,7 +21,8 @@ from cleanup.cleanup_service import CleanupService
 from cleanup.config import CleanupConfig
 
 logging.basicConfig(
-    level=logging.INFO,
+    # getting constant value from logging by its name (logging values) if value isn't correct one - fallback to INFO
+    level=getattr(logging, os.getenv('CP_CLEANUP_RUNS_LOG_LEVEL', 'INFO').upper(), logging.INFO),
     format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
     stream=sys.stdout,
 )

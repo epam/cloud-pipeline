@@ -355,6 +355,13 @@ docker build    $DOCKERS_SOURCES_PATH/cp-mlflow-server \
                 -t "$CP_MLFLOW_DIST_NAME"
 docker push "$CP_MLFLOW_DIST_NAME"
 
+# cp-pipeline-run-cleanup-job
+CP_RUN_CLEANUP_JOB_DIST_NAME=${CP_RUN_CLEANUP_JOB_DIST_NAME:-"$CP_DIST_REPO_NAME:cp-pipeline-run-cleanup-job-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-pipeline-run-cleanup-job \
+                -t "$CP_RUN_CLEANUP_JOB_DIST_NAME" \
+                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
+docker push "$CP_RUN_CLEANUP_JOB_DIST_NAME"
+
 
 ########################
 # Base tools dockers

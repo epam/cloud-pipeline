@@ -98,7 +98,7 @@ class CleanupService:
                 for path in output_paths:
                     _is_object_storage = re.match(_CLOUD_PATH_PREFIX, path)
                     if not self._cfg.nfs_support and not _is_object_storage:
-                        logger.info('Skipping path %s since object storages supported only (run %s)', path, run_id)
+                        logger.debug('Skipping path %s since object storages supported only (run %s)', path, run_id)
                         continue
                     stripped_path = _CLOUD_PATH_PREFIX_RE.sub('', path)
                     try:
@@ -116,7 +116,7 @@ class CleanupService:
                     storage_id = storage.id
                     relative_path = _strip_storage_prefix(stripped_path, storage.path)
 
-                    item_type = self.find_item_type(storage_id, relative_path)
+                    item_type = self.define_item_type(storage_id, relative_path)
                     items = [{'path': relative_path, 'type': item_type}] if item_type else None
 
                     if not items:
@@ -130,13 +130,13 @@ class CleanupService:
                     else:
                         try:
                             if not _is_object_storage:
-                                logger.info(
+                                logger.debug(
                                     'Deleting %s %s from storage #%s (run %s) via API..',
                                     item_type, relative_path, storage_id, run_id,
                                 )
                                 self._api.delete_datastorage_items(storage_id, items, cfg.delete_data_totally)
                             else:
-                                logger.info(
+                                logger.debug(
                                     'Deleting %s %s from storage #%s (run %s) via CLI..',
                                     item_type, relative_path, storage_id, run_id,
                                 )
@@ -205,7 +205,7 @@ class CleanupService:
             logger.info('Skipping path %s since NFS storages cleaning not supported', path)
             return None
 
-    def find_item_type(self, storage_id, relative_path):
+    def define_item_type(self, storage_id, relative_path):
         if relative_path.endswith('/'):
             return 'Folder'
         try:
