@@ -26,6 +26,8 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import static com.epam.pipeline.manager.datastorage.providers.nfs.NFSHelper.formatNfsPath;
@@ -44,6 +46,7 @@ public class NFSStorageMounter {
      */
     private static final String NFS_UNMOUNT_CMD_PATTERN = "sudo umount -l -f %s";
 
+
     private final CmdExecutor cmdExecutor = new CmdExecutor();
     private final MessageHelper messageHelper;
     private final DataStorageDao dataStorageDao;
@@ -51,6 +54,7 @@ public class NFSStorageMounter {
     private final FileShareMountManager shareMountManager;
     private final String rootMountPoint;
     private final long timeoutMills;
+    private final ConcurrentHashMap<String, ReentrantLock> rootMountPointLocks;
 
     public NFSStorageMounter(final MessageHelper messageHelper,
                              final DataStorageDao dataStorageDao,
@@ -66,12 +70,15 @@ public class NFSStorageMounter {
         this.shareMountManager = shareMountManager;
         this.rootMountPoint = rootMountPoint;
         this.timeoutMills = timeoutMills;
+        this.rootMountPointLocks = new ConcurrentHashMap<>();
     }
 
-    public synchronized File mount(final NFSDataStorage dataStorage) {
+    public File mount(final NFSDataStorage dataStorage) {
+        final FileShareMount fileShareMount = shareMountManager.load(dataStorage.getFileShareMountId());
+        final File rootMount = getShareRootMount(dataStorage, fileShareMount);
+        final ReentrantLock lock = getMountPointLock(rootMount);
+        lock.lock();
         try {
-            final FileShareMount fileShareMount = shareMountManager.load(dataStorage.getFileShareMountId());
-            final File rootMount = getShareRootMount(dataStorage, fileShareMount);
             if (!rootMount.exists()) {
                 Assert.isTrue(rootMount.mkdirs(), messageHelper.getMessage(
                         MessageConstants.ERROR_DATASTORAGE_NFS_MOUNT_DIRECTORY_NOT_CREATED));
@@ -107,28 +114,40 @@ public class NFSStorageMounter {
             throw new DataStorageException(messageHelper.getMessage(
                     messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_NFS_MOUNT, dataStorage.getName(),
                             dataStorage.getPath())), e);
+        } finally {
+            lock.unlock();
         }
     }
 
-    public synchronized void unmountNFSIfEmpty(NFSDataStorage storage) {
+    public void unmountNFSIfEmpty(final NFSDataStorage storage) {
         final FileShareMount fileShareMount = shareMountManager.load(storage.getFileShareMountId());
         final File rootMount = getShareRootMount(storage, fileShareMount);
-        // if mount exact path, storage will be mounted to the unique dir
-        final List<AbstractDataStorage> remaining = storage.isMountExactPath()
-                ? Collections.singletonList(storage)
-                : dataStorageDao.loadDataStoragesByFileShareMountID(storage.getFileShareMountId());
-        LOGGER.debug("Remaining NFS: " + remaining.stream().map(AbstractDataStorage::getPath)
-                .collect(Collectors.joining(";")) + " related with current file share mount");
+        final ReentrantLock lock = getMountPointLock(rootMount);
+        lock.lock();
+        try {
+            // if mount exact path, storage will be mounted to the unique dir
+            final List<AbstractDataStorage> remaining = storage.isMountExactPath()
+                    ? Collections.singletonList(storage)
+                    : dataStorageDao.loadDataStoragesByFileShareMountID(storage.getFileShareMountId());
+            LOGGER.debug("Remaining NFS: " + remaining.stream().map(AbstractDataStorage::getPath)
+                    .collect(Collectors.joining(";")) + " related with current file share mount");
 
-        if (rootMount.exists() && isStorageOnlyOnNFS(storage, remaining)) {
-            try {
-                final String umountCmd = String.format(NFS_UNMOUNT_CMD_PATTERN, rootMount.getAbsolutePath());
-                cmdExecutor.executeCommand(umountCmd);
-                FileUtils.deleteDirectory(rootMount);
-            } catch (IOException e) {
-                throw new DataStorageException(e);
+            if (rootMount.exists() && isStorageOnlyOnNFS(storage, remaining)) {
+                try {
+                    final String umountCmd = String.format(NFS_UNMOUNT_CMD_PATTERN, rootMount.getAbsolutePath());
+                    cmdExecutor.executeCommand(umountCmd);
+                    FileUtils.deleteDirectory(rootMount);
+                } catch (IOException e) {
+                    throw new DataStorageException(e);
+                }
             }
+        } finally {
+            lock.unlock();
         }
+    }
+
+    private ReentrantLock getMountPointLock(final File rootMount) {
+        return rootMountPointLocks.computeIfAbsent(rootMount.getAbsolutePath(), k -> new ReentrantLock());
     }
 
     private File getStorageMountPath(final NFSDataStorage storage, final FileShareMount fileShareMount) {
