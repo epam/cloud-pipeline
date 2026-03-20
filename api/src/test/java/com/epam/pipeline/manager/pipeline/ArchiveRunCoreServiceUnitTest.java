@@ -19,6 +19,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.pipeline.ArchiveRunDao;
 import com.epam.pipeline.dao.pipeline.EngineRunTaskDao;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
+import com.epam.pipeline.dao.pipeline.PipelineRunResultDao;
 import com.epam.pipeline.dao.pipeline.RestartRunDao;
 import com.epam.pipeline.dao.pipeline.RunLogDao;
 import com.epam.pipeline.dao.pipeline.RunStatusDao;
@@ -54,6 +55,7 @@ public class ArchiveRunCoreServiceUnitTest {
 
     private final ArchiveRunDao archiveRunDao = mock(ArchiveRunDao.class);
     private final PipelineRunDao pipelineRunDao = mock(PipelineRunDao.class);
+    private final PipelineRunResultDao pipelineRunResultDao = mock(PipelineRunResultDao.class);
     private final RunLogDao runLogDao = mock(RunLogDao.class);
     private final RestartRunDao restartRunDao = mock(RestartRunDao.class);
     private final RunServiceUrlDao runServiceUrlDao = mock(RunServiceUrlDao.class);
@@ -63,7 +65,7 @@ public class ArchiveRunCoreServiceUnitTest {
     private final MessageHelper messageHelper = mock(MessageHelper.class);
 
     private final ArchiveRunCoreService archiveRunCoreService = new ArchiveRunCoreService(
-            archiveRunDao, pipelineRunDao, runLogDao, restartRunDao, runServiceUrlDao,
+            archiveRunDao, pipelineRunDao, pipelineRunResultDao, runLogDao, restartRunDao, runServiceUrlDao,
             runStatusDao, stopServerlessRunDao, engineRunTaskDao, messageHelper);
 
     @Test
