@@ -288,6 +288,11 @@ public class LogAO implements AccessObject<LogAO> {
                 .shouldBe(visible).attr("href");
     }
 
+    public LogAO checkEndpointLink(String endpoint, String link) {
+        System.out.printf("%s  ;  %s/n", $(withText(endpoint)).getAttribute("href"), link);
+        return ensure(withText(endpoint), attribute("href", link));
+    }
+
     public LogAO waitForNestedRunsLink() {
         long startTime = currentTimeMillis();
         while(!get(NESTED_RUNS).exists() &&

@@ -117,9 +117,14 @@ public class NavigationHomeAO implements AccessObject<NavigationHomeAO> {
     }
 
     public ShellAO openSSHLink(String runId, String region) {
-        serviceSshLink(runId).hover().closest("div")
-                .find(className("ultizone-url__expander")).click();
-        $(byText(region)).click();
+        if (serviceSshLink(runId).hover().closest("div")
+                .find(className("ultizone-url__expander")).exists()) {
+            serviceSshLink(runId).hover().closest("div")
+                    .find(className("ultizone-url__expander")).click();
+            $(byText(region)).click();
+        } else {
+            serviceSshLink(runId).click();
+        }
         switchTo().window(1);
         switchTo().frame(0);
         return new ShellAO();
