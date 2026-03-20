@@ -18,7 +18,7 @@ import os
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_STATE_DIR = '/opt/cp-pipeline-run-cleanup-job/state'
+_DEFAULT_STATE_DIR = '/opt/cp-run-cleanup-job/state'
 
 _HARDCODED_DEFAULTS = {
     'cleanup_days_after': 30,

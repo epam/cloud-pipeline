@@ -37,7 +37,7 @@ spec:
               - name: CP_CLEANUP_RUNS_CONFIG_FILE
                 value: "/opt/cp-run-cleanup-job/config/config.json"
               - name: CP_CLEANUP_RUNS_STATE_DIR
-                value: "/opt/cp-pipeline-run-cleanup-job/state"
+                value: "/opt/cp-run-cleanup-job/state"
             volumeMounts:
             - name: cp-run-cleanup-job-state
               mountPath: /opt/cp-run-cleanup-job/state

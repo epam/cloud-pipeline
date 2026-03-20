@@ -15,10 +15,14 @@ RUN cd /tmp && \
     unzip -q pipeline.jar && \
     mkdir -p $COMMON_REPO_DIR && \
     mv BOOT-INF/classes/static/pipe-common.tar.gz $COMMON_REPO_DIR/pipe-common.tar.gz && \
+    mv BOOT-INF/classes/static/pipe.tar.gz $COMMON_REPO_DIR/pipe.tar.gz && \
     cd $COMMON_REPO_DIR && \
     tar xf pipe-common.tar.gz && \
     pip install --no-cache-dir . && \
     rm -f pipe-common.tar.gz && \
+    tar xf pipe.tar.gz && \
+    rm -f pipe.tar.gz && \
+    ln -s $COMMON_REPO_DIR/pipe/pipe /usr/local/bin/ && \
     rm -rf /tmp/*
 
 WORKDIR $CP_CLEANUP_RUNS_HOME

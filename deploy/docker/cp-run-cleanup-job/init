@@ -18,6 +18,15 @@ if [ -z "${API_TOKEN}" ]; then
     fi
 fi
 
+echo "Configuring pipe..."
+if ! pipe configure --auth-token ${API_TOKEN} --api ${API} --timezone local --proxy '' ; then
+  echo "Fail to configure pipe! Can't proceed further!"
+  exit 22
+else
+  echo "pipe configured."
+fi
+
+
 python -m cleanup.main
 EXIT_CODE=$?
 exit $EXIT_CODE
