@@ -29,7 +29,6 @@ _HARDCODED_DEFAULTS = {
     'page_size': 100,
     'archive_batch_size': 100,
     'delete_data_totally': False,
-    'state_file': None,
     'nfs_support': False,
 }
 
@@ -45,13 +44,14 @@ class GlobalConfig:
         self.config_file = os.environ.get('CP_CLEANUP_RUNS_CONFIG_FILE')
         if not self.config_file:
             raise EnvironmentError('CP_CLEANUP_RUNS_CONFIG_FILE environment variable is required')
+        self.state_dir = os.environ.get('CP_CLEANUP_RUNS_STATE_DIR', _DEFAULT_STATE_DIR)
 
 
 class PipelineCleanupConfig:
     """Per-pipeline cleanup configuration built by merging hard-coded defaults,
     JSON-level defaults, and per-pipeline overrides."""
 
-    def __init__(self, pipeline_id, merged):
+    def __init__(self, pipeline_id, merged, state_dir):
         self.pipeline_id = pipeline_id
         self.cleanup_days_after = merged['cleanup_days_after']
         self.cleanup_statuses = merged['cleanup_statuses']
@@ -61,9 +61,7 @@ class PipelineCleanupConfig:
         self.page_size = merged['page_size']
         self.archive_batch_size = merged['archive_batch_size']
         self.delete_data_totally = merged['delete_data_totally']
-        self.state_file = merged['state_file'] or os.path.join(
-            _DEFAULT_STATE_DIR, 'pipeline_{}.txt'.format(pipeline_id)
-        )
+        self.state_file = os.path.join(state_dir, 'pipeline_{}.state'.format(pipeline_id))
         self.nfs_support = merged['nfs_support']
 
 
@@ -77,7 +75,7 @@ def _merge_defaults(json_defaults, pipeline_entry):
     return merged
 
 
-def load_pipeline_configs(config_file):
+def load_pipeline_configs(global_config):
     """Load per-pipeline cleanup configurations from a JSON file.
 
     Expected format::
@@ -90,7 +88,7 @@ def load_pipeline_configs(config_file):
             ]
         }
     """
-    with open(config_file, 'r') as f:
+    with open(global_config.config_file, 'r') as f:
         data = json.load(f)
     if not isinstance(data, dict):
         raise ValueError('Config file must contain a JSON object '
@@ -106,5 +104,5 @@ def load_pipeline_configs(config_file):
         if pipeline_id is None:
             raise ValueError('Each pipeline config entry must specify "pipeline_id"')
         merged = _merge_defaults(json_defaults, entry)
-        configs.append(PipelineCleanupConfig(pipeline_id, merged))
+        configs.append(PipelineCleanupConfig(pipeline_id, merged, global_config.state_dir))
     return configs

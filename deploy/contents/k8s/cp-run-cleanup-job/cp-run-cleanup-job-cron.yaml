@@ -1,7 +1,7 @@
 apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
-  name: cp-pipeline-run-cleanup-job
+  name: cp-run-cleanup-job
   namespace: default
 spec:
   schedule: "${CP_CLEANUP_RUNS_CRON_SCHEDULE}"
@@ -14,18 +14,18 @@ spec:
         metadata:
           namespace: default
           labels:
-            cloud-pipeline/cp-pipeline-run-cleanup-job: "true"
+            cloud-pipeline/cp-run-cleanup-job: "true"
             cloud-pipeline/core-component: "CronJob"
         spec:
           nodeSelector:
-            cloud-pipeline/cp-pipeline-run-cleanup-job: "true"
+            cloud-pipeline/cp-run-cleanup-job: "true"
           tolerations:
             - key: node-role.kubernetes.io/master
               effect: NoSchedule
           restartPolicy: Never
           containers:
-          - name: cp-pipeline-run-cleanup-job
-            image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:pipeline-run-cleanup-job-${CP_VERSION}
+          - name: cp-run-cleanup-job
+            image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:run-cleanup-job-${CP_VERSION}
             imagePullPolicy: Always
             command: ["/init"]
             envFrom:
@@ -35,18 +35,21 @@ spec:
               - name: CP_CLEANUP_RUNS_LOG_LEVEL
                 value: INFO
               - name: CP_CLEANUP_RUNS_CONFIG_FILE
-                value: "/opt/cp-pipeline-run-cleanup-job/config/config.json"
+                value: "/opt/cp-run-cleanup-job/config/config.json"
+              - name: CP_CLEANUP_RUNS_STATE_DIR
+                value: "/opt/cp-pipeline-run-cleanup-job/state"
             volumeMounts:
-            - name: cp-pipeline-run-cleanup-job-state
-              mountPath: /opt/cp-pipeline-run-cleanup-job/state
-            - name: cp-pipeline-run-cleanup-job-config
-              mountPath: /opt/cp-pipeline-run-cleanup-job/config
+            - name: cp-run-cleanup-job-state
+              mountPath: /opt/cp-run-cleanup-job/state
+            - name: cp-run-cleanup-job-config
+              mountPath: /opt/cp-run-cleanup-job/config.json
+              subPath: config.json
           volumes:
-          - name: cp-pipeline-run-cleanup-job-state
+          - name: cp-run-cleanup-job-state
             hostPath:
-              path: /opt/cp-pipeline-run-cleanup-job/state
-          - name: cp-pipeline-run-cleanup-job-config
+              path: /opt/cp-run-cleanup-job/state
+          - name: cp-run-cleanup-job-config
             configMap:
-              name: cp-pipeline-run-cleanup-job-config
+              name: cp-run-cleanup-job-config
           imagePullSecrets:
           - name: cp-distr-docker-registry-secret

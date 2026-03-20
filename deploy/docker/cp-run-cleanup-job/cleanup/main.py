@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 def main():
     try:
         global_config = GlobalConfig()
-        pipeline_configs = load_pipeline_configs(global_config.config_file)
+        pipeline_configs = load_pipeline_configs(global_config)
         logger.info('Loaded %d pipeline configuration(s) from %s',
                      len(pipeline_configs), global_config.config_file)
     except (EnvironmentError, ValueError, IOError) as e:
