@@ -20,6 +20,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.pipeline.ArchiveRunDao;
 import com.epam.pipeline.dao.pipeline.EngineRunTaskDao;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
+import com.epam.pipeline.dao.pipeline.PipelineRunResultDao;
 import com.epam.pipeline.dao.pipeline.RestartRunDao;
 import com.epam.pipeline.dao.pipeline.RunLogDao;
 import com.epam.pipeline.dao.pipeline.RunStatusDao;
@@ -50,6 +51,7 @@ import java.util.stream.Collectors;
 public class ArchiveRunCoreService {
     private final ArchiveRunDao archiveRunDao;
     private final PipelineRunDao pipelineRunDao;
+    private final PipelineRunResultDao pipelineRunResultDao;
     private final RunLogDao runLogDao;
     private final RestartRunDao restartRunDao;
     private final RunServiceUrlDao runServiceUrlDao;
@@ -159,6 +161,8 @@ public class ArchiveRunCoreService {
         log.debug("Stop serverless runs info deleted. Deleting engine run tasks...");
         engineRunTaskDao.deleteByRunIdIn(runIds, dryRun);
         log.debug("Engine run logs deleted. Deleting runs...");
+        pipelineRunResultDao.deletePipelineRunResultsByRunIds(runIds, dryRun);
+        log.debug("Run results deleted...");
         pipelineRunDao.deleteRunByIdIn(runIds, dryRun);
         log.debug("'{}' runs deleted.", runIds.size());
     }
