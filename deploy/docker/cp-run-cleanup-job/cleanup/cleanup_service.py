@@ -212,8 +212,8 @@ class CleanupService:
             return 'Folder'
         try:
             return self._api.get_storage_item_type(storage_id, relative_path)
-        except Exception:
-            logger.debug('Could not find item type for path %s', relative_path)
+        except Exception as e:
+            logger.error('Could not find item type for path %s, error: %s', relative_path, str(e))
             return None
 
     @staticmethod

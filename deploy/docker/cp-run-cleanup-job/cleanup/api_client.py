@@ -20,6 +20,7 @@ from pipeline.api.token import StaticToken
 
 _RUNS_ARCHIVE_URL = 'runs/archive/explicit'
 _DATASTORAGE_FIND_BY_PATH_URL = 'datastorage/findByPath?id={path}'
+_STORAGE_PATH_TYPE = 'datastorage/{id}/type'
 _CLOUD_PATH_PREFIX_RE = re.compile(r'^(?:s3|az|gs|cp)://')
 
 
@@ -59,3 +60,11 @@ class CloudPipelineAPIClient(PipelineAPI):
 
     def archive_runs_by_ids(self, run_ids):
         self._request(endpoint=_RUNS_ARCHIVE_URL, http_method='post', data=run_ids)
+
+    def get_storage_item_type(self, storage_id, relative_path):
+        try:
+            endpoint = _STORAGE_PATH_TYPE.format(id=str(storage_id)) + "?path={}".format(relative_path)
+            return self._request(endpoint=endpoint, http_method='get')
+        except Exception as e:
+            raise RuntimeError("Failed to load item type for storage ID '{}', error: {}".format(str(storage_id),
+                                                                                                str(e)))
