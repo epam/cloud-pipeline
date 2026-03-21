@@ -347,6 +347,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
             $(elementWithText(tagName("b"), "other available ")).shouldBe(visible).click();
             sleep(2, SECONDS);
         }
+        $(withText("Currently viewing")).hover();
         return this;
     }
 
