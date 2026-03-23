@@ -10,7 +10,6 @@ data:
           "cleanup_days_after": 30,
           "dry_run": true,
           "cleanup_statuses": ["FAILURE"],
-          "delete_data_totally": false,
           "output_param_names": [],
           "archive_runs": false,
           "delete_data_totally": false,
