@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Prerequisites:
-# ADDR_FILE_SHARE: EFS address, e.g. fs-xxxxxxxx.efs.us-east-1.amazonaws.com
-# ID_FILE_SHARE: fileshare id from the cloud region, e.g. 1
-# ID_ROOT_FOLDER: ID of the root folder in CP Library where home dirs are created. e.g. 1
+# CP_HOME_DIRS_ADDR_FILE_SHARE: EFS address, e.g. fs-xxxxxxxx.efs.us-east-1.amazonaws.com
+# CP_HOME_DIRS_ID_FILE_SHARE: fileshare id from the cloud region, e.g. 1
+# CP_HOME_DIRS_ID_ROOT_FOLDER: ID of the root folder in CP Library where home dirs are created. e.g. 1
 
 function verify_required_parameter {
     local param_name="$1"
@@ -37,10 +37,22 @@ function api_put {
         -d "$data" "$uri"
 }
 
+function url_query_value {
+    printf '%s' "$1" | jq -sRr @uri
+}
+
 function find_storage_id_by_name {
     local name="$1"
-    local response=$(api_get "${API}datastorage/list?folderId=${ID_ROOT_FOLDER}")
-    echo "$response" | jq -r --arg n "$name" '( .payload // [] | if type == "array" then . else [.] end )[] | select(.name == $n) | .id // empty'
+    local value=$(url_query_value "$name")
+    local response=$(api_get "${API}datastorage/find?id=${value}")
+    echo "$response" | jq -r 'if .status == "OK" and .payload != null then .payload.id // empty else empty end'
+}
+
+function find_storage_id_by_path {
+    local path="$1"
+    local value=$(url_query_value "$path")
+    local response=$(api_get "${API}datastorage/findByPath?id=${value}")
+    echo "$response" | jq -r 'if .status == "OK" and .payload != null then .payload.id // empty else empty end'
 }
 
 function grant_storage_owner {
@@ -109,7 +121,7 @@ function create_file_storage {
     local file_share_mount_id="$4"
     local response
     response=$(api_post "${API}datastorage/save?cloud=true" \
-        "{\"parentFolderId\":${ID_ROOT_FOLDER},\"name\":\"${name}\",\"path\":\"${path}\",\"shared\":false,\"storagePolicy\":{\"versioningEnabled\":false},\"serviceType\":\"FILE_SHARE\",\"mountDisabled\":false,\"mountPoint\":\"${mount_point}\",\"mountOptions\":\"nolock\",\"fileShareMountId\":${file_share_mount_id}}")
+        "{\"parentFolderId\":${CP_HOME_DIRS_ID_ROOT_FOLDER},\"name\":\"${name}\",\"path\":\"${path}\",\"shared\":false,\"storagePolicy\":{\"versioningEnabled\":false},\"serviceType\":\"FILE_SHARE\",\"mountDisabled\":false,\"mountPoint\":\"${mount_point}\",\"mountOptions\":\"nolock\",\"fileShareMountId\":${file_share_mount_id}}")
     if [ "$(echo "$response" | jq -r '.status')" != "OK" ]; then
         echo "$response" | jq -r '.message'
         return 1
@@ -122,7 +134,7 @@ function create_file_storage {
 function create_nfs_home_dir_structure {
     local user_name="$1"
     local mount_point="/cloud-home/${user_name}"
-    local nfs_source="${ADDR_FILE_SHARE}/${user_name}"
+    local nfs_source="${CP_HOME_DIRS_ADDR_FILE_SHARE}/${user_name}"
 
     echo "-> Creating dir structure for $user_name"
     if [ -z "$user_name" ]; then
@@ -138,12 +150,12 @@ function create_nfs_home_dir_structure {
         rm -rf "$mount_point"
         return 1
     fi
-    chmod "$CP_HOME_DIRS_SERVICE_MOUNT_CHMOD" "$mount_point"
     if [[ "${CP_HOME_DIRS_CREATE_BASHRC:-false}" == "true" ]]; then
         if [ ! -f "${mount_point}/.bashrc" ]; then
             \cp /etc/skel/.bashrc "${mount_point}/.bashrc"
         fi
     fi
+    chmod -R "$CP_HOME_DIRS_SERVICE_MOUNT_CHMOD" "$mount_point"
     umount "$mount_point" 2>/dev/null || true
     rm -rf "$mount_point"
     echo "-> Initial nfs structure created"
@@ -156,19 +168,27 @@ function ensure_file_home_storage_for_user {
     local user_name_full="$2"
     local user_id="$3"
     local storage_id
-    local fs_name="${CP_FS_HOME_STORAGE_PREFIX}${user_name}"
+    local fs_name="${CP_HOME_DIRS_FS_HOME_STORAGE_PREFIX}${user_name}"
 
+    local nfs_path="${CP_HOME_DIRS_ADDR_FILE_SHARE}/${user_name}"
     echo "-> File datastorage (name: $fs_name)"
     storage_id=$(find_storage_id_by_name "$fs_name")
     if [ -z "$storage_id" ]; then
         echo "-> Creating FS datastorage"
-        local created_storage_id=$(create_file_storage "$fs_name" "${ADDR_FILE_SHARE}/${user_name}" "/home/${user_name}" "$ID_FILE_SHARE" 2>&1)
-        if [ $? -ne 0 ]; then
-            echo "[ERROR] Create FS failed for $user_name: $created_storage_id"
-            return 1
+        local create_out=$(create_file_storage "$fs_name" "$nfs_path" "/home/${user_name}" "$CP_HOME_DIRS_ID_FILE_SHARE" 2>&1)
+        local create_rc=$?
+        if [ "$create_rc" -eq 0 ] && [[ "$create_out" =~ ^[0-9]+$ ]]; then
+            storage_id="$create_out"
+            echo "-> File storage created: $storage_id"
+        else
+            storage_id=$(find_storage_id_by_name "$fs_name")
+            if [ -n "$storage_id" ]; then
+                echo "-> FS datastorage already exists (id $storage_id), continuing"
+            else
+                echo "[ERROR] Create FS failed for $user_name: $create_out"
+                return 1
+            fi
         fi
-        storage_id="$created_storage_id"
-        echo "-> File storage created: $storage_id"
     else
         echo "-> Using existing FS: $storage_id"
     fi
@@ -179,9 +199,13 @@ function ensure_file_home_storage_for_user {
     fi
     echo "-> File datastorage permissions granted"
 
+    if ! [[ "$storage_id" =~ ^[0-9]+$ ]]; then
+        echo "[ERROR] Invalid storage id for $user_name: $storage_id"
+        return 1
+    fi
     local set_default_response=$(set_user_default_storage "$user_id" "$storage_id")
     if ! echo "$set_default_response" | jq -e '.status == "OK"' >/dev/null 2>&1; then
-        echo "[ERROR] Failed setting default storage $storage_id for $user_name"
+        echo "[ERROR] Failed setting default storage for $user_name (id=$storage_id): $(echo "$set_default_response" | jq -r '.message // empty')"
         return 1
     fi
     echo "-> Default storage set"
@@ -202,7 +226,7 @@ function create_object_storage {
     local name="$1"
     local path="$2"
     local response=$(api_post "${API}datastorage/save?cloud=true&skipPolicy=false" \
-        "{\"parentFolderId\":${ID_ROOT_FOLDER},\"name\":\"${name}\",\"path\":\"${path}\",\"shared\":false,\"storagePolicy\":{\"versioningEnabled\":true},\"serviceType\":\"OBJECT_STORAGE\",\"mountDisabled\":false,\"regionId\":1,\"sensitive\":false}")
+        "{\"parentFolderId\":${CP_HOME_DIRS_ID_ROOT_FOLDER},\"name\":\"${name}\",\"path\":\"${path}\",\"shared\":false,\"storagePolicy\":{\"versioningEnabled\":true},\"serviceType\":\"OBJECT_STORAGE\",\"mountDisabled\":false,\"regionId\":1,\"sensitive\":false}")
     if [ "$(echo "$response" | jq -r '.status')" != "OK" ]; then
         echo "$response" | jq -r '.message'
         return 1
@@ -215,21 +239,20 @@ function ensure_object_home_storage_for_user {
     local user_name="$1"
     local user_name_full="$2"
     local user_name_lower="$3"
-    local s3_name="${CP_FS_HOME_STORAGE_PREFIX}${user_name}.${CP_FS_HOME_STORAGE_OBJECT_TYPE}"
-    local prefix_lower=$(echo "$CP_FS_HOME_STORAGE_PREFIX" | tr '[:upper:]' '[:lower:]' | sed 's/\./-/g' | sed 's/^-//;s/-$//')
-    local object_type_lower=$(echo "$CP_FS_HOME_STORAGE_OBJECT_TYPE" | tr '[:upper:]' '[:lower:]')
+    local s3_name="${CP_HOME_DIRS_FS_HOME_STORAGE_PREFIX}${user_name}.${CP_HOME_DIRS_STORAGE_OBJECT_TYPE}"
+    local prefix_lower=$(echo "$CP_HOME_DIRS_FS_HOME_STORAGE_PREFIX" | tr '[:upper:]' '[:lower:]' | sed 's/\./-/g' | sed 's/^-//;s/-$//')
+    local object_type_lower=$(echo "$CP_HOME_DIRS_STORAGE_OBJECT_TYPE" | tr '[:upper:]' '[:lower:]')
     if [ -n "$prefix_lower" ]; then
-        s3_path="${prefix_lower}.${user_name_lower}.${object_type_lower}"
+        s3_path="${prefix_lower}-${user_name_lower}-${object_type_lower}"
     else
-        s3_path="${user_name_lower}.${object_type_lower}"
+        s3_path="${user_name_lower}-${object_type_lower}"
     fi
 
     echo "-> Object datastorage (name: $s3_name)"
     local s3_id=$(find_storage_id_by_name "$s3_name")
     if [ -z "$s3_id" ]; then
         echo "-> Creating object datastorage"
-        local create_err
-        create_err=$(create_object_storage "$s3_name" "$s3_path" 2>&1)
+        local create_err=$(create_object_storage "$s3_name" "$s3_path" 2>&1)
         if [ $? -ne 0 ]; then
             echo "[ERROR] Create object storage failed for $user_name: $create_err"
             return 1
@@ -251,7 +274,7 @@ function ensure_object_home_storage_for_user {
 function create_fs_quota_for_storage {
     local storage_id="$1"
     local owner_email="$2"
-    local notifications_value="{\\\"notifications\\\":[{\\\"type\\\":\\\"GB\\\",\\\"actions\\\":[\\\"EMAIL\\\"],\\\"value\\\":\\\"$CP_FS_QUOTAS_VOLUME_THRESHOLD_GB_DISABLE_MOUNT\\\"},{\\\"type\\\":\\\"GB\\\",\\\"actions\\\":[\\\"EMAIL\\\"],\\\"value\\\":\\\"$CP_FS_QUOTAS_VOLUME_THRESHOLD_GB_READ_ONLY\\\"}],\\\"recipients\\\":[{\\\"principal\\\":true,\\\"name\\\":\\\"${owner_email}\\\"}]}"
+    local notifications_value="{\\\"notifications\\\":[{\\\"type\\\":\\\"GB\\\",\\\"actions\\\":[\\\"EMAIL\\\"],\\\"value\\\":\\\"$CP_HOME_DIRS_FS_QUOTAS_VOLUME_THRESHOLD_GB_DISABLE_MOUNT\\\"},{\\\"type\\\":\\\"GB\\\",\\\"actions\\\":[\\\"EMAIL\\\"],\\\"value\\\":\\\"$CP_HOME_DIRS_FS_QUOTAS_VOLUME_THRESHOLD_GB_READ_ONLY\\\"}],\\\"recipients\\\":[{\\\"principal\\\":true,\\\"name\\\":\\\"${owner_email}\\\"}]}"
     api_post "${API}metadata/updateKeys" \
         "{\"entity\":{\"entityId\":\"$storage_id\",\"entityClass\":\"DATA_STORAGE\"},\"data\":{\"fs_notifications\":{\"value\":\"$notifications_value\",\"type\":\"string\"}}}"
 }
@@ -287,10 +310,10 @@ function apply_fs_quotas {
 # Users who already have a default storage: only update default to FS home to update permission settings in API side
 function update_default_fs_storage_for_users_with_default {
     local response_users="$1"
-    if [[ "${CP_FS_HOME_STORAGE_ENABLE}" != "true" ]]; then
+    if [[ "${CP_HOME_DIRS_FS_HOME_STORAGE_ENABLE}" != "true" ]]; then
         return 0
     fi
-    if ! verify_optional_parameter "ID_FILE_SHARE" || ! verify_optional_parameter "ADDR_FILE_SHARE"; then
+    if ! verify_optional_parameter "CP_HOME_DIRS_ID_FILE_SHARE" || ! verify_optional_parameter "CP_HOME_DIRS_ADDR_FILE_SHARE"; then
         return 0
     fi
 
@@ -303,15 +326,17 @@ function update_default_fs_storage_for_users_with_default {
         if [[ " ${list_service_accounts[*]} " =~ " ${uid} " ]]; then
             continue
         fi
-        fs_name="${CP_FS_HOME_STORAGE_PREFIX}${user_name}"
+        fs_name="${CP_HOME_DIRS_FS_HOME_STORAGE_PREFIX}${user_name}"
+        local nfs_path="${CP_HOME_DIRS_ADDR_FILE_SHARE}/${user_name}"
         storage_id=$(find_storage_id_by_name "$fs_name")
+        [ -z "$storage_id" ] && storage_id=$(find_storage_id_by_path "$nfs_path")
         if [ -z "$storage_id" ]; then
-            echo "[WARN] No FS home storage '$fs_name' for $user_name — skip default update"
+            echo "[WARN] No FS home storage (name '$fs_name' or path '$nfs_path') for $user_name — skip default update"
             continue
         fi
         local set_default_response=$(set_user_default_storage "$uid" "$storage_id")
         if ! echo "$set_default_response" | jq -e '.status == "OK"' >/dev/null 2>&1; then
-            echo "[ERROR] Failed to update default storage for $user_name (storage $storage_id)"
+            echo "[ERROR] Failed to update default storage for $user_name (storage $storage_id): $(echo "$set_default_response" | jq -r '.message // empty')"
             continue
         fi
         echo "-> Default storage set to FS home ($storage_id) for $user_name"
@@ -344,13 +369,13 @@ function process_user {
         return 1
     fi
 
-    if [[ "${CP_FS_HOME_STORAGE_ENABLE}" == "true" ]] && verify_optional_parameter "ID_FILE_SHARE" && verify_optional_parameter "ADDR_FILE_SHARE"; then
+    if [[ "${CP_HOME_DIRS_FS_HOME_STORAGE_ENABLE}" == "true" ]] && verify_optional_parameter "CP_HOME_DIRS_ID_FILE_SHARE" && verify_optional_parameter "CP_HOME_DIRS_ADDR_FILE_SHARE"; then
         if ! ensure_file_home_storage_for_user "$user_name" "$user_name_full" "$user_id"; then
             return 1
         fi
     fi
 
-    if [[ "${CP_CREATE_OBJECT_STORAGE}" == "true" ]]; then
+    if [[ "${CP_HOME_DIRS_CREATE_OBJECT_STORAGE}" == "true" ]]; then
         if ! ensure_object_home_storage_for_user "$user_name" "$user_name_full" "$user_name_lower"; then
             return 1
         fi
@@ -358,27 +383,32 @@ function process_user {
     return 0
 }
 
+API="${API_EXTERNAL:-}"
+API_TOKEN="${CP_API_JWT_ADMIN:-}"
 # Required
-verify_required_parameter "ID_ROOT_FOLDER"
+verify_required_parameter "CP_HOME_DIRS_ID_ROOT_FOLDER"
 verify_required_parameter "API"
 verify_required_parameter "API_TOKEN"
 
 # Defaults
 CP_HOME_DIRS_SERVICE_ACCOUNTS="${CP_HOME_DIRS_SERVICE_ACCOUNTS:-}"
-list_service_accounts=($CP_HOME_DIRS_SERVICE_ACCOUNTS)
+list_service_accounts=()
+if [ -n "$CP_HOME_DIRS_SERVICE_ACCOUNTS" ]; then
+    IFS=',' read -ra list_service_accounts <<< "${CP_HOME_DIRS_SERVICE_ACCOUNTS// /}"
+fi
 CP_HOME_DIRS_SERVICE_MOUNT_CHMOD="${CP_HOME_DIRS_SERVICE_MOUNT_CHMOD:-755}"
-CP_APPLY_FS_QUOTAS="${CP_APPLY_FS_QUOTAS:-false}"
-CP_FS_QUOTAS_VOLUME_THRESHOLD_GB_DISABLE_MOUNT="${CP_FS_QUOTAS_VOLUME_THRESHOLD_GB_DISABLE_MOUNT:-250}"
-CP_FS_QUOTAS_VOLUME_THRESHOLD_GB_READ_ONLY="${CP_FS_QUOTAS_VOLUME_THRESHOLD_GB_READ_ONLY:-300}"
-CP_CREATE_OBJECT_STORAGE="${CP_CREATE_OBJECT_STORAGE:-false}"
-CP_FS_HOME_STORAGE_PREFIX="${CP_FS_HOME_STORAGE_PREFIX:-"HOME."}"
-CP_FS_HOME_STORAGE_OBJECT_TYPE="${CP_FS_HOME_STORAGE_OBJECT_TYPE:-S3}"
-CP_FS_HOME_STORAGE_ENABLE="${CP_FS_HOME_STORAGE_ENABLE:-true}"
+CP_HOME_DIRS_APPLY_FS_QUOTAS="${CP_HOME_DIRS_APPLY_FS_QUOTAS:-false}"
+CP_HOME_DIRS_FS_QUOTAS_VOLUME_THRESHOLD_GB_DISABLE_MOUNT="${CP_HOME_DIRS_FS_QUOTAS_VOLUME_THRESHOLD_GB_DISABLE_MOUNT:-250}"
+CP_HOME_DIRS_FS_QUOTAS_VOLUME_THRESHOLD_GB_READ_ONLY="${CP_HOME_DIRS_FS_QUOTAS_VOLUME_THRESHOLD_GB_READ_ONLY:-300}"
+CP_HOME_DIRS_CREATE_OBJECT_STORAGE="${CP_HOME_DIRS_CREATE_OBJECT_STORAGE:-false}"
+CP_HOME_DIRS_FS_HOME_STORAGE_PREFIX="${CP_HOME_DIRS_FS_HOME_STORAGE_PREFIX:-""}"
+CP_HOME_DIRS_STORAGE_OBJECT_TYPE="${CP_HOME_DIRS_STORAGE_OBJECT_TYPE:-S3}"
+CP_HOME_DIRS_FS_HOME_STORAGE_ENABLE="${CP_HOME_DIRS_FS_HOME_STORAGE_ENABLE:-true}"
 CP_HOME_DIRS_CREATE_BASHRC="${CP_HOME_DIRS_CREATE_BASHRC:-false}"
 
-if [[ "${CP_FS_HOME_STORAGE_ENABLE}" == "true" ]]; then
-    if ! verify_optional_parameter "ID_FILE_SHARE" || ! verify_optional_parameter "ADDR_FILE_SHARE"; then
-        echo "[ERROR] CP_FS_HOME_STORAGE_ENABLE is true but ID_FILE_SHARE and/or ADDR_FILE_SHARE are not set. FS home storage will be skipped. Exiting..."
+if [[ "${CP_HOME_DIRS_FS_HOME_STORAGE_ENABLE}" == "true" ]]; then
+    if ! verify_optional_parameter "CP_HOME_DIRS_ID_FILE_SHARE" || ! verify_optional_parameter "CP_HOME_DIRS_ADDR_FILE_SHARE"; then
+        echo "[ERROR] CP_HOME_DIRS_FS_HOME_STORAGE_ENABLE is true but CP_HOME_DIRS_ID_FILE_SHARE and/or CP_HOME_DIRS_ADDR_FILE_SHARE are not set. FS home storage will be skipped. Exiting..."
         exit 1
     fi
 fi
@@ -397,7 +427,7 @@ done
 
 update_default_fs_storage_for_users_with_default "$response_users"
 
-if [[ "${CP_APPLY_FS_QUOTAS}" == "true" ]]; then
+if [[ "${CP_HOME_DIRS_APPLY_FS_QUOTAS}" == "true" ]]; then
     apply_fs_quotas "$response_users"
 fi
 
