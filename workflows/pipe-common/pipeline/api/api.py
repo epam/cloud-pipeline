@@ -275,7 +275,6 @@ class PipelineAPI:
     DATA_STORAGE_MOUNT_LOAD = '/filesharemount/{id}'
     RUN_ENGINE_EVENTS_URL = '/run/{id}/engine/tasks'
     RUN_RESULT_URL = '/run/{id}/result'
-    STORAGE_PATH_TYPE = '/datastorage/{id}/type'
 
     # Pipeline API default header
 
@@ -1625,11 +1624,3 @@ class PipelineAPI:
             )
         except Exception as e:
             raise RuntimeError("Failed to load run results for run ID '{}', error: {}".format(str(run_id), str(e)))
-
-    def get_storage_item_type(self, storage_id, relative_path):
-        try:
-            endpoint = self.STORAGE_PATH_TYPE.format(id=str(storage_id)) + "?path={}".format(relative_path)
-            return self._request(endpoint=endpoint, http_method='get')
-        except Exception as e:
-            raise RuntimeError("Failed to load item type for storage ID '{}', error: {}".format(str(storage_id),
-                                                                                                str(e)))
