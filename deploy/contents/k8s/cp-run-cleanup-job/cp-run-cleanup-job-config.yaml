@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cp-run-cleanup-job-config
+  namespace: default
+data:
+  config.json: |
+    {
+      "default": {
+          "cleanup_days_after": 30,
+          "dry_run": true,
+          "cleanup_statuses": ["FAILURE"],
+          "delete_data_totally": false,
+          "output_param_names": [],
+          "archive_runs": false,
+          "delete_data_totally": false,
+          "nfs_support": false,
+          "page_size": 100,
+          "archive_batch_size": 100
+      },
+      "pipelines": []
+    }
