@@ -68,6 +68,7 @@ public class NFSStorageMounterTest {
     private static final String ROOT_DIR_1 = ":root/dir1";
     private static final String ROOT_DIR_2 = ":root/dir2";
     private static final long MOUNT_TIMEOUT_MILLS = 5000L;
+    private static final int TIMEOUT_EXIT_CODE = 124;
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -244,7 +245,8 @@ public class NFSStorageMounterTest {
         writeProcMountsEntry(rootMountPath);
 
         when(mockCmdExecutor.executeCommand(anyString(), anyLong()))
-                .thenThrow(new CmdExecutionException("stat -t " + rootMountPath, 124, "timed out"));
+                .thenThrow(new CmdExecutionException("stat -t " + rootMountPath, TIMEOUT_EXIT_CODE,
+                        "timed out"));
 
         mounter.mount(storage);
     }
@@ -284,7 +286,7 @@ public class NFSStorageMounterTest {
     }
 
     @Test
-    public void unmountShouldSkipWhenNotMounted() {
+    public void unmountShouldSkipWhenNotMounted() throws Exception {
         final NFSDataStorage storage = createStorage(1L, MOUNT_ROOT_A + ROOT_DIR_1, SHARE_MOUNT_ID_A);
         writeProcMountsEmpty();
         when(dataStorageDao.loadDataStoragesByFileShareMountID(SHARE_MOUNT_ID_A))
@@ -349,21 +351,13 @@ public class NFSStorageMounterTest {
         return Paths.get(tempFolder.getRoot().getAbsolutePath(), mountRoot).toString();
     }
 
-    private void writeProcMountsEntry(final String mountPoint) {
+    private void writeProcMountsEntry(final String mountPoint) throws IOException {
         final String content = String.format("server:/share %s nfs4 rw,relatime 0 0\n", mountPoint);
-        try {
-            Files.write(procMountsFile.toPath(), content.getBytes(StandardCharsets.UTF_8));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        Files.write(procMountsFile.toPath(), content.getBytes(StandardCharsets.UTF_8));
     }
 
-    private void writeProcMountsEmpty() {
-        try {
-            Files.write(procMountsFile.toPath(), new byte[0]);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    private void writeProcMountsEmpty() throws IOException {
+        Files.write(procMountsFile.toPath(), new byte[0]);
     }
 
 }
