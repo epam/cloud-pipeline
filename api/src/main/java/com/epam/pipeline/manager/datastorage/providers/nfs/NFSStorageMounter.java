@@ -65,9 +65,9 @@ public class NFSStorageMounter {
      * -f is for "force": in case of an unreachable NFS system
      */
     private static final String NFS_UNMOUNT_CMD_PATTERN = "sudo umount -l -f %s";
-    private static final String NFS_CHECK_CMD_PATTERN = "ls %s";
+    private static final String NFS_CHECK_CMD_PATTERN = "stat -t %s";
     private static final String PROC_MOUNTS = "/proc/mounts";
-    private static final long DEFAULT_MOUNT_CHECK_TIMEOUT_SEC = 10L;
+    private static final long DEFAULT_MOUNT_CHECK_TIMEOUT_MILLS = 30000L;
 
     private final CmdExecutor cmdExecutor = new CmdExecutor();
     private final MessageHelper messageHelper;
@@ -85,7 +85,7 @@ public class NFSStorageMounter {
                              @Value("${data.storage.nfs.root.mount.point}")
                              final String rootMountPoint,
                              @Value("${data.storage.nfs.mount.timeout.mills:"
-                                     + DEFAULT_MOUNT_CHECK_TIMEOUT_SEC + "}")
+                                     + DEFAULT_MOUNT_CHECK_TIMEOUT_MILLS + "}")
                              final long timeoutMills) {
         this.messageHelper = messageHelper;
         this.dataStorageDao = dataStorageDao;
@@ -194,17 +194,23 @@ public class NFSStorageMounter {
      * Falls back to {@link File#exists()} if {@code /proc/mounts} cannot be read.
      */
     private boolean isMounted(final File mountPoint) {
+        final String procMounts = getProcMountsPath();
         final String path = mountPoint.getAbsolutePath();
-        try (Stream<String> lines = Files.lines(Paths.get(PROC_MOUNTS))) {
+        try (Stream<String> lines = Files.lines(Paths.get(procMounts))) {
             return lines.anyMatch(line -> {
                 final String[] parts = line.split("\\s+");
                 return parts.length > 1 && parts[1].equals(path);
             });
         } catch (IOException e) {
             LOGGER.warn("Failed to read {}, falling back to File.exists() for: {}",
-                    PROC_MOUNTS, path, e);
+                    procMounts, path, e);
             return mountPoint.exists();
         }
+    }
+
+    // We have it to be able to mock in tests
+    String getProcMountsPath() {
+        return PROC_MOUNTS;
     }
 
     /**

@@ -17,11 +17,13 @@ package com.epam.pipeline.manager.datastorage.providers.nfs;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
+import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.entity.datastorage.MountType;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.exception.CmdExecutionException;
 import com.epam.pipeline.manager.CmdExecutor;
 import com.epam.pipeline.manager.datastorage.FileShareMountManager;
 import com.epam.pipeline.manager.region.CloudRegionManager;
@@ -30,17 +32,28 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.internal.util.reflection.Whitebox;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.concurrent.*;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class NFSStorageMounterTest {
@@ -54,6 +67,7 @@ public class NFSStorageMounterTest {
     private static final long LOCK_WAIT_MS = 100L;
     private static final String ROOT_DIR_1 = ":root/dir1";
     private static final String ROOT_DIR_2 = ":root/dir2";
+    private static final long MOUNT_TIMEOUT_MILLS = 5000L;
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -71,15 +85,20 @@ public class NFSStorageMounterTest {
 
     private NFSStorageMounter mounter;
     private ExecutorService executor;
+    private File procMountsFile;
 
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
 
-        mounter = new NFSStorageMounter(
+        mounter = spy(new NFSStorageMounter(
                 messageHelper, dataStorageDao, regionManager, shareMountManager,
-                tempFolder.getRoot().getAbsolutePath(), 0L);
+                tempFolder.getRoot().getAbsolutePath(), MOUNT_TIMEOUT_MILLS));
         Whitebox.setInternalState(mounter, "cmdExecutor", mockCmdExecutor);
+
+        procMountsFile = tempFolder.newFile("proc_mounts");
+        Files.write(procMountsFile.toPath(), new byte[0]);
+        doReturn(procMountsFile.getAbsolutePath()).when(mounter).getProcMountsPath();
 
         final AwsRegion region = new AwsRegion();
         region.setId(REGION_ID);
@@ -98,6 +117,8 @@ public class NFSStorageMounterTest {
     public void tearDown() {
         executor.shutdownNow();
     }
+
+    // --- Concurrency tests (existing) ---
 
     @Test
     public void mountShouldSerializeOperationsOnSameShareRoot() throws Exception {
@@ -193,6 +214,122 @@ public class NFSStorageMounterTest {
         unmountFuture.get(TIMEOUT_SEC, TimeUnit.SECONDS);
     }
 
+    // --- isMounted / verifyMountResponsive tests ---
+
+    @Test
+    public void mountShouldSkipMountCommandWhenAlreadyMountedAndResponsive() throws Exception {
+        final NFSDataStorage storage = createStorage(1L, MOUNT_ROOT_A + ROOT_DIR_1, SHARE_MOUNT_ID_A);
+        final String rootMountPath = rootMountPathFor(MOUNT_ROOT_A);
+        writeProcMountsEntry(rootMountPath);
+
+        when(mockCmdExecutor.executeCommand(anyString(), anyLong())).thenReturn("");
+
+        final File result = mounter.mount(storage);
+
+        assertNotNull(result);
+
+        final ArgumentCaptor<String> cmdCaptor = ArgumentCaptor.forClass(String.class);
+        verify(mockCmdExecutor).executeCommand(cmdCaptor.capture(), anyLong());
+        final String executedCmd = cmdCaptor.getValue();
+        assertTrue("Should run stat check, not mount command",
+                executedCmd.startsWith("stat -t "));
+        assertTrue("Stat command should target the root mount path",
+                executedCmd.contains(rootMountPath));
+    }
+
+    @Test(expected = DataStorageException.class)
+    public void mountShouldThrowWhenAlreadyMountedButUnresponsive() throws Exception {
+        final NFSDataStorage storage = createStorage(1L, MOUNT_ROOT_A + ROOT_DIR_1, SHARE_MOUNT_ID_A);
+        final String rootMountPath = rootMountPathFor(MOUNT_ROOT_A);
+        writeProcMountsEntry(rootMountPath);
+
+        when(mockCmdExecutor.executeCommand(anyString(), anyLong()))
+                .thenThrow(new CmdExecutionException("stat -t " + rootMountPath, 124, "timed out"));
+
+        mounter.mount(storage);
+    }
+
+    @Test
+    public void mountShouldExecuteMountCommandWhenNotMounted() throws Exception {
+        final NFSDataStorage storage = createStorage(1L, MOUNT_ROOT_A + ROOT_DIR_1, SHARE_MOUNT_ID_A);
+        writeProcMountsEmpty();
+
+        when(mockCmdExecutor.executeCommand(anyString(), anyLong())).thenReturn("");
+
+        final File result = mounter.mount(storage);
+
+        assertNotNull(result);
+
+        final ArgumentCaptor<String> cmdCaptor = ArgumentCaptor.forClass(String.class);
+        verify(mockCmdExecutor).executeCommand(cmdCaptor.capture(), anyLong());
+        final String executedCmd = cmdCaptor.getValue();
+        assertTrue("Should run mount command when not already mounted",
+                executedCmd.startsWith("sudo mount -t "));
+    }
+
+    @Test
+    public void mountShouldNotConfuseDifferentPathsInProcMounts() throws Exception {
+        final NFSDataStorage storage = createStorage(1L, MOUNT_ROOT_A + ROOT_DIR_1, SHARE_MOUNT_ID_A);
+        final String otherPath = rootMountPathFor(MOUNT_ROOT_B);
+        writeProcMountsEntry(otherPath);
+
+        when(mockCmdExecutor.executeCommand(anyString(), anyLong())).thenReturn("");
+
+        mounter.mount(storage);
+
+        final ArgumentCaptor<String> cmdCaptor = ArgumentCaptor.forClass(String.class);
+        verify(mockCmdExecutor).executeCommand(cmdCaptor.capture(), anyLong());
+        assertTrue("Should run mount command when a different path is mounted",
+                cmdCaptor.getValue().startsWith("sudo mount -t "));
+    }
+
+    @Test
+    public void unmountShouldSkipWhenNotMounted() {
+        final NFSDataStorage storage = createStorage(1L, MOUNT_ROOT_A + ROOT_DIR_1, SHARE_MOUNT_ID_A);
+        writeProcMountsEmpty();
+        when(dataStorageDao.loadDataStoragesByFileShareMountID(SHARE_MOUNT_ID_A))
+                .thenReturn(Collections.singletonList(storage));
+
+        mounter.unmountNFSIfEmpty(storage);
+
+        verify(mockCmdExecutor, never()).executeCommand(anyString());
+    }
+
+    @Test
+    public void unmountShouldProceedWhenMountedAndOnlyStorage() throws Exception {
+        final NFSDataStorage storage = createStorage(1L, MOUNT_ROOT_A + ROOT_DIR_1, SHARE_MOUNT_ID_A);
+        final String rootMountPath = rootMountPathFor(MOUNT_ROOT_A);
+        new File(rootMountPath).mkdirs();
+        writeProcMountsEntry(rootMountPath);
+        when(dataStorageDao.loadDataStoragesByFileShareMountID(SHARE_MOUNT_ID_A))
+                .thenReturn(Collections.singletonList(storage));
+        when(mockCmdExecutor.executeCommand(anyString())).thenReturn("");
+
+        mounter.unmountNFSIfEmpty(storage);
+
+        final ArgumentCaptor<String> cmdCaptor = ArgumentCaptor.forClass(String.class);
+        verify(mockCmdExecutor).executeCommand(cmdCaptor.capture());
+        assertTrue("Should run umount command",
+                cmdCaptor.getValue().startsWith("sudo umount -l -f "));
+    }
+
+    @Test
+    public void mountShouldFallBackToFileExistsWhenProcMountsUnreadable() throws Exception {
+        final NFSDataStorage storage = createStorage(1L, MOUNT_ROOT_A + ROOT_DIR_1, SHARE_MOUNT_ID_A);
+        doReturn("/nonexistent/proc/mounts").when(mounter).getProcMountsPath();
+
+        when(mockCmdExecutor.executeCommand(anyString(), anyLong())).thenReturn("");
+
+        mounter.mount(storage);
+
+        final ArgumentCaptor<String> cmdCaptor = ArgumentCaptor.forClass(String.class);
+        verify(mockCmdExecutor).executeCommand(cmdCaptor.capture(), anyLong());
+        assertTrue("Should fall back and run mount command (dir doesn't exist)",
+                cmdCaptor.getValue().startsWith("sudo mount -t "));
+    }
+
+    // --- Helpers ---
+
     private NFSDataStorage createStorage(final long id, final String path, final long fileShareMountId) {
         final NFSDataStorage storage = new NFSDataStorage(id, "storage-" + id, path);
         storage.setFileShareMountId(fileShareMountId);
@@ -207,4 +344,26 @@ public class NFSStorageMounterTest {
         mount.setRegionId(REGION_ID);
         return mount;
     }
+
+    private String rootMountPathFor(final String mountRoot) {
+        return Paths.get(tempFolder.getRoot().getAbsolutePath(), mountRoot).toString();
+    }
+
+    private void writeProcMountsEntry(final String mountPoint) {
+        final String content = String.format("server:/share %s nfs4 rw,relatime 0 0\n", mountPoint);
+        try {
+            Files.write(procMountsFile.toPath(), content.getBytes(StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void writeProcMountsEmpty() {
+        try {
+            Files.write(procMountsFile.toPath(), new byte[0]);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 }
