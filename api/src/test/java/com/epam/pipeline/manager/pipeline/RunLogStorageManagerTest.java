@@ -36,6 +36,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -50,7 +51,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.isNull;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -63,6 +63,8 @@ public class RunLogStorageManagerTest {
     private static final Long RUN_ID = 100L;
     private static final String TASK_1 = "task1";
     private static final String TASK_2 = "task2";
+    private static final String LOG_FILE_NAME = "log";
+    private static final int BUFFER_SIZE = 8192;
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Mock
@@ -142,7 +144,7 @@ public class RunLogStorageManagerTest {
 
         final String expectedTaskFolder = PATH_PREFIX + RUN_ID + "/" + TASK_1;
         verify(dataStorageManager).createDataStorageFile(
-                eq(STORAGE_ID), eq(expectedTaskFolder), eq("log"), any(InputStream.class));
+                eq(STORAGE_ID), eq(expectedTaskFolder), eq(LOG_FILE_NAME), any(InputStream.class));
         verify(dataStorageManager).createDataStorageFile(
                 eq(STORAGE_ID), eq(expectedTaskFolder), eq("metadata"), any(InputStream.class));
     }
@@ -292,7 +294,7 @@ public class RunLogStorageManagerTest {
         runLogStorageManager.saveLogsToStorage(RUN_ID, logsByTask);
 
         verify(dataStorageManager).createDataStorageFile(
-                eq(STORAGE_ID), eq(PATH_PREFIX + RUN_ID + "/" + TASK_1), eq("log"),
+                eq(STORAGE_ID), eq(PATH_PREFIX + RUN_ID + "/" + TASK_1), eq(LOG_FILE_NAME),
                 streamCaptor.capture());
 
         final byte[] capturedBytes = readStream(streamCaptor.getValue());
@@ -324,7 +326,7 @@ public class RunLogStorageManagerTest {
         final ArgumentCaptor<InputStream> streamCaptor = ArgumentCaptor.forClass(InputStream.class);
 
         final Map<PipelineTask, List<RunLog>> logsByTask = Collections.singletonMap(
-                original, Collections.singletonList(buildRunLog(RUN_ID, TASK_1, TaskStatus.SUCCESS, "log")));
+                original, Collections.singletonList(buildRunLog(RUN_ID, TASK_1, TaskStatus.SUCCESS, "test entry")));
 
         runLogStorageManager.saveLogsToStorage(RUN_ID, logsByTask);
 
@@ -378,7 +380,7 @@ public class RunLogStorageManagerTest {
         runLogStorageManager.saveLogsToStorage(RUN_ID, logsByTask);
 
         verify(dataStorageManager).createDataStorageFile(
-                eq(STORAGE_ID), eq(expectedFolder), eq("log"), logCaptor.capture());
+                eq(STORAGE_ID), eq(expectedFolder), eq(LOG_FILE_NAME), logCaptor.capture());
         verify(dataStorageManager).createDataStorageFile(
                 eq(STORAGE_ID), eq(expectedFolder), eq("metadata"), metaCaptor.capture());
 
@@ -448,7 +450,7 @@ public class RunLogStorageManagerTest {
             final RunLog log = buildRunLog(runId, taskName, status, logText);
             return OBJECT_MAPPER.writeValueAsBytes(Collections.singletonList(log));
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new UncheckedIOException(e);
         }
     }
 
@@ -472,7 +474,7 @@ public class RunLogStorageManagerTest {
 
     private static byte[] readStream(final InputStream stream) {
         try {
-            final byte[] buffer = new byte[8192];
+            final byte[] buffer = new byte[BUFFER_SIZE];
             final java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
             int read;
             while ((read = stream.read(buffer)) != -1) {
@@ -480,7 +482,7 @@ public class RunLogStorageManagerTest {
             }
             return bos.toByteArray();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new UncheckedIOException(e);
         }
     }
 }

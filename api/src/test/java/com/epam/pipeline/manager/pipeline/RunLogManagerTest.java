@@ -58,8 +58,11 @@ import static org.mockito.Mockito.when;
 public class RunLogManagerTest extends AbstractManagerTest {
 
     private static final Long RUN_ID = 1L;
+    private static final int LOG_LIMIT = 100;
     private static final String TASK_NAME = "testTask";
     private static final String CONSOLE_LOG_TASK = "Console";
+    private static final String LOGS_STORAGE_PREFIX = "s3://bucket/logs/runs/";
+    private static final String DB_LOG_TEXT = "db log";
 
     @Mock
     private PipelineRunCRUDService runCRUDServiceMock;
@@ -89,7 +92,7 @@ public class RunLogManagerTest extends AbstractManagerTest {
         when(messageHelper.getMessage(any(String.class))).thenReturn("test message");
         when(messageHelper.getMessage(any(String.class), any())).thenReturn("test message");
         when(preferenceManager.findPreference(SystemPreferences.SYSTEM_LIMIT_LOG_LINES))
-                .thenReturn(Optional.of(100));
+                .thenReturn(Optional.of(LOG_LIMIT));
     }
 
     @Test
@@ -108,7 +111,7 @@ public class RunLogManagerTest extends AbstractManagerTest {
         writer.write(os);
         String result = os.toString();
         Assert.assertNotNull(result);
-        Assert.assertTrue(!result.isEmpty());
+        assertTrue(!result.isEmpty());
     }
 
     @Test
@@ -167,7 +170,7 @@ public class RunLogManagerTest extends AbstractManagerTest {
         final String taskId = PipelineTask.buildTaskId(taskName, taskParams);
 
         when(runLogStorageManager.isRunLogMigrationConfigured()).thenReturn(true);
-        when(runLogStorageManager.saveLogsToStorage(eq(RUN_ID), any())).thenReturn("s3://bucket/logs/runs/" + RUN_ID);
+        when(runLogStorageManager.saveLogsToStorage(eq(RUN_ID), any())).thenReturn(LOGS_STORAGE_PREFIX + RUN_ID);
 
         final List<RunLog> logs = Arrays.asList(
                 buildRunLog(RUN_ID, taskId, TaskStatus.RUNNING, "starting"),
@@ -203,7 +206,7 @@ public class RunLogManagerTest extends AbstractManagerTest {
     @Test
     public void loadLogsByRunIdShouldReturnStorageLogsForFinalRun() {
         final PipelineRun run = buildRun(RUN_ID, TaskStatus.SUCCESS);
-        run.setLogsStoragePath("s3://bucket/logs/runs/" + RUN_ID);
+        run.setLogsStoragePath(LOGS_STORAGE_PREFIX + RUN_ID);
         when(runCRUDServiceMock.loadRunById(RUN_ID)).thenReturn(run);
 
         final List<RunLog> storageLogs = Collections.singletonList(
@@ -211,7 +214,7 @@ public class RunLogManagerTest extends AbstractManagerTest {
         when(runLogStorageManager.loadLogsFromStorage(RUN_ID)).thenReturn(storageLogs);
 
         final OffsetPagingFilter filter = OffsetPagingFilter.builder()
-                .offset(0).limit(100).build();
+                .offset(0).limit(LOG_LIMIT).build();
         final List<RunLog> result = logManager.loadLogsByRunId(RUN_ID, filter);
 
         assertEquals(1, result.size());
@@ -225,41 +228,41 @@ public class RunLogManagerTest extends AbstractManagerTest {
         when(runCRUDServiceMock.loadRunById(RUN_ID)).thenReturn(run);
 
         final List<RunLog> daoLogs = Collections.singletonList(
-                buildRunLog(RUN_ID, TASK_NAME, TaskStatus.RUNNING, "db log"));
+                buildRunLog(RUN_ID, TASK_NAME, TaskStatus.RUNNING, DB_LOG_TEXT));
         when(runLogDao.loadLogsForRun(eq(RUN_ID), any())).thenReturn(daoLogs);
 
         final OffsetPagingFilter filter = OffsetPagingFilter.builder()
-                .offset(0).limit(100).build();
+                .offset(0).limit(LOG_LIMIT).build();
         final List<RunLog> result = logManager.loadLogsByRunId(RUN_ID, filter);
 
         assertEquals(1, result.size());
-        assertEquals("db log", result.get(0).getLogText());
+        assertEquals(DB_LOG_TEXT, result.get(0).getLogText());
         verify(runLogStorageManager, never()).loadLogsFromStorage(anyLong());
     }
 
     @Test
     public void loadLogsByRunIdShouldFallBackToDaoWhenStorageEmpty() {
         final PipelineRun run = buildRun(RUN_ID, TaskStatus.SUCCESS);
-        run.setLogsStoragePath("s3://bucket/logs/runs/" + RUN_ID);
+        run.setLogsStoragePath(LOGS_STORAGE_PREFIX + RUN_ID);
         when(runCRUDServiceMock.loadRunById(RUN_ID)).thenReturn(run);
         when(runLogStorageManager.loadLogsFromStorage(RUN_ID)).thenReturn(Collections.emptyList());
 
         final List<RunLog> daoLogs = Collections.singletonList(
-                buildRunLog(RUN_ID, TASK_NAME, TaskStatus.SUCCESS, "db log"));
+                buildRunLog(RUN_ID, TASK_NAME, TaskStatus.SUCCESS, DB_LOG_TEXT));
         when(runLogDao.loadLogsForRun(eq(RUN_ID), any())).thenReturn(daoLogs);
 
         final OffsetPagingFilter filter = OffsetPagingFilter.builder()
-                .offset(0).limit(100).build();
+                .offset(0).limit(LOG_LIMIT).build();
         final List<RunLog> result = logManager.loadLogsByRunId(RUN_ID, filter);
 
         assertEquals(1, result.size());
-        assertEquals("db log", result.get(0).getLogText());
+        assertEquals(DB_LOG_TEXT, result.get(0).getLogText());
     }
 
     @Test
     public void loadLogsForTaskShouldReturnStorageLogsForFinalRun() {
         final PipelineRun run = buildRun(RUN_ID, TaskStatus.SUCCESS);
-        run.setLogsStoragePath("s3://bucket/logs/runs/" + RUN_ID);
+        run.setLogsStoragePath(LOGS_STORAGE_PREFIX + RUN_ID);
         when(runCRUDServiceMock.loadRunById(RUN_ID)).thenReturn(run);
 
         final List<RunLog> storageLogs = Collections.singletonList(
@@ -276,7 +279,7 @@ public class RunLogManagerTest extends AbstractManagerTest {
     @Test
     public void loadLogsForTaskShouldFallBackToDaoWhenStorageEmpty() {
         final PipelineRun run = buildRun(RUN_ID, TaskStatus.SUCCESS);
-        run.setLogsStoragePath("s3://bucket/logs/runs/" + RUN_ID);
+        run.setLogsStoragePath(LOGS_STORAGE_PREFIX + RUN_ID);
         when(runCRUDServiceMock.loadRunById(RUN_ID)).thenReturn(run);
         when(runLogStorageManager.loadTaskLogsFromStorage(RUN_ID, TASK_NAME))
                 .thenReturn(Collections.emptyList());
@@ -294,7 +297,7 @@ public class RunLogManagerTest extends AbstractManagerTest {
     @Test
     public void loadTasksByRunIdShouldReturnStorageTasksWhenDbEmpty() {
         final PipelineRun run = buildRun(RUN_ID, TaskStatus.SUCCESS);
-        run.setLogsStoragePath("s3://bucket/logs/runs/" + RUN_ID);
+        run.setLogsStoragePath(LOGS_STORAGE_PREFIX + RUN_ID);
         when(runCRUDServiceMock.loadRunById(RUN_ID)).thenReturn(run);
 
         final PipelineTask storageTask = buildPipelineTask(TASK_NAME, TaskStatus.SUCCESS);
@@ -310,7 +313,7 @@ public class RunLogManagerTest extends AbstractManagerTest {
     @Test
     public void loadTasksByRunIdShouldFallBackToDbWhenStorageEmpty() {
         final PipelineRun run = buildRun(RUN_ID, TaskStatus.SUCCESS);
-        run.setLogsStoragePath("s3://bucket/logs/runs/" + RUN_ID);
+        run.setLogsStoragePath(LOGS_STORAGE_PREFIX + RUN_ID);
         run.setPipelineName("pipeline");
         run.setStartDate(new Date());
         when(runCRUDServiceMock.loadRunById(RUN_ID)).thenReturn(run);
