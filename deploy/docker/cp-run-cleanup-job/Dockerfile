@@ -6,7 +6,7 @@ RUN apt-get update && \
 
 ARG CP_API_DIST_URL=""
 ENV COMMON_REPO_DIR=/usr/sbin/CommonRepo
-ENV CP_CLEANUP_RUNS_HOME=/opt/cp-pipeline-run-cleanup-job
+ENV CP_CLEANUP_RUNS_HOME=/opt/cp-run-cleanup-job
 
 RUN cd /tmp && \
     wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
