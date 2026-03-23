@@ -103,7 +103,7 @@ public class NFSStorageMounter {
         lock.lock();
         try {
             if (isMounted(rootMount)) {
-                verifyMountResponsive(rootMount);
+                verifyMountIsResponsive(rootMount);
             } else {
                 if (!rootMount.exists()) {
                     Assert.isTrue(rootMount.mkdirs(), messageHelper.getMessage(
@@ -218,7 +218,7 @@ public class NFSStorageMounter {
      * If the NFS server is unresponsive, the {@code timeout} command will kill {@code ls}
      * and return exit code 124, causing a {@link CmdExecutionException}.
      */
-    private void verifyMountResponsive(final File mountPoint) {
+    private void verifyMountIsResponsive(final File mountPoint) {
         final String checkCmd = String.format(NFS_CHECK_CMD_PATTERN, mountPoint.getAbsolutePath());
         try {
             cmdExecutor.executeCommand(checkCmd, timeoutMills);
