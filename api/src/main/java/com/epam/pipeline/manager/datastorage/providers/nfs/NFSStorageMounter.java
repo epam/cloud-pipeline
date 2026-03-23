@@ -39,6 +39,7 @@ import org.springframework.util.Assert;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
@@ -46,6 +47,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.epam.pipeline.manager.datastorage.providers.nfs.NFSHelper.formatNfsPath;
 import static com.epam.pipeline.manager.datastorage.providers.nfs.NFSHelper.getNfsRootPath;
@@ -63,7 +65,9 @@ public class NFSStorageMounter {
      * -f is for "force": in case of an unreachable NFS system
      */
     private static final String NFS_UNMOUNT_CMD_PATTERN = "sudo umount -l -f %s";
-
+    private static final String NFS_CHECK_CMD_PATTERN = "stat -t %s";
+    private static final String PROC_MOUNTS = "/proc/mounts";
+    private static final long DEFAULT_MOUNT_CHECK_TIMEOUT_MILLS = 30000L;
 
     private final CmdExecutor cmdExecutor = new CmdExecutor();
     private final MessageHelper messageHelper;
@@ -80,7 +84,8 @@ public class NFSStorageMounter {
                              final FileShareMountManager shareMountManager,
                              @Value("${data.storage.nfs.root.mount.point}")
                              final String rootMountPoint,
-                             @Value("${data.storage.nfs.mount.timeout.mills:0}")
+                             @Value("${data.storage.nfs.mount.timeout.mills:"
+                                     + DEFAULT_MOUNT_CHECK_TIMEOUT_MILLS + "}")
                              final long timeoutMills) {
         this.messageHelper = messageHelper;
         this.dataStorageDao = dataStorageDao;
@@ -97,9 +102,13 @@ public class NFSStorageMounter {
         final ReentrantLock lock = getMountPointLock(rootMount);
         lock.lock();
         try {
-            if (!rootMount.exists()) {
-                Assert.isTrue(rootMount.mkdirs(), messageHelper.getMessage(
-                        MessageConstants.ERROR_DATASTORAGE_NFS_MOUNT_DIRECTORY_NOT_CREATED));
+            if (isMounted(rootMount)) {
+                verifyMountIsResponsive(rootMount);
+            } else {
+                if (!rootMount.exists()) {
+                    Assert.isTrue(rootMount.mkdirs(), messageHelper.getMessage(
+                            MessageConstants.ERROR_DATASTORAGE_NFS_MOUNT_DIRECTORY_NOT_CREATED));
+                }
 
                 final AbstractCloudRegion cloudRegion = regionManager.load(fileShareMount.getRegionId());
                 final String protocol = fileShareMount.getMountType().getProtocol();
@@ -153,7 +162,7 @@ public class NFSStorageMounter {
             LOGGER.debug("Remaining NFS: " + remaining.stream().map(AbstractDataStorage::getPath)
                     .collect(Collectors.joining(";")) + " related with current file share mount");
 
-            if (rootMount.exists() && isStorageOnlyOnNFS(storage, remaining)) {
+            if (isMounted(rootMount) && isStorageOnlyOnNFS(storage, remaining)) {
                 try {
                     final String umountCmd = String.format(NFS_UNMOUNT_CMD_PATTERN, rootMount.getAbsolutePath());
                     cmdExecutor.executeCommand(umountCmd);
@@ -176,6 +185,47 @@ public class NFSStorageMounter {
         } catch (CmdExecutionException e) {
             LOGGER.error("Failed to change owner for path {}:", path);
             LOGGER.error(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Checks whether the given path is an active mount point by reading {@code /proc/mounts}.
+     * This avoids stat-ing the filesystem, which would block if the NFS server is unresponsive.
+     * Falls back to {@link File#exists()} if {@code /proc/mounts} cannot be read.
+     */
+    private boolean isMounted(final File mountPoint) {
+        final String procMounts = getProcMountsPath();
+        final String path = mountPoint.getAbsolutePath();
+        try (Stream<String> lines = Files.lines(Paths.get(procMounts))) {
+            return lines.anyMatch(line -> {
+                final String[] parts = line.split("\\s+");
+                return parts.length > 1 && parts[1].equals(path);
+            });
+        } catch (IOException e) {
+            LOGGER.warn("Failed to read {}, falling back to File.exists() for: {}",
+                    procMounts, path, e);
+            return mountPoint.exists();
+        }
+    }
+
+    // We have it to be able to mock in tests
+    String getProcMountsPath() {
+        return PROC_MOUNTS;
+    }
+
+    /**
+     * Verifies that a mounted NFS path is responsive by running {@code timeout <sec> stat -t <path>}.
+     * If the NFS server is unresponsive, the {@code timeout} command will kill {@code stat}
+     * and return exit code 124, causing a {@link CmdExecutionException}.
+     */
+    private void verifyMountIsResponsive(final File mountPoint) {
+        final String checkCmd = String.format(NFS_CHECK_CMD_PATTERN, mountPoint.getAbsolutePath());
+        try {
+            cmdExecutor.executeCommand(checkCmd, timeoutMills);
+        } catch (CmdExecutionException e) {
+            throw new DataStorageException(String.format(
+                    "NFS mount point is not responsive (check timed out after %d ms): %s",
+                    timeoutMills, mountPoint.getAbsolutePath()), e);
         }
     }
 
