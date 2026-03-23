@@ -171,6 +171,7 @@ public class DetachedConfigurationsTest
             .editConfiguration(pipelineProfile1611, profile -> {
                 refresh();
                 profile
+                    .ensureVisible(ESTIMATED_PRICE)
                     .addStringParameter(stringParameter, stringParameterValue)
                     .addPathParameter(pathParameter, pathParameterValue)
                     .addCommonParameter(commonParameter, commonParameterValue)
