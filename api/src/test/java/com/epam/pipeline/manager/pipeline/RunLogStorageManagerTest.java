@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.RunLog;
+import com.epam.pipeline.entity.log.RunLogStorageConfig;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -81,12 +82,13 @@ public class RunLogStorageManagerTest {
         runLogStorageManager = new RunLogStorageManager(dataStorageManager, preferenceManager);
         testStorage = new S3bucketDataStorage(STORAGE_ID, SYSTEM_STORAGE_NAME, "test");
 
+        when(preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_SYSTEM_RUN_LOGS_CONFIG))
+                .thenReturn(RunLogStorageConfig.builder()
+                        .enabled(true)
+                        .pathPrefix(PATH_PREFIX)
+                        .build());
         when(preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_SYSTEM_DATA_STORAGE_NAME))
                 .thenReturn(SYSTEM_STORAGE_NAME);
-        when(preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_SYSTEM_RUN_LOGS_PATH_PREFIX))
-                .thenReturn(PATH_PREFIX);
-        when(preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_SYSTEM_RUN_LOGS_TRANSFER_ENABLE))
-                .thenReturn(true);
         when(dataStorageManager.loadByNameOrId(SYSTEM_STORAGE_NAME)).thenReturn(testStorage);
     }
 
@@ -97,6 +99,8 @@ public class RunLogStorageManagerTest {
 
     @Test
     public void isRunLogMigrationConfiguredShouldReturnFalseWhenStorageNameBlank() {
+        when(preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_SYSTEM_RUN_LOGS_CONFIG))
+                .thenReturn(RunLogStorageConfig.builder().enabled(true).pathPrefix(PATH_PREFIX).build());
         when(preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_SYSTEM_DATA_STORAGE_NAME))
                 .thenReturn(null);
         assertFalse(runLogStorageManager.isRunLogMigrationConfigured());
@@ -104,16 +108,39 @@ public class RunLogStorageManagerTest {
 
     @Test
     public void isRunLogMigrationConfiguredShouldReturnFalseWhenPathPrefixBlank() {
-        when(preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_SYSTEM_RUN_LOGS_PATH_PREFIX))
-                .thenReturn(null);
+        when(preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_SYSTEM_RUN_LOGS_CONFIG))
+                .thenReturn(RunLogStorageConfig.builder().enabled(true).pathPrefix(null).build());
         assertFalse(runLogStorageManager.isRunLogMigrationConfigured());
     }
 
     @Test
     public void isRunLogMigrationConfiguredShouldReturnFalseWhenMigrationDisabled() {
-        when(preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_SYSTEM_RUN_LOGS_TRANSFER_ENABLE))
-                .thenReturn(false);
+        when(preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_SYSTEM_RUN_LOGS_CONFIG))
+                .thenReturn(RunLogStorageConfig.builder().enabled(false).pathPrefix(PATH_PREFIX).build());
         assertFalse(runLogStorageManager.isRunLogMigrationConfigured());
+    }
+
+    @Test
+    public void isRunLogMigrationConfiguredShouldReturnFalseWhenConfigNull() {
+        when(preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_SYSTEM_RUN_LOGS_CONFIG))
+                .thenReturn(null);
+        assertFalse(runLogStorageManager.isRunLogMigrationConfigured());
+    }
+
+    @Test
+    public void isRunLogMigrationConfiguredShouldUseDedicatedStorageNameFromConfig() {
+        final String dedicatedStorage = "dedicatedLogsStorage";
+        when(preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_SYSTEM_RUN_LOGS_CONFIG))
+                .thenReturn(RunLogStorageConfig.builder()
+                        .enabled(true)
+                        .pathPrefix(PATH_PREFIX)
+                        .storageName(dedicatedStorage)
+                        .build());
+        when(preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_SYSTEM_DATA_STORAGE_NAME))
+                .thenReturn(null);
+        when(dataStorageManager.loadByNameOrId(dedicatedStorage)).thenReturn(testStorage);
+
+        assertTrue(runLogStorageManager.isRunLogMigrationConfigured());
     }
 
     @Test
@@ -125,7 +152,7 @@ public class RunLogStorageManagerTest {
 
     @Test
     public void buildLogsStoragePathShouldReturnNullWhenStorageNotResolved() {
-        when(preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_SYSTEM_DATA_STORAGE_NAME))
+        when(preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_SYSTEM_RUN_LOGS_CONFIG))
                 .thenReturn(null);
 
         assertNull(runLogStorageManager.buildLogsStoragePath(RUN_ID));
@@ -193,7 +220,7 @@ public class RunLogStorageManagerTest {
 
     @Test
     public void loadLogsFromStorageShouldReturnEmptyWhenStorageNotResolved() {
-        when(preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_SYSTEM_DATA_STORAGE_NAME))
+        when(preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_SYSTEM_RUN_LOGS_CONFIG))
                 .thenReturn(null);
 
         final List<RunLog> result = runLogStorageManager.loadLogsFromStorage(RUN_ID);
@@ -233,7 +260,7 @@ public class RunLogStorageManagerTest {
 
     @Test
     public void loadTaskLogsFromStorageShouldReturnEmptyWhenStorageNotResolved() {
-        when(preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_SYSTEM_DATA_STORAGE_NAME))
+        when(preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_SYSTEM_RUN_LOGS_CONFIG))
                 .thenReturn(null);
 
         final List<RunLog> result = runLogStorageManager.loadTaskLogsFromStorage(RUN_ID, TASK_1);
@@ -266,7 +293,7 @@ public class RunLogStorageManagerTest {
 
     @Test
     public void loadTasksFromStorageShouldReturnEmptyWhenStorageNotResolved() {
-        when(preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_SYSTEM_DATA_STORAGE_NAME))
+        when(preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_SYSTEM_RUN_LOGS_CONFIG))
                 .thenReturn(null);
 
         final List<PipelineTask> result = runLogStorageManager.loadTasksFromStorage(RUN_ID);

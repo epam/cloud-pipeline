@@ -43,6 +43,7 @@ import com.epam.pipeline.entity.monitoring.NetworkConsumingRunAction;
 import com.epam.pipeline.entity.notification.filter.NotificationFilter;
 import com.epam.pipeline.entity.metadata.CommonInstanceTagsType;
 import com.epam.pipeline.entity.pipeline.run.runtime.RunSyncRuntimeDataConfig;
+import com.epam.pipeline.entity.log.RunLogStorageConfig;
 import com.epam.pipeline.entity.pipeline.run.RunVisibilityPolicy;
 import com.epam.pipeline.entity.pipeline.run.parameter.RuntimeParameter;
 import com.epam.pipeline.entity.preference.Preference;
@@ -259,11 +260,13 @@ public class SystemPreferences {
     public static final StringPreference DATA_STORAGE_SYSTEM_DATA_STORAGE_NAME = new StringPreference(
         "storage.system.storage.name", null, DATA_STORAGE_GROUP, null);
 
-    public static final StringPreference DATA_STORAGE_SYSTEM_RUN_LOGS_PATH_PREFIX = new StringPreference(
-            "storage.system.run.logs.path.prefix", "logs/runs/", DATA_STORAGE_GROUP, pass);
-
-    public static final BooleanPreference DATA_STORAGE_SYSTEM_RUN_LOGS_TRANSFER_ENABLE = new BooleanPreference(
-            "storage.system.run.logs.transfer.enabled", true, DATA_STORAGE_GROUP, pass);
+    public static final ObjectPreference<RunLogStorageConfig> DATA_STORAGE_SYSTEM_RUN_LOGS_CONFIG =
+        new ObjectPreference<>(
+            "storage.system.run.logs.config",
+            RunLogStorageConfig.builder().enabled(false).pathPrefix("logs/runs/").build(),
+            new TypeReference<RunLogStorageConfig>() {},
+            DATA_STORAGE_GROUP,
+            isNullOrValidJson(new TypeReference<RunLogStorageConfig>() {}));
 
     public static final StringPreference DATA_STORAGE_RUN_SHARED_STORAGE_NAME = new StringPreference(
             "storage.system.run.shared.storage.name", null, DATA_STORAGE_GROUP, pass);

@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.RunLog;
+import com.epam.pipeline.entity.log.RunLogStorageConfig;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -58,14 +59,11 @@ public class RunLogStorageManager {
     private final PreferenceManager preferenceManager;
 
     public boolean isRunLogMigrationConfigured() {
-        final String systemStorageName = preferenceManager.getPreference(
-                SystemPreferences.DATA_STORAGE_SYSTEM_DATA_STORAGE_NAME);
-        final String pathPrefix = preferenceManager.getPreference(
-                SystemPreferences.DATA_STORAGE_SYSTEM_RUN_LOGS_PATH_PREFIX);
-        final Boolean migrationEnabled = preferenceManager.getPreference(
-                SystemPreferences.DATA_STORAGE_SYSTEM_RUN_LOGS_TRANSFER_ENABLE);
-        return migrationEnabled &&
-                StringUtils.isNotBlank(systemStorageName) && StringUtils.isNotBlank(pathPrefix);
+        final RunLogStorageConfig config = resolveConfig().orElse(null);
+        if (config == null || !Boolean.TRUE.equals(config.getEnabled())) {
+            return false;
+        }
+        return StringUtils.isNotBlank(config.getPathPrefix()) && resolveStorageName(config).isPresent();
     }
 
     public String saveLogsToStorage(final Long runId,
@@ -216,20 +214,33 @@ public class RunLogStorageManager {
         }
     }
 
-    private Optional<AbstractDataStorage> resolveStorage() {
-        final String systemStorageName = preferenceManager.getPreference(
-                SystemPreferences.DATA_STORAGE_SYSTEM_DATA_STORAGE_NAME);
-        if (StringUtils.isBlank(systemStorageName)) {
-            return Optional.empty();
-        }
-        try {
-            return Optional.ofNullable(dataStorageManager.loadByNameOrId(systemStorageName));
-        } catch (Exception e) {
-            return  Optional.empty();
-        }
+    private Optional<RunLogStorageConfig> resolveConfig() {
+        return Optional.ofNullable(
+                preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_SYSTEM_RUN_LOGS_CONFIG));
     }
 
-    private static String buildPath(String... parts) {
+    private Optional<String> resolveStorageName(final RunLogStorageConfig config) {
+        if (StringUtils.isNotBlank(config.getStorageName())) {
+            return Optional.of(config.getStorageName());
+        }
+        return Optional.ofNullable(
+                preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_SYSTEM_DATA_STORAGE_NAME))
+                .filter(StringUtils::isNotBlank);
+    }
+
+    private Optional<AbstractDataStorage> resolveStorage() {
+        return resolveConfig()
+                .flatMap(this::resolveStorageName)
+                .flatMap(name -> {
+                    try {
+                        return Optional.ofNullable(dataStorageManager.loadByNameOrId(name));
+                    } catch (Exception e) {
+                        return Optional.empty();
+                    }
+                });
+    }
+
+    private static String buildPath(final String... parts) {
         return Arrays.stream(parts)
                         .map(part -> {
                             if (part.endsWith("/")) {
@@ -240,6 +251,8 @@ public class RunLogStorageManager {
     }
 
     private String resolvePathPrefix() {
-        return preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_SYSTEM_RUN_LOGS_PATH_PREFIX);
+        return resolveConfig()
+                .map(RunLogStorageConfig::getPathPrefix)
+                .orElse(null);
     }
 }
