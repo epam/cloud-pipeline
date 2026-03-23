@@ -214,8 +214,8 @@ public class NFSStorageMounter {
     }
 
     /**
-     * Verifies that a mounted NFS path is responsive by running {@code timeout <sec> ls <path>}.
-     * If the NFS server is unresponsive, the {@code timeout} command will kill {@code ls}
+     * Verifies that a mounted NFS path is responsive by running {@code timeout <sec> stat -t <path>}.
+     * If the NFS server is unresponsive, the {@code timeout} command will kill {@code stat}
      * and return exit code 124, causing a {@link CmdExecutionException}.
      */
     private void verifyMountIsResponsive(final File mountPoint) {
