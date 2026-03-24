@@ -123,7 +123,7 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public LogAO shouldHaveStatus(Status status) {
-        get(STATUS).shouldHave(status.reached);
+        get(STATUS).shouldHave(status.reached, ofMillis(COMPLETION_TIMEOUT));
         return this;
     }
 
