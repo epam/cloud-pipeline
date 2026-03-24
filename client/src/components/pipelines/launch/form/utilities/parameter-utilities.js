@@ -1539,7 +1539,8 @@ async function customValidate (customValidators, parameters, opts) {
             resolve({
               ...parameter,
               error: undefined,
-              warning: undefined
+              warning: undefined,
+              valid: true
             });
           }
         } catch (error) {
