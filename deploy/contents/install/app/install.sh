@@ -388,6 +388,12 @@ print_info "-> Assigning cloud-pipeline/cp-storage-lifecycle-service to $MLFLOW_
 kubectl label nodes "$MLFLOW_KUBE_NODE_NAME" cloud-pipeline/cp-mlflow="true" --overwrite
 
 
+# Allow to schedule Run cleanup job to the master
+CLEANUP_RUN_JOB_KUBE_NODE_NAME=${CLEANUP_RUN_JOB_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-run-cleanup-job to $CLEANUP_RUN_JOB_KUBE_NODE_NAME"
+kubectl label nodes "$CLEANUP_RUN_JOB_KUBE_NODE_NAME" cloud-pipeline/cp-run-cleanup-job="true" --overwrite
+
+
 echo
 
 ##########
@@ -1601,6 +1607,27 @@ if is_service_requested cp-mlflow; then
     fi
     echo
 fi
+
+# Run cleanup cron job
+if is_service_requested cp-run-cleanup-job; then
+    print_ok "[Starting Run Cleanup Job deployment]"
+
+    print_info "-> Deleting existing instance of cp-run-cleanup-job"
+    delete_cron_job "cp-run-cleanup-job" \
+                    "/opt/cp-run-cleanup-job"
+
+    if is_install_requested; then
+        print_info "-> Deploying cp-run-cleanup-job service"
+        # Run every day by default
+        export CP_CLEANUP_RUNS_CRON_SCHEDULE="${CP_CLEANUP_RUNS_CRON_SCHEDULE:-0 0 * * *}"
+        create_kube_resource $K8S_SPECS_HOME/cp-run-cleanup-job/cp-run-cleanup-job-config.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-run-cleanup-job/cp-run-cleanup-job-cron.yaml
+
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-run-cleanup-job: deployed"
+    fi
+    echo
+fi
+
 
 set_preferences_from_point_in_time_configuration
 import_users_from_point_in_time_configuration

@@ -919,6 +919,15 @@ public final class MessageConstants {
             "error.aws.omics.store.incorrect.file.path";
     public static final String AWS_OMICS_FILE_NOT_FOUND = "error.aws.omics.file.not.found";
 
+    //Archive runs
+    public static final String DEBUG_ARCHIVE_RUN_COMPLETED = "debug.archive.run.completed";
+    public static final String DEBUG_ARCHIVE_RUN_NO_IDS = "debug.archive.run.no.ids";
+    public static final String DEBUG_ARCHIVE_RUN_LOADING_MASTER_BY_IDS = "debug.archive.run.loading.master.by.ids";
+    public static final String DEBUG_ARCHIVE_RUN_LOADED_MASTER = "debug.archive.run.loaded.master";
+    public static final String DEBUG_ARCHIVE_RUN_LOADING_CHILDREN = "debug.archive.run.loading.children";
+    public static final String DEBUG_ARCHIVE_RUN_LOADED_CHILDREN = "debug.archive.run.loaded.children";
+    public static final String DEBUG_ARCHIVE_RUN_LOADING_STATUSES = "debug.archive.run.loading.statuses";
+    public static final String DEBUG_ARCHIVE_RUN_LOADED_STATUSES = "debug.archive.run.loaded.statuses";
 
     private MessageConstants() {
         // no-op

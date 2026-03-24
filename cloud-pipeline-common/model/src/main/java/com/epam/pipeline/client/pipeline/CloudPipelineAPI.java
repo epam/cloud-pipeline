@@ -354,6 +354,9 @@ public interface CloudPipelineAPI {
     @POST("runs/archive")
     Call<Result<Boolean>> archiveRuns();
 
+    @POST("runs/archive")
+    Call<Result<Boolean>> archiveRunsByIds(@Body List<Long> runIds);
+
     @POST("cluster/pods/filter")
     Call<Result<List<PodInstance>>> filterPods(@Body Map<String, String> monitoredLabels);
 

@@ -24,6 +24,7 @@ from src.api.tool import Tool
 from src.model.pipeline_run_model import PriceType
 from src.model.pipeline_run_parameter_model import PipelineRunParameterModel
 from src.utilities.api_wait import wait_for_server_enabling_if_needed
+from src.utilities.capacity_block_processor import CapacityBlockProcessor
 from src.utilities.cluster_manager import ClusterManager
 from src.utilities.user_operations_manager import UserOperationsManager
 from src.utilities.user_token_operations import UserTokenOperations
@@ -124,20 +125,22 @@ class PipelineRunOperations(object):
                 else:
                     if not quiet:
                         click.echo('Evaluating estimated price...', nl=False)
-                        run_price = Pipeline.get_estimated_price(pipeline_model.identifier,
-                                                                 pipeline_run_parameters.version,
-                                                                 instance_type,
-                                                                 instance_disk,
-                                                                 config_name=config,
-                                                                 price_type=price_type,
-                                                                 region_id=region_id)
+                    run_price = Pipeline.get_estimated_price(pipeline_model.identifier,
+                                                             pipeline_run_parameters.version,
+                                                             instance_type,
+                                                             instance_disk,
+                                                             config_name=config,
+                                                             price_type=price_type,
+                                                             region_id=region_id)
+                    instance_type = instance_type or run_price.instance_type
+
+                    if not quiet:
                         click.echo('done.', nl=True)
                         price_table = prettytable.PrettyTable()
                         price_table.field_names = ["key", "value"]
                         price_table.align = "l"
                         price_table.set_style(12)
                         price_table.header = False
-                        instance_type = instance_type or run_price.instance_type
 
                         price_table.add_row(['Price per hour ({}, hdd {})'.format(run_price.instance_type,
                                                                                   run_price.instance_disk),
@@ -172,6 +175,10 @@ class PipelineRunOperations(object):
                             wrong_parameters = True
                         elif run_params_dict.get(parameter.name) is not None:
                             parameter.value = run_params_dict.get(parameter.name)
+
+                    run_params_dict, pod_assign_policy = cls._apply_capacity_block_config_if_required(instance_type,
+                                                                                                      run_params_dict)
+
                     for user_parameter in run_params_dict.keys():
                         custom_parameter = True
                         for parameter in pipeline_run_parameters.parameters:
@@ -207,7 +214,8 @@ class PipelineRunOperations(object):
                                                                       status_notifications_recipient=status_notifications_recipient,
                                                                       status_notifications_subject=status_notifications_subject,
                                                                       status_notifications_body=status_notifications_body,
-                                                                      run_as_user=run_as_user)
+                                                                      run_as_user=run_as_user,
+                                                                      pod_assign_policy=pod_assign_policy)
                         pipeline_run_id = pipeline_run_model.identifier
                         if not quiet:
                             click.echo('"{}" pipeline run scheduled with RunId: {}'.format(
@@ -250,6 +258,9 @@ class PipelineRunOperations(object):
                 if not quiet:
                     cls._check_gpu_and_cuda_compatibility(instance_type, docker_image=docker_image)
 
+                run_params_dict, pod_assign_policy = cls._apply_capacity_block_config_if_required(instance_type,
+                                                                                                  run_params_dict)
+
                 if not yes:
                     click.confirm('Are you sure you want to schedule a run?', abort=True)
 
@@ -270,7 +281,8 @@ class PipelineRunOperations(object):
                                                              status_notifications_recipient=status_notifications_recipient,
                                                              status_notifications_subject=status_notifications_subject,
                                                              status_notifications_body=status_notifications_body,
-                                                             run_as_user=run_as_user)
+                                                             run_as_user=run_as_user,
+                                                             pod_assign_policy=pod_assign_policy)
                 pipeline_run_id = pipeline_run_model.identifier
                 if not quiet:
                     click.echo('Pipeline run scheduled with RunId: {}'.format(pipeline_run_id))
@@ -489,3 +501,9 @@ class PipelineRunOperations(object):
             click.echo(GPU_WITHOUT_CUDA_WARN_MSG)
         if not gpu_enabled and cuda_available:
             click.echo(CPU_WITH_CUDA_WARN_MSG)
+
+    @classmethod
+    def _apply_capacity_block_config_if_required(cls, instance_type, run_params_dict):
+        capacity_block_processor = CapacityBlockProcessor(instance_type)
+        capacity_block_processor.verify(run_params_dict)
+        return capacity_block_processor.apply_config(run_params_dict)
