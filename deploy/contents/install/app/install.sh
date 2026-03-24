@@ -387,16 +387,15 @@ MLFLOW_KUBE_NODE_NAME=${MLFLOW_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-storage-lifecycle-service to $MLFLOW_KUBE_NODE_NAME"
 kubectl label nodes "$MLFLOW_KUBE_NODE_NAME" cloud-pipeline/cp-mlflow="true" --overwrite
 
-# Allow to schedule Home Storages Creator to the master
-HOME_DIRS_KUBE_NODE_NAME=${HOME_DIRS_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
-print_info "-> Assigning cloud-pipeline/cp-home-dirs to $HOME_DIRS_KUBE_NODE_NAME"
-kubectl label nodes "$HOME_DIRS_KUBE_NODE_NAME" cloud-pipeline/cp-home-dirs="true" --overwrite
-
 # Allow to schedule Run cleanup job to the master
 CLEANUP_RUN_JOB_KUBE_NODE_NAME=${CLEANUP_RUN_JOB_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-run-cleanup-job to $CLEANUP_RUN_JOB_KUBE_NODE_NAME"
 kubectl label nodes "$CLEANUP_RUN_JOB_KUBE_NODE_NAME" cloud-pipeline/cp-run-cleanup-job="true" --overwrite
 
+# Allow to schedule Home Storages Creator to the master
+HOME_DIRS_KUBE_NODE_NAME=${HOME_DIRS_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-home-dirs to $HOME_DIRS_KUBE_NODE_NAME"
+kubectl label nodes "$HOME_DIRS_KUBE_NODE_NAME" cloud-pipeline/cp-home-dirs="true" --overwrite
 
 echo
 
@@ -1612,28 +1611,6 @@ if is_service_requested cp-mlflow; then
     echo
 fi
 
-# Home storages creator
-if is_service_requested cp-home-dirs; then
-    print_ok "[Starting Home Dirs deployment]"
-
-    print_info "-> Deleting existing instance of Home Dirs"
-    delete_deployment_and_service   "cp-home-dirs" \
-                                    "/opt/home_dirs"
-
-    if is_install_requested; then
-        print_info "-> Deploying cp-home-creator service"
-        # Run every hour
-        export CP_HOME_DIRS_SCHEDULE="${CP_HOME_DIRS_SCHEDULE:-0 * * * *}"
-        create_kube_resource $K8S_SPECS_HOME/cp-home-creator/cp-home-creator-dpl.yaml
-
-        print_info "-> Waiting for cp-home-creator to initialize"
-        wait_for_deployment "cp-home-dirs"
-
-        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-home-dirs: deployed"
-    fi
-    echo
-fi
-
 # Run cleanup cron job
 if is_service_requested cp-run-cleanup-job; then
     print_ok "[Starting Run Cleanup Job deployment]"
@@ -1654,6 +1631,24 @@ if is_service_requested cp-run-cleanup-job; then
     echo
 fi
 
+# Home storages creator
+if is_service_requested cp-home-dirs; then
+    print_ok "[Starting Home Storages Creator deployment]"
+
+    print_info "-> Deleting existing instance of Home Storages Creator"
+    delete_cron_job   "cp-home-dirs" \
+                      "/opt/home_dirs"
+
+    if is_install_requested; then
+        print_info "-> Deploying cp-home-creator service"
+        # Run every hour
+        export CP_HOME_DIRS_SCHEDULE="${CP_HOME_DIRS_SCHEDULE:-0 * * * *}"
+        create_kube_resource $K8S_SPECS_HOME/cp-home-creator/cp-home-creator-dpl.yaml
+
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-home-dirs: deployed"
+    fi
+    echo
+fi
 
 set_preferences_from_point_in_time_configuration
 import_users_from_point_in_time_configuration

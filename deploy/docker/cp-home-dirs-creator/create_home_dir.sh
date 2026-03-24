@@ -282,7 +282,7 @@ function create_fs_quota_for_storage {
 
 function apply_fs_quotas {
     local response_users="$1"
-    echo "$response_users" | jq -c '.payload[]' | while read -r user_info; do
+    echo "$response_users" | jq -c '(.payload // []) | .[] | select(.id? and .defaultStorageId?)' | while read -r user_info; do
         local uid=$(echo "$user_info" | jq -r '.id|tostring')
         if [[ " ${list_service_accounts[*]} " =~ " ${uid} " ]]; then
             continue
@@ -296,7 +296,7 @@ function apply_fs_quotas {
         fi
         local owner_email=$(echo "$user_info" | jq -r '.attributes.Email' | grep -v "^null$" | tr '[:lower:]' '[:upper:]')
         [ -z "$owner_email" ] && continue
-        local existing=$(echo "$load_response" | jq -r '.payload[].data.fs_notifications.value // empty')
+        local existing=$(echo "$load_response" | jq -r '(.payload // [] | if type == "array" then . else [.] end | .[] | .data.fs_notifications.value? // empty)')
         if [ -n "$existing" ]; then
             echo "FS quotas already defined for $default_storage_id"
             continue
