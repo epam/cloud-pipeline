@@ -1574,6 +1574,49 @@ function delete_deployment_and_service {
     fi
 }
 
+function delete_cron_job_pods {
+    local CRON_JOB_NAME=$1
+
+    pods=$(get_cron_job_pods $CRON_JOB_NAME)
+    for p in $pods; do
+        kubectl delete po $p --grace-period=0 --force
+    done
+}
+
+function get_cron_job_pods {
+    local CRON_JOB_NAME=$1
+    # CronJob pods are named {cronjob-name}-{schedule-timestamp}-{pod-hash}
+    _pods=$(kubectl get po 2>/dev/null | grep "^${CRON_JOB_NAME}-" | cut -f1 -d' ')
+    echo $_pods
+}
+
+function delete_cron_job {
+    local NAME=$1
+    local DATA_DIRS="$2"
+
+    if kubectl get cronjob $NAME &> /dev/null; then
+        kubectl delete cronjob $NAME --grace-period=0 --force
+        delete_cron_job_pods "$NAME"
+    fi
+
+    if kubectl get po $NAME &> /dev/null; then
+        kubectl delete po $NAME --grace-period=0 --force
+    fi
+
+    wait_for_deletion $NAME
+
+    if [ "$CP_FORCE_DATA_ERASE" ]; then
+        local secrets_template=${NAME//[^a-zA-Z_0-9]/-}
+        for kube_secret in $(kubectl get secrets  2>/dev/null| grep "$secrets_template" | cut -f1 -d' '); do
+            kubectl delete secrets "$kube_secret"
+        done
+        if [ "$DATA_DIRS" ]; then
+            rm -rf $DATA_DIRS
+            print_info "Directory(ies) removed: $DATA_DIRS"
+        fi
+    fi
+}
+
 function get_service_cluster_ip {
     local service_name="$1"
     local search_namespace="$2"
