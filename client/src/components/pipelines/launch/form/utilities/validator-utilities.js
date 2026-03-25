@@ -59,6 +59,48 @@ async function getFileSize (path) {
 }
 
 /**
+ * Parses a CSV string into headers and row objects.
+ * Empty rows (all values blank) are optionally can be skipped.
+ * @param {string} csvString
+ * @param {Boolean} filterEmptyRows
+ * @returns {{headers: string[], rows: Array<Record<string, string>>}}
+ */
+function parseCSV (csvString = '', filterEmptyRows = false) {
+  const lines = (csvString || '').trim().split('\n');
+  if (lines.length === 0) {
+    return {headers: [], rows: []};
+  }
+  const headers = lines[0].trim().split(',').map(h => h.trim());
+  let rows = lines.slice(1)
+    .map(line => {
+      const values = line.split(',').map(v => v.trim());
+      return headers.reduce((header, h, i) => {
+        header[h] = values[i] ?? '';
+        return header;
+      }, {});
+    });
+  if (filterEmptyRows) {
+    rows = rows.filter(row => Object.values(row).some(v => v !== ''));
+  }
+  return {headers, rows};
+}
+
+/**
+ * Returns values from a named column.
+ * @param {string} csvString
+ * @param {string} columnName
+ * @param {Boolean} filterEmptyValues
+ * @returns {string[]}
+ */
+function getCSVColumnValues (csvString, columnName, filterEmptyValues = false) {
+  const {rows} = parseCSV(csvString);
+  const values = rows.map(row => row[columnName] ?? '');
+  return filterEmptyValues
+    ? values.filter(v => v !== '')
+    : values;
+}
+
+/**
  * Extracts column names from CSV header
  * @param {string} csvString - CSV file content
  * @returns {string[]} Array of column names
@@ -210,5 +252,7 @@ export {
   getCSVColumns,
   validateItemSize,
   validateCSVHeader,
+  parseCSV,
+  getCSVColumnValues,
   invalidateFileContentCache
 };
