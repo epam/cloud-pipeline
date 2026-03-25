@@ -154,8 +154,10 @@ public class RunLogManager {
 
         final Map<PipelineTask, List<RunLog>> logsByTask = runLogs.stream()
                 .collect(Collectors.groupingBy(logEntry -> {
-                    // using consoleLogTask as default task for logs without task name
-                    final String taskId = StringUtils.defaultString(logEntry.getTaskName(), consoleLogTask);
+                    final String taskId = Optional.ofNullable(logEntry.getTask())
+                            .map(t -> PipelineTask.buildTaskId(t.getName(), t.getParameters()))
+                            .orElseGet(() -> StringUtils.defaultString(
+                                    logEntry.getTaskName(), consoleLogTask));
                     return tasksByName.getOrDefault(taskId, new PipelineTask(taskId));
                 }));
 

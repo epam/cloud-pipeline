@@ -26,8 +26,9 @@ import com.epam.pipeline.entity.log.RunLogStorageConfig;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -53,7 +54,6 @@ public class RunLogStorageManager {
     private static final String LOG_FILE_NAME = "log";
     private static final String METADATA_FILE_NAME = "metadata";
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    private static final TypeReference<List<RunLog>> RUN_LOG_LIST_TYPE = new TypeReference<List<RunLog>>() {};
 
     private final DataStorageManager dataStorageManager;
     private final PreferenceManager preferenceManager;
@@ -182,15 +182,19 @@ public class RunLogStorageManager {
 
     private byte[] serializeLogs(final List<RunLog> logs) {
         try {
-            return OBJECT_MAPPER.writeValueAsBytes(logs);
+            final StringBuilder sb = new StringBuilder();
+            for (final RunLog logEntry : logs) {
+                sb.append(OBJECT_MAPPER.writeValueAsString(logEntry)).append('\n');
+            }
+            return sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new IllegalStateException("Failed to serialize run logs to JSON", e);
         }
     }
 
     private List<RunLog> deserializeLogs(final byte[] content) {
-        try {
-            return OBJECT_MAPPER.readValue(content, RUN_LOG_LIST_TYPE);
+        try(MappingIterator<RunLog> logs = OBJECT_MAPPER.readerFor(RunLog.class).readValues(content)) {
+            return logs.readAll();
         } catch (IOException e) {
             log.warn("Failed to deserialize run logs from storage: {}", e.getMessage());
             return Collections.emptyList();

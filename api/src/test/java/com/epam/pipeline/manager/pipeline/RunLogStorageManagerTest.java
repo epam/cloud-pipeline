@@ -475,7 +475,8 @@ public class RunLogStorageManagerTest {
                                             final TaskStatus status, final String logText) {
         try {
             final RunLog log = buildRunLog(runId, taskName, status, logText);
-            return OBJECT_MAPPER.writeValueAsBytes(Collections.singletonList(log));
+            return (OBJECT_MAPPER.writeValueAsString(log) + "\n")
+                    .getBytes(java.nio.charset.StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

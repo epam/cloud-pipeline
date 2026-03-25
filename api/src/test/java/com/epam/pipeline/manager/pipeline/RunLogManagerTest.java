@@ -204,6 +204,46 @@ public class RunLogManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    public void migrateRunLogsToStorageShouldGroupByTaskFieldWhenTaskNameIsNull() {
+        final String task1Name = "task1";
+        final String task2Name = "task2";
+
+        when(runLogStorageManager.isRunLogMigrationConfigured()).thenReturn(true);
+        when(runLogStorageManager.saveLogsToStorage(eq(RUN_ID), any())).thenReturn(LOGS_STORAGE_PREFIX + RUN_ID);
+
+        final List<RunLog> logs = Arrays.asList(
+                buildRunLogWithTaskOnly(RUN_ID, task1Name, TaskStatus.RUNNING, "task1 line 1"),
+                buildRunLogWithTaskOnly(RUN_ID, task2Name, TaskStatus.RUNNING, "task2 line 1"),
+                buildRunLogWithTaskOnly(RUN_ID, task1Name, TaskStatus.SUCCESS, "task1 line 2"));
+        when(runLogDao.loadAllLogsForRun(RUN_ID)).thenReturn(logs);
+
+        final PipelineRun run = buildRun(RUN_ID, TaskStatus.SUCCESS);
+        when(runCRUDServiceMock.loadRunById(RUN_ID)).thenReturn(run);
+        when(runLogStorageManager.loadTasksFromStorage(RUN_ID)).thenReturn(Collections.emptyList());
+
+        when(runLogDao.loadTasksForRun(RUN_ID)).thenReturn(Arrays.asList(
+                buildPipelineTask(task1Name, TaskStatus.SUCCESS),
+                buildPipelineTask(task2Name, TaskStatus.SUCCESS)));
+
+        logManager.migrateRunLogsToStorage(RUN_ID);
+
+        @SuppressWarnings("rawtypes")
+        final ArgumentCaptor<Map> mapCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(runLogStorageManager).saveLogsToStorage(eq(RUN_ID), mapCaptor.capture());
+
+        final Map<PipelineTask, List<RunLog>> capturedMap = mapCaptor.getValue();
+        assertEquals(2, capturedMap.size());
+
+        final PipelineTask key1 = buildPipelineTask(task1Name, TaskStatus.SUCCESS);
+        final PipelineTask key2 = buildPipelineTask(task2Name, TaskStatus.SUCCESS);
+        assertTrue(capturedMap.containsKey(key1));
+        assertTrue(capturedMap.containsKey(key2));
+        assertEquals(2, capturedMap.get(key1).size());
+        assertEquals(1, capturedMap.get(key2).size());
+    }
+
+    @Test
     public void loadLogsByRunIdShouldReturnStorageLogsForFinalRun() {
         final PipelineRun run = buildRun(RUN_ID, TaskStatus.SUCCESS);
         run.setLogsStoragePath(LOGS_STORAGE_PREFIX + RUN_ID);
@@ -352,6 +392,17 @@ public class RunLogManagerTest extends AbstractManagerTest {
                 .date(new Date())
                 .status(status)
                 .taskName(taskName)
+                .logText(logText)
+                .build();
+    }
+
+    private static RunLog buildRunLogWithTaskOnly(final Long runId, final String taskName,
+                                                  final TaskStatus status, final String logText) {
+        return RunLog.builder()
+                .runId(runId)
+                .date(new Date())
+                .status(status)
+                .task(new PipelineTask(taskName))
                 .logText(logText)
                 .build();
     }
