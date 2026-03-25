@@ -17,7 +17,6 @@
 package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
-import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.pipeline.PipelineTask;
@@ -28,7 +27,6 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -37,6 +35,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -54,6 +53,8 @@ public class RunLogStorageManager {
     private static final String LOG_FILE_NAME = "log";
     private static final String METADATA_FILE_NAME = "metadata";
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final ObjectMapper LOG_WRITER = new ObjectMapper()
+            .setSerializationInclusion(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL);
 
     private final DataStorageManager dataStorageManager;
     private final PreferenceManager preferenceManager;
@@ -159,10 +160,9 @@ public class RunLogStorageManager {
 
     private PipelineTask loadTaskMetadata(final AbstractDataStorage storage, final String taskFolder) {
         final String metaPath = buildPath(taskFolder, METADATA_FILE_NAME);
-        try {
-            final DataStorageItemContent content = dataStorageManager.getDataStorageItemContent(
-                    storage.getId(), metaPath, null);
-            return deserializeTaskMetadata(content.getContent());
+        try (InputStream fileStream = dataStorageManager.getStreamingContent(
+                storage.getId(), metaPath, null).getContent()) {
+            return OBJECT_MAPPER.readValue(fileStream, PipelineTask.class);
         } catch (Exception e) {
             log.warn("Failed to load task metadata from {}: {}", metaPath, e.getMessage());
             return null;
@@ -170,10 +170,11 @@ public class RunLogStorageManager {
     }
 
     private List<RunLog> loadLogsFromFile(final AbstractDataStorage storage, final String logPath) {
-        try {
-            final DataStorageItemContent content = dataStorageManager.getDataStorageItemContent(
-                    storage.getId(), logPath, null);
-            return deserializeLogs(content.getContent());
+        try (InputStream logStream = dataStorageManager.getStreamingContent(
+                storage.getId(), logPath, null).getContent()) {
+            try (MappingIterator<RunLog> logs = OBJECT_MAPPER.readerFor(RunLog.class).readValues(logStream)) {
+                return logs.readAll();
+            }
         } catch (Exception e) {
             log.warn("Failed to load logs from {}: {}", logPath, e.getMessage());
             return Collections.emptyList();
@@ -184,20 +185,11 @@ public class RunLogStorageManager {
         try {
             final StringBuilder sb = new StringBuilder();
             for (final RunLog logEntry : logs) {
-                sb.append(OBJECT_MAPPER.writeValueAsString(logEntry)).append('\n');
+                sb.append(LOG_WRITER.writeValueAsString(logEntry)).append('\n');
             }
             return sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new IllegalStateException("Failed to serialize run logs to JSON", e);
-        }
-    }
-
-    private List<RunLog> deserializeLogs(final byte[] content) {
-        try(MappingIterator<RunLog> logs = OBJECT_MAPPER.readerFor(RunLog.class).readValues(content)) {
-            return logs.readAll();
-        } catch (IOException e) {
-            log.warn("Failed to deserialize run logs from storage: {}", e.getMessage());
-            return Collections.emptyList();
         }
     }
 
@@ -206,15 +198,6 @@ public class RunLogStorageManager {
             return OBJECT_MAPPER.writeValueAsBytes(task);
         } catch (IOException e) {
             throw new IllegalStateException("Failed to serialize task metadata to JSON", e);
-        }
-    }
-
-    private PipelineTask deserializeTaskMetadata(final byte[] content) {
-        try {
-            return OBJECT_MAPPER.readValue(content, PipelineTask.class);
-        } catch (IOException e) {
-            log.warn("Failed to deserialize task metadata from storage: {}", e.getMessage());
-            return new PipelineTask();
         }
     }
 

@@ -18,8 +18,8 @@ package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.DataStorageFolder;
-import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
+import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.RunLog;
@@ -243,12 +243,12 @@ public class RunLogStorageManagerTest {
     @Test
     public void loadTaskLogsFromStorageShouldReturnLogsForSpecificTask() {
         final byte[] jsonContent = buildLogJsonBytes(RUN_ID, TASK_1, TaskStatus.SUCCESS, "Task log");
-        final DataStorageItemContent content = new DataStorageItemContent();
-        content.setContent(jsonContent);
+        final DataStorageStreamingContent streaming = new DataStorageStreamingContent(
+                new java.io.ByteArrayInputStream(jsonContent), "log");
 
-        when(dataStorageManager.getDataStorageItemContent(
+        when(dataStorageManager.getStreamingContent(
                 eq(STORAGE_ID), eq(PATH_PREFIX + RUN_ID + "/" + TASK_1 + "/log"), isNull(String.class)))
-                .thenReturn(content);
+                .thenReturn(streaming);
 
         final List<RunLog> result = runLogStorageManager.loadTaskLogsFromStorage(RUN_ID, TASK_1);
 
@@ -362,13 +362,9 @@ public class RunLogStorageManagerTest {
                 streamCaptor.capture());
 
         final byte[] capturedBytes = readStream(streamCaptor.getValue());
-        final DataStorageItemContent metaContent = new DataStorageItemContent();
-        metaContent.setContent(capturedBytes);
 
         mockTaskFolderListing(TASK_1);
-        when(dataStorageManager.getDataStorageItemContent(
-                eq(STORAGE_ID), eq(PATH_PREFIX + RUN_ID + "/" + TASK_1 + "/metadata"), isNull(String.class)))
-                .thenReturn(metaContent);
+        mockStreamingContent(PATH_PREFIX + RUN_ID + "/" + TASK_1 + "/metadata", capturedBytes);
 
         final List<PipelineTask> result = runLogStorageManager.loadTasksFromStorage(RUN_ID);
 
@@ -415,18 +411,8 @@ public class RunLogStorageManagerTest {
         final byte[] savedMetaBytes = readStream(metaCaptor.getValue());
 
         mockTaskFolderListing(taskId);
-
-        final DataStorageItemContent logContent = new DataStorageItemContent();
-        logContent.setContent(savedLogBytes);
-        when(dataStorageManager.getDataStorageItemContent(
-                eq(STORAGE_ID), eq(expectedFolder + "/log"), isNull(String.class)))
-                .thenReturn(logContent);
-
-        final DataStorageItemContent metaContent = new DataStorageItemContent();
-        metaContent.setContent(savedMetaBytes);
-        when(dataStorageManager.getDataStorageItemContent(
-                eq(STORAGE_ID), eq(expectedFolder + "/metadata"), isNull(String.class)))
-                .thenReturn(metaContent);
+        mockStreamingContent(expectedFolder + "/log", savedLogBytes);
+        mockStreamingContent(expectedFolder + "/metadata", savedMetaBytes);
 
         final List<RunLog> loadedLogs = runLogStorageManager.loadLogsFromStorage(RUN_ID);
         assertEquals(2, loadedLogs.size());
@@ -456,19 +442,21 @@ public class RunLogStorageManagerTest {
     }
 
     private void mockLogFileContent(final String taskName, final byte[] jsonBytes) {
-        final DataStorageItemContent content = new DataStorageItemContent();
-        content.setContent(jsonBytes);
-        when(dataStorageManager.getDataStorageItemContent(
-                eq(STORAGE_ID), eq(PATH_PREFIX + RUN_ID + "/" + taskName + "/log"), isNull(String.class)))
-                .thenReturn(content);
+        mockStreamingContent(PATH_PREFIX + RUN_ID + "/" + taskName + "/log", jsonBytes);
     }
 
     private void mockMetadataFileContent(final String taskName, final PipelineTask task) throws IOException {
-        final DataStorageItemContent content = new DataStorageItemContent();
-        content.setContent(OBJECT_MAPPER.writeValueAsBytes(task));
-        when(dataStorageManager.getDataStorageItemContent(
-                eq(STORAGE_ID), eq(PATH_PREFIX + RUN_ID + "/" + taskName + "/metadata"), isNull(String.class)))
-                .thenReturn(content);
+        mockStreamingContent(
+                PATH_PREFIX + RUN_ID + "/" + taskName + "/metadata",
+                OBJECT_MAPPER.writeValueAsBytes(task));
+    }
+
+    private void mockStreamingContent(final String path, final byte[] bytes) {
+        final DataStorageStreamingContent streaming = new DataStorageStreamingContent(
+                new java.io.ByteArrayInputStream(bytes), path);
+        when(dataStorageManager.getStreamingContent(
+                eq(STORAGE_ID), eq(path), isNull(String.class)))
+                .thenReturn(streaming);
     }
 
     private static byte[] buildLogJsonBytes(final Long runId, final String taskName,

@@ -22,9 +22,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.ResultWriter;
@@ -85,6 +83,10 @@ public class RunLogManager {
     @Value("${runs.console.log.task:Console}")
     private String consoleLogTask;
 
+    public String getConsoleLogTask() {
+        return consoleLogTask;
+    }
+
     @PostConstruct
     public void init() {
         self = applicationContext.getBean(RunLogManager.class);
@@ -123,49 +125,6 @@ public class RunLogManager {
 
         runLogDao.createRunLog(runLog);
         return runLog;
-    }
-
-    @Transactional(propagation = Propagation.REQUIRED)
-    public void migrateRunLogsToStorage(final Long runId) {
-        if (!runLogStorageManager.isRunLogMigrationConfigured()) {
-            log.warn(messageHelper.getMessage(MessageConstants.WARN_RUN_LOG_STORAGE_NOT_CONFIGURED));
-            return;
-        }
-
-        final PipelineRun run = runCRUDService.loadRunById(runId);
-
-        if (StringUtils.isNotBlank(run.getLogsStoragePath())) {
-            log.warn(messageHelper.getMessage(MessageConstants.WARN_RUN_LOG_MIGRATED, runId, run.getLogsStoragePath()));
-            return;
-        }
-
-        final List<RunLog> runLogs = runLogDao.loadAllLogsForRun(runId);
-        if (runLogs.isEmpty()) {
-            log.debug("No logs found in DB for run {}, skipping migration.", runId);
-            return;
-        }
-
-        final List<PipelineTask> tasks = loadTasksByRunId(runId);
-        final Map<String, PipelineTask> tasksByName = tasks.stream()
-                .collect(Collectors.toMap(
-                    task -> PipelineTask.buildTaskId(task.getName(), task.getParameters()),
-                    task -> task,
-                    (existing, duplicate) -> existing));
-
-        final Map<PipelineTask, List<RunLog>> logsByTask = runLogs.stream()
-                .collect(Collectors.groupingBy(logEntry -> {
-                    final String taskId = Optional.ofNullable(logEntry.getTask())
-                            .map(t -> PipelineTask.buildTaskId(t.getName(), t.getParameters()))
-                            .orElseGet(() -> StringUtils.defaultString(
-                                    logEntry.getTaskName(), consoleLogTask));
-                    return tasksByName.getOrDefault(taskId, new PipelineTask(taskId));
-                }));
-
-        String runLogStoragePath = runLogStorageManager.saveLogsToStorage(runId, logsByTask);
-        runCRUDService.updatePipelineRunLogStoragePath(run, runLogStoragePath);
-        runLogDao.deleteTaskByRunIdsIn(Collections.singletonList(runId), false);
-
-        log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_LOG_MIGRATED, runId));
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
