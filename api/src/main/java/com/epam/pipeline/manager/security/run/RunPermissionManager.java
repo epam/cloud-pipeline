@@ -37,6 +37,8 @@ import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.acl.pipeline.PipelineApiService;
 import com.epam.pipeline.manager.pipeline.PipelineRunAsManager;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
@@ -71,7 +73,9 @@ public class RunPermissionManager {
 
     private final PipelineRunManager runManager;
     private final PipelineRunCRUDService runCRUDService;
-    private final PipelineApiService pipelineApiService;
+    @Lazy
+    @Autowired
+    private PipelineApiService pipelineApiService;
     private final CheckPermissionHelper permissionsHelper;
     private final AuthManager authManager;
     private final DockerRegistryManager registryManager;
