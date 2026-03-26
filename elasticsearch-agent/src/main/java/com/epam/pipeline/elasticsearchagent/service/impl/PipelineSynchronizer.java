@@ -55,8 +55,8 @@ import java.util.stream.Stream;
 import static com.epam.pipeline.elasticsearchagent.service.EventToRequestConverter.INDEX_TYPE;
 
 @Data
-@Service
 @Slf4j
+@Service
 @ConditionalOnProperty(value = "sync.pipeline.disable", matchIfMissing = true, havingValue = "false")
 public class PipelineSynchronizer implements ElasticsearchSynchronizer {
 
@@ -246,9 +246,9 @@ public class PipelineSynchronizer implements ElasticsearchSynchronizer {
     }
 
     @Data
-    @AllArgsConstructor
     @Builder
     @Jacksonized
+    @AllArgsConstructor
     private static final class PipelineDocRequests {
 
         private List<DocWriteRequest> pipelineRequests;

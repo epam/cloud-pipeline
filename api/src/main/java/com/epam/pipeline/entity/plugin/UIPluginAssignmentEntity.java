@@ -18,6 +18,7 @@ package com.epam.pipeline.entity.plugin;
 
 import com.epam.pipeline.entity.quota.QuotaSidEntity;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import jakarta.persistence.*;
 import java.io.Serializable;
@@ -25,6 +26,7 @@ import java.util.List;
 
 @Data
 @Entity
+@NoArgsConstructor
 @Table(name = "ui_plugin_assignment")
 public class UIPluginAssignmentEntity implements Serializable {
     @Id

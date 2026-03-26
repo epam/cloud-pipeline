@@ -17,10 +17,12 @@
 package com.epam.pipeline.entity.search;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Set;
 
 @Data
+@NoArgsConstructor(force = true)
 public class StorageFileSearchMask {
 
     private final String storageName;

@@ -18,6 +18,7 @@ package com.epam.pipeline.entity.plugin;
 
 import com.epam.pipeline.dto.plugin.PluginType;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -31,6 +32,7 @@ import java.io.Serializable;
 
 @Data
 @Entity
+@NoArgsConstructor
 @Table(name = "ui_plugin")
 public class UIPluginEntity implements Serializable {
     @Id

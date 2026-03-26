@@ -24,12 +24,14 @@ import com.epam.pipeline.entity.datastorage.MountType;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import lombok.Value;
 
 import java.time.LocalDate;
 import java.util.List;
 
 @Data
+@NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 public class StorageBillingInfo extends AbstractBillingInfo<AbstractDataStorage> {
 

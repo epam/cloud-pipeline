@@ -19,12 +19,14 @@ import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.pool.PoolLabel;
 import com.epam.pipeline.entity.cluster.pool.filter.PoolFilter;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Map;
 import java.util.Set;
 
 
 @Data
+@NoArgsConstructor
 public class NodePoolVO {
 
     private Long id;

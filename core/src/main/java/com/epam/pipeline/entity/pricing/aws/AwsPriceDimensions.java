@@ -17,10 +17,12 @@
 package com.epam.pipeline.entity.pricing.aws;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Map;
 
 @Data
+@NoArgsConstructor
 public class AwsPriceDimensions {
 
     private Map<String, AwsPriceRate> priceDimensions;

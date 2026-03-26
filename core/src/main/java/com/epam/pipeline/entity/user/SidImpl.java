@@ -17,8 +17,10 @@
 package com.epam.pipeline.entity.user;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class SidImpl implements Sid {
     private String name;
     private boolean principal = true;

@@ -17,10 +17,12 @@
 package com.epam.pipeline.entity.app;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Map;
 
 @Data
+@NoArgsConstructor(force = true)
 public class ApplicationInfo {
 
     private final String version;

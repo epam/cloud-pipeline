@@ -16,10 +16,14 @@
 
 package com.epam.pipeline.entity.cluster.nat;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor(force = true)
 @EqualsAndHashCode(exclude = {"description", "protocol"})
 public class NatRoutingRuleDescription {
 

@@ -20,10 +20,12 @@ import com.epam.pipeline.exception.GoogleAccessException;
 import com.google.auth.oauth2.UserCredentials;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.IOException;
 
 @Data
+@NoArgsConstructor
 @AllArgsConstructor
 public class FirecloudDefaultCredentials implements FirecloudCredentials {
 

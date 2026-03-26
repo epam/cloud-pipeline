@@ -18,8 +18,10 @@ package com.epam.pipeline.entity.firecloud;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 @AllArgsConstructor
 public class MethodInputsOutputsRequest {
     private String methodNamespace;

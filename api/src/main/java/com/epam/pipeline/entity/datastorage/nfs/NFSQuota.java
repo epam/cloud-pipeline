@@ -17,11 +17,15 @@
 package com.epam.pipeline.entity.datastorage.nfs;
 
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor(force = true)
 public class NFSQuota {
 
     private final List<NFSQuotaNotificationEntry> notifications;

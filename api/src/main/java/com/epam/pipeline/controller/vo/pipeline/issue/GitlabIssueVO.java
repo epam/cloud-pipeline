@@ -20,11 +20,13 @@ import com.epam.pipeline.entity.git.GitlabIssueAttachment;
 import com.epam.pipeline.entity.git.GitlabIssueRequest;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 
 import java.util.List;
 
 @Data
+@NoArgsConstructor
 public class GitlabIssueVO {
 
     @JsonProperty("iid")

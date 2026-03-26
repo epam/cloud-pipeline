@@ -16,11 +16,15 @@
 
 package com.epam.pipeline.vmmonitor.model.vm;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.Assert;
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor(force = true)
 public class VMTag {
     private final String key;
     private final String value;

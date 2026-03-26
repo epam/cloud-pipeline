@@ -19,14 +19,16 @@ package com.epam.pipeline.dts.sync.model;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import org.thymeleaf.util.StringUtils;
 
 import java.util.List;
 
 
 @Data
-@EqualsAndHashCode(exclude = {"transferTriggers", "parentRule"})
+@NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(exclude = {"transferTriggers", "parentRule"})
 public class AutonomousSyncRule {
 
     private String source;

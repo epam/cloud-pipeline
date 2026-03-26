@@ -18,9 +18,11 @@ package com.epam.pipeline.entity.pipeline.run.runtime;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @AllArgsConstructor
+@NoArgsConstructor(force = true)
 public class RunSyncRuntimeDataConfigEntry {
     // Storage path where folder for the particular run will be located.
     // Each run folder will have its own name equal to run id.

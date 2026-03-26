@@ -17,8 +17,10 @@
 package com.epam.pipeline.entity.git;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class GitlabBranch {
     private String name;
     private GitCommitEntry commit;
