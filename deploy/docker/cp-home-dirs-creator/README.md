@@ -25,7 +25,7 @@ The manifest `deploy/contents/k8s/cp-home-creator/cp-home-creator-dpl.yaml` defi
 Apply:
 
 ```bash
-kubectl apply -f deploy/contents/k8s/cp-home-creator/cp-home-creator-dpl.yaml
+kubectl apply -f deploy/contents/k8s/cp-home-creator/cp-home-creator-job.yaml
 ```
 
 ## Parameters
@@ -49,6 +49,7 @@ Variables are read from the environment (via `cp-config-global`). Names below ma
 | **CP_HOME_DIRS_FS_HOME_STORAGE_ENABLE** | `true` | If `true`, file-share home flow is used when file share settings are present; must be paired with `CP_HOME_DIRS_ID_FILE_SHARE` and `CP_HOME_DIRS_ADDR_FILE_SHARE`. |
 | **CP_HOME_DIRS_FS_HOME_STORAGE_PREFIX** | `""` | Prefix for file/object storage names/paths, e.g. `'HOME.'`                                                                                                         |
 | **CP_HOME_DIRS_CREATE_OBJECT_STORAGE** | `false` | If `true`, also creates object storage for the user.                                                                                                              |
+| **CP_HOME_DIRS_CREATE_SSH_KEYS** | `true` | If `true`, ensures users have SSH keys in metadata; if `false`, skips SSH key generation/check.                                                                   |
 | **CP_HOME_DIRS_STORAGE_OBJECT_TYPE** | `S3` | Object storage type label used in naming.                                                                                                                         |
 | **CP_HOME_DIRS_CREATE_BASHRC** | `false` | If `true`, seeds `.bashrc` from `/etc/skel` on the NFS home when missing.                                                                                         |
 

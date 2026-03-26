@@ -109,6 +109,8 @@ function ensure_user_ssh_keys {
         fi
         rm -rf "$tmp_dir"
         echo "-> SSH key is set"
+    else
+        echo "User $user_name already has a private ssh key, skipping"
     fi
     return 0
 }
@@ -364,14 +366,20 @@ function process_user {
     fi
     echo "-> User $user_name verified: $user_id"
 
-    echo "-> Checking ssh key for user $user_name"
-    if ! ensure_user_ssh_keys "$user_id" "$user_name" "$user_name_full"; then
-        return 1
+    if [[ "${CP_HOME_DIRS_CREATE_SSH_KEYS}" == "true" ]]; then
+        echo "-> Checking ssh key for user $user_name"
+        if ! ensure_user_ssh_keys "$user_id" "$user_name" "$user_name_full"; then
+            return 1
+        fi
+    else
+        echo "-> Skipping ssh key check for user $user_name"
     fi
 
-    if [[ "${CP_HOME_DIRS_FS_HOME_STORAGE_ENABLE}" == "true" ]] && verify_optional_parameter "CP_HOME_DIRS_ID_FILE_SHARE" && verify_optional_parameter "CP_HOME_DIRS_ADDR_FILE_SHARE"; then
-        if ! ensure_file_home_storage_for_user "$user_name" "$user_name_full" "$user_id"; then
-            return 1
+    if [[ "${CP_HOME_DIRS_FS_HOME_STORAGE_ENABLE}" == "true" ]]; then
+        if verify_optional_parameter "CP_HOME_DIRS_ID_FILE_SHARE" && verify_optional_parameter "CP_HOME_DIRS_ADDR_FILE_SHARE"; then
+            if ! ensure_file_home_storage_for_user "$user_name" "$user_name_full" "$user_id"; then
+                return 1
+            fi
         fi
     fi
 
@@ -398,6 +406,7 @@ if [ -n "$CP_HOME_DIRS_SERVICE_ACCOUNTS" ]; then
 fi
 CP_HOME_DIRS_SERVICE_MOUNT_CHMOD="${CP_HOME_DIRS_SERVICE_MOUNT_CHMOD:-755}"
 CP_HOME_DIRS_APPLY_FS_QUOTAS="${CP_HOME_DIRS_APPLY_FS_QUOTAS:-false}"
+CP_HOME_DIRS_CREATE_SSH_KEYS="${CP_HOME_DIRS_CREATE_SSH_KEYS:-true}"
 CP_HOME_DIRS_FS_QUOTAS_VOLUME_THRESHOLD_GB_DISABLE_MOUNT="${CP_HOME_DIRS_FS_QUOTAS_VOLUME_THRESHOLD_GB_DISABLE_MOUNT:-250}"
 CP_HOME_DIRS_FS_QUOTAS_VOLUME_THRESHOLD_GB_READ_ONLY="${CP_HOME_DIRS_FS_QUOTAS_VOLUME_THRESHOLD_GB_READ_ONLY:-300}"
 CP_HOME_DIRS_CREATE_OBJECT_STORAGE="${CP_HOME_DIRS_CREATE_OBJECT_STORAGE:-false}"
