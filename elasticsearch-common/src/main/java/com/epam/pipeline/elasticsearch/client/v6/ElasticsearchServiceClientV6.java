@@ -80,7 +80,7 @@ public class ElasticsearchServiceClientV6 implements ElasticsearchServiceClient 
                                         final int elasticsearchPort,
                                         final String elasticsearchScheme,
                                         final String elasticsearchAuth) {
-       this(elasticsearchUrl, elasticsearchPort, elasticsearchScheme, null, elasticsearchAuth);
+        this(elasticsearchUrl, elasticsearchPort, elasticsearchScheme, null, elasticsearchAuth);
     }
 
     public ElasticsearchServiceClientV6(final String elasticsearchUrl,

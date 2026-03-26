@@ -75,13 +75,13 @@ task buildDoc(type: Tar) {
 task buildAllFast(dependsOn: [":core:build", "client:buildUI", buildPipe, buildDoc,
                           ":pipe-cli:build", ":pipe-cli:buildLinux", ":pipe-cli:buildWin", ":jwt-generator:shadowJar",
                           ":api:bootJar", ":notifier:smtp:bootJar", ":docker-comp-scan:bootJar",
-                          // ":elasticsearch-agent:bootJar",  // commented: project excluded (depends on elasticsearch-common)
+                          ":elasticsearch-agent:bootJar",
                           ":vm-monitor:bootJar",
                           ":data-transfer-service:bootJar", ":data-transfer-service:bundleWindows",
                           ":data-transfer-service:bundleLinux",
                           // ":data-sharing-service:buildFast",  // commented: project excluded in settings.gradle
                           ":fs-browser:build", ":workflows:buildGpuStat",
-                          // ":billing-report-agent:bootJar",  // commented: project excluded (depends on elasticsearch-common)
+                          ":billing-report-agent:bootJar",
                           // ":cloud-pipeline-webdav-client:buildWin",  // commented: requires node-wine image
                           ":cloud-pipeline-webdav-client:buildLinux", ":cloud-pipeline-webdav-client:buildCli",
                           ":git-reader:build", ":monitoring-service:build", ":storage-lifecycle-service:build"]) {
@@ -91,13 +91,13 @@ task buildAllFast(dependsOn: [":core:build", "client:buildUI", buildPipe, buildD
 task buildAll(dependsOn: [":core:build", "client:buildUI", buildPipe, buildDoc,
                           ":pipe-cli:build", ":pipe-cli:buildLinux", ":pipe-cli:buildWin", ":jwt-generator:shadowJar",
                           ":api:build", ":notifier:smtp:build", ":docker-comp-scan:build",
-                          // ":elasticsearch-agent:build",  // commented: project excluded (depends on elasticsearch-common)
+                          ":elasticsearch-agent:build",
                           ":vm-monitor:build",
                           ":data-transfer-service:build", ":data-transfer-service:bundleWindows",
                           ":data-transfer-service:bundleLinux",
                           // ":data-sharing-service:buildAll",  // commented: project excluded in settings.gradle
                           ":fs-browser:build", ":workflows:buildGpuStat",
-                          // ":billing-report-agent:build",  // commented: project excluded (depends on elasticsearch-common)
+                          ":billing-report-agent:build",
                           // ":cloud-pipeline-webdav-client:buildWin",  // commented: requires node-wine image
                           ":cloud-pipeline-webdav-client:buildLinux", ":cloud-pipeline-webdav-client:buildCli",
                           ":git-reader:build", ":monitoring-service:build", ":storage-lifecycle-service:build"]) {
@@ -150,10 +150,10 @@ task installDist() {
             into "$distFolder/pipe-templates"
         }
 
-        // copy {  // commented: elasticsearch-agent excluded (depends on elasticsearch-common)
-        //     from "$rootDir/elasticsearch-agent/src/main/resources/templates"
-        //     into "$distFolder/search-mappings"
-        // }
+        copy {
+            from "$rootDir/elasticsearch-agent/src/main/resources/templates"
+            into "$distFolder/search-mappings"
+        }
 
         copy {
             from "$rootDir/monitoring-service/src/main/resources/templates"
@@ -172,7 +172,7 @@ task installDist() {
                 "$rootDir/notifier/smtp/build/libs/notifier.jar",
                 "$rootDir/docker-comp-scan/build/libs/docker-comp-scan.jar",
                 "$rootDir/dist/cloud-pipeline-docs.tar.gz",
-                // "$rootDir/elasticsearch-agent/build/libs/elasticsearch-agent.jar",  // commented: project excluded (depends on elasticsearch-common)
+                "$rootDir/elasticsearch-agent/build/libs/elasticsearch-agent.jar",
                 "$rootDir/data-transfer-service/build/libs/data-transfer-service.jar",
                 "$rootDir/data-transfer-service/build/distributions/data-transfer-service-windows.zip",
                 "$rootDir/data-transfer-service/build/distributions/data-transfer-service-linux.zip",

@@ -7,7 +7,7 @@ include 'pipe-cli'
 include 'jwt-generator'
 include 'notifier:smtp'
 include 'docker-comp-scan'
-// include 'elasticsearch-agent'  // commented: depends on elasticsearch-common (excluded)
+include 'elasticsearch-agent'
 include 'cloud-pipeline-common:model'
 include 'cloud-pipeline-common:event-sourcing-java-client'
 include 'data-transfer-service'
@@ -19,11 +19,11 @@ include 'data-sharing-service:client'
  */
 include 'fs-browser'
 include 'fs-browser:fs-browser-client'
-// include 'billing-report-agent'  // commented: depends on elasticsearch-common (excluded)
+include 'billing-report-agent'
 include 'cloud-pipeline-webdav-client'
 include 'git-reader'
 include 'monitoring-service'
 include 'storage-lifecycle-service'
 include 'workflows'
-// include 'elasticsearch-common'  // commented: excluded in settings.gradle
+include 'elasticsearch-common'
 include 'shaded:opensearch'

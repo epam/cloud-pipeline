@@ -249,7 +249,7 @@ public class PipelineSynchronizer implements ElasticsearchSynchronizer {
     @AllArgsConstructor
     @Builder
     @Jacksonized
-    private static class PipelineDocRequests {
+    private static final class PipelineDocRequests {
 
         private List<DocWriteRequest> pipelineRequests;
         private List<DocWriteRequest> codeRequests;

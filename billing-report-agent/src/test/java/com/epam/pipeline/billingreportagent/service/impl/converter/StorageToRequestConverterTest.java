@@ -47,8 +47,6 @@ import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.user.PipelineUser;
 import org.apache.commons.collections4.MapUtils;
-import org.elasticsearch.action.DocWriteRequest;
-import org.elasticsearch.action.index.IndexRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -350,7 +348,7 @@ public class StorageToRequestConverterTest {
                                                                           TestUtils.STORAGE_BILLING_PREFIX,
                                                                           SYNC_START, SYNC_END).get(0);
         final String expectedIndex = TestUtils.buildBillingIndex(TestUtils.STORAGE_BILLING_PREFIX, SYNC_START);
-        final Map<String, Object> requestFieldsMap = ((IndexRequest) request).sourceAsMap();
+        final Map<String, ?> requestFieldsMap = ((IndexRequest) request).sourceAsMap();
         assertEquals(expectedIndex, request.index());
         assertEquals(desiredType.name(), requestFieldsMap.get(ElasticsearchSynchronizer.DOC_TYPE_FIELD));
         assertFields(azureStorage, requestFieldsMap, regionId, storageType, usage,
@@ -379,7 +377,7 @@ public class StorageToRequestConverterTest {
                 TestUtils.STORAGE_BILLING_PREFIX,
                 SYNC_START, SYNC_END).get(0);
         final String expectedIndex = TestUtils.buildBillingIndex(TestUtils.STORAGE_BILLING_PREFIX, SYNC_START);
-        final Map<String, Object> requestFieldsMap = ((IndexRequest) request).sourceAsMap();
+        final Map<String, ?> requestFieldsMap = ((IndexRequest) request).sourceAsMap();
         assertEquals(expectedIndex, request.index());
         assertEquals(desiredType.name(), requestFieldsMap.get(ElasticsearchSynchronizer.DOC_TYPE_FIELD));
         assertFields(azureStorage, requestFieldsMap, regionId, storageType, expectedTotalSize,

@@ -1,17 +1,17 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
 plugins {
     id 'java-library'
     id 'maven-publish'
     id 'jacoco'
-    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'com.gradleup.shadow' version '8.3.5'
 }
 
 group = 'com.epam.pipeline'
 
 java {
-    toolchain {
-        // Gradle 8 requires running on JDK 17+, but you can still target 8 bytecode
-        languageVersion = JavaLanguageVersion.of(8)
-    }
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 }
 
 repositories {
@@ -37,11 +37,16 @@ dependencies {
     implementation group: "org.apache.commons", name: "commons-lang3", version: apacheCommonsLangVersion
     implementation group: "org.apache.commons", name: "commons-collections4", version: apacheCommonsCollectionsVersion
 
+    // Jakarta Annotations
+    implementation 'jakarta.annotation:jakarta.annotation-api:2.1.1'
+
     // Lombok
-    implementation group: "org.projectlombok", name: "lombok", version: lombokVersion
+    compileOnly group: "org.projectlombok", name: "lombok", version: lombokVersion
+    annotationProcessor group: "org.projectlombok", name: "lombok", version: lombokVersion
 }
 
-tasks.withType(com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar).configureEach {
+tasks.withType(ShadowJar).configureEach {
+    mergeServiceFiles()
     relocate('org.apache.lucene', 'shaded.org.apache.lucene7')
     relocate('lombok', 'shaded.lombok')
     // fix for log4j version mismatch

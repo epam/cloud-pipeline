@@ -37,7 +37,6 @@ import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
-import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -204,8 +203,8 @@ public class RunBillingMapperTest {
 
         assertEquals(TEST_USAGE_MINUTES.intValue(), mappedFields.get("usage_minutes"));
         assertEquals(TEST_PAUSED_MINUTES.intValue(), mappedFields.get("paused_minutes"));
-        assertEquals(run.getPricePerHour()..intValue(), mappedFields.get("run_price"));
-        assertEquals(run.getComputePricePerHour()..intValue() * TEST_PRICES_MULTIPLIER,
+        assertEquals(run.getPricePerHour().intValue(), mappedFields.get("run_price"));
+        assertEquals(run.getComputePricePerHour().intValue() * TEST_PRICES_MULTIPLIER,
                 mappedFields.get("compute_price"));
         assertEquals(run.getDiskPricePerHour().intValue() * TEST_PRICES_MULTIPLIER,
                 mappedFields.get("disk_price"));
