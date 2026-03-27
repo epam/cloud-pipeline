@@ -376,10 +376,8 @@ function process_user {
     fi
 
     if [[ "${CP_HOME_DIRS_FS_HOME_STORAGE_ENABLE}" == "true" ]]; then
-        if verify_optional_parameter "CP_HOME_DIRS_ID_FILE_SHARE" && verify_optional_parameter "CP_HOME_DIRS_ADDR_FILE_SHARE"; then
-            if ! ensure_file_home_storage_for_user "$user_name" "$user_name_full" "$user_id"; then
-                return 1
-            fi
+        if ! ensure_file_home_storage_for_user "$user_name" "$user_name_full" "$user_id"; then
+            return 1
         fi
     fi
 
@@ -417,7 +415,7 @@ CP_HOME_DIRS_CREATE_BASHRC="${CP_HOME_DIRS_CREATE_BASHRC:-false}"
 
 if [[ "${CP_HOME_DIRS_FS_HOME_STORAGE_ENABLE}" == "true" ]]; then
     if ! verify_optional_parameter "CP_HOME_DIRS_ID_FILE_SHARE" || ! verify_optional_parameter "CP_HOME_DIRS_ADDR_FILE_SHARE"; then
-        echo "[ERROR] CP_HOME_DIRS_FS_HOME_STORAGE_ENABLE is true but CP_HOME_DIRS_ID_FILE_SHARE and/or CP_HOME_DIRS_ADDR_FILE_SHARE are not set. FS home storage will be skipped. Exiting..."
+        echo "[ERROR] CP_HOME_DIRS_FS_HOME_STORAGE_ENABLE is true but CP_HOME_DIRS_ID_FILE_SHARE and/or CP_HOME_DIRS_ADDR_FILE_SHARE are not set. Exiting..."
         exit 1
     fi
 fi
