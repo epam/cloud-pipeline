@@ -444,14 +444,14 @@ class PipelineAPI:
         return result.json()['payload']
 
     def enable_tool(self, tool):
-        url = self.normalize_url(str(self.api_url) + self.ENABLE_TOOL_URL, data=tool.to_json())
-        result = requests.post(url, headers=self.header, verify=False)
+        url = self.normalize_url(str(self.api_url) + self.ENABLE_TOOL_URL)
+        result = requests.post(url, data=tool.to_json(), headers=self.header, verify=False)
         if hasattr(result.json(), 'error') or result.json()['status'] != self.RESPONSE_STATUS_OK:
             raise RuntimeError('Failed to enable tool {}/{}. API response: {}'.format(tool.registry, tool.image, result.json()['message']))
 
     def update_tool(self, tool):
-        url = self.normalize_url(str(self.api_url) + self.UPDATE_TOOL_URL, data=tool.to_json())
-        result = requests.post(url, headers=self.header, verify=False)
+        url = self.normalize_url(str(self.api_url) + self.UPDATE_TOOL_URL)
+        result = requests.post(url, data=tool.to_json(), headers=self.header, verify=False)
         if hasattr(result.json(), 'error') or result.json()['status'] != self.RESPONSE_STATUS_OK:
             raise RuntimeError('Failed to update tool {}/{}. API response: {}'.format(tool.registry, tool.image, result.json()['message']))
 
