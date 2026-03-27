@@ -2331,7 +2331,7 @@ export default `
   color: @application-color;
 }
 @THEME .cp-runs-autocomplete-menu.ant-menu {
-  background-color: fade(@panel-background-color, 100%);
+  background-color: fade(@panel-background-color, 100%) !important;
   border: 1px solid @panel-border-color;
 }
 @THEME .cp-runs-autocomplete-menu-item {
@@ -2343,7 +2343,7 @@ export default `
 @THEME .cp-runs-autocomplete-menu.ant-menu > .ant-menu-item-selected,
 @THEME .cp-runs-autocomplete-menu.ant-menu-item:active {
   background-color: @element-hover-background-color;
-  border: @menu-active-color;
+  border-color: @menu-active-color;
   color: @application-color;
 }
 @THEME .cp-run-name.editable {
