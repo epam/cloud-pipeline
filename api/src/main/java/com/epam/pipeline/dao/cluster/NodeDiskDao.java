@@ -38,7 +38,7 @@ public class NodeDiskDao extends NamedParameterJdbcDaoSupport {
     private List<NodeDisk> toDisks(final String nodeId, final LocalDateTime creationDate,
                                    final List<DiskRegistrationRequest> requests) {
         return requests.stream()
-                .map(disk -> new NodeDisk(disk.getSize(), nodeId, creationDate))
+                .map(disk -> new NodeDisk(disk.size(), nodeId, creationDate))
                 .collect(Collectors.toList());
     }
 

@@ -95,7 +95,7 @@ public class EdgeServiceManager {
         return runCRUDService.findRunByRunId(runId)
                 .map(PipelineRun::getPrettyUrl)
                 .flatMap(this::toPrettyUrl)
-                .map(PrettyUrl::getPath);
+                .map(PrettyUrl::path);
     }
 
     private Optional<PrettyUrl> toPrettyUrl(final String prettyUrlJson) {

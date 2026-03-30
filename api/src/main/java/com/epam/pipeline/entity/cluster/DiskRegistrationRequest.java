@@ -1,22 +1,18 @@
 package com.epam.pipeline.entity.cluster;
 
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
-import lombok.Value;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Value
-public class DiskRegistrationRequest {
-    
-    private final Long size;
+public record DiskRegistrationRequest(Long size) {
 
     public static DiskRegistrationRequest from(final DiskAttachRequest request) {
         return new DiskRegistrationRequest(request.size());
     }
 
     public static DiskRegistrationRequest from(final InstanceDisk disk) {
-        return new DiskRegistrationRequest(disk.getSize());
+        return new DiskRegistrationRequest(disk.size());
     }
 
     public static List<DiskRegistrationRequest> from(final List<InstanceDisk> disks) {

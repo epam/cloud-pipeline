@@ -1486,7 +1486,7 @@ public class PipelineRunManager {
     }
 
     private int getTotalSize(final List<InstanceDisk> disks) {
-        return (int) disks.stream().mapToLong(InstanceDisk::getSize).sum();
+        return (int) disks.stream().mapToLong(InstanceDisk::size).sum();
     }
 
     private void adjustInstanceDisk(final PipelineConfiguration configuration) {

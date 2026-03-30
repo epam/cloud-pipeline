@@ -222,8 +222,8 @@ public class UserManager implements SecuredEntityManager {
         log.info("Generating ssh keys for user {} #{}...", user.getUserName(), user.getId());
         final SshKeyPair sshKeyPair = sshKeyPairManager.generate();
         final Map<String, PipeConfValue> metadata = new HashMap<>(getCurrentMetadata(user.getId()));
-        metadata.put(getSshPrvMetadataKey(), getMetadataValue(sshKeyPair.getPrivateKey()));
-        metadata.put(getSshPubMetadataKey(), getMetadataValue(sshKeyPair.getPublicKey()));
+        metadata.put(getSshPrvMetadataKey(), getMetadataValue(sshKeyPair.privateKey()));
+        metadata.put(getSshPubMetadataKey(), getMetadataValue(sshKeyPair.publicKey()));
         metadataManager.updateEntityMetadata(metadata, user.getId(), AclClass.PIPELINE_USER);
     }
 

@@ -344,10 +344,10 @@ public class S3Helper {
                                final List<MoveObjectRequest> moveRequests) {
         try (S3ObjectDeleter deleter = new S3ObjectDeleter(client, events, bucket)) {
             moveRequests.forEach(moveRequest -> {
-                events.put(new DataAccessEvent(moveRequest.getSourcePath(), DataAccessType.READ, bucket),
-                        new DataAccessEvent(moveRequest.getDestinationPath(), DataAccessType.WRITE, bucket));
+                events.put(new DataAccessEvent(moveRequest.sourcePath(), DataAccessType.READ, bucket),
+                        new DataAccessEvent(moveRequest.destinationPath(), DataAccessType.WRITE, bucket));
                 client.copyObject(moveRequest.toCopyRequest(bucket.getRoot()));
-                deleter.deleteKey(moveRequest.getSourcePath(), moveRequest.getVersion());
+                deleter.deleteKey(moveRequest.sourcePath(), moveRequest.version());
             });
         } catch (AmazonS3Exception e) {
             handleInvalidObjectState(e);

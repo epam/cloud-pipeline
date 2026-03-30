@@ -40,8 +40,8 @@ public class SshKeyPairManagerTest {
     public void testKeysAreNotBlank(final SshKeyPairManager manager) {
         final SshKeyPair pair = manager.generate();
 
-        assertTrue(StringUtils.isNotBlank(pair.getPrivateKey()));
-        assertTrue(StringUtils.isNotBlank(pair.getPublicKey()));
+        assertTrue(StringUtils.isNotBlank(pair.privateKey()));
+        assertTrue(StringUtils.isNotBlank(pair.publicKey()));
     }
 
     @ParameterizedTest
