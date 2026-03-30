@@ -94,6 +94,7 @@ import org.apache.commons.math3.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.access.PermissionEvaluator;
 import org.springframework.security.acls.domain.AccessControlEntryImpl;
 import org.springframework.security.acls.domain.GrantedAuthoritySid;
@@ -196,6 +197,7 @@ public class GrantPermissionManager {
 
     @Autowired private EntityEventServiceManager entityEventServiceManager;
 
+    @Lazy
     @Autowired private RunPermissionManager runPermissionManager;
 
     @Autowired private PermissionGrantVOMapper permissionGrantVOMapper;
