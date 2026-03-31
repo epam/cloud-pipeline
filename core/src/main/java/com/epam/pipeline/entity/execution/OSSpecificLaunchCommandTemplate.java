@@ -1,5 +1,6 @@
 package com.epam.pipeline.entity.execution;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 
 import java.util.List;
@@ -15,10 +16,10 @@ import java.util.List;
  * @param args       Sets arguments for docker entrypoint
  */
 @Builder
-public record OSSpecificLaunchCommandTemplate(String os,
-                                              String docker,
-                                              String command,
-                                              String entrypoint,
-                                              List<String> args) {
-
+public record OSSpecificLaunchCommandTemplate(
+        @JsonProperty("os") String os,
+        @JsonProperty("docker") String docker,
+        @JsonProperty("command") String command,
+        @JsonProperty("entrypoint") String entrypoint,
+        @JsonProperty("args") List<String> args) {
 }

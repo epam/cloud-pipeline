@@ -16,13 +16,14 @@
 
 package com.epam.pipeline.entity.notification;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.Date;
 
-
 public record SystemNotificationConfirmation(
-        Long notificationId,
-        String title,
-        String body,
-        String user,
-        Date date) {
+        @JsonProperty("notificationId") Long notificationId,
+        @JsonProperty("title") String title,
+        @JsonProperty("body") String body,
+        @JsonProperty("user") String user,
+        @JsonProperty("date") Date date) {
 }
