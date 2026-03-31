@@ -128,7 +128,7 @@ function configure_vscode_extension() {
     local extension_tmp="$(mktemp -d)/$extension_name"
     mkdir $extension_tmp
     cd $extension_tmp
-    unzip $extension_filename
+    unzip -q $extension_filename
 
     # Create .env file for the extension branding and API URL
     while IFS= read -r line || [[ -n "$line" ]]; do
@@ -156,7 +156,8 @@ function configure_vscode_extension() {
     fi
 
     if [ -f "$VSC_EXTENSION_LOGO_PATH" ]; then
-        \cp "$VSC_EXTENSION_LOGO_PATH" "$extension_tmp/extension/resources/logo.png"
+        rm -f "$extension_tmp/extension/resources/logo.png"
+        cp "$VSC_EXTENSION_LOGO_PATH" "$extension_tmp/extension/resources/logo.png"
     fi
     
     local repackaged_extension_filename="${extension_name}.vsix"
