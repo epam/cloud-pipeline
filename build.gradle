@@ -80,7 +80,8 @@ task buildAllFast(dependsOn: [":core:build", "client:buildUI", buildPipe, buildD
                           ":data-transfer-service:bundleLinux",
                           ":data-sharing-service:buildFast", ":fs-browser:build", ":workflows:buildGpuStat", ":billing-report-agent:bootJar",
                           ":cloud-pipeline-webdav-client:buildWin", ":cloud-pipeline-webdav-client:buildLinux", ":cloud-pipeline-webdav-client:buildCli",
-                          ":git-reader:build", ":monitoring-service:build", ":storage-lifecycle-service:build"]) {
+                          ":git-reader:build", ":monitoring-service:build", ":storage-lifecycle-service:build",
+                          ":vscode-cloud-pipeline:buildVSCodeExtension"]) {
     group = 'build'
 }
 
@@ -92,7 +93,8 @@ task buildAll(dependsOn: [":core:build", "client:buildUI", buildPipe, buildDoc,
                           ":data-transfer-service:bundleLinux",
                           ":data-sharing-service:buildAll", ":fs-browser:build", ":workflows:buildGpuStat", ":billing-report-agent:build",
                           ":cloud-pipeline-webdav-client:buildWin", ":cloud-pipeline-webdav-client:buildLinux", ":cloud-pipeline-webdav-client:buildCli",
-                          ":git-reader:build", ":monitoring-service:build", ":storage-lifecycle-service:build"]) {
+                          ":git-reader:build", ":monitoring-service:build", ":storage-lifecycle-service:build",
+                          ":vscode-cloud-pipeline:buildVSCodeExtension"]) {
     group = 'build'
 }
 
