@@ -17,6 +17,16 @@ export interface FlatRegistryTool extends RegistryToolPayload {
   registryPath: string;
 }
 
+/** Tools whose image path starts with `library/` first; then alphabetical within each group. */
+function compareToolImagePaths(a: string, b: string): number {
+  const aLib = a.startsWith('library/');
+  const bLib = b.startsWith('library/');
+  if (aLib !== bLib) {
+    return aLib ? -1 : 1;
+  }
+  return a.localeCompare(b);
+}
+
 function flattenTools(tree: DockerRegistryTreePayload): FlatRegistryTool[] {
   const byId = new Map<number, FlatRegistryTool>();
   for (const reg of tree.registries ?? []) {
@@ -34,7 +44,9 @@ function flattenTools(tree: DockerRegistryTreePayload): FlatRegistryTool[] {
       visitTools(g.tools);
     }
   }
-  return [...byId.values()].sort((a, b) => (a.image || '').localeCompare(b.image || ''));
+  return [...byId.values()].sort((a, b) =>
+    compareToolImagePaths(a.image || '', b.image || '')
+  );
 }
 
 function parameterIsNotEmpty(
