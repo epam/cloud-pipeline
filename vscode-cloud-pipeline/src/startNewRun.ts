@@ -165,6 +165,43 @@ function clampPayloadToAllowed(
   }
 }
 
+type ToolQuickPickItem = vscode.QuickPickItem & { tool: FlatRegistryTool };
+
+/**
+ * Quick pick for tools: preserves {@link flattenTools} order while filtering (library/* first).
+ * Default {@link vscode.window.showQuickPick} re-sorts by match position in the label.
+ */
+async function showToolQuickPick(items: ToolQuickPickItem[]): Promise<ToolQuickPickItem | undefined> {
+  const qp = vscode.window.createQuickPick<ToolQuickPickItem>();
+  (qp as { sortByLabel?: boolean }).sortByLabel = false;
+  qp.items = items;
+  qp.placeholder = 'Search tools by name or description';
+  qp.matchOnDetail = true;
+
+  return await new Promise<ToolQuickPickItem | undefined>((resolve) => {
+    let resolved = false;
+    const finish = (value: ToolQuickPickItem | undefined) => {
+      if (resolved) {
+        return;
+      }
+      resolved = true;
+      qp.dispose();
+      resolve(value);
+    };
+
+    qp.onDidAccept(() => {
+      const item = (qp.selectedItems[0] ?? qp.activeItems[0]) as ToolQuickPickItem | undefined;
+      finish(item);
+    });
+    qp.onDidHide(() => {
+      if (!resolved) {
+        finish(undefined);
+      }
+    });
+    qp.show();
+  });
+}
+
 /** Mirrors the web UI default tag when opening Run → Run default. */
 function defaultVersionTag(versionNames: string[]): string | undefined {
   if (versionNames.includes('latest')) {
@@ -206,17 +243,13 @@ export async function runStartNewRunFlow(
     return;
   }
 
-  type ToolPick = vscode.QuickPickItem & { tool: FlatRegistryTool };
-  const toolItems: ToolPick[] = tools.map((t) => ({
+  const toolItems: ToolQuickPickItem[] = tools.map((t) => ({
     label: t.image || `tool ${t.id}`,
     detail: (t.shortDescription || t.description || '').trim() || undefined,
     tool: t,
   }));
 
-  const pickedTool = await vscode.window.showQuickPick(toolItems, {
-    placeHolder: 'Search tools by name or description',
-    matchOnDetail: true,
-  });
+  const pickedTool = await showToolQuickPick(toolItems);
   if (!pickedTool) {
     return;
   }
