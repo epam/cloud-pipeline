@@ -118,6 +118,7 @@ function configure_vscode_extension() {
     local VSC_EXTENSION_NAME="${VSC_EXTENSION_NAME-}"
     local VSC_EXTENSION_PUBLISHER=$(printf '%s' "$VSC_EXTENSION_NAME" | tr '[:upper:]' '[:lower:]' | tr -cs '[:alnum:]' '-' | sed 's/^-*//;s/-*$//')
     local VSC_EXTENSION_API_URL="https://${CP_API_SRV_EXTERNAL_HOST}:${CP_API_SRV_EXTERNAL_PORT}/pipeline/restapi"
+    local VSC_EXTENSION_LOGO_PATH="${VSC_EXTENSION_LOGO_PATH:$CP_API_SRV_STATIC_DIR/vsc_extension_logo.png}"
 
     local extension_filename="/tmp/cloud-pipeline-remote.vsix"
     local extension_name="$(basename $extension_filename)"
@@ -154,7 +155,15 @@ function configure_vscode_extension() {
         sed -i "s/cloud-pipeline/$VSC_EXTENSION_PUBLISHER/g" "$extension_tmp/extension/package.json"
     fi
 
-    zip -q -r "$output_dir/${extension_name}.vsix" .
+    if [ -f "$VSC_EXTENSION_LOGO_PATH" ]; then
+        cp "$VSC_EXTENSION_LOGO_PATH" "$extension_tmp/extension/resources/logo.png"
+    fi
+    
+    local repackaged_extension_filename="${extension_name}.vsix"
+    if [ "$VSC_EXTENSION_NAME" ]; then
+        repackaged_extension_filename="${VSC_EXTENSION_PUBLISHER}-remote.vsix"
+    fi
+    zip -q -r "$output_dir/${repackaged_extension_filename}.vsix" .
 
     rm -rf "$extension_tmp"
     rm -f "$extension_filename"
