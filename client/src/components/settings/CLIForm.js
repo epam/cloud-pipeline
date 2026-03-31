@@ -37,11 +37,13 @@ import DriveMappingWindowsForm from './DriveMappingWindowsForm';
 import {getOS} from '../../utils/OSDetection';
 import roleModel from '../../utils/roleModel';
 import BashCode from '../special/bash-code';
+import Markdown from '../special/markdown';
 import SubSettings from './sub-settings';
 
 const CLI_KEY = 'cli';
 const GIT_CLI_KEY = 'git cli';
 const DRIVE_KEY = 'drive';
+const VSCODE_KEY = 'vscode';
 
 const DRIVE_MAPPING_URL_PREFERENCE = 'base.dav.auth.url';
 const DRIVE_MAPPING_KEY = 'ui.pipe.drive.mapping';
@@ -87,7 +89,8 @@ export default class CLIForm extends React.Component {
     },
     driveMapping: {
       accessKey: null
-    }
+    },
+    vscodeTemplateSelectedKey: undefined
   };
 
   @computed
@@ -113,6 +116,12 @@ export default class CLIForm extends React.Component {
         .length > 0;
     }
     return false;
+  }
+
+  @computed
+  get uiVscodeExtensionInstallTemplate () {
+    const {preferences} = this.props;
+    return preferences.uiVscodeExtensionInstallTemplate || {};
   }
 
   renderPipeCLIContent = () => {
@@ -318,6 +327,49 @@ export default class CLIForm extends React.Component {
     );
   };
 
+  renderVscodeContent = () => {
+    const template = this.uiVscodeExtensionInstallTemplate;
+    if (!template || typeof template !== 'object' || Array.isArray(template)) {
+      return null;
+    }
+    const keys = Object.keys(template);
+    if (keys.length === 0) {
+      return null;
+    }
+    const {vscodeTemplateSelectedKey} = this.state;
+    const selectedKey = keys.includes(vscodeTemplateSelectedKey)
+      ? vscodeTemplateSelectedKey
+      : keys[0];
+    const raw = template[selectedKey];
+    const md = raw == null ? '' : String(raw);
+    const mdWithPlaceholders = this.props.preferences.replacePlaceholders(md);
+    return (
+      <div>
+        {
+          keys.length > 1 &&
+          <Row type="flex" align="middle" style={{marginBottom: 10}}>
+            <Select
+              style={{width: 320}}
+              onSelect={(k) => this.setState({vscodeTemplateSelectedKey: k})}
+              value={selectedKey}>
+              {
+                keys.map((k) => (
+                  <Select.Option key={k}>
+                    {k}
+                  </Select.Option>
+                ))
+              }
+            </Select>
+          </Row>
+        }
+        <Markdown
+          md={mdWithPlaceholders}
+          target="_blank"
+        />
+      </div>
+    );
+  };
+
   renderGitCLIContent = () => {
     if (this.props.pipelineGitCredentials.pending && this.props.pipelineGitCredentials.loaded) {
       return <LoadingView />;
@@ -517,6 +569,19 @@ export default class CLIForm extends React.Component {
         key: DRIVE_KEY,
         title: 'File System Access',
         render: () => this.renderDrive()
+      });
+    }
+    const vscodeTemplate = this.uiVscodeExtensionInstallTemplate;
+    if (
+      vscodeTemplate &&
+      typeof vscodeTemplate === 'object' &&
+      !Array.isArray(vscodeTemplate) &&
+      Object.keys(vscodeTemplate).length > 0
+    ) {
+      sections.push({
+        key: VSCODE_KEY,
+        title: 'VSCode extension',
+        render: () => this.renderVscodeContent()
       });
     }
     return sections;

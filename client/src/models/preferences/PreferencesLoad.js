@@ -351,6 +351,21 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
+  get uiVscodeExtensionInstallTemplate () {
+    const value = this.getPreferenceValue('ui.vscode.extension.install.template');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn(
+          'Error parsing "ui.vscode.extension.install.template" preference:',
+          e
+        );
+      }
+    }
+    return {};
+  }
+
   get launchToolSizeLimits () {
     const value = this.getPreferenceValue('launch.tool.size.limits');
     if (value) {
