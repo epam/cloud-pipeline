@@ -536,7 +536,7 @@ def view_pipe(pipeline, versions, parameters, storage_rules, permissions):
 @click.option('-td', '--tasks-details', help='Display tasks of a specific run', is_flag=True)
 @click.option('-uf', '--user-filter', help='Display tasks of a specific users. Format: Comma separated list.')
 @click.option('--tags-details', help='Display detailed tags information of a specific run', is_flag=True, default=False)
-@click.option('-o', '--output', type=click.Choice(['json']), default=None,
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
               help='Output format. Default is a text table.')
 @common_options
 def view_runs(run_id,
@@ -552,15 +552,15 @@ def view_runs(run_id,
               tasks_details,
               user_filter,
               tags_details,
-              output):
+              output_format):
     """Displays details of a run or list of pipeline runs
     """
     # If a run id is specified - list details of a run
     if run_id:
-        view_run(run_id, node_details, parameters_details, tasks_details, tags_details, output=output)
+        view_run(run_id, node_details, parameters_details, tasks_details, tags_details, output=output_format)
     # If no argument is specified - list runs according to options
     else:
-        view_all_runs(status, date_from, date_to, pipeline, parent_id, find, top, user_filter, output=output)
+        view_all_runs(status, date_from, date_to, pipeline, parent_id, find, top, user_filter, output=output_format)
 
 
 def view_all_runs(status, date_from, date_to, pipeline, parent_id, find, top, user_filter, output=None):
