@@ -34,7 +34,7 @@ function DataStorageLink (
 ) {
   const {
     storageId: parsedStorageId,
-    path: parsedPath
+    folderPath: parsedPath
   } = getStorageLinkInfo({
     storages: dataStorages.loaded ? (dataStorages.value || []) : [],
     storageId,

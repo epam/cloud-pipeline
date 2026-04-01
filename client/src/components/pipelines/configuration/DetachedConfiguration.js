@@ -384,7 +384,10 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
             }
           }
         } else {
-          configuration.configuration = opts;
+          configuration.configuration = {
+            ...configuration.configuration,
+            ...opts
+          };
         }
         const request = new ConfigurationUpdate();
         const payload = {
@@ -672,7 +675,10 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
             }
           }
         } else {
-          configuration.configuration = opts;
+          configuration.configuration = {
+            ...configuration.configuration,
+            ...opts
+          };
         }
         if (!configuration.configuration) {
           configuration.configuration = {};
@@ -793,7 +799,10 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
             }
           }
         } else {
-          configuration.configuration = opts;
+          configuration.configuration = {
+            ...configuration.configuration,
+            ...opts
+          };
         }
         if (!configuration.configuration) {
           configuration.configuration = {};
@@ -926,26 +935,45 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
   };
 
   onConfigurationSelectPipeline = async (opts, callback) => {
-    if (opts && !opts.isFireCloud) {
-      const {pipeline, version, configuration} = opts;
-      const request = new PipelineConfigurations(pipeline.id, version);
-      await request.fetch();
-      if (!request.error) {
+    let configError;
+    const setStateAsync = async (st) => new Promise((resolve) => {
+      this.setState(st, () => resolve());
+    });
+    try {
+      if (opts && !opts.isFireCloud) {
+        const {pipeline, version, configuration} = opts;
+        const request = new PipelineConfigurations(pipeline.id, version);
+        await request.fetch();
+        if (request.error) {
+          throw new Error(request.error);
+        }
         const [config] = configuration
           ? request.value.map(c => c).filter(c => c.name === configuration)
           : request.value.map(c => c).filter(c => c.default);
         if (config) {
-          this.setState({
+          await setStateAsync({
             overriddenConfiguration: config,
             emptyPipeline: false
-          }, () => callback());
+          });
+        } else {
+          throw new Error(
+            configuration
+              ? `Configuration '${configuration}' not found.`
+              : 'Default configuration not found.'
+          );
         }
+      } else {
+        await setStateAsync({
+          overriddenConfiguration: null,
+          emptyPipeline: true
+        });
       }
-    } else {
-      this.setState({
-        overriddenConfiguration: null,
-        emptyPipeline: true
-      }, () => callback());
+    } catch (error) {
+      configError = error.message;
+    } finally {
+      if (callback) {
+        callback(configError);
+      }
     }
   };
 

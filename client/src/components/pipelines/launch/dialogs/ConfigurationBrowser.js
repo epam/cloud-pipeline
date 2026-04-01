@@ -23,6 +23,7 @@ import Folder from '../../browser/Folder';
 import LoadingView from '../../../special/LoadingView';
 import {
   expandItem,
+  formatTreeItems,
   generateTreeData,
   getExpandedKeys,
   getTreeItemByKey,
@@ -33,7 +34,7 @@ import styles from './Browser.css';
 import roleModel from '../../../../utils/roleModel';
 import HiddenObjects from '../../../../utils/hidden-objects';
 
-@inject('folders')
+@inject('folders', 'preferences')
 @inject(({routing, folders}, params) => ({
   folders,
   folderId: params.initialFolderId,
@@ -230,8 +231,8 @@ export default class ConfigurationBrowser extends React.Component {
       if (!defaultRootEntity) return false;
       const [selectedEntityConfiguration] =
         this.props.currentMetadataEntity.filter(matadataEntity =>
-        matadataEntity.metadataClass.id === defaultRootEntity.rootEntityId
-      );
+          matadataEntity.metadataClass.id === defaultRootEntity.rootEntityId
+        );
       return selectedEntityConfiguration && selectedEntityConfiguration.metadataClass
         ? selectedEntityConfiguration.metadataClass.name !== this.props.metadataClassName
         : false;
@@ -273,27 +274,28 @@ export default class ConfigurationBrowser extends React.Component {
   }
 
   generateTreeItems (items) {
-    return items.map(item => {
-      if (item.isLeaf) {
-        return (
-          <Tree.TreeNode
-            className={`pipelines-library-tree-node-${item.key}`}
-            title={this.renderItemTitle(item)}
-            key={item.key}
-            isLeaf={item.isLeaf} />
-        );
-      } else {
-        return (
-          <Tree.TreeNode
-            className={`pipelines-library-tree-node-${item.key}`}
-            title={this.renderItemTitle(item)}
-            key={item.key}
-            isLeaf={item.isLeaf}>
-            {this.generateTreeItems(item.children)}
-          </Tree.TreeNode>
-        );
-      }
-    });
+    return formatTreeItems(items, {preferences: this.props.preferences})
+      .map(item => {
+        if (item.isLeaf) {
+          return (
+            <Tree.TreeNode
+              className={`pipelines-library-tree-node-${item.key}`}
+              title={this.renderItemTitle(item)}
+              key={item.key}
+              isLeaf={item.isLeaf} />
+          );
+        } else {
+          return (
+            <Tree.TreeNode
+              className={`pipelines-library-tree-node-${item.key}`}
+              title={this.renderItemTitle(item)}
+              key={item.key}
+              isLeaf={item.isLeaf}>
+              {this.generateTreeItems(item.children)}
+            </Tree.TreeNode>
+          );
+        }
+      });
   }
 
   filterConfigurations = (item, type) => {
@@ -307,11 +309,10 @@ export default class ConfigurationBrowser extends React.Component {
     if (!this.props.tree.pending && !this.props.tree.error) {
       this.rootItems = generateTreeData(
         this.props.tree.value,
-        false,
-        null,
-        [],
-        [ItemTypes.configuration],
-        this.props.hiddenObjectsTreeFilter(this.filterConfigurations)
+        {
+          types: [ItemTypes.configuration],
+          filter: this.props.hiddenObjectsTreeFilter(this.filterConfigurations)
+        }
       );
     }
     return (

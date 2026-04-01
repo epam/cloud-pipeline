@@ -35,3 +35,14 @@
   content: ', ';
   white-space: pre;
 }
+
+.instance-type-region::before {
+  content: ' ';
+  white-space: pre;
+}
+
+.instance-type-region {
+  font-size: smaller;
+  align-self: center;
+  display: inline-block;
+}

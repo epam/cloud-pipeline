@@ -16,22 +16,22 @@
 
 import Remote from '../basic/Remote';
 import {computed, isObservableArray} from 'mobx';
-import escapeRegExp, {ESCAPE_CHARACTERS} from '../../utils/escape-reg-exp';
 import {parsePermissionsRestrictionsConfig} from './utilities/parse-permissions-restrictions';
+import {
+  systemCapabilitiesParameters,
+  RUN_CAPABILITIES,
+  RUN_CAPABILITIES_PARAMETERS
+} from '../../components/pipelines/launch/form/utilities/parameters';
 
 const FETCH_ID_SYMBOL = Symbol('Fetch id');
 // eslint-disable-next-line max-len
 const MAINTENANCE_MODE_DISCLAIMER = 'Platform is in a maintenance mode, operation is temporary unavailable';
 
-export const RUN_CAPABILITIES = {
-  dinD: 'DinD',
-  singularity: 'Singularity',
-  systemD: 'SystemD',
-  noMachine: 'NoMachine',
-  module: 'Module',
-  disableHyperThreading: 'Disable Hyper-Threading',
-  dcv: 'NICE DCV'
-};
+const SYSTEM_CAPABILITY_PARAMETER_TO_DISPLAY = Object.entries(RUN_CAPABILITIES_PARAMETERS)
+  .reduce((acc, [name, parameter]) => ({
+    ...acc,
+    [parameter]: name
+  }), {});
 
 class PreferencesLoad extends Remote {
   constructor () {
@@ -248,15 +248,41 @@ class PreferencesLoad extends Remote {
             .filter(o => o.length);
         };
         const mapCapability = ([key, entry]) => {
-          if (
-            typeof entry === 'boolean' ||
-            entry.visible === false ||
-            Object.keys(RUN_CAPABILITIES).includes(key)
-          ) {
+          if (typeof entry === 'boolean' || entry.visible === false) {
             return undefined;
           }
+          const isSystemCapability = systemCapabilitiesParameters.includes(key);
+          if (isSystemCapability) {
+            const displayName = SYSTEM_CAPABILITY_PARAMETER_TO_DISPLAY[key];
+            if (!displayName) {
+              return undefined;
+            }
+            return {
+              value: displayName,
+              name: entry?.name || displayName,
+              custom: false,
+              ...(entry?.description !== undefined
+                ? {description: entry.description}
+                : {}),
+              ...(entry?.platforms !== undefined
+                ? {platforms: parsePlatforms(entry.platforms)}
+                : {}),
+              ...(entry?.cloud !== undefined
+                ? {cloud: parseCloudProviders(entry.cloud)}
+                : {}),
+              ...(entry?.os !== undefined
+                ? {os: parseOS(entry.os)}
+                : {}),
+              ...(entry?.disclaimer !== undefined
+                ? {disclaimer: entry.disclaimer}
+                : {}),
+              ...(entry?.privileged !== undefined
+                ? {privileged: entry.privileged}
+                : {})
+            };
+          }
           const {
-            capabilities = {}
+            capabilities: childCapabilities = {}
           } = entry;
           return {
             value: `CP_CAP_CUSTOM_${key}`,
@@ -268,9 +294,10 @@ class PreferencesLoad extends Remote {
             custom: true,
             params: entry?.params || {},
             disclaimer: entry?.disclaimer || '',
-            capabilities: Object.entries(capabilities)
-              .map(c => mapCapability(c, entry)),
-            multiple: Boolean(entry?.multiple)
+            capabilities: Object.entries(childCapabilities)
+              .map(mapCapability),
+            multiple: Boolean(entry?.multiple),
+            privileged: entry?.privileged
           };
         };
         return Object
@@ -334,6 +361,12 @@ class PreferencesLoad extends Remote {
       }
     }
     return {};
+  }
+
+  @computed
+  get inlineMetadataEntities () {
+    const value = this.getPreferenceValue('ui.library.metadata.inline');
+    return `${value}`.toLowerCase() === 'true';
   }
 
   get requestFileSystemAccessTooltip () {
@@ -731,6 +764,19 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get uiLaunchParameters () {
+    const value = this.getPreferenceValue('ui.launch.parameters');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "ui.launch.parameters" preference:', e.message);
+      }
+    }
+    return {};
+  }
+
+  @computed
   get miscAIPreferences () {
     const value = this.getPreferenceValue('misc.ai.preferences');
     if (value) {
@@ -745,6 +791,19 @@ class PreferencesLoad extends Remote {
       }
     }
     return {};
+  }
+
+  @computed
+  get launchReservationParameters () {
+    const value = this.getPreferenceValue('launch.reservation.parameters');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "launch.reservation.parameters" preference:', e.message);
+      }
+    }
+    return undefined;
   }
 
   toolScanningEnabledForRegistry (registry) {

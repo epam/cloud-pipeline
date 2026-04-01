@@ -57,7 +57,6 @@ import HiddenObjects from '../../../utils/hidden-objects';
 })
 @observer
 export default class MetadataFolder extends React.Component {
-
   static propTypes = {
     selectionAvailable: PropTypes.bool,
     hideUploadMetadataBtn: PropTypes.bool,
@@ -322,13 +321,11 @@ export default class MetadataFolder extends React.Component {
   render () {
     const dataFolder = generateTreeData(
       this.props.folder.value,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      this.props.hiddenObjectsTreeFilter()
+      {
+        filter: this.props.hiddenObjectsTreeFilter()
+      }
     );
-    const [metadataFolder] = dataFolder.filter(m => m.type === ItemTypes.metadataFolder);
+    const metadataFolder = dataFolder.find(m => m.type === ItemTypes.metadataFolder);
     let data = metadataFolder ? metadataFolder.children : [];
     if (this.props.folderId) {
       const url = `/folder/${this.props.folderId}`;
@@ -367,7 +364,7 @@ export default class MetadataFolder extends React.Component {
               id={parseInt(this.props.folderId)}
               type={ItemTypes.metadataFolder}
               textEditableField={'Metadata'}
-              readOnlyEditableField={true}
+              readOnlyEditableField
               icon="appstore-o"
               iconClassName={styles.editableControl}
               subject={this.props.folder.value}

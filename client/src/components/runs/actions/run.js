@@ -16,12 +16,11 @@
 
 import React from 'react';
 import {inject, observer, Provider} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {computed, isObservableArray} from 'mobx';
 import PropTypes from 'prop-types';
 import {
   Alert,
   Button,
-  Icon,
   message,
   Row,
   Select,
@@ -30,16 +29,14 @@ import {
 import EstimatedDiskSizeWarning from './estimated-disk-size-warning';
 import PipelineRunner from '../../../models/pipelines/PipelineRunner';
 import PipelineRunKubeServices from '../../../models/pipelines/PipelineRunKubeServices';
-import PipelineRunEstimatedPrice from '../../../models/pipelines/PipelineRunEstimatedPrice';
 import {names} from '../../../models/utils/ContextualPreference';
 import {autoScaledClusterEnabled} from '../../pipelines/launch/form/utilities/launch-cluster';
 import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
 import AllowedInstancesCountWarning from
-  '../../pipelines/launch/form/utilities/allowed-instances-count-warning';
+'../../pipelines/launch/form/utilities/allowed-instances-count-warning';
 import RunName from '../run-name';
 import '../../../staticStyles/tooltip-nowrap.css';
 import AWSRegionTag from '../../special/AWSRegionTag';
-import JobEstimatedPriceInfo from '../../special/job-estimated-price-info';
 import {getSpotTypeName} from '../../special/spot-instance-names';
 import awsRegions from '../../../models/cloudRegions/CloudRegions';
 import {
@@ -80,6 +77,10 @@ import {
   getUserTagsValidationResult,
   getVisibleUserTags
 } from '../run-tags/utilities';
+import {
+  ensureValidReservationParametersForLaunchPayloads,
+  findReservationParameterConfig
+} from '../../pipelines/launch/form/components/reservation-parameters/utilities';
 
 // Mark class with @submitsRun if it may launch pipelines / tools
 export const submitsRun = (...opts) => {
@@ -100,6 +101,7 @@ export function run (parent, callback) {
     warning,
     allowedInstanceTypesRequest,
     hostedApplicationConfiguration,
+    platform,
     skipCheck = false
   ) {
     return runFn(
@@ -111,6 +113,7 @@ export function run (parent, callback) {
       callback,
       allowedInstanceTypesRequest,
       hostedApplicationConfiguration,
+      platform,
       skipCheck
     );
   };
@@ -264,7 +267,7 @@ async function runHostedApp (runId, configuration) {
 }
 
 function runFn (
-  payload,
+  payloads,
   confirm,
   title,
   warning,
@@ -272,8 +275,23 @@ function runFn (
   callbackFn,
   allowedInstanceTypesRequest,
   hostedApplicationConfiguration,
+  platform,
   skipCheck
 ) {
+  const payloadsArray = Array.isArray(payloads) || isObservableArray(payloads)
+    ? payloads
+    : [payloads];
+  const setPayloadParameter = (parameterName, value) => {
+    for (const payload of payloadsArray) {
+      if (!payload.params) {
+        payload.params = {};
+      }
+      const v = payload.params[parameterName] || {type: 'string', value: undefined};
+      v.value = value;
+      payload.params[parameterName] = v;
+    }
+  };
+  const [payload] = payloadsArray;
   return new Promise(async (resolve) => {
     let launchName;
     let launchVersion;
@@ -344,12 +362,12 @@ function runFn (
             )
           );
         if (filtered.length) {
-          payload.params[CP_CAP_LIMIT_MOUNTS].value = getLimitMountsParameterValue(
+          setPayloadParameter(CP_CAP_LIMIT_MOUNTS, getLimitMountsParameterValue(
             filtered,
             cpCapLimitMountsParameter
-          );
+          ));
         } else {
-          payload.params[CP_CAP_LIMIT_MOUNTS].value = 'None';
+          setPayloadParameter(CP_CAP_LIMIT_MOUNTS, 'None');
         }
       }
     }
@@ -378,7 +396,10 @@ function runFn (
       scheduleRules = payload.scheduleRules;
       delete payload.scheduleRules;
     }
-    payload.params = applyCustomCapabilitiesParameters(payload.params, stores.preferences);
+    for (const p of payloadsArray) {
+      p.params = applyCustomCapabilitiesParameters(p.params, stores.preferences);
+    }
+    await ensureValidReservationParametersForLaunchPayloads(payloadsArray);
     const launchFn = async () => {
       const messageVersion = payload.runNameAlias
         ? `${launchName}:${launchVersion}`
@@ -391,26 +412,29 @@ function runFn (
         };
         delete payload.runNameAlias;
       }
-      await PipelineRunner.send({...payload, force: true});
+      for (const p of payloadsArray) {
+        await PipelineRunner.send({...p, force: true});
+      }
       hide();
       if (PipelineRunner.error) {
         message.error(PipelineRunner.error);
-        resolve(false);
+        resolve(undefined);
         callbackFn && callbackFn(false);
       } else {
         if (scheduleRules && scheduleRules.length > 0) {
           await saveRunSchedule(PipelineRunner.value.id, scheduleRules);
         }
         await runHostedApp(PipelineRunner.value.id, hostedApplicationConfiguration);
-        resolve(PipelineRunner.value || {});
+        resolve(PipelineRunner.value);
         callbackFn && callbackFn(true);
       }
     };
     if (!confirm) {
       await launchFn();
     } else {
-      const inputs = getInputPaths(null, payload.params);
-      const outputs = getOutputPaths(null, payload.params);
+      // todo: permission errors for input / output paths
+      const inputs = getInputPaths(payload.params);
+      const outputs = getOutputPaths(payload.params);
       const {errors: permissionErrors} = await performAsyncCheck({
         ...stores,
         dataStorages: dataStorageAvailable,
@@ -451,6 +475,7 @@ function runFn (
               payload
             }}
             ref={ref}
+            platform={platform}
             warning={warning}
             versionErrors={versionErrors}
             instanceType={payload.instanceType}
@@ -488,92 +513,125 @@ function runFn (
         closable: false,
         okText: 'Launch',
         onOk: async function () {
-          if (component) {
-            if (component.state.runCapabilities) {
-              payload.params = updateCapabilities(
-                payload.params,
-                component.state.runCapabilities,
+          const runSinglePayload = async (idx = 0, runs = []) => {
+            if (idx >= payloadsArray.length) {
+              return runs;
+            }
+            const singlePayload = payloadsArray[idx];
+            const launchPostfix = payloadsArray.length > 1
+              ? `${idx + 1} / ${payloadsArray.length}`
+              : undefined;
+            console.log(`launch payload ${launchPostfix || ''}:`, singlePayload);
+            if (component) {
+              if (component.state.runCapabilities) {
+                singlePayload.params = updateCapabilities(
+                  singlePayload.params,
+                  component.state.runCapabilities,
+                  stores.preferences
+                );
+              }
+              singlePayload.params = applyCustomCapabilitiesParameters(
+                singlePayload.params,
                 stores.preferences
               );
-            }
-            payload.params = applyCustomCapabilitiesParameters(
-              payload.params,
-              stores.preferences
-            );
-            if (
-              checkRequiredCapabilitiesErrors(
-                getEnabledCapabilities(payload.params),
-                stores.preferences
-              )
-            ) {
-              const error = 'You need to specify required capabilities';
-              message.error(error, 5);
-              return Promise.reject(new Error(error));
-            }
-            if (component.state.tagsValidation && component.state.tagsValidation.length > 0) {
-              const error = 'You need to specify required tags';
-              message.error(error, 5);
-              return Promise.reject(new Error(error));
-            }
-            payload.isSpot = component.state.isSpot;
-            payload.instanceType = component.state.instanceType;
-            payload.hddSize = component.state.hddSize;
-            payload.tags = filterVisibleTagsSync(
-              component.state.tags,
-              component.state.tagsVisibility
-            );
-            if (component.state.limitMounts !== component.props.limitMounts) {
-              const {limitMounts} = component.state;
-              if (limitMounts) {
-                if (!payload.params) {
-                  payload.params = {};
+              if (
+                checkRequiredCapabilitiesErrors(
+                  getEnabledCapabilities(singlePayload.params),
+                  stores.preferences
+                )
+              ) {
+                const error = 'You need to specify required capabilities';
+                message.error(error, 5);
+                return Promise.reject(new Error(error));
+              }
+              if (component.state.tagsValidation && component.state.tagsValidation.length > 0) {
+                const error = 'You need to specify required tags';
+                message.error(error, 5);
+                return Promise.reject(new Error(error));
+              }
+              singlePayload.isSpot = component.state.isSpot;
+              singlePayload.instanceType = component.state.instanceType;
+              singlePayload.hddSize = component.state.hddSize;
+              singlePayload.tags = filterVisibleTagsSync(
+                component.state.tags,
+                component.state.tagsVisibility
+              );
+              if (component.state.limitMounts !== component.props.limitMounts) {
+                const {limitMounts} = component.state;
+                if (limitMounts) {
+                  if (!singlePayload.params) {
+                    singlePayload.params = {};
+                  }
+                  singlePayload.params[CP_CAP_LIMIT_MOUNTS] = {
+                    type: 'string',
+                    required: false,
+                    value: limitMounts
+                  };
+                } else if (singlePayload.params && singlePayload.params[CP_CAP_LIMIT_MOUNTS]) {
+                  delete singlePayload.params[CP_CAP_LIMIT_MOUNTS];
                 }
-                payload.params[CP_CAP_LIMIT_MOUNTS] = {
-                  type: 'string',
-                  required: false,
-                  value: limitMounts
+              }
+              if (component.state.runNameAlias) {
+                singlePayload.tags = {
+                  alias: component.state.runNameAlias
                 };
-              } else if (payload.params && payload.params[CP_CAP_LIMIT_MOUNTS]) {
-                delete payload.params[CP_CAP_LIMIT_MOUNTS];
               }
             }
-            if (component.state.runNameAlias) {
-              payload.tags = {
-                alias: component.state.runNameAlias
-              };
-            }
-          }
-          if (!payload.instanceType) {
-            message.error('You should select instance type');
-            resolve(false);
-            callbackFn && callbackFn(false);
-          } else {
-            const version = payload.runNameAlias
-              ? `${launchName}:${launchVersion}`
-              : launchVersion;
-            const hide = message
-              .loading(`Launching ${payload.runNameAlias || launchName} (${version})...`, -1);
-            if (payload.runNameAlias) {
-              delete payload.runNameAlias;
-            }
-            await PipelineRunner.send({...payload, force: true});
-            hide();
-            if (PipelineRunner.error) {
-              message.error(PipelineRunner.error);
-              resolve(false);
-              callbackFn && callbackFn(false);
+            let launchedRun;
+            if (!singlePayload.instanceType) {
+              throw new Error('You should select instance type');
             } else {
-              if (scheduleRules && scheduleRules.length > 0) {
-                await saveRunSchedule(PipelineRunner.value.id, scheduleRules);
+              const version = singlePayload.runNameAlias
+                ? `${launchName}:${launchVersion}`
+                : launchVersion;
+              let details = [
+                version,
+                launchPostfix
+              ].filter(Boolean).join(' ');
+              if (details.length > 0) {
+                details = ` (${details})`;
               }
-              await runHostedApp(PipelineRunner.value.id, hostedApplicationConfiguration);
-              resolve(PipelineRunner.value || {});
-              callbackFn && callbackFn(true);
+              const hide = message
+                .loading(
+                  `Launching ${singlePayload.runNameAlias || launchName}${details}...`,
+                  0
+                );
+              if (singlePayload.runNameAlias) {
+                delete singlePayload.runNameAlias;
+              }
+              await ensureValidReservationParametersForLaunchPayloads([singlePayload]);
+              try {
+                await PipelineRunner.send({...singlePayload, force: true});
+                if (PipelineRunner.error) {
+                  message.error(PipelineRunner.error);
+                  throw new Error(PipelineRunner.error);
+                } else {
+                  launchedRun = PipelineRunner.value;
+                  if (scheduleRules && scheduleRules.length > 0) {
+                    await saveRunSchedule(PipelineRunner.value.id, scheduleRules);
+                  }
+                  await runHostedApp(PipelineRunner.value.id, hostedApplicationConfiguration);
+                }
+              } finally {
+                hide();
+              }
             }
+            if (launchedRun) {
+              runs.push(launchedRun);
+            }
+            return runSinglePayload(idx + 1, runs);
+          };
+          try {
+            const runs = await runSinglePayload();
+            resolve(runs.pop());
+            callbackFn && callbackFn(true);
+          } catch (error) {
+            resolve(undefined);
+            callbackFn && callbackFn(false);
           }
         },
         onCancel () {
-          resolve(false);
+          resolve(undefined);
           callbackFn && callbackFn(false);
         }
       });
@@ -606,7 +664,7 @@ export class RunConfirmation extends React.Component {
   };
 
   static propTypes = {
-    warning: PropTypes.string,
+    warning: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
     versionErrors: PropTypes.shape({
       size: PropTypes.shape({
         soft: PropTypes.bool,
@@ -615,6 +673,7 @@ export class RunConfirmation extends React.Component {
       allowedWarning: PropTypes.string
     }),
     allowedWarning: PropTypes.string,
+    platform: PropTypes.string,
     isSpot: PropTypes.bool,
     cloudRegionId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     cloudRegions: PropTypes.array,
@@ -767,6 +826,14 @@ export class RunConfirmation extends React.Component {
     return false;
   }
 
+  get isInstanceTypeWithReservation () {
+    const {
+      preferences
+    } = this.props;
+    const {name} = this.currentInstanceType || {};
+    return Boolean(findReservationParameterConfig(name, preferences));
+  }
+
   setOnDemand = (onDemand) => {
     this.setState({
       isSpot: !onDemand
@@ -900,6 +967,7 @@ export class RunConfirmation extends React.Component {
     const {size, allowedWarning} = this.props.versionErrors || {};
     const {soft, hard} = size || {};
     const {hasStorageConflicts} = this.state;
+    const {isInstanceTypeWithReservation} = this;
     return (
       <div>
         {allowedWarning ? (
@@ -940,7 +1008,10 @@ export class RunConfirmation extends React.Component {
             message={this.props.warning} />
         }
         {
-          this.props.onDemandSelectionAvailable && this.props.isSpot && this.state.isSpot &&
+          this.props.onDemandSelectionAvailable &&
+          this.props.isSpot &&
+          this.state.isSpot &&
+          !isInstanceTypeWithReservation &&
           <Alert
             style={{margin: 2}}
             key="spot warning"
@@ -1041,12 +1112,15 @@ export class RunConfirmation extends React.Component {
             showIcon
             message={
               <Row>
+                {/* eslint-disable-next-line max-len */}
                 Note that you will not be able to commit a cluster. Commit feature is only available for single-node runs
               </Row>
             } />
         }
         {
-          !this.props.isCluster && this.gpuEnabled &&
+          !this.props.isCluster &&
+          this.gpuEnabled &&
+          !/^windows$/i.test(this.props.platform) &&
           <Alert
             type="info"
             style={{margin: 2}}
@@ -1054,12 +1128,15 @@ export class RunConfirmation extends React.Component {
             message={
               <Row>
                 <Row style={{marginBottom: 5}}>
+                  {/* eslint-disable-next-line max-len */}
                   <b>You are going to launch a job using GPU-enabled instance</b> - <b>{this.state.instanceType}.</b>
                 </Row>
                 <Row style={{marginBottom: 5}}>
+                  {/* eslint-disable-next-line max-len */}
                   Note that if you install any <b>NVIDIA packages</b> manually and commit it, that may produce an unusable image.
                 </Row>
                 <Row>
+                  {/* eslint-disable-next-line max-len */}
                   All cuda-based dockers shall be built using <b><a target="_blank" href="https://hub.docker.com/r/nvidia/cuda/">nvidia/cuda</a></b> base image instead.
                 </Row>
               </Row>
@@ -1120,9 +1197,11 @@ export class RunConfirmation extends React.Component {
               message={
                 <div>
                   <Row style={{marginBottom: 5}}>
+                    {/* eslint-disable-next-line max-len */}
                     There is a number of data storages, that are going to be mounted to the same location within the compute node. This may lead to unexpected behavior.
                   </Row>
                   <Row style={{marginBottom: 5, fontWeight: 'bold'}}>
+                    {/* eslint-disable-next-line max-len */}
                     Please review the list of the mount points below and choose the data storage to be mounted:
                   </Row>
                   <Row style={{width: '100%'}}>
@@ -1139,6 +1218,7 @@ export class RunConfirmation extends React.Component {
           dataStorages={this.props.dataStorages}
           preferences={this.props.preferences}
           instance={this.currentInstanceType}
+          platform={this.props.platform}
         />
         {
           this.props.permissionErrors && this.props.permissionErrors.length > 0
@@ -1230,6 +1310,7 @@ export class RunConfirmation extends React.Component {
                     style={{padding: '2px'}}
                     showError={false}
                     getPopupContainer={node => node}
+                    instanceType={this.state.instanceType?.name}
                   />
                 </Provider>
               </div>
@@ -1252,16 +1333,20 @@ export class RunConfirmation extends React.Component {
             showIcon
           />
         </Provider>
-        <RunPayloadEstimatedPriceAlert
-          style={{margin: 2}}
-          pipelineId={this.props.pipelineId}
-          pipelineVersion={this.props.pipelineVersion}
-          pipelineConfiguration={this.props.pipelineConfiguration}
-          instanceType={this.state.instanceType}
-          instanceDisk={this.props.hddSize}
-          spot={this.state.isSpot}
-          regionId={this.props.cloudRegionId}
-        />
+        {
+          !isInstanceTypeWithReservation && (
+            <RunPayloadEstimatedPriceAlert
+              style={{margin: 2}}
+              pipelineId={this.props.pipelineId}
+              pipelineVersion={this.props.pipelineVersion}
+              pipelineConfiguration={this.props.pipelineConfiguration}
+              instanceType={this.state.instanceType}
+              instanceDisk={this.props.hddSize}
+              spot={this.state.isSpot}
+              regionId={this.props.cloudRegionId}
+            />
+          )
+        }
         <div
           style={{margin: 2, padding: '10px 0'}}
         >
@@ -1327,7 +1412,8 @@ class RunSpotConfirmationWithPrice extends React.Component {
       }),
       allowedWarning: PropTypes.string
     }),
-    warning: PropTypes.string,
+    warning: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
+    platform: PropTypes.string,
     isSpot: PropTypes.bool,
     isCluster: PropTypes.bool,
     onDemandSelectionAvailable: PropTypes.bool,
@@ -1492,7 +1578,7 @@ class RunSpotConfirmationWithPrice extends React.Component {
     let titleFn = (runName) => ([
       (<span key="launch">Launch</span>),
       runName,
-      (<span key="question">?</span>),
+      (<span key="question">?</span>)
     ]);
     if (title && typeof title === 'function') {
       titleFn = title;
@@ -1502,6 +1588,7 @@ class RunSpotConfirmationWithPrice extends React.Component {
     }
     return (
       <div
+        className="cp-run-name-title"
         style={{
           marginTop: '-16px',
           marginBottom: '6px',
@@ -1537,6 +1624,7 @@ class RunSpotConfirmationWithPrice extends React.Component {
           <RunConfirmation
             warning={this.props.warning}
             versionErrors={this.props.versionErrors}
+            platform={this.props.platform}
             onChangePriceType={this.onChangeSpotType}
             isSpot={this.props.isSpot}
             isCluster={this.props.isCluster}
