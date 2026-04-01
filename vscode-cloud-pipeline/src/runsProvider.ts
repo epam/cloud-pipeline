@@ -151,14 +151,93 @@ export class RunTreeItem extends vscode.TreeItem {
   }
 }
 
+function treeItemLabelText(it: vscode.TreeItem): string {
+  const { label } = it;
+  return typeof label === 'string' ? label : (label as vscode.TreeItemLabel | undefined)?.label ?? '';
+}
+
+function themeIconSnapshot(icon: vscode.ThemeIcon): { id: string; color?: string } {
+  const c = icon.color as vscode.ThemeColor | undefined;
+  return { id: icon.id, color: c?.id };
+}
+
+/** Serializable fingerprint of root tree rows — used to skip tree invalidation on auto-refresh. */
+function snapshotRootChildren(children: CpTreeItem[]): string {
+  const parts = children.map((it) => {
+    if (it instanceof RunTreeItem) {
+      const tip = it.tooltip instanceof vscode.MarkdownString ? it.tooltip.value : String(it.tooltip ?? '');
+      const icon =
+        it.iconPath instanceof vscode.ThemeIcon
+          ? themeIconSnapshot(it.iconPath)
+          : String(it.iconPath ?? '');
+      return {
+        t: 'run' as const,
+        id: it.run.id,
+        lbl: treeItemLabelText(it),
+        d: it.description,
+        ctx: it.contextValue,
+        tip,
+        icon,
+        cmd: it.command?.command,
+        args: it.command?.arguments,
+        fl: it.flags,
+      };
+    }
+    const tip = it.tooltip instanceof vscode.MarkdownString ? it.tooltip.value : String(it.tooltip ?? '');
+    const icon =
+      it.iconPath instanceof vscode.ThemeIcon
+        ? themeIconSnapshot(it.iconPath)
+        : String(it.iconPath ?? '');
+    return {
+      t: 'o' as const,
+      id: it.id,
+      lbl: treeItemLabelText(it),
+      ctx: it.contextValue,
+      tip,
+      icon,
+    };
+  });
+  return JSON.stringify(parts);
+}
+
 export class CloudPipelineRunsProvider implements vscode.TreeDataProvider<CpTreeItem> {
   private _onDidChange = new vscode.EventEmitter<CpTreeItem | undefined | void>();
   readonly onDidChangeTreeData = this._onDidChange.event;
 
+  /** Last snapshot that was published via `onDidChangeTreeData` or returned from `getChildren`. */
+  private lastPublishedSnapshot = '';
+
+  private autoRefreshInFlight = false;
+
   constructor(private readonly onAfterTreeResolved?: () => void) {}
 
+  /** Always invalidate the tree (user actions, auth, errors). */
   refresh(): void {
     this._onDidChange.fire();
+  }
+
+  /**
+   * Poll-friendly refresh: refetches data but only fires `onDidChangeTreeData` if the visible tree
+   * would change, so hover tooltips stay open when nothing changed.
+   */
+  async refreshIfChanged(): Promise<void> {
+    if (this.autoRefreshInFlight) {
+      return;
+    }
+    this.autoRefreshInFlight = true;
+    try {
+      const children = await this.loadRootChildren();
+      const snap = snapshotRootChildren(children);
+      if (snap === this.lastPublishedSnapshot) {
+        return;
+      }
+      this.lastPublishedSnapshot = snap;
+      this._onDidChange.fire();
+    } catch {
+      this.refresh();
+    } finally {
+      this.autoRefreshInFlight = false;
+    }
   }
 
   getTreeItem(element: CpTreeItem): vscode.TreeItem {
@@ -174,159 +253,164 @@ export class CloudPipelineRunsProvider implements vscode.TreeDataProvider<CpTree
       return [];
     }
     try {
-      const auth = resolveCredentials();
-      if (!auth) {
-        const it = new vscode.TreeItem('Sign in', vscode.TreeItemCollapsibleState.None);
-        it.id = 'cp-action-signin';
-        it.contextValue = 'cpSignIn';
-        it.iconPath = new vscode.ThemeIcon('account');
-        it.command = { command: 'cloudPipeline.signIn', title: 'Sign in' };
-        it.tooltip = `${getBrandName()}: SSO login via web-browser`;
-        return [it];
-      }
-
-      let owner = auth.proxyUser;
-      try {
-        const decoded = jwtDecode<{ sub?: string }>(auth.accessKey);
-        if (decoded.sub) {
-          owner = decoded.sub;
-        }
-      } catch {
-        /* use proxyUser */
-      }
-
-      try {
-        const api = new CloudPipelineApi(auth.apiUrl, auth.accessKey);
-        const filter = await api.listRunningRunsForOwner(owner, 200);
-        if (!filter.elements?.length) {
-          const emptyIt = new vscode.TreeItem(
-            'No active runs for your user (running / paused)',
-            vscode.TreeItemCollapsibleState.None
-          );
-          emptyIt.id = 'cp-empty-runs';
-          emptyIt.iconPath = new vscode.ThemeIcon('info');
-          return [emptyIt];
-        }
-        const elements = filter.elements;
-        const initTask = process.env.CP_SSH_INIT_TASK_NAME ?? 'InitializeEnvironment';
-
-        let diskPrefJson: string | undefined;
-        let diskPrefOk = false;
-        try {
-          diskPrefJson = await api.getPreference('launch.job.disk.size.thresholds');
-          diskPrefOk = true;
-        } catch {
-          diskPrefJson = undefined;
-          diskPrefOk = false;
-        }
-
-        const details = await mapWithConcurrency(elements, SSH_DETAIL_CONCURRENCY, async (r) => {
-          try {
-            return await api.getRunWithTasks(r.id);
-          } catch {
-            return null;
-          }
-        });
-
-        const fetchParamsByKey = new Map<
-          string,
-          { regionId?: number; spot: boolean; toolInstances: boolean }
-        >();
-        for (let i = 0; i < elements.length; i++) {
-          const r = elements[i];
-          const d = details[i];
-          const inst = d?.instance ?? r.instance;
-          const nodeType = inst?.nodeType?.trim() ?? r.nodeType?.trim() ?? '';
-          if (!nodeType) {
-            continue;
-          }
-          const rid = inst?.cloudRegionId;
-          const spot = inst?.spot === true;
-          const toolInstances = Boolean(r.dockerImage?.trim());
-          const key = instanceCatalogKey(
-            rid !== undefined && rid !== null ? Number(rid) : null,
-            spot,
-            toolInstances
-          );
-          if (!fetchParamsByKey.has(key)) {
-            fetchParamsByKey.set(key, {
-              regionId: rid !== undefined && rid !== null ? Number(rid) : undefined,
-              spot,
-              toolInstances,
-            });
-          }
-        }
-
-        const catalogResults: Array<[string, InstanceTypePayload[]]> = await Promise.all(
-          [...fetchParamsByKey.entries()].map(async ([key, params]) => {
-            try {
-              const list = await api.loadAllInstanceTypes(params);
-              return [key, list] as [string, InstanceTypePayload[]];
-            } catch {
-              return [key, [] as InstanceTypePayload[]];
-            }
-          })
-        );
-        const typesByKey = new Map(catalogResults);
-
-        return elements.map((r, i) => {
-          const d = details[i];
-          const displayStatus = (d?.status ?? r.status ?? '').toUpperCase() || 'RUNNING';
-          const sshReady =
-            d !== null &&
-            !isSshBlockedByPauseState(displayStatus) &&
-            isSshInitialized(d, initTask);
-          const pauseEligible = d !== null && canPauseRunDetail(d, diskPrefJson, diskPrefOk);
-          const resumeEligible = d !== null && canResumeRunDetail(d);
-
-          const inst = d?.instance ?? r.instance;
-          const nodeType = inst?.nodeType?.trim() ?? r.nodeType?.trim() ?? '';
-          const catalogKey = instanceCatalogKey(
-            inst?.cloudRegionId !== undefined && inst?.cloudRegionId !== null
-              ? Number(inst.cloudRegionId)
-              : null,
-            inst?.spot === true,
-            Boolean(r.dockerImage?.trim())
-          );
-          const catalog =
-            nodeType.length > 0
-              ? findMatchingInstanceType(typesByKey.get(catalogKey) ?? [], nodeType)
-              : undefined;
-          const instanceDetailsMarkdown = formatInstanceTooltipBlock(
-            catalog,
-            nodeType,
-            inst?.cloudProvider
-          );
-
-          const flags: RunTreeFlags = {
-            sshReady,
-            pauseEligible,
-            resumeEligible,
-            displayStatus,
-            instanceDetailsMarkdown: instanceDetailsMarkdown || undefined,
-          };
-          return new RunTreeItem(r, owner, flags);
-        });
-      } catch (e) {
-        if (e instanceof ApiAuthError) {
-          invalidatePipeAuth();
-          this._onDidChange.fire();
-          const it = new vscode.TreeItem('Session expired — Sign in again', vscode.TreeItemCollapsibleState.None);
-          it.id = 'cp-action-signin';
-          it.contextValue = 'cpSignIn';
-          it.iconPath = new vscode.ThemeIcon('key');
-          it.command = { command: 'cloudPipeline.signIn', title: 'Sign in' };
-          it.tooltip = `${getBrandName()}: sign in again (browser login)`;
-          return [it];
-        }
-        const msg = e instanceof Error ? e.message : String(e);
-        const errIt = new vscode.TreeItem(`Error: ${msg}`, vscode.TreeItemCollapsibleState.None);
-        errIt.id = 'cp-error';
-        errIt.iconPath = new vscode.ThemeIcon('error');
-        return [errIt];
-      }
+      const children = await this.loadRootChildren();
+      this.lastPublishedSnapshot = snapshotRootChildren(children);
+      return children;
     } finally {
       this.onAfterTreeResolved?.();
+    }
+  }
+
+  private async loadRootChildren(): Promise<CpTreeItem[]> {
+    const auth = resolveCredentials();
+    if (!auth) {
+      const it = new vscode.TreeItem('Sign in', vscode.TreeItemCollapsibleState.None);
+      it.id = 'cp-action-signin';
+      it.contextValue = 'cpSignIn';
+      it.iconPath = new vscode.ThemeIcon('account');
+      it.command = { command: 'cloudPipeline.signIn', title: 'Sign in' };
+      it.tooltip = `${getBrandName()}: SSO login via web-browser`;
+      return [it];
+    }
+
+    let owner = auth.proxyUser;
+    try {
+      const decoded = jwtDecode<{ sub?: string }>(auth.accessKey);
+      if (decoded.sub) {
+        owner = decoded.sub;
+      }
+    } catch {
+      /* use proxyUser */
+    }
+
+    try {
+      const api = new CloudPipelineApi(auth.apiUrl, auth.accessKey);
+      const filter = await api.listRunningRunsForOwner(owner, 200);
+      if (!filter.elements?.length) {
+        const emptyIt = new vscode.TreeItem(
+          'No active runs for your user (running / paused)',
+          vscode.TreeItemCollapsibleState.None
+        );
+        emptyIt.id = 'cp-empty-runs';
+        emptyIt.iconPath = new vscode.ThemeIcon('info');
+        return [emptyIt];
+      }
+      const elements = filter.elements;
+      const initTask = process.env.CP_SSH_INIT_TASK_NAME ?? 'InitializeEnvironment';
+
+      let diskPrefJson: string | undefined;
+      let diskPrefOk = false;
+      try {
+        diskPrefJson = await api.getPreference('launch.job.disk.size.thresholds');
+        diskPrefOk = true;
+      } catch {
+        diskPrefJson = undefined;
+        diskPrefOk = false;
+      }
+
+      const details = await mapWithConcurrency(elements, SSH_DETAIL_CONCURRENCY, async (r) => {
+        try {
+          return await api.getRunWithTasks(r.id);
+        } catch {
+          return null;
+        }
+      });
+
+      const fetchParamsByKey = new Map<
+        string,
+        { regionId?: number; spot: boolean; toolInstances: boolean }
+      >();
+      for (let i = 0; i < elements.length; i++) {
+        const r = elements[i];
+        const d = details[i];
+        const inst = d?.instance ?? r.instance;
+        const nodeType = inst?.nodeType?.trim() ?? r.nodeType?.trim() ?? '';
+        if (!nodeType) {
+          continue;
+        }
+        const rid = inst?.cloudRegionId;
+        const spot = inst?.spot === true;
+        const toolInstances = Boolean(r.dockerImage?.trim());
+        const key = instanceCatalogKey(
+          rid !== undefined && rid !== null ? Number(rid) : null,
+          spot,
+          toolInstances
+        );
+        if (!fetchParamsByKey.has(key)) {
+          fetchParamsByKey.set(key, {
+            regionId: rid !== undefined && rid !== null ? Number(rid) : undefined,
+            spot,
+            toolInstances,
+          });
+        }
+      }
+
+      const catalogResults: Array<[string, InstanceTypePayload[]]> = await Promise.all(
+        [...fetchParamsByKey.entries()].map(async ([key, params]) => {
+          try {
+            const list = await api.loadAllInstanceTypes(params);
+            return [key, list] as [string, InstanceTypePayload[]];
+          } catch {
+            return [key, [] as InstanceTypePayload[]];
+          }
+        })
+      );
+      const typesByKey = new Map(catalogResults);
+
+      return elements.map((r, i) => {
+        const d = details[i];
+        const displayStatus = (d?.status ?? r.status ?? '').toUpperCase() || 'RUNNING';
+        const sshReady =
+          d !== null &&
+          !isSshBlockedByPauseState(displayStatus) &&
+          isSshInitialized(d, initTask);
+        const pauseEligible = d !== null && canPauseRunDetail(d, diskPrefJson, diskPrefOk);
+        const resumeEligible = d !== null && canResumeRunDetail(d);
+
+        const inst = d?.instance ?? r.instance;
+        const nodeType = inst?.nodeType?.trim() ?? r.nodeType?.trim() ?? '';
+        const catalogKey = instanceCatalogKey(
+          inst?.cloudRegionId !== undefined && inst?.cloudRegionId !== null
+            ? Number(inst.cloudRegionId)
+            : null,
+          inst?.spot === true,
+          Boolean(r.dockerImage?.trim())
+        );
+        const catalog =
+          nodeType.length > 0
+            ? findMatchingInstanceType(typesByKey.get(catalogKey) ?? [], nodeType)
+            : undefined;
+        const instanceDetailsMarkdown = formatInstanceTooltipBlock(
+          catalog,
+          nodeType,
+          inst?.cloudProvider
+        );
+
+        const flags: RunTreeFlags = {
+          sshReady,
+          pauseEligible,
+          resumeEligible,
+          displayStatus,
+          instanceDetailsMarkdown: instanceDetailsMarkdown || undefined,
+        };
+        return new RunTreeItem(r, owner, flags);
+      });
+    } catch (e) {
+      if (e instanceof ApiAuthError) {
+        invalidatePipeAuth();
+        const it = new vscode.TreeItem('Session expired — Sign in again', vscode.TreeItemCollapsibleState.None);
+        it.id = 'cp-action-signin';
+        it.contextValue = 'cpSignIn';
+        it.iconPath = new vscode.ThemeIcon('key');
+        it.command = { command: 'cloudPipeline.signIn', title: 'Sign in' };
+        it.tooltip = `${getBrandName()}: sign in again (browser login)`;
+        return [it];
+      }
+      const msg = e instanceof Error ? e.message : String(e);
+      const errIt = new vscode.TreeItem(`Error: ${msg}`, vscode.TreeItemCollapsibleState.None);
+      errIt.id = 'cp-error';
+      errIt.iconPath = new vscode.ThemeIcon('error');
+      return [errIt];
     }
   }
 }

@@ -65,7 +65,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   const AUTO_REFRESH_MS = 5000;
   const autoRefreshTimer = setInterval(() => {
-    provider.refresh();
+    void provider.refreshIfChanged();
   }, AUTO_REFRESH_MS);
   context.subscriptions.push({
     dispose: () => clearInterval(autoRefreshTimer),
