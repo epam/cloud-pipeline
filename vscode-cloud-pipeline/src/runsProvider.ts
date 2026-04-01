@@ -1,11 +1,21 @@
 import * as vscode from 'vscode';
-import { ApiAuthError, CloudPipelineApi, RunFilterElement } from './api';
+import {
+  ApiAuthError,
+  CloudPipelineApi,
+  InstanceTypePayload,
+  RunFilterElement,
+} from './api';
 import { jwtDecode } from 'jwt-decode';
 import { resolveCredentials } from './config';
 import { invalidatePipeAuth } from './authState';
 import { getActiveTunnel } from './connectService';
 import { getBrandName } from './extensionEnv';
 import { runListDisplayName } from './runDisplayName';
+import {
+  findMatchingInstanceType,
+  formatInstanceTooltipBlock,
+  instanceCatalogKey,
+} from './instanceTypeTooltip';
 import {
   canPauseRunDetail,
   canResumeRunDetail,
@@ -21,6 +31,8 @@ export interface RunTreeFlags {
   resumeEligible: boolean;
   /** Uppercase status from API detail or list row. */
   displayStatus: string;
+  /** Rich markdown: provider SKU, CPU, memory, GPU (from `cluster/instance/loadAll`). */
+  instanceDetailsMarkdown?: string;
 }
 
 const SSH_DETAIL_CONCURRENCY = 12;
@@ -117,8 +129,11 @@ export class RunTreeItem extends vscode.TreeItem {
     }
 
     const fullTool = run.pipelineName ?? run.dockerImage ?? '—';
-    const nodeType =
+    const fallbackNodeType =
       run.nodeType?.trim() || run.instance?.nodeType?.trim() || '—';
+    const nodeBlock =
+      flags.instanceDetailsMarkdown?.trim() ||
+      `**Node type:** ${fallbackNodeType}`;
     let sshStateLabel: string;
     if (connected) {
       sshStateLabel = '';
@@ -128,7 +143,7 @@ export class RunTreeItem extends vscode.TreeItem {
       sshStateLabel = `**SSH:** ${sshReady ? 'Ready to connect' : 'Starting...'}\n\n`;
     }
     const sshLine = sshStateLabel;
-    let tipText = `**Run** ${run.id}\n\n**Tool:** ${fullTool}\n\n**Node type:** ${nodeType}\n\n${sshLine}**Owner:** ${run.owner ?? '—'}\n\n**Status:** ${displayStatus}`;
+    let tipText = `**Run** ${run.id}\n\n**Tool:** ${fullTool}\n\n${nodeBlock}\n\n${sshLine}**Owner:** ${run.owner ?? '—'}\n\n**Status:** ${displayStatus}`;
     if (connected && tunnel) {
       tipText += `\n\n**SSH tunnel:** \`127.0.0.1:${tunnel.localPort}\` → run`;
     }
@@ -212,6 +227,48 @@ export class CloudPipelineRunsProvider implements vscode.TreeDataProvider<CpTree
             return null;
           }
         });
+
+        const fetchParamsByKey = new Map<
+          string,
+          { regionId?: number; spot: boolean; toolInstances: boolean }
+        >();
+        for (let i = 0; i < elements.length; i++) {
+          const r = elements[i];
+          const d = details[i];
+          const inst = d?.instance ?? r.instance;
+          const nodeType = inst?.nodeType?.trim() ?? r.nodeType?.trim() ?? '';
+          if (!nodeType) {
+            continue;
+          }
+          const rid = inst?.cloudRegionId;
+          const spot = inst?.spot === true;
+          const toolInstances = Boolean(r.dockerImage?.trim());
+          const key = instanceCatalogKey(
+            rid !== undefined && rid !== null ? Number(rid) : null,
+            spot,
+            toolInstances
+          );
+          if (!fetchParamsByKey.has(key)) {
+            fetchParamsByKey.set(key, {
+              regionId: rid !== undefined && rid !== null ? Number(rid) : undefined,
+              spot,
+              toolInstances,
+            });
+          }
+        }
+
+        const catalogResults: Array<[string, InstanceTypePayload[]]> = await Promise.all(
+          [...fetchParamsByKey.entries()].map(async ([key, params]) => {
+            try {
+              const list = await api.loadAllInstanceTypes(params);
+              return [key, list] as [string, InstanceTypePayload[]];
+            } catch {
+              return [key, [] as InstanceTypePayload[]];
+            }
+          })
+        );
+        const typesByKey = new Map(catalogResults);
+
         return elements.map((r, i) => {
           const d = details[i];
           const displayStatus = (d?.status ?? r.status ?? '').toUpperCase() || 'RUNNING';
@@ -221,11 +278,32 @@ export class CloudPipelineRunsProvider implements vscode.TreeDataProvider<CpTree
             isSshInitialized(d, initTask);
           const pauseEligible = d !== null && canPauseRunDetail(d, diskPrefJson, diskPrefOk);
           const resumeEligible = d !== null && canResumeRunDetail(d);
+
+          const inst = d?.instance ?? r.instance;
+          const nodeType = inst?.nodeType?.trim() ?? r.nodeType?.trim() ?? '';
+          const catalogKey = instanceCatalogKey(
+            inst?.cloudRegionId !== undefined && inst?.cloudRegionId !== null
+              ? Number(inst.cloudRegionId)
+              : null,
+            inst?.spot === true,
+            Boolean(r.dockerImage?.trim())
+          );
+          const catalog =
+            nodeType.length > 0
+              ? findMatchingInstanceType(typesByKey.get(catalogKey) ?? [], nodeType)
+              : undefined;
+          const instanceDetailsMarkdown = formatInstanceTooltipBlock(
+            catalog,
+            nodeType,
+            inst?.cloudProvider
+          );
+
           const flags: RunTreeFlags = {
             sshReady,
             pauseEligible,
             resumeEligible,
             displayStatus,
+            instanceDetailsMarkdown: instanceDetailsMarkdown || undefined,
           };
           return new RunTreeItem(r, owner, flags);
         });
