@@ -263,13 +263,17 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         try {
           const api = new CloudPipelineApi(auth.apiUrl, auth.accessKey);
           const filter = await api.listRunningRunsForOwner(owner, 100);
-          const picks = (filter.elements ?? []).map((r) => ({
-            label: `${r.id} — ${runListDisplayName(r.pipelineName, r.dockerImage)}`,
-            description: r.owner,
-            id: r.id,
-          }));
+          const picks = (filter.elements ?? [])
+            .filter((r) => (r.status || '').toUpperCase() === 'RUNNING')
+            .map((r) => ({
+              label: `${r.id} — ${runListDisplayName(r.pipelineName, r.dockerImage)}`,
+              description: r.owner,
+              id: r.id,
+            }));
           if (!picks.length) {
-            vscode.window.showInformationMessage('No RUNNING runs to connect to.');
+            vscode.window.showInformationMessage(
+              'No RUNNING runs available for SSH (paused runs must be resumed first).'
+            );
             return;
           }
           const chosen = await vscode.window.showQuickPick(picks, {
@@ -321,6 +325,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   );
 
   context.subscriptions.push(
+    vscode.commands.registerCommand('cloudPipeline.terminatePausedRun', async (item?: RunTreeItem) => {
+      await vscode.commands.executeCommand('cloudPipeline.stopRun', item);
+    })
+  );
+
+  context.subscriptions.push(
     vscode.commands.registerCommand('cloudPipeline.stopRun', async (item?: RunTreeItem) => {
       if (!item?.run?.id) {
         vscode.window.showInformationMessage(
@@ -330,15 +340,18 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
       const runId = item.run.id;
       const name = runListDisplayName(item.run.pipelineName, item.run.dockerImage);
+      const isPaused = item.flags.displayStatus === 'PAUSED';
       const confirm = await vscode.window.showWarningMessage(
-        `Stop run ${runId} — ${name}?`,
+        isPaused ? `Terminate paused run ${runId} — ${name}?` : `Stop run ${runId} — ${name}?`,
         {
           modal: true,
-          detail: `This stops the run in ${brand}.`,
+          detail: isPaused
+            ? `This drops the cloud instance and ends the paused run in ${brand} (same as the web UI Terminate action).`
+            : `This stops the run in ${brand}.`,
         },
-        'Stop run'
+        isPaused ? 'Terminate' : 'Stop run'
       );
-      if (confirm !== 'Stop run') {
+      if (confirm !== (isPaused ? 'Terminate' : 'Stop run')) {
         return;
       }
 
@@ -350,11 +363,17 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
       try {
         const api = new CloudPipelineApi(auth.apiUrl, auth.accessKey);
-        await api.stopRun(runId);
+        if (isPaused) {
+          await api.terminateRun(runId);
+        } else {
+          await api.stopRun(runId);
+        }
         if (getActiveTunnel(runId)) {
           await stopTunnelForRun(runId);
         }
-        vscode.window.showInformationMessage(`${brand}: Run ${runId} stopped.`);
+        vscode.window.showInformationMessage(
+          `${brand}: Run ${runId} ${isPaused ? 'terminated' : 'stopped'}.`
+        );
         clearPipeAuthInvalidation();
         provider.refresh();
         updateSignInStatusBar();
@@ -370,6 +389,78 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         }
         const msg = e instanceof Error ? e.message : String(e);
         vscode.window.showErrorMessage(`${brand}: Failed to stop run: ${msg}`);
+      }
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('cloudPipeline.pauseRun', async (item?: RunTreeItem) => {
+      if (!item?.run?.id) {
+        vscode.window.showInformationMessage(
+          `${brand}: Right‑click a run in the tree and choose Pause run.`
+        );
+        return;
+      }
+      const auth = resolveCredentials();
+      if (!auth) {
+        vscode.window.showErrorMessage(`Not signed in. Use ${brand}: Sign in first.`);
+        return;
+      }
+      try {
+        const api = new CloudPipelineApi(auth.apiUrl, auth.accessKey);
+        await api.pauseRun(item.run.id);
+        vscode.window.showInformationMessage(`${brand}: Pause requested for run ${item.run.id}.`);
+        clearPipeAuthInvalidation();
+        provider.refresh();
+        updateSignInStatusBar();
+      } catch (e) {
+        if (e instanceof ApiAuthError) {
+          invalidatePipeAuth();
+          provider.refresh();
+          updateSignInStatusBar();
+          vscode.window.showErrorMessage(
+            `${brand} session expired or forbidden. Use Sign in or refresh after fixing ~/.pipe/config.json.`
+          );
+          return;
+        }
+        const msg = e instanceof Error ? e.message : String(e);
+        vscode.window.showErrorMessage(`${brand}: Failed to pause run: ${msg}`);
+      }
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('cloudPipeline.resumeRun', async (item?: RunTreeItem) => {
+      if (!item?.run?.id) {
+        vscode.window.showInformationMessage(
+          `${brand}: Right‑click a run in the tree and choose Resume run.`
+        );
+        return;
+      }
+      const auth = resolveCredentials();
+      if (!auth) {
+        vscode.window.showErrorMessage(`Not signed in. Use ${brand}: Sign in first.`);
+        return;
+      }
+      try {
+        const api = new CloudPipelineApi(auth.apiUrl, auth.accessKey);
+        await api.resumeRun(item.run.id);
+        vscode.window.showInformationMessage(`${brand}: Resume requested for run ${item.run.id}.`);
+        clearPipeAuthInvalidation();
+        provider.refresh();
+        updateSignInStatusBar();
+      } catch (e) {
+        if (e instanceof ApiAuthError) {
+          invalidatePipeAuth();
+          provider.refresh();
+          updateSignInStatusBar();
+          vscode.window.showErrorMessage(
+            `${brand} session expired or forbidden. Use Sign in or refresh after fixing ~/.pipe/config.json.`
+          );
+          return;
+        }
+        const msg = e instanceof Error ? e.message : String(e);
+        vscode.window.showErrorMessage(`${brand}: Failed to resume run: ${msg}`);
       }
     })
   );
