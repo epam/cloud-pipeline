@@ -25,6 +25,33 @@ export interface RunInstancePayload {
   nodeName?: string;
   nodeDisk?: number;
   spot?: boolean;
+  cloudRegionId?: number;
+  /** e.g. AWS, GCP, AZURE — serialized enum name from API. */
+  cloudProvider?: string;
+}
+
+/** Mirrors `com.epam.pipeline.entity.cluster.GpuDevice` JSON. */
+export interface GpuDevicePayload {
+  name?: string;
+  manufacturer?: string;
+  cores?: number;
+}
+
+/** Mirrors `com.epam.pipeline.entity.cluster.InstanceType` JSON (`GET cluster/instance/loadAll`). */
+export interface InstanceTypePayload {
+  sku?: string;
+  name?: string;
+  termType?: string;
+  operatingSystem?: string;
+  /** Jackson may emit `vcpu` or `vCPU` depending on version. */
+  vcpu?: number;
+  vCPU?: number;
+  memory?: number;
+  memoryUnit?: string;
+  instanceFamily?: string;
+  gpu?: number;
+  gpuDevice?: GpuDevicePayload | null;
+  regionId?: number;
 }
 
 export interface RunFilterElement {
@@ -298,6 +325,23 @@ export class CloudPipelineApi {
 
   loadCloudRegions(): Promise<CloudRegionPayload[]> {
     return this.callJson<CloudRegionPayload[]>('GET', 'cloud/region');
+  }
+
+  /**
+   * All allowed instance types for a region / price model (`GET cluster/instance/loadAll`).
+   * Pass `spot` explicitly so the list matches the run (omitting uses server default preference).
+   */
+  loadAllInstanceTypes(params: {
+    regionId?: number;
+    spot: boolean;
+    toolInstances: boolean;
+  }): Promise<InstanceTypePayload[]> {
+    const parts: string[] = [`spot=${params.spot ? 'true' : 'false'}`];
+    parts.push(`toolInstances=${params.toolInstances ? 'true' : 'false'}`);
+    if (params.regionId !== undefined) {
+      parts.push(`regionId=${params.regionId}`);
+    }
+    return this.callJson<InstanceTypePayload[]>('GET', `cluster/instance/loadAll?${parts.join('&')}`);
   }
 
   getAllowedInstanceAndPriceTypes(params: {
