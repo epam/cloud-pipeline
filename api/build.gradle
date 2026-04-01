@@ -99,8 +99,7 @@ ext["elasticsearch.version"] = project.ext.versionElasticsearch
 
 def apiDeps = [":client:buildUI", ":core:build", ":buildPipe", ":pipe-cli:build", ":pipe-cli:buildLinux",
 ":pipe-cli:buildWin", ":fs-browser:build", ":workflows:buildGpuStat",
-// ":cloud-pipeline-webdav-client:buildWin",  // commented: requires node-wine image
-":cloud-pipeline-webdav-client:buildLinux", ":cloud-pipeline-webdav-client:buildCli"]
+":cloud-pipeline-webdav-client:buildWin", ":cloud-pipeline-webdav-client:buildLinux", ":cloud-pipeline-webdav-client:buildCli"]
 
 build.mustRunAfter apiDeps
 bootJar.mustRunAfter apiDeps
