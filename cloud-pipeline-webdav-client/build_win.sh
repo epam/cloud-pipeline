@@ -20,16 +20,14 @@ if [ $? -ne 0 ]; then
     docker build docker/win -t $CP_NODE_WINE_DOCKER
 fi
 
-# Write inner script under project dir so we only mount the project (no file bind-mount).
-_INNER_SCRIPT="$CP_CLOUD_DATA_SOURCES_DIR/.build_win_inner.sh"
+_BUILD_SCRIPT_NAME=/tmp/build_cloud-data_win_$(date +%s).sh
 
-cat >"$_INNER_SCRIPT" <<'EOL'
+cat >$_BUILD_SCRIPT_NAME <<'EOL'
 
 cd /cloud-data
 
 version_file="scripts/PublishVersionPlugin.js"
 cp $version_file /tmp/version.bkp
-chmod -R a+w scripts 2>/dev/null || true
 sed -i "s/1111111111111111111111111111111111111111/$CLOUD_DATA_COMMIT_HASH/g" $version_file
 
 npm install
@@ -37,7 +35,7 @@ npm run package:win64
 
 if [ $? -ne 0 ]; then
     echo "Unable to build UI for Windows"
-    cp /tmp/version.bkp $version_file
+    cp /tmp/version.bkp \$version_file
     exit 1
 fi
 
@@ -46,7 +44,7 @@ cd out
 zip -r -q /cloud-data/out/cloud-data-win64.zip cloud-data-win32-x64/
 
 chmod -R 777 /cloud-data/out
-cp /tmp/version.bkp $version_file
+cp /tmp/version.bkp \$version_file
 
 EOL
 
@@ -55,15 +53,16 @@ CLOUD_DATA_COMMIT_HASH=$(git log --pretty=tformat:"%H" -n1 .)
 cd -
 
 docker run -i --rm \
-           -v "$CP_CLOUD_DATA_SOURCES_DIR:/cloud-data" \
+           -v $CP_CLOUD_DATA_SOURCES_DIR:/cloud-data \
+           -v $_BUILD_SCRIPT_NAME:$_BUILD_SCRIPT_NAME \
            --env CLOUD_DATA_APP_VERSION=$CLOUD_DATA_APP_VERSION \
-           --env CLOUD_DATA_COMMIT_HASH=$CLOUD_DATA_COMMIT_HASH \
            $CP_NODE_WINE_DOCKER \
-           bash /cloud-data/.build_win_inner.sh
+           bash $_BUILD_SCRIPT_NAME
 
-_ERR=$?
-rm -f "$_INNER_SCRIPT"
-if [ $_ERR -ne 0 ]; then
+if [ $? -ne 0 ]; then
     echo "An error occurred during Cloud Data windows build"
+    rm -f $_BUILD_SCRIPT_NAME
     exit 1
 fi
+
+rm -f $_BUILD_SCRIPT_NAME
