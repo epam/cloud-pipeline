@@ -90,10 +90,9 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
                         .findAll(byClassName("ant-table-row"))
                         .filter(not(cssClass("at-gateway-configuration__divider-row")))
                         .stream()
-                        .filter(element -> text(ipAddress).apply(driver(),
-                                element.findAll(".external-column").get(2))
-                                && text(port).apply(driver(),
-                                element.findAll(".external-column").get(3)))
+                        .filter(element -> element.findAll(".external-column")
+                                .get(2).has(text(ipAddress))
+                                && element.findAll(".external-column").get(3).has(text(port)))
                         .filter(el -> !el.find(By.className("ant-table-row-expand-icon")).exists() ||
                                 el.find(By.className("ant-table-row-spaced")).exists())
                         .collect(toList());
