@@ -155,6 +155,22 @@ export function getSkippedSystemParametersList (controller) {
   ];
 }
 
+export function getAllSkippedSystemParametersList (preferences) {
+  return [
+    CP_CAP_LIMIT_MOUNTS,
+    CP_CAP_SGE,
+    CP_CAP_SPARK,
+    CP_CAP_SLURM,
+    CP_CAP_KUBE,
+    CP_CAP_AUTOSCALE,
+    CP_CAP_AUTOSCALE_WORKERS,
+    CP_CAP_AUTOSCALE_HYBRID,
+    CP_CAP_AUTOSCALE_PRICE_TYPE,
+    ...getRunCapabilitiesSkippedParameters(),
+    ...getGPUScalingSkippedParameters(preferences)
+  ];
+}
+
 export function getSystemParameterDisabledState (controller, parameterName) {
   return getSkippedSystemParametersList(controller).indexOf(parameterName) >= 0;
 }
@@ -854,7 +870,7 @@ class ConfigureClusterDialog extends React.Component {
       if (hybrid) {
         const family = getInstanceFamilyByName(instanceName, cloudRegionProvider);
         if (family) {
-          return getEmptyConfigFromString(`Master's config - ${family}`)
+          return getEmptyConfigFromString(`Master's config - ${family}`);
         }
         return getEmptyConfigFromString('Master\'s config');
       }

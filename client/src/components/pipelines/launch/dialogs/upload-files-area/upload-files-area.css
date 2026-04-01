@@ -1,0 +1,72 @@
+.upload-files-area {
+  padding: 0 5px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.upload-files-area-dnd {
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 10px;
+  border-radius: 5px;
+}
+
+.upload-files-area:not(.dragging) .upload-files-area-dnd {
+  border-color: transparent;
+}
+
+.upload-files-area.dragging .upload-files-area-dnd {
+  border-style: dashed;
+}
+
+.upload-files-header {
+  flex-shrink: 0;
+  margin-bottom: 10px;
+}
+
+.upload-files-header.empty {
+  text-align: center;
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.upload-files-footer {
+  flex-shrink: 0;
+  margin-top: 10px;
+}
+
+.upload-files-list {
+  flex-shrink: 1;
+  overflow: auto;
+}
+
+.uploaded-file {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin: 2px 0;
+}
+
+.uploaded-file-action {
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-left: 5px;
+}
+
+.uploaded-file-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.uploaded-file-size {
+  white-space: nowrap;
+  margin-left: 5px;
+}

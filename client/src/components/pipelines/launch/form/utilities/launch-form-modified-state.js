@@ -15,14 +15,11 @@
  */
 import {
   ADVANCED,
-  EXEC_ENVIRONMENT,
-  PARAMETERS,
-  SYSTEM_PARAMETERS
+  EXEC_ENVIRONMENT
 } from './launch-form-sections';
 import {
   autoScaledClusterEnabled,
   hybridAutoScaledClusterEnabled,
-  getSkippedSystemParametersList,
   gridEngineEnabled,
   sparkEnabled,
   slurmEnabled,
@@ -34,10 +31,14 @@ import {
 } from './parameters';
 import {
   checkRunCapabilitiesModified,
-  getEnabledCapabilities,
-  isCustomCapability
+  getEnabledCapabilities
 } from './run-capabilities';
 import {notificationArraysAreEqual} from '../../dialogs/job-notifications/notifications-equal';
+import {parametersModified} from './parameter-utilities';
+import {
+  readReservationParameters,
+  reservationParametersDiffer
+} from '../components/reservation-parameters/utilities';
 import * as prettyUrlGenerator from './pretty-url';
 
 function formItemInitialized (form, formName) {
@@ -210,64 +211,6 @@ function cmdTemplateCheck (state, parameters, {cmdTemplateValue, toolDefaultCmd}
   return code !== parameters['cmd_template'];
 }
 
-function parametersCheck (form, parameters, state, preferences) {
-  if (!formItemInitialized(form, PARAMETERS) || !formItemInitialized(form, SYSTEM_PARAMETERS)) {
-    return false;
-  }
-  const formParams = form.getFieldValue(PARAMETERS);
-  const formSystemParams = form.getFieldValue(SYSTEM_PARAMETERS);
-  const formValue = {};
-  if (formParams && formParams.keys) {
-    for (let i = 0; i < formParams.keys.length; i++) {
-      const key = formParams.keys[i];
-      if (!formParams.params || !formParams.params.hasOwnProperty(key)) {
-        continue;
-      }
-      const parameter = formParams.params[key];
-      if (parameter && parameter.name && !isCustomCapability(parameter.name, preferences)) {
-        formValue[parameter.name] = parameter.value || '';
-      }
-    }
-  } else {
-    // 'form' value was not initialized yet -
-    // so it wasn't modified
-    return false;
-  }
-  if (formSystemParams && formSystemParams.keys) {
-    for (let i = 0; i < formSystemParams.keys.length; i++) {
-      const key = formSystemParams.keys[i];
-      if (!formSystemParams.params || !formSystemParams.params.hasOwnProperty(key)) {
-        continue;
-      }
-      const parameter = formSystemParams.params[key];
-      if (parameter && parameter.name && !isCustomCapability(parameter.name, preferences)) {
-        formValue[parameter.name] = parameter.value || '';
-      }
-    }
-  }
-  const initialValue = Object.keys(parameters.parameters || {})
-    .filter(key => [
-      CP_CAP_LIMIT_MOUNTS,
-      ...getSkippedSystemParametersList({state, props: {preferences}})
-    ].indexOf(key) === -1)
-    .filter(key => !isCustomCapability(key, preferences))
-    .map(key => ({key, value: parameters.parameters[key].value || ''}))
-    .reduce((r, c) => ({...r, [c.key]: c.value}), {});
-  const check = (source, test) => {
-    const sourceEntries = Object.entries(source);
-    for (let i = 0; i < sourceEntries.length; i++) {
-      const [name, value] = sourceEntries[i];
-      if (!test.hasOwnProperty(name) || `${test[name]}` !== `${value}`) {
-        return true;
-      }
-    }
-    return false;
-  };
-  return Object.keys(formValue).length !== Object.keys(initialValue).length ||
-    check(formValue, initialValue) ||
-    check(initialValue, formValue);
-}
-
 function runCapabilitiesCheck (state, parameters, preferences) {
   return checkRunCapabilitiesModified(
     state.runCapabilities,
@@ -305,8 +248,16 @@ function notificationsCheck (parameters, form) {
 export default function (props, state, options) {
   const {form, parameters, preferences} = props;
   const {
-    defaultCloudRegionId
+    defaultCloudRegionId,
+    formParameters = {},
+    initialParameters = {}
   } = options;
+  const {parameters: configParams = {}} = parameters || {};
+  const initialReservationRequestParameters = readReservationParameters(configParams);
+  const reservationRequestParametersModified = reservationParametersDiffer(
+    initialReservationRequestParameters,
+    state.reservationParameters
+  );
   // configuration name check
   return modified(form, props, 'configuration.name', 'currentConfigurationName') ||
     // pipeline check
@@ -351,11 +302,13 @@ export default function (props, state, options) {
     // cmd template check
     cmdTemplateCheck(state, parameters, options) ||
     // check general parameters
-    parametersCheck(form, parameters, state, preferences) ||
+    parametersModified(formParameters, initialParameters) ||
     // check additional run capabilities
     runCapabilitiesCheck(state, parameters, preferences) ||
     // check root entity id
     checkRootEntityModified(props, state) ||
     // check notifications
-    notificationsCheck(parameters, form);
+    notificationsCheck(parameters, form) ||
+    // reservation parameters
+    reservationRequestParametersModified;
 }

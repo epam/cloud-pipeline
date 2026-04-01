@@ -1,0 +1,25 @@
+.upload-files-list .upload-file {
+  margin-bottom: 5px;
+}
+
+.upload-files-list .upload-file .upload-file-status {
+  display: flex;
+  align-items: center;
+}
+
+.upload-files-list .upload-file .upload-file-error {
+  font-size: smaller;
+}
+
+.upload-file-name {
+  margin: 0 5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 1;
+}
+
+.upload-file-size {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
