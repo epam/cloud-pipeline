@@ -6,9 +6,22 @@ import { invalidatePipeAuth } from './authState';
 import { getActiveTunnel } from './connectService';
 import { getBrandName } from './extensionEnv';
 import { runListDisplayName } from './runDisplayName';
+import {
+  canPauseRunDetail,
+  canResumeRunDetail,
+  isSshBlockedByPauseState,
+} from './runPauseResume';
 import { isSshInitialized } from './sshResolve';
 
 export type CpTreeItem = RunTreeItem | vscode.TreeItem;
+
+export interface RunTreeFlags {
+  sshReady: boolean;
+  pauseEligible: boolean;
+  resumeEligible: boolean;
+  /** Uppercase status from API detail or list row. */
+  displayStatus: string;
+}
 
 const SSH_DETAIL_CONCURRENCY = 12;
 
@@ -36,7 +49,7 @@ export class RunTreeItem extends vscode.TreeItem {
   constructor(
     public readonly run: RunFilterElement,
     public readonly ownerFilter: string,
-    public readonly sshReady: boolean
+    public readonly flags: RunTreeFlags
   ) {
     const name = runListDisplayName(run.pipelineName, run.dockerImage);
     super(`${run.id} — ${name}`, vscode.TreeItemCollapsibleState.None);
@@ -44,9 +57,35 @@ export class RunTreeItem extends vscode.TreeItem {
 
     const tunnel = getActiveTunnel(run.id);
     const connected = tunnel !== undefined;
+    const { sshReady, pauseEligible, resumeEligible, displayStatus } = flags;
+
+    const ctxParts = ['cpRunItem'];
+    if (connected) {
+      ctxParts.push('tunnelActive');
+    }
+    if (sshReady) {
+      ctxParts.push('cpRunSshReady');
+    } else if (displayStatus === 'RUNNING') {
+      ctxParts.push('cpRunWarming');
+    }
+    if (displayStatus === 'PAUSED') {
+      ctxParts.push('cpRunPaused');
+    }
+    if (displayStatus === 'PAUSING' || displayStatus === 'RESUMING') {
+      ctxParts.push('cpRunPauseTransition');
+    }
+    if (pauseEligible) {
+      ctxParts.push('cpRunPauseEligible');
+    }
+    if (resumeEligible) {
+      ctxParts.push('cpRunResumeEligible');
+    }
+    if (displayStatus === 'RUNNING' || displayStatus === 'PAUSED') {
+      ctxParts.push('cpRunStoppable');
+    }
 
     if (connected) {
-      this.contextValue = 'tunnelActive';
+      this.contextValue = ctxParts.join(' ');
       this.iconPath = new vscode.ThemeIcon(
         'link',
         new vscode.ThemeColor('terminal.ansiGreen')
@@ -54,10 +93,19 @@ export class RunTreeItem extends vscode.TreeItem {
       const owner = run.owner ?? '';
       this.description = `tunnel :${tunnel.localPort}${owner ? ` · ${owner}` : ''}`;
     } else {
-      this.contextValue = sshReady ? 'cpRunSshReady' : 'cpRunWarming';
-      this.iconPath = sshReady
-        ? new vscode.ThemeIcon('vm-running')
-        : new vscode.ThemeIcon('loading~spin');
+      this.contextValue = ctxParts.join(' ');
+      if (displayStatus === 'PAUSED') {
+        this.iconPath = new vscode.ThemeIcon(
+          'debug-pause',
+          new vscode.ThemeColor('icon.foreground')
+        );
+      } else if (displayStatus === 'PAUSING' || displayStatus === 'RESUMING') {
+        this.iconPath = new vscode.ThemeIcon('loading~spin');
+      } else {
+        this.iconPath = sshReady
+          ? new vscode.ThemeIcon('vm-running')
+          : new vscode.ThemeIcon('loading~spin');
+      }
       this.description = run.owner ?? '';
       if (sshReady) {
         this.command = {
@@ -71,8 +119,16 @@ export class RunTreeItem extends vscode.TreeItem {
     const fullTool = run.pipelineName ?? run.dockerImage ?? '—';
     const nodeType =
       run.nodeType?.trim() || run.instance?.nodeType?.trim() || '—';
-    const sshLine = connected ? '' : `**SSH:** ${sshReady ? 'Ready to connect' : 'Starting...'}\n\n`;
-    let tipText = `**Run** ${run.id}\n\n**Tool:** ${fullTool}\n\n**Node type:** ${nodeType}\n\n${sshLine}**Owner:** ${run.owner ?? '—'}\n\n**Status:** ${run.status}`;
+    let sshStateLabel: string;
+    if (connected) {
+      sshStateLabel = '';
+    } else if (isSshBlockedByPauseState(displayStatus)) {
+      sshStateLabel = '**SSH:** Not available (run is paused or changing state)\n\n';
+    } else {
+      sshStateLabel = `**SSH:** ${sshReady ? 'Ready to connect' : 'Starting...'}\n\n`;
+    }
+    const sshLine = sshStateLabel;
+    let tipText = `**Run** ${run.id}\n\n**Tool:** ${fullTool}\n\n**Node type:** ${nodeType}\n\n${sshLine}**Owner:** ${run.owner ?? '—'}\n\n**Status:** ${displayStatus}`;
     if (connected && tunnel) {
       tipText += `\n\n**SSH tunnel:** \`127.0.0.1:${tunnel.localPort}\` → run`;
     }
@@ -128,13 +184,27 @@ export class CloudPipelineRunsProvider implements vscode.TreeDataProvider<CpTree
         const api = new CloudPipelineApi(auth.apiUrl, auth.accessKey);
         const filter = await api.listRunningRunsForOwner(owner, 200);
         if (!filter.elements?.length) {
-          const emptyIt = new vscode.TreeItem('No RUNNING runs for your user', vscode.TreeItemCollapsibleState.None);
+          const emptyIt = new vscode.TreeItem(
+            'No active runs for your user (running / paused)',
+            vscode.TreeItemCollapsibleState.None
+          );
           emptyIt.id = 'cp-empty-runs';
           emptyIt.iconPath = new vscode.ThemeIcon('info');
           return [emptyIt];
         }
         const elements = filter.elements;
         const initTask = process.env.CP_SSH_INIT_TASK_NAME ?? 'InitializeEnvironment';
+
+        let diskPrefJson: string | undefined;
+        let diskPrefOk = false;
+        try {
+          diskPrefJson = await api.getPreference('launch.job.disk.size.thresholds');
+          diskPrefOk = true;
+        } catch {
+          diskPrefJson = undefined;
+          diskPrefOk = false;
+        }
+
         const details = await mapWithConcurrency(elements, SSH_DETAIL_CONCURRENCY, async (r) => {
           try {
             return await api.getRunWithTasks(r.id);
@@ -144,8 +214,20 @@ export class CloudPipelineRunsProvider implements vscode.TreeDataProvider<CpTree
         });
         return elements.map((r, i) => {
           const d = details[i];
-          const ready = d !== null && isSshInitialized(d, initTask);
-          return new RunTreeItem(r, owner, ready);
+          const displayStatus = (d?.status ?? r.status ?? '').toUpperCase() || 'RUNNING';
+          const sshReady =
+            d !== null &&
+            !isSshBlockedByPauseState(displayStatus) &&
+            isSshInitialized(d, initTask);
+          const pauseEligible = d !== null && canPauseRunDetail(d, diskPrefJson, diskPrefOk);
+          const resumeEligible = d !== null && canResumeRunDetail(d);
+          const flags: RunTreeFlags = {
+            sshReady,
+            pauseEligible,
+            resumeEligible,
+            displayStatus,
+          };
+          return new RunTreeItem(r, owner, flags);
         });
       } catch (e) {
         if (e instanceof ApiAuthError) {

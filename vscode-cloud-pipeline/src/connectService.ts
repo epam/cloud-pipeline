@@ -12,6 +12,7 @@ import {
 import { getBrandName } from './extensionEnv';
 import { provisionPasswordlessKey } from './keyProvisioning';
 import { ensureRemoteSshForConnect } from './remoteSshExtension';
+import { isSshBlockedByPauseState } from './runPauseResume';
 import {
   isSshInitialized,
   resolveSshCredentialsWithParent,
@@ -93,6 +94,13 @@ export async function connectToRun(auth: ResolvedAuth, runId: number): Promise<v
 
   const api = new CloudPipelineApi(auth.apiUrl, auth.accessKey);
   const run = await api.getRunWithTasks(runId);
+
+  if (isSshBlockedByPauseState(run.status)) {
+    vscode.window.showErrorMessage(
+      `${getBrandName()}: SSH is not available while the run is ${(run.status || '').toLowerCase()}.`
+    );
+    return;
+  }
 
   if (run.sensitive) {
     vscode.window.showErrorMessage(

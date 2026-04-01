@@ -3,7 +3,7 @@
   "displayName": "Cloud Pipeline Remote",
   "description": "List running Cloud Pipeline compute instances and connect via SSH tunnel (Remote - SSH).",
   "icon": "resources/logo.png",
-  "version": "0.2.19",
+  "version": "0.2.20",
   "publisher": "cloud-pipeline",
   "engines": {
     "vscode": "^1.85.0"
@@ -20,7 +20,10 @@
     "onCommand:cloudPipeline.openSettings",
     "onCommand:cloudPipeline.signIn",
     "onCommand:cloudPipeline.startNewRun",
-    "onCommand:cloudPipeline.stopRun"
+    "onCommand:cloudPipeline.stopRun",
+    "onCommand:cloudPipeline.pauseRun",
+    "onCommand:cloudPipeline.resumeRun",
+    "onCommand:cloudPipeline.terminatePausedRun"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -59,6 +62,21 @@
       {
         "command": "cloudPipeline.stopRun",
         "title": "Stop run",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "cloudPipeline.pauseRun",
+        "title": "Pause run",
+        "icon": "$(debug-pause)"
+      },
+      {
+        "command": "cloudPipeline.resumeRun",
+        "title": "Resume run",
+        "icon": "$(play)"
+      },
+      {
+        "command": "cloudPipeline.terminatePausedRun",
+        "title": "Terminate run",
         "icon": "$(trash)"
       },
       {
@@ -106,8 +124,23 @@
         },
         {
           "command": "cloudPipeline.stopRun",
-          "when": "view == cloudPipelineRuns && viewItem =~ /cpRunSshReady|cpRunWarming|tunnelActive/",
+          "when": "view == cloudPipelineRuns && viewItem =~ /\\b(cpRunSshReady|cpRunWarming)\\b/",
           "group": "1_stop"
+        },
+        {
+          "command": "cloudPipeline.terminatePausedRun",
+          "when": "view == cloudPipelineRuns && viewItem =~ /\\bcpRunPaused\\b/",
+          "group": "1_stop"
+        },
+        {
+          "command": "cloudPipeline.pauseRun",
+          "when": "view == cloudPipelineRuns && viewItem =~ /\\bcpRunPauseEligible\\b/",
+          "group": "1_pause"
+        },
+        {
+          "command": "cloudPipeline.resumeRun",
+          "when": "view == cloudPipelineRuns && viewItem =~ /\\bcpRunResumeEligible\\b/",
+          "group": "1_pause"
         },
         {
           "command": "cloudPipeline.stopTunnel",
