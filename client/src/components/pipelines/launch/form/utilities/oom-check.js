@@ -27,7 +27,8 @@ function OOMCheck (
     limitMounts,
     dataStorages,
     preferences,
-    style
+    style,
+    platform
   }
 ) {
   if (
@@ -45,11 +46,12 @@ function OOMCheck (
     ? limitMounts.split(',')
     : [];
   const storages = (dataStorages || [])
+    .filter(storage => !storage.mountDisabled)
     .filter(storage => (allNonSensitive && !storage.sensitive && !storage.sourceStorageId) ||
       storageMatchesIdentifiers(storage, ids))
     .filter(storage => !/^nfs$/i.test(storage.type))
     .length;
-  if (preferences.storageMountsPerGBRatio * instance.memory <= storages) {
+  if (preferences.storageMountsPerGBRatio * instance.memory <= storages && platform !== 'windows') {
     return (
       <Alert
         type="warning"

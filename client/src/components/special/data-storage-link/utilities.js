@@ -39,12 +39,11 @@ export function correctNFSPath (path) {
   return correctedPath;
 }
 
-export function findStorageByPath (path, storages = []) {
+export function findStorageByPath (path, storages = [], showShared = false) {
   let lowerCasedPath = (path || '').toLowerCase();
   if (lowerCasedPath.endsWith('/')) {
     lowerCasedPath = lowerCasedPath.slice(0, -1);
   }
-  const notSharedStorages = storages.filter((storage) => !storage.shared);
   const storageMatch = (aStorage) => {
     const {
       pathMask = ''
@@ -56,6 +55,10 @@ export function findStorageByPath (path, storages = []) {
     return pathMaskCorrected === lowerCasedPath ||
       lowerCasedPath.startsWith(`${pathMaskCorrected}/`);
   };
+  if (showShared) {
+    return storages.find(storageMatch);
+  }
+  const notSharedStorages = storages.filter((storage) => !storage.shared);
   return notSharedStorages.find(storageMatch);
 }
 
@@ -74,21 +77,22 @@ export function findStorageByIdentifier (identifier, storages = []) {
 
 /**
  * @param {StorageLinkInfoOptions} options
- * @returns {{path: string, storageId: number}}
+ * @returns {{storage: object, relativePath: string, folderPath: string, storageId: number}}
  */
 export function getStorageLinkInfo (options) {
   const {
     storages = [],
     storageId,
     path,
-    isFolder
+    isFolder,
+    showShared = false
   } = options;
   let storage;
   let correctedPath = correctNFSPath(path);
   if (storageId && !Number.isNaN(Number(storageId))) {
     storage = findStorageByIdentifier(Number(storageId), storages);
   } else if (correctedPath) {
-    storage = findStorageByPath(correctedPath, storages);
+    storage = findStorageByPath(correctedPath, storages, showShared);
   }
   let relativePath = correctedPath || '';
   if (storage && relativePath.toLowerCase().startsWith((storage.pathMask || '').toLowerCase())) {
@@ -97,7 +101,7 @@ export function getStorageLinkInfo (options) {
   if (relativePath.startsWith('/')) {
     relativePath = relativePath.slice(1);
   }
-  const objectPath = guessParentFolderForLocalPath(relativePath, isFolder);
+  const folderPath = guessParentFolderForLocalPath(relativePath, isFolder);
   let objectStorageId;
   if (storage) {
     objectStorageId = storage.id;
@@ -105,7 +109,9 @@ export function getStorageLinkInfo (options) {
     objectStorageId = Number(storageId);
   }
   return {
+    storage,
     storageId: objectStorageId,
-    path: objectPath
+    folderPath,
+    relativePath
   };
 }

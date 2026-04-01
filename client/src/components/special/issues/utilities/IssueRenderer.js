@@ -340,11 +340,10 @@ export default class IssueRenderer {
     if (this._pipelinesLibrary && this._pipelinesLibrary.loaded) {
       const items = generateTreeData(
         this._pipelinesLibrary.value,
-        false,
-        null,
-        [],
-        [ItemTypes.folder, ItemTypes.pipeline, ItemTypes.configuration, ItemTypes.storage],
-        this._hiddenObjects.treeFilter()
+        {
+          types: [ItemTypes.folder, ItemTypes.pipeline, ItemTypes.configuration, ItemTypes.storage],
+          filter: this._hiddenObjects.treeFilter()
+        }
       );
       const makeFlat = (children) => {
         const result = [];
