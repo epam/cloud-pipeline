@@ -1053,8 +1053,10 @@ def mvtodir(name, directory):
                    "compact - brief summary only (default); "
                    "full - show extended details, works for the storage summary listing only")
 @click.option('-g', '--show-archive', is_flag=True, help='Show archived files.')
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help='Output format. Default is a text table.')
 @common_options
-def storage_list(path, show_details, show_versions, recursive, page, all, output, show_archive):
+def storage_list(path, show_details, show_versions, recursive, page, all, output, show_archive, output_format):
     """Lists storage contents
     """
     show_extended = False
@@ -1064,7 +1066,7 @@ def storage_list(path, show_details, show_versions, recursive, page, all, output
             sys.exit(1)
         show_extended = True
     DataStorageOperations.storage_list(path, show_details, show_versions, recursive, page, all, show_extended,
-                                       show_archive)
+                                       show_archive, output_format=output_format)
 
 
 @storage.command(name='mkdir')

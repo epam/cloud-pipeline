@@ -23,7 +23,7 @@ import dateutil.parser
 from src.config import Config
 from src.model.data_storage_item_model import DataStorageItemModel, DataStorageItemLabelModel
 from src.utilities.extension.ext_handler import ExtensionHandler, ExtensionApplicationRule
-from src.utilities.printing.storage import print_storage_items, init_items_table
+from src.utilities.printing.storage import print_storage_items, create_print_service
 
 PIPE_OMICS_JUST_PRINT_MESSAGE_ERROR_CODE = 15
 
@@ -111,18 +111,15 @@ class OmicsListFilesHandler(OmicsFileOperationHandler):
 
     def _process_output(self, process, quiet, arguments, cmd):
         show_details = arguments.get('show_details', False)
+        output_format = arguments.get('output_format', None)
 
-        if show_details:
-            fields = ["Type", "Labels", "Modified", "Size", "Name"]
-        else:
-            fields = []
+        print_service = create_print_service(output_format, show_versions=False, show_extended=False)
 
         output = "".join([o if isinstance(o, str) else o.decode("utf-8") for o in process.stdout.readlines()])
         if output:
             listing = json.loads(output)
-            items_table = init_items_table(fields)
             items = [self.__get_file_object(item) for item in listing]
-            print_storage_items(None, items, show_details, items_table, False, False)
+            print_storage_items(None, items, show_details, print_service, False, False)
 
     def __get_file_object(self, file):
         item = DataStorageItemModel()
