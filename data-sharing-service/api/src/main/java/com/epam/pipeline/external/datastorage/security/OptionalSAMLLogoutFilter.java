@@ -17,12 +17,12 @@
 package com.epam.pipeline.external.datastorage.security;
 
 import java.io.IOException;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.opensaml.common.SAMLException;
 import org.opensaml.saml2.metadata.provider.MetadataProviderException;
@@ -186,7 +186,7 @@ public class OptionalSAMLLogoutFilter extends LogoutFilter {
      */
     protected boolean isGlobalLogout(HttpServletRequest request, Authentication auth) {
         String localLogout = request.getParameter(LOGOUT_PARAMETER);
-        return (localLogout == null || !"true".equals(localLogout.toLowerCase().trim())) &&
+        return (localLogout == null || !"true".equalsIgnoreCase(localLogout.trim())) &&
                 (auth.getCredentials() instanceof SAMLCredential);
     }
 

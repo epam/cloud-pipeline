@@ -19,7 +19,8 @@ package com.epam.pipeline.external.datastorage.controller.log;
 import com.epam.pipeline.entity.log.LogEntry;
 import com.epam.pipeline.external.datastorage.manager.log.LogService;
 import com.epam.pipeline.rest.Result;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,7 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@Tag(name = "Log API")
+@Api(value = "Log API")
 @RequestMapping("/log")
 @RequiredArgsConstructor
 public class LogController {
@@ -40,9 +41,10 @@ public class LogController {
 
     @PostMapping
     @ResponseBody
-    @Operation(
-            summary = "Save logs.",
-            description = "Save logs.")
+    @ApiOperation(
+            value = "Save logs.",
+            notes = "Save logs.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
     public Result<Boolean> save(@RequestBody final List<LogEntry> entries) {
         service.save(entries);
         return Result.success();

@@ -14,83 +14,73 @@
  * limitations under the License.
  */
 
-buildscript {
-    repositories {
-        mavenCentral()
-        mavenCentral()
-    }
-}
-
 plugins {
-    id "io.spring.dependency-management" version "1.0.5.RELEASE"
-    id 'org.springframework.boot' version "1.5.2.RELEASE"
+    id 'io.spring.dependency-management' version '1.1.4'
+    id 'org.springframework.boot' version '2.7.18'
     id 'java'
-    id "checkstyle"
-    id "pmd"
+    id 'checkstyle'
+    id 'pmd'
 }
 
+ext { springBootVersion = '2.7.18' }
 
-sourceCompatibility = 1.8
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
 
 repositories {
     mavenCentral()
 }
 
-jar {
-    archiveName "data-sharing-service.jar"
+bootJar {
+    archiveFileName = "data-sharing-service.jar"
 }
 
 dependencies {
-    // Core library
-    compile project(":cloud-pipeline-common:model")
-
-    // Spring Boot
-    compile("org.springframework.boot:spring-boot-starter")
-    compile("org.springframework.boot:spring-boot-starter-web")
     configurations {
-        all*.exclude module : 'spring-boot-starter-logging'
+        all*.exclude module: 'spring-boot-starter-logging'
     }
 
-    // Spring Security
-    compile('org.springframework.boot:spring-boot-starter-security')
-    compile group: 'org.springframework.security.extensions', name: 'spring-security-saml2-core', version: '1.0.2.RELEASE'
-    compile 'com.auth0:java-jwt:3.1.0'
+    implementation project(":cloud-pipeline-common:model")
 
-    // Logging
-    compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.24'
-    compile group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: log4jVersion
-    compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: log4jVersion
-    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: log4jVersion
-    compile group: 'org.apache.logging.log4j', name: 'log4j-jcl', version: log4jVersion
+    implementation "org.springframework.boot:spring-boot-starter:$springBootVersion"
+    implementation "org.springframework.boot:spring-boot-starter-web:$springBootVersion"
 
-    // Jackson
-    compile group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.8.7'
-    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.8.7'
-    compile group: "com.fasterxml.jackson.datatype", name: "jackson-datatype-jsr310", version: "2.8.7"
+    implementation "org.springframework.boot:spring-boot-starter-security:$springBootVersion"
+    implementation group: 'org.springframework.security.extensions', name: 'spring-security-saml2-core', version: '1.0.2.RELEASE'
+    implementation 'com.auth0:java-jwt:3.1.0'
 
+    implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.36'
+    implementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    implementation "org.apache.logging.log4j:log4j-api:$log4jVersion"
+    implementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
+    implementation "org.apache.logging.log4j:log4j-jcl:$log4jVersion"
 
-    //Lombok
-    compileOnly "org.projectlombok:lombok:1.16.20"
-    testCompileOnly "org.projectlombok:lombok:1.16.20"
+    implementation 'com.fasterxml.jackson.core:jackson-annotations'
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
 
-    // Swagger
-    compile group: 'io.springfox', name: 'springfox-swagger2', version: '2.6.1'
-    compile group: 'io.springfox', name: 'springfox-swagger-ui', version: '2.6.1'
+    implementation 'org.projectlombok:lombok:1.18.34'
+    annotationProcessor 'org.projectlombok:lombok:1.18.34'
+    testImplementation 'org.projectlombok:lombok:1.18.34'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.34'
 
-    // Apache Commons
-    compile group: 'commons-io', name: "commons-io", version: "2.4"
-    compile group: 'org.apache.commons', name: "commons-lang3", version: "3.0"
+    implementation 'io.springfox:springfox-swagger2:2.9.2'
+    implementation 'io.springfox:springfox-swagger-ui:2.9.2'
 
-    // Retrofit
-    compile group: 'com.squareup.retrofit2', name: 'retrofit', version: '2.3.0'
-    compile group: 'com.squareup.retrofit2', name: 'converter-jackson', version: '2.3.0'
-    compile group: 'com.squareup.okhttp3', name: 'okhttp', version: '3.9.1'
+    implementation 'commons-io:commons-io:2.4'
+    implementation 'org.apache.commons:commons-lang3:3.0'
+    implementation 'org.apache.commons:commons-collections4:4.4'
 
-    // Testing
-    testCompile('org.springframework.boot:spring-boot-starter-test')
-    testCompile group: 'junit', name: 'junit', version: '4.12'
-    testCompile group: 'org.springframework.security', name: 'spring-security-test', version: '4.2.2.RELEASE'
+    implementation 'com.squareup.retrofit2:retrofit:2.3.0'
+    implementation 'com.squareup.retrofit2:converter-jackson:2.3.0'
+    implementation 'com.squareup.okhttp3:okhttp:3.9.1'
+
+    testImplementation "org.springframework.boot:spring-boot-starter-test:$springBootVersion"
+    testImplementation 'junit:junit:4.12'
+    testImplementation 'org.springframework.security:spring-security-test'
 }
 
 build.mustRunAfter ':data-sharing-service:client:buildUI'
-bootRepackage.mustRunAfter ':data-sharing-service:client:buildUI'
+bootJar.mustRunAfter ':data-sharing-service:client:buildUI'

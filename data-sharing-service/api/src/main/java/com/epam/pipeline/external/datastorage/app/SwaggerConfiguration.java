@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.external.datastorage.app;
 
-import jakarta.servlet.ServletContext;
+import javax.servlet.ServletContext;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -67,6 +67,7 @@ public class SwaggerConfiguration {
             "Terms of service",
             new Contact("dev", "url", "email"),
             "License of API",
-            "API license URL");
+            "API license URL",
+            java.util.Collections.emptyList());
     }
 }

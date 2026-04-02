@@ -87,7 +87,7 @@ public class PreferenceService {
         }
     }
 
-    public <T> T getValue(final String name, final TypeReference type) {
+    public <T> T getValue(final String name, final TypeReference<T> type) {
         return parseData(getValue(name), type);
     }
 
@@ -130,7 +130,7 @@ public class PreferenceService {
     }
 
     public <T> T parseData(final String data,
-                           final TypeReference type) {
+                           final TypeReference<T> type) {
         if (StringUtils.isBlank(data)) {
             return null;
         }

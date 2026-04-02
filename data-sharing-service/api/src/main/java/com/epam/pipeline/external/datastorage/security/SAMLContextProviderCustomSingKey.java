@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.external.datastorage.security;
 
-import jakarta.xml.namespace.QName;
+import javax.xml.namespace.QName;
 
 import org.opensaml.common.xml.SAMLConstants;
 import org.opensaml.saml2.metadata.EntityDescriptor;

@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 @RestController
-@Tag(name = "Preferences API")
+@Api(value = "Preferences API")
 @RequestMapping("/preferences")
 @RequiredArgsConstructor
 public class PreferencesController {
@@ -37,7 +37,10 @@ public class PreferencesController {
     private final PreferenceService preferenceService;
 
     @GetMapping
-    @Operation(summary = "Loads all preferences", description = "Loads all preferences")
+    @ApiOperation(
+            value = "Loads all preferences",
+            notes = "Loads all preferences",
+            produces = MediaType.APPLICATION_JSON_VALUE)
     public Result<Map<String, Map<String, Object>>> loadAll() {
         return Result.success(preferenceService.loadAll());
     }
