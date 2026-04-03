@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.permissions.StoragePathPermissionsService;
 import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.security.storage.StoragePermissionManager;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,10 +56,11 @@ public class TemporaryCredentialsManagerImplTest {
     private final MessageHelper messageHelper = mock(MessageHelper.class);
     private final DataStorageManager dataStorageManager = mock(DataStorageManager.class);
     private final StoragePathPermissionsService pathPermissionsService = mock(StoragePathPermissionsService.class);
+    private final StoragePermissionManager storagePermissionManager = mock(StoragePermissionManager.class);
     private final AuthManager authManager = mock(AuthManager.class);
 
     private final TemporaryCredentialsManagerImpl manager = new TemporaryCredentialsManagerImpl(credentialsGenerators,
-            messageHelper, dataStorageManager, pathPermissionsService, authManager);
+            messageHelper, dataStorageManager, pathPermissionsService, storagePermissionManager, authManager);
 
     @BeforeEach    public void setUp() {
         when(generator.generate(any(), any())).thenReturn(TemporaryCredentials.builder().build());

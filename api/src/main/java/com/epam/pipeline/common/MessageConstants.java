@@ -163,6 +163,7 @@ public final class MessageConstants {
     public static final String ERROR_DOCKER_IMAGE_NOT_FOUND = "error.docker.image.not.found";
     public static final String ERROR_PIPELINE_RUN_ID_NOT_FOUND = "error.pipeline.run.id.not.found";
     public static final String ERROR_ON_DEMAND_REQUIRED = "error.instance.on.demand.required";
+    public static final String ERROR_RUN_CANNOT_BE_PAUSED = "error.run.cannot.be.paused";
     public static final String ERROR_INSTANCE_IP_NOT_FOUND = "error.instance.ip.not.found";
     public static final String ERROR_ACTUAL_CMD_NOT_FOUND = "error.actual.cmd.not.found";
     public static final String ERROR_PIPELINE_RUN_NOT_INITIALIZED = "error.pipeline.run.not.initialized";
@@ -912,6 +913,15 @@ public final class MessageConstants {
             "error.aws.omics.store.incorrect.file.path";
     public static final String AWS_OMICS_FILE_NOT_FOUND = "error.aws.omics.file.not.found";
 
+    //Archive runs
+    public static final String DEBUG_ARCHIVE_RUN_COMPLETED = "debug.archive.run.completed";
+    public static final String DEBUG_ARCHIVE_RUN_NO_IDS = "debug.archive.run.no.ids";
+    public static final String DEBUG_ARCHIVE_RUN_LOADING_MASTER_BY_IDS = "debug.archive.run.loading.master.by.ids";
+    public static final String DEBUG_ARCHIVE_RUN_LOADED_MASTER = "debug.archive.run.loaded.master";
+    public static final String DEBUG_ARCHIVE_RUN_LOADING_CHILDREN = "debug.archive.run.loading.children";
+    public static final String DEBUG_ARCHIVE_RUN_LOADED_CHILDREN = "debug.archive.run.loaded.children";
+    public static final String DEBUG_ARCHIVE_RUN_LOADING_STATUSES = "debug.archive.run.loading.statuses";
+    public static final String DEBUG_ARCHIVE_RUN_LOADED_STATUSES = "debug.archive.run.loaded.statuses";
 
     private MessageConstants() {
         // no-op

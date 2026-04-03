@@ -469,6 +469,86 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
 
     @Test
     @Transactional
+    public void shouldArchiveRunsByIds() {
+        final PipelineRun run1 = run();
+        pipelineRunDao.createPipelineRun(run1);
+
+        final PipelineRun run2 = run();
+        pipelineRunDao.createPipelineRun(run2);
+
+        final PipelineRun otherRun = run();
+        pipelineRunDao.createPipelineRun(otherRun);
+
+        archiveRunService.archiveRuns(Arrays.asList(run1.getId(), run2.getId()));
+
+        assertThat(pipelineRunDao.loadPipelineRuns(Arrays.asList(run1.getId(), run2.getId()))).isNullOrEmpty();
+        assertThat(pipelineRunDao.loadPipelineRun(otherRun.getId())).isNotNull();
+        assertArchivedRuns(run1, run2);
+    }
+
+    @Test
+    @Transactional
+    public void shouldArchiveClusterRunByMasterIdOnly() {
+        final PipelineRun master = run();
+        pipelineRunDao.createPipelineRun(master);
+
+        final PipelineRun child1 = run();
+        child1.setParentRunId(master.getId());
+        pipelineRunDao.createPipelineRun(child1);
+
+        final PipelineRun child2 = run();
+        child2.setParentRunId(master.getId());
+        pipelineRunDao.createPipelineRun(child2);
+
+        archiveRunService.archiveRuns(Collections.singletonList(master.getId()));
+
+        assertThat(pipelineRunDao.loadPipelineRuns(
+                Arrays.asList(master.getId(), child1.getId(), child2.getId()))).isNullOrEmpty();
+        assertArchivedRuns(master, child1, child2);
+    }
+
+    @Test
+    @Transactional
+    public void shouldArchiveRunsByIdsWithLogs() {
+        final PipelineRun run = run();
+        pipelineRunDao.createPipelineRun(run);
+        runLogDao.createRunLog(runLog(run.getId()));
+
+        archiveRunService.archiveRuns(Collections.singletonList(run.getId()));
+
+        assertThat(pipelineRunDao.loadPipelineRun(run.getId())).isNull();
+        assertThat(runLogDao.loadTasksForRun(run.getId())).isNullOrEmpty();
+        assertArchivedRuns(run);
+    }
+
+    @Test
+    @Transactional
+    public void shouldArchiveRunsByIdsWithRunStatuses() {
+        final PipelineRun run = run();
+        pipelineRunDao.createPipelineRun(run);
+        runStatusDao.saveStatus(runStatus(run.getId()));
+
+        archiveRunService.archiveRuns(Collections.singletonList(run.getId()));
+
+        assertThat(pipelineRunDao.loadPipelineRun(run.getId())).isNull();
+        assertThat(runStatusDao.loadRunStatus(run.getId())).isNullOrEmpty();
+        assertArchiveRunsStatuses(Collections.singletonList(run.getId()));
+        assertArchivedRuns(run);
+    }
+
+    @Test
+    @Transactional
+    public void shouldNotArchiveRunsIfIdsListIsEmpty() {
+        final PipelineRun run = run();
+        pipelineRunDao.createPipelineRun(run);
+
+        archiveRunService.archiveRuns(Collections.emptyList());
+
+        assertThat(pipelineRunDao.loadPipelineRun(run.getId())).isNotNull();
+    }
+
+    @Test
+    @Transactional
     public void shouldNotArchiveRunsChunksIfDryRun() {
         doReturn(true).when(preferenceManager)
                 .getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_DRY_RUN_REGIME);

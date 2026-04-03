@@ -45,9 +45,11 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.run.EngineRunTask;
 import com.epam.pipeline.entity.pipeline.run.EngineRunTaskFilter;
+import com.epam.pipeline.entity.pipeline.run.EngineRunTaskKeys;
 import com.epam.pipeline.entity.pipeline.run.EngineType;
 import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineRunResult;
+import com.epam.pipeline.entity.pipeline.run.PipelineRunWithEngineTasks;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.RunChartInfo;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
@@ -590,6 +592,17 @@ public class PipelineRunController extends AbstractRestController {
         return Result.success(true);
     }
 
+    @PostMapping(value = "/runs/archive/explicit")
+    @ApiOperation(
+            value = "Archive specified runs by their IDs",
+            notes = "Migrate specified pipeline runs (by ID) to the archive table.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<Boolean> archiveRunsByIds(@RequestBody final List<Long> runIds) {
+        runApiService.archiveRuns(runIds);
+        return Result.success(true);
+    }
+
     @PostMapping("/runs/archive/owners")
     @Operation(
             summary = "Migrate runs to archive table for specified user (or group).",
@@ -669,6 +682,18 @@ public class PipelineRunController extends AbstractRestController {
             @PathVariable(value = ENGINE_TYPE) final EngineType engineType,
             @RequestBody final EngineRunTaskFilter filter) {
         return Result.success(runApiService.filterEngineRunTasks(runId, engineType, filter));
+    }
+
+    @PostMapping("run/engine/{engineType}/tasks/runInfo")
+    @ApiOperation(
+            value = "Loads pipeline runs for provided engine task keys, response is grouped by pipeline run.",
+            notes = "Loads pipeline runs for provided engine task keys, response is grouped by pipeline run.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<List<PipelineRunWithEngineTasks>> getPipelineRunInfoByEngineTask(
+            @PathVariable(value = ENGINE_TYPE) final EngineType engineType,
+            @RequestBody final EngineRunTaskKeys keys) {
+        return Result.success(runApiService.getPipelineRunInfoByEngineTask(engineType, keys));
     }
 
     @PostMapping("/run/{runId}/result")

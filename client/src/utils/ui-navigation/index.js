@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ import {action, computed, observable} from 'mobx';
 import Pages from './pages';
 import NavigationItems from './navigation-items';
 import MetadataMultiLoad from '../../models/metadata/MetadataMultiLoad';
+import {estimatedPriceVisible, showOptionalParametersFilter} from './utils';
 
 const USER_CLASS = 'PIPELINE_USER';
 const ROLE_CLASS = 'ROLE';
@@ -273,11 +274,34 @@ class UINavigation {
   }
 
   @computed
+  get aiChatBotAvailable () {
+    if (!this._loaded) {
+      return false;
+    }
+    const {
+      api
+    } = this.preferences.miscAIPreferences || {};
+    return !!api && api.length > 0;
+  }
+
+  @computed
+  get availablePages () {
+    if (!this._loaded) {
+      return [];
+    }
+    let pages = [...new Set((this.userPages || allPages).map(p => p.toLowerCase()))];
+    if (!this.aiChatBotAvailable) {
+      pages = pages.filter((page) => page !== Pages.chat);
+    }
+    return new Set(pages);
+  }
+
+  @computed
   get navigationItems () {
     if (!this._loaded) {
       return [];
     }
-    const pages = new Set((this.userPages || allPages).map(p => p.toLowerCase()));
+    const {availablePages: pages = []} = this;
     return NavigationItems
       .filter(page => page.static || pages.has(page.key));
   }
@@ -406,6 +430,14 @@ class UINavigation {
         .then(() => resolve(this.searchDocumentTypes));
     });
   };
+
+  @computed
+  get utils () {
+    return {
+      estimatedPriceVisible: () => estimatedPriceVisible(this.launchForm),
+      showOptionalParametersFilter: () => showOptionalParametersFilter(this.launchForm)
+    };
+  }
 
   pageIsUnavailable (pageKey) {
     return !this.navigationItems.find(item => item.key === pageKey);

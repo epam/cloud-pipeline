@@ -1,0 +1,163 @@
+{
+  "name": "cloud-pipeline-remote",
+  "displayName": "Cloud Pipeline Remote",
+  "description": "List running Cloud Pipeline compute instances and connect via SSH tunnel (Remote - SSH).",
+  "icon": "resources/logo.png",
+  "version": "0.2.19",
+  "publisher": "cloud-pipeline",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onView:cloudPipelineRuns",
+    "onCommand:cloudPipeline.connectRun",
+    "onCommand:cloudPipeline.connectRunFromTree",
+    "onCommand:cloudPipeline.stopTunnel",
+    "onCommand:cloudPipeline.refreshRuns",
+    "onCommand:cloudPipeline.openSettings",
+    "onCommand:cloudPipeline.signIn",
+    "onCommand:cloudPipeline.startNewRun",
+    "onCommand:cloudPipeline.stopRun"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "cloudPipeline",
+          "title": "Cloud Pipeline",
+          "icon": "resources/logo.png"
+        }
+      ]
+    },
+    "views": {
+      "cloudPipeline": [
+        {
+          "id": "cloudPipelineRuns",
+          "name": "Cloud Pipeline Runs"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "cloudPipeline.refreshRuns",
+        "title": "Refresh",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "cloudPipeline.startNewRun",
+        "title": "Start new run",
+        "icon": "$(add)"
+      },
+      {
+        "command": "cloudPipeline.connectRun",
+        "title": "Connect via SSH (Remote)"
+      },
+      {
+        "command": "cloudPipeline.stopRun",
+        "title": "Stop run",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "cloudPipeline.connectRunFromTree",
+        "title": "Cloud Pipeline: Connect run (tree activation)"
+      },
+      {
+        "command": "cloudPipeline.stopTunnel",
+        "title": "Stop SSH Tunnel",
+        "icon": "$(debug-disconnect)"
+      },
+      {
+        "command": "cloudPipeline.openSettings",
+        "title": "Cloud Pipeline: Open Settings"
+      },
+      {
+        "command": "cloudPipeline.signIn",
+        "title": "Cloud Pipeline: Sign in",
+        "icon": "$(key)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "cloudPipeline.refreshRuns",
+          "when": "view == cloudPipelineRuns",
+          "group": "navigation"
+        },
+        {
+          "command": "cloudPipeline.startNewRun",
+          "when": "view == cloudPipelineRuns",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "cloudPipeline.signIn",
+          "when": "view == cloudPipelineRuns && viewItem =~ /cpSignIn/",
+          "group": "1_signin"
+        },
+        {
+          "command": "cloudPipeline.connectRun",
+          "when": "view == cloudPipelineRuns && viewItem =~ /cpRunSshReady/",
+          "group": "1_connect"
+        },
+        {
+          "command": "cloudPipeline.stopRun",
+          "when": "view == cloudPipelineRuns && viewItem =~ /cpRunSshReady|cpRunWarming|tunnelActive/",
+          "group": "1_stop"
+        },
+        {
+          "command": "cloudPipeline.stopTunnel",
+          "when": "view == cloudPipelineRuns && viewItem =~ /tunnelActive/",
+          "group": "inline"
+        },
+        {
+          "command": "cloudPipeline.stopTunnel",
+          "when": "view == cloudPipelineRuns && viewItem =~ /tunnelActive/",
+          "group": "2_tunnel"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Cloud Pipeline",
+      "properties": {
+        "cloudPipeline.region": {
+          "type": "string",
+          "default": "",
+          "description": "Optional region query for EDGE external URL (multi-region deployments)."
+        },
+        "cloudPipeline.directTunnel": {
+          "type": "boolean",
+          "default": false,
+          "description": "Connect directly to pod IP:22. Requires network reachability."
+        },
+        "cloudPipeline.sshHostAliasPrefix": {
+          "type": "string",
+          "default": "cp-run-",
+          "description": "SSH config Host alias prefix (alias = prefix + run id)."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package --allow-missing-repository"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/ssh2": "^1.15.5",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^2.22.0",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "dotenv": "^16.6.1",
+    "jwt-decode": "^4.0.0",
+    "ssh2": "^1.15.0"
+  }
+}

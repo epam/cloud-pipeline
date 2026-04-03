@@ -83,15 +83,21 @@ task buildMacArm(type: Exec) {
     environment "PIPE_CLI_LINUX_DIST_DIR": "$project.rootDir/pipe-cli"
     environment "PIPE_MOUNT_SOURCES_DIR": "$project.rootDir/pipe-cli/mount"
     environment "PYINSTALLER_PATH": "/tmp/pyinstaller"
+    // Code signing options
+    environment "MAC_SIGN_IDENTITY": System.getenv("MAC_SIGN_IDENTITY")
+    environment "MAC_SIGN_KEYCHAIN": System.getenv("MAC_SIGN_KEYCHAIN")
+    environment "MAC_SIGN_KEYCHAIN_PASSWORD": System.getenv("MAC_SIGN_KEYCHAIN_PASSWORD")
+    environment "MAC_SIGN_P12": System.getenv("MAC_SIGN_P12")
+    environment "MAC_SIGN_P12_PASSWORD": System.getenv("MAC_SIGN_P12_PASSWORD")
+    environment "PIPE_CLI_REQUIRES_SIGNING": System.getenv("PIPE_CLI_REQUIRES_SIGNING")
+    environment "MAC_SIGN_P8": System.getenv("MAC_SIGN_P8")
+    environment "MAC_SIGN_KEY_ID": System.getenv("MAC_SIGN_KEY_ID")
+    environment "MAC_SIGN_ISSUER_ID": System.getenv("MAC_SIGN_ISSUER_ID")
+    environment "MAC_SIGN_TEAM_ID": System.getenv("MAC_SIGN_TEAM_ID")
 
     commandLine "bash", "$project.rootDir/pipe-cli/build_mac_arm.sh"
     doLast {
         cleanCLIVersion()
-        delete("$project.rootDir/api/src/main/resources/static/pipe_osx_arm")
-        copy {
-            from("$project.rootDir/pipe-cli/dist/dist-file/pipe_osx_arm")
-            into("$project.rootDir/api/src/main/resources/static/")
-        }
         copy {
             from("$project.rootDir/pipe-cli/dist/dist-folder/pipe_osx_arm.tar.gz")
             into("$project.rootDir/api/src/main/resources/static/")

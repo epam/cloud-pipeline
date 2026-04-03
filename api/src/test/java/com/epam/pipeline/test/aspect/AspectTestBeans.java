@@ -50,18 +50,7 @@ import com.epam.pipeline.dao.notification.MonitoringNotificationDao;
 import com.epam.pipeline.dao.notification.NotificationDao;
 import com.epam.pipeline.dao.notification.NotificationSettingsDao;
 import com.epam.pipeline.dao.notification.NotificationTemplateDao;
-import com.epam.pipeline.dao.pipeline.ArchiveRunDao;
-import com.epam.pipeline.dao.pipeline.DocumentGenerationPropertyDao;
-import com.epam.pipeline.dao.pipeline.EngineRunTaskDao;
-import com.epam.pipeline.dao.pipeline.FolderDao;
-import com.epam.pipeline.dao.pipeline.PipelineDao;
-import com.epam.pipeline.dao.pipeline.PipelineRunDao;
-import com.epam.pipeline.dao.pipeline.PipelineRunMetricsDao;
-import com.epam.pipeline.dao.pipeline.RestartRunDao;
-import com.epam.pipeline.dao.pipeline.RunLogDao;
-import com.epam.pipeline.dao.pipeline.RunScheduleDao;
-import com.epam.pipeline.dao.pipeline.RunStatusDao;
-import com.epam.pipeline.dao.pipeline.StopServerlessRunDao;
+import com.epam.pipeline.dao.pipeline.*;
 import com.epam.pipeline.dao.preference.PreferenceDao;
 import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.dao.run.RunServiceUrlDao;
@@ -93,6 +82,7 @@ import com.epam.pipeline.manager.notification.ContextualNotificationRegistration
 import com.epam.pipeline.manager.notification.ContextualNotificationSettingsManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunResultManager;
 import com.epam.pipeline.manager.scheduling.RunScheduler;
+import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
 import com.epam.pipeline.mapper.cluster.KubernetesMapper;
 import com.epam.pipeline.mapper.git.AzureDevOpsMapper;
 import com.epam.pipeline.mapper.git.BitbucketCloudMapper;
@@ -137,6 +127,7 @@ import com.epam.pipeline.security.jwt.JwtTokenVerifier;
 import java.util.concurrent.Executor;
 import org.flywaydb.core.Flyway;
 import org.springframework.boot.autoconfigure.flyway.FlywayMigrationInitializer;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -543,4 +534,11 @@ public class AspectTestBeans {
     public CommonAuditClient auditClient;
     @MockBean
     private PipelineRunMetricsDao runMetricsDao;
+    protected AzureDevOpsMapper azureDevOpsMapper;
+
+    @MockBean
+    protected GlobalSearchElasticHelper globalSearchElasticHelper;
+
+    @MockBean
+    protected PipelineRunMetricsDao pipelineRunMetricsDao;
 }

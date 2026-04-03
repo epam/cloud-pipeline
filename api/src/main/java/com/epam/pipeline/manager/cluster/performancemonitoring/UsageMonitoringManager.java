@@ -26,7 +26,8 @@ import com.epam.pipeline.entity.run.PipelineRunPerformanceMetric;
 import com.epam.pipeline.entity.run.PipelineRunPerformanceMetrics;
 import com.epam.pipeline.entity.run.PipelineRunPerformanceMetricsType;
 import com.epam.pipeline.manager.cluster.MonitoringReportType;
-import org.springframework.util.Assert;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import jakarta.annotation.Nullable;
 import java.io.InputStream;
@@ -39,6 +40,9 @@ import java.util.List;
  * Node usage monitoring manager.
  */
 public interface UsageMonitoringManager {
+
+    Logger LOGGER = LoggerFactory.getLogger(UsageMonitoringManager.class);
+
 
     /**
      * Retrieves monitoring stats for node.
@@ -59,10 +63,23 @@ public interface UsageMonitoringManager {
      * @param runId The run ID to filter particular pod (optional)
      * @return List of monitoring stats.
      */
-    default PipelineRunPerformanceMetrics getPerformanceMetricsForRun(final String nodeName, final LocalDateTime from,
-                                                                      final LocalDateTime to, final long runId) {
-        List<MonitoringStats> statsForNode = getStatsForNode(nodeName, from, to, Duration.between(from, to), null);
-        Assert.state(statsForNode.size() == 1, "There should be only 1 monitoring stat!");
+    default PipelineRunPerformanceMetrics getMeanPerformanceMetricsForRun(final String nodeName,
+                                                                          final long runId,
+                                                                          final LocalDateTime from,
+                                                                          final LocalDateTime to) {
+        // hack to accumulate all data in one bin of histogram,
+        // when we specify interval much bigger that period of time when we have real data,
+        // ELK will put everything into one bucket,
+        //
+        // Also, calculation results such as avg and max aggregations will be fair,
+        // because elk "count" period of time in statistics only if it has real data
+        final Duration interval = Duration.between(from, to).multipliedBy(10);
+        List<MonitoringStats> statsForNode = getStatsForNode(nodeName, from, to, interval, null);
+        if (statsForNode.size() != 1) {
+            LOGGER.warn("Expected stats for node with one element, got: {}, won't save run performance metrics!",
+                    statsForNode.size());
+            return null;
+        }
         return mapToRunPerformanceMetrics(runId, statsForNode.get(0));
     }
 

@@ -30,13 +30,17 @@ import java.util.List;
 @Builder
 @Jacksonized
 public class ToolVersion {
+
+    public static final String FALLBACK_PLATFORM = "linux";
+
     private Long id;
     private Long toolId;
     private String version;
     private String digest;
     private Long size;
     private Date modificationDate;
-    private String platform;
+    @Builder.Default
+    private String platform = FALLBACK_PLATFORM;
     private List<ConfigurationEntry> settings;
     @Builder.Default
     private boolean allowCommit = true;

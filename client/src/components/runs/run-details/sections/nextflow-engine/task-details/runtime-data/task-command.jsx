@@ -2,6 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {TaskRuntimeDataDetails} from './task-runtime-data-details';
 import CodeEditor from '../../../../../../special/CodeEditor';
+import DataStorageLink from '../../../../../../special/data-storage-link';
 import styles from './runtime-data.css';
 
 function Renderer (props) {
@@ -32,7 +33,14 @@ function Renderer (props) {
       return '-';
     };
     if (isWorkdirUrl(workdir)) {
-      return <a href={workdir} target="_blank">{workdir}</a>;
+      return (
+        <DataStorageLink
+          path={workdir}
+          isFolder
+        >
+          {workdir}
+        </DataStorageLink>
+      );
     }
     return workdir;
   };

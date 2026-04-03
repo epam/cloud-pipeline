@@ -150,7 +150,8 @@ export default class CommitRunDockerImageInput extends React.Component {
       if (tool) {
         this._tags = new LoadToolTags(tool.id);
         await this._tags.fetch();
-        const [defaultTag] = (this._tags.value || []).filter(t => t === this.state.version) || (this._tags.value || []);
+        const tags = Array.from(this._tags?.value || []);
+        const defaultTag = tags.find(t => t === this.state.version) || tags[0];
         this.setState({
           version: defaultTag
         }, this.handleOnChange);

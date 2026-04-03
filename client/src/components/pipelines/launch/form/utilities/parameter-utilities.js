@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import React from 'react';
 import {isObservableArray} from 'mobx';
 import runDefaultParameters from '../../../../../models/pipelines/PipelineRunDefaultParameters';
 import preferences from '../../../../../models/preferences/PreferencesLoad';
@@ -25,6 +26,7 @@ import {getSkippedParameters as getGPUScalingSkippedParameters} from './enable-g
 import whoAmI from '../../../../../models/user/WhoAmI';
 import {base64toString, stringToBase64} from '../../../../../utils/base64';
 import MetadataEntityFilter from '../../../../../models/folderMetadata/MetadataEntityFilter';
+import {getFolderIdFromTree} from '../../../../../utils/folder-utils';
 
 function normalizeParameters (parameters) {
   const {keys = [], params = {}} = parameters || {};
@@ -308,7 +310,9 @@ function booleanParameterIsSetToValue (parameters, parameter, value = true) {
 }
 
 function getParameterValue (parameters, parameter, defaultValue = undefined) {
-  const value = (parameters && parameters.hasOwnProperty(parameter) ? parameters[parameter].value : undefined);
+  const value = (parameters && parameters.hasOwnProperty(parameter)
+    ? parameters[parameter].value
+    : undefined);
   if (value === undefined) {
     return defaultValue;
   }
@@ -540,8 +544,9 @@ const metadataCache = {};
  * Fetch metadata for all metadata_entity type parameters.
  * @param {Parameter[]} [parameters=[]]
  * @param {Object} [pipeline]
+ * @param {Object} [pipelinesLibrary]
  **/
-async function getMetadataForParameters (parameters = [], pipeline) {
+async function getMetadataForParameters (parameters = [], pipeline, pipelinesLibrary) {
   const metadataEntityParams = parameters
     .filter(p => p.type === 'metadata_entity' &&
       p.config?.metadata_config?.metadataClass
@@ -562,8 +567,15 @@ async function getMetadataForParameters (parameters = [], pipeline) {
       continue;
     }
     if (!requestsTemp[key]) {
+      const resolvedId = getFolderIdFromTree(folderId, pipelinesLibrary);
+      if (!resolvedId) {
+        console.warn(
+          `getMetadataForParameters: folder ${folderId} can not be resolved, ` +
+          'parent folder id will be used'
+        );
+      }
       requestsTemp[key] = {
-        folderId: folderId || folderIdFallback,
+        folderId: resolvedId || folderIdFallback,
         metadataClass,
         name: param.name
       };
@@ -1441,6 +1453,131 @@ function validateParametersIteration (parameters, rawEdit = false) {
 }
 
 /**
+ * Parse validators module from string
+ * @param {string} moduleCode - The module code string
+ * @returns {Object} - Validators map: {paramName: validatorFn}
+ */
+function parseCustomValidatorsModule (moduleCode) {
+  if (!moduleCode || typeof moduleCode !== 'string') {
+    console.warn('parseCustomValidatorsModule: invalid module code provided');
+    return {};
+  }
+  try {
+    const moduleExports = {};
+    // eslint-disable-next-line no-new-func
+    const moduleFunction = new Function(
+      'module',
+      'exports',
+      'require',
+      `
+      ${moduleCode}
+      return module.exports;
+      `
+    );
+    const validators = moduleFunction(
+      {exports: moduleExports},
+      moduleExports,
+      (moduleName) => {
+        throw new Error(`require() is not allowed. Attempted to require: ${moduleName}`);
+      }
+    );
+    if (!validators || typeof validators !== 'object') {
+      console.error('Validators module must export an object, got:', typeof validators);
+      return {};
+    }
+    Object.keys(validators).forEach(key => {
+      if (typeof validators[key] !== 'function') {
+        console.error(`Invalid validator ${key}, must be function`);
+      }
+    });
+    return validators;
+  } catch (error) {
+    console.error('Failed to parse validators module:', error.message);
+    return {};
+  }
+};
+
+/**
+ * Applies custom validation functions to parameters.
+ * @param {Object.<string, function>} customValidators
+ * @param {Parameter[]} parameters
+ * @param {Object} opts
+ * @returns {Promise<{parameters: Parameter[], changed: boolean}>}
+ */
+async function customValidate (customValidators, parameters, opts) {
+  if (!customValidators || typeof customValidators !== 'object') {
+    console.warn('customValidate: invalid customValidators provided');
+    return {parameters, changed: false};
+  }
+  const result = parameters.slice();
+  let changed = false;
+  const promises = parameters
+    .filter(({value, name}) => {
+      const validator = customValidators[name];
+      return typeof validator === 'function' && !!value;
+    })
+    .map((parameter) => {
+      return new Promise(async (resolve) => {
+        try {
+          const validator = customValidators[parameter.name];
+          const validationResult = await validator(parameter, opts);
+          if (validationResult?.error) {
+            resolve({
+              ...parameter,
+              error: validationResult.error,
+              warning: undefined,
+              valid: false
+            });
+          } else if (validationResult?.warning) {
+            resolve({
+              ...parameter,
+              error: undefined,
+              warning: validationResult.warning,
+              valid: true
+            });
+          } else {
+            resolve({
+              ...parameter,
+              error: undefined,
+              warning: undefined,
+              valid: true
+            });
+          }
+        } catch (error) {
+          console.error(
+            `Custom validator for "${parameter.name}" failed:`,
+            error.message
+          );
+          console.error('Stack trace:', error.stack);
+          resolve({
+            ...parameter,
+            error: undefined,
+            warning: 'Unable to validate parameter',
+            valid: true
+          });
+        }
+      });
+    });
+  const validationResults = await Promise.all(promises);
+  validationResults.forEach(parameter => {
+    const idx = result.findIndex(r => r.name === parameter.name);
+    if (idx >= 0) {
+      const shouldUpdate = parameter.error !== result[idx].error ||
+        parameter.warning !== result[idx].warning ||
+        parameter.valid !== result[idx].valid;
+      if (shouldUpdate) {
+        changed = true;
+        result.splice(idx, 1, parameter);
+      }
+    }
+  });
+  return {
+    parameters: result,
+    changed
+  };
+}
+
+/**
  * @param {Parameter[]} parameters
  * @param {boolean} [rawEdit=false]
  * @returns {{changed: boolean, parameters: Parameter[]}}
@@ -1987,12 +2124,39 @@ export function parametersModified (parameters, initialParameters) {
 }
 
 /**
- * @param {Parameter} parameter
+ * Gets warning from parameters
+ * @param {Parameter[]} parameters
+ * @returns {Parameter[]}
  */
-function parameterIsVisible (parameter = {}) {
+function getParametersWarning (parameters = []) {
+  const withWarnings = parameters
+    .filter((parameter) => parameter.warning && parameter.warning.trim().length > 0);
+  if (withWarnings.length > 0) {
+    const s = withWarnings.length > 1 ? 's' : '';
+    return (
+      <div>
+        The following parameter{s} {s ? 'have' : 'has a'} warning{s}:
+        {withWarnings.map(p => (<div key={p.name}>
+          <b>{p.name}</b>: {p.warning}
+        </div>))}
+      </div>
+    );
+  }
+  return null;
+}
+
+/**
+ * Gets warning from parameters
+ * @param {Parameter} parameter
+ * @param {boolean} showOptional
+ */
+function parameterIsVisible (parameter = {}, showOptional = true) {
   const {config = {}} = parameter;
-  const {visible = true} = config;
-  return visible;
+  const {visible = true, required} = config;
+  if (showOptional) {
+    return visible;
+  }
+  return visible && required;
 }
 
 /**
@@ -2000,15 +2164,17 @@ function parameterIsVisible (parameter = {}) {
  * @param {boolean} isSystem
  * @param {boolean} rawEdit
  * @param {object} userInfo
+ * @param {boolean} showOptional
  */
 function getVisibleParameters (
   parameters = [],
   isSystem = false,
   rawEdit = false,
-  userInfo
+  userInfo,
+  showOptional = true
 ) {
   return parameters
-    .filter((parameter) => rawEdit || parameterIsVisible(parameter))
+    .filter((parameter) => rawEdit || parameterIsVisible(parameter, showOptional))
     .filter((parameter) => isSystem
       ? parameter.system &&
       !isReservedParameter(parameter.name) &&
@@ -2018,7 +2184,7 @@ function getVisibleParameters (
       : !parameter.system)
     .map((parameter) => isSystem ? mapSystemParameter(parameter, {
       runDefaultParameters,
-      userInfo,
+      userInfo
     }) : parameter);
 }
 
@@ -2051,6 +2217,7 @@ export {
   correctFormFieldValues,
   isVisible,
   validate,
+  customValidate,
   normalizeParameters,
   parameterIsVisible,
   parseEnumeration,
@@ -2062,6 +2229,8 @@ export {
   addSystemParameters,
   hasResolvedValues,
   toggleResolvedValues,
+  parseCustomValidatorsModule,
+  getParametersWarning,
   downloadParametersTemplate,
   getMetadataForParameters,
   resolveMetadataEntityParameters

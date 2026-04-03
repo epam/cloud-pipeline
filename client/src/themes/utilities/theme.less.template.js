@@ -684,6 +684,12 @@ export default `
 @THEME .cp-even-odd-element:nth-child(even):not(.cp-table-element-selected) {
   background-color: @even-element-background;
 }
+@THEME .table-element-selected-background-color {
+  background-color: @table-element-selected-background-color;
+}
+@THEME .table-element-selected-background-color-important {
+  background-color: @table-element-selected-background-color !important;
+}
 @THEME .ant-tree li .ant-tree-node-content-wrapper {
   color: @application-color;
 }
@@ -817,6 +823,12 @@ export default `
 }
 @THEME .cp-transparent-background {
   background-color: transparent !important;
+}
+@THEME .cp-panel-background-color {
+  background-color: @panel-background-color;
+}
+@THEME .cp-panel-color {
+  color: @panel-background-color;
 }
 @THEME .cp-split-panel-panel {
   color: @application-color;
@@ -2319,7 +2331,7 @@ export default `
   color: @application-color;
 }
 @THEME .cp-runs-autocomplete-menu.ant-menu {
-  background-color: fade(@panel-background-color, 100%);
+  background-color: fade(@panel-background-color, 100%) !important;
   border: 1px solid @panel-border-color;
 }
 @THEME .cp-runs-autocomplete-menu-item {
@@ -2331,7 +2343,7 @@ export default `
 @THEME .cp-runs-autocomplete-menu.ant-menu > .ant-menu-item-selected,
 @THEME .cp-runs-autocomplete-menu.ant-menu-item:active {
   background-color: @element-hover-background-color;
-  border: @menu-active-color;
+  border-color: @menu-active-color;
   color: @application-color;
 }
 @THEME .cp-run-name.editable {
@@ -3195,8 +3207,14 @@ export default `
 @THEME .markdown table {
   border-collapse: collapse;
   border: 1px solid @card-border-color;
-}
-@THEME .markdown table td,
+  margin-bottom: 10px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+@THEME }
+
+.markdown table td,
 @THEME .markdown table th {
   border: 1px solid @card-border-color;
   padding: 5px;

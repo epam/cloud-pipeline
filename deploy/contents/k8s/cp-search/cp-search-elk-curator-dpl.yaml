@@ -6,13 +6,13 @@ metadata:
 spec:
   selector:
     matchLabels:
-      cloud-pipeline/cp-search-elk: "true"
+      cloud-pipeline/cp-search-elk-curator: "true"
   replicas: 1
   template:
     metadata:
       namespace: default
       labels:
-        cloud-pipeline/cp-search-elk: "true"
+        cloud-pipeline/cp-search-elk-curator: "true"
         cloud-pipeline/core-component: "Deployment"
     spec:
       nodeSelector:

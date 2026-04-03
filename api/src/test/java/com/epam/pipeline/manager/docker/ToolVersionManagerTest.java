@@ -30,6 +30,7 @@ import com.epam.pipeline.util.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,6 +56,7 @@ public class ToolVersionManagerTest extends AbstractManagerTest {
     private static final Long TEST_SIZE = 123L;
     private static final Date TEST_LAST_MODIFIED_DATE = new Date();
     private static final String TEST_VERSION = "latest";
+    private static final String TEST_VERSION_2 = "latest2";
     private static final String TEST_IMAGE = "library/image";
     private static final String TEST_USER = "test";
     private static final String TEST_CPU = "500m";
@@ -81,6 +83,8 @@ public class ToolVersionManagerTest extends AbstractManagerTest {
     private DockerClientFactory dockerClientFactory;
 
     private ToolVersion toolVersion;
+    private ToolVersion anotherToolVersion;
+
     private Tool tool;
     private Tool symlink;
 
@@ -102,6 +106,28 @@ public class ToolVersionManagerTest extends AbstractManagerTest {
         secondGroup.setName(ANOTHER_TOOL_GROUP);
         secondGroup.setRegistryId(registry.getId());
         toolGroupManager.create(secondGroup);
+        when(toolVersionDao.loadToolVersion(Mockito.any(), Mockito.anyString())).thenReturn(Optional.empty());
+        toolVersion = ToolVersion
+                .builder()
+                .digest(TEST_DIGEST)
+                .size(TEST_SIZE)
+                .version(TEST_VERSION)
+                .modificationDate(TEST_LAST_MODIFIED_DATE)
+                .platform("linux")
+                .build();
+        when(dockerClient.getVersionAttributes(any(DockerRegistry.class), anyString(), Mockito.eq(TEST_VERSION)))
+                .thenReturn(this.toolVersion);
+
+        anotherToolVersion = ToolVersion
+                .builder()
+                .digest(TEST_DIGEST_2)
+                .size(TEST_SIZE)
+                .version(TEST_VERSION_2)
+                .modificationDate(TEST_LAST_MODIFIED_DATE)
+                .platform("linux")
+                .build();
+        when(dockerClient.getVersionAttributes(any(DockerRegistry.class), anyString(), Mockito.eq(TEST_VERSION_2)))
+                .thenReturn(this.anotherToolVersion);
 
         tool = new Tool();
         tool.setImage(TEST_IMAGE);
@@ -114,27 +140,16 @@ public class ToolVersionManagerTest extends AbstractManagerTest {
         toolManager.create(tool, false);
         
         symlink = toolManager.symlink(new ToolSymlinkRequest(tool.getId(), secondGroup.getId()));
-        
-        toolVersion = ToolVersion
-                .builder()
-                .digest(TEST_DIGEST)
-                .size(TEST_SIZE)
-                .version(TEST_VERSION)
-                .modificationDate(TEST_LAST_MODIFIED_DATE)
-                .toolId(tool.getId())
-                .build();
     }
 
     @Test
     public void shouldCreateToolVersion() {
         when(toolVersionDao.loadToolVersion(tool.getId(), TEST_VERSION)).thenReturn(Optional.empty());
-        when(dockerClient.getVersionAttributes(any(DockerRegistry.class), anyString(), anyString()))
-                .thenReturn(this.toolVersion);
         doNothing().when(toolVersionDao).createToolVersion(isA(ToolVersion.class));
         doThrow(getThrowable()).when(toolVersionDao).updateToolVersion(any(ToolVersion.class));
         toolVersionManager
-                .updateOrCreateToolVersion(tool.getId(), TEST_VERSION, TEST_IMAGE, dockerRegistry, dockerClient);
-        verify(toolVersionDao).createToolVersion(this.toolVersion);
+                .updateOrCreateToolVersion(tool.getId(), TEST_VERSION_2, TEST_IMAGE, dockerRegistry, dockerClient);
+        verify(toolVersionDao).createToolVersion(this.anotherToolVersion);
     }
 
     @Test

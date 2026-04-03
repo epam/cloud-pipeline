@@ -50,7 +50,6 @@ function get_pipe_binaries() {
   aws s3 cp --no-progress s3://cloud-pipeline-oss-builds/temp/${_OSX_CLI_TAR_NAME} ${_OSX_CLI_PATH}/
   tar -zxf $_OSX_CLI_PATH/$_OSX_CLI_TAR_NAME -C $_OSX_CLI_PATH
 
-  mv $_OSX_CLI_PATH/dist/dist-file/pipe-osx* ${API_STATIC_PATH}/
   mv $_OSX_CLI_PATH/dist/dist-folder/pipe-osx*.tar.gz ${API_STATIC_PATH}/
 }
 
@@ -78,7 +77,7 @@ rm -rf ${API_STATIC_PATH}/*
 rm -rf build/install/dist/*
 mkdir -p ${API_STATIC_PATH}
 
-# get_pipe_binaries "-arm"
+get_pipe_binaries "-arm"
 
 _BUILD_DOCKER_IMAGE="${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:python2.7-centos6" ./gradlew -PbuildNumber=${CLOUD_PIPELINE_BUILD_NUMBER}.${GITHUB_SHA} -Pprofile=release pipe-cli:buildLinux --no-daemon -x :pipe-cli:test
 mv pipe-cli/dist/dist-file/pipe ${API_STATIC_PATH}/pipe-el6
@@ -95,7 +94,7 @@ if [ "$GITHUB_REPOSITORY" == "epam/cloud-pipeline" ]; then
 
     # Publish repackaged distribution tgz to S3 into builds/ prefix
     # Only if it is one of the allowed branches and it is a push (not PR)
-    if [ "$GITHUB_REF_NAME" == "develop" ] || [ "$GITHUB_REF_NAME" == "master" ] || [[ "$GITHUB_REF_NAME" == "release/"* ]] || [[ "$GITHUB_REF_NAME" == "stage/"* ]] || [[ "$GITHUB_REF_NAME" == "java21_migration" ]] ; then
+    if [ "$GITHUB_REF_NAME" == "develop" ] || [ "$GITHUB_REF_NAME" == "master" ] || [[ "$GITHUB_REF_NAME" == "release/"* ]] || [[ "$GITHUB_REF_NAME" == "stage/"* ]] || [[ "$GITHUB_REF_NAME" == "vscode-ext" ]] || [[ "$GITHUB_REF_NAME" == "java21_migration" ]] ; then
             aws s3 cp --no-progress $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/builds/${GITHUB_REF_NAME}/
     fi
 fi

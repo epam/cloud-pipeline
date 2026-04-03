@@ -1,4 +1,4 @@
-# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -70,11 +70,18 @@ class User(API):
             raise RuntimeError("Failed to change owner.")
 
     @classmethod
-    def generate_user_token(cls, user_name, duration):
+    def generate_user_token(cls, user_name=None, duration=None):
         api = cls.instance()
-        query = '/user/token?name=%s' % user_name
+        base_query = '/user/token'
+        query_params = []
+        if user_name:
+            query_params.append('name={}'.format(user_name))
         if duration:
-            query = '&expiration='.join([query, str(duration)])
+            query_params.append('expiration={}'.format(str(duration)))
+        if query_params:
+            query = '{}?{}'.format(base_query, '&'.join(query_params))
+        else:
+            query = base_query
         response_data = api.call(query, None)
         if 'payload' in response_data and 'token' in response_data['payload']:
             return response_data['payload']['token']

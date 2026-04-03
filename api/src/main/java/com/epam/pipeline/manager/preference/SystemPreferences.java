@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -861,6 +861,13 @@ public class SystemPreferences {
     public static final IntPreference  LAUNCH_GID_SEED = new IntPreference("launch.gid.seed", 90000,
             LAUNCH_GROUP, pass, true);
 
+    public static final BooleanPreference LAUNCH_EXTERNAL_UID_ENABLE = new BooleanPreference(
+            "launch.external.uid.enable", false, LAUNCH_GROUP, pass, true);
+    public static final StringPreference LAUNCH_EXTERNAL_UID_FIELD_NAME = new StringPreference(
+            "launch.external.uid.field.name", null, LAUNCH_GROUP, pass, true);
+    public static final StringPreference LAUNCH_EXTERNAL_GID_FIELD_NAME = new StringPreference(
+            "launch.external.default.gid.field.name", null, LAUNCH_GROUP, pass, true);
+
     public static final ObjectPreference<Map<String, Object>> LAUNCH_PRE_COMMON_COMMANDS = new ObjectPreference<>(
             "launch.pre.common.commands", null, new TypeReference<Map<String, Object>>() {},
             LAUNCH_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
@@ -936,6 +943,9 @@ public class SystemPreferences {
     public static final ObjectPreference<Map<String, String>> UI_CLI_INSTALL_TEMPLATE = new ObjectPreference<>(
         "ui.pipe.cli.install.template", null, new TypeReference<Map<String, String>>() {}, UI_GROUP,
         isNullOrValidJson(new TypeReference<Map<String, String>>() {}));
+    public static final ObjectPreference<Map<String, String>> UI_VSCODE_EXTENSION_INSTALL_TEMPLATE = new ObjectPreference<>(
+        "ui.vscode.extension.install.template", null, new TypeReference<Map<String, String>>() {}, UI_GROUP,
+        isNullOrValidJson(new TypeReference<Map<String, String>>() {}), true);
     public static final ObjectPreference<List<ControlEntry>> UI_CONTROLS_SETTINGS = new ObjectPreference<>(
         "ui.controls.settings", null, new TypeReference<List<ControlEntry>>() {}, UI_GROUP,
         isNullOrValidJson(new TypeReference<List<ControlEntry>>() {}));
@@ -1182,6 +1192,11 @@ public class SystemPreferences {
     public static final BooleanPreference SYSTEM_SSH_DEFAULT_ROOT_USER_ENABLED = new BooleanPreference(
             "system.ssh.default.root.user.enabled", true, SYSTEM_GROUP, pass, true);
     /**
+     * Specifies paths/command list that will be available for default user under sudo.
+     */
+    public static final StringPreference SYSTEM_SSH_DEFAULT_ROOT_USER_AVAILABLE_COMMANDS = new StringPreference(
+            "system.ssh.default.root.user.available.commands", "", SYSTEM_GROUP, pass);
+    /**
      * Controls which instance types will be excluded from notification list.
      */
     public static final StringPreference SYSTEM_NOTIFICATIONS_EXCLUDE_INSTANCE_TYPES = new StringPreference(
@@ -1420,6 +1435,8 @@ public class SystemPreferences {
             new ObjectPreference<>("search.export.template.mapping", Collections.emptyMap(),
                     new TypeReference<Map<String, SearchTemplateExportConfig>>() {}, SEARCH_GROUP,
                     isValidSearchExportTemplateConfig);
+    public static final StringPreference SEARCH_PROMPT_TEMPLATE = new StringPreference(
+            "search.prompt.template", null, SEARCH_GROUP, pass);
 
     public static final ObjectPreference<List<StorageFileSearchMask>> FILE_SEARCH_MASK_RULES = new ObjectPreference<>(
         "search.storage.elements.settings",

@@ -171,7 +171,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
     return metadataEntityFieldsRequest.value;
   };
 
-  launch = async (payloads, hostedApplicationConfiguration, platform, skipCheck) => {
+  launch = async (payloads, hostedApplicationConfiguration, platform, skipCheck, warnings) => {
     this.setState({pending: true}, async () => {
       const {currentConfiguration} = this;
       const payloadsArray = Array.isArray(payloads) ? payloads : [payloads];
@@ -186,7 +186,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
           payloadsArray,
           true,
           undefined,
-          undefined,
+          warnings,
           this.allowedInstanceTypes,
           hostedApplicationConfiguration,
           platform,

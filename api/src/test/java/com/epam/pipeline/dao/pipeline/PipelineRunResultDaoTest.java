@@ -105,6 +105,33 @@ public class PipelineRunResultDaoTest extends AbstractJdbcTest {
         Assertions.assertThat(loaded).containsOnly(runResult.toArray(new PipelineRunResult[0]));
     }
 
+    @Test
+    public void shouldDeleteRunResultsByRunIds() {
+        Pipeline testPipeline = getPipeline();
+        PipelineRun run1 = createRun(testPipeline.getId(), null, TaskStatus.RUNNING, TEST_PARENT_1);
+        PipelineRun run2 = createRun(testPipeline.getId(), null, TaskStatus.RUNNING, TEST_PARENT_1);
+        PipelineRun run3 = createRun(testPipeline.getId(), null, TaskStatus.RUNNING, TEST_PARENT_1);
+
+        runResultDao.addPipelineRunResults(Collections.singletonList(
+                PipelineRunResult.builder().runId(run1.getId())
+                        .name(TEST_NAME).fileMask(TEST_STRING)
+                        .items(Collections.singletonList(TEST_STRING)).build()));
+        runResultDao.addPipelineRunResults(Collections.singletonList(
+                PipelineRunResult.builder().runId(run2.getId())
+                        .name(TEST_NAME).fileMask(TEST_STRING)
+                        .items(Collections.singletonList(TEST_STRING)).build()));
+        runResultDao.addPipelineRunResults(Collections.singletonList(
+                PipelineRunResult.builder().runId(run3.getId())
+                        .name(TEST_NAME).fileMask(TEST_STRING)
+                        .items(Collections.singletonList(TEST_STRING)).build()));
+
+        runResultDao.deletePipelineRunResultsByRunIds(Arrays.asList(run1.getId(), run2.getId()), false);
+
+        Assertions.assertThat(runResultDao.loadPipelineRunResultsForRun(run1.getId())).isEmpty();
+        Assertions.assertThat(runResultDao.loadPipelineRunResultsForRun(run2.getId())).isEmpty();
+        Assertions.assertThat(runResultDao.loadPipelineRunResultsForRun(run3.getId())).isNotEmpty();
+    }
+
 
     private PipelineRun createRun(Long pipelineId, String params, TaskStatus status, Long parentRunId) {
         return createPipelineRun(pipelineId, params, status,

@@ -79,6 +79,14 @@ class Parameters extends Component {
     return this.props.authenticatedUserInfo.value;
   }
 
+  get optionalIsVisible () {
+    const {showOptionalParameters = true, system} = this.props;
+    if (system) {
+      return true;
+    }
+    return showOptionalParameters;
+  }
+
   checkResolvedValues = () => {
     const {useResolvedValues} = this.state;
     const {parameters = []} = this.props;
@@ -154,7 +162,13 @@ class Parameters extends Component {
     if (!preferences.loaded || !runDefaultParameters.loaded) {
       return (<LoadingView />);
     }
-    const filtered = getVisibleParameters(parameters, system, rawEdit, this.userInfo);
+    const filtered = getVisibleParameters(
+      parameters,
+      system,
+      rawEdit,
+      this.userInfo,
+      this.optionalIsVisible
+    );
     const sections = getSections(filtered);
     const grouped = sections.map((section) => ({
       section,
@@ -326,6 +340,7 @@ Parameters.propTypes = {
   rootEntityId: PropTypes.string,
   onChangeRootEntityId: PropTypes.func,
   showRootEntityId: PropTypes.bool,
+  showOptionalParameters: PropTypes.bool,
   metadataAutoComplete: PropTypes.bool,
   navigationClassName: PropTypes.string,
   navigationStyle: PropTypes.object,

@@ -88,6 +88,7 @@ import {
 } from './utilities/launch-form-sections';
 import * as prettyUrlGenerator from './utilities/pretty-url';
 import * as parameterUtilities from './utilities/parameter-utilities';
+import * as validatorUtilities from './utilities/validator-utilities';
 import RunSchedulingList from '../../../runs/run-scheduling/run-sheduling-list';
 import pipelinesEquals from './utilities/pipelines-equals';
 import LaunchCommand from './utilities/launch-command';
@@ -106,7 +107,6 @@ import RunCapabilities, {
   getEnabledCapabilities,
   getUserCapabilities,
   hasPlatformSpecificCapabilities,
-  RUN_CAPABILITIES,
   RUN_CAPABILITIES_MODE
 } from './utilities/run-capabilities';
 import {
@@ -121,7 +121,8 @@ import {
   CP_CAP_AUTOSCALE_WORKERS,
   CP_CAP_AUTOSCALE_HYBRID,
   CP_CAP_AUTOSCALE_PRICE_TYPE,
-  CP_CAP_RESCHEDULE_RUN
+  CP_CAP_RESCHEDULE_RUN,
+  RUN_CAPABILITIES,
 } from './utilities/parameters';
 import OOMCheck from './utilities/oom-check';
 import AllowedInstancesCountWarning from
@@ -167,6 +168,10 @@ import {
   readReservationParameters
 } from './components/reservation-parameters/utilities';
 import Markdown from '../../../special/markdown';
+import DataStorageItemSize from '../../../../models/dataStorage/DataStorageItemSize';
+import VersionFile from '../../../../models/pipelines/VersionFile';
+import {base64toString} from '../../../../utils/base64';
+import {getStorageFileAccessInfo} from '../../../../utils/object-storage';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -191,7 +196,8 @@ function getFormItemClassName (rootClass, key) {
   'preferences',
   'dockerRegistries',
   'dataStorageAvailable',
-  'uiNavigation'
+  'uiNavigation',
+  'pipelinesLibrary'
 )
 @localization.localizedComponent
 @roleModel.authenticationInfo
@@ -285,6 +291,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   state = {
+    pending: false,
     userTags: {},
     userTagsTouched: [],
     userTagsValidation: [],
@@ -384,7 +391,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     parameterType: undefined,
     selectedParameter: undefined,
     highlightedParameterSection: undefined,
-    reservationParameters: undefined
+    reservationParameters: undefined,
+    showOptionalParameters: false
   };
 
   formItemLayout = {
@@ -459,6 +467,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   @observable rescheduleRun = undefined;
   @observable rescheduleRunInitialValue = undefined;
+
+  _customValidators = {}
+
+  get customValidators () {
+    return this._customValidators || {};
+  }
 
   @action
   formFieldsChanged = () => {
@@ -585,6 +599,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   renderAdditionalRunCapabilities = () => {
     if (hasPlatformSpecificCapabilities(this.toolPlatform, this.props.preferences)) {
+      const instanceTypeValue = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
       return (
         <FormItem
           className={getFormItemClassName(styles.formItem, 'runCapabilities')}
@@ -601,6 +616,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             provider={this.currentCloudRegionProvider}
             region={this.currentCloudRegion}
             mode={RUN_CAPABILITIES_MODE.launch}
+            instanceType={instanceTypeValue}
           />
         </FormItem>
       );
@@ -826,6 +842,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return null;
   }
 
+  @computed
+  get pipelinesLibrary () {
+    if (this.props.pipelinesLibrary.loaded) {
+      return this.props.pipelinesLibrary.value || {};
+    }
+    return {};
+  }
+
   get launchFormUserPreferences () {
     const {uiNavigation, editConfigurationMode, isDetachedConfiguration} = this.props;
     if (editConfigurationMode || isDetachedConfiguration) {
@@ -863,11 +887,40 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   }
 
   get estimatedPriceSectionVisible () {
-    const {
-      'estimates-visible': estimatesVisible = true,
-      'estimated-price-visible': estimatedPriceSectionVisible = estimatesVisible
-    } = this.launchFormUserPreferences || {};
-    return `${estimatedPriceSectionVisible}`.toLowerCase() === 'true';
+    const {uiNavigation, editConfigurationMode, isDetachedConfiguration} = this.props;
+    if (editConfigurationMode || isDetachedConfiguration) {
+      return true;
+    }
+    const {pipeline} = this.state;
+    const {tools, pipelines} = uiNavigation.utils.estimatedPriceVisible();
+    if (pipeline) {
+      return pipelines;
+    }
+    return tools;
+  }
+
+  get showOptionalParametersFilter () {
+    const {uiNavigation} = this.props;
+    const parameters = this.getParameters();
+    const hasOptional = parameters
+      .some(({config}) => config.visible && !config.system && !config.required);
+    if (!hasOptional || this.props.editConfigurationMode) {
+      return false;
+    }
+    const {pipeline} = this.state;
+    const {tools, pipelines} = uiNavigation.utils.showOptionalParametersFilter();
+    if (pipeline) {
+      return pipelines;
+    }
+    return tools;
+  }
+
+  get showOptionalParameters () {
+    const {showOptionalParameters} = this.state;
+    if (this.showOptionalParametersFilter) {
+      return showOptionalParameters;
+    }
+    return true;
   }
 
   get currentDetachedConfiguration () {
@@ -970,6 +1023,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     };
 
     this.props.form.validateFields(async (errors, values) => {
+      this.setState({pending: true});
+      const hide = message.loading('Validating parameters...', 0);
+      validatorUtilities.invalidateFileContentCache();
+      await this.onCustomValidateParameters();
+      hide();
+      this.setState({pending: false});
       const userTagsValid = await this.validateUserTags(await this.generateLaunchPayload(values));
       const parametersValidationResult = await this.getParametersValidationResult(true);
       const {
@@ -981,6 +1040,18 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         nonValidParameter ? {[nonValidParameter.system ? SYSTEM_PARAMETERS : PARAMETERS]: {
           [getParameterKeyClassName(nonValidParameter)]: false
         }} : undefined);
+      const parameters = this.getParameters();
+      const optionalParamsHasErrors = parameters.some(p => {
+        const isOptional = p.config.visible && !p.config.system && !p.config.required;
+        return isOptional && !!p.error;
+      });
+      if (
+        this.showOptionalParametersFilter &&
+        optionalParamsHasErrors &&
+        !this.showOptionalParameters
+      ) {
+        this.setState({showOptionalParameters: true});
+      }
       if (err) {
         console.warn('Validation error');
         console.log(err);
@@ -1014,7 +1085,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             values[ADVANCED].hostedApplication,
             this.toolPlatform,
             this.props.parameters.run_as &&
-            this.currentUserName() !== this.props.parameters.run_as
+            this.currentUserName() !== this.props.parameters.run_as,
+            parameterUtilities.getParametersWarning(this.getParameters())
           );
           if (result) {
             this.reset();
@@ -2705,6 +2777,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         pipeline={pipelineSelected}
         description={description ? (<Markdown md={description} />) : undefined}
         parametersMetadata={this.state.parametersMetadata}
+        showOptionalParameters={this.showOptionalParameters}
       />,
       <div
         key={`add-${system ? 'system' : 'default'}-parameter`}
@@ -4202,12 +4275,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       case ADVANCED: title = 'Advanced'; icon = 'setting'; break;
       case PARAMETERS: title = 'Parameters'; icon = 'bars'; break;
     }
+    const onChangeShowOptionalParameters = (e) => {
+      this.setState({showOptionalParameters: e.target.checked});
+    };
     return (
       <Row
         className={styles.panelHeader}
         type="flex"
         justify={key === PARAMETERS ? 'flex-start' : 'space-between'}
-        align="middle"
       >
         <span className={styles.itemHeader}>
           <Icon type={icon} /> {title}
@@ -4215,15 +4290,35 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         {
           this.getPanelShortDescription(key)
         }
-        {
-          key === PARAMETERS && this.renderUploadParametersControls({marginLeft: 10})
-        }
-        {
-          key === PARAMETERS && this.renderParametersPayloadSelector({marginLeft: 10})
-        }
-        {
-          key === PARAMETERS && this.renderRawEditCheckbox()
-        }
+        {key === PARAMETERS ? (
+          <div style={{
+            display: 'flex',
+            flex: 1,
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            marginLeft: 10
+          }}>
+            <div style={{display: 'flex', gap: 10}}>
+              {this.renderUploadParametersControls()}
+              {this.renderParametersPayloadSelector()}
+            </div>
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{display: 'flex', flexWrap: 'wrap', gap: 5, paddingLeft: 10}}
+            >
+              {this.showOptionalParametersFilter ? (
+                <Checkbox
+                  checked={this.state.showOptionalParameters}
+                  onChange={onChangeShowOptionalParameters}
+                  disabled={this.state.isRawEditEnabled}
+                >
+                  Show optional parameters
+                </Checkbox>
+              ) : null}
+              {this.renderRawEditCheckbox()}
+            </div>
+          </div>
+        ) : null}
       </Row>
     );
   };
@@ -4605,6 +4700,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               };
             }));
           await this.registerParametersPayloads(paramsPayloads);
+          if (
+            this.showOptionalParametersFilter &&
+            !this.state.showOptionalParameters
+          ) {
+            this.setState({showOptionalParameters: true});
+          }
         } catch (error) {
           message.error(
             <div>Error applying parameters: {error.message}</div>,
@@ -4703,8 +4804,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return (
       <div
         style={{
-          display: 'inline',
-          marginLeft: 'auto'
+          display: 'inline'
         }}
         onClick={handleChangeRawEdit}
       >
@@ -4860,7 +4960,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 dropdownRenderer={dropdownRenderer}
                 dropdownId="launch-metadata"
                 loading={this.props.pending}
-                disabled={this.props.pending}
+                disabled={this.props.pending || this.state.pending}
               >
                 Launch
               </SubmitButton>
@@ -5411,6 +5511,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       prevPipeline !== pipeline
     ) {
       this.updateFromProps();
+      this.updateCustomValidators();
     }
     if (configurationId !== prevConfigurationId) {
       this.updateConfigurationsFromProps();
@@ -5482,7 +5583,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   updateFromProps = () => {
     const {
       parameters: payload,
-      detached = false
+      detached = false,
+      pipelinesLibrary
     } = this.props;
     const {
       pipeline
@@ -5499,8 +5601,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             pipelineObject: pipeline
           }
         );
+        await pipelinesLibrary.fetchIfNeededOrWait();
         parametersMetadata = await parameterUtilities
-          .getMetadataForParameters(params, this.state.pipeline);
+          .getMetadataForParameters(params, pipeline, this.pipelinesLibrary);
       } catch (error) {
         console.log(`error initializing parameters: ${error.message}`);
       }
@@ -5597,6 +5700,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   onParametersChange = (newParameters) => {
     const current = this.getCurrentParametersPayload();
+    const prevCount = (current.parameters || []).length;
+    const parameterAdded = newParameters.length > prevCount;
+    const shouldShowOptional = parameterAdded &&
+      this.showOptionalParametersFilter &&
+      !this.state.showOptionalParameters;
     const payload = {
       ...current,
       parameters: newParameters
@@ -5610,7 +5718,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       updated.push(payload);
     }
     this.setState({
-      parametersPayloads: updated
+      parametersPayloads: updated,
+      ...(shouldShowOptional ? {showOptionalParameters: true} : {})
     }, () => {
       this.onValidateParameters();
       this.formFieldsChanged();
@@ -5748,6 +5857,47 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     });
   };
 
+  updateCustomValidators = async () => {
+    try {
+      const [currentConfiguration = {}] = this.props.configurations
+        .filter(config => config.name === this.props.currentConfigurationName);
+      const path = currentConfiguration?.configuration?.config_validation;
+      if (!path) {
+        return;
+      }
+      const request = new VersionFile(
+        this.props.pipeline.id,
+        path,
+        this.state.version
+      );
+      await request.fetch();
+      if (request.error) {
+        console.warn('Failed to load validators file:', request.error);
+        this._customValidators = {};
+        return;
+      }
+      if (!request.response) {
+        console.warn('Validators file is empty or not found');
+        this._customValidators = {};
+        return;
+      }
+      const string = base64toString(request.response);
+      if (!string || string.trim() === '') {
+        console.warn('Validators file content is empty');
+        this._customValidators = {};
+        return;
+      }
+      const validators = parameterUtilities.parseCustomValidatorsModule(string);
+      console.log('LaunchForm custom validators loaded: ', validators);
+      this._customValidators = validators;
+    } catch (e) {
+      console.error('Error updating custom validators:', e.message);
+      this._customValidators = {};
+    }
+  };
+
+  _validateParametersTimeout;
+
   onValidateParameters = (commitState = undefined) => {
     commitState = commitState || ((st) => {
       if (typeof st === 'function') {
@@ -5763,12 +5913,15 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
      */
     const validationFn = (payload) => {
       const {parameters} = payload;
-      const {changed, parameters: result} = parameterUtilities.validateParameters(
+      let {
+        changed,
+        parameters: result
+      } = parameterUtilities.validateParameters(
         parameters,
         isRawEditEnabled
       );
       return {
-        changed,
+        changed: changed,
         payload: {
           ...payload,
           parameters: result
@@ -5791,6 +5944,54 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         ...cur,
         parametersPayloads: updated
       }));
+    }
+  };
+
+  onCustomValidateParameters = async () => {
+    const payloads = this.getParametersPayloads();
+    const validationFn = async (payload) => {
+      const {parameters} = payload;
+      const instanceTypeValue = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
+      const instanceType = this.instanceTypes.find(t => t.name === instanceTypeValue);
+      const opts = {
+        form: this.props.form,
+        payload,
+        instanceType,
+        parameters,
+        api: {
+          DataStorageItemSize,
+          getStorageFileAccessInfo
+        },
+        utils: validatorUtilities
+      };
+      console.log('LaunchForm custom validators opts: ', opts);
+      const {
+        parameters: result,
+        changed: customChanged
+      } = await parameterUtilities.customValidate(this.customValidators, parameters, opts);
+      return {
+        changed: customChanged,
+        payload: {
+          ...payload,
+          parameters: result
+        }
+      };
+    };
+    const payloadsValidation = await Promise.all(payloads.map(validationFn));
+    const changed = payloadsValidation
+      .filter((pv) => pv.changed)
+      .map((pv) => pv.payload);
+    if (changed.length > 0) {
+      const updated = payloads.slice();
+      for (const p of changed) {
+        const idx = updated.findIndex(c => c.id === p.id);
+        if (idx >= 0) {
+          updated.splice(idx, 1, p);
+        }
+      }
+      this.setState({
+        parametersPayloads: updated
+      });
     }
   };
 

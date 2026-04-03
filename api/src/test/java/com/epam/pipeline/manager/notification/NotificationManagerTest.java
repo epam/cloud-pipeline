@@ -16,40 +16,27 @@
 
 package com.epam.pipeline.manager.notification;
 
-import static com.epam.pipeline.entity.notification.NotificationType.HIGH_CONSUMED_RESOURCES;
-import static com.epam.pipeline.entity.notification.NotificationType.IDLE_RUN;
-import static com.epam.pipeline.entity.notification.NotificationType.LONG_PAUSED;
-import static com.epam.pipeline.entity.notification.NotificationType.LONG_PAUSED_STOPPED;
-import static com.epam.pipeline.entity.notification.NotificationType.LONG_RUNNING;
-import static com.epam.pipeline.entity.notification.NotificationType.LONG_STATUS;
-import static com.epam.pipeline.entity.notification.NotificationType.NEW_ISSUE;
-import static com.epam.pipeline.entity.notification.NotificationType.NEW_ISSUE_COMMENT;
-import static com.epam.pipeline.util.CustomAssertions.assertThrows;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
+import com.epam.pipeline.app.TestApplication;
+import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.notification.NotificationMessageVO;
+import com.epam.pipeline.dao.issue.IssueDao;
+import com.epam.pipeline.dao.notification.MonitoringNotificationDao;
+import com.epam.pipeline.dao.notification.NotificationSettingsDao;
+import com.epam.pipeline.dao.notification.NotificationTemplateDao;
+import com.epam.pipeline.dao.pipeline.PipelineDao;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
+import com.epam.pipeline.dao.user.UserDao;
+import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
+import com.epam.pipeline.entity.issue.Issue;
+import com.epam.pipeline.entity.issue.IssueComment;
 import com.epam.pipeline.entity.notification.NotificationMessage;
-import com.epam.pipeline.entity.notification.filter.NotificationFilter;
-import com.epam.pipeline.entity.notification.filter.NotificationFilterOperator;
 import com.epam.pipeline.entity.notification.NotificationSettings;
 import com.epam.pipeline.entity.notification.NotificationTemplate;
 import com.epam.pipeline.entity.notification.NotificationType;
+import com.epam.pipeline.entity.notification.filter.NotificationFilter;
+import com.epam.pipeline.entity.notification.filter.NotificationFilterOperator;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -58,12 +45,32 @@ import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.entity.run.PipelineRunPerformanceMetric;
+import com.epam.pipeline.entity.run.PipelineRunPerformanceMetrics;
+import com.epam.pipeline.entity.user.DefaultRoles;
+import com.epam.pipeline.entity.user.ExtendedRole;
+import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.manager.AbstractManagerTest;
+import com.epam.pipeline.manager.cluster.KubernetesManager;
+import com.epam.pipeline.manager.cluster.PodMonitor;
 import com.epam.pipeline.manager.execution.EnvVarsBuilder;
 import com.epam.pipeline.manager.execution.EnvVarsBuilderTest;
 import com.epam.pipeline.manager.execution.SystemParams;
+import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.RunStatusManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.test.creator.user.UserCreatorUtils;
+import com.epam.pipeline.util.KubernetesTestUtils;
+import io.fabric8.kubernetes.api.model.DoneablePod;
+import io.fabric8.kubernetes.api.model.ObjectMeta;
+import io.fabric8.kubernetes.api.model.Pod;
+import io.fabric8.kubernetes.api.model.PodList;
+import io.fabric8.kubernetes.api.model.PodStatus;
+import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.dsl.MixedOperation;
+import io.fabric8.kubernetes.client.dsl.PodResource;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.hamcrest.Matchers;
@@ -84,35 +91,36 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.epam.pipeline.app.TestApplication;
-import com.epam.pipeline.controller.vo.EntityVO;
-import com.epam.pipeline.dao.issue.IssueDao;
-import com.epam.pipeline.dao.notification.MonitoringNotificationDao;
-import com.epam.pipeline.dao.notification.NotificationSettingsDao;
-import com.epam.pipeline.dao.notification.NotificationTemplateDao;
-import com.epam.pipeline.dao.pipeline.PipelineDao;
-import com.epam.pipeline.dao.user.UserDao;
-import com.epam.pipeline.entity.AbstractSecuredEntity;
-import com.epam.pipeline.entity.issue.Issue;
-import com.epam.pipeline.entity.issue.IssueComment;
-import com.epam.pipeline.entity.user.DefaultRoles;
-import com.epam.pipeline.entity.user.ExtendedRole;
-import com.epam.pipeline.entity.user.PipelineUser;
-import com.epam.pipeline.entity.utils.DateUtils;
-import com.epam.pipeline.manager.AbstractManagerTest;
-import com.epam.pipeline.manager.cluster.KubernetesManager;
-import com.epam.pipeline.manager.cluster.PodMonitor;
-import com.epam.pipeline.manager.pipeline.PipelineRunManager;
-import com.epam.pipeline.manager.preference.SystemPreferences;
-import com.epam.pipeline.util.KubernetesTestUtils;
-import io.fabric8.kubernetes.api.model.DoneablePod;
-import io.fabric8.kubernetes.api.model.ObjectMeta;
-import io.fabric8.kubernetes.api.model.Pod;
-import io.fabric8.kubernetes.api.model.PodList;
-import io.fabric8.kubernetes.api.model.PodStatus;
-import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.dsl.MixedOperation;
-import io.fabric8.kubernetes.client.dsl.PodResource;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import static com.epam.pipeline.entity.notification.NotificationType.HIGH_CONSUMED_RESOURCES;
+import static com.epam.pipeline.entity.notification.NotificationType.IDLE_RUN;
+import static com.epam.pipeline.entity.notification.NotificationType.LONG_PAUSED;
+import static com.epam.pipeline.entity.notification.NotificationType.LONG_PAUSED_STOPPED;
+import static com.epam.pipeline.entity.notification.NotificationType.LONG_RUNNING;
+import static com.epam.pipeline.entity.notification.NotificationType.LONG_STATUS;
+import static com.epam.pipeline.entity.notification.NotificationType.NEW_ISSUE;
+import static com.epam.pipeline.entity.notification.NotificationType.NEW_ISSUE_COMMENT;
+import static com.epam.pipeline.entity.notification.NotificationType.PIPELINE_RUN_STATUS;
+import static com.epam.pipeline.entity.run.PipelineRunPerformanceMetricsType.CPU;
+import static com.epam.pipeline.entity.run.PipelineRunPerformanceMetricsType.MEMORY;
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.quality.Strictness.LENIENT;
@@ -133,7 +141,8 @@ public class NotificationManagerTest extends AbstractManagerTest {
     private static final Map<String, Object> PARAMETERS = Collections.singletonMap("key", "value");
     private static final int LONG_STATUS_THRESHOLD = 100;
     private static final Duration LONG_RUNNING_DURATION = Duration.standardMinutes(6);
-    private static final Long LONG_PAUSED_SECONDS = 10L;
+    private static final Long LONG_PAUSED_SECONDS = 60L;
+    private static final Integer LONG_PAUSED_MINUTES = 1;
     private static final String TEST_PLATFORM = "linux";
     private static final String EXCLUDE_PARAM_VALUE = "equalPramValue";
     private static final String EQUAL_PARAM_NAME = "equalParamName";
@@ -141,6 +150,13 @@ public class NotificationManagerTest extends AbstractManagerTest {
     private static final String INCLUDE_PARAM_VALUE = "includeParamValue";
     private static final String INCLUDE_PARAM_NAME = "includeParamName";
     private static final long LONG_THRESHOLD = 2000L;
+    public static final String LONG_RUNNING_TAG = "LONG_RUNNING";
+    public static final double CPU_AVG = 0.5d;
+    public static final double CPU_MAX = 1d;
+    public static final double CPU_CAP = 2d;
+    public static final double MEM_AVG = 50d;
+    public static final double MEM_MAX = 100d;
+    public static final double MEM_CAP = 1024d;
 
     @Autowired
     private NotificationManager notificationManager;
@@ -227,10 +243,16 @@ public class NotificationManagerTest extends AbstractManagerTest {
         stopLongPausedTemplate = createTemplate(LONG_PAUSED_STOPPED.getId(), "stopLongPausedTemplate");
         createSettings(LONG_PAUSED_STOPPED, stopLongPausedTemplate.getId(), LONG_PAUSED_SECONDS,
                 LONG_PAUSED_SECONDS);
+        doReturn(LONG_PAUSED_MINUTES).when(preferenceManager)
+                .getPreference(SystemPreferences.SYSTEM_LONG_PAUSED_ACTION_TIMEOUT_MINUTES);
 
         createTemplate(HIGH_CONSUMED_RESOURCES.getId(), "idle-run-template");
         highConsuming = createSettings(HIGH_CONSUMED_RESOURCES, HIGH_CONSUMED_RESOURCES.getId(),
                 HIGH_CONSUMED_RESOURCES.getDefaultThreshold(), HIGH_CONSUMED_RESOURCES.getDefaultResendDelay());
+
+        createTemplate(PIPELINE_RUN_STATUS.getId(), "runStatusChangedTemplate");
+        createSettings(PIPELINE_RUN_STATUS, PIPELINE_RUN_STATUS.getId(),
+                PIPELINE_RUN_STATUS.getDefaultThreshold(), PIPELINE_RUN_STATUS.getDefaultResendDelay());
 
         longRunnging = new PipelineRun();
         DateTime date = DateTime.now(DateTimeZone.UTC).minus(LONG_RUNNING_DURATION);
@@ -432,7 +454,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
                         .timestamp(DateUtils.nowUTC())
                         .build()));
 
-        createSettings(LONG_STATUS, createTemplate(5L, "stuckStatusTemplate").getId(),
+        createSettings(LONG_STATUS, createTemplate(LONG_STATUS.getId(), "stuckStatusTemplate").getId(),
                 LONG_STATUS_THRESHOLD, LONG_STATUS_THRESHOLD);
 
         notificationManager.notifyStuckInStatusRuns(Arrays.asList(notified, skipped));
@@ -440,6 +462,76 @@ public class NotificationManagerTest extends AbstractManagerTest {
         assertEquals(1, messages.size());
         assertEquals(testUser1.getId(), messages.get(0).getToUserId());
 
+    }
+
+    @Test
+    public void testRunStatusChangedNotificationCollectsPerfMetricsForRun() {
+        final PipelineRun notified = new PipelineRun();
+        notified.setId(1L);
+        notified.setStatus(TaskStatus.STOPPED);
+        notified.setOwner(testUser1.getUserName());
+        notified.setStartDate(new Date());
+        notified.setTags(Collections.singletonMap(LONG_RUNNING_TAG, "true"));
+        notified.setRunStatuses(Collections.singletonList(
+                RunStatus.builder()
+                        .runId(notified.getId())
+                        .status(TaskStatus.STOPPED)
+                        .timestamp(DateUtils.nowUTC())
+                        .build()));
+
+        final PipelineRunPerformanceMetrics runPerformanceMetrics =
+                new PipelineRunPerformanceMetrics(
+                        notified.getId(),
+                        Arrays.asList(
+                                PipelineRunPerformanceMetric.builder()
+                                        .type(CPU)
+                                        .max(CPU_MAX)
+                                        .avg(CPU_AVG)
+                                        .capacity(CPU_CAP)
+                                        .build(),
+                                PipelineRunPerformanceMetric.builder()
+                                        .type(MEMORY)
+                                        .max(MEM_MAX)
+                                        .avg(MEM_AVG)
+                                        .capacity(MEM_CAP)
+                                        .build()
+                        )
+                );
+
+        when(pipelineRunManager.loadPipelineRunPerformanceMetrics(notified.getId()))
+                .thenReturn(runPerformanceMetrics);
+
+        notificationManager.notifyRunStatusChanged(notified, Collections.emptyMap());
+        final List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
+        assertEquals(1, messages.size());
+        final NotificationMessage message = messages.get(0);
+        assertEquals(testUser1.getId(), message.getToUserId());
+        Map<String, Object> parameters = message.getTemplateParameters();
+
+        assertTrue(parameters.get(
+            NotificationManager.METRICS_PREFIX + CPU + NotificationManager.AVG_POSTFIX).equals(CPU_AVG)
+        );
+        assertTrue(parameters.get(
+            NotificationManager.METRICS_PREFIX + CPU + NotificationManager.MAX_POSTFIX).equals(CPU_MAX)
+        );
+        assertTrue(parameters.get(
+            NotificationManager.METRICS_PREFIX + CPU + NotificationManager.CAPACITY_POSTFIX).equals(CPU_CAP)
+        );
+
+        assertTrue(parameters.get(
+            NotificationManager.METRICS_PREFIX + MEMORY + NotificationManager.AVG_POSTFIX).equals(MEM_AVG)
+        );
+        assertTrue(parameters.get(
+            NotificationManager.METRICS_PREFIX + MEMORY + NotificationManager.MAX_POSTFIX).equals(MEM_MAX)
+        );
+        assertTrue(parameters.get(
+            NotificationManager.METRICS_PREFIX + MEMORY + NotificationManager.CAPACITY_POSTFIX).equals(MEM_CAP)
+        );
+
+        assertTrue(
+            parameters.get(NotificationManager.METRICS_PREFIX + NotificationManager.TAGS_POSTFIX)
+                    .equals(Collections.singletonList(LONG_RUNNING_TAG))
+        );
     }
 
     @Test

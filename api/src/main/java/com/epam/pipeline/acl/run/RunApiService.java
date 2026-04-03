@@ -45,9 +45,11 @@ import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.EngineRunTask;
 import com.epam.pipeline.entity.pipeline.run.EngineRunTaskFilter;
+import com.epam.pipeline.entity.pipeline.run.EngineRunTaskKeys;
 import com.epam.pipeline.entity.pipeline.run.EngineType;
 import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineRunResult;
+import com.epam.pipeline.entity.pipeline.run.PipelineRunWithEngineTasks;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.RunChartInfo;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
@@ -411,6 +413,11 @@ public class RunApiService {
     }
 
     @PreAuthorize(ADMIN_ONLY + OR + RUN_ADMIN_ONLY)
+    public void archiveRuns(final List<Long> runIds) {
+        archiveRunService.archiveRuns(runIds);
+    }
+
+    @PreAuthorize(ADMIN_ONLY + OR + RUN_ADMIN_ONLY)
     public void archiveRuns(final String name, final boolean principal, final Integer days) {
         archiveRunService.archiveRuns(name, principal, days);
     }
@@ -465,5 +472,11 @@ public class RunApiService {
     @PreAuthorize(RUN_ID_READ)
     public PipelineRunPerformanceMetrics loadPipelineRunPerformanceMetrics(final Long runId) {
         return runManager.loadPipelineRunPerformanceMetrics(runId);
+    }
+
+    @PreAuthorize(ADMIN_ONLY + OR + RUN_ADMIN_ONLY)
+    public List<PipelineRunWithEngineTasks> getPipelineRunInfoByEngineTask(final EngineType engineType,
+                                                                           final EngineRunTaskKeys keys) {
+        return engineRunTaskService.loadRunInfoByTasks(engineType, keys.getEngineTaskKeys());
     }
 }

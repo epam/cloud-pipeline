@@ -110,6 +110,67 @@ function sign_win_executable() {
     export PATH="$ORIGINAL_PATH"
 }
 
+function configure_vscode_extension() {
+    local jar_path="$1"
+    local output_dir="$2"
+
+    local old_pwd="$(pwd)"
+    local VSC_EXTENSION_NAME="${VSC_EXTENSION_NAME-}"
+    local VSC_EXTENSION_PUBLISHER=$(printf '%s' "$VSC_EXTENSION_NAME" | tr '[:upper:]' '[:lower:]' | tr -cs '[:alnum:]' '-' | sed 's/^-*//;s/-*$//')
+    local VSC_EXTENSION_API_URL="https://${CP_API_SRV_EXTERNAL_HOST}:${CP_API_SRV_EXTERNAL_PORT}/pipeline/restapi"
+    local VSC_EXTENSION_LOGO_PATH="${VSC_EXTENSION_LOGO_PATH:-$CP_API_SRV_STATIC_DIR/vsc_extension_logo.png}"
+
+    local extension_filename="/tmp/cloud-pipeline-remote.vsix"
+    local extension_name="$(basename $extension_filename)"
+    extension_name="${extension_name%%.*}"
+    unzip -p "$jar_path" BOOT-INF/classes/static/cloud-pipeline-remote.vsix > "$extension_filename"
+
+    local extension_tmp="$(mktemp -d)/$extension_name"
+    mkdir $extension_tmp
+    cd $extension_tmp
+    unzip -q $extension_filename
+
+    # Create .env file for the extension branding and API URL
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        case "$line" in
+            '# CLOUD_PIPELINE_DEFAULT_API_URL='*)
+            printf 'CLOUD_PIPELINE_DEFAULT_API_URL=%s\n' "${VSC_EXTENSION_API_URL}"
+            ;;
+            '# CLOUD_PIPELINE_BRAND_NAME='*)
+            if [ "$VSC_EXTENSION_NAME" ]; then
+                printf 'CLOUD_PIPELINE_BRAND_NAME=%s\n' "${VSC_EXTENSION_NAME}"
+            fi
+            ;;
+            *)
+            printf '%s\n' "$line"
+            ;;
+        esac
+    done < "$extension_tmp/extension/.env.example" > "$extension_tmp/extension/.env"
+    rm -f "$extension_tmp/extension/.env.example"
+
+    if [ "$VSC_EXTENSION_NAME" ]; then
+        sed -i "s/Cloud Pipeline/$VSC_EXTENSION_NAME/g" "$extension_tmp/extension.vsixmanifest"
+        sed -i "s/Cloud Pipeline/$VSC_EXTENSION_NAME/g" "$extension_tmp/extension/README.md"
+        sed -i "s/Cloud Pipeline/$VSC_EXTENSION_NAME/g" "$extension_tmp/extension/package.json"
+        sed -i "s/cloud-pipeline/$VSC_EXTENSION_PUBLISHER/g" "$extension_tmp/extension/package.json"
+    fi
+
+    if [ -f "$VSC_EXTENSION_LOGO_PATH" ]; then
+        rm -f "$extension_tmp/extension/resources/logo.png"
+        cp "$VSC_EXTENSION_LOGO_PATH" "$extension_tmp/extension/resources/logo.png"
+    fi
+    
+    local repackaged_extension_filename="${extension_name}.vsix"
+    if [ "$VSC_EXTENSION_NAME" ]; then
+        repackaged_extension_filename="${VSC_EXTENSION_PUBLISHER}-remote.vsix"
+    fi
+    zip -q -r "$output_dir/${repackaged_extension_filename}" .
+
+    rm -rf "$extension_tmp"
+    rm -f "$extension_filename"
+    cd "$old_pwd"
+}
+
 function sign_and_publish_pipe_win_distribution() {
     local jar_path="$1"
     local cert_path="$2"
@@ -271,6 +332,9 @@ cp "$CP_API_HOME/data-transfer-service-linux.zip" "$CP_API_SRV_STATIC_DIR"
 # - Application name
 echo "Configuring Cloud Data with the deployment specific settings"
 configure_and_publish_cloud_data_win_distribution "$CP_API_HOME/pipeline.jar" "$CP_API_SRV_STATIC_DIR"
+
+echo "Configuring VS Code extension with the deployment specific settings"
+configure_vscode_extension "$CP_API_HOME/pipeline.jar" "$CP_API_SRV_STATIC_DIR"
 
 echo "Importing API SSL cert into global java keystore"
 /update-trust $CP_API_SRV_CERT_DIR/ssl-public-cert.pem "cp-api-srv"

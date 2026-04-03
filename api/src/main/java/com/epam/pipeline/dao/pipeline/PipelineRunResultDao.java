@@ -16,13 +16,13 @@
 
 package com.epam.pipeline.dao.pipeline;
 
+import com.epam.pipeline.dao.DryRunJdbcDaoSupport;
 import com.epam.pipeline.entity.pipeline.run.PipelineRunResult;
 import lombok.Setter;
 import org.apache.commons.collections4.ListUtils;
 
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,12 +31,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class PipelineRunResultDao extends NamedParameterJdbcDaoSupport {
+public class PipelineRunResultDao extends DryRunJdbcDaoSupport {
 
     @Setter
     private String addPipelineRunResultQuery;
     @Setter
     private String loadPipelineRunResultQuery;
+    @Setter(onMethod_={@Required})
+    private String deletePipelineRunResultsByRunIdQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void addPipelineRunResults(final List<PipelineRunResult> results) {
@@ -56,6 +58,13 @@ public class PipelineRunResultDao extends NamedParameterJdbcDaoSupport {
                 params,
                 PipelineRunResultParameters.getExtractor()
         );
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void deletePipelineRunResultsByRunIds(final List<Long> runIds, boolean dryRun) {
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(PipelineRunResultParameters.RUN_ID.name(), runIds);
+        getNamedParameterJdbcTemplate(dryRun).update(deletePipelineRunResultsByRunIdQuery, params);
     }
 
     public enum PipelineRunResultParameters {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ import styles from './Panel.css';
 @roleModel.authenticationInfo
 @localization.localizedComponent
 @runPipelineActions
-@inject('pipelines', 'multiZoneManager', 'preferences')
+@inject('pipelines', 'multiZoneManager', 'preferences', 'uiNavigation')
 @VSActions.check
 @observer
 export default class MyActiveRunsPanel extends localization.LocalizedReactComponent {
@@ -55,6 +55,11 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
 
   get usesActiveRuns () {
     return true;
+  }
+
+  get estimatedPriceVisible () {
+    const {uiNavigation} = this.props;
+    return uiNavigation.utils.estimatedPriceVisible().logs;
   }
 
   getActiveRuns = () => {
@@ -176,7 +181,7 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
             cardClassName={run => classNames({
               'cp-card-service': run.initialized && run.serviceUrl
             })}
-            childRenderer={renderRunCard}>
+            childRenderer={(run) => renderRunCard(run, this.estimatedPriceVisible)}>
             {this.getActiveRuns()}
           </CardsPanel>
         </Row>,
@@ -190,7 +195,8 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
             style={{
               fontStyle: 'italic'
             }}>
-            Top {this.props.activeRuns.params.pageSize} runs will be shown. <Link to="/runs/active">Explore all active runs</Link>
+            Top {this.props.activeRuns.params.pageSize} runs will be shown.{' '}
+            <Link to="/runs/active">Explore all active runs</Link>
           </span>
         </Row>
       ];

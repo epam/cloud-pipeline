@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 
 package com.epam.pipeline.manager.docker;
 
-import com.epam.pipeline.entity.docker.HistoryEntry;
-import com.epam.pipeline.entity.docker.RawImageDescription;
+import com.epam.pipeline.entity.docker.HistoryEntryV2;
+import com.epam.pipeline.entity.docker.RawImageDescriptionV2;
 import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
 import com.epam.pipeline.utils.StreamUtils;
 import org.junit.jupiter.api.Test;
@@ -35,9 +35,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class DockerParsingUtilsTest {
-    private static final String LATEST_DATE_ENTRY_JSON = "{\"created\":\"2017-10-02T18:59:07.729529044Z\"}";
-    private static final String EARLIEST_DATE_ENTRY_JSON = "{\"created\":\"2017-10-02T18:57:48.784338364Z\"}";
-    private static final String SHORT_DATE_ENTRY_JSON = "{\"created\":\"2017-10-02T18:58:48.784338Z\"}";
+    private static final String LATEST_DATE_ENTRY_JSON = "{\"2017-10-02T18:59:07.729529044Z\"}";
+    private static final String EARLIEST_DATE_ENTRY_JSON = "\"2017-10-02T18:57:48.784338364Z\"}";
+    private static final String SHORT_DATE_ENTRY_JSON = "{\"2017-10-02T18:58:48.784338Z\"}";
     private static final int EARLIEST_MINUTES = 57;
     private static final int LATEST_MINUTES = 59;
     private static final String POD_LAUNCH_CMD = "set -o pipefail; command -v wget >/dev/null 2>&1 && { " +
@@ -75,13 +75,13 @@ public class DockerParsingUtilsTest {
 
     @Test
     public void shouldCalculateLatestAndEarliestDateTimeProperly() {
-        HistoryEntry entryWithEarliestDate = new HistoryEntry();
-        entryWithEarliestDate.setV1Compatibility(EARLIEST_DATE_ENTRY_JSON);
-        HistoryEntry entryWithLatestDate = new HistoryEntry();
-        entryWithLatestDate.setV1Compatibility(LATEST_DATE_ENTRY_JSON);
-        HistoryEntry entryWithShortDate = new HistoryEntry();
-        entryWithShortDate.setV1Compatibility(SHORT_DATE_ENTRY_JSON);
-        RawImageDescription description = new RawImageDescription();
+        final HistoryEntryV2 entryWithEarliestDate = new HistoryEntryV2();
+        entryWithEarliestDate.setCreated(EARLIEST_DATE_ENTRY_JSON);
+        final HistoryEntryV2 entryWithLatestDate = new HistoryEntryV2();
+        entryWithLatestDate.setCreated(LATEST_DATE_ENTRY_JSON);
+        final HistoryEntryV2 entryWithShortDate = new HistoryEntryV2();
+        entryWithShortDate.setCreated(SHORT_DATE_ENTRY_JSON);
+        final RawImageDescriptionV2 description = new RawImageDescriptionV2();
         description.setHistory(Arrays.asList(entryWithEarliestDate, entryWithLatestDate, entryWithShortDate));
 
         assertThat(DockerParsingUtils.getEarliestDate(description).toInstant().atZone(ZoneOffset.UTC).getMinute())

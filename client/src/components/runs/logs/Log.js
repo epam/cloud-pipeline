@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -423,6 +423,11 @@ class Logs extends localization.LocalizedReactComponent {
       return preferences.systemMaintenanceMode;
     }
     return false;
+  }
+
+  get estimatedPriceVisible () {
+    const {uiNavigation} = this.props;
+    return uiNavigation.utils.estimatedPriceVisible().logs;
   }
 
   get isCapacityBlock () {
@@ -2082,7 +2087,7 @@ class Logs extends localization.LocalizedReactComponent {
           }
           return cents / 100;
         };
-        price = (
+        price = this.estimatedPriceVisible ? (
           <tr>
             <th>Estimated price:</th>
             <td>
@@ -2100,7 +2105,7 @@ class Logs extends localization.LocalizedReactComponent {
               </JobEstimatedPriceInfo>
             </td>
           </tr>
-        );
+        ) : null;
       }
 
       Details =

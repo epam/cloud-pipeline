@@ -20,7 +20,7 @@ function generate_params_file() {
     all_cp_params_json=""
     all_cp_params=$(printenv | sed 's;=.*;;' | grep _PARAM_TYPE)
     for cp_param in $all_cp_params; do
-        [[ "$cp_param" =~ CP_* ]]  && continue
+        [[ "$cp_param" == CP_* ]]  && continue
         cp_param_clean=$(echo "$cp_param" | sed 's/_PARAM_TYPE//')
         cp_param_type="${!cp_param}"
         if [ "$cp_param_type" == "boolean" ] || [ "$cp_param_type" == "integer" ] || [ "$cp_param_type" == "float" ]; then

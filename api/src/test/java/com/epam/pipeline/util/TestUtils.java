@@ -88,6 +88,7 @@ public final class TestUtils {
         toolVersion.setDigest("test_digest");
         toolVersion.setSize(DOCKER_SIZE);
         toolVersion.setVersion("test_version");
+        toolVersion.setPlatform("linux");
         Mockito.doReturn(toolVersion).when(dockerClientMock).getVersionAttributes(any(), any(), any());
 
         return mockManifest;
