@@ -299,6 +299,8 @@
                 </li>
                 <li class="toctree-l2"><a class="reference internal" href="../15.4._Interactive_service_examples/">15.4. Interactive service examples</a>
                 </li>
+                <li class="toctree-l2"><a class="reference internal" href="../15.5._VSCode_interactions/">15.5. VSCode interactions</a>
+                </li>
     </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../16_Issues/16._Issues/">16. Issues</a>
@@ -419,12 +421,26 @@ Examples:</p>
 <h2 id="supported-services">Supported services</h2>
 <p>Out of the box, Cloud Pipeline provides the following interactive services:</p>
 <ul>
-<li><strong>RStudio</strong> - IDE for R language that helps to make work with R a great deal more convenient. For details see <a href="https://www.rstudio.com/">https://www.rstudio.com/</a>.</li>
-<li><strong>Jupiter Notebook</strong> - a web application that allows creating documents with code pieces, visualizations and narrative text inside. For more information see <a href="http://jupyter.org/">http://jupyter.org/</a>.</li>
-<li><strong>Terminal</strong> - a window with a command line (shell).<br />
-<strong><em>Note</em></strong>: Terminal access is available for all Tools or Pipelines with these Tools. On the other side, you can't get an access to the e.g. <strong>Rstudio</strong> application if a Tool doesn't contain it.</li>
+<li><strong>RStudio</strong> - IDE for R language that helps to make work with R a great deal more convenient. See example <a href="../15.4._Interactive_service_examples/#launch-the-rstudio-tool-with-apache-cluster">here</a>.<br />
+    More details about <code>RStudio</code> you can find at <a href="https://www.rstudio.com/">https://www.rstudio.com/</a>.</li>
+<li><strong>Jupiter Notebook</strong> - a web application that allows creating documents with code pieces, visualizations and narrative text inside.<br />
+    More details about <code>Jupiter</code> you can find at <a href="http://jupyter.org/">http://jupyter.org/</a>.</li>
+<li><strong>Terminal</strong> - a window with a command line (shell). See example <a href="../15.2._Using_Terminal_access/#using-terminal-access">here</a>.<br />
+<strong><em>Note</em></strong>: Terminal access is available for all Tools and Pipelines.</li>
 </ul>
+<blockquote>
 <p><em>List of services can be extended by users.</em></p>
+</blockquote>
+<p>Additional interaction services that could be easily configured for Cloud Pipeline deployment:</p>
+<ul>
+<li><strong>Desktop services</strong> - some interactive services in tools do not have own Web GUI, but they can be launched from remote desktops, where launched tool instance acts as the remote server. Supported desktops:<ul>
+<li><a href="https://www.ni-sp.com/products/nice-dcv/"><strong>NICE DCV</strong></a></li>
+<li><a href="https://www.nomachine.com/"><strong>NoMachine</strong></a></li>
+</ul>
+</li>
+<li><strong>VSCode extension</strong> - this option allows users getting access to the remote compute node's filesystem within IDE (VSCode/Cursor) and be able to execute code. Such functionality is useful for developing and testing computational jobs. See details <a href="../15.5._VSCode_interactions/">here</a>.<br />
+    More details about <code>VSCode</code> you can find at <a href="https://code.visualstudio.com/">https://code.visualstudio.com/</a>.</li>
+</ul>
               
             </div>
           </div><footer>
