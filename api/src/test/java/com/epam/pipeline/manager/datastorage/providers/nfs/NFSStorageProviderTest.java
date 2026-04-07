@@ -16,9 +16,8 @@
 
 package com.epam.pipeline.manager.datastorage.providers.nfs;
 
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -63,11 +62,7 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.mapper.region.CloudRegionMapper;
 import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import org.apache.commons.io.FileUtils;
-import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -546,10 +541,10 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
                 .thenReturn(gidFieldName);
         when(mockAuthManager.getCurrentUser()).thenReturn(user);
 
-        Whitebox.setInternalState(nfsProvider, "preferenceManager", mockPreferenceManager);
-        Whitebox.setInternalState(nfsProvider, "authManager", mockAuthManager);
-        Whitebox.setInternalState(externalUIDManager, "preferenceManager", mockPreferenceManager);
-        Whitebox.setInternalState(externalUIDManager, "metadataManager", mockMetadataManager);
+        ReflectionTestUtils.setField(nfsProvider, "preferenceManager", mockPreferenceManager);
+        ReflectionTestUtils.setField(nfsProvider, "authManager", mockAuthManager);
+        ReflectionTestUtils.setField(externalUIDManager, "preferenceManager", mockPreferenceManager);
+        ReflectionTestUtils.setField(externalUIDManager, "metadataManager", mockMetadataManager);
     }
 
     private void createFileForChownTest() {

@@ -33,23 +33,16 @@ import com.epam.pipeline.exception.git.UnexpectedResponseStatusException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hc.client5.http.impl.DefaultRedirectStrategy;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.ssl.DefaultClientTlsStrategy;
+import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.http.HttpRequest;
+import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.ssl.SSLContexts;
 import org.apache.hc.core5.ssl.TrustStrategy;
-import org.apache.http.HttpRequest;
-import org.apache.http.HttpResponse;
-import org.apache.http.ProtocolException;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.conn.ssl.TrustStrategy;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.DefaultRedirectStrategy;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.protocol.HttpContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -89,11 +82,13 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static org.apache.hc.core5.http.HttpHeaders.AUTHORIZATION;
+import static org.apache.hc.core5.http.HttpHeaders.COOKIE;
 
 /**
  * Provides methods to operate Docker Registry API
@@ -429,29 +424,27 @@ public class DockerClient {
             SSLContext sslContext = SSLContexts.custom()
                     .loadTrustMaterial(null, acceptingTrustStrategy)
                     .build();
-            SSLConnectionSocketFactory csf = new SSLConnectionSocketFactory(sslContext);
-
-            HttpClientBuilder builder = HttpClients.custom()
-                    .setSSLSocketFactory(csf);
-//            drop Authorization headers when handling a cross-origin redirect
-            builder.setRedirectStrategy(new DefaultRedirectStrategy() {
-                @Override
-                public HttpUriRequest getRedirect(HttpRequest request,
-                                                  HttpResponse response,
-                                                  HttpContext context) throws ProtocolException {
-                    HttpUriRequest redirect = super.getRedirect(request, response, context);
-                    URI originalUri = URI.create(request.getRequestLine().getUri());
-                    URI redirectUri = redirect.getURI();
-
-                    if (!Objects.equals(originalUri, redirectUri)) {
-                        redirect.setHeaders(request.getAllHeaders());
-                        redirect.removeHeaders("Authorization");
-                    }
-
-                    return redirect;
-                }
-            });
-            CloseableHttpClient httpClient = builder.build();
+            var tlsStrategy = new DefaultClientTlsStrategy(sslContext);
+            var connectionManager = PoolingHttpClientConnectionManagerBuilder.create()
+                    .setTlsSocketStrategy(tlsStrategy)
+                    .build();
+            CloseableHttpClient httpClient = HttpClients.custom()
+                    .setConnectionManager(connectionManager)
+                    .setRedirectStrategy(new DefaultRedirectStrategy() {
+                        @Override
+                        public boolean isRedirectAllowed(
+                                final HttpHost currentTarget,
+                                final HttpHost newTarget,
+                                final HttpRequest redirect,
+                                final HttpContext context) {
+                            if (currentTarget != null && newTarget != null && !currentTarget.equals(newTarget)) {
+                                redirect.removeHeaders(AUTHORIZATION);
+                                redirect.removeHeaders(COOKIE);
+                            }
+                            return super.isRedirectAllowed(currentTarget, newTarget, redirect, context);
+                        }
+                    })
+                    .build();
 
             HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
             requestFactory.setHttpClient(httpClient);
@@ -494,7 +487,7 @@ public class DockerClient {
         }
 
         return builder
-                .setConnectTimeout(REQUEST_TIMEOUT)
+                .setConnectTimeout(Duration.ofMillis(REQUEST_TIMEOUT))
                 .build();
     }
 

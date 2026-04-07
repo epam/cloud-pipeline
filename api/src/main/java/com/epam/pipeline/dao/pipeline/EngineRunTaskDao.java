@@ -254,7 +254,6 @@ public class EngineRunTaskDao extends DryRunJdbcDaoSupport {
         this.loadEngineRunTasksByKeysQuery = loadEngineRunTasksByKeysQuery;
     }
 
-    @Required
     public void setLoadEngineRunTasksStatsByRunIdAndTypeQuery(final String loadEngineRunTasksStatsByRunIdAndTypeQuery) {
         this.loadEngineRunTasksStatsByRunIdAndTypeQuery = loadEngineRunTasksStatsByRunIdAndTypeQuery;
     }

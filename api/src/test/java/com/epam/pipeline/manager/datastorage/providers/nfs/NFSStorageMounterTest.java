@@ -35,7 +35,7 @@ import org.junit.rules.TemporaryFolder;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.mockito.internal.util.reflection.Whitebox;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,8 +48,8 @@ import java.util.concurrent.*;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -95,7 +95,7 @@ public class NFSStorageMounterTest {
         mounter = spy(new NFSStorageMounter(
                 messageHelper, dataStorageDao, regionManager, shareMountManager,
                 tempFolder.getRoot().getAbsolutePath(), MOUNT_TIMEOUT_MILLS));
-        Whitebox.setInternalState(mounter, "cmdExecutor", mockCmdExecutor);
+        ReflectionTestUtils.setField(mounter, "cmdExecutor", mockCmdExecutor);
 
         procMountsFile = tempFolder.newFile("proc_mounts");
         Files.write(procMountsFile.toPath(), new byte[0]);

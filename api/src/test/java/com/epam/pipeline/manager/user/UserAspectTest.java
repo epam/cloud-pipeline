@@ -24,14 +24,14 @@ import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.providers.nfs.NFSStorageProvider;
 import org.aspectj.lang.JoinPoint;
 import org.junit.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.mockito.internal.util.reflection.Whitebox.setInternalState;
 
 public class UserAspectTest {
 
@@ -104,9 +104,9 @@ public class UserAspectTest {
 
     private UserAspect createUserAspect() {
         final UserAspect aspect = new UserAspect();
-        setInternalState(aspect, "userManager", userManager);
-        setInternalState(aspect, "dataStorageManager", dataStorageManager);
-        setInternalState(aspect, "nfsStorageProvider", nfsStorageProvider);
+        ReflectionTestUtils.setField(aspect, "userManager", userManager);
+        ReflectionTestUtils.setField(aspect, "dataStorageManager", dataStorageManager);
+        ReflectionTestUtils.setField(aspect, "nfsStorageProvider", nfsStorageProvider);
         return aspect;
     }
 }

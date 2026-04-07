@@ -38,6 +38,8 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDateTime;
 import java.util.*;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import static com.epam.pipeline.entity.utils.DateUtils.convertDateToLocalDateTime;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -157,7 +159,7 @@ public class PipelineRunDockerOperationManagerTest {
         verify(dockerContainerOperationManager).resumeRun(runToResume, TEST_NAMES);
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void shouldNotPauseIfPauseDisabled() {
         final PipelineRun runToPause = pauseDisabledRun();
         runToPause.setId(TEST_ID);
@@ -168,8 +170,8 @@ public class PipelineRunDockerOperationManagerTest {
                 .thenReturn(Optional.of(false));
         when(pipelineRunDao.loadPipelineRun(TEST_ID))
                 .thenReturn(runToPause);
-        pipelineRunDockerOperationManager.pauseRun(TEST_ID, false);
-
+        assertThrows(IllegalStateException.class,
+                () -> pipelineRunDockerOperationManager.pauseRun(TEST_ID, false));
     }
 
 

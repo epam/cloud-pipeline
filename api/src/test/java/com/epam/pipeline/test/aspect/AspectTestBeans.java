@@ -136,7 +136,6 @@ import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 import org.springframework.security.access.PermissionEvaluator;
 import org.springframework.security.acls.domain.PermissionFactory;
 import org.springframework.security.acls.model.SidRetrievalStrategy;
-import org.springframework.boot.test.mock.mockito.MockBean;
 
 @Configuration
 public class AspectTestBeans {
@@ -319,6 +318,9 @@ public class AspectTestBeans {
 
     @MockBean
     public PipelineRunDao mockPipelineRunDao;
+
+    @MockBean
+    public PipelineRunResultDao mockPipelineRunResultDao;
 
     @MockBean
     public UserDao mockUserDao;
@@ -534,11 +536,7 @@ public class AspectTestBeans {
     public CommonAuditClient auditClient;
     @MockBean
     private PipelineRunMetricsDao runMetricsDao;
-    protected AzureDevOpsMapper azureDevOpsMapper;
 
     @MockBean
     protected GlobalSearchElasticHelper globalSearchElasticHelper;
-
-    @MockBean
-    protected PipelineRunMetricsDao pipelineRunMetricsDao;
 }

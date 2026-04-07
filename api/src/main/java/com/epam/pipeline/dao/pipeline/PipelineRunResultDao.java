@@ -37,7 +37,7 @@ public class PipelineRunResultDao extends DryRunJdbcDaoSupport {
     private String addPipelineRunResultQuery;
     @Setter
     private String loadPipelineRunResultQuery;
-    @Setter(onMethod_={@Required})
+    @Setter
     private String deletePipelineRunResultsByRunIdQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)

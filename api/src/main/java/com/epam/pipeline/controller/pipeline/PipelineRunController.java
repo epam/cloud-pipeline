@@ -593,11 +593,10 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @PostMapping(value = "/runs/archive/explicit")
-    @ApiOperation(
-            value = "Archive specified runs by their IDs",
-            notes = "Migrate specified pipeline runs (by ID) to the archive table.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Archive specified runs by their IDs",
+            description = "Migrate specified pipeline runs (by ID) to the archive table.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<Boolean> archiveRunsByIds(@RequestBody final List<Long> runIds) {
         runApiService.archiveRuns(runIds);
         return Result.success(true);
@@ -685,11 +684,10 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @PostMapping("run/engine/{engineType}/tasks/runInfo")
-    @ApiOperation(
-            value = "Loads pipeline runs for provided engine task keys, response is grouped by pipeline run.",
-            notes = "Loads pipeline runs for provided engine task keys, response is grouped by pipeline run.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Loads pipeline runs for provided engine task keys, response is grouped by pipeline run.",
+            description = "Loads pipeline runs for provided engine task keys, response is grouped by pipeline run.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<List<PipelineRunWithEngineTasks>> getPipelineRunInfoByEngineTask(
             @PathVariable(value = ENGINE_TYPE) final EngineType engineType,
             @RequestBody final EngineRunTaskKeys keys) {
