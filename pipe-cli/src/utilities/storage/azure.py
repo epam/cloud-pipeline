@@ -151,11 +151,12 @@ class AzureListingManager(AzureManager, AbstractListingManager):
 
 class AzureDeleteManager(AzureManager, AbstractDeleteManager):
 
-    def __init__(self, blob_service, events, bucket):
+    def __init__(self, blob_service, events, bucket, is_hns_enabled=False):
         super(AzureDeleteManager, self).__init__(blob_service, events)
         self.bucket = bucket
         self.delimiter = StorageOperations.PATH_SEPARATOR
         self.listing_manager = AzureListingManager(self.service, self.bucket)
+        self.is_hns_enabled = is_hns_enabled
 
     def delete_items(self, relative_path, recursive=False, exclude=[], include=[], version=None, hard_delete=False,
                      page_size=None):
@@ -174,12 +175,17 @@ class AzureDeleteManager(AzureManager, AbstractDeleteManager):
             blob_names_for_deletion = []
             for item in self.listing_manager.list_items(prefix, recursive=True, show_all=True):
                 if item.name == prefix and check_file:
+                    # case: only file to delete
                     blob_names_for_deletion = [item.name]
                     break
                 if self.__file_under_folder(item.name, prefix):
                     blob_names_for_deletion.append(item.name)
             deleted_blob_names = []
-            for blob_name in blob_names_for_deletion:
+            # For ADLS Gen2 storage, folders must be deleted as well as files. Non-empty folders cannot be deleted,
+            # so all files within a folder should be deleted before deleting the folder itself.
+            blob_names = blob_names_for_deletion.sort(key=len, reverse=True) if self.is_hns_enabled \
+                else blob_names_for_deletion
+            for blob_name in blob_names:
                 deleted = self.__delete_blob(blob_name, exclude, include, prefix=prefix)
                 if deleted:
                     deleted_blob_names.append(blob_name)
