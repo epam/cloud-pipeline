@@ -175,17 +175,23 @@ class AzureDeleteManager(AzureManager, AbstractDeleteManager):
             blob_names_for_deletion = []
             for item in self.listing_manager.list_items(prefix, recursive=True, show_all=True):
                 if item.name == prefix and check_file:
-                    # case: only file to delete
+                    # Typically, this branch is used only for files. However, in ADLS Gen2 storage,
+                    # there is no distinction between files and folders. If a path does not end with '/',
+                    # and, consequently, the check_file flag is set to True, this branch will be executed.
+                    # This way, if the item is not a file, an error will occur.
                     blob_names_for_deletion = [item.name]
                     break
                 if self.__file_under_folder(item.name, prefix):
                     blob_names_for_deletion.append(item.name)
+                elif self.is_hns_enabled and item.name == prefix:
+                    # root folder itself
+                    blob_names_for_deletion.append(item.name)
             deleted_blob_names = []
             # For ADLS Gen2 storage, folders must be deleted as well as files. Non-empty folders cannot be deleted,
             # so all files within a folder should be deleted before deleting the folder itself.
-            blob_names = blob_names_for_deletion.sort(key=len, reverse=True) if self.is_hns_enabled \
-                else blob_names_for_deletion
-            for blob_name in blob_names:
+            if self.is_hns_enabled:
+                blob_names_for_deletion.sort(key=len, reverse=True)
+            for blob_name in blob_names_for_deletion:
                 deleted = self.__delete_blob(blob_name, exclude, include, prefix=prefix)
                 if deleted:
                     deleted_blob_names.append(blob_name)
