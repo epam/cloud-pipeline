@@ -88,7 +88,6 @@ public class DnsHostsManagementTest extends AbstractSeveralPipelineRunningTest
                 .ssh(shell -> shell
                         .waitUntilTextAppears(userRunId2)
                         .execute(command[1])
-                        .sleep(6, TimeUnit.MINUTES)
                         .assertNextStringIsVisible("Complete!",
                                 format("pipeline-%s", userRunId2))
                         .execute(format(command[2], userRunId1))

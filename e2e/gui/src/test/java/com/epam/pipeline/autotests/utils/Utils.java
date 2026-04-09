@@ -72,6 +72,10 @@ public class Utils {
     public static final String ON_DEMAND = "On-demand";
     public static final String SPOT = "Spot";
     public static final String LATEST_VERSION = "latest";
+    public static final String PASTE_KEY = "v";
+    public static final String COPY_KEY = "a";
+    public static final String CHROME_BROWSER = "chrome";
+    public static final String BROWSER_SIZE = "1920x1080";
 
     public static void assertTimePassed(String dateAndTimeString, int maxSeconds) {
         LocalDateTime runDateTime = validateDateTimeString(dateAndTimeString);
@@ -128,7 +132,7 @@ public class Utils {
     public static void selectAllAndClearTextField(final SelenideElement field) {
         sleep(500, MILLISECONDS);
         field.click();
-        sendKeysWithControl("a");
+        sendKeysWithControl(COPY_KEY);
         actions().sendKeys(Keys.DELETE).perform();
     }
 
@@ -136,7 +140,7 @@ public class Utils {
             final StringSelection stringSelection = new StringSelection(text);
             Toolkit.getDefaultToolkit().getSystemClipboard()
                     .setContents(stringSelection, null);
-            sendKeysWithControl("v");
+            sendKeysWithControl(PASTE_KEY);
     }
 
     public static void pasteText(final SelenideElement field, final String text) {
@@ -144,7 +148,7 @@ public class Utils {
         Toolkit.getDefaultToolkit().getSystemClipboard()
                 .setContents(stringSelection, null);
         field.click();
-        sendKeysWithControl("v");
+        sendKeysWithControl(PASTE_KEY);
     }
 
     public static void sendKeysWithControl(CharSequence ch) {

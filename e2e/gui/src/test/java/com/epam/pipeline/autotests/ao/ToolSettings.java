@@ -18,6 +18,7 @@ package com.epam.pipeline.autotests.ao;
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.Utils;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -46,14 +47,16 @@ import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.visible;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static java.util.stream.Collectors.toList;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.tagName;
 import static java.lang.Integer.parseInt;
 import static java.lang.String.format;
+import static java.time.Duration.ofMillis;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.stream.Collectors.toList;
 
 public class ToolSettings extends ToolTab<ToolSettings> {
 
@@ -97,7 +100,7 @@ public class ToolSettings extends ToolTab<ToolSettings> {
     @Override
     public ToolSettings open() {
         click(SETTINGS);
-        get(SETTINGS).shouldBe(have(cssClass("ant-menu-item-selected")));
+        get(SETTINGS).shouldBe(have(cssClass("ant-menu-item-selected")), ofMillis(DEFAULT_TIMEOUT));
         get(EXEC_ENVIRONMENT).shouldBe(exist);
         return click(EXEC_ENVIRONMENT);
     }

@@ -40,7 +40,10 @@ import java.lang.reflect.Method;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.closeWebDriver;
 import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
+import static com.epam.pipeline.autotests.utils.Utils.BROWSER_SIZE;
+import static com.epam.pipeline.autotests.utils.Utils.CHROME_BROWSER;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -60,12 +63,13 @@ public abstract class AbstractBfxPipelineTest implements ITest {
     }
 
     public void setUpConfiguration() {
-        Configuration.browser = "chrome";
-        Configuration.browserSize = "1920x1080";
+        Configuration.browser = CHROME_BROWSER;
+        Configuration.browserSize = BROWSER_SIZE;
         Configuration.timeout = DEFAULT_TIMEOUT;
         System.setProperty("webdriver.chrome.driver", "/usr/local/bin/chromedriver");
         ChromeOptions options = new ChromeOptions();
         options.setBinary("/usr/local/bin/chrome");
+
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
         options.addArguments("--disable-gpu");
@@ -88,7 +92,7 @@ public abstract class AbstractBfxPipelineTest implements ITest {
     }
 
     public void restartBrowser(final String address) {
-        Selenide.closeWindow();
+        closeWebDriver();
         setUpConfiguration();
         login(address);
     }

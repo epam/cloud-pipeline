@@ -33,6 +33,7 @@ import com.google.common.collect.Comparators;
 import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.Keys;
 
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
@@ -43,6 +44,7 @@ import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
 import static com.codeborne.selenide.Selenide.switchTo;
 import static java.lang.String.format;
+import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -159,13 +161,13 @@ public class ShellAO implements AccessObject<ShellAO> {
 
     public ShellAO assertNextStringIsVisibleAtFileUpload(String str1, String str2) {
         $(withText(str1)).shouldBe(visible).parent()
-                .$(byXpath(format("following::x-row[contains(text(), '%s')]", str2))).shouldBe(visible);
+                .$(byXpath(format("following::x-row[contains(text(), '%s')]", str2))).shouldBe(visible, ofMillis(DEFAULT_TIMEOUT));
         return this;
     }
 
     public ShellAO assertNextStringIsVisible(String str1, String str2) {
         $(withText(str1)).shouldBe(visible)
-                .$(byXpath(format("following::x-row[contains(text(), '%s')]", str2))).shouldBe(visible);
+                .$(byXpath(format("following::x-row[contains(text(), '%s')]", str2))).shouldBe(visible, ofMillis(DEFAULT_TIMEOUT));
         return this;
     }
 

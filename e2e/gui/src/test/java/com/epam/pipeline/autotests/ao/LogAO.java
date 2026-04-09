@@ -112,7 +112,6 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public LogAO ssh(final Consumer<ShellAO> shell) {
-       // shell.accept(SSH_CLOUD_REGION.isEmpty() ? clickOnSshLink() : clickOnSelectedRegionLink());
         shell.accept(clickOnSshLink());
         return this;
     }

@@ -70,6 +70,7 @@ public class ToolsTest
     private final String instanceType = C.DEFAULT_INSTANCE;
     private final String defaultCommand = "/start.sh";
     private final String toolWithoutDefaultSettings = C.TOOL_WITHOUT_DEFAULT_SETTINGS;
+    private final String EMPTY_ESTIMATED_PRICE = "\u2014";
 
     @BeforeClass
     @AfterClass(alwaysRun = true)
@@ -439,7 +440,7 @@ public class ToolsTest
                 .ensure(LAUNCH, visible)
                 .ensure(PIPELINE, text(nameWithoutGroup(toolWithoutDefaultSettings)))
                 .ensure(TOOL_VERSION, text("latest"))
-                .checkEstimatedPriceValue("\u2014")
+                .checkEstimatedPriceValue(EMPTY_ESTIMATED_PRICE)
                 .ensure(INFORMATION_ICON, visible)
                 .checkEstimatedPriceTooltip("Price cannot be estimated for the selected node type / disk configuration")
                 .expandTabs(execEnvironmentTab, advancedTab, parametersTab)

@@ -40,6 +40,8 @@ import static com.epam.pipeline.autotests.utils.Privilege.EXECUTE;
 import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
 import static com.epam.pipeline.autotests.utils.PrivilegeValue.ALLOW;
+import static com.epam.pipeline.autotests.utils.Utils.BROWSER_SIZE;
+import static com.epam.pipeline.autotests.utils.Utils.CHROME_BROWSER;
 import static java.lang.System.currentTimeMillis;
 import static java.lang.System.getProperty;
 import static java.lang.System.out;
@@ -105,8 +107,8 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
     @BeforeMethod(alwaysRun = true)
     public void setUp() {
         Configuration.timeout = C.DEFAULT_TIMEOUT;
-        Configuration.browser = "chrome";
-        Configuration.browserSize = "1920x1080";
+        Configuration.browser = CHROME_BROWSER;
+        Configuration.browserSize = BROWSER_SIZE;
         setProperty("webdriver.chrome.driver", "/usr/local/bin/chromedriver");
 
         open(C.ROOT_ADDRESS);

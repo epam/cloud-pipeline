@@ -24,6 +24,7 @@ import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.ex.ElementNotFound;
 import com.codeborne.selenide.impl.Alias;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.Conditions;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import org.openqa.selenium.By;
@@ -111,10 +112,10 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
     public RunsMenuAO stopRun(String runId) {
         final SelenideElement runStopButton = $("#run-" + runId + "-stop-button");
-        runStopButton.shouldBe(enabled, ofMillis(50000)).click();
+        runStopButton.shouldBe(enabled, ofMillis(DEFAULT_TIMEOUT)).click();
         sleep(3, SECONDS);
         if (!$(button("STOP")).isEnabled()) {
-            runStopButton.shouldBe(enabled, ofMillis(50000)).click();
+            runStopButton.shouldBe(enabled, ofMillis(DEFAULT_TIMEOUT)).click();
         }
         $(button("STOP")).click();
         return this;

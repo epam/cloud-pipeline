@@ -48,7 +48,6 @@ class LazyWebElementsCollection implements CollectionSource {
                                      final int maxAttempts,
                                      final String expectedSize
     ) {
-        super();
         this.elementsQualifier = elementsQualifier;
         this.collectionSizeValidator = sizePredicate;
         this.maxAttempts = maxAttempts;
@@ -107,10 +106,6 @@ class LazyWebElementsCollection implements CollectionSource {
                         screenShotFile
                 )
         );
-    }
-
-    public List<WebElement> getActualElements() {
-        return getElements();
     }
 
     @Override

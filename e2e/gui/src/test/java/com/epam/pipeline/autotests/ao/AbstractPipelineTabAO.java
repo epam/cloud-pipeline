@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import static com.codeborne.selenide.Condition.exist;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.Utils;
 
@@ -116,20 +117,14 @@ public abstract class AbstractPipelineTabAO<TAB_AO extends AbstractPipelineTabAO
     }
 
     public PipelineRunFormAO runPipeline() {
-        sleep(2, SECONDS);
-        get(RUN).shouldBe(not(disabled));
-        sleep(2, SECONDS);
+        get(RUN).shouldBe(exist, not(disabled));
         click(RUN);
-        sleep(1, SECONDS);
         return new PipelineRunFormAO(pipelineName);
     }
 
     public void runPipelineWithException(String message) {
-        sleep(2, SECONDS);
-        get(RUN).shouldBe(not(disabled));
-        sleep(2, SECONDS);
+        get(RUN).shouldBe(exist, not(disabled));
         click(RUN);
-        sleep(1, SECONDS);
         new PipelineRunFormAO().validateException(message);
     }
 

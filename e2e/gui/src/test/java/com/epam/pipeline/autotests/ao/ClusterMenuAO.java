@@ -91,7 +91,6 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
             @Override
             public boolean apply(Driver driver, final WebElement element) {
                 return $(element).has(contains(nodeLabel("WINDOWS")));
-//                        .test(element);
             }
         };
     }
