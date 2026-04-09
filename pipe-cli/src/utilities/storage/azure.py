@@ -151,11 +151,12 @@ class AzureListingManager(AzureManager, AbstractListingManager):
 
 class AzureDeleteManager(AzureManager, AbstractDeleteManager):
 
-    def __init__(self, blob_service, events, bucket, is_hns_enabled=False):
+    def __init__(self, blob_service, events, bucket, is_file, is_hns_enabled=False):
         super(AzureDeleteManager, self).__init__(blob_service, events)
         self.bucket = bucket
         self.delimiter = StorageOperations.PATH_SEPARATOR
         self.listing_manager = AzureListingManager(self.service, self.bucket)
+        self.is_file = is_file
         self.is_hns_enabled = is_hns_enabled
 
     def delete_items(self, relative_path, recursive=False, exclude=[], include=[], version=None, hard_delete=False,
@@ -167,6 +168,8 @@ class AzureDeleteManager(AzureManager, AbstractDeleteManager):
         if prefix.endswith(self.delimiter):
             prefix = prefix[:-1]
             check_file = False
+        elif self.is_hns_enabled and not self.is_file:
+            check_file = False
         if not recursive:
             deleted = self.__delete_blob(prefix, exclude, include)
             if deleted:
@@ -175,10 +178,7 @@ class AzureDeleteManager(AzureManager, AbstractDeleteManager):
             blob_names_for_deletion = []
             for item in self.listing_manager.list_items(prefix, recursive=True, show_all=True):
                 if item.name == prefix and check_file:
-                    # Typically, this branch is used only for files. However, in ADLS Gen2 storage,
-                    # there is no distinction between files and folders. If a path does not end with '/',
-                    # and, consequently, the check_file flag is set to True, this branch will be executed.
-                    # This way, if the item is not a file, an error will occur.
+                    # Typically, this branch is used only for files.
                     blob_names_for_deletion = [item.name]
                     break
                 if self.__file_under_folder(item.name, prefix):

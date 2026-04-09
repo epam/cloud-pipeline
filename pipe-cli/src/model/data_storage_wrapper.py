@@ -431,7 +431,8 @@ class AzureBucketWrapper(CloudDataStorageWrapper):
     def get_delete_manager(self, events, versioning):
         if versioning:
             raise RuntimeError('Versioning is not supported by AZURE cloud provider')
-        return AzureDeleteManager(self._blob_service(read=True, write=True), events, self.bucket, self.is_hns_enabled)
+        return AzureDeleteManager(self._blob_service(read=True, write=True), events, self.bucket, self.is_file(),
+                                  self.is_hns_enabled)
 
     def _blob_service(self, read, write):
         if write or not self.service:
