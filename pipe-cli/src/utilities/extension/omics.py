@@ -23,7 +23,7 @@ import dateutil.parser
 from src.config import Config
 from src.model.data_storage_item_model import DataStorageItemModel, DataStorageItemLabelModel
 from src.utilities.extension.ext_handler import ExtensionHandler, ExtensionApplicationRule
-from src.utilities.printing.storage import print_storage_items, create_print_service
+from src.utilities.printing.storage import print_storage_items, create_storage_print_service
 
 PIPE_OMICS_JUST_PRINT_MESSAGE_ERROR_CODE = 15
 
@@ -113,7 +113,7 @@ class OmicsListFilesHandler(OmicsFileOperationHandler):
         show_details = arguments.get('show_details', False)
         output_format = arguments.get('output_format', None)
 
-        print_service = create_print_service(output_format, show_versions=False, show_extended=False)
+        print_service = create_storage_print_service(output_format)
 
         output = "".join([o if isinstance(o, str) else o.decode("utf-8") for o in process.stdout.readlines()])
         if output:

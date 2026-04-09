@@ -37,7 +37,7 @@ from src.utilities.extension.ext_handler_registry import ExtensionHandlerRegistr
 from src.utilities.hidden_object_manager import HiddenObjectManager
 from src.utilities.patterns import PatternMatcher
 from src.utilities.storage.common import TransferResult, StorageOperations
-from src.utilities.printing.storage import print_storage_items, create_print_service
+from src.utilities.printing.storage import print_storage_items
 from src.utilities.storage.mount import Mount
 from src.utilities.storage.umount import Umount
 from src.utilities.storage_path_permissions_manager import get_permissions_manager
@@ -594,15 +594,13 @@ class DataStorageOperations(object):
 
     @classmethod
     def storage_list(cls, path, show_details, show_versions, recursive, page, show_all, show_extended, show_archive,
-                     output_format=None):
+                     print_service):
         """Lists storage contents
         """
 
         # Check if any external extension should handle this call
         if ExtensionHandlerRegistry.accept('storage', 'ls', locals()):
             sys.exit(0)
-
-        print_service = create_print_service(output_format)
 
         if path:
             root_bucket = None

@@ -269,7 +269,7 @@ class JsonStoragePrintService(StoragePrintService):
         click.echo(self._to_json([]))
 
 
-def create_print_service(output):
+def create_storage_print_service(output):
     if output == 'json':
         return JsonStoragePrintService()
     return PrettyTableStoragePrintService()

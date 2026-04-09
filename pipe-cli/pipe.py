@@ -46,6 +46,7 @@ from src.utilities.datastorage_operations import DataStorageOperations
 from src.utilities.metadata_operations import MetadataOperations
 from src.utilities.permissions_operations import PermissionsOperations
 from src.utilities.printing.print_service import create_print_service
+from src.utilities.printing.storage import create_storage_print_service
 from src.utilities.pipeline_run_operations import PipelineRunOperations
 from src.utilities.ssh_operations import run_ssh, run_scp, create_tunnel, kill_tunnels, list_tunnels
 from src.utilities.update_cli_version import UpdateCLIVersionManager
@@ -1067,14 +1068,15 @@ def mvtodir(name, directory):
 def storage_list(path, show_details, show_versions, recursive, page, all, output, show_archive, output_format):
     """Lists storage contents
     """
+    print_service = create_storage_print_service(output_format)
     show_extended = False
     if output == 'full':
         if path is not None or not show_details:
-            click.echo('Extended output could be configured for the storage summary listing only!', err=True)
+            print_service.error('Extended output could be configured for the storage summary listing only!', err=True)
             sys.exit(1)
         show_extended = True
     DataStorageOperations.storage_list(path, show_details, show_versions, recursive, page, all, show_extended,
-                                       show_archive, output_format=output_format)
+                                       show_archive, print_service)
 
 
 @storage.command(name='mkdir')
