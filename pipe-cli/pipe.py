@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import logging
 import os
 import traceback
@@ -165,9 +166,16 @@ def stacktracing(func, ctx, *args, **kwargs):
         raise
     except Exception as runtime_error:
         if sys.version_info >= (3, 0):
-            click.echo(u'Error: {}'.format(str(runtime_error)), err=True)
+            err_msg = str(runtime_error)
         else:
-            click.echo(u'Error: {}'.format(unicode(runtime_error)), err=True)
+            err_msg = unicode(runtime_error)
+        if ctx.params.get('output_format') == 'json':
+            click.echo(
+                json.dumps({'error': err_msg}, default=str, indent=2, ensure_ascii=False),
+                err=True,
+            )
+        else:
+            click.echo(u'Error: {}'.format(err_msg), err=True)
         if trace:
             traceback.print_exc()
         sys.exit(1)
