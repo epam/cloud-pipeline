@@ -89,6 +89,9 @@ class AzureListingManager(AzureManager, AbstractListingManager):
                                                   prefix=prefix if relative_path else None,
                                                   num_results=page_size if not show_all else None,
                                                   delimiter=StorageOperations.PATH_SEPARATOR if not recursive else None)
+        # TODO: When using ADLS Gen2 storage with the recursive flag enabled, the list_blobs function
+        #  treats both files and folders as Blob class objects. As a result, it cannot accurately identify
+        #  whether an item is a file or a folder, and all items are classified as files.
         absolute_items = [self._to_storage_item(blob) for blob in blobs_generator]
         return absolute_items if recursive else [self._to_local_item(item, prefix) for item in absolute_items]
 
