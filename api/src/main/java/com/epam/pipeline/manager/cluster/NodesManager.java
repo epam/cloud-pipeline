@@ -46,6 +46,7 @@ import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.utils.CommonUtils;
 import io.fabric8.kubernetes.api.model.Node;
+import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import lombok.extern.slf4j.Slf4j;
@@ -593,10 +594,14 @@ public class NodesManager {
 
     private List<NodeInstance> filterKubeNodes(final FilterNodesVO filterNodesVO) {
         List<NodeInstance> result;
-        try (KubernetesClient client = kubernetesManager.getKubernetesClient()) {
+        Config config = new Config();
+        try (KubernetesClient client = kubernetesManager.getKubernetesClient(config)) {
             Map<String, String> labelsMap = new HashedMap<>();
             if (StringUtils.isNotBlank(filterNodesVO.getRunId())) {
                 labelsMap.put(KubernetesConstants.RUN_ID_LABEL, filterNodesVO.getRunId());
+            }
+            if (MapUtils.isNotEmpty(filterNodesVO.getLabels())) {
+                labelsMap.putAll(filterNodesVO.getLabels());
             }
             Predicate<NodeInstance> addressFilter = node -> true;
             if (StringUtils.isNotBlank(filterNodesVO.getAddress())) {
@@ -605,8 +610,7 @@ public class NodesManager {
                                 address.getAddress().equalsIgnoreCase(filterNodesVO.getAddress());
                 addressFilter = node ->
                         node.getAddresses() != null && node.getAddresses()
-                                .stream()
-                                .filter(addressEqualsPredicate).count() > 0;
+                                .stream().anyMatch(addressEqualsPredicate);
             }
             result = client.nodes()
                     .withLabels(labelsMap)
