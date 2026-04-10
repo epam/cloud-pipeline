@@ -952,9 +952,10 @@ public class SystemPreferences {
     public static final ObjectPreference<Map<String, String>> UI_CLI_INSTALL_TEMPLATE = new ObjectPreference<>(
         "ui.pipe.cli.install.template", null, new TypeReference<Map<String, String>>() {}, UI_GROUP,
         isNullOrValidJson(new TypeReference<Map<String, String>>() {}));
-    public static final ObjectPreference<Map<String, String>> UI_VSCODE_EXTENSION_INSTALL_TEMPLATE = new ObjectPreference<>(
-        "ui.vscode.extension.install.template", null, new TypeReference<Map<String, String>>() {}, UI_GROUP,
-        isNullOrValidJson(new TypeReference<Map<String, String>>() {}), true);
+    public static final ObjectPreference<Map<String, String>> UI_VSCODE_EXTENSION_INSTALL_TEMPLATE =
+            new ObjectPreference<>("ui.vscode.extension.install.template", null,
+                    new TypeReference<Map<String, String>>() {}, UI_GROUP,
+                    isNullOrValidJson(new TypeReference<Map<String, String>>() {}), true);
     public static final ObjectPreference<List<ControlEntry>> UI_CONTROLS_SETTINGS = new ObjectPreference<>(
         "ui.controls.settings", null, new TypeReference<List<ControlEntry>>() {}, UI_GROUP,
         isNullOrValidJson(new TypeReference<List<ControlEntry>>() {}));
