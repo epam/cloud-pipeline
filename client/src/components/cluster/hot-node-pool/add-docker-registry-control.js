@@ -109,13 +109,15 @@ class AddDockerRegistryControl extends React.Component {
             result.push(tools);
             for (let t = 0; t < groupTools.length; t++) {
               const tool = groupTools[t];
-              tools.tools.push({
-                ...tool,
-                dockerImage: `${registry.path}/${tool.image}`,
-                registry,
-                group,
-                name: tool.image.split('/').pop()
-              });
+              if (!/^windows$/i.test(tool.platform)) {
+                tools.tools.push({
+                  ...tool,
+                  dockerImage: `${registry.path}/${tool.image}`,
+                  registry,
+                  group,
+                  name: tool.image.split('/').pop()
+                });
+              }
             }
           }
         }
@@ -238,7 +240,7 @@ class AddDockerRegistryControl extends React.Component {
                     const {versions = []} = versionsRequest.value || {};
                     const nonWindowsVersions = versions
                       .filter(v => !v.attributes || !/^windows$/i.test(v.attributes.platform))
-                      .map(v => ({id: v.attributes.id, version: v.version}));
+                      .map(v => ({id: v.attributes?.id, version: v.version}));
                     resolve(nonWindowsVersions);
                   } else {
                     resolve([]);
@@ -399,20 +401,26 @@ class AddDockerRegistryControl extends React.Component {
       imagesToExclude.includes(tool.dockerImage);
     };
     return (
-      group.tools.map(tool => (
-        <Select.Option
-          key={tool.id}
-          value={tool.dockerImage}
-          style={{
-            background: isDisabled(tool)
-              ? '#dfdfdf'
-              : 'none'
-          }}
-          disabled={isDisabled(tool)}
-        >
-          <DockerImageDetails docker={tool.dockerImage} />
-        </Select.Option>
-      ))
+      group.tools.map(tool => {
+        const [r, g, iv] = tool.dockerImage.split('/');
+        const registry = (tool.registry && tool.registry.description) || r;
+        const title = `${registry} > ${g} > ${iv}`;
+        return (
+          <Select.Option
+            key={tool.id}
+            value={tool.dockerImage}
+            style={{
+              background: isDisabled(tool)
+                ? '#dfdfdf'
+                : 'none'
+            }}
+            disabled={isDisabled(tool)}
+            title={title}
+          >
+            <DockerImageDetails docker={tool.dockerImage} />
+          </Select.Option>
+        );
+      })
     );
   };
 
