@@ -46,12 +46,11 @@ class BaseChart extends React.Component {
         plugins,
         units
       } = props || this.props;
-      const {plugins: optPlugins = {}, ...rest} = options;
+      const {plugins: optPlugins = {}, tooltips = {}, skipHiddenXPoints = false, ...rest} = options;
       const format = periodType === Period.day ? 'D MMMM, YYYY' : 'MMMM YYYY';
       const {start} = getPeriod(periodType, period);
       const xAxisLabel = start.format(format);
       const chartOptions = {
-        ...rest,
         plugins: optPlugins,
         elements: {
           line: {
@@ -99,9 +98,14 @@ class BaseChart extends React.Component {
         tooltips: {
           intersect: true,
           mode: 'point',
+          filter: function (tooltipItem) {
+            const {xLabel} = tooltipItem;
+            const {display = true} = xLabel || {};
+            return !skipHiddenXPoints || display;
+          },
           callbacks: {
             title: function (tooltipItems = []) {
-              const {xLabel} = tooltipItems[0];
+              const {xLabel} = tooltipItems[0] || {};
               const {tooltip} = xLabel || {};
               if (tooltip) {
                 return tooltip;
@@ -109,21 +113,44 @@ class BaseChart extends React.Component {
               return null;
             },
             label: function (tooltipItem, data) {
-              const {datasetIndex} = tooltipItem;
+              const {
+                datasetIndex,
+                value: tooltipItemValue,
+                index: dataIndex,
+                xLabel
+              } = tooltipItem || {};
+              const {
+                display: displayXLabel = true
+              } = xLabel || {};
               const {label} = data.datasets[datasetIndex];
-              let value = Number(tooltipItem.value);
-              if (!isNaN(value)) {
-                const formatter = new Intl.NumberFormat('en-US', {
-                  minimumFractionDigits: 0,
-                  maximumFractionDigits: 2
-                });
+              let value = Number(tooltipItemValue);
+              const formatter = new Intl.NumberFormat('en-US', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2
+              });
+              if (!Number.isNaN(value)) {
                 value = formatter.format(value);
+              } else if (!displayXLabel) {
+                const {
+                  data: items = []
+                } = data.datasets[datasetIndex] || {};
+                const prev = items[dataIndex - 1];
+                value = prev !== undefined && !Number.isNaN(Number(prev))
+                  ? formatter.format(Number(prev))
+                  : undefined;
+              } else {
+                value = undefined;
               }
-              return `${label}: ${value}${units}`;
+              if (value) {
+                return `${label}: ${value}${units}`;
+              }
+              return `${label}: -`;
             }
-          }
+          },
+          ...tooltips
         },
-        maintainAspectRatio: false
+        maintainAspectRatio: false,
+        ...rest
       };
       if (this.chart) {
         this.chart.data = data;
