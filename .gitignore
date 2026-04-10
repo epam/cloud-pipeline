@@ -9,3 +9,4 @@ api/src/main/resources/static/
 .gnupg/
 docs/site
 dist
+vscode-cloud-pipeline/.env

@@ -42,7 +42,7 @@ spec:
             - name: cp-run-cleanup-job-state
               mountPath: /opt/cp-run-cleanup-job/state
             - name: cp-run-cleanup-job-config
-              mountPath: /opt/cp-run-cleanup-job/config.json
+              mountPath: /opt/cp-run-cleanup-job/config/config.json
               subPath: config.json
           volumes:
           - name: cp-run-cleanup-job-state
