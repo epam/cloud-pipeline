@@ -64,14 +64,23 @@ public class RunLogMigrationCleaner implements RunCleaner {
         this.messageHelper = messageHelper;
     }
 
+    // For cluster master runs, also migrates logs for all child (worker) runs,
+    // since child pods are cleaned up via clearWorkerNodes() in PodMonitor without invoking cleaners.
     @Override
     public void cleanResources(final PipelineRun run) {
         if (Objects.isNull(run)) {
             return;
         }
         cleanResources(run.getId());
+        if (run.isMasterRun()) {
+            runCRUDService.loadRunsByParentRuns(Collections.singleton(run.getId()))
+                    .getOrDefault(run.getId(), Collections.emptyList())
+                    .forEach(childRun -> cleanResources(childRun.getId()));
+        }
     }
 
+    // Used by AutoscaleManager for orphaned/lost runs — child runs are not handled here
+    // since worker pods are processed individually in that flow.
     @Override
     public void cleanResources(final Long runId) {
         try {

@@ -19,7 +19,6 @@ package com.epam.pipeline.manager.pipeline;
 import java.io.ByteArrayOutputStream;
 import java.io.Writer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
