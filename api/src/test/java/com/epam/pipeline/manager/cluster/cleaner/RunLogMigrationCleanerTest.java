@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.eq;
@@ -77,7 +78,7 @@ public class RunLogMigrationCleanerTest {
         when(runLogStorageManager.isRunLogMigrationConfigured()).thenReturn(true);
         when(messageHelper.getMessage(any())).thenReturn("test message");
         when(runLogManager.loadTasksByRunId(anyLong())).thenReturn(Collections.emptyList());
-        when(runLogStorageManager.saveLogsToStorage(anyLong(), anyMap())).thenReturn(STORAGE_PATH);
+        when(runLogStorageManager.saveLogsToStorage(anyLong(), anyMap(), anyBoolean())).thenReturn(STORAGE_PATH);
     }
 
     @Test
@@ -127,14 +128,29 @@ public class RunLogMigrationCleanerTest {
         final PipelineRun childRun = buildRun(CHILD_RUN_ID_1, null, MASTER_RUN_ID);
 
         when(runCRUDService.loadRunById(MASTER_RUN_ID)).thenReturn(masterRun);
+        when(runLogDao.loadAllLogsForRun(MASTER_RUN_ID)).thenReturn(Collections.emptyList());
         when(runCRUDService.loadRunsByParentRuns(Collections.singleton(MASTER_RUN_ID)))
                 .thenReturn(buildChildRunsMap(Collections.singletonList(childRun)));
         mockRunWithLogs(childRun);
 
         cleaner.cleanResources(masterRun);
 
-        // master is skipped (already migrated), child is migrated
+        // master has no DB logs; child is migrated
         verify(runLogDao, times(1)).deleteTaskByRunIdsIn(any(), eq(false));
+    }
+
+    @Test
+    public void migrateRunLogsToStorageShouldPassMergeWhenLogsStoragePathAlreadySet() {
+        final PipelineRun run = buildRun(MASTER_RUN_ID, null, null);
+        run.setLogsStoragePath(STORAGE_PATH);
+
+        when(runCRUDService.loadRunById(MASTER_RUN_ID)).thenReturn(run);
+        when(runLogDao.loadAllLogsForRun(MASTER_RUN_ID))
+                .thenReturn(Collections.singletonList(buildRunLog(MASTER_RUN_ID)));
+
+        cleaner.cleanResources(run);
+
+        verify(runLogStorageManager).saveLogsToStorage(eq(MASTER_RUN_ID), anyMap(), eq(true));
     }
 
     private void mockRunWithLogs(final PipelineRun run) {

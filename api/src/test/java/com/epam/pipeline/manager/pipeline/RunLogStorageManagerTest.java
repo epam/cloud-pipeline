@@ -167,7 +167,7 @@ public class RunLogStorageManagerTest {
         final Map<PipelineTask, List<RunLog>> logsByTask = Collections.singletonMap(
                 task, Arrays.asList(log1, log2));
 
-        runLogStorageManager.saveLogsToStorage(RUN_ID, logsByTask);
+        runLogStorageManager.saveLogsToStorage(RUN_ID, logsByTask, false);
 
         final String expectedTaskFolder = PATH_PREFIX + RUN_ID + "/" + TASK_1;
         verify(dataStorageManager).createDataStorageFile(
@@ -187,10 +187,30 @@ public class RunLogStorageManagerTest {
         logsByTask.put(task1, Collections.singletonList(log1));
         logsByTask.put(task2, Collections.singletonList(log2));
 
-        runLogStorageManager.saveLogsToStorage(RUN_ID, logsByTask);
+        runLogStorageManager.saveLogsToStorage(RUN_ID, logsByTask, false);
 
         verify(dataStorageManager, times(4)).createDataStorageFile(
                 eq(STORAGE_ID), any(String.class), any(String.class), any(InputStream.class));
+    }
+
+    @Test
+    public void saveLogsToStorageShouldCombineExistingAndNewLogsWhenMergeTrue() throws Exception {
+        final byte[] existingBytes = buildLogJsonBytes(RUN_ID, TASK_1, TaskStatus.RUNNING, "Already in storage");
+        mockLogFileContent(TASK_1, existingBytes);
+
+        final RunLog newLog = buildRunLog(RUN_ID, TASK_1, TaskStatus.SUCCESS, "New from DB");
+        final PipelineTask task = buildPipelineTask(TASK_1, TaskStatus.SUCCESS);
+        final Map<PipelineTask, List<RunLog>> logsByTask = Collections.singletonMap(
+                task, Collections.singletonList(newLog));
+
+        runLogStorageManager.saveLogsToStorage(RUN_ID, logsByTask, true);
+
+        final ArgumentCaptor<InputStream> logCaptor = ArgumentCaptor.forClass(InputStream.class);
+        verify(dataStorageManager).createDataStorageFile(
+                eq(STORAGE_ID), eq(PATH_PREFIX + RUN_ID + "/" + TASK_1), eq(LOG_FILE_NAME), logCaptor.capture());
+        final String written = new String(readStream(logCaptor.getValue()), java.nio.charset.StandardCharsets.UTF_8);
+        assertTrue(written.contains("Already in storage"));
+        assertTrue(written.contains("New from DB"));
     }
 
     @Test
@@ -318,7 +338,7 @@ public class RunLogStorageManagerTest {
         final Map<PipelineTask, List<RunLog>> logsByTask = Collections.singletonMap(
                 buildPipelineTask(TASK_1, TaskStatus.RUNNING), Collections.singletonList(original));
 
-        runLogStorageManager.saveLogsToStorage(RUN_ID, logsByTask);
+        runLogStorageManager.saveLogsToStorage(RUN_ID, logsByTask, false);
 
         verify(dataStorageManager).createDataStorageFile(
                 eq(STORAGE_ID), eq(PATH_PREFIX + RUN_ID + "/" + TASK_1), eq(LOG_FILE_NAME),
@@ -355,7 +375,7 @@ public class RunLogStorageManagerTest {
         final Map<PipelineTask, List<RunLog>> logsByTask = Collections.singletonMap(
                 original, Collections.singletonList(buildRunLog(RUN_ID, TASK_1, TaskStatus.SUCCESS, "test entry")));
 
-        runLogStorageManager.saveLogsToStorage(RUN_ID, logsByTask);
+        runLogStorageManager.saveLogsToStorage(RUN_ID, logsByTask, false);
 
         verify(dataStorageManager).createDataStorageFile(
                 eq(STORAGE_ID), eq(PATH_PREFIX + RUN_ID + "/" + TASK_1), eq("metadata"),
@@ -400,7 +420,7 @@ public class RunLogStorageManagerTest {
         final Map<PipelineTask, List<RunLog>> logsByTask = Collections.singletonMap(
                 task, Arrays.asList(log1, log2));
 
-        runLogStorageManager.saveLogsToStorage(RUN_ID, logsByTask);
+        runLogStorageManager.saveLogsToStorage(RUN_ID, logsByTask, false);
 
         verify(dataStorageManager).createDataStorageFile(
                 eq(STORAGE_ID), eq(expectedFolder), eq(LOG_FILE_NAME), logCaptor.capture());

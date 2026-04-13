@@ -25,6 +25,7 @@ import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
 import com.epam.pipeline.manager.pipeline.RunLogStorageManager;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -66,6 +67,8 @@ public class RunLogMigrationCleaner implements RunCleaner {
 
     // For cluster master runs, also migrates logs for all child (worker) runs,
     // since child pods are cleaned up via clearWorkerNodes() in PodMonitor without invoking cleaners.
+    // TX on entry points: self-invocation skips @Transactional on migrateRunLogsToStorage; delete uses MANDATORY.
+    @Transactional(propagation = Propagation.REQUIRED)
     @Override
     public void cleanResources(final PipelineRun run) {
         if (Objects.isNull(run)) {
@@ -81,6 +84,7 @@ public class RunLogMigrationCleaner implements RunCleaner {
 
     // Used by AutoscaleManager for orphaned/lost runs — child runs are not handled here
     // since worker pods are processed individually in that flow.
+    @Transactional(propagation = Propagation.REQUIRED)
     @Override
     public void cleanResources(final Long runId) {
         try {
@@ -90,8 +94,7 @@ public class RunLogMigrationCleaner implements RunCleaner {
         }
     }
 
-    @Transactional(propagation = Propagation.REQUIRED)
-    public void migrateRunLogsToStorage(final Long runId) {
+    private void migrateRunLogsToStorage(final Long runId) {
         if (!runLogStorageManager.isRunLogMigrationConfigured()) {
             log.warn(messageHelper.getMessage(MessageConstants.WARN_RUN_LOG_STORAGE_NOT_CONFIGURED));
             return;
@@ -100,13 +103,7 @@ public class RunLogMigrationCleaner implements RunCleaner {
 
         final PipelineRun run = runCRUDService.loadRunById(runId);
 
-        if (StringUtils.isNotBlank(run.getLogsStoragePath())) {
-            log.warn(messageHelper.getMessage(MessageConstants.WARN_RUN_LOG_MIGRATED, runId,
-                    run.getLogsStoragePath()));
-            return;
-        }
-
-        final List<RunLog> runLogs = runLogDao.loadAllLogsForRun(runId);
+        final List<RunLog> runLogs = ListUtils.emptyIfNull(runLogDao.loadAllLogsForRun(runId));
         if (runLogs.isEmpty()) {
             log.debug("No logs found in DB for run {}, skipping migration.", runId);
             return;
@@ -128,7 +125,9 @@ public class RunLogMigrationCleaner implements RunCleaner {
                     return tasksByName.getOrDefault(taskId, new PipelineTask(taskId));
                 }));
 
-        String runLogStoragePath = runLogStorageManager.saveLogsToStorage(runId, logsByTask);
+        String runLogStoragePath = runLogStorageManager.saveLogsToStorage(
+                runId, logsByTask, StringUtils.isNotBlank(run.getLogsStoragePath())
+        );
         runCRUDService.updatePipelineRunLogStoragePath(run, runLogStoragePath);
         runLogDao.deleteTaskByRunIdsIn(Collections.singletonList(runId), false);
 

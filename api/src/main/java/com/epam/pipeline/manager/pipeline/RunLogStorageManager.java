@@ -30,6 +30,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
@@ -68,7 +69,7 @@ public class RunLogStorageManager {
     }
 
     public String saveLogsToStorage(final Long runId,
-                                  final Map<PipelineTask, List<RunLog>> logsByTask) {
+                                  final Map<PipelineTask, List<RunLog>> logsByTask, final boolean merge) {
         final AbstractDataStorage storage = resolveStorage().orElse(null);
 
         if (storage == null) {
@@ -85,7 +86,17 @@ public class RunLogStorageManager {
                     runFolder, PipelineTask.buildTaskId(task.getName(), task.getParameters())
             );
 
-            final byte[] logContent = serializeLogs(taskLogs);
+            final List<RunLog> taskLogsToSave;
+            if (merge) {
+                final List<RunLog> existingTaskLogs = loadTaskLogsFromStorage(
+                        runId, PipelineTask.buildTaskId(task.getName(), task.getParameters())
+                );
+                taskLogsToSave = ListUtils.sum(existingTaskLogs, taskLogs);
+            } else {
+                taskLogsToSave = taskLogs;
+            }
+
+            final byte[] logContent = serializeLogs(taskLogsToSave);
             dataStorageManager.createDataStorageFile(
                     storage.getId(), taskFolder, LOG_FILE_NAME, new ByteArrayInputStream(logContent));
 
