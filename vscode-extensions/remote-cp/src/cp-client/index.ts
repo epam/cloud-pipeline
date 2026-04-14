@@ -158,10 +158,10 @@ export abstract class CpClientBase extends Disposable {
 
     const output = await this.execPipeCommand("--version");
     const apiM = output.match(
-      /^Cloud Pipeline API, version (\d+\.\d+\.\d+\.\d+)\.([0-9a-f]{40})/m,
+      /^Cloud Pipeline API, version (\d+\.\d+\.\d+(?:\.(\d+))?)(?:\.([0-9a-f]{40}))?/m,
     );
     const cliM = output.match(
-      /^Cloud Pipeline CLI, version (\d+\.\d+\.\d+\.\d+)\.([0-9a-f]{40})/m,
+      /^Cloud Pipeline CLI, version (\d+\.\d+\.\d+(?:\.(\d+))?)(?:\.([0-9a-f]{40}))?/m,
     );
     const tokenM = output.match(
       /^Access token info:\s*\nIssued to: (\w+)\s*\nIssued at: (\d{4}-\d{2}-\d{2} \d{2}:\d{2})\s*\nExpires at: (\d{4}-\d{2}-\d{2} \d{2}:\d{2})/m,
