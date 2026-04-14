@@ -203,6 +203,25 @@
                 ]]>
             </value>
         </property>
+        <property name="loadAllLogsByRunIdQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        run_id,
+                        log_date,
+                        status,
+                        log_text,
+                        task_name,
+                        instance
+                    FROM
+                        pipeline.pipeline_run_log
+                    WHERE
+                        run_id = :RUN_ID
+                    ORDER BY
+                        log_date ASC
+                ]]>
+            </value>
+        </property>
         <property name="deleteRunLogByRunIdsQuery">
             <value>
                 <![CDATA[

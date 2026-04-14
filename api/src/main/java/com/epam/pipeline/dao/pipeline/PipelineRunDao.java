@@ -1104,7 +1104,8 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         CLUSTER_PRICE,
         NODE_POOL_ID,
         NODE_START_DATE,
-        PROJECT_ID;
+        PROJECT_ID,
+        LOGS_STORAGE_PATH;
 
         public static final RunAccessType DEFAULT_ACCESS_TYPE = RunAccessType.ENDPOINT;
 
@@ -1159,6 +1160,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             params.addValue(TAGS.name(), JsonMapper.convertDataToJsonStringForQuery(run.getTags()));
             params.addValue(SENSITIVE.name(), BooleanUtils.toBoolean(run.getSensitive()));
             params.addValue(KUBE_SERVICE_ENABLED.name(), BooleanUtils.toBoolean(run.isKubeServiceEnabled()));
+            params.addValue(LOGS_STORAGE_PATH.name(), run.getLogsStoragePath());
             addInstanceFields(run, params);
             return params;
         }
@@ -1333,6 +1335,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
                     JsonMapper.parseData(tagsJson, new TypeReference<Map<String, String>>() {});
                 run.setTags(newTags);
             }
+            run.setLogsStoragePath(rs.getString(LOGS_STORAGE_PATH.name()));
             return run;
         }
 

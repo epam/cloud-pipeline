@@ -150,6 +150,7 @@ public class PipelineRun extends AbstractSecuredEntity {
      * Cluster workers price estimation. This value shall be calculated for master runs only.
      */
     private BigDecimal workersPrice;
+    private String logsStoragePath;
 
     public PipelineRun() {
         this.terminating = false;

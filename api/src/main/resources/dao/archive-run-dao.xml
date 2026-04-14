@@ -74,7 +74,8 @@
                         tags,
                         sensitive,
                         pipeline_name,
-                        node_start_date)
+                        node_start_date,
+                        logs_storage_path)
                     VALUES (
                         :RUN_ID,
                         :PIPELINE_ID,
@@ -127,7 +128,8 @@
                         to_jsonb(:TAGS::jsonb),
                         :SENSITIVE,
                         :PIPELINE_NAME,
-                        :NODE_START_DATE)
+                        :NODE_START_DATE,
+                        :LOGS_STORAGE_PATH)
                 ]]>
             </value>
         </property>
