@@ -18,6 +18,7 @@ package com.epam.pipeline.acl.user;
 
 import com.epam.pipeline.controller.vo.PipelineUserExportVO;
 import com.epam.pipeline.controller.vo.PipelineUserVO;
+import com.epam.pipeline.entity.security.NamedJwtToken;
 import com.epam.pipeline.controller.vo.user.RunnerSidVO;
 import com.epam.pipeline.dto.user.OnlineUsers;
 import com.epam.pipeline.entity.info.UserInfo;
@@ -29,6 +30,9 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.PipelineUserEvent;
 import com.epam.pipeline.entity.user.RunnerSid;
 import com.epam.pipeline.manager.quota.RunLimitsService;
+import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.security.JwtTokenRevocationManager;
+import com.epam.pipeline.manager.security.NamedJwtTokenManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
 import com.epam.pipeline.manager.security.acl.AclMaskList;
 import com.epam.pipeline.manager.user.OnlineUsersService;
@@ -66,6 +70,15 @@ public class UserApiService {
 
     @Autowired
     private RunLimitsService runLimitsService;
+
+    @Autowired
+    private NamedJwtTokenManager namedJwtTokenManager;
+
+    @Autowired
+    private AuthManager authManager;
+
+    @Autowired
+    private JwtTokenRevocationManager jwtTokenRevocationManager;
 
     /**
      * Registers a new user
@@ -232,6 +245,30 @@ public class UserApiService {
         return userManager.issueToken(userName, expiration);
     }
 
+    /**
+     * @param tokenName optional label stored in the JWT session registry (not embedded in the JWT).
+     */
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
+    public JwtRawToken issueToken(final String userName, final Long expiration, final String tokenName) {
+        return userManager.issueToken(userName, expiration, tokenName);
+    }
+
+    /**
+     * Issues a JWT for another user (admin) and returns registry metadata including the raw token string.
+     */
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
+    public NamedJwtToken issueNamedJwtToken(final String userName, final Long expiration, final String registryLabel) {
+        return namedJwtTokenManager.issueNamedTokenForUser(userName, expiration, registryLabel);
+    }
+
+    /**
+     * Issues a JWT for the current user and returns registry metadata including the raw token string.
+     */
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    public NamedJwtToken issueNamedJwtTokenForCurrentUser(final Long expiration, final String registryLabel) {
+        return namedJwtTokenManager.issueNamedTokenForCurrentUser(expiration, !authManager.isAdmin(), registryLabel);
+    }
+
     @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
     public List<PipelineUserEvent> importUsersFromCsv(final boolean createUser, final boolean createGroup,
                                                       final List<String> systemDictionariesToCreate,
@@ -277,5 +314,32 @@ public class UserApiService {
 
     public Map<String, Integer> getCurrentUserLaunchLimits(final boolean loadAll) {
         return runLimitsService.getCurrentUserLaunchLimits(loadAll);
+    }
+
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    public void revokeJwtTokenForCurrentUser(final String jti) {
+        final Long userId = userManager.getCurrentUser().getId();
+        jwtTokenRevocationManager.revokeTokenForUser(userId, jti);
+    }
+
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    public List<NamedJwtToken> listCurrentUserNamedJwtTokens() {
+        final Long userId = userManager.getCurrentUser().getId();
+        return namedJwtTokenManager.loadNamedJwtTokensForCurrentUser(userId);
+    }
+
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
+    public void revokeUserJwtTokenAsAdmin(final Long userId, final String jti) {
+        jwtTokenRevocationManager.revokeTokenForUser(userId, jti);
+    }
+
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
+    public void revokeAllUserNamedJwtTokensAsAdmin(final Long userId) {
+        jwtTokenRevocationManager.revokeAllNamedTokensForUser(userId);
+    }
+
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
+    public List<NamedJwtToken> listUserNamedJwtTokensAsAdmin(final Long userId) {
+        return namedJwtTokenManager.loadNamedJwtTokensForUserAsAdmin(userId);
     }
 }

@@ -22,6 +22,7 @@ import com.epam.pipeline.controller.vo.PipelineUserVO;
 import com.epam.pipeline.controller.vo.RouteType;
 import com.epam.pipeline.entity.info.UserInfo;
 import com.epam.pipeline.entity.security.JwtRawToken;
+import com.epam.pipeline.entity.security.NamedJwtToken;
 import com.epam.pipeline.entity.user.CustomControl;
 import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
@@ -47,6 +48,8 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_LONG_LI
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING_LIST;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.isNull;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -80,6 +83,7 @@ public class UserControllerTest extends AbstractControllerTest {
 
     private static final String EXPIRATION = "expiration";
     private static final String NAME = "name";
+    private static final String TOKEN_ID = "tokenId";
     private static final String PREFIX = "prefix";
     private static final String BLOCK_STATUS = "blockStatus";
     private static final String ROLE_IDS = "roleIds";
@@ -105,6 +109,7 @@ public class UserControllerTest extends AbstractControllerTest {
     private static final String ROLE_ANONYMOUS_USER = "ANONYMOUS_USER";
 
     private final JwtRawToken token = SecurityCreatorUtils.getJwtRawToken();
+    private final NamedJwtToken namedJwtToken = SecurityCreatorUtils.getNamedJwtToken();
     private final PipelineUser pipelineUser = UserCreatorUtils.getPipelineUser();
     private final PipelineUserVO pipelineUserVO = UserCreatorUtils.getPipelineUserVO();
     private final UserInfo userInfo = UserCreatorUtils.getUserInfo(UserCreatorUtils.getPipelineUser());
@@ -127,27 +132,43 @@ public class UserControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldGenerateToken() {
-        doReturn(token).when(mockUserApiService).issueToken(TEST_STRING, ID);
+        doReturn(namedJwtToken).when(mockUserApiService)
+                .issueNamedJwtToken(eq(TEST_STRING), eq(ID), isNull(String.class));
 
         final MvcResult mvcResult = performRequest(get(USER_TOKEN_URL)
                 .params(multiValueMapOf(EXPIRATION, ID,
                                         NAME, TEST_STRING)));
 
-        verify(mockUserApiService).issueToken(TEST_STRING, ID);
-        assertResponse(mvcResult, token, SecurityCreatorUtils.JWT_RAW_TOKEN_TYPE);
+        verify(mockUserApiService).issueNamedJwtToken(eq(TEST_STRING), eq(ID), isNull(String.class));
+        assertResponse(mvcResult, namedJwtToken, SecurityCreatorUtils.NAMED_JWT_TOKEN_TYPE);
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldGenerateTokenWithOptionalRegistryName() {
+        final String label = "cli-laptop";
+        doReturn(namedJwtToken).when(mockUserApiService).issueNamedJwtToken(eq(TEST_STRING), eq(ID), eq(label));
+
+        final MvcResult mvcResult = performRequest(get(USER_TOKEN_URL)
+                .params(multiValueMapOf(EXPIRATION, ID,
+                                        NAME, TEST_STRING,
+                                        TOKEN_ID, label)));
+
+        verify(mockUserApiService).issueNamedJwtToken(eq(TEST_STRING), eq(ID), eq(label));
+        assertResponse(mvcResult, namedJwtToken, SecurityCreatorUtils.NAMED_JWT_TOKEN_TYPE);
     }
 
     @Test
     @WithMockUser
     public void shouldGenerateTokenForCurrentUserAndCallMethodWithDurationValidation() {
-        doReturn(token).when(mockAuthManager).issueTokenForCurrentUser(ID);
+        doReturn(namedJwtToken).when(mockUserApiService).issueNamedJwtTokenForCurrentUser(eq(ID), isNull(String.class));
 
         final MvcResult mvcResult = performRequest(get(USER_TOKEN_URL)
                 .params(multiValueMapOf(EXPIRATION, ID,
                                         null, null)));
 
-        verify(mockAuthManager).issueTokenForCurrentUser(ID);
-        assertResponse(mvcResult, token, SecurityCreatorUtils.JWT_RAW_TOKEN_TYPE);
+        verify(mockUserApiService).issueNamedJwtTokenForCurrentUser(eq(ID), isNull(String.class));
+        assertResponse(mvcResult, namedJwtToken, SecurityCreatorUtils.NAMED_JWT_TOKEN_TYPE);
     }
 
     @Test

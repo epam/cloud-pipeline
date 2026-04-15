@@ -18,6 +18,7 @@ package com.epam.pipeline.security.jwt;
 
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.security.JwtTokenClaims;
+import com.epam.pipeline.manager.security.JwtTokenRevocationManager;
 import com.epam.pipeline.security.UserAccessService;
 import com.epam.pipeline.security.UserContext;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ import org.springframework.security.core.Authentication;
 @RequiredArgsConstructor
 public class JwtAuthenticationProvider implements AuthenticationProvider {
     private final JwtTokenVerifier tokenVerifier;
+    private final JwtTokenRevocationManager jwtTokenRevocationManager;
     private final UserAccessService accessService;
 
     @Override
@@ -39,6 +41,7 @@ public class JwtAuthenticationProvider implements AuthenticationProvider {
         JwtTokenClaims claims;
         try {
             claims = tokenVerifier.readClaims(jwtRawToken.getToken());
+            jwtTokenRevocationManager.assertTokenNotRevoked(claims);
         } catch (TokenVerificationException e) {
             throw new AuthenticationServiceException("Authentication error", e);
         }

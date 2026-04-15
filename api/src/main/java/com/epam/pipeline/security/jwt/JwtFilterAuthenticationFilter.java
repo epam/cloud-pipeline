@@ -27,6 +27,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.security.JwtTokenClaims;
+import com.epam.pipeline.manager.security.JwtTokenRevocationManager;
 import com.epam.pipeline.security.UserAccessService;
 import com.epam.pipeline.security.UserContext;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +43,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class JwtFilterAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenVerifier tokenVerifier;
+    private final JwtTokenRevocationManager jwtTokenRevocationManager;
     private final UserAccessService accessService;
     private final boolean disableLogging;
 
@@ -53,6 +55,7 @@ public class JwtFilterAuthenticationFilter extends OncePerRequestFilter {
         try {
             if (!StringUtils.isEmpty(rawToken)) {
                 JwtTokenClaims claims = tokenVerifier.readClaims(rawToken.getToken());
+                jwtTokenRevocationManager.assertTokenNotRevoked(claims);
                 UserContext context = accessService.getJwtUser(rawToken, claims);
                 JwtAuthenticationToken token = new JwtAuthenticationToken(context, context.getAuthorities());
                 token.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

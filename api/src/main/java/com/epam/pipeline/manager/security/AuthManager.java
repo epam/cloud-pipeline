@@ -50,6 +50,9 @@ public class AuthManager {
     @Autowired
     private JwtTokenGenerator jwtTokenGenerator;
 
+    @Autowired
+    private NamedJwtTokenManager namedJwtTokenManager;
+
     @Value("${flyway.placeholders.default.admin}")
     private String defaultAdmin;
 
@@ -113,9 +116,14 @@ public class AuthManager {
     }
 
     public JwtRawToken issueTokenForCurrentUser(Long expiration, boolean validateExpirationDuration) {
+        return issueTokenForCurrentUser(expiration, validateExpirationDuration, null);
+    }
+
+    public JwtRawToken issueTokenForCurrentUser(Long expiration, boolean validateExpirationDuration,
+                                                @Nullable String tokenName) {
         Object principal = getPrincipal();
         if (principal instanceof UserContext) {
-            return issueToken((UserContext) principal, expiration, validateExpirationDuration);
+            return issueToken((UserContext) principal, expiration, validateExpirationDuration, tokenName);
         } else {
             throw new IllegalArgumentException("Unexpected authorization type: " + principal);
         }
@@ -182,15 +190,36 @@ public class AuthManager {
      * @return a JwtRawToken, that contains a string representation of JWT token
      */
     public JwtRawToken issueToken(UserContext user, @Nullable Long expiration, boolean validateExpirationDuration) {
-        return new JwtRawToken(jwtTokenGenerator.encodeToken(user.toClaims(), expiration, validateExpirationDuration));
+        return issueToken(user, expiration, validateExpirationDuration, null);
     }
 
     public JwtRawToken issueToken(UserContext user, @Nullable Long expiration) {
-        return new JwtRawToken(jwtTokenGenerator.encodeToken(user.toClaims(), expiration));
+        return issueToken(user, expiration, false, null);
+    }
+
+    public JwtRawToken issueToken(UserContext user, @Nullable Long expiration, @Nullable String tokenName) {
+        return issueToken(user, expiration, false, tokenName);
+    }
+
+    public JwtRawToken issueToken(UserContext user, @Nullable Long expiration, boolean validateExpirationDuration,
+                                  @Nullable String tokenName) {
+        final JwtRawToken raw = new JwtRawToken(jwtTokenGenerator.encodeToken(user.toClaims(), expiration,
+                validateExpirationDuration));
+        namedJwtTokenManager.registerIssuedNamedJwtToken(raw, user.getUserId(),
+                resolveTokenCreatedByUserId(user), tokenName);
+        return raw;
     }
 
     public JwtRawToken issueAdminToken(@Nullable Long expiration) {
         return new JwtRawToken(jwtTokenGenerator.encodeToken(getAdminContext().toClaims(), expiration));
+    }
+
+    private Long resolveTokenCreatedByUserId(final UserContext tokenOwner) {
+        final UserContext current = getUserContext();
+        if (current != null && current.getUserId() != null) {
+            return current.getUserId();
+        }
+        return tokenOwner.getUserId();
     }
 
     /**

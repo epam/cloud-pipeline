@@ -20,7 +20,10 @@ import com.epam.pipeline.security.acl.redis.AclImplDeserializer;
 import com.epam.pipeline.security.acl.redis.AclImplSerializer;
 import com.epam.pipeline.security.acl.redis.JsonRedisSerializer;
 import com.epam.pipeline.entity.preference.Preference;
+import com.epam.pipeline.entity.security.NamedJwtToken;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -45,6 +48,7 @@ public class CacheConfiguration {
 
     public static final String PREFERENCE_CACHE = "preferences";
     public static final String ACL_CACHE = "aclCache";
+    public static final String NAMED_JWT_TOKEN_CACHE = "namedJwtToken";
 
     private static final String REDIS = "REDIS";
     private static final String MEMORY = "MEMORY";
@@ -144,6 +148,37 @@ public class CacheConfiguration {
     @ConditionalOnProperty(value = CACHE_TYPE, havingValue = REDIS)
     public RedisTemplate<String, Preference> templatePreference(final RedisConnectionFactory redisConnectionFactory) {
         final RedisTemplate<String, Preference> redisTemplate = new RedisTemplate<>();
+        redisTemplate.setConnectionFactory(redisConnectionFactory);
+        return redisTemplate;
+    }
+
+    @Bean("namedJwtTokenCacheManager")
+    public CacheManager namedJwtTokenCacheManager(
+            @Autowired final Optional<RedisCacheManager> redisCacheManagerNamedJwt) {
+        switch (cacheType) {
+            case MEMORY:
+                return new ConcurrentMapCacheManager(NAMED_JWT_TOKEN_CACHE);
+            case REDIS:
+                return redisCacheManagerNamedJwt.orElseThrow(
+                    () -> new IllegalArgumentException("redisCacheManagerNamedJwt is required when cache.type=REDIS")
+                );
+            default:
+                return new NoOpCacheManager();
+        }
+    }
+
+    @Bean("redisCacheManagerNamedJwt")
+    @ConditionalOnProperty(value = CACHE_TYPE, havingValue = REDIS)
+    public RedisCacheManager redisCacheManagerNamedJwt(
+            final RedisTemplate<String, NamedJwtToken> namedJwtTokenRedisTemplate) {
+        return new RedisCacheManager(namedJwtTokenRedisTemplate, Collections.singleton(NAMED_JWT_TOKEN_CACHE));
+    }
+
+    @Bean
+    @ConditionalOnProperty(value = CACHE_TYPE, havingValue = REDIS)
+    public RedisTemplate<String, NamedJwtToken> namedJwtTokenRedisTemplate(
+            @Qualifier("redisConnectionFactory") final RedisConnectionFactory redisConnectionFactory) {
+        final RedisTemplate<String, NamedJwtToken> redisTemplate = new RedisTemplate<>();
         redisTemplate.setConnectionFactory(redisConnectionFactory);
         return redisTemplate;
     }

@@ -144,6 +144,8 @@ import com.epam.pipeline.manager.report.UsersUsageReportService;
 import com.epam.pipeline.manager.resource.StaticResourcesService;
 import com.epam.pipeline.manager.search.SearchManager;
 import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.security.JwtTokenRevocationManager;
+import com.epam.pipeline.manager.security.NamedJwtTokenManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.PermissionsService;
 import com.epam.pipeline.manager.user.OnlineUsersService;
@@ -197,6 +199,12 @@ public class AclTestBeans {
 
     @MockBean
     protected AuthManager mockAuthManager;
+
+    @MockBean
+    protected NamedJwtTokenManager namedJwtTokenManager;
+
+    @MockBean
+    protected JwtTokenRevocationManager jwtTokenRevocationManager;
 
     @MockBean
     protected JwtTokenGenerator tokenGenerator;
