@@ -78,7 +78,8 @@
                         r.cluster_price,
                         r.node_pool_id,
                         r.node_start_date,
-                        r.project_id
+                        r.project_id,
+                        r.logs_storage_path
                     FROM
                         pipeline.pipeline_run r
                     WHERE @WHERE@
