@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -392,6 +392,11 @@ kubectl label nodes "$MLFLOW_KUBE_NODE_NAME" cloud-pipeline/cp-mlflow="true" --o
 CLEANUP_RUN_JOB_KUBE_NODE_NAME=${CLEANUP_RUN_JOB_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-run-cleanup-job to $CLEANUP_RUN_JOB_KUBE_NODE_NAME"
 kubectl label nodes "$CLEANUP_RUN_JOB_KUBE_NODE_NAME" cloud-pipeline/cp-run-cleanup-job="true" --overwrite
+
+# Allow to schedule usage metrics reporter to the master
+USAGE_METRICS_REPORTER_KUBE_NODE_NAME=${USAGE_METRICS_REPORTER_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-usage-metrics-reporter to $USAGE_METRICS_REPORTER_KUBE_NODE_NAME"
+kubectl label nodes "$USAGE_METRICS_REPORTER_KUBE_NODE_NAME" cloud-pipeline/cp-usage-metrics-reporter="true" --overwrite
 
 
 echo
@@ -1624,6 +1629,25 @@ if is_service_requested cp-run-cleanup-job; then
         create_kube_resource $K8S_SPECS_HOME/cp-run-cleanup-job/cp-run-cleanup-job-cron.yaml
 
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-run-cleanup-job: deployed"
+    fi
+    echo
+fi
+
+# Usage metrics reporter сron job
+if is_service_requested cp-usage-metrics-reporter; then
+    print_ok "[Starting Usage Metrics Reporter service]"
+
+    print_info "-> Deleting existing instance of cp-usage-metrics-reporter"
+    delete_cron_job "cp-usage-metrics-reporter" \
+                    "/opt/cp-usage-metrics-reporter"
+
+    if is_install_requested; then
+        print_info "-> Deploying cp-usage-metrics-reporter service"
+        # Run every day by default
+        export CP_USAGE_METRICS_REPORTER_CRON_SCHEDULE="${CP_USAGE_METRICS_REPORTER_CRON_SCHEDULE:-0 1 * * *}"
+        create_kube_resource $K8S_SPECS_HOME/cp-usage-metrics-reporter/cp-usage-metrics-reporter-cron.yaml
+
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-usage-metrics-reporter: deployed"
     fi
     echo
 fi

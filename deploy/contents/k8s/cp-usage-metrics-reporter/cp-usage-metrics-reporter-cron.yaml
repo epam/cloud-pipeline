@@ -1,0 +1,49 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: cp-usage-metrics-reporter
+  namespace: default
+spec:
+  schedule: "${CP_USAGE_METRICS_REPORTER_CRON_SCHEDULE}"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          namespace: default
+          labels:
+            cloud-pipeline/cp-usage-metrics-reporter: "true"
+            cloud-pipeline/core-component: "CronJob"
+        spec:
+          nodeSelector:
+            cloud-pipeline/cp-usage-metrics-reporter: "true"
+          tolerations:
+            - key: node-role.kubernetes.io/master
+              effect: NoSchedule
+          restartPolicy: Never
+          containers:
+          - name: cp-usage-metrics-reporter
+            image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:usage-metrics-reporter-${CP_VERSION}
+            imagePullPolicy: Always
+            command: ["/init"]
+            envFrom:
+            - configMapRef:
+                name: cp-config-global
+            env:
+              - name: CP_USAGE_METRICS_OUTPUT
+                value: "/opt/cp-usage-metrics-reporter/data/usage_metrics_by_day.tsv"
+              - name: CP_USAGE_METRICS_S3_URI
+                value: "${CP_USAGE_METRICS_S3_URI}"
+              - name: CP_USAGE_METRICS_EXTRA_ARGS
+                value: ""
+            volumeMounts:
+            - name: cp-usage-metrics-reporter-data
+              mountPath: /opt/cp-usage-metrics-reporter/data
+          volumes:
+          - name: cp-usage-metrics-reporter-data
+            hostPath:
+              path: /opt/cp-usage-metrics-reporter/data
+          imagePullSecrets:
+          - name: cp-distr-docker-registry-secret

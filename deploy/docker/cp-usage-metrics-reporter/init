@@ -1,0 +1,56 @@
+#!/bin/bash
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+if [ -z "${API}" ]; then
+    if [ -z "${CP_API_SRV_INTERNAL_HOST}" ] || [ -z "${CP_API_SRV_INTERNAL_PORT}" ]; then
+      echo "API is not provided and CP_API_SRV_INTERNAL_HOST/CP_API_SRV_INTERNAL_PORT are not set."
+      exit 22
+    fi
+    export API="https://${CP_API_SRV_INTERNAL_HOST}:${CP_API_SRV_INTERNAL_PORT}/pipeline/restapi/"
+fi
+
+if [ -z "${API_TOKEN}" ]; then
+    if [ -n "${CP_API_JWT_ADMIN}" ]; then
+       export API_TOKEN="${CP_API_JWT_ADMIN}"
+    else
+       echo "API_TOKEN is not set and CP_API_JWT_ADMIN is not set."
+       exit 22
+    fi
+fi
+
+OUTPUT="${CP_USAGE_METRICS_OUTPUT:-/opt/cp-usage-metrics-reporter/data/usage_metrics_by_day.tsv}"
+OUTPUT_DIR="$(dirname "$OUTPUT")"
+mkdir -p "$OUTPUT_DIR"
+
+python3 /opt/cp-usage-metrics-reporter/metrics/usage_metrics_daily_report.py -o "$OUTPUT" ${CP_USAGE_METRICS_EXTRA_ARGS}
+
+if [ -z "${CP_USAGE_METRICS_S3_URI}" ]; then
+    echo "CP_USAGE_METRICS_S3_URI is not set to the Cloud Pipeline storage path. Metric report will not be uploaded."
+    exit 0
+fi
+
+echo "Configuring pipe CLI for storage upload..."
+if ! pipe configure --auth-token "${API_TOKEN}" --api "${API}" --timezone UTC --proxy '' ; then
+  echo "pipe configure failed. Exiting ..."
+  exit 22
+fi
+
+echo "Uploading ${OUTPUT} -> ${CP_USAGE_METRICS_S3_URI}"
+if ! pipe storage cp -f "$OUTPUT" "${CP_USAGE_METRICS_S3_URI}"; then
+  echo "pipe storage cp failed."
+  exit 22
+fi
+
+echo "Metrics report was uploaded to "${CP_USAGE_METRICS_S3_URI}"."

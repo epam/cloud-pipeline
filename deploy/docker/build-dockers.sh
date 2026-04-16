@@ -362,6 +362,13 @@ docker build    $DOCKERS_SOURCES_PATH/cp-run-cleanup-job \
                 --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
 docker push "$CP_RUN_CLEANUP_JOB_DIST_NAME"
 
+# cp-usage-metrics-reporter
+CP_USAGE_METRICS_REPORTER_DIST_NAME=${CP_USAGE_METRICS_REPORTER_DIST_NAME:-"$CP_DIST_REPO_NAME:usage-metrics-reporter-${DOCKERS_VERSION}"}
+docker build -f $DOCKERS_SOURCES_PATH/cp-usage-metrics-reporter \
+                -t "$CP_USAGE_METRICS_REPORTER_DIST_NAME" \
+                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
+docker push "$CP_USAGE_METRICS_REPORTER_DIST_NAME"
+
 
 ########################
 # Base tools dockers
