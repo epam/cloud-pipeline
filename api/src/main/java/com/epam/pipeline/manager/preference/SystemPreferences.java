@@ -43,6 +43,7 @@ import com.epam.pipeline.entity.monitoring.NetworkConsumingRunAction;
 import com.epam.pipeline.entity.notification.filter.NotificationFilter;
 import com.epam.pipeline.entity.metadata.CommonInstanceTagsType;
 import com.epam.pipeline.entity.pipeline.run.runtime.RunSyncRuntimeDataConfig;
+import com.epam.pipeline.entity.log.RunLogStorageConfig;
 import com.epam.pipeline.entity.pipeline.run.RunVisibilityPolicy;
 import com.epam.pipeline.entity.pipeline.run.parameter.RuntimeParameter;
 import com.epam.pipeline.entity.preference.Preference;
@@ -258,6 +259,14 @@ public class SystemPreferences {
      */
     public static final StringPreference DATA_STORAGE_SYSTEM_DATA_STORAGE_NAME = new StringPreference(
         "storage.system.storage.name", null, DATA_STORAGE_GROUP, null);
+
+    public static final ObjectPreference<RunLogStorageConfig> DATA_STORAGE_SYSTEM_RUN_LOGS_CONFIG =
+        new ObjectPreference<>(
+            "storage.system.run.logs.config",
+            RunLogStorageConfig.builder().enabled(false).pathPrefix("logs/runs/").build(),
+            new TypeReference<RunLogStorageConfig>() {},
+            DATA_STORAGE_GROUP,
+            isNullOrValidJson(new TypeReference<RunLogStorageConfig>() {}));
 
     public static final StringPreference DATA_STORAGE_RUN_SHARED_STORAGE_NAME = new StringPreference(
             "storage.system.run.shared.storage.name", null, DATA_STORAGE_GROUP, pass);
@@ -815,9 +824,9 @@ public class SystemPreferences {
                     new TypeReference<Map<String, ResourcesParameter>>() {},
                     LAUNCH_GROUP, isNullOrValidJson(new TypeReference<Map<String, ResourcesParameter>>() {}));
     public static final ObjectPreference<Map<String, Object>> LAUNCH_RESERVATION_PARAMS =
-            new ObjectPreference<>("launch.reservation.parameters", null,
+            new ObjectPreference<>("launch.reservation.parameters", Collections.emptyMap(),
                     new TypeReference<Map<String, Object>>() {},
-                    LAUNCH_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
+                    LAUNCH_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
     public static final IntPreference LAUNCH_CONTAINER_MEMORY_RESOURCE_REQUEST = new IntPreference(
             "launch.container.memory.resource.request", 1, LAUNCH_GROUP, isGreaterThan(0));
     public static final IntPreference LAUNCH_SERVERLESS_WAIT_COUNT = new IntPreference(
@@ -944,9 +953,9 @@ public class SystemPreferences {
         "ui.pipe.cli.install.template", null, new TypeReference<Map<String, String>>() {}, UI_GROUP,
         isNullOrValidJson(new TypeReference<Map<String, String>>() {}));
     public static final ObjectPreference<Map<String, String>> UI_VSCODE_EXTENSION_INSTALL_TEMPLATE =
-            new ObjectPreference<>(
-        "ui.vscode.extension.install.template", null, new TypeReference<Map<String, String>>() {}, UI_GROUP,
-        isNullOrValidJson(new TypeReference<Map<String, String>>() {}), true);
+            new ObjectPreference<>("ui.vscode.extension.install.template", null,
+                    new TypeReference<Map<String, String>>() {}, UI_GROUP,
+                    isNullOrValidJson(new TypeReference<Map<String, String>>() {}), true);
     public static final ObjectPreference<List<ControlEntry>> UI_CONTROLS_SETTINGS = new ObjectPreference<>(
         "ui.controls.settings", null, new TypeReference<List<ControlEntry>>() {}, UI_GROUP,
         isNullOrValidJson(new TypeReference<List<ControlEntry>>() {}));

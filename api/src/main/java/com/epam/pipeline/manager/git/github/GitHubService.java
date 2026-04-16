@@ -257,7 +257,10 @@ public class GitHubService implements GitClientService {
                                                           final boolean isDraft) {
         final GitHubClient client = getClient(pipeline);
 
-        final String path = ProviderUtils.DELIMITER.equals(rawPath) ? version : getContentSha(rawPath, version, client);
+        final String normalizedPath = StringUtils.strip(rawPath, ProviderUtils.DELIMITER);
+        final String path = StringUtils.isBlank(normalizedPath)
+                ? version
+                : getContentSha(normalizedPath, version, client);
 
         final GitHubTree tree = client.getTree(path, !recursive ? null : true);
         final List<GitHubTreeContent> values = tree.getTree();

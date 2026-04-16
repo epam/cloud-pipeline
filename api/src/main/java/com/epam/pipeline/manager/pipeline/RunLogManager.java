@@ -76,10 +76,17 @@ public class RunLogManager implements InitializingBean {
     @Autowired
     private RunLogExporter runLogExporter;
 
+    @Autowired
+    private RunLogStorageManager runLogStorageManager;
+
     private RunLogManager self;
 
     @Value("${runs.console.log.task:Console}")
     private String consoleLogTask;
+
+    public String getConsoleLogTask() {
+        return consoleLogTask;
+    }
 
     @Override
     public void afterPropertiesSet() {
@@ -128,7 +135,13 @@ public class RunLogManager implements InitializingBean {
 
     @Transactional(propagation = Propagation.SUPPORTS)
     public List<RunLog> loadLogsByRunId(Long runId, OffsetPagingFilter filter) {
-        runCRUDService.loadRunById(runId);
+        final PipelineRun run = runCRUDService.loadRunById(runId);
+        if (StringUtils.isNotBlank(run.getLogsStoragePath())) {
+            final List<RunLog> storageLogs = runLogStorageManager.loadLogsFromStorage(runId);
+            if (!storageLogs.isEmpty()) {
+                return storageLogs;
+            }
+        }
         return runLogDao.loadLogsForRun(runId, normalize(filter));
     }
 
@@ -145,6 +158,14 @@ public class RunLogManager implements InitializingBean {
             return getPodLogs(run, normalize(filter));
         }
         String taskId = PipelineTask.buildTaskId(taskName, parameters);
+
+        if (StringUtils.isNotBlank(run.getLogsStoragePath())) {
+            final List<RunLog> storageLogs = runLogStorageManager.loadTaskLogsFromStorage(runId, taskId);
+            if (!storageLogs.isEmpty()) {
+                return storageLogs;
+            }
+        }
+
         return runLogDao.loadLogsForTask(runId, taskId, normalize(filter));
     }
 
@@ -156,6 +177,14 @@ public class RunLogManager implements InitializingBean {
     @Transactional(propagation = Propagation.SUPPORTS)
     public List<PipelineTask> loadTasksByRunId(Long runId) {
         PipelineRun run = runCRUDService.loadRunById(runId);
+
+        if (StringUtils.isNotBlank(run.getLogsStoragePath())) {
+            final List<PipelineTask> storageTasks = runLogStorageManager.loadTasksFromStorage(runId);
+            if (!storageTasks.isEmpty()) {
+                return storageTasks;
+            }
+        }
+
         List<PipelineTask> tasks = runLogDao.loadTasksForRun(runId);
         tasks.forEach(task -> {
             if (run.getStatus().isFinal() && !task.getStatus().isFinal()) {

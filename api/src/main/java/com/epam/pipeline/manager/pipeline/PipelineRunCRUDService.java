@@ -63,6 +63,12 @@ public class PipelineRunCRUDService {
         pipelineRunDao.updateRun(run);
     }
 
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void updatePipelineRunLogStoragePath(final PipelineRun run, final String runLogStoragePath) {
+        run.setLogsStoragePath(runLogStoragePath);
+        pipelineRunDao.updateRun(run);
+    }
+
     public List<PipelineRun> loadRunsByIds(final List<Long> runIds) {
         if (CollectionUtils.isEmpty(runIds)) {
             return Collections.emptyList();
