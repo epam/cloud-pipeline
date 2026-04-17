@@ -88,10 +88,9 @@ public class UserController extends AbstractRestController {
     public Result<NamedJwtToken> issueToken(@RequestParam(required = false) Long expiration,
                                             @RequestParam(required = false) String name,
                                             @RequestParam(required = false) String tokenId) {
-        final String registryLabel = StringUtils.trimToNull(tokenId);
         return Result.success(StringUtils.isNotBlank(name)
-                ? userApiService.issueNamedJwtToken(name, expiration, registryLabel)
-                : userApiService.issueNamedJwtTokenForCurrentUser(expiration, registryLabel));
+                ? userApiService.issueNamedJwtToken(name, expiration, tokenId)
+                : userApiService.issueNamedJwtTokenForCurrentUser(expiration, tokenId));
     }
 
     @GetMapping(value = "/user/token/list")
@@ -99,7 +98,7 @@ public class UserController extends AbstractRestController {
     @ApiOperation(
             value = "Lists named JWT registry entries.",
             notes = "Without userId, lists tokens for the current user. "
-                    + "With userId, lists tokens for that user (admin or user admin only).",
+                    + "With userId, lists tokens for that user (admin, user admin, or write ACL on that user).",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
@@ -107,7 +106,7 @@ public class UserController extends AbstractRestController {
     public Result<List<NamedJwtToken>> listNamedJwtTokens(
             @RequestParam(required = false) final Long userId) {
         if (userId != null) {
-            return Result.success(userApiService.listUserNamedJwtTokensAsAdmin(userId));
+            return Result.success(userApiService.listNamedJwtTokensForUser(userId));
         }
         return Result.success(userApiService.listCurrentUserNamedJwtTokens());
     }
@@ -129,8 +128,10 @@ public class UserController extends AbstractRestController {
     @DeleteMapping(value = "/user/{userId}/token/revoke")
     @ResponseBody
     @ApiOperation(
-            value = "Revokes named JWT entries for a user (admin).",
-            notes = "Specify exactly one of: query param jti (single token), or revokeAll=true (all tokens for user).",
+            value = "Revokes named JWT entries for a user.",
+            notes = "Allowed for admin, user admin, or principals with write access on that user. "
+                    + "Specify exactly one of: query param jti (single token), "
+                    + "or revokeAll=true (all tokens for user).",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
@@ -148,9 +149,9 @@ public class UserController extends AbstractRestController {
             throw new IllegalArgumentException("Specify jti or revokeAll=true.");
         }
         if (hasJti) {
-            userApiService.revokeUserJwtTokenAsAdmin(userId, jti);
+            userApiService.revokeJwtTokenForUser(userId, jti);
         } else {
-            userApiService.revokeAllUserNamedJwtTokensAsAdmin(userId);
+            userApiService.revokeAllUserNamedJwtTokens(userId);
         }
         return Result.success(Boolean.TRUE);
     }

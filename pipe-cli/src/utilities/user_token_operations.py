@@ -13,6 +13,7 @@
 # limitations under the License.
 import sys
 import click
+from prettytable import prettytable
 
 from src.api.user import User
 from src.config import Config
@@ -25,10 +26,10 @@ class UserTokenOperations(object):
     def __init__(self):
         pass
 
-    def print_user_token(self, user_name, duration=None):
-        click.echo(self.generate_user_token(user_name, duration))
+    def print_user_token(self, user_name, duration=None, token_name=None):
+        click.echo(self.generate_user_token(user_name, duration, token_name))
 
-    def generate_user_token(self, user_name, duration=None):
+    def generate_user_token(self, user_name, duration=None, token_name=None):
         try:
             duration = self.convert_to_seconds(duration)
             if duration:
@@ -41,7 +42,10 @@ class UserTokenOperations(object):
                             % self.convert_seconds_to_fmt_str(token_expiration_user_limit_int), err=True
                         )
                         sys.exit(1)
-            return User().generate_user_token(user_name, duration)
+            return User().generate_user_token(user_name, duration, token_name)
+        except ValueError as error:
+            click.echo('Error: %s' % error, err=True)
+            sys.exit(1)
         except Exception as error:
             error_message = str(error)
             if 'Access is denied' in error_message:
@@ -54,6 +58,43 @@ class UserTokenOperations(object):
     def set_user_token(self, user_name):
         if user_name:
             Config.__USER_TOKEN__ = self.generate_user_token(user_name)
+
+    def print_named_tokens(self, user_id=None):
+        rows = User().list_named_tokens(user_id)
+        if not rows:
+            click.echo('No named tokens found.')
+            return
+        table = prettytable.PrettyTable()
+        table.field_names = ['Token Name', 'jti', 'User ID', 'Issued at', 'Expires at']
+        table.align['jti'] = 'l'
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            table.add_row([
+                row.get('tokenName'),
+                row.get('jti'),
+                row.get('userId'),
+                row.get('issuedAt'),
+                row.get('expiresAt'),
+            ])
+        click.echo(table.get_string())
+
+    def revoke_tokens(self, jtis, user_id=None):
+        cleaned = [j.strip() for j in jtis if j and str(j).strip()]
+        if not cleaned:
+            click.echo('Error: specify at least one non-empty -jti value.', err=True)
+            sys.exit(1)
+        errors = []
+        for jti in cleaned:
+            try:
+                User().revoke_named_token(jti, user_id)
+            except Exception as error:
+                errors.append((jti, error))
+        if errors:
+            for jti, error in errors:
+                click.echo('Failed to revoke jti=%s: %s' % (jti, error), err=True)
+            sys.exit(1)
+        click.echo('Revoked %d token(s).' % len(cleaned))
 
     @staticmethod
     def convert_to_seconds(duration):

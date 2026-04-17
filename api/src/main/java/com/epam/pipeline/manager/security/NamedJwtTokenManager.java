@@ -50,7 +50,7 @@ public class NamedJwtTokenManager {
     @Autowired
     public NamedJwtTokenManager(final NamedJwtTokenDao namedJwtTokenDao,
                                 @Lazy final AuthManager authManager,
-                                final UserManager userManager) {
+                                @Lazy final UserManager userManager) {
         this.namedJwtTokenDao = namedJwtTokenDao;
         this.authManager = authManager;
         this.userManager = userManager;

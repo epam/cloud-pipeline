@@ -14,8 +14,11 @@
 from src.api.entity import Entity
 from .base import API
 import json
+import re
+
 from ..model.object_permission_model import ObjectPermissionModel
 
+_SAFE_TOKEN_NAME_PATTERN = re.compile(r'^[A-Za-z0-9_-]+$')
 
 class User(API):
     def __init__(self):
@@ -70,7 +73,15 @@ class User(API):
             raise RuntimeError("Failed to change owner.")
 
     @classmethod
-    def generate_user_token(cls, user_name=None, duration=None):
+    def generate_user_token(cls, user_name=None, duration=None, token_name=None):
+        if token_name is not None:
+            token_name = token_name.strip()
+            if not token_name:
+                token_name = None
+            elif not _SAFE_TOKEN_NAME_PATTERN.match(token_name):
+                raise ValueError(
+                    'Token name may contain only letters, digits, underscore (_) and hyphen (-).'
+                )
         api = cls.instance()
         base_query = '/user/token'
         query_params = []
@@ -78,6 +89,8 @@ class User(API):
             query_params.append('name={}'.format(user_name))
         if duration:
             query_params.append('expiration={}'.format(str(duration)))
+        if token_name:
+            query_params.append('tokenId={}'.format(token_name))
         if query_params:
             query = '{}?{}'.format(base_query, '&'.join(query_params))
         else:
@@ -113,3 +126,31 @@ class User(API):
     def load_launch_limits(cls, load_all=False):
         api = cls.instance()
         return api.retryable_call('GET', '/user/launchLimits?loadAll={}'.format(load_all)) or {}
+
+    @classmethod
+    def list_named_tokens(cls, user_id=None):
+        api = cls.instance()
+        if user_id is not None:
+            query = '/user/token/list?userId={}'.format(int(user_id))
+        else:
+            query = '/user/token/list'
+        response_data = api.call(query, None)
+        if 'payload' in response_data:
+            return response_data['payload'] or []
+        if 'message' in response_data:
+            raise RuntimeError(response_data['message'])
+        raise RuntimeError('Failed to list named tokens.')
+
+    @classmethod
+    def revoke_named_token(cls, jti, user_id=None):
+        api = cls.instance()
+        if user_id is not None:
+            path = '/user/{}/token/revoke?jti={}'.format(int(user_id), jti)
+        else:
+            path = '/user/token/revoke?jti={}'.format(jti)
+        response_data = api.call(path, None, http_method='DELETE')
+        if 'payload' in response_data:
+            return response_data['payload']
+        if 'message' in response_data:
+            raise RuntimeError(response_data['message'])
+        raise RuntimeError('Failed to revoke token.')

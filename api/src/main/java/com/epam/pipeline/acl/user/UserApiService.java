@@ -250,7 +250,8 @@ public class UserApiService {
      */
     @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
     public JwtRawToken issueToken(final String userName, final Long expiration, final String tokenName) {
-        return userManager.issueToken(userName, expiration, tokenName);
+        return userManager.issueToken(userName, expiration,
+                NamedJwtToken.normalizeTokenId(tokenName));
     }
 
     /**
@@ -258,7 +259,8 @@ public class UserApiService {
      */
     @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
     public NamedJwtToken issueNamedJwtToken(final String userName, final Long expiration, final String registryLabel) {
-        return namedJwtTokenManager.issueNamedTokenForUser(userName, expiration, registryLabel);
+        return namedJwtTokenManager.issueNamedTokenForUser(userName, expiration,
+                NamedJwtToken.normalizeTokenId(registryLabel));
     }
 
     /**
@@ -266,7 +268,8 @@ public class UserApiService {
      */
     @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public NamedJwtToken issueNamedJwtTokenForCurrentUser(final Long expiration, final String registryLabel) {
-        return namedJwtTokenManager.issueNamedTokenForCurrentUser(expiration, !authManager.isAdmin(), registryLabel);
+        return namedJwtTokenManager.issueNamedTokenForCurrentUser(expiration, !authManager.isAdmin(),
+                NamedJwtToken.normalizeTokenId(registryLabel));
     }
 
     @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
@@ -328,18 +331,18 @@ public class UserApiService {
         return namedJwtTokenManager.loadNamedJwtTokensForCurrentUser(userId);
     }
 
-    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
-    public void revokeUserJwtTokenAsAdmin(final Long userId, final String jti) {
+    @PreAuthorize(USER_ID_ADMIN_OR_USER_ADMIN_OR_WRITE)
+    public void revokeJwtTokenForUser(final Long userId, final String jti) {
         jwtTokenRevocationManager.revokeTokenForUser(userId, jti);
     }
 
-    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
-    public void revokeAllUserNamedJwtTokensAsAdmin(final Long userId) {
+    @PreAuthorize(USER_ID_ADMIN_OR_USER_ADMIN_OR_WRITE)
+    public void revokeAllUserNamedJwtTokens(final Long userId) {
         jwtTokenRevocationManager.revokeAllNamedTokensForUser(userId);
     }
 
-    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
-    public List<NamedJwtToken> listUserNamedJwtTokensAsAdmin(final Long userId) {
+    @PreAuthorize(USER_ID_ADMIN_OR_USER_ADMIN_OR_WRITE)
+    public List<NamedJwtToken> listNamedJwtTokensForUser(final Long userId) {
         return namedJwtTokenManager.loadNamedJwtTokensForUserAsAdmin(userId);
     }
 }

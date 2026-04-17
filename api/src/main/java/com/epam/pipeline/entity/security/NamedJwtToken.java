@@ -19,8 +19,10 @@ package com.epam.pipeline.entity.security;
 import lombok.Builder;
 import lombok.Value;
 
+import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.regex.Pattern;
 
 /**
  * Persisted metadata for an issued user JWT registered in the named-token table (see issue #4327).
@@ -29,6 +31,8 @@ import java.time.LocalDateTime;
 @Builder
 public class NamedJwtToken implements Serializable {
     private static final long serialVersionUID = 1L;
+
+    private static final Pattern TOKEN_ID_PATTERN = Pattern.compile("^[A-Za-z0-9_-]+$");
 
     String jti;
     Long userId;
@@ -43,4 +47,24 @@ public class NamedJwtToken implements Serializable {
      * Raw JWT string. Present when the token is freshly issued; not loaded from the registry (list APIs omit it).
      */
     String token;
+
+    /**
+     * Trims the input; returns {@code null} if blank. Non-blank values must match
+     * {@code [A-Za-z0-9_-]+} (optional {@code tokenId} / registry label on issue-token requests).
+     */
+    @Nullable
+    public static String normalizeTokenId(@Nullable final String raw) {
+        if (raw == null) {
+            return null;
+        }
+        final String trimmed = raw.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        if (!TOKEN_ID_PATTERN.matcher(trimmed).matches()) {
+            throw new IllegalArgumentException(
+                    "Token registry label may contain only letters, digits, underscore (_), and hyphen (-).");
+        }
+        return trimmed;
+    }
 }

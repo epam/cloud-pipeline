@@ -40,6 +40,13 @@ public final class AclExpressions {
             ADMIN_ONLY + OR + USER_ADMIN_ONLY + OR_USER_READER + OR + "hasPermission(filterObject, 'READ')";
     public static final String USER_READ_PERMISSION =
             "hasPermission(#id, 'com.epam.pipeline.entity.user.PipelineUser', 'READ')";
+
+    /**
+     * Operations on another user's JWT registry: platform admin, user admin, or ACL write on that user.
+     */
+    public static final String USER_ID_ADMIN_OR_USER_ADMIN_OR_WRITE =
+            ADMIN_ONLY + OR + USER_ADMIN_ONLY + OR
+                    + "hasPermission(#userId, 'com.epam.pipeline.entity.user.PipelineUser', 'WRITE')";
     public static final String PIPELINE_CREATE = "hasRole('ADMIN') OR " +
             "@pipelinePermissionManager.hasCreatePermission(#pipeline.pipelineType, #pipeline.parentFolderId)";
 
