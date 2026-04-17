@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import json
 import sys
 import click
 from prettytable import prettytable
@@ -59,8 +60,11 @@ class UserTokenOperations(object):
         if user_name:
             Config.__USER_TOKEN__ = self.generate_user_token(user_name)
 
-    def print_named_tokens(self, user_id=None):
+    def print_named_tokens(self, user_id=None, output_format=None):
         rows = User().list_named_tokens(user_id)
+        if output_format == 'json':
+            click.echo(json.dumps(rows, default=str, indent=2, ensure_ascii=False))
+            return
         if not rows:
             click.echo('No named tokens found.')
             return
@@ -79,7 +83,7 @@ class UserTokenOperations(object):
             ])
         click.echo(table.get_string())
 
-    def revoke_tokens(self, jtis, user_id=None):
+    def revoke_tokens(self, jtis, user_id=None, output_format=None):
         cleaned = [j.strip() for j in jtis if j and str(j).strip()]
         if not cleaned:
             click.echo('Error: specify at least one non-empty -jti value.', err=True)
@@ -94,7 +98,23 @@ class UserTokenOperations(object):
             for jti, error in errors:
                 click.echo('Failed to revoke jti=%s: %s' % (jti, error), err=True)
             sys.exit(1)
-        click.echo('Revoked %d token(s).' % len(cleaned))
+        if output_format == 'json':
+            payload = {'revokedCount': len(cleaned), 'jtis': cleaned}
+            if user_id is not None:
+                payload['userId'] = user_id
+            click.echo(json.dumps(payload, indent=2, ensure_ascii=False))
+        else:
+            click.echo('Revoked %d token(s).' % len(cleaned))
+
+    def revoke_all_named_tokens(self, user_id, output_format=None):
+        User().revoke_named_token(user_id=user_id, revoke_all=True)
+        if output_format == 'json':
+            click.echo(json.dumps(
+                {'revokedAll': True, 'userId': user_id},
+                indent=2,
+                ensure_ascii=False))
+        else:
+            click.echo('Revoked all named tokens for user id %s.' % user_id)
 
     @staticmethod
     def convert_to_seconds(duration):

@@ -142,15 +142,31 @@ class User(API):
         raise RuntimeError('Failed to list named tokens.')
 
     @classmethod
-    def revoke_named_token(cls, jti, user_id=None):
+    def revoke_named_token(cls, jti=None, user_id=None, revoke_all=False):
+        """
+        Revoke named JWT registry entries.
+
+        :param jti: single token id; required unless revoke_all is True
+        :param user_id: target user for admin-style paths; omit for current user (jti-only)
+        :param revoke_all: if True, revoke every named token for user_id (requires user_id)
+        """
         api = cls.instance()
-        if user_id is not None:
-            path = '/user/{}/token/revoke?jti={}'.format(int(user_id), jti)
+        if revoke_all:
+            if user_id is None:
+                raise ValueError('user_id is required when revoke_all=True')
+            path = '/user/{}/token/revoke?revokeAll=true'.format(int(user_id))
         else:
-            path = '/user/token/revoke?jti={}'.format(jti)
+            if not jti:
+                raise ValueError('jti is required when revoke_all=False')
+            if user_id is not None:
+                path = '/user/{}/token/revoke?jti={}'.format(int(user_id), jti)
+            else:
+                path = '/user/token/revoke?jti={}'.format(jti)
         response_data = api.call(path, None, http_method='DELETE')
         if 'payload' in response_data:
             return response_data['payload']
         if 'message' in response_data:
             raise RuntimeError(response_data['message'])
+        if revoke_all:
+            raise RuntimeError('Failed to revoke all tokens for user.')
         raise RuntimeError('Failed to revoke token.')

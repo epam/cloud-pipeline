@@ -2034,25 +2034,41 @@ def token(user_id, duration, token_name):
 @cli.command(name='list-tokens')
 @click.option('--user-id', 'user_id', required=False, type=int,
               help='List tokens registered for this user (requires access). Omit to list current user tokens.')
+@click.option('-o', '--output-format', type=click.Choice(['json']), default=None,
+              help='Output format. Default is a text table.')
 @common_options
-def list_tokens(user_id):
+def list_tokens(user_id, output_format):
     """
     Lists named JWT token entries (metadata only; secret token values are not shown).
     """
-    UserTokenOperations().print_named_tokens(user_id)
+    UserTokenOperations().print_named_tokens(user_id, output_format)
 
 
 @cli.command(name='revoke-tokens')
-@click.option('-jti', '--jti', 'jtis', required=True, multiple=True,
+@click.option('-jti', '--jti', 'jtis', required=False, multiple=True,
               help='JWT id (jti) to revoke. Repeat -jti/--jti for multiple tokens.')
 @click.option('--user-id', 'user_id', required=False, type=int,
               help='Revoke for this user (requires access). Omit to revoke as the current user.')
+@click.option('--all', 'revoke_all', is_flag=True, default=False,
+              help='Revoke all named tokens for --user-id (admin-style; cannot be combined with -jti).')
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help='Output format. Default is plain text.')
 @common_options
-def revoke_tokens(jtis, user_id):
+def revoke_tokens(jtis, user_id, output_format, revoke_all):
     """
     Revokes JWT token by jti (see list-tokens). Each -jti is revoked in a separate request.
+    With --all and --user-id, revokes every named token for that user in one request.
     """
-    UserTokenOperations().revoke_tokens(jtis, user_id)
+    if revoke_all:
+        if user_id is None:
+            raise click.UsageError('--all requires --user-id')
+        if jtis:
+            raise click.UsageError('Cannot use --all together with -jti / --jti')
+        UserTokenOperations().revoke_all_named_tokens(user_id, output_format)
+        return
+    if not jtis:
+        raise click.UsageError('Specify -jti / --jti at least once, or use --all with --user-id')
+    UserTokenOperations().revoke_tokens(jtis, user_id, output_format)
 
 
 @cli.group()

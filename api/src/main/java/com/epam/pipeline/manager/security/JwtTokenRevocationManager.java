@@ -63,6 +63,9 @@ public class JwtTokenRevocationManager {
         if (StringUtils.isBlank(jti)) {
             throw new IllegalArgumentException("JWT id (jti) is required");
         }
+        if (jwtTokenRevocationDao.isRevoked(jti)) {
+            throw new IllegalArgumentException("This JWT has already been revoked");
+        }
         final Optional<NamedJwtToken> row = namedJwtTokenDao.loadByJti(jti);
         if (row.isPresent() && !userId.equals(row.get().getUserId())) {
             throw new IllegalArgumentException("JWT id does not belong to the specified user");

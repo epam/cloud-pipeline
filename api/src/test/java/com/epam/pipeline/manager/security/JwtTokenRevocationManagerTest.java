@@ -79,7 +79,17 @@ public class JwtTokenRevocationManagerTest {
     }
 
     @Test
+    public void shouldFailWhenTokenAlreadyRevoked() {
+        doReturn(true).when(jwtTokenRevocationDao).isRevoked(JTI);
+
+        assertThatThrownBy(() -> jwtTokenRevocationManager.revokeTokenForUser(USER_ID, JTI))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("already been revoked");
+    }
+
+    @Test
     public void shouldRevokeByJtiWhenNoNamedTokenRow() {
+        doReturn(false).when(jwtTokenRevocationDao).isRevoked(JTI);
         doReturn(Optional.empty()).when(namedJwtTokenDao).loadByJti(JTI);
 
         jwtTokenRevocationManager.revokeTokenForUser(USER_ID, JTI);
@@ -100,6 +110,7 @@ public class JwtTokenRevocationManagerTest {
                 .expiresAt(now)
                 .token(null)
                 .build();
+        doReturn(false).when(jwtTokenRevocationDao).isRevoked(JTI);
         doReturn(Optional.of(otherUser)).when(namedJwtTokenDao).loadByJti(JTI);
 
         assertThatThrownBy(() -> jwtTokenRevocationManager.revokeTokenForUser(USER_ID, JTI))
