@@ -51,6 +51,11 @@ function sftpReadFile(client: Client, remotePath: string): Promise<Buffer> {
   });
 }
 
+/** Safe for embedding in a double-quoted remote shell fragment. */
+function shellEscapeDoubleQuoted(s: string): string {
+  return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\$/g, '\\$').replace(/`/g, '\\`');
+}
+
 /**
  * Provisions a throwaway RSA key on the run, adds to authorized_keys for sshUsers, downloads private key.
  * Mirrors pipe-cli generate_remote_openssh_and_putty_keys + copy keys (OpenSSH path only, no putty).
@@ -63,9 +68,6 @@ export async function provisionPasswordlessKey(
   sshConfigUser: string
 ): Promise<KeyProvisionResult> {
   const keyName = randomKeyName(runId);
-  const remoteKeysPath = '/root/.pipe/.keys';
-  const remotePrivate = `${remoteKeysPath}/${keyName}`;
-  const remotePublic = `${remotePrivate}.pub`;
   const localPrivate = path.join(keysDir, keyName);
   const localPublic = `${localPrivate}.pub`;
 
@@ -74,22 +76,10 @@ export async function provisionPasswordlessKey(
     throw new Error('No SSH users for key provisioning');
   }
 
-  const script = `
-set -e
-mkdir -p "$(dirname "${remotePrivate}")"
-ssh-keygen -t rsa -f "${remotePrivate}" -N "" -q
-for authorized_user in ${users.map((u) => `"${u.replace(/"/g, '\\"')}"`).join(' ')}; do
-  user_home_path="$(getent passwd "$authorized_user" | cut -d: -f6)"
-  user_openssh_path="$user_home_path/.ssh"
-  user_authorized_keys_path="$user_openssh_path/authorized_keys"
-  mkdir -p "$user_openssh_path"
-  touch "$user_authorized_keys_path"
-  chown -R "$authorized_user:$authorized_user" "$user_openssh_path"
-  chmod 700 "$user_openssh_path"
-  chmod 600 "$user_authorized_keys_path"
-  cat "${remotePublic}" >> "$user_authorized_keys_path"
-done
-`.trim();
+  const sshUser = (connect.username ?? '').trim();
+  if (!sshUser) {
+    throw new Error('SSH username is required for key provisioning');
+  }
 
   const client = new Client();
   await new Promise<void>((resolve, reject) => {
@@ -98,6 +88,45 @@ done
       .on('error', reject)
       .connect(connect);
   });
+
+  const qSshUser = `"${shellEscapeDoubleQuoted(sshUser)}"`;
+  const homeProbe = await execCommand(client, `getent passwd ${qSshUser} | cut -d: -f6`);
+  if (homeProbe.code !== 0) {
+    client.end();
+    throw new Error(
+      `Could not resolve home for SSH user ${sshUser}: ${homeProbe.stderr || homeProbe.stdout || `exit ${homeProbe.code}`}`
+    );
+  }
+  const remoteHome = homeProbe.stdout.trim();
+  if (!remoteHome) {
+    client.end();
+    throw new Error(`Unknown SSH user (no passwd entry): ${sshUser}`);
+  }
+
+  const remoteKeysPath = `${remoteHome}/.pipe/.keys`;
+  const remotePrivate = `${remoteKeysPath}/${keyName}`;
+  const remotePublic = `${remotePrivate}.pub`;
+  const qRemotePrivate = `"${shellEscapeDoubleQuoted(remotePrivate)}"`;
+  const qRemotePublic = `"${shellEscapeDoubleQuoted(remotePublic)}"`;
+
+  const script = `
+set -e
+mkdir -p "$(dirname ${qRemotePrivate})"
+ssh-keygen -t rsa -f ${qRemotePrivate} -N "" -q
+for authorized_user in ${users.map((u) => `"${shellEscapeDoubleQuoted(u)}"`).join(' ')}; do
+  user_home_path="$(getent passwd "$authorized_user" | cut -d: -f6)"
+  user_openssh_path="$user_home_path/.ssh"
+  user_authorized_keys_path="$user_openssh_path/authorized_keys"
+  mkdir -p "$user_openssh_path"
+  touch "$user_authorized_keys_path"
+  if [ "$(id -u)" -eq 0 ]; then
+    chown -R "$authorized_user:$authorized_user" "$user_openssh_path"
+  fi
+  chmod 700 "$user_openssh_path"
+  chmod 600 "$user_authorized_keys_path"
+  cat ${qRemotePublic} >> "$user_authorized_keys_path"
+done
+`.trim();
 
   let hostRsaPubKeyBody = '';
   try {
