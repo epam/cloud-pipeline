@@ -47,6 +47,12 @@ dependencies {
     compile group: 'org.apache.velocity', name: 'velocity', version: '1.7'
     compile group: 'org.apache.velocity', name: 'velocity-tools', version: '2.0'
 
+    // Azure
+    // azure-identity uses Reactor at runtime; keep explicit so it is not dropped from the classpath
+    compile group: 'io.projectreactor', name: 'reactor-core', version: '3.4.34'
+    compile group: 'com.azure', name: 'azure-identity', version: '1.18.2'
+    compile group: 'com.microsoft.graph', name: 'microsoft-graph', version: '6.62.0'
+
     //Tests
     testCompile group: 'junit', name: 'junit', version: '4.12'
     testCompile group: 'com.h2database', name: 'h2', version: '1.4.197'
