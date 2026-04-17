@@ -483,7 +483,9 @@ function configure_package_manager {
                   if [ "$CP_REPO_BASE_EXTRA_URL_UBUNTU" ]; then
                         echo "Extra repositories mirror is being configured: $CP_REPO_BASE_EXTRA_URL_UBUNTU"
 
-                        if [ "${CP_REPO_EXTRA_DISABLE_DEFAULT_REPOS,,}" == 'true' ]; then
+                        if [ "${CP_REPO_EXTRA_DISABLE_DEFAULT_REPOS_UBUNTU,,}" == 'true' ] || \
+                              ([ "${CP_REPO_EXTRA_DISABLE_DEFAULT_REPOS_UBUNTU,,}" != 'false' ] && \
+                              [ "${CP_REPO_EXTRA_DISABLE_DEFAULT_REPOS,,}" == 'true' ]); then
                               echo "[INFO] Default repositories list (/etc/apt/sources.list) is requested to be delete via CP_REPO_EXTRA_DISABLE_DEFAULT_REPOS"
                               echo "" > /etc/apt/sources.list
                         fi
@@ -510,7 +512,9 @@ EOF
                   if [ "$CP_REPO_BASE_EXTRA_URL_ROCKY" ]; then
                         echo "Extra repositories mirror is being configured: $CP_REPO_BASE_EXTRA_URL_ROCKY"
 
-                        if [ "${CP_REPO_EXTRA_DISABLE_DEFAULT_REPOS,,}" == 'true' ]; then
+                        if [ "${CP_REPO_EXTRA_DISABLE_DEFAULT_REPOS_ROCKY,,}" == 'true' ] || \
+                              ([ "${CP_REPO_EXTRA_DISABLE_DEFAULT_REPOS_ROCKY,,}" != 'false' ] && \
+                              [ "${CP_REPO_EXTRA_DISABLE_DEFAULT_REPOS,,}" == 'true' ]); then
                               echo "[INFO] Default repositories list (/etc/yum.repos.d/) is requested to be delete via CP_REPO_EXTRA_DISABLE_DEFAULT_REPOS"
                               rm -f /etc/yum.repos.d/Rocky-*.repo
                         fi
