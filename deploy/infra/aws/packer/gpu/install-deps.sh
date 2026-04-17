@@ -82,7 +82,7 @@ yum install -y vulkan-devel \
                 kernel-devel \
                 kernel-modules-extra
 
-DRIVER_VERSION=570.124.06
+DRIVER_VERSION=595.58.03
 curl -k -L -O https://us.download.nvidia.com/tesla/$DRIVER_VERSION/NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run
 chmod +x ./NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run
 ./NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run -s
