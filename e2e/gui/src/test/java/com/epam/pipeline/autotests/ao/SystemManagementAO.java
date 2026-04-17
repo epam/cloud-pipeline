@@ -31,6 +31,7 @@ import java.util.NoSuchElementException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.codeborne.selenide.CollectionCondition.sizeGreaterThan;
 import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exist;
@@ -48,10 +49,12 @@ import static com.codeborne.selenide.WebDriverRunner.driver;
 import static com.epam.pipeline.autotests.ao.Primitive.NAT_GATEWAY_TAB;
 import static com.epam.pipeline.autotests.ao.Primitive.SYSTEM_LOGS_TAB;
 import static com.epam.pipeline.autotests.utils.C.ADMIN_TOKEN_IS_SERVICE;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.combobox;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.inputOf;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.comboboxDropdown;
 import static java.lang.String.format;
+import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertTrue;
 
@@ -95,7 +98,7 @@ public class SystemManagementAO extends SettingsPageAO {
             List<String> serviceFilters = getMultiSelectFilterValues("Service");
             List<String> typeFilters = getMultiSelectFilterValues("Type");
             String messageFilter = getMessageFilter();
-            sleep(5, SECONDS);
+            containerLogs().shouldBe(sizeGreaterThan(0), ofMillis(DEFAULT_TIMEOUT));
             while (containerLogs().stream().filter(r ->
                     r.has(matchText(message)) && r.has(text(type))).count() == 0
                     && attempt < maxAttempts) {
