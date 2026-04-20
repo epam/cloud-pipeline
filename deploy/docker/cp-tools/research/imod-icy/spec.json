@@ -1,0 +1,7 @@
+{
+    "short_description": "Icy - An open community platform for bioimage informatics. IMOD - a set of image processing, modeling and display programs used for tomographic reconstruction and for 3D reconstruction of EM serial sections and optical sections",
+    "instance_type": "${CP_PREF_CLUSTER_INSTANCE_TYPE_GPU_GL}",
+    "disk_size": "100",
+    "default_command": "export CP_NM_PROXY_HOST=${CP_EDGE_EXTERNAL_HOST} && export CP_NM_PROXY_PORT=${CP_EDGE_EXTERNAL_PORT} && /init && bash /etc/nomachine/nomachine_launcher.sh",
+    "endpoints": [ "{ \"name\": \"NoMachine Desktop\", \"nginx\": { \"port\": \"8888\" }, \"isDefault\": false }" ]
+}
