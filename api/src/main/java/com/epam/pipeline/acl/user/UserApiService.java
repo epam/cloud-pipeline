@@ -331,12 +331,12 @@ public class UserApiService {
         return namedJwtTokenManager.loadNamedJwtTokensForCurrentUser(userId);
     }
 
-    @PreAuthorize(USER_ID_ADMIN_OR_USER_ADMIN_OR_WRITE)
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY + OR + USER_WRITE_BY_USER_ID)
     public void revokeJwtTokenForUser(final Long userId, final String jti) {
         jwtTokenRevocationManager.revokeTokenForUser(userId, jti);
     }
 
-    @PreAuthorize(USER_ID_ADMIN_OR_USER_ADMIN_OR_WRITE)
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY + OR + USER_WRITE_BY_USER_ID)
     public List<NamedJwtToken> listNamedJwtTokensForUser(final Long userId) {
         return namedJwtTokenManager.loadNamedJwtTokensForUserAsAdmin(userId);
     }
