@@ -38,7 +38,7 @@ class PrintService(object):
         pass
 
     @abstractmethod
-    def error(self, message):
+    def error(self, message, err=False, buf=False):
         pass
 
     @abstractmethod
@@ -69,6 +69,18 @@ class PrintService(object):
     def run_tags(self, run_model):
         pass
 
+    @abstractmethod
+    def launch_run_id(self, run_id):
+        pass
+
+    @abstractmethod
+    def launch_run_status(self, run_status):
+        pass
+
+    @abstractmethod
+    def launch_run_parameters(self, parameters):
+        pass
+
 
 class PrettyTablePrintService(PrintService):
 
@@ -84,8 +96,8 @@ class PrettyTablePrintService(PrintService):
         # not supported for text table
         pass
 
-    def error(self, message):
-        click.echo(message)
+    def error(self, message, err=False, buf=False):
+        click.echo(message, err=err)
 
     def empty_runs(self, run_filter=None):
         click.echo('No data is available for the request')
@@ -207,22 +219,62 @@ class PrettyTablePrintService(PrintService):
             click.echo('No tags are configured')
         click.echo()
 
+    def launch_run_id(self, run_id):
+        click.echo(run_id)
+
+    def launch_run_status(self, run_status):
+        click.echo(run_status)
+
+    def launch_run_parameters(self, parameters):
+        for parameter in parameters:
+            if parameter.required:
+                click.echo('* --{}'.format(parameter.name))
+            else:
+                click.echo('  --{} ({})'.format(parameter.name, parameter.parameter_type))
+            if parameter.value is not None:
+                click.echo('    Default: {}'.format(parameter.value))
+            click.echo()
+
 
 class JsonPrintService(PrintService):
 
     def __init__(self):
-        self.__buffer = None
+        self.__buffer = {}
 
     @staticmethod
     def _to_json(obj):
         return json.dumps(obj, default=str, indent=2, ensure_ascii=False)
 
     def flush(self):
-        if self.__buffer is not None:
+        if self.__buffer:
             click.echo(self._to_json(self.__buffer))
 
-    def error(self, message):
-        click.echo(self._to_json({'error': message}))
+    def launch_run_id(self, run_id):
+        self.__buffer['runId'] = _to_int_value(run_id)
+
+    def launch_run_status(self, status):
+        self.__buffer['status'] = status
+
+    def launch_run_parameters(self, parameters):
+        run_params = []
+        for parameter in parameters:
+            run_param = {
+                'name': parameter.name,
+                'type': parameter.parameter_type,
+                'required': parameter.required
+            }
+            if parameter.value is not None:
+                run_param['value'] = parameter.value
+            run_params.append(run_param)
+        click.echo(self._to_json(run_params))
+
+    def error(self, message, err=False, buf=False):
+        if buf:
+            if not 'error' in self.__buffer:
+                self.__buffer['error'] = [message]
+            else:
+                self.__buffer['error'].append(message)
+        click.echo(self._to_json({'error': message}), err=err)
 
     def empty_runs(self, run_filter=None):
         payload = {

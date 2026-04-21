@@ -772,6 +772,8 @@ def view_cluster_for_node(node_name):
 @click.option('-t', '--timeout', type=int,
               help='Specifies run timeout in minutes. '
                    'If a run doesn\'t finish within this period of time, than it is marked as failed and stopped.')
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help='Structured output format. When set, quiet mode is enabled automatically.')
 @click.option('-q', '--quiet', help='Quiet mode', is_flag=True)
 @click.option('-ic', '--instance-count', help='Number of worker instances to launch in a cluster',
               type=click.IntRange(0, MAX_INSTANCE_COUNT, clamp=True), required=False)
@@ -830,6 +832,7 @@ def run(pipeline,
         docker_image,
         cmd_template,
         timeout,
+        output_format,
         quiet,
         instance_count,
         cores,
@@ -888,7 +891,7 @@ def run(pipeline,
                               status_notifications,
                               status_notifications_status, status_notifications_recipient,
                               status_notifications_subject, status_notifications_body,
-                              user)
+                              user, output_format)
 
 
 @cli.command(name='stop')
