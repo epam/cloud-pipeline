@@ -24,6 +24,7 @@ import com.epam.pipeline.controller.vo.RouteType;
 import com.epam.pipeline.controller.vo.user.RunnerSidVO;
 import com.epam.pipeline.dto.user.OnlineUsers;
 import com.epam.pipeline.entity.info.UserInfo;
+import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.security.NamedJwtToken;
 import com.epam.pipeline.entity.user.CustomControl;
 import com.epam.pipeline.entity.user.GroupStatus;
@@ -77,23 +78,44 @@ public class UserController extends AbstractRestController {
     @RequestMapping(value = "/user/token", method = RequestMethod.GET)
     @ResponseBody
     @ApiOperation(
-            value = "Returns a new valid token.",
-            notes = "Returns named-token registry metadata including the raw JWT in field 'token'. " +
-                    "If user name is not specified a new token will be generated for currently authenticated user. " +
-                    "Optional tokenId is stored in the named-token registry only (not in the JWT) to label the token.",
+            value = "Returns a new plain JWT.",
+            notes = "Issues a plain (non-registered) JWT that is not stored in the named-token table. "
+                    + "If user name is not specified, a token is issued for the authenticated user. "
+                    + "If name is specified, the token is issued for that user (admin-only).",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<NamedJwtToken> issueToken(@RequestParam(required = false) Long expiration,
-                                            @RequestParam(required = false) String name,
-                                            @RequestParam(required = false) String tokenId) {
-        return Result.success(StringUtils.isNotBlank(name)
-                ? userApiService.issueNamedJwtToken(name, expiration, tokenId)
-                : userApiService.issueNamedJwtTokenForCurrentUser(expiration, tokenId));
+    public Result<JwtRawToken> issuePlainToken(@RequestParam(required = false) Long expiration,
+                                               @RequestParam(required = false) String name) {
+        if (StringUtils.isNotBlank(name)) {
+            return Result.success(userApiService.issueToken(name, expiration));
+        }
+        return Result.success(userApiService.issueTokenForCurrentUser(expiration));
     }
 
-    @GetMapping(value = "/user/token/list")
+    @GetMapping(value = "/user/token/named")
+    @ResponseBody
+    @ApiOperation(
+            value = "Issues a named (registered) JWT.",
+            notes = "Registers the token in the named-token registry. "
+                    + "Optional tokenName is the registry label for the row. "
+                    + "If userId is omitted, the token is issued for the authenticated user; "
+                    + "with userId (admin-only), for that user.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<NamedJwtToken> issueNamedToken(@RequestParam(required = false) Long expiration,
+                                                 @RequestParam(required = false) String tokenName,
+                                                 @RequestParam(required = false) Long userId) {
+        if (userId != null) {
+            return Result.success(userApiService.issueNamedJwtToken(userId, expiration, tokenName));
+        }
+        return Result.success(userApiService.issueNamedJwtTokenForCurrentUser(expiration, tokenName));
+    }
+
+    @GetMapping(value = "/user/token/named/list")
     @ResponseBody
     @ApiOperation(
             value = "Lists named JWT registry entries.",
@@ -114,44 +136,22 @@ public class UserController extends AbstractRestController {
     @DeleteMapping(value = "/user/token/revoke")
     @ResponseBody
     @ApiOperation(
-            value = "Revokes a named JWT entry for the current user.",
-            notes = "Requires jti (see GET /user/token/list).",
+            value = "Revokes a JWT by jti.",
+            notes = "Requires jti from the JWT payload. "
+                    + "Omit userId to revoke for the authenticated user. "
+                    + "With userId, revokes that user's token (admin, user admin, or write ACL on that user). "
+                    + "Named and plain tokens are supported. "
+                    + "Registered tokens are listed via GET /user/token/named/list.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<Boolean> revokeNamedJwtTokenForCurrentUser(@RequestParam final String jti) {
-        userApiService.revokeJwtTokenForCurrentUser(jti);
-        return Result.success(Boolean.TRUE);
-    }
-
-    @DeleteMapping(value = "/user/{userId}/token/revoke")
-    @ResponseBody
-    @ApiOperation(
-            value = "Revokes named JWT entries for a user.",
-            notes = "Allowed for admin, user admin, or principals with write access on that user. "
-                    + "Specify exactly one of: query param jti (single token), "
-                    + "or revokeAll=true (all tokens for user).",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
-    public Result<Boolean> revokeNamedJwtTokenAsAdmin(
-            @PathVariable final Long userId,
-            @RequestParam(required = false) final String jti,
-            @RequestParam(required = false) final Boolean revokeAll) {
-        final boolean hasJti = StringUtils.isNotBlank(jti);
-        final boolean revokeAllTokens = Boolean.TRUE.equals(revokeAll);
-        if (hasJti && revokeAllTokens) {
-            throw new IllegalArgumentException("Specify either jti or revokeAll=true, not both.");
-        }
-        if (!hasJti && !revokeAllTokens) {
-            throw new IllegalArgumentException("Specify jti or revokeAll=true.");
-        }
-        if (hasJti) {
+    public Result<Boolean> revokeJwtToken(@RequestParam final String jti,
+                                          @RequestParam(required = false) final Long userId) {
+        if (userId != null) {
             userApiService.revokeJwtTokenForUser(userId, jti);
         } else {
-            userApiService.revokeAllUserNamedJwtTokens(userId);
+            userApiService.revokeJwtTokenForCurrentUser(jti);
         }
         return Result.success(Boolean.TRUE);
     }

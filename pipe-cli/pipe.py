@@ -2019,14 +2019,15 @@ def split_tool_path(tool_path, registry, group, tool, version, strict=False):
 
 
 @cli.command(name='token')
-@click.argument('user-id', required=False, type=str)
+@click.argument('user-id', required=False, type=int)
 @click.option('-d', '--duration', type=int, required=False, help='The number of days this token will be valid.')
 @click.option('-tn', '--token-name', 'token_name', required=False, type=str,
               help='Optional registry label: letters, digits, underscore and hyphen only.')
 @common_options
 def token(user_id, duration, token_name):
     """
-    Prints a JWT token for specified user. If USER_ID is not specified, prints token of the current user.
+    Prints a JWT token for the specified user (admin) or the current user. The token is registered
+    as a named token (see list-tokens / revoke-tokens).
     """
     UserTokenOperations().print_user_token(user_id, duration, token_name)
 
@@ -2049,25 +2050,15 @@ def list_tokens(user_id, output_format):
               help='JWT id (jti) to revoke. Repeat -jti/--jti for multiple tokens.')
 @click.option('--user-id', 'user_id', required=False, type=int,
               help='Revoke for this user (requires access). Omit to revoke as the current user.')
-@click.option('--all', 'revoke_all', is_flag=True, default=False,
-              help='Revoke all named tokens for --user-id (admin-style; cannot be combined with -jti).')
 @click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
               help='Output format. Default is plain text.')
 @common_options
-def revoke_tokens(jtis, user_id, output_format, revoke_all):
+def revoke_tokens(jtis, user_id, output_format):
     """
-    Revokes JWT token by jti (see list-tokens). Each -jti is revoked in a separate request.
-    With --all and --user-id, revokes every named token for that user in one request.
+    Revokes a JWT by jti (from the token payload). Each -jti is revoked in a separate request.
     """
-    if revoke_all:
-        if user_id is None:
-            raise click.UsageError('--all requires --user-id')
-        if jtis:
-            raise click.UsageError('Cannot use --all together with -jti / --jti')
-        UserTokenOperations().revoke_all_named_tokens(user_id, output_format)
-        return
     if not jtis:
-        raise click.UsageError('Specify -jti / --jti at least once, or use --all with --user-id')
+        raise click.UsageError('Specify -jti / --jti at least once')
     UserTokenOperations().revoke_tokens(jtis, user_id, output_format)
 
 

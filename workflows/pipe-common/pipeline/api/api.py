@@ -1148,20 +1148,23 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError("Failed to load current user. Error message: {}".format(str(e.message)))
 
-    def generate_user_token(self, user_name, duration=None):
+    def generate_user_token(self, user_name=None, duration=None):
         try:
+            url = str(self.api_url) + '/user/token'
+            params = []
+            if user_name:
+                params.append('name=' + user_name)
             if duration:
-                expiration_query = '&expiration=' + str(duration)
-            url = str(self.api_url) \
-                  + '/user/token?name=' + user_name \
-                  + (expiration_query if duration else '')
+                params.append('expiration=' + str(duration))
+            if params:
+                url += '?' + '&'.join(params)
             return self.execute_request(url, method='get')
         except Exception as e:
             raise RuntimeError("Failed to load user token. Error message: {}".format(str(e.message)))
 
     def list_named_tokens(self, user_id=None):
         try:
-            url = str(self.api_url) + '/user/token/list'
+            url = str(self.api_url) + '/user/token/named/list'
             if user_id is not None:
                 url += '?userId=' + str(int(user_id))
             result = self.execute_request(url, method='get')

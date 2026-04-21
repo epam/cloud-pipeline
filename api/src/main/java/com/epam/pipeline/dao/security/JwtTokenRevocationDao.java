@@ -29,7 +29,6 @@ public class JwtTokenRevocationDao extends NamedParameterJdbcDaoSupport {
 
     private String upsertRevocationQuery;
     private String existsByJtiQuery;
-    private String insertRevocationsForUserQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void upsertRevocation(final String jti, final LocalDateTime revokedAt) {
@@ -37,14 +36,6 @@ public class JwtTokenRevocationDao extends NamedParameterJdbcDaoSupport {
         params.addValue(Parameters.JTI.name(), jti);
         params.addValue(Parameters.REVOKED_AT.name(), DateUtils.convertLocalDateTimeToDate(revokedAt));
         getNamedParameterJdbcTemplate().update(upsertRevocationQuery, params);
-    }
-
-    @Transactional(propagation = Propagation.MANDATORY)
-    public void insertRevocationsForAllNamedTokensOfUser(final Long userId, final LocalDateTime revokedAt) {
-        final MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue(Parameters.USER_ID.name(), userId);
-        params.addValue(Parameters.REVOKED_AT.name(), DateUtils.convertLocalDateTimeToDate(revokedAt));
-        getNamedParameterJdbcTemplate().update(insertRevocationsForUserQuery, params);
     }
 
     @Transactional(readOnly = true, propagation = Propagation.MANDATORY)
@@ -55,7 +46,6 @@ public class JwtTokenRevocationDao extends NamedParameterJdbcDaoSupport {
 
     enum Parameters {
         JTI,
-        USER_ID,
         REVOKED_AT
     }
 
@@ -67,10 +57,5 @@ public class JwtTokenRevocationDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setExistsByJtiQuery(final String existsByJtiQuery) {
         this.existsByJtiQuery = existsByJtiQuery;
-    }
-
-    @Required
-    public void setInsertRevocationsForUserQuery(final String insertRevocationsForUserQuery) {
-        this.insertRevocationsForUserQuery = insertRevocationsForUserQuery;
     }
 }

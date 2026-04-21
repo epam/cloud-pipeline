@@ -60,7 +60,7 @@ def get_user_token_refresh_threshold(api):
     return preference.get('value')
 
 
-def get_user_token(api, user_name, duration=None):
+def get_user_token(api, user_name=None, duration=None):
     token_response = api.generate_user_token(user_name, duration)
     token = token_response.get('token', None)
     if not token:
@@ -97,14 +97,12 @@ def refresh_token():
         raise RuntimeError("[ERROR] Cannot determine expiration date for current token")
 
     api = PipelineAPI(API_URL, LOG_DIR)
-    user = api.load_current_user()
-    username = user.get("userName", None)
 
     if not token_refresh_required(api, token_expiration_date):
         # No token refresh required
         return
 
-    new_token = get_user_token(api, username)
+    new_token = get_user_token(api, None)
     old_jti = token_payload.get('jti')
     if token_from_file:
         os.system('sed -i \'s|API_TOKEN=.*|API_TOKEN="%s"|g\' %s' % (new_token, ENV_SRC))

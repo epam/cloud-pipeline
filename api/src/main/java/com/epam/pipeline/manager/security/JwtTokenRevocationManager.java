@@ -74,11 +74,4 @@ public class JwtTokenRevocationManager {
         jwtTokenRevocationDao.upsertRevocation(jti, revokedAt);
         namedJwtTokenDao.deleteByJti(jti);
     }
-
-    @Transactional
-    public void revokeAllNamedTokensForUser(final Long userId) {
-        final LocalDateTime revokedAt = DateUtils.nowUTC();
-        jwtTokenRevocationDao.insertRevocationsForAllNamedTokensOfUser(userId, revokedAt);
-        namedJwtTokenDao.deleteByUserId(userId);
-    }
 }

@@ -27,38 +27,51 @@ class UserTokenOperations(object):
     def __init__(self):
         pass
 
-    def print_user_token(self, user_name, duration=None, token_name=None):
-        click.echo(self.generate_user_token(user_name, duration, token_name))
+    def print_user_token(self, user_id, duration=None, token_name=None):
+        click.echo(self.generate_named_user_token(user_id, duration, token_name))
 
-    def generate_user_token(self, user_name, duration=None, token_name=None):
-        try:
-            duration = self.convert_to_seconds(duration)
-            if duration:
-                token_expiration_user_limit = PreferenceAPI().get_preference(LAUNCH_JWT_TOKEN_EXPIRATION_USER_LIMIT)
-                if token_expiration_user_limit and token_expiration_user_limit.value:
-                    token_expiration_user_limit_int = int(token_expiration_user_limit.value)
-                    if duration > token_expiration_user_limit_int:
-                        click.echo(
-                            'Requested token duration is too long, it should be less that %s'
-                            % self.convert_seconds_to_fmt_str(token_expiration_user_limit_int), err=True
-                        )
-                        sys.exit(1)
-            return User().generate_user_token(user_name, duration, token_name)
-        except ValueError as error:
+    def _validate_duration_against_limit(self, duration):
+        duration = self.convert_to_seconds(duration)
+        if duration:
+            token_expiration_user_limit = PreferenceAPI().get_preference(LAUNCH_JWT_TOKEN_EXPIRATION_USER_LIMIT)
+            if token_expiration_user_limit and token_expiration_user_limit.value:
+                token_expiration_user_limit_int = int(token_expiration_user_limit.value)
+                if duration > token_expiration_user_limit_int:
+                    click.echo(
+                        'Requested token duration is too long, it should be less that %s'
+                        % self.convert_seconds_to_fmt_str(token_expiration_user_limit_int), err=True
+                    )
+                    sys.exit(1)
+        return duration
+
+    def _handle_token_generation_errors(self, error):
+        if isinstance(error, ValueError):
             click.echo('Error: %s' % error, err=True)
             sys.exit(1)
+        error_message = str(error)
+        if 'Access is denied' in error_message:
+            error_message = '%s. This operation available for admins only' % error_message
+            click.echo('Error: %s' % error_message, err=True)
+            sys.exit(1)
+        raise error
+
+    def generate_plain_user_token(self, user_name=None, duration=None):
+        try:
+            duration = self._validate_duration_against_limit(duration)
+            return User().generate_plain_user_token(user_name, duration)
         except Exception as error:
-            error_message = str(error)
-            if 'Access is denied' in error_message:
-                error_message = '%s. This operation available for admins only' % error_message
-                click.echo('Error: %s' % error_message, err=True)
-                sys.exit(1)
-            else:
-                raise
+            self._handle_token_generation_errors(error)
+
+    def generate_named_user_token(self, user_id=None, duration=None, token_name=None):
+        try:
+            duration = self._validate_duration_against_limit(duration)
+            return User().generate_named_user_token(user_id, duration, token_name)
+        except Exception as error:
+            self._handle_token_generation_errors(error)
 
     def set_user_token(self, user_name):
         if user_name:
-            Config.__USER_TOKEN__ = self.generate_user_token(user_name)
+            Config.__USER_TOKEN__ = self.generate_plain_user_token(user_name)
 
     def print_named_tokens(self, user_id=None, output_format=None):
         rows = User().list_named_tokens(user_id)
@@ -105,16 +118,6 @@ class UserTokenOperations(object):
             click.echo(json.dumps(payload, indent=2, ensure_ascii=False))
         else:
             click.echo('Revoked %d token(s).' % len(cleaned))
-
-    def revoke_all_named_tokens(self, user_id, output_format=None):
-        User().revoke_named_token(user_id=user_id, revoke_all=True)
-        if output_format == 'json':
-            click.echo(json.dumps(
-                {'revokedAll': True, 'userId': user_id},
-                indent=2,
-                ensure_ascii=False))
-        else:
-            click.echo('Revoked all named tokens for user id %s.' % user_id)
 
     @staticmethod
     def convert_to_seconds(duration):

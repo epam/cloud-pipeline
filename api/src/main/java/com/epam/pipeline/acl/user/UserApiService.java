@@ -246,20 +246,20 @@ public class UserApiService {
     }
 
     /**
-     * @param tokenName optional label stored in the JWT session registry (not embedded in the JWT).
+     * Issues a plain JWT for the current user (not registered in the named-token table).
      */
-    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
-    public JwtRawToken issueToken(final String userName, final Long expiration, final String tokenName) {
-        return userManager.issueToken(userName, expiration,
-                NamedJwtToken.normalizeTokenId(tokenName));
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    public JwtRawToken issueTokenForCurrentUser(final Long expiration) {
+        return authManager.issueTokenForCurrentUser(expiration, !authManager.isAdmin());
     }
 
     /**
      * Issues a JWT for another user (admin) and returns registry metadata including the raw token string.
      */
     @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
-    public NamedJwtToken issueNamedJwtToken(final String userName, final Long expiration, final String registryLabel) {
-        return namedJwtTokenManager.issueNamedTokenForUser(userName, expiration,
+    public NamedJwtToken issueNamedJwtToken(final Long userId, final Long expiration, final String registryLabel) {
+        final PipelineUser user = userManager.load(userId);
+        return namedJwtTokenManager.issueNamedTokenForUser(user.getUserName(), expiration,
                 NamedJwtToken.normalizeTokenId(registryLabel));
     }
 
@@ -334,11 +334,6 @@ public class UserApiService {
     @PreAuthorize(USER_ID_ADMIN_OR_USER_ADMIN_OR_WRITE)
     public void revokeJwtTokenForUser(final Long userId, final String jti) {
         jwtTokenRevocationManager.revokeTokenForUser(userId, jti);
-    }
-
-    @PreAuthorize(USER_ID_ADMIN_OR_USER_ADMIN_OR_WRITE)
-    public void revokeAllUserNamedJwtTokens(final Long userId) {
-        jwtTokenRevocationManager.revokeAllNamedTokensForUser(userId);
     }
 
     @PreAuthorize(USER_ID_ADMIN_OR_USER_ADMIN_OR_WRITE)

@@ -86,12 +86,5 @@
                 ]]>
             </value>
         </property>
-        <property name="deleteByUserIdQuery">
-            <value>
-                <![CDATA[
-                    DELETE FROM pipeline.jwt_named_token WHERE user_id = ?
-                ]]>
-            </value>
-        </property>
     </bean>
 </beans>

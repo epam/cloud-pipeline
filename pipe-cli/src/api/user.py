@@ -73,35 +73,62 @@ class User(API):
             raise RuntimeError("Failed to change owner.")
 
     @classmethod
-    def generate_user_token(cls, user_name=None, duration=None, token_name=None):
-        if token_name is not None:
-            token_name = token_name.strip()
-            if not token_name:
-                token_name = None
-            elif not _SAFE_TOKEN_NAME_PATTERN.match(token_name):
-                raise ValueError(
-                    'Token name may contain only letters, digits, underscore (_) and hyphen (-).'
-                )
+    def _normalize_token_name(cls, token_name):
+        if token_name is None:
+            return None
+        token_name = token_name.strip()
+        if not token_name:
+            return None
+        if not _SAFE_TOKEN_NAME_PATTERN.match(token_name):
+            raise ValueError(
+                'Token name may contain only letters, digits, underscore (_) and hyphen (-).'
+            )
+        return token_name
+
+    @classmethod
+    def generate_plain_user_token(cls, user_name=None, duration=None):
+        """
+        Plain JWT (GET /user/token). Optional user_name issues for that user (admin).
+        """
         api = cls.instance()
-        base_query = '/user/token'
         query_params = []
-        if user_name:
+        if user_name is not None:
             query_params.append('name={}'.format(user_name))
         if duration:
             query_params.append('expiration={}'.format(str(duration)))
-        if token_name:
-            query_params.append('tokenId={}'.format(token_name))
+        query = '/user/token'
         if query_params:
-            query = '{}?{}'.format(base_query, '&'.join(query_params))
-        else:
-            query = base_query
+            query += '?' + '&'.join(query_params)
         response_data = api.call(query, None)
         if 'payload' in response_data and 'token' in response_data['payload']:
             return response_data['payload']['token']
         if 'message' in response_data:
             raise RuntimeError(response_data['message'])
-        else:
-            raise RuntimeError("Failed to generate user token.")
+        raise RuntimeError('Failed to generate plain user token.')
+
+    @classmethod
+    def generate_named_user_token(cls, user_id=None, duration=None, token_name=None):
+        """
+        Registered named JWT (GET /user/token/named). Optional user_id targets that user (admin).
+        """
+        token_name = cls._normalize_token_name(token_name)
+        api = cls.instance()
+        query_params = []
+        if user_id is not None:
+            query_params.append('userId={}'.format(int(user_id)))
+        if duration:
+            query_params.append('expiration={}'.format(str(duration)))
+        if token_name:
+            query_params.append('tokenName={}'.format(token_name))
+        query = '/user/token/named'
+        if query_params:
+            query += '?' + '&'.join(query_params)
+        response_data = api.call(query, None)
+        if 'payload' in response_data and 'token' in response_data['payload']:
+            return response_data['payload']['token']
+        if 'message' in response_data:
+            raise RuntimeError(response_data['message'])
+        raise RuntimeError('Failed to generate named user token.')
 
     @classmethod
     def import_users(cls, file_path, create_user, create_group, create_metadata):
@@ -131,9 +158,9 @@ class User(API):
     def list_named_tokens(cls, user_id=None):
         api = cls.instance()
         if user_id is not None:
-            query = '/user/token/list?userId={}'.format(int(user_id))
+            query = '/user/token/named/list?userId={}'.format(int(user_id))
         else:
-            query = '/user/token/list'
+            query = '/user/token/named/list'
         response_data = api.call(query, None)
         if 'payload' in response_data:
             return response_data['payload'] or []
@@ -142,31 +169,27 @@ class User(API):
         raise RuntimeError('Failed to list named tokens.')
 
     @classmethod
-    def revoke_named_token(cls, jti=None, user_id=None, revoke_all=False):
+    def revoke_named_token(cls, jti=None, user_id=None):
         """
-        Revoke named JWT registry entries.
+        Revoke a JWT by jti (named or plain).
 
-        :param jti: single token id; required unless revoke_all is True
-        :param user_id: target user for admin-style paths; omit for current user (jti-only)
-        :param revoke_all: if True, revoke every named token for user_id (requires user_id)
+        :param jti: token id (required)
+        :param user_id: if set, revoke for this user (admin-style); omit for current user
         """
+        if not jti:
+            raise ValueError('jti is required')
+        try:
+            from urllib.parse import quote
+        except ImportError:
+            from urllib import quote
         api = cls.instance()
-        if revoke_all:
-            if user_id is None:
-                raise ValueError('user_id is required when revoke_all=True')
-            path = '/user/{}/token/revoke?revokeAll=true'.format(int(user_id))
-        else:
-            if not jti:
-                raise ValueError('jti is required when revoke_all=False')
-            if user_id is not None:
-                path = '/user/{}/token/revoke?jti={}'.format(int(user_id), jti)
-            else:
-                path = '/user/token/revoke?jti={}'.format(jti)
+        query_parts = ['jti=' + quote(str(jti), safe='')]
+        if user_id is not None:
+            query_parts.append('userId=' + str(int(user_id)))
+        path = '/user/token/revoke?' + '&'.join(query_parts)
         response_data = api.call(path, None, http_method='DELETE')
         if 'payload' in response_data:
             return response_data['payload']
         if 'message' in response_data:
             raise RuntimeError(response_data['message'])
-        if revoke_all:
-            raise RuntimeError('Failed to revoke all tokens for user.')
         raise RuntimeError('Failed to revoke token.')

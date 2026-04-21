@@ -35,16 +35,5 @@
                 ]]>
             </value>
         </property>
-        <property name="insertRevocationsForUserQuery">
-            <value>
-                <![CDATA[
-                    INSERT INTO pipeline.jwt_token_revocation (jti, revoked_at)
-                    SELECT jti, :REVOKED_AT
-                    FROM pipeline.jwt_named_token
-                    WHERE user_id = :USER_ID
-                    ON CONFLICT (jti) DO UPDATE SET revoked_at = EXCLUDED.revoked_at
-                ]]>
-            </value>
-        </property>
     </bean>
 </beans>

@@ -50,7 +50,7 @@ public class NamedJwtToken implements Serializable {
 
     /**
      * Trims the input; returns {@code null} if blank. Non-blank values must match
-     * {@code [A-Za-z0-9_-]+} (optional {@code tokenId} / registry label on issue-token requests).
+     * {@code [A-Za-z0-9_-]+} (optional {@code tokenName} / registry label on issue-token requests).
      */
     @Nullable
     public static String normalizeTokenId(@Nullable final String raw) {

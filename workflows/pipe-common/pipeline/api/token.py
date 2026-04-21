@@ -126,7 +126,7 @@ class _RefreshingTokenDaemon:
             time.sleep(self._polling_delay)
 
     def _request_token(self, duration):
-        return self._request('GET', '/user/token?duration={}'.format(duration)) or {}
+        return self._request('GET', '/user/token?expiration={}'.format(duration)) or {}
 
     def _request(self, http_method, endpoint, data=None):
         url = '{}/{}'.format(self._api_url, endpoint)

@@ -45,7 +45,6 @@ public class NamedJwtTokenDao extends NamedParameterJdbcDaoSupport {
     private String loadByUserIdQuery;
     private String countByUserIdQuery;
     private String deleteByJtiQuery;
-    private String deleteByUserIdQuery;
 
     @CachePut(value = CacheConfiguration.NAMED_JWT_TOKEN_CACHE, key = "#token.jti")
     @Transactional(propagation = Propagation.MANDATORY)
@@ -73,12 +72,6 @@ public class NamedJwtTokenDao extends NamedParameterJdbcDaoSupport {
     @Transactional(propagation = Propagation.MANDATORY)
     public int deleteByJti(final String jti) {
         return getJdbcTemplate().update(deleteByJtiQuery, jti);
-    }
-
-    @CacheEvict(value = CacheConfiguration.NAMED_JWT_TOKEN_CACHE, allEntries = true)
-    @Transactional(propagation = Propagation.MANDATORY)
-    public int deleteByUserId(final Long userId) {
-        return getJdbcTemplate().update(deleteByUserIdQuery, userId);
     }
 
     @Transactional(readOnly = true, propagation = Propagation.MANDATORY)
@@ -140,10 +133,5 @@ public class NamedJwtTokenDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setDeleteByJtiQuery(final String deleteByJtiQuery) {
         this.deleteByJtiQuery = deleteByJtiQuery;
-    }
-
-    @Required
-    public void setDeleteByUserIdQuery(final String deleteByUserIdQuery) {
-        this.deleteByUserIdQuery = deleteByUserIdQuery;
     }
 }

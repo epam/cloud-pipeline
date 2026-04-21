@@ -50,9 +50,6 @@ public class AuthManager {
     @Autowired
     private JwtTokenGenerator jwtTokenGenerator;
 
-    @Autowired
-    private NamedJwtTokenManager namedJwtTokenManager;
-
     @Value("${flyway.placeholders.default.admin}")
     private String defaultAdmin;
 
@@ -203,11 +200,8 @@ public class AuthManager {
 
     public JwtRawToken issueToken(UserContext user, @Nullable Long expiration, boolean validateExpirationDuration,
                                   @Nullable String tokenName) {
-        final JwtRawToken raw = new JwtRawToken(jwtTokenGenerator.encodeToken(user.toClaims(), expiration,
+        return new JwtRawToken(jwtTokenGenerator.encodeToken(user.toClaims(), expiration,
                 validateExpirationDuration));
-        namedJwtTokenManager.registerIssuedNamedJwtToken(raw, user.getUserId(),
-                resolveTokenCreatedByUserId(user), tokenName);
-        return raw;
     }
 
     public JwtRawToken issueAdminToken(@Nullable Long expiration) {

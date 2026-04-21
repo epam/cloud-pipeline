@@ -62,6 +62,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 public class UserControllerTest extends AbstractControllerTest {
 
     private static final String USER_TOKEN_URL = SERVLET_PATH + "/user/token";
+    private static final String USER_TOKEN_NAMED_URL = SERVLET_PATH + "/user/token/named";
     private static final String WHOAMI_URL = SERVLET_PATH + "/whoami";
     private static final String USER_URL = SERVLET_PATH + "/user";
     private static final String USER_FIND_URL = USER_URL + "/find";
@@ -83,7 +84,8 @@ public class UserControllerTest extends AbstractControllerTest {
 
     private static final String EXPIRATION = "expiration";
     private static final String NAME = "name";
-    private static final String TOKEN_ID = "tokenId";
+    private static final String USER_ID_PARAM = "userId";
+    private static final String TOKEN_NAME_PARAM = "tokenName";
     private static final String PREFIX = "prefix";
     private static final String BLOCK_STATUS = "blockStatus";
     private static final String ROLE_IDS = "roleIds";
@@ -132,43 +134,42 @@ public class UserControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldGenerateToken() {
-        doReturn(namedJwtToken).when(mockUserApiService)
-                .issueNamedJwtToken(eq(TEST_STRING), eq(ID), isNull(String.class));
+        doReturn(token).when(mockUserApiService).issueToken(eq(TEST_STRING), eq(ID));
 
         final MvcResult mvcResult = performRequest(get(USER_TOKEN_URL)
                 .params(multiValueMapOf(EXPIRATION, ID,
                                         NAME, TEST_STRING)));
 
-        verify(mockUserApiService).issueNamedJwtToken(eq(TEST_STRING), eq(ID), isNull(String.class));
-        assertResponse(mvcResult, namedJwtToken, SecurityCreatorUtils.NAMED_JWT_TOKEN_TYPE);
+        verify(mockUserApiService).issueToken(eq(TEST_STRING), eq(ID));
+        assertResponse(mvcResult, token, SecurityCreatorUtils.JWT_RAW_TOKEN_TYPE);
     }
 
     @Test
     @WithMockUser
     public void shouldGenerateTokenWithOptionalRegistryName() {
         final String label = "cli-laptop";
-        doReturn(namedJwtToken).when(mockUserApiService).issueNamedJwtToken(eq(TEST_STRING), eq(ID), eq(label));
+        doReturn(namedJwtToken).when(mockUserApiService).issueNamedJwtToken(eq(ID), eq(ID), eq(label));
 
-        final MvcResult mvcResult = performRequest(get(USER_TOKEN_URL)
+        final MvcResult mvcResult = performRequest(get(USER_TOKEN_NAMED_URL)
                 .params(multiValueMapOf(EXPIRATION, ID,
-                                        NAME, TEST_STRING,
-                                        TOKEN_ID, label)));
+                                        USER_ID_PARAM, ID,
+                                        TOKEN_NAME_PARAM, label)));
 
-        verify(mockUserApiService).issueNamedJwtToken(eq(TEST_STRING), eq(ID), eq(label));
+        verify(mockUserApiService).issueNamedJwtToken(eq(ID), eq(ID), eq(label));
         assertResponse(mvcResult, namedJwtToken, SecurityCreatorUtils.NAMED_JWT_TOKEN_TYPE);
     }
 
     @Test
     @WithMockUser
     public void shouldGenerateTokenForCurrentUserAndCallMethodWithDurationValidation() {
-        doReturn(namedJwtToken).when(mockUserApiService).issueNamedJwtTokenForCurrentUser(eq(ID), isNull(String.class));
+        doReturn(token).when(mockUserApiService).issueTokenForCurrentUser(eq(ID));
 
         final MvcResult mvcResult = performRequest(get(USER_TOKEN_URL)
                 .params(multiValueMapOf(EXPIRATION, ID,
                                         null, null)));
 
-        verify(mockUserApiService).issueNamedJwtTokenForCurrentUser(eq(ID), isNull(String.class));
-        assertResponse(mvcResult, namedJwtToken, SecurityCreatorUtils.NAMED_JWT_TOKEN_TYPE);
+        verify(mockUserApiService).issueTokenForCurrentUser(eq(ID));
+        assertResponse(mvcResult, token, SecurityCreatorUtils.JWT_RAW_TOKEN_TYPE);
     }
 
     @Test
