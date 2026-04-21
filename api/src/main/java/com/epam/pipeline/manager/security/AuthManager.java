@@ -113,14 +113,9 @@ public class AuthManager {
     }
 
     public JwtRawToken issueTokenForCurrentUser(Long expiration, boolean validateExpirationDuration) {
-        return issueTokenForCurrentUser(expiration, validateExpirationDuration, null);
-    }
-
-    public JwtRawToken issueTokenForCurrentUser(Long expiration, boolean validateExpirationDuration,
-                                                @Nullable String tokenName) {
         Object principal = getPrincipal();
         if (principal instanceof UserContext) {
-            return issueToken((UserContext) principal, expiration, validateExpirationDuration, tokenName);
+            return issueToken((UserContext) principal, expiration, validateExpirationDuration);
         } else {
             throw new IllegalArgumentException("Unexpected authorization type: " + principal);
         }
@@ -187,21 +182,12 @@ public class AuthManager {
      * @return a JwtRawToken, that contains a string representation of JWT token
      */
     public JwtRawToken issueToken(UserContext user, @Nullable Long expiration, boolean validateExpirationDuration) {
-        return issueToken(user, expiration, validateExpirationDuration, null);
+        return new JwtRawToken(jwtTokenGenerator.encodeToken(user.toClaims(), expiration,
+                validateExpirationDuration));
     }
 
     public JwtRawToken issueToken(UserContext user, @Nullable Long expiration) {
-        return issueToken(user, expiration, false, null);
-    }
-
-    public JwtRawToken issueToken(UserContext user, @Nullable Long expiration, @Nullable String tokenName) {
-        return issueToken(user, expiration, false, tokenName);
-    }
-
-    public JwtRawToken issueToken(UserContext user, @Nullable Long expiration, boolean validateExpirationDuration,
-                                  @Nullable String tokenName) {
-        return new JwtRawToken(jwtTokenGenerator.encodeToken(user.toClaims(), expiration,
-                validateExpirationDuration));
+        return issueToken(user, expiration, false);
     }
 
     public JwtRawToken issueAdminToken(@Nullable Long expiration) {

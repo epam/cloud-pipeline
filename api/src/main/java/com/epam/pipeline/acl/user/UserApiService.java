@@ -260,7 +260,7 @@ public class UserApiService {
     public NamedJwtToken issueNamedJwtToken(final Long userId, final Long expiration, final String registryLabel) {
         final PipelineUser user = userManager.load(userId);
         return namedJwtTokenManager.issueNamedTokenForUser(user.getUserName(), expiration,
-                NamedJwtToken.normalizeTokenId(registryLabel));
+                NamedJwtToken.normalizeTokenName(registryLabel));
     }
 
     /**
@@ -269,7 +269,7 @@ public class UserApiService {
     @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public NamedJwtToken issueNamedJwtTokenForCurrentUser(final Long expiration, final String registryLabel) {
         return namedJwtTokenManager.issueNamedTokenForCurrentUser(expiration, !authManager.isAdmin(),
-                NamedJwtToken.normalizeTokenId(registryLabel));
+                NamedJwtToken.normalizeTokenName(registryLabel));
     }
 
     @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)

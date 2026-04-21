@@ -96,7 +96,7 @@ public class NamedJwtTokenManager {
     public NamedJwtToken issueNamedTokenForCurrentUser(final Long expiration,
                                                        final boolean validateExpirationDuration,
                                                        @Nullable final String registryLabel) {
-        final JwtRawToken raw = authManager.issueTokenForCurrentUser(expiration, validateExpirationDuration, null);
+        final JwtRawToken raw = authManager.issueTokenForCurrentUser(expiration, validateExpirationDuration);
         final UserContext owner = authManager.getUserContext();
         if (owner == null || owner.getUserId() == null) {
             throw new IllegalStateException("Cannot resolve current user for named JWT response");
@@ -113,7 +113,7 @@ public class NamedJwtTokenManager {
     public NamedJwtToken issueNamedTokenForUser(final String userName, final Long expiration,
                                                 @Nullable final String registryLabel) {
         final UserContext userContext = userManager.loadUserContext(userName);
-        final JwtRawToken raw = userManager.issueToken(userName, expiration, false, null);
+        final JwtRawToken raw = userManager.issueToken(userName, expiration, false);
         registerIssuedNamedJwtToken(raw, userContext.getUserId(), resolveTokenCreatedByUserId(userContext),
                 registryLabel);
         return buildNamedJwtToken(raw, userContext.getUserId(), resolveTokenCreatedByUserId(userContext),

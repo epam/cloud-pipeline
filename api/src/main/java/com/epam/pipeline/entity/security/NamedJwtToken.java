@@ -25,14 +25,14 @@ import java.time.LocalDateTime;
 import java.util.regex.Pattern;
 
 /**
- * Persisted metadata for an issued user JWT registered in the named-token table (see issue #4327).
+ * Persisted metadata for an issued user JWT registered in the named-token table.
  */
 @Value
 @Builder
 public class NamedJwtToken implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private static final Pattern TOKEN_ID_PATTERN = Pattern.compile("^[A-Za-z0-9_-]+$");
+    private static final Pattern TOKEN_NAME_PATTERN = Pattern.compile("^[A-Za-z0-9_-]+$");
 
     String jti;
     Long userId;
@@ -49,21 +49,20 @@ public class NamedJwtToken implements Serializable {
     String token;
 
     /**
-     * Trims the input; returns {@code null} if blank. Non-blank values must match
-     * {@code [A-Za-z0-9_-]+} (optional {@code tokenName} / registry label on issue-token requests).
+     * Trims the input; returns {@code null} if blank. Non-blank values must matc {@code [A-Za-z0-9_-]+}.
      */
     @Nullable
-    public static String normalizeTokenId(@Nullable final String raw) {
-        if (raw == null) {
+    public static String normalizeTokenName(@Nullable final String name) {
+        if (name == null) {
             return null;
         }
-        final String trimmed = raw.trim();
+        final String trimmed = name.trim();
         if (trimmed.isEmpty()) {
             return null;
         }
-        if (!TOKEN_ID_PATTERN.matcher(trimmed).matches()) {
+        if (!TOKEN_NAME_PATTERN.matcher(trimmed).matches()) {
             throw new IllegalArgumentException(
-                    "Token registry label may contain only letters, digits, underscore (_), and hyphen (-).");
+                    "JWT token name may contain only letters, digits, underscore (_), and hyphen (-).");
         }
         return trimmed;
     }
