@@ -164,7 +164,6 @@ function is_capacity_block_context() {
   _RESERVATION_PARAMS=$(resolve_system_preference "$_PREFERENCES" "launch.reservation.parameters" "{}")
   if echo "$_RESERVATION_PARAMS" | jq -e --arg t "$_INSTANCE_TYPE" 'type == "object" and has($t)' >/dev/null 2>&1
   then
-    pipe_log_debug "Capacity block context detected for instance type ${_INSTANCE_TYPE}; attaching disk by node name."
     return 0
   fi
   return 1
@@ -345,6 +344,15 @@ then
 fi
 
 pipe_log_debug "Starting filesystem $MOUNT_POINT autoscaling process for node $NODE..."
+
+if is_capacity_block_context "$(get_system_preferences "$API" "$API_TOKEN")" "$INSTANCE_TYPE"
+then
+  pipe_log_debug "Capacity block context detected for instance type ${_INSTANCE_TYPE}; attaching disk by node name."
+  CAPACITY_BLOCK_CONTEXT=0
+else
+  CAPACITY_BLOCK_CONTEXT=1
+fi
+
 while true
 do
   sleep "$MONITORING_DELAY"
@@ -386,7 +394,7 @@ do
       ADDITIONAL_DISK_SIZE=$(get_additional_disk_size "$TOTAL_SIZE" "$REQUIRED_SIZE" "$MIN_DISK_SIZE" "$MAX_DISK_SIZE")
       RESULTING_SIZE=$((TOTAL_SIZE + ADDITIONAL_DISK_SIZE))
       pipe_log_debug "Scaling filesystem $MOUNT_POINT ${TOTAL_SIZE}G + ${ADDITIONAL_DISK_SIZE}G = ${RESULTING_SIZE}G..."
-      if is_capacity_block_context "$PREFERENCES" "$INSTANCE_TYPE"
+      if [[ "$CAPACITY_BLOCK_CONTEXT" -eq 0 ]]
       then
         if attach_new_disk_to_node "$API" "$API_TOKEN" "$NODE" "$ADDITIONAL_DISK_SIZE"
         then
