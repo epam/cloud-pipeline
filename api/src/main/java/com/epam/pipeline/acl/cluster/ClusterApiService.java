@@ -159,8 +159,7 @@ public class ClusterApiService {
 
     @PreAuthorize(ADMIN_ONLY)
     public NodeInstance attachDiskToNode(final String name, final DiskAttachRequest request) {
-        nodesManager.attachDiskToNode(name, request);
-        return nodesManager.getKubeOrCloudNode(name, MachineType.KUBE, null);
+        return nodesManager.attachDiskToNode(name, request);
     }
 
     public String buildEdgeExternalUrl(final String region) {

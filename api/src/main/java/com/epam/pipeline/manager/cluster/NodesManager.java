@@ -470,7 +470,7 @@ public class NodesManager {
      * Attaches a new disk to the node's cloud instance (region is taken from the node's cloud labels).
      * Intended for workloads such as AWS Capacity Blocks where the instance is not tagged by run id.
      */
-    public void attachDiskToNode(final String nodeId, final DiskAttachRequest request) {
+    public NodeInstance attachDiskToNode(final String nodeId, final DiskAttachRequest request) {
         Assert.notNull(request.getSize(),
                 messageHelper.getMessage(MessageConstants.ERROR_RUN_DISK_SIZE_NOT_FOUND));
         Assert.isTrue(request.getSize() > 0,
@@ -479,6 +479,7 @@ public class NodesManager {
         final AbstractCloudRegion region = loadRegionFromLabels(nodeInstance);
         cloudFacade.attachDiskToNode(region.getId(), nodeId, request, Collections.emptyMap());
         nodeDiskManager.register(nodeId, DiskRegistrationRequest.from(request));
+        return nodeInstance;
     }
 
     private boolean isNodeProtected(NodeInstance nodeInstance) {
