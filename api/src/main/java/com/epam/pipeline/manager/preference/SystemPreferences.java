@@ -824,9 +824,9 @@ public class SystemPreferences {
                     new TypeReference<Map<String, ResourcesParameter>>() {},
                     LAUNCH_GROUP, isNullOrValidJson(new TypeReference<Map<String, ResourcesParameter>>() {}));
     public static final ObjectPreference<Map<String, Object>> LAUNCH_RESERVATION_PARAMS =
-            new ObjectPreference<>("launch.reservation.parameters", null,
+            new ObjectPreference<>("launch.reservation.parameters", Collections.emptyMap(),
                     new TypeReference<Map<String, Object>>() {},
-                    LAUNCH_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
+                    LAUNCH_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
     public static final IntPreference LAUNCH_CONTAINER_MEMORY_RESOURCE_REQUEST = new IntPreference(
             "launch.container.memory.resource.request", 1, LAUNCH_GROUP, isGreaterThan(0));
     public static final IntPreference LAUNCH_SERVERLESS_WAIT_COUNT = new IntPreference(

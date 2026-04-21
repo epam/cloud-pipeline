@@ -22,7 +22,7 @@ from src.api.preferenceapi import PreferenceAPI
 class CapacityBlockProcessor:
     CONFIG_PREFERENCE = 'launch.reservation.parameters'
 
-    def __init__(self, instance_type):
+    def __init__(self, instance_type, print_service):
         self._config = None
         if not instance_type:
             # instance type is None, we can not to check further
@@ -30,6 +30,7 @@ class CapacityBlockProcessor:
         self._instance_type = instance_type
         config = self._find_capacity_block_config()
         self._config = config.get(self._instance_type)
+        self._print_service = print_service
 
     def verify(self, parameters):
         if not self._config:
@@ -64,7 +65,8 @@ class CapacityBlockProcessor:
         try:
             return json.loads(preference_value)
         except json.JSONDecodeError:
-            click.echo('Cannot parse preference %s, not a valid json.' % self.CONFIG_PREFERENCE, err=True)
+            self._print_service.error('Cannot parse preference %s, not a valid json.' % self.CONFIG_PREFERENCE,
+                                      err=True, buf=True)
             return {}
 
     def _validate_parameter(self, config_marker_name, parameters, parameter_name):
@@ -72,6 +74,6 @@ class CapacityBlockProcessor:
             return
         if parameters.get(parameter_name):
             return
-        click.echo('Parameter %s shall be specified for instance type %s.' % (parameter_name, self._instance_type),
-                   err=True)
+        self._print_service.error(
+            'Parameter %s shall be specified for instance type %s.' % (parameter_name, self._instance_type), err=True)
         sys.exit(1)

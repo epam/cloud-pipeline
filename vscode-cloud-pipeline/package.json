@@ -3,7 +3,7 @@
   "displayName": "Cloud Pipeline Remote",
   "description": "List running Cloud Pipeline compute instances and connect via SSH tunnel (Remote - SSH).",
   "icon": "resources/logo.png",
-  "version": "0.2.19",
+  "version": "0.2.20",
   "publisher": "cloud-pipeline",
   "engines": {
     "vscode": "^1.85.0"
