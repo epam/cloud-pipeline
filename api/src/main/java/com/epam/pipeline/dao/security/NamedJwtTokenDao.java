@@ -43,6 +43,7 @@ public class NamedJwtTokenDao extends NamedParameterJdbcDaoSupport {
     private String insertTokenQuery;
     private String loadByJtiQuery;
     private String loadByUserIdQuery;
+    private String countByUserIdQuery;
     private String deleteByJtiQuery;
     private String deleteByUserIdQuery;
 
@@ -85,6 +86,12 @@ public class NamedJwtTokenDao extends NamedParameterJdbcDaoSupport {
         return getJdbcTemplate().query(loadByUserIdQuery, getNamedTokenRowMapper(), userId);
     }
 
+    @Transactional(readOnly = true, propagation = Propagation.MANDATORY)
+    public int countByUserId(final Long userId) {
+        final Integer count = getJdbcTemplate().queryForObject(countByUserIdQuery, Integer.class, userId);
+        return count == null ? 0 : count;
+    }
+
     private RowMapper<NamedJwtToken> getNamedTokenRowMapper() {
         return (rs, rowNum) -> NamedJwtToken.builder()
                 .jti(rs.getString(1))
@@ -123,6 +130,11 @@ public class NamedJwtTokenDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setLoadByUserIdQuery(final String loadByUserIdQuery) {
         this.loadByUserIdQuery = loadByUserIdQuery;
+    }
+
+    @Required
+    public void setCountByUserIdQuery(final String countByUserIdQuery) {
+        this.countByUserIdQuery = countByUserIdQuery;
     }
 
     @Required

@@ -21,6 +21,8 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import com.epam.pipeline.dao.security.NamedJwtTokenDao;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.security.NamedJwtToken;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.UserContext;
 import lombok.extern.slf4j.Slf4j;
@@ -46,14 +48,17 @@ public class NamedJwtTokenManager {
     private final NamedJwtTokenDao namedJwtTokenDao;
     private final AuthManager authManager;
     private final UserManager userManager;
+    private final PreferenceManager preferenceManager;
 
     @Autowired
     public NamedJwtTokenManager(final NamedJwtTokenDao namedJwtTokenDao,
                                 @Lazy final AuthManager authManager,
-                                @Lazy final UserManager userManager) {
+                                @Lazy final UserManager userManager,
+                                final PreferenceManager preferenceManager) {
         this.namedJwtTokenDao = namedJwtTokenDao;
         this.authManager = authManager;
         this.userManager = userManager;
+        this.preferenceManager = preferenceManager;
     }
 
     @Transactional
@@ -67,7 +72,21 @@ public class NamedJwtTokenManager {
         if (entity.getJti() == null) {
             return;
         }
+        assertWithinNamedTokenLimit(userId);
         namedJwtTokenDao.insert(entity);
+    }
+
+    private void assertWithinNamedTokenLimit(final Long userId) {
+        final Integer limit = preferenceManager.getPreference(SystemPreferences.LAUNCH_JWT_NAMED_TOKENS_LIMIT);
+        final int max = limit == null ? 0 : limit;
+        if (max <= 0) {
+            return;
+        }
+        final int current = namedJwtTokenDao.countByUserId(userId);
+        if (current >= max) {
+            throw new IllegalArgumentException(
+                    String.format("The maximum number of JWT tokens for a user is %d.", max));
+        }
     }
 
     /**

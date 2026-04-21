@@ -70,6 +70,15 @@
                 ]]>
             </value>
         </property>
+        <property name="countByUserIdQuery">
+            <value>
+                <![CDATA[
+                    SELECT COUNT(*)
+                    FROM pipeline.jwt_named_token
+                    WHERE user_id = ?
+                ]]>
+            </value>
+        </property>
         <property name="deleteByJtiQuery">
             <value>
                 <![CDATA[
