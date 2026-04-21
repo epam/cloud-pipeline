@@ -208,14 +208,6 @@ public class AuthManager {
         return new JwtRawToken(jwtTokenGenerator.encodeToken(getAdminContext().toClaims(), expiration));
     }
 
-    private Long resolveTokenCreatedByUserId(final UserContext tokenOwner) {
-        final UserContext current = getUserContext();
-        if (current != null && current.getUserId() != null) {
-            return current.getUserId();
-        }
-        return tokenOwner.getUserId();
-    }
-
     /**
      * @return A default UserContext for scheduled operations
      */
