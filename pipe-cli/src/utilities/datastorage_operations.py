@@ -37,7 +37,7 @@ from src.utilities.extension.ext_handler_registry import ExtensionHandlerRegistr
 from src.utilities.hidden_object_manager import HiddenObjectManager
 from src.utilities.patterns import PatternMatcher
 from src.utilities.storage.common import TransferResult, StorageOperations
-from src.utilities.printing.storage import print_storage_items, init_items_table
+from src.utilities.printing.storage import print_storage_items
 from src.utilities.storage.mount import Mount
 from src.utilities.storage.umount import Umount
 from src.utilities.storage_path_permissions_manager import get_permissions_manager
@@ -593,7 +593,8 @@ class DataStorageOperations(object):
             manager.restore_version(version, exclude, include, recursive=recursive)
 
     @classmethod
-    def storage_list(cls, path, show_details, show_versions, recursive, page, show_all, show_extended, show_archive):
+    def storage_list(cls, path, show_details, show_versions, recursive, page, show_all, show_extended, show_archive,
+                     print_service):
         """Lists storage contents
         """
 
@@ -606,27 +607,27 @@ class DataStorageOperations(object):
             original_path = ''
             root_bucket, original_path, _ = DataStorage.load_from_uri(path)
             if show_versions and not root_bucket.policy.versioning_enabled:
-                click.echo('Error: versioning is not enabled for storage.', err=True)
+                print_service.error('Error: versioning is not enabled for storage.', err=True)
                 sys.exit(1)
             if root_bucket is None:
-                click.echo('Storage path "{}" was not found'.format(path), err=True)
+                print_service.error('Storage path "{}" was not found'.format(path), err=True)
                 sys.exit(1)
             if show_archive and root_bucket.type != 'S3':
-                click.echo('Error: --show-archive option is not available for this provider.', err=True)
+                print_service.error('Error: --show-archive option is not available for this provider.', err=True)
                 sys.exit(1)
             if show_archive and not UserOperationsManager()\
                     .has_storage_archive_permissions(root_bucket.identifier, root_bucket.owner):
-                click.echo(ARCHIVED_PERMISSION_ERROR_MASSAGE, err=True)
+                print_service.error(ARCHIVED_PERMISSION_ERROR_MASSAGE, err=True)
                 sys.exit(1)
             else:
                 relative_path = original_path if original_path != '/' else ''
                 cls.__print_data_storage_contents(root_bucket, relative_path, show_details, recursive,
                                                   page_size=page, show_versions=show_versions, show_all=show_all,
-                                                  show_archive=show_archive)
+                                                  show_archive=show_archive, print_service=print_service)
         else:
             # If no argument is specified - list brief details of all buckets
             cls.__print_data_storage_contents(None, None, show_details, recursive, show_all=show_all,
-                                              show_extended=show_extended)
+                                              show_extended=show_extended, print_service=print_service)
 
     @classmethod
     def storage_mk_dir(cls, folders):
@@ -719,7 +720,8 @@ class DataStorageOperations(object):
 
     @classmethod
     def __print_data_storage_contents(cls, bucket_model, relative_path, show_details, recursive, page_size=None,
-                                      show_versions=False, show_all=False, show_extended=False, show_archive=False):
+                                      show_versions=False, show_all=False, show_extended=False, show_archive=False,
+                                      print_service=None):
         next_page_token = None
         manager = None
         paging_allowed = (recursive and not page_size and not show_versions and bucket_model is not None
@@ -740,38 +742,34 @@ class DataStorageOperations(object):
             items = [s for s in cls.__load_storage_list(show_extended) if not hidden_object_manager.is_object_hidden('data_storage', s.identifier)]
 
             if not items:
-                click.echo("No datastorages available.")
+                print_service.empty_items()
                 sys.exit(0)
 
-        fields = ["Type", "Labels", "Modified", "Size", "Name"]
-        if show_versions:
-            fields.append("Version")
         if show_extended:
-            fields.extend(["Mount status", "Mount limits", "Metadata"])
             cls.assign_metadata_to_items(items)
 
-        items_table = init_items_table(fields)
-        print_storage_items(bucket_model, items, show_details, items_table, show_extended, show_versions)
+        print_service.init_header(show_versions, show_extended)
+        print_storage_items(bucket_model, items, show_details, print_service, show_extended, show_versions)
 
         if not next_page_token:
-            click.echo()
+            print_service.flush()
             return
 
-        cls.__print_paging_storage_contents(manager, bucket_model, items_table, relative_path,
+        cls.__print_paging_storage_contents(print_service, manager, bucket_model, relative_path,
                                             recursive, show_details, next_page_token, show_versions, show_archive)
 
     @classmethod
-    def __print_paging_storage_contents(cls, manager, bucket_model, items_table, relative_path,
+    def __print_paging_storage_contents(cls, print_service, manager, bucket_model, relative_path,
                                         recursive, show_details, next_page_token, show_versions,
                                         show_archive):
-        items_table.header = False
+        print_service.disable_header()
         while True:
             items, next_page_token = manager.list_paging_items(relative_path=relative_path, recursive=recursive,
                                                                page_size=BATCH_SIZE, start_token=next_page_token,
                                                                show_archive=show_archive)
-            print_storage_items(bucket_model, items, show_details, items_table, False, show_versions)
+            print_storage_items(bucket_model, items, show_details, print_service, False, show_versions)
             if not next_page_token:
-                click.echo()
+                print_service.flush()
                 return
 
     @classmethod

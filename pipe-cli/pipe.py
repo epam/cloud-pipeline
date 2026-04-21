@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import logging
 import os
 import traceback
@@ -45,6 +46,7 @@ from src.utilities.datastorage_operations import DataStorageOperations
 from src.utilities.metadata_operations import MetadataOperations
 from src.utilities.permissions_operations import PermissionsOperations
 from src.utilities.printing.print_service import create_print_service
+from src.utilities.printing.storage import create_storage_print_service
 from src.utilities.pipeline_run_operations import PipelineRunOperations
 from src.utilities.ssh_operations import run_ssh, run_scp, create_tunnel, kill_tunnels, list_tunnels
 from src.utilities.update_cli_version import UpdateCLIVersionManager
@@ -165,9 +167,16 @@ def stacktracing(func, ctx, *args, **kwargs):
         raise
     except Exception as runtime_error:
         if sys.version_info >= (3, 0):
-            click.echo(u'Error: {}'.format(str(runtime_error)), err=True)
+            err_msg = str(runtime_error)
         else:
-            click.echo(u'Error: {}'.format(unicode(runtime_error)), err=True)
+            err_msg = unicode(runtime_error)
+        if ctx.params.get('output_format') == 'json':
+            click.echo(
+                json.dumps({'error': err_msg}, default=str, indent=2, ensure_ascii=False),
+                err=True,
+            )
+        else:
+            click.echo(u'Error: {}'.format(err_msg), err=True)
         if trace:
             traceback.print_exc()
         sys.exit(1)
@@ -1053,18 +1062,21 @@ def mvtodir(name, directory):
                    "compact - brief summary only (default); "
                    "full - show extended details, works for the storage summary listing only")
 @click.option('-g', '--show-archive', is_flag=True, help='Show archived files.')
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help='Output format. Default is a text table.')
 @common_options
-def storage_list(path, show_details, show_versions, recursive, page, all, output, show_archive):
+def storage_list(path, show_details, show_versions, recursive, page, all, output, show_archive, output_format):
     """Lists storage contents
     """
+    print_service = create_storage_print_service(output_format)
     show_extended = False
     if output == 'full':
         if path is not None or not show_details:
-            click.echo('Extended output could be configured for the storage summary listing only!', err=True)
+            print_service.error('Extended output could be configured for the storage summary listing only!', err=True)
             sys.exit(1)
         show_extended = True
     DataStorageOperations.storage_list(path, show_details, show_versions, recursive, page, all, show_extended,
-                                       show_archive)
+                                       show_archive, print_service)
 
 
 @storage.command(name='mkdir')
