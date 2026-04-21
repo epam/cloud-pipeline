@@ -146,6 +146,30 @@ function attach_new_disk() {
   call_api "$_API" "$_API_TOKEN" "run/$_RUN_ID/disk/attach" "POST" '{"size": "'"$_SIZE"'"}'
 }
 
+function attach_new_disk_to_node() {
+  _API="$1"
+  _API_TOKEN="$2"
+  _NODE="$3"
+  _SIZE="$4"
+  call_api "$_API" "$_API_TOKEN" "cluster/node/$_NODE/disk/attach" "POST" '{"size": "'"$_SIZE"'"}'
+}
+
+function is_capacity_block_context() {
+  _PREFERENCES="$1"
+  _INSTANCE_TYPE="$2"
+  if [[ -z "$_INSTANCE_TYPE" ]]
+  then
+    return 1
+  fi
+  _RESERVATION_PARAMS=$(resolve_system_preference "$_PREFERENCES" "launch.reservation.parameters" "{}")
+  if echo "$_RESERVATION_PARAMS" | jq -e --arg t "$_INSTANCE_TYPE" 'type == "object" and has($t)' >/dev/null 2>&1
+  then
+    pipe_log_debug "Capacity block context detected for instance type ${_INSTANCE_TYPE}; attaching disk by node name."
+    return 0
+  fi
+  return 1
+}
+
 function get_matching_devices() {
   _SIZE="$1"
   lsblk -sdrpnb -o NAME,TYPE,SIZE,MOUNTPOINT | awk '$2 == "disk" && $3 / (1024 ^ 3) == "'"$_SIZE"'" && $4 == "" { print $1 }'
@@ -270,6 +294,11 @@ do
     shift
     shift
     ;;
+  -i | --instance-type)
+    INSTANCE_TYPE="$2"
+    shift
+    shift
+    ;;
   -e | --debug)
     DEBUG="true"
     shift
@@ -357,18 +386,29 @@ do
       ADDITIONAL_DISK_SIZE=$(get_additional_disk_size "$TOTAL_SIZE" "$REQUIRED_SIZE" "$MIN_DISK_SIZE" "$MAX_DISK_SIZE")
       RESULTING_SIZE=$((TOTAL_SIZE + ADDITIONAL_DISK_SIZE))
       pipe_log_debug "Scaling filesystem $MOUNT_POINT ${TOTAL_SIZE}G + ${ADDITIONAL_DISK_SIZE}G = ${RESULTING_SIZE}G..."
-      RUN_ID=$(get_current_run_id "$API" "$API_TOKEN" "$NODE")
-      if [[ -z "$RUN_ID" ]]
+      if is_capacity_block_context "$PREFERENCES" "$INSTANCE_TYPE"
       then
-        pipe_log_debug "No run is assigned to the node. Filesystem won't be autoscaled."
-        continue
-      fi
-      if attach_new_disk "$API" "$API_TOKEN" "$RUN_ID" "$ADDITIONAL_DISK_SIZE"
-      then
-        pipe_log_debug "New disk ${ADDITIONAL_DISK_SIZE}G was attached to the node."
+        if attach_new_disk_to_node "$API" "$API_TOKEN" "$NODE" "$ADDITIONAL_DISK_SIZE"
+        then
+          pipe_log_debug "New disk ${ADDITIONAL_DISK_SIZE}G was attached to the node."
+        else
+          pipe_log_error "New disk ${ADDITIONAL_DISK_SIZE}G wasn't attached to the node because of the underlying error."
+          continue
+        fi
       else
-        pipe_log_error "New disk ${ADDITIONAL_DISK_SIZE}G wasn't attached to the node because of the underlying error."
-        continue
+        RUN_ID=$(get_current_run_id "$API" "$API_TOKEN" "$NODE")
+        if [[ -z "$RUN_ID" ]]
+        then
+          pipe_log_debug "No run is assigned to the node. Filesystem won't be autoscaled."
+          continue
+        fi
+        if attach_new_disk "$API" "$API_TOKEN" "$RUN_ID" "$ADDITIONAL_DISK_SIZE"
+        then
+          pipe_log_debug "New disk ${ADDITIONAL_DISK_SIZE}G was attached to the node."
+        else
+          pipe_log_error "New disk ${ADDITIONAL_DISK_SIZE}G wasn't attached to the node because of the underlying error."
+          continue
+        fi
       fi
       pipe_log_debug "Waiting for the new disk ${ADDITIONAL_DISK_SIZE}G to be available."
       NEW_DEVICE=$(get_new_device "$MOUNT_POINT" "$ADDITIONAL_DISK_SIZE" "$DISK_AVAILABILITY_TIMEOUT")
