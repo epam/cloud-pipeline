@@ -55,13 +55,14 @@ public class JwtFilterAuthenticationFilter extends OncePerRequestFilter {
         try {
             if (!StringUtils.isEmpty(rawToken)) {
                 JwtTokenClaims claims = tokenVerifier.readClaims(rawToken.getToken());
-                jwtTokenRevocationManager.assertTokenNotRevoked(claims);
+                jwtTokenRevocationManager.assertTokenNotRevoked(claims.getJwtTokenId());
                 UserContext context = accessService.getJwtUser(rawToken, claims);
                 JwtAuthenticationToken token = new JwtAuthenticationToken(context, context.getAuthorities());
                 token.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(token);
                 if (!disableLogging) {
-                    log.info("Successfully authenticate user with name: " + context.getUsername());
+                    log.info("Successfully authenticated user {} (jti: {})", context.getUsername(),
+                            claims.getJwtTokenId());
                 }
             }
         } catch (TokenVerificationException e) {

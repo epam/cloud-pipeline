@@ -63,6 +63,8 @@ public class JwtFilterAuthenticationFilter extends OncePerRequestFilter {
             JwtAuthenticationToken token = new JwtAuthenticationToken(context, context.getAuthorities());
             token.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(token);
+            log.info("Successfully authenticated user {} (jti: {})", context.getUsername(),
+                    claims.getJwtTokenId());
         } catch (AuthenticationServiceException | TokenVerificationException e) {
             logger.trace(e.getMessage(), e);
         }

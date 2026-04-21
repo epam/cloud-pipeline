@@ -63,7 +63,7 @@ public class JwtTokenRevocationManagerTest {
         jwtTokenRevocationManager.assertTokenNotRevoked(JwtTokenClaims.builder()
                 .jwtTokenId(JTI)
                 .userName("USER")
-                .build());
+                .build().getJwtTokenId());
     }
 
     @Test
@@ -73,7 +73,7 @@ public class JwtTokenRevocationManagerTest {
         assertThatThrownBy(() -> jwtTokenRevocationManager.assertTokenNotRevoked(JwtTokenClaims.builder()
                 .jwtTokenId(JTI)
                 .userName("USER")
-                .build()))
+                .build().getJwtTokenId()))
                 .isInstanceOf(TokenVerificationException.class)
                 .hasMessageContaining("revoked");
     }

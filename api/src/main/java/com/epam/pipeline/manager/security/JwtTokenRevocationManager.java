@@ -18,7 +18,6 @@ package com.epam.pipeline.manager.security;
 
 import com.epam.pipeline.dao.security.JwtTokenRevocationDao;
 import com.epam.pipeline.dao.security.NamedJwtTokenDao;
-import com.epam.pipeline.entity.security.JwtTokenClaims;
 import com.epam.pipeline.entity.security.NamedJwtToken;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.security.jwt.TokenVerificationException;
@@ -43,8 +42,7 @@ public class JwtTokenRevocationManager {
     private final NamedJwtTokenDao namedJwtTokenDao;
 
     @Transactional(readOnly = true)
-    public void assertTokenNotRevoked(final JwtTokenClaims claims) {
-        final String jti = claims.getJwtTokenId();
+    public void assertTokenNotRevoked(final String jti) {
         if (StringUtils.isBlank(jti)) {
             return;
         }
