@@ -17,9 +17,13 @@
 import Remote from '../basic/Remote';
 
 class UserToken extends Remote {
-  constructor (expiration) {
+  constructor (expiration, name) {
     super();
-    this.url = `/user/token?expiration=${expiration}`;
+    let url = `/user/token?expiration=${expiration}`;
+    if (name) {
+      url += `&name=${encodeURIComponent(name)}`;
+    }
+    this.url = url;
   }
 }
 
