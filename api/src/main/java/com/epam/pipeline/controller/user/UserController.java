@@ -78,20 +78,18 @@ public class UserController extends AbstractRestController {
     @RequestMapping(value = "/user/token", method = RequestMethod.GET)
     @ResponseBody
     @ApiOperation(
-            value = "Returns a new plain JWT.",
-            notes = "Issues a plain (non-registered) JWT that is not stored in the named-token table. "
-                    + "If user name is not specified, a token is issued for the authenticated user. "
-                    + "If name is specified, the token is issued for that user (admin-only).",
+            value = "Returns a new valid token.",
+            notes = "Returns a new valid token. " +
+                    "If user is name not specified a new token will be generated for currently authenticated user.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
     public Result<JwtRawToken> issuePlainToken(@RequestParam(required = false) Long expiration,
                                                @RequestParam(required = false) String name) {
-        if (StringUtils.isNotBlank(name)) {
-            return Result.success(userApiService.issueToken(name, expiration));
-        }
-        return Result.success(userApiService.issueTokenForCurrentUser(expiration));
+        return Result.success(StringUtils.isNotBlank(name)
+                ? userApiService.issueToken(name, expiration)
+                : authManager.issueTokenForCurrentUser(expiration));
     }
 
     @GetMapping(value = "/user/token/named")
