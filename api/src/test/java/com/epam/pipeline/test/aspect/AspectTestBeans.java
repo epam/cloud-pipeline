@@ -54,6 +54,8 @@ import com.epam.pipeline.dao.pipeline.*;
 import com.epam.pipeline.dao.preference.PreferenceDao;
 import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.dao.run.RunServiceUrlDao;
+import com.epam.pipeline.dao.security.JwtTokenRevocationDao;
+import com.epam.pipeline.dao.security.NamedJwtTokenDao;
 import com.epam.pipeline.dao.tool.ToolDao;
 import com.epam.pipeline.dao.tool.ToolGroupDao;
 import com.epam.pipeline.dao.tool.ToolVersionDao;
@@ -78,6 +80,8 @@ import com.epam.pipeline.manager.docker.scan.ToolScanScheduler;
 import com.epam.pipeline.manager.ldap.LdapTemplateProvider;
 import com.epam.pipeline.manager.notification.ContextualNotificationManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
+import com.epam.pipeline.manager.security.JwtTokenRevocationManager;
+import com.epam.pipeline.manager.security.NamedJwtTokenManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationSettingsManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunResultManager;
 import com.epam.pipeline.manager.scheduling.RunScheduler;
@@ -314,6 +318,21 @@ public class AspectTestBeans {
 
     @MockBean
     protected PipelineRunDao mockPipelineRunDao;
+
+    @MockBean
+    protected PipelineRunResultDao mockPipelineRunResultDao;
+
+    @MockBean
+    protected JwtTokenRevocationDao mockJwtTokenRevocationDao;
+
+    @MockBean
+    protected NamedJwtTokenDao mockNamedJwtTokenDao;
+
+    @MockBean
+    protected JwtTokenRevocationManager jwtTokenRevocationManager;
+
+    @MockBean
+    protected NamedJwtTokenManager namedJwtTokenManager;
 
     @MockBean
     protected UserDao mockUserDao;

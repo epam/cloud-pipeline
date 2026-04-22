@@ -932,6 +932,12 @@ public class SystemPreferences {
         "launch.pods.release.rate", 3000, LAUNCH_GROUP, isLessThan(LAUNCH_TASK_STATUS_UPDATE_RATE.getDefaultValue()));
     public static final LongPreference LAUNCH_JWT_TOKEN_EXPIRATION_REFRESH_THRESHOLD = new LongPreference(
             "launch.jwt.token.expiration.refresh.threshold", 172800L, LAUNCH_GROUP, isGreaterThan(0L));
+    /**
+     * Maximum number of registered JWT tokens per user (rows in {@code jwt_named_token}).
+     * Non-positive values disable the limit.
+     */
+    public static final IntPreference LAUNCH_JWT_NAMED_TOKENS_LIMIT = new IntPreference(
+            "launch.jwt.named.tokens.limit", 0, LAUNCH_GROUP, pass);
     public static final StringPreference LAUNCH_INSUFFICIENT_CAPACITY_MESSAGE = new StringPreference(
             "launch.insufficient.capacity.message", "Insufficient instance capacity.",
             LAUNCH_GROUP, pass);

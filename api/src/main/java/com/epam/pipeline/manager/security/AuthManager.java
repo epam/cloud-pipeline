@@ -182,11 +182,12 @@ public class AuthManager {
      * @return a JwtRawToken, that contains a string representation of JWT token
      */
     public JwtRawToken issueToken(UserContext user, @Nullable Long expiration, boolean validateExpirationDuration) {
-        return new JwtRawToken(jwtTokenGenerator.encodeToken(user.toClaims(), expiration, validateExpirationDuration));
+        return new JwtRawToken(jwtTokenGenerator.encodeToken(user.toClaims(), expiration,
+                validateExpirationDuration));
     }
 
     public JwtRawToken issueToken(UserContext user, @Nullable Long expiration) {
-        return new JwtRawToken(jwtTokenGenerator.encodeToken(user.toClaims(), expiration));
+        return issueToken(user, expiration, false);
     }
 
     public JwtRawToken issueAdminToken(@Nullable Long expiration) {
