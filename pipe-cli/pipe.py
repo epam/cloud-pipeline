@@ -2050,7 +2050,7 @@ def token(user_id, duration, token_name):
 @cli.command(name='list-tokens')
 @click.option('--user-id', 'user_id', required=False, type=int,
               help='List tokens registered for this user (requires access). Omit to list current user tokens.')
-@click.option('-o', '--output-format', type=click.Choice(['json']), default=None,
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
               help='Output format. Default is a text table.')
 @common_options
 def list_tokens(user_id, output_format):

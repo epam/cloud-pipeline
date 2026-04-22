@@ -28,7 +28,6 @@ import com.epam.pipeline.security.UserContext;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,8 +51,8 @@ public class NamedJwtTokenManager {
 
     @Autowired
     public NamedJwtTokenManager(final NamedJwtTokenDao namedJwtTokenDao,
-                                @Lazy final AuthManager authManager,
-                                @Lazy final UserManager userManager,
+                                final AuthManager authManager,
+                                final UserManager userManager,
                                 final PreferenceManager preferenceManager) {
         this.namedJwtTokenDao = namedJwtTokenDao;
         this.authManager = authManager;
@@ -68,7 +67,7 @@ public class NamedJwtTokenManager {
             log.debug("Skipping JWT named token registration: missing user id or created-by id.");
             return;
         }
-        final NamedJwtToken entity = buildNamedJwtToken(rawToken, userId, createdByUserId, tokenName, null);
+        final NamedJwtToken entity = buildNamedJwtToken(rawToken, userId, createdByUserId, tokenName, false);
         if (entity.getJti() == null) {
             return;
         }
@@ -103,7 +102,7 @@ public class NamedJwtTokenManager {
         }
         registerIssuedNamedJwtToken(raw, owner.getUserId(), resolveTokenCreatedByUserId(owner), registryLabel);
         return buildNamedJwtToken(raw, owner.getUserId(), resolveTokenCreatedByUserId(owner), registryLabel,
-                raw.getToken());
+                true);
     }
 
     /**
@@ -117,22 +116,20 @@ public class NamedJwtTokenManager {
         registerIssuedNamedJwtToken(raw, userContext.getUserId(), resolveTokenCreatedByUserId(userContext),
                 registryLabel);
         return buildNamedJwtToken(raw, userContext.getUserId(), resolveTokenCreatedByUserId(userContext),
-                registryLabel, raw.getToken());
+                registryLabel, true);
     }
 
+    /**
+     * Returns registry rows for a user. Self vs. admin is enforced in {@code UserApiService} (ACL), not here.
+     */
     @Transactional(readOnly = true)
-    public List<NamedJwtToken> loadNamedJwtTokensForCurrentUser(final Long userId) {
-        return namedJwtTokenDao.loadByUserId(userId);
-    }
-
-    @Transactional(readOnly = true)
-    public List<NamedJwtToken> loadNamedJwtTokensForUserAsAdmin(final Long userId) {
+    public List<NamedJwtToken> loadNamedJwtTokensByUserId(final Long userId) {
         return namedJwtTokenDao.loadByUserId(userId);
     }
 
     private NamedJwtToken buildNamedJwtToken(final JwtRawToken rawToken, final Long userId,
                                              final Long createdByUserId, final String tokenName,
-                                             @Nullable final String secretToken) {
+                                             final boolean includeSecret) {
         final DecodedJWT decoded = JWT.decode(rawToken.getToken());
         final String jti = decoded.getId();
         if (StringUtils.isBlank(jti)) {
@@ -147,8 +144,8 @@ public class NamedJwtTokenManager {
                 .tokenName(StringUtils.trimToNull(tokenName))
                 .issuedAt(issuedAt)
                 .expiresAt(expiresAt);
-        if (secretToken != null) {
-            builder.token(secretToken);
+        if (includeSecret) {
+            builder.token(rawToken.getToken());
         }
         return builder.build();
     }

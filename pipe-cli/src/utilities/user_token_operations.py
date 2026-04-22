@@ -99,7 +99,11 @@ class UserTokenOperations(object):
     def revoke_tokens(self, jtis, user_id=None, output_format=None):
         cleaned = [j.strip() for j in jtis if j and str(j).strip()]
         if not cleaned:
-            click.echo('Error: specify at least one non-empty -jti value.', err=True)
+            if output_format == 'json':
+                click.echo(json.dumps({'error': 'specify at least one non-empty -jti / --jti value.'},
+                                      indent=2, ensure_ascii=False), err=True)
+            else:
+                click.echo('Error: specify at least one non-empty -jti value.', err=True)
             sys.exit(1)
         errors = []
         for jti in cleaned:
@@ -108,8 +112,14 @@ class UserTokenOperations(object):
             except Exception as error:
                 errors.append((jti, error))
         if errors:
-            for jti, error in errors:
-                click.echo('Failed to revoke jti=%s: %s' % (jti, error), err=True)
+            if output_format == 'json':
+                click.echo(json.dumps({
+                    'error': 'One or more revoke operations failed',
+                    'failures': [{'jti': jti, 'message': str(err)} for jti, err in errors]
+                }, indent=2, ensure_ascii=False), err=True)
+            else:
+                for jti, error in errors:
+                    click.echo('Failed to revoke jti=%s: %s' % (jti, error), err=True)
             sys.exit(1)
         if output_format == 'json':
             payload = {'revokedCount': len(cleaned), 'jtis': cleaned}

@@ -328,7 +328,7 @@ public class UserApiService {
     @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public List<NamedJwtToken> listCurrentUserNamedJwtTokens() {
         final Long userId = userManager.getCurrentUser().getId();
-        return namedJwtTokenManager.loadNamedJwtTokensForCurrentUser(userId);
+        return namedJwtTokenManager.loadNamedJwtTokensByUserId(userId);
     }
 
     @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY + OR + USER_WRITE_BY_USER_ID)
@@ -338,6 +338,6 @@ public class UserApiService {
 
     @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY + OR + USER_WRITE_BY_USER_ID)
     public List<NamedJwtToken> listNamedJwtTokensForUser(final Long userId) {
-        return namedJwtTokenManager.loadNamedJwtTokensForUserAsAdmin(userId);
+        return namedJwtTokenManager.loadNamedJwtTokensByUserId(userId);
     }
 }

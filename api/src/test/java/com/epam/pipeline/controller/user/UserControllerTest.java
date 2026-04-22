@@ -24,9 +24,9 @@ import com.epam.pipeline.entity.info.UserInfo;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.security.NamedJwtToken;
 import com.epam.pipeline.entity.user.CustomControl;
+import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
-import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import com.epam.pipeline.test.creator.security.SecurityCreatorUtils;
 import com.epam.pipeline.test.creator.user.UserCreatorUtils;
@@ -161,13 +161,13 @@ public class UserControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldGenerateTokenForCurrentUserAndCallMethodWithDurationValidation() {
-        doReturn(token).when(mockAuthManager).issueTokenForCurrentUser(ID);
+        doReturn(token).when(mockUserApiService).issueTokenForCurrentUser(ID);
 
         final MvcResult mvcResult = performRequest(get(USER_TOKEN_URL)
                 .params(multiValueMapOf(EXPIRATION, ID,
                                         null, null)));
 
-        verify(mockAuthManager).issueTokenForCurrentUser(ID);
+        verify(mockUserApiService).issueTokenForCurrentUser(ID);
         assertResponse(mvcResult, token, SecurityCreatorUtils.JWT_RAW_TOKEN_TYPE);
     }
 
@@ -195,35 +195,35 @@ public class UserControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldRedirectWithCookieRouteType() throws Exception {
-        doReturn(token).when(mockAuthManager).issueTokenForCurrentUser(null);
+        doReturn(token).when(mockAuthManager).issueTokenForCurrentUser((Long) null);
 
         final MvcResult mvcResult = performRequest(get(ROUTE_URL)
                 .params(multiValueMapOf(URL, TEST_STRING,
                                         TYPE, RouteType.COOKIE)),
                                         TEXT_HTML_UTF8_CONTENT_TYPE);
 
-        verify(mockAuthManager).issueTokenForCurrentUser(null);
+        verify(mockAuthManager).issueTokenForCurrentUser((Long) null);
         assertThat(mvcResult.getResponse().getContentAsString()).contains(redirectCookie);
     }
 
     @Test
     @WithMockUser
     public void shouldRedirectWithFormRouteType() throws Exception {
-        doReturn(token).when(mockAuthManager).issueTokenForCurrentUser(null);
+        doReturn(token).when(mockAuthManager).issueTokenForCurrentUser((Long) null);
 
         final MvcResult mvcResult = performRequest(get(ROUTE_URL)
                 .params(multiValueMapOf(URL, TEST_STRING,
                                         TYPE, RouteType.FORM)),
                                         TEXT_HTML_UTF8_CONTENT_TYPE);
 
-        verify(mockAuthManager).issueTokenForCurrentUser(null);
+        verify(mockAuthManager).issueTokenForCurrentUser((Long) null);
         assertThat(mvcResult.getResponse().getContentAsString()).contains(redirectForm);
     }
 
     @Test
     @WithMockUser(roles = ROLE_ANONYMOUS_USER)
     public void shouldRedirectForAnonymousUser() throws Exception {
-        doReturn(token).when(mockAuthManager).issueTokenForCurrentUser(null);
+        doReturn(token).when(mockAuthManager).issueTokenForCurrentUser((Long) null);
 
         final MvcResult mvcResultRedirectForm = performRequest(get(ROUTE_URL)
                         .params(multiValueMapOf(URL, TEST_STRING,
@@ -234,7 +234,7 @@ public class UserControllerTest extends AbstractControllerTest {
                                                 TYPE, RouteType.COOKIE)),
                                                 TEXT_HTML_UTF8_CONTENT_TYPE);
 
-        verify(mockAuthManager, times(2)).issueTokenForCurrentUser(null);
+        verify(mockAuthManager, times(2)).issueTokenForCurrentUser((Long) null);
         assertThat(mvcResultRedirectForm.getResponse().getContentAsString()).contains(redirectForm);
         assertThat(mvcResultRedirectCookie.getResponse().getContentAsString()).contains(redirectCookie);
     }
