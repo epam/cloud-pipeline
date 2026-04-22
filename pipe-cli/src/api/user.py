@@ -162,8 +162,8 @@ class User(API):
         else:
             query = '/user/token/named/list'
         response_data = api.call(query, None)
-        if 'payload' in response_data:
-            return response_data['payload'] or []
+        if response_data.get('status') == 'OK':
+            return response_data['payload'] if 'payload' in response_data else []
         if 'message' in response_data:
             raise RuntimeError(response_data['message'])
         raise RuntimeError('Failed to list named tokens.')

@@ -122,7 +122,7 @@ class UserTokenOperations(object):
                     click.echo('Failed to revoke jti=%s: %s' % (jti, error), err=True)
             sys.exit(1)
         if output_format == 'json':
-            payload = {'revokedCount': len(cleaned), 'jtis': cleaned}
+            payload = {'revokedCount': len(cleaned), 'jti': cleaned}
             if user_id is not None:
                 payload['userId'] = user_id
             click.echo(json.dumps(payload, indent=2, ensure_ascii=False))
