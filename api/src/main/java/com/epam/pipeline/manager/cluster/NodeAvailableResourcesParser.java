@@ -32,6 +32,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 public final class NodeAvailableResourcesParser {
@@ -43,29 +45,33 @@ public final class NodeAvailableResourcesParser {
     private NodeAvailableResourcesParser() {
     }
 
-    public static NodeResources parse(final NodeInstance node, final List<PodInstance> pods) {
+    public static NodeResources parse(final NodeInstance node, final List<PodInstance> pods,
+                                      final boolean showDetails) {
         final NodeResources resources = NodeResources.builder()
                 .nodeName(node.getName())
                 .total(toQuantities(node.getAllocatable(), false))
                 .build();
-        resources.setUsed(CollectionUtils.isEmpty(pods)
-                ? NodeResources.Quantities.empty()  // empty node
-                : collectAllocatedResources(pods));
+        if (CollectionUtils.isEmpty(pods)) {
+            resources.setUsed(NodeResources.Quantities.empty()); // empty node
+            return resources;
+        }
+        resources.setUsed(collectAllocatedResources(pods));
+        if (showDetails) {
+            resources.setDetails(collectDetailsForRuns(pods));
+        }
         return resources;
     }
 
     private static NodeResources.Quantities collectAllocatedResources(final List<PodInstance> pods) {
+        return collectContainersResources(ListUtils.emptyIfNull(pods).stream()
+                .flatMap(pod -> ListUtils.emptyIfNull(pod.getContainers()).stream()));
+    }
+
+    private static List<NodeResources.RunDetails> collectDetailsForRuns(final List<PodInstance> pods) {
         return ListUtils.emptyIfNull(pods).stream()
-                .flatMap(pod -> ListUtils.emptyIfNull(pod.getContainers()).stream())
-                .map(ContainerInstance::getRequests)
-                .filter(MapUtils::isNotEmpty)
-                .map(quantities -> toQuantities(quantities, true))
-                .reduce(NodeResources.Quantities.builder().build(), (q1, q2) ->
-                        NodeResources.Quantities.builder()
-                                .cpu(nullSafeSum(q1.getCpu(), q2.getCpu()))
-                                .gpu(nullSafeSum(q1.getGpu(), q2.getGpu()))
-                                .memory(nullSafeSum(q1.getMemory(), q2.getMemory()))
-                                .build());
+                .map(NodeAvailableResourcesParser::podToNodeDetails)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 
     private static Long parseMemory(final String memoryValue) {
@@ -129,5 +135,37 @@ public final class NodeAvailableResourcesParser {
 
     private static Long zeroIfNull(final Long value) {
         return Optional.ofNullable(value).orElse(0L);
+    }
+
+    private static NodeResources.RunDetails podToNodeDetails(final PodInstance pod) {
+        if (!MapUtils.emptyIfNull(pod.getLabels()).containsKey(KubernetesConstants.RUN_ID_LABEL)) {
+            // skip if pod has not 'runid' label
+            return null;
+        }
+        final String runIdValue = pod.getLabels().get(KubernetesConstants.RUN_ID_LABEL);
+        if (StringUtils.isBlank(runIdValue) || !NumberUtils.isDigits(runIdValue)) {
+            // skip if run is not assigned to pod
+            return null;
+        }
+        return NodeResources.RunDetails.builder()
+                .quantities(collectContainersResources(ListUtils.emptyIfNull(pod.getContainers()).stream()))
+                .runId(Long.parseLong(runIdValue))
+                // if owner label was not provided will try to fetch from DB later
+                .owner(pod.getLabels().getOrDefault(KubernetesConstants.OWNER_LABEL, null))
+                .build();
+    }
+
+    private static NodeResources.Quantities collectContainersResources(
+            final Stream<ContainerInstance> containersStream) {
+        return containersStream
+                .map(ContainerInstance::getRequests)
+                .filter(MapUtils::isNotEmpty)
+                .map(quantities -> toQuantities(quantities, true))
+                .reduce(NodeResources.Quantities.builder().build(), (q1, q2) ->
+                        NodeResources.Quantities.builder()
+                                .cpu(nullSafeSum(q1.getCpu(), q2.getCpu()))
+                                .gpu(nullSafeSum(q1.getGpu(), q2.getGpu()))
+                                .memory(nullSafeSum(q1.getMemory(), q2.getMemory()))
+                                .build());
     }
 }

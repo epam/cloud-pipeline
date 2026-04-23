@@ -177,12 +177,14 @@ public class NodesManager {
             return Collections.emptyList();
         }
         log.debug("Found {} nodes matching labels {}", nodes.size(), labels);
-        final List<PodInstance> pods = findActivePodsByLabelsAndNodes(labels, nodes);
+        final boolean showDetails = preferenceManager.getPreference(
+                SystemPreferences.CLUSTER_NODE_RESOURCES_SHOW_DETAILS);
+        final List<PodInstance> pods = findActivePodsByLabelsAndNodes(labels, nodes, showDetails);
         log.debug("Found {} active pods matching labels {}", pods.size(), labels);
         final Map<String, List<PodInstance>> podsByNodes = pods.stream()
                 .collect(Collectors.groupingBy(PodInstance::getNodeName));
         return ListUtils.emptyIfNull(nodes).stream()
-                .map(node -> NodeAvailableResourcesParser.parse(node, podsByNodes.get(node.getName())))
+                .map(node -> parseNodeResources(node, podsByNodes.get(node.getName()), showDetails))
                 .collect(Collectors.toList());
     }
 
@@ -641,14 +643,29 @@ public class NodesManager {
     }
 
     private List<PodInstance> findActivePodsByLabelsAndNodes(final Map<String, String> labels,
-                                                             final List<NodeInstance> nodes) {
+                                                             final List<NodeInstance> nodes,
+                                                             final boolean showLabels) {
         final Set<String> nodeNames = ListUtils.emptyIfNull(nodes).stream()
                 .map(NodeInstance::getName)
                 .collect(Collectors.toSet());
         return ListUtils.emptyIfNull(kubernetesManager.getPodsByLabels(labels)).stream()
-                .map(PodInstance::new)
+                .map(pod -> new PodInstance(pod, showLabels))
                 .filter(pod -> isPodOnNodeIn(pod, nodeNames))
                 .filter(this::isActivePod)
                 .collect(Collectors.toList());
+    }
+
+    private NodeResources parseNodeResources(final NodeInstance node, final List<PodInstance> pods,
+                                             final boolean showDetails) {
+        final NodeResources resources = NodeAvailableResourcesParser.parse(node, pods, showDetails);
+        ListUtils.emptyIfNull(resources.getDetails())
+                .forEach(details -> {
+                    if (Objects.isNull(details.getOwner())) {
+                        details.setOwner(runCRUDService.findRunByRunId(details.getRunId())
+                                .map(PipelineRun::getOwner)
+                                .orElse(null));
+                    }
+                });
+        return resources;
     }
 }

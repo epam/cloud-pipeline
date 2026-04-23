@@ -21,6 +21,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -38,6 +40,15 @@ public class NodeResources {
      * (cpu/memory/nvidia.com/gpu).
      */
     private Quantities used;
+    /**
+     * Per-run breakdown of resource requests allocated on this node (one entry per qualifying pod).
+     * Each {@link RunDetails} row aggregates container {@code requests} for CPU, memory, and
+     * GPU for pods that carry a run id label.
+     * <p>
+     * This list is only populated when the {@code cluster.node.resources.show.details} system preference
+     * is enabled; otherwise the field shall be {@code null}.
+     */
+    private List<RunDetails> details;
 
     @Data
     @NoArgsConstructor
@@ -55,5 +66,15 @@ public class NodeResources {
                     .memory(0L)
                     .build();
         }
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class RunDetails {
+        private Long runId;
+        private String owner;
+        private Quantities quantities;
     }
 }

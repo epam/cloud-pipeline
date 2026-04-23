@@ -724,6 +724,14 @@ public class SystemPreferences {
             "cluster.kube.core.component.label", "cloud-pipeline/core-component", CLUSTER_GROUP, pass);
     public static final IntPreference CLUSTER_INSTANCE_LOAD_TIMEOUT = new IntPreference(
             "cluster.instance.load.timeout.seconds", 15, CLUSTER_GROUP, isGreaterThan(0));
+    /**
+     * When {@code true}, responses that report Kubernetes node available resources include a per-run
+     * {@link com.epam.pipeline.entity.cluster.NodeResources#getDetails() details} list on each node
+     * (run id, owner label when set, and requested CPU/GPU/memory for that pod's containers).
+     * Default is {@code false} to keep payloads smaller and omit run-level breakdown unless needed.
+     */
+    public static final BooleanPreference CLUSTER_NODE_RESOURCES_SHOW_DETAILS = new BooleanPreference(
+            "cluster.node.resources.show.details", false, CLUSTER_GROUP, pass);
 
     //LAUNCH_GROUP
     public static final StringPreference LAUNCH_CMD_TEMPLATE = new StringPreference("launch.cmd.template",
