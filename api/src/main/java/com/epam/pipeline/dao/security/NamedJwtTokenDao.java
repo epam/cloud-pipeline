@@ -16,15 +16,10 @@
 
 package com.epam.pipeline.dao.security;
 
-import com.epam.pipeline.app.CacheConfiguration;
 import com.epam.pipeline.entity.security.NamedJwtToken;
 import com.epam.pipeline.entity.utils.DateUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Required;
-import org.springframework.cache.annotation.CacheConfig;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -37,7 +32,6 @@ import java.util.List;
 import java.util.Optional;
 
 @Slf4j
-@CacheConfig(cacheManager = "namedJwtTokenCacheManager")
 public class NamedJwtTokenDao extends NamedParameterJdbcDaoSupport {
 
     private String insertTokenQuery;
@@ -46,7 +40,6 @@ public class NamedJwtTokenDao extends NamedParameterJdbcDaoSupport {
     private String countByUserIdQuery;
     private String deleteByJtiQuery;
 
-    @CachePut(value = CacheConfiguration.NAMED_JWT_TOKEN_CACHE, key = "#token.jti")
     @Transactional(propagation = Propagation.MANDATORY)
     public void insert(final NamedJwtToken token) {
         final MapSqlParameterSource params = new MapSqlParameterSource();
@@ -61,14 +54,12 @@ public class NamedJwtTokenDao extends NamedParameterJdbcDaoSupport {
         getNamedParameterJdbcTemplate().update(insertTokenQuery, params);
     }
 
-    @Cacheable(value = CacheConfiguration.NAMED_JWT_TOKEN_CACHE, key = "#jti")
     @Transactional(readOnly = true, propagation = Propagation.MANDATORY)
     public Optional<NamedJwtToken> loadByJti(final String jti) {
         final List<NamedJwtToken> list = getJdbcTemplate().query(loadByJtiQuery, getNamedTokenRowMapper(), jti);
         return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
     }
 
-    @CacheEvict(value = CacheConfiguration.NAMED_JWT_TOKEN_CACHE, key = "#jti")
     @Transactional(propagation = Propagation.MANDATORY)
     public int deleteByJti(final String jti) {
         return getJdbcTemplate().update(deleteByJtiQuery, jti);

@@ -20,7 +20,6 @@ import com.epam.pipeline.security.acl.redis.AclImplDeserializer;
 import com.epam.pipeline.security.acl.redis.AclImplSerializer;
 import com.epam.pipeline.security.acl.redis.JsonRedisSerializer;
 import com.epam.pipeline.entity.preference.Preference;
-import com.epam.pipeline.entity.security.NamedJwtToken;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -47,7 +46,11 @@ public class CacheConfiguration {
 
     public static final String PREFERENCE_CACHE = "preferences";
     public static final String ACL_CACHE = "aclCache";
-    public static final String NAMED_JWT_TOKEN_CACHE = "namedJwtToken";
+    /**
+     * Caches JWT revocation status by {@code jti} for fast lookups (hot path on each authenticated request).
+     * Value type is {@link Boolean} (revoked or not); not used for named-token registry metadata.
+     */
+    public static final String JWT_TOKEN_REVOCATION_CACHE = "jwtTokenRevocation";
 
     private static final String REDIS = "REDIS";
     private static final String MEMORY = "MEMORY";
@@ -160,37 +163,39 @@ public class CacheConfiguration {
         return redisTemplate;
     }
 
-    @Bean("namedJwtTokenCacheManager")
-    public CacheManager namedJwtTokenCacheManager(final ApplicationContext applicationContext) {
-        final RedisCacheManager redisCacheManagerNamedJwt =
-                applicationContext.containsBean("redisCacheManagerNamedJwt")
-                        ? applicationContext.getBean("redisCacheManagerNamedJwt", RedisCacheManager.class)
+    @Bean("jwtTokenRevocationCacheManager")
+    public CacheManager jwtTokenRevocationCacheManager(final ApplicationContext applicationContext) {
+        final RedisCacheManager redisCacheManagerJwtRevocation =
+                applicationContext.containsBean("redisCacheManagerJwtTokenRevocation")
+                        ? applicationContext.getBean("redisCacheManagerJwtTokenRevocation", RedisCacheManager.class)
                         : null;
         switch (cacheType) {
             case MEMORY:
-                return new ConcurrentMapCacheManager(NAMED_JWT_TOKEN_CACHE);
+                return new ConcurrentMapCacheManager(JWT_TOKEN_REVOCATION_CACHE);
             case REDIS:
-                if (redisCacheManagerNamedJwt == null) {
-                    throw new IllegalArgumentException("redisCacheManagerNamedJwt is required when cache.type=REDIS");
+                if (redisCacheManagerJwtRevocation == null) {
+                    throw new IllegalArgumentException(
+                            "redisCacheManagerJwtTokenRevocation is required when cache.type=REDIS");
                 }
-                return redisCacheManagerNamedJwt;
+                return redisCacheManagerJwtRevocation;
             default:
                 return new NoOpCacheManager();
         }
     }
 
-    @Bean("redisCacheManagerNamedJwt")
+    @Bean("redisCacheManagerJwtTokenRevocation")
     @ConditionalOnProperty(value = CACHE_TYPE, havingValue = REDIS)
-    public RedisCacheManager redisCacheManagerNamedJwt(
-            final RedisTemplate<String, NamedJwtToken> namedJwtTokenRedisTemplate) {
-        return new RedisCacheManager(namedJwtTokenRedisTemplate, Collections.singleton(NAMED_JWT_TOKEN_CACHE));
+    public RedisCacheManager redisCacheManagerJwtTokenRevocation(
+            final RedisTemplate<String, Boolean> jwtTokenRevocationRedisTemplate) {
+        return new RedisCacheManager(jwtTokenRevocationRedisTemplate,
+                Collections.singleton(JWT_TOKEN_REVOCATION_CACHE));
     }
 
     @Bean
     @ConditionalOnProperty(value = CACHE_TYPE, havingValue = REDIS)
-    public RedisTemplate<String, NamedJwtToken> namedJwtTokenRedisTemplate(
+    public RedisTemplate<String, Boolean> jwtTokenRevocationRedisTemplate(
             @Qualifier("redisConnectionFactory") final RedisConnectionFactory redisConnectionFactory) {
-        final RedisTemplate<String, NamedJwtToken> redisTemplate = new RedisTemplate<>();
+        final RedisTemplate<String, Boolean> redisTemplate = new RedisTemplate<>();
         redisTemplate.setConnectionFactory(redisConnectionFactory);
         return redisTemplate;
     }
