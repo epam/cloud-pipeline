@@ -2048,8 +2048,7 @@ def token(user_id, duration, token_name):
 
 
 @cli.command(name='list-tokens')
-@click.option('--user-id', 'user_id', required=False, type=int,
-              help='List tokens registered for this user (requires access). Omit to list current user tokens.')
+@click.argument('user-id', required=False, type=int)
 @click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
               help='Output format. Default is a text table.')
 @common_options
@@ -2061,10 +2060,9 @@ def list_tokens(user_id, output_format):
 
 
 @cli.command(name='revoke-tokens')
+@click.argument('user-id', required=False, type=int)
 @click.option('-jti', '--jti', 'jtis', required=False, multiple=True,
               help='JWT id (jti) to revoke. Repeat -jti/--jti for multiple tokens.')
-@click.option('--user-id', 'user_id', required=False, type=int,
-              help='Revoke for this user (requires access). Omit to revoke as the current user.')
 @click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
               help='Output format. Default is plain text.')
 @common_options
