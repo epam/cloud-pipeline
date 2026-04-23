@@ -99,7 +99,9 @@ public class UserManagementAO extends SettingsPageAO {
     }
 
     public UsersTabAO switchToUsers() {
-        click(USERS_TAB);
+        if (get(USERS_TAB).exists()) {
+            click(USERS_TAB);
+        }
         return new UsersTabAO(parentAO);
     }
 
