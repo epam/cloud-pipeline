@@ -346,10 +346,9 @@ Restart=always
 StartLimitInterval=0
 RestartSec=10
 Environment="API_ARGS=--api-url $_API_URL --api-token $_API_TOKEN"
-Environment="NODE_ARGS=--node-name $_KUBE_NODE_NAME"
+Environment="NODE_ARGS=--node-name $_KUBE_NODE_NAME --instance-type $_CLOUD_INSTANCE_TYPE"
 Environment="MOUNT_POINT_ARGS=--mount-point $_MOUNT_POINT"
-Environment="INSTANCE_TYPE_ARGS=--instance-type $_CLOUD_INSTANCE_TYPE"
-ExecStart=/usr/bin/fsautoscale \$API_ARGS \$NODE_ARGS \$MOUNT_POINT_ARGS \$INSTANCE_TYPE_ARGS
+ExecStart=/usr/bin/fsautoscale \$API_ARGS \$NODE_ARGS \$MOUNT_POINT_ARGS
 
 [Install]
 WantedBy=multi-user.target
