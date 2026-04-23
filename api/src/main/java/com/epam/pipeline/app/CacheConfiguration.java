@@ -22,7 +22,6 @@ import com.epam.pipeline.security.acl.redis.JsonRedisSerializer;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.security.NamedJwtToken;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -31,6 +30,7 @@ import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 import org.springframework.cache.support.NoOpCacheManager;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.cache.RedisCacheManager;
@@ -41,7 +41,6 @@ import org.springframework.security.acls.domain.AclImpl;
 import redis.clients.jedis.JedisPoolConfig;
 
 import java.util.Collections;
-import java.util.Optional;
 
 @EnableCaching
 public class CacheConfiguration {
@@ -81,26 +80,35 @@ public class CacheConfiguration {
 
     @Bean
     @Primary
-    public CacheManager cacheManager(final Optional<RedisCacheManager> redisCacheManagerPref) {
+    public CacheManager cacheManager(final ApplicationContext applicationContext) {
+        final RedisCacheManager redisCacheManagerPref = applicationContext.containsBean("redisCacheManagerPref")
+                ? applicationContext.getBean("redisCacheManagerPref", RedisCacheManager.class) : null;
         switch (cacheType) {
             case MEMORY:
                 return new ConcurrentMapCacheManager(PREFERENCE_CACHE);
             case REDIS:
-                return redisCacheManagerPref
-                        .orElseThrow(IllegalArgumentException::new);
+                if (redisCacheManagerPref == null) {
+                    throw new IllegalArgumentException("redisCacheManagerPref is required when cache.type=REDIS");
+                }
+                return redisCacheManagerPref;
             default:
                 return new NoOpCacheManager();
         }
     }
 
     @Bean
-    public CacheManager aclCacheManager(final Optional<RedisCacheManager> redisCacheManagerAcl) {
+    public CacheManager aclCacheManager(final ApplicationContext applicationContext) {
+        final RedisCacheManager redisCacheManagerAcl = applicationContext.containsBean("redisCacheManagerAcl")
+                ? applicationContext.getBean("redisCacheManagerAcl", RedisCacheManager.class) : null;
         switch (cacheTypeAcl) {
             case MEMORY:
                 return new ConcurrentMapCacheManager(ACL_CACHE);
             case REDIS:
-                return redisCacheManagerAcl
-                        .orElseThrow(IllegalArgumentException::new);
+                if (redisCacheManagerAcl == null) {
+                    throw new IllegalArgumentException(
+                            "redisCacheManagerAcl is required when security.acl.cache.type=REDIS");
+                }
+                return redisCacheManagerAcl;
             default:
                 return new NoOpCacheManager();
         }
@@ -153,15 +161,19 @@ public class CacheConfiguration {
     }
 
     @Bean("namedJwtTokenCacheManager")
-    public CacheManager namedJwtTokenCacheManager(
-            @Autowired final Optional<RedisCacheManager> redisCacheManagerNamedJwt) {
+    public CacheManager namedJwtTokenCacheManager(final ApplicationContext applicationContext) {
+        final RedisCacheManager redisCacheManagerNamedJwt =
+                applicationContext.containsBean("redisCacheManagerNamedJwt")
+                        ? applicationContext.getBean("redisCacheManagerNamedJwt", RedisCacheManager.class)
+                        : null;
         switch (cacheType) {
             case MEMORY:
                 return new ConcurrentMapCacheManager(NAMED_JWT_TOKEN_CACHE);
             case REDIS:
-                return redisCacheManagerNamedJwt.orElseThrow(
-                    () -> new IllegalArgumentException("redisCacheManagerNamedJwt is required when cache.type=REDIS")
-                );
+                if (redisCacheManagerNamedJwt == null) {
+                    throw new IllegalArgumentException("redisCacheManagerNamedJwt is required when cache.type=REDIS");
+                }
+                return redisCacheManagerNamedJwt;
             default:
                 return new NoOpCacheManager();
         }
