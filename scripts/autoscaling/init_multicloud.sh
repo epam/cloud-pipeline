@@ -339,6 +339,7 @@ if [[ $FS_TYPE == "btrfs" ]]; then
   fi
   if [ $_FS_AUTOSCALE_PRESENT -eq 1 ]; then
     chmod +x /usr/bin/fsautoscale
+    _FS_INSTANCE_TYPE_ARGS=$( [[ $cloud == *"EC2"* ]] && echo "--instance-type $_CLOUD_INSTANCE_TYPE" )
 cat >/etc/systemd/system/fsautoscale.service <<EOL
 [Unit]
 Description=Cloud Pipeline Filesystem Autoscaling Daemon
@@ -351,7 +352,7 @@ RestartSec=10
 Environment="API_ARGS=--api-url $_API_URL --api-token $_API_TOKEN"
 Environment="NODE_ARGS=--node-name $_KUBE_NODE_NAME"
 Environment="MOUNT_POINT_ARGS=--mount-point $_MOUNT_POINT"
-Environment="INSTANCE_TYPE_ARGS=$( [[ $cloud == *"EC2"* ]] && echo "--instance-type $_CLOUD_INSTANCE_TYPE" )"
+Environment="INSTANCE_TYPE_ARGS=$_FS_INSTANCE_TYPE_ARGS"
 ExecStart=/usr/bin/fsautoscale \$API_ARGS \$NODE_ARGS \$MOUNT_POINT_ARGS \$INSTANCE_TYPE_ARGS
 
 [Install]

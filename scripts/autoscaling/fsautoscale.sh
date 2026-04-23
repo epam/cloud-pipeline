@@ -347,7 +347,7 @@ pipe_log_debug "Starting filesystem $MOUNT_POINT autoscaling process for node $N
 
 if is_capacity_block_context "$(get_system_preferences "$API" "$API_TOKEN")" "$INSTANCE_TYPE"
 then
-  pipe_log_debug "Capacity block context detected for instance type ${_INSTANCE_TYPE}; attaching disk by node name."
+  pipe_log_debug "Capacity block context detected for instance type $INSTANCE_TYPE; attaching disk by node name."
   CAPACITY_BLOCK_CONTEXT=0
 else
   CAPACITY_BLOCK_CONTEXT=1
