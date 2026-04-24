@@ -222,9 +222,9 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
 
     public MetadataSectionAO checkStorageSize(final String sizeWithUnit) {
         if ("0".equals(sizeWithUnit)) {
-            ensure(byClassName("torage-size__storage-size"), matchText("Request storage re-index"));
+            ensure(byClassName("torage-size__detail"), matchText("Request storage re-index"));
         } else {
-            ensure(byClassName("torage-size__storage-size"), matchText(format("Storage size: %s", sizeWithUnit)));
+            ensure(byClassName("torage-size__detail"), matchText(format("Standard size: %s", sizeWithUnit)));
         }
         return this;
     }
