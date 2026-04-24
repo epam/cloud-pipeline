@@ -148,7 +148,7 @@ public final class NodeAvailableResourcesParser {
             return null;
         }
         return NodeResources.RunDetails.builder()
-                .quantities(collectContainersResources(ListUtils.emptyIfNull(pod.getContainers()).stream()))
+                .allocated(collectContainersResources(ListUtils.emptyIfNull(pod.getContainers()).stream()))
                 .runId(Long.parseLong(runIdValue))
                 // if owner label was not provided will try to fetch from DB later
                 .owner(pod.getLabels().getOrDefault(KubernetesConstants.OWNER_LABEL, null))

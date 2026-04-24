@@ -75,6 +75,6 @@ public class NodeResources {
     public static class RunDetails {
         private Long runId;
         private String owner;
-        private Quantities quantities;
+        private Quantities allocated;
     }
 }

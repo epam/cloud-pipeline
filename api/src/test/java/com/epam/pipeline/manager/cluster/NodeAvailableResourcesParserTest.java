@@ -112,9 +112,9 @@ public class NodeAvailableResourcesParserTest {
         final NodeResources.RunDetails runDetails = actual.getDetails().get(0);
         Assert.assertThat(runDetails.getRunId(), is(RUN_ID));
         Assert.assertThat(runDetails.getOwner(), is(nullValue()));
-        Assert.assertThat(runDetails.getQuantities().getCpu(), is(2L));
-        Assert.assertThat(runDetails.getQuantities().getGpu(), is(1L));
-        Assert.assertThat(runDetails.getQuantities().getMemory(), is(ONE_GB_IN_BYTES));
+        Assert.assertThat(runDetails.getAllocated().getCpu(), is(2L));
+        Assert.assertThat(runDetails.getAllocated().getGpu(), is(1L));
+        Assert.assertThat(runDetails.getAllocated().getMemory(), is(ONE_GB_IN_BYTES));
     }
 
     @Test
@@ -135,9 +135,9 @@ public class NodeAvailableResourcesParserTest {
         final NodeResources.RunDetails runDetails = actual.getDetails().get(0);
         Assert.assertThat(runDetails.getRunId(), is(RUN_ID));
         Assert.assertThat(runDetails.getOwner(), is(OWNER));
-        Assert.assertThat(runDetails.getQuantities().getCpu(), is(2L));
-        Assert.assertThat(runDetails.getQuantities().getGpu(), is(1L));
-        Assert.assertThat(runDetails.getQuantities().getMemory(), is(ONE_GB_IN_BYTES));
+        Assert.assertThat(runDetails.getAllocated().getCpu(), is(2L));
+        Assert.assertThat(runDetails.getAllocated().getGpu(), is(1L));
+        Assert.assertThat(runDetails.getAllocated().getMemory(), is(ONE_GB_IN_BYTES));
     }
 
     @Test
@@ -164,9 +164,9 @@ public class NodeAvailableResourcesParserTest {
         actual.getDetails().forEach(runDetails -> {
             Assert.assertThat(runDetails.getRunId(), isIn(Arrays.asList(RUN_ID, RUN_ID_2).toArray()));
             Assert.assertThat(runDetails.getOwner(), is(nullValue()));
-            Assert.assertThat(runDetails.getQuantities().getCpu(), is(2L));
-            Assert.assertThat(runDetails.getQuantities().getGpu(), is(1L));
-            Assert.assertThat(runDetails.getQuantities().getMemory(), is(ONE_GB_IN_BYTES));
+            Assert.assertThat(runDetails.getAllocated().getCpu(), is(2L));
+            Assert.assertThat(runDetails.getAllocated().getGpu(), is(1L));
+            Assert.assertThat(runDetails.getAllocated().getMemory(), is(ONE_GB_IN_BYTES));
         });
     }
 
