@@ -155,13 +155,19 @@ function attach_new_disk_to_node() {
 }
 
 function is_capacity_block_context() {
-  _PREFERENCES="$1"
-  _INSTANCE_TYPE="$2"
+  _API="$1"
+  _API_TOKEN="$2"
+  _INSTANCE_TYPE="$3"
+  _PREFERENCE_NAME="$4"
   if [[ -z "$_INSTANCE_TYPE" ]]
   then
     return 1
   fi
-  _RESERVATION_PARAMS=$(resolve_system_preference "$_PREFERENCES" "launch.reservation.parameters" "{}")
+  _RESERVATION_PARAMS=$(call_api "$_API" "$_API_TOKEN" "preferences/$_PREFERENCE_NAME" "GET" | jq -r '.payload.value')
+  if [[ -z "$_RESERVATION_PARAMS" ]]
+  then
+    return 1
+  fi
   if echo "$_RESERVATION_PARAMS" | jq -e --arg t "$_INSTANCE_TYPE" 'type == "object" and has($t)' >/dev/null 2>&1
   then
     return 0
@@ -336,6 +342,7 @@ MIN_DISK_SIZE_PREFERENCE="${MIN_DISK_SIZE_PREFERENCE:-cluster.instance.hdd.scale
 MIN_DISK_SIZE_PREFERENCE_DEFAULT="${MIN_DISK_SIZE_PREFERENCE_DEFAULT:-10}"
 MAX_DISK_SIZE_PREFERENCE="${MAX_DISK_SIZE_PREFERENCE:-cluster.instance.hdd.scale.disk.max.size}"
 MAX_DISK_SIZE_PREFERENCE_DEFAULT="${MAX_DISK_SIZE_PREFERENCE_DEFAULT:-16384}"
+LAUNCH_RESERVATION_PREFERENCE="${LAUNCH_RESERVATION_PREFERENCE:-launch.reservation.parameters}"
 
 if ! is_filesystem_scalable "$MOUNT_POINT" "$SCALABLE_FILESYSTEM_TYPE"
 then
@@ -345,7 +352,7 @@ fi
 
 pipe_log_debug "Starting filesystem $MOUNT_POINT autoscaling process for node $NODE..."
 
-if is_capacity_block_context "$(get_system_preferences "$API" "$API_TOKEN")" "$INSTANCE_TYPE"
+if is_capacity_block_context "$API" "$API_TOKEN" "$INSTANCE_TYPE" "$LAUNCH_RESERVATION_PREFERENCE"
 then
   pipe_log_debug "Capacity block context detected for instance type $INSTANCE_TYPE; attaching disk by node name."
   CAPACITY_BLOCK_CONTEXT=0
