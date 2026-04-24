@@ -127,12 +127,14 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.ToIntFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -164,6 +166,16 @@ public class PipelineRunManager {
 
     public static final String CP_CAP_LIMIT_MOUNTS = "CP_CAP_LIMIT_MOUNTS";
     public static final String NETWORK_LIMIT = "NETWORK_LIMIT";
+    private static final String CP_CAP_REQUESTS_CPU = "CP_CAP_REQUESTS_CPU";
+    private static final String CP_CAP_REQUESTS_GPU = "CP_CAP_REQUESTS_GPU";
+
+    private static final Map<String, ToIntFunction<InstanceOffer>> CAPACITY_CHECKS;
+    static {
+        final Map<String, ToIntFunction<InstanceOffer>> checks = new LinkedHashMap<>();
+        checks.put(CP_CAP_REQUESTS_CPU, InstanceOffer::getVCPU);
+        checks.put(CP_CAP_REQUESTS_GPU, InstanceOffer::getGpu);
+        CAPACITY_CHECKS = Collections.unmodifiableMap(checks);
+    }
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
@@ -421,7 +433,9 @@ public class PipelineRunManager {
 
         calculateDynamicParameterValues(configuration);
         adjustInstanceDisk(configuration);
-        checkGPUInstance(configuration, region.getId());
+        final Optional<InstanceOffer> instance = instanceOfferManager.findOffer(instanceType, region.getId());
+        checkGPUInstance(configuration, instance);
+        checkCapacityRequirements(configuration, instance);
 
         final List<String> endpoints = configuration.isEraseRunEndpoints()
                 ? Collections.emptyList() : tool.getEndpoints();
@@ -476,6 +490,24 @@ public class PipelineRunManager {
         return run;
     }
 
+    private void checkCapacityRequirements(final PipelineConfiguration configuration,
+                                           final Optional<InstanceOffer> instance) {
+        final Map<String, PipeConfValueVO> params = MapUtils.emptyIfNull(configuration.getParameters());
+        if (params.isEmpty() || CAPACITY_CHECKS.keySet().stream().noneMatch(params::containsKey)) {
+            return;
+        }
+
+        instance.ifPresent(offer -> {
+            final List<String> violations = CAPACITY_CHECKS.entrySet().stream()
+                    .map(e -> check(params, e.getKey(), e.getValue().applyAsInt(offer), offer.getInstanceType()))
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .collect(Collectors.toList());
+
+            Assert.isTrue(violations.isEmpty(), String.join("; ", violations));
+        });
+    }
+
     private static void calculateDynamicParameterValues(final PipelineConfiguration configuration) {
         final Map<String, PipeConfValueVO> parameters = configuration.getParameters();
         for (final PipeConfValueVO parameter : parameters.values()) {
@@ -489,10 +521,9 @@ public class PipelineRunManager {
         }
     }
 
-    private void checkGPUInstance(final PipelineConfiguration configuration, final Long regionId) {
+    private void checkGPUInstance(final PipelineConfiguration configuration, final Optional<InstanceOffer> instance) {
         final String instanceType = configuration.getInstanceType();
         if (StringUtils.isNotBlank(instanceType)) {
-            final Optional<InstanceOffer> instance = instanceOfferManager.findOffer(instanceType, regionId);
             if (instance.isPresent()) {
                 final InstanceOffer offer = instance.get();
                 if (offer.getGpu() > 0) {
@@ -2016,5 +2047,29 @@ public class PipelineRunManager {
         }
         final FolderWithMetadata project = folderApiService.getProject(pipeline.getId(), AclClass.PIPELINE);
         return project != null ? project.getId() : null;
+    }
+
+    private Optional<String> check(final Map<String, PipeConfValueVO> params,
+                                   final String paramName,
+                                   final int available,
+                                   final String instanceType) {
+        final Optional<String> raw = Optional.ofNullable(params.get(paramName))
+                .map(PipeConfValueVO::getValue)
+                .filter(StringUtils::isNotBlank);
+        if (!raw.isPresent()) {
+            return Optional.empty();
+        }
+        final int requested;
+        try {
+            requested = Integer.parseInt(raw.get().trim());
+        } catch (NumberFormatException ex) {
+            return Optional.of(String.format("%s='%s' is not a valid integer", paramName, raw.get()));
+        }
+        if (requested > available) {
+            return Optional.of(String.format(
+                    "%s=%d exceeds capacity of instance '%s' (%d available)",
+                    paramName, requested, instanceType, available));
+        }
+        return Optional.empty();
     }
 }
