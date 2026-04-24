@@ -861,7 +861,8 @@ class AWSRegionForm extends React.Component {
       'runShiftPolicy',
       'customInstanceTypes',
       'user',
-      'password'
+      'password',
+      'globalDistributionUrl',
     ]
   };
 
