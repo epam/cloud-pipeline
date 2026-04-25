@@ -110,6 +110,8 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
     @BeforeMethod
     void openApplication() {
         open(C.ROOT_ADDRESS);
+        logout();
+        loginAs(admin);
     }
 
     @AfterClass(alwaysRun = true)
