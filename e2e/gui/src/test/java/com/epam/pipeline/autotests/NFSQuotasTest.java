@@ -121,7 +121,6 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                         .library()
                         .selectStorage(s)
                         .clickEditStorageButton()
-                        .editForNfsMount()
                         .clickDeleteStorageButton()
                         .clickDelete());
         navigationMenu()

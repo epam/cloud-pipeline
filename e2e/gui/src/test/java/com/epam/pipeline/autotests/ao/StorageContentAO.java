@@ -463,6 +463,9 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
     }
 
     public MetadataSectionAO showMetadata() {
+        if ($(byXpath(".//span[.='Attributes']")).exists()) {
+            return new MetadataSectionAO(this);
+        }
         click(ACTIONS);
         if (get(SHOW_METADATA).$(className("anticon-check")).exists()) {
             return new MetadataSectionAO(this);
