@@ -16,71 +16,64 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Button, Table} from 'antd';
-import moment from 'moment-timezone';
+import {Button, message, Table} from 'antd';
+import {computed} from 'mobx';
+import {observer} from 'mobx-react';
 import displayDate from '../../utils/displayDate';
+import roleModel from '../../utils/roleModel';
+import UserNamedTokens from '../../models/user/UserNamedTokens';
+import UserNamedTokenRevoke from '../../models/user/UserNamedTokenRevoke';
+import styles from './UserTokensTable.css';
 
-/**
- * Placeholder data until the API exposes token listing.
- */
-const MOCK_USER_TOKENS = [
-  {
-    id: '7a2f9c01',
-    name: 'Test name 1',
-    expiresAt: moment().add(12, 'days').endOf('day')
-  },
-  {
-    id: '3e8b1d44',
-    name: 'Test name 2',
-    expiresAt: moment().add(45, 'days').endOf('day')
-  },
-  {
-    id: '9c0e55aa',
-    name: '',
-    expiresAt: moment().add(6, 'months').endOf('day')
-  }
-];
-
+@roleModel.authenticationInfo
+@observer
 export default class UserTokensTable extends React.Component {
   static propTypes = {
-    user: PropTypes.object,
+    userId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     refreshToken: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
   };
 
   state={
-    pending: false
+    pending: false,
+    userTokens: [],
+    revokingJti: null
   };
 
   columns = [
     {
       title: 'ID',
-      dataIndex: 'id',
-      key: 'id'
+      dataIndex: 'jti',
+      key: 'jti',
+      className: styles.idColumn,
+      render: (jti) => jti
     },
     {
       title: 'Name',
-      dataIndex: 'name',
-      key: 'name',
-      render: (name) => (name || '—')
+      dataIndex: 'tokenName',
+      key: 'tokenName',
+      className: styles.nameColumn,
+      render: (tokenName) => (tokenName || '—')
     },
     {
       title: 'Expiration date',
       dataIndex: 'expiresAt',
       key: 'expiresAt',
+      className: styles.expiresColumn,
       render: (expiresAt) => (expiresAt ? displayDate(expiresAt) : '—')
     },
     {
       title: '',
       key: 'revoke',
-      width: 80,
-      onCell: () => ({style: {whiteSpace: 'nowrap', width: 1}}),
-      onHeaderCell: () => ({style: {width: 1}}),
+      className: styles.revokeColumn,
       render: (_, record) => (
         <Button
-          id={`revoke-user-token-${record.id}`}
-          onClick={(e) => {}}
+          id={`revoke-user-token-${record.jti}`}
+          loading={this.state.revokingJti === record.jti}
+          onClick={() => this.revokeToken(record)}
           size="small"
-          type="danger">
+          type="danger"
+          disabled={!!this.state.revokingJti}
+        >
           Revoke
         </Button>
       )
@@ -92,8 +85,8 @@ export default class UserTokensTable extends React.Component {
   }
 
   componentDidUpdate (prevProps) {
-    const prevId = prevProps.user ? prevProps.user.id : undefined;
-    const currentId = this.props.user ? this.props.user.id : undefined;
+    const prevId = prevProps.userId;
+    const currentId = this.props.userId;
     if (
       prevId !== currentId ||
       prevProps.refreshToken !== this.props.refreshToken
@@ -102,23 +95,74 @@ export default class UserTokensTable extends React.Component {
     }
   }
 
+  @computed
+  get currentUserId () {
+    if (this.props.authenticatedUserInfo && this.props.authenticatedUserInfo.loaded) {
+      const user = this.props.authenticatedUserInfo.value;
+      return user.id;
+    }
+    return undefined;
+  }
+
+  @computed
+  get targetUserId () {
+    const {userId} = this.props;
+    if (userId !== null && userId !== undefined) {
+      return Number(userId);
+    }
+    return this.currentUserId;
+  }
+
   fetchData = async () => {
-    const sleepMock = (timeout) => new Promise(resolve => setTimeout(() => resolve(), timeout));
+    if (!this.targetUserId) {
+      return this.setState({
+        pending: false,
+        userTokens: []
+      });
+    }
     this.setState({pending: true});
-    await sleepMock(1000);
-    this.setState({pending: false});
+    const userNamedTokens = new UserNamedTokens(this.targetUserId);
+    await userNamedTokens.fetch();
+    this.setState({
+      pending: false,
+      userTokens: userNamedTokens.loaded
+        ? (userNamedTokens.value || []).map(v => v)
+        : []
+    });
+  };
+
+  revokeToken = async (record) => {
+    const jti = record?.jti;
+    if (!jti) {
+      return;
+    }
+    this.setState({revokingJti: jti});
+    try {
+      const revoke = new UserNamedTokenRevoke(jti, this.targetUserId);
+      await revoke.fetch();
+      if (revoke.loaded && revoke.value) {
+        const msg = record.tokenName
+          ? `Token ${record.tokenName} revoked.`
+          : 'Token revoked.';
+        message.success(msg);
+        await this.fetchData();
+      } else {
+        message.error(revoke.error || 'Failed to revoke token', 5);
+      }
+    } finally {
+      this.setState({revokingJti: null});
+    }
   };
 
   render () {
     return (
       <Table
-        className="user-tokens-table"
+        className={styles.table}
         columns={this.columns}
-        dataSource={MOCK_USER_TOKENS}
+        dataSource={this.state.userTokens}
         pagination={false}
-        rowKey="id"
+        rowKey="jti"
         size="small"
-        style={{marginTop: 16}}
         loading={this.state.pending}
       />
     );

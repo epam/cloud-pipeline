@@ -1358,7 +1358,7 @@ export default class EditUserRolesDialog extends React.Component {
     if (activeTab === 'api-tokens') {
       return (
         <UserTokensTable
-          user={this.props.user}
+          userId={userId}
         />
       );
     }

@@ -306,7 +306,6 @@ export default class CLIForm extends React.Component {
           </Row>
         }
         <UserTokensTable
-          user={null}
           refreshToken={this.state.refreshTableToken}
         />
         <GenerateUserTokenModal

@@ -17,9 +17,22 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {DatePicker, Input, message, Modal} from 'antd';
+import {Button, DatePicker, Form, Input, message, Modal} from 'antd';
 import moment from 'moment-timezone';
 import UserToken from '../../models/user/UserToken';
+
+const TOKEN_NAME_PATTERN = /^[A-Za-z0-9_-]+$/;
+
+function getTokenNameError (rawName) {
+  const trimmed = (rawName || '').trim();
+  if (!trimmed) {
+    return null;
+  }
+  if (!TOKEN_NAME_PATTERN.test(trimmed)) {
+    return 'May contain only letters, digits, underscore (_), and hyphen (-).';
+  }
+  return null;
+}
 
 @inject('authenticatedUserInfo', 'preferences')
 @observer
@@ -135,7 +148,7 @@ export default class GenerateUserTokenModal extends React.Component {
         seconds = Math.min(seconds, limit);
       }
       const trimmedName = (name || '').trim();
-      const request = new UserToken(seconds, trimmedName || undefined);
+      const request = new UserToken(seconds, trimmedName);
       await request.fetch();
       if (request.error) {
         throw new Error(request.error);
@@ -154,19 +167,33 @@ export default class GenerateUserTokenModal extends React.Component {
   render () {
     const {visible, onCancel} = this.props;
     const {validTill, name, confirmLoading} = this.state;
+    const nameError = getTokenNameError(name);
     return (
       <Modal
         closable={!confirmLoading}
-        confirmLoading={confirmLoading}
+        footer={(
+          <div style={{textAlign: 'right'}}>
+            <Button
+              disabled={confirmLoading}
+              onClick={onCancel}>
+              Cancel
+            </Button>
+            <Button
+              disabled={!validTill || !!nameError}
+              loading={confirmLoading}
+              onClick={this.handleOk}
+              style={{marginLeft: 8}}
+              type="primary">
+              Generate
+            </Button>
+          </div>
+        )}
         maskClosable={!confirmLoading}
         onCancel={onCancel}
-        onOk={this.handleOk}
-        okButtonProps={{disabled: !validTill}}
         title="Generate access key"
         visible={visible}
-        okText="Generate"
       >
-        <div style={{display: 'flex', alignItems: 'flex-end'}}>
+        <div style={{display: 'flex', alignItems: 'flex-start'}}>
           <div style={{flex: '0 0 auto', marginRight: 12}}>
             <div style={{marginBottom: 4}}><b>Valid till:</b></div>
             <DatePicker
@@ -179,12 +206,19 @@ export default class GenerateUserTokenModal extends React.Component {
           </div>
           <div style={{flex: '1 1 auto'}}>
             <div style={{marginBottom: 4}}><b>Name:</b></div>
-            <Input
-              className="generate-user-token-name"
-              onChange={this.onNameChanged}
-              placeholder="Name (optional)"
-              value={name}
-            />
+            <Form.Item
+              help={nameError || undefined}
+              style={{marginBottom: 0}}
+              validateStatus={nameError ? 'error' : undefined}
+              wrapperCol={{span: 24}}>
+              <Input
+                className="generate-user-token-name"
+                onChange={this.onNameChanged}
+                placeholder="Name (optional)"
+                size="default"
+                value={name}
+              />
+            </Form.Item>
           </div>
         </div>
       </Modal>
