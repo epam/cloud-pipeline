@@ -43,15 +43,17 @@ import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.ao.Primitive.VALUE_FIELD;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.comboboxOf;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.inputOf;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.menuitem;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.modalWithTitle;
 import static java.lang.String.format;
+import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import org.openqa.selenium.By;
+import static org.openqa.selenium.By.className;
 
 public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> {
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
@@ -170,7 +172,7 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
     }
 
     public MetadataSectionAO ensureMetadataSectionNotContainText(String text) {
-        $(By.className("cp-split-panel")).shouldNotHave(text(text));
+        $(className("cp-split-panel")).shouldNotHave(text(text));
         return this;
     }
 
@@ -271,6 +273,7 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
     }
 
     public MetadataSectionAO reindexStorage() {
+        $(className("s-notifications__container")).shouldBe(exist, ofMillis(DEFAULT_TIMEOUT));
         if ($(byText("Re-index")).exists()) {
             $(byText("Re-index")).click();
         } else {

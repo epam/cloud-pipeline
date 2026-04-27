@@ -843,8 +843,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         }
 
         public EditStoragePopUpAO editForNfsMount() {
-            if ($(byClassName("ant-modal-header")).isDisplayed() &&
-                    !$(byClassName("edit-storage-button")).isDisplayed()) {
+            if (!$(byClassName("edit-storage-button")).isDisplayed()) {
                 return this;
             }
             $(byClassName("edit-storage-button")).shouldBe(enabled).click();
