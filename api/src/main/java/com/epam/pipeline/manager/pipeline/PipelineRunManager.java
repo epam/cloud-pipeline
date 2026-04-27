@@ -134,7 +134,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.ToIntFunction;
+import java.util.function.ToLongFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -166,14 +166,26 @@ public class PipelineRunManager {
 
     public static final String CP_CAP_LIMIT_MOUNTS = "CP_CAP_LIMIT_MOUNTS";
     public static final String NETWORK_LIMIT = "NETWORK_LIMIT";
-    private static final String CP_CAP_REQUESTS_CPU = "CP_CAP_REQUESTS_CPU";
-    private static final String CP_CAP_REQUESTS_GPU = "CP_CAP_REQUESTS_GPU";
+    public static final String CP_CAP_REQUESTS_CPU = "CP_CAP_REQUESTS_CPU";
+    public static final String CP_CAP_REQUESTS_GPU = "CP_CAP_REQUESTS_GPU";
+    public static final String CP_CAP_REQUESTS_RAM = "CP_CAP_REQUESTS_RAM";
+    public static final long BYTES_PER_GIB = 1024L * 1024L * 1024L;
+    public static final String GIB_UNIT = "GiB";
+    private static final String RESOLVE_ACTION_MSG =
+            "Please consider selecting a different node type which provides the requested resources.";
 
-    private static final Map<String, ToIntFunction<InstanceOffer>> CAPACITY_CHECKS;
+
+    private static final Map<String, ToLongFunction<InstanceOffer>> CAPACITY_CHECKS;
     static {
-        final Map<String, ToIntFunction<InstanceOffer>> checks = new LinkedHashMap<>();
+        final Map<String, ToLongFunction<InstanceOffer>> checks = new LinkedHashMap<>();
         checks.put(CP_CAP_REQUESTS_CPU, InstanceOffer::getVCPU);
         checks.put(CP_CAP_REQUESTS_GPU, InstanceOffer::getGpu);
+        checks.put(CP_CAP_REQUESTS_RAM, o -> {
+            Assert.isTrue(GIB_UNIT.equalsIgnoreCase(o.getMemoryUnit()),
+                    String.format("Can't validate %s for instance %s: memory unit %s is not supported, expected GiB",
+                            CP_CAP_REQUESTS_RAM, o.getInstanceType(), o.getMemoryUnit()));
+            return Math.round(o.getMemory() * BYTES_PER_GIB);
+        });
         CAPACITY_CHECKS = Collections.unmodifiableMap(checks);
     }
 
@@ -499,11 +511,15 @@ public class PipelineRunManager {
 
         instance.ifPresent(offer -> {
             final List<String> violations = CAPACITY_CHECKS.entrySet().stream()
-                    .map(e -> check(params, e.getKey(), e.getValue().applyAsInt(offer), offer.getInstanceType()))
+                    .filter(e -> params.containsKey(e.getKey()))
+                    .map(e -> check(params, e.getKey(), e.getValue().applyAsLong(offer), offer.getInstanceType()))
                     .filter(Optional::isPresent)
                     .map(Optional::get)
                     .collect(Collectors.toList());
 
+            if (!violations.isEmpty()) {
+                violations.add(RESOLVE_ACTION_MSG);
+            }
             Assert.isTrue(violations.isEmpty(), String.join("; ", violations));
         });
     }
@@ -2051,7 +2067,7 @@ public class PipelineRunManager {
 
     private Optional<String> check(final Map<String, PipeConfValueVO> params,
                                    final String paramName,
-                                   final int available,
+                                   final long available,
                                    final String instanceType) {
         final Optional<String> raw = Optional.ofNullable(params.get(paramName))
                 .map(PipeConfValueVO::getValue)
@@ -2059,11 +2075,11 @@ public class PipelineRunManager {
         if (!raw.isPresent()) {
             return Optional.empty();
         }
-        final int requested;
+        final long requested;
         try {
-            requested = Integer.parseInt(raw.get().trim());
+            requested = Long.parseLong(raw.get().trim());
         } catch (NumberFormatException ex) {
-            return Optional.of(String.format("%s='%s' is not a valid integer", paramName, raw.get()));
+            throw new IllegalArgumentException(String.format("%s='%s' is not a valid number", paramName, raw.get()));
         }
         if (requested > available) {
             return Optional.of(String.format(
