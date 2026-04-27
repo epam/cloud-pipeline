@@ -24,6 +24,9 @@ import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
 import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.controller.vo.run.RunChartFilterVO;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
+import com.epam.pipeline.entity.cluster.InstanceOffer;
+import com.epam.pipeline.entity.configuration.PipeConfValueVO;
+import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
@@ -50,12 +53,14 @@ import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.security.run.RunPermissionManager;
 import com.google.common.collect.Maps;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -63,9 +68,15 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.epam.pipeline.manager.pipeline.PipelineRunManager.BYTES_PER_GIB;
+import static com.epam.pipeline.manager.pipeline.PipelineRunManager.CP_CAP_REQUESTS_CPU;
+import static com.epam.pipeline.manager.pipeline.PipelineRunManager.CP_CAP_REQUESTS_GPU;
+import static com.epam.pipeline.manager.pipeline.PipelineRunManager.CP_CAP_REQUESTS_RAM;
+import static com.epam.pipeline.manager.pipeline.PipelineRunManager.GIB_UNIT;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_3;
@@ -113,6 +124,7 @@ public class PipelineRunManagerUnitTest {
     private static final String PROCESSED_VALUE = "Processed";
     private static final String CP_REPORT_RUN_PROCESSED_DATE = "CP_REPORT_RUN_PROCESSED_DATE";
     private static final String CP_REPORT_RUN_STATUS = "CP_REPORT_RUN_STATUS";
+    private static final String INSTANCE_TYPE = "m5.large";
     public static final String DOCKER_IMAGE = "Docker Image";
     private static final int MAX_PAGE_SIZE = 100;
 
@@ -168,6 +180,71 @@ public class PipelineRunManagerUnitTest {
 
     @BeforeEach    public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
+    }
+
+    @Test
+    public void shouldSkipCapacityRequirementsValidationIfOfferIsMissing() {
+        checkCapacityRequirements(configuration(param(CP_CAP_REQUESTS_CPU, "128")), Optional.empty());
+    }
+
+    @Test
+    public void shouldPassCapacityRequirementsValidationForAllowedRequests() {
+        checkCapacityRequirements(configuration(
+                param(CP_CAP_REQUESTS_CPU, "2"),
+                param(CP_CAP_REQUESTS_GPU, "1"),
+                param(CP_CAP_REQUESTS_RAM, String.valueOf(8L * BYTES_PER_GIB))),
+                Optional.of(instanceOffer(2, 1, 8D, GIB_UNIT)));
+    }
+
+    @Test
+    public void shouldFailCapacityRequirementsValidationIfCpuRequestExceedsInstanceCapacity() {
+        assertThrows(IllegalArgumentException.class, () -> checkCapacityRequirements(
+                configuration(param(CP_CAP_REQUESTS_CPU, "3")),
+                Optional.of(instanceOffer(2, 0, 8F, GIB_UNIT))));
+    }
+
+    @Test
+    public void shouldFailCapacityRequirementsValidationIfGpuRequestExceedsInstanceCapacity() {
+        assertThrows(IllegalArgumentException.class, () -> checkCapacityRequirements(
+                configuration(param(CP_CAP_REQUESTS_GPU, "1")),
+                Optional.of(instanceOffer(2, 0, 8F, GIB_UNIT))));
+    }
+
+    @Test
+    public void shouldFailCapacityRequirementsValidationIfRamRequestExceedsInstanceCapacity() {
+        assertThrows(IllegalArgumentException.class, () -> checkCapacityRequirements(
+                configuration(param(CP_CAP_REQUESTS_RAM, String.valueOf(8L * BYTES_PER_GIB + 1))),
+                Optional.of(instanceOffer(2, 0, 8F, GIB_UNIT))));
+    }
+
+    @Test
+    public void shouldParseRamRequestAsLongBytes() {
+        checkCapacityRequirements(
+                configuration(param(CP_CAP_REQUESTS_RAM, String.valueOf(8L * BYTES_PER_GIB))),
+                Optional.of(instanceOffer(2, 0, 8F, GIB_UNIT)));
+    }
+
+    @Test
+    public void shouldFailCapacityRequirementsValidationIfRamRequestIsNotANumber() {
+        assertThrows(IllegalArgumentException.class, () -> checkCapacityRequirements(
+                configuration(param(CP_CAP_REQUESTS_RAM, "8Gi")),
+                Optional.of(instanceOffer(2, 0, 8F, GIB_UNIT))));
+    }
+
+    @Test
+    public void shouldFailCapacityRequirementsValidationIfRamUnitIsNotGiB() {
+        assertThrows(t -> t instanceof IllegalArgumentException
+                        && t.getMessage().contains("memory unit MB is not supported"),
+                () -> checkCapacityRequirements(
+                        configuration(param(CP_CAP_REQUESTS_RAM, String.valueOf(8L * BYTES_PER_GIB))),
+                        Optional.of(instanceOffer(2, 0, 8F, "MB"))));
+    }
+
+    @Test
+    public void shouldNotCheckMemoryUnitIfRamRequestIsMissing() {
+        checkCapacityRequirements(
+                configuration(param(CP_CAP_REQUESTS_CPU, "2")),
+                Optional.of(instanceOffer(2, 0, 8D, "MB")));
     }
 
     @Test
@@ -635,6 +712,35 @@ public class PipelineRunManagerUnitTest {
 
     private RunChartInfoEntity pausingChart(final RunChartInfoEntity.ColumnName columnName, final String value) {
         return runChart(TaskStatus.PAUSING, columnName, value);
+    }
+
+    private void checkCapacityRequirements(final PipelineConfiguration configuration,
+                                           final Optional<InstanceOffer> offer) {
+        ReflectionTestUtils.invokeMethod(pipelineRunManager, "checkCapacityRequirements", configuration, offer);
+    }
+
+    @SafeVarargs
+    private static PipelineConfiguration configuration(final Pair<String, PipeConfValueVO>... params) {
+        final PipelineConfiguration configuration = new PipelineConfiguration();
+        final Map<String, PipeConfValueVO> parameters = Arrays.stream(params)
+                .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
+        configuration.setParameters(parameters);
+        return configuration;
+    }
+
+    private static Pair<String, PipeConfValueVO> param(final String name, final String value) {
+        return Pair.of(name, new PipeConfValueVO(value));
+    }
+
+    private static InstanceOffer instanceOffer(final int cpu, final int gpu, final double memory,
+                                               final String memoryUnit) {
+        final InstanceOffer offer = new InstanceOffer();
+        offer.setInstanceType(INSTANCE_TYPE);
+        offer.setVCPU(cpu);
+        offer.setGpu(gpu);
+        offer.setMemory(memory);
+        offer.setMemoryUnit(memoryUnit);
+        return offer;
     }
 
     private void assertRunChartElements(final Map<TaskStatus, Map<String, Long>> elements) {
