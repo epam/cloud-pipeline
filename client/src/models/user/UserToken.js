@@ -25,10 +25,9 @@ class UserToken extends Remote {
     const query = [
       `expiration=${encodeURIComponent(expiration)}`
     ];
-    let endpoint = '/user/token';
+    const endpoint = '/user/token/named';
     if (typeof trimmedName === 'string' && trimmedName.length > 0) {
       query.push(`tokenName=${encodeURIComponent(trimmedName)}`);
-      endpoint = '/user/token/named';
     }
     const url = `${endpoint}?${query.join('&')}`;
     this.url = url;
