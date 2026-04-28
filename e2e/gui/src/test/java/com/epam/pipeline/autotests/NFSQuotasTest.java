@@ -225,7 +225,6 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                 .library()
                 .selectStorage(storage)
                 .showMetadata()
-                .reindexStorage()
                 .waitUntilStatusUpdated(DISABLED_MOUNT_STATUS)
                 .checkWarningStatusIcon()
                 .checkStorageSize(storageSizeWithUnit)

@@ -264,7 +264,7 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
                     break;
                 }
             }
-            sleep(1, MINUTES);
+            sleep(30, SECONDS);
             refresh();
             sleep(5, SECONDS);
 
@@ -273,13 +273,20 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
     }
 
     public MetadataSectionAO reindexStorage() {
-        $(className("s-notifications__container")).shouldBe(exist, ofMillis(DEFAULT_TIMEOUT));
+        int attempt = 0;
+        int maxAttempts = 10;
+        $(byXpath(".//*[contains(text(), '-index')]")).shouldBe(exist, ofMillis(DEFAULT_TIMEOUT));
         if ($(byText("Re-index")).exists()) {
             $(byText("Re-index")).click();
         } else {
             $(byText("Request storage re-index")).click();
         }
-        sleep(1, MINUTES);
+        while (!$(byXpath(".//*[contains(text(), 'Standard')]")).exists()
+                && attempt < maxAttempts) {
+            sleep(3, SECONDS);
+            refresh();
+            attempt++;
+        }
         return this;
     }
 
