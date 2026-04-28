@@ -18,11 +18,13 @@ package com.epam.pipeline.vmmonitor.model.instance;
 
 import lombok.Builder;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 import java.time.LocalDateTime;
 
 @Value
 @Builder(toBuilder = true)
+@Jacksonized
 public class NodeThresholdEvent {
     String parameter;
     String node;

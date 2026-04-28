@@ -18,9 +18,11 @@ package com.epam.pipeline.manager.cluster.node;
 import com.epam.pipeline.manager.cluster.container.ContainerResources;
 import lombok.Builder;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 @Value
 @Builder
+@Jacksonized
 public class NodeResources {
     String kubeMem;
     String systemMem;
