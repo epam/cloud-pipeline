@@ -31,6 +31,7 @@ import com.epam.pipeline.autotests.ao.ToolPageAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.BeforeClass;
@@ -242,6 +243,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .clickOnPipeline(pipeline)
                 .firstVersion()
                 .runPipeline()
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
                 .launch(this)
                 .showLog(testRunID = getLastRunId())
                 .waitForCompletion();
@@ -250,6 +252,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .clickOnPipeline(pipeline)
                 .firstVersion()
                 .runPipeline()
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
                 .launch(this)
                 .stopRun(getLastRunId());
         library()
@@ -257,6 +260,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .clickOnPipeline(pipeline)
                 .firstVersion()
                 .runPipeline()
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
                 .launch(this);
         search()
                 .click(PIPELINES)
@@ -388,6 +392,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .clickOnPipeline(pipeline)
                 .firstVersion()
                 .runPipeline()
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
                 .launch(this)
                 .showLog(getLastRunId())
                 .waitForCompletion();
