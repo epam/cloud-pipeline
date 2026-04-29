@@ -1,7 +1,11 @@
 ARG BASE_IMG=library/rockylinux:8.7
+FROM $BASE_IMG
+
 COPY . /opt/local/mcp-remote
 ENV PATH=$PATH:/opt/local/mamba/bin \
     MAMBA_ROOT_PREFIX=/opt/local/mamba
+
+RUN yum install -y bzip2
 RUN mkdir -p /opt/local/mamba && \
     cd /opt/local/mamba && \
     curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj bin/micromamba && \
@@ -12,3 +16,5 @@ RUN mkdir -p /opt/local/mamba && \
     pip install mlflow psycopg2-binary boto3 && \
     pip install -e /opt/local/mcp-remote
 
+RUN chmod +x /opt/local/mcp-remote/init
+CMD [ "/opt/local/mcp-remote/init" ]
