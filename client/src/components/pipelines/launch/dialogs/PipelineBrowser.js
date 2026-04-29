@@ -477,6 +477,7 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
             onSelectItem={this.onSelectItem}
             listingMode
             configurationSelectionMode
+            lazyLoadingConfigurations
             readOnly
             allowSelectLatestVersion={!!this.props.allowSelectLatestVersion}
           />
