@@ -961,7 +961,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
         await request.fetch();
         const list = request.loaded ? (request.value || []).map(c => c) : [];
         let [selected] = list.filter(c => c.default).map(c => c.name);
-        if (!selected && list.length === 1) {
+        if (!selected) {
           selected = list[0].name;
         }
         if (version.name === this.props.selectedVersion && this.props.selectedConfiguration) {
@@ -998,6 +998,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     } else {
       versionsToLoad = versionsToLoad.filter(v => !cached[v.commitId]);
     }
+    console.log(versionsToLoad, versions);
     if (!versionsToLoad.length) {
       return;
     }
@@ -1007,6 +1008,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     }));
     try {
       const configurations = await this.loadConfigurationsForVersions(versionsToLoad);
+      console.log('->', configurations, this.state);
       this.setState(({configurations: previousConfigurations = {}}) => ({
         configurations: {...previousConfigurations, ...configurations}
       }));
