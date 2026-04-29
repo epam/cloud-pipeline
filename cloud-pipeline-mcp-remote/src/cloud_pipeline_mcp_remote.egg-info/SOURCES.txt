@@ -1,0 +1,12 @@
+README.md
+pyproject.toml
+setup.py
+src/cloud_pipeline_mcp_remote/__init__.py
+src/cloud_pipeline_mcp_remote/__main__.py
+src/cloud_pipeline_mcp_remote/app.py
+src/cloud_pipeline_mcp_remote.egg-info/PKG-INFO
+src/cloud_pipeline_mcp_remote.egg-info/SOURCES.txt
+src/cloud_pipeline_mcp_remote.egg-info/dependency_links.txt
+src/cloud_pipeline_mcp_remote.egg-info/entry_points.txt
+src/cloud_pipeline_mcp_remote.egg-info/requires.txt
+src/cloud_pipeline_mcp_remote.egg-info/top_level.txt

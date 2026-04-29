@@ -19,6 +19,7 @@ import {
 } from './extensionEnv';
 import { runListDisplayName } from './runDisplayName';
 import { CloudPipelineRunsProvider, RunTreeItem } from './runsProvider';
+import { syncMcpFromWorkspaceSettings } from './mcpCursorConfig';
 import { runStartNewRunFlow } from './startNewRun';
 
 function normalizeApiBase(input: string): string {
@@ -128,6 +129,29 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   );
 
   context.subscriptions.push(
+    vscode.commands.registerCommand('cloudPipeline.syncMcpCursorConfig', () => {
+      const auth = resolveCredentials();
+      if (!auth) {
+        void vscode.window.showErrorMessage(
+          `Not signed in. Use ${brand}: Sign in or ~/.pipe/config.json with api and access_key.`
+        );
+        return;
+      }
+      const mcpCfg = vscode.workspace.getConfiguration('cloudPipeline');
+      if (!(mcpCfg.get<string>('mcp.serverUrl') ?? '').trim()) {
+        void vscode.window.showErrorMessage(
+          `${brand}: Set cloudPipeline.mcp.serverUrl to your remote MCP base URL, then run this command again.`
+        );
+        return;
+      }
+      syncMcpFromWorkspaceSettings(auth);
+      void vscode.window.showInformationMessage(
+        `${brand}: Updated ~/.cursor/mcp.json for remote MCP. Restart Cursor if the MCP server list does not refresh.`
+      );
+    })
+  );
+
+  context.subscriptions.push(
     vscode.commands.registerCommand('cloudPipeline.signIn', async () => {
       const fromEnv = getDefaultApiBase();
       let apiBase: string;
@@ -170,8 +194,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         clearPipeAuthInvalidation();
         provider.refresh();
         updateSignInStatusBar();
+        const mcpCfg = vscode.workspace.getConfiguration('cloudPipeline');
+        let mcpExtra = '';
+        if (mcpCfg.get<boolean>('mcp.syncOnSignIn', true)) {
+          if (syncMcpFromWorkspaceSettings({ apiUrl: apiBase, accessKey: token })) {
+            mcpExtra =
+              ' Cursor MCP config updated (~/.cursor/mcp.json). Restart Cursor if the MCP server list does not refresh.';
+          }
+        }
         vscode.window.showInformationMessage(
-          `Signed in. Configuration saved to ~/.pipe/config.json`
+          `Signed in. Configuration saved to ~/.pipe/config.json.${mcpExtra}`
         );
       } catch (e) {
         if (e instanceof vscode.CancellationError) {

@@ -1,0 +1,2 @@
+[console_scripts]
+cloud-pipeline-mcp-remote = cloud_pipeline_mcp_remote.__main__:main
