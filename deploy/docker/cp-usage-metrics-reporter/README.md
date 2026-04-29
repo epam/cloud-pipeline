@@ -14,6 +14,15 @@ If the output file exists, the script finds the latest date in the first column,
 
 Default **`--from`** is **`2026-01-01`** (overridable via **`CP_USAGE_METRICS_DEFAULT_DATE_FROM`**). Default **`--to`** is **yesterday (UTC)**. Omitting **`--to`** still ends at yesterday so the current day is not included.
 
+### Active users trend
+
+Daily **user** columns come from the **user-activity report**:
+
+| Column | Source | Meaning                                                                                                                                                                                                                                              |
+|--------|--------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **`total_active_users`** | **`POST /report/users`** with **`interval`** **`DAYS`** over the same calendar window as the row batch (`from` / `to` use **`YYYY-MM-DD 00:00:00.000`**). | Distinct users with platform activity that day — **`totalUsersCount`** from each daily data.|
+| **`new_users_onboarded`** | **`GET /users`**. | Count of users whose **`registrationDate`** falls on that calendar day (within **`--from`** / **`--to`**). **Not** filtered by **`CP_USAGE_METRICS_EXCLUDE_USER_GROUPS`** (that applies only to runs).|
+
 ### Total jobs executed and interactive vs batch
 
 The column **Total jobs executed** is the number of runs whose **startDate** falls on that **calendar day**. Each run is counted **once**, on its **start day only**, so summing the column over a date range equals the number of runs that **started** in that range among rows returned by **`/run/filter`** (no double-count across days). 

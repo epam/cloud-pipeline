@@ -64,6 +64,8 @@ class ReportSchema:
     def expected_header(cls) -> str:
         return (
             "date\t"
+            "total_active_users\t"
+            "new_users_onboarded\t"
             "total_jobs_executed\t"
             "compute_cpu_hours\tcompute_gpu_hours\t"
             "capacity_cpu_total\tcapacity_gpu_total\tcapacity_memory_total_gib\t"
@@ -87,6 +89,24 @@ class ReportSchema:
 def default_report_day_utc() -> date:
     """Yesterday in UTC. Today is excluded as an incomplete calendar day."""
     return datetime.now(timezone.utc).date() - timedelta(days=1)
+
+
+def new_users_onboarded_by_calendar_day(
+    users: List[dict], report_start_day: date, report_end_day: date
+) -> Dict[date, int]:
+    """Counts users whose registrationDate falls on each calendar day."""
+    counts: DefaultDict[date, int] = defaultdict(int)
+    for user in users:
+        if not isinstance(user, dict):
+            continue
+        registered_at = RunTimeline.parse_run_datetime(user.get("registrationDate"))
+        if registered_at is None:
+            continue
+        registered_at = RunTimeline.normalize_naive_utc(registered_at)
+        registration_calendar_day = registered_at.date()
+        if report_start_day <= registration_calendar_day <= report_end_day:
+            counts[registration_calendar_day] += 1
+    return dict(counts)
 
 
 def owners_matching_excluded_user_groups(users: List[dict], excluded_lower: FrozenSet[str]) -> FrozenSet[str]:
@@ -428,6 +448,85 @@ class PipelineRestClient:
         )
         return payload.get("payload") or []
 
+    def load_users_usage_by_day(self, report_start_day: date, report_end_day: date) -> Dict[date, int]:
+        """POST /report/users with interval DAYS; map periodStart calendar day -> totalUsersCount."""
+        start_day = f"{report_start_day.isoformat()} 00:00:00.000"
+        end_day = (
+            f"{(report_end_day + timedelta(days=1)).isoformat()} 00:00:00.000"
+        )
+        api_response = self.post_json(
+            "/report/users",
+            {
+                "from": start_day,
+                "to": end_day,
+                "interval": "DAYS",
+            },
+        )
+        payload = api_response.get("payload")
+        if not isinstance(payload, list):
+            raise SystemExit(f"Unexpected /report/users response: {api_response!r}")
+        counts_by_calendar_day: Dict[date, int] = {}
+        for day_data in payload:
+            if not isinstance(day_data, dict):
+                continue
+            period_day_str = PoolUtilization.period_start_day(day_data.get("periodStart"))
+            if not period_day_str:
+                continue
+            try:
+                calendar_day = datetime.strptime(period_day_str, ReportSchema.DATE_FMT_SHORT).date()
+            except ValueError:
+                continue
+            total_users_count = day_data.get("totalUsersCount")
+            if total_users_count is not None:
+                counts_by_calendar_day[calendar_day] = int(total_users_count)
+                continue
+            fallback_username_list = day_data.get("totalUsers")
+            counts_by_calendar_day[calendar_day] = (
+                len(fallback_username_list) if isinstance(fallback_username_list, list) else 0
+            )
+        return counts_by_calendar_day
+
+    def unique_active_usernames_in_range(self, range_start_day: date, range_end_day: date) -> Set[str]:
+        """Distinct usernames active on at least one day in [range_start_day, range_end_day] (inclusive).
+
+        Calls ``POST /report/users`` with ``interval`` ``DAYS`` and unions each bucket's ``totalUsers``.
+        If a day has counts but no ``totalUsers`` list, that day cannot contribute names; see stderr warning.
+        """
+        range_start_iso = f"{range_start_day.isoformat()} 00:00:00.000"
+        range_end_exclusive_iso = (
+            f"{(range_end_day + timedelta(days=1)).isoformat()} 00:00:00.000"
+        )
+        api_response = self.post_json(
+            "/report/users",
+            {
+                "from": range_start_iso,
+                "to": range_end_exclusive_iso,
+                "interval": "DAYS",
+            },
+        )
+        daily_buckets = api_response.get("payload")
+        if not isinstance(daily_buckets, list):
+            raise SystemExit(f"Unexpected /report/users response: {api_response!r}")
+        unique_names: Set[str] = set()
+        buckets_without_usernames = 0
+        for day_bucket in daily_buckets:
+            if not isinstance(day_bucket, dict):
+                continue
+            username_list = day_bucket.get("totalUsers")
+            if isinstance(username_list, list) and username_list:
+                for name in username_list:
+                    if name is not None and str(name).strip():
+                        unique_names.add(str(name).strip())
+            elif day_bucket.get("totalUsersCount"):
+                buckets_without_usernames += 1
+        if buckets_without_usernames:
+            print(
+                f"[WARN] {buckets_without_usernames} daily bucket(s) had totalUsersCount but no "
+                "totalUsers list; unique count may be understated.",
+                file=sys.stderr,
+            )
+        return unique_names
+
 
 class PoolUtilization:
     @staticmethod
@@ -647,6 +746,8 @@ class DailyMetricsBuilder:
         cb_types: Set[str],
         pool_by_day: Dict[str, Dict[str, Dict[str, float]]],
         failures: DayFailureCounts,
+        users_active_by_day: Dict[date, int],
+        new_users_onboarded_by_day: Dict[date, int],
     ) -> List[str]:
         starts_by_day, interactive_by_day, batch_by_day = (
             self._count_starts_interactive_batch_by_day(runs, report_start_day, report_end_day)
@@ -754,7 +855,13 @@ class DailyMetricsBuilder:
         while report_day <= report_end_day:
             lines.append(
                 self._format_day_row(
-                    report_day, data_by_date, pool_by_day, failures, decimal_format
+                    report_day,
+                    data_by_date,
+                    pool_by_day,
+                    failures,
+                    decimal_format,
+                    users_active_by_day,
+                    new_users_onboarded_by_day,
                 )
             )
             report_day += timedelta(days=1)
@@ -767,6 +874,8 @@ class DailyMetricsBuilder:
         pool_by_day: Dict[str, Dict[str, Dict[str, float]]],
         failures: DayFailureCounts,
         decimal_format: str,
+        users_active_by_day: Dict[date, int],
+        new_users_onboarded_by_day: Dict[date, int],
     ) -> str:
         day_str = report_day.isoformat()
         pool_stats = pool_by_day.get(day_str) or {
@@ -786,6 +895,8 @@ class DailyMetricsBuilder:
 
         row = [
             day_str,
+            str(users_active_by_day.get(report_day, 0)),
+            str(new_users_onboarded_by_day.get(report_day, 0)),
             str(total_jobs),
             decimal_format.format(day_data.compute_cpu[report_day]),
             decimal_format.format(day_data.compute_gpu[report_day]),
@@ -944,6 +1055,10 @@ def main() -> None:
 
     failures = DayFailureCounts.from_filtered_runs(runs, report_start_day, report_end_day)
 
+    users_active_by_day = client.load_users_usage_by_day(report_start_day, report_end_day)
+
+    new_users_onboarded_by_day = new_users_onboarded_by_calendar_day(users, report_start_day, report_end_day)
+
     builder = DailyMetricsBuilder()
     rows = builder.build_rows(
         report_start_day,
@@ -953,6 +1068,8 @@ def main() -> None:
         cb_types,
         pool_by_day,
         failures,
+        users_active_by_day,
+        new_users_onboarded_by_day,
     )
 
     mode = "w" if args.rewrite or not os.path.isfile(out_path) else "a"
