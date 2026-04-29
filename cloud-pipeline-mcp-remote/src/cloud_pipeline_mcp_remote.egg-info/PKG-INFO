@@ -1,0 +1,56 @@
+Metadata-Version: 2.4
+Name: cloud-pipeline-mcp-remote
+Version: 0.1.0
+Summary: Remote Model Context Protocol server that proxies Cloud Pipeline REST API using forwarded JWT and API base headers.
+License-Expression: Apache-2.0
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: httpx<1,>=0.27
+Requires-Dist: mcp<2,>=1.8
+Requires-Dist: uvicorn[standard]<1,>=0.30
+
+# Cloud Pipeline MCP (remote)
+
+Stateless **Streamable HTTP** MCP server. Each Cursor request must include:
+
+- `Authorization: Bearer <JWT>` — same token as `~/.pipe/config.json` `access_key`
+- `X-Cloud-Pipeline-Api-Base: <url>` — same as `api` (e.g. `https://host/pipeline/restapi`, no trailing slash)
+
+The server forwards those credentials to the Cloud Pipeline REST API and returns JSON tool results as text.
+
+## Run
+
+```bash
+cd cloud-pipeline-mcp-remote
+pip install -e .
+cloud-pipeline-mcp-remote --host 0.0.0.0 --port 8080
+```
+
+If `pip install -e .` still complains about setuptools, your `pip` is too old to use `pyproject.toml` alone; upgrading `pip`, `setuptools`, and `wheel` (as above) fixes that. The repo includes a small `setup.py` shim for editable installs.
+
+Cursor `~/.cursor/mcp.json` entry (written by the **Cloud Pipeline Remote** extension when configured):
+
+```json
+{
+  "mcpServers": {
+    "cloud-pipeline": {
+      "url": "https://your-mcp-host/mcp",
+      "headers": {
+        "Authorization": "Bearer <jwt>",
+        "X-Cloud-Pipeline-Api-Base": "https://cp-host/pipeline/restapi"
+      }
+    }
+  }
+}
+```
+
+## Environment
+
+| Variable | Default | Meaning |
+|----------|---------|---------|
+| `CP_HTTP_VERIFY` | `true` | Set to `false` to skip TLS verification (not recommended). |
+| `ALLOW_ORIGINS` | `*` | Comma-separated CORS `allow_origins` for the MCP mount. |
+
+Health check: `GET /health` on the same host/port as the app root (not under `/mcp`).
+
+The server adapts to your installed `mcp` SDK: if `Server(...)` accepts `on_list_tools` / `on_call_tool`, those are used; otherwise it registers `@server.list_tools()` / `@server.call_tool()` (decorator API).

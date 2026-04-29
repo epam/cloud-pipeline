@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cloud-pipeline-mcp-remote"
+version = "0.1.0"
+description = "Remote Model Context Protocol server that proxies Cloud Pipeline REST API using forwarded JWT and API base headers."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+dependencies = [
+  "httpx>=0.27,<1",
+  "mcp>=1.8,<2",
+  "uvicorn[standard]>=0.30,<1",
+]
+
+[project.scripts]
+cloud-pipeline-mcp-remote = "cloud_pipeline_mcp_remote.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

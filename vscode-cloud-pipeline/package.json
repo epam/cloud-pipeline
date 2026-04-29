@@ -3,7 +3,7 @@
   "displayName": "Cloud Pipeline Remote",
   "description": "List running Cloud Pipeline compute instances and connect via SSH tunnel (Remote - SSH).",
   "icon": "resources/logo.png",
-  "version": "0.2.20",
+  "version": "0.2.21",
   "publisher": "cloud-pipeline",
   "engines": {
     "vscode": "^1.85.0"
@@ -23,7 +23,8 @@
     "onCommand:cloudPipeline.stopRun",
     "onCommand:cloudPipeline.pauseRun",
     "onCommand:cloudPipeline.resumeRun",
-    "onCommand:cloudPipeline.terminatePausedRun"
+    "onCommand:cloudPipeline.terminatePausedRun",
+    "onCommand:cloudPipeline.syncMcpCursorConfig"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -96,6 +97,10 @@
         "command": "cloudPipeline.signIn",
         "title": "Cloud Pipeline: Sign in",
         "icon": "$(key)"
+      },
+      {
+        "command": "cloudPipeline.syncMcpCursorConfig",
+        "title": "Cloud Pipeline: Sync remote MCP to ~/.cursor/mcp.json"
       }
     ],
     "menus": {
@@ -171,6 +176,21 @@
           "type": "string",
           "default": "cp-run-",
           "description": "SSH config Host alias prefix (alias = prefix + run id)."
+        },
+        "cloudPipeline.mcp.serverUrl": {
+          "type": "string",
+          "default": "",
+          "description": "Base URL of the remote Cloud Pipeline MCP HTTP server (e.g. https://mcp.example.com — /mcp is appended if missing). Written to ~/.cursor/mcp.json when you sign in (if sync is enabled) or run the sync command."
+        },
+        "cloudPipeline.mcp.serverId": {
+          "type": "string",
+          "default": "cloud-pipeline",
+          "description": "mcpServers entry name in ~/.cursor/mcp.json for this Cloud Pipeline MCP connection."
+        },
+        "cloudPipeline.mcp.syncOnSignIn": {
+          "type": "boolean",
+          "default": true,
+          "description": "After a successful sign-in, merge ~/.cursor/mcp.json with url + Authorization + X-Cloud-Pipeline-Api-Base when mcp.serverUrl is set."
         }
       }
     }
