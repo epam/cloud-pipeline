@@ -31,6 +31,29 @@ _cp_api_base: ContextVar[str | None] = ContextVar("cp_api_base", default=None)
 
 API_BASE_HEADER = "x-cloud-pipeline-api-base"
 
+DEFAULT_BRAND = "Cloud Pipeline"
+DEFAULT_SERVER_NAME = "cloud-pipeline-mcp-remote"
+
+
+def _env_brand() -> str:
+    return (os.environ.get("CP_MCP_BRAND") or "").strip() or DEFAULT_BRAND
+
+
+def _env_server_name() -> str:
+    return (os.environ.get("CP_MCP_SERVER_NAME") or "").strip() or DEFAULT_SERVER_NAME
+
+
+def _env_server_instructions(brand: str) -> str:
+    custom = (os.environ.get("CP_MCP_SERVER_INSTRUCTIONS") or "").strip()
+    if custom:
+        return custom
+    return (
+        f"Tools to operate {brand}: list/start/stop runs, browse data storages, tools, "
+        f"docker registries, cloud regions, preferences and ACL permissions. Each request "
+        f"must carry the user's JWT (Authorization: Bearer) and the {brand} REST base URL "
+        f"(X-Cloud-Pipeline-Api-Base) — these are forwarded as-is."
+    )
+
 
 def _http_verify() -> bool:
     return os.environ.get("CP_HTTP_VERIFY", "true").lower() in ("1", "true", "yes")
@@ -73,9 +96,10 @@ async def _cp_json(
     base = (_cp_api_base.get() or "").strip().rstrip("/")
     bearer = (_cp_bearer.get() or "").strip()
     if not base or not bearer:
+        brand = _env_brand()
         return _tool_error(
             "Missing upstream credentials. Send Authorization: Bearer <jwt> and "
-            f"{API_BASE_HEADER}: <Cloud Pipeline REST base URL> on every MCP HTTP request."
+            f"{API_BASE_HEADER}: <{brand} REST base URL> on every MCP HTTP request."
         )
     p = path if path.startswith("/") else f"/{path}"
     url = f"{base}{p}"
@@ -114,210 +138,218 @@ async def _cp_json(
     return _tool_text(data.get("payload", data))
 
 
-TOOLS: list[types.Tool] = [
-    types.Tool(
-        name="cp_whoami",
-        description="Return current user (GET whoami).",
-        inputSchema={"type": "object", "properties": {}, "additionalProperties": False},
-    ),
-    types.Tool(
-        name="cp_preference_get",
-        description="Load a system preference by name (GET preferences/{name}).",
-        inputSchema={
-            "type": "object",
-            "required": ["name"],
-            "properties": {"name": {"type": "string", "description": "Preference key"}},
-            "additionalProperties": False,
-        },
-    ),
-    types.Tool(
-        name="cp_run_filter",
-        description="Filter pipeline runs (POST run/filter).",
-        inputSchema={
-            "type": "object",
-            "description": "PagingRunFilterVO body",
-            "properties": {
-                "page": {"type": "integer", "default": 1},
-                "pageSize": {"type": "integer", "default": 20},
-                "statuses": {"type": "array", "items": {"type": "string"}},
-                "owners": {"type": "array", "items": {"type": "string"}},
-                "runIds": {"type": "array", "items": {"type": "integer"}},
-                "pipelineIds": {"type": "array", "items": {"type": "integer"}},
-                "prettyUrl": {"type": "string"},
-                "partialParameters": {"type": "string"},
-            },
-            "additionalProperties": True,
-        },
-    ),
-    types.Tool(
-        name="cp_run_get",
-        description="Get a single run by id (GET run/{runId}).",
-        inputSchema={
-            "type": "object",
-            "required": ["runId"],
-            "properties": {"runId": {"type": "integer"}},
-            "additionalProperties": False,
-        },
-    ),
-    types.Tool(
-        name="cp_run_get_tasks",
-        description="List tasks for a run (GET run/{runId}/tasks).",
-        inputSchema={
-            "type": "object",
-            "required": ["runId"],
-            "properties": {"runId": {"type": "integer"}},
-            "additionalProperties": False,
-        },
-    ),
-    types.Tool(
-        name="cp_run_start",
-        description="Start a pipeline or tool run (POST run). Body matches PipelineStart / tool launch payload.",
-        inputSchema={
-            "type": "object",
-            "required": ["payload"],
-            "properties": {
-                "payload": {
-                    "type": "object",
-                    "description": "JSON body sent to POST /run",
-                    "additionalProperties": True,
-                }
-            },
-            "additionalProperties": False,
-        },
-    ),
-    types.Tool(
-        name="cp_run_stop",
-        description="Stop a run (POST run/{runId}/status with STOPPED).",
-        inputSchema={
-            "type": "object",
-            "required": ["runId"],
-            "properties": {"runId": {"type": "integer"}},
-            "additionalProperties": False,
-        },
-    ),
-    types.Tool(
-        name="cp_cluster_edge_external_url",
-        description="Resolve EDGE external URL (GET cluster/edge/externalUrl).",
-        inputSchema={
-            "type": "object",
-            "properties": {
-                "region": {"type": "string", "description": "Optional region query parameter"},
-            },
-            "additionalProperties": False,
-        },
-    ),
-    types.Tool(
-        name="cp_docker_registry_load_tree",
-        description="Docker registries and tools tree (GET dockerRegistry/loadTree).",
-        inputSchema={"type": "object", "properties": {}, "additionalProperties": False},
-    ),
-    types.Tool(
-        name="cp_tool_info",
-        description="Tool metadata (GET tool/{toolId}/info).",
-        inputSchema={
-            "type": "object",
-            "required": ["toolId"],
-            "properties": {"toolId": {"type": "integer"}},
-            "additionalProperties": False,
-        },
-    ),
-    types.Tool(
-        name="cp_tool_settings",
-        description="Tool version settings (GET tool/{toolId}/settings).",
-        inputSchema={
-            "type": "object",
-            "required": ["toolId"],
-            "properties": {
-                "toolId": {"type": "integer"},
-                "version": {"type": "string", "description": "Optional tool version"},
-            },
-            "additionalProperties": False,
-        },
-    ),
-    types.Tool(
-        name="cp_cloud_regions",
-        description="List cloud regions (GET cloud/region).",
-        inputSchema={"type": "object", "properties": {}, "additionalProperties": False},
-    ),
-    types.Tool(
-        name="cp_cluster_instance_allowed",
-        description="Allowed instance and price types (GET cluster/instance/allowed).",
-        inputSchema={
-            "type": "object",
-            "properties": {
-                "toolId": {"type": "integer"},
-                "regionId": {"type": "integer"},
-                "spot": {"type": "boolean"},
-            },
-            "additionalProperties": False,
-        },
-    ),
-    types.Tool(
-        name="cp_data_storage_list",
-        description="List all data storages (GET datastorage/loadAll).",
-        inputSchema={"type": "object", "properties": {}, "additionalProperties": False},
-    ),
-    types.Tool(
-        name="cp_permission_entity",
-        description="Entity-level permissions (GET permissions?id=&aclClass=).",
-        inputSchema={
-            "type": "object",
-            "required": ["aclClass", "id"],
-            "properties": {
-                "aclClass": {"type": "string", "description": "AclClass enum name"},
-                "id": {"type": "integer"},
-            },
-            "additionalProperties": False,
-        },
-    ),
-    types.Tool(
-        name="cp_permission_grant_tree",
-        description="ACL grant tree for an object (GET grant?id=&aclClass=).",
-        inputSchema={
-            "type": "object",
-            "required": ["aclClass", "id"],
-            "properties": {
-                "aclClass": {"type": "string"},
-                "id": {"type": "integer"},
-            },
-            "additionalProperties": False,
-        },
-    ),
-    types.Tool(
-        name="cp_api_request",
-        description=(
-            "Low-level Cloud Pipeline JSON call. method is GET/POST/PUT/DELETE; path is relative to "
-            "the REST base (e.g. run/123). Same authentication as other tools."
+def _build_tools(brand: str) -> list[types.Tool]:
+    """Build tool list with brand-aware descriptions for better agent grounding."""
+    return [
+        types.Tool(
+            name="cp_whoami",
+            description=f"Return the current {brand} user profile (GET whoami).",
+            inputSchema={"type": "object", "properties": {}, "additionalProperties": False},
         ),
-        inputSchema={
-            "type": "object",
-            "required": ["method", "path"],
-            "properties": {
-                "method": {"type": "string", "enum": ["GET", "POST", "PUT", "DELETE", "PATCH"]},
-                "path": {"type": "string"},
-                "query": {"type": "object", "additionalProperties": True},
-                "body": {
-                    "anyOf": [
-                        {"type": "object"},
-                        {"type": "array"},
-                        {"type": "string"},
-                        {"type": "number"},
-                        {"type": "boolean"},
-                        {"type": "null"},
-                    ]
-                },
+        types.Tool(
+            name="cp_preference_get",
+            description=f"Load a {brand} system preference by name (GET preferences/{{name}}).",
+            inputSchema={
+                "type": "object",
+                "required": ["name"],
+                "properties": {"name": {"type": "string", "description": "Preference key"}},
+                "additionalProperties": False,
             },
-            "additionalProperties": False,
-        },
-    ),
-]
+        ),
+        types.Tool(
+            name="cp_run_filter",
+            description=f"Filter {brand} pipeline runs by status, owner, run/pipeline ids, etc. (POST run/filter).",
+            inputSchema={
+                "type": "object",
+                "description": "PagingRunFilterVO body",
+                "properties": {
+                    "page": {"type": "integer", "default": 1},
+                    "pageSize": {"type": "integer", "default": 20},
+                    "statuses": {"type": "array", "items": {"type": "string"}},
+                    "owners": {"type": "array", "items": {"type": "string"}},
+                    "runIds": {"type": "array", "items": {"type": "integer"}},
+                    "pipelineIds": {"type": "array", "items": {"type": "integer"}},
+                    "prettyUrl": {"type": "string"},
+                    "partialParameters": {"type": "string"},
+                },
+                "additionalProperties": True,
+            },
+        ),
+        types.Tool(
+            name="cp_run_get",
+            description=f"Get a single {brand} run by id (GET run/{{runId}}).",
+            inputSchema={
+                "type": "object",
+                "required": ["runId"],
+                "properties": {"runId": {"type": "integer"}},
+                "additionalProperties": False,
+            },
+        ),
+        types.Tool(
+            name="cp_run_get_tasks",
+            description=f"List tasks of a {brand} run (GET run/{{runId}}/tasks).",
+            inputSchema={
+                "type": "object",
+                "required": ["runId"],
+                "properties": {"runId": {"type": "integer"}},
+                "additionalProperties": False,
+            },
+        ),
+        types.Tool(
+            name="cp_run_start",
+            description=(
+                f"Start a {brand} pipeline or tool run (POST run). Body matches "
+                f"{brand} PipelineStart / tool launch payload."
+            ),
+            inputSchema={
+                "type": "object",
+                "required": ["payload"],
+                "properties": {
+                    "payload": {
+                        "type": "object",
+                        "description": f"JSON body sent to {brand} POST /run",
+                        "additionalProperties": True,
+                    }
+                },
+                "additionalProperties": False,
+            },
+        ),
+        types.Tool(
+            name="cp_run_stop",
+            description=f"Stop a {brand} run (POST run/{{runId}}/status with STOPPED).",
+            inputSchema={
+                "type": "object",
+                "required": ["runId"],
+                "properties": {"runId": {"type": "integer"}},
+                "additionalProperties": False,
+            },
+        ),
+        types.Tool(
+            name="cp_cluster_edge_external_url",
+            description=f"Resolve {brand} EDGE external URL (GET cluster/edge/externalUrl).",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "region": {"type": "string", "description": "Optional region query parameter"},
+                },
+                "additionalProperties": False,
+            },
+        ),
+        types.Tool(
+            name="cp_docker_registry_load_tree",
+            description=f"{brand} docker registries and tools tree (GET dockerRegistry/loadTree).",
+            inputSchema={"type": "object", "properties": {}, "additionalProperties": False},
+        ),
+        types.Tool(
+            name="cp_tool_info",
+            description=f"{brand} tool metadata (GET tool/{{toolId}}/info).",
+            inputSchema={
+                "type": "object",
+                "required": ["toolId"],
+                "properties": {"toolId": {"type": "integer"}},
+                "additionalProperties": False,
+            },
+        ),
+        types.Tool(
+            name="cp_tool_settings",
+            description=f"{brand} tool version settings (GET tool/{{toolId}}/settings).",
+            inputSchema={
+                "type": "object",
+                "required": ["toolId"],
+                "properties": {
+                    "toolId": {"type": "integer"},
+                    "version": {"type": "string", "description": "Optional tool version"},
+                },
+                "additionalProperties": False,
+            },
+        ),
+        types.Tool(
+            name="cp_cloud_regions",
+            description=f"List {brand} cloud regions (GET cloud/region).",
+            inputSchema={"type": "object", "properties": {}, "additionalProperties": False},
+        ),
+        types.Tool(
+            name="cp_cluster_instance_allowed",
+            description=f"{brand} allowed instance and price types (GET cluster/instance/allowed).",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "toolId": {"type": "integer"},
+                    "regionId": {"type": "integer"},
+                    "spot": {"type": "boolean"},
+                },
+                "additionalProperties": False,
+            },
+        ),
+        types.Tool(
+            name="cp_data_storage_list",
+            description=f"List all {brand} data storages (GET datastorage/loadAll).",
+            inputSchema={"type": "object", "properties": {}, "additionalProperties": False},
+        ),
+        types.Tool(
+            name="cp_permission_entity",
+            description=f"{brand} entity-level permissions (GET permissions?id=&aclClass=).",
+            inputSchema={
+                "type": "object",
+                "required": ["aclClass", "id"],
+                "properties": {
+                    "aclClass": {"type": "string", "description": "AclClass enum name"},
+                    "id": {"type": "integer"},
+                },
+                "additionalProperties": False,
+            },
+        ),
+        types.Tool(
+            name="cp_permission_grant_tree",
+            description=f"{brand} ACL grant tree for an object (GET grant?id=&aclClass=).",
+            inputSchema={
+                "type": "object",
+                "required": ["aclClass", "id"],
+                "properties": {
+                    "aclClass": {"type": "string"},
+                    "id": {"type": "integer"},
+                },
+                "additionalProperties": False,
+            },
+        ),
+        types.Tool(
+            name="cp_api_request",
+            description=(
+                f"Low-level {brand} JSON call. method is GET/POST/PUT/DELETE; path is relative to "
+                f"the {brand} REST base (e.g. run/123). Same authentication as other tools."
+            ),
+            inputSchema={
+                "type": "object",
+                "required": ["method", "path"],
+                "properties": {
+                    "method": {"type": "string", "enum": ["GET", "POST", "PUT", "DELETE", "PATCH"]},
+                    "path": {"type": "string"},
+                    "query": {"type": "object", "additionalProperties": True},
+                    "body": {
+                        "anyOf": [
+                            {"type": "object"},
+                            {"type": "array"},
+                            {"type": "string"},
+                            {"type": "number"},
+                            {"type": "boolean"},
+                            {"type": "null"},
+                        ]
+                    },
+                },
+                "additionalProperties": False,
+            },
+        ),
+    ]
 
 
-async def handle_list_tools(
-    _ctx: Any,
-    _params: types.PaginatedRequestParams | None,
-) -> types.ListToolsResult:
-    return types.ListToolsResult(tools=TOOLS)
+def handle_list_tools_factory(tools: list[types.Tool]):
+    async def _handler(
+        _ctx: Any,
+        _params: types.PaginatedRequestParams | None,
+    ) -> types.ListToolsResult:
+        return types.ListToolsResult(tools=tools)
+
+    return _handler
 
 
 async def execute_tool_call(name: str, args: dict[str, Any]) -> types.CallToolResult:
@@ -399,17 +431,22 @@ def _transport_security_relaxed() -> Any | None:
         return None
 
 
-def _build_mcp_server() -> Any:
+def _build_mcp_server(*, server_name: str, instructions: str, tools: list[types.Tool]) -> Any:
     """Return a configured low-level MCP Server (constructor or decorator API)."""
     sig = inspect.signature(Server.__init__)
+    extra_kwargs: dict[str, Any] = {}
+    if "instructions" in sig.parameters:
+        extra_kwargs["instructions"] = instructions
+
     if "on_list_tools" in sig.parameters:
         return Server(
-            "cloud-pipeline-mcp-remote",
-            on_list_tools=handle_list_tools,
+            server_name,
+            on_list_tools=handle_list_tools_factory(tools),
             on_call_tool=handle_call_tool,
+            **extra_kwargs,
         )
 
-    srv = Server("cloud-pipeline-mcp-remote")
+    srv = Server(server_name, **extra_kwargs)
     if not hasattr(srv, "list_tools") or not hasattr(srv, "call_tool"):
         raise RuntimeError(
             "The installed 'mcp' Server has no list_tools/call_tool registration API. "
@@ -418,7 +455,7 @@ def _build_mcp_server() -> Any:
 
     @srv.list_tools()
     async def _list_tools_decorator() -> list[types.Tool]:
-        return TOOLS
+        return tools
 
     @srv.call_tool()
     async def _call_tool_decorator(name: str, arguments: dict[str, Any] | None) -> types.CallToolResult:
@@ -452,13 +489,21 @@ class ForwardedUpstreamMiddleware:
             _cp_api_base.reset(t2)
 
 
-async def _health(_: Any) -> JSONResponse:
-    return JSONResponse({"status": "ok", "service": "cloud-pipeline-mcp-remote"})
+def _health_factory(server_name: str, brand: str):
+    async def _health(_: Any) -> JSONResponse:
+        return JSONResponse({"status": "ok", "service": server_name, "brand": brand})
+
+    return _health
 
 
 def create_app() -> Starlette:
     """Streamable HTTP is wired via StreamableHTTPSessionManager (same as SDK streamable_http_app)."""
-    srv = _build_mcp_server()
+    brand = _env_brand()
+    server_name = _env_server_name()
+    instructions = _env_server_instructions(brand)
+    tools = _build_tools(brand)
+    logger.info("Starting MCP server name=%r brand=%r tools=%d", server_name, brand, len(tools))
+    srv = _build_mcp_server(server_name=server_name, instructions=instructions, tools=tools)
     sm_kwargs: dict[str, Any] = {
         "app": srv,
         "event_store": None,
@@ -489,7 +534,7 @@ def create_app() -> Starlette:
     core = Starlette(
         debug=False,
         routes=[
-            Route("/health", _health, methods=["GET"]),
+            Route("/health", _health_factory(server_name, brand), methods=["GET"]),
             Route("/mcp", endpoint=mcp_asgi),
         ],
         lifespan=lifespan,
