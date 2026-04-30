@@ -102,6 +102,7 @@ import {
   StorageItemPermissionsButton,
   StorageItemPermissionsModal
 } from './components/storage-item-permissions';
+import {checkStorageOperationsEnabled} from './utils';
 
 const STORAGE_CLASSES = {
   standard: 'STANDARD',
@@ -180,6 +181,14 @@ export default class DataStorage extends React.Component {
 
   @observable generateDownloadUrls;
   @observable filterDropdownVisible;
+
+  get storageOperationsEnabled () {
+    if (!this.storage.loaded) {
+      return false;
+    }
+    const metadata = this.storage?.metadata;
+    return metadata ? checkStorageOperationsEnabled(metadata) : true;
+  }
 
   get showMetadata () {
     if (this.state.metadata === undefined && this.storage.info) {
@@ -1185,7 +1194,7 @@ export default class DataStorage extends React.Component {
   };
 
   canRestoreVersion = (item) => {
-    if (!this.showVersions) {
+    if (!this.showVersions || !this.storageOperationsEnabled) {
       return false;
     }
     if (
@@ -1924,14 +1933,16 @@ export default class DataStorage extends React.Component {
     const restoreAction = {
       key: Keys.restore,
       title: `Restore transferred item${this.restorableItems.length > 1 ? 's' : ''}`,
-      available: this.userLifeCyclePermissions.write &&
+      available: this.storageOperationsEnabled &&
+        this.userLifeCyclePermissions.write &&
         this.restorableItems.length > 0 && !this.isOmicsStore,
       icon: 'reload'
     };
     const restoreOmicsAction = {
       key: Keys.restoreOmics,
       title: `Restore transferred item${this.restorableItems.length > 1 ? 's' : ''}`,
-      available: this.userLifeCyclePermissions.write &&
+      available: this.storageOperationsEnabled &&
+        this.userLifeCyclePermissions.write &&
         this.restorableItems.length > 0 && this.isSequenceStorage && this.isOmicsFolder,
       icon: 'reload'
     };
@@ -2596,7 +2607,7 @@ export default class DataStorage extends React.Component {
                 (/^nfs$/i.test(type) && !this.isOmicsStore)
                   ? FS_MOUNTS_NOTIFICATIONS_ATTRIBUTE
                   : false,
-                ((!/^nfs$/i.test(type) && !this.state.selectedFile) && !this.isOmicsStore)
+                (this.storageOperationsEnabled && !/^nfs$/i.test(type) && !this.state.selectedFile && !this.isOmicsStore)
                   ? REQUEST_DAV_ACCESS_ATTRIBUTE
                   : false
               ].filter(Boolean)}
@@ -2621,12 +2632,19 @@ export default class DataStorage extends React.Component {
                   onClickRestore={() => this.openRestoreFilesDialog('folder')}
                   restoreInfo={this.lifeCycleRestoreInfo}
                   restoreEnabled={this.userLifeCyclePermissions.write}
-                  visible={!this.state.selectedFile && (
-                    this.userLifeCyclePermissions.read ||
-                    this.userLifeCyclePermissions.write
-                  )}
+                  visible={
+                    !this.state.selectedFile &&
+                    this.storageOperationsEnabled &&
+                    (
+                      this.userLifeCyclePermissions.read ||
+                      this.userLifeCyclePermissions.write
+                    )
+                  }
                 />,
-                <StorageSize storage={this.storage.info} />
+                <StorageSize
+                  storage={this.storage.info}
+                  storageOperationsEnabled={this.storageOperationsEnabled}
+                />
               ].filter(Boolean) : []}
               specialTagsProperties={{
                 storageType: this.fileShareMount ? this.fileShareMount.mountType : undefined,
@@ -2648,6 +2666,7 @@ export default class DataStorage extends React.Component {
         <DataStorageEditDialog
           visible={this.state.editDialogVisible}
           dataStorage={this.storage.info}
+          storageOperationsEnabled={this.storageOperationsEnabled}
           pending={this.storage.infoPending}
           policySupported={policySupported}
           onDelete={this.deleteStorage}
