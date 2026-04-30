@@ -42,8 +42,34 @@ All configuration is via environment variables (no CLI flags besides `--host`/`-
 | `CP_MCP_SERVER_NAME` | `cloud-pipeline-mcp-remote` | Internal server identifier. Reported as `Server(name=...)` to MCP clients and used as `service` in `/health`. |
 | `CP_MCP_BRAND` | `Cloud Pipeline` | Human-readable product name. Embedded in the server's `instructions` and into every tool description so agents always know which platform the tools target. |
 | `CP_MCP_SERVER_INSTRUCTIONS` | *(auto)* | Override the default `Server(instructions=...)` text. When unset, instructions are auto-generated from `CP_MCP_BRAND`. |
+| `CP_MCP_ADMIN_SAFEGUARD` | `true` | When `true`, destructive operations are refused for users with `ROLE_ADMIN` or any scoped `ROLE_*_ADMIN` role (see "Admin safeguard" below). Set to `false` only for emergency / automation accounts. |
 | `CP_HTTP_VERIFY` | `true` | Set to `false` to skip TLS verification (not recommended). |
 | `ALLOW_ORIGINS` | `*` | Comma-separated CORS `allow_origins` for the MCP mount. |
+
+## Admin safeguard
+
+To keep an admin's JWT from accidentally firing a fleet-wide stop/delete via an LLM agent, the
+server inspects the JWT-bound user (via `/whoami`) before destructive operations and refuses
+them when any of the following is true:
+
+- the user has `ROLE_ADMIN`, or
+- the user has any scoped `ROLE_*_ADMIN` role (e.g. `ROLE_RUN_ADMIN`, `ROLE_STORAGE_ADMIN`, `ROLE_BILLING_ADMIN`), or
+- the `/whoami` payload reports `admin: true`.
+
+The following calls are treated as destructive:
+
+- `cp_run_stop` (always).
+- `cp_api_request` with `method = DELETE` (always).
+- `cp_api_request` with `method = POST` against `run/{id}/status` (the stop-run endpoint).
+- `cp_api_request` with `method = POST` against any path ending in `/terminate`, `/stop`, `/abort`, `/cancel`, `/kill`.
+
+Read-only tools (`cp_whoami`, `cp_run_filter`, `cp_run_get`, `cp_run_get_tasks`, `cp_data_storage_list`,
+permission/preference lookups, etc.) and `cp_run_start` are always allowed.
+
+The check **fails closed**: if `/whoami` cannot be reached or returns an unexpected payload, the
+destructive call is refused. Set `CP_MCP_ADMIN_SAFEGUARD=false` to disable the safeguard
+entirely (e.g. for a dedicated automation node where the operator already gates access at a
+different layer).
 
 White-label example:
 

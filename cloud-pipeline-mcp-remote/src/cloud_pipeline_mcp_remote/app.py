@@ -6,6 +6,7 @@ import inspect
 import json
 import logging
 import os
+import re
 from contextlib import asynccontextmanager
 from contextvars import ContextVar
 from typing import Any
@@ -51,7 +52,10 @@ def _env_server_instructions(brand: str) -> str:
         f"Tools to operate {brand}: list/start/stop runs, browse data storages, tools, "
         f"docker registries, cloud regions, preferences and ACL permissions. Each request "
         f"must carry the user's JWT (Authorization: Bearer) and the {brand} REST base URL "
-        f"(X-Cloud-Pipeline-Api-Base) — these are forwarded as-is."
+        f"(X-Cloud-Pipeline-Api-Base) — these are forwarded as-is. "
+        "Safeguard: destructive operations (stop/terminate/delete) are refused for users "
+        "carrying ROLE_ADMIN or any scoped *_ADMIN role to prevent fleet-wide impact; "
+        "read-only tools and starting new runs remain available."
     )
 
 
@@ -62,6 +66,125 @@ def _http_verify() -> bool:
 def _cors_origins() -> list[str]:
     raw = os.environ.get("ALLOW_ORIGINS", "*")
     return [o.strip() for o in raw.split(",") if o.strip()]
+
+
+# --- Admin safeguard ---------------------------------------------------------
+
+# Matches ROLE_ADMIN and any scoped role with the *_ADMIN suffix (e.g. ROLE_RUN_ADMIN,
+# ROLE_STORAGE_ADMIN, ROLE_BILLING_ADMIN, ...).
+_ADMIN_ROLE_RE = re.compile(r"^ROLE_(?:ADMIN|.+_ADMIN)$")
+
+# Tools that mutate or destroy state and are always considered destructive.
+_DESTRUCTIVE_TOOL_NAMES: set[str] = {"cp_run_stop"}
+
+
+def _role_is_admin_scope(role_name: str) -> bool:
+    return bool(_ADMIN_ROLE_RE.match((role_name or "").strip().upper()))
+
+
+def _admin_safeguard_enabled() -> bool:
+    val = (os.environ.get("CP_MCP_ADMIN_SAFEGUARD") or "true").strip().lower()
+    return val in ("1", "true", "yes", "on")
+
+
+def _api_call_is_destructive(method: str, path: str) -> bool:
+    """Heuristic deny-list for cp_api_request: DELETE-anything plus known stop endpoints."""
+    m = (method or "").upper()
+    p = (path or "").lstrip("/")
+    if m == "DELETE":
+        return True
+    if m == "POST" and re.match(r"^run/\d+/status$", p):
+        return True
+    if m == "POST" and re.search(r"/(terminate|stop|abort|cancel|kill)(?:/.*)?$", p, re.IGNORECASE):
+        return True
+    return False
+
+
+async def _fetch_user_admin_status() -> tuple[bool, list[str], str | None]:
+    """Look up the JWT-bound user via /whoami. Returns (is_admin, role_names, error)."""
+    base = (_cp_api_base.get() or "").strip().rstrip("/")
+    bearer = (_cp_bearer.get() or "").strip()
+    if not base or not bearer:
+        return False, [], "missing forwarded credentials"
+    headers = {
+        "Authorization": f"Bearer {bearer}",
+        "Accept": "application/json",
+    }
+    try:
+        async with httpx.AsyncClient(timeout=30.0, verify=_http_verify()) as client:
+            r = await client.get(f"{base}/whoami", headers=headers)
+    except httpx.RequestError as e:
+        return False, [], f"whoami request failed: {e}"
+    try:
+        data = r.json()
+    except json.JSONDecodeError:
+        return False, [], f"whoami returned non-JSON HTTP {r.status_code}"
+    if r.status_code != 200 or not isinstance(data, dict) or data.get("status") != "OK":
+        return False, [], f"whoami non-OK HTTP {r.status_code}: {str(data)[:200]}"
+    payload = data.get("payload") or {}
+    role_names: list[str] = []
+    for it in payload.get("roles") or []:
+        if isinstance(it, dict):
+            n = it.get("name")
+            if n:
+                role_names.append(str(n))
+        elif isinstance(it, str):
+            role_names.append(it)
+    has_admin_role = any(_role_is_admin_scope(rn) for rn in role_names)
+    is_admin_flag = bool(payload.get("admin"))
+    return (has_admin_role or is_admin_flag), role_names, None
+
+
+async def _admin_safeguard(
+    tool: str,
+    *,
+    method: str | None = None,
+    path: str | None = None,
+) -> types.CallToolResult | None:
+    """Return a CallToolResult error if the JWT-bound user is admin and the call is destructive.
+
+    Fail-closed semantics: if we cannot determine the user's role we still refuse, because the
+    safeguard exists precisely to keep an admin token from ever firing a fleet-wide stop/delete
+    through the agent.
+    """
+    if not _admin_safeguard_enabled():
+        return None
+
+    if tool in _DESTRUCTIVE_TOOL_NAMES:
+        destructive = True
+    elif tool == "cp_api_request" and method is not None and path is not None:
+        destructive = _api_call_is_destructive(method, path)
+    else:
+        destructive = False
+
+    if not destructive:
+        return None
+
+    is_admin, roles, err = await _fetch_user_admin_status()
+    brand = _env_brand()
+    if err:
+        return _tool_error(
+            f"{brand} MCP admin safeguard: refusing destructive operation '{tool}' because the "
+            f"current user's role could not be verified ({err}). The safeguard fails closed by "
+            "design. Set CP_MCP_ADMIN_SAFEGUARD=false on the server to disable (not recommended)."
+        )
+    if is_admin:
+        admin_roles = [rn for rn in roles if _role_is_admin_scope(rn)]
+        marker = ", ".join(admin_roles) if admin_roles else "admin flag from /whoami"
+        target = (
+            f" ({(method or '').upper()} {path})" if tool == "cp_api_request" and path else ""
+        )
+        return _tool_error(
+            f"{brand} MCP admin safeguard: refused destructive operation '{tool}'{target} for an "
+            f"administrative user (matched: {marker}). Stop/delete-alike actions are blocked for "
+            "users carrying ROLE_ADMIN or any scoped *_ADMIN role to prevent fleet-wide impact. "
+            "Re-run with a non-admin account, or set CP_MCP_ADMIN_SAFEGUARD=false on the server "
+            "(not recommended) to opt out."
+        )
+    return None
+
+
+# -----------------------------------------------------------------------------
 
 
 def _decode_scope_headers(scope: dict[str, Any]) -> dict[str, str]:
@@ -216,7 +339,10 @@ def _build_tools(brand: str) -> list[types.Tool]:
         ),
         types.Tool(
             name="cp_run_stop",
-            description=f"Stop a {brand} run (POST run/{{runId}}/status with STOPPED).",
+            description=(
+                f"Stop a {brand} run (POST run/{{runId}}/status with STOPPED). "
+                "Destructive: refused for users carrying ROLE_ADMIN or any scoped *_ADMIN role."
+            ),
             inputSchema={
                 "type": "object",
                 "required": ["runId"],
@@ -316,7 +442,10 @@ def _build_tools(brand: str) -> list[types.Tool]:
             name="cp_api_request",
             description=(
                 f"Low-level {brand} JSON call. method is GET/POST/PUT/DELETE; path is relative to "
-                f"the {brand} REST base (e.g. run/123). Same authentication as other tools."
+                f"the {brand} REST base (e.g. run/123). Same authentication as other tools. "
+                "Destructive variants (DELETE method, run/{id}/status, *terminate/stop/abort/cancel/kill "
+                "endpoints) are refused for users carrying ROLE_ADMIN or any scoped *_ADMIN role; "
+                "use a non-admin account for those."
             ),
             inputSchema={
                 "type": "object",
@@ -353,6 +482,19 @@ def handle_list_tools_factory(tools: list[types.Tool]):
 
 
 async def execute_tool_call(name: str, args: dict[str, Any]) -> types.CallToolResult:
+    if name == "cp_run_stop":
+        block = await _admin_safeguard(name)
+        if block is not None:
+            return block
+    elif name == "cp_api_request":
+        block = await _admin_safeguard(
+            name,
+            method=str(args.get("method") or ""),
+            path=str(args.get("path") or ""),
+        )
+        if block is not None:
+            return block
+
     if name == "cp_whoami":
         return await _cp_json("GET", "whoami")
     if name == "cp_preference_get":
