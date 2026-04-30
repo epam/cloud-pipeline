@@ -137,14 +137,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         );
         return;
       }
-      const mcpCfg = vscode.workspace.getConfiguration('cloudPipeline');
-      if (!(mcpCfg.get<string>('mcp.serverUrl') ?? '').trim()) {
+      if (!syncMcpFromWorkspaceSettings(auth)) {
         void vscode.window.showErrorMessage(
-          `${brand}: Set cloudPipeline.mcp.serverUrl to your remote MCP base URL, then run this command again.`
+          `${brand}: Could not derive MCP URL from API URL "${auth.apiUrl}". Set cloudPipeline.mcp.serverUrl explicitly and try again.`
         );
         return;
       }
-      syncMcpFromWorkspaceSettings(auth);
       void vscode.window.showInformationMessage(
         `${brand}: Updated ~/.cursor/mcp.json for remote MCP. Restart Cursor if the MCP server list does not refresh.`
       );

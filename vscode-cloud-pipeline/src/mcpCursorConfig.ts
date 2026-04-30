@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import { URL } from 'url';
 import * as vscode from 'vscode';
 
 const MCP_JSON = path.join(os.homedir(), '.cursor', 'mcp.json');
@@ -15,6 +16,32 @@ function mcpStreamableHttpUrl(serverUrl: string): string {
     return t;
   }
   return `${t}/mcp`;
+}
+
+/**
+ * Derive the MCP base URL from the Cloud Pipeline API URL by stripping its path.
+ * Example: https://cp.example.com/pipeline/restapi -> https://cp.example.com
+ */
+export function deriveMcpServerUrlFromApi(apiUrl: string): string | undefined {
+  const trimmed = (apiUrl ?? '').trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  try {
+    const u = new URL(trimmed);
+    return `${u.protocol}//${u.host}`;
+  } catch {
+    return undefined;
+  }
+}
+
+export function effectiveMcpServerUrl(apiUrl: string): string | undefined {
+  const cfg = vscode.workspace.getConfiguration('cloudPipeline');
+  const explicit = (cfg.get<string>('mcp.serverUrl') ?? '').trim();
+  if (explicit) {
+    return explicit;
+  }
+  return deriveMcpServerUrlFromApi(apiUrl);
 }
 
 function readMcpJson(): McpJsonRoot {
@@ -78,11 +105,11 @@ export function syncMcpFromWorkspaceSettings(auth: {
   apiUrl: string;
   accessKey: string;
 }): boolean {
-  const cfg = vscode.workspace.getConfiguration('cloudPipeline');
-  const serverUrl = (cfg.get<string>('mcp.serverUrl') ?? '').trim();
+  const serverUrl = effectiveMcpServerUrl(auth.apiUrl);
   if (!serverUrl) {
     return false;
   }
+  const cfg = vscode.workspace.getConfiguration('cloudPipeline');
   const serverId = (cfg.get<string>('mcp.serverId') ?? 'cloud-pipeline').trim() || 'cloud-pipeline';
   writeRemoteCloudPipelineMcpEntry({
     serverUrl,
