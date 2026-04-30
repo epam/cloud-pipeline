@@ -35,10 +35,25 @@ Cursor `~/.cursor/mcp.json` entry (written by the **Cloud Pipeline Remote** exte
 
 ## Environment
 
+All configuration is via environment variables (no CLI flags besides `--host`/`--port`/`--log-level`):
+
 | Variable | Default | Meaning |
 |----------|---------|---------|
+| `CP_MCP_SERVER_NAME` | `cloud-pipeline-mcp-remote` | Internal server identifier. Reported as `Server(name=...)` to MCP clients and used as `service` in `/health`. |
+| `CP_MCP_BRAND` | `Cloud Pipeline` | Human-readable product name. Embedded in the server's `instructions` and into every tool description so agents always know which platform the tools target. |
+| `CP_MCP_SERVER_INSTRUCTIONS` | *(auto)* | Override the default `Server(instructions=...)` text. When unset, instructions are auto-generated from `CP_MCP_BRAND`. |
 | `CP_HTTP_VERIFY` | `true` | Set to `false` to skip TLS verification (not recommended). |
 | `ALLOW_ORIGINS` | `*` | Comma-separated CORS `allow_origins` for the MCP mount. |
+
+White-label example:
+
+```bash
+export CP_MCP_BRAND="Acme Compute Cloud"
+export CP_MCP_SERVER_NAME="acme-compute-mcp"
+cloud-pipeline-mcp-remote --host 0.0.0.0 --port 8080
+```
+
+With the above, MCP clients see a server named `acme-compute-mcp`, and tool descriptions read e.g. *"List all Acme Compute Cloud data storages..."* instead of the default branding.
 
 Health check: `GET /health` on the same host/port as the app root (not under `/mcp`).
 
