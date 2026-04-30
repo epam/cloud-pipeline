@@ -1,4 +1,5 @@
 #!/bin/bash
 
+eval "$(micromamba shell hook --shell bash)"
 micromamba activate mcp
 cloud-pipeline-mcp-remote --host 0.0.0.0 --port 8080
