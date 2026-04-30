@@ -1460,6 +1460,7 @@ then
 fi
 
 # Generate server side keys
+rm -f /etc/ssh/*key*
 /usr/bin/ssh-keygen -A
 
 # Set default root password if it exists
