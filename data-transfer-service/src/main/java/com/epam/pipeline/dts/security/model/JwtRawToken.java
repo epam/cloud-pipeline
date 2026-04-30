@@ -18,6 +18,7 @@ package com.epam.pipeline.dts.security.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.authentication.AuthenticationServiceException;
 
@@ -27,6 +28,7 @@ import java.net.URLDecoder;
 
 @Getter
 @AllArgsConstructor
+@NoArgsConstructor
 public class JwtRawToken {
     private static final String HEADER_PREFIX = "Bearer ";
     private String token;

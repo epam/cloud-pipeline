@@ -17,10 +17,12 @@
 package com.epam.pipeline.elasticsearchagent.model.nfsobserver;
 
 import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.Value;
 
 @Value
 @AllArgsConstructor
+@NoArgsConstructor
 public class NFSObserverEvent {
 
     public NFSObserverEvent(final Long timestamp, final NFSObserverEventType eventType, final String storage,

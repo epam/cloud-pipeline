@@ -19,11 +19,13 @@ package com.epam.pipeline.elasticsearch.model.v7.action.bulk;
 import com.epam.pipeline.elasticsearch.model.BulkResponse;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.Arrays;
 
 @RequiredArgsConstructor
 @Builder
+@Jacksonized
 public class BulkResponseV7 implements BulkResponse {
     final org.opensearch.action.bulk.BulkResponse response;
 
