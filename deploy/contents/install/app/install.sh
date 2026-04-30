@@ -1036,8 +1036,15 @@ if is_service_requested cp-notifier; then
                                           CP_NOTIFIER_SMTP_FROM \
                                           CP_NOTIFIER_SMTP_USER \
                                           CP_NOTIFIER_SMTP_PASS"
+        CP_NOTIFIER_SMTP_PARAMETERS_LIST="CP_NOTIFIER_AZ_ENABLE \
+                                          CP_NOTIFIER_AZ_CLIENT_ID \
+                                          CP_NOTIFIER_AZ_CLIENT_SECRET \
+                                          CP_NOTIFIER_AZ_TENANT_ID \
+                                          CP_NOTIFIER_AZ_SENDER"
         if ! check_params_present "update_config" $CP_NOTIFIER_SMTP_PARAMETERS_LIST; then
             print_err "Not all the SMTP parameters are set ("$CP_NOTIFIER_SMTP_PARAMETERS_LIST"). Email notifier service WILL NOT be installed. Please rerun installation with \"-s cp-notifier\" and all the parameters specified"
+        elif ! check_params_present "update_config" $CP_NOTIFIER_AZ_PARAMETERS_LIST; then
+            print_err "Not all the Graph API parameters are set ("$CP_NOTIFIER_AZ_PARAMETERS_LIST"). Email notifier service WILL NOT be installed. Please rerun installation with \"-s cp-notifier\" and all the parameters specified"
         else
             print_info "-> Deploying Email notifier"
             create_kube_resource $K8S_SPECS_HOME/cp-notifier/cp-notifier-dpl.yaml
