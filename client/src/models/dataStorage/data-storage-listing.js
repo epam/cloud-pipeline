@@ -20,6 +20,7 @@ import dataStorages from './DataStorages';
 import DataStorageRequest from './DataStoragePage';
 import DataStorageFilter from './DataStorageFilter';
 import roleModel from '../../utils/roleModel';
+import MetadataLoad from '../metadata/MetadataLoad';
 
 const DEFAULT_DELIMITER = '/';
 const PAGE_SIZE = 40;
@@ -245,6 +246,7 @@ class DataStorageListing {
   @observable showVersions;
   @observable showArchives;
   @observable markers = {};
+  @observable _metadataRequest;
   /**
    * Storage info (DataStorage request)
    */
@@ -331,6 +333,14 @@ class DataStorageListing {
       return undefined;
     }
     return this.storageRequest.value;
+  }
+
+  @computed
+  get metadata () {
+    if (this._metadataRequest.loaded) {
+      return (this._metadataRequest.value || [])[0] || {};
+    }
+    return {};
   }
 
   @computed
@@ -483,7 +493,14 @@ class DataStorageListing {
       .catch((error) => console.warn(
         `Error fetching storage #${storageId || '<unknown>'}: ${error.message}`
       ));
+    this.initializeMetadataAndSorting();
     return true;
+  };
+
+  initializeMetadataAndSorting = () => {
+    if (this.storageId && this.storageRequest) {
+      this._metadataRequest = new MetadataLoad(this.storageId, 'DATA_STORAGE');
+    }
   };
 
   @action
@@ -632,6 +649,10 @@ class DataStorageListing {
 
   @action
   fetchCurrentPage = async () => {
+    await Promise.all([
+      this._metadataRequest.fetchIfNeededOrWait(),
+      this.storageRequest.fetchIfNeededOrWait()
+    ]);
     const token = this._increaseUniqueToken();
     const submitChanges = (fn) => {
       if (token === this.token && typeof fn === 'function') {
