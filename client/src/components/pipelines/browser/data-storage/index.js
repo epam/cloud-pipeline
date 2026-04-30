@@ -208,7 +208,7 @@ export default class DataStorage extends React.Component {
   @observable generateDownloadUrls;
   @observable filterDropdownVisible;
 
-  get storageActionsEnabled () {
+  get storageOperationsEnabled () {
     if (!this.storage.loaded) {
       return false;
     }
@@ -2346,7 +2346,7 @@ export default class DataStorage extends React.Component {
     const restoreAction = {
       key: Keys.restore,
       title: `Restore transferred item${this.restorableItems.length > 1 ? 's' : ''}`,
-      available: this.storageActionsEnabled &&
+      available: this.storageOperationsEnabled &&
         this.userLifeCyclePermissions.write &&
         this.restorableItems.length > 0 && !this.isOmicsStore,
       icon: 'reload'
@@ -2354,7 +2354,7 @@ export default class DataStorage extends React.Component {
     const restoreOmicsAction = {
       key: Keys.restoreOmics,
       title: `Restore transferred item${this.restorableItems.length > 1 ? 's' : ''}`,
-      available: this.storageActionsEnabled &&
+      available: this.storageOperationsEnabled &&
         this.userLifeCyclePermissions.write &&
         this.restorableItems.length > 0 && this.isSequenceStorage && this.isOmicsFolder,
       icon: 'reload'
@@ -3101,10 +3101,10 @@ export default class DataStorage extends React.Component {
               }
               fileIsEmpty={this.isFileSelectedEmpty}
               extraKeys={[
-                (this.storageActionsEnabled && /^nfs$/i.test(type) && !this.isOmicsStore)
+                (/^nfs$/i.test(type) && !this.isOmicsStore)
                   ? FS_MOUNTS_NOTIFICATIONS_ATTRIBUTE
                   : false,
-                (this.storageActionsEnabled && !/^nfs$/i.test(type) && !this.state.selectedFile && !this.isOmicsStore)
+                (this.storageOperationsEnabled && !/^nfs$/i.test(type) && !this.state.selectedFile && !this.isOmicsStore)
                   ? REQUEST_DAV_ACCESS_ATTRIBUTE
                   : false
               ].filter(Boolean)}
@@ -3131,7 +3131,7 @@ export default class DataStorage extends React.Component {
                   restoreEnabled={this.userLifeCyclePermissions.write}
                   visible={
                     !this.state.selectedFile &&
-                    this.storageActionsEnabled &&
+                    this.storageOperationsEnabled &&
                     (
                       this.userLifeCyclePermissions.read ||
                       this.userLifeCyclePermissions.write
@@ -3140,7 +3140,7 @@ export default class DataStorage extends React.Component {
                 />,
                 <StorageSize
                   storage={this.storage.info}
-                  storageOperationsEnabled={this.storageActionsEnabled}
+                  storageOperationsEnabled={this.storageOperationsEnabled}
                 />
               ].filter(Boolean) : []}
               specialTagsProperties={{
@@ -3163,6 +3163,7 @@ export default class DataStorage extends React.Component {
         <DataStorageEditDialog
           visible={this.state.editDialogVisible}
           dataStorage={this.storage.info}
+          storageOperationsEnabled={this.storageOperationsEnabled}
           pending={this.storage.infoPending}
           policySupported={policySupported}
           onDelete={this.deleteStorage}

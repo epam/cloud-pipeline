@@ -20,7 +20,14 @@ const STORAGE_OPERATIONS_METADATA_KEYS = [
   'storage_operations'
 ];
 
-const FALSY_STORAGE_OPERATION_VALUES = new Set(['none', 'false']);
+const FALSY_STORAGE_OPERATION_VALUES = new Set([
+  'none',
+  "'none'",
+  '"none"',
+  'false',
+  "'false'",
+  '"false"'
+]);
 
 function getMetadataEntryValueString (entry) {
   if (entry == null) {
