@@ -20,6 +20,7 @@ import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCredentials;
+import com.epam.pipeline.entity.git.GitNamespace;
 import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
@@ -177,5 +178,13 @@ public class PipelineRepositoryProviderService {
 
     public boolean fileExists(final Pipeline pipeline, final String filePath) {
         return getProvider(pipeline.getRepositoryType()).fileExists(pipeline, filePath);
+    }
+
+    public List<GitNamespace> getAllowedNamespaces(final RepositoryType repositoryType) {
+        return getProvider(repositoryType).getAllowedNamespaces();
+    }
+
+    public List<GitProject> getNamespaceRepositories(final String namespaceId, final RepositoryType repositoryType) {
+        return getProvider(repositoryType).getNamespaceRepositories(namespaceId);
     }
 }

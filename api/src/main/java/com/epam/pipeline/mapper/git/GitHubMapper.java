@@ -17,8 +17,10 @@
 package com.epam.pipeline.mapper.git;
 
 import com.epam.pipeline.entity.git.GitCommitEntry;
+import com.epam.pipeline.entity.git.GitNamespace;
 import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.git.GitTagEntry;
+import com.epam.pipeline.entity.git.github.GitHubInstallation;
 import com.epam.pipeline.entity.git.github.GitHubAuthor;
 import com.epam.pipeline.entity.git.github.GitHubCommit;
 import com.epam.pipeline.entity.git.github.GitHubCommitNode;
@@ -107,6 +109,11 @@ public interface GitHubMapper {
 
     @Mapping(target = "message", ignore = true)
     GitTagEntry tagToTagEntry(GitHubRelease tag);
+
+    @Mapping(target = "name", source = "account.login")
+    @Mapping(target = "type", source = "account.type")
+    @Mapping(target = "id", expression = "java(String.valueOf(installation.getId()))")
+    GitNamespace installationToNamespace(GitHubInstallation installation);
 
     @SneakyThrows
     default Date fillDate(final String date) {

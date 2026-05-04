@@ -16,8 +16,11 @@
 
 package com.epam.pipeline.manager.git.github;
 
+import com.epam.pipeline.entity.git.github.GitHubAccessToken;
 import com.epam.pipeline.entity.git.github.GitHubCommitNode;
+import com.epam.pipeline.entity.git.github.GitHubInstallationRepositories;
 import com.epam.pipeline.entity.git.github.GitHubContent;
+import com.epam.pipeline.entity.git.github.GitHubInstallation;
 import com.epam.pipeline.entity.git.github.GitHubRef;
 import com.epam.pipeline.entity.git.github.GitHubRelease;
 import com.epam.pipeline.entity.git.github.GitHubRepository;
@@ -50,6 +53,7 @@ public interface GitHubApi {
     String SHA = "sha";
     String PAGE_LENGTH = "per_page";
     String REF = "ref";
+    String INSTALLATION_ID = "installation_id";
 
     @GET("repos/{workspace}/{repository}")
     Call<GitHubRepository> getRepository(@Path(WORKSPACE) String workspace,
@@ -142,4 +146,59 @@ public interface GitHubApi {
                                       @Path(REPOSITORY) String repository,
                                       @Query(PAGE) Integer page,
                                       @Query(PAGE_LENGTH) Integer pageLength);
+
+    //CHECKSTYLE:OFF: Line is longer than 120 characters
+    /**
+     * List installations for the authenticated app. For more information, see
+     * <a href="https://docs.github.com/en/rest/apps/apps?apiVersion=2026-03-10#list-installations-for-the-authenticated-app">API Docs</a>
+     * <p>A JWT must be used to access this endpoint.</p>
+     * @param page The page number of the results to fetch.
+     * @param pageLength The number of results per page (max 100).
+     * @return Allowed installations.
+     */
+    //CHECKSTYLE:ON
+    @GET("app/installations")
+    Call<List<GitHubInstallation>> getAppInstallations(@Query(PAGE) Integer page,
+                                                       @Query(PAGE_LENGTH) Integer pageLength);
+
+    //CHECKSTYLE:OFF: Line is longer than 120 characters
+    /**
+     * Get a repository installation for the authenticated app. For more information, see
+     * <a href="https://docs.github.com/en/rest/apps/apps?apiVersion=2026-03-10#get-a-repository-installation-for-the-authenticated-app">API Docs</a>
+     * <p>A JWT must be used to access this endpoint.</p>
+     * @param workspace The account owner of the repository. The name is not case-sensitive.
+     * @param repository The name of the repository without the .git extension. The name is not case-sensitive.
+     * @return Repository.
+     */
+    //CHECKSTYLE:ON
+    @GET("repos/{workspace}/{repository}/installation")
+    Call<GitHubInstallation> getRepositoryInstallation(@Path(WORKSPACE) String workspace,
+                                                       @Path(REPOSITORY) String repository);
+
+    //CHECKSTYLE:OFF: Line is longer than 120 characters
+    /**
+     * Create an installation access token for an app. For more information, see
+     * <a href="https://docs.github.com/en/rest/apps/apps?apiVersion=2026-03-10#create-an-installation-access-token-for-an-app">API Docs</a>
+     * <p>A JWT must be used to access this endpoint.</p>
+     * @param installationId The unique identifier of the installation.
+     * @return Access token.
+     */
+    //CHECKSTYLE:ON
+    @POST("app/installations/{installation_id}/access_tokens")
+    Call<GitHubAccessToken> createInstallationAccessToken(@Path(INSTALLATION_ID) Long installationId);
+
+    //CHECKSTYLE:OFF: Line is longer than 120 characters
+    /**
+     * List repositories that an app installation can access. For more information, see
+     * <a href="https://docs.github.com/en/rest/apps/installations?apiVersion=2026-03-10#list-repositories-accessible-to-the-app-installation">API Docs</a>
+     * <p>An access token from {@link GitHubApi#createInstallationAccessToken(Long)} must be used to access this
+     * endpoint.</p>
+     * @param page The page number of the results to fetch.
+     * @param pageLength The number of results per page (max 100).
+     * @return List of allowed repositories.
+     */
+    //CHECKSTYLE:ON
+    @GET("installation/repositories")
+    Call<GitHubInstallationRepositories> getInstallationRepositories(@Query(PAGE) Integer page,
+                                                                     @Query(PAGE_LENGTH) Integer pageLength);
 }

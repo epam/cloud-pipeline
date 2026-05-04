@@ -19,6 +19,8 @@ package com.epam.pipeline.test.creator.git;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCredentials;
+import com.epam.pipeline.entity.git.GitNamespace;
+import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -39,6 +41,10 @@ public final class GitCreatorUtils {
             new TypeReference<Result<GitRepositoryEntry>>() {};
     public static final TypeReference<Result<List<GitRepositoryEntry>>> GIT_REPOSITORY_ENTRY_LIST_TYPE =
             new TypeReference<Result<List<GitRepositoryEntry>>>() {};
+    public static final TypeReference<Result<List<GitNamespace>>> GIT_NAMESPACE_LIST_TYPE =
+            new TypeReference<Result<List<GitNamespace>>>() {};
+    public static final TypeReference<Result<List<GitProject>>> GIT_PROJECT_LIST_TYPE =
+            new TypeReference<Result<List<GitProject>>>() {};
 
     private GitCreatorUtils() {
 
@@ -58,5 +64,22 @@ public final class GitCreatorUtils {
 
     public static GitCredentials getGitCredentials() {
         return new GitCredentials(TEST_STRING, TEST_STRING, TEST_STRING, TEST_STRING);
+    }
+
+    public static GitNamespace getGitNamespace() {
+        final GitNamespace namespace = new GitNamespace();
+        namespace.setName("test-org");
+        namespace.setId("123456");
+        namespace.setType("Organization");
+        return namespace;
+    }
+
+    public static GitProject getGitProject() {
+        final GitProject project = new GitProject();
+        project.setName("test-repo");
+        project.setProjectId(1L);
+        project.setRepoUrl("https://github.com/test-org/test-repo");
+        project.setPath("test-org/test-repo");
+        return project;
     }
 }
