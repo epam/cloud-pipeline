@@ -69,6 +69,7 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
@@ -131,6 +132,8 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
     private NodePoolMonitoringService nodePoolMonitoringService;
     @MockBean
     private ToolScanScheduler toolScanScheduler;
+    @MockBean
+    public SchedulerFactoryBean mockSchedulerFactoryBean;
     @MockBean
     private DtsMonitoringManager dtsMonitoringManager;
     @MockBean

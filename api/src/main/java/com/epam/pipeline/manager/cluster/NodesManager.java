@@ -472,10 +472,10 @@ public class NodesManager implements InitializingBean {
      * Intended for workloads such as AWS Capacity Blocks where the instance is not tagged by run id.
      */
     public NodeInstance attachDiskToNode(final String nodeId, final DiskAttachRequest request) {
-        Assert.notNull(request.getSize(),
+        Assert.notNull(request.size(),
                 messageHelper.getMessage(MessageConstants.ERROR_RUN_DISK_SIZE_NOT_FOUND));
-        Assert.isTrue(request.getSize() > 0,
-                messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_DISK_IS_INVALID, request.getSize()));
+        Assert.isTrue(request.size() > 0,
+                messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_DISK_IS_INVALID, request.size()));
         final NodeInstance nodeInstance = getNode(nodeId);
         final AbstractCloudRegion region = loadRegionFromLabels(nodeInstance);
         cloudFacade.attachDiskToNode(region.getId(), nodeId, request, Collections.emptyMap());

@@ -133,7 +133,6 @@ import org.flywaydb.core.Flyway;
 import org.springframework.boot.autoconfigure.flyway.FlywayMigrationInitializer;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cache.CacheManager;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.quartz.SchedulerFactoryBean;
@@ -313,6 +312,9 @@ public class AspectTestBeans {
     public ToolScanScheduler mockToolScanScheduler;
 
     @MockBean
+    public SchedulerFactoryBean mockSchedulerFactoryBean;
+
+    @MockBean
     public RunScheduler mockRunScheduler;
 
     @MockBean
@@ -320,9 +322,6 @@ public class AspectTestBeans {
 
     @MockBean
     public PipelineRunResultDao mockPipelineRunResultDao;
-
-    @MockBean
-    protected PipelineRunResultDao mockPipelineRunResultDao;
 
     @MockBean
     protected JwtTokenRevocationDao mockJwtTokenRevocationDao;

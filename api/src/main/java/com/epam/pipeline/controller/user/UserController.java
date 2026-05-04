@@ -92,16 +92,13 @@ public class UserController extends AbstractRestController {
 
     @GetMapping(value = "/user/token/named")
     @ResponseBody
-    @ApiOperation(
-            value = "Issues a named (registered) JWT.",
-            notes = "Registers the token in the named-token registry. "
+    @Operation(
+            summary = "Issues a named (registered) JWT.",
+            description = "Registers the token in the named-token registry. "
                     + "Optional tokenName is the registry label for the row. "
                     + "If userId is omitted, the token is issued for the authenticated user; "
-                    + "with userId (admin-only), for that user.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
+                    + "with userId (admin-only), for that user.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<NamedJwtToken> issueNamedToken(@RequestParam(required = false) Long expiration,
                                                  @RequestParam(required = false) String tokenName,
                                                  @RequestParam(required = false) Long userId) {
@@ -113,14 +110,11 @@ public class UserController extends AbstractRestController {
 
     @GetMapping(value = "/user/token/named/list")
     @ResponseBody
-    @ApiOperation(
-            value = "Lists named JWT registry entries.",
-            notes = "Without userId, lists tokens for the current user. "
-                    + "With userId, lists tokens for that user (admin, user admin, or write ACL on that user).",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
+    @Operation(
+            summary = "Lists named JWT registry entries.",
+            description = "Without userId, lists tokens for the current user. "
+                    + "With userId, lists tokens for that user (admin, user admin, or write ACL on that user).")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<List<NamedJwtToken>> listNamedJwtTokens(
             @RequestParam(required = false) final Long userId) {
         if (userId != null) {
@@ -131,17 +125,14 @@ public class UserController extends AbstractRestController {
 
     @DeleteMapping(value = "/user/token/revoke")
     @ResponseBody
-    @ApiOperation(
-            value = "Revokes a JWT by jti.",
-            notes = "Requires jti from the JWT payload. "
+    @Operation(
+            summary = "Revokes a JWT by jti.",
+            description = "Requires jti from the JWT payload. "
                     + "Omit userId to revoke for the authenticated user. "
                     + "With userId, revokes that user's token (admin, user admin, or write ACL on that user). "
                     + "Named and plain tokens are supported. "
-                    + "Registered tokens are listed via GET /user/token/named/list.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
+                    + "Registered tokens are listed via GET /user/token/named/list.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<Boolean> revokeJwtToken(@RequestParam final String jti,
                                           @RequestParam(required = false) final Long userId) {
         if (userId != null) {
@@ -182,7 +173,7 @@ public class UserController extends AbstractRestController {
                     url);
         } else if (type == RouteType.FORM) {
             return String.format(
-                            "<html>\n"
+                    "<html>\n"
                             +  "<body>\n"
                             +    "<form id=\"form\" method=\"post\" action=\"%s\">\n"
                             +      " <input type=\"hidden\" name=\"bearer\" value=\"%s\" />\n"
@@ -430,12 +421,12 @@ public class UserController extends AbstractRestController {
     @GetMapping(value = "/groups/block")
     @ResponseBody
     @Operation(
-        summary = "Load all available blocking statuses all over the groups.",
-        description = "Load all available blocking statuses all over the groups. "
-                + "Returns all statuses presented in the corresponding DB table")
+            summary = "Load all available blocking statuses all over the groups.",
+            description = "Load all available blocking statuses all over the groups. "
+                    + "Returns all statuses presented in the corresponding DB table")
     @ApiResponses(
-        value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
-        })
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
+            })
     public Result<List<GroupStatus>> loadGroupsBlockingStatuses() {
         return Result.success(userApiService.loadAllGroupsBlockingStatuses());
     }
@@ -465,7 +456,7 @@ public class UserController extends AbstractRestController {
             description = "Updates runners to user")
     @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<List<RunnerSidVO>> updateRunners(@PathVariable final Long id,
-                                                 @RequestBody final List<RunnerSidVO> runners) {
+                                                   @RequestBody final List<RunnerSidVO> runners) {
         return Result.success(userApiService.updateRunners(id, runners));
     }
 
@@ -482,8 +473,8 @@ public class UserController extends AbstractRestController {
     @GetMapping("/user/impersonation")
     @ResponseBody
     @Operation(
-        summary = "Loads impersonation status",
-        description = "Loads impersonation status: show original user and impersonated one if present")
+            summary = "Loads impersonation status",
+            description = "Loads impersonation status: show original user and impersonated one if present")
     @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<ImpersonationStatus> getImpersonationStatus() {
         return Result.success(userApiService.getImpersonationStatus());
@@ -506,7 +497,7 @@ public class UserController extends AbstractRestController {
             description = "Deletes online users dumps created before specified date")
     @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<Boolean> deleteOnlineUsers(@DateTimeFormat(iso = DateTimeFormat.ISO.DATE) @RequestParam
-                                                 final LocalDate date) {
+                                             final LocalDate date) {
         return Result.success(userApiService.deleteExpiredOnlineUsers(date));
     }
 
@@ -517,7 +508,7 @@ public class UserController extends AbstractRestController {
             description = "Loads a map of launch limits, configured via contextual preferences.")
     @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<Map<String, Integer>> getCurrentUserLaunchLimits(
-        @RequestParam(required = false, defaultValue = "false") final boolean loadAll) {
+            @RequestParam(required = false, defaultValue = "false") final boolean loadAll) {
         return Result.success(userApiService.getCurrentUserLaunchLimits(loadAll));
     }
 }

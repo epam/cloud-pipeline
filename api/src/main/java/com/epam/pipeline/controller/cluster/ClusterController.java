@@ -90,7 +90,7 @@ public class ClusterController extends AbstractRestController {
     @Operation(
             summary = "Returns kubernetes nodes used in cluster as a master API node",
             description = "Returns kubernetes nodes used in cluster as a master API node"
-        )
+    )
     @ApiResponses(
             value = {@ApiResponse(description = API_STATUS_DESCRIPTION)}
     )
@@ -111,7 +111,7 @@ public class ClusterController extends AbstractRestController {
     @Operation(
             summary = "Returns all nodes used in cluster",
             description = "Returns all nodes used in cluster"
-        )
+    )
     @ApiResponses(
             value = {@ApiResponse(description = API_STATUS_DESCRIPTION)}
     )
@@ -124,7 +124,7 @@ public class ClusterController extends AbstractRestController {
     @Operation(
             summary = "Returns all nodes used in cluster, filtered by runId or address",
             description = "Returns all nodes used in cluster, filtered by runId or address"
-        )
+    )
     @ApiResponses(
             value = {@ApiResponse(description = API_STATUS_DESCRIPTION)}
     )
@@ -138,7 +138,7 @@ public class ClusterController extends AbstractRestController {
     @Operation(
             summary = "Returns a node, specified by name.",
             description = "Returns a node, specified by name."
-        )
+    )
     @ApiResponses(
             value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
@@ -153,7 +153,7 @@ public class ClusterController extends AbstractRestController {
     @Operation(
             summary = "Returns run id associated with nodename.",
             description = "Returns run id associated with nodename."
-        )
+    )
     @ApiResponses(
             value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
@@ -165,12 +165,12 @@ public class ClusterController extends AbstractRestController {
     @Operation(
             summary = "Returns an ec2 node, specified by name. Filter pods by statuses",
             description = "Returns an ec2 node, specified by name. Filter pods by statuses"
-        )
+    )
     @ApiResponses(
             value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<NodeInstance> loadNodeFiltered(@PathVariable(value = NAME) final String name,
-            @RequestBody FilterPodsRequest request) {
+                                                 @RequestBody FilterPodsRequest request) {
         return Result.success(clusterApiService.getNode(name, request));
     }
 
@@ -178,7 +178,7 @@ public class ClusterController extends AbstractRestController {
     @Operation(
             summary = "Terminates a node, specified by name.",
             description = "Terminates a node, specified by name."
-        )
+    )
     @ApiResponses(
             value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
@@ -193,7 +193,7 @@ public class ClusterController extends AbstractRestController {
     @Operation(
             summary = "Returns all instance types.",
             description = "Returns all instance types in the specified or default region."
-        )
+    )
     @ApiResponses(
             value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
@@ -202,8 +202,8 @@ public class ClusterController extends AbstractRestController {
             @RequestParam(required = false, defaultValue = FALSE) final boolean toolInstances,
             @RequestParam(required = false) final Boolean spot) {
         return toolInstances
-            ? Result.success(clusterApiService.getAllowedToolInstanceTypes(regionId, spot))
-            : Result.success(clusterApiService.getAllowedInstanceTypes(regionId, spot));
+                ? Result.success(clusterApiService.getAllowedToolInstanceTypes(regionId, spot))
+                : Result.success(clusterApiService.getAllowedInstanceTypes(regionId, spot));
     }
 
     @GetMapping(value = "/cluster/instance")
@@ -220,7 +220,7 @@ public class ClusterController extends AbstractRestController {
             summary = "Returns allowed instance types and allowed prices types for the authorized user.",
             description = "Returns allowed instance types and allowed prices types for the authorized user " +
                     "in the specified or default region."
-        )
+    )
     @ApiResponses(
             value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
@@ -235,7 +235,7 @@ public class ClusterController extends AbstractRestController {
     @Operation(
             summary = "Returns stats from instance by given IP address",
             description = "Returns stats from instance by given IP address"
-        )
+    )
     @ApiResponses(
             value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
@@ -271,45 +271,44 @@ public class ClusterController extends AbstractRestController {
 
     @GetMapping("/cluster/node/{name}/usage/report")
     @Operation(
-        summary = "Download resource utilization report for given instance as a csv file.",
-        description = "Download resource utilization report for given instance as a csv file.")
+            summary = "Download resource utilization report for given instance as a csv file.",
+            description = "Download resource utilization report for given instance as a csv file.")
     @ApiResponses(
-        value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
-        })
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
+            })
     public void downloadNodeUsageStatisticsReport(
-        @PathVariable(value = NAME) final String name,
-        @DateTimeFormat(pattern = DATE_TIME_FORMAT)
-        @RequestParam(value = FROM, required = false) final LocalDateTime from,
-        @DateTimeFormat(pattern = DATE_TIME_FORMAT)
-        @RequestParam(value = TO, required = false) final LocalDateTime to,
-        @RequestParam(required = false) final Long runId,
-        @RequestParam(value = INTERVAL, required = false, defaultValue = "PT1M") final Duration interval,
-        @RequestParam(value = REPORT_TYPE, required = false, defaultValue = "CSV") final MonitoringReportType type,
-        final HttpServletResponse response) throws IOException {
+            @PathVariable(value = NAME) final String name,
+            @DateTimeFormat(pattern = DATE_TIME_FORMAT)
+            @RequestParam(value = FROM, required = false) final LocalDateTime from,
+            @DateTimeFormat(pattern = DATE_TIME_FORMAT)
+            @RequestParam(value = TO, required = false) final LocalDateTime to,
+            @RequestParam(required = false) final Long runId,
+            @RequestParam(value = INTERVAL, required = false, defaultValue = "PT1M") final Duration interval,
+            @RequestParam(value = REPORT_TYPE, required = false, defaultValue = "CSV") final MonitoringReportType type,
+            final HttpServletResponse response) throws IOException {
         final InputStream inputStream = clusterApiService.getUsageStatisticsFile(name, from, to, interval, type, runId);
         final String reportName =
-            String.format(REPORT_NAME_TEMPLATE, name, from, to, interval, type.name().toLowerCase())
-                .replace(TIME_SEPARATION_CHAR, UNDERSCORE);
+                String.format(REPORT_NAME_TEMPLATE, name, from, to, interval, type.name().toLowerCase())
+                        .replace(TIME_SEPARATION_CHAR, UNDERSCORE);
         writeStreamToResponse(response, inputStream, reportName);
     }
 
     @RequestMapping(value = "/cluster/node/{name}/disks", method = RequestMethod.GET)
     @Operation(
-        summary = "Returns node disks.",
-        description = "Returns node disks.")
+            summary = "Returns node disks.",
+            description = "Returns node disks.")
     @ApiResponses(@ApiResponse(description = API_STATUS_DESCRIPTION))
     public Result<List<NodeDisk>> loadNodeDisks(@PathVariable(value = NAME) final String name) {
         return Result.success(clusterApiService.loadNodeDisks(name));
     }
 
     @PostMapping(value = "/cluster/node/{name}/disk/attach")
-    @ApiOperation(
-            value = "Creates and attaches a new disk to the node's cloud instance.",
-            notes = "Creates and attaches a new disk by node name (on AWS, the EC2 instance id). "
+    @Operation(
+            summary = "Creates and attaches a new disk to the node's cloud instance.",
+            description = "Creates and attaches a new disk by node name (on AWS, the EC2 instance id). "
                     + "Disk size is specified in GB. Intended for Capacity Blocks and other cases "
-                    + "where the instance is not tagged by pipeline run id.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+                    + "where the instance is not tagged by pipeline run id.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<NodeInstance> attachDiskToNode(@PathVariable(value = NAME) final String name,
                                                  @RequestBody final DiskAttachRequest request) {
         return Result.success(clusterApiService.attachDiskToNode(name, request));
