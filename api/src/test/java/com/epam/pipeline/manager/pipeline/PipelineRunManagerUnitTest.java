@@ -233,11 +233,11 @@ public class PipelineRunManagerUnitTest {
 
     @Test
     public void shouldFailCapacityRequirementsValidationIfRamUnitIsNotGiB() {
-        assertThrows(t -> t instanceof IllegalArgumentException
-                        && t.getMessage().contains("memory unit MB is not supported"),
-                () -> checkCapacityRequirements(
-                        configuration(param(CP_CAP_REQUESTS_RAM, String.valueOf(8L * BYTES_PER_GIB))),
-                        Optional.of(instanceOffer(2, 0, 8F, "MB"))));
+        assertThrows(t -> t instanceof IllegalArgumentException &&
+            t.getMessage().contains("memory unit MB is not supported"),
+            () -> checkCapacityRequirements(
+                configuration(param(CP_CAP_REQUESTS_RAM, String.valueOf(8L * BYTES_PER_GIB))),
+            Optional.of(instanceOffer(2, 0, 8F, "MB"))));
     }
 
     @Test

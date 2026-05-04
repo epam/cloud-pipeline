@@ -17,9 +17,20 @@
 import Remote from '../basic/Remote';
 
 class UserToken extends Remote {
-  constructor (expiration) {
+  constructor (expiration, name) {
     super();
-    this.url = `/user/token?expiration=${expiration}`;
+    const trimmedName = typeof name === 'string'
+      ? name.trim()
+      : name;
+    const query = [
+      `expiration=${encodeURIComponent(expiration)}`
+    ];
+    const endpoint = '/user/token/named';
+    if (typeof trimmedName === 'string' && trimmedName.length > 0) {
+      query.push(`tokenName=${encodeURIComponent(trimmedName)}`);
+    }
+    const url = `${endpoint}?${query.join('&')}`;
+    this.url = url;
   }
 }
 

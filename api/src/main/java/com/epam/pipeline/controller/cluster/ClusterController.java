@@ -38,6 +38,7 @@ import com.epam.pipeline.entity.cluster.monitoring.gpu.GpuMonitoringStats;
 import com.epam.pipeline.entity.cluster.monitoring.platform.network.NetworkEventFilter;
 import com.epam.pipeline.entity.cluster.monitoring.platform.histogram.HistogramBin;
 import com.epam.pipeline.entity.cluster.monitoring.platform.histogram.HistogramType;
+import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.manager.cluster.MonitoringReportType;
 import io.swagger.v3.oas.annotations.Operation;
@@ -299,6 +300,19 @@ public class ClusterController extends AbstractRestController {
     @ApiResponses(@ApiResponse(description = API_STATUS_DESCRIPTION))
     public Result<List<NodeDisk>> loadNodeDisks(@PathVariable(value = NAME) final String name) {
         return Result.success(clusterApiService.loadNodeDisks(name));
+    }
+
+    @PostMapping(value = "/cluster/node/{name}/disk/attach")
+    @ApiOperation(
+            value = "Creates and attaches a new disk to the node's cloud instance.",
+            notes = "Creates and attaches a new disk by node name (on AWS, the EC2 instance id). "
+                    + "Disk size is specified in GB. Intended for Capacity Blocks and other cases "
+                    + "where the instance is not tagged by pipeline run id.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<NodeInstance> attachDiskToNode(@PathVariable(value = NAME) final String name,
+                                                 @RequestBody final DiskAttachRequest request) {
+        return Result.success(clusterApiService.attachDiskToNode(name, request));
     }
 
     @PostMapping("/cluster/dnsrecord")

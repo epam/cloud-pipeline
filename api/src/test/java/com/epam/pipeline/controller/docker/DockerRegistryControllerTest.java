@@ -23,7 +23,9 @@ import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.DockerRegistryEventEnvelope;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.security.JwtRawToken;
+import com.epam.pipeline.entity.security.JwtTokenClaims;
 import com.epam.pipeline.acl.docker.DockerRegistryApiService;
+import com.epam.pipeline.security.jwt.JwtTokenVerifier;
 import com.epam.pipeline.security.UserAccessService;
 import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.test.creator.CommonCreatorConstants;
@@ -39,6 +41,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
@@ -93,6 +96,9 @@ public class DockerRegistryControllerTest extends AbstractControllerTest {
 
     @Autowired
     private UserAccessService mockAccessService;
+
+    @Autowired
+    private JwtTokenVerifier jwtTokenVerifier;
 
     @Test
     @WithMockUser
@@ -156,11 +162,22 @@ public class DockerRegistryControllerTest extends AbstractControllerTest {
         final String encodedNameAndPass = new String(Base64.getEncoder()
                 .encode(testNameAndPass.getBytes(StandardCharsets.UTF_8)));
         doReturn(userContext).when(mockAccessService).getJwtUser(any(), any());
+        doReturn(JwtTokenClaims.builder()
+                .jwtTokenId("oauth-test-jti")
+                .userName(TEST_STRING)
+                .userId("1")
+                .orgUnitId("")
+                .roles(Collections.emptyList())
+                .groups(Collections.emptyList())
+                .issuedAt(LocalDateTime.now())
+                .expiresAt(LocalDateTime.now().plusHours(1))
+                .external(false)
+                .build()).when(jwtTokenVerifier).readClaims(anyString());
         doReturn(jwtRawToken).when(mockDockerRegistryApiService)
                 .issueTokenForDockerRegistry(TEST_STRING, TEST_STRING, TEST_STRING, TEST_STRING);
 
         final MvcResult mvcResult = performRequest(get(OAUTH_DOCKER_REGISTRY_URL)
-                .header("Authorization", "Basic" + encodedNameAndPass).params(params));
+                .header("Authorization", "Basic " + encodedNameAndPass).params(params));
 
         verify(mockDockerRegistryApiService)
                 .issueTokenForDockerRegistry(TEST_STRING, TEST_STRING, TEST_STRING, TEST_STRING);

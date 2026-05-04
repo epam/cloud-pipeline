@@ -25,3 +25,16 @@
   padding: 2px 6px;
   text-align: center;
 }
+
+.node-resources-detail-row td {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.node-resources-detail-cell {
+  padding-left: 28px !important;
+  text-align: left !important;
+}
+
+.node-run-details {
+
+}

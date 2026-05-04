@@ -539,16 +539,13 @@ public class PipelineRunManager {
 
     private void checkGPUInstance(final PipelineConfiguration configuration, final Optional<InstanceOffer> instance) {
         final String instanceType = configuration.getInstanceType();
-        if (StringUtils.isNotBlank(instanceType)) {
-            if (instance.isPresent()) {
-                final InstanceOffer offer = instance.get();
-                if (offer.getGpu() > 0) {
-                    configuration.setParameters(CommonUtils.mergeMaps(
-                            Collections.singletonMap(CP_GPU_COUNT,
-                                    new PipeConfValueVO(String.valueOf(offer.getGpu()))),
-                            configuration.getParameters()));
-                    return;
-                }
+        if (StringUtils.isNotBlank(instanceType) && instance.isPresent()) {
+            final InstanceOffer offer = instance.get();
+            if (offer.getGpu() > 0) {
+                configuration.setParameters(CommonUtils.mergeMaps(
+                        Collections.singletonMap(CP_GPU_COUNT, new PipeConfValueVO(String.valueOf(offer.getGpu()))),
+                        configuration.getParameters()));
+                return;
             }
         }
         MapUtils.emptyIfNull(configuration.getParameters()).remove(CP_GPU_COUNT);

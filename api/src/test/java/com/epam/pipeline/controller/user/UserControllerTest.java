@@ -22,10 +22,11 @@ import com.epam.pipeline.controller.vo.PipelineUserVO;
 import com.epam.pipeline.controller.vo.RouteType;
 import com.epam.pipeline.entity.info.UserInfo;
 import com.epam.pipeline.entity.security.JwtRawToken;
+import com.epam.pipeline.entity.security.NamedJwtToken;
 import com.epam.pipeline.entity.user.CustomControl;
+import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
-import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import com.epam.pipeline.test.creator.security.SecurityCreatorUtils;
 import com.epam.pipeline.test.creator.user.UserCreatorUtils;
@@ -48,6 +49,7 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_LONG_LI
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING_LIST;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -61,6 +63,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 public class UserControllerTest extends AbstractControllerTest {
 
     private static final String USER_TOKEN_URL = SERVLET_PATH + "/user/token";
+    private static final String USER_TOKEN_NAMED_URL = SERVLET_PATH + "/user/token/named";
     private static final String WHOAMI_URL = SERVLET_PATH + "/whoami";
     private static final String USER_URL = SERVLET_PATH + "/user";
     private static final String USER_FIND_URL = USER_URL + "/find";
@@ -82,6 +85,8 @@ public class UserControllerTest extends AbstractControllerTest {
 
     private static final String EXPIRATION = "expiration";
     private static final String NAME = "name";
+    private static final String USER_ID_PARAM = "userId";
+    private static final String TOKEN_NAME_PARAM = "tokenName";
     private static final String PREFIX = "prefix";
     private static final String BLOCK_STATUS = "blockStatus";
     private static final String ROLE_IDS = "roleIds";
@@ -107,6 +112,7 @@ public class UserControllerTest extends AbstractControllerTest {
     private static final String ROLE_ANONYMOUS_USER = "ANONYMOUS_USER";
 
     private final JwtRawToken token = SecurityCreatorUtils.getJwtRawToken();
+    private final NamedJwtToken namedJwtToken = SecurityCreatorUtils.getNamedJwtToken();
     private final PipelineUser pipelineUser = UserCreatorUtils.getPipelineUser();
     private final PipelineUserVO pipelineUserVO = UserCreatorUtils.getPipelineUserVO();
     private final UserInfo userInfo = UserCreatorUtils.getUserInfo(UserCreatorUtils.getPipelineUser());
@@ -129,26 +135,41 @@ public class UserControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldGenerateToken() {
-        doReturn(token).when(mockUserApiService).issueToken(TEST_STRING, ID);
+        doReturn(token).when(mockUserApiService).issueToken(eq(TEST_STRING), eq(ID));
 
         final MvcResult mvcResult = performRequest(get(USER_TOKEN_URL)
                 .params(multiValueMapOf(EXPIRATION, ID,
                                         NAME, TEST_STRING)));
 
-        verify(mockUserApiService).issueToken(TEST_STRING, ID);
+        verify(mockUserApiService).issueToken(eq(TEST_STRING), eq(ID));
         assertResponse(mvcResult, token, SecurityCreatorUtils.JWT_RAW_TOKEN_TYPE);
     }
 
     @Test
     @WithMockUser
+    public void shouldGenerateTokenWithOptionalRegistryName() {
+        final String label = "cli-laptop";
+        doReturn(namedJwtToken).when(mockUserApiService).issueNamedJwtToken(eq(ID), eq(ID), eq(label));
+
+        final MvcResult mvcResult = performRequest(get(USER_TOKEN_NAMED_URL)
+                .params(multiValueMapOf(EXPIRATION, ID,
+                                        USER_ID_PARAM, ID,
+                                        TOKEN_NAME_PARAM, label)));
+
+        verify(mockUserApiService).issueNamedJwtToken(eq(ID), eq(ID), eq(label));
+        assertResponse(mvcResult, namedJwtToken, SecurityCreatorUtils.NAMED_JWT_TOKEN_TYPE);
+    }
+
+    @Test
+    @WithMockUser
     public void shouldGenerateTokenForCurrentUserAndCallMethodWithDurationValidation() {
-        doReturn(token).when(mockAuthManager).issueTokenForCurrentUser(ID);
+        doReturn(token).when(mockUserApiService).issueTokenForCurrentUser(ID);
 
         final MvcResult mvcResult = performRequest(get(USER_TOKEN_URL)
                 .params(multiValueMapOf(EXPIRATION, ID,
                                         null, null)));
 
-        verify(mockAuthManager).issueTokenForCurrentUser(ID);
+        verify(mockUserApiService).issueTokenForCurrentUser(ID);
         assertResponse(mvcResult, token, SecurityCreatorUtils.JWT_RAW_TOKEN_TYPE);
     }
 
@@ -176,35 +197,35 @@ public class UserControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldRedirectWithCookieRouteType() throws Exception {
-        doReturn(token).when(mockAuthManager).issueTokenForCurrentUser(null);
+        doReturn(token).when(mockAuthManager).issueTokenForCurrentUser((Long) null);
 
         final MvcResult mvcResult = performRequest(get(ROUTE_URL)
                 .params(multiValueMapOf(URL, TEST_STRING,
                                         TYPE, RouteType.COOKIE)),
                                         TEXT_HTML_UTF8_CONTENT_TYPE);
 
-        verify(mockAuthManager).issueTokenForCurrentUser(null);
+        verify(mockAuthManager).issueTokenForCurrentUser((Long) null);
         assertThat(mvcResult.getResponse().getContentAsString()).contains(redirectCookie);
     }
 
     @Test
     @WithMockUser
     public void shouldRedirectWithFormRouteType() throws Exception {
-        doReturn(token).when(mockAuthManager).issueTokenForCurrentUser(null);
+        doReturn(token).when(mockAuthManager).issueTokenForCurrentUser((Long) null);
 
         final MvcResult mvcResult = performRequest(get(ROUTE_URL)
                 .params(multiValueMapOf(URL, TEST_STRING,
                                         TYPE, RouteType.FORM)),
                                         TEXT_HTML_UTF8_CONTENT_TYPE);
 
-        verify(mockAuthManager).issueTokenForCurrentUser(null);
+        verify(mockAuthManager).issueTokenForCurrentUser((Long) null);
         assertThat(mvcResult.getResponse().getContentAsString()).contains(redirectForm);
     }
 
     @Test
     @WithMockUser(roles = ROLE_ANONYMOUS_USER)
     public void shouldRedirectForAnonymousUser() throws Exception {
-        doReturn(token).when(mockAuthManager).issueTokenForCurrentUser(null);
+        doReturn(token).when(mockAuthManager).issueTokenForCurrentUser((Long) null);
 
         final MvcResult mvcResultRedirectForm = performRequest(get(ROUTE_URL)
                         .params(multiValueMapOf(URL, TEST_STRING,
@@ -215,7 +236,7 @@ public class UserControllerTest extends AbstractControllerTest {
                                                 TYPE, RouteType.COOKIE)),
                                                 TEXT_HTML_UTF8_CONTENT_TYPE);
 
-        verify(mockAuthManager, times(2)).issueTokenForCurrentUser(null);
+        verify(mockAuthManager, times(2)).issueTokenForCurrentUser((Long) null);
         assertThat(mvcResultRedirectForm.getResponse().getContentAsString()).contains(redirectForm);
         assertThat(mvcResultRedirectCookie.getResponse().getContentAsString()).contains(redirectCookie);
     }

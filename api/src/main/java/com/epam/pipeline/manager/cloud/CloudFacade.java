@@ -97,6 +97,11 @@ public interface CloudFacade {
     void attachDisk(Long regionId, Long runId, DiskAttachRequest request, Map<String, String> tags);
 
     /**
+     * Creates and attaches a new disk to the cloud instance identified by node name.
+     */
+    void attachDiskToNode(Long regionId, String nodeName, DiskAttachRequest request, Map<String, String> tags);
+
+    /**
      * Loads all disks attached to an instance associated with run including os, data and swap disks.
      */
     List<InstanceDisk> loadDisks(Long regionId, Long runId);

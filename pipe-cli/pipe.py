@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import logging
 import os
 import traceback
@@ -45,6 +46,7 @@ from src.utilities.datastorage_operations import DataStorageOperations
 from src.utilities.metadata_operations import MetadataOperations
 from src.utilities.permissions_operations import PermissionsOperations
 from src.utilities.printing.print_service import create_print_service
+from src.utilities.printing.storage import create_storage_print_service
 from src.utilities.pipeline_run_operations import PipelineRunOperations
 from src.utilities.ssh_operations import run_ssh, run_scp, create_tunnel, kill_tunnels, list_tunnels
 from src.utilities.update_cli_version import UpdateCLIVersionManager
@@ -165,9 +167,16 @@ def stacktracing(func, ctx, *args, **kwargs):
         raise
     except Exception as runtime_error:
         if sys.version_info >= (3, 0):
-            click.echo(u'Error: {}'.format(str(runtime_error)), err=True)
+            err_msg = str(runtime_error)
         else:
-            click.echo(u'Error: {}'.format(unicode(runtime_error)), err=True)
+            err_msg = unicode(runtime_error)
+        if ctx.params.get('output_format') == 'json':
+            click.echo(
+                json.dumps({'error': err_msg}, default=str, indent=2, ensure_ascii=False),
+                err=True,
+            )
+        else:
+            click.echo(u'Error: {}'.format(err_msg), err=True)
         if trace:
             traceback.print_exc()
         sys.exit(1)
@@ -772,6 +781,8 @@ def view_cluster_for_node(node_name):
 @click.option('-t', '--timeout', type=int,
               help='Specifies run timeout in minutes. '
                    'If a run doesn\'t finish within this period of time, than it is marked as failed and stopped.')
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help='Structured output format. When set, quiet mode is enabled automatically.')
 @click.option('-q', '--quiet', help='Quiet mode', is_flag=True)
 @click.option('-ic', '--instance-count', help='Number of worker instances to launch in a cluster',
               type=click.IntRange(0, MAX_INSTANCE_COUNT, clamp=True), required=False)
@@ -830,6 +841,7 @@ def run(pipeline,
         docker_image,
         cmd_template,
         timeout,
+        output_format,
         quiet,
         instance_count,
         cores,
@@ -888,7 +900,7 @@ def run(pipeline,
                               status_notifications,
                               status_notifications_status, status_notifications_recipient,
                               status_notifications_subject, status_notifications_body,
-                              user)
+                              user, output_format)
 
 
 @cli.command(name='stop')
@@ -1050,18 +1062,21 @@ def mvtodir(name, directory):
                    "compact - brief summary only (default); "
                    "full - show extended details, works for the storage summary listing only")
 @click.option('-g', '--show-archive', is_flag=True, help='Show archived files.')
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help='Output format. Default is a text table.')
 @common_options
-def storage_list(path, show_details, show_versions, recursive, page, all, output, show_archive):
+def storage_list(path, show_details, show_versions, recursive, page, all, output, show_archive, output_format):
     """Lists storage contents
     """
+    print_service = create_storage_print_service(output_format)
     show_extended = False
     if output == 'full':
         if path is not None or not show_details:
-            click.echo('Extended output could be configured for the storage summary listing only!', err=True)
+            print_service.error('Extended output could be configured for the storage summary listing only!', err=True)
             sys.exit(1)
         show_extended = True
     DataStorageOperations.storage_list(path, show_details, show_versions, recursive, page, all, show_extended,
-                                       show_archive)
+                                       show_archive, print_service)
 
 
 @storage.command(name='mkdir')
@@ -2019,14 +2034,45 @@ def split_tool_path(tool_path, registry, group, tool, version, strict=False):
 
 
 @cli.command(name='token')
-@click.argument('user-id', required=False, type=str)
+@click.argument('user-id', required=False, type=int)
 @click.option('-d', '--duration', type=int, required=False, help='The number of days this token will be valid.')
+@click.option('-tn', '--token-name', 'token_name', required=False, type=str,
+              help='Optional registry label: letters, digits, underscore and hyphen only.')
 @common_options
-def token(user_id, duration):
+def token(user_id, duration, token_name):
     """
-    Prints a JWT token for specified user. If USER_ID is not specified, prints token of the current user.
+    Prints a JWT token for the specified user (admin) or the current user. The token is registered
+    as a named token (see list-tokens / revoke-tokens).
     """
-    UserTokenOperations().print_user_token(user_id, duration)
+    UserTokenOperations().print_user_token(user_id, duration, token_name)
+
+
+@cli.command(name='list-tokens')
+@click.argument('user-id', required=False, type=int)
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help='Output format. Default is a text table.')
+@common_options
+def list_tokens(user_id, output_format):
+    """
+    Lists named JWT token entries (metadata only; secret token values are not shown).
+    """
+    UserTokenOperations().print_named_tokens(user_id, output_format)
+
+
+@cli.command(name='revoke-tokens')
+@click.argument('user-id', required=False, type=int)
+@click.option('-jti', '--jti', 'jtis', required=False, multiple=True,
+              help='JWT id (jti) to revoke. Repeat -jti/--jti for multiple tokens.')
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help='Output format. Default is plain text.')
+@common_options
+def revoke_tokens(jtis, user_id, output_format):
+    """
+    Revokes a JWT by jti (from the token payload). Each -jti is revoked in a separate request.
+    """
+    if not jtis:
+        raise click.UsageError('Specify -jti / --jti at least once')
+    UserTokenOperations().revoke_tokens(jtis, user_id, output_format)
 
 
 @cli.group()

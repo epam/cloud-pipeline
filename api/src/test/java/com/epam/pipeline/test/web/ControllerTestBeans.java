@@ -80,6 +80,8 @@ import com.epam.pipeline.manager.search.SearchExportManager;
 import com.epam.pipeline.manager.search.SearchManager;
 import com.epam.pipeline.acl.security.AclPermissionApiService;
 import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.security.JwtTokenRevocationManager;
+import com.epam.pipeline.manager.security.NamedJwtTokenManager;
 import com.epam.pipeline.manager.template.TemplateManager;
 import com.epam.pipeline.acl.user.RoleApiService;
 import com.epam.pipeline.acl.user.UserApiService;
@@ -174,6 +176,12 @@ public class ControllerTestBeans {
 
     @MockBean
     protected AuthManager authManager;
+
+    @MockBean
+    protected NamedJwtTokenManager namedJwtTokenManager;
+
+    @MockBean
+    protected JwtTokenRevocationManager jwtTokenRevocationManager;
 
     @MockBean
     protected AclPermissionApiService aclPermissionApiService;

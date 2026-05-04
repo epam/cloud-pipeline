@@ -82,7 +82,14 @@ yum install -y vulkan-devel \
                 kernel-devel \
                 kernel-modules-extra
 
-DRIVER_VERSION=570.124.06
+DRIVER_VERSION=595.58.03
 curl -k -L -O https://us.download.nvidia.com/tesla/$DRIVER_VERSION/NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run
 chmod +x ./NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run
 ./NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run -s
+
+# Fabric Manager for A100, H100, H200 and friends
+dnf config-manager --add-repo https://developer.download.nvidia.com/compute/cuda/repos/amzn2023/x86_64/cuda-amzn2023.repo
+dnf install nvidia-fabric-manager -y
+dnf install nvidia-persistenced -н
+systemctl enable nvidia-fabricmanager
+systemctl enable nvidia-persistenced

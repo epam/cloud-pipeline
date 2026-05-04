@@ -20,7 +20,6 @@ import com.epam.pipeline.security.acl.redis.AclImplDeserializer;
 import com.epam.pipeline.security.acl.redis.AclImplSerializer;
 import com.epam.pipeline.security.acl.redis.JsonRedisSerializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -28,6 +27,7 @@ import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 import org.springframework.cache.support.NoOpCacheManager;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
@@ -45,7 +45,6 @@ import redis.clients.jedis.JedisPoolConfig;
 
 import java.time.Duration;
 import java.util.Collections;
-import java.util.Optional;
 import java.util.Set;
 
 @EnableCaching
@@ -53,6 +52,11 @@ public class CacheConfiguration {
 
     public static final String PREFERENCE_CACHE = "preferences";
     public static final String ACL_CACHE = "aclCache";
+    /**
+     * Caches JWT revocation status by {@code jti} for fast lookups (hot path on each authenticated request).
+     * Value type is {@link Boolean} (revoked or not); not used for named-token registry metadata.
+     */
+    public static final String JWT_TOKEN_REVOCATION_CACHE = "jwtTokenRevocation";
 
     private static final String REDIS = "REDIS";
     private static final String MEMORY = "MEMORY";
@@ -82,21 +86,53 @@ public class CacheConfiguration {
 
     @Bean
     @Primary
-    public CacheManager cacheManager(@Qualifier("redisCacheManagerPref")
-                                         final Optional<RedisCacheManager> redisCacheManagerPref) {
+    public CacheManager cacheManager(final ApplicationContext applicationContext) {
+        final RedisCacheManager redisCacheManagerPref = applicationContext.containsBean("redisCacheManagerPref")
+                ? applicationContext.getBean("redisCacheManagerPref", RedisCacheManager.class) : null;
         return switch (cacheType) {
             case MEMORY -> new ConcurrentMapCacheManager(PREFERENCE_CACHE);
-            case REDIS -> redisCacheManagerPref.orElseThrow(IllegalArgumentException::new);
+            case REDIS -> {
+                if (redisCacheManagerPref == null) {
+                    throw new IllegalArgumentException("redisCacheManagerPref is required when cache.type=REDIS");
+                }
+                yield redisCacheManagerPref;
+            }
             default -> new NoOpCacheManager();
         };
     }
 
     @Bean
-    public CacheManager aclCacheManager(@Qualifier("redisCacheManagerAcl")
-                                            final Optional<RedisCacheManager> redisCacheManagerAcl) {
+    public CacheManager aclCacheManager(final ApplicationContext applicationContext) {
+        final RedisCacheManager redisCacheManagerAcl = applicationContext.containsBean("redisCacheManagerAcl")
+                ? applicationContext.getBean("redisCacheManagerAcl", RedisCacheManager.class) : null;
         return switch (cacheTypeAcl) {
             case MEMORY -> new ConcurrentMapCacheManager(ACL_CACHE);
-            case REDIS -> redisCacheManagerAcl.orElseThrow(IllegalArgumentException::new);
+            case REDIS -> {
+                if (redisCacheManagerAcl == null) {
+                    throw new IllegalArgumentException(
+                            "redisCacheManagerAcl is required when security.acl.cache.type=REDIS");
+                }
+                yield redisCacheManagerAcl;
+            }
+            default -> new NoOpCacheManager();
+        };
+    }
+
+    @Bean("jwtTokenRevocationCacheManager")
+    public CacheManager jwtTokenRevocationCacheManager(final ApplicationContext applicationContext) {
+        final RedisCacheManager redisCacheManagerJwtRevocation =
+                applicationContext.containsBean("redisCacheManagerJwtTokenRevocation")
+                        ? applicationContext.getBean("redisCacheManagerJwtTokenRevocation", RedisCacheManager.class)
+                        : null;
+        return switch (cacheType) {
+            case MEMORY -> new ConcurrentMapCacheManager(JWT_TOKEN_REVOCATION_CACHE);
+            case REDIS -> {
+                if (redisCacheManagerJwtRevocation == null) {
+                    throw new IllegalArgumentException(
+                            "redisCacheManagerJwtTokenRevocation is required when cache.type=REDIS");
+                }
+                yield redisCacheManagerJwtRevocation;
+            }
             default -> new NoOpCacheManager();
         };
     }
@@ -104,13 +140,19 @@ public class CacheConfiguration {
     @Bean("redisCacheManagerPref")
     @ConditionalOnProperty(value = CACHE_TYPE, havingValue = REDIS)
     public RedisCacheManager redisCacheManagerPref(final RedisConnectionFactory connectionFactory) {
-        return buildRedisCacheManager(connectionFactory, Collections.singleton(ACL_CACHE), false);
+        return buildRedisCacheManager(connectionFactory, Collections.singleton(PREFERENCE_CACHE), false);
     }
 
     @Bean("redisCacheManagerAcl")
     @ConditionalOnProperty(value = ACL_CACHE_TYPE, havingValue = REDIS)
     public RedisCacheManager redisCacheManagerAcl(final RedisConnectionFactory connectionFactory) {
         return buildRedisCacheManager(connectionFactory, Collections.singleton(ACL_CACHE), useOptimizedParsing);
+    }
+
+    @Bean("redisCacheManagerJwtTokenRevocation")
+    @ConditionalOnProperty(value = CACHE_TYPE, havingValue = REDIS)
+    public RedisCacheManager redisCacheManagerJwtTokenRevocation(final RedisConnectionFactory connectionFactory) {
+        return buildRedisCacheManager(connectionFactory, Collections.singleton(JWT_TOKEN_REVOCATION_CACHE), false);
     }
 
     @Bean("redisConnectionFactory")

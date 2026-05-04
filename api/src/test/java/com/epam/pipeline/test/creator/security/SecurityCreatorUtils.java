@@ -21,6 +21,7 @@ import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.security.JwtRawToken;
+import com.epam.pipeline.entity.security.NamedJwtToken;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.security.acl.AclPermissionEntry;
 import com.epam.pipeline.entity.security.acl.AclSecuredEntry;
@@ -30,6 +31,7 @@ import com.epam.pipeline.security.UserContext;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +47,8 @@ public final class SecurityCreatorUtils {
     public static final TypeReference<JwtRawToken> JWT_RAW_TOKEN_INSTANCE_TYPE = new TypeReference<JwtRawToken>() {};
     public static final TypeReference<Result<JwtRawToken>> JWT_RAW_TOKEN_TYPE =
             new TypeReference<Result<JwtRawToken>>() {};
+    public static final TypeReference<Result<NamedJwtToken>> NAMED_JWT_TOKEN_TYPE =
+            new TypeReference<Result<NamedJwtToken>>() {};
 
     private SecurityCreatorUtils() {
 
@@ -87,6 +91,21 @@ public final class SecurityCreatorUtils {
 
     public static JwtRawToken getJwtRawToken() {
         return new JwtRawToken(TEST_STRING);
+    }
+
+    /**
+     * Minimal {@link NamedJwtToken} for controller tests (matches {@link #getJwtRawToken()} secret).
+     */
+    public static NamedJwtToken getNamedJwtToken() {
+        return NamedJwtToken.builder()
+                .jti("named-jti")
+                .userId(1L)
+                .createdBy(1L)
+                .tokenName(null)
+                .issuedAt(LocalDateTime.parse("2020-01-01T00:00:00"))
+                .expiresAt(LocalDateTime.parse("2020-01-02T00:00:00"))
+                .token(TEST_STRING)
+                .build();
     }
 
     public static EntityVO getEntityVO(final Long id, final AclClass aclClass) {

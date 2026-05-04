@@ -29,12 +29,15 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.user.UserManager;
+import com.epam.pipeline.entity.user.PipelineUser;
 import com.google.common.collect.Maps;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -56,6 +59,10 @@ public class MetadataManagerUnitTest {
     private static final String OWNER_KEY = "CP_OWNER";
     private static final String RUN_ID_KEY = "CP_RUN_ID";
     private static final String TOOL_KEY = "CP_TOOL";
+    private static final String BILLING_CENTER_TAG_KEY = "CP_BILLING_CENTER";
+    private static final String BILLING_CENTER_METADATA_KEY = "billing-center";
+    private static final String BILLING_CENTER_TAG_VALUE = "dept-42";
+    private static final long TEST_USER_ID = 42L;
     private static final String TEST_RUN_ID = "1";
     private static final String TEST_IMAGE = "test:8080/docker/image:latest";
     private static final long TEST_TOOL_ID = 1L;
@@ -67,11 +74,15 @@ public class MetadataManagerUnitTest {
     @Mock
     private MetadataDao metadataDao;
 
+    @Mock
+    private UserManager userManager;
+
     @InjectMocks
     private MetadataManager metadataManager;
 
     @BeforeEach    public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
+        ReflectionTestUtils.setField(metadataManager, "billingCenterKey", "");
     }
 
     @Test
@@ -117,6 +128,55 @@ public class MetadataManagerUnitTest {
                 .contains(Maps.immutableEntry(TOOL_KEY, TEST_IMAGE));
         verify(metadataDao, never()).loadMetadataItem(any());
         verify(toolManager, never()).loadByNameOrId(any());
+    }
+
+    @Test
+    public void shouldPrepareTagsWithBillingCenterFromRunOwnerMetadata() {
+        ReflectionTestUtils.setField(metadataManager, "billingCenterKey", BILLING_CENTER_METADATA_KEY);
+        when(preferenceManager.getPreference(SystemPreferences.CLUSTER_INSTANCE_TAGS))
+                .thenReturn(buildCommonTagsMappingWithBillingCenter());
+
+        final PipelineUser pipelineUser = new PipelineUser();
+        pipelineUser.setId(TEST_USER_ID);
+        when(userManager.loadUserByName(TEST_USER)).thenReturn(pipelineUser);
+
+        final EntityVO userEntity = new EntityVO(TEST_USER_ID, AclClass.PIPELINE_USER);
+        when(metadataDao.loadMetadataItem(userEntity)).thenReturn(userBillingCenterMetadata(userEntity));
+
+        when(preferenceManager.findPreference(SystemPreferences.CLUSTER_INSTANCE_ALLOWED_TAGS))
+                .thenReturn(Optional.empty());
+
+        final PipelineRun run = run(TEST_RUN_ID, TEST_USER, TEST_IMAGE);
+        final Map<String, String> tags = metadataManager.prepareCloudResourceTags(run);
+        assertThat(tags)
+                .hasSize(4)
+                .contains(Maps.immutableEntry(OWNER_KEY, TEST_USER))
+                .contains(Maps.immutableEntry(RUN_ID_KEY, TEST_RUN_ID))
+                .contains(Maps.immutableEntry(TOOL_KEY, TEST_IMAGE))
+                .contains(Maps.immutableEntry(BILLING_CENTER_TAG_KEY, BILLING_CENTER_TAG_VALUE));
+    }
+
+    @Test
+    public void shouldOmitBillingCenterTagWhenMetadataMissing() {
+        ReflectionTestUtils.setField(metadataManager, "billingCenterKey", BILLING_CENTER_METADATA_KEY);
+        when(preferenceManager.getPreference(SystemPreferences.CLUSTER_INSTANCE_TAGS))
+                .thenReturn(buildCommonTagsMappingWithBillingCenter());
+
+        final PipelineUser pipelineUser = new PipelineUser();
+        pipelineUser.setId(TEST_USER_ID);
+        when(userManager.loadUserByName(TEST_USER)).thenReturn(pipelineUser);
+
+        final EntityVO userEntity = new EntityVO(TEST_USER_ID, AclClass.PIPELINE_USER);
+        when(metadataDao.loadMetadataItem(userEntity)).thenReturn(null);
+
+        when(preferenceManager.findPreference(SystemPreferences.CLUSTER_INSTANCE_ALLOWED_TAGS))
+                .thenReturn(Optional.empty());
+
+        final PipelineRun run = run(TEST_RUN_ID, TEST_USER, TEST_IMAGE);
+        final Map<String, String> tags = metadataManager.prepareCloudResourceTags(run);
+        assertThat(tags)
+                .hasSize(3)
+                .doesNotContainKey(BILLING_CENTER_TAG_KEY);
     }
 
     @Test
@@ -198,6 +258,21 @@ public class MetadataManagerUnitTest {
         mapping.put(CommonInstanceTagsType.run_id, RUN_ID_KEY);
         mapping.put(CommonInstanceTagsType.tool, TOOL_KEY);
         return mapping;
+    }
+
+    private static Map<CommonInstanceTagsType, String> buildCommonTagsMappingWithBillingCenter() {
+        final Map<CommonInstanceTagsType, String> mapping = buildCommonTagsMapping();
+        mapping.put(CommonInstanceTagsType.billing_center, BILLING_CENTER_TAG_KEY);
+        return mapping;
+    }
+
+    private static MetadataEntry userBillingCenterMetadata(final EntityVO entityVO) {
+        final Map<String, PipeConfValue> data = new HashMap<>();
+        data.put(BILLING_CENTER_METADATA_KEY, new PipeConfValue(TYPE, BILLING_CENTER_TAG_VALUE));
+        final MetadataEntry metadataEntry = new MetadataEntry();
+        metadataEntry.setEntity(entityVO);
+        metadataEntry.setData(data);
+        return metadataEntry;
     }
 
     private static MetadataEntry toolMetadata(final EntityVO entityVO) {
