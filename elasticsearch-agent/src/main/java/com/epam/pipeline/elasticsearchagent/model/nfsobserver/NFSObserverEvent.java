@@ -16,24 +16,16 @@
 
 package com.epam.pipeline.elasticsearchagent.model.nfsobserver;
 
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
-import lombok.Value;
+public record NFSObserverEvent(
+        Long timestamp,
+        NFSObserverEventType eventType,
+        String storage,
+        String filePath,
+        String filePathTo
+) {
 
-@Value
-@AllArgsConstructor
-@NoArgsConstructor
-public class NFSObserverEvent {
-
-    public NFSObserverEvent(final Long timestamp, final NFSObserverEventType eventType, final String storage,
-                            final String filePath) {
+    public NFSObserverEvent(final Long timestamp, final NFSObserverEventType eventType,
+                            final String storage, final String filePath) {
         this(timestamp, eventType, storage, filePath, null);
     }
-
-    private final Long timestamp;
-    private final NFSObserverEventType eventType;
-    private final String storage;
-    private final String filePath;
-    private final String filePathTo;
-
 }
