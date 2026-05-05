@@ -22,7 +22,7 @@ spec:
         effect: NoSchedule
       containers:
         - name: cp-monitoring-srv
-          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:monitoring-service-$CP_VERSION
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:monitoring-service-${CP_MONITORING_SRV_VERSION}
           imagePullPolicy: "Always"
           command: ["/init"]
           envFrom:
