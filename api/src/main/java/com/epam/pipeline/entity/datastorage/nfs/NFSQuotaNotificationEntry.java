@@ -18,25 +18,15 @@ package com.epam.pipeline.entity.datastorage.nfs;
 
 import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
 import com.epam.pipeline.entity.datastorage.StorageQuotaType;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.util.Collections;
 import java.util.Set;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor(force = true)
-public class NFSQuotaNotificationEntry {
+public record NFSQuotaNotificationEntry(Double value, StorageQuotaType type, Set<StorageQuotaAction> actions) {
 
     public static final NFSQuotaNotificationEntry NO_ACTIVE_QUOTAS_NOTIFICATION =
         new NFSQuotaNotificationEntry(-1.0,
                                       StorageQuotaType.GIGABYTES, Collections.singleton(StorageQuotaAction.EMAIL));
-
-    private final Double value;
-    private final StorageQuotaType type;
-    private final Set<StorageQuotaAction> actions;
 
     public String toThreshold() {
         return String.format("%.0f %s", value, type.getThresholdLabel());

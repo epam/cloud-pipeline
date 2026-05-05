@@ -16,20 +16,13 @@
 
 package com.epam.pipeline.entity.pipeline.run.runtime;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-@Data
-@AllArgsConstructor
-@NoArgsConstructor(force = true)
-public class RunSyncRuntimeDataConfigEntry {
-    // Storage path where folder for the particular run will be located.
-    // Each run folder will have its own name equal to run id.
-    private final String runFolderPathPrefix;
-    // (Optional) Path where data for this config entry will be located.
-    // This path is relative to run folder.
-    // If not present, data should be located in the run folder itself.
-    private final String dataPathPrefix;
-    private final RunSyncRuntimeEvalType evalType;
+public record RunSyncRuntimeDataConfigEntry(
+        // Storage path where folder for the particular run will be located.
+        // Each run folder will have its own name equal to run id.
+        String runFolderPathPrefix,
+        // (Optional) Path where data for this config entry will be located.
+        // This path is relative to run folder.
+        // If not present, data should be located in the run folder itself.
+        String dataPathPrefix,
+        RunSyncRuntimeEvalType evalType) {
 }

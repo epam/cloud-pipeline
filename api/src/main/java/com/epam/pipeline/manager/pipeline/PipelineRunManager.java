@@ -1192,10 +1192,10 @@ public class PipelineRunManager {
         Assert.notNull(run,
                 messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_NOT_FOUND, runId));
         if (overwrite) {
-            run.setTags(newTags.getTags());
+            run.setTags(newTags.tags());
         } else {
             final Map<String, String> currentTags = new HashMap<>(MapUtils.emptyIfNull(run.getTags()));
-            currentTags.putAll(MapUtils.emptyIfNull(newTags.getTags()));
+            currentTags.putAll(MapUtils.emptyIfNull(newTags.tags()));
             run.setTags(currentTags);
         }
         pipelineRunDao.updateRunTags(run);

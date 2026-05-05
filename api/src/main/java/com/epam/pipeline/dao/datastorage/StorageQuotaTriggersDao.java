@@ -91,9 +91,9 @@ public class StorageQuotaTriggersDao extends NamedParameterJdbcDaoSupport {
             final NFSQuotaNotificationEntry quota = triggerEntry.getQuota();
             final MapSqlParameterSource params = new MapSqlParameterSource();
             params.addValue(STORAGE_ID.name(), triggerEntry.getStorageId());
-            params.addValue(QUOTA_VALUE.name(), quota.getValue());
-            params.addValue(QUOTA_TYPE.name(), quota.getType().name());
-            params.addValue(ACTIONS.name(), JsonMapper.convertDataToJsonStringForQuery(quota.getActions()));
+            params.addValue(QUOTA_VALUE.name(), quota.value());
+            params.addValue(QUOTA_TYPE.name(), quota.type().name());
+            params.addValue(ACTIONS.name(), JsonMapper.convertDataToJsonStringForQuery(quota.actions()));
             params.addValue(RECIPIENTS.name(),
                             JsonMapper.convertDataToJsonStringForQuery(triggerEntry.getRecipients()));
             params.addValue(UPDATE_DATE.name(), triggerEntry.getExecutionTime());

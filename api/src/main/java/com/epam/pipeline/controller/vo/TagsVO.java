@@ -16,15 +16,7 @@
 
 package com.epam.pipeline.controller.vo;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.util.Map;
 
-@Data
-@NoArgsConstructor(force = true)
-@AllArgsConstructor
-public class TagsVO {
-    private final Map<String, String> tags;
+public record TagsVO(Map<String, String> tags) {
 }

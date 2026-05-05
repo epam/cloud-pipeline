@@ -16,17 +16,10 @@
 
 package com.epam.pipeline.entity.pipeline.run.runtime;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.util.Map;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor(force = true)
-public class RunSyncRuntimeDataConfig {
-    // timeout in sec to be used for the sync_to_storage script
-    private final Integer syncTimeout;
-    private final Map<RunSyncRuntimeDataType, RunSyncRuntimeDataConfigEntry> data;
+public record RunSyncRuntimeDataConfig(
+        // timeout in sec to be used for the sync_to_storage script
+        Integer syncTimeout,
+        Map<RunSyncRuntimeDataType, RunSyncRuntimeDataConfigEntry> data) {
 }

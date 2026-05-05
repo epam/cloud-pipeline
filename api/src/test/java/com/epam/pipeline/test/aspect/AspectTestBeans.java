@@ -135,7 +135,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.TaskScheduler;
-import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 import org.springframework.security.access.PermissionEvaluator;
 import org.springframework.security.acls.domain.PermissionFactory;
 import org.springframework.security.acls.model.SidRetrievalStrategy;
@@ -310,9 +309,6 @@ public class AspectTestBeans {
 
     @MockBean
     public ToolScanScheduler mockToolScanScheduler;
-
-    @MockBean
-    public SchedulerFactoryBean mockSchedulerFactoryBean;
 
     @MockBean
     public RunScheduler mockRunScheduler;
