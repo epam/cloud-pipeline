@@ -23,7 +23,7 @@ spec:
       serviceAccountName: cp-main-service
       containers:
         - name: cp-deployment-autoscaler
-          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:deployment-autoscaler-${CP_VERSION}
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:deployment-autoscaler-${CP_DEPLOYMENT_AUTOSCALER_VERSION}
           imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:

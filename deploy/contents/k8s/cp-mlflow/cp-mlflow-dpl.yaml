@@ -26,7 +26,7 @@ spec:
       terminationGracePeriodSeconds: 60
       containers:
         - name: cp-mlflow
-          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:mlflow-server-$CP_VERSION
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:mlflow-server-${CP_MLFLOW_VERSION}
           imagePullPolicy: "Always"
           securityContext:
             privileged: true

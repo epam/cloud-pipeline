@@ -633,6 +633,43 @@ function import_users_from_point_in_time_configuration {
   fi
 }
 
+function init_service_versions {
+    # Initialize per-service image version variables.
+    # Each variable falls back to CP_VERSION if not explicitly set,
+    # preserving the default behaviour while allowing individual services
+    # to be pinned to a different version via -env or the install-config file.
+    # leader-elector shares CP_API_SRV_VERSION because it is always
+    # deployed together with api-srv and released as the same image build.
+    export CP_LEADER_ELECTOR_VERSION="${CP_LEADER_ELECTOR_VERSION:-$CP_VERSION}"
+    export CP_API_SRV_VERSION="${CP_API_SRV_VERSION:-$CP_VERSION}"
+    export CP_BILLING_SRV_VERSION="${CP_BILLING_SRV_VERSION:-$CP_VERSION}"
+    export CP_BKP_WORKER_VERSION="${CP_BKP_WORKER_VERSION:-$CP_VERSION}"
+    export CP_CLAIR_VERSION="${CP_CLAIR_VERSION:-$CP_VERSION}"
+    export CP_DAV_VERSION="${CP_DAV_VERSION:-$CP_VERSION}"
+    export CP_DEPLOYMENT_AUTOSCALER_VERSION="${CP_DEPLOYMENT_AUTOSCALER_VERSION:-$CP_VERSION}"
+    export CP_DOCKER_COMP_VERSION="${CP_DOCKER_COMP_VERSION:-$CP_VERSION}"
+    export CP_DOCKER_REGISTRY_VERSION="${CP_DOCKER_REGISTRY_VERSION:-$CP_VERSION}"
+    export CP_EDGE_VERSION="${CP_EDGE_VERSION:-$CP_VERSION}"
+    export CP_GIT_VERSION="${CP_GIT_VERSION:-$CP_VERSION}"
+    export CP_GITLAB_READER_VERSION="${CP_GITLAB_READER_VERSION:-$CP_VERSION}"
+    export CP_HEAPSTER_VERSION="${CP_HEAPSTER_VERSION:-$CP_VERSION}"
+    export CP_IDP_VERSION="${CP_IDP_VERSION:-$CP_VERSION}"
+    export CP_MLFLOW_VERSION="${CP_MLFLOW_VERSION:-$CP_VERSION}"
+    export CP_MONITORING_SRV_VERSION="${CP_MONITORING_SRV_VERSION:-$CP_VERSION}"
+    export CP_NODE_LOGGER_VERSION="${CP_NODE_LOGGER_VERSION:-$CP_VERSION}"
+    export CP_NODE_REPORTER_VERSION="${CP_NODE_REPORTER_VERSION:-$CP_VERSION}"
+    export CP_NOTIFIER_VERSION="${CP_NOTIFIER_VERSION:-$CP_VERSION}"
+    export CP_RUN_CLEANUP_JOB_VERSION="${CP_RUN_CLEANUP_JOB_VERSION:-$CP_VERSION}"
+    export CP_RUN_POLICY_MANAGER_VERSION="${CP_RUN_POLICY_MANAGER_VERSION:-$CP_VERSION}"
+    export CP_SEARCH_SRV_VERSION="${CP_SEARCH_SRV_VERSION:-$CP_VERSION}"
+    export CP_SEARCH_ELK_VERSION="${CP_SEARCH_ELK_VERSION:-$CP_VERSION}"
+    export CP_SEARCH_ELK_CURATOR_VERSION="${CP_SEARCH_ELK_CURATOR_VERSION:-$CP_VERSION}"
+    export CP_SHARE_SRV_VERSION="${CP_SHARE_SRV_VERSION:-$CP_VERSION}"
+    export CP_STATPING_MONITOR_VERSION="${CP_STATPING_MONITOR_VERSION:-$CP_VERSION}"
+    export CP_TINYPROXY_VERSION="${CP_TINYPROXY_VERSION:-$CP_VERSION}"
+    export CP_VM_MONITOR_VERSION="${CP_VM_MONITOR_VERSION:-$CP_VERSION}"
+}
+
 function parse_options {
     local services_count=0
     export CP_SERVICES_ENABLED=

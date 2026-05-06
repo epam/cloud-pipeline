@@ -22,7 +22,7 @@ spec:
         effect: NoSchedule
       containers:
         - name: cp-health
-          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:statping-monitor-$CP_VERSION
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:statping-monitor-${CP_STATPING_MONITOR_VERSION}
           imagePullPolicy: "IfNotPresent"
           ports:
             - containerPort: 8080
