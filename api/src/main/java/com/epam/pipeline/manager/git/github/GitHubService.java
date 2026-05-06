@@ -30,10 +30,6 @@ import com.epam.pipeline.entity.git.GitRepositoryUrl;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.github.GitHubCommitNode;
 import com.epam.pipeline.entity.git.github.GitHubContent;
-import com.epam.pipeline.entity.git.github.GitHubAccessToken;
-import com.epam.pipeline.entity.git.github.GitHubInstallation;
-import com.epam.pipeline.entity.git.github.GitHubInstallationAccount;
-import com.epam.pipeline.entity.git.github.GitHubInstallationRepositories;
 import com.epam.pipeline.entity.git.github.GitHubRef;
 import com.epam.pipeline.entity.git.github.GitHubRelease;
 import com.epam.pipeline.entity.git.github.GitHubRepository;
@@ -51,34 +47,25 @@ import com.epam.pipeline.manager.git.GitClientService;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.mapper.git.GitHubMapper;
-import com.epam.pipeline.utils.JwtUtils;
 import com.epam.pipeline.utils.AuthorizationUtils;
 import com.epam.pipeline.utils.GitUtils;
 import joptsimple.internal.Strings;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.util.TextUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import retrofit2.Response;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Paths;
-import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -86,35 +73,19 @@ import static com.epam.pipeline.manager.git.PipelineRepositoryService.NOT_SUPPOR
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class GitHubService implements GitClientService {
     private static final String REPOSITORY_NAME = "repository name";
     private static final String PROJECT_NAME = "project name";
     private static final String GITHUB_FOLDER_MARKER = "tree";
     private static final String GITHUB_FILE_MARKER = "blob";
-    private static final String LINK = "link";
-    private static final String REL_NEXT = "rel=\"next\"";
     private static final String COMMIT = "commit";
     private static final String REFS_TAGS_PREFIX = "refs/tags/%s";
-    private static final int GITHUB_APP_JWT_MAX_TTL_SECONDS = 600;
-    private static final String ACCEPT_HEADER = "Accept";
-    private static final String ACCEPT_GITHUB_JSON = "application/vnd.github+json";
-    private static final String X_GITHUB_API_VERSION = "2026-03-10";
-    private static final String API_VERSION_HEADER = "X-GitHub-Api-Version";
 
     private final GitHubMapper mapper;
     private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
-    private final String privateKeyPem;
-
-    public GitHubService(final GitHubMapper mapper,
-                         final MessageHelper messageHelper,
-                         final PreferenceManager preferenceManager,
-                         @Value("${github.app.private.key.pem:}") final String privateKeyPem) {
-        this.mapper = mapper;
-        this.messageHelper = messageHelper;
-        this.preferenceManager = preferenceManager;
-        this.privateKeyPem = privateKeyPem;
-    }
+    private final GitHubAppService gitHubAppService;
 
     @Override
     public RepositoryType getType() {
@@ -152,7 +123,7 @@ public class GitHubService implements GitClientService {
     @Override
     public List<String> getBranches(final String repositoryPath, final String token) {
         final GitHubClient client = getClient(repositoryPath, token);
-        return pagination(client::getBranches).stream()
+        return GitHubUtils.pagination(client::getBranches).stream()
                 .map(GitHubRef::getName)
                 .collect(Collectors.toList());
     }
@@ -184,7 +155,7 @@ public class GitHubService implements GitClientService {
     @Override
     public List<Revision> getTags(final Pipeline pipeline) {
         final GitHubClient client = getClient(pipeline);
-        return pagination(client::getTags).stream()
+        return GitHubUtils.pagination(client::getTags).stream()
                 .map(tag -> fillCommitInfo(tag, client))
                 .map(mapper::refToRevision)
                 .collect(Collectors.toList());
@@ -361,26 +332,14 @@ public class GitHubService implements GitClientService {
 
     @Override
     public List<GitNamespace> getAllowedNamespaces() {
-        final List<String> allowed = getAllowedInstallations();
-
-        final String jwt = generateJWT();
-        final List<GitHubInstallation> installations = findInstallations(jwt);
-        return installations.stream()
-                .filter(Objects::nonNull)
-                .filter(installation -> isInstallationAllowed(installation, allowed))
+        return gitHubAppService.findAllowedInstallations().stream()
                 .map(mapper::installationToNamespace)
                 .collect(Collectors.toList());
     }
 
     @Override
     public List<GitProject> getNamespaceRepositories(final String installationId) {
-        final String jwt = generateJWT();
-        final String accessToken = generateAccessToken(jwt, Long.valueOf(installationId));
-        final GitHubClient client = buildAppClient(accessToken);
-        return pagination(client::getInstallationRepositories,
-            responseBody -> Optional.ofNullable(responseBody)
-                    .map(GitHubInstallationRepositories::getRepositories)
-                    .orElse(Collections.emptyList())).stream()
+        return gitHubAppService.findRepositoriesByInstallation(installationId).stream()
                 .map(mapper::toGitRepository)
                 .collect(Collectors.toList());
     }
@@ -419,28 +378,11 @@ public class GitHubService implements GitClientService {
         final String host = repositoryUrl.getHost();
         final String gitHubHost = protocol + "api." + host;
 
-        final String credentials = buildAuthHeader(token);
-
-        return new GitHubClient(gitHubHost, credentials, null, projectName, repositoryName);
-    }
-
-    private GitHubClient buildAppClient(final String token) {
-        final String apiUrl = preferenceManager.getPreference(SystemPreferences.GITHUB_API_ROOT_URL);
-        return buildAppClient(apiUrl, token);
-    }
-
-    private GitHubClient buildAppClient(final String apiUrl, final String token) {
-        final Map<String, String> headers = new HashMap<>();
-        headers.put(ACCEPT_HEADER, ACCEPT_GITHUB_JSON);
-        headers.put(API_VERSION_HEADER, X_GITHUB_API_VERSION);
-        return new GitHubClient(apiUrl, buildAuthHeader(token),
-                null, null, null, headers);
-    }
-
-    private String buildAuthHeader(final String token) {
         Assert.isTrue(StringUtils.isNotBlank(token), messageHelper
                 .getMessage(MessageConstants.ERROR_REPOSITORY_TOKEN_NOT_FOUND, getType()));
-        return AuthorizationUtils.buildBearerTokenAuth(token);
+        final String credentials = AuthorizationUtils.buildBearerTokenAuth(token);
+
+        return new GitHubClient(gitHubHost, credentials, null, projectName, repositoryName);
     }
 
     private GitClientException buildUrlParseError(final String urlPart) {
@@ -480,101 +422,10 @@ public class GitHubService implements GitClientService {
         return client.fileExists(ref, path);
     }
 
-    private String generateJWT() {
-        final String appId = preferenceManager.getPreference(SystemPreferences.GITHUB_APP_ID);
-        Assert.hasText(appId, "GitHub App ID shall be configured.");
-        try {
-            return JwtUtils.generateRsa256Jwt(privateKeyPem, appId, GITHUB_APP_JWT_MAX_TTL_SECONDS);
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
-            throw new GitClientException("Failed to read GitHub App private key: " + e.getMessage());
-        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
-            log.error(e.getMessage(), e);
-            throw new GitClientException("Failed to parse GitHub App private key: " + e.getMessage());
-        }
-    }
-
     private String getGithubAppToken(final String repositoryPath) {
         final GitRepositoryUrl repositoryUrl = GitRepositoryUrl.from(repositoryPath);
         final String projectName = repositoryUrl.getNamespace().orElseThrow(() -> buildUrlParseError(PROJECT_NAME));
         final String repositoryName = repositoryUrl.getProject().orElseThrow(() -> buildUrlParseError(REPOSITORY_NAME));
-        final String jwt = generateJWT();
-        final GitHubInstallation installation = findInstallationId(projectName, repositoryName, jwt);
-        assertInstallationAllowed(installation);
-        return generateAccessToken(jwt, installation.getId());
-    }
-
-    private void assertInstallationAllowed(final GitHubInstallation installation) {
-        final List<String> allowed = getAllowedInstallations();
-        if (isInstallationAllowed(installation, allowed)) {
-            return;
-        }
-        throw new GitClientException(String.format(
-                "GitHub App installation %s is not allowed by github.allowed.installations.", installation.getId()));
-    }
-
-    private List<String> getAllowedInstallations() {
-        final List<String> allowed = preferenceManager.getPreference(SystemPreferences.GITHUB_ALLOWED_INSTALLATIONS);
-        if (CollectionUtils.isEmpty(allowed)) {
-            throw new GitClientException("GitHub App installation access token generation is not allowed.");
-        }
-        return allowed;
-    }
-
-    private boolean isInstallationAllowed(final GitHubInstallation installation, final List<String> allowed) {
-        // check by installation ID:
-        final Long installationId = installation.getId();
-        if (Objects.nonNull(installationId) && allowed.stream()
-                .anyMatch(entry -> Objects.equals(entry, String.valueOf(installationId)))) {
-            return true;
-        }
-
-        // check by installation account name (org or username):
-        final String installationName = Optional.ofNullable(installation.getAccount())
-                .map(GitHubInstallationAccount::getLogin)
-                .filter(StringUtils::isNotBlank)
-                .orElse(null);
-        return StringUtils.isNotBlank(installationName) && allowed.stream()
-                .anyMatch(installationName::equalsIgnoreCase);
-    }
-
-    private GitHubInstallation findInstallationId(final String projectName, final String repositoryName,
-                                                  final String jwt) {
-        final GitHubClient appClient = buildAppClient(jwt);
-        return appClient.getRepositoryInstallation(projectName, repositoryName);
-    }
-
-    private List<GitHubInstallation> findInstallations(final String jwt) {
-        final GitHubClient appClient = buildAppClient(jwt);
-        return pagination(appClient::getAppInstallations);
-    }
-
-    private String generateAccessToken(final String jwt, final Long installationId) {
-        final GitHubClient appClient = buildAppClient(jwt);
-        final GitHubAccessToken tokenResponse = appClient.createInstallationAccessToken(installationId);
-        return Optional.ofNullable(tokenResponse)
-                .map(GitHubAccessToken::getToken)
-                .filter(StringUtils::isNotBlank)
-                .orElseThrow(() -> new GitClientException(
-                        "GitHub installation access token response did not contain a token."));
-    }
-
-    private <T> List<T> pagination(final Function<Integer, Response<List<T>>> apiCall) {
-        return pagination(apiCall, Function.identity());
-    }
-
-    private <T, R> List<T> pagination(final Function<Integer, Response<R>> apiCall,
-                                      final Function<R, List<T>> responseConverter) {
-        int page = 1;
-        Response<R> response = apiCall.apply(page);
-        final List<T> values = new ArrayList<>(ListUtils.emptyIfNull(responseConverter.apply(response.body())));
-        String link = response.headers().get(LINK);
-        while (link != null && link.contains(REL_NEXT)) {
-            page++;
-            response = apiCall.apply(page);
-            values.addAll(ListUtils.emptyIfNull(responseConverter.apply(response.body())));
-            link = response.headers().get(LINK);
-        }
-        return values;
+        return gitHubAppService.getGithubAppToken(projectName, repositoryName);
     }
 }

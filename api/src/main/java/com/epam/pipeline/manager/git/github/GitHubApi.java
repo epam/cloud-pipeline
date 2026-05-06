@@ -152,7 +152,8 @@ public interface GitHubApi {
      * List installations for the authenticated app. For more information, see
      * <a href="https://docs.github.com/en/rest/apps/apps?apiVersion=2026-03-10#list-installations-for-the-authenticated-app">API Docs</a>
      * <p>A JWT must be used to access this endpoint.</p>
-     * @param page The page number of the results to fetch.
+     *
+     * @param page       The page number of the results to fetch.
      * @param pageLength The number of results per page (max 100).
      * @return Allowed installations.
      */
@@ -166,7 +167,8 @@ public interface GitHubApi {
      * Get a repository installation for the authenticated app. For more information, see
      * <a href="https://docs.github.com/en/rest/apps/apps?apiVersion=2026-03-10#get-a-repository-installation-for-the-authenticated-app">API Docs</a>
      * <p>A JWT must be used to access this endpoint.</p>
-     * @param workspace The account owner of the repository. The name is not case-sensitive.
+     *
+     * @param workspace  The account owner of the repository. The name is not case-sensitive.
      * @param repository The name of the repository without the .git extension. The name is not case-sensitive.
      * @return Repository.
      */
@@ -177,9 +179,23 @@ public interface GitHubApi {
 
     //CHECKSTYLE:OFF: Line is longer than 120 characters
     /**
+     * Get an installation for the authenticated app. For more information, see
+     * <a href="https://docs.github.com/en/rest/apps/apps?apiVersion=2026-03-10#get-an-installation-for-the-authenticated-app">API Docs</a>
+     * <p>A JWT must be used to access this endpoint.</p>
+     *
+     * @param installationId The unique identifier of the installation.
+     * @return Installation.
+     */
+    //CHECKSTYLE:ON
+    @GET("app/installations/{installation_id}")
+    Call<GitHubInstallation> getAppInstallation(@Path(INSTALLATION_ID) Long installationId);
+
+    //CHECKSTYLE:OFF: Line is longer than 120 characters
+    /**
      * Create an installation access token for an app. For more information, see
      * <a href="https://docs.github.com/en/rest/apps/apps?apiVersion=2026-03-10#create-an-installation-access-token-for-an-app">API Docs</a>
      * <p>A JWT must be used to access this endpoint.</p>
+     *
      * @param installationId The unique identifier of the installation.
      * @return Access token.
      */
@@ -193,7 +209,8 @@ public interface GitHubApi {
      * <a href="https://docs.github.com/en/rest/apps/installations?apiVersion=2026-03-10#list-repositories-accessible-to-the-app-installation">API Docs</a>
      * <p>An access token from {@link GitHubApi#createInstallationAccessToken(Long)} must be used to access this
      * endpoint.</p>
-     * @param page The page number of the results to fetch.
+     *
+     * @param page       The page number of the results to fetch.
      * @param pageLength The number of results per page (max 100).
      * @return List of allowed repositories.
      */

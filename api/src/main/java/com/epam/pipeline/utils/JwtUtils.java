@@ -37,6 +37,20 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.Date;
 
+/**
+ * Utility class for JWT generation.
+ * <p>
+ * This class provides functionality to generate RSA-256 signed JWT tokens using private keys
+ * in either PKCS#8 or PKCS#1 PEM format. It supports reading private keys from the file system
+ * and creating JWT tokens with configurable issuer and time-to-live settings.
+ * </p>
+ *
+ * <h2>Supported Key Formats:</h2>
+ * <ul>
+ *   <li>PKCS#8 format: {@code -----BEGIN PRIVATE KEY-----}</li>
+ *   <li>PKCS#1 format: {@code -----BEGIN RSA PRIVATE KEY-----}</li>
+ * </ul>
+ */
 public final class JwtUtils {
 
     private static final String PEM_PKCS8_HEADER = "-----BEGIN PRIVATE KEY-----";
@@ -48,6 +62,35 @@ public final class JwtUtils {
     private JwtUtils() {
     }
 
+    /**
+     * Generates a JWT token signed with RSA-256 algorithm using a private key from a PEM file.
+     * <p>
+     * This method creates a JWT with the following claims:
+     * </p>
+     * <ul>
+     *   <li><strong>iss</strong> (Issuer): The entity that issued the token</li>
+     *   <li><strong>iat</strong> (Issued At): The timestamp when the token was created</li>
+     *   <li><strong>exp</strong> (Expiration Time): The timestamp when the token expires</li>
+     * </ul>
+     * <p>
+     * The private key file must be in PEM format and can be either PKCS#8 or PKCS#1 encoded.
+     * The method automatically detects the format based on the PEM header.
+     * </p>
+     *
+     * @param privateKeyPath the file system path to the RSA private key in PEM format.
+     *                       Must not be null or empty, and the file must exist.
+     * @param issuer         the issuer claim (iss) to include in the JWT.
+     *                       Typically identifies the principal that issued the token.
+     * @param ttlSeconds     the time-to-live in seconds. The token will expire
+     *                       this many seconds after the current time.
+     *                       Must be a positive value.
+     * @return a signed JWT token as a compact, URL-safe string in the format:
+     * {@code header.payload.signature}
+     * @throws IOException              if the private key file cannot be read or does not exist
+     * @throws NoSuchAlgorithmException if the RSA algorithm is not available in the JVM
+     * @throws InvalidKeySpecException  if the private key format is invalid or cannot be parsed
+     * @throws IllegalArgumentException if privateKeyPath is null/empty or the file doesn't exist
+     */
     public static String generateRsa256Jwt(final String privateKeyPath,
                                            final String issuer,
                                            final long ttlSeconds)

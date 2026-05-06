@@ -16,11 +16,8 @@
 
 package com.epam.pipeline.manager.git.github;
 
-import com.epam.pipeline.entity.git.github.GitHubAccessToken;
 import com.epam.pipeline.entity.git.github.GitHubCommitNode;
 import com.epam.pipeline.entity.git.github.GitHubContent;
-import com.epam.pipeline.entity.git.github.GitHubInstallation;
-import com.epam.pipeline.entity.git.github.GitHubInstallationRepositories;
 import com.epam.pipeline.entity.git.github.GitHubRef;
 import com.epam.pipeline.entity.git.github.GitHubRelease;
 import com.epam.pipeline.entity.git.github.GitHubRepository;
@@ -38,12 +35,16 @@ import retrofit2.Response;
 import java.io.IOException;
 import java.util.Base64;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
+import static com.epam.pipeline.manager.git.github.GitHubUtils.AUTHORIZATION;
+import static com.epam.pipeline.manager.git.github.GitHubUtils.LIMIT;
+
+/**
+ * GitHub client for repository-scoped operations.
+ * This client requires project name and repository name and can only call repository-scoped methods.
+ */
 public class GitHubClient {
-    private static final String AUTHORIZATION = "Authorization";
-    private static final Integer LIMIT = 100;
     private static final String DUMMY_CONTENT = "# Put your content here";
 
     private final GitHubApi serverApi;
@@ -53,13 +54,6 @@ public class GitHubClient {
     public GitHubClient(final String baseUrl, final String credentials, final String dateFormat,
                         final String projectName, final String repositoryName) {
         this.serverApi = buildClient(baseUrl, credentials, dateFormat);
-        this.projectName = projectName;
-        this.repositoryName = repositoryName;
-    }
-
-    public GitHubClient(final String baseUrl, final String credentials, final String dateFormat,
-                        final String projectName, final String repositoryName, final Map<String, String> headers) {
-        this.serverApi = buildClient(baseUrl, credentials, dateFormat, headers);
         this.projectName = projectName;
         this.repositoryName = repositoryName;
     }
@@ -178,31 +172,9 @@ public class GitHubClient {
     public Response<List<GitHubRef>> getBranches(final Integer page) {
         return RestApiUtils.getResponse(serverApi.getBranches(projectName, repositoryName, page, LIMIT));
     }
-
-    public Response<List<GitHubInstallation>> getAppInstallations(final Integer page) {
-        return RestApiUtils.getResponse(serverApi.getAppInstallations(page, LIMIT));
-    }
-
-    public GitHubInstallation getRepositoryInstallation(final String owner, final String repository) {
-        return RestApiUtils.execute(serverApi.getRepositoryInstallation(owner, repository));
-    }
-
-    public GitHubAccessToken createInstallationAccessToken(final Long installationId) {
-        return RestApiUtils.execute(serverApi.createInstallationAccessToken(installationId));
-    }
-
-    public Response<GitHubInstallationRepositories> getInstallationRepositories(final Integer page) {
-        return RestApiUtils.getResponse(serverApi.getInstallationRepositories(page, LIMIT));
-    }
-
+    
     private GitHubApi buildClient(final String baseUrl, final String credentials, final String dataFormat) {
         return new ApiBuilder<>(GitHubApi.class, baseUrl, AUTHORIZATION, credentials, dataFormat).build();
-    }
-
-    private static GitHubApi buildClient(final String baseUrl, final String bearerCredentials, final String dataFormat,
-                                         final Map<String, String> headers) {
-        return new ApiBuilder<>(GitHubApi.class, baseUrl, AUTHORIZATION, bearerCredentials, dataFormat, headers)
-                .build();
     }
 
     private GitHubSource createFile(final String path, final GitHubContent request) {
