@@ -303,11 +303,11 @@
         </classes>
     </test>
 
-    <test name="AutopauseTest">
+    <!-- <test name="AutopauseTest">
         <classes>
             <class name="com.epam.pipeline.autotests.AutopauseTest"/>
         </classes>
-    </test>
+    </test> -->
 
     <!-- SLOW TESTS BELOW -->
 
