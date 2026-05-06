@@ -53,6 +53,7 @@ sudo -E $DEPLOY_DIR/pipectl install \
     -s cp-gitlab-reader \
     -s cp-api-srv \
     -env CP_API_SRV_VERSION=0.25 \
+    -env CP_API_FLYWAY_OUT_OF_ORDER=true \
     -env CP_API_SRV_REPLICAS=2 \
     -env CP_API_SRV_EXTERNAL_PORT=${CP_AWS_API_SRV_EXTERNAL_PORT} \
     -env CP_API_SRV_INTERNAL_PORT=${CP_AWS_API_SRV_INTERNAL_PORT} \
