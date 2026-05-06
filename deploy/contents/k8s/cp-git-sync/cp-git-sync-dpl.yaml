@@ -23,7 +23,7 @@ spec:
         effect: NoSchedule
       containers:
         - name: cp-git-sync
-          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:api-srv-${CP_API_SRV_VERSION}
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:api-srv-${CP_GIT_SYNC_VERSION}
           imagePullPolicy: "Always"
           command: ["/init-git-sync", "https://$(CP_API_SRV_INTERNAL_HOST):$(CP_API_SRV_INTERNAL_PORT)/pipeline/restapi/", "$(CP_API_JWT_ADMIN)"]
           envFrom:
