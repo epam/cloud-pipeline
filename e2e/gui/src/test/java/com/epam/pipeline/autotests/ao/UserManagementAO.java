@@ -61,9 +61,11 @@ import static com.epam.pipeline.autotests.ao.Primitive.STATUS;
 import static com.epam.pipeline.autotests.ao.Primitive.TABLE;
 import static com.epam.pipeline.autotests.ao.Primitive.UNBLOCK;
 import static com.epam.pipeline.autotests.ao.Primitive.USERS_TAB;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
 import static java.lang.String.format;
+import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.openqa.selenium.By.className;
@@ -77,6 +79,7 @@ import com.epam.pipeline.autotests.utils.Utils;
 import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -137,6 +140,7 @@ public class UserManagementAO extends SettingsPageAO {
 
         public UserEntry searchForUserEntry(String login) {
             sleep(1, SECONDS);
+            $(byTitle(NEXT_PAGE)).shouldBe(exist, ofMillis(DEFAULT_TIMEOUT));
             while (!getUser(login.toUpperCase()).isDisplayed()
                     && $(byTitle(NEXT_PAGE)).has(not(cssClass("ant-pagination-disabled")))) {
                 click(byTitle(NEXT_PAGE));
