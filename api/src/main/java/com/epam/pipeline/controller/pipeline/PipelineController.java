@@ -30,10 +30,12 @@ import com.epam.pipeline.controller.vo.RegisterPipelineVersionVO;
 import com.epam.pipeline.controller.vo.TaskGraphVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.controller.vo.EntityFilterVO;
+import com.epam.pipeline.dto.git.GitRepositoryDTO;
 import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCommitsFilter;
 import com.epam.pipeline.entity.git.GitCredentials;
+import com.epam.pipeline.entity.git.GitNamespace;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
@@ -50,6 +52,7 @@ import com.epam.pipeline.entity.pipeline.DocumentGenerationProperty;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.PipelineWithMetadata;
+import com.epam.pipeline.entity.pipeline.RepositoryType;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.acl.pipeline.PipelineApiService;
@@ -94,6 +97,7 @@ public class PipelineController extends AbstractRestController {
     private static final String PAGE_SIZE = "page_size";
     private static final String KEEP_REPOSITORY = "keep_repository";
     private static final String RECURSIVE = "recursive";
+    private static final String TYPE = "type";
     private static final Logger LOGGER = LoggerFactory.getLogger(PipelineController.class);
     @Autowired
     private PipelineApiService pipelineApiService;
@@ -824,5 +828,32 @@ public class PipelineController extends AbstractRestController {
             final HttpServletResponse response) throws IOException {
         final VersionStorageReportFile report = pipelineApiService.generateReportForVersionedStorage(id, filter);
         writeFileToResponse(response, report.getContent(), report.getName());
+    }
+
+    @GetMapping("/pipeline/git/namespaces")
+    @ResponseBody
+    @Operation(
+            summary = "Returns all allowed Git namespaces. For now only GitHub provider supported.",
+            description = "Returns all allowed Git namespaces (organizations/users) for the specified repository type.")
+    @ApiResponses(
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
+            })
+    public Result<List<GitNamespace>> getAllowedNamespaces(
+            @RequestParam(value = TYPE) final RepositoryType type) {
+        return Result.success(pipelineApiService.getAllowedNamespaces(type));
+    }
+
+    @GetMapping("/pipeline/git/{namespaceId}/repositories")
+    @ResponseBody
+    @Operation(
+            summary = "Returns all repositories for a specific Git namespace. For now only GitHub provider supported.",
+            description = "Returns all repositories accessible within the specified Git namespace.")
+    @ApiResponses(
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
+            })
+    public Result<List<GitRepositoryDTO>> getNamespaceRepositories(
+            @PathVariable(value = "namespaceId") final String namespaceId,
+            @RequestParam(value = TYPE) final RepositoryType type) {
+        return Result.success(pipelineApiService.getNamespaceRepositories(namespaceId, type));
     }
 }

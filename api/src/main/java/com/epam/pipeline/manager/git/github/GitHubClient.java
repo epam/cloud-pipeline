@@ -37,9 +37,14 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
 
+import static com.epam.pipeline.manager.git.github.GitHubUtils.AUTHORIZATION;
+import static com.epam.pipeline.manager.git.github.GitHubUtils.LIMIT;
+
+/**
+ * GitHub client for repository-scoped operations.
+ * This client requires project name and repository name and can only call repository-scoped methods.
+ */
 public class GitHubClient {
-    private static final String AUTHORIZATION = "Authorization";
-    private static final Integer LIMIT = 100;
     private static final String DUMMY_CONTENT = "# Put your content here";
 
     private final GitHubApi serverApi;
@@ -167,7 +172,7 @@ public class GitHubClient {
     public Response<List<GitHubRef>> getBranches(final Integer page) {
         return RestApiUtils.getResponse(serverApi.getBranches(projectName, repositoryName, page, LIMIT));
     }
-
+    
     private GitHubApi buildClient(final String baseUrl, final String credentials, final String dataFormat) {
         return new ApiBuilder<>(GitHubApi.class, baseUrl, AUTHORIZATION, credentials, dataFormat).build();
     }
