@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.entity.contextual;
 
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.With;
@@ -29,8 +28,7 @@ import lombok.With;
 @Value
 @With
 @RequiredArgsConstructor
-@NoArgsConstructor(force = true)
 public class ContextualPreferenceExternalResource {
-    private final ContextualPreferenceLevel level;
-    private final String resourceId;
+    ContextualPreferenceLevel level;
+    String resourceId;
 }

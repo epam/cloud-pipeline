@@ -82,11 +82,11 @@ public class NatGatewayDaoTest extends AbstractJdbcTest {
                                          final NatRouteStatus status) {
         assertNotNull(routingRuleCreated);
         assertNotNull(routingRuleCreated.getRouteId());
-        assertEquals(request.getExternalName(), routingRuleCreated.getExternalName());
-        assertEquals(request.getExternalIp(), routingRuleCreated.getExternalIp());
-        assertEquals(request.getPort(), routingRuleCreated.getExternalPort());
-        assertEquals(request.getDescription(), routingRuleCreated.getDescription());
-        assertEquals(request.getProtocol(), routingRuleCreated.getProtocol());
+        assertEquals(request.externalName(), routingRuleCreated.getExternalName());
+        assertEquals(request.externalIp(), routingRuleCreated.getExternalIp());
+        assertEquals(request.port(), routingRuleCreated.getExternalPort());
+        assertEquals(request.description(), routingRuleCreated.getDescription());
+        assertEquals(request.protocol(), routingRuleCreated.getProtocol());
         assertEquals(status, routingRuleCreated.getStatus());
     }
 

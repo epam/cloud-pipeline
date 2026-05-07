@@ -16,20 +16,32 @@
 
 package com.epam.pipeline.entity.cluster.nat;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import java.util.Objects;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor(force = true)
-@EqualsAndHashCode(exclude = {"description", "protocol"})
-public class NatRoutingRuleDescription {
+public record NatRoutingRuleDescription(
+        String externalName,
+        String externalIp,
+        Integer port,
+        String description,
+        String protocol) {
 
-    private final String externalName;
-    private final String externalIp;
-    private final Integer port;
-    private final String description;
-    private final String protocol;
+    // Preserve the original @EqualsAndHashCode(exclude = {"description","protocol"}) semantics:
+    // two rules are equal when they refer to the same host+ip+port regardless of description/protocol.
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof NatRoutingRuleDescription that)) {
+            return false;
+        }
+        return Objects.equals(externalName, that.externalName)
+                && Objects.equals(externalIp, that.externalIp)
+                && Objects.equals(port, that.port);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(externalName, externalIp, port);
+    }
 }

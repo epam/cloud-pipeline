@@ -17,15 +17,16 @@
 package com.epam.pipeline.entity.datastorage.nfs;
 
 import com.epam.pipeline.entity.user.Sid;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@Data
-@NoArgsConstructor(force = true)
-@AllArgsConstructor
-public class NFSQuotaNotificationRecipient implements Sid {
+public record NFSQuotaNotificationRecipient(boolean principal, String name) implements Sid {
 
-    private final boolean principal;
-    private final String name;
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    @Override
+    public boolean isPrincipal() {
+        return principal;
+    }
 }

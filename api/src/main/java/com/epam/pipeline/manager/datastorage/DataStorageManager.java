@@ -937,9 +937,9 @@ public class DataStorageManager implements SecuredEntityManager {
         return Optional.ofNullable(preferenceManager.getPreference(SystemPreferences.STORAGE_QUOTAS_SKIPPED_PATHS))
             .orElse(Collections.emptyList())
             .stream()
-            .collect(Collectors.groupingBy(StorageFileSearchMask::getStorageName,
+            .collect(Collectors.groupingBy(StorageFileSearchMask::storageName,
                                            Collector.of(HashSet::new,
-                                               (set, mask) -> set.addAll(mask.getHiddenFilePathGlobs()),
+                                               (set, mask) -> set.addAll(mask.hiddenFilePathGlobs()),
                                                (left, right) -> {
                                                    left.addAll(right);
                                                    return left;

@@ -17,15 +17,10 @@
 package com.epam.pipeline.controller.vo;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-@NoArgsConstructor(force = true)
-public class ServiceUrlVO {
-
-    private final String name;
-    private final String url;
-    private final boolean isDefault;
+public record ServiceUrlVO(
+        String name,
+        String url,
+        boolean isDefault) {
 }

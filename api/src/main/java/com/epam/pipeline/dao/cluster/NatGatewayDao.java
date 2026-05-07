@@ -102,13 +102,13 @@ public class NatGatewayDao extends NamedParameterJdbcDaoSupport {
     private NatRoute mapRuleToRoute(final NatRoutingRuleDescription ruleDescription, final NatRouteStatus status) {
         return NatRoute.builder()
             .routeId(daoHelper.createId(routingRuleSequence))
-            .externalIp(ruleDescription.getExternalIp())
-            .externalName(ruleDescription.getExternalName())
-            .externalPort(ruleDescription.getPort())
-            .protocol(ruleDescription.getProtocol())
+            .externalIp(ruleDescription.externalIp())
+            .externalName(ruleDescription.externalName())
+            .externalPort(ruleDescription.port())
+            .protocol(ruleDescription.protocol())
             .lastUpdateTime(getNowUTC())
             .status(status)
-            .description(ruleDescription.getDescription())
+            .description(ruleDescription.description())
             .build();
     }
 

@@ -461,8 +461,8 @@ public class NatGatewayManager {
     }
 
     public NatRoutingRuleDescription toRuleWoDescription(final NatRoutingRuleDescription rule) {
-        return new NatRoutingRuleDescription(rule.getExternalName(), rule.getExternalIp(), rule.getPort(), null,
-                                             Optional.ofNullable(rule.getProtocol()).orElse(TCP));
+        return new NatRoutingRuleDescription(rule.externalName(), rule.externalIp(), rule.port(), null,
+                                             Optional.ofNullable(rule.protocol()).orElse(TCP));
     }
 
     private void addQueuedRouteToKubeServices(final Map<String, Service> proxyServicesMapping, final NatRoute route) {
@@ -644,25 +644,25 @@ public class NatGatewayManager {
     }
 
     private NatRoutingRuleDescription setProtocolIfMissing(final NatRoutingRuleDescription rule) {
-        return rule.getProtocol() != null
+        return rule.protocol() != null
                ? rule
-               : new NatRoutingRuleDescription(rule.getExternalName(), rule.getExternalIp(), rule.getPort(),
-                                               rule.getDescription(), TCP);
+               : new NatRoutingRuleDescription(rule.externalName(), rule.externalIp(), rule.port(),
+                                               rule.description(), TCP);
     }
 
     private void validateRuleFields(final NatRoutingRuleDescription rule) {
-        validateMandatoryRuleField(EXTERNAL_NAME, rule.getExternalName());
-        validateMandatoryRuleField(PORT, Optional.ofNullable(rule.getPort()).map(Object::toString).orElse(null));
-        validateMandatoryRuleField(EXTERNAL_IP, rule.getExternalIp());
+        validateMandatoryRuleField(EXTERNAL_NAME, rule.externalName());
+        validateMandatoryRuleField(PORT, Optional.ofNullable(rule.port()).map(Object::toString).orElse(null));
+        validateMandatoryRuleField(EXTERNAL_IP, rule.externalIp());
         validateRuleProtocol(rule);
-        Optional.ofNullable(rule.getDescription())
+        Optional.ofNullable(rule.description())
             .ifPresent(description -> Assert.isTrue(
                 kubernetesManager.isValidAnnotation(description),
                 messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_INVALID_DESCRIPTION, description)));
     }
 
     private void validateRuleProtocol(final NatRoutingRuleDescription rule) {
-        Optional.ofNullable(rule.getProtocol()).ifPresent(protocol -> {
+        Optional.ofNullable(rule.protocol()).ifPresent(protocol -> {
             final Set<String> allowedProtocols = portForwardingRuleMapping.keySet();
             Assert.isTrue(allowedProtocols.contains(protocol),
                           messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_INVALID_PROTOCOL,

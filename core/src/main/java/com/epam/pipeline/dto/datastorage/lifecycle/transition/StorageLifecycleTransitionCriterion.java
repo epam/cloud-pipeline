@@ -17,11 +17,10 @@
 package com.epam.pipeline.dto.datastorage.lifecycle.transition;
 
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -30,8 +29,7 @@ import org.apache.commons.lang3.StringUtils;
 @Value
 @Builder(toBuilder = true)
 @EqualsAndHashCode
-@NoArgsConstructor(force = true)
-@AllArgsConstructor
+@Jacksonized
 public class StorageLifecycleTransitionCriterion {
 
     StorageLifecycleTransitionCriterionType type;

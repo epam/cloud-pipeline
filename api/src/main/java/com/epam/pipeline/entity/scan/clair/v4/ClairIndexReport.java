@@ -16,13 +16,5 @@
 
 package com.epam.pipeline.entity.scan.clair.v4;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-@Data
-@NoArgsConstructor(force = true)
-public class ClairIndexReport {
-    private final String state;
-    private final boolean success;
-    private final String err;
+public record ClairIndexReport(String state, boolean success, String err) {
 }

@@ -233,15 +233,15 @@ public class ServerlessConfigurationManager {
 
         if (StringUtils.isNotBlank(endpointName)) {
             return serviceUrls.stream()
-                    .filter(serviceUrl -> Objects.equals(serviceUrl.getName(), endpointName))
+                    .filter(serviceUrl -> Objects.equals(serviceUrl.name(), endpointName))
                     .findAny()
                     .orElseThrow(() -> new IllegalArgumentException(String
                             .format("Failed to find endpoint url for endpoint name '%s'", endpointName)))
-                    .getUrl();
+                    .url();
         }
         Assert.state(serviceUrls.size() == 1,
                 "Only one service url is allowed when endpoint name is not specified");
-        return serviceUrls.get(0).getUrl();
+        return serviceUrls.get(0).url();
     }
 
     String sendRequest(final HttpServletRequest request, final String appPath) {
