@@ -139,7 +139,8 @@ export default class UserTokensTable extends React.Component {
     }
     this.setState({revokingJti: jti});
     try {
-      const revoke = new UserNamedTokenRevoke(jti, this.targetUserId);
+      const id = this.targetUserId === this.currentUserId ? undefined : this.targetUserId;
+      const revoke = new UserNamedTokenRevoke(jti, id);
       await revoke.fetch();
       if (revoke.loaded && revoke.value) {
         const msg = record.tokenName
