@@ -16,6 +16,9 @@
 
 import Remote from '../basic/Remote';
 
+// userId should be null or undefined to revoke current user tokens.
+// "?jti=&userId=" - endpoint available only for admins.
+// "?jti=" - available for non-admins too.
 export default class UserNamedTokenRevoke extends Remote {
   constructor (jti, userId) {
     super();
@@ -29,7 +32,7 @@ export default class UserNamedTokenRevoke extends Remote {
     };
     const queryParameters = [
       `jti=${encodeURIComponent(jti)}`,
-      userId != null && userId !== ''
+      userId !== null && userId !== undefined && userId !== ''
         ? `userId=${encodeURIComponent(userId)}`
         : undefined
     ].filter(Boolean);
