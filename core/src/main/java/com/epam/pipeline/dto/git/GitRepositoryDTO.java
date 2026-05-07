@@ -13,26 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.epam.pipeline.entity.git;
+
+package com.epam.pipeline.dto.git;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class GitNamespace {
-    /**
-     * For GitHub provider: organization name or presonal accont name
-     */
-    private String name;
-    /**
-     * For GitHub provider: installation ID associated with this organization / account
-     */
+public class GitRepositoryDTO {
     private String id;
-    /**
-     * For GitHub provider: User (for personal accounts) or Organization
-     */
-    private String type;
+    private String name;
+    private String description;
+    private String defaultBranch;
+    private String httpUrl;
+    private String sshUrl;
+    private String path;
 }

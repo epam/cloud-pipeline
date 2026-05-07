@@ -21,10 +21,10 @@ import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
 import com.epam.pipeline.controller.vo.RegisterPipelineVersionVO;
 import com.epam.pipeline.controller.vo.TaskGraphVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
+import com.epam.pipeline.dto.git.GitRepositoryDTO;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.git.GitNamespace;
-import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.pipeline.Pipeline;
@@ -73,9 +73,9 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
     private final RegisterPipelineVersionVO pipelineVersionVO = PipelineCreatorUtils.getRegisterPipelineVersionVO();
     private final List<Revision> revisionList = Collections.singletonList(revision);
     private final GitNamespace gitNamespace = GitCreatorUtils.getGitNamespace();
-    private final GitProject gitProject = GitCreatorUtils.getGitProject();
+    private final GitRepositoryDTO gitRepositoryDTO = GitCreatorUtils.getGitRepositoryDTO();
     private final List<GitNamespace> gitNamespaceList = Collections.singletonList(gitNamespace);
-    private final List<GitProject> gitProjectList = Collections.singletonList(gitProject);
+    private final List<GitRepositoryDTO> gitRepositoryDTOList = Collections.singletonList(gitRepositoryDTO);
 
     @Autowired
     private PipelineApiService pipelineApiService;
@@ -588,10 +588,10 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
     @Test
     @WithMockUser
     public void shouldGetNamespaceRepositoriesForUser() {
-        doReturn(gitProjectList).when(mockPipelineRepositoryService)
+        doReturn(gitRepositoryDTOList).when(mockPipelineRepositoryService)
                 .getNamespaceRepositories(TEST_STRING, RepositoryType.GITHUB);
 
         assertThat(pipelineApiService.getNamespaceRepositories(TEST_STRING, RepositoryType.GITHUB))
-                .isEqualTo(gitProjectList);
+                .isEqualTo(gitRepositoryDTOList);
     }
 }

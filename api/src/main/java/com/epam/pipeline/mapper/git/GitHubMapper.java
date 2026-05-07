@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.mapper.git;
 
+import com.epam.pipeline.dto.git.GitRepositoryDTO;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitNamespace;
 import com.epam.pipeline.entity.git.GitProject;
@@ -114,6 +115,12 @@ public interface GitHubMapper {
     @Mapping(target = "type", source = "account.type")
     @Mapping(target = "id", expression = "java(String.valueOf(installation.getId()))")
     GitNamespace installationToNamespace(GitHubInstallation installation);
+
+    @Mapping(target = "id", expression = "java(String.valueOf(repository.getId()))")
+    @Mapping(target = "httpUrl", source = "cloneUrl")
+    @Mapping(target = "sshUrl", source = "sshUrl")
+    @Mapping(target = "path", source = "htmlUrl")
+    GitRepositoryDTO toGitRepositoryDTO(GitHubRepository repository);
 
     @SneakyThrows
     default Date fillDate(final String date) {

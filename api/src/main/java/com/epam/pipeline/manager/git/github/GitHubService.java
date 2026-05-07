@@ -21,6 +21,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.PipelineSourceItemVO;
 import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
+import com.epam.pipeline.dto.git.GitRepositoryDTO;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.git.GitNamespace;
@@ -123,7 +124,7 @@ public class GitHubService implements GitClientService {
     @Override
     public List<String> getBranches(final String repositoryPath, final String token) {
         final GitHubClient client = getClient(repositoryPath, token);
-        return GitHubUtils.pagination(client::getBranches).stream()
+        return GitHubUtils.fetchAllPages(client::getBranches).stream()
                 .map(GitHubRef::getName)
                 .collect(Collectors.toList());
     }
@@ -155,7 +156,7 @@ public class GitHubService implements GitClientService {
     @Override
     public List<Revision> getTags(final Pipeline pipeline) {
         final GitHubClient client = getClient(pipeline);
-        return GitHubUtils.pagination(client::getTags).stream()
+        return GitHubUtils.fetchAllPages(client::getTags).stream()
                 .map(tag -> fillCommitInfo(tag, client))
                 .map(mapper::refToRevision)
                 .collect(Collectors.toList());
@@ -338,9 +339,9 @@ public class GitHubService implements GitClientService {
     }
 
     @Override
-    public List<GitProject> getNamespaceRepositories(final String installationId) {
+    public List<GitRepositoryDTO> getNamespaceRepositories(final String installationId) {
         return gitHubAppService.findRepositoriesByInstallation(installationId).stream()
-                .map(mapper::toGitRepository)
+                .map(mapper::toGitRepositoryDTO)
                 .collect(Collectors.toList());
     }
 

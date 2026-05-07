@@ -36,12 +36,12 @@ public final class GitHubUtils {
         // no-op
     }
 
-    public static <T> List<T> pagination(final Function<Integer, Response<List<T>>> apiCall) {
-        return pagination(apiCall, Function.identity());
+    public static <T> List<T> fetchAllPages(final Function<Integer, Response<List<T>>> apiCall) {
+        return fetchAllPages(apiCall, Function.identity());
     }
 
-    public static <T, R> List<T> pagination(final Function<Integer, Response<R>> apiCall,
-                                            final Function<R, List<T>> responseConverter) {
+    public static <T, R> List<T> fetchAllPages(final Function<Integer, Response<R>> apiCall,
+                                               final Function<R, List<T>> responseConverter) {
         int page = 1;
         Response<R> response = apiCall.apply(page);
         final List<T> values = new ArrayList<>(ListUtils.emptyIfNull(responseConverter.apply(response.body())));

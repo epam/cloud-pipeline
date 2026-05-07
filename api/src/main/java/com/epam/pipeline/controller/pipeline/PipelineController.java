@@ -30,12 +30,12 @@ import com.epam.pipeline.controller.vo.RegisterPipelineVersionVO;
 import com.epam.pipeline.controller.vo.TaskGraphVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.controller.vo.EntityFilterVO;
+import com.epam.pipeline.dto.git.GitRepositoryDTO;
 import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCommitsFilter;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.git.GitNamespace;
-import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
@@ -891,7 +891,7 @@ public class PipelineController extends AbstractRestController {
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<List<GitProject>> getNamespaceRepositories(
+    public Result<List<GitRepositoryDTO>> getNamespaceRepositories(
             @PathVariable(value = "namespaceId") final String namespaceId,
             @RequestParam(value = TYPE) final RepositoryType type) {
         return Result.success(pipelineApiService.getNamespaceRepositories(namespaceId, type));

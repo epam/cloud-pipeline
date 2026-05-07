@@ -27,11 +27,11 @@ import com.epam.pipeline.controller.vo.PipelinesWithPermissionsVO;
 import com.epam.pipeline.controller.vo.RegisterPipelineVersionVO;
 import com.epam.pipeline.controller.vo.TaskGraphVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
+import com.epam.pipeline.dto.git.GitRepositoryDTO;
 import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.git.GitNamespace;
-import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.pipeline.DocumentGenerationProperty;
@@ -160,8 +160,8 @@ public class PipelineControllerTest extends AbstractControllerTest {
             Collections.singletonList(documentGenerationProperty);
     private final GitNamespace gitNamespace = GitCreatorUtils.getGitNamespace();
     private final List<GitNamespace> gitNamespaceList = Collections.singletonList(gitNamespace);
-    private final List<GitProject> gitProjectList = Collections.singletonList(
-            GitCreatorUtils.getGitProject());
+    private final GitRepositoryDTO gitRepositoryDTO = GitCreatorUtils.getGitRepositoryDTO();
+    private final List<GitRepositoryDTO> gitRepositoryDTOList = Collections.singletonList(gitRepositoryDTO);
 
     @Autowired
     private PipelineApiService mockPipelineApiService;
@@ -853,7 +853,7 @@ public class PipelineControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldGetNamespaceRepositories() {
-        doReturn(gitProjectList).when(mockPipelineApiService)
+        doReturn(gitRepositoryDTOList).when(mockPipelineApiService)
                 .getNamespaceRepositories(NAMESPACE_ID, RepositoryType.GITHUB);
     
         final MvcResult mvcResult = performRequest(
@@ -861,7 +861,7 @@ public class PipelineControllerTest extends AbstractControllerTest {
                         .params(multiValueMapOf(TYPE, RepositoryType.GITHUB)));
     
         verify(mockPipelineApiService).getNamespaceRepositories(NAMESPACE_ID, RepositoryType.GITHUB);
-        assertResponse(mvcResult, gitProjectList, GitCreatorUtils.GIT_PROJECT_LIST_TYPE);
+        assertResponse(mvcResult, gitRepositoryDTOList, GitCreatorUtils.GIT_REPOSITORY_DTO_LIST_TYPE);
     }
 
     private void assertResponseAsBytes(final MvcResult mvcResult, final byte[] bytes) throws Exception {

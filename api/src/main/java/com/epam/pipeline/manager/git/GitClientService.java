@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.git;
 
 import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
+import com.epam.pipeline.dto.git.GitRepositoryDTO;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.git.GitNamespace;
@@ -105,7 +106,7 @@ public interface GitClientService {
                 String.format("Getting allowed namespaces is not supported for %s repository", getType()));
     }
 
-    default List<GitProject> getNamespaceRepositories(String namespaceId) {
+    default List<GitRepositoryDTO> getNamespaceRepositories(String namespaceId) {
         throw new UnsupportedOperationException(
                 String.format("Getting namespace repositories is not supported for %s repository", getType()));
     }

@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.git;
 
 import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
+import com.epam.pipeline.dto.git.GitRepositoryDTO;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.git.GitNamespace;
@@ -184,7 +185,8 @@ public class PipelineRepositoryProviderService {
         return getProvider(repositoryType).getAllowedNamespaces();
     }
 
-    public List<GitProject> getNamespaceRepositories(final String namespaceId, final RepositoryType repositoryType) {
+    public List<GitRepositoryDTO> getNamespaceRepositories(final String namespaceId,
+                                                           final RepositoryType repositoryType) {
         return getProvider(repositoryType).getNamespaceRepositories(namespaceId);
     }
 }

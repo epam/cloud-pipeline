@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.git.github.GitHubInstallationAccount;
 import com.epam.pipeline.entity.git.github.GitHubInstallationRepositories;
 import com.epam.pipeline.entity.git.github.GitHubRepository;
 import com.epam.pipeline.exception.git.GitClientException;
+import com.epam.pipeline.exception.git.UnexpectedResponseStatusException;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.utils.AuthorizationUtils;
@@ -31,6 +32,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -170,15 +172,16 @@ public class GitHubAppService {
         final String jwt = generateJWT();
         final GitHubAppClient appClient = buildAppClient(jwt);
 
-        final GitHubInstallation installation = appClient.getAppInstallation(installationIdLong);
-        Assert.notNull(installation, String.format("Installation with ID %s does not exist.", installationId));
+        final GitHubInstallation installation = findAppInstallation(appClient, installationIdLong)
+                .orElseThrow(() -> new GitClientException(String.format(
+                        "Installation with ID %s does not exist.", installationId)));
 
         assertInstallationAllowed(installation);
 
         final String accessToken = generateAccessToken(jwt, installationIdLong);
         final GitHubAppClient client = buildAppClient(accessToken);
 
-        return GitHubUtils.pagination(client::getInstallationRepositories,
+        return GitHubUtils.fetchAllPages(client::getInstallationRepositories,
             responseBody -> Optional.ofNullable(responseBody)
                     .map(GitHubInstallationRepositories::getRepositories)
                     .orElse(Collections.emptyList()));
@@ -240,7 +243,7 @@ public class GitHubAppService {
 
     private List<GitHubInstallation> findInstallations(final String jwt) {
         final GitHubAppClient appClient = buildAppClient(jwt);
-        return GitHubUtils.pagination(appClient::getAppInstallations);
+        return GitHubUtils.fetchAllPages(appClient::getAppInstallations);
     }
 
     private String generateAccessToken(final String jwt, final Long installationId) {
@@ -263,5 +266,17 @@ public class GitHubAppService {
         headers.put(ACCEPT_HEADER, ACCEPT_GITHUB_JSON);
         headers.put(API_VERSION_HEADER, X_GITHUB_API_VERSION);
         return new GitHubAppClient(apiUrl, AuthorizationUtils.buildBearerTokenAuth(token), null, headers);
+    }
+
+    private Optional<GitHubInstallation> findAppInstallation(final GitHubAppClient appClient,
+                                                             final Long installationId) {
+        try {
+            return Optional.ofNullable(appClient.getAppInstallation(installationId));
+        } catch (UnexpectedResponseStatusException e) {
+            if (e.getStatus() == HttpStatus.NOT_FOUND) {
+                return Optional.empty();
+            }
+            throw e;
+        }
     }
 }
