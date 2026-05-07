@@ -196,13 +196,16 @@ export default class GenerateUserTokenModal extends React.Component {
         <div style={{display: 'flex', alignItems: 'flex-start'}}>
           <div style={{flex: '0 0 auto', marginRight: 12}}>
             <div style={{marginBottom: 4}}><b>Valid till:</b></div>
-            <DatePicker
-              className="generate-user-token-valid-till"
-              allowClear={false}
-              disabledDate={this.disabledDate}
-              onChange={this.onValidTillChanged}
-              value={validTill}
-            />
+            <Form.Item style={{marginBottom: 0}}>
+              <DatePicker
+                className="generate-user-token-valid-till"
+                allowClear={false}
+                disabledDate={this.disabledDate}
+                onChange={this.onValidTillChanged}
+                size="default"
+                value={validTill}
+              />
+            </Form.Item>
           </div>
           <div style={{flex: '1 1 auto'}}>
             <div style={{marginBottom: 4}}><b>Name:</b></div>
