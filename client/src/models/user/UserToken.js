@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,9 @@
 
 import Remote from '../basic/Remote';
 
+// "namedEndpoint" allows to specify token name and list tokens for user
 class UserToken extends Remote {
-  constructor (expiration, name) {
+  constructor (expiration, name, namedEndpoint = false) {
     super();
     const trimmedName = typeof name === 'string'
       ? name.trim()
@@ -25,8 +26,8 @@ class UserToken extends Remote {
     const query = [
       `expiration=${encodeURIComponent(expiration)}`
     ];
-    const endpoint = '/user/token/named';
-    if (typeof trimmedName === 'string' && trimmedName.length > 0) {
+    const endpoint = namedEndpoint ? '/user/token/named' : '/user/token';
+    if (namedEndpoint && typeof trimmedName === 'string' && trimmedName.length > 0) {
       query.push(`tokenName=${encodeURIComponent(trimmedName)}`);
     }
     const url = `${endpoint}?${query.join('&')}`;
