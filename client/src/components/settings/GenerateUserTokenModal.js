@@ -148,7 +148,7 @@ export default class GenerateUserTokenModal extends React.Component {
         seconds = Math.min(seconds, limit);
       }
       const trimmedName = (name || '').trim();
-      const request = new UserToken(seconds, trimmedName);
+      const request = new UserToken(seconds, trimmedName, true);
       await request.fetch();
       if (request.error) {
         throw new Error(request.error);
