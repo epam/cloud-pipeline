@@ -43,6 +43,7 @@ sudo -E $DEPLOY_DIR/pipectl install \
     -env CP_IDP_INTERNAL_PORT=${CP_AWS_IDP_INTERNAL_PORT} \
     -env CP_OVERWRITE_SERVICES_ENABLED="all" \
     -s cp-notifier \
+    -env CP_NOTIFIER_SMTP_ENABLE=false \
     -env CP_NOTIFIER_AZ_ENABLE=true \
     -env CP_NOTIFIER_AZ_CLIENT_ID=$CP_NOTIFIER_AZ_CLIENT_ID \
     -env CP_NOTIFIER_AZ_CLIENT_SECRET=$CP_NOTIFIER_AZ_CLIENT_SECRET \
@@ -51,6 +52,8 @@ sudo -E $DEPLOY_DIR/pipectl install \
     -env CP_NOTIFIER_AZ_TENANT_ID=$CP_NOTIFIER_AZ_TENANT_ID \
     -s cp-gitlab-reader \
     -s cp-api-srv \
+    -env CP_API_SRV_VERSION=0.25 \
+    -env CP_API_FLYWAY_OUT_OF_ORDER=true \
     -env CP_API_SRV_REPLICAS=2 \
     -env CP_API_SRV_EXTERNAL_PORT=${CP_AWS_API_SRV_EXTERNAL_PORT} \
     -env CP_API_SRV_INTERNAL_PORT=${CP_AWS_API_SRV_INTERNAL_PORT} \

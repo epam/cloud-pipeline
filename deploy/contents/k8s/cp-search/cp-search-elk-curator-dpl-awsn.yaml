@@ -22,7 +22,7 @@ spec:
         effect: NoSchedule
       containers:
         - name: cp-search-elk
-          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:search-elk-curator-$CP_VERSION
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:search-elk-curator-${CP_SEARCH_ELK_CURATOR_VERSION}
           securityContext:
             privileged: true
           imagePullPolicy: "Always"

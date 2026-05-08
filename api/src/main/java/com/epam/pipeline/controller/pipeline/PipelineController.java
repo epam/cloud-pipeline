@@ -289,7 +289,7 @@ public class PipelineController extends AbstractRestController {
     @RequestMapping(value = "/pipeline/git/credentials", method = RequestMethod.GET)
     @ResponseBody
     @Operation(
-        summary = "Returns user's git credentials for internal Gitlab.", 
+        summary = "Returns user's git credentials for internal Gitlab.",
         description = "Returns user's git credentials for internal Gitlab.")
     @ApiResponses(
         value = {@ApiResponse(description = API_STATUS_DESCRIPTION)

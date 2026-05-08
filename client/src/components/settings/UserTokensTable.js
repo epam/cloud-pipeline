@@ -121,7 +121,8 @@ export default class UserTokensTable extends React.Component {
       });
     }
     this.setState({pending: true});
-    const userNamedTokens = new UserNamedTokens(this.targetUserId);
+    const id = this.targetUserId === this.currentUserId ? undefined : this.targetUserId;
+    const userNamedTokens = new UserNamedTokens(id);
     await userNamedTokens.fetch();
     this.setState({
       pending: false,
@@ -138,7 +139,8 @@ export default class UserTokensTable extends React.Component {
     }
     this.setState({revokingJti: jti});
     try {
-      const revoke = new UserNamedTokenRevoke(jti, this.targetUserId);
+      const id = this.targetUserId === this.currentUserId ? undefined : this.targetUserId;
+      const revoke = new UserNamedTokenRevoke(jti, id);
       await revoke.fetch();
       if (revoke.loaded && revoke.value) {
         const msg = record.tokenName

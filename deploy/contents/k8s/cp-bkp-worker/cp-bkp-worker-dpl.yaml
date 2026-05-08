@@ -22,7 +22,7 @@ spec:
         effect: NoSchedule
       containers:
         - name: cp-bkp-worker-$CP_BKP_SERVICE_NAME
-          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:cp-bkp-worker-$CP_VERSION
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:cp-bkp-worker-${CP_BKP_WORKER_VERSION}
           imagePullPolicy: "Always"
           envFrom:
             - configMapRef:

@@ -32,7 +32,7 @@ if [ "$CP_NOTIFIER_AZ_ENABLE" == "true" ]; then
     validate_notifier_parameter "CP_NOTIFIER_AZ_CLIENT_SECRET" 
     validate_notifier_parameter "CP_NOTIFIER_AZ_TENANT_ID"
     validate_notifier_parameter "CP_NOTIFIER_AZ_SENDER"
-else
+elif [ "$CP_NOTIFIER_SMTP_ENABLE" == "true" ]; then
     validate_notifier_parameter "CP_NOTIFIER_SMTP_SERVER_HOST"
     validate_notifier_parameter "CP_NOTIFIER_SMTP_SERVER_PORT" 
     validate_notifier_parameter "CP_NOTIFIER_SMTP_FROM"

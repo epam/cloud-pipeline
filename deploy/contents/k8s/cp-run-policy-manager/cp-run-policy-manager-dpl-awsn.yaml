@@ -22,7 +22,7 @@ spec:
       serviceAccountName: cp-main-service
       containers:
         - name: cp-run-policy-manager
-          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:run-policy-manager-$CP_VERSION
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:run-policy-manager-${CP_RUN_POLICY_MANAGER_VERSION}
           imagePullPolicy: "Always"
           securityContext:
             privileged: true
