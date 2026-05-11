@@ -25,6 +25,7 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.user.UserManager;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -52,6 +53,7 @@ public class IAMProfileVerifier {
     private final PreferenceManager preferenceManager;
     private final CloudRegionManager regionManager;
     private final AuthManager authManager;
+    private final UserManager userManager;
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     public boolean isImageRestricted(final PipelineRun run) {
@@ -78,10 +80,14 @@ public class IAMProfileVerifier {
                 return false;
             }
             log.debug("Found '{}' IAM instance profiles found for region '{}'", amiConfigurations.size(), runRegion);
-            final PipelineUser currentUser = authManager.getCurrentUser();
+            final PipelineUser permissionUser = resolveUserForPermissions(run);
+            if (permissionUser == null) {
+                log.warn("Cannot resolve user for IAM profile permission check for run '{}'", run.getId());
+                return false;
+            }
             final Set<String> roles = Stream.concat(
-                            ListUtils.emptyIfNull(currentUser.getRoles()).stream().map(Role::getName),
-                            ListUtils.emptyIfNull(currentUser.getGroups()).stream())
+                            ListUtils.emptyIfNull(permissionUser.getRoles()).stream().map(Role::getName),
+                            ListUtils.emptyIfNull(permissionUser.getGroups()).stream())
                     .collect(Collectors.toSet());
             return amiConfigurations.stream()
                     .filter(c -> checkPermissions(c.getPermissions(), roles))
@@ -91,6 +97,22 @@ public class IAMProfileVerifier {
             log.error("Failed to check AMI: ", e);
             return false;
         }
+    }
+
+    /**
+     * Permissions in {@code CLUSTER_NETWORKS_CONFIG} apply to the pipeline run owner (effective user),
+     * not the caller's principal — e.g. autoscaling runs under a scheduler admin context.
+     */
+    private PipelineUser resolveUserForPermissions(final PipelineRun run) {
+        if (StringUtils.isNotBlank(run.getOwner())) {
+            final PipelineUser ownerUser = userManager.loadUserByName(run.getOwner());
+            if (ownerUser != null) {
+                return ownerUser;
+            }
+            log.warn("Run owner '{}' for run '{}' is not a registered user; falling back to current user",
+                    run.getOwner(), run.getId());
+        }
+        return authManager.getCurrentUser();
     }
 
     private boolean checkPermissions(final List<String> permissions, final Set<String> roles) {
