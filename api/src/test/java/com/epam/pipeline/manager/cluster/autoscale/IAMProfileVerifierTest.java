@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.user.UserManager;
 import org.junit.Test;
 
 import java.util.Collections;
@@ -47,15 +48,18 @@ public class IAMProfileVerifierTest {
     private static final String ALLOWED_ROLE = "ROLE_TEST";
     private static final String ALLOWED_INSTANCE_TYPE = "r5.xlarge";
     private static final String ALLOWED_DOCKER_IMAGE = "centos:latest";
+    private static final String RUN_OWNER = "run-owner";
 
     private final PreferenceManager preferenceManager = mock(PreferenceManager.class);
     private final CloudRegionManager regionManager = mock(CloudRegionManager.class);
     private final AuthManager authManager = mock(AuthManager.class);
+    private final UserManager userManager = mock(UserManager.class);
 
     private final IAMProfileVerifier iamProfileVerifier = new IAMProfileVerifier(
             preferenceManager,
             regionManager,
-            authManager);
+            authManager,
+            userManager);
 
     @Test
     public void shouldRestrict() {
@@ -67,6 +71,27 @@ public class IAMProfileVerifierTest {
         final PipelineUser pipelineUser = new PipelineUser();
         pipelineUser.setGroups(Collections.singletonList(RESTRICTED_ROLE));
         doReturn(pipelineUser).when(authManager).getCurrentUser();
+
+        final boolean result = iamProfileVerifier.isImageRestricted(run);
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    public void shouldRestrictUsingRunOwnerEvenIfCurrentUserIsDifferent() {
+        doReturn(getNetworksConfig()).when(preferenceManager).getObjectPreferenceAs(any(), any());
+        doReturn(getRestrictedRegion()).when(regionManager).loadOrDefault(RESTRICTED_REGION_ID);
+
+        final PipelineRun run = getRestrictedRun();
+        run.setOwner(RUN_OWNER);
+
+        final PipelineUser runOwner = new PipelineUser();
+        runOwner.setUserName(RUN_OWNER);
+        runOwner.setGroups(Collections.singletonList(RESTRICTED_ROLE));
+        doReturn(runOwner).when(userManager).loadUserByName(RUN_OWNER);
+
+        final PipelineUser schedulerUser = new PipelineUser();
+        schedulerUser.setGroups(Collections.singletonList(ALLOWED_ROLE));
+        doReturn(schedulerUser).when(authManager).getCurrentUser();
 
         final boolean result = iamProfileVerifier.isImageRestricted(run);
         assertThat(result).isTrue();
