@@ -65,14 +65,9 @@ public class IAMProfileVerifierTest {
     public void shouldRestrict() {
         doReturn(getNetworksConfig()).when(preferenceManager).getObjectPreferenceAs(any(), any());
         doReturn(getRestrictedRegion()).when(regionManager).loadOrDefault(RESTRICTED_REGION_ID);
+        mockRunOwner(restrictedRoleUser());
 
-        final PipelineRun run = getRestrictedRun();
-
-        final PipelineUser pipelineUser = new PipelineUser();
-        pipelineUser.setGroups(Collections.singletonList(RESTRICTED_ROLE));
-        doReturn(pipelineUser).when(authManager).getCurrentUser();
-
-        final boolean result = iamProfileVerifier.isImageRestricted(run);
+        final boolean result = iamProfileVerifier.isImageRestricted(getRestrictedRun());
         assertThat(result).isTrue();
     }
 
@@ -80,9 +75,6 @@ public class IAMProfileVerifierTest {
     public void shouldRestrictUsingRunOwnerEvenIfCurrentUserIsDifferent() {
         doReturn(getNetworksConfig()).when(preferenceManager).getObjectPreferenceAs(any(), any());
         doReturn(getRestrictedRegion()).when(regionManager).loadOrDefault(RESTRICTED_REGION_ID);
-
-        final PipelineRun run = getRestrictedRun();
-        run.setOwner(RUN_OWNER);
 
         final PipelineUser runOwner = new PipelineUser();
         runOwner.setUserName(RUN_OWNER);
@@ -93,6 +85,28 @@ public class IAMProfileVerifierTest {
         schedulerUser.setGroups(Collections.singletonList(ALLOWED_ROLE));
         doReturn(schedulerUser).when(authManager).getCurrentUser();
 
+        final boolean result = iamProfileVerifier.isImageRestricted(getRestrictedRun());
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    public void shouldForbidIfRunOwnerNotFound() {
+        doReturn(getNetworksConfig()).when(preferenceManager).getObjectPreferenceAs(any(), any());
+        doReturn(getRestrictedRegion()).when(regionManager).loadOrDefault(RESTRICTED_REGION_ID);
+        doReturn(null).when(userManager).loadUserByName(RUN_OWNER);
+
+        final boolean result = iamProfileVerifier.isImageRestricted(getRestrictedRun());
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    public void shouldForbidIfRunOwnerBlank() {
+        doReturn(getNetworksConfig()).when(preferenceManager).getObjectPreferenceAs(any(), any());
+        doReturn(getRestrictedRegion()).when(regionManager).loadOrDefault(RESTRICTED_REGION_ID);
+
+        final PipelineRun run = getRestrictedRun();
+        run.setOwner(null);
+
         final boolean result = iamProfileVerifier.isImageRestricted(run);
         assertThat(result).isTrue();
     }
@@ -101,13 +115,12 @@ public class IAMProfileVerifierTest {
     public void shouldAllowIfUserNotInRestrictedGroup() {
         doReturn(getNetworksConfig()).when(preferenceManager).getObjectPreferenceAs(any(), any());
         doReturn(getRestrictedRegion()).when(regionManager).loadOrDefault(RESTRICTED_REGION_ID);
-        final PipelineRun run = getRestrictedRun();
 
         final PipelineUser pipelineUser = new PipelineUser();
         pipelineUser.setGroups(Collections.singletonList(ALLOWED_ROLE));
-        doReturn(pipelineUser).when(authManager).getCurrentUser();
+        mockRunOwner(pipelineUser);
 
-        final boolean result = iamProfileVerifier.isImageRestricted(run);
+        final boolean result = iamProfileVerifier.isImageRestricted(getRestrictedRun());
         assertThat(result).isFalse();
     }
 
@@ -115,12 +128,9 @@ public class IAMProfileVerifierTest {
     public void shouldAllowIfUserHasNoGroupsOrRoles() {
         doReturn(getNetworksConfig()).when(preferenceManager).getObjectPreferenceAs(any(), any());
         doReturn(getRestrictedRegion()).when(regionManager).loadOrDefault(RESTRICTED_REGION_ID);
-        final PipelineRun run = getRestrictedRun();
+        mockRunOwner(new PipelineUser());
 
-        final PipelineUser pipelineUser = new PipelineUser();
-        doReturn(pipelineUser).when(authManager).getCurrentUser();
-
-        final boolean result = iamProfileVerifier.isImageRestricted(run);
+        final boolean result = iamProfileVerifier.isImageRestricted(getRestrictedRun());
         assertThat(result).isFalse();
     }
 
@@ -128,13 +138,12 @@ public class IAMProfileVerifierTest {
     public void shouldAllowIfUserHasNotRestrictedRoles() {
         doReturn(getNetworksConfig()).when(preferenceManager).getObjectPreferenceAs(any(), any());
         doReturn(getRestrictedRegion()).when(regionManager).loadOrDefault(RESTRICTED_REGION_ID);
-        final PipelineRun run = getRestrictedRun();
 
         final PipelineUser pipelineUser = new PipelineUser();
         pipelineUser.setRoles(Collections.singletonList(new Role(ALLOWED_ROLE)));
-        doReturn(pipelineUser).when(authManager).getCurrentUser();
+        mockRunOwner(pipelineUser);
 
-        final boolean result = iamProfileVerifier.isImageRestricted(run);
+        final boolean result = iamProfileVerifier.isImageRestricted(getRestrictedRun());
         assertThat(result).isFalse();
     }
 
@@ -142,12 +151,10 @@ public class IAMProfileVerifierTest {
     public void shouldAllowWithAllowedInstanceType() {
         doReturn(getNetworksConfig()).when(preferenceManager).getObjectPreferenceAs(any(), any());
         doReturn(getRestrictedRegion()).when(regionManager).loadOrDefault(RESTRICTED_REGION_ID);
+        mockRunOwner(restrictedRoleUser());
+
         final PipelineRun run = getRestrictedRun();
         run.getInstance().setNodeType(ALLOWED_INSTANCE_TYPE);
-
-        final PipelineUser pipelineUser = new PipelineUser();
-        pipelineUser.setGroups(Collections.singletonList(RESTRICTED_ROLE));
-        doReturn(pipelineUser).when(authManager).getCurrentUser();
 
         final boolean result = iamProfileVerifier.isImageRestricted(run);
         assertThat(result).isFalse();
@@ -157,12 +164,9 @@ public class IAMProfileVerifierTest {
     public void shouldAllowIfNoInstanceType() {
         doReturn(getNetworksConfig()).when(preferenceManager).getObjectPreferenceAs(any(), any());
         doReturn(getRestrictedRegion()).when(regionManager).loadOrDefault(RESTRICTED_REGION_ID);
+
         final PipelineRun run = getRestrictedRun();
         run.getInstance().setNodeType(null);
-
-        final PipelineUser pipelineUser = new PipelineUser();
-        pipelineUser.setGroups(Collections.singletonList(RESTRICTED_ROLE));
-        doReturn(pipelineUser).when(authManager).getCurrentUser();
 
         final boolean result = iamProfileVerifier.isImageRestricted(run);
         assertThat(result).isFalse();
@@ -172,12 +176,10 @@ public class IAMProfileVerifierTest {
     public void shouldAllowWithAllowedDockerImage() {
         doReturn(getNetworksConfig()).when(preferenceManager).getObjectPreferenceAs(any(), any());
         doReturn(getRestrictedRegion()).when(regionManager).loadOrDefault(RESTRICTED_REGION_ID);
+        mockRunOwner(restrictedRoleUser());
+
         final PipelineRun run = getRestrictedRun();
         run.setDockerImage(ALLOWED_DOCKER_IMAGE);
-
-        final PipelineUser pipelineUser = new PipelineUser();
-        pipelineUser.setGroups(Collections.singletonList(RESTRICTED_ROLE));
-        doReturn(pipelineUser).when(authManager).getCurrentUser();
 
         final boolean result = iamProfileVerifier.isImageRestricted(run);
         assertThat(result).isFalse();
@@ -187,12 +189,9 @@ public class IAMProfileVerifierTest {
     public void shouldAllowIfNoDockerImage() {
         doReturn(getNetworksConfig()).when(preferenceManager).getObjectPreferenceAs(any(), any());
         doReturn(getRestrictedRegion()).when(regionManager).loadOrDefault(RESTRICTED_REGION_ID);
+
         final PipelineRun run = getRestrictedRun();
         run.setDockerImage(null);
-
-        final PipelineUser pipelineUser = new PipelineUser();
-        pipelineUser.setGroups(Collections.singletonList(RESTRICTED_ROLE));
-        doReturn(pipelineUser).when(authManager).getCurrentUser();
 
         final boolean result = iamProfileVerifier.isImageRestricted(run);
         assertThat(result).isFalse();
@@ -202,13 +201,8 @@ public class IAMProfileVerifierTest {
     public void shouldAllowIfNoNetworkConfig() {
         doReturn(null).when(preferenceManager).getObjectPreferenceAs(any(), any());
         doReturn(getRestrictedRegion()).when(regionManager).loadOrDefault(RESTRICTED_REGION_ID);
-        final PipelineRun run = getRestrictedRun();
 
-        final PipelineUser pipelineUser = new PipelineUser();
-        pipelineUser.setGroups(Collections.singletonList(RESTRICTED_ROLE));
-        doReturn(pipelineUser).when(authManager).getCurrentUser();
-
-        final boolean result = iamProfileVerifier.isImageRestricted(run);
+        final boolean result = iamProfileVerifier.isImageRestricted(getRestrictedRun());
         assertThat(result).isFalse();
     }
 
@@ -219,13 +213,9 @@ public class IAMProfileVerifierTest {
                 Collections.singletonList(RESTRICTED_ROLE)))
                 .when(preferenceManager).getObjectPreferenceAs(any(), any());
         doReturn(getRestrictedRegion()).when(regionManager).loadOrDefault(RESTRICTED_REGION_ID);
-        final PipelineRun run = getRestrictedRun();
+        mockRunOwner(restrictedRoleUser());
 
-        final PipelineUser pipelineUser = new PipelineUser();
-        pipelineUser.setGroups(Collections.singletonList(RESTRICTED_ROLE));
-        doReturn(pipelineUser).when(authManager).getCurrentUser();
-
-        final boolean result = iamProfileVerifier.isImageRestricted(run);
+        final boolean result = iamProfileVerifier.isImageRestricted(getRestrictedRun());
         assertThat(result).isTrue();
     }
 
@@ -235,13 +225,9 @@ public class IAMProfileVerifierTest {
                 Collections.singletonList(RESTRICTED_ROLE)))
                 .when(preferenceManager).getObjectPreferenceAs(any(), any());
         doReturn(getRestrictedRegion()).when(regionManager).loadOrDefault(RESTRICTED_REGION_ID);
-        final PipelineRun run = getRestrictedRun();
+        mockRunOwner(restrictedRoleUser());
 
-        final PipelineUser pipelineUser = new PipelineUser();
-        pipelineUser.setGroups(Collections.singletonList(RESTRICTED_ROLE));
-        doReturn(pipelineUser).when(authManager).getCurrentUser();
-
-        final boolean result = iamProfileVerifier.isImageRestricted(run);
+        final boolean result = iamProfileVerifier.isImageRestricted(getRestrictedRun());
         assertThat(result).isTrue();
     }
 
@@ -251,14 +237,20 @@ public class IAMProfileVerifierTest {
                 Collections.singletonList(RESTRICTED_DOCKER_IMAGE), null))
                 .when(preferenceManager).getObjectPreferenceAs(any(), any());
         doReturn(getRestrictedRegion()).when(regionManager).loadOrDefault(RESTRICTED_REGION_ID);
-        final PipelineRun run = getRestrictedRun();
+        mockRunOwner(restrictedRoleUser());
 
-        final PipelineUser pipelineUser = new PipelineUser();
-        pipelineUser.setGroups(Collections.singletonList(RESTRICTED_ROLE));
-        doReturn(pipelineUser).when(authManager).getCurrentUser();
-
-        final boolean result = iamProfileVerifier.isImageRestricted(run);
+        final boolean result = iamProfileVerifier.isImageRestricted(getRestrictedRun());
         assertThat(result).isTrue();
+    }
+
+    private void mockRunOwner(final PipelineUser user) {
+        doReturn(user).when(userManager).loadUserByName(RUN_OWNER);
+    }
+
+    private static PipelineUser restrictedRoleUser() {
+        final PipelineUser user = new PipelineUser();
+        user.setGroups(Collections.singletonList(RESTRICTED_ROLE));
+        return user;
     }
 
     private static CloudRegionsConfiguration getNetworksConfig(final String instanceMask,
@@ -293,6 +285,7 @@ public class IAMProfileVerifierTest {
         final PipelineRun run = new PipelineRun();
         run.setInstance(instance);
         run.setDockerImage(RESTRICTED_DOCKER_IMAGE);
+        run.setOwner(RUN_OWNER);
 
         return run;
     }

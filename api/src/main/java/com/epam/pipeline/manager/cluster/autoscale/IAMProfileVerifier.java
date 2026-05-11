@@ -39,6 +39,7 @@ import org.springframework.util.AntPathMatcher;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -80,22 +81,23 @@ public class IAMProfileVerifier {
                 return false;
             }
             log.debug("Found '{}' IAM instance profiles found for region '{}'", amiConfigurations.size(), runRegion);
-            final PipelineUser permissionUser = resolveUserForPermissions(run);
-            if (permissionUser == null) {
-                log.warn("Cannot resolve user for IAM profile permission check for run '{}'", run.getId());
-                return false;
-            }
-            final Set<String> roles = Stream.concat(
-                            ListUtils.emptyIfNull(permissionUser.getRoles()).stream().map(Role::getName),
-                            ListUtils.emptyIfNull(permissionUser.getGroups()).stream())
-                    .collect(Collectors.toSet());
-            return amiConfigurations.stream()
-                    .filter(c -> checkPermissions(c.getPermissions(), roles))
-                    .filter(c -> checkDockerImages(c.getDockerImages(), targetImage))
-                    .anyMatch(c -> checkInstanceMask(c.getInstanceMask(), instanceType));
+            return resolveUserForPermissions(run)
+                    .map(user -> {
+                        final Set<String> roles = Stream.concat(
+                                        ListUtils.emptyIfNull(user.getRoles()).stream().map(Role::getName),
+                                        ListUtils.emptyIfNull(user.getGroups()).stream())
+                                .collect(Collectors.toSet());
+                        return amiConfigurations.stream()
+                                .filter(c -> checkPermissions(c.getPermissions(), roles))
+                                .filter(c -> checkDockerImages(c.getDockerImages(), targetImage))
+                                .anyMatch(c -> checkInstanceMask(c.getInstanceMask(), instanceType));
+                    }).orElseGet(() -> {
+                        log.warn("Cannot resolve user for IAM profile permission check for run '{}'", run.getId());
+                        return true;
+                    });
         } catch (Exception e) {
             log.error("Failed to check AMI: ", e);
-            return false;
+            return true;
         }
     }
 
@@ -103,16 +105,16 @@ public class IAMProfileVerifier {
      * Permissions in {@code CLUSTER_NETWORKS_CONFIG} apply to the pipeline run owner (effective user),
      * not the caller's principal — e.g. autoscaling runs under a scheduler admin context.
      */
-    private PipelineUser resolveUserForPermissions(final PipelineRun run) {
+    private Optional<PipelineUser> resolveUserForPermissions(final PipelineRun run) {
         if (StringUtils.isNotBlank(run.getOwner())) {
             final PipelineUser ownerUser = userManager.loadUserByName(run.getOwner());
             if (ownerUser != null) {
-                return ownerUser;
+                return Optional.of(ownerUser);
             }
             log.warn("Run owner '{}' for run '{}' is not a registered user; falling back to current user",
                     run.getOwner(), run.getId());
         }
-        return authManager.getCurrentUser();
+        return Optional.empty();
     }
 
     private boolean checkPermissions(final List<String> permissions, final Set<String> roles) {
