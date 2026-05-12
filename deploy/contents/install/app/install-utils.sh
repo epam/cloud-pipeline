@@ -113,8 +113,8 @@ function run_preflight {
         print_err "Installation shall be run as a root user"
         return 1
     fi
-    if ! grep -q centos /etc/os-release; then
-        print_err "Unsupported Linux distribution. Centos 7 and above shall be used"
+    if ! grep -q centos /etc/os-release && ! grep -q amzn /etc/os-release; then
+        print_err "Unsupported Linux distribution. Centos 7 and above or Amazon Linux 2/2023 and above shall be used"
         return 1
     fi
     fix_http_proxies
