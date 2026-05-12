@@ -192,6 +192,10 @@ public final class MessageConstants {
     public static final String ERROR_RUN_AS_TOOLS_NOT_ALLOWED = "error.run.as.tools.not.allowed";
     public static final String ERROR_RUN_AS_TOOL_NOT_ALLOWED = "error.run.as.tool.not.allowed";
     public static final String ERROR_RUN_ALLOWED_SID_NAME_NOT_FOUND = "error.run.allowed.sid.name.not.found";
+    public static final String ERROR_RUN_SIDS_NOT_ALLOWED_FOR_CONFIGURATION =
+            "error.run.sids.not.allowed.for.configuration";
+    public static final String ERROR_RUN_SIDS_UPDATE_NOT_ALLOWED_FOR_CONFIGURATION =
+            "error.run.sids.update.not.allowed.for.configuration";
     public static final String ERROR_IMAGE_NOT_FOUND_FOR_VERSIONED_STORAGE =
             "error.image.not.found.for.versioned.storage";
     public static final String ERROR_ARCHIVE_RUN_METADATA_NOT_FOUND = "error.archive.run.metadata.not.found";
@@ -286,7 +290,7 @@ public final class MessageConstants {
     public static final String ERROR_DATASTORAGE_GET_CONTENT_FAILED = "error.datastorage.get.content.failed";
     public static final String ERROR_AZURE_STORAGE_CREDENTIAL_INVALID = "error.azure.storage.credentials.invalid";
     public static final String ERROR_SENSITIVE_DATASTORAGE_OPERATION =
-        "error.sensitive.datastorage.forbidden.operation";
+            "error.sensitive.datastorage.forbidden.operation";
     public static final String ERROR_SENSITIVE_REQUEST_WRONG_CONTEXT =
             "error.sensitive.request.wrong.context";
     public static final String ERROR_SENSITIVE_WRITE_FORBIDDEN = "error.sensitive.datastorage.write.forbidden";
@@ -319,7 +323,7 @@ public final class MessageConstants {
     public static final String ERROR_DATASTORAGE_NFS_MOUNT = "error.datastorage.nfs.mount";
     public static final String ERROR_DATASTORAGE_NFS_MOUNT_2 = "error.datastorage.nfs.mount.2";
     public static final String ERROR_DATASTORAGE_NFS_MOUNT_DIRECTORY_NOT_CREATED =
-        "error.datastorage.nfs.mount.dir.not.created";
+            "error.datastorage.nfs.mount.dir.not.created";
     public static final String ERROR_DATASTORAGE_NFS_UNMOUNT_ERROR_2 = "error.datastorage.nfs.unmount.2";
     public static final String ERROR_DATASTORAGE_NFS_CREATE_FOLDER = "error.datastorage.nfs.create.folder";
     public static final String ERROR_DATASTORAGE_NFS_CREATE_FILE = "error.datastorage.nfs.create.file";
@@ -335,7 +339,7 @@ public final class MessageConstants {
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_WRONG_DAYS_TO_PROLONG =
             "error.datastorage.lifecycle.rule.wrong.days.to.prolong";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_CANT_BE_PROLONGED =
-        "error.datastorage.lifecycle.rule.cant.be.prolonged";
+            "error.datastorage.lifecycle.rule.cant.be.prolonged";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_WAS_PROLONGED_BEFORE =
             "error.datastorage.lifecycle.rule.was.prolong.before";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_DATASTORAGE_ID_NOT_SPECIFIED =
@@ -392,7 +396,7 @@ public final class MessageConstants {
             "error.datastorage.lifecycle.rule.notification.recipients.not.provided";
     public static final String ERROR_DATASTORAGE_INTELLIGENT_TIERING_ARCHIVE_ACCESS =
             "error.datastorage.intelligent.tiering.archive.access";
-    public static final String ERROR_DATASTORAGE_ARCHIVE_ACCESS =  "error.datastorage.archive.access";
+    public static final String ERROR_DATASTORAGE_ARCHIVE_ACCESS = "error.datastorage.archive.access";
     public static final String ERROR_DATASTORAGE_PATH_PERMISSIONS_NOT_ALLOWED =
             "error.datastorage.path.permissions.not.allowed";
 
@@ -418,7 +422,7 @@ public final class MessageConstants {
     public static final String DEBUG_INSTANCE_OFFERS_EXPIRATION_CHECK_RUNNING =
             "instance.offers.expiration.check.running";
     public static final String DEBUG_INSTANCE_OFFERS_EXPIRATION_CHECK_DONE =
-        "instance.offers.expiration.check.done";
+            "instance.offers.expiration.check.done";
     public static final String INFO_INSTANCE_OFFERS_EXPIRED = "instance.offers.expired";
     public static final String DEBUG_INSTANCE_OFFERS_UPDATE_STARTED = "instance.offers.update.started";
     public static final String DEBUG_INSTANCE_OFFERS_UPDATE_FINISHED = "instance.offers.update.finished";
@@ -459,7 +463,7 @@ public final class MessageConstants {
     public static final String INFO_DELETE_USER = "info.delete.user";
     public static final String INFO_UPDATE_USER_ROLES = "info.update.user.roles";
     public static final String INFO_UPDATE_USER_DATASTORAGE = "info.update.user.datastorage";
-    public static final String INFO_UPDATE_USER_BLOCK_STATUS= "info.update.user.block.status";
+    public static final String INFO_UPDATE_USER_BLOCK_STATUS = "info.update.user.block.status";
     public static final String INFO_UPDATE_USER_SAML_INFO = "info.update.user.saml.info";
     public static final String ERROR_DEFAULT_STORAGE_CREATION = "user.storage.home.auto.fails";
     public static final String DEFAULT_STORAGE_CREATION_CORRESPONDING_EXISTS = "user.storage.home.auto.exists";
@@ -500,7 +504,7 @@ public final class MessageConstants {
     public static final String ERROR_ENTITY_FOR_METADATA_NOT_FOUND = "error.entity.for.metadata.not.found";
     public static final String ERROR_ENTITY_FOR_METADATA_NOT_SPECIFIED = "error.entity.for.metadata.not.specified";
     public static final String ERROR_KEY_FOR_METADATA_UNIQUE_VALUES_REQUEST_NOT_SPECIFIED =
-        "error.key.for.metadata.unique.values.not.specified";
+            "error.key.for.metadata.unique.values.not.specified";
 
     //Paging
     public static final String ERROR_PAGE_INDEX = "error.page.index";
@@ -581,7 +585,7 @@ public final class MessageConstants {
     // Attachments
     public static final String ERROR_ATTACHMENT_NOT_FOUND = "error.attachment.not.found";
     public static final String ERROR_ATTACHMENT_SYSTEM_DATA_STORAGE_NOT_CONFIGURED =
-        "error.attachment.system.data.storage.not.configured";
+            "error.attachment.system.data.storage.not.configured";
 
     // Run Logs Storage
     public static final String WARN_RUN_LOG_STORAGE_NOT_CONFIGURED = "warn.run.log.storage.not.configured";
@@ -596,7 +600,7 @@ public final class MessageConstants {
     public static final String ERROR_PREFERENCE_WITH_NAME_HAS_DIFFERENT_TYPE =
             "error.preference.with.name.has.different.type";
     public static final String INFO_PREFERENCE_UPDATED_WITH_ADDITIONAL_TASKS =
-        "info.preference.update.with.additional.tasks";
+            "info.preference.update.with.additional.tasks";
 
     public static final String ERROR_PREFERENCE_VALUE_INVALID = "error.preference.value.invalid";
     public static final String ERROR_PREFERENCE_REQUIREMENTS_NOT_MET = "error.preference.requirements.not.met";
@@ -711,9 +715,9 @@ public final class MessageConstants {
 
     //Billing
     public static final String ERROR_BILLING_FIELD_DATE_GROUPING_NOT_SUPPORTED =
-        "error.billing.date.field.grouping.not.supported";
+            "error.billing.date.field.grouping.not.supported";
     public static final String INFO_BILLING_ENTITY_FOR_DETAILS_NOT_FOUND =
-        "error.billing.entity.for.grouping.not.found";
+            "error.billing.entity.for.grouping.not.found";
     public static final String ERROR_BILLING_DETAILS_NOT_SUPPORTED = "error.billing.details.not.supported";
     public static final String ERROR_BILLING_INTERVAL_NOT_SUPPORTED = "error.billing.interval.not.supported";
     public static final String ERROR_ILLEGAL_PAGING_PARAMETERS = "error.billing.invalid.paging";
@@ -770,7 +774,7 @@ public final class MessageConstants {
     public static final String ERROR_NODE_POOL_INVALID_PERCENT = "error.node.pool.invalid.percent";
     public static final String ERROR_NODE_POOL_WIN_TOOLS_ARE_NOT_ALLOWED = "error.node.pool.win.tools.not.allowed";
     public static final String ERROR_NODE_POOL_WIN_INSTANCES_ARE_NOT_ALLOWED =
-        "error.node.pool.win.instance.not.allowed";
+            "error.node.pool.win.instance.not.allowed";
 
     // Users import events
     public static final String EVENT_USER_CREATED = "user.import.event.user.created";
@@ -791,7 +795,7 @@ public final class MessageConstants {
     public static final String STORAGE_QUOTA_UNKNOWN_RESTRICTION = "storage.quota.unknown.restriction";
     public static final String STORAGE_QUOTA_UNKNOWN_TYPE = "storage.quota.unknown.type";
     public static final String STORAGE_QUOTA_PERCENTS_UNKNOWN_SHARE_TYPE =
-        "storage.quota.unknown.share.type.for.percentage";
+            "storage.quota.unknown.share.type.for.percentage";
 
     // NAT configuration
     public static final String NAT_ADDRESS_RESOLVING_EXCEPTION = "nat.gateway.address.resolving.exception";
@@ -799,14 +803,14 @@ public final class MessageConstants {
     public static final String NAT_ROUTE_CONFIG_ROUTE_ON_SERVICE_PORT = "nat.gateway.route.creation.route.service.port";
     public static final String NAT_ROUTE_CONFIG_ROUTE_TRANSFER_SUMMARY = "nat.gateway.route.transfer.summary";
     public static final String NAT_ROUTE_CONFIG_ADD_ROUTE_TO_EXISTING_SERVICE_FAILED =
-        "nat.gateway.route.creation.existing.service.add.port.failed";
+            "nat.gateway.route.creation.existing.service.add.port.failed";
     public static final String NAT_ROUTE_CONFIG_NEW_SERVICE_CREATION = "nat.gateway.route.creation.new.service";
     public static final String NAT_ROUTE_CONFIG_PORT_GENERATION_FAILED =
-        "nat.gateway.route.creation.port.generation.failed";
+            "nat.gateway.route.creation.port.generation.failed";
     public static final String NAT_ROUTE_CONFIG_NEW_SERVICE_CREATION_FAILED =
-        "nat.gateway.route.creation.new.service.failed";
+            "nat.gateway.route.creation.new.service.failed";
     public static final String NAT_ROUTE_CONFIG_ADD_ROUTE_TO_EXISTING_SERVICE =
-        "nat.gateway.route.creation.existing.service.add.port";
+            "nat.gateway.route.creation.existing.service.add.port";
     public static final String NAT_ROUTE_CONFIG_DNS_CREATION_FAILED = "nat.gateway.route.creation.dns.config.error";
     public static final String NAT_ROUTE_CONFIG_ERROR_EMPTY_RULE = "nat.gateway.route.creation.empty.rule";
     public static final String NAT_ROUTE_CONFIG_FAILURE_SUMMARY = "nat.gateway.route.creation.failure.summary";
@@ -815,36 +819,36 @@ public final class MessageConstants {
     public static final String NAT_ROUTE_CONFIG_INVALID_PROTOCOL = "nat.gateway.route.creation.invalid.protocol";
     public static final String NAT_ROUTE_EXISTS_ALREADY = "nat.gateway.route.registration.exists.already";
     public static final String NAT_ROUTE_CONFIG_DEPLOYMENT_REFRESH_FAILED =
-        "nat.gateway.route.creation.deploy.refresh.error";
+            "nat.gateway.route.creation.deploy.refresh.error";
     public static final String NAT_ROUTE_CONFIG_PORT_FORWARDING_FAILED =
-        "nat.gateway.route.creation.port.forwarding.error";
+            "nat.gateway.route.creation.port.forwarding.error";
     public static final String NAT_ROUTE_CONFIG_PORT_ASSIGNING_FAILED =
-        "nat.gateway.route.creation.port.assigning.error";
+            "nat.gateway.route.creation.port.assigning.error";
     public static final String NAT_ROUTE_CONFIG_CANT_FIND_CONFIG_MAP =
-        "nat.gateway.route.creation.empty.config.map.port.forwarding";
+            "nat.gateway.route.creation.empty.config.map.port.forwarding";
     public static final String NAT_ROUTE_CONFIG_UNABLE_TO_RESOLVE_ADDRESS =
-        "nat.gateway.route.creation.dns.resolving.failed";
+            "nat.gateway.route.creation.dns.resolving.failed";
     public static final String NAT_ROUTE_CONFIG_CANT_FIND_PORT =
-        "nat.gateway.route.creation.port.forwarding.missing.port.error";
+            "nat.gateway.route.creation.port.forwarding.missing.port.error";
     public static final String NAT_ROUTE_CONFIG_KUBE_DNS_RESTART_FAILED =
-        "nat.gateway.route.creation.kube.dns.restart.error";
+            "nat.gateway.route.creation.kube.dns.restart.error";
     public static final String NAT_ROUTE_EXTENDING_INVALID_EXTERNAL_IP =
-        "nat.gateway.route.extending.invalid.external.ip";
+            "nat.gateway.route.extending.invalid.external.ip";
     public static final String NAT_SERVICE_CONFIG_ERROR_NO_CLUSTER_IP = "nat.gateway.service.config.no.cluster.ip";
     public static final String NAT_SERVICE_CONFIG_GENERAL_ERROR = "nat.gateway.service.config.general.error";
     public static final String NAT_SERVICE_CONFIG_EMPTY_ANNOTATIONS_WITH_PORTS =
-        "nat.gateway.service.config.empty.annotations.with.ports.warn";
+            "nat.gateway.service.config.empty.annotations.with.ports.warn";
     public static final String NAT_ROUTE_CONFIG_WARN_UNKNOWN_STATUS_PORT =
-        "nat.gateway.route.config.port.unknown.status";
+            "nat.gateway.route.config.port.unknown.status";
 
     public static final String NAT_ROUTE_REMOVAL_NO_PORT_SPECIFIED = "nat.gateway.route.removal.port.not.found";
     public static final String NAT_ROUTE_REMOVAL_DNS_MASK_REMOVAL_FAILED = "nat.gateway.route.removal.dns.failed";
     public static final String NAT_ROUTE_REMOVAL_PORT_REMOVAL_FAILED = "nat.gateway.route.removal.service.port.failed";
     public static final String NAT_ROUTE_REMOVAL_KEEP_DNS_MASK = "nat.gateway.route.removal.keep.dns.entry";
     public static final String NAT_ROUTE_REMOVAL_DEPLOYMENT_REFRESH_FAILED =
-        "nat.gateway.route.removal.deploy.refresh.failed";
+            "nat.gateway.route.removal.deploy.refresh.failed";
     public static final String NAT_ROUTE_REMOVAL_PORT_FORWARDING_REMOVAL_FAILED =
-        "nat.gateway.route.removal.port.forwarding.failed";
+            "nat.gateway.route.removal.port.forwarding.failed";
     public static final String NAT_ROUTE_REMOVAL_NO_ACTIVE_SERVICE_PORTS = "nat.gateway.route.removal.no.service.ports";
     public static final String NAT_ROUTE_REMOVAL_SERVICE_PORT = "nat.gateway.route.removal.service.port";
 
@@ -879,7 +883,6 @@ public final class MessageConstants {
     public static final String ERROR_RUN_ASSIGN_POLICY_MALFORMED = "error.run.assign.policy.malformed";
     public static final String ERROR_RUN_ASSIGN_POLICY_FORBIDDEN = "error.run.assign.policy.forbidden";
     public static final String ERROR_RUN_WITH_SERVICE_ACCOUNT_FORBIDDEN = "error.run.with.service.account.forbidden";
-
 
 
     // Ngs preprocessing
