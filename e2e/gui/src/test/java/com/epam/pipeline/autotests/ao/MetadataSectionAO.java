@@ -345,7 +345,8 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
         public ConfigureNotificationAO addRecipient(final String recipient) {
             click(RECIPIENTS);
             actions().sendKeys(recipient).perform();
-            enter();
+            $$(byXpath(".//li[contains(@class, 'ant-select-dropdown-menu-item')]"))
+                    .filter(Condition.exactText(recipient)).first().click();
             click(byText("Recipients:"));
             return this;
         }
