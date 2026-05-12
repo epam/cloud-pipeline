@@ -21,8 +21,10 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.PipelineSourceItemVO;
 import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
+import com.epam.pipeline.dto.git.GitRepositoryDTO;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCredentials;
+import com.epam.pipeline.entity.git.GitNamespace;
 import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitRepositoryUrl;
@@ -50,6 +52,7 @@ import com.epam.pipeline.utils.AuthorizationUtils;
 import com.epam.pipeline.utils.GitUtils;
 import joptsimple.internal.Strings;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.util.TextUtils;
@@ -59,7 +62,6 @@ import retrofit2.Response;
 
 import java.io.File;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -71,20 +73,20 @@ import java.util.stream.Stream;
 import static com.epam.pipeline.manager.git.PipelineRepositoryService.NOT_SUPPORTED_PATTERN;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class GitHubService implements GitClientService {
     private static final String REPOSITORY_NAME = "repository name";
     private static final String PROJECT_NAME = "project name";
     private static final String GITHUB_FOLDER_MARKER = "tree";
     private static final String GITHUB_FILE_MARKER = "blob";
-    private static final String LINK = "link";
-    private static final String REL_NEXT = "rel=\"next\"";
     private static final String COMMIT = "commit";
     private static final String REFS_TAGS_PREFIX = "refs/tags/%s";
+
     private final GitHubMapper mapper;
     private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
-
+    private final GitHubAppService gitHubAppService;
 
     @Override
     public RepositoryType getType() {
@@ -122,18 +124,7 @@ public class GitHubService implements GitClientService {
     @Override
     public List<String> getBranches(final String repositoryPath, final String token) {
         final GitHubClient client = getClient(repositoryPath, token);
-        int page = 1;
-        Response<List<GitHubRef>> response = client.getBranches(page);
-        final List<GitHubRef> values = new ArrayList<>(Optional.ofNullable(response.body())
-                .orElse(Collections.emptyList()));
-        String link = response.headers().get(LINK);
-        while (link != null && link.contains(REL_NEXT)) {
-            page++;
-            response = client.getBranches(page);
-            values.addAll(Optional.ofNullable(response.body()).orElse(Collections.emptyList()));
-            link = response.headers().get(LINK);
-        }
-        return values.stream()
+        return GitHubUtils.fetchAllPages(client::getBranches).stream()
                 .map(GitHubRef::getName)
                 .collect(Collectors.toList());
     }
@@ -165,18 +156,7 @@ public class GitHubService implements GitClientService {
     @Override
     public List<Revision> getTags(final Pipeline pipeline) {
         final GitHubClient client = getClient(pipeline);
-        int page = 1;
-        Response<List<GitHubRelease>> response = client.getTags(page);
-        final List<GitHubRelease> values = new ArrayList<>(Optional.ofNullable(response.body())
-                .orElse(Collections.emptyList()));
-        String link = response.headers().get(LINK);
-        while (link != null && link.contains(REL_NEXT)) {
-            page++;
-            response = client.getTags(page);
-            values.addAll(Optional.ofNullable(response.body()).orElse(Collections.emptyList()));
-            link = response.headers().get(LINK);
-        }
-        return values.stream()
+        return GitHubUtils.fetchAllPages(client::getTags).stream()
                 .map(tag -> fillCommitInfo(tag, client))
                 .map(mapper::refToRevision)
                 .collect(Collectors.toList());
@@ -223,7 +203,9 @@ public class GitHubService implements GitClientService {
     public GitCredentials getCloneCredentials(final Pipeline pipeline, final boolean useEnvVars,
                                               final boolean issueToken, final Long duration) {
         final GitRepositoryUrl repositoryUrl = GitRepositoryUrl.from(pipeline.getRepository());
-        final String token = pipeline.getRepositoryToken();
+        final String token = StringUtils.isBlank(pipeline.getRepositoryToken())
+                ? getGithubAppToken(pipeline.getRepository())
+                : pipeline.getRepositoryToken();
         final String username = preferenceManager.getPreference(SystemPreferences.GITHUB_USER_NAME);
         final String host = repositoryUrl.getHost();
         return GitCredentials.builder()
@@ -349,6 +331,20 @@ public class GitHubService implements GitClientService {
         return fileExists(getClient(pipeline), pipeline.getBranch(), filePath);
     }
 
+    @Override
+    public List<GitNamespace> getAllowedNamespaces() {
+        return gitHubAppService.findAllowedInstallations().stream()
+                .map(mapper::installationToNamespace)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<GitRepositoryDTO> getNamespaceRepositories(final String installationId) {
+        return gitHubAppService.findRepositoriesByInstallation(installationId).stream()
+                .map(mapper::toGitRepositoryDTO)
+                .collect(Collectors.toList());
+    }
+
     private static String getContentSha(final String rawPath, final String version, final GitHubClient client) {
         final File folder = new File(rawPath);
         final String parentDirectory = Optional.ofNullable(folder.getParent()).orElse(Strings.EMPTY);
@@ -365,10 +361,17 @@ public class GitHubService implements GitClientService {
     }
 
     private GitHubClient getClient(final String repositoryPath, final String token) {
-        return buildClient(repositoryPath, token);
+        return StringUtils.isBlank(token) ? buildGithubAppClient(repositoryPath) : buildClient(repositoryPath, token);
+    }
+
+    private GitHubClient buildGithubAppClient(final String repositoryPath) {
+        log.debug("Token was not provided. Building Github App installation token for repository {}.", repositoryPath);
+        final String accessToken = getGithubAppToken(repositoryPath);
+        return buildClient(repositoryPath, accessToken);
     }
 
     private GitHubClient buildClient(final String repositoryPath, final String token) {
+        log.debug("Token has been provided. Building plain client for repository {}.", repositoryPath);
         final GitRepositoryUrl repositoryUrl = GitRepositoryUrl.from(repositoryPath);
         final String projectName = repositoryUrl.getNamespace().orElseThrow(() -> buildUrlParseError(PROJECT_NAME));
         final String repositoryName = repositoryUrl.getProject().orElseThrow(() -> buildUrlParseError(REPOSITORY_NAME));
@@ -378,7 +381,7 @@ public class GitHubService implements GitClientService {
 
         Assert.isTrue(StringUtils.isNotBlank(token), messageHelper
                 .getMessage(MessageConstants.ERROR_REPOSITORY_TOKEN_NOT_FOUND, getType()));
-        final String credentials = AuthorizationUtils.BEARER_AUTH + token;
+        final String credentials = AuthorizationUtils.buildBearerTokenAuth(token);
 
         return new GitHubClient(gitHubHost, credentials, null, projectName, repositoryName);
     }
@@ -418,5 +421,12 @@ public class GitHubService implements GitClientService {
 
     private boolean fileExists(final GitHubClient client, final String ref, final String path) {
         return client.fileExists(ref, path);
+    }
+
+    private String getGithubAppToken(final String repositoryPath) {
+        final GitRepositoryUrl repositoryUrl = GitRepositoryUrl.from(repositoryPath);
+        final String projectName = repositoryUrl.getNamespace().orElseThrow(() -> buildUrlParseError(PROJECT_NAME));
+        final String repositoryName = repositoryUrl.getProject().orElseThrow(() -> buildUrlParseError(REPOSITORY_NAME));
+        return gitHubAppService.getGithubAppToken(projectName, repositoryName);
     }
 }

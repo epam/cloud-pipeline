@@ -25,7 +25,7 @@ spec:
           restartPolicy: Never
           containers:
           - name: cp-run-cleanup-job
-            image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:run-cleanup-job-${CP_VERSION}
+            image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:run-cleanup-job-${CP_RUN_CLEANUP_JOB_VERSION}
             imagePullPolicy: Always
             command: ["/init"]
             envFrom:

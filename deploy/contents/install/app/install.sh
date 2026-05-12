@@ -44,6 +44,8 @@ if [ $? -ne 0 ]; then
     print_err "Unable to setup installation configuration, exiting"
     exit 1
 fi
+
+init_service_versions
 echo
 
 ##########

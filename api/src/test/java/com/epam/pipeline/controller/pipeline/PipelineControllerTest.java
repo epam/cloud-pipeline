@@ -27,14 +27,17 @@ import com.epam.pipeline.controller.vo.PipelinesWithPermissionsVO;
 import com.epam.pipeline.controller.vo.RegisterPipelineVersionVO;
 import com.epam.pipeline.controller.vo.TaskGraphVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
+import com.epam.pipeline.dto.git.GitRepositoryDTO;
 import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCredentials;
+import com.epam.pipeline.entity.git.GitNamespace;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.pipeline.DocumentGenerationProperty;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.RepositoryType;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.test.creator.CommonCreatorConstants;
@@ -103,6 +106,8 @@ public class PipelineControllerTest extends AbstractControllerTest {
     private static final String PIPELINE_ID_ADD_HOOK_URL = PIPELINE_ID_URL + "/addHook";
     private static final String PIPELINE_ID_REPOSITORY_URL = PIPELINE_ID_URL + "/repository";
     private static final String PIPELINE_ID_COPY_URL = PIPELINE_ID_URL + "/copy";
+    private static final String PIPELINE_GIT_NAMESPACES_URL = PIPELINE_GIT_URL + "/namespaces";
+    private static final String PIPELINE_GIT_NAMESPACE_REPOSITORIES_URL = PIPELINE_GIT_URL + "/%s/repositories";
 
     private static final String LOAD_VERSION = "loadVersion";
     private static final String PAGE_NUM = "pageNum";
@@ -119,6 +124,8 @@ public class PipelineControllerTest extends AbstractControllerTest {
     private static final String NAME = "name";
     private static final String BYTE_LIMIT = "byteLimit";
     private static final String FILE_SIZE = "0 Kb";
+    private static final String TYPE = "type";
+    private static final String NAMESPACE_ID = "test-namespace";
 
     private final Pipeline pipeline = PipelineCreatorUtils.getPipeline();
     private final PipelineVO pipelineVO = PipelineCreatorUtils.getPipelineVO();
@@ -151,6 +158,10 @@ public class PipelineControllerTest extends AbstractControllerTest {
     private final List<UploadFileMetadata> fileMetadataList = Collections.singletonList(fileMetadata);
     private final List<DocumentGenerationProperty> generationProperties =
             Collections.singletonList(documentGenerationProperty);
+    private final GitNamespace gitNamespace = GitCreatorUtils.getGitNamespace();
+    private final List<GitNamespace> gitNamespaceList = Collections.singletonList(gitNamespace);
+    private final GitRepositoryDTO gitRepositoryDTO = GitCreatorUtils.getGitRepositoryDTO();
+    private final List<GitRepositoryDTO> gitRepositoryDTOList = Collections.singletonList(gitRepositoryDTO);
 
     @Autowired
     private PipelineApiService mockPipelineApiService;
@@ -803,18 +814,54 @@ public class PipelineControllerTest extends AbstractControllerTest {
     @WithMockUser
     public void shouldCopyPipeline() {
         doReturn(pipeline).when(mockPipelineApiService).copyPipeline(ID, ID, TEST_STRING);
-
+    
         final MvcResult mvcResult = performRequest(post(String.format(PIPELINE_ID_COPY_URL, ID))
                 .params(multiValueMapOf(PARENT_ID, ID,
                                         NAME, TEST_STRING)));
-
+    
         verify(mockPipelineApiService).copyPipeline(ID, ID, TEST_STRING);
         assertResponse(mvcResult, pipeline, PipelineCreatorUtils.PIPELINE_INSTANCE_TYPE);
     }
-
+    
     @Test
     public void shouldFailCopyPipelineForUnauthorizedUser() {
         performUnauthorizedRequest(post(String.format(PIPELINE_ID_COPY_URL, ID)));
+    }
+    
+    @Test
+    public void shouldFailGetAllowedNamespacesForUnauthorizedUser() {
+        performUnauthorizedRequest(get(PIPELINE_GIT_NAMESPACES_URL));
+    }
+    
+    @Test
+    @WithMockUser
+    public void shouldGetAllowedNamespaces() {
+        doReturn(gitNamespaceList).when(mockPipelineApiService).getAllowedNamespaces(RepositoryType.GITHUB);
+    
+        final MvcResult mvcResult = performRequest(get(PIPELINE_GIT_NAMESPACES_URL)
+                .params(multiValueMapOf(TYPE, RepositoryType.GITHUB)));
+    
+        verify(mockPipelineApiService).getAllowedNamespaces(RepositoryType.GITHUB);
+        assertResponse(mvcResult, gitNamespaceList, GitCreatorUtils.GIT_NAMESPACE_LIST_TYPE);
+    }
+    
+    @Test
+    public void shouldFailGetNamespaceRepositoriesForUnauthorizedUser() {
+        performUnauthorizedRequest(get(String.format(PIPELINE_GIT_NAMESPACE_REPOSITORIES_URL, NAMESPACE_ID)));
+    }
+    
+    @Test
+    @WithMockUser
+    public void shouldGetNamespaceRepositories() {
+        doReturn(gitRepositoryDTOList).when(mockPipelineApiService)
+                .getNamespaceRepositories(NAMESPACE_ID, RepositoryType.GITHUB);
+    
+        final MvcResult mvcResult = performRequest(
+                get(String.format(PIPELINE_GIT_NAMESPACE_REPOSITORIES_URL, NAMESPACE_ID))
+                        .params(multiValueMapOf(TYPE, RepositoryType.GITHUB)));
+    
+        verify(mockPipelineApiService).getNamespaceRepositories(NAMESPACE_ID, RepositoryType.GITHUB);
+        assertResponse(mvcResult, gitRepositoryDTOList, GitCreatorUtils.GIT_REPOSITORY_DTO_LIST_TYPE);
     }
 
     private void assertResponseAsBytes(final MvcResult mvcResult, final byte[] bytes) throws Exception {

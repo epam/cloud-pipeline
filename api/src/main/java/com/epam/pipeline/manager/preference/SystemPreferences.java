@@ -381,6 +381,21 @@ public class SystemPreferences {
 
     public static final StringPreference GITHUB_USER_NAME = new StringPreference(
             "github.user.name", "x-token-auth", GIT_GROUP, pass);
+    /**
+     * GitHub App numeric identifier ({@code iss} claim for app JWT).
+     */
+    public static final StringPreference GITHUB_APP_ID = new StringPreference(
+            "github.app.id", null, GIT_GROUP, pass);
+    public static final StringPreference GITHUB_API_ROOT_URL = new StringPreference(
+            "github.api.root.url", "https://api.github.com", GIT_GROUP, pass);
+    /** A list acts as a whitelist: access is allowed if any entry equals the installation id
+     * or the installation account login (organization or username).
+     * If empty access over GitHub App is denied.
+     **/
+    public static final ObjectPreference<List<String>> GITHUB_ALLOWED_INSTALLATIONS = new ObjectPreference<>(
+            "github.allowed.installations", null, new TypeReference<List<String>>() {}, GIT_GROUP,
+            isNullOrValidJson(new TypeReference<List<String>>() {}), true);
+
 
     public static final EnumPreference<AuthType> BITBUCKET_CLOUD_AUTH_TYPE = new EnumPreference<>(
             "bitbucket.cloud.auth.type", AuthType.BASIC, GIT_GROUP, pass);
@@ -779,7 +794,7 @@ public class SystemPreferences {
      );
     public static final IntPreference LAUNCH_JWT_TOKEN_EXPIRATION_USER_LIMIT = new IntPreference(
             "launch.jwt.token.expiration.user.limit", 2592000, LAUNCH_GROUP,
-            isGreaterThan(0)
+            isGreaterThan(0), true
     );
     public static final ObjectPreference<EnvVarsSettings> LAUNCH_ENV_PROPERTIES = new ObjectPreference<>(
         "launch.env.properties", null, new TypeReference<EnvVarsSettings>() {}, LAUNCH_GROUP,

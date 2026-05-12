@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,19 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.epam.pipeline.entity.git.github;
 
-import Remote from '../basic/Remote';
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-// userId should be null or undefined to fetch current user tokens.
-// "/list?userId" - endpoint available only for admins.
-// "/list" - available for non-admins, return tokens for current user.
-export default class UserNamedTokens extends Remote {
-  constructor (userId) {
-    super();
-    let url = '/user/token/named/list';
-    if (userId !== null && userId !== undefined && userId !== '') {
-      url += `?userId=${userId}`;
-    }
-    this.url = url;
-  }
+@AllArgsConstructor
+@NoArgsConstructor
+@Data
+public class GitHubInstallationAccount {
+    private String login;
+    private String type;
 }

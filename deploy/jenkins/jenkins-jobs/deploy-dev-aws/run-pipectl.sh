@@ -52,6 +52,8 @@ sudo -E $DEPLOY_DIR/pipectl install \
     -env CP_NOTIFIER_AZ_TENANT_ID=$CP_NOTIFIER_AZ_TENANT_ID \
     -s cp-gitlab-reader \
     -s cp-api-srv \
+    -env CP_API_SRV_VERSION=0.25 \
+    -env CP_API_FLYWAY_OUT_OF_ORDER=true \
     -env CP_API_SRV_REPLICAS=2 \
     -env CP_API_SRV_EXTERNAL_PORT=${CP_AWS_API_SRV_EXTERNAL_PORT} \
     -env CP_API_SRV_INTERNAL_PORT=${CP_AWS_API_SRV_INTERNAL_PORT} \
@@ -67,6 +69,7 @@ sudo -E $DEPLOY_DIR/pipectl install \
     -env CP_CAP_NFS_MNT_OBSERVER_TARGET_BUCKET="${CP_AWS_CAP_NFS_MNT_OBSERVER_TARGET_BUCKET}" \
     -env CP_API_CACHE_TYPE="${CP_API_CACHE_TYPE:-REDIS}" \
     -env CP_EVENT_SOURCING_ENABLED="true" \
+    -env CP_GITHUB_APP_PRIVATE_KEY="/opt/api/etc/github/app.private-key.pem" \
     -s cp-docker-registry \
     -env CP_DOCKER_EXTERNAL_PORT=${CP_AWS_DOCKER_EXTERNAL_PORT} \
     -env CP_DOCKER_INTERNAL_PORT=${CP_AWS_DOCKER_INTERNAL_PORT} \
