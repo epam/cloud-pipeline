@@ -22,7 +22,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: cp-clair
-          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:${CP_CLAIR_DOCKER_NAME}-${CP_CLAIR_VERSION}
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:${CP_CLAIR_DOCKER_NAME}-${CP_CLAIR_DOCKER_VERSION}
           imagePullPolicy: "Always"
           ports:
             - containerPort: 8080
