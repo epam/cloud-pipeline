@@ -116,6 +116,19 @@ function install_dcv {
                       ./nice-dcv-web-viewer*.deb \
                       ./nice-xdcv_*.deb
       _pkg_result=$?
+    elif [[  "$CP_VER" == *"24.04"* ]]; then
+      _NICE_DCV_DISTRIBUTION=nice-dcv-2024.0-19030-ubuntu2404-x86_64
+      wget "$_dcv_distro_url/NICE-GPG-KEY"
+      gpg --import NICE-GPG-KEY
+      wget "$_dcv_distro_url/$_NICE_DCV_DISTRIBUTION.tgz" && \
+      tar -xvzf $_NICE_DCV_DISTRIBUTION.tgz && cd $_NICE_DCV_DISTRIBUTION && \
+      apt install -y ./nice-dcv-server*.deb \
+                      ./nice-dcv-web-viewer*.deb \
+                      ./nice-xdcv_*.deb
+      _pkg_result=$?
+    else
+      pipe_log_fail "[ERROR] Unsupported Ubuntu version: $CP_VER" "$DCV_INSTALL_TASK"
+      return 1
     fi
   fi
 
@@ -125,7 +138,9 @@ function install_dcv {
   fi
 
   cd ..
-  rm -rf "${_NICE_DCV_DISTRIBUTION}"*
+  if [ "${_NICE_DCV_DISTRIBUTION}" ]; then
+    rm -rf "${_NICE_DCV_DISTRIBUTION}"*
+  fi
   pipe_log_info "DCV successfully installed and configured" "$DCV_INSTALL_TASK"
 }
 
