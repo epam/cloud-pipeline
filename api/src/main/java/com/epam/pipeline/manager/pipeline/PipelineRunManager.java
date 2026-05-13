@@ -1740,7 +1740,7 @@ public class PipelineRunManager {
     }
 
     public List<PipelineRunParameter> replaceParametersWithEnvVars(List<PipelineRunParameter> params,
-                                                                   Map<String, String> envVars) {
+                                                            Map<String, String> envVars) {
         if (CollectionUtils.isEmpty(params) || MapUtils.isEmpty(envVars)) {
             return params;
         }
@@ -1948,8 +1948,8 @@ public class PipelineRunManager {
 
     private void checkRunLaunchLimits(final PipelineStart runVO) {
         final int totalStaticNodesCount = Optional.of(runVO)
-                .map(PipelineStart::getNodeCount)
-                .orElse(0) + 1;
+                                              .map(PipelineStart::getNodeCount)
+                                              .orElse(0) + 1;
         runLimitsService.checkRunLaunchLimits(totalStaticNodesCount);
     }
 
