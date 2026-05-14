@@ -192,6 +192,10 @@ public final class MessageConstants {
     public static final String ERROR_RUN_AS_TOOLS_NOT_ALLOWED = "error.run.as.tools.not.allowed";
     public static final String ERROR_RUN_AS_TOOL_NOT_ALLOWED = "error.run.as.tool.not.allowed";
     public static final String ERROR_RUN_ALLOWED_SID_NAME_NOT_FOUND = "error.run.allowed.sid.name.not.found";
+    public static final String ERROR_RUN_SIDS_NOT_ALLOWED_FOR_CONFIGURATION =
+            "error.run.sids.not.allowed.for.configuration";
+    public static final String ERROR_RUN_SIDS_UPDATE_NOT_ALLOWED_FOR_CONFIGURATION =
+            "error.run.sids.update.not.allowed.for.configuration";
     public static final String ERROR_IMAGE_NOT_FOUND_FOR_VERSIONED_STORAGE =
             "error.image.not.found.for.versioned.storage";
     public static final String ERROR_ARCHIVE_RUN_METADATA_NOT_FOUND = "error.archive.run.metadata.not.found";
