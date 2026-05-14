@@ -113,8 +113,8 @@ function run_preflight {
         print_err "Installation shall be run as a root user"
         return 1
     fi
-    if ! grep -q centos /etc/os-release; then
-        print_err "Unsupported Linux distribution. Centos 7 and above shall be used"
+    if ! grep -q centos /etc/os-release && ! grep -q amzn /etc/os-release; then
+        print_err "Unsupported Linux distribution. Centos 7 and above or Amazon Linux 2/2023 and above shall be used"
         return 1
     fi
     fix_http_proxies
@@ -644,7 +644,7 @@ function init_service_versions {
     export CP_API_SRV_VERSION="${CP_API_SRV_VERSION:-$CP_VERSION}"
     export CP_BILLING_SRV_VERSION="${CP_BILLING_SRV_VERSION:-$CP_VERSION}"
     export CP_BKP_WORKER_VERSION="${CP_BKP_WORKER_VERSION:-$CP_VERSION}"
-    export CP_CLAIR_VERSION="${CP_CLAIR_VERSION:-$CP_VERSION}"
+    export CP_CLAIR_DOCKER_VERSION="${CP_CLAIR_DOCKER_VERSION:-$CP_VERSION}"
     export CP_DAV_VERSION="${CP_DAV_VERSION:-$CP_VERSION}"
     export CP_DEPLOYMENT_AUTOSCALER_VERSION="${CP_DEPLOYMENT_AUTOSCALER_VERSION:-$CP_VERSION}"
     export CP_DOCKER_COMP_VERSION="${CP_DOCKER_COMP_VERSION:-$CP_VERSION}"

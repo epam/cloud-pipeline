@@ -1220,13 +1220,13 @@ fi
 if is_service_requested cp-clair; then
     print_ok "[Starting Clair deployment]"
 
-    if [ ! -n "${CP_CLAIR_VERSION}" ]; then CP_CLAIR_VERSION="v4"; fi
-    if [ "${CP_CLAIR_VERSION}" == "v4" ] || [ "${CP_CLAIR_VERSION}" == "V4" ];
-    then
+    if [ ! -n "${CP_CLAIR_VERSION}" ]; then 
+        CP_CLAIR_VERSION="v4";
+    fi
+    if [ "${CP_CLAIR_VERSION}" == "v4" ] || [ "${CP_CLAIR_VERSION}" == "V4" ]; then
         CP_CLAIR_DOCKER_NAME="clair-v4"
         CP_CLAIR_HEALTH_ENDPOINT="/healthz"
-    elif [ "${CP_CLAIR_VERSION}" == "v2" ] || [ "${CP_CLAIR_VERSION}" == "V2" ];
-    then
+    elif [ "${CP_CLAIR_VERSION}" == "v2" ] || [ "${CP_CLAIR_VERSION}" == "V2" ]; then
     	  CP_CLAIR_DOCKER_NAME="clair"
     	  CP_CLAIR_HEALTH_ENDPOINT="/health"
     else
