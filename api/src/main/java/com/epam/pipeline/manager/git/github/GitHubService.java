@@ -26,8 +26,8 @@ import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.git.GitNamespace;
 import com.epam.pipeline.entity.git.GitProject;
-import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitRepositoryUrl;
+import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.github.GitHubCommitNode;
 import com.epam.pipeline.entity.git.github.GitHubContent;
@@ -56,7 +56,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.util.TextUtils;
-import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import retrofit2.Response;
 
@@ -72,7 +71,6 @@ import java.util.stream.Stream;
 
 import static com.epam.pipeline.manager.git.PipelineRepositoryService.NOT_SUPPORTED_PATTERN;
 
-@Service
 @Slf4j
 @RequiredArgsConstructor
 public class GitHubService implements GitClientService {
@@ -83,14 +81,15 @@ public class GitHubService implements GitClientService {
     private static final String COMMIT = "commit";
     private static final String REFS_TAGS_PREFIX = "refs/tags/%s";
 
+    private final RepositoryType repositoryType;
+    private final GitHubAuthInnerService innerService;
     private final GitHubMapper mapper;
     private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
-    private final GitHubAppService gitHubAppService;
 
     @Override
     public RepositoryType getType() {
-        return RepositoryType.GITHUB;
+        return repositoryType;
     }
 
     @Override
@@ -203,9 +202,7 @@ public class GitHubService implements GitClientService {
     public GitCredentials getCloneCredentials(final Pipeline pipeline, final boolean useEnvVars,
                                               final boolean issueToken, final Long duration) {
         final GitRepositoryUrl repositoryUrl = GitRepositoryUrl.from(pipeline.getRepository());
-        final String token = StringUtils.isBlank(pipeline.getRepositoryToken())
-                ? getGithubAppToken(pipeline.getRepository())
-                : pipeline.getRepositoryToken();
+        final String token = innerService.resolveCloneToken(pipeline);
         final String username = preferenceManager.getPreference(SystemPreferences.GITHUB_USER_NAME);
         final String host = repositoryUrl.getHost();
         return GitCredentials.builder()
@@ -260,7 +257,7 @@ public class GitHubService implements GitClientService {
     @Override
     public GitCommitEntry updateFile(final Pipeline pipeline, final String path, final String content,
                                      final String message, final boolean fileExists) {
-        final GitHubClient client = getClient(pipeline.getRepository(), pipeline.getRepositoryToken());
+        final GitHubClient client = getClient(pipeline);
         final GitHubSource gitHubSource = fileExists ?
                 client.updateFile(path, content, message, pipeline.getBranch()) :
                 client.createFile(path, content, message, pipeline.getBranch());
@@ -275,7 +272,7 @@ public class GitHubService implements GitClientService {
 
     @Override
     public GitCommitEntry deleteFile(final Pipeline pipeline, final String filePath, final String commitMessage) {
-        final GitHubSource gitHubSource = getClient(pipeline.getRepository(), pipeline.getRepositoryToken())
+        final GitHubSource gitHubSource = getClient(pipeline)
                 .deleteFile(filePath, commitMessage, pipeline.getBranch());
         return mapper.gitHubSourceToCommitEntry(gitHubSource);
     }
@@ -333,14 +330,14 @@ public class GitHubService implements GitClientService {
 
     @Override
     public List<GitNamespace> getAllowedNamespaces() {
-        return gitHubAppService.findAllowedInstallations().stream()
+        return ListUtils.emptyIfNull(innerService.getAllowedNamespaces()).stream()
                 .map(mapper::installationToNamespace)
                 .collect(Collectors.toList());
     }
 
     @Override
     public List<GitRepositoryDTO> getNamespaceRepositories(final String installationId) {
-        return gitHubAppService.findRepositoriesByInstallation(installationId).stream()
+        return ListUtils.emptyIfNull(innerService.getNamespaceRepositories(installationId)).stream()
                 .map(mapper::toGitRepositoryDTO)
                 .collect(Collectors.toList());
     }
@@ -360,18 +357,13 @@ public class GitHubService implements GitClientService {
         return getClient(pipeline.getRepository(), pipeline.getRepositoryToken());
     }
 
-    private GitHubClient getClient(final String repositoryPath, final String token) {
-        return StringUtils.isBlank(token) ? buildGithubAppClient(repositoryPath) : buildClient(repositoryPath, token);
-    }
-
-    private GitHubClient buildGithubAppClient(final String repositoryPath) {
-        log.debug("Token was not provided. Building Github App installation token for repository {}.", repositoryPath);
-        final String accessToken = getGithubAppToken(repositoryPath);
-        return buildClient(repositoryPath, accessToken);
+    private GitHubClient getClient(final String repositoryPath, final String explicitToken) {
+        final String token = innerService.resolveToken(repositoryPath, explicitToken);
+        return buildClient(repositoryPath, token);
     }
 
     private GitHubClient buildClient(final String repositoryPath, final String token) {
-        log.debug("Token has been provided. Building plain client for repository {}.", repositoryPath);
+        log.debug("Building GitHub REST client for repository {} (type {}).", repositoryPath, repositoryType);
         final GitRepositoryUrl repositoryUrl = GitRepositoryUrl.from(repositoryPath);
         final String projectName = repositoryUrl.getNamespace().orElseThrow(() -> buildUrlParseError(PROJECT_NAME));
         final String repositoryName = repositoryUrl.getProject().orElseThrow(() -> buildUrlParseError(REPOSITORY_NAME));
@@ -421,12 +413,5 @@ public class GitHubService implements GitClientService {
 
     private boolean fileExists(final GitHubClient client, final String ref, final String path) {
         return client.fileExists(ref, path);
-    }
-
-    private String getGithubAppToken(final String repositoryPath) {
-        final GitRepositoryUrl repositoryUrl = GitRepositoryUrl.from(repositoryPath);
-        final String projectName = repositoryUrl.getNamespace().orElseThrow(() -> buildUrlParseError(PROJECT_NAME));
-        final String repositoryName = repositoryUrl.getProject().orElseThrow(() -> buildUrlParseError(REPOSITORY_NAME));
-        return gitHubAppService.getGithubAppToken(projectName, repositoryName);
     }
 }
