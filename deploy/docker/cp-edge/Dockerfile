@@ -12,10 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM library/centos:7
+FROM rockylinux:8
 
 RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
-    sed -i 's/^# baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
     sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo && \
     sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo && \
     sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo
@@ -26,7 +25,8 @@ ENV PATH $PATH:/usr/local/openresty/bin:/usr/local/openresty/nginx/sbin:/etc/ssh
 ENV JWT_PUB_KEY /etc/nginx/jwt-public-key.pem
 
 # Install common
-RUN yum install -y python \
+RUN yum install -y python2 \
+                   python3 \
                    unzip \
                    git \
                    curl \
@@ -35,8 +35,20 @@ RUN yum install -y python \
                    zlib-devel \
                    cronie \
                    sshpass \
-                   perl && \
+                   perl \
+                   nc \
+                   gcc \
+                   make \
+                   bzip2 \
+                   bzip2-devel \
+                   xz \
+                   xz-devel \
+                   ncurses-devel \
+                   procps \
+                   patch && \
     yum group install -y "Development Tools" && \
+    yum clean all && \
+    ln -sf /usr/bin/python2 /usr/bin/python && \
     curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python - && \
     pip install rsa==4.0 \
                 pykube==0.15.0
