@@ -309,13 +309,7 @@ public class PipelineRunManager {
         checkRunLaunchLimits(runVO);
         final Tool tool = toolManager.loadByNameOrId(runVO.getDockerImage());
         final PipelineConfiguration configuration = configurationManager.getPipelineConfiguration(runVO, tool);
-        if (hasNotSharedUsersOrRoles(configuration)) {
-            runVO.setRunSids(configuration.mergeRunSids(runVO.getRunSids()));
-        } else {
-            Assert.state(CollectionUtils.isEmpty(runVO.getRunSids()),
-                    messageHelper.getMessage(MessageConstants.ERROR_RUN_SIDS_NOT_ALLOWED_FOR_CONFIGURATION));
-            runVO.setRunSids(configuration.mergeRunSids(new ArrayList<>()));
-        }
+        runVO.setRunSids(mergeRunSidsWithParent(configuration, runVO.getRunSids()));
         final boolean clusterRun = configurationManager.initClusterConfiguration(configuration, true);
 
         final PipelineRun run = launchPipeline(configuration, null, null,
@@ -363,13 +357,7 @@ public class PipelineRunManager {
         run.setTimeout(runVO.getTimeout());
         run.setCommitStatus(CommitStatus.NOT_COMMITTED);
         run.setLastChangeCommitTime(DateUtils.now());
-        if (hasNotSharedUsersOrRoles(configuration)) {
-            run.setRunSids(runVO.getRunSids());
-        } else {
-            Assert.state(CollectionUtils.isEmpty(runVO.getRunSids()),
-                    messageHelper.getMessage(MessageConstants.ERROR_RUN_SIDS_NOT_ALLOWED_FOR_CONFIGURATION));
-            run.setRunSids(configuration.mergeRunSids(new ArrayList<>()));
-        }
+        run.setRunSids(mergeRunSidsWithParent(configuration, runVO.getRunSids()));
         run.setOwner(parentRun.getOwner());
         final String launchedCommand = pipelineLauncher.launch(
                 run, configuration, endpoints, false, parentRun.getPodId(), null
@@ -2113,6 +2101,16 @@ public class PipelineRunManager {
         validateToolSharing(run.getDockerImage());
     }
 
+    private List<RunSid> mergeRunSidsWithParent(final PipelineConfiguration configuration,
+                                                final List<RunSid> externalRunSids) {
+        if (hasNotSharedUsersOrRoles(configuration)) {
+            return externalRunSids;
+        }
+        Assert.state(CollectionUtils.isEmpty(externalRunSids),
+                messageHelper.getMessage(MessageConstants.ERROR_RUN_SIDS_NOT_ALLOWED_FOR_CONFIGURATION));
+        return configuration.mergeRunSids(new ArrayList<>());
+    }
+
     /**
      * Merges RunSids from pipeline configuration and parent tool configuration.
      * Logic:
@@ -2126,18 +2124,20 @@ public class PipelineRunManager {
      */
     List<RunSid> mergeRunSidsWithParents(final PipelineConfiguration configuration,
                                          final List<RunSid> externalRunSids) {
+        final List<RunSid> pipelineSids = mergeRunSidsWithParent(configuration, externalRunSids);
+
         final Tool tool = getToolForRun(configuration);
         final PipelineConfiguration toolConfiguration = configurationManager
                 .getConfigurationForTool(tool, configuration);
 
-        if (hasNotSharedUsersOrRoles(configuration) && hasNotSharedUsersOrRoles(toolConfiguration)) {
-            return configuration.mergeRunSids(externalRunSids);
+        final List<RunSid> toolSids = mergeRunSidsWithParent(toolConfiguration, externalRunSids);
+
+        if (CollectionUtils.isNotEmpty(externalRunSids)) {
+            // if "shared with" were specified for one of the parent configuration, an error would occur
+            return externalRunSids;
         }
 
-        Assert.state(CollectionUtils.isEmpty(externalRunSids),
-                messageHelper.getMessage(MessageConstants.ERROR_RUN_SIDS_NOT_ALLOWED_FOR_CONFIGURATION));
-
-        return new ArrayList<>(configuration.mergeRunSids(toolConfiguration.mergeRunSids(new ArrayList<>())).stream()
+        return new ArrayList<>(Stream.concat(pipelineSids.stream(), toolSids.stream())
                 .collect(Collectors.toMap(
                     runSid -> Pair.of(runSid.getName(), runSid.getIsPrincipal()),
                     Function.identity(),
