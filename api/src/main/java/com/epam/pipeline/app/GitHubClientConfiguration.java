@@ -27,11 +27,14 @@ import com.epam.pipeline.mapper.git.GitHubMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * This configuration implemented to distinguish GITHUB and GITHUB_APP repository types.
+ */
 @Configuration
 public class GitHubClientConfiguration {
 
     @Bean
-    public GitClientService gitHubGitClientService(
+    public GitClientService gitHubClientService(
             final GitHubTokenAuthService gitHubTokenAuthService,
             final GitHubMapper mapper,
             final MessageHelper messageHelper,
@@ -45,7 +48,7 @@ public class GitHubClientConfiguration {
     }
 
     @Bean
-    public GitClientService gitHubAppGitClientService(
+    public GitClientService gitHubAppClientService(
             final GitHubAppAuthService gitHubAppAuthService,
             final GitHubMapper mapper,
             final MessageHelper messageHelper,
