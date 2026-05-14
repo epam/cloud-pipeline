@@ -34,11 +34,12 @@ import {
   getEnabledCapabilities
 } from './run-capabilities';
 import {notificationArraysAreEqual} from '../../dialogs/job-notifications/notifications-equal';
-import {parametersModified} from './parameter-utilities';
 import {
-  readReservationParameters,
-  reservationParametersDiffer
-} from '../components/reservation-parameters/utilities';
+  fsConfigsAreEqual,
+  getFsConfigFromParameters
+} from './configure-fs/utilities';
+import {parametersModified} from "./parameter-utilities";
+import {readReservationParameters, reservationParametersDiffer} from "../components/reservation-parameters/utilities";
 import * as prettyUrlGenerator from './pretty-url';
 
 function formItemInitialized (form, formName) {
@@ -138,6 +139,7 @@ function pipelineCheck (props, state) {
     fireCloudOutputsLength: Object.keys(state.fireCloudOutputs).length
   };
   return (
+    state.pipelineChanged ||
     initial.pipeline !== current.pipeline ||
     initial.version !== current.version ||
     initial.pipelineConfiguration !== current.pipelineConfiguration ||
@@ -253,11 +255,14 @@ export default function (props, state, options) {
     initialParameters = {}
   } = options;
   const {parameters: configParams = {}} = parameters || {};
+  const initialFsConfig = getFsConfigFromParameters(configParams);
   const initialReservationRequestParameters = readReservationParameters(configParams);
   const reservationRequestParametersModified = reservationParametersDiffer(
     initialReservationRequestParameters,
     state.reservationParameters
   );
+  const {fsConfig} = state;
+  const fsConfigModified = !fsConfigsAreEqual(fsConfig, initialFsConfig);
   // configuration name check
   return modified(form, props, 'configuration.name', 'currentConfigurationName') ||
     // pipeline check
@@ -272,6 +277,8 @@ export default function (props, state, options) {
     modified(form, parameters, `${EXEC_ENVIRONMENT}.disk`, 'instance_disk') ||
     // cluster state check
     clusterModified(parameters, state) ||
+    // cluster file system check
+    fsConfigModified ||
     // cloud region check
     modified(
       form,
