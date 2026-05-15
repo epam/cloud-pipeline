@@ -414,6 +414,34 @@ public class PipelineRunManagerUnitTest {
     }
 
     @Test
+    public void shouldUpdateRunSidsIfNoConfigurationForTool() {
+        final PipelineRun run = toolRun();
+
+        final Tool tool = getTool(ID, OWNER);
+        tool.setImage(DOCKER_IMAGE);
+
+        final RunSid userSid = userRunSid(USER1);
+        final RunSid roleSid = groupRunSid(GROUP1);
+        final List<RunSid> newSids = Arrays.asList(userSid, roleSid);
+
+        when(pipelineRunDao.loadPipelineRun(eq(RUN_ID))).thenReturn(run);
+        when(toolManager.loadByNameOrId(eq(DOCKER_IMAGE))).thenReturn(tool);
+        when(pipelineConfigurationManager.getConfigurationForToolVersion(eq(ID), eq(DOCKER_IMAGE), eq(null)))
+                .thenReturn(null);
+        doNothing().when(pipelineRunDao).deleteRunSids(eq(RUN_ID));
+        doNothing().when(pipelineRunDao).createRunSids(eq(RUN_ID), eq(newSids));
+        doNothing().when(auditClient).log(anyString());
+
+        final PipelineRun result = pipelineRunManager.updateRunSids(RUN_ID, newSids);
+
+        assertNotNull(result);
+        assertEquals(RUN_ID, result.getId());
+        assertEquals(newSids, result.getRunSids());
+        verify(pipelineRunDao).deleteRunSids(eq(RUN_ID));
+        verify(pipelineRunDao).createRunSids(eq(RUN_ID), eq(newSids));
+    }
+
+    @Test
     public void shouldUpdateRunSidsForPipeline() {
         final PipelineRun run = toolRun();
         run.setPipelineId(ID);
