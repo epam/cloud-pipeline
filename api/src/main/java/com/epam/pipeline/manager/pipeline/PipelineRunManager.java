@@ -32,6 +32,7 @@ import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.cluster.PriceType;
+import com.epam.pipeline.entity.configuration.ConfigurationEntry;
 import com.epam.pipeline.entity.configuration.ExecutionEnvironment;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
@@ -59,6 +60,7 @@ import com.epam.pipeline.entity.pipeline.run.RunChartInfo;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
+import com.epam.pipeline.entity.pipeline.run.parameter.RunAccessType;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.run.PipelineRunPerformanceMetrics;
@@ -265,8 +267,7 @@ public class PipelineRunManager {
         checkRunLaunchLimits(runVO);
         final Tool tool = toolManager.loadByNameOrId(runVO.getDockerImage());
         final PipelineConfiguration configuration = configurationManager.getPipelineConfiguration(runVO, tool);
-        runVO.setRunSids(mergeRunSids(runVO.getRunSids(), configuration.getSharedWithUsers(),
-                configuration.getSharedWithRoles()));
+        runVO.setRunSids(mergeRunSidsWithParent(configuration, runVO.getRunSids()));
         final boolean clusterRun = configurationManager.initClusterConfiguration(configuration, true);
 
         final PipelineRun run = launchPipeline(configuration, null, null,
@@ -314,7 +315,7 @@ public class PipelineRunManager {
         run.setTimeout(runVO.getTimeout());
         run.setCommitStatus(CommitStatus.NOT_COMMITTED);
         run.setLastChangeCommitTime(DateUtils.now());
-        run.setRunSids(runVO.getRunSids());
+        run.setRunSids(mergeRunSidsWithParent(configuration, runVO.getRunSids()));
         run.setOwner(parentRun.getOwner());
         final String launchedCommand = pipelineLauncher.launch(
                 run, configuration, endpoints, false, parentRun.getPodId(), null
@@ -341,9 +342,9 @@ public class PipelineRunManager {
                 MessageConstants.ERROR_EXCEED_MAX_RUNS_COUNT, maxRunsNumber, getNodeCount(runVO.getNodeCount(), 1)));
         checkRunLaunchLimits(runVO);
         final Pipeline pipeline = pipelineManager.load(pipelineId);
-        final PipelineConfiguration configuration = configurationManager.getPipelineConfiguration(runVO);
-        runVO.setRunSids(mergeRunSids(runVO.getRunSids(), configuration.getSharedWithUsers(),
-                configuration.getSharedWithRoles()));
+        final PipelineConfiguration configuration = configurationManager
+                .getPipelineConfigurationForPipeline(pipeline, runVO);
+        runVO.setRunSids(mergeRunSidsWithParents(configuration, runVO.getRunSids()));
         final boolean isClusterRun = configurationManager.initClusterConfiguration(configuration, true);
 
         permissionManager.checkToolRunPermission(configuration.getDockerImage());
@@ -1044,6 +1045,11 @@ public class PipelineRunManager {
         PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(runId);
         Assert.notNull(pipelineRun,
                 messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_NOT_FOUND, runId));
+
+        // Validate that parent entities don't have shared users/roles
+        // If so, update shall be forbidden for this run
+        validateParentEntitiesSharing(pipelineRun);
+
         pipelineRunDao.deleteRunSids(runId);
         pipelineRunDao.createRunSids(runId, runSids);
         ListUtils.emptyIfNull(runSids).forEach(entry -> auditClient.log(String.format(
@@ -1871,5 +1877,103 @@ public class PipelineRunManager {
         }
         final FolderWithMetadata project = folderApiService.getProject(pipeline.getId(), AclClass.PIPELINE);
         return project != null ? project.getId() : null;
+    }
+
+    private void validateParentEntitiesSharing(final PipelineRun run) {
+        if (Objects.nonNull(run.getPipelineId())) {
+            validatePipelineSharing(run.getPipelineId(), run.getVersion(), run.getDockerImage(), run.getConfigName());
+            return;
+        }
+        validateToolSharing(run.getDockerImage());
+    }
+
+    private List<RunSid> mergeRunSidsWithParent(final PipelineConfiguration configuration,
+                                                final List<RunSid> externalRunSids) {
+        if (hasNotSharedUsersOrRoles(configuration)) {
+            return new ArrayList<>(ListUtils.emptyIfNull(externalRunSids));
+        }
+        Assert.state(CollectionUtils.isEmpty(externalRunSids),
+                messageHelper.getMessage(MessageConstants.ERROR_RUN_SIDS_NOT_ALLOWED_FOR_CONFIGURATION));
+        return mergeRunSids(new ArrayList<>(), configuration.getSharedWithUsers(), configuration.getSharedWithRoles());
+    }
+
+    /**
+     * Merges RunSids from pipeline configuration and parent tool configuration.
+     * Logic:
+     * - If tool or pipeline contains shared roles/users, raise an error when runSids provided to run VO
+     * - If no tool or pipeline contains shared roles/users, apply runSids from run VO if present
+     * - If user is present in both configurations with different access types, use SSH
+     *
+     * @param configuration       Current pipeline configuration
+     * @param externalRunSids     RunSids from the launch request
+     * @return Merged list of RunSids
+     */
+    List<RunSid> mergeRunSidsWithParents(final PipelineConfiguration configuration,
+                                         final List<RunSid> externalRunSids) {
+        final List<RunSid> pipelineSids = mergeRunSidsWithParent(configuration, externalRunSids);
+
+        final Tool tool = getToolForRun(configuration);
+        final PipelineConfiguration toolConfiguration = configurationManager
+                .getConfigurationForTool(tool, configuration);
+
+        final List<RunSid> toolSids = mergeRunSidsWithParent(toolConfiguration, externalRunSids);
+
+        if (CollectionUtils.isNotEmpty(externalRunSids)) {
+            // if "shared with" were specified for one of the parent configuration, an error would occur
+            return externalRunSids;
+        }
+
+        return new ArrayList<>(Stream.concat(pipelineSids.stream(), toolSids.stream())
+                .collect(Collectors.toMap(
+                    runSid -> Pair.of(runSid.getName(), runSid.getIsPrincipal()),
+                    Function.identity(),
+                    this::mergeRunSid
+                )).values());
+    }
+
+    private boolean hasNotSharedUsersOrRoles(final PipelineConfiguration configuration) {
+        return Objects.isNull(configuration) ||
+                (CollectionUtils.isEmpty(configuration.getSharedWithUsers()) &&
+                        CollectionUtils.isEmpty(configuration.getSharedWithRoles()));
+    }
+
+    private RunSid mergeRunSid(final RunSid existing, final RunSid replacement) {
+        return Objects.equals(RunAccessType.SSH, existing.getAccessType()) ? existing : replacement;
+    }
+
+    private void validatePipelineSharing(final Long pipelineId, final String version, final String dockerImage,
+                                         final String configName) {
+        final PipelineConfiguration pipelineConfig = versionManager
+                .loadParametersFromScript(pipelineId, version, configName);
+        validateEntitySharing(pipelineConfig);
+
+        // For pipeline, also check the tool
+        validateToolSharing(dockerImage);
+    }
+
+    private void validateToolSharing(final String dockerImage) {
+        if (StringUtils.isBlank(dockerImage)) {
+            return;
+        }
+        final Tool tool = toolManager.loadByNameOrId(dockerImage);
+        // tool version setting has single default configuration
+        final ConfigurationEntry toolConfiguration = configurationManager
+                .getConfigurationForToolVersion(tool.getId(), dockerImage, null);
+        if (Objects.isNull(toolConfiguration)) {
+            return;
+        }
+        validateEntitySharing(toolConfiguration.getConfiguration());
+    }
+
+    private void validateEntitySharing(final PipelineConfiguration configuration) {
+        if (Objects.isNull(configuration)) {
+            return;
+        }
+
+        if (CollectionUtils.isNotEmpty(configuration.getSharedWithUsers()) ||
+                CollectionUtils.isNotEmpty(configuration.getSharedWithRoles())) {
+            throw new IllegalStateException(messageHelper.getMessage(
+                    MessageConstants.ERROR_RUN_SIDS_UPDATE_NOT_ALLOWED_FOR_CONFIGURATION));
+        }
     }
 }
