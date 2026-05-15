@@ -118,6 +118,14 @@ import {
 } from '../../pipelines/launch/form/components/reservation-parameters/utilities';
 import * as prettyUrlGenerator from '../../pipelines/launch/form/utilities/pretty-url';
 import roleModel from '../../../utils/roleModel';
+import ShareWithForm from '../../runs/logs/forms/ShareWithForm';
+import Roles from '../../../models/user/Roles';
+import UserName from '../../special/UserName';
+import {
+  configurationShareToSids,
+  sidsToConfigurationShare,
+  shareSidsEqual
+} from './utilities/share-with-configuration';
 
 const Panels = {
   endpoints: 'endpoints',
@@ -139,6 +147,7 @@ const regionNotConfiguredValue = 'not_configured';
   'onDemandToolInstanceTypes',
   'runDefaultParameters'
 )
+@inject(() => ({roles: new Roles()}))
 @roleModel.authenticationInfo
 @observer
 export default class EditToolForm extends React.Component {
@@ -210,7 +219,10 @@ export default class EditToolForm extends React.Component {
     rescheduleRun: undefined,
     runCapabilities: [],
     reservationParameters: undefined,
-    initialReservationParameters: undefined
+    initialReservationParameters: undefined,
+    shareSids: [],
+    initialShareSids: [],
+    shareDialogOpened: false
   };
 
   @observable defaultLimitMounts;
@@ -434,6 +446,14 @@ export default class EditToolForm extends React.Component {
           }
         );
         configuration.parameters = appliedReservationParameters;
+        const {
+          users: shareWithUsers,
+          roles: shareWithRoles
+        } = sidsToConfigurationShare(this.state.shareSids);
+        /* eslint-disable camelcase */
+        configuration.share_with_users = shareWithUsers;
+        configuration.share_with_roles = shareWithRoles;
+        /* eslint-enable camelcase */
         this.setState({pending: true}, async () => {
           if (this.props.onSubmit) {
             await this.props.onSubmit(
@@ -631,6 +651,9 @@ export default class EditToolForm extends React.Component {
         state.initialReservationParameters = readReservationParameters(
           props.configuration.parameters
         );
+        const shareSids = configurationShareToSids(props.configuration);
+        state.shareSids = shareSids;
+        state.initialShareSids = shareSids;
         if (props.configuration && props.configuration.parameters) {
           for (let key in props.configuration.parameters) {
             if (!props.configuration.parameters.hasOwnProperty(key) ||
@@ -683,6 +706,9 @@ export default class EditToolForm extends React.Component {
 
   componentDidMount () {
     this.reset();
+    if (this.props.roles) {
+      this.props.roles.fetchIfNeededOrWait();
+    }
     if (this.props.allowedInstanceTypes) {
       const isSpot = this.getPriceTypeInitialValue();
       const cloudRegionId = this.props.configuration && this.props.configuration.cloudRegionId
@@ -1037,7 +1063,8 @@ export default class EditToolForm extends React.Component {
         this.state.initialReservationParameters,
         this.state.reservationParameters
       ) ||
-      !notificationArraysAreEqual(this.state.notifications, this.state.initialNotifications);
+      !notificationArraysAreEqual(this.state.notifications, this.state.initialNotifications) ||
+      !shareSidsEqual(this.state.initialShareSids, this.state.shareSids);
   };
 
   initializeEndpointsControl = (control) => {
@@ -1319,6 +1346,112 @@ export default class EditToolForm extends React.Component {
     reservationParameters: value
   });
 
+  get endpointsAvailable () {
+    const endpoints = this.props.form.getFieldValue('endpoints') || [];
+    return (endpoints || []).length > 0;
+  }
+
+  openShareDialog = () => {
+    if (this.props.readOnly || !this.props.configuration) {
+      return;
+    }
+    this.setState({shareDialogOpened: true});
+  };
+
+  closeShareDialog = () => {
+    this.setState({shareDialogOpened: false});
+  };
+
+  saveShareSids = (sids = []) => {
+    this.setState({
+      shareSids: sids.slice(),
+      shareDialogOpened: false
+    });
+  };
+
+  splitRoleName = (name) => {
+    if (name && name.toLowerCase().indexOf('role_') === 0) {
+      return name.substring('role_'.length);
+    }
+    return name;
+  };
+
+  renderShareSidName = (sid) => {
+    if (sid.isPrincipal) {
+      return <UserName userName={sid.name} />;
+    }
+    const roles = this.props.roles?.loaded
+      ? (this.props.roles.value || [])
+      : [];
+    const [role] = roles.filter((r) => !r.predefined && r.name === sid.name);
+    if (role) {
+      return this.splitRoleName(sid.name);
+    }
+    return sid.name;
+  };
+
+  renderShareSummary = () => {
+    const {shareSids = []} = this.state;
+    if (!shareSids.length) {
+      return 'Not shared (click to configure)';
+    }
+    return shareSids.map((sid, index, array) => (
+      <span key={`${sid.name}-${sid.isPrincipal}`} style={{marginRight: 5}}>
+        {this.renderShareSidName(sid)}
+        {index < array.length - 1 ? ',' : undefined}
+      </span>
+    ));
+  };
+
+  renderShareWith = () => {
+    if (!this.props.configuration) {
+      return null;
+    }
+    const readOnly = this.state.pending || this.props.readOnly;
+    return (
+      <Row style={{marginBottom: 10, marginTop: 10}}>
+        <Col
+          xs={24}
+          sm={6}
+          style={{paddingRight: 10}}
+          className={classNames(
+            'cp-accent',
+            styles.toolSettingsTitle
+          )}
+        >
+          Share with:
+        </Col>
+        <Col xs={24} sm={12}>
+          <a
+            onClick={readOnly ? undefined : this.openShareDialog}
+            className={classNames('cp-text', {underline: !readOnly})}
+            style={{
+              cursor: readOnly ? 'default' : 'pointer',
+              pointerEvents: readOnly ? 'none' : undefined,
+              textDecoration: readOnly ? undefined : 'underline'
+            }}
+          >
+            {this.renderShareSummary()}
+          </a>
+          <ShareWithForm
+            endpointsAvailable={this.endpointsAvailable}
+            visible={this.state.shareDialogOpened}
+            roles={
+              this.props.roles?.loaded
+                ? (this.props.roles.value || []).map((r) => r)
+                : []
+            }
+            sids={(this.state.shareSids || []).map((s) => s)}
+            pending={readOnly}
+            onSave={this.saveShareSids}
+            onClose={this.closeShareDialog}
+            runSharing
+          />
+        </Col>
+      </Row>
+    );
+  };
+
   renderPrettyUrlFormItem = () => {
     const prettyUrlAvailable = this.isAdmin || this.isAdvancedUser;
     if (prettyUrlAvailable) {
@@ -1451,6 +1584,7 @@ export default class EditToolForm extends React.Component {
                 )}
               </Form.Item>
               {this.renderPrettyUrlFormItem()}
+              {this.renderShareWith()}
               <Form.Item
                 {...this.formItemLayout}
                 label="Disk (Gb)"
