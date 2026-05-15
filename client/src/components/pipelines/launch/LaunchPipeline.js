@@ -606,7 +606,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
           isSpot: payloadRequest.is_spot,
           regionId: payloadRequest.cloudRegionId,
           toolId: image,
-          requestAllRegionsForProviders: ['GCP']
+          requestAllRegionsForProviders: ['GCP', 'AWS']
         });
       } catch (error) {
         message.error(error.message, 5);
