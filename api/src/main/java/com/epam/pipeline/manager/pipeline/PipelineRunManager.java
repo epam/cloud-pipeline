@@ -1890,7 +1890,7 @@ public class PipelineRunManager {
     private List<RunSid> mergeRunSidsWithParent(final PipelineConfiguration configuration,
                                                 final List<RunSid> externalRunSids) {
         if (hasNotSharedUsersOrRoles(configuration)) {
-            return externalRunSids;
+            return new ArrayList<>(ListUtils.emptyIfNull(externalRunSids));
         }
         Assert.state(CollectionUtils.isEmpty(externalRunSids),
                 messageHelper.getMessage(MessageConstants.ERROR_RUN_SIDS_NOT_ALLOWED_FOR_CONFIGURATION));

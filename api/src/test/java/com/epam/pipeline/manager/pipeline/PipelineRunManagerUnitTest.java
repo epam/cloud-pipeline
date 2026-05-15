@@ -541,6 +541,24 @@ public class PipelineRunManagerUnitTest {
     }
 
     @Test
+    public void shouldReturnEmptyRunSidsWhenNoRunSidsProvided() {
+        final PipelineConfiguration pipelineConfig = new PipelineConfiguration();
+        pipelineConfig.setDockerImage(DOCKER_IMAGE);
+
+        final PipelineConfiguration toolConfig = new PipelineConfiguration();
+
+        final Tool tool = getTool(ID, OWNER);
+        tool.setImage(DOCKER_IMAGE);
+        when(toolManager.resolveSymlinks(eq(DOCKER_IMAGE))).thenReturn(tool);
+        when(pipelineConfigurationManager.getConfigurationForTool(eq(tool), any(PipelineConfiguration.class)))
+                .thenReturn(toolConfig);
+
+        final List<RunSid> result = pipelineRunManager.mergeRunSidsWithParents(pipelineConfig, null);
+
+        assertThat(result).hasSize(0);
+    }
+
+    @Test
     public void shouldUseSshAccessTypeWhenUserHasDifferentAccessTypes() {
         // Given: Pipeline with USER1 (ENDPOINT), Parent tool with USER1 (SSH)
         final PipelineConfiguration pipelineConfig = new PipelineConfiguration();
