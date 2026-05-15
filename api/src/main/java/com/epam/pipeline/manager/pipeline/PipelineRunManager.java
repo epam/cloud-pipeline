@@ -2173,6 +2173,9 @@ public class PipelineRunManager {
         // tool version setting has single default configuration
         final ConfigurationEntry toolConfiguration = configurationManager
                 .getConfigurationForToolVersion(tool.getId(), dockerImage, null);
+        if (Objects.isNull(toolConfiguration)) {
+            return;
+        }
         validateEntitySharing(toolConfiguration.getConfiguration());
     }
 
