@@ -16,11 +16,16 @@
 
 package com.epam.pipeline.manager.git.github;
 
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.entity.git.GitRepositoryUrl;
 import com.epam.pipeline.entity.git.github.GitHubAccessToken;
 import com.epam.pipeline.entity.git.github.GitHubInstallation;
 import com.epam.pipeline.entity.git.github.GitHubInstallationAccount;
 import com.epam.pipeline.entity.git.github.GitHubInstallationRepositories;
 import com.epam.pipeline.entity.git.github.GitHubRepository;
+import com.epam.pipeline.entity.pipeline.Pipeline;
+import com.epam.pipeline.entity.pipeline.RepositoryType;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.exception.git.UnexpectedResponseStatusException;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -75,18 +80,23 @@ import java.util.stream.Collectors;
  */
 @Service
 @Slf4j
-public class GitHubAppService {
+public class GitHubAppAuthService implements GitHubAuthInnerService {
     private static final int GITHUB_APP_JWT_MAX_TTL_SECONDS = 600;
     private static final String ACCEPT_HEADER = "Accept";
     private static final String ACCEPT_GITHUB_JSON = "application/vnd.github+json";
     private static final String X_GITHUB_API_VERSION = "2026-03-10";
     private static final String API_VERSION_HEADER = "X-GitHub-Api-Version";
+    private static final String REPOSITORY_NAME = "repository name";
+    private static final String PROJECT_NAME = "project name";
 
+    private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
     private final String privateKeyPem;
 
-    public GitHubAppService(final PreferenceManager preferenceManager,
-                            @Value("${github.app.private.key.pem:}") final String privateKeyPem) {
+    public GitHubAppAuthService(final MessageHelper messageHelper,
+                                final PreferenceManager preferenceManager,
+                                @Value("${github.app.private.key.pem:}") final String privateKeyPem) {
+        this.messageHelper = messageHelper;
         this.preferenceManager = preferenceManager;
         this.privateKeyPem = privateKeyPem;
     }
@@ -108,18 +118,19 @@ public class GitHubAppService {
      * with the permissions granted to the GitHub App installation.
      * </p>
      *
-     * @param projectName    the GitHub organization or username that owns the repository.
-     *                       Must not be null or empty.
-     * @param repositoryName the name of the repository within the project.
-     *                       Must not be null or empty.
+     * @param repositoryPath    the GitHub path to the repository. Must not be null or empty.
+     * @param explicitToken     ignored.
      * @return a GitHub installation access token that can be used for API authentication.
      * The token has a limited lifetime as determined by GitHub's API.
      */
-    public String getGithubAppToken(final String projectName, final String repositoryName) {
-        final String jwt = generateJWT();
-        final GitHubInstallation installation = findInstallationId(projectName, repositoryName, jwt);
-        assertInstallationAllowed(installation);
-        return generateAccessToken(jwt, installation.getId());
+    @Override
+    public String resolveToken(final String repositoryPath, @SuppressWarnings("unused") final String explicitToken) {
+        return installationTokenForRepository(repositoryPath);
+    }
+
+    @Override
+    public String resolveCloneToken(final Pipeline pipeline) {
+        return installationTokenForRepository(pipeline.getRepository());
     }
 
     /**
@@ -136,7 +147,8 @@ public class GitHubAppService {
      * @return a list of {@link GitHubInstallation} objects representing allowed installations.
      * Returns an empty list if no installations match the allowlist.
      */
-    public List<GitHubInstallation> findAllowedInstallations() {
+    @Override
+    public List<GitHubInstallation> getAllowedNamespaces() {
         final List<String> allowed = getAllowedInstallations();
 
         final String jwt = generateJWT();
@@ -163,7 +175,8 @@ public class GitHubAppService {
      * @return a list of {@link GitHubRepository} objects accessible through the installation.
      * Returns an empty list if the installation has no accessible repositories.
      */
-    public List<GitHubRepository> findRepositoriesByInstallation(final String installationId) {
+    @Override
+    public List<GitHubRepository> getNamespaceRepositories(final String installationId) {
         Assert.hasText(installationId, "Installation ID must not be null or empty.");
         Assert.state(NumberUtils.isDigits(installationId),
                 String.format("Installation ID must contain only digits, but got: %s", installationId));
@@ -181,10 +194,31 @@ public class GitHubAppService {
         final String accessToken = generateAccessToken(jwt, installationIdLong);
         final GitHubAppClient client = buildAppClient(accessToken);
 
-        return GitHubUtils.fetchAllPages(client::getInstallationRepositories,
-            responseBody -> Optional.ofNullable(responseBody)
-                    .map(GitHubInstallationRepositories::getRepositories)
-                    .orElse(Collections.emptyList()));
+        return GitHubUtils.fetchAllPages(client::getInstallationRepositories, responseBody ->
+                Optional.ofNullable(responseBody)
+                        .map(GitHubInstallationRepositories::getRepositories)
+                        .orElse(Collections.emptyList()));
+    }
+
+    private String installationTokenForRepository(final String repositoryPath) {
+        final GitRepositoryUrl repositoryUrl = GitRepositoryUrl.from(repositoryPath);
+        final String projectName = repositoryUrl.getNamespace()
+                .orElseThrow(() -> buildUrlParseError(PROJECT_NAME));
+        final String repoName = repositoryUrl.getProject()
+                .orElseThrow(() -> buildUrlParseError(REPOSITORY_NAME));
+        return getGithubAppToken(projectName, repoName);
+    }
+
+    private GitClientException buildUrlParseError(final String urlPart) {
+        return new GitClientException(messageHelper.getMessage(
+                MessageConstants.ERROR_REPOSITORY_PATH_PARSE, urlPart, RepositoryType.GITHUB_APP));
+    }
+
+    private String getGithubAppToken(final String projectName, final String repositoryName) {
+        final String jwt = generateJWT();
+        final GitHubInstallation installation = findInstallationId(projectName, repositoryName, jwt);
+        assertInstallationAllowed(installation);
+        return generateAccessToken(jwt, installation.getId());
     }
 
     private String generateJWT() {
