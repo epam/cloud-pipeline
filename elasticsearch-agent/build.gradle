@@ -21,6 +21,10 @@ bootJar {
     }
 }
 
+jar {
+    enabled = false
+}
+
 repositories {
     gradlePluginPortal()
     mavenCentral()
