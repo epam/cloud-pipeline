@@ -30,14 +30,12 @@ export default class GitHubRepositoryForm extends React.Component {
     form: PropTypes.object,
     formItemLayout: PropTypes.object,
     formItemStyle: PropTypes.object,
+    githubType: PropTypes.string,
+    onGithubTypeChange: PropTypes.func,
     onSubmit: PropTypes.func,
     pending: PropTypes.bool,
     pipeline: PropTypes.object,
     readOnly: PropTypes.bool
-  };
-
-  state = {
-    manualSettings: false
   };
 
   @observable _namespacesRequest = new PipelineGitNameSpaces();
@@ -56,14 +54,25 @@ export default class GitHubRepositoryForm extends React.Component {
     return req && req.loaded && req.value ? req.value : [];
   }
 
+  get pipelineIsExisting () {
+    return !!(this.props.pipeline && this.props.pipeline.repository);
+  }
+
   componentDidMount () {
-    if (!this.state.manualSettings) {
+    if (
+      !this.pipelineIsExisting &&
+      this.props.githubType !== RepositoryTypes.GitHub
+    ) {
       this.fetchNamespaces();
     }
   }
 
-  componentDidUpdate (_, prevState) {
-    if (prevState.manualSettings && !this.state.manualSettings) {
+  componentDidUpdate (prevProps) {
+    if (
+      !this.pipelineIsExisting &&
+      prevProps.githubType === RepositoryTypes.GitHub &&
+      this.props.githubType !== RepositoryTypes.GitHub
+    ) {
       this.fetchNamespaces();
     }
   }
@@ -90,7 +99,14 @@ export default class GitHubRepositoryForm extends React.Component {
 
   githubRepositoryOptionValue = (repo) => repo.httpUrl || '';
 
-  onManualSettingsChange = (e) => this.setState({manualSettings: e.target.checked});
+  onManualSettingsChange = (e) => {
+    const {onGithubTypeChange} = this.props;
+    if (typeof onGithubTypeChange === 'function') {
+      onGithubTypeChange(
+        e.target.checked ? RepositoryTypes.GitHub : RepositoryTypes.GitHubApp
+      );
+    }
+  };
 
   renderGitHubSelectForm () {
     const {
@@ -188,7 +204,7 @@ export default class GitHubRepositoryForm extends React.Component {
           className="edit-pipeline-form-github-branch-container"
           {...formItemLayout}
           style={formItemStyle}
-          label="GitHub branch"
+          label="Branch"
         >
           {getFieldDecorator('githubBranch', {
             initialValue:
@@ -206,12 +222,19 @@ export default class GitHubRepositoryForm extends React.Component {
       form,
       formItemLayout,
       formItemStyle,
+      githubType,
       onSubmit,
       pending,
       pipeline,
       readOnly
     } = this.props;
-    const {manualSettings} = this.state;
+    const resolvedGithubType = this.pipelineIsExisting
+      ? (pipeline.repositoryType === RepositoryTypes.GitHub
+        ? RepositoryTypes.GitHub
+        : RepositoryTypes.GitHubApp)
+      : githubType;
+    const showManualRepositoryForm = this.pipelineIsExisting
+      || resolvedGithubType === RepositoryTypes.GitHub;
     return (
       <div>
         <Form.Item
@@ -222,15 +245,15 @@ export default class GitHubRepositoryForm extends React.Component {
           colon={false}
         >
           <Checkbox
-            checked={manualSettings}
+            checked={resolvedGithubType === RepositoryTypes.GitHub}
             onChange={this.onManualSettingsChange}
-            disabled={pending || readOnly}
+            disabled={this.pipelineIsExisting || pending || readOnly}
           >
             Manual settings
           </Checkbox>
         </Form.Item>
         {
-          manualSettings ? (
+          showManualRepositoryForm ? (
             <ManualRepositoryForm
               key="repository-fields-manual"
               form={form}
@@ -240,6 +263,7 @@ export default class GitHubRepositoryForm extends React.Component {
               pending={pending}
               pipeline={pipeline}
               readOnly={readOnly}
+              showToken={resolvedGithubType === RepositoryTypes.GitHub}
             />
           ) : (
             this.renderGitHubSelectForm()

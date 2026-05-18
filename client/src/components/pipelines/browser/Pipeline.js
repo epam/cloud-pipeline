@@ -30,7 +30,9 @@ import {
   ISSUES_PANEL_KEY
 } from '../../special/splitPanel';
 import Breadcrumbs from '../../special/Breadcrumbs';
-import GitRepositoryControl from '../../special/git-repository-control';
+import GitRepositoryControl, {
+  normalizeRepositoryType
+} from '../../special/git-repository-control';
 import {Alert, Button, Col, Icon, message, Popover, Row, Select, Table} from 'antd';
 import Menu, {MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
@@ -134,7 +136,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     const {pipeline} = this.props;
     if (pipeline && pipeline.loaded) {
       const {repositoryType} = pipeline.value || {};
-      return repositoryType;
+      return normalizeRepositoryType(repositoryType);
     }
     return undefined;
   }

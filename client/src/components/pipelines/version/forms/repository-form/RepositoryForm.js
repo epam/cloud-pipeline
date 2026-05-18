@@ -17,7 +17,10 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Form} from 'antd';
-import {RepositoryTypes} from '../../../../special/git-repository-control';
+import {
+  RepositoryTypes,
+  normalizeRepositoryType
+} from '../../../../special/git-repository-control';
 import RepositoryTypeSelector from '../repository-type';
 import GitHubRepositoryForm from './GitHubRepositoryForm';
 import ManualRepositoryForm from './ManualRepositoryForm';
@@ -31,6 +34,8 @@ export default class RepositoryForm extends React.Component {
     }),
     formItemLayout: PropTypes.object,
     formItemStyle: PropTypes.object,
+    githubType: PropTypes.string,
+    onGithubTypeChange: PropTypes.func,
     onRepositoryTypeChanged: PropTypes.func,
     onSubmit: PropTypes.func,
     pending: PropTypes.bool,
@@ -49,6 +54,8 @@ export default class RepositoryForm extends React.Component {
       form,
       formItemLayout,
       formItemStyle,
+      githubType,
+      onGithubTypeChange,
       onRepositoryTypeChanged,
       onSubmit,
       pending,
@@ -60,10 +67,12 @@ export default class RepositoryForm extends React.Component {
       ...formItemStyle,
       display: editRepositorySettings ? 'inherit' : 'none'
     };
-    const repositoryType = form.getFieldValue('repositoryType') || (
-      pipeline && pipeline.repositoryType
-    ) || RepositoryTypes.GitLab;
-    const useGitHubForm = repositoryType === RepositoryTypes.GitHub && !(pipeline && pipeline.repository);
+    const repositoryType = normalizeRepositoryType(
+      form.getFieldValue('repositoryType') || (
+        pipeline && pipeline.repositoryType
+      ) || RepositoryTypes.GitLab
+    );
+    const useGitHubForm = repositoryType === RepositoryTypes.GitHub;
     return (
       <div>
         <Form.Item
@@ -76,7 +85,7 @@ export default class RepositoryForm extends React.Component {
           {getFieldDecorator('repositoryType', {
             initialValue:
               pipeline && pipeline.repositoryType
-                ? pipeline.repositoryType
+                ? normalizeRepositoryType(pipeline.repositoryType)
                 : RepositoryTypes.GitLab
           })(
             <RepositoryTypeSelector
@@ -91,6 +100,8 @@ export default class RepositoryForm extends React.Component {
               form={form}
               formItemLayout={formItemLayout}
               formItemStyle={formItemDisplayStyle}
+              githubType={githubType}
+              onGithubTypeChange={onGithubTypeChange}
               onSubmit={onSubmit}
               pending={pending}
               pipeline={pipeline}

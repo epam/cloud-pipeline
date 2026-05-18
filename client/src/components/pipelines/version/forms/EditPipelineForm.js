@@ -45,7 +45,8 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
   state = {
     activeTab: 'info',
     deleteDialogVisible: false,
-    editRepositorySettings: false
+    editRepositorySettings: false,
+    githubType: RepositoryTypes.GitHubApp
   };
 
   static propTypes = {
@@ -173,6 +174,21 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
           payload.branch = payload.githubBranch;
           delete payload.githubBranch;
         }
+        if (payload.repositoryType === RepositoryTypes.GitHub) {
+          payload.repositoryType = this.state.githubType;
+        }
+        if (payload.repositoryType === RepositoryTypes.GitHubApp) {
+          delete payload.githubOwner;
+          delete payload.token;
+        } else if (payload.repositoryType === RepositoryTypes.GitHub) {
+          delete payload.githubOwner;
+          delete payload.githubRepository;
+          delete payload.githubBranch;
+        } else {
+          delete payload.githubOwner;
+          delete payload.githubRepository;
+          delete payload.githubBranch;
+        }
         this.props.onSubmit(payload);
       }
     });
@@ -190,14 +206,40 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
         src: 'src',
         docs: 'docs'
       };
+      this.setState({githubType: RepositoryTypes.GitHubApp});
       this.props.form.setFieldsValue({
         codePath: defaultPaths.src,
-        docsPath: defaultPaths.docs
+        docsPath: defaultPaths.docs,
+        githubOwner: undefined,
+        githubRepository: undefined,
+        githubBranch: undefined,
+        repository: undefined,
+        branch: undefined,
+        token: undefined
       });
       this.props.form.validateFields(
         ['repository', 'githubRepository', 'branch', 'githubBranch', 'token'],
         {force: true}
       );
+    }
+  };
+
+  onGithubTypeChange = (githubType) => {
+    this.setState({githubType});
+    if (!this.props.pipeline) {
+      if (githubType === RepositoryTypes.GitHub) {
+        this.props.form.setFieldsValue({
+          githubOwner: undefined,
+          githubRepository: undefined,
+          githubBranch: undefined
+        });
+      } else {
+        this.props.form.setFieldsValue({
+          repository: undefined,
+          branch: undefined,
+          token: undefined
+        });
+      }
     }
   };
 
@@ -307,6 +349,8 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
           form={this.props.form}
           formItemLayout={this.formItemLayout}
           formItemStyle={this.formItemStyle}
+          githubType={this.state.githubType}
+          onGithubTypeChange={this.onGithubTypeChange}
           onRepositoryTypeChanged={this.onRepositoryTypeChanged}
           onSubmit={this.handleSubmit}
           pending={this.props.pending}
@@ -579,7 +623,11 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
     );
     const onClose = () => {
       resetFields();
-      this.setState({activeTab: 'info', editRepositorySettings: false});
+      this.setState({
+        activeTab: 'info',
+        editRepositorySettings: false,
+        githubType: RepositoryTypes.GitHubApp
+      });
     };
     return (
       <Modal
@@ -690,6 +738,13 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
   componentDidUpdate (prevProps) {
     if (prevProps.visible !== this.props.visible) {
       this.focusNameInput();
+      if (this.props.visible) {
+        const {pipeline} = this.props;
+        const githubType = pipeline && pipeline.repositoryType === RepositoryTypes.GitHub
+          ? RepositoryTypes.GitHub
+          : RepositoryTypes.GitHubApp;
+        this.setState({githubType});
+      }
     }
   }
 }
