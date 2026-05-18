@@ -65,6 +65,12 @@ public abstract class AbstractSchedulingManager {
             .subscribe(rate -> scheduledFuture.updateAndGet(f -> {
                 log.debug("Rescheduling {} with a new rate of {} ms", taskName, rate);
                 f.cancel(false);
+                long delay = rate.longValue();
+                if (delay == -1) {
+                    log.info("Delay rate configured as -1 ms for task: {}. -1 is considered as disable scheduling." +
+                            " Task will not be scheduled", taskName);
+                    return f;
+                }
                 return scheduler.scheduleWithFixedDelay(task, Duration.ofMillis(rate.longValue()));
             }));
     }
