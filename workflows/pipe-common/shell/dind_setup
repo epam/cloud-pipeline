@@ -127,8 +127,8 @@ if [ $REQUIRES_GPU_DIND -eq 0 ]; then
         find /etc/yum.repos.d -type f \( -name "*nvidia*" -o -name "*docker*" \)  -exec rm -f {} \;
     else
         # Hacky way to make Ubuntu 24.04 DIND work with GPU
-        if [ "$distribution" == "ubuntu2404" ]; then
-            distribution="ubuntu2204"
+        if [ "$distribution" == "ubuntu24.04" ]; then
+            distribution="ubuntu22.04"
         fi
         export CP_CAP_DIND_GPU_VERSION="${CP_CAP_DIND_GPU_VERSION:-3.13.0-1}"
         if [ "$CP_CAP_DIND_GPU_VERSION_DEB" ]; then

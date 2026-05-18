@@ -19,6 +19,7 @@ from prettytable import prettytable
 from src.api.user import User
 from src.config import Config
 from src.api.preferenceapi import PreferenceAPI
+from src.utilities.user_operations_manager import UserOperationsManager
 
 LAUNCH_JWT_TOKEN_EXPIRATION_USER_LIMIT = "launch.jwt.token.expiration.user.limit"
 
@@ -32,17 +33,21 @@ class UserTokenOperations(object):
 
     def _validate_duration_against_limit(self, duration):
         duration = self.convert_to_seconds(duration)
-        if duration:
-            token_expiration_user_limit = PreferenceAPI().get_preference(LAUNCH_JWT_TOKEN_EXPIRATION_USER_LIMIT)
-            if token_expiration_user_limit and token_expiration_user_limit.value:
-                token_expiration_user_limit_int = int(token_expiration_user_limit.value)
-                if duration > token_expiration_user_limit_int:
-                    click.echo(
-                        'Requested token duration is too long, it should be less that %s'
-                        % self.convert_seconds_to_fmt_str(token_expiration_user_limit_int), err=True
-                    )
-                    sys.exit(1)
-        return duration
+        if not duration:
+            return None
+        if UserOperationsManager().is_admin():
+            return None
+        token_expiration_user_limit = PreferenceAPI().get_preference(LAUNCH_JWT_TOKEN_EXPIRATION_USER_LIMIT)
+        if not token_expiration_user_limit or not token_expiration_user_limit.value:
+            return None
+        token_expiration_user_limit_int = int(token_expiration_user_limit.value)
+        if duration <= token_expiration_user_limit_int:
+            return duration
+        click.echo(
+            'Requested token duration is too long, it should be less than %s'
+            % self.convert_seconds_to_fmt_str(token_expiration_user_limit_int), err=True
+        )
+        sys.exit(1)
 
     def _handle_token_generation_errors(self, error):
         if isinstance(error, ValueError):
