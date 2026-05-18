@@ -593,7 +593,9 @@ public class SystemPreferences {
         "cluster.allowed.instance.types.docker", "m5.*,c5.*,r4.*,t2.*", CLUSTER_GROUP, pass);
 
     public static final IntPreference CLUSTER_INSTANCE_OFFER_UPDATE_RATE = new IntPreference(
-        "instance.offer.update.rate", 3600000, CLUSTER_GROUP, isGreaterThan(10000));
+        "instance.offer.update.rate", 3600000, CLUSTER_GROUP,
+            isGreaterThan(10000).or(isEquals(-1))
+    );
     public static final IntPreference CLUSTER_INSTANCE_OFFER_EXPIRATION_RATE_HOURS = new IntPreference(
         "instance.offer.expiration.rate.hours", 72, CLUSTER_GROUP, isGreaterThan(0));
     public static final BooleanPreference CLUSTER_INSTANCE_OFFER_FETCH_GPU = new BooleanPreference(
