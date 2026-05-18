@@ -55,6 +55,7 @@ from src.utilities.user_token_operations import UserTokenOperations
 from src.utilities.dts_operations_manager import DtsOperationsManager
 from src.utilities.cloud_provider_operations import CloudProviderOperations
 from src.version import __version__, __bundle_info__, __component_version__
+from src.utilities.printing.tool_print_service import create_tool_print_service
 
 MAX_INSTANCE_COUNT = 1000
 MAX_CORES_COUNT = 10000
@@ -1946,12 +1947,15 @@ def update_cli_version(path):
 @click.option('-g', '--group', help='List group tools.')
 @click.option('-t', '--tool', help='List tool details.')
 @click.option('-v', '--version', help='List tool version details.')
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help='Output format. Default is a text table.')
 @common_options
 def view_tools(tool_path,
                registry,
                group,
                tool,
-               version):
+               version,
+               output_format):
     """
     Either shows details of a tool / tool version or lists tools / tool groups.
 
@@ -1987,37 +1991,40 @@ def view_tools(tool_path,
       pipe view-tools --registry docker-registry:port --group library --tool ubuntu --version 18.04
       pipe view-tools docker-registry:port/library/ubuntu:18.04
     """
+    print_service = create_tool_print_service(output_format)
+    
     if tool_path and (registry or group or tool or version):
-        click.echo('Tool path positional argument cannot be specified along with the named parameters.', err=True)
+        print_service.print_error('Tool path positional argument cannot be specified along with the named parameters.')
         sys.exit(1)
     if tool_path:
-        registry, group, tool, version = split_tool_path(tool_path, registry, group, tool, version)
+        registry, group, tool, version = split_tool_path(tool_path, registry, group, tool, version, output_format)
     elif tool and not registry and not group and not version:
-        registry, group, tool, version = split_tool_path(tool, registry, group, None, version, strict=True)
+        registry, group, tool, version = split_tool_path(tool, registry, group, None, version, output_format,
+                                                         strict=True)
     else:
         if version and not tool:
-            click.echo('Please specify tool name.', err=True)
+            print_service.print_error('Please specify tool name.')
             sys.exit(1)
         if tool and not group:
-            click.echo('Please specify tool group.', err=True)
+            print_service.print_error('Please specify tool group.')
             sys.exit(1)
 
     if not registry and not group and not tool and not version:
-        ToolOperations.view_default_group()
+        ToolOperations.view_default_group(output_format)
     elif group and tool and version:
-        ToolOperations.view_version(group, tool, version, registry)
+        ToolOperations.view_version(group, tool, version, registry, output_format)
     elif group and tool:
-        ToolOperations.view_tool(group, tool, registry)
+        ToolOperations.view_tool(group, tool, registry, output_format)
     elif group:
-        ToolOperations.view_group(group, registry)
+        ToolOperations.view_group(group, registry, output_format)
     elif registry:
-        ToolOperations.view_registry(registry)
+        ToolOperations.view_registry(registry, output_format)
     else:
-        click.echo('Specify either registry, group, tool or version parameters', err=True)
+        print_service.print_error('Specify either registry, group, tool or version parameters')
         sys.exit(1)
 
 
-def split_tool_path(tool_path, registry, group, tool, version, strict=False):
+def split_tool_path(tool_path, registry, group, tool, version, output_format=None, strict=False):
     if tool_path:
         match = re.search('^([^/]+)(/([^/]+)(/([^/:]+)(:([^/:]+))?)?)?$', tool_path)
         if match:
@@ -2026,9 +2033,10 @@ def split_tool_path(tool_path, registry, group, tool, version, strict=False):
             tool = match.group(5) if match.group(5) else tool
             version = match.group(7) if match.group(7) else version
     if strict and (not registry or not group or not tool):
-        click.echo('Please specify full tool path using one of the following patterns:\n'
-                   'registry/group/tool\n'
-                   'registry/group/tool:version', err=True)
+        print_service = create_tool_print_service(output_format)
+        print_service.print_error('Please specify full tool path using one of the following patterns:\n'
+                                 'registry/group/tool\n'
+                                 'registry/group/tool:version')
         sys.exit(1)
     return registry, group, tool, version
 
