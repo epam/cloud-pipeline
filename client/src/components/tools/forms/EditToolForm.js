@@ -1311,7 +1311,11 @@ export default class EditToolForm extends React.Component {
   };
 
   correctSensitiveMounts = async (e) => {
-    const {dataStorageAvailable, form} = this.props;
+    const {dataStorageAvailable} = this.props;
+    const form = this.formRef.current;
+    if (!form) {
+      return;
+    }
     const initialLimitMounts = (form.getFieldValue('limitMounts') || this.defaultLimitMounts || '');
     if (/^none$/i.test(initialLimitMounts)) {
       return;
@@ -1372,7 +1376,7 @@ export default class EditToolForm extends React.Component {
   renderPrettyUrlFormItem = () => {
     const prettyUrlAvailable = this.isAdmin || this.isAdvancedUser;
     if (prettyUrlAvailable) {
-      const validate = (rule, value, callback) => {
+      const validateFriendlyUrl = (rule, value, callback) => {
         const {dockerImage, dockerRegistries} = this.props;
         const error = prettyUrlGenerator.validate(
           value,
@@ -1380,6 +1384,7 @@ export default class EditToolForm extends React.Component {
         );
         if (error) {
           callback(error);
+          return;
         }
         callback();
       };
@@ -1390,9 +1395,7 @@ export default class EditToolForm extends React.Component {
           style={{marginBottom: 10}}
           name="friendly_url"
           rules={[{
-            validator: (rule, value) => new Promise((resolve, reject) => {
-              validate(value, (err) => { if (err) reject(err); else resolve(); });
-            })
+            validator: validateFriendlyUrl
           }]}
         >
           <Input
@@ -1480,6 +1483,7 @@ export default class EditToolForm extends React.Component {
               </Row>
               <Form.Item
                 {...this.formItemLayout}
+                label="Instance image"
                 style={{marginBottom: 10}}
                 name="instanceImage"
               >
