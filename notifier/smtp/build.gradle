@@ -38,8 +38,12 @@ configurations {
 // and break compatibility with the rest of the 3.x stack, so the block is intentionally
 // not carried over.
 
-jar {
+bootJar {
     archiveFileName = 'notifier.jar'
+}
+
+jar {
+    enabled = false
 }
 
 dependencies {
