@@ -104,7 +104,9 @@ class RunTagPopover extends React.PureComponent {
           </div>
         )}
       >
-        {children}
+        <span style={{display: 'inline'}}>
+          {children}
+        </span>
       </Popover>
     );
   }
