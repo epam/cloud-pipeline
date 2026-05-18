@@ -37,7 +37,6 @@ import TABLE_MENU_KEYS from './table-menu-keys';
 import DOCUMENT_TYPES from '../document-types';
 import downloadPipelineFile from '../../../version/utilities/download-pipeline-file';
 import styles from './table.css';
-import '../../../../../staticStyles/vs-storage.css';
 
 function typeSorter (a, b) {
   return b.type.localeCompare(a.type);

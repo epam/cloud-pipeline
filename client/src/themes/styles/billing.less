@@ -22,50 +22,6 @@
   min-height: 100%;
 }
 
-.cp-billing-menu .ant-menu-submenu-title,
-.cp-billing-menu .ant-menu-item,
-.cp-billing-menu .cp-billing-sub-menu .ant-menu-item {
-  height: 32px;
-  line-height: 32px;
-}
-
-.cp-billing-menu .cp-billing-sub-menu .ant-menu-submenu-title {
-  position: relative;
-  left: 1px;
-  margin-left: -1px;
-  z-index: 1;
-  height: 32px;
-  line-height: 32px;
-}
-
-.cp-billing-menu .cp-billing-sub-menu.ant-menu-submenu-open .ant-menu-submenu-title {
-  background-color: transparent;
-  color: @application-color;
-}
-
-.cp-billing-menu .cp-billing-sub-menu.cp-billing-sub-menu-selected .ant-menu-submenu-title {
-  background-color: transparent;
-  color: @menu-active-color;
-}
-
-.cp-billing-menu .cp-billing-sub-menu .ant-menu-submenu-title::after {
-  content: "";
-  position: absolute;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  border-right: 3px solid @menu-active-color;
-  transform: scaleY(0.0001);
-  opacity: 0;
-  transition: transform 0.15s cubic-bezier(0.215, 0.61, 0.355, 1), opacity 0.15s cubic-bezier(0.215, 0.61, 0.355, 1);
-}
-
-.cp-billing-menu .cp-billing-sub-menu.cp-billing-sub-menu-selected .ant-menu-submenu-title::after {
-  transition: transform 0.15s cubic-bezier(0.645, 0.045, 0.355, 1), opacity 0.15s cubic-bezier(0.645, 0.045, 0.355, 1);
-  opacity: 1;
-  transform: scaleY(1);
-}
-
 .cp-billing-table td {
   border: 1px solid @panel-border-color;
 }
@@ -167,10 +123,6 @@
 .cp-quota-status-red {
   fill: @color-error;
   background-color: @color-error;
-}
-
-.cp-billing-action-tag .ant-tag-text{
-  background-color: @color-warning;
 }
 
 .cp-report-table td,

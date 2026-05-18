@@ -38,7 +38,6 @@ import {facetedQueryString} from './faceted-search/utilities';
 import {DocumentTypeFilterName} from './faceted-search/filter';
 import getItemUrl from './faceted-search/utilities/get-item-url';
 import {getSearchPrompt} from './utilities/search-utilities';
-import '../../staticStyles/Search.css';
 
 const PAGE_SIZE = 50;
 const INSTANT_SEARCH_DELAY = 1000;

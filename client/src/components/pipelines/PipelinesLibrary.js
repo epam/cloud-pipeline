@@ -48,7 +48,6 @@ import {
 } from './model/treeStructureFunctions';
 import roleModel from '../../utils/roleModel';
 import styles from './PipelinesLibrary.css';
-import '../../staticStyles/PipelineLibrary.css';
 
 import pipelinesLibrary from '../../models/folders/FolderLoadTree';
 import folders from '../../models/folders/Folders';

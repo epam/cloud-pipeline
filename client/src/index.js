@@ -23,7 +23,6 @@ import {configure} from 'mobx';
 import Root from './components/main/Root';
 import 'rc-slider/assets/index.css';
 import './index.css';
-import './staticStyles/antd-extensions.css';
 import './staticStyles/markdown.css';
 configure({enforceActions: 'never'});
 

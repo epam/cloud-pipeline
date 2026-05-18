@@ -21,7 +21,6 @@ import {getRunStatusIcon} from './run-status-iconset';
 import DefaultStyles from './run-status-styles';
 import StatusTooltips from './run-status-tooltips';
 import {getStatus} from './run-statuses';
-import '../../../staticStyles/tooltip-without-arrow.css';
 
 const StatusIcon = ({displayTooltip = true, ...props}) => {
   const status = getStatus(props);

@@ -17,7 +17,6 @@
 import React from 'react';
 import {Tooltip} from 'antd';
 import styles from './job-estimated-price-info.css';
-import '../../staticStyles/tooltip-nowrap.css';
 
 export default function JobEstimatedPriceInfo ({children}) {
   return (

@@ -35,7 +35,6 @@ import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/paramet
 import AllowedInstancesCountWarning from
 '../../pipelines/launch/form/utilities/allowed-instances-count-warning';
 import RunName from '../run-name';
-import '../../../staticStyles/tooltip-nowrap.css';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import {getSpotTypeName} from '../../special/spot-instance-names';
 import awsRegions from '../../../models/cloudRegions/CloudRegions';
