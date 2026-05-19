@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('version:', d.get\\('version'\\)\\); print\\('description:', d.get\\('description',''\\)[:100]\\)\")",
+      "WebSearch",
+      "Bash(npm run *)"
+    ]
+  }
+}

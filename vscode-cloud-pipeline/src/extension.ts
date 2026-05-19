@@ -137,7 +137,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         );
         return;
       }
-      if (!syncMcpFromWorkspaceSettings(auth)) {
+      if (!syncMcpFromWorkspaceSettings(auth, context.extensionPath)) {
         void vscode.window.showErrorMessage(
           `${brand}: Could not derive MCP URL from API URL "${auth.apiUrl}". Set cloudPipeline.mcp.serverUrl explicitly and try again.`
         );
@@ -195,7 +195,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         const mcpCfg = vscode.workspace.getConfiguration('cloudPipeline');
         let mcpExtra = '';
         if (mcpCfg.get<boolean>('mcp.syncOnSignIn', true)) {
-          if (syncMcpFromWorkspaceSettings({ apiUrl: apiBase, accessKey: token })) {
+          if (syncMcpFromWorkspaceSettings({ apiUrl: apiBase, accessKey: token }, context.extensionPath)) {
             mcpExtra =
               ' Cursor MCP config updated (~/.cursor/mcp.json). Restart Cursor if the MCP server list does not refresh.';
           }
