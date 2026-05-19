@@ -1859,6 +1859,7 @@
                         actual_cmd,
                         timeout,
                         owner,
+                        original_owner,
                         pod_ip,
                         commit_status,
                         last_change_commit_time,
@@ -1878,6 +1879,7 @@
                         price_per_hour,
                         compute_price_per_hour,
                         disk_price_per_hour,
+                        fs_price_per_hour,
                         state_reason,
                         non_pause,
                         pause_disabled,
@@ -1890,6 +1892,7 @@
                         cluster_price,
                         node_pool_id,
                         node_start_date,
+                        project_id,
                         logs_storage_path
                     FROM
                         pipeline.pipeline_run r
@@ -1926,6 +1929,7 @@
                         ar.actual_cmd,
                         ar.timeout,
                         ar.owner,
+                        ar.original_owner,
                         ar.pod_ip,
                         ar.commit_status,
                         ar.last_change_commit_time,
@@ -1945,6 +1949,7 @@
                         ar.price_per_hour,
                         ar.compute_price_per_hour,
                         ar.disk_price_per_hour,
+                        null as fs_price_per_hour,
                         ar.state_reason,
                         ar.non_pause,
                         ar.pause_disabled,
@@ -1957,6 +1962,7 @@
                         ar.cluster_price,
                         ar.node_pool_id,
                         ar.node_start_date,
+                        null as project_id,
                         ar.logs_storage_path
                     FROM
                         pipeline.archive_run ar
