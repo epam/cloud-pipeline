@@ -1093,8 +1093,12 @@ function configureHyperThreading() {
 }
 
 function mark_run_as_completed() {
-    pipe_log_info "Marking run as finished." "CleanupEnvironment"
     tag_run "$CP_CAP_RUN_WORK_FINISHED_TAG" "$(date +"%F %T.%3N" -u)"
+    if [ $? -ne 0 ]; then
+        pipe_log_fail "Failed to mark run as finished with tag $CP_CAP_RUN_WORK_FINISHED_TAG" "CleanupEnvironment"
+    else
+        pipe_log_success "Marking run as finished." "CleanupEnvironment"
+    fi
 }
 
 function exit_stage() {
