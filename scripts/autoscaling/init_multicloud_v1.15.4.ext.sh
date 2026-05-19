@@ -272,8 +272,6 @@ fi
 modprobe nfs
 modprobe nfsd
 
-chmod +x /etc/rc.d/rc.local
-
 echo "> [$(date)] Get instance info"
 cloud=$(curl --head -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep Server | cut -f2 -d:)
 gcloud_header=$(curl --head -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep Metadata-Flavor | cut -f2 -d:)
@@ -476,19 +474,39 @@ EOL
   fi
 fi
 
+echo "> [$(date)] Setup resume service"
+_RESUME_SCRIPT="/usr/local/bin/cloud-pipeline-resume.sh"
+printf '#!/bin/bash\nexec >> /var/log/cloud-pipeline-resume.log 2>&1\n' > "$_RESUME_SCRIPT"
+
 if check_gpu_available; then
-  cat >> /etc/rc.local << EOF
-nvidia-persistenced --persistence-mode
-nvidia-smi
-EOF
+    printf 'nvidia-persistenced --persistence-mode\nnvidia-smi\n' >> "$_RESUME_SCRIPT"
 fi
 
-echo "> [$(date)] Setup resume script"
-cat >> /etc/rc.local << EOF
+cat >> "$_RESUME_SCRIPT" << RESUME_MAIN
 systemctl start docker
 kubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --discovery-token-unsafe-skip-ca-verification --node-name $_KUBE_NODE_NAME --ignore-preflight-errors all
 systemctl start kubelet
+RESUME_MAIN
+
+chmod +x "$_RESUME_SCRIPT"
+
+cat > /etc/systemd/system/cloud-pipeline-resume.service << 'EOF'
+[Unit]
+Description=Cloud Pipeline Node Resume
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/cloud-pipeline-resume.sh
+
+[Install]
+WantedBy=multi-user.target
 EOF
+
+systemctl daemon-reload
+systemctl enable cloud-pipeline-resume
 
 echo "> [$(date)] Pre-pull dockers"
 _PRE_PULL_DOCKERS="@PRE_PULL_DOCKERS@"
