@@ -21,6 +21,9 @@ spec:
         - name: cp-mcp
           image: lifescience/cloud-pipeline:mcp-0.16
           imagePullPolicy: "IfNotPresent"
+          env:
+            - name: CP_HTTP_VERIFY
+              value: "false"
           envFrom:
             - configMapRef:
                 name: cp-config-global
