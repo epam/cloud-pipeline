@@ -1503,6 +1503,8 @@ function parseCustomValidatorsModule (moduleCode) {
  * @param {Parameter[]} parameters
  * @param {Object} opts
  * @returns {Promise<{parameters: Parameter[], changed: boolean}>}
+ * A validator runs only if the parameter has a non-empty value, unless the function has
+ * `alwaysValidate === true`
  */
 async function customValidate (customValidators, parameters, opts) {
   if (!customValidators || typeof customValidators !== 'object') {
@@ -1514,7 +1516,13 @@ async function customValidate (customValidators, parameters, opts) {
   const promises = parameters
     .filter(({value, name}) => {
       const validator = customValidators[name];
-      return typeof validator === 'function' && !!value;
+      if (typeof validator !== 'function') {
+        return false;
+      }
+      if (validator.alwaysValidate === true) {
+        return true;
+      }
+      return !!value;
     })
     .map((parameter) => {
       return new Promise(async (resolve) => {
