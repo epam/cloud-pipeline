@@ -20,6 +20,7 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -39,6 +40,7 @@ import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -177,14 +179,8 @@ public class RunLogManager {
     public List<PipelineTask> loadTasksByRunId(Long runId) {
         PipelineRun run = runCRUDService.loadRunById(runId);
 
-        if (StringUtils.isNotBlank(run.getLogsStoragePath())) {
-            final List<PipelineTask> storageTasks = runLogStorageManager.loadTasksFromStorage(runId);
-            if (!storageTasks.isEmpty()) {
-                return storageTasks;
-            }
-        }
+        final List<PipelineTask> tasks = new ArrayList<>(ListUtils.emptyIfNull(loadRunTasks(run, runId)));
 
-        List<PipelineTask> tasks = runLogDao.loadTasksForRun(runId);
         tasks.forEach(task -> {
             if (run.getStatus().isFinal() && !task.getStatus().isFinal()) {
                 task.setStatus(run.getStatus());
@@ -282,5 +278,15 @@ public class RunLogManager {
     private int getRunLogDefaultLimit() {
         return preferenceManager.findPreference(SystemPreferences.SYSTEM_LIMIT_LOG_LINES)
                 .orElseGet(SystemPreferences.SYSTEM_LIMIT_LOG_LINES::getDefaultValue);
+    }
+
+    private List<PipelineTask> loadRunTasks(final PipelineRun run, final Long runId) {
+        if (StringUtils.isNotBlank(run.getLogsStoragePath())) {
+            final List<PipelineTask> storageTasks = runLogStorageManager.loadTasksFromStorage(runId);
+            if (!storageTasks.isEmpty()) {
+                return storageTasks;
+            }
+        }
+        return runLogDao.loadTasksForRun(runId);
     }
 }
