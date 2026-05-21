@@ -57,18 +57,26 @@ public abstract class AbstractSchedulingManager {
         Integer statusUpdateRate = preferenceManager.getPreference(delayPreference);
         log.info("Scheduled {} with a rate of {} ms", taskName, statusUpdateRate);
 
-        ScheduledFuture<?> future = scheduler.scheduleWithFixedDelay(task, statusUpdateRate);
-        scheduledFuture.set(future);
+        if(statusUpdateRate > 0) {
+            scheduledFuture.set(
+                    scheduler.scheduleWithFixedDelay(task, statusUpdateRate)
+            );
+        } else {
+            log.info("Delay rate configured as negative value for task: {}." +
+                    " This is considered as disable scheduling. Task will not be scheduled", taskName);
+        }
 
         preferenceManager.getObservablePreference(delayPreference)
             .subscribe(rate -> scheduledFuture.updateAndGet(f -> {
                 log.debug("Rescheduling {} with a new rate of {} ms", taskName, rate);
-                f.cancel(false);
+                if (f != null) {
+                    f.cancel(false);
+                }
                 long delay = rate.longValue();
-                if (delay == -1) {
-                    log.info("Delay rate configured as -1 ms for task: {}. -1 is considered as disable scheduling." +
-                            " Task will not be scheduled", taskName);
-                    return f;
+                if (delay <= 0) {
+                    log.info("Delay rate configured as negative value for task: {}." +
+                            " This is considered as disable scheduling. Task will not be scheduled", taskName);
+                    return null;
                 }
                 return scheduler.scheduleWithFixedDelay(task, delay);
             }));
