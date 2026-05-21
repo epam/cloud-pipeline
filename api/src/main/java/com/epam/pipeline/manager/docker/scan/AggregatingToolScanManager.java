@@ -211,6 +211,11 @@ public class AggregatingToolScanManager implements ToolScanManager {
 
     private ToolExecutionCheckStatus checkStatus(final Tool tool, final String tag,
                                                  final Optional<ToolVersionScanResult> versionScanOp) {
+        if (versionScanOp.isPresent() && versionScanOp.get().isFromBlackList()) {
+            LOGGER.warn("Tool: {} version: {} is blacklisted. Execution denied.", tool.getId(), tag);
+            return ToolExecutionCheckStatus.fail("Tool version is blacklisted and cannot be executed.");
+        }
+
         int graceHours = preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_GRACE_HOURS);
 
         boolean isGracePeriodOrWhiteList = versionScanOp.isPresent() &&
