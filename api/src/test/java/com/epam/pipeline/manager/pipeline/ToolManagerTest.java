@@ -535,6 +535,15 @@ public class ToolManagerTest extends AbstractManagerTest {
         Assert.assertEquals(now, versionScan.getSuccessScanDate());
         Assert.assertEquals(layerRef, versionScan.getLastLayerRef());
         Assert.assertFalse(versionScan.isFromWhiteList());
+
+        toolManager.updateBlackListWithToolVersionStatus(tool.getId(), LATEST_TAG, true);
+        versionScan = toolManager.loadToolVersionScan(tool.getId(), LATEST_TAG).get();
+        Assert.assertEquals(status, versionScan.getStatus());
+        Assert.assertEquals(now, versionScan.getScanDate());
+        Assert.assertEquals(now, versionScan.getSuccessScanDate());
+        Assert.assertEquals(layerRef, versionScan.getLastLayerRef());
+        Assert.assertFalse(versionScan.isFromWhiteList());
+        Assert.assertTrue(versionScan.isFromBlackList());
     }
 
     @Test
