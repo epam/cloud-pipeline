@@ -85,7 +85,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -673,8 +672,9 @@ public class ToolManager implements SecuredEntityManager {
         final Optional<ToolVersionScanResult> toolVersionScanResult =
                 prepareToolVersionScanForUpdate(tool, toolId, version);
 
-        final boolean fromBlackList = resolveBlackWhiteListConflict(fromWhiteList,
-                ToolVersionScanResult::isFromBlackList, toolVersionScanResult);
+        // if tool version shall be added to white list, disable black list if present
+        final boolean fromBlackList = !fromWhiteList
+                && toolVersionScanResult.map(ToolVersionScanResult::isFromBlackList).orElse(false);
 
         toolVulnerabilityDao.updateWhiteAndBlackListWithToolVersion(toolId, version, fromWhiteList,
                 fromBlackList);
@@ -688,8 +688,9 @@ public class ToolManager implements SecuredEntityManager {
         final Optional<ToolVersionScanResult> toolVersionScanResult =
                 prepareToolVersionScanForUpdate(tool, toolId, version);
 
-        final boolean fromWhiteList = resolveBlackWhiteListConflict(fromBlackList,
-                ToolVersionScanResult::isFromWhiteList, toolVersionScanResult);
+        // if tool version shall be added to black list, disable white list if present
+        final boolean fromWhiteList = !fromBlackList
+                && toolVersionScanResult.map(ToolVersionScanResult::isFromWhiteList).orElse(false);
 
         toolVulnerabilityDao.updateWhiteAndBlackListWithToolVersion(toolId, version, fromWhiteList,
                 fromBlackList);
@@ -1077,14 +1078,5 @@ public class ToolManager implements SecuredEntityManager {
                     DateUtils.now(), new HashMap<>(), null, null, false);
         }
         return toolVersionScanResult;
-    }
-
-    private boolean resolveBlackWhiteListConflict(final boolean newValue,
-                                                  final Function<ToolVersionScanResult, Boolean> getCurrent,
-                                                  final Optional<ToolVersionScanResult> toolVersionScanResult) {
-        // if tool version shall be added to black[white] list, disable white[black] list if present
-        return !newValue
-                // current white[black] list value:
-                && toolVersionScanResult.map(getCurrent).orElse(false);
     }
 }
