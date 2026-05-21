@@ -81,6 +81,13 @@ public class ToolApiService {
                                                                           final boolean fromWhiteList) {
         return toolManager.updateWhiteListWithToolVersionStatus(toolId, version, fromWhiteList);
     }
+    
+    @PreAuthorize(ADMIN_ONLY + OR + TOOL_ADMIN_ONLY)
+    @AclMask
+    public ToolVersionScanResult updateBlackListWithToolVersion(final long toolId, final String version,
+                                                                final boolean fromBlackList) {
+        return toolManager.updateBlackListWithToolVersionStatus(toolId, version, fromBlackList);
+    }
 
     @PreAuthorize(ADMIN_ONLY + OR + TOOL_ADMIN_ONLY +
             "OR @grantPermissionManager.toolPermission(#registry, #image, 'READ')")

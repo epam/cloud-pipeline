@@ -85,6 +85,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -669,14 +670,29 @@ public class ToolManager implements SecuredEntityManager {
     public ToolVersionScanResult updateWhiteListWithToolVersionStatus(long toolId, String version,
                                                                       boolean fromWhiteList) {
         final Tool tool = load(toolId);
-        validateToolNotNull(tool, toolId);
-        validateToolCanBeModified(tool);
-        Optional<ToolVersionScanResult> toolVersionScanResult = loadToolVersionScan(tool, version);
-        if (!toolVersionScanResult.isPresent()) {
-            toolVulnerabilityDao.insertToolVersionScan(toolId, version, null, null, null, ToolScanStatus.NOT_SCANNED,
-                    DateUtils.now(), new HashMap<>(), null, null, false);
-        }
-        toolVulnerabilityDao.updateWhiteListWithToolVersion(toolId, version, fromWhiteList);
+        final Optional<ToolVersionScanResult> toolVersionScanResult =
+                prepareToolVersionScanForUpdate(tool, toolId, version);
+
+        final boolean fromBlackList = resolveBlackWhiteListConflict(fromWhiteList,
+                ToolVersionScanResult::isFromBlackList, toolVersionScanResult);
+
+        toolVulnerabilityDao.updateWhiteAndBlackListWithToolVersion(toolId, version, fromWhiteList,
+                fromBlackList);
+        return loadToolVersionScan(tool, version).orElse(null);
+    }
+    
+    @Transactional(propagation = Propagation.REQUIRED)
+    public ToolVersionScanResult updateBlackListWithToolVersionStatus(final long toolId, final String version,
+                                                                      final boolean fromBlackList) {
+        final Tool tool = load(toolId);
+        final Optional<ToolVersionScanResult> toolVersionScanResult =
+                prepareToolVersionScanForUpdate(tool, toolId, version);
+
+        final boolean fromWhiteList = resolveBlackWhiteListConflict(fromBlackList,
+                ToolVersionScanResult::isFromWhiteList, toolVersionScanResult);
+
+        toolVulnerabilityDao.updateWhiteAndBlackListWithToolVersion(toolId, version, fromWhiteList,
+                fromBlackList);
         return loadToolVersionScan(tool, version).orElse(null);
     }
 
@@ -1049,5 +1065,26 @@ public class ToolManager implements SecuredEntityManager {
 
     public Optional<ToolVersion> findToolVersion(final Tool tool) {
         return toolVersionManager.findToolVersion(tool.getId(), getTagFromImageName(tool.getImage()));
+    }
+
+    private Optional<ToolVersionScanResult> prepareToolVersionScanForUpdate(final Tool tool, final Long toolId,
+                                                                            final String version) {
+        validateToolNotNull(tool, toolId);
+        validateToolCanBeModified(tool);
+        final Optional<ToolVersionScanResult> toolVersionScanResult = loadToolVersionScan(tool, version);
+        if (!toolVersionScanResult.isPresent()) {
+            toolVulnerabilityDao.insertToolVersionScan(toolId, version, null, null, null, ToolScanStatus.NOT_SCANNED,
+                    DateUtils.now(), new HashMap<>(), null, null, false);
+        }
+        return toolVersionScanResult;
+    }
+
+    private boolean resolveBlackWhiteListConflict(final boolean newValue,
+                                                  final Function<ToolVersionScanResult, Boolean> getCurrent,
+                                                  final Optional<ToolVersionScanResult> toolVersionScanResult) {
+        // if tool version shall be added to black[white] list, disable white[black] list if present
+        return !newValue
+                // current white[black] list value:
+                && toolVersionScanResult.map(getCurrent).orElse(false);
     }
 }
