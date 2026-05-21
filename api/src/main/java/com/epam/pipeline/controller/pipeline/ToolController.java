@@ -122,6 +122,22 @@ public class ToolController extends AbstractRestController {
                                                                                     boolean whiteList) {
         return Result.success(toolApiService.updateWhiteListWithToolVersion(toolId, version, whiteList));
     }
+    
+    @PostMapping("/tool/updateBlackList")
+    @ResponseBody
+    @ApiOperation(
+            value = "Add or remove image from black list.",
+            notes = "Add or remove image from black list.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<ToolVersionScanResult> updateBlackListWithToolVersion(@RequestParam long toolId,
+                                                                        @RequestParam String version,
+                                                                        @RequestParam(defaultValue = "true")
+                                                                                    boolean blackList) {
+        return Result.success(toolApiService.updateBlackListWithToolVersion(toolId, version, blackList));
+    }
 
     @RequestMapping(value = "/tool/load", method= RequestMethod.GET)
     @ResponseBody

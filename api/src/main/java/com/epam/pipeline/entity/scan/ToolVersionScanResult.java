@@ -45,6 +45,7 @@ public class ToolVersionScanResult {
     private List<ToolDependency> dependencies;
     private boolean isAllowedToExecute;
     private boolean fromWhiteList;
+    private boolean fromBlackList;
     private Date gracePeriod;
     private String defaultCmd;
     private Integer layersCount;

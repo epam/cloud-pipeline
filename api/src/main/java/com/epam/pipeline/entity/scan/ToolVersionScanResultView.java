@@ -40,6 +40,7 @@ public class ToolVersionScanResultView {
     private List<ToolDependency> dependencies;
     private boolean isAllowedToExecute;
     private boolean fromWhiteList;
+    private boolean fromBlackList;
     private Date gracePeriod;
     private String defaultCmd;
     private Integer layersCount;
@@ -59,6 +60,7 @@ public class ToolVersionScanResultView {
                     .dependencies(scan.getDependencies())
                     .isAllowedToExecute(scan.isAllowedToExecute())
                     .fromWhiteList(scan.isFromWhiteList())
+                    .fromBlackList(scan.isFromBlackList())
                     .gracePeriod(scan.getGracePeriod())
                     .vulnerabilitiesCount(scan.getVulnerabilitiesCount())
                     .defaultCmd(scan.getDefaultCmd())
