@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.entity.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Value;
 
 import java.util.Collections;
@@ -53,6 +55,11 @@ public class AnalysisResult {
      * }
      */
     private final Map<String, List<Row>> outputs;
+
+    @JsonCreator
+    public AnalysisResult(@JsonProperty("outputs") final Map<String, List<Row>> outputs) {
+        this.outputs = outputs;
+    }
 
     public static AnalysisResult empty() {
         return new AnalysisResult(Collections.emptyMap());

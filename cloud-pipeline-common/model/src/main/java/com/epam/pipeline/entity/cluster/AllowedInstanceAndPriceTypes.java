@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity.cluster;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
@@ -27,6 +28,7 @@ public class AllowedInstanceAndPriceTypes {
     List<InstanceType> allowedInstanceDockerTypes;
     List<String> allowedPriceTypes;
 
+    @JsonCreator
     public AllowedInstanceAndPriceTypes(
             @JsonProperty("cluster.allowed.instance.types") List<InstanceType> allowedInstanceTypes,
             @JsonProperty("cluster.allowed.instance.types.docker") List<InstanceType> allowedInstanceDockerTypes,
