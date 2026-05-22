@@ -2010,15 +2010,15 @@ def view_tools(tool_path,
             sys.exit(1)
 
     if not registry and not group and not tool and not version:
-        ToolOperations.view_default_group(output_format)
+        ToolOperations.view_default_group(print_service)
     elif group and tool and version:
-        ToolOperations.view_version(group, tool, version, registry, output_format)
+        ToolOperations.view_version(group, tool, version, registry, print_service)
     elif group and tool:
-        ToolOperations.view_tool(group, tool, registry, output_format)
+        ToolOperations.view_tool(group, tool, registry, print_service)
     elif group:
-        ToolOperations.view_group(group, registry, output_format)
+        ToolOperations.view_group(group, registry, print_service)
     elif registry:
-        ToolOperations.view_registry(registry, output_format)
+        ToolOperations.view_registry(registry, print_service)
     else:
         print_service.print_error('Specify either registry, group, tool or version parameters')
         sys.exit(1)
