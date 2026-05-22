@@ -47,6 +47,7 @@ from src.utilities.metadata_operations import MetadataOperations
 from src.utilities.permissions_operations import PermissionsOperations
 from src.utilities.printing.print_service import create_print_service
 from src.utilities.printing.storage import create_storage_print_service
+from src.utilities.printing.cluster import create_cluster_print_service
 from src.utilities.pipeline_run_operations import PipelineRunOperations
 from src.utilities.ssh_operations import run_ssh, run_scp, create_tunnel, kill_tunnels, list_tunnels
 from src.utilities.update_cli_version import UpdateCLIVersionManager
@@ -637,133 +638,45 @@ def view_run(run_id, node_details, parameters_details, tasks_details, tags_detai
 
 @cli.command(name='view-cluster')
 @click.argument('node-name', required=False)
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help='Output format. Default is a text table.')
 @common_options
-def view_cluster(node_name):
+def view_cluster(node_name, output_format):
     """Lists cluster nodes
     """
     # If a node id is specified - list details of a node
     if node_name:
-        view_cluster_for_node(node_name)
+        view_cluster_for_node(node_name, output_format)
     # If no argument is specified - list all nodes
     else:
-        view_all_cluster()
+        view_all_cluster(output_format)
 
 
-def view_all_cluster():
-    nodes_table = prettytable.PrettyTable()
-    nodes_table.field_names = ["Name", "Pipeline", "Run", "Addresses", "Created"]
-    nodes_table.align = "l"
+def view_all_cluster(output_format=None):
+    """Display all cluster nodes in the specified format.
+
+    Args:
+        output_format: Optional output format. If 'json', returns JSON. Otherwise returns table.
+    """
     nodes = Cluster.list()
-    if len(nodes) > 0:
-        for node_model in nodes:
-            info_lines = []
-            is_first_line = True
-            pipeline_name = None
-            run_id = None
-            if node_model.run is not None:
-                pipeline_name = node_model.run.pipeline
-                run_id = node_model.run.identifier
-            for address in node_model.addresses:
-                if is_first_line:
-                    info_lines.append([node_model.name, pipeline_name, run_id, address, node_model.created])
-                else:
-                    info_lines.append(['', '', '', address, ''])
-                is_first_line = False
-            if len(info_lines) == 0:
-                info_lines.append([node_model.name, pipeline_name, run_id, None, node_model.created])
-            for line in info_lines:
-                nodes_table.add_row(line)
-            nodes_table.add_row(['', '', '', '', ''])
-        click.echo(nodes_table)
+    print_service = create_cluster_print_service(output_format)
+
+    if nodes:
+        print_service.print_nodes_list(nodes)
     else:
-        click.echo('No data is available for the request')
+        print_service.empty_nodes()
 
 
-def view_cluster_for_node(node_name):
+def view_cluster_for_node(node_name, output_format=None):
+    """Display details of a specific cluster node.
+
+    Args:
+        node_name: Name of the node to display
+        output_format: Optional output format. If 'json', returns JSON. Otherwise returns table.
+    """
     node_model = Cluster.get(node_name)
-    node_main_info_table = prettytable.PrettyTable()
-    node_main_info_table.field_names = ["key", "value"]
-    node_main_info_table.align = "l"
-    node_main_info_table.set_style(12)
-    node_main_info_table.header = False
-    node_main_info_table.add_row(['Name:', node_model.name])
-
-    pipeline_name = None
-    if node_model.run is not None:
-        pipeline_name = node_model.run.pipeline
-
-    node_main_info_table.add_row(['Pipeline:', pipeline_name])
-
-    addresses_string = ''
-    for address in node_model.addresses:
-        addresses_string += address + '; '
-
-    node_main_info_table.add_row(['Addresses:', addresses_string])
-    node_main_info_table.add_row(['Created:', node_model.created])
-    click.echo(node_main_info_table)
-    click.echo()
-
-    if node_model.system_info is not None:
-        table = prettytable.PrettyTable()
-        table.field_names = ["key", "value"]
-        table.align = "l"
-        table.set_style(12)
-        table.header = False
-        for key, value in node_model.system_info:
-            table.add_row([key, value])
-        echo_title('System info:')
-        click.echo(table)
-        click.echo()
-
-    if node_model.labels is not None:
-        table = prettytable.PrettyTable()
-        table.field_names = ["key", "value"]
-        table.align = "l"
-        table.set_style(12)
-        table.header = False
-        for key, value in node_model.labels:
-            if key.lower() == 'node-role.kubernetes.io/master':
-                table.add_row([key, click.style(value, fg='blue')])
-            elif key.lower() == 'kubeadm.alpha.kubernetes.io/role' and value.lower() == 'master':
-                table.add_row([key, click.style(value, fg='blue')])
-            elif key.lower() == 'cloud-pipeline/role' and value.lower() == 'edge':
-                table.add_row([key, click.style(value, fg='blue')])
-            elif key.lower() == 'runid':
-                table.add_row([key, click.style(value, fg='green')])
-            else:
-                table.add_row([key, value])
-        echo_title('Labels:')
-        click.echo(table)
-        click.echo()
-
-    if node_model.allocatable is not None or node_model.capacity is not None:
-        ac_table = prettytable.PrettyTable()
-        ac_table.field_names = ["", "Allocatable", "Capacity"]
-        ac_table.align = "l"
-        keys = []
-        for key in node_model.allocatable.keys():
-            if key not in keys:
-                keys.append(key)
-        for key in node_model.capacity.keys():
-            if key not in keys:
-                keys.append(key)
-        for key in keys:
-            ac_table.add_row([key, node_model.allocatable.get(key, ''), node_model.capacity.get(key, '')])
-        click.echo(ac_table)
-        click.echo()
-
-    if len(node_model.pods) > 0:
-        echo_title("Jobs:", line=False)
-        if len(node_model.pods) > 0:
-            pods_table = prettytable.PrettyTable()
-            pods_table.field_names = ["Name", "Namespace", "Status"]
-            pods_table.align = "l"
-            for pod in node_model.pods:
-                pods_table.add_row([pod.name, pod.namespace, state_utilities.color_state(pod.phase)])
-            click.echo(pods_table)
-        else:
-            click.echo('No jobs are available')
-        click.echo()
+    print_service = create_cluster_print_service(output_format)
+    print_service.print_node_details(node_model)
 
 
 @cli.command(name='run', context_settings=dict(ignore_unknown_options=True))
