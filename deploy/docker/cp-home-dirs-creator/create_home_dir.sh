@@ -194,17 +194,17 @@ function ensure_file_home_storage_for_user {
     else
         echo "-> Using existing FS: $storage_id"
     fi
-
+    if ! [[ "$storage_id" =~ ^[0-9]+$ ]]; then
+        echo "[ERROR] Invalid storage id for $user_name: $storage_id"
+        return 1
+    fi
     if ! grant_storage_owner "$storage_id" "$user_name_full" >/dev/null; then
         echo "[ERROR] Failed to grant OWNER for $user_name to FS: $storage_id"
         return 1
     fi
     echo "-> File datastorage permissions granted"
 
-    if ! [[ "$storage_id" =~ ^[0-9]+$ ]]; then
-        echo "[ERROR] Invalid storage id for $user_name: $storage_id"
-        return 1
-    fi
+
     local set_default_response=$(set_user_default_storage "$user_id" "$storage_id")
     if ! echo "$set_default_response" | jq -e '.status == "OK"' >/dev/null 2>&1; then
         echo "[ERROR] Failed setting default storage for $user_name (id=$storage_id): $(echo "$set_default_response" | jq -r '.message // empty')"

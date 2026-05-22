@@ -18,7 +18,7 @@ The image entrypoint runs `/create_home_dirs.sh` (packaged in the image build).
 
 ## Kubernetes (CronJob)
 
-The manifest `deploy/contents/k8s/cp-home-creator/cp-home-creator-dpl.yaml` defines a **CronJob** that runs **once per hour** (`schedule: "0 * * * *"`).
+The manifest `deploy/contents/k8s/cp-home-creator/cp-home-creator-job.yaml` defines a **CronJob** that runs **once per hour** (`schedule: "0 * * * *"`).
 
 - **Configuration:** environment variables are loaded from the ConfigMap `cp-config-global` (`envFrom`).
 

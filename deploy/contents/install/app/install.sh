@@ -1643,7 +1643,7 @@ if is_service_requested cp-home-dirs; then
         print_info "-> Deploying cp-home-creator service"
         # Run every hour
         export CP_HOME_DIRS_SCHEDULE="${CP_HOME_DIRS_SCHEDULE:-0 * * * *}"
-        create_kube_resource $K8S_SPECS_HOME/cp-home-creator/cp-home-creator-dpl.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-home-creator/cp-home-creator-job.yaml
 
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-home-dirs: deployed"
     fi
