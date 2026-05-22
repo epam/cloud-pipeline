@@ -26,8 +26,11 @@ import org.springframework.stereotype.Component;
 
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 @Slf4j
@@ -55,17 +58,28 @@ public class CertificateNotifier {
     private Map<String, Object> createCertParameters(final PkiCertificate certificate) {
         final Map<String, Object> parameters = new HashMap<>();
         final X509Certificate x509Cert = certificate.getX509Certificate();
+        parameters.put("san", formatSubjectAlternativeNames(x509Cert));
+        parameters.put("serialNumber", x509Cert.getSerialNumber().toString());
+        parameters.put("dn", x509Cert.getSubjectX500Principal().getName());
+        parameters.put("issuer", x509Cert.getIssuerX500Principal().getName());
+        parameters.put("notAfter", x509Cert.getNotAfter().toString());
+        parameters.put("filePath", certificate.getPathToCertFile().toString());
+        return parameters;
+    }
+
+    private String formatSubjectAlternativeNames(final X509Certificate x509Cert) {
         try {
-            parameters.put("san", x509Cert.getSubjectAlternativeNames());
+            final Collection<List<?>> subjectAlternativeNames = x509Cert.getSubjectAlternativeNames();
+            if (subjectAlternativeNames == null || subjectAlternativeNames.isEmpty()) {
+                return StringUtils.EMPTY;
+            }
+            return subjectAlternativeNames.stream()
+                    .filter(entry -> entry != null && entry.size() > 1 && entry.get(1) != null)
+                    .map(entry -> entry.get(1).toString())
+                    .collect(Collectors.joining(", "));
         } catch (CertificateParsingException e) {
             log.warn("Can't obtain SAN info from certificate!", e);
-            parameters.put("san", StringUtils.EMPTY);
+            return StringUtils.EMPTY;
         }
-        parameters.put("serialNumber", x509Cert.getSerialNumber());
-        parameters.put("dn", x509Cert.getSubjectDN());
-        parameters.put("issuer", x509Cert.getIssuerDN());
-        parameters.put("notAfter", x509Cert.getNotAfter());
-        parameters.put("filePath", certificate.getPathToCertFile());
-        return parameters;
     }
 }
