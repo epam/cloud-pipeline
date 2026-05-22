@@ -78,6 +78,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.when;
+import static com.epam.pipeline.util.CustomAssertions.notInvoked;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.quality.Strictness.LENIENT;
@@ -591,6 +592,27 @@ public class AggregatingToolScanManagerTest {
         when(toolVersionManager.findToolVersion(testTool.getId(), LATEST_VERSION)).thenReturn(windowsToolVersion);
         assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
         Mockito.verifyNoInteractions(preferenceManager);
+    }
+
+    @Test
+    public void shouldDenyBlackListedTool() {
+        // Setup: Tool version is in blacklist
+        toolScanResult.setFromBlackList(true);
+        TestUtils.generateScanResult(0, 0, 0, toolScanResult);
+
+        // Should deny execution even if no vulnerabilities and grace period is active
+        assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
+        notInvoked(toolVersionManager).findToolVersion(Mockito.anyLong(), Mockito.anyString());
+    }
+
+    @Test
+    public void shouldAllowWhenNotBlackListed() {
+        // Setup: Tool version is not blacklisted, has no vulnerabilities
+        toolScanResult.setFromBlackList(false);
+        TestUtils.generateScanResult(0, 0, 0, toolScanResult);
+
+        // Should allow execution
+        assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
     }
 
     private final class MockCall<T> implements Call<T> {

@@ -1,3 +1,19 @@
+/*
+ * Copyright 2026 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.common.MessageHelper;
@@ -7,6 +23,8 @@ import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
+import com.epam.pipeline.entity.pipeline.ToolScanStatus;
+import com.epam.pipeline.entity.scan.ToolVersionScanResult;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.docker.DockerClient;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
@@ -21,9 +39,12 @@ import org.springframework.test.util.ReflectionTestUtils;
 import static org.hamcrest.MatcherAssert.assertThat;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -47,6 +68,7 @@ public class ToolManagerUnitTest {
     private static final String SOME_TAG = "tag";
     private static final Long GROUP_ID = CommonCreatorConstants.ID;
     private static final String TEST_DIGEST = "sha256:abc123";
+    private static final Long DOES_NOT_EXIST_ID = 999L;
 
     private final ToolManager manager = new ToolManager();
     private final ToolDao toolDao = mock(ToolDao.class);
@@ -178,6 +200,178 @@ public class ToolManagerUnitTest {
         verify(toolVersionManager).updateOrCreateToolVersion(TOOL_ID, SOME_TAG, TOOL_IMAGE, registry, dockerClient);
         verify(toolVersionManager, times(2))
                 .updateOrCreateToolVersion(anyLong(), anyString(), anyString(), any(), any());
+    }
+
+    @Test
+    public void shouldEnableBlackListWithToolVersion() {
+        final Tool tool = getTool();
+        mockTool(tool);
+        doReturn(Optional.empty()).when(toolVulnerabilityDao).loadToolVersionScan(TOOL_ID, LATEST_TAG);
+
+        manager.updateBlackListWithToolVersionStatus(TOOL_ID, LATEST_TAG, true);
+
+        verify(toolVulnerabilityDao).insertToolVersionScan(eq(TOOL_ID), eq(LATEST_TAG), eq(null), eq(null),
+                eq(null), eq(ToolScanStatus.NOT_SCANNED), any(Date.class), any(Map.class), eq(null), eq(null),
+                eq(false));
+        verify(toolVulnerabilityDao).updateWhiteAndBlackListWithToolVersion(TOOL_ID, LATEST_TAG, false, true);
+    }
+
+    @Test
+    public void shouldUpdateWhiteListWithToolVersion() {
+        final Tool tool = getTool();
+        mockTool(tool);
+        doReturn(Optional.empty()).when(toolVulnerabilityDao).loadToolVersionScan(TOOL_ID, LATEST_TAG);
+
+        manager.updateWhiteListWithToolVersionStatus(TOOL_ID, LATEST_TAG, true);
+
+        verify(toolVulnerabilityDao).insertToolVersionScan(eq(TOOL_ID), eq(LATEST_TAG), eq(null), eq(null),
+                eq(null), eq(ToolScanStatus.NOT_SCANNED), any(Date.class), any(Map.class), eq(null), eq(null),
+                eq(false));
+        verify(toolVulnerabilityDao).updateWhiteAndBlackListWithToolVersion(TOOL_ID, LATEST_TAG, true, false);
+    }
+
+    @Test
+    public void shouldDisableBlackListWithToolVersion() {
+        final Tool tool = getTool();
+        final ToolVersionScanResult scanResult = new ToolVersionScanResult(LATEST_TAG);
+        scanResult.setFromBlackList(true);
+        mockTool(tool);
+        doReturn(Optional.of(scanResult)).when(toolVulnerabilityDao).loadToolVersionScan(TOOL_ID, LATEST_TAG);
+
+        manager.updateBlackListWithToolVersionStatus(TOOL_ID, LATEST_TAG, false);
+
+        verify(toolVulnerabilityDao).updateWhiteAndBlackListWithToolVersion(TOOL_ID, LATEST_TAG, false, false);
+    }
+
+    @Test
+    public void shouldDisableWhiteListForToolVersion() {
+        final Tool tool = getTool();
+        final ToolVersionScanResult scanResult = new ToolVersionScanResult(LATEST_TAG);
+        scanResult.setFromWhiteList(true);
+        mockTool(tool);
+        doReturn(Optional.of(scanResult)).when(toolVulnerabilityDao).loadToolVersionScan(TOOL_ID, LATEST_TAG);
+
+        manager.updateWhiteListWithToolVersionStatus(TOOL_ID, LATEST_TAG, false);
+
+        verify(toolVulnerabilityDao).updateWhiteAndBlackListWithToolVersion(TOOL_ID, LATEST_TAG, false, false);
+    }
+
+    @Test
+    public void shouldDisableWhiteListWhenEnablingBlackList() {
+        final Tool tool = getTool();
+        final ToolVersionScanResult scanResult = new ToolVersionScanResult(LATEST_TAG);
+        scanResult.setFromWhiteList(true);
+        scanResult.setFromBlackList(false);
+        mockTool(tool);
+        doReturn(Optional.of(scanResult)).when(toolVulnerabilityDao).loadToolVersionScan(TOOL_ID, LATEST_TAG);
+
+        manager.updateBlackListWithToolVersionStatus(TOOL_ID, LATEST_TAG, true);
+
+        verify(toolVulnerabilityDao).updateWhiteAndBlackListWithToolVersion(TOOL_ID, LATEST_TAG, false, true);
+    }
+
+    @Test
+    public void shouldDisableBlackListWhenEnablingWhiteList() {
+        final Tool tool = getTool();
+        final ToolVersionScanResult scanResult = new ToolVersionScanResult(LATEST_TAG);
+        scanResult.setFromWhiteList(false);
+        scanResult.setFromBlackList(true);
+        mockTool(tool);
+        doReturn(Optional.of(scanResult)).when(toolVulnerabilityDao).loadToolVersionScan(TOOL_ID, LATEST_TAG);
+
+        manager.updateWhiteListWithToolVersionStatus(TOOL_ID, LATEST_TAG, true);
+
+        verify(toolVulnerabilityDao).updateWhiteAndBlackListWithToolVersion(TOOL_ID, LATEST_TAG, true, false);
+    }
+
+    @Test
+    public void shouldPreserveWhiteListWhenDisablingBlackList() {
+        final Tool tool = getTool();
+        final ToolVersionScanResult scanResult = new ToolVersionScanResult(LATEST_TAG);
+        scanResult.setFromWhiteList(true);
+        scanResult.setFromBlackList(true);
+        mockTool(tool);
+        doReturn(Optional.of(scanResult)).when(toolVulnerabilityDao).loadToolVersionScan(TOOL_ID, LATEST_TAG);
+
+        manager.updateBlackListWithToolVersionStatus(TOOL_ID, LATEST_TAG, false);
+
+        verify(toolVulnerabilityDao).updateWhiteAndBlackListWithToolVersion(TOOL_ID, LATEST_TAG, true, false);
+    }
+
+    @Test
+    public void shouldPreserveBlackListWhenDisablingWhiteList() {
+        final Tool tool = getTool();
+        final ToolVersionScanResult scanResult = new ToolVersionScanResult(LATEST_TAG);
+        scanResult.setFromWhiteList(true);
+        scanResult.setFromBlackList(true);
+        mockTool(tool);
+        doReturn(Optional.of(scanResult)).when(toolVulnerabilityDao).loadToolVersionScan(TOOL_ID, LATEST_TAG);
+
+        manager.updateWhiteListWithToolVersionStatus(TOOL_ID, LATEST_TAG, false);
+
+        verify(toolVulnerabilityDao).updateWhiteAndBlackListWithToolVersion(TOOL_ID, LATEST_TAG, false, true);
+    }
+
+    @Test
+    public void shouldCreateToolVersionScanWhenEnablingBlackListForNonExistentScan() {
+        final Tool tool = getTool();
+        mockTool(tool);
+        doReturn(Optional.empty()).when(toolVulnerabilityDao).loadToolVersionScan(TOOL_ID, LATEST_TAG);
+
+        manager.updateBlackListWithToolVersionStatus(TOOL_ID, LATEST_TAG, true);
+
+        verify(toolVulnerabilityDao).insertToolVersionScan(eq(TOOL_ID), eq(LATEST_TAG), eq(null), eq(null),
+                eq(null), eq(ToolScanStatus.NOT_SCANNED), any(Date.class), any(Map.class), eq(null), eq(null),
+                eq(false));
+        verify(toolVulnerabilityDao).updateWhiteAndBlackListWithToolVersion(TOOL_ID, LATEST_TAG, false, true);
+    }
+
+    @Test
+    public void shouldCreateToolVersionScanWhenEnablingWhiteListForNonExistentScan() {
+        final Tool tool = getTool();
+        mockTool(tool);
+        doReturn(Optional.empty()).when(toolVulnerabilityDao).loadToolVersionScan(TOOL_ID, LATEST_TAG);
+
+        manager.updateWhiteListWithToolVersionStatus(TOOL_ID, LATEST_TAG, true);
+
+        verify(toolVulnerabilityDao).insertToolVersionScan(eq(TOOL_ID), eq(LATEST_TAG), eq(null), eq(null),
+                eq(null), eq(ToolScanStatus.NOT_SCANNED), any(Date.class), any(Map.class), eq(null), eq(null),
+                eq(false));
+        verify(toolVulnerabilityDao).updateWhiteAndBlackListWithToolVersion(TOOL_ID, LATEST_TAG, true, false);
+    }
+
+    @Test
+    public void shouldFailBlackListUpdateForSymlinkTool() {
+        final Tool symlink = getSymlink();
+        mockTool(symlink);
+
+        assertThrows(IllegalArgumentException.class, () ->
+                manager.updateBlackListWithToolVersionStatus(SYMLINK_ID, LATEST_TAG, true));
+    }
+
+    @Test
+    public void shouldFailUpdateWhiteListWhenToolIsSymlink() {
+        final Tool symlink = getSymlink();
+        mockTool(symlink);
+
+        assertThrows(IllegalArgumentException.class, () ->
+                manager.updateWhiteListWithToolVersionStatus(SYMLINK_ID, LATEST_TAG, true));
+    }
+
+    @Test
+    public void shouldFailBlackListUpdateForNonExistentTool() {
+        doReturn(null).when(toolDao).loadTool(DOES_NOT_EXIST_ID);
+
+        assertThrows(IllegalArgumentException.class, () ->
+                manager.updateBlackListWithToolVersionStatus(DOES_NOT_EXIST_ID, LATEST_TAG, true));
+    }
+
+    @Test
+    public void shouldFailUpdateWhiteListWhenToolDoesNotExist() {
+        doReturn(null).when(toolDao).loadTool(DOES_NOT_EXIST_ID);
+
+        assertThrows(IllegalArgumentException.class, () ->
+                manager.updateWhiteListWithToolVersionStatus(DOES_NOT_EXIST_ID, LATEST_TAG, true));
     }
 
     private Tool createToolForCreate() {

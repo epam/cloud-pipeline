@@ -219,6 +219,11 @@ public class AggregatingToolScanManager implements ToolScanManager, Initializing
 
     private ToolExecutionCheckStatus checkStatus(final Tool tool, final String tag,
                                                  final Optional<ToolVersionScanResult> versionScanOp) {
+        if (versionScanOp.isPresent() && versionScanOp.get().isFromBlackList()) {
+            LOGGER.warn("Tool: {} version: {} is blacklisted. Execution denied.", tool.getId(), tag);
+            return ToolExecutionCheckStatus.fail("Tool version is blacklisted and cannot be executed.");
+        }
+
         final boolean isWindowsTool = toolVersionManager.findToolVersion(tool.getId(), tag)
             .map(ToolVersion::getPlatform)
             .filter(WINDOWS_PLATFORM::equalsIgnoreCase)

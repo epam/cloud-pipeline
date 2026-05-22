@@ -65,6 +65,7 @@ public class ToolControllerTest extends AbstractControllerTest {
     private static final String REGISTER_TOOL_URL = TOOL_URL + "/register";
     private static final String UPDATE_TOOL_URL = TOOL_URL + "/update";
     private static final String UPDATE_WHITE_LIST_URL = TOOL_URL + "/updateWhiteList";
+    private static final String UPDATE_BLACK_LIST_URL = TOOL_URL + "/updateBlackList";
     private static final String LOAD_TOOL_URL = TOOL_URL + "/load";
     private static final String DELETE_TOOL_URL = TOOL_URL + "/delete";
     private static final String LOAD_IMAGE_TAGS_URL = TOOL_URL + "/%d/tags";
@@ -164,6 +165,27 @@ public class ToolControllerTest extends AbstractControllerTest {
     @Test
     public void shouldFailUpdateWhiteListWithToolVersion() {
         performUnauthorizedRequest(post(UPDATE_WHITE_LIST_URL));
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldUpdateBlackListWithToolVersion() {
+        final ToolVersionScanResult toolVersionScanResult = DockerCreatorUtils.getToolVersionScanResult();
+        final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add(TOOL_ID, ID_AS_STRING);
+        params.add(VERSION, TEST_STRING);
+        doReturn(toolVersionScanResult).when(mockToolApiService)
+                .updateBlackListWithToolVersion(ID, TEST_STRING, true);
+
+        final MvcResult mvcResult = performRequest(post(UPDATE_BLACK_LIST_URL).params(params));
+
+        verify(mockToolApiService).updateBlackListWithToolVersion(ID, TEST_STRING, true);
+        assertResponse(mvcResult, toolVersionScanResult, DockerCreatorUtils.TOOL_VERSION_SCAN_INSTANCE_TYPE);
+    }
+
+    @Test
+    public void shouldFailUpdateBlackListWithToolVersion() {
+        performUnauthorizedRequest(post(UPDATE_BLACK_LIST_URL));
     }
 
     @Test
