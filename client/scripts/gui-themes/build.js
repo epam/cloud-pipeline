@@ -14,6 +14,4 @@
  *  limitations under the License.
  */
 
-const generateThemes = require('./generate-themes');
-
-generateThemes();
+require('./generate-palette');

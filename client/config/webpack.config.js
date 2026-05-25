@@ -47,7 +47,6 @@ const svgRegex = /\.svg$/;
 // style files regExes
 const cssRegex = /\.css$/;
 const sassRegex = /\.(scss|sass)$/;
-const lessRegex = /\.less$/;
 
 // This is the production and development configuration.
 // It is focused on developer experience, fast rebuilds, and a minimal bundle.
@@ -253,7 +252,6 @@ module.exports = function (webpackEnv) {
                 htmlRegex,
                 /\.(js|mjs|jsx|ts|tsx)(\?.*)?$/,
                 cssRegex,
-                lessRegex,
                 sassRegex,
                 jsonRegex,
                 svgRegex
@@ -308,7 +306,7 @@ module.exports = function (webpackEnv) {
                   ? shouldUseSourceMap
                   : isEnvDevelopment
               }),
-              include: /(node_modules|src[\\/]staticStyles)/,
+              include: /(node_modules|src[\\/]staticStyles|src[\\/]themes[\\/]styles)/,
               // Don't consider CSS imports dead code even if the
               // containing package claims to have no side effects.
               // Remove this when webpack adds a warning or an error for this.
@@ -329,21 +327,12 @@ module.exports = function (webpackEnv) {
                   exportLocalsConvention: 'camelCase'
                 }
               }),
-              exclude: /(node_modules|src[\\/]staticStyles)/,
+              exclude: /(node_modules|src[\\/]staticStyles|src[\\/]themes[\\/]styles)/,
               // Don't consider CSS imports dead code even if the
               // containing package claims to have no side effects.
               // Remove this when webpack adds a warning or an error for this.
               // See https://github.com/webpack/webpack/issues/6571
               sideEffects: true
-            },
-            {
-              test: lessRegex,
-              use: getStyleLoaders({}, true, 'less-loader', {
-                lessOptions: {
-                  math: 'always',
-                  javascriptEnabled: true
-                }
-              })
             },
             {
               test: sassRegex,
