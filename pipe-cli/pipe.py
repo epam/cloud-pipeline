@@ -55,7 +55,7 @@ from src.utilities.user_token_operations import UserTokenOperations
 from src.utilities.dts_operations_manager import DtsOperationsManager
 from src.utilities.cloud_provider_operations import CloudProviderOperations
 from src.version import __version__, __bundle_info__, __component_version__
-from src.utilities.printing.tool_print_service import create_tool_print_service
+from src.utilities.printing.tool import create_tool_print_service
 
 MAX_INSTANCE_COUNT = 1000
 MAX_CORES_COUNT = 10000

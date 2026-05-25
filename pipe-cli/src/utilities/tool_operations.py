@@ -18,7 +18,7 @@ import sys
 from src.api.docker_registry import DockerRegistry
 from src.api.tool import Tool
 from src.utilities.hidden_object_manager import HiddenObjectManager
-from src.utilities.printing.tool_print_service import create_tool_print_service
+from src.utilities.printing.tool import create_tool_print_service
 
 
 class ToolOperations(object):
