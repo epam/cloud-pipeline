@@ -14,12 +14,10 @@
  *  limitations under the License.
  */
 
-@import "variables";
-
 .cp-panel {
-  border: 1px solid @panel-border-color;
-  background-color: @panel-background-color;
-  color: @application-color;
+  border: 1px solid var(--cp-color-border);
+  background-color: var(--cp-color-bg-container);
+  color: var(--cp-color-text);
 }
 
 .cp-panel.cp-panel-transparent {
@@ -42,12 +40,12 @@
 }
 
 .cp-card-background-color {
-  background-color: @card-background-color;
+  background-color: var(--cp-color-bg-elevated);
 }
 
 .cp-panel .cp-panel-card {
-  border: 1px solid @card-border-color;
-  background-color: @card-background-color;
+  border: 1px solid var(--cp-color-border-card);
+  background-color: var(--cp-color-bg-elevated);
   margin: 2px;
 }
 
@@ -64,8 +62,8 @@
 }
 
 .cp-panel .cp-panel-card.cp-card-service {
-  border: 1px solid @card-service-border-color;
-  background-color: @card-service-background-color;
+  border: 1px solid var(--cp-color-border-service-card);
+  background-color: var(--cp-color-bg-service-card);
 }
 
 .cp-panel .cp-panel-card.cp-card-service.borderless {
@@ -73,22 +71,22 @@
 }
 
 .cp-panel .cp-panel-card:hover {
-  box-shadow: 0 1px 6px @card-hovered-shadow-color;
-  border-color: @card-hovered-shadow-color;
+  box-shadow: 0 1px 6px var(--cp-color-card-shadow);
+  border-color: var(--cp-color-card-shadow);
 }
 
 .cp-panel .cp-panel-card.cp-card-service:hover {
-  box-shadow: 0 1px 6px @card-service-hovered-shadow-color;
-  border-color: @card-service-hovered-shadow-color;
+  box-shadow: 0 1px 6px var(--cp-color-service-card-shadow);
+  border-color: var(--cp-color-service-card-shadow);
 }
 
 .cp-panel .cp-panel-card .cp-panel-card-title,
 .cp-panel .cp-panel-card .cp-panel-card-text {
-  color: @application-color;
+  color: var(--cp-color-text);
 }
 
 .cp-panel .cp-panel-card .cp-panel-card-sub-text {
-  color: @application-color-faded;
+  color: var(--cp-color-text-secondary);
 }
 
 .cp-panel .cp-panel-card .cp-panel-card-title {
@@ -96,39 +94,39 @@
 }
 
 .cp-panel .cp-panel-card .cp-card-action-button {
-  color: @primary-color;
+  color: var(--cp-color-primary);
 }
 
 .cp-panel .cp-panel-card .cp-card-action-button.cp-danger {
-  color: @btn-danger-color;
+  color: var(--cp-color-btn-danger-text);
 }
 
 .cp-panel .cp-panel-card .cp-card-action-button.cp-disabled {
-  color: @btn-disabled-color;
+  color: var(--cp-color-btn-disabled-text);
   cursor: not-allowed;
 }
 
 .cp-panel .cp-panel-card .cp-panel-card-actions .cp-panel-card-actions-background {
-  background-color: @card-background-color;
+  background-color: var(--cp-color-bg-elevated);
 }
 
 .cp-panel .cp-panel-card.cp-card-service .cp-panel-card-actions .cp-panel-card-actions-background {
-  background-color: @card-service-background-color;
+  background-color: var(--cp-color-bg-service-card);
 }
 
 .cp-panel .cp-panel-card.cp-card-service .cp-panel-card-actions:hover .cp-panel-card-actions-background,
 .cp-panel .cp-panel-card.cp-card-service .cp-panel-card-actions.hovered .cp-panel-card-actions-background {
-  background-color: @card-service-actions-active-background;
+  background-color: var(--cp-color-service-card-actions-active-bg);
 }
 
 .cp-panel .cp-panel-card .cp-panel-card-actions:hover .cp-panel-card-actions-background,
 .cp-panel .cp-panel-card .cp-panel-card-actions.hovered .cp-panel-card-actions-background {
-  background-color: @card-actions-active-background;
+  background-color: var(--cp-color-card-actions-active-bg);
 }
 
 .cp-panel .cp-panel-card.cp-card-service .cp-panel-card-actions:hover .cp-panel-card-actions-background,
 .cp-panel .cp-panel-card.cp-card-service .cp-panel-card-actions.hovered .cp-panel-card-actions-background {
-  background-color: @card-service-actions-active-background;
+  background-color: var(--cp-color-service-card-actions-active-bg);
 }
 
 .cp-panel .cp-panel-card.cp-card-no-hover:hover,
@@ -137,21 +135,21 @@
 }
 
 .cp-content-panel {
-  background-color: @card-background-color;
-  border-color: @card-border-color;
-  color: @application-color;
+  background-color: var(--cp-color-bg-elevated);
+  border-color: var(--cp-color-border-card);
+  color: var(--cp-color-text);
 }
 
 .cp-content-panel-header {
-  background-color: @card-header-background;
-  border-color: @card-border-color;
-  color: @application-color;
+  background-color: var(--cp-color-bg-elevated-header);
+  border-color: var(--cp-color-border-card);
+  color: var(--cp-color-text);
 }
 
 .cp-resizable-panel-anchor {
-  background-color: @card-header-background;
+  background-color: var(--cp-color-bg-elevated-header);
 }
 
 .cp-card-border {
-  border: 1px solid @card-border-color;
+  border: 1px solid var(--cp-color-border-card);
 }

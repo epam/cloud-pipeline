@@ -14,38 +14,36 @@
  *  limitations under the License.
  */
 
-@import "variables";
-
 .cp-library-metadata-item-key {
-  background-color: @tag-key-background-color;
-  border-bottom: 1px solid @tag-key-value-divider-color;
+  background-color: var(--cp-color-tag-key-bg);
+  border-bottom: 1px solid var(--cp-color-tag-divider);
 }
 
 .cp-library-metadata-item-value {
-  background-color: @tag-value-background-color;
+  background-color: var(--cp-color-tag-value-bg);
 }
 
 .cp-library-metadata-additional-actions {
-  background-color: @card-background-color;
-  border-color: @table-border-color;
+  background-color: var(--cp-color-bg-elevated);
+  border-color: var(--cp-color-border-table);
 }
 
 .cp-metadata-item-row {
-  color: @application-color;
+  color: var(--cp-color-text);
 }
 
 .cp-metadata-item-row.key {
-  background-color: @element-selected-background-color;
+  background-color: var(--cp-color-interactive-selected-bg);
 }
 
 .cp-metadata-item-content-preview {
-  background-color: @card-background-color;
-  color: @application-color;
+  background-color: var(--cp-color-bg-elevated);
+  color: var(--cp-color-text);
 }
 
 .cp-metadata-item-row.read-only {
-  color: @application-color-faded;
-  background-color: @element-selected-background-color;
+  color: var(--cp-color-text-secondary);
+  background-color: var(--cp-color-interactive-selected-bg);
 }
 
 .cp-metadata-item-row td {
@@ -64,137 +62,137 @@
 .cp-metadata-item-row.key td.cp-metadata-item-key:hover,
 .cp-metadata-item-row.value td:hover {
   cursor: text;
-  border: 1px dashed @panel-border-color;
+  border: 1px dashed var(--cp-color-border);
 }
 
 .cp-metadata-fs-notification:nth-child(4n+3),
 .cp-metadata-fs-notification:nth-child(4n) {
-  background-color: @even-element-background;
+  background-color: var(--cp-color-bg-striped);
 }
 
 .cp-metadata-item-json-table {
-  background-color: @card-background-color;
-  color: @application-color;
-  border-color: @card-border-color;
+  background-color: var(--cp-color-bg-elevated);
+  color: var(--cp-color-text);
+  border-color: var(--cp-color-border-card);
   border-collapse: collapse;
 }
 
 .cp-metadata-item-json-table th,
 .cp-metadata-item-json-table td {
   padding: 2px 4px;
-  border: 1px solid @card-border-color;
+  border: 1px solid var(--cp-color-border-card);
 }
 
 .cp-library-breadcrumbs-editable-field:hover {
-  border: 1px solid @panel-border-color;
-  background-color: @element-selected-background-color !important;
+  border: 1px solid var(--cp-color-border);
+  background-color: var(--cp-color-interactive-selected-bg) !important;
 }
 
 .cp-library-breadcrumbs-editable-field-icon {
-  color: @application-color-faded;
+  color: var(--cp-color-text-secondary);
 }
 
 .cp-library-breadcrumbs-editable-field:hover .cp-library-breadcrumbs-editable-field-icon {
-  color: @application-color;
+  color: var(--cp-color-text);
 }
 
 .cp-library-path-components-container:hover {
   transition: background-color 0.5s ease;
-  background-color: @element-selected-background-color;
+  background-color: var(--cp-color-interactive-selected-bg);
 }
 
 .cp-library-metadata-table {
-  border: 1px solid @table-border-color;
-  background-color: @card-background-color;
+  border: 1px solid var(--cp-color-border-table);
+  background-color: var(--cp-color-bg-elevated);
 }
 
 .cp-library-metadata-table-cell {
-  border-right: 1px solid fadeout(@application-color, 90%);
+  border-right: 1px solid color-mix(in srgb, var(--cp-color-text) 10%, transparent);
 }
 
 .cp-library-metadata-table-cell-selected {
-  background-color: fadeout(@primary-hover-color, 70%);
-  color: @application-color;
+  background-color: color-mix(in srgb, var(--cp-color-primary-hover) 30%, transparent);
+  color: var(--cp-color-text);
 }
 
 .cp-library-metadata-table-marker {
-  background-color: @primary-color;
+  background-color: var(--cp-color-primary);
 }
 
 .cp-library-metadata-panel-placeholder {
-  color: @application-color-faded;
+  color: var(--cp-color-text-secondary);
 }
 
 .cp-library-metadata-spread-top-cell {
-  border-top-color: @primary-color;
+  border-top-color: var(--cp-color-primary);
 }
 
 .cp-library-metadata-spread-bottom-cell {
-  border-bottom-color: @primary-color;
+  border-bottom-color: var(--cp-color-primary);
 }
 
 .cp-library-metadata-table .cp-library-metadata-spread-right-cell.cp-library-metadata-spread-cell-selected,
 .cp-library-metadata-table .cp-library-metadata-spread-right-cell.cp-library-metadata-spread-cell-hovered,
 .cp-library-metadata-table .cp-library-metadata-spread-right-cell.cp-library-metadata-spread-selected {
-  border-right: 1px solid @primary-color;
+  border-right: 1px solid var(--cp-color-primary);
 }
 
 .cp-library-metadata-spread-left-cell {
-  border-left-color: @primary-color;
+  border-left-color: var(--cp-color-primary);
 }
 
 .cp-library-metadata-spread-selected {
-  background-color: fadeout(@primary-hover-color, 60%);
+  background-color: color-mix(in srgb, var(--cp-color-primary-hover) 40%, transparent);
 }
 
 .cp-library-metadata-spread-cell-hovered {
-  background-color: fadeout(@primary-hover-color, 60%);
+  background-color: color-mix(in srgb, var(--cp-color-primary-hover) 40%, transparent);
 }
 
 .cp-library-metadata-spread-cell-selected {
-  background-color: fadeout(@primary-hover-color, 90%);
+  background-color: color-mix(in srgb, var(--cp-color-primary-hover) 10%, transparent);
 }
 
 .cp-metadata-dropdown-row {
-  border-bottom: 1px solid @input-addon;
-  background-color: @card-background-color;
+  border-bottom: 1px solid var(--cp-color-input-addon-bg);
+  background-color: var(--cp-color-bg-elevated);
 }
 
 .cp-sample-sheet-table,
 .cp-sample-sheet-table th,
 .cp-sample-sheet-table td {
-  border-color: @card-border-color;
+  border-color: var(--cp-color-border-card);
 }
 
 .cp-metadata-predefined-filter.cp-primary {
-  color: @primary-color;
+  color: var(--cp-color-primary);
 }
 .cp-metadata-predefined-filter.cp-primary:not(.cp-library-metadata-cell) {
-  border-color: @primary-color;
+  border-color: var(--cp-color-primary);
 }
 
 .cp-metadata-predefined-filter.cp-primary.applied.cp-library-metadata-cell,
 .cp-metadata-predefined-filter.cp-primary.applied {
-  color: @primary-text-color;
-  background-color: @primary-color;
+  color: var(--cp-color-primary-on);
+  background-color: var(--cp-color-primary);
 }
 .cp-metadata-predefined-filter.cp-primary.applied:not(.cp-library-metadata-cell) {
-  border-color: @primary-color;
+  border-color: var(--cp-color-primary);
 }
 
 .cp-metadata-predefined-filter.cp-danger.cp-library-metadata-cell,
 .cp-metadata-predefined-filter.cp-danger {
-  color: @btn-danger-color;
+  color: var(--cp-color-btn-danger-text);
 }
 .cp-metadata-predefined-filter.cp-danger:not(.cp-library-metadata-cell) {
-  border-color: @btn-danger-color;
+  border-color: var(--cp-color-btn-danger-text);
 }
 
 .cp-metadata-predefined-filter.cp-danger.applied.cp-library-metadata-cell,
 .cp-metadata-predefined-filter.cp-danger.applied {
-  color: @btn-danger-active-color;
-  background-color: @btn-danger-active-background;
+  color: var(--cp-color-btn-danger-active-text);
+  background-color: var(--cp-color-btn-danger-active-bg);
 }
 .cp-metadata-predefined-filter.cp-danger.applied:not(.cp-library-metadata-cell) {
-  background-color: @btn-danger-active-background;
+  background-color: var(--cp-color-btn-danger-active-bg);
 }

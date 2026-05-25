@@ -14,20 +14,18 @@
  *  limitations under the License.
  */
 
-@import "variables";
-
 .code-highlight {
-  color: @application-color;
-  background-color: @code-background-color;
-  border: 1px solid @card-border-color;
+  color: var(--cp-color-text);
+  background-color: var(--cp-color-bg-code);
+  border: 1px solid var(--cp-color-border-card);
   border-radius: 4px;
 }
 
 .markdown pre,
 .markdown code {
-  color: @application-color;
-  background-color: @code-background-color;
-  border: 1px solid @card-border-color;
+  color: var(--cp-color-text);
+  background-color: var(--cp-color-bg-code);
+  border: 1px solid var(--cp-color-border-card);
   border-radius: 4px;
   padding: 10px;
   margin: 5px 0;
@@ -110,13 +108,13 @@
   margin: 0;
   padding: 10px 0;
   padding-left: 1rem;
-  border-left: 4px solid @card-border-color;
-  background-color: @code-background-color;
+  border-left: 4px solid var(--cp-color-border-card);
+  background-color: var(--cp-color-bg-code);
 }
 
 .markdown hr {
   margin: 5px 0;
-  border-top: 1px solid @card-border-color;
+  border-top: 1px solid var(--cp-color-border-card);
   border-right: none;
   border-left: none;
   border-bottom: none;
@@ -124,7 +122,7 @@
 
 .markdown table {
   border-collapse: collapse;
-  border: 1px solid @card-border-color;
+  border: 1px solid var(--cp-color-border-card);
   margin-bottom: 10px;
 
   &:last-child {
@@ -134,28 +132,28 @@
 
 .markdown table td,
 .markdown table th {
-  border: 1px solid @card-border-color;
+  border: 1px solid var(--cp-color-border-card);
   padding: 5px;
 }
 
 .markdown table tr:nth-child(even) {
-  background-color: @even-element-background;
+  background-color: var(--cp-color-bg-striped);
 }
 
 .hljs {
-  color: @application-color;
-  background: @card-background-color;
+  color: var(--cp-color-text);
+  background: var(--cp-color-bg-elevated);
 }
 
 .hljs-comment,
 .hljs-quote {
-  color: @application-color-faded;
+  color: var(--cp-color-text-secondary);
 }
 
 .hljs-keyword,
 .hljs-selector-tag,
 .hljs-subst {
-  color: @application-color;
+  color: var(--cp-color-text);
 }
 
 .hljs-number,
@@ -163,208 +161,208 @@
 .hljs-variable,
 .hljs-template-variable,
 .hljs-tag .hljs-attr {
-  color: @color-aqua;
+  color: var(--cp-color-aqua);
 }
 
 .hljs-string,
 .hljs-doctag {
-  color: @color-pink;
+  color: var(--cp-color-pink);
 }
 
 .hljs-title,
 .hljs-section,
 .hljs-selector-id {
-  color: @color-red;
+  color: var(--cp-color-red);
 }
 
 .hljs-type,
 .hljs-class .hljs-title {
-  color: @color-blue-dimmed;
+  color: var(--cp-color-blue-dimmed);
 }
 
 .hljs-tag,
 .hljs-name,
 .hljs-attribute {
-  color: @primary-color;
+  color: var(--cp-color-primary);
   font-weight: normal;
 }
 
 .hljs-regexp,
 .hljs-link {
-  color: @color-green;
+  color: var(--cp-color-green);
 }
 
 .hljs-symbol,
 .hljs-bullet {
-  color: @color-violet;
+  color: var(--cp-color-violet);
 }
 
 .hljs-built_in,
 .hljs-builtin-name {
-  color: @primary-color;
+  color: var(--cp-color-primary);
 }
 
 .hljs-meta {
-  color: @application-color-faded;
+  color: var(--cp-color-text-secondary);
   font-weight: bold;
 }
 
 .hljs-deletion {
-  background: @alert-error-background;
+  background: var(--cp-color-alert-error-bg);
 }
 
 .hljs-addition {
-  background: @alert-success-background;
+  background: var(--cp-color-alert-success-bg);
 }
 
 .cp-code-editor {
-  background-color: @card-background-color;
-  color: @application-color;
-  border-color: @card-border-color;
+  background-color: var(--cp-color-bg-elevated);
+  color: var(--cp-color-text);
+  border-color: var(--cp-color-border-card);
 }
 
 .CodeMirror {
-  background-color: @card-background-color;
-  color: @application-color;
-  border: 1px solid @card-border-color;
+  background-color: var(--cp-color-bg-elevated);
+  color: var(--cp-color-text);
+  border: 1px solid var(--cp-color-border-card);
 }
 
 .CodeMirror-cursor {
-  border-color: @application-color;
+  border-color: var(--cp-color-text);
 }
 
 .CodeMirror-gutters {
-  background-color: @card-header-background;
-  border-color: @card-border-color;
+  background-color: var(--cp-color-bg-elevated-header);
+  border-color: var(--cp-color-border-card);
 }
 
 .CodeMirror-linenumber {
-  color: @application-color-faded;
+  color: var(--cp-color-text-secondary);
 }
 
 .CodeMirror-selected {
-  background-color: @codemirror-selected-background-color;
+  background-color: var(--cp-color-codemirror-selection-bg);
 }
 
 .CodeMirror-focused .CodeMirror-selected {
-  background-color: @codemirror-focused-selected-background-color;
+  background-color: var(--cp-color-codemirror-selection-focused-bg);
 }
 
 .cm-s-default .cm-header {
-  color: @color-blue;
+  color: var(--cp-color-blue);
 }
 
 .cm-s-default .cm-quote {
-  color: @color-green;
+  color: var(--cp-color-green);
 }
 
 .cm-negative {
-  color: @color-sensitive;
+  color: var(--cp-color-sensitive);
 }
 
 .cm-positive {
-  color: @color-green;
+  color: var(--cp-color-green);
 }
 
 .cm-s-default .cm-keyword {
-  color: @color-violet;
+  color: var(--cp-color-violet);
 }
 
 .cm-s-default .cm-atom {
-  color: @color-blue;
+  color: var(--cp-color-blue);
 }
 
 .cm-s-default .cm-number {
-  color: @color-aqua;
+  color: var(--cp-color-aqua);
 }
 
 .cm-s-default .cm-def {
-  color: @color-blue-dimmed;
+  color: var(--cp-color-blue-dimmed);
 }
 
 .cm-s-default .cm-variable-2 {
-  color: @color-blue-dimmed;
+  color: var(--cp-color-blue-dimmed);
 }
 
 .cm-s-default .cm-variable-3,
 .cm-s-default .cm-type {
-  color: @color-green;
+  color: var(--cp-color-green);
 }
 
 .cm-s-default .cm-comment {
-  color: @color-yellow;
+  color: var(--cp-color-yellow);
 }
 
 .cm-s-default .cm-string {
-  color: @color-red;
+  color: var(--cp-color-red);
 }
 
 .cm-s-default .cm-string-2 {
-  color: @color-yellow;
+  color: var(--cp-color-yellow);
 }
 
 .cm-s-default .cm-meta,
 .cm-s-default .cm-qualifier {
-  color: @application-color-disabled;
+  color: var(--cp-color-text-disabled);
 }
 
 .cm-s-default .cm-builtin {
-  color: @color-blue-dimmed;
+  color: var(--cp-color-blue-dimmed);
 }
 
 .cm-s-default .cm-bracket {
-  color: @color-grey;
+  color: var(--cp-color-grey);
 }
 
 .cm-s-default .cm-tag {
-  color: @color-green;
+  color: var(--cp-color-green);
 }
 
 .cm-s-default .cm-hr {
-  color: @application-color-faded;
+  color: var(--cp-color-text-secondary);
 }
 
 .cm-s-default .cm-attribute,
 .cm-s-default .cm-link {
-  color: @primary-color;
+  color: var(--cp-color-primary);
 }
 
 .cm-s-default .cm-error,
 .cm-invalidchar {
-  color: @color-red;
+  color: var(--cp-color-red);
 }
 
 div.CodeMirror span.CodeMirror-matchingbracket {
-  color: @color-green;
+  color: var(--cp-color-green);
 }
 
 div.CodeMirror span.CodeMirror-nonmatchingbracket {
-  color: @color-red;
+  color: var(--cp-color-red);
 }
 
-.CodeMirror-matchingtag { background: fadeout(@color-yellow, 50%); }
+.CodeMirror-matchingtag { background: color-mix(in srgb, var(--cp-color-yellow) 50%, transparent); }
 
 .CodeMirror-activeline-background {
-  background: @card-header-background;
+  background: var(--cp-color-bg-elevated-header);
 }
 
 .handsontable {
-  color: @application-color;
+  color: var(--cp-color-text);
 }
 
 .handsontable th {
-  background-color: @card-header-background;
+  background-color: var(--cp-color-bg-elevated-header);
 }
 
 .handsontable td {
-  background-color: @card-background-color;
+  background-color: var(--cp-color-bg-elevated);
 }
 
 .handsontable tr th,
 .handsontable tr td,
 .handsontable tr:first-child th,
 .handsontable tr:first-child td {
-  color: @application-color;
+  color: var(--cp-color-text);
 }
 
 .handsontable tr th,
@@ -372,65 +370,65 @@ div.CodeMirror span.CodeMirror-nonmatchingbracket {
 .handsontable tr:first-child th,
 .handsontable tr:first-child td,
 .handsontable.htRowHeaders thead tr th:nth-child(2) {
-  border-color: darken(@card-border-color, 5%);
+  border-color: color-mix(in oklch, var(--cp-color-border-card), black 5%);
 }
 
 .handsontable tbody th.ht__highlight,
 .handsontable thead th.ht__highlight {
-  background-color: @primary-color;
-  color: @primary-text-color;
+  background-color: var(--cp-color-primary);
+  color: var(--cp-color-primary-on);
 }
 
 .handsontable td.area {
-  background-image: linear-gradient(to bottom, @primary-color-semi-transparent 0%, @primary-color-semi-transparent 100%);
-  background-color: @card-background-color;
+  background-image: linear-gradient(to bottom, var(--cp-color-primary-muted) 0%, var(--cp-color-primary-muted) 100%);
+  background-color: var(--cp-color-bg-elevated);
 }
 
 .htContextMenu table.htCore,
 .htContextMenu table tbody tr td.htSeparator {
-  border-color: @card-border-color;
+  border-color: var(--cp-color-border-card);
 }
 
 .htContextMenu table tbody tr td.current,
 .htContextMenu table tbody tr td.zeroclipboard-is-hover {
-  background-color: @element-selected-background-color;
+  background-color: var(--cp-color-interactive-selected-bg);
 }
 
 .htContextMenu table tbody tr td.htDisabled,
 .htContextMenu table tbody tr td.htDisabled:hover {
-  background-color: @card-background-color;
-  color: @application-color-disabled;
+  background-color: var(--cp-color-bg-elevated);
+  color: var(--cp-color-text-disabled);
 }
 
 .cp-pipeline-code-editor-readonly .handsontable td,
 .cp-pipeline-code-editor-readonly .handsontable td.area,
 .cp-pipeline-code-editor-readonly .CodeMirror {
-  background-color: lighten(@card-header-background, 2%);
+  background-color: color-mix(in oklch, var(--cp-color-bg-elevated-header), white 2%);
 }
 
 .joint-paper.joint-theme-default {
-  background-color: @card-background-color;
+  background-color: var(--cp-color-bg-elevated);
 }
 
 .joint-type-visualstep .body,
 .joint-type-visualgroup .body,
 .joint-type-visualworkflow .body {
-  fill: @card-background-color;
-  stroke: @primary-color;
+  fill: var(--cp-color-bg-elevated);
+  stroke: var(--cp-color-primary);
 }
 
 .joint-type-visualstep .port-body.empty,
 .joint-type-visualgroup .port-body.empty,
 .joint-type-visualworkflow .port-body.empty {
-  fill: @card-background-color;
-  stroke: @primary-color;
+  fill: var(--cp-color-bg-elevated);
+  stroke: var(--cp-color-primary);
 }
 
 .joint-type-visualstep .port-body,
 .joint-type-visualgroup .port-body,
 .joint-type-visualworkflow .port-body {
-  fill: @card-background-color;
-  stroke: @color-aqua;
+  fill: var(--cp-color-bg-elevated);
+  stroke: var(--cp-color-aqua);
 }
 
 .joint-type-visualstep .port-label,
@@ -439,42 +437,42 @@ div.CodeMirror span.CodeMirror-nonmatchingbracket {
 .marker-source,
 .marker-target,
 .joint-type-visualdeclaration .label {
-  fill: @color-aqua;
-  stroke: @color-aqua;
+  fill: var(--cp-color-aqua);
+  stroke: var(--cp-color-aqua);
 }
 
 .joint-link .marker-arrowheads .marker-arrowhead,
 .joint-link .marker-vertex-group .marker-vertex,
 .joint-link .marker-vertex-group .marker-vertex:hover {
-  fill: @primary-color;
+  fill: var(--cp-color-primary);
 }
 
 .marker-vertex-remove-area {
-  fill: @application-color;
+  fill: var(--cp-color-text);
 }
 
 .joint-link.joint-theme-default .marker-vertex-remove {
-  fill: @card-background-color;
+  fill: var(--cp-color-bg-elevated);
 }
 
 .joint-link.joint-theme-default .connection-wrap,
 .joint-link .connection {
-  stroke: @color-aqua;
+  stroke: var(--cp-color-aqua);
 }
 
 .joint-type-visualstep .label,
 .joint-type-visualgroup .label,
 .joint-type-visualworkflow .label {
-  fill: @primary-color;
+  fill: var(--cp-color-primary);
 }
 
 .joint-link .link-tools .link-tool .tool-remove circle {
-  fill: @color-red;
+  fill: var(--cp-color-red);
 }
 
 .cp-pipeline-graph-side-panel:hover {
-  background-color: @card-background-color;
-  box-shadow: 5px 0 15px @card-hovered-shadow-color;
+  background-color: var(--cp-color-bg-elevated);
+  box-shadow: 5px 0 15px var(--cp-color-card-shadow);
 }
 
 .cp-pipeline-graph-properties-panel {
@@ -482,17 +480,17 @@ div.CodeMirror span.CodeMirror-nonmatchingbracket {
 }
 
 .cp-issue-markdown-link {
-  color: @primary-color;
-  background-color: @card-background-color;
-  box-shadow: inset 0 -1px 0 @card-hovered-shadow-color;
+  color: var(--cp-color-primary);
+  background-color: var(--cp-color-bg-elevated);
+  box-shadow: inset 0 -1px 0 var(--cp-color-card-shadow);
   transition: none;
   border-radius: 5px;
   padding: 2px 4px;
 }
 
 .cp-issue-markdown-link:hover {
-  color: @primary-text-color;
-  background-color: @primary-color;
+  color: var(--cp-color-primary-on);
+  background-color: var(--cp-color-primary);
 }
 
 .d2h-file-wrapper,
@@ -501,35 +499,35 @@ div.CodeMirror span.CodeMirror-nonmatchingbracket {
 .d2h-code-linenumber,
 .d2h-code-line.d2h-info,
 .d2h-code-linenumber.d2h-info {
-  background-color: @card-background-color;
-  color: @application-color;
-  border-color: @card-border-color;
+  background-color: var(--cp-color-bg-elevated);
+  color: var(--cp-color-text);
+  border-color: var(--cp-color-border-card);
 }
 
 .d2h-tag {
-  background-color: @card-background-color;
+  background-color: var(--cp-color-bg-elevated);
 }
 
 .d2h-info {
-  background-color: @panel-background-color;
+  background-color: var(--cp-color-bg-container);
 }
 
 .d2h-file-diff .d2h-ins.d2h-change,
 .d2h-ins {
-  background-color: @color-green-semi-transparent;
+  background-color: var(--cp-color-green-faint);
 }
 
 .d2h-file-diff .d2h-del.d2h-change,
 .d2h-del {
-  background-color: @color-red-semi-transparent;
+  background-color: var(--cp-color-red-faint);
 }
 
 .d2h-code-line.d2h-del.d2h-change del {
-  color: @card-background-color;
-  background-color: @color-red;
+  color: var(--cp-color-bg-elevated);
+  background-color: var(--cp-color-red);
 }
 
 .d2h-code-line.d2h-ins.d2h-change ins {
-  color: @card-background-color;
-  background-color: @color-green;
+  color: var(--cp-color-bg-elevated);
+  background-color: var(--cp-color-green);
 }

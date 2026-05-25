@@ -29,7 +29,8 @@ import getThemes, {
   getTheme
 } from './themes';
 import injectTheme, {ejectTheme} from './utilities/inject-theme';
-import './default.theme.less';
+import {withLegacyAliases} from './tokens/migrate-v1-to-v2';
+import './styles/index.css';
 
 const _TEMPORARY_SYNC_WITH_SYSTEM_KEY = 'CP-THEMES-SYNC-WITH-SYSTEM';
 const _TEMPORARY_LIGHT_THEME_KEY = 'CP-THEMES-SYSTEM-LIGHT';
@@ -87,7 +88,7 @@ class CloudPipelineThemes {
   get currentThemeConfiguration () {
     const theme = this.themes.find(o => o.identifier === this.currentTheme);
     if (theme) {
-      return theme.getParsedConfiguration();
+      return withLegacyAliases(theme.getParsedConfiguration());
     }
     return undefined;
   }

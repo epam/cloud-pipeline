@@ -14,18 +14,16 @@
  *  limitations under the License.
  */
 
-@import "variables";
-
 .cp-navigation-panel {
-  background-color: @navigation-panel-color;
+  background-color: var(--cp-color-nav-bg);
 }
 
 .cp-navigation-panel.impersonated {
-  background-color: @navigation-panel-color-impersonated;
+  background-color: var(--cp-color-nav-bg-impersonated);
 }
 
 .cp-navigation-panel .cp-navigation-menu-item {
-  color: @navigation-item-color;
+  color: var(--cp-color-nav-text);
   background-color: transparent;
   text-transform: uppercase;
   border: 0 solid transparent;
@@ -39,7 +37,7 @@
 }
 
 .cp-navigation-panel .cp-divider.cp-navigation-divider {
-  background-color: @navigation-item-color;
+  background-color: var(--cp-color-nav-text);
   opacity: 0.5;
   margin: 0 4px;
   width: calc(100% - 8px);
@@ -47,11 +45,11 @@
 }
 
 .cp-navigation-panel .cp-navigation-menu-item.selected {
-  background-color: @navigation-panel-highlighted-color;
+  background-color: var(--cp-color-nav-bg-active);
 }
 
 .cp-navigation-panel.impersonated .cp-navigation-menu-item.selected {
-  background-color: @navigation-panel-highlighted-color-impersonated;
+  background-color: var(--cp-color-nav-bg-impersonated-active);
 }
 
 .cp-navigation-panel .cp-navigation-menu-item i {
@@ -60,14 +58,14 @@
 }
 
 .cp-navigation-panel .cp-navigation-menu-item.cp-runs-menu-item.active {
-  color: @navigation-item-runs-color;
+  color: var(--cp-color-nav-runs);
 }
 
 .cp-navigation-item-logo {
   height: 26px;
   width: 26px;
   display: block;
-  background-image: @logo-image;
+  background-image: var(--cp-asset-logo);
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;

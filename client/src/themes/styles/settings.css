@@ -14,8 +14,6 @@
  *  limitations under the License.
  */
 
-@import "variables";
-
 .cp-settings-sidebar-element:not(.cp-table-element-disabled) {
   cursor: pointer;
 }
@@ -25,59 +23,59 @@
 }
 
 .cp-setting-info {
-  color: @color-green;
+  color: var(--cp-color-green);
 }
 
 .cp-setting-warning {
-  color: @color-yellow;
+  color: var(--cp-color-yellow);
 }
 
 .cp-setting-critical {
-  color: @color-red;
+  color: var(--cp-color-red);
 }
 
 .cp-setting-message {
-  color: @primary-color;
+  color: var(--cp-color-primary);
 }
 
 .cp-settings-table thead,
 .cp-settings-table thead th {
-  color: @table-head-color;
-  background-color: @card-header-background;
-  border-color: @table-border-color;
+  color: var(--cp-color-table-head-text);
+  background-color: var(--cp-color-bg-elevated-header);
+  border-color: var(--cp-color-border-table);
 }
 
 .cp-settings-table tbody tr,
 .cp-settings-table tbody th {
-  color: @application-color;
-  background-color: @card-background-color;
+  color: var(--cp-color-text);
+  background-color: var(--cp-color-bg-elevated);
 }
 
 .cp-settings-table tbody tr:nth-child(even),
 .cp-settings-table tbody tr:nth-child(even) th {
-  color: @application-color;
-  background-color: @even-element-background;
+  color: var(--cp-color-text);
+  background-color: var(--cp-color-bg-striped);
 }
 
 .cp-settings-users-integrity-check.modified:not(.new),
 .cp-settings-users-integrity-check.modified:not(.new) > div {
-  background-color: @alert-warning-background;
+  background-color: var(--cp-color-alert-warning-bg);
 }
 
 .cp-settings-users-integrity-check.new > div {
-  background-color: @alert-info-background;
+  background-color: var(--cp-color-alert-info-bg);
 }
 
 .cp-even-row {
-  background-color: @even-element-background;
+  background-color: var(--cp-color-bg-striped);
 }
 
 .cp-settings-form-item-label {
-  color: @application-color-accent;
+  color: var(--cp-color-text-accent);
 }
 
 .cp-settings-form-item-label.required::before {
-  color: @color-red;
+  color: var(--cp-color-red);
   content: '*';
 }
 
@@ -87,11 +85,11 @@
 .cp-settings-nat-table tbody tr td.external-column:nth-child(5),
 .cp-settings-nat-table thead tr th.internal-column:nth-child(8),
 .cp-settings-nat-table tbody tr td.internal-column:nth-child(8) {
-  border-right: 2px solid @table-border-color;
+  border-right: 2px solid var(--cp-color-border-table);
 }
 
 .cp-settings-nat-table thead tr:first-child th {
-  background: @card-header-background;
+  background: var(--cp-color-bg-elevated-header);
 }
 
 .cp-nat-route-removed .cp-nat-route-status {
@@ -99,15 +97,15 @@
 }
 
 .cp-nat-route-port-control {
-  border-bottom: 1px solid @table-border-color;
+  border-bottom: 1px solid var(--cp-color-border-table);
 }
 
 .cp-status-online {
-  fill: @color-green;
-  stroke: @color-green;
+  fill: var(--cp-color-green);
+  stroke: var(--cp-color-green);
 }
 
 .cp-status-offline {
-  stroke: @color-grey;
+  stroke: var(--cp-color-grey);
   fill: transparent;
 }

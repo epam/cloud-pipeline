@@ -31,8 +31,9 @@ import roleModel from '../../utils/roleModel';
 import {Pages} from '../../utils/ui-navigation';
 import {RunContinuationConfirmation} from '../runs/actions/continue-run';
 import ErrorBoundary from './ErrorBoundary';
+import buildAntdTheme from '../../themes/tokens/antd-theme-config';
 
-@inject('preferences', 'uiNavigation')
+@inject('preferences', 'uiNavigation', 'themes')
 @roleModel.authenticationInfo
 @observer
 class App extends Component {
@@ -79,8 +80,12 @@ class App extends Component {
     const {
       preferences,
       authenticatedUserInfo,
-      uiNavigation
+      uiNavigation,
+      themes
     } = this.props;
+    const antdTheme = themes && themes.loaded
+      ? buildAntdTheme(themes.currentThemeConfiguration, themes.currentTheme)
+      : undefined;
     uiNavigation.getActivePage(this.props.router);
     const isBillingPrivilegedUser = authenticatedUserInfo.loaded &&
       roleModel.isManager.billing(this);
@@ -136,7 +141,7 @@ class App extends Component {
       );
     }
     return (
-      <ConfigProvider locale={enUS}>
+      <ConfigProvider locale={enUS} theme={antdTheme}>
         <div id="root-container" className={styles.appContainer}>
           {
             this.props.uiNavigation.searchEnabled() && !isExternalApp && (

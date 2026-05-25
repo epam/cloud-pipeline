@@ -14,21 +14,22 @@
  *  limitations under the License.
  */
 
-@import "styles/theme.preview";
-@import "styles/layout";
-@import "styles/panels";
-@import "styles/navigation";
-@import "styles/dashboard";
-@import "styles/providers";
-@import "styles/animation";
-@import "styles/tools";
-@import "styles/runs";
-@import "styles/billing";
-@import "styles/search";
-@import "styles/versioned-storage";
-@import "styles/metadata";
-@import "styles/cluster";
-@import "styles/settings";
-@import "styles/code-highlight";
-@import "styles/cell-profiler";
-@import "styles/wdl";
+.cp-theme-transition-background {
+  transition: background-color linear 250ms;
+}
+
+.cp-theme-transition-color {
+  transition: color linear 250ms;
+}
+
+.cp-theme-transition {
+  transition: color linear 250ms, background-color linear 250ms;
+}
+
+.cp-panel,
+.cp-panel-card,
+.cp-panel-card-actions-background,
+.cp-navigation-panel,
+.cp-navigation-panel .cp-navigation-menu-item {
+  transition: color linear 250ms, background-color linear 250ms;
+}

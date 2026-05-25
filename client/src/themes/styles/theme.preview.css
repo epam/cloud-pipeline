@@ -14,90 +14,88 @@
  *  limitations under the License.
  */
 
-@import "variables";
-
 .theme-preview {
-  border-color: @card-border-color;
+  border-color: var(--cp-color-border-card);
 }
 
 .theme-preview.selected {
-  border-color: @primary-color;
+  border-color: var(--cp-color-primary);
 }
 
 .theme-preview:not(.read-only):hover {
-  border-color: @primary-color;
-  box-shadow: 0 0 2px 2px fade(@primary-color, 20%);
+  border-color: var(--cp-color-primary);
+  box-shadow: 0 0 2px 2px color-mix(in srgb, var(--cp-color-primary) 20%, transparent);
 }
 
 .cp-themes-group {
-  color: @application-color;
-  background-color: @card-background-color;
-  border: 1px solid @card-border-color;
+  color: var(--cp-color-text);
+  background-color: var(--cp-color-bg-elevated);
+  border: 1px solid var(--cp-color-border-card);
 }
 
 .cp-themes-group .cp-themes-group-header {
-  background-color: @card-header-background;
-  border-bottom: 1px solid @card-border-color;
+  background-color: var(--cp-color-bg-elevated-header);
+  border-bottom: 1px solid var(--cp-color-border-card);
 }
 
 .cp-themes-group-active-tag {
-  background-color: @primary-color;
-  color: @primary-text-color;
+  background-color: var(--cp-color-primary);
+  color: var(--cp-color-primary-on);
 }
 
 .theme-identifier.theme-preview .cp-theme-preview-navigation-panel {
-  background-color: @navigation-panel-color;
+  background-color: var(--cp-color-nav-bg);
 }
 
 .theme-identifier.theme-preview .cp-theme-preview-layout {
-  background-color: @application-background-color;
-  color: @application-color;
-  background-image: @background-image;
+  background-color: var(--cp-color-bg-layout);
+  color: var(--cp-color-text);
+  background-image: var(--cp-asset-bg-image);
   background-size: cover;
 }
 
 .theme-identifier.theme-preview .cp-theme-preview-panel {
-  border: 1px solid @panel-border-color;
-  background-color: @panel-background-color;
-  color: @application-color;
+  border: 1px solid var(--cp-color-border);
+  background-color: var(--cp-color-bg-container);
+  color: var(--cp-color-text);
 }
 
 .theme-identifier.theme-preview .cp-theme-priview-panel-card {
-  border: 1px solid @card-border-color;
-  background-color: @card-background-color;
+  border: 1px solid var(--cp-color-border-card);
+  background-color: var(--cp-color-bg-elevated);
   margin: 2px;
 }
 
 .theme-identifier.theme-preview .cp-theme-preview-button-primary {
-  color: @primary-text-color;
-  background-color: @primary-color;
-  border-color: @primary-color;
+  color: var(--cp-color-primary-on);
+  background-color: var(--cp-color-primary);
+  border-color: var(--cp-color-primary);
 }
 
 .theme-identifier.theme-preview .cp-theme-preview-button-danger {
-  background-color: @btn-danger-active-background;
-  border-color: @btn-danger-active-background;
+  background-color: var(--cp-color-btn-danger-active-bg);
+  border-color: var(--cp-color-btn-danger-active-bg);
 }
 
 .theme-identifier.theme-preview .cp-theme-preview-button {
-  color: @primary-color;
-  background-color: @panel-background-color;
+  color: var(--cp-color-primary);
+  background-color: var(--cp-color-bg-container);
 }
 
 .theme-identifier.theme-preview .cp-theme-priview-runs-table-icon-blue {
-  color: @color-info;
+  color: var(--cp-color-info);
 }
 
 .theme-identifier.theme-preview .cp-theme-priview-runs-table-icon-yellow {
-  color: @color-warning;
+  color: var(--cp-color-warning);
 }
 
 .theme-identifier.theme-preview .cp-theme-priview-runs-table-icon-green {
-  color: @color-success;
+  color: var(--cp-color-success);
 }
 
 .theme-identifier.theme-preview .cp-theme-preview-navigation-menu-item.selected {
-  background-color: @navigation-panel-highlighted-color;
+  background-color: var(--cp-color-nav-bg-active);
 }
 
 .theme-identifier.theme-preview .cp-theme-preview-navigation-menu-item i {
@@ -106,12 +104,12 @@
 }
 
 .theme-identifier.theme-preview .cp-runs-menu-item.active {
-  color: @navigation-item-runs-color;
+  color: var(--cp-color-nav-runs);
 }
 
 .theme-identifier.theme-preview .cp-theme-preview-navigation-menu-item,
 .theme-identifier.theme-preview .cp-runs-menu-item {
-  color: @navigation-item-color;
+  color: var(--cp-color-nav-text);
   background-color: transparent;
   display: flex;
   justify-content: center;
@@ -119,22 +117,22 @@
 }
 
 .theme-identifier.theme-preview .cp-theme-preview-text {
-  background-color: @application-color;
+  background-color: var(--cp-color-text);
 }
 
 .theme-identifier .theme-preview-bordered {
-  border: 1px solid @application-color;
+  border: 1px solid var(--cp-color-text);
 }
 
 .color-presenter {
-  stroke: @application-color;
+  stroke: var(--cp-color-text);
 }
 
 .image-uploader {
-  border-color: @application-color;
-  background-color: @application-background-color;
+  border-color: var(--cp-color-text);
+  background-color: var(--cp-color-bg-layout);
 }
 
 .image-uploader .uploader-thumb-image {
-  background-color: fade(@application-background-color, 25%);
+  background-color: color-mix(in srgb, var(--cp-color-bg-layout) 25%, transparent);
 }

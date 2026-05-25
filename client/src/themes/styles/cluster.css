@@ -14,11 +14,9 @@
  *  limitations under the License.
  */
 
-@import "variables";
-
 .cp-node-tag {
-  border-color: @application-color-disabled;
-  color: @application-color;
+  border-color: var(--cp-color-text-disabled);
+  color: var(--cp-color-text);
 }
 
 .cp-node-tag.cp-node-tag-run,
@@ -30,34 +28,34 @@
 }
 
 .cp-node-tag.cp-node-tag-run {
-  color: @color-green;
+  color: var(--cp-color-green);
   font-weight: bold;
 }
 
 .cp-node-tag.cp-node-tag-run:hover {
-  background-color: @color-green;
-  border-color: @color-green;
-  color: @primary-text-color;
+  background-color: var(--cp-color-green);
+  border-color: var(--cp-color-green);
+  color: var(--cp-color-primary-on);
 }
 
 .cp-node-tag.cp-node-tag-pipeline-info {
-  color: @application-color-faded;
+  color: var(--cp-color-text-secondary);
 }
 
 .cp-node-tag.cp-node-tag-pool {
-  color: @color-violet;
+  color: var(--cp-color-violet);
 }
 
 .cp-node-tag.cp-node-tag-master,
 .cp-node-tag.cp-node-tag-cp-role {
-  color: @primary-color;
+  color: var(--cp-color-primary);
 }
 
 .cp-cluster-node-even-row {
-  background-color: @even-element-background;
+  background-color: var(--cp-color-bg-striped);
 }
 
 .cp-filter-popover-item:hover {
-  background-color: @element-hover-background-color;
-  color: @application-color;
+  background-color: var(--cp-color-interactive-hover-bg);
+  color: var(--cp-color-text);
 }

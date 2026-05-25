@@ -19,6 +19,7 @@ import DarkDimmedTheme from './dark-dimmed-theme';
 import DarkTheme from './dark-theme';
 import LightTheme from './light-theme';
 import parseConfiguration from './utilities/parse-configuration';
+import {migrateV1ToV2, SCHEMA_VERSION} from './tokens/migrate-v1-to-v2';
 import PreferenceLoad from '../models/preferences/PreferenceLoad';
 import PreferencesUpdate from '../models/preferences/PreferencesUpdate';
 
@@ -244,19 +245,18 @@ function parseThemesPreference (preferenceValue) {
 export function getTheme (theme, themes) {
   const result = getThemeConfiguration(theme, themes);
   result.getParsedConfiguration = parseConfiguration.bind(result, result.configuration);
+  result.schemaVersion = SCHEMA_VERSION;
   return result;
 }
 
 export function extendPredefinedThemesWithCustom (custom = []) {
-  const themes = PredefinedThemes.slice();
+  const themes = PredefinedThemes.map(migrateV1ToV2);
   const customThemesProcessed = custom
     .map(mapCustomTheme)
-    .map(correctCustomThemeIdentifier(themes));
-  return [
-    ...themes,
-    ...customThemesProcessed
-  ]
-    .map(theme => getTheme(theme, themes));
+    .map(correctCustomThemeIdentifier(themes))
+    .map(migrateV1ToV2);
+  const allMigrated = [...themes, ...customThemesProcessed];
+  return allMigrated.map(theme => getTheme(theme, allMigrated));
 }
 
 export default function getThemes () {

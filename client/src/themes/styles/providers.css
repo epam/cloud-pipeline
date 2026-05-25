@@ -14,72 +14,70 @@
  *  limitations under the License.
  */
 
-@import "variables";
-
 .provider.aws {
-  background-image: @aws-icon;
+  background-image: var(--cp-asset-aws-icon);
   background-color: transparent;
 }
 
 .provider.local {
-  background-image: @local-icon;
+  background-image: var(--cp-asset-local-icon);
   background-color: transparent;
 }
 
 .provider.gcp {
-  background-image: @gcp-icon;
+  background-image: var(--cp-asset-gcp-icon);
   background-color: transparent;
   box-shadow: 0 0 0 1px transparent;
 }
 
 .provider.azure {
-  background-image: @azure-icon;
+  background-image: var(--cp-asset-azure-icon);
 }
 
 .flag.eu {
-  background-image: @eu-region-icon;
+  background-image: var(--cp-asset-eu-region-icon);
 }
 
 .flag.us {
-  background-image: @us-region-icon;
+  background-image: var(--cp-asset-us-region-icon);
 }
 
 .flag.sa {
-  background-image: @sa-region-icon;
+  background-image: var(--cp-asset-sa-region-icon);
 }
 
 .flag.cn {
-  background-image: @cn-region-icon;
+  background-image: var(--cp-asset-cn-region-icon);
 }
 
 .flag.ca {
-  background-image: @ca-region-icon;
+  background-image: var(--cp-asset-ca-region-icon);
 }
 
 .flag.ap.ap-northeast-1 {
-  background-image: @ap-northeast-1-region-icon;
+  background-image: var(--cp-asset-ap-northeast-1-region-icon);
 }
 
 .flag.ap.ap-northeast-2 {
-  background-image: @ap-northeast-2-region-icon;
+  background-image: var(--cp-asset-ap-northeast-2-region-icon);
 }
 
 .flag.ap.ap-northeast-3 {
-  background-image: @ap-northeast-3-region-icon;
+  background-image: var(--cp-asset-ap-northeast-3-region-icon);
 }
 
 .flag.ap.ap-south-1 {
-  background-image: @ap-south-1-region-icon;
+  background-image: var(--cp-asset-ap-south-1-region-icon);
 }
 
 .flag.ap.ap-southeast-1 {
-  background-image: @ap-southeast-1-region-icon;
+  background-image: var(--cp-asset-ap-southeast-1-region-icon);
 }
 
 .flag.ap.ap-southeast-2 {
-  background-image: @ap-southeast-2-region-icon;
+  background-image: var(--cp-asset-ap-southeast-2-region-icon);
 }
 
 .flag.taiwan {
-  background-image: @taiwan-region-icon;
+  background-image: var(--cp-asset-taiwan-region-icon);
 }

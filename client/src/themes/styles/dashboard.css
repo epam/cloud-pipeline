@@ -14,47 +14,45 @@
  *  limitations under the License.
  */
 
-@import "variables.less";
-
 .cp-dashboard-sticky-panel {
-  background-color: @application-background-color;
+  background-color: var(--cp-color-bg-layout);
 }
 
 .cp-project-tag-key {
-  background-color: @tag-key-background-color;
-  border-bottom: 1px solid @tag-key-value-divider-color;
+  background-color: var(--cp-color-tag-key-bg);
+  border-bottom: 1px solid var(--cp-color-tag-divider);
 }
 
 .cp-project-tag-value {
-  background-color: @tag-value-background-color;
+  background-color: var(--cp-color-tag-value-bg);
 }
 
 .cp-dashboard-panel-card-header,
 .cp-panel-card .cp-dashboard-panel-card-header {
-  background-color: @card-header-background;
+  background-color: var(--cp-color-bg-elevated-header);
 }
 
 .cp-panel-card.cp-card-service .cp-dashboard-panel-card-header {
-  background-color: @card-service-header-background;
+  background-color: var(--cp-color-service-card-header-bg);
 }
 
 .cp-nfs-storage-type {
-  color: @nfs-icon-color;
+  color: var(--cp-color-nfs-icon);
 }
 
 .cp-notification-status-info {
-  color: @color-green;
+  color: var(--cp-color-green);
 }
 
 .cp-notification-status-warning {
-  color: @color-warning;
+  color: var(--cp-color-warning);
 }
 
 .cp-notification-status-critical {
-  color: @color-error;
+  color: var(--cp-color-error);
 }
 
 .cp-new-notification {
-  border-color: @color-info;
-  box-shadow: 0 0 1em @color-info;
+  border-color: var(--cp-color-info);
+  box-shadow: 0 0 1em var(--cp-color-info);
 }

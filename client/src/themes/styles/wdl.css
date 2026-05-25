@@ -14,96 +14,94 @@
  *  limitations under the License.
  */
 
-@import "variables";
-
 .cp-wdl-visualizer .visual-element .visual-element-body {
-  fill: fade(@primary-color, 0.1);
-  stroke: @primary-color;
+  fill: color-mix(in srgb, var(--cp-color-primary) 10%, transparent);
+  stroke: var(--cp-color-primary);
   stroke-width: 1;
 }
 
 .cp-wdl-visualizer .visual-element.visual-scatter .visual-element-body {
-  stroke: @primary-color;
+  stroke: var(--cp-color-primary);
   stroke-width: 1;
   stroke-dasharray: 2 2;
 }
 
 .cp-wdl-visualizer .visual-element.visual-conditional .visual-element-body {
-  stroke: @primary-color;
+  stroke: var(--cp-color-primary);
   stroke-width: 1;
   stroke-dasharray: 10 10;
 }
 
 .cp-wdl-visualizer .visual-element.selected .visual-element-body {
-  fill: fade(@primary-color, 0.2);
-  stroke: @primary-active-color;
+  fill: color-mix(in srgb, var(--cp-color-primary) 20%, transparent);
+  stroke: var(--cp-color-primary-active);
   stroke-width: 2;
 }
 
 .cp-wdl-visualizer .visual-element .visual-parameter {
-  stroke: @panel-background-color;
-  fill: @primary-color;
+  stroke: var(--cp-color-bg-container);
+  fill: var(--cp-color-primary);
   stroke-width: 1;
 }
 
 .cp-wdl-visualizer .visual-element .visual-parameter[has-value=false] {
-  fill: @panel-background-color;
-  stroke: @primary-color;
+  fill: var(--cp-color-bg-container);
+  stroke: var(--cp-color-primary);
 }
 
 .cp-wdl-visualizer .visual-element .visual-parameter.invalid {
-  stroke: @panel-background-color;
-  fill: @color-error;
+  stroke: var(--cp-color-bg-container);
+  fill: var(--cp-color-error);
 }
 
 .cp-wdl-visualizer .visual-element .visual-parameter.invalid[has-value=false] {
-  fill: @panel-background-color;
-  stroke: @color-error;
+  fill: var(--cp-color-bg-container);
+  stroke: var(--cp-color-error);
 }
 
 .cp-wdl-visualizer .visual-element .visual-parameter.invalid[has-value=true] {
-  fill: @color-error;
-  stroke: @panel-background-color;
+  fill: var(--cp-color-error);
+  stroke: var(--cp-color-bg-container);
 }
 
 .cp-wdl-visualizer .visual-element.invalid .visual-element-body,
 .cp-wdl-visualizer .visual-element.selected.invalid .visual-element-body,
 .cp-wdl-visualizer .visual-element.visual-scatter.invalid .visual-element-body,
 .cp-wdl-visualizer .visual-element.visual-conditional.invalid .visual-element-body {
-  stroke: @color-error;
+  stroke: var(--cp-color-error);
 }
 
 .cp-wdl-visualizer #workflow-connection-marker {
-  fill: @primary-color;
-  stroke: @primary-color;
+  fill: var(--cp-color-primary);
+  stroke: var(--cp-color-primary);
 }
 
 .cp-wdl-visualizer #default-connection-marker {
-  fill: @primary-color;
-  stroke: @primary-color;
+  fill: var(--cp-color-primary);
+  stroke: var(--cp-color-primary);
 }
 
 .cp-wdl-visualizer .visual-connection .visual-connection-line {
-  stroke: fade(@primary-color, 0.5);
+  stroke: color-mix(in srgb, var(--cp-color-primary) 50%, transparent);
 }
 
 .cp-wdl-visualizer .visual-parameter-label tspan[parameter-name=true],
 .cp-wdl-visualizer .visual-element-label tspan[element-name=true],
 .cp-wdl-visualizer .visual-element-label tspan[element-alias=true] {
-  fill: @application-color;
+  fill: var(--cp-color-text);
 }
 
 .cp-wdl-visualizer .visual-parameter-label tspan[parameter-type=true],
 .cp-wdl-visualizer .visual-element-label tspan[element-type=true],
 .cp-wdl-visualizer .visual-element-label tspan[element-as=true] {
-  fill: @application-color-faded;
+  fill: var(--cp-color-text-secondary);
 }
 
 .cp-wdl-visualizer .joint-tools-layer .joint-tools .joint-link-tool-remove circle {
-  fill: @color-error;
+  fill: var(--cp-color-error);
 }
 
 .cp-wdl-visualizer .joint-highlight-stroke {
-  stroke: @primary-color;
+  stroke: var(--cp-color-primary);
 }
 

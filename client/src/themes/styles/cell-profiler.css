@@ -14,41 +14,39 @@
  *  limitations under the License.
  */
 
-@import "variables";
-
 .cell-profiler-module {
-  color: @application-color;
-  background-color: @card-background-color;
-  border-bottom: 1px @card-border-color solid;
+  color: var(--cp-color-text);
+  background-color: var(--cp-color-bg-elevated);
+  border-bottom: 1px var(--cp-color-border-card) solid;
 }
 
 .cell-profiler-module.expanded .cell-profiler-module-header {
-  border-bottom: 1px @card-border-color solid;
+  border-bottom: 1px var(--cp-color-border-card) solid;
 }
 
 .cell-profiler-module:not(.empty) .cell-profiler-module-header:hover {
-  background-color: darken(@card-background-color, 5%);
+  background-color: color-mix(in oklch, var(--cp-color-bg-elevated), black 5%);
 }
 
 .cell-profiler-results-table {
-  background-color: @card-background-color;
+  background-color: var(--cp-color-bg-elevated);
 }
 
 .cell-profiler-results-table td,
 .cell-profiler-results-table th {
-  border: 1px solid @table-border-color;
+  border: 1px solid var(--cp-color-border-table);
 }
 
 .cell-profiler-job:nth-child(even) {
-  background-color: @even-element-background;
+  background-color: var(--cp-color-bg-striped);
 }
 
 .cell-profiler-job:hover {
-  background-color: @table-element-hover-background-color;
-  color: @table-element-hover-color;
+  background-color: var(--cp-color-table-hover-bg);
+  color: var(--cp-color-table-hover-text);
 }
 
 .cell-profiler-job.selected {
-  background-color: @table-element-selected-background-color;
-  color: @table-element-selected-color;
+  background-color: var(--cp-color-table-selected-bg);
+  color: var(--cp-color-table-selected-text);
 }

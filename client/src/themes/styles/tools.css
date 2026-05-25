@@ -14,10 +14,8 @@
  *  limitations under the License.
  */
 
-@import "variables";
-
 .cp-tool-header {
-  border-color: @panel-border-color;
+  border-color: var(--cp-color-border);
 }
 
 .cp-tool-panel + .cp-tool-panel {
@@ -26,16 +24,16 @@
 
 .cp-tool-panel .cp-tool-panel-header {
   padding: 10px;
-  background-color: @card-header-background;
-  border: 1px solid @card-border-color;
+  background-color: var(--cp-color-bg-elevated-header);
+  border: 1px solid var(--cp-color-border-card);
   border-radius: 5px 5px 0 0;
 }
 
 .cp-tool-panel .cp-tool-panel-body {
   margin-top: -1px;
   padding: 10px;
-  border: 1px solid @card-border-color;
-  background-color: @card-background-color;
+  border: 1px solid var(--cp-color-border-card);
+  background-color: var(--cp-color-bg-elevated);
   border-radius: 0 0 5px 5px;
 }
 
@@ -44,36 +42,36 @@
 }
 
 .cp-tool-no-description {
-  color: @application-color-faded;
+  color: var(--cp-color-text-secondary);
 }
 
 .cp-tool-icon-container {
-  background-color: @application-background-color;
-  color: @application-color;
+  background-color: var(--cp-color-bg-layout);
+  color: var(--cp-color-text);
 }
 
 .cp-tool-add-endpoint {
-  background-color: @input-background-disabled;
+  background-color: var(--cp-color-bg-input-disabled);
 }
 
 .cp-scan-result.critical {
-  color: @color-red;
+  color: var(--cp-color-red);
 }
 
 .cp-scan-result.high {
-  color: @color-sensitive;
+  color: var(--cp-color-sensitive);
 }
 
 .cp-scan-result.medium {
-  color: @color-yellow;
+  color: var(--cp-color-yellow);
 }
 
 .cp-scan-result.low {
-  color: @color-aqua-light;
+  color: var(--cp-color-aqua-light);
 }
 
 .cp-scan-result.negligible {
-  color: @color-grey;
+  color: var(--cp-color-grey);
 }
 
 .cp-scan-result.bar {
@@ -81,26 +79,26 @@
 }
 
 .cp-exec-env-summary {
-  border: 1px solid @input-border;
-  background-color: @input-background-disabled;
-  box-shadow: 0 0 3px @card-border-color;
-  color: @application-color;
+  border: 1px solid var(--cp-color-border-input);
+  background-color: var(--cp-color-bg-input-disabled);
+  box-shadow: 0 0 3px var(--cp-color-border-card);
+  color: var(--cp-color-text);
 }
 
 .cp-exec-env-summary-item {
-  border: 1px solid @card-header-background;
+  border: 1px solid var(--cp-color-bg-elevated-header);
 }
 
 .cp-edit-permissions-selected-row {
-  background-color: @element-selected-background-color;
+  background-color: var(--cp-color-interactive-selected-bg);
 }
 
 .cp-tool-white-listed-version > td,
 .cp-tool-white-listed-version:hover > td {
-  background-color: fade(@color-success, 15%);
+  background-color: color-mix(in srgb, var(--cp-color-success) 15%, transparent);
 }
 
 .cp-tool-select-option-divider::before,
 .cp-divider.tool-settings {
-  background: @panel-border-color;
+  background: var(--cp-color-border);
 }
