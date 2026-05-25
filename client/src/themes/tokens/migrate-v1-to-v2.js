@@ -60,7 +60,10 @@ export function migrateV1ToV2 (theme) {
   return {
     ...theme,
     schemaVersion: SCHEMA_VERSION,
-    configuration: semantic
+    configuration: semantic,
+    // Configuration already includes merged `extends` chain; getTheme must
+    // not run getThemeConfiguration again (would corrupt e.g. dark-dimmed).
+    fullyResolved: true
   };
 }
 

@@ -243,20 +243,34 @@ function parseThemesPreference (preferenceValue) {
 }
 
 export function getTheme (theme, themes) {
-  const result = getThemeConfiguration(theme, themes);
+  const skipExtendsMerge = Number(theme.schemaVersion) === SCHEMA_VERSION &&
+    (theme.fullyResolved || theme.predefined);
+  const result = skipExtendsMerge
+    ? {
+      ...theme,
+      configuration: {...(theme.configuration || {})},
+      properties: theme.properties || {...(theme.configuration || {})}
+    }
+    : getThemeConfiguration(theme, themes);
   result.getParsedConfiguration = parseConfiguration.bind(result, result.configuration);
   result.schemaVersion = SCHEMA_VERSION;
   return result;
 }
 
 export function extendPredefinedThemesWithCustom (custom = []) {
-  const themes = PredefinedThemes.map(migrateV1ToV2);
   const customThemesProcessed = custom
     .map(mapCustomTheme)
-    .map(correctCustomThemeIdentifier(themes))
-    .map(migrateV1ToV2);
-  const allMigrated = [...themes, ...customThemesProcessed];
-  return allMigrated.map(theme => getTheme(theme, allMigrated));
+    .map(correctCustomThemeIdentifier(PredefinedThemes));
+  const allRaw = [...PredefinedThemes, ...customThemesProcessed];
+  // Merge `extends` into a full v1 configuration before v2 migration so
+  // derived keys (e.g. @card-border-color: @panel-border-color on dark-theme)
+  // resolve against the complete palette, not the partial override object.
+  const withMergedConfiguration = allRaw.map(theme => {
+    const {configuration} = getThemeConfiguration(theme, allRaw);
+    return {...theme, configuration};
+  });
+  const migrated = withMergedConfiguration.map(migrateV1ToV2);
+  return migrated.map(theme => getTheme(theme, migrated));
 }
 
 export default function getThemes () {

@@ -20,12 +20,28 @@ import {inject, observer, Provider} from 'mobx-react';
 import {observable, makeObservable, makeAutoObservable} from 'mobx';
 import {colors} from './charts';
 import {fadeout, darken, lighten, parseColor} from '../../../themes/utilities/color-utilities';
+import {SemanticTokensByLegacy} from '../../../themes/tokens/semantic-keys';
 
 function undefinedOnInherit (o) {
   if (!o || /^inherit$/i.test(o)) {
     return undefined;
   }
   return o;
+}
+
+function themeToken (configuration, legacyKey, fallback) {
+  if (!configuration) {
+    return fallback;
+  }
+  const legacyValue = configuration[legacyKey];
+  if (legacyValue && !/^inherit$/i.test(legacyValue)) {
+    return legacyValue;
+  }
+  const token = SemanticTokensByLegacy[legacyKey];
+  if (token && configuration[token.cssVar] && !/^inherit$/i.test(configuration[token.cssVar])) {
+    return configuration[token.cssVar];
+  }
+  return fallback;
 }
 
 class ThemedReportConfiguration {
@@ -39,53 +55,36 @@ class ThemedReportConfiguration {
     this.themes = themes;
   }
 
+  get configuration () {
+    return this.themes && this.themes.currentThemeConfiguration;
+  }
+
   get backgroundColor () {
-    if (this.themes && this.themes.currentThemeConfiguration) {
-      return this.themes.currentThemeConfiguration['@card-background-color'] || colors.white;
-    }
-    return colors.white;
+    return themeToken(this.configuration, '@card-background-color', colors.white);
   }
 
   get lineColor () {
-    if (this.themes && this.themes.currentThemeConfiguration) {
-      return this.themes.currentThemeConfiguration['@card-border-color'] || colors.grey;
-    }
-    return colors.grey;
+    return themeToken(this.configuration, '@card-border-color', colors.grey);
   }
 
   get textColor () {
-    if (this.themes && this.themes.currentThemeConfiguration) {
-      return this.themes.currentThemeConfiguration['@application-color'] || colors.black;
-    }
-    return colors.black;
+    return themeToken(this.configuration, '@application-color', colors.black);
   }
 
   get errorColor () {
-    if (this.themes && this.themes.currentThemeConfiguration) {
-      return this.themes.currentThemeConfiguration['@color-red'] || colors.red;
-    }
-    return colors.red;
+    return themeToken(this.configuration, '@color-red', colors.red);
   }
 
   get subTextColor () {
-    if (this.themes && this.themes.currentThemeConfiguration) {
-      return this.themes.currentThemeConfiguration['@application-color-faded'] || colors.grey;
-    }
-    return colors.grey;
+    return themeToken(this.configuration, '@application-color-faded', colors.grey);
   }
 
   get quota () {
-    if (this.themes && this.themes.currentThemeConfiguration) {
-      return this.themes.currentThemeConfiguration['@color-sensitive'] || colors.quota;
-    }
-    return colors.quota;
+    return themeToken(this.configuration, '@color-sensitive', colors.quota);
   }
 
   get current () {
-    if (this.themes && this.themes.currentThemeConfiguration) {
-      return this.themes.currentThemeConfiguration['@color-green'] || colors.current;
-    }
-    return colors.current;
+    return themeToken(this.configuration, '@color-green', colors.current);
   }
 
   get lightCurrent () {
@@ -97,10 +96,7 @@ class ThemedReportConfiguration {
   }
 
   get previous () {
-    if (this.themes && this.themes.currentThemeConfiguration) {
-      return this.themes.currentThemeConfiguration['@primary-color'] || colors.previous;
-    }
-    return colors.previous;
+    return themeToken(this.configuration, '@primary-color', colors.previous);
   }
 
   get lightPrevious () {
@@ -108,14 +104,9 @@ class ThemedReportConfiguration {
   }
 
   get blue () {
-    if (this.themes && this.themes.currentThemeConfiguration) {
-      return undefinedOnInherit(
-        darken(
-          this.themes.currentThemeConfiguration['@primary-color'], 0.05
-        )
-      ) || colors.blue;
-    }
-    return colors.blue;
+    return undefinedOnInherit(
+      darken(themeToken(this.configuration, '@primary-color', colors.previous), 0.05)
+    ) || colors.blue;
   }
 
   get lightBlue () {
@@ -123,7 +114,7 @@ class ThemedReportConfiguration {
   }
 
   get colors () {
-    if (this.themes && this.themes.currentThemeConfiguration) {
+    if (this.configuration) {
       return [
         this.current,
         this.previous,
@@ -140,13 +131,13 @@ class ThemedReportConfiguration {
   }
 
   get otherColors () {
-    if (this.themes && this.themes.currentThemeConfiguration) {
+    if (this.configuration) {
       return [
-        this.themes.currentThemeConfiguration['@color-green-soft'],
-        this.themes.currentThemeConfiguration['@color-blue-soft'],
-        this.themes.currentThemeConfiguration['@color-yellow'],
-        this.themes.currentThemeConfiguration['@color-violet'],
-        this.themes.currentThemeConfiguration['@color-pink']
+        themeToken(this.configuration, '@color-green-soft', colors.orange),
+        themeToken(this.configuration, '@color-blue-soft', colors.blue),
+        themeToken(this.configuration, '@color-yellow', colors.orange),
+        themeToken(this.configuration, '@color-violet', colors.previous),
+        themeToken(this.configuration, '@color-pink', colors.orange)
       ];
     }
     return [
@@ -187,9 +178,17 @@ class ThemedReport extends React.Component {
   }
 
   componentDidMount () {
+    this.syncThemes();
+  }
+
+  componentDidUpdate () {
+    this.syncThemes();
+  }
+
+  syncThemes = () => {
     const {themes} = this.props;
     this.configuration.attachThemes(themes);
-  }
+  };
 
   render () {
     const {
