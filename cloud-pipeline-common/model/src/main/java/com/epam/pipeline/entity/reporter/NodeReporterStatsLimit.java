@@ -11,8 +11,8 @@ public class NodeReporterStatsLimit {
 
     @JsonCreator
     public NodeReporterStatsLimit(
-            @JsonProperty("softLimit") final int softLimit,
-            @JsonProperty("hardLimit") final int hardLimit) {
+            @JsonProperty("soft_limit") final int softLimit,
+            @JsonProperty("hard_limit") final int hardLimit) {
         this.softLimit = softLimit;
         this.hardLimit = hardLimit;
     }
