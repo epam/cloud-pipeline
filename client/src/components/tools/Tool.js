@@ -1030,10 +1030,10 @@ export default class Tool extends localization.LocalizedReactComponent {
         {key: 'add-white', label: 'Add to white list', listType: 'white', enable: true}
       ];
     } else {
-      label = 'Add to ...';
+      label = 'Configure access';
       menuItems = [
-        {key: 'add-white', label: 'White list', listType: 'white', enable: true},
-        {key: 'add-black', label: 'Black list', listType: 'black', enable: true}
+        {key: 'add-white', label: 'Add to white list', listType: 'white', enable: true},
+        {key: 'add-black', label: 'Add to black list', listType: 'black', enable: true}
       ];
     }
     const onSelect = ({key, domEvent}) => {
