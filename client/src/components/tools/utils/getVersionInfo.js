@@ -87,7 +87,7 @@ export default function getVersionRunningInfo (
       tooltip = ScanStatusDescriptionsFn(isLatest, false).blackListed;
       launchTooltip = LaunchMessages(gracePeriodEnd).blackListed;
       return {
-        allowedToExecute: false,
+        allowedToExecute: isAdmin ? true :false,
         tooltip,
         launchTooltip,
         notLoaded: false
