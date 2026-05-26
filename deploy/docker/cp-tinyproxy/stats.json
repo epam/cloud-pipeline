@@ -1,4 +1,4 @@
-{{
+{
     "server": "{package}",
     "version": "{version}",
     "open": "{opens}",
