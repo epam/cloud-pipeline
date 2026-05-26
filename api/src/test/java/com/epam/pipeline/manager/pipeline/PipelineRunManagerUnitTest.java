@@ -104,6 +104,7 @@ public class PipelineRunManagerUnitTest {
     private static final String USER1 = "USER1";
     private static final String USER2 = "USER2";
     private static final String USER3 = "USER3";
+    private static final String ORIGINAL_OWNER = "RUNNER";
     private static final String GROUP1 = "GROUP1";
     private static final String GROUP2 = "GROUP2";
     private static final String PARAM_NAME_1 = "param-1";
@@ -560,7 +561,8 @@ public class PipelineRunManagerUnitTest {
         when(pipelineConfigurationManager.getConfigurationForTool(eq(tool), any(PipelineConfiguration.class)))
                 .thenReturn(toolConfig);
 
-        final List<RunSid> result = pipelineRunManager.mergeRunSidsWithParents(pipelineConfig, Collections.emptyList());
+        final List<RunSid> result = pipelineRunManager.mergeRunSidsWithParents(pipelineConfig, Collections.emptyList(),
+                null);
 
         // Then: Both users should be present
         assertThat(result).hasSize(2);
@@ -581,7 +583,8 @@ public class PipelineRunManagerUnitTest {
         when(pipelineConfigurationManager.getConfigurationForTool(eq(tool), any(PipelineConfiguration.class)))
                 .thenReturn(toolConfig);
 
-        final List<RunSid> result = pipelineRunManager.mergeRunSidsWithParents(pipelineConfig, null);
+        final List<RunSid> result = pipelineRunManager.mergeRunSidsWithParents(pipelineConfig, null,
+                null);
 
         assertThat(result).hasSize(0);
     }
@@ -604,7 +607,8 @@ public class PipelineRunManagerUnitTest {
         when(pipelineConfigurationManager.getConfigurationForTool(eq(tool), any(PipelineConfiguration.class)))
                 .thenReturn(toolConfig);
 
-        final List<RunSid> result = pipelineRunManager.mergeRunSidsWithParents(pipelineConfig, Collections.emptyList());
+        final List<RunSid> result = pipelineRunManager.mergeRunSidsWithParents(pipelineConfig, Collections.emptyList(),
+                null);
 
         // Then: Single user with SSH access
         assertThat(result).hasSize(1);
@@ -629,7 +633,8 @@ public class PipelineRunManagerUnitTest {
         when(pipelineConfigurationManager.getConfigurationForTool(eq(tool), any(PipelineConfiguration.class)))
                 .thenReturn(toolConfig);
 
-        final List<RunSid> result = pipelineRunManager.mergeRunSidsWithParents(pipelineConfig, Collections.emptyList());
+        final List<RunSid> result = pipelineRunManager.mergeRunSidsWithParents(pipelineConfig, Collections.emptyList(),
+                null);
 
         // Then: Single user with ENDPOINT access
         assertThat(result).hasSize(1);
@@ -654,7 +659,8 @@ public class PipelineRunManagerUnitTest {
         when(pipelineConfigurationManager.getConfigurationForTool(eq(tool), any(PipelineConfiguration.class)))
                 .thenReturn(toolConfig);
 
-        final List<RunSid> result = pipelineRunManager.mergeRunSidsWithParents(pipelineConfig, Collections.emptyList());
+        final List<RunSid> result = pipelineRunManager.mergeRunSidsWithParents(pipelineConfig, Collections.emptyList(),
+                null);
 
         // Then: Both roles should be present
         assertThat(result).hasSize(2);
@@ -680,7 +686,8 @@ public class PipelineRunManagerUnitTest {
         when(pipelineConfigurationManager.getConfigurationForTool(eq(tool), any(PipelineConfiguration.class)))
                 .thenReturn(toolConfig);
 
-        final List<RunSid> result = pipelineRunManager.mergeRunSidsWithParents(pipelineConfig, Collections.emptyList());
+        final List<RunSid> result = pipelineRunManager.mergeRunSidsWithParents(pipelineConfig, Collections.emptyList(),
+                null);
 
         // Then: All users and roles should be present
         assertThat(result).hasSize(4);
@@ -708,7 +715,7 @@ public class PipelineRunManagerUnitTest {
                 .thenReturn(toolConfig);
 
         assertThrows(IllegalStateException.class, () ->
-                pipelineRunManager.mergeRunSidsWithParents(pipelineConfig, externalRunSids));
+                pipelineRunManager.mergeRunSidsWithParents(pipelineConfig, externalRunSids, null));
     }
 
     @Test
@@ -729,7 +736,7 @@ public class PipelineRunManagerUnitTest {
                 .thenReturn(toolConfig);
 
         assertThrows(IllegalStateException.class, () ->
-                pipelineRunManager.mergeRunSidsWithParents(pipelineConfig, externalRunSids));
+                pipelineRunManager.mergeRunSidsWithParents(pipelineConfig, externalRunSids, null));
     }
 
     @Test
@@ -750,7 +757,7 @@ public class PipelineRunManagerUnitTest {
                 .thenReturn(toolConfig);
 
         assertThrows(IllegalStateException.class, () ->
-                pipelineRunManager.mergeRunSidsWithParents(pipelineConfig, externalRunSids));
+                pipelineRunManager.mergeRunSidsWithParents(pipelineConfig, externalRunSids, null));
     }
 
     @Test
@@ -768,11 +775,33 @@ public class PipelineRunManagerUnitTest {
         when(pipelineConfigurationManager.getConfigurationForTool(eq(tool), any(PipelineConfiguration.class)))
                 .thenReturn(toolConfig);
 
-        final List<RunSid> result = pipelineRunManager.mergeRunSidsWithParents(pipelineConfig, externalRunSids);
+        final List<RunSid> result = pipelineRunManager.mergeRunSidsWithParents(pipelineConfig, externalRunSids,
+                null);
 
         // Then: External USER3 should be present
         assertThat(result).hasSize(1);
         assertContainsUser(result, USER3, RunAccessType.ENDPOINT);
+    }
+
+    @Test
+    public void shouldApplyOriginalOwnerWhenNoConfigurationHasSharing() {
+        final List<RunSid> externalRunSids = singletonList(createUserSid(ORIGINAL_OWNER, RunAccessType.ENDPOINT));
+
+        final PipelineConfiguration pipelineConfig = new PipelineConfiguration();
+        pipelineConfig.setDockerImage(DOCKER_IMAGE);
+        final PipelineConfiguration toolConfig = new PipelineConfiguration();
+
+        final Tool tool = getTool(ID, OWNER);
+        tool.setImage(DOCKER_IMAGE);
+        when(toolManager.resolveSymlinks(eq(DOCKER_IMAGE))).thenReturn(tool);
+        when(pipelineConfigurationManager.getConfigurationForTool(eq(tool), any(PipelineConfiguration.class)))
+                .thenReturn(toolConfig);
+
+        final List<RunSid> result = pipelineRunManager.mergeRunSidsWithParents(pipelineConfig, externalRunSids,
+                ORIGINAL_OWNER);
+
+        assertThat(result).hasSize(1);
+        assertContainsUser(result, ORIGINAL_OWNER, RunAccessType.ENDPOINT);
     }
 
     @Test
@@ -794,7 +823,124 @@ public class PipelineRunManagerUnitTest {
                 .thenReturn(toolConfig);
 
         assertThrows(IllegalStateException.class, () ->
-                pipelineRunManager.mergeRunSidsWithParents(pipelineConfig, externalRunSids));
+                pipelineRunManager.mergeRunSidsWithParents(pipelineConfig, externalRunSids, null));
+    }
+
+    @Test
+    public void shouldAllowOriginalOwnerWhenConfigurationHasSharedUsers() {
+        final List<RunSid> externalRunSids = singletonList(createUserSid(ORIGINAL_OWNER, RunAccessType.ENDPOINT));
+
+        final PipelineConfiguration pipelineConfig = new PipelineConfiguration();
+        pipelineConfig.setSharedWithUsers(singletonList(createUserSid(USER1, RunAccessType.ENDPOINT)));
+        pipelineConfig.setDockerImage(DOCKER_IMAGE);
+
+        final PipelineConfiguration toolConfig = new PipelineConfiguration();
+
+        final Tool tool = getTool(ID, OWNER);
+        tool.setImage(DOCKER_IMAGE);
+        when(toolManager.resolveSymlinks(eq(DOCKER_IMAGE))).thenReturn(tool);
+        when(pipelineConfigurationManager.getConfigurationForTool(eq(tool), any(PipelineConfiguration.class)))
+                .thenReturn(toolConfig);
+
+        final List<RunSid> result = pipelineRunManager.mergeRunSidsWithParents(
+                pipelineConfig, externalRunSids, ORIGINAL_OWNER);
+
+        assertThat(result).hasSize(2);
+        assertContainsUser(result, USER1, RunAccessType.ENDPOINT);
+        assertContainsUser(result, ORIGINAL_OWNER, RunAccessType.ENDPOINT);
+    }
+
+    @Test
+    public void shouldFailWhenExternalContainsOtherUserWithOriginalOwnerSet() {
+        final List<RunSid> externalRunSids = singletonList(createUserSid(USER3, RunAccessType.ENDPOINT));
+
+        final PipelineConfiguration pipelineConfig = new PipelineConfiguration();
+        pipelineConfig.setSharedWithUsers(singletonList(createUserSid(USER1, RunAccessType.ENDPOINT)));
+        pipelineConfig.setDockerImage(DOCKER_IMAGE);
+
+        final PipelineConfiguration toolConfig = new PipelineConfiguration();
+
+        final Tool tool = getTool(ID, OWNER);
+        tool.setImage(DOCKER_IMAGE);
+        when(toolManager.resolveSymlinks(eq(DOCKER_IMAGE))).thenReturn(tool);
+        when(pipelineConfigurationManager.getConfigurationForTool(eq(tool), any(PipelineConfiguration.class)))
+                .thenReturn(toolConfig);
+
+        assertThrows(IllegalStateException.class, () ->
+                pipelineRunManager.mergeRunSidsWithParents(pipelineConfig, externalRunSids, ORIGINAL_OWNER));
+    }
+
+    @Test
+    public void shouldFailWhenExternalContainsOtherUserAndOriginalOwner() {
+        final List<RunSid> externalRunSids = Arrays.asList(
+                createUserSid(ORIGINAL_OWNER, RunAccessType.ENDPOINT),
+                createUserSid(USER3, RunAccessType.ENDPOINT)
+        );
+
+        final PipelineConfiguration pipelineConfig = new PipelineConfiguration();
+        pipelineConfig.setSharedWithUsers(singletonList(createUserSid(USER1, RunAccessType.ENDPOINT)));
+        pipelineConfig.setDockerImage(DOCKER_IMAGE);
+
+        final PipelineConfiguration toolConfig = new PipelineConfiguration();
+
+        final Tool tool = getTool(ID, OWNER);
+        tool.setImage(DOCKER_IMAGE);
+        when(toolManager.resolveSymlinks(eq(DOCKER_IMAGE))).thenReturn(tool);
+        when(pipelineConfigurationManager.getConfigurationForTool(eq(tool), any(PipelineConfiguration.class)))
+                .thenReturn(toolConfig);
+
+        assertThrows(IllegalStateException.class, () ->
+                pipelineRunManager.mergeRunSidsWithParents(pipelineConfig, externalRunSids, ORIGINAL_OWNER));
+    }
+
+    @Test
+    public void shouldMergeOriginalOwnerWhenOnlyToolHasSharing() {
+        final List<RunSid> externalRunSids = singletonList(createUserSid(ORIGINAL_OWNER, RunAccessType.SSH));
+
+        final PipelineConfiguration pipelineConfig = new PipelineConfiguration();
+        pipelineConfig.setDockerImage(DOCKER_IMAGE);
+
+        final PipelineConfiguration toolConfig = new PipelineConfiguration();
+        toolConfig.setSharedWithUsers(singletonList(createUserSid(USER2, RunAccessType.ENDPOINT)));
+
+        final Tool tool = getTool(ID, OWNER);
+        tool.setImage(DOCKER_IMAGE);
+        when(toolManager.resolveSymlinks(eq(DOCKER_IMAGE))).thenReturn(tool);
+        when(pipelineConfigurationManager.getConfigurationForTool(eq(tool), any(PipelineConfiguration.class)))
+                .thenReturn(toolConfig);
+
+        final List<RunSid> result = pipelineRunManager.mergeRunSidsWithParents(
+                pipelineConfig, externalRunSids, ORIGINAL_OWNER);
+
+        assertThat(result).hasSize(2);
+        assertContainsUser(result, USER2, RunAccessType.ENDPOINT);
+        assertContainsUser(result, ORIGINAL_OWNER, RunAccessType.SSH);
+    }
+
+    @Test
+    public void shouldMergeOriginalOwnerWhenDuplicates() {
+        final List<RunSid> externalRunSids = Arrays.asList(
+                createUserSid(ORIGINAL_OWNER, RunAccessType.SSH),
+                createUserSid(ORIGINAL_OWNER, RunAccessType.ENDPOINT));
+
+        final PipelineConfiguration pipelineConfig = new PipelineConfiguration();
+        pipelineConfig.setDockerImage(DOCKER_IMAGE);
+
+        final PipelineConfiguration toolConfig = new PipelineConfiguration();
+        toolConfig.setSharedWithUsers(singletonList(createUserSid(USER2, RunAccessType.ENDPOINT)));
+
+        final Tool tool = getTool(ID, OWNER);
+        tool.setImage(DOCKER_IMAGE);
+        when(toolManager.resolveSymlinks(eq(DOCKER_IMAGE))).thenReturn(tool);
+        when(pipelineConfigurationManager.getConfigurationForTool(eq(tool), any(PipelineConfiguration.class)))
+                .thenReturn(toolConfig);
+
+        final List<RunSid> result = pipelineRunManager.mergeRunSidsWithParents(
+                pipelineConfig, externalRunSids, ORIGINAL_OWNER);
+
+        assertThat(result).hasSize(2);
+        assertContainsUser(result, USER2, RunAccessType.ENDPOINT);
+        assertContainsUser(result, ORIGINAL_OWNER, RunAccessType.SSH);
     }
 
     @Test
@@ -812,7 +958,8 @@ public class PipelineRunManagerUnitTest {
         when(pipelineConfigurationManager.getConfigurationForTool(eq(tool), any(PipelineConfiguration.class)))
                 .thenReturn(toolConfig);
 
-        final List<RunSid> result = pipelineRunManager.mergeRunSidsWithParents(pipelineConfig, Collections.emptyList());
+        final List<RunSid> result = pipelineRunManager.mergeRunSidsWithParents(pipelineConfig, Collections.emptyList(),
+                null);
 
         // Then: Only pipeline user should be present
         assertThat(result).hasSize(1);
@@ -843,7 +990,8 @@ public class PipelineRunManagerUnitTest {
         when(pipelineConfigurationManager.getConfigurationForTool(eq(tool), any(PipelineConfiguration.class)))
                 .thenReturn(toolConfig);
 
-        final List<RunSid> result = pipelineRunManager.mergeRunSidsWithParents(pipelineConfig, Collections.emptyList());
+        final List<RunSid> result = pipelineRunManager.mergeRunSidsWithParents(pipelineConfig, Collections.emptyList(),
+                null);
 
         // Then: Merged result with correct access types
         assertThat(result).hasSize(5);
@@ -872,7 +1020,8 @@ public class PipelineRunManagerUnitTest {
         when(pipelineConfigurationManager.getConfigurationForTool(eq(tool), any(PipelineConfiguration.class)))
                 .thenReturn(toolConfig);
 
-        final List<RunSid> result = pipelineRunManager.mergeRunSidsWithParents(pipelineConfig, Collections.emptyList());
+        final List<RunSid> result = pipelineRunManager.mergeRunSidsWithParents(pipelineConfig, Collections.emptyList(),
+                null);
 
         // Then: Result should be empty
         assertThat(result).isEmpty();
@@ -894,7 +1043,8 @@ public class PipelineRunManagerUnitTest {
         when(pipelineConfigurationManager.getConfigurationForTool(eq(tool), any(PipelineConfiguration.class)))
                 .thenReturn(toolConfig);
 
-        final List<RunSid> result = pipelineRunManager.mergeRunSidsWithParents(pipelineConfig, Collections.emptyList());
+        final List<RunSid> result = pipelineRunManager.mergeRunSidsWithParents(pipelineConfig, Collections.emptyList(),
+                null);
 
         // Then: User should have isPrincipal = true
         assertThat(result).hasSize(1);
@@ -919,7 +1069,8 @@ public class PipelineRunManagerUnitTest {
         when(pipelineConfigurationManager.getConfigurationForTool(eq(tool), any(PipelineConfiguration.class)))
                 .thenReturn(toolConfig);
 
-        final List<RunSid> result = pipelineRunManager.mergeRunSidsWithParents(pipelineConfig, Collections.emptyList());
+        final List<RunSid> result = pipelineRunManager.mergeRunSidsWithParents(pipelineConfig, Collections.emptyList(),
+                null);
 
         // Then: Role should have isPrincipal = false
         assertThat(result).hasSize(1);
