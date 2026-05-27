@@ -1391,14 +1391,16 @@ def storage_set_object_tags(path, tags, version):
 @storage.command('get-object-tags')
 @click.argument('path', required=True)
 @click.option('-v', '--version', required=False, help='Get tags for a specified version')
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help='Output format. Default is a text table.')
 @common_options
-def storage_get_object_tags(path, version):
+def storage_get_object_tags(path, version, output_format):
     """ Gets tags for a specified object.\n
         - PATH: full path to an object in a datastorage starting
         with a Cloud prefix ('s3://' for AWS, 'az://' for MS Azure,
         'gs://' for GCP) or common 'cp://' scheme\n
     """
-    DataStorageOperations.get_object_tags(path, version)
+    DataStorageOperations.get_object_tags(path, version, output_format)
 
 
 @storage.command('delete-object-tags')
