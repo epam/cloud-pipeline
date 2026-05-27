@@ -1420,12 +1420,16 @@ def umount_storage(mountpoint, quiet):
     required=True,
     type=click.Choice(ACLOperations.get_classes())
 )
+@click.option('-of', '--output-format',
+              type=click.Choice(['json']),
+              default=None,
+              help='Output format. Default is a text table.')
 @common_options
-def view_acl(identifier, object_type):
+def view_acl(identifier, object_type, output_format=None):
     """ View object permissions.\n
     - IDENTIFIER: defines name or id of an object
     """
-    ACLOperations.view_acl(identifier, object_type)
+    ACLOperations.view_acl(identifier, object_type, output_format)
 
 
 @cli.command(name='set-acl')
@@ -1457,9 +1461,13 @@ def set_acl(identifier, object_type, sid, group, allow, deny, inherit):
     required=False,
     type=click.Choice(ACLOperations.get_classes())
 )
+@click.option('-of', '--output-format',
+              type=click.Choice(['json']),
+              default=None,
+              help='Output format. Default is a text table.')
 @common_options
-def view_user_objects(username, object_type):
-    ACLOperations.print_sid_objects(username, True, object_type)
+def view_user_objects(username, object_type, output_format=None):
+    ACLOperations.print_sid_objects(username, True, object_type, output_format)
 
 
 @cli.command(name='view-group-objects')
@@ -1470,9 +1478,13 @@ def view_user_objects(username, object_type):
     required=False,
     type=click.Choice(ACLOperations.get_classes())
 )
+@click.option('-of', '--output-format',
+              type=click.Choice(['json']),
+              default=None,
+              help='Output format. Default is a text table.')
 @common_options
-def view_group_objects(group_name, object_type):
-    ACLOperations.print_sid_objects(group_name, False, object_type)
+def view_group_objects(group_name, object_type, output_format=None):
+    ACLOperations.print_sid_objects(group_name, False, object_type, output_format)
 
 
 @cli.group()
