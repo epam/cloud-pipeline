@@ -204,7 +204,7 @@ class MountStorageTask:
             # 2. ... Add more conditions here ...
             #    ...
         except Exception as e:
-            Logger.fail('An error occured while waiting for the mounts prerequisites: {}.'.format(str(e.message)), task_name=self.task_name)
+            Logger.fail('An error occured while waiting for the mounts prerequisites: {}.'.format(str(str(e))), task_name=self.task_name)
 
     def run(self, mount_root, tmp_dir):
         try:

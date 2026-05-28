@@ -110,7 +110,7 @@ class PipelineApiTask(luigi.Task, S3Bucket):
             try:
                 return self.pipeline_api.load_datastorage_rules(self.pipeline_id)
             except RequestException as e:
-                print(e.message)
+                print(str(e))
                 count += 1
                 time.sleep(self.retry_timeout)
         raise RuntimeError("Failed to load data storage rules request.")
@@ -121,7 +121,7 @@ class PipelineApiTask(luigi.Task, S3Bucket):
             try:
                 return self.pipeline_api.launch_pipeline(pipeline_id, pipeline_version, parameters)
             except RequestException as e:
-                print(e.message)
+                print(str(e))
                 count += 1
                 time.sleep(self.retry_timeout)
         raise RuntimeError("Failed to launch pipeline.")
@@ -132,7 +132,7 @@ class PipelineApiTask(luigi.Task, S3Bucket):
             try:
                 return self.pipeline_api.load_run(run_id)
             except RequestException as e:
-                print(e.message)
+                print(str(e))
                 count += 1
                 time.sleep(self.retry_timeout)
         raise RuntimeError("Failed to load  run {}.".format(run_id))
@@ -143,7 +143,7 @@ class PipelineApiTask(luigi.Task, S3Bucket):
             try:
                 return self.pipeline_api.load_child_pipelines(parent_id)
             except RequestException as e:
-                print(e.message)
+                print(str(e))
                 count += 1
                 time.sleep(self.retry_timeout)
         raise RuntimeError("Failed to load child runs for parent {}.".format(parent_id))
@@ -154,7 +154,7 @@ class PipelineApiTask(luigi.Task, S3Bucket):
             try:
                 return self.pipeline_api.load_tool(image, "")
             except RequestException as e:
-                print(e.message)
+                print(str(e))
                 count += 1
                 time.sleep(self.retry_timeout)
         raise RuntimeError("Failed to load tool {}.".format(image))
@@ -216,8 +216,8 @@ class KubernetesTask(PipelineApiTask):
 
             except RuntimeError as e:
                 self.log_event(api.LogEntry(self.run_id, api.TaskStatus.FAILURE,
-                                        e.message, self.__repr__(), self.uu_name))
-                raise RuntimeError(e.message)
+                                        str(e), self.__repr__(), self.uu_name))
+                raise RuntimeError(str(e))
 
     def _init_kubernetes(self):
         if self.auth_method == "kubeconfig":

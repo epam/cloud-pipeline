@@ -30,27 +30,27 @@ def test_load_tree_single(index, api_path, access_key):
     global test_load_tree_threads_succeeded
     global test_load_tree_threads_failed
     start_time = time.time()
-    print 'Load tree: #{} thread started'.format(index)
+    print('Load tree: #{} thread started'.format(index))
     folder_api_instance = FolderAPI(api_path, access_key)
     try:
         folder_api_instance.load_tree()
         test_load_tree_threads_succeeded += 1
     except RuntimeError as error:
         test_load_tree_threads_failed += 1
-        print 'Load tree: #{} thread error: {}'.format(index, error)
-    print 'Load tree: #{} thread finished. {} seconds'.format(index, round(time.time() - start_time, 2))
+        print('Load tree: #{} thread error: {}'.format(index, error))
+    print('Load tree: #{} thread finished. {} seconds'.format(index, round(time.time() - start_time, 2)))
 
 
 def test_load_tree(api_path, access_key, count):
     threads = []
-    print 'Load tree test started'
+    print('Load tree test started')
     for index in range(0, count):
         thread = Thread(target=test_load_tree_single, args=(index + 1, api_path, access_key))
         thread.start()
         threads.append(thread)
     for thread in threads:
         thread.join()
-    print 'Load tree test finished'
+    print('Load tree test finished')
 
 
 def test_create_pipeline_single(index, api_path, access_key, folder, folder_id, file_size, files_count, file_contents):
@@ -61,68 +61,68 @@ def test_create_pipeline_single(index, api_path, access_key, folder, folder_id, 
     files_creation_time = 0
     pipeline_deletion_time = 0
     pipeline_name = '{}-{}'.format(folder, index)
-    print 'Pipeline {}: #{} thread started'.format(pipeline_name, index)
+    print('Pipeline {}: #{} thread started'.format(pipeline_name, index))
     pipeline_api_instance = PipelineAPI(api_path, access_key)
     pipeline_id = None
     try:
-        print 'Pipeline {}: #{} thread: creating pipeline {}...'.format(pipeline_name, index, pipeline_name)
+        print('Pipeline {}: #{} thread: creating pipeline {}...'.format(pipeline_name, index, pipeline_name))
         pipeline_creation_time_start = time.time()
         pipeline_id = pipeline_api_instance.create_pipeline(pipeline_name, folder_id)
         pipeline_creation_time = time.time() - pipeline_creation_time_start
     except RuntimeError as error:
-        print 'Pipeline {}: #{} thread error: {}'.format(pipeline_name, index, error)
+        print('Pipeline {}: #{} thread error: {}'.format(pipeline_name, index, error))
     if pipeline_id is not None:
         try:
-            print 'Pipeline {}: #{} thread: pipeline #{} created'.format(pipeline_name, index, pipeline_id)
+            print('Pipeline {}: #{} thread: pipeline #{} created'.format(pipeline_name, index, pipeline_id))
             files_creation_time_start = time.time()
             for file_index in range(0, files_count):
-                print 'Pipeline {}: #{} thread: creating #{} file ({} bytes)'.format(
+                print('Pipeline {}: #{} thread: creating #{} file ({} bytes)'.format(
                     pipeline_name,
                     index,
                     file_index + 1,
                     file_size
-                )
+                ))
                 file_name = 'src/test-{}-file-{}.txt'.format(pipeline_name, file_index + 1)
                 commit = '{} created'.format(file_name)
-                print 'Pipeline {}: #{} thread: fetching last commit id...'.format(pipeline_name, index)
+                print('Pipeline {}: #{} thread: fetching last commit id...'.format(pipeline_name, index))
                 commit_id = pipeline_api_instance.load_last_version_commit_id(pipeline_id)
-                print 'Pipeline {}: #{} thread: last commit id \'{}\''.format(pipeline_name, index, commit_id)
-                print 'Pipeline {}: #{} thread: creating file {} in repository...'.format(pipeline_name, index, file_name)
+                print('Pipeline {}: #{} thread: last commit id \'{}\''.format(pipeline_name, index, commit_id))
+                print('Pipeline {}: #{} thread: creating file {} in repository...'.format(pipeline_name, index, file_name))
                 pipeline_api_instance.create_pipeline_file(pipeline_id, commit_id, file_name, file_contents, commit)
-                print 'Pipeline {}: #{} thread: file {} created'.format(pipeline_name, index, file_name)
+                print('Pipeline {}: #{} thread: file {} created'.format(pipeline_name, index, file_name))
             files_creation_time = time.time() - files_creation_time_start
         except RuntimeError as error:
-            print 'Pipeline {}: #{} thread error: {}'.format(pipeline_name, index, error)
+            print('Pipeline {}: #{} thread error: {}'.format(pipeline_name, index, error))
         try:
-            print 'Pipeline {}: #{} thread: removing pipeline #{}...'.format(pipeline_name, index, pipeline_id)
+            print('Pipeline {}: #{} thread: removing pipeline #{}...'.format(pipeline_name, index, pipeline_id))
             pipeline_deletion_time_start = time.time()
             pipeline_api_instance.delete_pipeline(pipeline_id)
             pipeline_deletion_time = time.time() - pipeline_deletion_time_start
-            print 'Pipeline {}: #{} thread: pipeline #{} removed'.format(pipeline_name, index, pipeline_id)
+            print('Pipeline {}: #{} thread: pipeline #{} removed'.format(pipeline_name, index, pipeline_id))
             test_create_pipeline_threads_succeeded += 1
         except RuntimeError as error:
             test_create_pipeline_threads_failed += 1
-            print 'Pipeline {}: #{} thread error: {}'.format(pipeline_name, index, error)
+            print('Pipeline {}: #{} thread error: {}'.format(pipeline_name, index, error))
     else:
         test_create_pipeline_threads_failed += 1
-    print 'Pipeline {}: #{} thread finished. Total {} seconds. ' \
+    print('Pipeline {}: #{} thread finished. Total {} seconds. ' \
           'Pipeline creation: {}. ' \
           '{} files creation: {}. ' \
-          'Pipeline deletion: {}'.format(pipeline_name, index, round(time.time() - start_time, 2), round(pipeline_creation_time, 2), files_count, round(files_creation_time, 2), round(pipeline_deletion_time, 2))
+          'Pipeline deletion: {}'.format(pipeline_name, index, round(time.time() - start_time, 2), round(pipeline_creation_time, 2), files_count, round(files_creation_time, 2), round(pipeline_deletion_time, 2)))
     pass
 
 
 def test_create_pipeline(api_path, access_key, folder, count, file_size, files_count):
     threads = []
-    print 'Create pipeline test started'
-    print 'Creating folder \'{}\'...'.format(folder)
+    print('Create pipeline test started')
+    print('Creating folder \'{}\'...'.format(folder))
     file_contents = ''
     for c in range(0, file_size):
         file_contents += '{}'.format(c % 10)
     try:
         folder_api_instance = FolderAPI(api_path, access_key)
         folder_id = folder_api_instance.create_folder(folder)
-        print 'Folder \'{}\' created. ID #{}'.format(folder, folder_id)
+        print('Folder \'{}\' created. ID #{}'.format(folder, folder_id))
         for index in range(0, count):
             thread = Thread(target=test_create_pipeline_single, args=(
                 index + 1,
@@ -138,12 +138,12 @@ def test_create_pipeline(api_path, access_key, folder, count, file_size, files_c
             threads.append(thread)
         for thread in threads:
             thread.join()
-        print 'Removing folder \'{}\'...'.format(folder)
+        print('Removing folder \'{}\'...'.format(folder))
         folder_api_instance.delete_folder(folder_id)
-        print 'Folder \'{}\' removed.'.format(folder)
-        print 'Create pipeline test finished'
+        print('Folder \'{}\' removed.'.format(folder))
+        print('Create pipeline test finished')
     except RuntimeError as error:
-        print 'Create pipeline test failed: {}'.format(error)
+        print('Create pipeline test failed: {}'.format(error))
 
 
 def main(script_name, argv):
@@ -157,7 +157,7 @@ def main(script_name, argv):
         files_count = 1
         for opt, arg in opts:
             if opt in ("-h", "--help"):
-                print script_name + ' -f <folder> -c <count> -a <api path> -k <authentication token> -s <file size in KB> -n <files count>'
+                print(script_name + ' -f <folder> -c <count> -a <api path> -k <authentication token> -s <file size in KB> -n <files count>')
                 sys.exit()
             if opt in ("-f", "--folder"):
                 folder = arg
@@ -172,37 +172,37 @@ def main(script_name, argv):
             elif opt in ("-n", "--number"):
                 files_count = int(arg)
         if not folder:
-            print 'Folder name (-f <folder>) is required'
-            print script_name + ' -f <folder> -c <count> -a <api path> -k <authentication token> -s <file size in KB> -n <files count>'
+            print('Folder name (-f <folder>) is required')
+            print(script_name + ' -f <folder> -c <count> -a <api path> -k <authentication token> -s <file size in KB> -n <files count>')
             sys.exit(2)
         if not api:
-            print 'API path (-a <api path>) is required'
-            print script_name + ' -f <folder> -c <count> -a <api path> -k <authentication token> -s <file size in KB> -n <files count>'
+            print('API path (-a <api path>) is required')
+            print(script_name + ' -f <folder> -c <count> -a <api path> -k <authentication token> -s <file size in KB> -n <files count>')
             sys.exit(2)
         if not key:
-            print 'Authentication token (-k <authentication token>) is required'
-            print script_name + ' -f <folder> -c <count> -a <api path> -k <authentication token> -s <file size in KB> -n <files count>'
+            print('Authentication token (-k <authentication token>) is required')
+            print(script_name + ' -f <folder> -c <count> -a <api path> -k <authentication token> -s <file size in KB> -n <files count>')
             sys.exit(2)
         if file_size > 1024 * 10:
             choise = ''
             while choise not in ('y', 'n'):
                 sys.stdout.write('File size is larger then 10 MB. Are you sure? y/n: ')
-                choise = raw_input().lower()
+                choise = input().lower()
                 if choise == 'n':
                     sys.exit()
         test_load_tree(api, key, count)
         test_create_pipeline(api, key, folder, count, file_size * 1024, files_count)
-        print ''
-        print 'Load tree test: {} succeeded, {} failed'.format(
+        print('')
+        print('Load tree test: {} succeeded, {} failed'.format(
             test_load_tree_threads_succeeded,
             test_load_tree_threads_failed
-        )
-        print 'Create pipeline test: {} succeeded, {} failed'.format(
+        ))
+        print('Create pipeline test: {} succeeded, {} failed'.format(
             test_create_pipeline_threads_succeeded,
             test_create_pipeline_threads_failed
-        )
+        ))
     except getopt.GetoptError:
-        print script_name + ' -f <folder> -c <count> -a <api path> -k <authentication token> -s <file size in KB> -n <files count>'
+        print(script_name + ' -f <folder> -c <count> -a <api path> -k <authentication token> -s <file size in KB> -n <files count>')
         sys.exit(2)
 
 

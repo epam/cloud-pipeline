@@ -154,7 +154,7 @@ export CP_SLURM_SOURCE_URL="${CP_SLURM_SOURCE_URL:-"${GLOBAL_DISTRIBUTION_URL}to
 export CP_SLURM_PACKAGE_DEB_URL="${CP_SLURM_PACKAGE_DEB_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/slurm/deb/slurm_22.05.5_amd64.deb"}"
 export CP_SLURM_PACKAGE_RPM_URL="${CP_SLURM_PACKAGE_RPM_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/slurm/rpm/slurm-22.05.5-1.el7.x86_64.tar"}"
 
-MASTER_INFO_RESULT=$(eval "${CP_PYTHON2_PATH} ${COMMON_REPO_DIR}/scripts/cluster_wait_for_master.py --master-id ${parent_id} --task-name SLURMMasterSetup")
+MASTER_INFO_RESULT=$(eval "${CP_PYTHON_PATH} ${COMMON_REPO_DIR}/scripts/cluster_wait_for_master.py --master-id ${parent_id} --task-name SLURMMasterSetup")
 _MASTER_AWAIT_RESULT=$?
 MASTER_INFO=($MASTER_INFO_RESULT)
 MASTER_IP=${MASTER_INFO[-1]}

@@ -325,7 +325,7 @@ def _send_users_stat(api, logger, from_date, to_date, users, template_path, send
                                 receiver, logger, cc_users=cc_users)
             notifier.send_notifications(template, table_templ, table_center_templ, user)
         except BaseException as e:
-            logger.error('Failed to generate stats for user {}: {}'.format(user.get('userName'), str(e.message)),
+            logger.error('Failed to generate stats for user {}: {}'.format(user.get('userName'), str(str(e))),
                          trace=True)
 
 

@@ -151,7 +151,7 @@ def start(serving_port, desktop_port, template_path):
     run_dir = _extract_parameter('RUN_DIR', default=os.path.join(runs_dir, pipeline_name + '-' + run_id))
     log_dir = _extract_parameter('LOG_DIR', default=os.path.join(run_dir, 'logs'))
     python_exec = os.path.join(os.getenv('CP_PYTHON_DIR', default='c:\\python'), 'python.exe') if is_windows() \
-        else _extract_parameter('CP_PYTHON2_PATH', default='python2')
+        else _extract_parameter('CP_PYTHON_PATH', default='python3')
     user_name = _extract_parameter('OWNER')
     if not user_name:
         raise RuntimeError('Cannot get OWNER from environment')

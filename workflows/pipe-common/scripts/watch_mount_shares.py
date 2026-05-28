@@ -334,7 +334,7 @@ class NFSMountWatcher:
                     if len(content) > 0:
                         return int(content[0])
             except BaseException as e:
-                logging.error('Error during limit retrieval from the file: {}'.format(e.message))
+                logging.error('Error during limit retrieval from the file: {}'.format(str(e)))
         logging.info('Reading watchers configuration from the env var...')
         return int(os.getenv('CP_CAP_NFS_MNT_OBSERVER_RUN_WATCHERS', 65535))
 
@@ -410,7 +410,7 @@ class NFSMountWatcher:
             return True
         except OSError as e:
             logging.error(
-                format_message('Unable to drop observation on [{}], an error occurred: {}'.format(mnt_dest, e.message)))
+                format_message('Unable to drop observation on [{}], an error occurred: {}'.format(mnt_dest, str(e))))
             return False
 
     def try_to_add_path_to_observer(self, mnt_dest):
@@ -421,7 +421,7 @@ class NFSMountWatcher:
             self._event_observer.schedule(self._event_handler, mnt_dest, recursive=True)
             return True
         except OSError as e:
-            logging.error(format_message('Unable to assign [{}], an error occurred: {}'.format(mnt_dest, e.message)))
+            logging.error(format_message('Unable to assign [{}], an error occurred: {}'.format(mnt_dest, str(e))))
             return False
 
     @staticmethod

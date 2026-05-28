@@ -18,7 +18,7 @@ URL="$1"
 [ -z "$URL" ] && exit 0
 
 PART="${2:-geturl()}"
-$CP_PYTHON2_PATH -c "try:
+$CP_PYTHON_PATH -c "try:
     # python2
     from urlparse import urlparse
 except:

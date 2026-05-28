@@ -18,11 +18,14 @@ from ..api.pipeline_api import Pipeline
 from ..api.metadata_api import Metadata
 from ..model.permission_model import PermissionModel
 from .git_server import GitServer
-from urlparse import urlparse
+try:
+    # python2
+    from urlparse import urlparse
+except:
+    # python3
+    from urllib.parse import urlparse
 import sys
 import traceback
-from requests.exceptions import ConnectionError
-from exceptions import KeyboardInterrupt
 
 
 class PipelineServer(object):
@@ -43,25 +46,25 @@ class PipelineServer(object):
             emails = map(lambda x: x.email.lower(), __users_with_email__)
             self.__duplicated_users__ = list(set(filter(lambda x: emails.count(x) > 1, emails)))
             if len(self.__duplicated_users__) > 0:
-                print 'Following users wont be synchronized:'
+                print('Following users wont be synchronized:')
                 for duplicate in self.__duplicated_users__:
                     duplicates = map(
                         lambda x: '{} ({})'.format(x.friendly_name, x.username),
                         list(filter(lambda x: x.email.lower() == duplicate, __users_with_email__))
                     )
-                    print '{}: duplicated email \'{}\'.'.format(', '.join(duplicates), duplicate)
+                    print('{}: duplicated email \'{}\'.'.format(', '.join(duplicates), duplicate))
             self.__groups__ = PipelineServer.__create_group_users_map__(self.__users__)
             self.__git_servers__ = {}
             for pipeline in self.list_pipelines():
                 if pipeline_ids is None or len(pipeline_ids) == 0 or pipeline.identifier in pipeline_ids:
                     self.synchronize_pipeline(pipeline)
-                    print ''
+                    print('')
         except RuntimeError as error:
-            print error.message
+            print(error)
         except KeyboardInterrupt:
             raise
         except:
-            print 'Error: ', traceback.format_exc()
+            print('Error: ', traceback.format_exc())
 
     def synchronize_users(self, git_servers=[]):
         try:
@@ -70,13 +73,13 @@ class PipelineServer(object):
             emails = map(lambda x: x.email.lower(), __users_with_email__)
             self.__duplicated_users__ = list(set(filter(lambda x: emails.count(x) > 1, emails)))
             if len(self.__duplicated_users__) > 0:
-                print 'Following users wont be synchronized:'
+                print('Following users wont be synchronized:')
                 for duplicate in self.__duplicated_users__:
                     duplicates = map(
                         lambda x: '{} ({})'.format(x.friendly_name, x.username),
                         list(filter(lambda x: x.email.lower() == duplicate, __users_with_email__))
                     )
-                    print '{}: duplicated email \'{}\'.'.format(', '.join(duplicates), duplicate)
+                    print('{}: duplicated email \'{}\'.'.format(', '.join(duplicates), duplicate))
             for git_server_url in git_servers:
                 git_server = GitServer(git_server_url, self)
                 git_server.initialize()
@@ -85,15 +88,15 @@ class PipelineServer(object):
                         if user.username is not None:
                             git_server.synchronize_user(user.username)
         except RuntimeError as error:
-            print error.message
+            print(error)
         except KeyboardInterrupt:
             raise
         except:
-            print 'Error: ', traceback.format_exc()
+            print('Error: ', traceback.format_exc())
 
     def synchronize_pipeline(self, pipeline):
         try:
-            print 'Processing pipeline #{} {}.'.format(pipeline.identifier, pipeline.name)
+            print('Processing pipeline #{} {}.'.format(pipeline.identifier, pipeline.name))
             parse_result = urlparse(pipeline.repository)
             server = '{}://{}'.format(parse_result.scheme, parse_result.netloc).lower()
             if server not in self.__git_servers__:
@@ -103,11 +106,11 @@ class PipelineServer(object):
             git_server = self.__git_servers__[server]
             git_server.synchronize(pipeline)
         except RuntimeError as error:
-            print error.message
+            print(error)
         except KeyboardInterrupt:
             raise
         except:
-            print 'Error: ', traceback.format_exc()
+            print('Error: ', traceback.format_exc())
 
     def get_distinct_git_servers(self):
         try:
@@ -116,17 +119,17 @@ class PipelineServer(object):
                 parse_result = urlparse(pipeline.repository)
                 server = '{}://{}'.format(parse_result.scheme, parse_result.netloc).lower()
                 if server not in server_paths:
-                    print server
+                    print(server)
                     git_server = GitServer(server, self)
                     git_server.initialize()
                     server_paths.append(server)
                     yield git_server
         except RuntimeError as error:
-            print error.message
+            print(error)
         except KeyboardInterrupt:
             raise
         except:
-            print 'Error: ', traceback.format_exc()
+            print('Error: ', traceback.format_exc())
 
     def get_group_members(self, group):
         return self.__groups__[group] if group in self.__groups__ else []
@@ -197,9 +200,6 @@ class PipelineServer(object):
                     pipeline.permissions.append(admin_permissions)
                     yield pipeline
                 page += 1
-        except RuntimeError as error:
-            print error.message
-        except ConnectionError as error:
-            print error.message
-        except:
-            print 'Error: ', traceback.format_exc()
+        except BaseException as error:
+            print(error)
+            print('Error: ', traceback.format_exc())

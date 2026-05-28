@@ -66,8 +66,8 @@ class PodLauncher:
             seen_events = set()
             self.track_pod(pod_id, seen_events)
         except Exception as e:
-            Logger.fail(str(e.message), task_name=self.task_name)
-            raise RuntimeError(str(e.message))
+            Logger.fail(str(e), task_name=self.task_name)
+            raise RuntimeError(str(e))
 
     def track_pod(self, pod_id, seen_events):
         """Poll pod status while active"""

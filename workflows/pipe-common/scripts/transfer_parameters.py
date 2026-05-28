@@ -360,7 +360,7 @@ class InputDataTask:
                         report.write('export {}="{}"\n'.format(env_name + '_ORIGINAL', original_value))
             Logger.success('Finished localization of remote data', task_name=self.task_name)
         except BaseException as e:
-            Logger.fail('Localization of remote data failed due to exception: %s' % e.message, task_name=self.task_name)
+            Logger.fail('Localization of remote data failed due to exception: %s' % str(e), task_name=self.task_name)
             exit(1)
 
     def fetch_dts_registry(self):
@@ -368,7 +368,7 @@ class InputDataTask:
         try:
             dts_data = self.api.load_dts_registry()
         except BaseException as e:
-            Logger.info("DTS is not available: %s" % e.message, task_name=self.task_name)
+            Logger.info("DTS is not available: %s" % str(e), task_name=self.task_name)
             return result
         for registry in dts_data:
             for prefix in registry['prefixes']:

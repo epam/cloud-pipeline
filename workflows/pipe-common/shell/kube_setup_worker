@@ -23,7 +23,7 @@ pipe_log_info "Starting Kube worker setup" "$_kube_worker_setup_task"
 # Get the kube master information
 #################################
 # Name/IP
-_kube_master_info_result=$(eval "${CP_PYTHON2_PATH} ${COMMON_REPO_DIR}/scripts/cluster_wait_for_master.py --master-id ${parent_id} --task-name KubeMasterSetup")
+_kube_master_info_result=$(eval "${CP_PYTHON_PATH} ${COMMON_REPO_DIR}/scripts/cluster_wait_for_master.py --master-id ${parent_id} --task-name KubeMasterSetup")
 _kube_master_await_result=$?
 _kube_master_info=($_kube_master_info_result)
 _kube_master_ip=${_kube_master_info[-1]}

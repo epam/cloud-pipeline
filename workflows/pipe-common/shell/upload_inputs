@@ -18,7 +18,7 @@ REPORT_FILE=$1
 UPLOAD_TASK_NAME=$2
 
 
-UPLOAD_RESULT=$(eval "${CP_PYTHON2_PATH} ${COMMON_REPO_DIR}/scripts/transfer_parameters.py --input-dir ${INPUT_DIR} \
+UPLOAD_RESULT=$(eval "${CP_PYTHON_PATH} ${COMMON_REPO_DIR}/scripts/transfer_parameters.py --input-dir ${INPUT_DIR} \
      --analysis-dir ${ANALYSIS_DIR} --common-dir ${COMMON_DIR} \
      --task ${UPLOAD_TASK_NAME}" --report-file ${REPORT_FILE} --operation upload)
 

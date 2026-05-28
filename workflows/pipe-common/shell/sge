@@ -42,4 +42,4 @@ if [ "$parent_id" ]; then
     exit 1
 fi
 
-"$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/manage_sge_profiles.py" "$@"
+"$CP_PYTHON_PATH" "$COMMON_REPO_DIR/scripts/manage_sge_profiles.py" "$@"

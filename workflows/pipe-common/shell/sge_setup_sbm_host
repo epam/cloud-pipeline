@@ -125,7 +125,7 @@ export SGE_CLUSTER_NAME="CLOUD_PIPELINE"
 IFS='@' read -r -a owner_info <<< "$OWNER"
 OWNER_NAME="${owner_info[0]}"
 
-MASTER_INFO_RESULT=$(eval "${CP_PYTHON2_PATH} ${COMMON_REPO_DIR}/scripts/cluster_wait_for_master.py --master-id ${parent_id} --task-name SGEMasterSetup")
+MASTER_INFO_RESULT=$(eval "${CP_PYTHON_PATH} ${COMMON_REPO_DIR}/scripts/cluster_wait_for_master.py --master-id ${parent_id} --task-name SGEMasterSetup")
 _MASTER_AWAIT_RESULT=$?
 MASTER_INFO=($MASTER_INFO_RESULT)
 MASTER_IP=${MASTER_INFO[-1]}

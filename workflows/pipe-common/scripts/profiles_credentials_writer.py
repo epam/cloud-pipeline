@@ -100,7 +100,7 @@ def find_default_profile_id(user):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--script-path', required=True)
-    parser.add_argument('--python-path', required=True)  # $CP_PYTHON2_PATH
+    parser.add_argument('--python-path', required=True)  # $CP_PYTHON_PATH
     parser.add_argument('--config-file', default="~/.aws/config")
     parser.add_argument('--log-dir', default='logs')
     args = parser.parse_args()

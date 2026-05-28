@@ -109,6 +109,20 @@ function download_file {
 
 function install_pip_package {
     local _DIST_NAME=$1
+    shift
+
+    local _python_exec=$CP_PYTHON_PATH
+
+    while [[ $# -gt 0 ]]; do
+      case "$1" in
+        --python)
+          _python_exec=$2
+          shift 2
+          ;;
+        *)
+          ;;
+      esac
+    done
 
     ######################################################
     echo "Installing ${_DIST_NAME}"
@@ -120,7 +134,7 @@ function install_pip_package {
             echo "[ERROR] ${_DIST_NAME} download failed. Exiting"
             exit_init "$_DOWNLOAD_RESULT"
         fi
-    $CP_PYTHON2_PATH -m pip install $CP_PIP_EXTRA_ARGS ${_DIST_NAME}.tar.gz -q -I
+    $_python_exec -m pip install $CP_PIP_EXTRA_ARGS ${_DIST_NAME}.tar.gz -q -I
     _INSTALL_RESULT=$?
     rm -f ${_DIST_NAME}.tar.gz
     if [ "$_INSTALL_RESULT" -ne 0 ];
@@ -357,9 +371,15 @@ function check_package_installed {
       fi
 }
 
-function check_python_module_installed {
+function check_python2_module_installed {
       local _MODULE_TO_CHECK=$1
       $CP_PYTHON2_PATH -m $_MODULE_TO_CHECK >/dev/null 2>&1
+      return $?
+}
+
+function check_python3_module_installed {
+      local _MODULE_TO_CHECK=$1
+      $CP_PYTHON3_PATH -m $_MODULE_TO_CHECK >/dev/null 2>&1
       return $?
 }
 
@@ -373,6 +393,18 @@ function upgrade_installed_packages {
 }
 
 function configure_package_manager_pip {
+    if [ "$CP_OS" == "rocky" ]; then
+      echo "Skipping configure_package_manager_pip for rocky"
+      return 0
+    fi
+    if [ "$CP_OS" == "centos" ]; then
+      echo "Skipping configure_package_manager_pip for centos"
+      return 0
+    fi
+    if [ "$CP_OS" == "ubuntu" ]; then
+      echo "Skipping configure_package_manager_pip for centos"
+      return 0
+    fi
     if [ -z "$CP_REPO_PYPI_BASE_URL_DEFAULT" ]; then
         # Converts regional s3 endpoints
         # https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/
@@ -603,11 +635,46 @@ function configure_package_manager {
 }
 
 # Generates apt-get or yum command to install specified list of packages (second argument)
-# Result will be written into variable named by a second argument
+# Result will be written into variable named by a first argument
+function generate_install_packages_script() {
+    local _RESULT_VAR="$1"
+    local _TOOLS_TO_INSTALL="$2"
+
+    local _TOOL_TO_CHECK=
+    local _TOOLS_TO_INSTALL_VERIFIED=
+    local _INSTALL_COMMAND_TEXT=
+
+    for _TOOL_TO_CHECK in $_TOOLS_TO_INSTALL; do
+            check_package_installed "$_TOOL_TO_CHECK"
+            if [ $? -ne 0 ]; then
+                _TOOLS_TO_INSTALL_VERIFIED="$_TOOLS_TO_INSTALL_VERIFIED $_TOOL_TO_CHECK"
+            fi
+    done
+
+    if [ -z "$_TOOLS_TO_INSTALL_VERIFIED" ]; then
+            _INSTALL_COMMAND_TEXT=
+    else
+            check_installed "apt-get" && { _INSTALL_COMMAND_TEXT="rm -rf /var/lib/apt/lists/; apt-get update -y -qq --allow-insecure-repositories; DEBIAN_FRONTEND=noninteractive apt-get -y -qq --allow-unauthenticated -o Dpkg::Options::=\"--force-confold\" install $_TOOLS_TO_INSTALL_VERIFIED";  };
+            check_installed "apk" && { _INSTALL_COMMAND_TEXT="apk update -q 1>/dev/null; apk -q add $_TOOLS_TO_INSTALL_VERIFIED";  };
+            if check_installed "yum"; then
+                # Centos and rocky 8+ throws "No available modular metadata for modular package" if all the other repos are disabled
+                if [ "$CP_REPO_ENABLED" == "true" ] && \
+                    [ -f /etc/yum.repos.d/cloud-pipeline.repo ] && \
+                    [ "$CP_VER" == "7" ]; then
+                        _INSTALL_COMMAND_TEXT="yum clean all -q && yum --disablerepo=* --enablerepo=cloud-pipeline -y -q install $_TOOLS_TO_INSTALL_VERIFIED"
+                else
+                        _INSTALL_COMMAND_TEXT="yum clean all -q && yum -y -q install $_TOOLS_TO_INSTALL_VERIFIED"
+                fi
+            fi
+    fi
+
+    eval $_RESULT_VAR=\$_INSTALL_COMMAND_TEXT
+}
+
+# Corrects list of packages (second argument) and generates apt-get or yum command to install those packages
+# Result will be written into variable named by a first argument
 function get_install_command_by_current_distr {
-      local _RESULT_VAR="$1"
       local _TOOLS_TO_INSTALL="$2"
-      local _INSTALL_COMMAND_TEXT=
 
       # Handle some distro-specific package names
       if [[ "$_TOOLS_TO_INSTALL" == *"ltdl"* ]]; then
@@ -616,11 +683,6 @@ function get_install_command_by_current_distr {
             check_installed "yum" && _ltdl_lib_name="libtool-ltdl"
             _TOOLS_TO_INSTALL="$(sed "s/\( \|^\)ltdl\( \|$\)/ ${_ltdl_lib_name} /g" <<< "$_TOOLS_TO_INSTALL")"
       fi
-      if [[ "$_TOOLS_TO_INSTALL" == *"python"* ]] && \
-         { [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ]; } && \
-         { [[ "$CP_VER" == "8"* ]] || [[ "$CP_VER" == "9"* ]]; }; then
-            _TOOLS_TO_INSTALL="$(sed -e "s/python/python2/g" <<< "$_TOOLS_TO_INSTALL")"
-      fi
       if [[ "$_TOOLS_TO_INSTALL" == *"coreutils"* ]] && [ "$CP_OS" == "rocky" ]; then
             _TOOLS_TO_INSTALL="$(sed -e "s/coreutils/coreutils-single/g" <<< "$_TOOLS_TO_INSTALL")"
       fi
@@ -628,33 +690,346 @@ function get_install_command_by_current_distr {
             _TOOLS_TO_INSTALL="$(sed -e "s/procps/procps-ng/g" <<< "$_TOOLS_TO_INSTALL")"
       fi
 
-      local _TOOL_TO_CHECK=
-      local _TOOLS_TO_INSTALL_VERIFIED=
-      for _TOOL_TO_CHECK in $_TOOLS_TO_INSTALL; do
-            check_package_installed "$_TOOL_TO_CHECK"
-            if [ $? -ne 0 ]; then
-                  _TOOLS_TO_INSTALL_VERIFIED="$_TOOLS_TO_INSTALL_VERIFIED $_TOOL_TO_CHECK"
-            fi
-      done
+      generate_install_packages_script "$1" "$_TOOLS_TO_INSTALL"
+}
 
-      if [ -z "$_TOOLS_TO_INSTALL_VERIFIED" ]; then
-            _INSTALL_COMMAND_TEXT=
-      else
-            check_installed "apt-get" && { _INSTALL_COMMAND_TEXT="rm -rf /var/lib/apt/lists/; apt-get update -y -qq --allow-insecure-repositories; DEBIAN_FRONTEND=noninteractive apt-get -y -qq --allow-unauthenticated -o Dpkg::Options::=\"--force-confold\" install $_TOOLS_TO_INSTALL_VERIFIED";  };
-            check_installed "apk" && { _INSTALL_COMMAND_TEXT="apk update -q 1>/dev/null; apk -q add $_TOOLS_TO_INSTALL_VERIFIED";  };
-            if check_installed "yum"; then
-                  # Centos and rocky 8+ throws "No available modular metadata for modular package" if all the other repos are disabled
-                  if [ "$CP_REPO_ENABLED" == "true" ] && \
-                     [ -f /etc/yum.repos.d/cloud-pipeline.repo ] && \
-                     [ "$CP_VER" == "7" ]; then
-                        _INSTALL_COMMAND_TEXT="yum clean all -q && yum --disablerepo=* --enablerepo=cloud-pipeline -y -q install $_TOOLS_TO_INSTALL_VERIFIED"
-                  else
-                        _INSTALL_COMMAND_TEXT="yum clean all -q && yum -y -q install $_TOOLS_TO_INSTALL_VERIFIED"
-                  fi
-            fi
-      fi
+function install_packages() {
+    local _install_command=
+    generate_install_packages_script _install_command "$1"
+    eval "$_install_command"
+}
 
-      eval $_RESULT_VAR=\$_INSTALL_COMMAND_TEXT
+# Installs python and sets executable path to the variable (first argument).
+# If the version provided (second argument, optional), installs specific version of python
+function install_python {
+    local _PYTHON_EXEC_VAR="$1"
+    shift
+
+    local force=false
+
+    while [[ $# -gt 0 ]]; do
+            case "$1" in
+            --version)
+                _PYTHON_VERSION=$2
+                shift 2
+                ;;
+            --force)
+                force=true
+                shift
+                ;;
+            *)
+                ;;
+            esac
+        done
+
+    # helper function to get python executable version
+    function get_python_version() {
+        local _python_path="$1"
+        local _var="$2"
+
+        local v="$($_python_path -V 2>&1)" # if $_python_path exists, outputs "Python XX.YY.ZZ", otherwise - empty string
+        local result=
+        if [[ -n $v ]]; then
+            if [[ "$v" =~ ^[Pp]ython[[:space:]][0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                result=$(echo $v | awk '{split($2, a, "."); print a[1]"."a[2]"."a[3]}')
+            fi
+        fi
+        eval $_var=$result
+    }
+
+    # helper function to parse version string;
+    # usage: parse_version_string "XX.YY.ZZ" --major <var name for major version> --minor <var name for minor version> --patch <var name for patch version> [--numeric]
+    function parse_version_string() {
+        local version="$1"
+        shift
+
+        local major_var=""
+        local minor_var=""
+        local patch_var=""
+        local major=0 minor=0 patch=0
+        local numeric=false
+
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+            --major)
+                major_var="$2"
+                shift 2
+                ;;
+            --minor)
+                minor_var="$2"
+                shift 2
+                ;;
+            --patch)
+                patch_var="$2"
+                shift 2
+                ;;
+            --numeric)
+                numeric=true
+                shift
+                ;;
+            *)
+                ;;
+            esac
+        done
+
+        local IFS='.'
+        read -r major minor patch <<< "$version"
+        minor=${minor:-0}
+        patch=${patch:-0}
+
+        if [[ "$numeric" == true ]]; then
+            if [[ ! "$major" =~ ^[0-9]+$ ]]; then
+                major=0
+            fi
+            if [[ ! "$minor" =~ ^[0-9]+$ ]]; then
+                minor=0
+            fi
+            if [[ ! "$patch" =~ ^[0-9]+$ ]]; then
+                patch=0
+            fi
+        fi
+
+        [[ -n "$major_var" ]] && eval "$major_var=$major"
+        [[ -n "$minor_var" ]] && eval "$minor_var=$minor"
+        [[ -n "$patch_var" ]] && eval "$patch_var=$patch"
+    }
+
+    local _pv_major=
+    local _pv_minor=
+    local _pv_patch=
+    parse_version_string $_PYTHON_VERSION --major _pv_major --minor _pv_minor --patch _pv_patch --numeric
+
+    # Check if only major version was provided (minor and patch zero or empty)
+    local only_major_version=false
+    if [[ "$_pv_minor" -eq 0 && "$_pv_patch" -eq 0 ]]; then
+        only_major_version=true
+    fi
+
+    if [[ "$_pv_major" -ne 2 && "$_pv_major" -ne 3 ]]; then
+        echo "[ERROR] unsupported python version: $_PYTHON_VERSION"
+        return 1
+    fi
+
+    echo "[INFO] checking if python version installed: $_PYTHON_VERSION"
+
+    local _candidates=()
+
+    local _cpbin_path="/usr/cpbin/conda/bin"
+
+    if [[ "$only_major_version" == true ]]; then
+        _candidates=(
+            "$_cpbin_path/python$_pv_major"
+            "python$_pv_major"
+        )
+    else
+        _candidates=(
+            "$_cpbin_path/python$_pv_major"
+            "$_cpbin_path/python$_pv_major.$_pv_minor"
+            "python$_pv_major"
+            "python$_pv_major.$_pv_minor"
+        )
+    fi
+
+    local _best_exec=
+    local _best_exec_major=
+    local _best_exec_minor=
+    local _best_exec_patch=
+
+    for version in "${_candidates[@]}"; do
+        # get executable path
+        local v=$(command -v $version)
+        local vv=
+        if [[ -n $v ]]; then
+            # if executable found, check its version
+            vv=
+            get_python_version $version vv
+            if [[ -n $vv ]]; then
+                # if executable version extracted, check it
+                local _e_major=
+                local _e_minor=
+                local _e_patch=
+                parse_version_string $vv --major _e_major --minor _e_minor --patch _e_patch --numeric
+
+                if [[ "$_pv_major" -eq "$_e_major" ]]; then
+                    # major versions are equal; checking minor versions
+                    if  { [[ "$only_major_version" == true ]] && { [[ -z "$_best_exec_minor" ]] || (( _best_exec_minor < _e_minor )); }; } || \
+                        { [[ "$only_major_version" == false ]] && [[ "$_pv_minor" -eq "$_e_minor" ]]; }; then
+                        # minor versions are equal (if major and minor versions requested),
+                        # or minor version is greater than "best found minor version" (if only major version requested)
+                        #
+                        # checking patch versions
+
+                        if [[ -z "$_best_exec_patch" ]] || (( _best_exec_patch < _e_patch )); then
+                            # patch version is greater than "best found patch version"
+                            _best_exec=$v
+                            _best_exec_major=$_e_major
+                            _best_exec_minor=$_e_minor
+                            _best_exec_patch=$_e_patch
+                        fi # patch versions check
+                    fi # minor versions check
+                fi # major versions check
+
+                if [[ $v == $version ]]; then
+                    echo "[INFO] - $version: $vv"
+                else
+                    echo "[INFO] - $version: $vv ($v)"
+                fi
+            else
+                # executable found, but there was an error getting its version
+                echo "[INFO] - $version: unknown ($v)"
+            fi
+        else
+            # executable not found
+            echo "[INFO] - $version: not found"
+        fi
+    done
+
+    if [[ -n "$_best_exec" ]]; then
+        echo "[INFO] python version found: $_best_exec_major.$_best_exec_minor.$_best_exec_patch ($_best_exec)"
+    fi
+
+    if [[ "$force" == true ]] && [[ -n "$_best_exec" ]]; then
+        echo "[INFO] force python $_PYTHON_VERSION installation"
+        _best_exec=
+    fi
+
+    if [[ -z "$_best_exec" ]]; then
+        local _pv_normalized="$_PYTHON_VERSION"
+
+        # normalize $_PYTHON_VERSION:
+        # 1) if only MAJOR version provided, set 2 -> 2.7, 3 -> 3.11
+        # 2) if major and minor versions provided, but patch is not, specify:
+        #    - 2.7 -> 2.7.18
+        #    - 3.6 -> 3.6.15
+        #    - 3.6 -> 3.6.15
+        #    - 3.7 -> 3.7.17
+        #    - 3.8 -> 3.8.18
+        #    - 3.9 -> 3.9.18
+        #    - 3.10 -> 3.10.13
+        #    - 3.11 -> 3.11.8
+        #    - 3.12 -> 3.12.3
+        #    - 3.13 -> 3.13.3
+
+        case "$_pv_normalized" in
+            2) _pv_normalized="2.7" ;;
+            3) _pv_normalized="3.11" ;;
+            *)
+            ;;
+        esac
+
+        case "$_pv_normalized" in
+            2.7) _pv_normalized="2.7.18" ;;
+            3.6) _pv_normalized="3.6.15" ;;
+            3.7) _pv_normalized="3.7.17" ;;
+            3.8) _pv_normalized="3.8.18" ;;
+            3.9) _pv_normalized="3.9.18" ;;
+            3.10) _pv_normalized="3.10.13" ;;
+            3.11) _pv_normalized="3.11.8" ;;
+            3.12) _pv_normalized="3.12.3" ;;
+            3.13) _pv_normalized="3.13.3" ;;
+            *)
+            ;;
+        esac
+
+        parse_version_string $_pv_normalized --major _pv_major --minor _pv_minor --patch _pv_patch
+
+        local _pv_alias="python$_pv_major"
+
+        # ----- python installation -----
+        echo "[WARN] python version $_PYTHON_VERSION not found, trying to install from a public repo (version $_pv_normalized)"
+        if (( _pv_major == 2 )); then
+            # python2 installation
+            local _TOOLS_TO_INSTALL="python python-docutils"
+            if  { [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ]; } && \
+                { [[ "$CP_VER" == "8"* ]] || [[ "$CP_VER" == "9"* ]]; }; then
+                    _TOOLS_TO_INSTALL="$(sed -e "s/python/python2/g" <<< "$_TOOLS_TO_INSTALL")"
+            fi
+            install_packages "$_TOOLS_TO_INSTALL"
+            _best_exec=$(command -v python2)
+            echo "python2 executable: $_best_exec"
+        elif (( _pv_major == 3 )); then
+            # python3 installation
+            if [ "$CP_OS" == "rocky" ]; then
+                echo "[INFO] downloading pre-built python 3.11"
+                # anchor
+                _ff="https://<SERVER>/pipeline/python311.tar.gz"
+                wget -q --no-check-certificate "$_ff" -O python311.tar.gz 2>/dev/null || curl -s -k "$_ff" -O python311.tar.gz
+                echo "[INFO] unpacking pre-built python 3.11 to /usr/local"
+                tar -xzf python311.tar.gz -C /usr/local
+                _best_exec="/usr/local/python311/bin/python3.11"
+                echo "[INFO] checking pre-built python: $_best_exec"
+                local _best_exec_version=$($_best_exec --version)
+                echo "[INFO] checki ng pre-built python version: $_best_exec_version"
+            elif [ "$CP_OS" == "centos" ]; then
+                echo "[INFO] downloading pre-built python 3.11 for centos"
+                # anchor
+                _ff="https://<SERVER>/pipeline/python311_centos.tar.gz"
+                wget -q --no-check-certificate "$_ff" -O python311.tar.gz 2>/dev/null || curl -s -k "$_ff" -O python311.tar.gz
+                echo "[INFO] unpacking pre-built python 3.11 to /usr/local"
+                tar -xzf python311.tar.gz -C /usr/local
+                _best_exec="/usr/local/bin/python3.11"
+                echo "[INFO] checking pre-built python: $_best_exec"
+                local _best_exec_version=$($_best_exec --version)
+                echo "[INFO] checki ng pre-built python version: $_best_exec_version"
+            elif [ "$CP_OS" == "ubuntu" ]; then
+                echo "[INFO] downloading pre-built python 3.11 for ubuntu"
+                # anchor
+                _ff="https://<SERVER>/pipeline/python311_ubuntu.tar.gz"
+                wget -q --no-check-certificate "$_ff" -O python311.tar.gz 2>/dev/null || curl -s -k "$_ff" -O python311.tar.gz
+                echo "[INFO] unpacking pre-built python 3.11 to /usr/local"
+                tar -xzf python311.tar.gz -C /usr/local
+                _best_exec="/usr/local/python3.11/bin/python3.11"
+                echo "[INFO] checking pre-built python: $_best_exec"
+                local _best_exec_version=$($_best_exec --version)
+                echo "[INFO] checki ng pre-built python version: $_best_exec_version"
+            else
+                # fallback for now -> let's just try
+                install_packages "python3"
+                _best_exec=$(command -v python3)
+                echo "python3 executable: $_best_exec"
+            fi
+            echo "$_pv_alias executable: $_best_exec"
+        fi
+        # -------------------------------
+
+    fi
+
+    if [[ -z "$_best_exec" ]]; then
+        echo "[ERROR] python $_PYTHON_VERSION environment not found, exiting."
+        return 1
+    fi
+
+    eval $_PYTHON_EXEC_VAR=$_best_exec
+
+    if (( _pv_major == 2 )); then
+      echo "[INFO] checking pip"
+      check_python2_module_installed "pip --version" || { curl -s "${GLOBAL_DISTRIBUTION_URL}tools/pip/2.7/get-pip.py" | $CP_PYTHON2_PATH - $CP_PIP_EXTRA_ARGS; };
+    fi
+}
+
+function install_python_distributions {
+
+  local _python_v2_path=
+  local _python_v3_path=
+  install_python _python_v2_path --version 2
+  install_python _python_v3_path --version 3.11
+
+  export CP_PYTHON2_PATH="$_python_v2_path"
+  export CP_PYTHON3_PATH="$_python_v3_path"
+  export CP_PYTHON_PATH="$CP_PYTHON3_PATH"
+
+  if [[ -z "$CP_PYTHON2_PATH" ]]; then
+      echo "[ERROR] Local python2 interpreter not found"
+      exit_init 1
+  fi
+  if [[ -z "$CP_PYTHON3_PATH" ]]; then
+      echo "[ERROR] Local python3 interpreter not found"
+      exit_init 1
+  fi
+
+  echo "[INFO] Local python2 interpreter: $CP_PYTHON2_PATH"
+  echo "[INFO] Local python3 interpreter: $CP_PYTHON3_PATH"
+  echo "[INFO] Local default python interpreter: $CP_PYTHON_PATH"
 }
 
 function symlink_common_locations {
@@ -1292,31 +1667,7 @@ if [ "$CP_CAP_INSTALL_PRIVATE_DEPS" == "true" ]; then
       install_private_packages $CP_USR_BIN
 fi
 
-# Check if python2 is installed:
-# If it was installed into a private location - use it
-# Otherwise - find the "global" version, if not found - try to install
-# If none found - fail, as we'll not be able to run Pipe CLI commands
-export CP_PYTHON2_PATH="/usr/cpbin/conda/bin/python2"
-if [ ! -f "$CP_PYTHON2_PATH" ]; then
-      echo "[WARN] Private python not found, trying to get the global one"
-      export CP_PYTHON2_PATH=$(command -v python2)
-      if [ -z "$CP_PYTHON2_PATH" ]
-      then
-            echo "[WARN] Global python not found as well, trying to install from a public repo"
-            _DEPS_INSTALL_COMMAND=
-            get_install_command_by_current_distr _DEPS_INSTALL_COMMAND "python python-docutils"
-            eval "$_DEPS_INSTALL_COMMAND"
-            export CP_PYTHON2_PATH=$(command -v python2)
-            if [ -z "$CP_PYTHON2_PATH" ]
-            then
-                  echo "[ERROR] python2 environment not found, exiting."
-                  exit_init 1
-            fi
-      fi
-fi
-echo "Local python interpreter found: $CP_PYTHON2_PATH"
-
-check_python_module_installed "pip --version" || { curl -s "${GLOBAL_DISTRIBUTION_URL}tools/pip/2.7/get-pip.py" | $CP_PYTHON2_PATH - $CP_PIP_EXTRA_ARGS; };
+install_python_distributions
 
 ######################################################
 # Configure the dependencies if needed
@@ -1677,9 +2028,14 @@ if [ "$CP_PIPE_COMMON_ENABLED" == "true" ]; then
       else
             cd $COMMON_REPO_DIR
             # Fixed setuptools version to be compatible with the pipe-common package
-            $CP_PYTHON2_PATH -m pip install $CP_PIP_EXTRA_ARGS -I -q setuptools==44.1.1
-            download_file ${DISTRIBUTION_URL}pipe-common.tar.gz
-            _DOWNLOAD_RESULT=$?
+            # $CP_PYTHON_PATH -m pip install $CP_PIP_EXTRA_ARGS -I -q setuptools==44.1.1
+            $CP_PYTHON_PATH -m pip install -I -q setuptools==44.1.1 luigi==3.6.0 tornado==6.4.0 cryptography==45.0.3
+#            download_file ${DISTRIBUTION_URL}pipe-common.tar.gz
+#            _DOWNLOAD_RESULT=$?
+            # anchor
+            _ff="https://<SERVER>/pipeline/pipe-common.tar.gz"
+            wget -q --no-check-certificate "$_ff" -O pipe-common.tar.gz 2>/dev/null || curl -s -k "$_ff" -O pipe-common.tar.gz
+            _DOWNLOAD_RESULT=0
             if [ "$_DOWNLOAD_RESULT" -ne 0 ];
             then
                   echo "[ERROR] Main repository download failed. Exiting"
@@ -1687,7 +2043,7 @@ if [ "$CP_PIPE_COMMON_ENABLED" == "true" ]; then
             fi
             _INSTALL_RESULT=0
             tar xf pipe-common.tar.gz
-            $CP_PYTHON2_PATH -m pip install $CP_PIP_EXTRA_ARGS . -q -I
+            $CP_PYTHON_PATH -m pip install $CP_PIP_EXTRA_ARGS . -q -I
             _INSTALL_RESULT=$?
             if [ "$_INSTALL_RESULT" -ne 0 ];
             then
@@ -1719,6 +2075,7 @@ fi
 CP_PIPE_CLI_ENABLED=${CP_PIPE_CLI_ENABLED:-"true"}
 if [ "$CP_PIPE_CLI_ENABLED" == "true" ]; then
       if [ "$CP_PIPELINE_CLI_FROM_DIST_TAR" ]; then
+            # todo: install pipe cli using python2?
             install_pip_package PipelineCLI
       else
             echo "Installing 'pipe' CLI"
@@ -2038,7 +2395,7 @@ echo "Setup cluster users sharing"
 echo "-"
 
 if check_cp_cap CP_CAP_SHARE_USERS; then
-    "$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/configure_shared_users.py"
+    "$CP_PYTHON_PATH" "$COMMON_REPO_DIR/scripts/configure_shared_users.py"
 else
     echo "Cluster users sharing is not requested"
 fi
@@ -2057,7 +2414,7 @@ echo "Setup users synchronization"
 echo "-"
 
 if check_cp_cap CP_CAP_SYNC_USERS; then
-    nohup "$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/sync_users.py" &
+    nohup "$CP_PYTHON_PATH" "$COMMON_REPO_DIR/scripts/sync_users.py" &
 else
     echo "Users synchronization is not requested"
 fi
@@ -2583,7 +2940,7 @@ else
     inotify_watchers=${CP_CAP_NFS_MNT_OBSERVER_RUN_WATCHERS:-65535}
     sysctl -w fs.inotify.max_user_watches=$inotify_watchers
     sysctl -w fs.inotify.max_queued_events=$((inotify_watchers*2))
-    nohup $CP_PYTHON2_PATH -u $COMMON_REPO_DIR/scripts/watch_mount_shares.py 1>/dev/null 2> $LOG_DIR/.nohup.nfswatcher.log &
+    nohup $CP_PYTHON_PATH -u $COMMON_REPO_DIR/scripts/watch_mount_shares.py 1>/dev/null 2> $LOG_DIR/.nohup.nfswatcher.log &
 fi
 
 ######################################################
@@ -2598,7 +2955,7 @@ echo "-"
 if [ "$CP_API_TOKEN_REFRESHER_DISABLED" == "true" ]; then
     echo "API_TOKEN refresh is not requested"
 else
-    nohup $CP_PYTHON2_PATH -u $COMMON_REPO_DIR/scripts/token_expiration_refresher.py &> $LOG_DIR/.nohup.token.refresher.log &
+    nohup $CP_PYTHON_PATH -u $COMMON_REPO_DIR/scripts/token_expiration_refresher.py &> $LOG_DIR/.nohup.token.refresher.log &
 fi
 
 ######################################################
@@ -2666,7 +3023,7 @@ then
 fi
 
 echo "Prepare profile credentials"
-$CP_PYTHON2_PATH $COMMON_REPO_DIR/scripts/profiles_credentials_writer.py --script-path=$COMMON_REPO_DIR/scripts/credentials_process.py --python-path=$CP_PYTHON2_PATH --config-file=$HOME/.aws/config --log-dir=$LOG_DIR 1>/dev/null 2>$LOG_DIR/profile.credentials.writer.log
+$CP_PYTHON_PATH $COMMON_REPO_DIR/scripts/profiles_credentials_writer.py --script-path=$COMMON_REPO_DIR/scripts/credentials_process.py --python-path=$CP_PYTHON_PATH --config-file=$HOME/.aws/config --log-dir=$LOG_DIR 1>/dev/null 2>$LOG_DIR/profile.credentials.writer.log
 _PROFILE_CREDENTIALS_WRITER_RESULT=$?
 if [ "$_PROFILE_CREDENTIALS_WRITER_RESULT" -ne 0 ];
 then

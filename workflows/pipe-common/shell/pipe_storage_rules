@@ -23,6 +23,6 @@ if [ -z "$PIPELINE_ID" ] ; then
     echo '[{"moveToSts": true, "fileMask": "*"}]'
 else
     # Call datastorage API
-    CMD="import pipeline.api; pipe=pipeline.api.PipelineAPI(\"${API}\", \"${LOG_DIR}\"); storage_rules=pipe.load_datastorage_rules(${PIPELINE_ID}); print storage_rules if storage_rules else \"\";"
-    $CP_PYTHON2_PATH -c "$CMD"
+    CMD="import pipeline.api; pipe=pipeline.api.PipelineAPI(\"${API}\", \"${LOG_DIR}\"); storage_rules=pipe.load_datastorage_rules(${PIPELINE_ID}); print(storage_rules) if storage_rules else \"\";"
+    $CP_PYTHON_PATH -c "$CMD"
 fi

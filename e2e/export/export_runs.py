@@ -33,7 +33,7 @@ def main(script_name, argv):
         name_attribute = 'Name'
         for opt, arg in opts:
             if opt in ("-h", "--help"):
-                print script_name + ' -s <since date> -a <api path> -k <authentication token> -o <output file> [--skip-groups] [--skip-ad-groups] [-n <name-attribute>]'
+                print(script_name + ' -s <since date> -a <api path> -k <authentication token> -o <output file> [--skip-groups] [--skip-ad-groups] [-n <name-attribute>]')
                 sys.exit()
             if opt in ("-s", "--since"):
                 since = parse_date_parameter(arg)
@@ -50,16 +50,16 @@ def main(script_name, argv):
             elif opt in ("-n", "--name"):
                 name_attribute = arg
         if not api:
-            print 'API path (-a <api path>) is required'
-            print script_name + ' -s <since date> -a <api path> -k <authentication token> -o <output file> [--skip-groups] [--skip-ad-groups] [-n <name-attribute>]'
+            print('API path (-a <api path>) is required')
+            print(script_name + ' -s <since date> -a <api path> -k <authentication token> -o <output file> [--skip-groups] [--skip-ad-groups] [-n <name-attribute>]')
             sys.exit(2)
         if not key:
-            print 'Authentication token (-k <authentication token>) is required'
-            print script_name + ' -s <since date> -a <api path> -k <authentication token> -o <output file> [--skip-groups] [--skip-ad-groups] [-n <name-attribute>]'
+            print('Authentication token (-k <authentication token>) is required')
+            print(script_name + ' -s <since date> -a <api path> -k <authentication token> -o <output file> [--skip-groups] [--skip-ad-groups] [-n <name-attribute>]')
             sys.exit(2)
         if not output:
-            print 'Output file (-o <output file>) is required'
-            print script_name + ' -s <since date> -a <api path> -k <authentication token> -o <output file> [--skip-groups] [--skip-ad-groups] [-n <name-attribute>]'
+            print('Output file (-o <output file>) is required')
+            print(script_name + ' -s <since date> -a <api path> -k <authentication token> -o <output file> [--skip-groups] [--skip-ad-groups] [-n <name-attribute>]')
             sys.exit(2)
 
         pipeline_run_api = PipelineRunAPI(api, key)
@@ -83,7 +83,7 @@ def main(script_name, argv):
         ad_groups_weights = {}
         roles = []
         if not skip_groups or not skip_ad:
-            print 'Fetching user list...'
+            print('Fetching user list...')
             users_api = UsersAPI(api, key)
             users_result = users_api.get_users()
             for user in users_result:
@@ -109,8 +109,8 @@ def main(script_name, argv):
                             role_name = role_name[len('ROLE_'):]
                         users[user['userName'].upper()].append(role_name.encode('utf8'))
             ad_groups.sort(key=lambda g: ad_groups_weights[g], reverse=True)
-            print 'Done.'
-        print 'Generating csv...'
+            print('Done.')
+        print('Generating csv...')
         columns = [
             'ID',
             'Parent Run',
@@ -175,11 +175,11 @@ def main(script_name, argv):
                     csv_writer.writerow(data)
                 total = result['totalCount']
                 not_finished = page * page_size < total
-                print '{} of {} items processed'.format(min(total, page * page_size), total)
-        print 'Done.'
+                print('{} of {} items processed'.format(min(total, page * page_size), total))
+        print('Done.')
 
     except getopt.GetoptError:
-        print script_name + ' -s <since date> -a <api path> -k <authentication token> -o <output file> [-n <name-attribute>]'
+        print(script_name + ' -s <since date> -a <api path> -k <authentication token> -o <output file> [-n <name-attribute>]')
         sys.exit(2)
 
 

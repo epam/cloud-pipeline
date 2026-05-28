@@ -259,7 +259,7 @@ check_last_exit_code() {
 LINUX_DISTRIBUTION=$( get_linux_dist )
 
 #Remove pipe qsub, if exists
-$CP_PYTHON2_PATH -m pip uninstall -y -q PipelineQSUB
+$CP_PYTHON_PATH -m pip uninstall -y -q PipelineQSUB
 
 pipe_log_info "Installing SGE master" "$SGE_MASTER_SETUP_TASK"
 
@@ -450,7 +450,7 @@ fi
 
 create_execution_host
 
-"$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/generate_sge_profiles.py"
+"$CP_PYTHON_PATH" "$COMMON_REPO_DIR/scripts/generate_sge_profiles.py"
 
 for sge_profile_script in "$CP_CAP_SCRIPTS_DIR"/sge_profile_*_queue.sh; do
     (
@@ -503,6 +503,6 @@ for sge_profile_script in "$CP_CAP_SCRIPTS_DIR"/sge_profile_*_queue.sh; do
     (
         # shellcheck source=/dev/null
         [[ -e "$sge_profile_script" ]] && source "$sge_profile_script"
-        nohup "$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/autoscale_grid_engine.py" >"$LOG_DIR/.nohup.autoscaler.sge.$CP_CAP_SGE_QUEUE_NAME.log" 2>&1 &
+        nohup "$CP_PYTHON_PATH" "$COMMON_REPO_DIR/scripts/autoscale_grid_engine.py" >"$LOG_DIR/.nohup.autoscaler.sge.$CP_CAP_SGE_QUEUE_NAME.log" 2>&1 &
     )
 done

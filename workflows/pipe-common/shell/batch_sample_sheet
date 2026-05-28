@@ -35,7 +35,7 @@ if [ -z "$COMMON_REPO_DIR" ]
 fi
 
 # Execute command
-$CP_PYTHON2_PATH $COMMON_REPO_DIR/scripts/sample_sheet_batch.py --sample_sheet "$SAMPLE_SHEET" --cmd "$CMD"
+$CP_PYTHON_PATH $COMMON_REPO_DIR/scripts/sample_sheet_batch.py --sample_sheet "$SAMPLE_SHEET" --cmd "$CMD"
 result=$?
 
 exit $result

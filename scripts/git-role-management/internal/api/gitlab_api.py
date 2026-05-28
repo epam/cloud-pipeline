@@ -41,11 +41,11 @@ class GitLab(object):
         try:
             text_json = json.loads(text)
             if 'message' in text_json:
-                print text_json['message']
+                print(text_json['message'])
         except RuntimeError:
-            print text
+            print(text)
         except:
-            print text
+            print(text)
         return None
 
     def call(self,

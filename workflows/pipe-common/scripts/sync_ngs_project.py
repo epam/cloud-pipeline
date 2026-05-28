@@ -152,10 +152,10 @@ class MachineRun(object):
             self.register_metadata(self.machine_run, self.run_folder, sample_sheets, trigger_run)
             Logger.success('Finished % synchronization' % self.machine_run, task_name=self.machine_run)
         except BaseException as e:
-            Logger.fail('An error occurred during machine run processing %s: %s.' % (self.machine_run, str(e.message)),
+            Logger.fail('An error occurred during machine run processing %s: %s.' % (self.machine_run, str(str(e))),
                         task_name=self.machine_run)
             self.notifications.append(
-                Event(self.machine_run, 'Metadata Created', EVENT_FAILURE, message=str(e.message)))
+                Event(self.machine_run, 'Metadata Created', EVENT_FAILURE, message=str(str(e))))
 
     def validate_illumina_folder(self):
         Logger.info("Validating Illumina folder structure for path %s" % self.run_folder, task_name=self.machine_run)
@@ -411,9 +411,9 @@ class MachineRun(object):
             Logger.info(msg, task_name=self.machine_run)
             self.notifications.append(Event(self.machine_run, 'Analysis launch', EVENT_SUCCESS, message=msg))
         except BaseException as e:
-            Logger.warn('Failed to launch analysis for machine run %s. Error: %s' % (self.machine_run, str(e.message)),
+            Logger.warn('Failed to launch analysis for machine run %s. Error: %s' % (self.machine_run, str(str(e))),
                         task_name=self.machine_run)
-            self.notifications.append(Event(self.machine_run, 'Analysis launch', EVENT_FAILURE, message=str(e.message)))
+            self.notifications.append(Event(self.machine_run, 'Analysis launch', EVENT_FAILURE, message=str(str(e))))
 
     def build_run_notification(self, metadata_entity):
         if not self.settings.notify_users:
@@ -487,7 +487,7 @@ class MachineRun(object):
                 return float(result[0].get('size', 0)) / BYTES_IN_GB
             return 0
         except BaseException as e:
-            Logger.warn('Failed to estimate data size for path %s: %s' % (run_folder, str(e.message)),
+            Logger.warn('Failed to estimate data size for path %s: %s' % (run_folder, str(str(e))),
                         task_name=self.machine_run)
             return 0
 

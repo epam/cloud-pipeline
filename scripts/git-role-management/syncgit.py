@@ -17,7 +17,6 @@ import sys
 import time
 from internal.config import Config, ConfigNotFoundError
 from internal.synchronization.pipeline_server import PipelineServer
-from exceptions import KeyboardInterrupt
 
 
 def configure(argv):
@@ -56,13 +55,13 @@ def configure(argv):
         elif opt == "--git-group-prefix":
             git_group_prefix = arg
     Config.store(key, api, proxy, email, name, ssh_pub, ssh_prv, admins_group, git_group_prefix)
-    print 'syncgit configuration updated'
+    print('syncgit configuration updated')
     exit(0)
 
 
 def help():
-    print 'Use \'configure\' command to setup synchronization properties and settings:'
-    print 'python syncgit.py configure ' \
+    print('Use \'configure\' command to setup synchronization properties and settings:')
+    print('python syncgit.py configure ' \
           '--api=<api path> ' \
           '--key=<api token> ' \
           '--email-attribute=<attribute name for \'email\' field, case sensitive, default - \'Email\'> ' \
@@ -70,14 +69,14 @@ def help():
           '--ssh-pub-attribute=<attribute name for \'ssh_pub\' field, case sensitive, default - \'ssh_pub\'> ' \
           '--ssh-prv-attribute=<attribute name for \'ssh_prv\' field, case sensitive, default - \'ssh_prv\'> ' \
           '--admins-group=<administrators group name, defualt - \'ROLE_ADMIN\'> ' \
-          '--git-group-prefix=<prefix for group names, default - \'PIPELINE-\'>'
-    print ''
-    print 'Use \'sync\' command to synchronize git users, groups and project members.'
-    print 'python syncgit.py sync'
-    print ''
-    print 'Use \'purge\' command to remove git users, groups and project members.'
-    print 'python syncgit.py purge'
-    print ''
+          '--git-group-prefix=<prefix for group names, default - \'PIPELINE-\'>')
+    print('')
+    print('Use \'sync\' command to synchronize git users, groups and project members.')
+    print('python syncgit.py sync')
+    print('')
+    print('Use \'purge\' command to remove git users, groups and project members.')
+    print('python syncgit.py purge')
+    print('')
 
 
 def main(argv):
@@ -91,15 +90,15 @@ def main(argv):
             try:
                 config = Config.instance(show=True)
                 if config.api is None:
-                    print 'API path is not configured'
+                    print('API path is not configured')
                     help()
                     exit(1)
                 elif config.access_key is None:
-                    print 'API token is not configured'
+                    print('API token is not configured')
                     help()
                     exit(1)
             except ConfigNotFoundError as error:
-                print error.message
+                print(error.message)
                 help()
                 exit(1)
             start = time.time()
@@ -108,21 +107,21 @@ def main(argv):
                 pipeline_server.synchronize(map(lambda pipeline_id: int(pipeline_id), argv[1:]))
             except KeyboardInterrupt:
                 exit(2)
-            print ''
-            print 'Synchronization time: {} seconds'.format(time.time() - start)
+            print('')
+            print('Synchronization time: {} seconds'.format(time.time() - start))
         elif command == 'sync-users':
             try:
                 config = Config.instance(show=True)
                 if config.api is None:
-                    print 'API path is not configured'
+                    print('API path is not configured')
                     help()
                     exit(1)
                 elif config.access_key is None:
-                    print 'API token is not configured'
+                    print('API token is not configured')
                     help()
                     exit(1)
             except ConfigNotFoundError as error:
-                print error.message
+                print(error.message)
                 help()
                 exit(1)
             start = time.time()
@@ -131,36 +130,41 @@ def main(argv):
                 pipeline_server.synchronize_users(argv[1:])
             except KeyboardInterrupt:
                 exit(2)
-            print ''
-            print 'Synchronization time: {} seconds'.format(time.time() - start)
+            print('')
+            print('Synchronization time: {} seconds'.format(time.time() - start))
         elif command == 'purge':
             try:
                 config = Config.instance(show=True)
                 if config.api is None:
-                    print 'API path is not configured'
+                    print('API path is not configured')
                     help()
                     exit(1)
                 elif config.access_key is None:
-                    print 'API token is not configured'
+                    print('API token is not configured')
                     help()
                     exit(1)
             except ConfigNotFoundError as error:
-                print error.message
+                print(error.message)
                 help()
                 exit(1)
             choice = ''
             while choice not in ('y', 'n'):
                 sys.stdout.write('This command will remove all users (except root) and generated groups for git server.'
                                  ' Are you sure? y/n: ')
-                choice = raw_input().lower()
+                try:
+                    # python3
+                    choice = input().lower()
+                except:
+                    # python2
+                    choice = raw_input().lower()
                 if choice == 'n':
                     sys.exit()
             pipeline_server = PipelineServer()
             for server in pipeline_server.get_distinct_git_servers():
                 server.clear_users_and_groups()
-            print ''
+            print('')
         else:
-            print 'Unknown command {}'.format(command)
+            print('Unknown command {}'.format(command))
             exit(1)
 
 if __name__ == "__main__":
