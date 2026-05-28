@@ -1346,12 +1346,14 @@ def storage_copy_item(source, destination, recursive, force, exclude, include, q
 @click.option('-f', '--format', help='Format for size [G/M/K]',
               type=click.Choice(DuOutput.possible_size_types()), required=False, default='M')
 @click.option('-d', '--depth', help='Depth level', type=int, required=False)
+@click.option('-of', '--output-format', help='Output format. Default is a text table.',
+              type=click.Choice(['json']), required=False, default=None)
 @common_options
-def du(name, relative_path, depth, cloud, output_mode, generation, format):
+def du(name, relative_path, depth, cloud, output_mode, generation, format, output_format):
     """
     Displays data storage usage statistics.
     """
-    DataStorageOperations.du(name, relative_path, depth, cloud, output_mode, generation, format)
+    DataStorageOperations.du(name, relative_path, depth, cloud, output_mode, generation, format, output_format)
 
 
 @storage.command('restore')

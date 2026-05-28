@@ -31,7 +31,8 @@ from src.api.metadata import Metadata
 from src.model.data_storage_wrapper import DataStorageWrapper, S3BucketWrapper
 from src.model.data_storage_wrapper_type import WrapperType
 from src.utilities.audit import auditing
-from src.utilities.datastorage_du_operation import DataUsageHelper, DataUsageCommand, DuOutput
+from src.utilities.datastorage_du_operation import DataUsageHelper, DataUsageCommand
+from src.utilities.printing.storage_du import create_storage_du_print_service
 from src.utilities.encoding_utilities import to_string, is_safe_chars, to_ascii
 from src.utilities.extension.ext_handler_registry import ExtensionHandlerRegistry
 from src.utilities.hidden_object_manager import HiddenObjectManager
@@ -673,26 +674,26 @@ class DataStorageOperations(object):
 
     @classmethod
     def du(cls, storage_name, relative_path=None, depth=None, perform_on_cloud=False,
-           output_mode='brief', generation="all", size_format='M'):
+           output_mode='brief', generation="all", size_format='M', output_format=None):
+        print_service = create_storage_du_print_service(output_format)
         du_command = DataUsageCommand(storage_name, relative_path, depth,
                                       perform_on_cloud, output_mode, generation, size_format)
-        if not du_command.validate():
+        if not du_command.validate(print_service):
             # Bad input
             sys.exit(22)
         storage = DataStorage.fetch_storage(du_command.storage_name) if du_command.storage_name else None
+        helper = DataUsageHelper(print_service)
         if du_command.eagerly_allowed(storage):
             if storage.type.lower() == 's3' or storage.type.lower() == 'nfs':
-                table = None
-                header = None
-                for _item in DataUsageHelper().fetch_data_eagerly(du_command, storage):
-                    header, table = DuOutput.print_item(du_command, _item, header, table)
-                click.echo()
+                for _item in helper.fetch_data_eagerly(du_command, storage):
+                    print_service.add_item(du_command, _item)
+                print_service.flush()
                 sys.exit(0)
-            click.echo("Using --cloud, because --depth is used", err=True)
+            print_service.warning("Using --cloud, because --depth is used", err=True)
             du_command.perform_on_cloud = True
-        du_leafs = DataUsageHelper().fetch_data(du_command, storage)
-        click.echo(DuOutput.format_table(du_command, du_leafs))
-        click.echo()
+        du_leafs = helper.fetch_data(du_command, storage)
+        print_service.print_items(du_command, du_leafs)
+        print_service.flush()
 
     @classmethod
     def convert_input_pairs_to_json(cls, tags):
