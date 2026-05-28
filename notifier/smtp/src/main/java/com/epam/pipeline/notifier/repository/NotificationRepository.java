@@ -19,6 +19,7 @@ package com.epam.pipeline.notifier.repository;
 import com.epam.pipeline.entity.notification.NotificationMessage;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,10 +41,12 @@ public interface NotificationRepository extends JpaRepository<NotificationMessag
     List<NotificationMessage> loadNotification(Pageable pageable);
 
     /**
-     * Delete {@link NotificationMessage} by id
-     * @param id   id of {@link NotificationMessage} to be deleted
+     * Delete {@link com.epam.pipeline.entity.notification.NotificationMessage} by id
+     *
+     * @param id id of {@link com.epam.pipeline.entity.notification.NotificationMessage} to be deleted
      */
     @Transactional(propagation = Propagation.MANDATORY)
+    @Modifying
     @Query("delete from NotificationMessage n where n.id = :id")
-    int removeById(Long id);
+    void removeById(Long id);
 }
