@@ -14,9 +14,9 @@
 
 import sys
 import click
-from prettytable import prettytable
 
 from src.api.pipeline_run import PipelineRun
+from src.utilities.printing.share import PrettyTableSharePrintService
 
 
 class PipelineRunShareManager(object):
@@ -24,21 +24,15 @@ class PipelineRunShareManager(object):
     def __init__(self):
         pass
 
-    def get(self, run_id):
+    def get(self, run_id, print_service=PrettyTableSharePrintService()):
         run = PipelineRun.get(run_id)
         if not run:
             raise RuntimeError("Failed to load run '%s'" % str(run_id))
         if not run.run_sids or len(run.run_sids) == 0:
-            click.echo("Not shared (use 'pipe share add' to configure)")
+            print_service.not_shared()
             return
-        self._check_run_is_running(run)
-        table = prettytable.PrettyTable()
-        table.field_names = ["User/group", "SSH shared"]
-        table.align = "l"
-        table.header = True
-        for sid in run.run_sids:
-            table.add_row([sid.name, '+' if sid.access_type == 'SSH' else ''])
-        click.echo(table)
+        self._check_run_is_running(run, print_service)
+        print_service.print_sids(run.run_sids)
 
     def add(self, run_id, users, groups, ssh):
         run = PipelineRun.get(run_id)
@@ -85,9 +79,9 @@ class PipelineRunShareManager(object):
         click.echo("Done")
 
     @staticmethod
-    def _check_run_is_running(run):
+    def _check_run_is_running(run, print_service=PrettyTableSharePrintService()):
         if run.status != 'RUNNING':
-            click.echo("Run is not running", err=True)
+            print_service.error("Run is not running")
             sys.exit(1)
 
     @staticmethod

@@ -46,6 +46,7 @@ from src.utilities.datastorage_operations import DataStorageOperations
 from src.utilities.metadata_operations import MetadataOperations
 from src.utilities.permissions_operations import PermissionsOperations
 from src.utilities.printing.print_service import create_print_service
+from src.utilities.printing.share import create_share_print_service
 from src.utilities.printing.storage import create_storage_print_service
 from src.utilities.pipeline_run_operations import PipelineRunOperations
 from src.utilities.ssh_operations import run_ssh, run_scp, create_tunnel, kill_tunnels, list_tunnels
@@ -2084,12 +2085,14 @@ def share():
 
 @share.command(name='get')
 @click.argument('run-id', required=True)
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help='Output format. Default is a text table.')
 @common_options
-def get_share_run(run_id):
+def get_share_run(run_id, output_format):
     """
     Returns users and groups this run shared
     """
-    PipelineRunShareManager().get(run_id)
+    PipelineRunShareManager().get(run_id, create_share_print_service(output_format))
 
 
 @share.command(name='add')
