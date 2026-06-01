@@ -125,80 +125,77 @@ class Synchronization(object):
             logging.exception('Storages fetching has failed.')
 
     def synchronize_user(self, user, user_storages, use_symlinks=False):
+        logging.info('Processing user {}.'.format(user))
+        user_dir_name = user.split('@')[0]
+        user_dir = os.path.join(self.__config__.users_root, user_dir_name)
+        if not os.path.exists(user_dir):
+            logging.info('Creating destination directory {}...'.format(user_dir))
+            os.mkdir(user_dir)
+            logging.info('Done.')
+        else:
+            logging.info('Destination directory: {}'.format(user_dir))
         try:
-            logging.info('Processing user {}.'.format(user))
-            user_dir_name = user.split('@')[0]
-            user_dir = os.path.join(self.__config__.users_root, user_dir_name)
-            if not os.path.exists(user_dir):
-                logging.info('Creating destination directory {}...'.format(user_dir))
-                os.mkdir(user_dir)
-                logging.info('Done.')
-            else:
-                logging.info('Destination directory: {}'.format(user_dir))
-            try:
-                os.chmod(user_dir, chmod_mask_decimal)
-            except OSError:
-                logging.exception('Error modifying destination directory permissions.')
+            os.chmod(user_dir, chmod_mask_decimal)
+        except OSError:
+            logging.exception('Error modifying destination directory permissions.')
 
-            syncing_storages = {}
-            _user_lower = user.strip().lower()
-            for storage, mask in user_storages:
-                if _user_lower in self.__all_users__:
-                    _user_entity = self.__all_users__[_user_lower]
-                    if DAV_SCOPE_ATTR_KEY in _user_entity \
-                            and 'owner' in _user_entity[DAV_SCOPE_ATTR_KEY] \
-                            and storage.owner.strip().lower() != _user_lower:
-                        logging.info('Skipping storage {} as the user has "owner" scope and is not an owner'.format(storage.name))
-                        continue
-                syncing_storages[storage] = mask
+        syncing_storages = {}
+        _user_lower = user.strip().lower()
+        for storage, mask in user_storages:
+            if _user_lower in self.__all_users__:
+                _user_entity = self.__all_users__[_user_lower]
+                if DAV_SCOPE_ATTR_KEY in _user_entity \
+                        and 'owner' in _user_entity[DAV_SCOPE_ATTR_KEY] \
+                        and storage.owner.strip().lower() != _user_lower:
+                    logging.info('Skipping storage {} as the user has "owner" scope and is not an owner'.format(storage.name))
+                    continue
+            syncing_storages[storage] = mask
 
-            if use_symlinks:
-                existing_mounts = self.resolve_symlinks(user_dir)
-            else:
-                existing_mounts = self.resolve_mounts(user_dir)
-            if not existing_mounts and not syncing_storages:
-                logging.info('Nothing to synchronize')
-                return
-            for storage, mask in syncing_storages.items():
-                if Mask.is_not_set(mask, Mask.READ):
-                    logging.warning('Skipping storage #{} {} linking because of no read permissions...'
-                                    .format(storage.identifier, storage.name))
-                    continue
-                if use_symlinks and Mask.is_not_set(mask, Mask.WRITE):
-                    logging.warning('Skipping storage #{} {} linking because read only mounts '
-                                    'are not supported in symlinks mode...'
-                                    .format(storage.identifier, storage.name))
-                    continue
-                storage_dir_name = storage.name\
-                    .replace(':', '_')\
-                    .replace('\\', '_')\
-                    .replace('/', '_')\
-                    .replace(' ', '_')\
-                    .replace('-', '_')
-                storage_dir = os.path.join(user_dir, storage_dir_name)
-                if storage_dir not in existing_mounts:
-                    if use_symlinks:
-                        self.symlink_storage(storage, storage_dir)
-                    else:
-                        self.mount_storage(storage, storage_dir, mask)
-                else:
-                    existing_mask = existing_mounts.pop(storage_dir, mask)
-                    logging.info('Storage #{} {} is already available as {} ({}).'
-                                 .format(storage.identifier, storage.name,
-                                         storage_dir, Mask.as_string(existing_mask)))
-                    if not use_symlinks:
-                        if Mask.is_not_equal(mask, existing_mask, trimming_mask=Mask.READ | Mask.WRITE):
-                            logging.info('Storage #{} {} has to be remounted as {} ({}).'
-                                         .format(storage.identifier, storage.name,
-                                                 storage_dir, Mask.as_string(mask)))
-                            self.remount_storage(storage, storage_dir, mask)
-            for storage_dir in existing_mounts:
+        if use_symlinks:
+            existing_mounts = self.resolve_symlinks(user_dir)
+        else:
+            existing_mounts = self.resolve_mounts(user_dir)
+        if not existing_mounts and not syncing_storages:
+            logging.info('Nothing to synchronize')
+            return
+        for storage, mask in syncing_storages.items():
+            if Mask.is_not_set(mask, Mask.READ):
+                logging.warning('Skipping storage #{} {} linking because of no read permissions...'
+                                .format(storage.identifier, storage.name))
+                continue
+            if use_symlinks and Mask.is_not_set(mask, Mask.WRITE):
+                logging.warning('Skipping storage #{} {} linking because read only mounts '
+                                'are not supported in symlinks mode...'
+                                .format(storage.identifier, storage.name))
+                continue
+            storage_dir_name = storage.name\
+                .replace(':', '_')\
+                .replace('\\', '_')\
+                .replace('/', '_')\
+                .replace(' ', '_')\
+                .replace('-', '_')
+            storage_dir = os.path.join(user_dir, storage_dir_name)
+            if storage_dir not in existing_mounts:
                 if use_symlinks:
-                    self.remove_symlink(storage_dir)
+                    self.symlink_storage(storage, storage_dir)
                 else:
-                    self.unmount_storage(storage_dir)
-        except Exception:
-            logging.exception('User processing has failed.')
+                    self.mount_storage(storage, storage_dir, mask)
+            else:
+                existing_mask = existing_mounts.pop(storage_dir, mask)
+                logging.info('Storage #{} {} is already available as {} ({}).'
+                             .format(storage.identifier, storage.name,
+                                     storage_dir, Mask.as_string(existing_mask)))
+                if not use_symlinks:
+                    if Mask.is_not_equal(mask, existing_mask, trimming_mask=Mask.READ | Mask.WRITE):
+                        logging.info('Storage #{} {} has to be remounted as {} ({}).'
+                                     .format(storage.identifier, storage.name,
+                                             storage_dir, Mask.as_string(mask)))
+                        self.remount_storage(storage, storage_dir, mask)
+        for storage_dir in existing_mounts:
+            if use_symlinks:
+                self.remove_symlink(storage_dir)
+            else:
+                self.unmount_storage(storage_dir)
 
     def resolve_symlinks(self, root_dir):
         symlinks = {}
