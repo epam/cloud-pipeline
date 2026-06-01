@@ -16,6 +16,10 @@ import logging
 import os
 import re
 import subprocess
+try:
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+except ImportError:
+    from futures import ThreadPoolExecutor, as_completed
 
 from internal.api.storages_api import Storages
 from internal.api.users_api import Users, DAV_SCOPE_ATTR_KEY
@@ -36,7 +40,6 @@ class Synchronization(object):
     def __init__(self, config):
         self.__storages_api__ = Storages(config)
         self.__config__ = config if config is not None else Config.instance()
-        self.__users__ = []
         self.__storages__ = []
         self.__all_users__ = Users(config).loadAll()
 
@@ -84,32 +87,48 @@ class Synchronization(object):
         try:
             logging.info('Fetching storages...')
             self.__storages__ = []
-            self.__users__ = []
+            # Inverted index: lowercase username -> (original username, [(storage, mask)])
+            # Built once during storage loading — O(S) — replaces the O(U x S) per-user scan.
+            user_index = {}
             share_mounts = self.list_share_mounts()
             for storage in self.list_storages(filter_mask=filter_mask):
                 storage.mount_source = validate_storage(storage, share_mounts)
                 if storage.mount_source is not None:
                     self.__storages__.append(storage)
-                    for user in storage.users.keys():
-                        if user.username not in self.__users__:
-                            self.__users__.append(user.username)
-            logging.info('{} NFS storages fetched'.format(len(self.__storages__)))
-            for user in self.__users__:
-                if user_matches_criteria(user):
-                    self.synchronize_user(user, use_symlinks=use_symlinks)
-                    logging.info('')
+                    for user, mask in storage.users.items():
+                        key = user.username.strip().lower()
+                        if key not in user_index:
+                            user_index[key] = (user.username, [])
+                        user_index[key][1].append((storage, mask))
+            logging.info('{} NFS storages fetched, {} users affected'.format(
+                len(self.__storages__), len(user_index)))
+
+            if not os.path.exists(self.__config__.users_root):
+                logging.info('Creating users destination directory {}...'.format(self.__config__.users_root))
+                os.makedirs(self.__config__.users_root)
+
+            max_workers = int(os.getenv('CP_DAV_SYNC_WORKERS', '8'))
+            logging.info('Processing {} users with {} workers...'.format(len(user_index), max_workers))
+            with ThreadPoolExecutor(max_workers=max_workers) as pool:
+                futures = {}
+                for key, (original_username, user_storages) in user_index.items():
+                    if user_matches_criteria(original_username):
+                        future = pool.submit(self.synchronize_user, original_username,
+                                             user_storages, use_symlinks)
+                        futures[future] = original_username
+                for future in as_completed(futures):
+                    try:
+                        future.result()
+                    except Exception:
+                        logging.exception('User processing has failed for %s.', futures[future])
         except Exception:
             logging.exception('Storages fetching has failed.')
 
-    def synchronize_user(self, user, use_symlinks=False):
+    def synchronize_user(self, user, user_storages, use_symlinks=False):
         try:
             logging.info('Processing user {}.'.format(user))
             user_dir_name = user.split('@')[0]
             user_dir = os.path.join(self.__config__.users_root, user_dir_name)
-            if not os.path.exists(self.__config__.users_root):
-                logging.info('Creating users destination directory {}...'.format(self.__config__.users_root))
-                os.makedirs(self.__config__.users_root)
-                logging.info('Done.')
             if not os.path.exists(user_dir):
                 logging.info('Creating destination directory {}...'.format(user_dir))
                 os.mkdir(user_dir)
@@ -122,18 +141,16 @@ class Synchronization(object):
                 logging.exception('Error modifying destination directory permissions.')
 
             syncing_storages = {}
-            for storage in self.__storages__:
-                for storage_user, storage_user_mask in storage.users.items():
-                    _user_lower = user.strip().lower()
-                    if storage_user.username.strip().lower() == _user_lower:
-                        if _user_lower in self.__all_users__:
-                            _user_entity = self.__all_users__[_user_lower]
-                            if DAV_SCOPE_ATTR_KEY in _user_entity \
-                                and 'owner' in _user_entity[DAV_SCOPE_ATTR_KEY] \
-                                and storage.owner.strip().lower() != _user_lower:
-                                logging.info('Skipping storage {} as the user has "owner" scope and is not an owner'.format(storage.name))
-                                continue
-                        syncing_storages[storage] = storage_user_mask
+            _user_lower = user.strip().lower()
+            for storage, mask in user_storages:
+                if _user_lower in self.__all_users__:
+                    _user_entity = self.__all_users__[_user_lower]
+                    if DAV_SCOPE_ATTR_KEY in _user_entity \
+                            and 'owner' in _user_entity[DAV_SCOPE_ATTR_KEY] \
+                            and storage.owner.strip().lower() != _user_lower:
+                        logging.info('Skipping storage {} as the user has "owner" scope and is not an owner'.format(storage.name))
+                        continue
+                syncing_storages[storage] = mask
 
             if use_symlinks:
                 existing_mounts = self.resolve_symlinks(user_dir)
