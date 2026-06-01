@@ -157,6 +157,37 @@ class PrettyTableStorageDuPrintService(StorageDuPrintService):
 
 
 class JsonStorageDuPrintService(StorageDuPrintService):
+    """
+
+    JSON output schema:
+
+        [
+          {
+            "storage":     "<path>",
+            "filesCount":  <integer>,
+            "size":        <number>,
+            "sizeUnit":    "Kb" | "Mb" | "Gb",
+            "archiveSize": <number>
+          }
+        ]
+
+    "archiveSize" is present in brief output mode (-o brief, default).
+    In full output mode (-o full) per-tier keys replace it, e.g.:
+
+        {
+          "storage": "<path>",
+          "filesCount": <integer>,
+          "size": <number>,
+          "sizeUnit": "<unit>",
+          "GLACIER": <number>,
+          "DEEP_ARCHIVE": <number>
+        }
+
+    Errors are reported as:
+
+        { "error": "<message>" }
+
+    """
 
     def __init__(self):
         self._buffer = []
