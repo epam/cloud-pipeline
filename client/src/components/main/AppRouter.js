@@ -148,6 +148,7 @@ const PipelineDocumentsWithContext = withContext(PipelineDocuments);
 const PipelineHistoryWithContext = withContext(PipelineHistory);
 const PipelineGraphWithContext = withContext(PipelineGraph);
 const PipelineStorageRulesWithContext = withContext(PipelineStorageRules);
+const LogsRedirectWithContext = withContext(LogsRedirect);
 
 const routeConfig = createRoutesFromElements(
   <Route path="/" element={<App />}>
@@ -195,10 +196,10 @@ const routeConfig = createRoutesFromElements(
     <Route path="runs/filter" element={<RunsFilter />} />
     <Route path="runs" element={<Navigate to="/runs/active" replace />} />
     <Route path="runs/:status" element={<AllRuns />} />
-    <Route path="run/:runId" element={<LogsRedirect />} />
-    <Route path="run/:runId/:mode" element={<LogsRedirect />} />
-    <Route path="run/:runId/:mode/:taskName" element={<LogsRedirect />} />
-    <Route path="run/:runId/:taskName" element={<LogsRedirect />} />
+    <Route path="run/:runId" element={<LogsRedirectWithContext />} />
+    <Route path="run/:runId/:mode" element={<LogsRedirectWithContext />} />
+    <Route path="run/:runId/:mode/:taskName" element={<LogsRedirectWithContext />} />
+    <Route path="run/:runId/:taskName" element={<LogsRedirectWithContext />} />
     <Route path="tool/:id" element={<ToolIdRedirect />} />
     <Route path="tool/:id/:section" element={<Tool />} />
     <Route path="tool/:id/info/:version" element={<ToolVersion />}>
