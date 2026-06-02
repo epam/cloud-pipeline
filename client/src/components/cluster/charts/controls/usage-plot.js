@@ -41,7 +41,7 @@ class UsagePlot extends React.Component {
   get backgroundColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@card-header-background'] || '#ccc';
+      return themes.currentThemeConfiguration['--cp-color-bg-elevated-header'] || '#ccc';
     }
     return '#ccc';
   }
@@ -49,7 +49,7 @@ class UsagePlot extends React.Component {
   get fontColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@application-color'] || 'rgba(0, 0, 0, 0.65)';
+      return themes.currentThemeConfiguration['--cp-color-text'] || 'rgba(0, 0, 0, 0.65)';
     }
     return 'rgba(0, 0, 0, 0.65)';
   }

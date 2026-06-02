@@ -331,7 +331,7 @@ class GPUInfoTab extends React.Component {
         />
         <circle cx="10" cy="5" r="3"
           strokeWidth="2"
-          fill={this.themeConfiguration['@card-background-color'] || 'white'}
+          fill={this.themeConfiguration['--cp-color-bg-elevated'] || 'white'}
           stroke={stroke}
         />
       </svg>
@@ -467,7 +467,7 @@ class GPUInfoTab extends React.Component {
           <div className={styles.legend}>
             {Object.entries(DATASET_TYPES).map(([key, value]) => {
               const color = hideDatasets.includes(key)
-                ? this.themeConfiguration['@application-color-disabled'] || '#8c8c8c'
+                ? this.themeConfiguration['--cp-color-text-disabled'] || '#8c8c8c'
                 : DATASET_COLORS[value];
               return (
                 <div

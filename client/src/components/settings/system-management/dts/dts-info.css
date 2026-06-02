@@ -31,7 +31,7 @@
 }
 
 .preference.mark-as-deleted {
-  background: #ffccc7;
+  background: var(--cp-color-alert-error-bg);
 }
 
 .string-preference {

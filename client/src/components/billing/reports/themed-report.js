@@ -60,31 +60,31 @@ class ThemedReportConfiguration {
   }
 
   get backgroundColor () {
-    return themeToken(this.configuration, '@card-background-color', colors.white);
+    return themeToken(this.configuration, '--cp-color-bg-elevated', colors.white);
   }
 
   get lineColor () {
-    return themeToken(this.configuration, '@card-border-color', colors.grey);
+    return themeToken(this.configuration, '--cp-color-border-card', colors.grey);
   }
 
   get textColor () {
-    return themeToken(this.configuration, '@application-color', colors.black);
+    return themeToken(this.configuration, '--cp-color-text', colors.black);
   }
 
   get errorColor () {
-    return themeToken(this.configuration, '@color-red', colors.red);
+    return themeToken(this.configuration, '--cp-color-red', colors.red);
   }
 
   get subTextColor () {
-    return themeToken(this.configuration, '@application-color-faded', colors.grey);
+    return themeToken(this.configuration, '--cp-color-text-secondary', colors.grey);
   }
 
   get quota () {
-    return themeToken(this.configuration, '@color-sensitive', colors.quota);
+    return themeToken(this.configuration, '--cp-color-sensitive', colors.quota);
   }
 
   get current () {
-    return themeToken(this.configuration, '@color-green', colors.current);
+    return themeToken(this.configuration, '--cp-color-green', colors.current);
   }
 
   get lightCurrent () {
@@ -96,7 +96,7 @@ class ThemedReportConfiguration {
   }
 
   get previous () {
-    return themeToken(this.configuration, '@primary-color', colors.previous);
+    return themeToken(this.configuration, '--cp-color-primary', colors.previous);
   }
 
   get lightPrevious () {
@@ -105,7 +105,7 @@ class ThemedReportConfiguration {
 
   get blue () {
     return undefinedOnInherit(
-      darken(themeToken(this.configuration, '@primary-color', colors.previous), 0.05)
+      darken(themeToken(this.configuration, '--cp-color-primary', colors.previous), 0.05)
     ) || colors.blue;
   }
 
@@ -133,11 +133,11 @@ class ThemedReportConfiguration {
   get otherColors () {
     if (this.configuration) {
       return [
-        themeToken(this.configuration, '@color-green-soft', colors.orange),
-        themeToken(this.configuration, '@color-blue-soft', colors.blue),
-        themeToken(this.configuration, '@color-yellow', colors.orange),
-        themeToken(this.configuration, '@color-violet', colors.previous),
-        themeToken(this.configuration, '@color-pink', colors.orange)
+        themeToken(this.configuration, '--cp-color-green-soft', colors.orange),
+        themeToken(this.configuration, '--cp-color-blue-soft', colors.blue),
+        themeToken(this.configuration, '--cp-color-yellow', colors.orange),
+        themeToken(this.configuration, '--cp-color-violet', colors.previous),
+        themeToken(this.configuration, '--cp-color-pink', colors.orange)
       ];
     }
     return [

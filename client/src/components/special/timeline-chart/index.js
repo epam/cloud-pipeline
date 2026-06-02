@@ -234,15 +234,15 @@ class TimelineChart extends React.Component {
       }
       return undefined;
     };
-    const primary = getColor('@primary-color') || '#108ee9';
-    const green = getColor('@color-green') || '#09ab5a';
-    const red = getColor('@color-red') || '#f04134';
-    const yellow = getColor('@color-yellow') || '#ff8818';
-    const violet = getColor('@color-violet') || '#8d09ab';
-    const pink = getColor('@color-pink') || '#dd1144';
-    const backgroundColor = getColor('@card-background-color') || DEFAULT_BACKGROUND_COLOR;
-    const lineColor = getColor('@card-border-color') || DEFAULT_LINE_COLOR;
-    const textColor = getColor('@application-color') || DEFAULT_TEXT_COLOR;
+    const primary = getColor('--cp-color-primary') || '#108ee9';
+    const green = getColor('--cp-color-green') || '#09ab5a';
+    const red = getColor('--cp-color-red') || '#f04134';
+    const yellow = getColor('--cp-color-yellow') || '#ff8818';
+    const violet = getColor('--cp-color-violet') || '#8d09ab';
+    const pink = getColor('--cp-color-pink') || '#dd1144';
+    const backgroundColor = getColor('--cp-color-bg-elevated') || DEFAULT_BACKGROUND_COLOR;
+    const lineColor = getColor('--cp-color-border-card') || DEFAULT_LINE_COLOR;
+    const textColor = getColor('--cp-color-text') || DEFAULT_TEXT_COLOR;
     const colors = {
       primary,
       green,

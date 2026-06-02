@@ -21,6 +21,7 @@ import React from 'react';
 import {createRoot} from 'react-dom/client';
 import {configure} from 'mobx';
 import Root from './components/main/Root';
+import 'antd/dist/reset.css';
 import 'rc-slider/assets/index.css';
 import './index.css';
 import './staticStyles/markdown.css';

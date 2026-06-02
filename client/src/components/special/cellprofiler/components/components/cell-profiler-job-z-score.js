@@ -146,9 +146,9 @@ class CellProfilerJobZScore extends React.Component {
     let selectedColor = '#ff8818';
     let textColor = 'rgba(0, 0, 0, 0.65)';
     if (themes && themes.currentThemeConfiguration) {
-      primaryColor = themes.currentThemeConfiguration['@primary-color'] || primaryColor;
-      selectedColor = themes.currentThemeConfiguration['@color-warning'] || selectedColor;
-      textColor = themes.currentThemeConfiguration['@application-color'] || textColor;
+      primaryColor = themes.currentThemeConfiguration['--cp-color-primary'] || primaryColor;
+      selectedColor = themes.currentThemeConfiguration['--cp-color-warning'] || selectedColor;
+      textColor = themes.currentThemeConfiguration['--cp-color-text'] || textColor;
     }
     this.primaryColor = colorToVec4(primaryColor);
     this.selectedColor = colorToVec4(selectedColor);

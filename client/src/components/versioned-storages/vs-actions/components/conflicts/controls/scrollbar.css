@@ -15,7 +15,7 @@
  */
 
 .scrollbar {
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: color-mix(in srgb, var(--cp-color-text) 5%, transparent);
   border-radius: 5px;
 }
 
@@ -23,12 +23,12 @@
   position: absolute;
   top: 0;
   left: 0;
-  background-color: rgba(0, 0, 0, 0.25);
+  background-color: var(--cp-color-text-disabled);
   border-radius: 5px;
 }
 
 .scrollbar:hover .bar,
 .scrollbar .bar:hover,
 .scrollbar .bar.hovered {
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: var(--cp-color-text-secondary);
 }

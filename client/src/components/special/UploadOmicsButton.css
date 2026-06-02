@@ -35,22 +35,22 @@
 .clear-source {
   margin-left: 10px;
   cursor: pointer;
-  color: #59595984;
+  color: var(--cp-color-text-disabled);
 }
 
 .clear-source:hover {
   margin-left: 10px;
   cursor: pointer;
-  color: #595959;
+  color: var(--cp-color-text-secondary);
 }
 
 .cancel-source {
   margin-left: 10px;
   cursor: pointer;
-  color: #f04134;
+  color: var(--cp-color-error);
 }
 
 .source-validation-error {
-  color: #f04134;
+  color: var(--cp-color-error);
   line-height: 10px;
 }

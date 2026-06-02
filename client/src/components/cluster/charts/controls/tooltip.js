@@ -43,7 +43,7 @@ class TooltipRenderer extends React.Component {
   get color () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@application-color'] || '#666';
+      return themes.currentThemeConfiguration['--cp-color-text'] || '#666';
     }
     return '#666';
   }
@@ -51,7 +51,7 @@ class TooltipRenderer extends React.Component {
   get backgroundColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@card-background-color-not-faded'] || 'white';
+      return themes.currentThemeConfiguration['--cp-color-bg-elevated-opaque'] || 'white';
     }
     return 'white';
   }
@@ -59,7 +59,7 @@ class TooltipRenderer extends React.Component {
   get borderColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@card-border-color'] || '#ccc';
+      return themes.currentThemeConfiguration['--cp-color-border-card'] || '#ccc';
     }
     return '#ccc';
   }

@@ -316,7 +316,7 @@ class UsersActivityChart extends React.Component {
   get chartColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@primary-color'] || DEFAULT_COLOR;
+      return themes.currentThemeConfiguration['--cp-color-primary'] || DEFAULT_COLOR;
     }
     return DEFAULT_COLOR;
   }
@@ -324,7 +324,7 @@ class UsersActivityChart extends React.Component {
   get backgroundColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@card-background-color'] ||
+      return themes.currentThemeConfiguration['--cp-color-bg-elevated'] ||
         DEFAULT_BACKGROUND_COLOR;
     }
     return DEFAULT_BACKGROUND_COLOR;
@@ -333,7 +333,7 @@ class UsersActivityChart extends React.Component {
   get lineColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@card-border-color'] || DEFAULT_LINE_COLOR;
+      return themes.currentThemeConfiguration['--cp-color-border-card'] || DEFAULT_LINE_COLOR;
     }
     return DEFAULT_LINE_COLOR;
   }
@@ -341,7 +341,7 @@ class UsersActivityChart extends React.Component {
   get textColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@application-color'] || DEFAULT_TEXT_COLOR;
+      return themes.currentThemeConfiguration['--cp-color-text'] || DEFAULT_TEXT_COLOR;
     }
     return DEFAULT_TEXT_COLOR;
   }
@@ -349,7 +349,7 @@ class UsersActivityChart extends React.Component {
   get errorColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@color-red'] || DEFAULT_ERROR_COLOR;
+      return themes.currentThemeConfiguration['--cp-color-red'] || DEFAULT_ERROR_COLOR;
     }
     return DEFAULT_ERROR_COLOR;
   }

@@ -149,7 +149,7 @@ class ChartRendererWithOffset extends React.Component {
   get backgroundColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@card-background-color'] || 'white';
+      return themes.currentThemeConfiguration['--cp-color-bg-elevated'] || 'white';
     }
     return 'white';
   }

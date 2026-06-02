@@ -105,8 +105,8 @@ export default class ChangesDisplayConfig {
     const getColor = (name) => this.themes
       ? this.themes.currentThemeConfiguration[name]
       : undefined;
-    const redColor = getColor('@vs-color-conflict-background') || 'rgb(237, 75, 48)';
-    const redBorderColor = getColor('@vs-color-conflict-border') || '#e9aeae';
+    const redColor = getColor('--cp-color-vs-conflict-bg') || 'rgb(237, 75, 48)';
+    const redBorderColor = getColor('--cp-color-vs-conflict-border') || '#e9aeae';
     this.conflict.update({
       applied: redColor,
       background: redColor,

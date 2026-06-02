@@ -29,8 +29,8 @@
 }
 
 .key-row {
-  background-color: #f9f9f9;
-  color: #777;
+  background-color: var(--cp-color-bg-striped);
+  color: var(--cp-color-text-secondary);
 }
 
 .key-cell {
@@ -47,14 +47,14 @@
 
 .divider td div {
   height: 1px;
-  background-color: #ddd;
+  background-color: var(--cp-color-border);
   margin: 2px 0;
 }
 
 .section {
   border-radius: 0;
   margin-bottom: 5px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--cp-color-border);
 }
 
 .section div[role=tabpanel] {

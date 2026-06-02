@@ -51,7 +51,7 @@ class ValueAxis extends React.Component {
   get tickColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@application-color-faded'] || '#777';
+      return themes.currentThemeConfiguration['--cp-color-text-secondary'] || '#777';
     }
     return '#777';
   }

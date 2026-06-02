@@ -31,7 +31,7 @@
 }
 
 .label-input.key-input {
-  border: 1px dashed #ccc;
+  border: 1px dashed var(--cp-color-border);
 }
 
 .checkbox-title {

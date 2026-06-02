@@ -153,12 +153,12 @@ class HcsCellSelector extends React.Component {
     let selectedColor = '#ff8818';
     let selectedHoverColor = '#ff8818';
     if (themes && themes.currentThemeConfiguration) {
-      backgroundColor = themes.currentThemeConfiguration['@card-background-color'] || backgroundColor;
-      textColor = themes.currentThemeConfiguration['@application-color'] || textColor;
-      primaryColor = themes.currentThemeConfiguration['@primary-color'] || primaryColor;
-      primaryHoverColor = themes.currentThemeConfiguration['@primary-hover-color'] || primaryHoverColor;
-      selectedColor = themes.currentThemeConfiguration['@color-warning'] || selectedColor;
-      selectedHoverColor = themes.currentThemeConfiguration['@color-sensitive'] || selectedHoverColor;
+      backgroundColor = themes.currentThemeConfiguration['--cp-color-bg-elevated'] || backgroundColor;
+      textColor = themes.currentThemeConfiguration['--cp-color-text'] || textColor;
+      primaryColor = themes.currentThemeConfiguration['--cp-color-primary'] || primaryColor;
+      primaryHoverColor = themes.currentThemeConfiguration['--cp-color-primary-hover'] || primaryHoverColor;
+      selectedColor = themes.currentThemeConfiguration['--cp-color-warning'] || selectedColor;
+      selectedHoverColor = themes.currentThemeConfiguration['--cp-color-sensitive'] || selectedHoverColor;
     }
     this.backgroundColor = colorToVec4(backgroundColor);
     this.textColor = textColor;

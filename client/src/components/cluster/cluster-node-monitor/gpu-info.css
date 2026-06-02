@@ -36,7 +36,7 @@
 }
 
 .metrics-card:not(:last-child) {
-  border-right: 1px solid #dfdfdf;
+  border-right: 1px solid var(--cp-color-border-input);
 }
 
 .metrics-card .value {

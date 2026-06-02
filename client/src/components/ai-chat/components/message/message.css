@@ -43,7 +43,7 @@
 }
 
 .errorConnect {
-  color: #f04134;
+  color: var(--cp-color-error);
 }
 
 .no-border {

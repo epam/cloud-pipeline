@@ -38,37 +38,37 @@
 
 .file-diff-header .type {
   padding: 1px 3px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--cp-color-border);
   border-radius: 1px;
   text-transform: uppercase;
   font-size: smaller;
 }
 
 .file-diff-header .type.created {
-  color: #399839;
-  border-color: #399839;
+  color: var(--cp-color-success);
+  border-color: var(--cp-color-success);
 }
 
 .file-diff-header .type.modified {
-  color: #d0b44c;
-  border-color: #d0b44c;
+  color: var(--cp-color-warning);
+  border-color: var(--cp-color-warning);
 }
 
 .file-diff-header .type.deleted,
 .file-diff-header .type.removed {
-  color: #c33;
-  border-color: #c33;
+  color: var(--cp-color-error);
+  border-color: var(--cp-color-error);
 }
 
 .file-diff-header .type.renamed,
 .file-diff-header .type.moved {
-  color: #3572b0;
-  border-color: #3572b0;
+  color: var(--cp-color-info);
+  border-color: var(--cp-color-info);
 }
 
 .empty-content {
   font-style: italic;
-  color: #999;
+  color: var(--cp-color-text-disabled);
   padding: 5px;
 }
 

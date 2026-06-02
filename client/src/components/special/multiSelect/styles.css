@@ -18,7 +18,7 @@
   width: 200px;
   min-height: 26px;
   border-radius: 5px;
-  border: 1px solid #dfdfdf;
+  border: 1px solid var(--cp-color-border-input);
   padding-right: 20px;
   transition: all 0.2s ease;
   position: relative;
@@ -26,11 +26,11 @@
 }
 
 .input:not(.disabled):hover {
-  border: 1px solid #40a9ff;
+  border: 1px solid var(--cp-color-primary-hover);
 }
 
 .input.disabled {
-  background: #f0f0f0;
+  background: var(--cp-color-interactive-hover-bg);
 }
 
 .input-arrow {
@@ -45,12 +45,12 @@
 }
 
 .dropdown-overlay {
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--cp-color-text) 25%, transparent);
   max-height: 400px;
 }
 
 .menu-item {
-  background: white;
+  background: var(--cp-color-bg-elevated);
   padding: 2px 4px;
   height: 36px;
   line-height: 32px;
@@ -58,5 +58,5 @@
 }
 
 .menu-item:hover {
-  background: #fafafa;
+  background: var(--cp-color-bg-layout);
 }
