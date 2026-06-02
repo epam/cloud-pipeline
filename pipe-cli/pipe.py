@@ -21,7 +21,6 @@ import click
 import functools
 import sys
 import re
-from prettytable import prettytable
 
 from src.api.app_info import ApplicationInfo
 from src.api.cluster import Cluster
@@ -48,6 +47,7 @@ from src.utilities.permissions_operations import PermissionsOperations
 from src.utilities.printing.print_service import create_print_service
 from src.utilities.printing.share import create_share_print_service
 from src.utilities.printing.storage import create_storage_print_service
+from src.utilities.printing.pipeline import create_pipeline_print_service
 from src.utilities.printing.cluster import create_cluster_print_service
 from src.utilities.pipeline_run_operations import PipelineRunOperations
 from src.utilities.ssh_operations import run_ssh, run_scp, create_tunnel, kill_tunnels, list_tunnels
@@ -84,6 +84,7 @@ ON_FAILURES_OPTION_DESCRIPTION = 'Configure how singular file processing failure
                                  '[fail-after] fails only after all files are processed; \n'\
                                  '[skip] skips all failures;'\
                                  '[retry] retries all failures.'
+OUTPUT_FORMAT_OPTION_DESCRIPTION = 'Output format. Default is a text table.'
 
 
 def silent_print_api_version():
@@ -427,111 +428,46 @@ def echo_title(title, line=True):
 @click.option('-p', '--parameters', help='List parameters of a pipeline', is_flag=True)
 @click.option('-s', '--storage-rules', help='List storage rules of a pipeline', is_flag=True)
 @click.option('-r', '--permissions', help='List user permissions for a pipeline', is_flag=True)
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help=OUTPUT_FORMAT_OPTION_DESCRIPTION)
 @common_options
-def view_pipes(pipeline, versions, parameters, storage_rules, permissions):
+def view_pipes(pipeline, versions, parameters, storage_rules, permissions, output_format):
     """Lists pipelines definitions
     """
 
     # If pipeline name or id is specified - list details of a pipeline
     if pipeline:
-        view_pipe(pipeline, versions, parameters, storage_rules, permissions)
+        view_pipe(pipeline, versions, parameters, storage_rules, permissions, output_format)
     # If no argument is specified - list brief details of all pipelines
     else:
-        view_all_pipes()
+        view_all_pipes(output_format)
 
 
-def view_all_pipes():
+def view_all_pipes(output_format=None):
     hidden_object_manager = HiddenObjectManager()
-    pipes_table = prettytable.PrettyTable()
-    pipes_table.field_names = ["ID", "Name", "Latest version", "Created", "Source repo"]
-    pipes_table.align = "r"
-
     pipelines = [p for p in Pipeline.list() if not hidden_object_manager.is_object_hidden('pipeline', p.identifier)]
 
-    if len(pipelines) > 0:
-        for pipeline_model in pipelines:
-            pipes_table.add_row([pipeline_model.identifier,
-                                 pipeline_model.name,
-                                 pipeline_model.current_version_name,
-                                 pipeline_model.created_date,
-                                 pipeline_model.repository])
-        click.echo(pipes_table)
-    else:
-        click.echo('No pipelines are available')
+    print_service = create_pipeline_print_service(output_format)
+    print_service.print_pipelines_list(pipelines)
 
 
-def view_pipe(pipeline, versions, parameters, storage_rules, permissions):
+def view_pipe(pipeline, versions, parameters, storage_rules, permissions, output_format=None):
     pipeline_model = Pipeline.get(pipeline, storage_rules, versions, parameters)
-    pipe_table = prettytable.PrettyTable()
-    pipe_table.field_names = ["key", "value"]
-    pipe_table.align = "l"
-    pipe_table.set_style(12)
-    pipe_table.header = False
-    pipe_table.add_row(['ID:', pipeline_model.identifier])
-    pipe_table.add_row(['Name:', pipeline_model.name])
-    pipe_table.add_row(['Latest version:', pipeline_model.current_version_name])
-    pipe_table.add_row(['Created:', pipeline_model.created_date])
-    pipe_table.add_row(['Source repo:', pipeline_model.repository])
-    pipe_table.add_row(['Description:', pipeline_model.description])
-    click.echo(pipe_table)
-    click.echo()
 
-    if parameters and pipeline_model.current_version is not None and pipeline_model.current_version.run_parameters is not None:
-        echo_title('Parameters:', line=False)
-        if len(pipeline_model.current_version.run_parameters.parameters) > 0:
-            parameters_table = prettytable.PrettyTable()
-            parameters_table.field_names = ["Name", "Type", "Mandatory", "Default value"]
-            parameters_table.align = "l"
-            for parameter in pipeline_model.current_version.run_parameters.parameters:
-                parameters_table.add_row(
-                    [parameter.name, parameter.parameter_type, parameter.required, parameter.value])
-            click.echo(parameters_table)
-            click.echo()
-        else:
-            click.echo('No parameters are available for current version')
-
-    if versions:
-        echo_title('Versions:', line=False)
-        if len(pipeline_model.versions) > 0:
-            versions_table = prettytable.PrettyTable()
-            versions_table.field_names = ["Name", "Created", "Draft"]
-            versions_table.align = "r"
-            for version_model in pipeline_model.versions:
-                versions_table.add_row([version_model.name, version_model.created_date, version_model.draft])
-            click.echo(versions_table)
-            click.echo()
-        else:
-            click.echo('No versions are configured for pipeline')
-
-    if storage_rules:
-        echo_title('Storage rules', line=False)
-        if len(pipeline_model.storage_rules) > 0:
-            storage_rules_table = prettytable.PrettyTable()
-            storage_rules_table.field_names = ["File mask", "Created", "Move to STS"]
-            storage_rules_table.align = "r"
-            for rule in pipeline_model.storage_rules:
-                storage_rules_table.add_row([rule.file_mask, rule.created_date, rule.move_to_sts])
-            click.echo(storage_rules_table)
-            click.echo()
-        else:
-            click.echo('No storage rules are configured for pipeline')
-
+    # Get permissions if requested
+    permissions_list = None
     if permissions:
         permissions_list = User.get_permissions(pipeline_model.identifier, 'pipeline')[0]
-        echo_title('Permissions', line=False)
-        if len(permissions_list) > 0:
-            permissions_table = prettytable.PrettyTable()
-            permissions_table.field_names = ["SID", "Principal", "Allow", "Deny"]
-            permissions_table.align = "r"
-            for permission in permissions_list:
-                permissions_table.add_row([permission.name,
-                                           permission.principal,
-                                           permission.get_allowed_permissions_description(),
-                                           permission.get_denied_permissions_description()])
-            click.echo(permissions_table)
-            click.echo()
-        else:
-            click.echo('No user permissions are configured for pipeline')
+
+    print_service = create_pipeline_print_service(output_format)
+    print_service.print_pipeline_details(
+        pipeline_model,
+        include_parameters=parameters,
+        include_versions=versions,
+        include_storage_rules=storage_rules,
+        include_permissions=permissions,
+        permissions_list=permissions_list
+    )
 
 
 @cli.command(name='view-runs')
@@ -549,7 +485,7 @@ def view_pipe(pipeline, versions, parameters, storage_rules, permissions):
 @click.option('-uf', '--user-filter', help='Display tasks of a specific users. Format: Comma separated list.')
 @click.option('--tags-details', help='Display detailed tags information of a specific run', is_flag=True, default=False)
 @click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
-              help='Output format. Default is a text table.')
+              help=OUTPUT_FORMAT_OPTION_DESCRIPTION)
 @common_options
 def view_runs(run_id,
               status,
@@ -641,7 +577,7 @@ def view_run(run_id, node_details, parameters_details, tasks_details, tags_detai
 @cli.command(name='view-cluster')
 @click.argument('node-name', required=False)
 @click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
-              help='Output format. Default is a text table.')
+              help=OUTPUT_FORMAT_OPTION_DESCRIPTION)
 @common_options
 def view_cluster(node_name, output_format):
     """Lists cluster nodes
@@ -978,7 +914,7 @@ def mvtodir(name, directory):
                    "full - show extended details, works for the storage summary listing only")
 @click.option('-g', '--show-archive', is_flag=True, help='Show archived files.')
 @click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
-              help='Output format. Default is a text table.')
+              help=OUTPUT_FORMAT_OPTION_DESCRIPTION)
 @common_options
 def storage_list(path, show_details, show_versions, recursive, page, all, output, show_archive, output_format):
     """Lists storage contents
@@ -1307,7 +1243,7 @@ def storage_set_object_tags(path, tags, version):
 @click.argument('path', required=True)
 @click.option('-v', '--version', required=False, help='Get tags for a specified version')
 @click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
-              help='Output format. Default is a text table.')
+              help=OUTPUT_FORMAT_OPTION_DESCRIPTION)
 @common_options
 def storage_get_object_tags(path, version, output_format):
     """ Gets tags for a specified object.\n
@@ -1485,7 +1421,7 @@ def set_tag(entity_class, entity_id, data):
 @click.argument('entity_class', required=True)
 @click.argument('entity_id', required=True)
 @click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
-              help='Output format. Default is a text table.')
+              help=OUTPUT_FORMAT_OPTION_DESCRIPTION)
 @common_options
 def get_tag(entity_class, entity_id, output_format):
     """ Lists all tags for a specific object or list of objects.\n
@@ -1866,7 +1802,7 @@ def update_cli_version(path):
 @click.option('-t', '--tool', help='List tool details.')
 @click.option('-v', '--version', help='List tool version details.')
 @click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
-              help='Output format. Default is a text table.')
+              help=OUTPUT_FORMAT_OPTION_DESCRIPTION)
 @common_options
 def view_tools(tool_path,
                registry,
@@ -1910,7 +1846,7 @@ def view_tools(tool_path,
       pipe view-tools docker-registry:port/library/ubuntu:18.04
     """
     print_service = create_tool_print_service(output_format)
-    
+
     if tool_path and (registry or group or tool or version):
         print_service.print_error('Tool path positional argument cannot be specified along with the named parameters.')
         sys.exit(1)
@@ -1976,7 +1912,7 @@ def token(user_id, duration, token_name):
 @cli.command(name='list-tokens')
 @click.argument('user-id', required=False, type=int)
 @click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
-              help='Output format. Default is a text table.')
+              help=OUTPUT_FORMAT_OPTION_DESCRIPTION)
 @common_options
 def list_tokens(user_id, output_format):
     """
@@ -2011,7 +1947,7 @@ def share():
 @share.command(name='get')
 @click.argument('run-id', required=True)
 @click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
-              help='Output format. Default is a text table.')
+              help=OUTPUT_FORMAT_OPTION_DESCRIPTION)
 @common_options
 def get_share_run(run_id, output_format):
     """
