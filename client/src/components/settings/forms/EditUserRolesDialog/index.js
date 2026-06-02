@@ -66,6 +66,7 @@ import {
 } from '../../../runs/logs/forms/configure-run-as-permissions/utilities';
 import styles from './EditUserRolesDialog.css';
 import RequiredLaunchTags from '../../../special/metadata/special/required-launch-tags';
+import UserTokensTable from '../../UserTokensTable';
 
 const RESTRICTED_METADATA_KEYS = [
   MuteEmailNotifications.metadataKey
@@ -1281,7 +1282,22 @@ export default class EditUserRolesDialog extends React.Component {
               label: 'PERMISSIONS',
               children: null
             }]
-            : [])
+            : []),
+          ...(
+            (
+              this.isAdmin ||
+              (
+                roleModel.readAllowed(this.props.user) &&
+                roleModel.writeAllowed(this.props.user)
+              )
+            )
+              ? [{
+                key: 'api-tokens',
+                label: 'API TOKENS',
+                children: null
+              }]
+              : []
+          )
         ]}
       />
     );
@@ -1307,6 +1323,13 @@ export default class EditUserRolesDialog extends React.Component {
           objectType={'PIPELINE_USER'}
           objectIdentifier={userId}
           showOwner={false}
+        />
+      );
+    }
+    if (activeTab === 'api-tokens') {
+      return (
+        <UserTokensTable
+          userId={userId}
         />
       );
     }

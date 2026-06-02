@@ -44,6 +44,8 @@ if [ $? -ne 0 ]; then
     print_err "Unable to setup installation configuration, exiting"
     exit 1
 fi
+
+init_service_versions
 echo
 
 ##########
@@ -386,6 +388,12 @@ kubectl label nodes "$CP_STORAGE_LIFECYCLE_SERVICE_KUBE_NODE_NAME" cloud-pipelin
 MLFLOW_KUBE_NODE_NAME=${MLFLOW_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-storage-lifecycle-service to $MLFLOW_KUBE_NODE_NAME"
 kubectl label nodes "$MLFLOW_KUBE_NODE_NAME" cloud-pipeline/cp-mlflow="true" --overwrite
+
+
+# Allow to schedule Run cleanup job to the master
+CLEANUP_RUN_JOB_KUBE_NODE_NAME=${CLEANUP_RUN_JOB_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-run-cleanup-job to $CLEANUP_RUN_JOB_KUBE_NODE_NAME"
+kubectl label nodes "$CLEANUP_RUN_JOB_KUBE_NODE_NAME" cloud-pipeline/cp-run-cleanup-job="true" --overwrite
 
 
 echo
@@ -1212,13 +1220,13 @@ fi
 if is_service_requested cp-clair; then
     print_ok "[Starting Clair deployment]"
 
-    if [ ! -n "${CP_CLAIR_VERSION}" ]; then CP_CLAIR_VERSION="v4"; fi
-    if [ "${CP_CLAIR_VERSION}" == "v4" ] || [ "${CP_CLAIR_VERSION}" == "V4" ];
-    then
+    if [ ! -n "${CP_CLAIR_VERSION}" ]; then 
+        CP_CLAIR_VERSION="v4";
+    fi
+    if [ "${CP_CLAIR_VERSION}" == "v4" ] || [ "${CP_CLAIR_VERSION}" == "V4" ]; then
         CP_CLAIR_DOCKER_NAME="clair-v4"
         CP_CLAIR_HEALTH_ENDPOINT="/healthz"
-    elif [ "${CP_CLAIR_VERSION}" == "v2" ] || [ "${CP_CLAIR_VERSION}" == "V2" ];
-    then
+    elif [ "${CP_CLAIR_VERSION}" == "v2" ] || [ "${CP_CLAIR_VERSION}" == "V2" ]; then
     	  CP_CLAIR_DOCKER_NAME="clair"
     	  CP_CLAIR_HEALTH_ENDPOINT="/health"
     else
@@ -1276,13 +1284,28 @@ if is_service_requested cp-notifier; then
                                     "/opt/notifier"
 
     if is_install_requested; then
-        CP_NOTIFIER_SMTP_PARAMETERS_LIST="CP_NOTIFIER_SMTP_SERVER_HOST \
-                                          CP_NOTIFIER_SMTP_SERVER_PORT \
-                                          CP_NOTIFIER_SMTP_FROM \
-                                          CP_NOTIFIER_SMTP_USER \
-                                          CP_NOTIFIER_SMTP_PASS"
-        if ! check_params_present "update_config" $CP_NOTIFIER_SMTP_PARAMETERS_LIST; then
-            print_err "Not all the SMTP parameters are set ("$CP_NOTIFIER_SMTP_PARAMETERS_LIST"). Email notifier service WILL NOT be installed. Please rerun installation with \"-s cp-notifier\" and all the parameters specified"
+        # SMTP is considered as a default notifier type
+        if [ "$CP_NOTIFIER_SMTP_ENABLE" != "true" ] && [ "$CP_NOTIFIER_AZ_ENABLE" != "true" ]; then
+            export CP_NOTIFIER_SMTP_ENABLE="true"
+            update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                                "CP_NOTIFIER_SMTP_ENABLE" \
+                                "$CP_NOTIFIER_SMTP_ENABLE"
+        fi
+        if [ "$CP_NOTIFIER_AZ_ENABLE" == "true" ]; then
+            CP_NOTIFIER_PARAMETERS_LIST="CP_NOTIFIER_AZ_CLIENT_ID \
+                                         CP_NOTIFIER_AZ_CLIENT_SECRET \
+                                         CP_NOTIFIER_AZ_TENANT_ID \
+                                         CP_NOTIFIER_AZ_SENDER"
+        fi
+        if [ "$CP_NOTIFIER_SMTP_ENABLE" == "true" ]; then
+            CP_NOTIFIER_PARAMETERS_LIST="CP_NOTIFIER_SMTP_SERVER_HOST \
+                                         CP_NOTIFIER_SMTP_SERVER_PORT \
+                                         CP_NOTIFIER_SMTP_FROM \
+                                         CP_NOTIFIER_SMTP_USER \
+                                         CP_NOTIFIER_SMTP_PASS"
+        fi
+        if ! check_params_present "update_config" $CP_NOTIFIER_PARAMETERS_LIST; then
+            print_err "Not all the notifier parameters are set ("$CP_NOTIFIER_PARAMETERS_LIST"). Email notifier service WILL NOT be installed. Please rerun installation with \"-s cp-notifier\" and all the parameters specified"
         else
             print_info "-> Deploying Email notifier"
             create_kube_resource $K8S_SPECS_HOME/cp-notifier/cp-notifier-dpl.yaml
@@ -1601,6 +1624,27 @@ if is_service_requested cp-mlflow; then
     fi
     echo
 fi
+
+# Run cleanup cron job
+if is_service_requested cp-run-cleanup-job; then
+    print_ok "[Starting Run Cleanup Job deployment]"
+
+    print_info "-> Deleting existing instance of cp-run-cleanup-job"
+    delete_cron_job "cp-run-cleanup-job" \
+                    "/opt/cp-run-cleanup-job"
+
+    if is_install_requested; then
+        print_info "-> Deploying cp-run-cleanup-job service"
+        # Run every day by default
+        export CP_CLEANUP_RUNS_CRON_SCHEDULE="${CP_CLEANUP_RUNS_CRON_SCHEDULE:-0 0 * * *}"
+        create_kube_resource $K8S_SPECS_HOME/cp-run-cleanup-job/cp-run-cleanup-job-config.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-run-cleanup-job/cp-run-cleanup-job-cron.yaml
+
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-run-cleanup-job: deployed"
+    fi
+    echo
+fi
+
 
 set_preferences_from_point_in_time_configuration
 import_users_from_point_in_time_configuration

@@ -22,8 +22,6 @@ import {API_PATH, SERVER} from '../../config';
 import {
   Alert,
   Button,
-  DatePicker,
-  message,
   Row,
   Select
 } from 'antd';
@@ -38,11 +36,15 @@ import DriveMappingWindowsForm from './DriveMappingWindowsForm';
 import {getOS} from '../../utils/OSDetection';
 import roleModel from '../../utils/roleModel';
 import BashCode from '../special/bash-code';
+import Markdown from '../special/markdown';
 import SubSettings from './sub-settings';
+import GenerateUserTokenModal from './GenerateUserTokenModal';
+import UserTokensTable from './UserTokensTable';
 
 const CLI_KEY = 'cli';
 const GIT_CLI_KEY = 'git cli';
 const DRIVE_KEY = 'drive';
+const VSCODE_KEY = 'vscode';
 
 const DRIVE_MAPPING_URL_PREFERENCE = 'base.dav.auth.url';
 const DRIVE_MAPPING_KEY = 'ui.pipe.drive.mapping';
@@ -70,9 +72,8 @@ function parseDriveMappingConfig (config) {
   return [];
 }
 
-@inject('authenticatedUserInfo', 'dataStorages', 'preferences')
-@inject(({authenticatedUserInfo, dataStorages, preferences}) => ({
-  authenticatedUserInfo,
+@inject('dataStorages', 'preferences')
+@inject(({dataStorages, preferences}) => ({
   preferences,
   dataStorages,
   notifications: new Notifications(),
@@ -82,12 +83,14 @@ function parseDriveMappingConfig (config) {
 export default class CLIForm extends React.Component {
   state = {
     cli: {
-      validTill: undefined,
       accessKey: null
     },
     driveMapping: {
       accessKey: null
-    }
+    },
+    vscodeTemplateSelectedKey: undefined,
+    generateModalVisible: false,
+    refreshTableToken: 0
   };
 
   constructor (props) {
@@ -99,7 +102,8 @@ export default class CLIForm extends React.Component {
       hasWritableNFSStorages: computed,
       isAdmin: computed,
       jwtTokenExpirationUserLimitSeconds: computed,
-      jwtTokenDateTo: computed
+      jwtTokenDateTo: computed,
+      uiVscodeExtensionInstallTemplate: computed
     });
   }
 
@@ -153,6 +157,11 @@ export default class CLIForm extends React.Component {
     return undefined;
   }
 
+  get uiVscodeExtensionInstallTemplate () {
+    const {preferences} = this.props;
+    return preferences.uiVscodeExtensionInstallTemplate || {};
+  }
+
   recalculateDefaultValidTillDate = () => {
     (async () => {
       try {
@@ -171,6 +180,12 @@ export default class CLIForm extends React.Component {
     })();
   };
 
+  onGenerateToken = (token) => this.setState({
+    generateModalVisible: false,
+    cli: {accessKey: token},
+    refreshTableToken: this.state.refreshTableToken + 1
+  });
+
   renderPipeCLIContent = () => {
     const getSettingsValue = (key) => {
       if (this.props.preferences.loaded &&
@@ -179,48 +194,7 @@ export default class CLIForm extends React.Component {
       }
       return '';
     };
-    const onValidTillChanged = (date) => {
-      if (date < moment()) {
-        message.info('\'Valid till\' date should not be in past');
-        return;
-      }
-      const cli = this.state.cli;
-      cli.validTill = date;
-      cli.accessKey = null;
-      this.setState({cli});
-    };
-    const {
-      validTill,
-      accessKey
-    } = this.state.cli || {};
-    const generateAccessKey = async () => {
-      const hide = message.loading('Generating...');
-      try {
-        if (validTill) {
-          const expiration = validTill.endOf('day');
-          const now = moment();
-          let seconds = expiration.diff(now, 'seconds');
-          const {jwtTokenExpirationUserLimitSeconds} = this;
-          if (jwtTokenExpirationUserLimitSeconds > 0) {
-            seconds = Math.min(seconds, jwtTokenExpirationUserLimitSeconds);
-          }
-          const request = new UserToken(seconds);
-          await request.fetch();
-          if (request.error) {
-            throw new Error(request.error);
-          }
-          const newAccessKey = request.value.token;
-          this.setState({cli: {
-            accessKey: newAccessKey,
-            validTill
-          }});
-        }
-      } catch (error) {
-        message.error(error.message);
-      } finally {
-        hide();
-      }
-    };
+    const {accessKey} = this.state.cli || {};
     const generateCliConfigureCommand = () => {
       if (this.state.cli.accessKey) {
         const generateAPIAbsoluteUrl = () => {
@@ -261,8 +235,8 @@ export default class CLIForm extends React.Component {
       operationSystem;
 
     if (this.props.preferences.pending && !this.props.preferences.loaded) {
-      cliConfigureCommand = (<BashCode className={styles.mdPreview} loading />);
-      pipInstallCommand = (<BashCode className={styles.mdPreview} loading />);
+      cliConfigureCommand = (<BashCode copyable className={styles.mdPreview} loading />);
+      pipInstallCommand = (<BashCode copyable className={styles.mdPreview} loading />);
     } else {
       let pipInstallCommandTemplate = this.props.preferences.replacePlaceholders(
         getSettingsValue('ui.pipe.cli.install.template') ||
@@ -301,6 +275,7 @@ export default class CLIForm extends React.Component {
           id="pip-install-url-input"
           className={styles.mdPreview}
           code={pipInstallCommandTemplate}
+          copyable
         />
       );
 
@@ -326,11 +301,10 @@ export default class CLIForm extends React.Component {
           id="cli-configure-command-text-area"
           className={styles.mdPreview}
           code={cliConfigureCommandTemplate}
+          copyable
         />
       );
     }
-
-    const {jwtTokenDateTo} = this;
 
     return (
       <div>
@@ -355,22 +329,19 @@ export default class CLIForm extends React.Component {
           </Row>
         }
         {pipInstallCommand}
-        <div className={classNames('cp-divider', 'horizontal')} />
-        <Row style={{fontSize: 'large', marginBottom: 10}}>Access keys:</Row>
-        <Row>
-          <b>Valid till: </b>
-          <DatePicker
-            className="valid-till-date-picker"
-            allowClear={false}
-            disabled={!validTill}
-            disabledDate={jwtTokenDateTo ? (dt) => dt.isAfter(momentToDayjs(jwtTokenDateTo)) : undefined}
-            onChange={(d) => onValidTillChanged(dayjsToMoment(d))}
-            value={momentToDayjs(validTill)} />
+        <div style={{marginBottom: 5}} className={classNames('cp-divider', 'horizontal')} />
+        <Row style={{
+          display: 'flex',
+          gap: '8px',
+          alignItems: 'center',
+          fontSize: 'large',
+          marginBottom: 10
+        }}>
+          Access keys:
           <Button
+            size="small"
             id="generate-access-key-button"
-            disabled={!validTill}
-            onClick={generateAccessKey}
-            style={{marginLeft: 10}}
+            onClick={() => this.setState({generateModalVisible: true})}
             type="primary">Generate access key</Button>
         </Row>
         {
@@ -381,6 +352,7 @@ export default class CLIForm extends React.Component {
               id="access-key"
               className={styles.mdPreview}
               code={accessKey}
+              copyable
             />
           </Row>
         }
@@ -391,6 +363,57 @@ export default class CLIForm extends React.Component {
             {cliConfigureCommand}
           </Row>
         }
+        <UserTokensTable
+          refreshToken={this.state.refreshTableToken}
+        />
+        <GenerateUserTokenModal
+          visible={this.state.generateModalVisible}
+          onCancel={() => this.setState({generateModalVisible: false})}
+          onGenerated={this.onGenerateToken}
+        />
+      </div>
+    );
+  };
+
+  renderVscodeContent = () => {
+    const template = this.uiVscodeExtensionInstallTemplate;
+    if (!template || typeof template !== 'object' || Array.isArray(template)) {
+      return null;
+    }
+    const keys = Object.keys(template);
+    if (keys.length === 0) {
+      return null;
+    }
+    const {vscodeTemplateSelectedKey} = this.state;
+    const selectedKey = keys.includes(vscodeTemplateSelectedKey)
+      ? vscodeTemplateSelectedKey
+      : keys[0];
+    const raw = template[selectedKey];
+    const md = raw == null ? '' : String(raw);
+    const mdWithPlaceholders = this.props.preferences.replacePlaceholders(md);
+    return (
+      <div>
+        {
+          keys.length > 1 &&
+          <Row type="flex" align="middle" style={{marginBottom: 10}}>
+            <Select
+              style={{width: 320}}
+              onSelect={(k) => this.setState({vscodeTemplateSelectedKey: k})}
+              value={selectedKey}>
+              {
+                keys.map((k) => (
+                  <Select.Option key={k}>
+                    {k}
+                  </Select.Option>
+                ))
+              }
+            </Select>
+          </Row>
+        }
+        <Markdown
+          md={mdWithPlaceholders}
+          target="_blank"
+        />
       </div>
     );
   };
@@ -435,6 +458,7 @@ export default class CLIForm extends React.Component {
         id="git-cli-configure-command"
         className={styles.mdPreview}
         code={code}
+        copyable
       />
     );
   };
@@ -512,6 +536,7 @@ export default class CLIForm extends React.Component {
           loading={!code}
           className={styles.mdPreview}
           code={this.props.preferences.replacePlaceholders(code)}
+          copyable
         />
       );
     };
@@ -594,6 +619,19 @@ export default class CLIForm extends React.Component {
         key: DRIVE_KEY,
         title: 'File System Access',
         render: () => this.renderDrive()
+      });
+    }
+    const vscodeTemplate = this.uiVscodeExtensionInstallTemplate;
+    if (
+      vscodeTemplate &&
+      typeof vscodeTemplate === 'object' &&
+      !Array.isArray(vscodeTemplate) &&
+      Object.keys(vscodeTemplate).length > 0
+    ) {
+      sections.push({
+        key: VSCODE_KEY,
+        title: 'VSCode extension',
+        render: () => this.renderVscodeContent()
       });
     }
     return sections;

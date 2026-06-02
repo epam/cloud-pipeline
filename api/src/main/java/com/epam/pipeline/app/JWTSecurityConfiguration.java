@@ -17,6 +17,7 @@
 package com.epam.pipeline.app;
 
 import com.epam.pipeline.entity.user.DefaultRoles;
+import com.epam.pipeline.manager.security.JwtTokenRevocationManager;
 import com.epam.pipeline.security.UserAccessService;
 import com.epam.pipeline.security.jwt.JwtAuthenticationProvider;
 import com.epam.pipeline.security.jwt.JwtFilterAuthenticationFilter;
@@ -89,6 +90,9 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Autowired
     private UserAccessService userAccessService;
 
+    @Autowired
+    private JwtTokenRevocationManager jwtTokenRevocationManager;
+
     protected String getPublicKey() {
         return publicKey;
     }
@@ -134,11 +138,12 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
     }
 
     @Bean protected JwtAuthenticationProvider jwtAuthenticationProvider() {
-        return new JwtAuthenticationProvider(jwtTokenVerifier(), userAccessService);
+        return new JwtAuthenticationProvider(jwtTokenVerifier(), jwtTokenRevocationManager, userAccessService);
     }
 
     protected JwtFilterAuthenticationFilter getJwtAuthenticationFilter() {
-        return new JwtFilterAuthenticationFilter(jwtTokenVerifier(), userAccessService, disableLogging);
+        return new JwtFilterAuthenticationFilter(jwtTokenVerifier(), jwtTokenRevocationManager, userAccessService,
+                disableLogging);
     }
 
     protected RequestMatcher getFullRequestMatcher() {

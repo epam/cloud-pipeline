@@ -17,9 +17,11 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {LoadingOutlined} from '@ant-design/icons';
+import {CopyOutlined, LoadingOutlined} from '@ant-design/icons';
+import {message} from 'antd';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
+import copyTextToClipboard from '../copy-text-to-clipboard';
 import styles from './bash-code.css';
 
 function shScriptToHtml (script) {
@@ -38,6 +40,14 @@ function shScriptToHtml (script) {
   return command;
 }
 
+function handleCopy (event, code) {
+  event.preventDefault();
+  event.stopPropagation();
+  copyTextToClipboard(code || '')
+    .then(() => message.success('Copied to clipboard', 2))
+    .catch((error) => message.error(error.message, 3));
+}
+
 function BashCode (
   {
     className,
@@ -46,13 +56,15 @@ function BashCode (
     loading,
     style,
     breakLines,
-    nowrap
+    nowrap,
+    copyable
   }
 ) {
   let html = (shScriptToHtml(code) || '');
   if (breakLines) {
     html = html.replace(/\n/g, '<br />');
   }
+  const showCopy = copyable && !loading && !!code;
   return (
     <div
       id={id}
@@ -73,9 +85,19 @@ function BashCode (
       }
       {
         !loading && (
-          <pre
-            dangerouslySetInnerHTML={{__html: html}}
-          />
+          <pre>
+            {
+              showCopy && (
+                <span
+                  className={styles.copyIcon}
+                  onClick={(event) => handleCopy(event, code)}
+                >
+                  <CopyOutlined />
+                </span>
+              )
+            }
+            <span dangerouslySetInnerHTML={{__html: html}} />
+          </pre>
         )
       }
     </div>
@@ -89,7 +111,12 @@ BashCode.propTypes = {
   loading: PropTypes.bool,
   style: PropTypes.object,
   breakLines: PropTypes.bool,
-  nowrap: PropTypes.bool
+  nowrap: PropTypes.bool,
+  copyable: PropTypes.bool
+};
+
+BashCode.defaultProps = {
+  copyable: true
 };
 
 export default BashCode;

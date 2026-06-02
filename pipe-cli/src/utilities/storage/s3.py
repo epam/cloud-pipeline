@@ -25,6 +25,7 @@ from src.utilities.storage.storage_usage import StorageUsageAccumulator
 from src.utilities.storage.s3_checksum import ChecksumProcessor
 
 import collections
+import logging
 import os
 
 from boto3 import Session
@@ -47,6 +48,7 @@ from src.config import Config
 import requests
 
 from src.utilities.storage_path_permissions_manager import get_permissions_manager
+from src.utilities.storage.file_timestamps import FileTimestampsManager
 
 requests.urllib3.disable_warnings()
 import botocore.vendored.requests.packages.urllib3 as boto_urllib3
@@ -239,7 +241,8 @@ class DownloadManager(StorageItemManager, AbstractTransferManager):
             StorageOperations.get_local_file_modification_datetime(destination_key)
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=None, io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
+                 size=None, tags=None, io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False,
+                 source_last_modified=None):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -253,6 +256,8 @@ class DownloadManager(StorageItemManager, AbstractTransferManager):
         self.bucket.download_file(source_key, to_string(destination_key),
                                   Callback=progress_callback,
                                   Config=transfer_config)
+        if source_last_modified is not None:
+            FileTimestampsManager().set_timestamp(destination_key, source_last_modified)
         if clean:
             self.events.put(DataAccessEvent(source_key, DataAccessType.DELETE, storage=source_wrapper.bucket))
             source_wrapper.delete_item(source_key)
@@ -277,7 +282,8 @@ class DownloadStreamManager(StorageItemManager, AbstractTransferManager):
         return 0, None
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=None, io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
+                 size=None, tags=None, io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False,
+                 source_last_modified=None):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -318,7 +324,8 @@ class UploadManager(StorageItemManager, AbstractTransferManager):
             return source_wrapper.path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
+                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False,
+                 source_last_modified=None):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -367,7 +374,8 @@ class UploadStreamManager(StorageItemManager, AbstractTransferManager):
         return source_path or source_wrapper.path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
+                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False,
+                 source_last_modified=None):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -414,7 +422,8 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
         return source_path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
+                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False,
+                 source_last_modified=None):
         # checked is bucket and file
         source_bucket = source_wrapper.bucket.path
         source_region = source_wrapper.bucket.region

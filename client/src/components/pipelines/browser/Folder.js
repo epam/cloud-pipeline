@@ -89,7 +89,10 @@ import UploadButton from '../../special/UploadButton';
 import PreviewConfiguration from '../configuration/PreviewConfiguration';
 import Breadcrumbs from '../../special/Breadcrumbs';
 import HiddenObjects from '../../../utils/hidden-objects';
-import {RepositoryTypes} from '../../special/git-repository-control';
+import {
+  RepositoryTypes,
+  normalizeRepositoryType
+} from '../../special/git-repository-control';
 
 const MAX_INLINE_METADATA_KEYS = 10;
 const SHOW_SECRET_TAGS_IN_LISTING = false;

@@ -102,7 +102,7 @@ function install_nm {
     yum install -y nomachine.rpm && \
     rm -f nomachine.rpm
   else
-    CP_NM_DEFAULT_DESKTOP_COMMAND="${CP_NM_DEFAULT_DESKTOP_COMMAND_DEB}"
+    CP_NM_DEFAULT_DESKTOP_COMMAND="${CP_NM_DEFAULT_DESKTOP_COMMAND_DEB:-/usr/bin/startxfce4}"
     apt-get install -y --no-upgrade locales && \
     locale-gen en_US.UTF-8 && \
     locale-gen en_US && \
@@ -110,7 +110,8 @@ function install_nm {
     update-locale LANG=$LANG && \
     apt-get install -yq --no-upgrade \
                         xfce4 \
-                        xfce4-xkb-plugin && \
+                        xfce4-xkb-plugin \
+                        dbus-x11 && \
     wget -q "${GLOBAL_DISTRIBUTION_URL}tools/nomachine/nomachine_${nm_version}_amd64.deb" -O nomachine.deb && \
     dpkg -i nomachine.deb && \
     rm -f nomachine.deb

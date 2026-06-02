@@ -19,6 +19,28 @@ repositories {
 
 ext { springBootVersion = '1.5.2.RELEASE' }
 
+// Azure SDK (azure-core 1.5x+) requires Jackson 2.10+ (e.g. com.fasterxml.jackson.databind.cfg.MapperBuilder).
+// :core and Spring Boot 1.5 still pull Jackson 2.8.x; force a single aligned stack for this module only.
+ext.jacksonVersionForAzure = '2.10.5'
+
+// Microsoft Kiota JSON (microsoft-graph) calls JsonParser.parseReader(Reader); that API exists from Gson 2.8.6+.
+// Spring Boot 1.5 BOM still resolves an older Gson; pin a current 2.x line for this module.
+ext.gsonVersionForGraph = '2.10.1'
+
+// This part resolves transitive dependencies:
+configurations.all {
+    resolutionStrategy.eachDependency { details ->
+        if (details.requested.group?.startsWith('com.fasterxml.jackson')) {
+            details.useVersion jacksonVersionForAzure
+            details.because('Azure SDK / Graph require Jackson 2.10+; align on 2.10.5 minimum; :core still references 2.8.x')
+        }
+        if (details.requested.group == 'com.google.code.gson' && details.requested.name == 'gson') {
+            details.useVersion gsonVersionForGraph
+            details.because('Microsoft Kiota / Graph require Gson with JsonParser.parseReader(Reader)')
+        }
+    }
+}
+
 dependencies {
     // Spring Boot
     configurations {
@@ -37,7 +59,10 @@ dependencies {
 
     //DB
     compile group: 'org.postgresql', name: 'postgresql', version: '42.7.3'
-    compile group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.8.7'
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: jacksonVersionForAzure
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: jacksonVersionForAzure
+    compile group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-jsr310', version: jacksonVersionForAzure
+    compile group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-xml', version: jacksonVersionForAzure
     compile('org.springframework.boot:spring-boot-starter-data-jpa')
     compile group: 'com.zaxxer', name: 'HikariCP', version: '3.2.0'
     compile group: 'org.hibernate', name: 'hibernate-java8', version: '5.0.12.Final'
@@ -46,6 +71,13 @@ dependencies {
     compile group: 'org.apache.commons', name: 'commons-email', version: '1.5'
     compile group: 'org.apache.velocity', name: 'velocity', version: '1.7'
     compile group: 'org.apache.velocity', name: 'velocity-tools', version: '2.0'
+
+    // Azure
+    compile group: 'com.google.code.gson', name: 'gson', version: gsonVersionForGraph
+    // azure-identity uses Reactor at runtime; keep explicit so it is not dropped from the classpath
+    compile group: 'io.projectreactor', name: 'reactor-core', version: '3.4.34'
+    compile group: 'com.azure', name: 'azure-identity', version: '1.18.2'
+    compile group: 'com.microsoft.graph', name: 'microsoft-graph', version: '6.62.0'
 
     //Tests
     testCompile group: 'junit', name: 'junit', version: '4.12'

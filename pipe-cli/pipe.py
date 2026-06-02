@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import logging
 import os
 import traceback
@@ -44,6 +45,8 @@ from src.utilities.acl_operations import ACLOperations
 from src.utilities.datastorage_operations import DataStorageOperations
 from src.utilities.metadata_operations import MetadataOperations
 from src.utilities.permissions_operations import PermissionsOperations
+from src.utilities.printing.print_service import create_print_service
+from src.utilities.printing.storage import create_storage_print_service
 from src.utilities.pipeline_run_operations import PipelineRunOperations
 from src.utilities.ssh_operations import run_ssh, run_scp, create_tunnel, kill_tunnels, list_tunnels
 from src.utilities.update_cli_version import UpdateCLIVersionManager
@@ -164,9 +167,16 @@ def stacktracing(func, ctx, *args, **kwargs):
         raise
     except Exception as runtime_error:
         if sys.version_info >= (3, 0):
-            click.echo(u'Error: {}'.format(str(runtime_error)), err=True)
+            err_msg = str(runtime_error)
         else:
-            click.echo(u'Error: {}'.format(unicode(runtime_error)), err=True)
+            err_msg = unicode(runtime_error)
+        if ctx.params.get('output_format') == 'json':
+            click.echo(
+                json.dumps({'error': err_msg}, default=str, indent=2, ensure_ascii=False),
+                err=True,
+            )
+        else:
+            click.echo(u'Error: {}'.format(err_msg), err=True)
         if trace:
             traceback.print_exc()
         sys.exit(1)
@@ -313,6 +323,8 @@ def cli():
                                              a maximum of 10,000 parts per object. Configuring part size is important
                                              for large STREAM transfers, as the final size of the stream cannot
                                              be predicted.
+      CP_CLI_STORAGE_SYNC_MTIME_ENABLED      Enables persisting timestemps from cloud objects to local files
+                                             during CLOUD -> LOCAL trasfers. (Default: True)
     """
     pass
 
@@ -533,6 +545,8 @@ def view_pipe(pipeline, versions, parameters, storage_rules, permissions):
 @click.option('-td', '--tasks-details', help='Display tasks of a specific run', is_flag=True)
 @click.option('-uf', '--user-filter', help='Display tasks of a specific users. Format: Comma separated list.')
 @click.option('--tags-details', help='Display detailed tags information of a specific run', is_flag=True, default=False)
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help='Output format. Default is a text table.')
 @common_options
 def view_runs(run_id,
               status,
@@ -546,23 +560,22 @@ def view_runs(run_id,
               parameters_details,
               tasks_details,
               user_filter,
-              tags_details):
+              tags_details,
+              output_format):
     """Displays details of a run or list of pipeline runs
     """
     # If a run id is specified - list details of a run
     if run_id:
-        view_run(run_id, node_details, parameters_details, tasks_details, tags_details)
+        view_run(run_id, node_details, parameters_details, tasks_details, tags_details, output=output_format)
     # If no argument is specified - list runs according to options
     else:
-        view_all_runs(status, date_from, date_to, pipeline, parent_id, find, top, user_filter)
+        view_all_runs(status, date_from, date_to, pipeline, parent_id, find, top, user_filter, output=output_format)
 
 
-def view_all_runs(status, date_from, date_to, pipeline, parent_id, find, top, user_filter):
-    runs_table = prettytable.PrettyTable()
-    runs_table.field_names = ["RunID", "Parent RunID", "Pipeline", "Version", "Status", "Started", "Owner"]
-    runs_table.align = "r"
+def view_all_runs(status, date_from, date_to, pipeline, parent_id, find, top, user_filter, output=None):
+    print_service = create_print_service(output)
     if date_to and not status:
-        click.echo("The run status shall be specified for viewing completed before specified date runs")
+        print_service.error('The run status shall be specified for viewing completed before specified date runs')
         sys.exit(1)
     statuses = []
     if status is not None:
@@ -596,128 +609,29 @@ def view_all_runs(status, date_from, date_to, pipeline, parent_id, find, top, us
                                   custom_filter=find,
                                   owners=user_filter.split(",") if user_filter else None)
     if run_filter.total_count == 0:
-        click.echo('No data is available for the request')
+        print_service.empty_runs(run_filter)
     else:
-        if run_filter.total_count > run_filter.page_size:
-            click.echo('Showing {} results from {}:'.format(run_filter.page_size, run_filter.total_count))
-        for run_model in run_filter.elements:
-            runs_table.add_row([run_model.identifier,
-                                run_model.parent_id,
-                                run_model.pipeline,
-                                run_model.version,
-                                state_utilities.color_state(run_model.status),
-                                run_model.scheduled_date,
-                                run_model.owner])
-        click.echo(runs_table)
-        click.echo()
+        print_service.runs(run_filter)
 
 
-def view_run(run_id, node_details, parameters_details, tasks_details, tags_details):
+def view_run(run_id, node_details, parameters_details, tasks_details, tags_details=False, output=None):
     run_model = PipelineRun.get(run_id)
     if not run_model.pipeline and run_model.pipeline_id is not None:
         pipeline_model = Pipeline.get(run_model.pipeline_id)
         if pipeline_model is not None:
             run_model.pipeline = pipeline_model.name
     run_model_price = PipelineRun.get_estimated_price(run_id)
-    run_main_info_table = prettytable.PrettyTable()
-    run_main_info_table.field_names = ["key", "value"]
-    run_main_info_table.align = "l"
-    run_main_info_table.set_style(12)
-    run_main_info_table.header = False
-    run_main_info_table.add_row(['ID:', run_model.identifier])
-    run_main_info_table.add_row(['Pipeline:', run_model.pipeline])
-    run_main_info_table.add_row(['Version:', run_model.version])
-    if run_model.owner is not None:
-        run_main_info_table.add_row(['Owner:', run_model.owner])
-    if run_model.endpoints is not None and len(run_model.endpoints) > 0:
-        endpoint_index = 0
-        for endpoint in run_model.endpoints:
-            if endpoint_index == 0:
-                run_main_info_table.add_row(['Endpoints:', endpoint])
-            else:
-                run_main_info_table.add_row(['', endpoint])
-            endpoint_index = endpoint_index + 1
-    if not run_model.scheduled_date:
-        run_main_info_table.add_row(['Scheduled', 'N/A'])
-    else:
-        run_main_info_table.add_row(['Scheduled:', run_model.scheduled_date])
-    if not run_model.start_date:
-        run_main_info_table.add_row(['Started', 'N/A'])
-    else:
-        run_main_info_table.add_row(['Started:', run_model.start_date])
-    if not run_model.end_date:
-        run_main_info_table.add_row(['Completed', 'N/A'])
-    else:
-        run_main_info_table.add_row(['Completed:', run_model.end_date])
-    run_main_info_table.add_row(['Status:', state_utilities.color_state(run_model.status)])
-    run_main_info_table.add_row(['ParentID:', run_model.parent_id])
-    if run_model_price.total_price > 0:
-        run_main_info_table.add_row(['Estimated price:', '{} $'.format(round(run_model_price.total_price, 2))])
-    else:
-        run_main_info_table.add_row(['Estimated price:', 'N/A'])
-
-    run_main_info_table.add_row(['Tags:', run_model.tags_str])
-
-    click.echo(run_main_info_table)
-    click.echo()
-
+    print_service = create_print_service(output)
+    print_service.run(run_model, run_model_price)
     if node_details:
-
-        node_details_table = prettytable.PrettyTable()
-        node_details_table.field_names = ["key", "value"]
-        node_details_table.align = "l"
-        node_details_table.set_style(12)
-        node_details_table.header = False
-
-        for key, value in run_model.instance:
-            if key == PriceType.SPOT:
-                node_details_table.add_row(['price-type', PriceType.SPOT if value else PriceType.ON_DEMAND])
-            else:
-                node_details_table.add_row([key, value])
-        echo_title('Node details:')
-        click.echo(node_details_table)
-        click.echo()
-
+        print_service.node_details(run_model)
     if parameters_details:
-        echo_title('Parameters:')
-        if len(run_model.parameters) > 0:
-            for parameter in run_model.parameters:
-                click.echo('{}={}'.format(parameter.name, parameter.value))
-        else:
-            click.echo('No parameters are configured')
-        click.echo()
-
+        print_service.run_parameters(run_model)
     if tasks_details:
-        echo_title('Tasks:', line=False)
-        if len(run_model.tasks) > 0:
-            tasks_table = prettytable.PrettyTable()
-            tasks_table.field_names = ['Task', 'State', 'Scheduled', 'Started', 'Finished']
-            tasks_table.align = "r"
-            for task in run_model.tasks:
-                scheduled = 'N/A'
-                started = 'N/A'
-                finished = 'N/A'
-                if task.created is not None:
-                    scheduled = task.created
-                if task.started is not None:
-                    started = task.started
-                if task.finished is not None:
-                    finished = task.finished
-                tasks_table.add_row(
-                    [task.name, state_utilities.color_state(task.status), scheduled, started, finished])
-            click.echo(tasks_table)
-        else:
-            click.echo('No tasks are available for the run')
-        click.echo()
-
+        print_service.run_tasks(run_model)
     if tags_details:
-        echo_title('Tags:')
-        if len(run_model.tags) > 0:
-            for tag_name in run_model.tags:
-                click.echo('{}={}'.format(tag_name, run_model.tags[tag_name]))
-        else:
-            click.echo('No tags are configured')
-        click.echo()
+        print_service.run_tags(run_model)
+    print_service.flush()
 
 
 
@@ -867,6 +781,8 @@ def view_cluster_for_node(node_name):
 @click.option('-t', '--timeout', type=int,
               help='Specifies run timeout in minutes. '
                    'If a run doesn\'t finish within this period of time, than it is marked as failed and stopped.')
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help='Structured output format. When set, quiet mode is enabled automatically.')
 @click.option('-q', '--quiet', help='Quiet mode', is_flag=True)
 @click.option('-ic', '--instance-count', help='Number of worker instances to launch in a cluster',
               type=click.IntRange(0, MAX_INSTANCE_COUNT, clamp=True), required=False)
@@ -925,6 +841,7 @@ def run(pipeline,
         docker_image,
         cmd_template,
         timeout,
+        output_format,
         quiet,
         instance_count,
         cores,
@@ -983,7 +900,7 @@ def run(pipeline,
                               status_notifications,
                               status_notifications_status, status_notifications_recipient,
                               status_notifications_subject, status_notifications_body,
-                              user)
+                              user, output_format)
 
 
 @cli.command(name='stop')
@@ -1145,18 +1062,21 @@ def mvtodir(name, directory):
                    "compact - brief summary only (default); "
                    "full - show extended details, works for the storage summary listing only")
 @click.option('-g', '--show-archive', is_flag=True, help='Show archived files.')
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help='Output format. Default is a text table.')
 @common_options
-def storage_list(path, show_details, show_versions, recursive, page, all, output, show_archive):
+def storage_list(path, show_details, show_versions, recursive, page, all, output, show_archive, output_format):
     """Lists storage contents
     """
+    print_service = create_storage_print_service(output_format)
     show_extended = False
     if output == 'full':
         if path is not None or not show_details:
-            click.echo('Extended output could be configured for the storage summary listing only!', err=True)
+            print_service.error('Extended output could be configured for the storage summary listing only!', err=True)
             sys.exit(1)
         show_extended = True
     DataStorageOperations.storage_list(path, show_details, show_versions, recursive, page, all, show_extended,
-                                       show_archive)
+                                       show_archive, print_service)
 
 
 @storage.command(name='mkdir')
@@ -2114,14 +2034,45 @@ def split_tool_path(tool_path, registry, group, tool, version, strict=False):
 
 
 @cli.command(name='token')
-@click.argument('user-id', required=False, type=str)
+@click.argument('user-id', required=False, type=int)
 @click.option('-d', '--duration', type=int, required=False, help='The number of days this token will be valid.')
+@click.option('-tn', '--token-name', 'token_name', required=False, type=str,
+              help='Optional registry label: letters, digits, underscore and hyphen only.')
 @common_options
-def token(user_id, duration):
+def token(user_id, duration, token_name):
     """
-    Prints a JWT token for specified user. If USER_ID is not specified, prints token of the current user.
+    Prints a JWT token for the specified user (admin) or the current user. The token is registered
+    as a named token (see list-tokens / revoke-tokens).
     """
-    UserTokenOperations().print_user_token(user_id, duration)
+    UserTokenOperations().print_user_token(user_id, duration, token_name)
+
+
+@cli.command(name='list-tokens')
+@click.argument('user-id', required=False, type=int)
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help='Output format. Default is a text table.')
+@common_options
+def list_tokens(user_id, output_format):
+    """
+    Lists named JWT token entries (metadata only; secret token values are not shown).
+    """
+    UserTokenOperations().print_named_tokens(user_id, output_format)
+
+
+@cli.command(name='revoke-tokens')
+@click.argument('user-id', required=False, type=int)
+@click.option('-jti', '--jti', 'jtis', required=False, multiple=True,
+              help='JWT id (jti) to revoke. Repeat -jti/--jti for multiple tokens.')
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help='Output format. Default is plain text.')
+@common_options
+def revoke_tokens(jtis, user_id, output_format):
+    """
+    Revokes a JWT by jti (from the token payload). Each -jti is revoked in a separate request.
+    """
+    if not jtis:
+        raise click.UsageError('Specify -jti / --jti at least once')
+    UserTokenOperations().revoke_tokens(jtis, user_id, output_format)
 
 
 @cli.group()

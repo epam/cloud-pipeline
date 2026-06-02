@@ -11,3 +11,4 @@ api/src/main/resources/static/
 docs/site
 dist
 portals-ui/
+vscode-cloud-pipeline/.env

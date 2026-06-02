@@ -24,11 +24,13 @@ from src.api.tool import Tool
 from src.model.pipeline_run_model import PriceType
 from src.model.pipeline_run_parameter_model import PipelineRunParameterModel
 from src.utilities.api_wait import wait_for_server_enabling_if_needed
+from src.utilities.capacity_block_processor import CapacityBlockProcessor
 from src.utilities.cluster_manager import ClusterManager
 from src.utilities.user_operations_manager import UserOperationsManager
 from src.utilities.user_token_operations import UserTokenOperations
 
 from src.api.pipeline import Pipeline
+from src.utilities.printing.print_service import create_print_service
 
 ROLE_ADMIN = 'ROLE_ADMIN'
 DELAY = 30
@@ -54,8 +56,15 @@ class PipelineRunOperations(object):
             status_notifications=False,
             status_notifications_status=None, status_notifications_recipient=None,
             status_notifications_subject=None, status_notifications_body=None,
-            run_as_user=None):
+            run_as_user=None, output_format=None):
+        if output_format and not yes:
+            click.echo('Output in json format supported with -y (--yes) option only.', err=True)
+            sys.exit(1)
+        if output_format:
+            # force enable quite mode to support valid json output
+            quiet = True
 
+        print_service = create_print_service(output_format)
         all_user_roles = UserOperationsManager().get_all_user_roles()
         # Preserving old style impersonation for admin users. Specified user token is generated and used
         # for impersonation rather than run as capability which is used for non-admin users.
@@ -69,13 +78,14 @@ class PipelineRunOperations(object):
         # This approach is used because we do not know parameters list beforehand
 
         run_params_dict = dict([(k.strip('-'), v) for k, v in zip(run_params[::2], run_params[1::2])])
-        cls._validate_run_params(run_params_dict, all_user_roles)
+        cls._validate_run_params(run_params_dict, all_user_roles, print_service)
 
         if instance_count == 0:
             instance_count = None
 
         if non_pause and not price_type == PriceType.ON_DEMAND:
-            click.echo("--non-pause option supported for on-demand runs only and will be ignored")
+            if output_format is None:
+                click.echo("--non-pause option supported for on-demand runs only and will be ignored")
             non_pause = None
         if price_type == PriceType.ON_DEMAND and non_pause is None:
             non_pause = False
@@ -91,13 +101,14 @@ class PipelineRunOperations(object):
             instance_type = nodes_spec["name"]
 
         if friendly_url:
-            friendly_url = cls._build_pretty_url(friendly_url)
+            friendly_url = cls._build_pretty_url(friendly_url, print_service)
 
         try:
             if not pipeline and docker_image and cls.required_args_missing(parent_node, instance_type, instance_disk,
                                                                            cmd_template):
                 instance_disk, instance_type, cmd_template = cls.load_missing_args(docker_image, instance_disk,
-                                                                                   instance_type, cmd_template)
+                                                                                   instance_type, cmd_template,
+                                                                                   print_service)
             if pipeline:
                 parts = pipeline.split('@')
                 pipeline_name = parts[0]
@@ -120,24 +131,27 @@ class PipelineRunOperations(object):
                     if not quiet:
                         click.echo('done.', nl=True)
                 if parameters:
-                    cls.print_pipeline_parameters_info(pipeline_model, pipeline_run_parameters)
+                    cls.print_pipeline_parameters_info(pipeline_model, pipeline_run_parameters, print_service,
+                                                       output_format)
                 else:
                     if not quiet:
                         click.echo('Evaluating estimated price...', nl=False)
-                        run_price = Pipeline.get_estimated_price(pipeline_model.identifier,
-                                                                 pipeline_run_parameters.version,
-                                                                 instance_type,
-                                                                 instance_disk,
-                                                                 config_name=config,
-                                                                 price_type=price_type,
-                                                                 region_id=region_id)
+                    run_price = Pipeline.get_estimated_price(pipeline_model.identifier,
+                                                             pipeline_run_parameters.version,
+                                                             instance_type,
+                                                             instance_disk,
+                                                             config_name=config,
+                                                             price_type=price_type,
+                                                             region_id=region_id)
+                    instance_type = instance_type or run_price.instance_type
+
+                    if not quiet:
                         click.echo('done.', nl=True)
                         price_table = prettytable.PrettyTable()
                         price_table.field_names = ["key", "value"]
                         price_table.align = "l"
                         price_table.set_style(12)
                         price_table.header = False
-                        instance_type = instance_type or run_price.instance_type
 
                         price_table.add_row(['Price per hour ({}, hdd {})'.format(run_price.instance_type,
                                                                                   run_price.instance_disk),
@@ -167,11 +181,16 @@ class PipelineRunOperations(object):
                             if not quiet:
                                 click.echo('"{}" parameter is required'.format(parameter.name), err=True)
                             else:
-                                click.echo(parameter.name)
+                                print_service.error(parameter.name)
                                 sys.exit(1)
                             wrong_parameters = True
                         elif run_params_dict.get(parameter.name) is not None:
                             parameter.value = run_params_dict.get(parameter.name)
+
+                    run_params_dict, pod_assign_policy = cls._apply_capacity_block_config_if_required(instance_type,
+                                                                                                      run_params_dict,
+                                                                                                      print_service)
+
                     for user_parameter in run_params_dict.keys():
                         custom_parameter = True
                         for parameter in pipeline_run_parameters.parameters:
@@ -207,7 +226,8 @@ class PipelineRunOperations(object):
                                                                       status_notifications_recipient=status_notifications_recipient,
                                                                       status_notifications_subject=status_notifications_subject,
                                                                       status_notifications_body=status_notifications_body,
-                                                                      run_as_user=run_as_user)
+                                                                      run_as_user=run_as_user,
+                                                                      pod_assign_policy=pod_assign_policy)
                         pipeline_run_id = pipeline_run_model.identifier
                         if not quiet:
                             click.echo('"{}" pipeline run scheduled with RunId: {}'.format(
@@ -220,12 +240,14 @@ class PipelineRunOperations(object):
                                 if pipeline_processed_status != 'SUCCESS':
                                     sys.exit(1)
                         else:
-                            click.echo(pipeline_run_id)
+                            print_service.launch_run_id(pipeline_run_id)
                             if sync:
                                 pipeline_processed_status = cls.get_pipeline_processed_status(pipeline_run_id)
-                                click.echo(pipeline_processed_status)
+                                print_service.launch_run_status(pipeline_processed_status)
                                 if pipeline_processed_status != 'SUCCESS':
+                                    print_service.flush()
                                     sys.exit(1)
+                            print_service.flush()
             elif parameters:
                 if not quiet:
                     click.echo('You must specify pipeline for listing parameters', err=True)
@@ -244,11 +266,15 @@ class PipelineRunOperations(object):
                         required_parameters.append('instance_disk')
                     if cmd_template is None:
                         required_parameters.append('cmd_template')
-                    click.echo(', '.join(required_parameters))
+                    print_service.error(', '.join(required_parameters))
                     sys.exit(1)
             else:
                 if not quiet:
                     cls._check_gpu_and_cuda_compatibility(instance_type, docker_image=docker_image)
+
+                run_params_dict, pod_assign_policy = cls._apply_capacity_block_config_if_required(instance_type,
+                                                                                                  run_params_dict,
+                                                                                                  print_service)
 
                 if not yes:
                     click.confirm('Are you sure you want to schedule a run?', abort=True)
@@ -270,7 +296,8 @@ class PipelineRunOperations(object):
                                                              status_notifications_recipient=status_notifications_recipient,
                                                              status_notifications_subject=status_notifications_subject,
                                                              status_notifications_body=status_notifications_body,
-                                                             run_as_user=run_as_user)
+                                                             run_as_user=run_as_user,
+                                                             pod_assign_policy=pod_assign_policy)
                 pipeline_run_id = pipeline_run_model.identifier
                 if not quiet:
                     click.echo('Pipeline run scheduled with RunId: {}'.format(pipeline_run_id))
@@ -281,14 +308,17 @@ class PipelineRunOperations(object):
                         if pipeline_processed_status != 'SUCCESS':
                             sys.exit(1)
                 else:
-                    click.echo(pipeline_run_id)
+                    print_service.launch_run_id(pipeline_run_id)
                     if sync:
                         pipeline_processed_status = cls.get_pipeline_processed_status(pipeline_run_id)
-                        click.echo(pipeline_processed_status)
+                        print_service.launch_run_status(pipeline_processed_status)
                         if pipeline_processed_status != 'SUCCESS':
+                            print_service.flush()
                             sys.exit(1)
+                    print_service.flush()
 
         except click.exceptions.Abort:
+            print_service.flush()
             sys.exit(0)
 
     @classmethod
@@ -327,20 +357,14 @@ class PipelineRunOperations(object):
         return PipelineRun.get(identifier)
 
     @staticmethod
-    def print_pipeline_parameters_info(pipeline_model, pipeline_run_parameters):
-        click.echo('"{}" pipeline arguments:'.format(
-            PipelineRunOperations.build_image_name(pipeline_model.name, pipeline_run_parameters.version)))
+    def print_pipeline_parameters_info(pipeline_model, pipeline_run_parameters, print_service, output_format=None):
+        if not output_format:
+            click.echo('"{}" pipeline arguments:'.format(
+                PipelineRunOperations.build_image_name(pipeline_model.name, pipeline_run_parameters.version)))
         if len(pipeline_run_parameters.parameters) > 0:
-            for parameter in pipeline_run_parameters.parameters:
-                if parameter.required:
-                    click.echo('* --{}'.format(parameter.name))
-                else:
-                    click.echo('  --{} ({})'.format(parameter.name, parameter.parameter_type))
-                if parameter.value is not None:
-                    click.echo('    Default: {}'.format(parameter.value))
-                click.echo()
+            print_service.launch_run_parameters(pipeline_run_parameters.parameters)
         else:
-            click.echo('No parameters are configured')
+            print_service.error('No parameters are configured')
 
     @classmethod
     def get_pipeline_processed_status(cls, identifier):
@@ -370,14 +394,14 @@ class PipelineRunOperations(object):
         return image_name, image_tag
 
     @classmethod
-    def load_missing_args(cls, docker_image, instance_disk, instance_type, cmd_template):
+    def load_missing_args(cls, docker_image, instance_disk, instance_type, cmd_template, print_service=None):
         image_name, image_tag = cls.parse_image(docker_image)
 
         tool = Tool().find_tool_by_name(docker_image)
         if tool and 'id' in tool:
             tool_id = tool['id']
         else:
-            click.echo("Failed to find tool by name %s" % docker_image, err=True)
+            print_service.error("Failed to find tool by name %s" % docker_image, err=True)
             sys.exit(1)
 
         tool_settings = Tool().load_settings(tool_id, image_tag)
@@ -413,7 +437,7 @@ class PipelineRunOperations(object):
             return '{}@{}'.format(name, version)
 
     @classmethod
-    def _build_pretty_url(cls, pretty_url):
+    def _build_pretty_url(cls, pretty_url, print_service=None):
         path = str(pretty_url).strip('/')
         try:
             json.loads(path)
@@ -423,7 +447,8 @@ class PipelineRunOperations(object):
 
         parts = path.split('/')
         if len(parts) > 2:
-            click.echo("Pretty URL has an incorrect format. Expected formats: <domain>/<path> or <path>.", err=True)
+            print_service.error("Pretty URL has an incorrect format. Expected formats: <domain>/<path> or <path>.",
+                                err=True)
             sys.exit(1)
         if len(parts) == 1:
             return '{"path":"%s"}' % parts[0]
@@ -442,7 +467,7 @@ class PipelineRunOperations(object):
         return pipeline_name
 
     @classmethod
-    def _validate_run_params(cls, run_params_dict, all_user_roles):
+    def _validate_run_params(cls, run_params_dict, all_user_roles, print_service=None):
         if ROLE_ADMIN in all_user_roles:
             return
         default_system_parameters_dict = {param.name: param for param in Pipeline.get_default_run_parameters()}
@@ -452,7 +477,7 @@ class PipelineRunOperations(object):
                 if default_system_parameter.value != run_param_value:
                     allowed_roles = default_system_parameter.roles
                     if allowed_roles and len(allowed_roles.intersection(all_user_roles)) == 0:
-                        click.echo('An error has occurred while starting a job: "{}" parameter'
+                        print_service.error('An error has occurred while starting a job: "{}" parameter'
                                    ' is not permitted for overriding'.format(run_param_name), err=True)
                         sys.exit(1)
 
@@ -489,3 +514,9 @@ class PipelineRunOperations(object):
             click.echo(GPU_WITHOUT_CUDA_WARN_MSG)
         if not gpu_enabled and cuda_available:
             click.echo(CPU_WITH_CUDA_WARN_MSG)
+
+    @classmethod
+    def _apply_capacity_block_config_if_required(cls, instance_type, run_params_dict, print_service):
+        capacity_block_processor = CapacityBlockProcessor(instance_type, print_service)
+        capacity_block_processor.verify(run_params_dict)
+        return capacity_block_processor.apply_config(run_params_dict)

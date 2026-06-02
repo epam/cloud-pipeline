@@ -46,7 +46,10 @@ import AdaptedLink from '../../special/AdaptedLink';
 import EditPipelineForm from './forms/EditPipelineForm';
 import LoadingView from '../../special/LoadingView';
 import Breadcrumbs from '../../special/Breadcrumbs';
-import GitRepositoryControl, {RepositoryTypes} from '../../special/git-repository-control';
+import GitRepositoryControl, {
+  RepositoryTypes,
+  normalizeRepositoryType
+} from '../../special/git-repository-control';
 import styles from './PipelineDetails.css';
 import browserStyles from '../browser/Browser.css';
 import {ItemTypes} from '../model/treeStructureFunctions';
@@ -94,7 +97,7 @@ class PipelineDetails extends localization.LocalizedReactComponent {
     const {pipeline} = this.props;
     if (pipeline && pipeline.loaded) {
       const {repositoryType} = pipeline.value || {};
-      return repositoryType;
+      return normalizeRepositoryType(repositoryType);
     }
     return undefined;
   }
@@ -505,7 +508,7 @@ class PipelineDetails extends localization.LocalizedReactComponent {
               overlayClassName={browserStyles.gitRepositoryPopover}
               https={this.props.pipeline.value.repository}
               ssh={this.props.pipeline.value.repositorySsh}
-              repositoryType={this.props.pipeline.value.repositoryType}
+              repositoryType={this.repositoryType}
             />
           </Col>
         </Row>

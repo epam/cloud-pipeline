@@ -43,6 +43,7 @@ import com.epam.pipeline.entity.monitoring.NetworkConsumingRunAction;
 import com.epam.pipeline.entity.notification.filter.NotificationFilter;
 import com.epam.pipeline.entity.metadata.CommonInstanceTagsType;
 import com.epam.pipeline.entity.pipeline.run.runtime.RunSyncRuntimeDataConfig;
+import com.epam.pipeline.entity.log.RunLogStorageConfig;
 import com.epam.pipeline.entity.pipeline.run.RunVisibilityPolicy;
 import com.epam.pipeline.entity.pipeline.run.parameter.RuntimeParameter;
 import com.epam.pipeline.entity.preference.Preference;
@@ -105,6 +106,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isEquals;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isGreaterThan;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isGreaterThanOrEquals;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isLessThan;
@@ -259,6 +261,14 @@ public class SystemPreferences {
     public static final StringPreference DATA_STORAGE_SYSTEM_DATA_STORAGE_NAME = new StringPreference(
         "storage.system.storage.name", null, DATA_STORAGE_GROUP, null);
 
+    public static final ObjectPreference<RunLogStorageConfig> DATA_STORAGE_SYSTEM_RUN_LOGS_CONFIG =
+        new ObjectPreference<>(
+            "storage.system.run.logs.config",
+            RunLogStorageConfig.builder().enabled(false).pathPrefix("logs/runs/").build(),
+            new TypeReference<RunLogStorageConfig>() {},
+            DATA_STORAGE_GROUP,
+            isNullOrValidJson(new TypeReference<RunLogStorageConfig>() {}));
+
     public static final StringPreference DATA_STORAGE_RUN_SHARED_STORAGE_NAME = new StringPreference(
             "storage.system.run.shared.storage.name", null, DATA_STORAGE_GROUP, pass);
     public static final StringPreference DATA_STORAGE_RUN_SHARED_FOLDER_PATTERN = new StringPreference(
@@ -372,6 +382,21 @@ public class SystemPreferences {
 
     public static final StringPreference GITHUB_USER_NAME = new StringPreference(
             "github.user.name", "x-token-auth", GIT_GROUP, pass);
+    /**
+     * GitHub App numeric identifier ({@code iss} claim for app JWT).
+     */
+    public static final StringPreference GITHUB_APP_ID = new StringPreference(
+            "github.app.id", null, GIT_GROUP, pass);
+    public static final StringPreference GITHUB_API_ROOT_URL = new StringPreference(
+            "github.api.root.url", "https://api.github.com", GIT_GROUP, pass);
+    /** A list acts as a whitelist: access is allowed if any entry equals the installation id
+     * or the installation account login (organization or username).
+     * If empty access over GitHub App is denied.
+     **/
+    public static final ObjectPreference<List<String>> GITHUB_ALLOWED_INSTALLATIONS = new ObjectPreference<>(
+            "github.allowed.installations", null, new TypeReference<List<String>>() {}, GIT_GROUP,
+            isNullOrValidJson(new TypeReference<List<String>>() {}), true);
+
 
     public static final EnumPreference<AuthType> BITBUCKET_CLOUD_AUTH_TYPE = new EnumPreference<>(
             "bitbucket.cloud.auth.type", AuthType.BASIC, GIT_GROUP, pass);
@@ -631,7 +656,9 @@ public class SystemPreferences {
         "cluster.allowed.instance.types.docker", "m5.*,c5.*,r4.*,t2.*", CLUSTER_GROUP, pass);
 
     public static final IntPreference CLUSTER_INSTANCE_OFFER_UPDATE_RATE = new IntPreference(
-        "instance.offer.update.rate", 3600000, CLUSTER_GROUP, isGreaterThan(10000));
+        "instance.offer.update.rate", 3600000, CLUSTER_GROUP,
+            isGreaterThan(10000).or(isEquals(-1))
+    );
     public static final IntPreference CLUSTER_INSTANCE_OFFER_EXPIRATION_RATE_HOURS = new IntPreference(
         "instance.offer.expiration.rate.hours", 72, CLUSTER_GROUP, isGreaterThan(0));
     public static final BooleanPreference CLUSTER_INSTANCE_OFFER_FETCH_GPU = new BooleanPreference(
@@ -715,6 +742,14 @@ public class SystemPreferences {
             "cluster.kube.core.component.label", "cloud-pipeline/core-component", CLUSTER_GROUP, pass);
     public static final IntPreference CLUSTER_INSTANCE_LOAD_TIMEOUT = new IntPreference(
             "cluster.instance.load.timeout.seconds", 15, CLUSTER_GROUP, isGreaterThan(0));
+    /**
+     * When {@code true}, responses that report Kubernetes node available resources include a per-run
+     * {@link com.epam.pipeline.entity.cluster.NodeResources#getDetails() details} list on each node
+     * (run id, owner label when set, and requested CPU/GPU/memory for that pod's containers).
+     * Default is {@code false} to keep payloads smaller and omit run-level breakdown unless needed.
+     */
+    public static final BooleanPreference CLUSTER_NODE_RESOURCES_SHOW_DETAILS = new BooleanPreference(
+            "cluster.node.resources.show.details", false, CLUSTER_GROUP, pass);
 
     //LAUNCH_GROUP
     public static final StringPreference LAUNCH_CMD_TEMPLATE = new StringPreference("launch.cmd.template",
@@ -762,7 +797,7 @@ public class SystemPreferences {
      );
     public static final IntPreference LAUNCH_JWT_TOKEN_EXPIRATION_USER_LIMIT = new IntPreference(
             "launch.jwt.token.expiration.user.limit", 2592000, LAUNCH_GROUP,
-            isGreaterThan(0)
+            isGreaterThan(0), true
     );
     public static final ObjectPreference<EnvVarsSettings> LAUNCH_ENV_PROPERTIES = new ObjectPreference<>(
         "launch.env.properties", null, new TypeReference<EnvVarsSettings>() {}, LAUNCH_GROUP,
@@ -815,9 +850,9 @@ public class SystemPreferences {
                     new TypeReference<Map<String, ResourcesParameter>>() {},
                     LAUNCH_GROUP, isNullOrValidJson(new TypeReference<Map<String, ResourcesParameter>>() {}));
     public static final ObjectPreference<Map<String, Object>> LAUNCH_RESERVATION_PARAMS =
-            new ObjectPreference<>("launch.reservation.parameters", null,
+            new ObjectPreference<>("launch.reservation.parameters", Collections.emptyMap(),
                     new TypeReference<Map<String, Object>>() {},
-                    LAUNCH_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
+                    LAUNCH_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
     public static final IntPreference LAUNCH_CONTAINER_MEMORY_RESOURCE_REQUEST = new IntPreference(
             "launch.container.memory.resource.request", 1, LAUNCH_GROUP, isGreaterThan(0));
     public static final IntPreference LAUNCH_SERVERLESS_WAIT_COUNT = new IntPreference(
@@ -923,6 +958,12 @@ public class SystemPreferences {
         "launch.pods.release.rate", 3000, LAUNCH_GROUP, isLessThan(LAUNCH_TASK_STATUS_UPDATE_RATE.getDefaultValue()));
     public static final LongPreference LAUNCH_JWT_TOKEN_EXPIRATION_REFRESH_THRESHOLD = new LongPreference(
             "launch.jwt.token.expiration.refresh.threshold", 172800L, LAUNCH_GROUP, isGreaterThan(0L));
+    /**
+     * Maximum number of registered JWT tokens per user (rows in {@code jwt_named_token}).
+     * Non-positive values disable the limit.
+     */
+    public static final IntPreference LAUNCH_JWT_NAMED_TOKENS_LIMIT = new IntPreference(
+            "launch.jwt.named.tokens.limit", 0, LAUNCH_GROUP, pass);
     public static final StringPreference LAUNCH_INSUFFICIENT_CAPACITY_MESSAGE = new StringPreference(
             "launch.insufficient.capacity.message", "Insufficient instance capacity.",
             LAUNCH_GROUP, pass);
@@ -943,6 +984,10 @@ public class SystemPreferences {
     public static final ObjectPreference<Map<String, String>> UI_CLI_INSTALL_TEMPLATE = new ObjectPreference<>(
         "ui.pipe.cli.install.template", null, new TypeReference<Map<String, String>>() {}, UI_GROUP,
         isNullOrValidJson(new TypeReference<Map<String, String>>() {}));
+    public static final ObjectPreference<Map<String, String>> UI_VSCODE_EXTENSION_INSTALL_TEMPLATE =
+            new ObjectPreference<>("ui.vscode.extension.install.template", null,
+                    new TypeReference<Map<String, String>>() {}, UI_GROUP,
+                    isNullOrValidJson(new TypeReference<Map<String, String>>() {}), true);
     public static final ObjectPreference<List<ControlEntry>> UI_CONTROLS_SETTINGS = new ObjectPreference<>(
         "ui.controls.settings", null, new TypeReference<List<ControlEntry>>() {}, UI_GROUP,
         isNullOrValidJson(new TypeReference<List<ControlEntry>>() {}));

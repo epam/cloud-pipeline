@@ -248,7 +248,7 @@ class AddDockerRegistryControl extends React.Component {
                     const {versions = []} = versionsRequest.value || {};
                     const nonWindowsVersions = versions
                       .filter(v => !v.attributes || !/^windows$/i.test(v.attributes.platform))
-                      .map(v => ({id: v.attributes.id, version: v.version}));
+                      .map(v => ({id: v.attributes?.id, version: v.version}));
                     resolve(nonWindowsVersions);
                   } else {
                     resolve([]);

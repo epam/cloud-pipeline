@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,31 @@ import localization from '../../../../utils/localization';
 import {RepositoryTypes} from '../../../special/git-repository-control';
 import EnabledPath from './enabled-path';
 import {getPipelineDefaultPaths} from './default-paths';
-import RepositoryTypeSelector from './repository-type';
+import RepositoryForm from './repository-form/RepositoryForm';
+
+function getLegacyFormFromRef (formRef) {
+  const form = formRef && formRef.current;
+  if (!form) {
+    return null;
+  }
+  return {
+    getFieldValue: (name) => form.getFieldValue(name),
+    setFieldsValue: (values) => form.setFieldsValue(values),
+    validateFields: (fields, config) => form.validateFields(fields, config),
+    getFieldDecorator: (name, options = {}) => (component) => (
+      <Form.Item
+        name={name}
+        initialValue={options.initialValue}
+        rules={options.rules}
+        valuePropName={options.valuePropName}
+        hidden={options.hidden}
+        noStyle
+      >
+        {component}
+      </Form.Item>
+    )
+  };
+}
 
 @roleModel.authenticationInfo
 @localization.localizedComponent
@@ -46,7 +70,8 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
   state = {
     activeTab: 'info',
     deleteDialogVisible: false,
-    editRepositorySettings: false
+    editRepositorySettings: false,
+    githubType: RepositoryTypes.GitHubApp
   };
 
   static propTypes = {
@@ -172,7 +197,31 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
     e.preventDefault();
     this.formRef.current.validateFields()
       .then((values) => {
-        this.props.onSubmit(values);
+        const payload = {...values};
+        if (Object.prototype.hasOwnProperty.call(payload, 'githubRepository')) {
+          payload.repository = payload.githubRepository;
+          delete payload.githubRepository;
+        }
+        if (Object.prototype.hasOwnProperty.call(payload, 'githubBranch')) {
+          payload.branch = payload.githubBranch;
+          delete payload.githubBranch;
+        }
+        if (payload.repositoryType === RepositoryTypes.GitHub) {
+          payload.repositoryType = this.state.githubType;
+        }
+        if (payload.repositoryType === RepositoryTypes.GitHubApp) {
+          delete payload.githubOwner;
+          delete payload.token;
+        } else if (payload.repositoryType === RepositoryTypes.GitHub) {
+          delete payload.githubOwner;
+          delete payload.githubRepository;
+          delete payload.githubBranch;
+        } else {
+          delete payload.githubOwner;
+          delete payload.githubRepository;
+          delete payload.githubBranch;
+        }
+        this.props.onSubmit(payload);
       })
       .catch(() => {});
   };
@@ -189,11 +238,39 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
         src: 'src',
         docs: 'docs'
       };
+      this.setState({githubType: RepositoryTypes.GitHubApp});
       this.formRef.current.setFieldsValue({
         codePath: defaultPaths.src,
-        docsPath: defaultPaths.docs
+        docsPath: defaultPaths.docs,
+        githubOwner: undefined,
+        githubRepository: undefined,
+        githubBranch: undefined,
+        repository: undefined,
+        branch: undefined,
+        token: undefined
       });
-      this.formRef.current.validateFields(['repository', 'token']).catch(() => {});
+      this.formRef.current.validateFields(
+        ['repository', 'githubRepository', 'branch', 'githubBranch', 'token']
+      ).catch(() => {});
+    }
+  };
+
+  onGithubTypeChange = (githubType) => {
+    this.setState({githubType});
+    if (!this.props.pipeline && this.formRef.current) {
+      if (githubType === RepositoryTypes.GitHub) {
+        this.formRef.current.setFieldsValue({
+          githubOwner: undefined,
+          githubRepository: undefined,
+          githubBranch: undefined
+        });
+      } else {
+        this.formRef.current.setFieldsValue({
+          repository: undefined,
+          branch: undefined,
+          token: undefined
+        });
+      }
     }
   };
 
@@ -293,105 +370,20 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
         );
       }
       formItems.push(
-        <Form.Item
-          key="repositoryType"
-          className="edit-pipeline-form-repository-type-container"
-          {...this.formItemLayout}
-          style={{
-            ...this.formItemStyle,
-            display: this.state.editRepositorySettings ? 'inherit' : 'none'
-          }}
-          label="Repository Type"
-          name="repositoryType"
-        >
-          <RepositoryTypeSelector
-            disabled={!!this.props.pipeline || this.props.pending}
-            onRepositoryTypeChanged={this.onRepositoryTypeChanged}
-          />
-        </Form.Item>
-      );
-      formItems.push(
-        <Form.Item
-          key="repository"
-          className="edit-pipeline-form-repository-container"
-          {...this.formItemLayout}
-          style={{
-            ...this.formItemStyle,
-            display: this.state.editRepositorySettings ? 'inherit' : 'none'
-          }}
-          label="Repository"
-          name="repository"
-          rules={[{
-            validator: (rule, value) => {
-              const form = this.formRef.current;
-              let repoType = form ? form.getFieldValue('repositoryType') : undefined;
-              if (!repoType && this.props.pipeline) {
-                repoType = this.props.pipeline.repositoryType;
-              }
-              if (repoType === RepositoryTypes.AzureDevOps) {
-                if (!value) {
-                  return Promise.reject(new Error('Repository is required'));
-                }
-              }
-              return Promise.resolve();
-            }
-          }]}
-        >
-          <Input
-            onPressEnter={this.handleSubmit}
-            disabled={!!this.props.pipeline || this.props.pending}
-          />
-        </Form.Item>
-      );
-      formItems.push(
-        <Form.Item
-          key="branch"
-          className="edit-pipeline-form-branch-container"
-          {...this.formItemLayout}
-          style={{
-            ...this.formItemStyle,
-            display: this.state.editRepositorySettings ? 'inherit' : 'none'
-          }}
-          label="Branch"
-          name="branch"
-        >
-          <Input disabled={this.props.pending || readOnly} />
-        </Form.Item>
-      );
-      formItems.push(
-        <Form.Item
-          key="token"
-          className="edit-pipeline-form-repository-token-container"
-          {...this.formItemLayout}
-          style={{
-            ...this.formItemStyle,
-            display: this.state.editRepositorySettings ? 'inherit' : 'none'
-          }}
-          label="Token"
-          name="token"
-          rules={[{
-            validator: (rule, value) => {
-              const form = this.formRef.current;
-              let repoType = form ? form.getFieldValue('repositoryType') : undefined;
-              if (!repoType && this.props.pipeline) {
-                repoType = this.props.pipeline.repositoryType;
-              }
-              if (repoType === RepositoryTypes.AzureDevOps) {
-                if (!value) {
-                  return Promise.reject(new Error('Token is required'));
-                }
-              }
-              return Promise.resolve();
-            }
-          }]}
-        >
-          <Input
-            onPressEnter={this.handleSubmit}
-            type="password"
-            autoComplete="off"
-            disabled={this.props.pending || readOnly}
-          />
-        </Form.Item>
+        <RepositoryForm
+          key="repository-form"
+          editRepositorySettings={this.state.editRepositorySettings}
+          form={getLegacyFormFromRef(this.formRef)}
+          formItemLayout={this.formItemLayout}
+          formItemStyle={this.formItemStyle}
+          githubType={this.state.githubType}
+          onGithubTypeChange={this.onGithubTypeChange}
+          onRepositoryTypeChanged={this.onRepositoryTypeChanged}
+          onSubmit={this.handleSubmit}
+          pending={this.props.pending}
+          pipeline={this.props.pipeline}
+          readOnly={readOnly}
+        />
       );
       formItems.push(
         <Form.Item
@@ -642,7 +634,11 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
     );
     const onClose = () => {
       this.formRef.current && this.formRef.current.resetFields();
-      this.setState({activeTab: 'info', editRepositorySettings: false});
+      this.setState({
+        activeTab: 'info',
+        editRepositorySettings: false,
+        githubType: RepositoryTypes.GitHubApp
+      });
     };
     return (
       <Modal
@@ -765,6 +761,13 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
   componentDidUpdate (prevProps) {
     if (prevProps.visible !== this.props.visible) {
       this.focusNameInput();
+      if (this.props.visible) {
+        const {pipeline} = this.props;
+        const githubType = pipeline && pipeline.repositoryType === RepositoryTypes.GitHub
+          ? RepositoryTypes.GitHub
+          : RepositoryTypes.GitHubApp;
+        this.setState({githubType});
+      }
     }
   }
 }

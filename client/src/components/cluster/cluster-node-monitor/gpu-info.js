@@ -155,11 +155,11 @@ class GPUInfoTab extends React.Component {
   }
 
   initRanges = (resetToDefaultRange = true) => {
-    const to = this.chartsBounds.max;
-    let from = Math.max(
-      moment.unix(to).local().subtract(1, 'days').unix(),
-      this.chartsBounds.min
-    );
+    const {min, max: to} = this.chartsBounds;
+    let from = moment.unix(to).local().subtract(1, 'days').unix();
+    if (min !== undefined && min !== null && !Number.isNaN(min)) {
+      from = Math.max(from, min);
+    }
     if (!resetToDefaultRange) {
       const currentDiff = this.state.chartsTo - this.state.chartsFrom;
       from = to - currentDiff;

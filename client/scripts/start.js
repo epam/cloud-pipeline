@@ -50,6 +50,19 @@ const createDevServerConfig = require('../config/webpackDevServer.config');
 const useYarn = fs.existsSync(paths.yarnLockFile);
 const isInteractive = process.stdout.isTTY;
 
+function shouldStartDevProxy () {
+  if (
+    process.env.PROXY_DISABLED === '1' ||
+    process.env.PROXY_DISABLED === 'true'
+  ) {
+    return false;
+  }
+  const skip = process.env.SKIP_DEV_PROXY;
+  return skip !== '1' && skip !== 'true';
+}
+
+let devProxyServer = null;
+
 // Warn and crash if required files are missing
 if (!checkRequiredFiles([paths.appHtml, paths.appIndexJs])) {
   process.exit(1);
@@ -80,6 +93,15 @@ if (process.env.HOST) {
 // browserslist defaults.
 const {checkBrowsers} = require('react-dev-utils/browsersHelper');
 checkBrowsers(paths.appPath, isInteractive)
+  .then(() => {
+    if (!shouldStartDevProxy()) {
+      return;
+    }
+    const {startDevProxy} = require('./dev-proxy');
+    return startDevProxy().then((result) => {
+      devProxyServer = result.server;
+    });
+  })
   .then(() => {
     // We attempt to use the default port but if it is busy, we offer the user to
     // run on a different port. `choosePort()` Promise resolves to the next free port.
@@ -125,6 +147,9 @@ checkBrowsers(paths.appPath, isInteractive)
     ['SIGINT', 'SIGTERM'].forEach(function (sig) {
       process.on(sig, function () {
         devServer.stop();
+        if (devProxyServer) {
+          devProxyServer.close();
+        }
         process.exit();
       });
     });

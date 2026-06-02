@@ -34,6 +34,7 @@ import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.cluster.PriceType;
+import com.epam.pipeline.entity.configuration.ConfigurationEntry;
 import com.epam.pipeline.entity.configuration.ExecutionEnvironment;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
@@ -66,6 +67,7 @@ import com.epam.pipeline.entity.pipeline.run.RunChartInfo;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
+import com.epam.pipeline.entity.pipeline.run.parameter.RunAccessType;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.run.PipelineRunPerformanceMetrics;
@@ -127,12 +129,14 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.ToLongFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -164,6 +168,28 @@ public class PipelineRunManager {
 
     public static final String CP_CAP_LIMIT_MOUNTS = "CP_CAP_LIMIT_MOUNTS";
     public static final String NETWORK_LIMIT = "NETWORK_LIMIT";
+    public static final String CP_CAP_REQUESTS_CPU = "CP_CAP_REQUESTS_CPU";
+    public static final String CP_CAP_REQUESTS_GPU = "CP_CAP_REQUESTS_GPU";
+    public static final String CP_CAP_REQUESTS_RAM = "CP_CAP_REQUESTS_RAM";
+    public static final long BYTES_PER_GIB = 1024L * 1024L * 1024L;
+    public static final String GIB_UNIT = "GiB";
+    private static final String RESOLVE_ACTION_MSG =
+            "Please consider selecting a different node type which provides the requested resources.";
+
+
+    private static final Map<String, ToLongFunction<InstanceOffer>> CAPACITY_CHECKS;
+    static {
+        final Map<String, ToLongFunction<InstanceOffer>> checks = new LinkedHashMap<>();
+        checks.put(CP_CAP_REQUESTS_CPU, InstanceOffer::getVCPU);
+        checks.put(CP_CAP_REQUESTS_GPU, InstanceOffer::getGpu);
+        checks.put(CP_CAP_REQUESTS_RAM, o -> {
+            Assert.isTrue(GIB_UNIT.equalsIgnoreCase(o.getMemoryUnit()),
+                    String.format("Can't validate %s for instance %s: memory unit %s is not supported, expected GiB",
+                            CP_CAP_REQUESTS_RAM, o.getInstanceType(), o.getMemoryUnit()));
+            return Math.round(o.getMemory() * BYTES_PER_GIB);
+        });
+        CAPACITY_CHECKS = Collections.unmodifiableMap(checks);
+    }
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
@@ -283,7 +309,7 @@ public class PipelineRunManager {
         checkRunLaunchLimits(runVO);
         final Tool tool = toolManager.loadByNameOrId(runVO.getDockerImage());
         final PipelineConfiguration configuration = configurationManager.getPipelineConfiguration(runVO, tool);
-        runVO.setRunSids(configuration.mergeRunSids(runVO.getRunSids()));
+        runVO.setRunSids(mergeRunSidsWithParent(configuration, runVO.getRunSids(), resolveOriginalOwner(runVO)));
         final boolean clusterRun = configurationManager.initClusterConfiguration(configuration, true);
 
         final PipelineRun run = launchPipeline(configuration, null, null,
@@ -331,7 +357,7 @@ public class PipelineRunManager {
         run.setTimeout(runVO.getTimeout());
         run.setCommitStatus(CommitStatus.NOT_COMMITTED);
         run.setLastChangeCommitTime(DateUtils.now());
-        run.setRunSids(runVO.getRunSids());
+        run.setRunSids(mergeRunSidsWithParent(configuration, runVO.getRunSids(), resolveOriginalOwner(runVO)));
         run.setOwner(parentRun.getOwner());
         final String launchedCommand = pipelineLauncher.launch(
                 run, configuration, endpoints, false, parentRun.getPodId(), null
@@ -360,7 +386,7 @@ public class PipelineRunManager {
         final Pipeline pipeline = pipelineManager.load(pipelineId);
         final PipelineConfiguration configuration = configurationManager
                 .getPipelineConfigurationForPipeline(pipeline, runVO);
-        runVO.setRunSids(configuration.mergeRunSids(runVO.getRunSids()));
+        runVO.setRunSids(mergeRunSidsWithParents(configuration, runVO.getRunSids(), resolveOriginalOwner(runVO)));
         final boolean isClusterRun = configurationManager.initClusterConfiguration(configuration, true);
 
         permissionManager.checkToolRunPermission(configuration.getDockerImage());
@@ -421,7 +447,9 @@ public class PipelineRunManager {
 
         calculateDynamicParameterValues(configuration);
         adjustInstanceDisk(configuration);
-        checkGPUInstance(configuration, region.getId());
+        final Optional<InstanceOffer> instance = instanceOfferManager.findOffer(instanceType, region.getId());
+        checkGPUInstance(configuration, instance);
+        checkCapacityRequirements(configuration, instance);
 
         final List<String> endpoints = configuration.isEraseRunEndpoints()
                 ? Collections.emptyList() : tool.getEndpoints();
@@ -476,6 +504,28 @@ public class PipelineRunManager {
         return run;
     }
 
+    private void checkCapacityRequirements(final PipelineConfiguration configuration,
+                                           final Optional<InstanceOffer> instance) {
+        final Map<String, PipeConfValueVO> params = MapUtils.emptyIfNull(configuration.getParameters());
+        if (params.isEmpty() || CAPACITY_CHECKS.keySet().stream().noneMatch(params::containsKey)) {
+            return;
+        }
+
+        instance.ifPresent(offer -> {
+            final List<String> violations = CAPACITY_CHECKS.entrySet().stream()
+                    .filter(e -> params.containsKey(e.getKey()))
+                    .map(e -> check(params, e.getKey(), e.getValue().applyAsLong(offer), offer.getInstanceType()))
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .collect(Collectors.toList());
+
+            if (!violations.isEmpty()) {
+                violations.add(RESOLVE_ACTION_MSG);
+            }
+            Assert.isTrue(violations.isEmpty(), String.join("; ", violations));
+        });
+    }
+
     private static void calculateDynamicParameterValues(final PipelineConfiguration configuration) {
         final Map<String, PipeConfValueVO> parameters = configuration.getParameters();
         for (final PipeConfValueVO parameter : parameters.values()) {
@@ -489,19 +539,15 @@ public class PipelineRunManager {
         }
     }
 
-    private void checkGPUInstance(final PipelineConfiguration configuration, final Long regionId) {
+    private void checkGPUInstance(final PipelineConfiguration configuration, final Optional<InstanceOffer> instance) {
         final String instanceType = configuration.getInstanceType();
-        if (StringUtils.isNotBlank(instanceType)) {
-            final Optional<InstanceOffer> instance = instanceOfferManager.findOffer(instanceType, regionId);
-            if (instance.isPresent()) {
-                final InstanceOffer offer = instance.get();
-                if (offer.getGpu() > 0) {
-                    configuration.setParameters(CommonUtils.mergeMaps(
-                            Collections.singletonMap(CP_GPU_COUNT,
-                                    new PipeConfValueVO(String.valueOf(offer.getGpu()))),
-                            configuration.getParameters()));
-                    return;
-                }
+        if (StringUtils.isNotBlank(instanceType) && instance.isPresent()) {
+            final InstanceOffer offer = instance.get();
+            if (offer.getGpu() > 0) {
+                configuration.setParameters(CommonUtils.mergeMaps(
+                        Collections.singletonMap(CP_GPU_COUNT, new PipeConfValueVO(String.valueOf(offer.getGpu()))),
+                        configuration.getParameters()));
+                return;
             }
         }
         MapUtils.emptyIfNull(configuration.getParameters()).remove(CP_GPU_COUNT);
@@ -1111,6 +1157,11 @@ public class PipelineRunManager {
         PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(runId);
         Assert.notNull(pipelineRun,
                 messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_NOT_FOUND, runId));
+
+        // Validate that parent entities don't have shared users/roles
+        // If so, update shall be forbidden for this run
+        validateParentEntitiesSharing(pipelineRun);
+
         pipelineRunDao.deleteRunSids(runId);
         pipelineRunDao.createRunSids(runId, runSids);
         ListUtils.emptyIfNull(runSids).forEach(entry -> auditClient.log(String.format(
@@ -2016,5 +2067,160 @@ public class PipelineRunManager {
         }
         final FolderWithMetadata project = folderApiService.getProject(pipeline.getId(), AclClass.PIPELINE);
         return project != null ? project.getId() : null;
+    }
+
+    private Optional<String> check(final Map<String, PipeConfValueVO> params,
+                                   final String paramName,
+                                   final long available,
+                                   final String instanceType) {
+        final Optional<String> raw = Optional.ofNullable(params.get(paramName))
+                .map(PipeConfValueVO::getValue)
+                .filter(StringUtils::isNotBlank);
+        if (!raw.isPresent()) {
+            return Optional.empty();
+        }
+        final long requested;
+        try {
+            requested = Long.parseLong(raw.get().trim());
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException(String.format("%s='%s' is not a valid number", paramName, raw.get()));
+        }
+        if (requested > available) {
+            return Optional.of(String.format(
+                    "%s=%d exceeds capacity of instance '%s' (%d available)",
+                    paramName, requested, instanceType, available));
+        }
+        return Optional.empty();
+    }
+
+    private void validateParentEntitiesSharing(final PipelineRun run) {
+        if (Objects.nonNull(run.getPipelineId())) {
+            validatePipelineSharing(run.getPipelineId(), run.getVersion(), run.getDockerImage(), run.getConfigName());
+            return;
+        }
+        validateToolSharing(run.getDockerImage());
+    }
+
+    private String resolveOriginalOwner(final PipelineStart runVO) {
+        final String originalOwnerParam = preferenceManager.getPreference(
+                SystemPreferences.LAUNCH_ORIGINAL_OWNER_PARAMETER);
+        return Optional.ofNullable(runVO.getParams())
+                .map(params -> params.get(originalOwnerParam))
+                .map(PipeConfValueVO::getValue)
+                .filter(StringUtils::isNotBlank)
+                .orElse(null);
+    }
+
+    private List<RunSid> mergeRunSidsWithParent(final PipelineConfiguration configuration,
+                                                final List<RunSid> externalRunSids,
+                                                final String originalOwner) {
+        if (hasNotSharedUsersOrRoles(configuration)) {
+            return new ArrayList<>(ListUtils.emptyIfNull(externalRunSids));
+        }
+        final List<RunSid> allowedExternalRunSids = validateAndFilterExternalRunSids(externalRunSids, originalOwner);
+        return configuration.mergeRunSids(allowedExternalRunSids);
+    }
+
+    private List<RunSid> validateAndFilterExternalRunSids(final List<RunSid> externalRunSids,
+                                                          final String originalOwner) {
+        if (CollectionUtils.isEmpty(externalRunSids)) {
+            return Collections.emptyList();
+        }
+        final List<RunSid> disallowedRunSids = externalRunSids.stream()
+                .filter(runSid -> !isOriginalOwnerRunSid(runSid, originalOwner))
+                .collect(Collectors.toList());
+        Assert.state(disallowedRunSids.isEmpty(),
+                messageHelper.getMessage(MessageConstants.ERROR_RUN_SIDS_NOT_ALLOWED_FOR_CONFIGURATION));
+        return new ArrayList<>(externalRunSids);
+    }
+
+    private boolean isOriginalOwnerRunSid(final RunSid runSid, final String originalOwner) {
+        return StringUtils.isNotBlank(originalOwner)
+                && Boolean.TRUE.equals(runSid.getIsPrincipal())
+                && StringUtils.equalsIgnoreCase(runSid.getName(), originalOwner);
+    }
+
+    /**
+     * Merges RunSids from pipeline configuration and parent tool configuration.
+     * Logic:
+     * - If tool or pipeline contains shared roles/users, raise an error when runSids other than the original
+     *   owner are provided to run VO (original owner is allowed for run-as launches)
+     * - If no tool or pipeline contains shared roles/users, apply runSids from run VO if present
+     * - If user is present in both configurations with different access types, use SSH
+     *
+     * @param configuration       Current pipeline configuration
+     * @param externalRunSids     RunSids from the launch request
+     * @param originalOwner       User who initiated the launch (for run-as), or null
+     * @return Merged list of RunSids
+     */
+    List<RunSid> mergeRunSidsWithParents(final PipelineConfiguration configuration,
+                                         final List<RunSid> externalRunSids,
+                                         final String originalOwner) {
+        final List<RunSid> pipelineSids = mergeRunSidsWithParent(configuration, externalRunSids, originalOwner);
+
+        final Tool tool = getToolForRun(configuration);
+        final PipelineConfiguration toolConfiguration = configurationManager
+                .getConfigurationForTool(tool, configuration);
+
+        final List<RunSid> toolSids = mergeRunSidsWithParent(toolConfiguration, externalRunSids, originalOwner);
+
+        if (CollectionUtils.isNotEmpty(externalRunSids)
+                && hasNotSharedUsersOrRoles(configuration)
+                && hasNotSharedUsersOrRoles(toolConfiguration)) {
+            return externalRunSids;
+        }
+
+        return new ArrayList<>(Stream.concat(pipelineSids.stream(), toolSids.stream())
+                .collect(Collectors.toMap(
+                    runSid -> Pair.of(runSid.getName(), runSid.getIsPrincipal()),
+                    Function.identity(),
+                    this::mergeRunSid
+                )).values());
+    }
+
+    private boolean hasNotSharedUsersOrRoles(final PipelineConfiguration configuration) {
+        return Objects.isNull(configuration) ||
+                (CollectionUtils.isEmpty(configuration.getSharedWithUsers()) &&
+                        CollectionUtils.isEmpty(configuration.getSharedWithRoles()));
+    }
+
+    private RunSid mergeRunSid(final RunSid existing, final RunSid replacement) {
+        return Objects.equals(RunAccessType.SSH, existing.getAccessType()) ? existing : replacement;
+    }
+
+    private void validatePipelineSharing(final Long pipelineId, final String version, final String dockerImage,
+                                         final String configName) {
+        final PipelineConfiguration pipelineConfig = versionManager
+                .loadParametersFromScript(pipelineId, version, configName);
+        validateEntitySharing(pipelineConfig);
+
+        // For pipeline, also check the tool
+        validateToolSharing(dockerImage);
+    }
+
+    private void validateToolSharing(final String dockerImage) {
+        if (StringUtils.isBlank(dockerImage)) {
+            return;
+        }
+        final Tool tool = toolManager.loadByNameOrId(dockerImage);
+        // tool version setting has single default configuration
+        final ConfigurationEntry toolConfiguration = configurationManager
+                .getConfigurationForToolVersion(tool.getId(), dockerImage, null);
+        if (Objects.isNull(toolConfiguration)) {
+            return;
+        }
+        validateEntitySharing(toolConfiguration.getConfiguration());
+    }
+
+    private void validateEntitySharing(final PipelineConfiguration configuration) {
+        if (Objects.isNull(configuration)) {
+            return;
+        }
+
+        if (CollectionUtils.isNotEmpty(configuration.getSharedWithUsers()) ||
+                CollectionUtils.isNotEmpty(configuration.getSharedWithRoles())) {
+            throw new IllegalStateException(messageHelper.getMessage(
+                    MessageConstants.ERROR_RUN_SIDS_UPDATE_NOT_ALLOWED_FOR_CONFIGURATION));
+        }
     }
 }

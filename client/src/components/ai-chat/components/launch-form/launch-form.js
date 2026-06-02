@@ -377,7 +377,7 @@ export default class LaunchForm extends React.Component {
       allowedInstanceTypesRequest.setParameters({
         isSpot: this.formStore.is_spot,
         regionId: configuration.cloudRegionId,
-        requestAllRegionsForProviders: ['GCP']
+        requestAllRegionsForProviders: ['GCP', 'AWS']
       });
       await allowedInstanceTypesRequest.fetchIfNeededOrWait();
       const platform = this.formStore.pipelineVersion.platform;

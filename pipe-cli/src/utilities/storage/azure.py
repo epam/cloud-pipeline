@@ -89,6 +89,9 @@ class AzureListingManager(AzureManager, AbstractListingManager):
                                                   prefix=prefix if relative_path else None,
                                                   num_results=page_size if not show_all else None,
                                                   delimiter=StorageOperations.PATH_SEPARATOR if not recursive else None)
+        # TODO: When using ADLS Gen2 storage with the recursive flag enabled, the list_blobs function
+        #  treats both files and folders as Blob class objects. As a result, it cannot accurately identify
+        #  whether an item is a file or a folder, and all items are classified as files.
         absolute_items = [self._to_storage_item(blob) for blob in blobs_generator]
         return absolute_items if recursive else [self._to_local_item(item, prefix) for item in absolute_items]
 
@@ -151,11 +154,13 @@ class AzureListingManager(AzureManager, AbstractListingManager):
 
 class AzureDeleteManager(AzureManager, AbstractDeleteManager):
 
-    def __init__(self, blob_service, events, bucket):
+    def __init__(self, blob_service, events, bucket, is_file, is_hns_enabled=False):
         super(AzureDeleteManager, self).__init__(blob_service, events)
         self.bucket = bucket
         self.delimiter = StorageOperations.PATH_SEPARATOR
         self.listing_manager = AzureListingManager(self.service, self.bucket)
+        self.is_file = is_file
+        self.is_hns_enabled = is_hns_enabled
 
     def delete_items(self, relative_path, recursive=False, exclude=[], include=[], version=None, hard_delete=False,
                      page_size=None):
@@ -166,6 +171,8 @@ class AzureDeleteManager(AzureManager, AbstractDeleteManager):
         if prefix.endswith(self.delimiter):
             prefix = prefix[:-1]
             check_file = False
+        elif self.is_hns_enabled and not self.is_file:
+            check_file = False
         if not recursive:
             deleted = self.__delete_blob(prefix, exclude, include)
             if deleted:
@@ -174,11 +181,19 @@ class AzureDeleteManager(AzureManager, AbstractDeleteManager):
             blob_names_for_deletion = []
             for item in self.listing_manager.list_items(prefix, recursive=True, show_all=True):
                 if item.name == prefix and check_file:
+                    # Typically, this branch is used only for files.
                     blob_names_for_deletion = [item.name]
                     break
                 if self.__file_under_folder(item.name, prefix):
                     blob_names_for_deletion.append(item.name)
+                elif self.is_hns_enabled and item.name == prefix:
+                    # root folder itself
+                    blob_names_for_deletion.append(item.name)
             deleted_blob_names = []
+            # For ADLS Gen2 storage, folders must be deleted as well as files. Non-empty folders cannot be deleted,
+            # so all files within a folder should be deleted before deleting the folder itself.
+            if self.is_hns_enabled:
+                blob_names_for_deletion.sort(key=len, reverse=True)
             for blob_name in blob_names_for_deletion:
                 deleted = self.__delete_blob(blob_name, exclude, include, prefix=prefix)
                 if deleted:
@@ -234,7 +249,8 @@ class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
         return source_path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
+                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False,
+                 source_last_modified=None):
         full_path = path
         destination_path = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -298,7 +314,8 @@ class AzureDownloadManager(AzureManager, AbstractTransferManager):
         return source_path or source_wrapper.path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=None, io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
+                 size=None, tags=None, io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False,
+                 source_last_modified=None):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -330,7 +347,8 @@ class AzureUploadManager(AzureManager, AbstractTransferManager):
             return source_wrapper.path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
+                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False,
+                 source_last_modified=None):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 

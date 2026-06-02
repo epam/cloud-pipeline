@@ -192,6 +192,10 @@ public final class MessageConstants {
     public static final String ERROR_RUN_AS_TOOLS_NOT_ALLOWED = "error.run.as.tools.not.allowed";
     public static final String ERROR_RUN_AS_TOOL_NOT_ALLOWED = "error.run.as.tool.not.allowed";
     public static final String ERROR_RUN_ALLOWED_SID_NAME_NOT_FOUND = "error.run.allowed.sid.name.not.found";
+    public static final String ERROR_RUN_SIDS_NOT_ALLOWED_FOR_CONFIGURATION =
+            "error.run.sids.not.allowed.for.configuration";
+    public static final String ERROR_RUN_SIDS_UPDATE_NOT_ALLOWED_FOR_CONFIGURATION =
+            "error.run.sids.update.not.allowed.for.configuration";
     public static final String ERROR_IMAGE_NOT_FOUND_FOR_VERSIONED_STORAGE =
             "error.image.not.found.for.versioned.storage";
     public static final String ERROR_ARCHIVE_RUN_METADATA_NOT_FOUND = "error.archive.run.metadata.not.found";
@@ -583,6 +587,12 @@ public final class MessageConstants {
     public static final String ERROR_ATTACHMENT_SYSTEM_DATA_STORAGE_NOT_CONFIGURED =
         "error.attachment.system.data.storage.not.configured";
 
+    // Run Logs Storage
+    public static final String WARN_RUN_LOG_STORAGE_NOT_CONFIGURED = "warn.run.log.storage.not.configured";
+    public static final String ERROR_RUN_LOG_MIGRATION_FAILED = "error.run.log.migration.failed";
+    public static final String INFO_RUN_LOG_MIGRATED = "info.run.log.migrated";
+    public static final String WARN_RUN_LOG_MIGRATED = "warn.run.log.already.migrated";
+
     //Preferences
     public static final String ERROR_PREFERENCE_NAME_NOT_SPECIFIED = "error.preference.name.not.specified";
     public static final String ERROR_PREFERENCE_TYPE_NOT_SPECIFIED = "error.preference.type.not.specified";
@@ -913,6 +923,15 @@ public final class MessageConstants {
             "error.aws.omics.store.incorrect.file.path";
     public static final String AWS_OMICS_FILE_NOT_FOUND = "error.aws.omics.file.not.found";
 
+    //Archive runs
+    public static final String DEBUG_ARCHIVE_RUN_COMPLETED = "debug.archive.run.completed";
+    public static final String DEBUG_ARCHIVE_RUN_NO_IDS = "debug.archive.run.no.ids";
+    public static final String DEBUG_ARCHIVE_RUN_LOADING_MASTER_BY_IDS = "debug.archive.run.loading.master.by.ids";
+    public static final String DEBUG_ARCHIVE_RUN_LOADED_MASTER = "debug.archive.run.loaded.master";
+    public static final String DEBUG_ARCHIVE_RUN_LOADING_CHILDREN = "debug.archive.run.loading.children";
+    public static final String DEBUG_ARCHIVE_RUN_LOADED_CHILDREN = "debug.archive.run.loaded.children";
+    public static final String DEBUG_ARCHIVE_RUN_LOADING_STATUSES = "debug.archive.run.loading.statuses";
+    public static final String DEBUG_ARCHIVE_RUN_LOADED_STATUSES = "debug.archive.run.loaded.statuses";
 
     private MessageConstants() {
         // no-op

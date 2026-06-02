@@ -21,6 +21,11 @@ import sys
 import time
 import urllib3
 
+try:
+    from urllib.parse import quote
+except ImportError:
+    from urllib import quote
+
 from .region import CloudRegion
 from .datastorage import DataStorage, FileShareMount, DataStorageWithShareMount
 from .token import StaticToken
@@ -275,6 +280,7 @@ class PipelineAPI:
     DATA_STORAGE_MOUNT_LOAD = '/filesharemount/{id}'
     RUN_ENGINE_EVENTS_URL = '/run/{id}/engine/tasks'
     RUN_RESULT_URL = '/run/{id}/result'
+    STORAGE_PATH_TYPE = 'datastorage/{id}/type'
 
     # Pipeline API default header
 
@@ -1142,16 +1148,38 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError("Failed to load current user. Error message: {}".format(str(e.message)))
 
-    def generate_user_token(self, user_name, duration=None):
+    def generate_user_token(self, user_name=None, duration=None):
         try:
+            url = str(self.api_url) + '/user/token'
+            params = []
+            if user_name:
+                params.append('name=' + user_name)
             if duration:
-                expiration_query = '&expiration=' + str(duration)
-            url = str(self.api_url) \
-                  + '/user/token?name=' + user_name \
-                  + (expiration_query if duration else '')
+                params.append('expiration=' + str(duration))
+            if params:
+                url += '?' + '&'.join(params)
             return self.execute_request(url, method='get')
         except Exception as e:
             raise RuntimeError("Failed to load user token. Error message: {}".format(str(e.message)))
+
+    def list_named_tokens(self, user_id=None):
+        try:
+            url = str(self.api_url) + '/user/token/named/list'
+            if user_id is not None:
+                url += '?userId=' + str(int(user_id))
+            result = self.execute_request(url, method='get')
+            return result if result is not None else []
+        except Exception as e:
+            raise RuntimeError("Failed to list named tokens. Error message: {}".format(str(e.message)))
+
+    def revoke_named_token_for_current_user(self, jti):
+        try:
+            encoded_jti = quote(str(jti), safe='')
+            url = str(self.api_url) + '/user/token/revoke?jti=' + encoded_jti
+            return self.execute_request(url, method='delete')
+        except Exception as e:
+            raise RuntimeError(
+                "Failed to revoke named token for current user. Error message: {}".format(str(e.message)))
 
     def generate_user_token_efficiently(self, user_name=None, duration=None):
         args = {}
@@ -1624,3 +1652,12 @@ class PipelineAPI:
             )
         except Exception as e:
             raise RuntimeError("Failed to load run results for run ID '{}', error: {}".format(str(run_id), str(e)))
+
+
+    def get_storage_item_type(self, storage_id, relative_path):
+        try:
+            endpoint = self.STORAGE_PATH_TYPE.format(id=str(storage_id)) + "?path={}".format(relative_path)
+            return self._request(endpoint=endpoint, http_method='get')
+        except Exception as e:
+            raise RuntimeError("Failed to load item type for storage ID '{}', error: {}".format(str(storage_id),
+                                                                                                str(e)))

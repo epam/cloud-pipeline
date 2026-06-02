@@ -33,7 +33,9 @@ import {
   ISSUES_PANEL_KEY
 } from '../../special/splitPanel';
 import Breadcrumbs from '../../special/Breadcrumbs';
-import GitRepositoryControl from '../../special/git-repository-control';
+import GitRepositoryControl, {
+  normalizeRepositoryType
+} from '../../special/git-repository-control';
 import {Alert,
   Button,
   Col,
@@ -100,6 +102,7 @@ const LATEST_VERSION_PLACEHOLDER = {
 @observer
 class Pipeline extends localization.LocalizedReactComponent {
   _versions = null;
+  _lastVersionsPending = undefined;
 
   static propTypes = {
     id: PropTypes.oneOfType([
@@ -113,13 +116,15 @@ class Pipeline extends localization.LocalizedReactComponent {
     selectedVersion: PropTypes.string,
     selectedConfiguration: PropTypes.string,
     configurationSelectionMode: PropTypes.bool,
-    allowSelectLatestVersion: PropTypes.bool
+    allowSelectLatestVersion: PropTypes.bool,
+    lazyLoadingConfigurations: PropTypes.bool
   };
 
   state = {
     editPipeline: false,
     releaseCandidate: null,
-    configurations: undefined,
+    configurations: {},
+    configurationsPending: [],
     showIssuesPanel: false,
     operationInProgress: false,
     clonePipelineVisible: false
@@ -147,7 +152,7 @@ class Pipeline extends localization.LocalizedReactComponent {
     const {pipeline} = this.props;
     if (pipeline && pipeline.loaded) {
       const {repositoryType} = pipeline.value || {};
-      return repositoryType;
+      return normalizeRepositoryType(repositoryType);
     }
     return undefined;
   }
@@ -362,6 +367,9 @@ class Pipeline extends localization.LocalizedReactComponent {
   renderTreeItemActions = (item) => {
     if (this.props.listingMode || this.props.readOnly) {
       if (this.props.configurationSelectionMode) {
+        if (this.props.lazyLoadingConfigurations && this.state.configurationsPending.includes(item.id)) {
+          return <Icon type="loading" />;
+        }
         if (!this.state.configurations || !this.state.configurations[item.id]) {
           return undefined;
         } else {
@@ -945,6 +953,31 @@ class Pipeline extends localization.LocalizedReactComponent {
     );
   }
 
+  loadConfigurationsForVersions = async (versions = []) => {
+    const configurationsList = await Promise.all(
+      versions.map(async (version) => {
+        const request = new PipelineConfigurations(this.props.pipelineId, version.name);
+        await request.fetch();
+        const list = request.loaded ? (request.value || []).map(c => c) : [];
+        let [selected] = list.filter(c => c.default).map(c => c.name);
+        if (!selected) {
+          selected = list[0].name;
+        }
+        if (version.name === this.props.selectedVersion && this.props.selectedConfiguration) {
+          selected = this.props.selectedConfiguration;
+        }
+        return {
+          commitId: version.commitId,
+          configuration: {list, selected}
+        };
+      })
+    );
+    return configurationsList.reduce((acc, {commitId, configuration}) => {
+      acc[commitId] = configuration;
+      return acc;
+    }, {});
+  };
+
   loadConfigurations = async () => {
     let versions = this.props.versions.value.map(v => v);
     if (this.props.allowSelectLatestVersion) {
@@ -953,22 +986,36 @@ class Pipeline extends localization.LocalizedReactComponent {
         ...versions
       ];
     }
-    const configurations = {};
-    for (let i = 0; i < versions.length; i++) {
-      const version = versions[i];
-      const request = new PipelineConfigurations(this.props.pipelineId, version.name);
-      await request.fetch();
-      const list = request.loaded ? (request.value || []).map(c => c) : [];
-      let [selected] = list.filter(c => c.default).map(c => c.name);
-      if (!selected && list.length === 1) {
-        selected = list[0].name;
-      }
-      if (version.name === this.props.selectedVersion && this.props.selectedConfiguration) {
-        selected = this.props.selectedConfiguration;
-      }
-      configurations[version.commitId] = {list, selected};
+    const cached = this.state.configurations || {};
+    const pending = new Set(this.state.configurationsPending || []);
+    let versionsToLoad = versions.filter(v => !pending.has(v.commitId));
+    if (this.props.lazyLoadingConfigurations) {
+      const matchingByName = versions.filter(v => v.name === this.props.selectedVersion);
+      versionsToLoad = matchingByName.filter(
+        v => !cached[v.commitId] && !pending.has(v.commitId)
+      );
+    } else {
+      versionsToLoad = versionsToLoad.filter(v => !cached[v.commitId]);
     }
-    this.setState({configurations});
+    console.log(versionsToLoad, versions);
+    if (!versionsToLoad.length) {
+      return;
+    }
+    const pendingIds = versionsToLoad.map(v => v.commitId);
+    this.setState(({configurationsPending = []}) => ({
+      configurationsPending: Array.from(new Set([...configurationsPending, ...pendingIds]))
+    }));
+    try {
+      const configurations = await this.loadConfigurationsForVersions(versionsToLoad);
+      console.log('->', configurations, this.state);
+      this.setState(({configurations: previousConfigurations = {}}) => ({
+        configurations: {...previousConfigurations, ...configurations}
+      }));
+    } finally {
+      this.setState(({configurationsPending = []}) => ({
+        configurationsPending: configurationsPending.filter(id => !pendingIds.includes(id))
+      }));
+    }
   };
 
   redirectToVersionedStorage = () => {
@@ -983,17 +1030,27 @@ class Pipeline extends localization.LocalizedReactComponent {
   componentDidUpdate (prevProps) {
     if (prevProps.pipelineId !== this.props.pipelineId) {
       // eslint-disable-next-line
-      this.setState({metadata: undefined, configurations: undefined, showIssuesPanel: false});
+      this.setState({
+        metadata: undefined,
+        configurations: {},
+        configurationsPending: [],
+        showIssuesPanel: false
+      });
     }
     if (
       !this.props.versions.pending &&
       !this.props.versions.error &&
       this.props.configurationSelectionMode
     ) {
-      if (!this.state.configurations) {
+      const pipelineChanged = prevProps.pipelineId !== this.props.pipelineId;
+      const selectedVersionChanged = prevProps.selectedVersion !== this.props.selectedVersion;
+      const versionsReady = this._lastVersionsPending === true &&
+        this.props.versions.pending === false;
+      if (pipelineChanged || selectedVersionChanged || versionsReady) {
         this.loadConfigurations();
       }
     }
+    this._lastVersionsPending = this.props.versions.pending;
     this.redirectToVersionedStorage();
   }
 
@@ -1003,10 +1060,9 @@ class Pipeline extends localization.LocalizedReactComponent {
       !this.props.versions.error &&
       this.props.configurationSelectionMode
     ) {
-      if (!this.state.configurations) {
-        this.loadConfigurations();
-      }
+      this.loadConfigurations();
     }
+    this._lastVersionsPending = this.props.versions.pending;
     this.redirectToVersionedStorage();
   }
 }

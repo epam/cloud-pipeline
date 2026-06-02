@@ -495,8 +495,8 @@ public class PipelineConfigurationManager {
         }
     }
 
-    private ConfigurationEntry getConfigurationForToolVersion(final Long toolId, final String dockerImage,
-                                                              final String configurationName) {
+    public ConfigurationEntry getConfigurationForToolVersion(final Long toolId, final String dockerImage,
+                                                             final String configurationName) {
         String tag = toolManager.getTagFromImageName(dockerImage);
         List<ConfigurationEntry> configurationEntries =
                 toolVersionManager.loadToolVersionSettings(toolId, tag)

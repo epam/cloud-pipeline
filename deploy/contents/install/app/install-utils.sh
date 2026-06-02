@@ -113,8 +113,8 @@ function run_preflight {
         print_err "Installation shall be run as a root user"
         return 1
     fi
-    if ! grep -q centos /etc/os-release; then
-        print_err "Unsupported Linux distribution. Centos 7 and above shall be used"
+    if ! grep -q centos /etc/os-release && ! grep -q amzn /etc/os-release; then
+        print_err "Unsupported Linux distribution. Centos 7 and above or Amazon Linux 2/2023 and above shall be used"
         return 1
     fi
     fix_http_proxies
@@ -631,6 +631,44 @@ function import_users_from_point_in_time_configuration {
       print_info "Users from point-in-time configuration: ${point_in_time_configuration_users_file} will be imported."
       call_api "/users/import?createUser=true&createGroup=true" "$CP_API_JWT_ADMIN" "$point_in_time_configuration_users_file" "users"
   fi
+}
+
+function init_service_versions {
+    # Initialize per-service image version variables.
+    # Each variable falls back to CP_VERSION if not explicitly set,
+    # preserving the default behaviour while allowing individual services
+    # to be pinned to a different version via -env or the install-config file.
+    # leader-elector shares CP_API_SRV_VERSION because it is always
+    # deployed together with api-srv and released as the same image build.
+    export CP_LEADER_ELECTOR_VERSION="${CP_LEADER_ELECTOR_VERSION:-$CP_VERSION}"
+    export CP_API_SRV_VERSION="${CP_API_SRV_VERSION:-$CP_VERSION}"
+    export CP_BILLING_SRV_VERSION="${CP_BILLING_SRV_VERSION:-$CP_VERSION}"
+    export CP_BKP_WORKER_VERSION="${CP_BKP_WORKER_VERSION:-$CP_VERSION}"
+    export CP_CLAIR_DOCKER_VERSION="${CP_CLAIR_DOCKER_VERSION:-$CP_VERSION}"
+    export CP_DAV_VERSION="${CP_DAV_VERSION:-$CP_VERSION}"
+    export CP_DEPLOYMENT_AUTOSCALER_VERSION="${CP_DEPLOYMENT_AUTOSCALER_VERSION:-$CP_VERSION}"
+    export CP_DOCKER_COMP_VERSION="${CP_DOCKER_COMP_VERSION:-$CP_VERSION}"
+    export CP_DOCKER_REGISTRY_VERSION="${CP_DOCKER_REGISTRY_VERSION:-$CP_VERSION}"
+    export CP_EDGE_VERSION="${CP_EDGE_VERSION:-$CP_VERSION}"
+    export CP_GIT_VERSION="${CP_GIT_VERSION:-$CP_VERSION}"
+    export CP_GIT_SYNC_VERSION="${CP_GIT_SYNC_VERSION:-$CP_VERSION}"
+    export CP_GITLAB_READER_VERSION="${CP_GITLAB_READER_VERSION:-$CP_VERSION}"
+    export CP_HEAPSTER_VERSION="${CP_HEAPSTER_VERSION:-$CP_VERSION}"
+    export CP_IDP_VERSION="${CP_IDP_VERSION:-$CP_VERSION}"
+    export CP_MLFLOW_VERSION="${CP_MLFLOW_VERSION:-$CP_VERSION}"
+    export CP_MONITORING_SRV_VERSION="${CP_MONITORING_SRV_VERSION:-$CP_VERSION}"
+    export CP_NODE_LOGGER_VERSION="${CP_NODE_LOGGER_VERSION:-$CP_VERSION}"
+    export CP_NODE_REPORTER_VERSION="${CP_NODE_REPORTER_VERSION:-$CP_VERSION}"
+    export CP_NOTIFIER_VERSION="${CP_NOTIFIER_VERSION:-$CP_VERSION}"
+    export CP_RUN_CLEANUP_JOB_VERSION="${CP_RUN_CLEANUP_JOB_VERSION:-$CP_VERSION}"
+    export CP_RUN_POLICY_MANAGER_VERSION="${CP_RUN_POLICY_MANAGER_VERSION:-$CP_VERSION}"
+    export CP_SEARCH_SRV_VERSION="${CP_SEARCH_SRV_VERSION:-$CP_VERSION}"
+    export CP_SEARCH_ELK_VERSION="${CP_SEARCH_ELK_VERSION:-$CP_VERSION}"
+    export CP_SEARCH_ELK_CURATOR_VERSION="${CP_SEARCH_ELK_CURATOR_VERSION:-$CP_VERSION}"
+    export CP_SHARE_SRV_VERSION="${CP_SHARE_SRV_VERSION:-$CP_VERSION}"
+    export CP_STATPING_MONITOR_VERSION="${CP_STATPING_MONITOR_VERSION:-$CP_VERSION}"
+    export CP_TINYPROXY_VERSION="${CP_TINYPROXY_VERSION:-$CP_VERSION}"
+    export CP_VM_MONITOR_VERSION="${CP_VM_MONITOR_VERSION:-$CP_VERSION}"
 }
 
 function parse_options {
@@ -1561,6 +1599,49 @@ function delete_deployment_and_service {
     if kubectl get svc $NAME &> /dev/null; then
         kubectl delete svc $NAME
     fi
+
+    if [ "$CP_FORCE_DATA_ERASE" ]; then
+        local secrets_template=${NAME//[^a-zA-Z_0-9]/-}
+        for kube_secret in $(kubectl get secrets  2>/dev/null| grep "$secrets_template" | cut -f1 -d' '); do
+            kubectl delete secrets "$kube_secret"
+        done
+        if [ "$DATA_DIRS" ]; then
+            rm -rf $DATA_DIRS
+            print_info "Directory(ies) removed: $DATA_DIRS"
+        fi
+    fi
+}
+
+function delete_cron_job_pods {
+    local CRON_JOB_NAME=$1
+
+    pods=$(get_cron_job_pods $CRON_JOB_NAME)
+    for p in $pods; do
+        kubectl delete po $p --grace-period=0 --force
+    done
+}
+
+function get_cron_job_pods {
+    local CRON_JOB_NAME=$1
+    # CronJob pods are named {cronjob-name}-{schedule-timestamp}-{pod-hash}
+    _pods=$(kubectl get po 2>/dev/null | grep "^${CRON_JOB_NAME}-" | cut -f1 -d' ')
+    echo $_pods
+}
+
+function delete_cron_job {
+    local NAME=$1
+    local DATA_DIRS="$2"
+
+    if kubectl get cronjob $NAME &> /dev/null; then
+        kubectl delete cronjob $NAME --grace-period=0 --force
+        delete_cron_job_pods "$NAME"
+    fi
+
+    if kubectl get po $NAME &> /dev/null; then
+        kubectl delete po $NAME --grace-period=0 --force
+    fi
+
+    wait_for_deletion $NAME
 
     if [ "$CP_FORCE_DATA_ERASE" ]; then
         local secrets_template=${NAME//[^a-zA-Z_0-9]/-}

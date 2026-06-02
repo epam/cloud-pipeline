@@ -276,6 +276,13 @@ public class CloudFacadeImpl implements CloudFacade {
     }
 
     @Override
+    public void attachDiskToNode(final Long regionId, final String nodeName, final DiskAttachRequest request,
+                                 final Map<String, String> tags) {
+        final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
+        getInstanceService(region).attachDiskToInstance(region, nodeName, request, tags);
+    }
+
+    @Override
     public List<InstanceDisk> loadDisks(final Long regionId, final Long runId) {
         final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
         return getInstanceService(region).loadDisks(region, runId);

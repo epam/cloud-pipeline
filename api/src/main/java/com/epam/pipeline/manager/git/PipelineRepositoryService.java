@@ -23,8 +23,10 @@ import com.epam.pipeline.controller.vo.PipelineSourceItemVO;
 import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
 import com.epam.pipeline.controller.vo.PipelineVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
+import com.epam.pipeline.dto.git.GitRepositoryDTO;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCredentials;
+import com.epam.pipeline.entity.git.GitNamespace;
 import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
@@ -274,7 +276,8 @@ public class PipelineRepositoryService {
                                        final String lastCommitId,
                                        final String commitMessage) throws GitClientException {
         if (pipeline.getRepositoryType() == RepositoryType.BITBUCKET_CLOUD ||
-                pipeline.getRepositoryType() == RepositoryType.GITHUB) {
+                pipeline.getRepositoryType() == RepositoryType.GITHUB ||
+                pipeline.getRepositoryType() == RepositoryType.GITHUB_APP) {
             throw new UnsupportedOperationException(String.format(NOT_SUPPORTED_PATTERN, "Folder creation",
                     pipeline.getRepositoryType()));
         }
@@ -309,7 +312,8 @@ public class PipelineRepositoryService {
                                        final String lastCommitId,
                                        final String commitMessage) throws GitClientException {
         if (pipeline.getRepositoryType() == RepositoryType.BITBUCKET_CLOUD ||
-                pipeline.getRepositoryType() == RepositoryType.GITHUB) {
+                pipeline.getRepositoryType() == RepositoryType.GITHUB ||
+                pipeline.getRepositoryType() == RepositoryType.GITHUB_APP) {
             throw new UnsupportedOperationException(String.format(NOT_SUPPORTED_PATTERN, "Folder renaming",
                     pipeline.getRepositoryType()));
         }
@@ -552,8 +556,17 @@ public class PipelineRepositoryService {
     private static String getCommitName(final Revision commit, final RepositoryType repositoryType) {
         final String commitId = RepositoryType.BITBUCKET_CLOUD.equals(repositoryType) ?
                 commit.getCommitId().substring(0, 6) :
-                (RepositoryType.GITHUB.equals(repositoryType) ? commit.getCommitId().substring(0, 7) :
+                (RepositoryType.GITHUB.equals(repositoryType) || RepositoryType.GITHUB_APP.equals(repositoryType)
+                        ? commit.getCommitId().substring(0, 7) :
                         commit.getName());
         return GitUtils.DRAFT_PREFIX + commitId;
+    }
+
+    public List<GitNamespace> getAllowedNamespaces(final RepositoryType type) {
+        return providerService.getAllowedNamespaces(type);
+    }
+
+    public List<GitRepositoryDTO> getNamespaceRepositories(final String namespaceId, final RepositoryType type) {
+        return providerService.getNamespaceRepositories(namespaceId, type);
     }
 }

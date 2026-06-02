@@ -115,7 +115,6 @@ import RunCapabilities, {
   getEnabledCapabilities,
   getUserCapabilities,
   hasPlatformSpecificCapabilities,
-  RUN_CAPABILITIES,
   RUN_CAPABILITIES_MODE
 } from './utilities/run-capabilities';
 import {
@@ -130,7 +129,8 @@ import {
   CP_CAP_AUTOSCALE_WORKERS,
   CP_CAP_AUTOSCALE_HYBRID,
   CP_CAP_AUTOSCALE_PRICE_TYPE,
-  CP_CAP_RESCHEDULE_RUN
+  CP_CAP_RESCHEDULE_RUN,
+  RUN_CAPABILITIES,
 } from './utilities/parameters';
 import OOMCheck from './utilities/oom-check';
 import AllowedInstancesCountWarning from
@@ -401,7 +401,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     selectedParameter: undefined,
     highlightedParameterSection: undefined,
     reservationParameters: undefined,
-    showOptionalParameters: true
+    showOptionalParameters: false
   };
 
   formItemLayout = {
@@ -640,6 +640,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   renderAdditionalRunCapabilities = () => {
     if (hasPlatformSpecificCapabilities(this.toolPlatform, this.props.preferences)) {
+      const instanceTypeValue = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
       return (
         <FormItem
           className={getFormItemClassName(styles.formItem, 'runCapabilities')}
@@ -656,6 +657,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             provider={this.currentCloudRegionProvider}
             region={this.currentCloudRegion}
             mode={RUN_CAPABILITIES_MODE.launch}
+            instanceType={instanceTypeValue}
           />
         </FormItem>
       );
@@ -939,6 +941,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       return pipelines;
     }
     return tools;
+  }
+
+  get showOptionalParameters () {
+    const {showOptionalParameters} = this.state;
+    if (this.showOptionalParametersFilter) {
+      return showOptionalParameters;
+    }
+    return true;
   }
 
   get currentDetachedConfiguration () {
@@ -2812,7 +2822,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         pipeline={pipelineSelected}
         description={description ? (<Markdown md={description} />) : undefined}
         parametersMetadata={this.state.parametersMetadata}
-        showOptionalParameters={this.state.showOptionalParameters}
+        showOptionalParameters={this.showOptionalParameters}
       />,
       <div
         key={`add-${system ? 'system' : 'default'}-parameter`}
@@ -4683,6 +4693,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               };
             }));
           await this.registerParametersPayloads(paramsPayloads);
+          if (
+            this.showOptionalParametersFilter &&
+            !this.state.showOptionalParameters
+          ) {
+            this.setState({showOptionalParameters: true});
+          }
         } catch (error) {
           message.error(
             <div>Error applying parameters: {error.message}</div>,
@@ -5665,6 +5681,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   onParametersChange = (newParameters) => {
     const current = this.getCurrentParametersPayload();
+    const prevCount = (current.parameters || []).length;
+    const parameterAdded = newParameters.length > prevCount;
+    const shouldShowOptional = parameterAdded &&
+      this.showOptionalParametersFilter &&
+      !this.state.showOptionalParameters;
     const payload = {
       ...current,
       parameters: newParameters
@@ -5678,7 +5699,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       updated.push(payload);
     }
     this.setState({
-      parametersPayloads: updated
+      parametersPayloads: updated,
+      ...(shouldShowOptional ? {showOptionalParameters: true} : {})
     }, () => {
       this.onValidateParameters();
       this.formFieldsChanged();

@@ -100,7 +100,8 @@ ext["elasticsearch.version"] = project.ext.versionElasticsearch
 
 def apiDeps = [":client:buildUI", ":core:build", ":buildPipe", ":pipe-cli:build", ":pipe-cli:buildLinux",
 ":pipe-cli:buildWin", ":fs-browser:build", ":workflows:buildGpuStat", ":cloud-pipeline-webdav-client:buildWin",
-":cloud-pipeline-webdav-client:buildLinux", ":cloud-pipeline-webdav-client:buildCli"]
+":cloud-pipeline-webdav-client:buildLinux", ":cloud-pipeline-webdav-client:buildCli",
+":vscode-cloud-pipeline:buildVSCodeExtension"]
 
 build.mustRunAfter apiDeps
 bootRepackage.mustRunAfter apiDeps
@@ -121,6 +122,7 @@ dependencies {
     //security
     compile("org.springframework.boot:spring-boot-starter-security")
     compile "com.auth0:java-jwt:3.1.0"
+    compile "org.bouncycastle:bcpkix-jdk18on:1.78.1"
     compile "org.springframework.security.extensions:spring-security-saml2-core:1.0.2.RELEASE"
     compile group: "org.springframework.security", name: "spring-security-acl", version: "4.2.2.RELEASE"
     compile group: "net.sf.ehcache", name: "ehcache", version: "2.10.4"

@@ -146,7 +146,9 @@ class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
     def _generate_s3_client(self, pipe):
         session = self._generate_aws_session(pipe, self.bucket_object)
         custom_endpoint = self.bucket_object.endpoint
-        return session.client('s3', config=Config(), region_name=self.bucket_object.region_name,
+        # Allow enough connections for parallel disk-buffer downloads (default 10 may limit throughput)
+        config = Config(max_pool_connections=50)
+        return session.client('s3', config=config, region_name=self.bucket_object.region_name,
                               endpoint_url=custom_endpoint, verify=False if custom_endpoint else None)
 
     def _generate_aws_session(self, pipe, bucket_object):

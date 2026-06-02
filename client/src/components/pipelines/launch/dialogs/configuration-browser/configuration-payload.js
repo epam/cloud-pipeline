@@ -910,7 +910,8 @@ class ConfigurationPayload extends React.Component {
       return null;
     }
     const {
-      docker_image: dockerImage
+      docker_image: dockerImage,
+      instance_size: instanceType
     } = payload;
     return (
       <div
@@ -926,6 +927,7 @@ class ConfigurationPayload extends React.Component {
           tool={tool}
           provider={this.currentProvider}
           region={this.currentCloudRegion}
+          instanceType={instanceType}
         />
       </div>
     );

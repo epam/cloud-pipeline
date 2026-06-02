@@ -643,12 +643,13 @@ class FSNotifications extends React.Component {
       info = {},
       showOnlySummary
     } = this.props;
-    const readOnly = showOnlySummary ||
-      readOnlyRaw ||
-      !authenticatedUserInfo ||
-      !authenticatedUserInfo.loaded ||
-      !authenticatedUserInfo.value ||
-      !authenticatedUserInfo.value.admin;
+    const isAdmin = authenticatedUserInfo &&
+      authenticatedUserInfo.loaded &&
+      authenticatedUserInfo.value &&
+      authenticatedUserInfo.value.admin;
+    const isStorageAdmin = roleModel.isManager.storageAdmin(this);
+    const editAllowed = isAdmin || isStorageAdmin;
+    const readOnly = showOnlySummary || readOnlyRaw || !editAllowed;
     const {
       visible
     } = this.state;

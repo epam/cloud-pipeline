@@ -39,6 +39,7 @@ import com.epam.pipeline.entity.cluster.monitoring.gpu.GpuMonitoringStats;
 import com.epam.pipeline.entity.cluster.monitoring.platform.network.NetworkEventFilter;
 import com.epam.pipeline.entity.cluster.monitoring.platform.histogram.HistogramBin;
 import com.epam.pipeline.entity.cluster.monitoring.platform.histogram.HistogramType;
+import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.manager.cluster.EdgeServiceManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
@@ -154,6 +155,11 @@ public class ClusterApiService {
     @PreAuthorize(NODE_READ)
     public List<NodeDisk> loadNodeDisks(final String name) {
         return nodeDiskManager.loadByNodeId(name);
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public NodeInstance attachDiskToNode(final String name, final DiskAttachRequest request) {
+        return nodesManager.attachDiskToNode(name, request);
     }
 
     public String buildEdgeExternalUrl(final String region) {
