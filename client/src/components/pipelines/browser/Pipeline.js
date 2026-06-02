@@ -46,7 +46,7 @@ import {Alert,
   Select,
   Table
 } from 'antd';
-import {AppstoreFilled, CheckCircleFilled, CopyOutlined, EditOutlined, FolderOutlined, ForkOutlined, SettingOutlined, TagFilled} from '@ant-design/icons';
+import {AppstoreFilled, CheckCircleFilled, CopyOutlined, EditOutlined, FolderOutlined, ForkOutlined, LoadingOutlined, SettingOutlined, TagFilled} from '@ant-design/icons';
 import EditPipelineForm from '../version/forms/EditPipelineForm';
 import PipelineConfigurations from '../../../models/pipelines/PipelineConfigurations';
 import folders from '../../../models/folders/Folders';
@@ -368,7 +368,7 @@ class Pipeline extends localization.LocalizedReactComponent {
     if (this.props.listingMode || this.props.readOnly) {
       if (this.props.configurationSelectionMode) {
         if (this.props.lazyLoadingConfigurations && this.state.configurationsPending.includes(item.id)) {
-          return <Icon type="loading" />;
+          return <LoadingOutlined />;
         }
         if (!this.state.configurations || !this.state.configurations[item.id]) {
           return undefined;

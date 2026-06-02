@@ -28,20 +28,16 @@ function filterPipelineVersion (version, filter, exact = false) {
   return false;
 }
 
-function createAutoCompleteGroup (key, group, versions) {
-  return (
-    <AutoComplete.OptGroup key={key} label={group}>
-      {
-        versions.map((version) => (
-          <AutoComplete.Option
-            key={version.commitId}
-            value={version.name}>
-            {version.name}
-          </AutoComplete.Option>
-        ))
-      }
-    </AutoComplete.OptGroup>
-  );
+function createAutoCompleteGroup (key, label, versions) {
+  return {
+    key,
+    label,
+    options: versions.map((version) => ({
+      key: version.commitId,
+      value: version.name,
+      label: version.name
+    }))
+  };
 }
 
 class PipelineVersionPicker extends React.PureComponent {
@@ -166,7 +162,6 @@ class PipelineVersionPicker extends React.PureComponent {
       const realVersion = existing || version.trim().toLowerCase().startsWith('draft-')
         ? version
         : `draft-${version}`;
-      console.log(version, existing, realVersion);
       this.setState({filter: version});
       Modal.confirm({
         title: <span>Are you sure you want to change version to <b>{version}</b>?</span>,
@@ -230,7 +225,7 @@ class PipelineVersionPicker extends React.PureComponent {
       <div className={classNames(className, styles.pipelineVersionPicker)} style={style}>
         <AutoComplete
           disabled={pending || disabled}
-          dataSource={options}
+          options={options}
           value={value}
           onSelect={this.onSelectVersion}
           onChange={this.onChangeFilter}

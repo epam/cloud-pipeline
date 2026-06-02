@@ -27,30 +27,6 @@ import EnabledPath from './enabled-path';
 import {getPipelineDefaultPaths} from './default-paths';
 import RepositoryForm from './repository-form/RepositoryForm';
 
-function getLegacyFormFromRef (formRef) {
-  const form = formRef && formRef.current;
-  if (!form) {
-    return null;
-  }
-  return {
-    getFieldValue: (name) => form.getFieldValue(name),
-    setFieldsValue: (values) => form.setFieldsValue(values),
-    validateFields: (fields, config) => form.validateFields(fields, config),
-    getFieldDecorator: (name, options = {}) => (component) => (
-      <Form.Item
-        name={name}
-        initialValue={options.initialValue}
-        rules={options.rules}
-        valuePropName={options.valuePropName}
-        hidden={options.hidden}
-        noStyle
-      >
-        {component}
-      </Form.Item>
-    )
-  };
-}
-
 @roleModel.authenticationInfo
 @localization.localizedComponent
 @inject('dockerRegistries', 'pipelines', 'preferences')
@@ -285,6 +261,9 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
       repository: p && p.repository ? p.repository : '',
       branch: p && p.branch ? p.branch : undefined,
       token: p && p.repositoryToken ? p.repositoryToken : '',
+      githubOwner: undefined,
+      githubRepository: p && p.repository ? p.repository : undefined,
+      githubBranch: p && p.branch ? p.branch : undefined,
       configurationPath: p && p.configurationPath ? p.configurationPath : undefined,
       codePath: p ? p.codePath : defaultPaths.src,
       docsPath: p ? p.docsPath : defaultPaths.docs
@@ -373,7 +352,7 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
         <RepositoryForm
           key="repository-form"
           editRepositorySettings={this.state.editRepositorySettings}
-          form={getLegacyFormFromRef(this.formRef)}
+          formRef={this.formRef}
           formItemLayout={this.formItemLayout}
           formItemStyle={this.formItemStyle}
           githubType={this.state.githubType}

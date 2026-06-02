@@ -28,10 +28,7 @@ import ManualRepositoryForm from './ManualRepositoryForm';
 export default class RepositoryForm extends React.Component {
   static propTypes = {
     editRepositorySettings: PropTypes.bool,
-    form: PropTypes.shape({
-      getFieldDecorator: PropTypes.func,
-      getFieldValue: PropTypes.func
-    }),
+    formRef: PropTypes.shape({current: PropTypes.object}),
     formItemLayout: PropTypes.object,
     formItemStyle: PropTypes.object,
     githubType: PropTypes.string,
@@ -51,7 +48,7 @@ export default class RepositoryForm extends React.Component {
   render () {
     const {
       editRepositorySettings,
-      form,
+      formRef,
       formItemLayout,
       formItemStyle,
       githubType,
@@ -62,17 +59,10 @@ export default class RepositoryForm extends React.Component {
       pipeline,
       readOnly
     } = this.props;
-    const {getFieldDecorator} = form;
     const formItemDisplayStyle = {
       ...formItemStyle,
       display: editRepositorySettings ? 'inherit' : 'none'
     };
-    const repositoryType = normalizeRepositoryType(
-      form.getFieldValue('repositoryType') || (
-        pipeline && pipeline.repositoryType
-      ) || RepositoryTypes.GitLab
-    );
-    const useGitHubForm = repositoryType === RepositoryTypes.GitHub;
     return (
       <div>
         <Form.Item
@@ -81,44 +71,45 @@ export default class RepositoryForm extends React.Component {
           {...formItemLayout}
           style={formItemDisplayStyle}
           label="Repository Type"
+          name="repositoryType"
         >
-          {getFieldDecorator('repositoryType', {
-            initialValue:
-              pipeline && pipeline.repositoryType
-                ? normalizeRepositoryType(pipeline.repositoryType)
-                : RepositoryTypes.GitLab
-          })(
-            <RepositoryTypeSelector
-              disabled={!!pipeline || pending}
-              onRepositoryTypeChanged={onRepositoryTypeChanged}
-            />
-          )}
+          <RepositoryTypeSelector
+            disabled={!!pipeline || pending}
+            onRepositoryTypeChanged={onRepositoryTypeChanged}
+          />
         </Form.Item>
-        {
-          useGitHubForm ? (
-            <GitHubRepositoryForm
-              form={form}
-              formItemLayout={formItemLayout}
-              formItemStyle={formItemDisplayStyle}
-              githubType={githubType}
-              onGithubTypeChange={onGithubTypeChange}
-              onSubmit={onSubmit}
-              pending={pending}
-              pipeline={pipeline}
-              readOnly={readOnly}
-            />
-          ) : (
-            <ManualRepositoryForm
-              form={form}
-              formItemLayout={formItemLayout}
-              formItemStyle={formItemDisplayStyle}
-              onSubmit={onSubmit}
-              pending={pending}
-              pipeline={pipeline}
-              readOnly={readOnly}
-            />
-          )
-        }
+        <Form.Item noStyle dependencies={['repositoryType']}>
+          {({getFieldValue}) => {
+            const repositoryType = normalizeRepositoryType(
+              getFieldValue('repositoryType') || (
+                pipeline && pipeline.repositoryType
+              ) || RepositoryTypes.GitLab
+            );
+            const useGitHubForm = repositoryType === RepositoryTypes.GitHub;
+            return useGitHubForm ? (
+              <GitHubRepositoryForm
+                formRef={formRef}
+                formItemLayout={formItemLayout}
+                formItemStyle={formItemDisplayStyle}
+                githubType={githubType}
+                onGithubTypeChange={onGithubTypeChange}
+                onSubmit={onSubmit}
+                pending={pending}
+                pipeline={pipeline}
+                readOnly={readOnly}
+              />
+            ) : (
+              <ManualRepositoryForm
+                formItemLayout={formItemLayout}
+                formItemStyle={formItemDisplayStyle}
+                onSubmit={onSubmit}
+                pending={pending}
+                pipeline={pipeline}
+                readOnly={readOnly}
+              />
+            );
+          }}
+        </Form.Item>
       </div>
     );
   }

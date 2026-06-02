@@ -9,7 +9,7 @@
  *
  *  Unless required by applicable law or agreed to in writing, software
  *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR ANY KIND, either express or implied.
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import {Checkbox, Form, Input, Select, Spin} from 'antd';
 import {RepositoryTypes} from '../../../../special/git-repository-control';
 import ManualRepositoryForm from './ManualRepositoryForm';
@@ -27,7 +27,7 @@ import PipelineGitRepositories from '../../../../../models/pipelines/PipelineGit
 @observer
 export default class GitHubRepositoryForm extends React.Component {
   static propTypes = {
-    form: PropTypes.object,
+    formRef: PropTypes.shape({current: PropTypes.object}),
     formItemLayout: PropTypes.object,
     formItemStyle: PropTypes.object,
     githubType: PropTypes.string,
@@ -41,6 +41,10 @@ export default class GitHubRepositoryForm extends React.Component {
   @observable _namespacesRequest = new PipelineGitNameSpaces();
   @observable _repositoriesRequest = null;
 
+  constructor (props) {
+    super(props);
+    makeObservable(this);
+  }
 
   @computed
   get namespaces () {
@@ -56,6 +60,11 @@ export default class GitHubRepositoryForm extends React.Component {
 
   get pipelineIsExisting () {
     return !!(this.props.pipeline && this.props.pipeline.repository);
+  }
+
+  getFormInstance () {
+    const {formRef} = this.props;
+    return formRef && formRef.current ? formRef.current : null;
   }
 
   componentDidMount () {
@@ -86,10 +95,12 @@ export default class GitHubRepositoryForm extends React.Component {
   };
 
   onGithubOwnerChanged = (namespaceId) => {
-    const {form} = this.props;
+    const form = this.getFormInstance();
     if (!namespaceId) {
       this._repositoriesRequest = null;
-      form.setFieldsValue({githubRepository: undefined});
+      if (form) {
+        form.setFieldsValue({githubRepository: undefined});
+      }
       return;
     }
     const req = new PipelineGitRepositories(namespaceId);
@@ -110,21 +121,16 @@ export default class GitHubRepositoryForm extends React.Component {
 
   renderGitHubSelectForm () {
     const {
-      form,
       formItemLayout,
       formItemStyle,
       pending,
       pipeline,
       readOnly
     } = this.props;
-    const {getFieldDecorator} = form;
     const nsReq = this._namespacesRequest;
     const nsPending = nsReq && nsReq.pending;
     const reposReq = this._repositoriesRequest;
     const reposPending = reposReq && reposReq.pending;
-    const githubOwner = form.getFieldValue('githubOwner');
-    const githubRepositorySelectDisabled =
-      !!pipeline || pending || !githubOwner;
     return (
       <div>
         <Form.Item
@@ -133,71 +139,73 @@ export default class GitHubRepositoryForm extends React.Component {
           {...formItemLayout}
           style={formItemStyle}
           label="Organization"
+          name="githubOwner"
         >
-          {getFieldDecorator('githubOwner', {
-            initialValue: undefined,
-            onChange: this.onGithubOwnerChanged
-          })(
-            <Select
-              allowClear
-              showSearch
-              style={{width: '100%'}}
-              placeholder="Select owner or organization"
-              disabled={pending || readOnly}
-              optionFilterProp="children"
-              notFoundContent={
-                nsPending ? <Spin size="small" /> : 'No organizations'
-              }
-            >
-              {this.namespaces.map((ns) => (
-                <Select.Option key={ns.id} value={ns.id}>
-                  {ns.name || ns.id}
-                </Select.Option>
-              ))}
-            </Select>
-          )}
+          <Select
+            allowClear
+            showSearch
+            style={{width: '100%'}}
+            placeholder="Select owner or organization"
+            disabled={pending || readOnly}
+            optionFilterProp="children"
+            onChange={this.onGithubOwnerChanged}
+            notFoundContent={
+              nsPending ? <Spin size="small" /> : 'No organizations'
+            }
+          >
+            {this.namespaces.map((ns) => (
+              <Select.Option key={ns.id} value={ns.id}>
+                {ns.name || ns.id}
+              </Select.Option>
+            ))}
+          </Select>
         </Form.Item>
-        <Form.Item
-          key="githubRepository"
-          className="edit-pipeline-form-github-repository-container"
-          {...formItemLayout}
-          style={formItemStyle}
-          label="GitHub repository"
-        >
-          {getFieldDecorator('githubRepository', {
-            initialValue: `${pipeline && pipeline.repository ? pipeline.repository : ''}`
-          })(
-            <Select
-              allowClear
-              showSearch
-              style={{width: '100%'}}
-              placeholder="Select GitHub repository"
-              disabled={githubRepositorySelectDisabled}
-              optionFilterProp="children"
-              notFoundContent={
-                reposPending ? <Spin size="small" /> : 'No GitHub repositories'
-              }
-              filterOption={(input, option) =>
-                (option.props.children || '')
-                  .toString()
-                  .toLowerCase()
-                  .indexOf((input || '').toLowerCase()) >= 0
-              }
-            >
-              {this.githubRepositories.map((repo) => {
-                const value = this.githubRepositoryOptionValue(repo);
-                if (!value) {
-                  return null;
-                }
-                const optionValue = String(value);
-                return (
-                  <Select.Option key={optionValue} value={optionValue}>
-                    {repo.name || optionValue}
-                  </Select.Option>
-                );
-              })}
-            </Select>
-          )}
+        <Form.Item noStyle dependencies={['githubOwner']}>
+          {({getFieldValue}) => {
+            const githubOwner = getFieldValue('githubOwner');
+            const githubRepositorySelectDisabled =
+              !!pipeline || pending || !githubOwner;
+            return (
+              <Form.Item
+                key="githubRepository"
+                className="edit-pipeline-form-github-repository-container"
+                {...formItemLayout}
+                style={formItemStyle}
+                label="GitHub repository"
+                name="githubRepository"
+              >
+                <Select
+                  allowClear
+                  showSearch
+                  style={{width: '100%'}}
+                  placeholder="Select GitHub repository"
+                  disabled={githubRepositorySelectDisabled}
+                  optionFilterProp="children"
+                  notFoundContent={
+                    reposPending ? <Spin size="small" /> : 'No GitHub repositories'
+                  }
+                  filterOption={(input, option) =>
+                    String(option?.children ?? '')
+                      .toLowerCase()
+                      .indexOf((input || '').toLowerCase()) >= 0
+                  }
+                >
+                  {this.githubRepositories.map((repo) => {
+                    const value = this.githubRepositoryOptionValue(repo);
+                    if (!value) {
+                      return null;
+                    }
+                    const optionValue = String(value);
+                    return (
+                      <Select.Option key={optionValue} value={optionValue}>
+                        {repo.name || optionValue}
+                      </Select.Option>
+                    );
+                  })}
+                </Select>
+              </Form.Item>
+            );
+          }}
         </Form.Item>
         <Form.Item
           key="githubBranch"
@@ -205,13 +213,9 @@ export default class GitHubRepositoryForm extends React.Component {
           {...formItemLayout}
           style={formItemStyle}
           label="Branch"
+          name="githubBranch"
         >
-          {getFieldDecorator('githubBranch', {
-            initialValue:
-              pipeline && pipeline.branch
-                ? pipeline.branch
-                : undefined
-          })(<Input disabled={pending || readOnly} />)}
+          <Input disabled={pending || readOnly} />
         </Form.Item>
       </div>
     );
@@ -219,7 +223,6 @@ export default class GitHubRepositoryForm extends React.Component {
 
   render () {
     const {
-      form,
       formItemLayout,
       formItemStyle,
       githubType,
@@ -256,7 +259,6 @@ export default class GitHubRepositoryForm extends React.Component {
           showManualRepositoryForm ? (
             <ManualRepositoryForm
               key="repository-fields-manual"
-              form={form}
               formItemLayout={formItemLayout}
               formItemStyle={formItemStyle}
               onSubmit={onSubmit}

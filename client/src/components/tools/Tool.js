@@ -1052,19 +1052,19 @@ class Tool extends localization.LocalizedReactComponent {
         this.setVersionListStatus(domEvent, version, menuItem.listType, menuItem.enable);
       }
     };
-    const menu = (
-      <Menu onClick={onSelect} style={{cursor: 'pointer'}}>
-        {menuItems.map((item) => (
-          <MenuItem key={item.key}>{item.label}</MenuItem>
-        ))}
-      </Menu>
-    );
     const blackListWarning = version.fromBlackList
       ? this.getVersionRunningInformation(version.name).tooltip
       : null;
-    const dropdown = (
+    return (
       <Dropdown
-        overlay={menu}
+        menu={{
+          items: menuItems.map((item) => ({
+            key: item.key,
+            label: item.label
+          })),
+          onClick: onSelect,
+          style: {cursor: 'pointer'}
+        }}
         trigger={['click']}
         placement="bottomRight"
       >
@@ -1080,14 +1080,13 @@ class Tool extends localization.LocalizedReactComponent {
         >
           {
             blackListWarning &&
-            <Icon type="exclamation-circle" style={{marginRight: 5}} />
+            <ExclamationCircleFilled style={{marginRight: 5}} />
           }
           <span>{label}</span>
-          <Icon type="down" style={{marginLeft: 5}} />
+          <DownOutlined style={{marginLeft: 5}} />
         </Button>
       </Dropdown>
     );
-    return dropdown;
   };
 
   renderVersions = () => {
