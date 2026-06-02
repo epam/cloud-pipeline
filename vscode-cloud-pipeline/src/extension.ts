@@ -7,6 +7,7 @@ import {
   connectToRun,
   getActiveTunnel,
   listActiveTunnelRunIds,
+  reconnectTunnel,
   stopAllTunnels,
   stopTunnelForRun,
 } from './connectService';
@@ -491,6 +492,31 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         }
         const msg = e instanceof Error ? e.message : String(e);
         vscode.window.showErrorMessage(`${brand}: Failed to resume run: ${msg}`);
+      }
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('cloudPipeline.reconnectTunnel', async (item?: RunTreeItem) => {
+      let chosen: number | undefined = item?.run.id;
+      if (chosen === undefined) {
+        const ids = listActiveTunnelRunIds();
+        if (!ids.length) {
+          vscode.window.showInformationMessage(`No active ${brand} SSH tunnels to reconnect in this window.`);
+          return;
+        }
+        if (ids.length === 1) {
+          chosen = ids[0];
+        } else {
+          const pick = await vscode.window.showQuickPick(
+            ids.map((id) => ({ label: `Run ${id}`, id })),
+            { placeHolder: 'Reconnect tunnel for run' }
+          );
+          chosen = pick?.id;
+        }
+      }
+      if (chosen !== undefined) {
+        await reconnectTunnel(chosen);
       }
     })
   );
