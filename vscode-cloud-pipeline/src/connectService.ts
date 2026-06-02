@@ -6,6 +6,7 @@ import {
   ensureConfigDIncludes,
   extensionKeysDir,
   ResolvedAuth,
+  resolveCredentials,
   sshConfigDir,
   sshConfigFragmentPath,
 } from './config';
@@ -17,7 +18,8 @@ import {
   isSshInitialized,
   resolveSshCredentialsWithParent,
 } from './sshResolve';
-import { parseEdgeUrl, startLocalTunnelServer, TunnelTarget } from './tunnel';
+import { invalidatePipeAuth } from './authState';
+import { parseEdgeUrl, startLocalTunnelServer, TunnelProxyAuthError, TunnelServerHandle, TunnelTarget } from './tunnel';
 
 export interface ActiveTunnel {
   runId: number;
@@ -25,12 +27,28 @@ export interface ActiveTunnel {
   close: () => Promise<void>;
 }
 
-const tunnels = new Map<number, ActiveTunnel>();
+/** Internal record — extends ActiveTunnel with reconnection state. Not exported. */
+interface TunnelRecord extends ActiveTunnel {
+  target: TunnelTarget;
+  serverHandle: TunnelServerHandle;
+  healthTimer: ReturnType<typeof setInterval> | undefined;
+  /** Prevents flooding the user with repeated auth-error notifications for the same tunnel. */
+  authErrorNotified: boolean;
+}
+
+const tunnelRecords = new Map<number, TunnelRecord>();
+
+/** Guards against concurrent reconnect attempts for the same run. */
+const reconnecting = new Set<number>();
+
+/** Guards against concurrent health-check ticks for the same run. */
+const healthChecking = new Set<number>();
+
+const HEALTH_CHECK_INTERVAL_MS = 60_000;
 
 /**
- * Remote - SSH folder URI built with {@link vscode.Uri.from} so `ssh-remote+<host>` is not
- * misparsed by {@link vscode.Uri.parse}. Opening only `/` as the folder can break the integrated
- * terminal (UriError: path cannot begin with "//" when authority is missing).
+ * Remote-SSH folder URI built with {@link vscode.Uri.from} so `ssh-remote+<host>` is not
+ * misparsed by {@link vscode.Uri.parse}.
  */
 function remoteSshWorkspaceUri(hostAlias: string, remoteUser: string): vscode.Uri {
   const u = (remoteUser.trim() || 'root').split('@')[0];
@@ -43,18 +61,22 @@ function remoteSshWorkspaceUri(hostAlias: string, remoteUser: string): vscode.Ur
 }
 
 export function getActiveTunnel(runId: number): ActiveTunnel | undefined {
-  return tunnels.get(runId);
+  return tunnelRecords.get(runId);
 }
 
 export function listActiveTunnelRunIds(): number[] {
-  return [...tunnels.keys()];
+  return [...tunnelRecords.keys()];
 }
 
 export async function stopTunnelForRun(runId: number): Promise<void> {
-  const t = tunnels.get(runId);
-  if (t) {
-    await t.close();
-    tunnels.delete(runId);
+  const rec = tunnelRecords.get(runId);
+  if (rec) {
+    if (rec.healthTimer !== undefined) {
+      clearInterval(rec.healthTimer);
+      rec.healthTimer = undefined;
+    }
+    await rec.close();
+    tunnelRecords.delete(runId);
   }
   try {
     fs.unlinkSync(sshConfigFragmentPath(runId));
@@ -69,7 +91,7 @@ export async function stopTunnelForRun(runId: number): Promise<void> {
 }
 
 export async function stopAllTunnels(): Promise<void> {
-  await Promise.all([...tunnels.keys()].map((id) => stopTunnelForRun(id)));
+  await Promise.all([...tunnelRecords.keys()].map((id) => stopTunnelForRun(id)));
 }
 
 function resolveAuthorizedUsersForKey(
@@ -79,6 +101,112 @@ function resolveAuthorizedUsersForKey(
 ): string[] {
   const set = new Set<string>([credUser, runOwnerShort, whoamiShort].filter(Boolean) as string[]);
   return [...set];
+}
+
+/**
+ * Restarts the local tunnel server for an existing tunnel on the same port.
+ * Does not re-provision SSH keys or reopen the VS Code window — the existing
+ * SSH config and authorized_keys remain valid.  When the server is back on the
+ * same port, VS Code Remote-SSH's "Retry" / reconnect attempts succeed automatically.
+ */
+export async function reconnectTunnel(runId: number): Promise<void> {
+  if (reconnecting.has(runId)) {
+    return;
+  }
+  const rec = tunnelRecords.get(runId);
+  if (!rec) {
+    return;
+  }
+
+  reconnecting.add(runId);
+  try {
+    // Pause health monitor during restart to avoid re-entrant calls.
+    if (rec.healthTimer !== undefined) {
+      clearInterval(rec.healthTimer);
+      rec.healthTimer = undefined;
+    }
+
+    try {
+      await rec.serverHandle.close();
+    } catch {
+      /* ignore close errors */
+    }
+
+    const newServer = await startLocalTunnelServer(rec.target, rec.localPort);
+
+    rec.serverHandle = newServer;
+    rec.close = () => newServer.close();
+    rec.authErrorNotified = false;
+
+    // Resume health monitor.
+    rec.healthTimer = setInterval(() => {
+      void runHealthCheck(runId);
+    }, HEALTH_CHECK_INTERVAL_MS);
+
+    vscode.window.showInformationMessage(
+      `${getBrandName()}: SSH tunnel for run ${runId} has been restarted on port ${rec.localPort}. ` +
+      `Click "Retry" in the Remote-SSH dialog if prompted.`
+    );
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    vscode.window.showErrorMessage(
+      `${getBrandName()}: Failed to restart SSH tunnel for run ${runId}: ${msg}`
+    );
+    // Restart health monitor anyway so we keep checking.
+    if (tunnelRecords.has(runId)) {
+      rec.healthTimer = setInterval(() => {
+        void runHealthCheck(runId);
+      }, HEALTH_CHECK_INTERVAL_MS);
+    }
+  } finally {
+    reconnecting.delete(runId);
+  }
+}
+
+async function runHealthCheck(runId: number): Promise<void> {
+  if (healthChecking.has(runId)) {
+    return;
+  }
+  const rec = tunnelRecords.get(runId);
+  if (!rec) {
+    return;
+  }
+
+  healthChecking.add(runId);
+  try {
+    const auth = resolveCredentials();
+    if (!auth) {
+      // No valid credentials — skip this tick; the tunnel's getProxyAuth will handle it.
+      return;
+    }
+
+    let runStatus: string;
+    try {
+      const api = new CloudPipelineApi(auth.apiUrl, auth.accessKey);
+      const run = await api.getRun(runId);
+      runStatus = (run.status ?? '').toUpperCase();
+    } catch {
+      // Network error or auth issue — skip this tick rather than cleaning up prematurely.
+      return;
+    }
+
+    // If the run is no longer active, tear down the tunnel.
+    const isActive = ['RUNNING', 'PAUSING', 'PAUSED', 'RESUMING'].includes(runStatus);
+    if (!isActive) {
+      await stopTunnelForRun(runId);
+      vscode.window.showInformationMessage(
+        `${getBrandName()}: Run ${runId} has ended (status: ${runStatus}). SSH tunnel closed.`
+      );
+      return;
+    }
+
+    // If the net.Server has died but the run is still alive, attempt a silent restart.
+    if (!rec.serverHandle.listening) {
+      await reconnectTunnel(runId);
+    }
+  } finally {
+    healthChecking.delete(runId);
+  }
 }
 
 export async function connectToRun(auth: ResolvedAuth, runId: number): Promise<void> {
@@ -155,10 +283,14 @@ export async function connectToRun(auth: ResolvedAuth, runId: number): Promise<v
     defaultRootEnabled
   );
 
-  const existing = tunnels.get(runId);
+  const existing = tunnelRecords.get(runId);
   if (existing) {
+    if (existing.healthTimer !== undefined) {
+      clearInterval(existing.healthTimer);
+      existing.healthTimer = undefined;
+    }
     await existing.close();
-    tunnels.delete(runId);
+    tunnelRecords.delete(runId);
   }
 
   let edgeHost: string | undefined;
@@ -178,6 +310,10 @@ export async function connectToRun(auth: ResolvedAuth, runId: number): Promise<v
         remotePort: 22,
         proxyAuthUser: auth.proxyUser,
         proxyAuthPassword: auth.accessKey,
+        getProxyAuth: () => {
+          const fresh = resolveCredentials();
+          return fresh ? { user: fresh.proxyUser, password: fresh.accessKey } : null;
+        },
       }
     : {
         proxyHost: edgeHost,
@@ -186,6 +322,10 @@ export async function connectToRun(auth: ResolvedAuth, runId: number): Promise<v
         remotePort: 22,
         proxyAuthUser: auth.proxyUser,
         proxyAuthPassword: auth.accessKey,
+        getProxyAuth: () => {
+          const fresh = resolveCredentials();
+          return fresh ? { user: fresh.proxyUser, password: fresh.accessKey } : null;
+        },
       };
 
   await vscode.window.withProgress(
@@ -196,11 +336,40 @@ export async function connectToRun(auth: ResolvedAuth, runId: number): Promise<v
     },
     async () => {
       const server = await startLocalTunnelServer(target);
-      tunnels.set(runId, {
+
+      // Wire up callbacks now that we have the runId in scope.
+      target.onProxyAuthError = (err: TunnelProxyAuthError) => {
+        const rec = tunnelRecords.get(runId);
+        if (rec && !rec.authErrorNotified) {
+          rec.authErrorNotified = true;
+          invalidatePipeAuth();
+          void vscode.window.showErrorMessage(
+            `${getBrandName()}: SSH tunnel for run ${runId} — proxy authentication failed ` +
+            `(HTTP ${err.statusCode}). Your session may have expired. Sign in again.`,
+            'Sign In'
+          ).then((pick) => {
+            if (pick === 'Sign In') {
+              void vscode.commands.executeCommand('cloudPipeline.signIn');
+            }
+          });
+        }
+      };
+
+      target.onServerError = (err: Error) => {
+        // Logged only; health monitor will detect server.listening === false and restart.
+        console.error(`[${getBrandName()}] Tunnel server error for run ${runId}: ${err.message}`);
+      };
+
+      const record: TunnelRecord = {
         runId,
         localPort: server.localPort,
+        target,
+        serverHandle: server,
+        healthTimer: undefined,
+        authErrorNotified: false,
         close: () => server.close(),
-      });
+      };
+      tunnelRecords.set(runId, record);
 
       const runOwnerShort = (run.owner ?? '').split('@')[0];
       const authorizedUsers = resolveAuthorizedUsersForKey(runOwnerShort, whoamiShort, creds.username);
@@ -245,6 +414,11 @@ export async function connectToRun(auth: ResolvedAuth, runId: number): Promise<v
         const mainConfig = path.join(sshDir, 'config');
         ensureConfigDIncludes(mainConfig);
 
+        // Start background health monitor after the tunnel is fully established.
+        record.healthTimer = setInterval(() => {
+          void runHealthCheck(runId);
+        }, HEALTH_CHECK_INTERVAL_MS);
+
         // Open remote in this app. `vscode.openFolder` stays in-process (Cursor or VS Code).
         const remoteUri = remoteSshWorkspaceUri(hostAlias, keyResult.sshConfigUser);
         await vscode.commands.executeCommand('vscode.openFolder', remoteUri, true);
@@ -252,8 +426,12 @@ export async function connectToRun(auth: ResolvedAuth, runId: number): Promise<v
           `Tunnel active on 127.0.0.1:${server.localPort} for run ${runId}. Use "Stop SSH Tunnel" when done.`
         );
       } catch (e) {
+        if (record.healthTimer !== undefined) {
+          clearInterval(record.healthTimer);
+          record.healthTimer = undefined;
+        }
         await server.close();
-        tunnels.delete(runId);
+        tunnelRecords.delete(runId);
         const msg = e instanceof Error ? e.message : String(e);
         vscode.window.showErrorMessage(`${getBrandName()} connect failed: ${msg}`);
       }
