@@ -5153,6 +5153,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return (
       <Form
         form={this.props.form}
+        preserve
         onValuesChange={(changedValues, allValues) => this.onValuesChange(this.props, allValues)}
         onFieldsChange={(changedFields, allFields) => this.onFieldsChange(this.props, changedFields)}
         onSubmit={this.handleSubmit}>
@@ -5209,6 +5210,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             <Collapse.Panel
               id="launch-pipeline-exec-environment-panel"
               key={EXEC_ENVIRONMENT}
+              forceRender
               className={
                 classNames(styles.section, {
                   [styles.hidden]: !this.executionEnvironmentSectionVisible
