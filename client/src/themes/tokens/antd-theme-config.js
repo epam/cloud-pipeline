@@ -57,6 +57,8 @@ export default function buildAntdTheme (parsedConfiguration, identifier) {
   if (palette['--cp-color-primary-active']) {
     token.colorLinkActive = palette['--cp-color-primary-active'];
   }
+  token.fontSize = 12;
+  token.fontSizeSM = 12;
   return {
     algorithm: dark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
     cssVar: {key: 'cp-ant'},
