@@ -210,7 +210,7 @@ class JsonStoragePrintService(StoragePrintService):
             click.echo(self._to_json(self.__buffer))
 
     def error(self, message, err=False, buf=False):
-        click.echo(self._to_json({'error': message}), err=err)
+        click.echo(json.dumps({'error': message}), err=err)
 
     def add_item(self, item, show_versions, show_extended):
         # item:

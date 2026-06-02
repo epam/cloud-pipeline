@@ -65,7 +65,7 @@ class JsonTagPrintService(TagPrintService):
         click.echo(self._to_json(tags))
 
     def error(self, message, err=True):
-        click.echo(self._to_json({'error': message}), err=err)
+        click.echo(json.dumps({'error': message}), err=err)
 
 
 def create_tag_print_service(output_format):

@@ -387,10 +387,7 @@ class JsonToolPrintService(ToolPrintService):
 
     def print_error(self, message):
         """Print error message in JSON format."""
-        error_data = {
-            'error': message
-        }
-        click.echo(self._to_json(error_data), err=True)
+        click.echo(json.dumps({'error': message}), err=True)
 
 
 def create_tool_print_service(output_format):
