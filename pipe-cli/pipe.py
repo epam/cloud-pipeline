@@ -1484,15 +1484,17 @@ def set_tag(entity_class, entity_id, data):
 @tag.command(name='get')
 @click.argument('entity_class', required=True)
 @click.argument('entity_id', required=True)
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help='Output format. Default is a text table.')
 @common_options
-def get_tag(entity_class, entity_id):
+def get_tag(entity_class, entity_id, output_format):
     """ Lists all tags for a specific object or list of objects.\n
     - ENTITY_CLASS: defines an object class. Possible values: data_storage,
     docker_registry, folder, metadata_entity, pipeline, tool, tool_group,
     configuration\n
     - ENTITY_ID: defines name or id of an object of a specified class
     """
-    MetadataOperations.get_metadata(entity_class, entity_id)
+    MetadataOperations.get_metadata(entity_class, entity_id, output_format)
 
 
 @tag.command(name='delete')
