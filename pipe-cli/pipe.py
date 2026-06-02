@@ -21,7 +21,6 @@ import click
 import functools
 import sys
 import re
-from prettytable import prettytable
 
 from src.api.app_info import ApplicationInfo
 from src.api.cluster import Cluster
@@ -85,6 +84,7 @@ ON_FAILURES_OPTION_DESCRIPTION = 'Configure how singular file processing failure
                                  '[fail-after] fails only after all files are processed; \n'\
                                  '[skip] skips all failures;'\
                                  '[retry] retries all failures.'
+OUTPUT_FORMAT_OPTION_DESCRIPTION = 'Output format. Default is a text table.'
 
 
 def silent_print_api_version():
@@ -429,7 +429,7 @@ def echo_title(title, line=True):
 @click.option('-s', '--storage-rules', help='List storage rules of a pipeline', is_flag=True)
 @click.option('-r', '--permissions', help='List user permissions for a pipeline', is_flag=True)
 @click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
-              help='Output format. Default is a text table.')
+              help=OUTPUT_FORMAT_OPTION_DESCRIPTION)
 @common_options
 def view_pipes(pipeline, versions, parameters, storage_rules, permissions, output_format):
     """Lists pipelines definitions
@@ -485,7 +485,7 @@ def view_pipe(pipeline, versions, parameters, storage_rules, permissions, output
 @click.option('-uf', '--user-filter', help='Display tasks of a specific users. Format: Comma separated list.')
 @click.option('--tags-details', help='Display detailed tags information of a specific run', is_flag=True, default=False)
 @click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
-              help='Output format. Default is a text table.')
+              help=OUTPUT_FORMAT_OPTION_DESCRIPTION)
 @common_options
 def view_runs(run_id,
               status,
@@ -577,7 +577,7 @@ def view_run(run_id, node_details, parameters_details, tasks_details, tags_detai
 @cli.command(name='view-cluster')
 @click.argument('node-name', required=False)
 @click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
-              help='Output format. Default is a text table.')
+              help=OUTPUT_FORMAT_OPTION_DESCRIPTION)
 @common_options
 def view_cluster(node_name, output_format):
     """Lists cluster nodes
@@ -914,7 +914,7 @@ def mvtodir(name, directory):
                    "full - show extended details, works for the storage summary listing only")
 @click.option('-g', '--show-archive', is_flag=True, help='Show archived files.')
 @click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
-              help='Output format. Default is a text table.')
+              help=OUTPUT_FORMAT_OPTION_DESCRIPTION)
 @common_options
 def storage_list(path, show_details, show_versions, recursive, page, all, output, show_archive, output_format):
     """Lists storage contents
@@ -1243,7 +1243,7 @@ def storage_set_object_tags(path, tags, version):
 @click.argument('path', required=True)
 @click.option('-v', '--version', required=False, help='Get tags for a specified version')
 @click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
-              help='Output format. Default is a text table.')
+              help=OUTPUT_FORMAT_OPTION_DESCRIPTION)
 @common_options
 def storage_get_object_tags(path, version, output_format):
     """ Gets tags for a specified object.\n
@@ -1421,7 +1421,7 @@ def set_tag(entity_class, entity_id, data):
 @click.argument('entity_class', required=True)
 @click.argument('entity_id', required=True)
 @click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
-              help='Output format. Default is a text table.')
+              help=OUTPUT_FORMAT_OPTION_DESCRIPTION)
 @common_options
 def get_tag(entity_class, entity_id, output_format):
     """ Lists all tags for a specific object or list of objects.\n
@@ -1802,7 +1802,7 @@ def update_cli_version(path):
 @click.option('-t', '--tool', help='List tool details.')
 @click.option('-v', '--version', help='List tool version details.')
 @click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
-              help='Output format. Default is a text table.')
+              help=OUTPUT_FORMAT_OPTION_DESCRIPTION)
 @common_options
 def view_tools(tool_path,
                registry,
@@ -1912,7 +1912,7 @@ def token(user_id, duration, token_name):
 @cli.command(name='list-tokens')
 @click.argument('user-id', required=False, type=int)
 @click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
-              help='Output format. Default is a text table.')
+              help=OUTPUT_FORMAT_OPTION_DESCRIPTION)
 @common_options
 def list_tokens(user_id, output_format):
     """
@@ -1947,7 +1947,7 @@ def share():
 @share.command(name='get')
 @click.argument('run-id', required=True)
 @click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
-              help='Output format. Default is a text table.')
+              help=OUTPUT_FORMAT_OPTION_DESCRIPTION)
 @common_options
 def get_share_run(run_id, output_format):
     """
