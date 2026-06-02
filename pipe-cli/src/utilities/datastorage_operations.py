@@ -18,7 +18,6 @@ import logging
 import multiprocessing
 import os
 import platform
-import prettytable
 import sys
 from botocore.exceptions import ClientError
 from future.utils import iteritems
@@ -38,6 +37,7 @@ from src.utilities.hidden_object_manager import HiddenObjectManager
 from src.utilities.patterns import PatternMatcher
 from src.utilities.storage.common import TransferResult, StorageOperations
 from src.utilities.printing.storage import print_storage_items
+from src.utilities.printing.storage import create_storage_object_tag_print_service
 from src.utilities.storage.mount import Mount
 from src.utilities.storage.umount import Umount
 from src.utilities.storage_path_permissions_manager import get_permissions_manager
@@ -655,13 +655,11 @@ class DataStorageOperations(object):
             raise RuntimeError("Failed to set tags for path '{}'.".format(path))
 
     @classmethod
-    def get_object_tags(cls, path, version):
+    def get_object_tags(cls, path, version, output_format=None):
+        print_service = create_storage_object_tag_print_service(output_format)
         root_bucket, full_path, relative_path = DataStorage.load_from_uri(path)
         tags = DataStorage.get_object_tags(root_bucket.identifier, relative_path, version)
-        if not tags:
-            click.echo("No tags available for path '{}'.".format(path))
-        else:
-            click.echo(cls.create_table(tags))
+        print_service.print_tags(path, tags)
 
     @classmethod
     def delete_object_tags(cls, path, tags, version):
@@ -703,16 +701,6 @@ class DataStorageOperations(object):
             pair = tags_for_update.split("=", 1)
             result.update({pair[0]: pair[1]})
         return result
-
-    @classmethod
-    def create_table(cls, tags):
-        table = prettytable.PrettyTable()
-        table.field_names = ["Tag name", "Value"]
-        table.align = "l"
-        table.header = True
-        for (key, value) in iteritems(tags):
-            table.add_row([key, value])
-        return table
 
     @classmethod
     def __load_storage_list(cls, extended=False):
