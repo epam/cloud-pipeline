@@ -36,6 +36,34 @@
   text-decoration: none;
 }
 
+.cp-navigation-panel .cp-navigation-menu-item.ant-btn,
+.cp-navigation-panel .cp-navigation-menu-item.ant-btn:hover,
+.cp-navigation-panel .cp-navigation-menu-item.ant-btn:focus,
+.cp-navigation-panel .cp-navigation-menu-item.ant-btn:focus-visible,
+.cp-navigation-panel .cp-navigation-menu-item.ant-btn:active {
+  outline: none;
+  box-shadow: none;
+  border-color: transparent;
+}
+
+.cp-navigation-panel .cp-navigation-menu-item:not(.selected):hover,
+.cp-navigation-panel .cp-navigation-menu-item:not(.selected):focus-visible,
+.cp-navigation-panel .cp-navigation-menu-item.ant-btn:not(.selected):hover,
+.cp-navigation-panel .cp-navigation-menu-item.ant-btn:not(.selected):focus,
+.cp-navigation-panel .cp-navigation-menu-item.ant-btn:not(.selected):focus-visible,
+.cp-navigation-panel .cp-navigation-menu-item.ant-btn:not(.selected):active,
+.cp-navigation-panel a.cp-navigation-menu-item:not(.selected):hover,
+.cp-navigation-panel a.cp-navigation-menu-item:not(.selected):focus,
+.cp-navigation-panel a.cp-navigation-menu-item:not(.selected):focus-visible {
+  background-color: transparent;
+  color: var(--cp-color-primary-hover);
+}
+
+.cp-navigation-panel .cp-navigation-menu-item:not(.selected):hover .anticon,
+.cp-navigation-panel .cp-navigation-menu-item:not(.selected):focus-visible .anticon {
+  color: var(--cp-color-primary-hover);
+}
+
 .cp-navigation-panel .cp-divider.cp-navigation-divider {
   background-color: var(--cp-color-nav-text);
   opacity: 0.5;
@@ -44,11 +72,22 @@
   border: none;
 }
 
-.cp-navigation-panel .cp-navigation-menu-item.selected {
+.cp-navigation-panel .cp-navigation-menu-item.selected,
+.cp-navigation-panel .cp-navigation-menu-item.selected.ant-btn:hover,
+.cp-navigation-panel .cp-navigation-menu-item.selected.ant-btn:focus,
+.cp-navigation-panel .cp-navigation-menu-item.selected.ant-btn:focus-visible,
+.cp-navigation-panel .cp-navigation-menu-item.selected.ant-btn:active,
+.cp-navigation-panel a.cp-navigation-menu-item.selected:hover,
+.cp-navigation-panel a.cp-navigation-menu-item.selected:focus,
+.cp-navigation-panel a.cp-navigation-menu-item.selected:focus-visible {
   background-color: var(--cp-color-nav-bg-active);
 }
 
-.cp-navigation-panel.impersonated .cp-navigation-menu-item.selected {
+.cp-navigation-panel.impersonated .cp-navigation-menu-item.selected,
+.cp-navigation-panel.impersonated .cp-navigation-menu-item.selected.ant-btn:hover,
+.cp-navigation-panel.impersonated .cp-navigation-menu-item.selected.ant-btn:focus,
+.cp-navigation-panel.impersonated .cp-navigation-menu-item.selected.ant-btn:focus-visible,
+.cp-navigation-panel.impersonated .cp-navigation-menu-item.selected.ant-btn:active {
   background-color: var(--cp-color-nav-bg-impersonated-active);
 }
 
@@ -59,6 +98,11 @@
 
 .cp-navigation-panel .cp-navigation-menu-item.cp-runs-menu-item.active {
   color: var(--cp-color-nav-runs);
+}
+
+.cp-navigation-panel .cp-navigation-menu-item.cp-runs-menu-item.active:not(.selected):hover,
+.cp-navigation-panel .cp-navigation-menu-item.cp-runs-menu-item.active:not(.selected):hover .anticon {
+  color: var(--cp-color-primary-hover);
 }
 
 .cp-navigation-item-logo {

@@ -294,6 +294,7 @@ class Navigation extends React.Component {
             <Button
               id={`navigation-button-${navigationItem.key}`}
               key={navigationItem.key}
+              type="text"
               className={this.menuItemClassSelector(navigationItem, activeTabPath)}
               onClick={() => this.navigate(navigationItem)}
             >
@@ -338,6 +339,7 @@ class Navigation extends React.Component {
             open={this.state.versionInfoVisible}>
             <Button
               id="navigation-button-logo"
+              type="text"
               className="cp-navigation-menu-item">
               <div className="cp-navigation-item-logo">
                 {'\u00A0'}
@@ -359,6 +361,7 @@ class Navigation extends React.Component {
             activeTabPath === Pages.library &&
             <Button
               id="expand-collapse-library-tree-button"
+              type="text"
               onClick={this.props.onLibraryCollapsedChange}
               className="cp-navigation-menu-item"
               style={{position: 'absolute', left: 0, bottom: 0, right: 0}}

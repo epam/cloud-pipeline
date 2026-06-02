@@ -214,6 +214,7 @@ class SupportMenuItem extends React.Component {
         >
           <Button
             id={id}
+            type="text"
             className={className}
             style={style}
             onClick={this.openUrl}
@@ -233,6 +234,7 @@ class SupportMenuItem extends React.Component {
         >
           <Button
             id={id}
+            type="text"
             className={className}
             style={style}
             onClick={this.doAction}
@@ -277,6 +279,7 @@ class SupportMenuItem extends React.Component {
       >
         <Button
           id={id}
+          type="text"
           className={className}
           style={style}
         >

@@ -43,6 +43,7 @@ function CounterMenuItem (props) {
     >
       <Button
         id={id}
+        type="text"
         className={className}
         onClick={onClick}
       >
