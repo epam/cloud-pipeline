@@ -46,8 +46,10 @@ from src.utilities.datastorage_operations import DataStorageOperations
 from src.utilities.metadata_operations import MetadataOperations
 from src.utilities.permissions_operations import PermissionsOperations
 from src.utilities.printing.print_service import create_print_service
+from src.utilities.printing.share import create_share_print_service
 from src.utilities.printing.storage import create_storage_print_service
 from src.utilities.printing.pipeline import create_pipeline_print_service
+from src.utilities.printing.cluster import create_cluster_print_service
 from src.utilities.pipeline_run_operations import PipelineRunOperations
 from src.utilities.ssh_operations import run_ssh, run_scp, create_tunnel, kill_tunnels, list_tunnels
 from src.utilities.update_cli_version import UpdateCLIVersionManager
@@ -56,6 +58,7 @@ from src.utilities.user_token_operations import UserTokenOperations
 from src.utilities.dts_operations_manager import DtsOperationsManager
 from src.utilities.cloud_provider_operations import CloudProviderOperations
 from src.version import __version__, __bundle_info__, __component_version__
+from src.utilities.printing.tool import create_tool_print_service
 
 MAX_INSTANCE_COUNT = 1000
 MAX_CORES_COUNT = 10000
@@ -573,133 +576,45 @@ def view_run(run_id, node_details, parameters_details, tasks_details, tags_detai
 
 @cli.command(name='view-cluster')
 @click.argument('node-name', required=False)
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help='Output format. Default is a text table.')
 @common_options
-def view_cluster(node_name):
+def view_cluster(node_name, output_format):
     """Lists cluster nodes
     """
     # If a node id is specified - list details of a node
     if node_name:
-        view_cluster_for_node(node_name)
+        view_cluster_for_node(node_name, output_format)
     # If no argument is specified - list all nodes
     else:
-        view_all_cluster()
+        view_all_cluster(output_format)
 
 
-def view_all_cluster():
-    nodes_table = prettytable.PrettyTable()
-    nodes_table.field_names = ["Name", "Pipeline", "Run", "Addresses", "Created"]
-    nodes_table.align = "l"
+def view_all_cluster(output_format=None):
+    """Display all cluster nodes in the specified format.
+
+    Args:
+        output_format: Optional output format. If 'json', returns JSON. Otherwise returns table.
+    """
     nodes = Cluster.list()
-    if len(nodes) > 0:
-        for node_model in nodes:
-            info_lines = []
-            is_first_line = True
-            pipeline_name = None
-            run_id = None
-            if node_model.run is not None:
-                pipeline_name = node_model.run.pipeline
-                run_id = node_model.run.identifier
-            for address in node_model.addresses:
-                if is_first_line:
-                    info_lines.append([node_model.name, pipeline_name, run_id, address, node_model.created])
-                else:
-                    info_lines.append(['', '', '', address, ''])
-                is_first_line = False
-            if len(info_lines) == 0:
-                info_lines.append([node_model.name, pipeline_name, run_id, None, node_model.created])
-            for line in info_lines:
-                nodes_table.add_row(line)
-            nodes_table.add_row(['', '', '', '', ''])
-        click.echo(nodes_table)
+    print_service = create_cluster_print_service(output_format)
+
+    if nodes:
+        print_service.print_nodes_list(nodes)
     else:
-        click.echo('No data is available for the request')
+        print_service.empty_nodes()
 
 
-def view_cluster_for_node(node_name):
+def view_cluster_for_node(node_name, output_format=None):
+    """Display details of a specific cluster node.
+
+    Args:
+        node_name: Name of the node to display
+        output_format: Optional output format. If 'json', returns JSON. Otherwise returns table.
+    """
     node_model = Cluster.get(node_name)
-    node_main_info_table = prettytable.PrettyTable()
-    node_main_info_table.field_names = ["key", "value"]
-    node_main_info_table.align = "l"
-    node_main_info_table.set_style(12)
-    node_main_info_table.header = False
-    node_main_info_table.add_row(['Name:', node_model.name])
-
-    pipeline_name = None
-    if node_model.run is not None:
-        pipeline_name = node_model.run.pipeline
-
-    node_main_info_table.add_row(['Pipeline:', pipeline_name])
-
-    addresses_string = ''
-    for address in node_model.addresses:
-        addresses_string += address + '; '
-
-    node_main_info_table.add_row(['Addresses:', addresses_string])
-    node_main_info_table.add_row(['Created:', node_model.created])
-    click.echo(node_main_info_table)
-    click.echo()
-
-    if node_model.system_info is not None:
-        table = prettytable.PrettyTable()
-        table.field_names = ["key", "value"]
-        table.align = "l"
-        table.set_style(12)
-        table.header = False
-        for key, value in node_model.system_info:
-            table.add_row([key, value])
-        echo_title('System info:')
-        click.echo(table)
-        click.echo()
-
-    if node_model.labels is not None:
-        table = prettytable.PrettyTable()
-        table.field_names = ["key", "value"]
-        table.align = "l"
-        table.set_style(12)
-        table.header = False
-        for key, value in node_model.labels:
-            if key.lower() == 'node-role.kubernetes.io/master':
-                table.add_row([key, click.style(value, fg='blue')])
-            elif key.lower() == 'kubeadm.alpha.kubernetes.io/role' and value.lower() == 'master':
-                table.add_row([key, click.style(value, fg='blue')])
-            elif key.lower() == 'cloud-pipeline/role' and value.lower() == 'edge':
-                table.add_row([key, click.style(value, fg='blue')])
-            elif key.lower() == 'runid':
-                table.add_row([key, click.style(value, fg='green')])
-            else:
-                table.add_row([key, value])
-        echo_title('Labels:')
-        click.echo(table)
-        click.echo()
-
-    if node_model.allocatable is not None or node_model.capacity is not None:
-        ac_table = prettytable.PrettyTable()
-        ac_table.field_names = ["", "Allocatable", "Capacity"]
-        ac_table.align = "l"
-        keys = []
-        for key in node_model.allocatable.keys():
-            if key not in keys:
-                keys.append(key)
-        for key in node_model.capacity.keys():
-            if key not in keys:
-                keys.append(key)
-        for key in keys:
-            ac_table.add_row([key, node_model.allocatable.get(key, ''), node_model.capacity.get(key, '')])
-        click.echo(ac_table)
-        click.echo()
-
-    if len(node_model.pods) > 0:
-        echo_title("Jobs:", line=False)
-        if len(node_model.pods) > 0:
-            pods_table = prettytable.PrettyTable()
-            pods_table.field_names = ["Name", "Namespace", "Status"]
-            pods_table.align = "l"
-            for pod in node_model.pods:
-                pods_table.add_row([pod.name, pod.namespace, state_utilities.color_state(pod.phase)])
-            click.echo(pods_table)
-        else:
-            click.echo('No jobs are available')
-        click.echo()
+    print_service = create_cluster_print_service(output_format)
+    print_service.print_node_details(node_model)
 
 
 @cli.command(name='run', context_settings=dict(ignore_unknown_options=True))
@@ -1327,14 +1242,16 @@ def storage_set_object_tags(path, tags, version):
 @storage.command('get-object-tags')
 @click.argument('path', required=True)
 @click.option('-v', '--version', required=False, help='Get tags for a specified version')
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help='Output format. Default is a text table.')
 @common_options
-def storage_get_object_tags(path, version):
+def storage_get_object_tags(path, version, output_format):
     """ Gets tags for a specified object.\n
         - PATH: full path to an object in a datastorage starting
         with a Cloud prefix ('s3://' for AWS, 'az://' for MS Azure,
         'gs://' for GCP) or common 'cp://' scheme\n
     """
-    DataStorageOperations.get_object_tags(path, version)
+    DataStorageOperations.get_object_tags(path, version, output_format)
 
 
 @storage.command('delete-object-tags')
@@ -1503,15 +1420,17 @@ def set_tag(entity_class, entity_id, data):
 @tag.command(name='get')
 @click.argument('entity_class', required=True)
 @click.argument('entity_id', required=True)
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help='Output format. Default is a text table.')
 @common_options
-def get_tag(entity_class, entity_id):
+def get_tag(entity_class, entity_id, output_format):
     """ Lists all tags for a specific object or list of objects.\n
     - ENTITY_CLASS: defines an object class. Possible values: data_storage,
     docker_registry, folder, metadata_entity, pipeline, tool, tool_group,
     configuration\n
     - ENTITY_ID: defines name or id of an object of a specified class
     """
-    MetadataOperations.get_metadata(entity_class, entity_id)
+    MetadataOperations.get_metadata(entity_class, entity_id, output_format)
 
 
 @tag.command(name='delete')
@@ -1882,12 +1801,15 @@ def update_cli_version(path):
 @click.option('-g', '--group', help='List group tools.')
 @click.option('-t', '--tool', help='List tool details.')
 @click.option('-v', '--version', help='List tool version details.')
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help='Output format. Default is a text table.')
 @common_options
 def view_tools(tool_path,
                registry,
                group,
                tool,
-               version):
+               version,
+               output_format):
     """
     Either shows details of a tool / tool version or lists tools / tool groups.
 
@@ -1923,37 +1845,40 @@ def view_tools(tool_path,
       pipe view-tools --registry docker-registry:port --group library --tool ubuntu --version 18.04
       pipe view-tools docker-registry:port/library/ubuntu:18.04
     """
+    print_service = create_tool_print_service(output_format)
+
     if tool_path and (registry or group or tool or version):
-        click.echo('Tool path positional argument cannot be specified along with the named parameters.', err=True)
+        print_service.print_error('Tool path positional argument cannot be specified along with the named parameters.')
         sys.exit(1)
     if tool_path:
-        registry, group, tool, version = split_tool_path(tool_path, registry, group, tool, version)
+        registry, group, tool, version = split_tool_path(tool_path, registry, group, tool, version, output_format)
     elif tool and not registry and not group and not version:
-        registry, group, tool, version = split_tool_path(tool, registry, group, None, version, strict=True)
+        registry, group, tool, version = split_tool_path(tool, registry, group, None, version, output_format,
+                                                         strict=True)
     else:
         if version and not tool:
-            click.echo('Please specify tool name.', err=True)
+            print_service.print_error('Please specify tool name.')
             sys.exit(1)
         if tool and not group:
-            click.echo('Please specify tool group.', err=True)
+            print_service.print_error('Please specify tool group.')
             sys.exit(1)
 
     if not registry and not group and not tool and not version:
-        ToolOperations.view_default_group()
+        ToolOperations.view_default_group(print_service)
     elif group and tool and version:
-        ToolOperations.view_version(group, tool, version, registry)
+        ToolOperations.view_version(group, tool, version, registry, print_service)
     elif group and tool:
-        ToolOperations.view_tool(group, tool, registry)
+        ToolOperations.view_tool(group, tool, registry, print_service)
     elif group:
-        ToolOperations.view_group(group, registry)
+        ToolOperations.view_group(group, registry, print_service)
     elif registry:
-        ToolOperations.view_registry(registry)
+        ToolOperations.view_registry(registry, print_service)
     else:
-        click.echo('Specify either registry, group, tool or version parameters', err=True)
+        print_service.print_error('Specify either registry, group, tool or version parameters')
         sys.exit(1)
 
 
-def split_tool_path(tool_path, registry, group, tool, version, strict=False):
+def split_tool_path(tool_path, registry, group, tool, version, output_format=None, strict=False):
     if tool_path:
         match = re.search('^([^/]+)(/([^/]+)(/([^/:]+)(:([^/:]+))?)?)?$', tool_path)
         if match:
@@ -1962,9 +1887,10 @@ def split_tool_path(tool_path, registry, group, tool, version, strict=False):
             tool = match.group(5) if match.group(5) else tool
             version = match.group(7) if match.group(7) else version
     if strict and (not registry or not group or not tool):
-        click.echo('Please specify full tool path using one of the following patterns:\n'
-                   'registry/group/tool\n'
-                   'registry/group/tool:version', err=True)
+        print_service = create_tool_print_service(output_format)
+        print_service.print_error('Please specify full tool path using one of the following patterns:\n'
+                                 'registry/group/tool\n'
+                                 'registry/group/tool:version')
         sys.exit(1)
     return registry, group, tool, version
 
@@ -2020,12 +1946,14 @@ def share():
 
 @share.command(name='get')
 @click.argument('run-id', required=True)
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help='Output format. Default is a text table.')
 @common_options
-def get_share_run(run_id):
+def get_share_run(run_id, output_format):
     """
     Returns users and groups this run shared
     """
-    PipelineRunShareManager().get(run_id)
+    PipelineRunShareManager().get(run_id, create_share_print_service(output_format))
 
 
 @share.command(name='add')
