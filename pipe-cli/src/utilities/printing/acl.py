@@ -171,7 +171,7 @@ class JsonAclPrintService(AclPrintService):
         click.echo(self._to_json(objects_list))
 
     def error(self, message, err=True):
-        click.echo(self._to_json({'error': message}), err=err)
+        click.echo(json.dumps({'error': message}), err=err)
 
 
 def create_acl_print_service(output_format):

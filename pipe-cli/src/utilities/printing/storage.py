@@ -17,6 +17,8 @@ import click
 
 import datetime
 from abc import abstractmethod, ABCMeta
+
+from future.utils import iteritems
 from prettytable import prettytable
 
 from src.model.data_storage_wrapper_type import WrapperType
@@ -208,7 +210,7 @@ class JsonStoragePrintService(StoragePrintService):
             click.echo(self._to_json(self.__buffer))
 
     def error(self, message, err=False, buf=False):
-        click.echo(self._to_json({'error': message}), err=err)
+        click.echo(json.dumps({'error': message}), err=err)
 
     def add_item(self, item, show_versions, show_extended):
         # item:
@@ -267,6 +269,49 @@ class JsonStoragePrintService(StoragePrintService):
 
     def empty_items(self):
         click.echo(self._to_json([]))
+
+
+class StorageObjectTagPrintService(object):
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def print_tags(self, path, tags):
+        pass
+
+
+class PrettyTableStorageObjectTagPrintService(StorageObjectTagPrintService):
+
+    def print_tags(self, path, tags):
+        if not tags:
+            click.echo("No tags available for path '{}'.".format(path))
+            return
+        table = prettytable.PrettyTable()
+        table.field_names = ["Tag name", "Value"]
+        table.align = "l"
+        table.header = True
+        for key, value in iteritems(tags):
+            table.add_row([key, value])
+        click.echo(table)
+
+
+class JsonStorageObjectTagPrintService(StorageObjectTagPrintService):
+
+    @staticmethod
+    def _to_json(obj):
+        return json.dumps(obj, indent=2, default=str, ensure_ascii=False)
+
+    def print_tags(self, path, tags):
+        if not tags:
+            click.echo(self._to_json([]))
+            return
+        result = [{'tagName': key, 'value': value} for key, value in iteritems(tags)]
+        click.echo(self._to_json(result))
+
+
+def create_storage_object_tag_print_service(output_format):
+    if output_format == 'json':
+        return JsonStorageObjectTagPrintService()
+    return PrettyTableStorageObjectTagPrintService()
 
 
 def create_storage_print_service(output):
