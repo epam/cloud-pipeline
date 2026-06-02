@@ -23,6 +23,7 @@ import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import com.epam.pipeline.common.MessageHelper;
@@ -182,25 +183,25 @@ public class RunLogManager {
         final List<PipelineTask> tasks = new ArrayList<>(ListUtils.emptyIfNull(loadRunTasks(run, runId)));
 
         tasks.forEach(task -> {
-            if (run.getStatus().isFinal() && !task.getStatus().isFinal()) {
+            if (run.getStatus().isFinal() && statusNullOrNotFinal(task)) {
                 task.setStatus(run.getStatus());
                 if (task.getFinished() == null) {
                     task.setFinished(run.getEndDate());
                 }
             }
             if ((StringUtils.isEmpty(task.getInstance()) || task.getInstance().equals(run.getPodId()))
-                    && !task.getStatus().isFinal()) {
+                    && statusNullOrNotFinal(task)) {
                 task.setStatus(run.getStatus());
             }
             if (task.getStarted() == null &&
                     (StringUtils.isEmpty(task.getInstance()) || task.getInstance().equals(run.getPodId())
-                            || task.getStatus().isFinal())) {
+                            || !statusNullOrNotFinal(task))) {
                 task.setStarted(task.getCreated());
             }
-            if (!task.getStatus().isFinal()) {
+            if (statusNullOrNotFinal(task)) {
                 task.setFinished(null);
             }
-            if (task.getName().equals(run.getPipelineName())) {
+            if (Objects.equals(task.getName(), run.getPipelineName())) {
                 task.setCreated(run.getStartDate());
                 task.setStarted(tasks.get(0).getCreated());
             }
@@ -288,5 +289,9 @@ public class RunLogManager {
             }
         }
         return runLogDao.loadTasksForRun(runId);
+    }
+
+    private boolean statusNullOrNotFinal(final PipelineTask task) {
+        return Objects.isNull(task.getStatus()) || !task.getStatus().isFinal();
     }
 }
