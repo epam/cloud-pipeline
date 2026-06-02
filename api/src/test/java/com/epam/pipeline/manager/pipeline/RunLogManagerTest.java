@@ -289,6 +289,28 @@ public class RunLogManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void loadTasksByRunIdShouldNormalizeStorageTaskWithNullStatus() {
+        final PipelineRun run = buildRun(RUN_ID, TaskStatus.STOPPED);
+        run.setLogsStoragePath(LOGS_STORAGE_PREFIX + RUN_ID);
+        run.setStartDate(new Date(System.currentTimeMillis() - DURATION1));
+        run.setEndDate(new Date());
+        run.setPodId(POD_NAME);
+
+        when(runCRUDServiceMock.loadRunById(RUN_ID)).thenReturn(run);
+
+        final PipelineTask storageTask = buildPipelineTask(TASK_NAME, null);
+        storageTask.setCreated(new Date(System.currentTimeMillis() - DURATION2));
+        storageTask.setInstance(POD_NAME);
+        when(runLogStorageManager.loadTasksFromStorage(RUN_ID))
+                .thenReturn(Collections.singletonList(storageTask));
+
+        final List<PipelineTask> result = logManager.loadTasksByRunId(RUN_ID);
+
+        assertEquals(1, result.size());
+        assertEquals(TaskStatus.STOPPED, result.get(0).getStatus());
+    }
+
+    @Test
     public void loadTasksByRunIdShouldNormalizeDatabaseTasks() {
         // Given: A final run without storage path and non-final task in database
         final PipelineRun run = buildRun(RUN_ID, TaskStatus.FAILURE);
@@ -492,7 +514,9 @@ public class RunLogManagerTest extends AbstractManagerTest {
     private static PipelineTask buildPipelineTask(final String name, final TaskStatus status) {
         final PipelineTask task = new PipelineTask();
         task.setName(name);
-        task.setStatus(status);
+        if (status != null) {
+            task.setStatus(status);
+        }
         return task;
     }
 
