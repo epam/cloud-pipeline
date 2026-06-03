@@ -943,7 +943,7 @@ export default class PermissionsForm extends React.Component {
           onCancel={this.closeFindUserDialog}
           onOk={this.onSelectUser}
           footer={(
-            <div className={styles.modalFooter}>
+            <div className="cp-modal-footer-actions">
               <Button onClick={this.closeFindUserDialog}>
                 Cancel
               </Button>
@@ -1000,7 +1000,7 @@ export default class PermissionsForm extends React.Component {
           onCancel={this.closeFindGroupDialog}
           onOk={this.onSelectGroup}
           footer={(
-            <div className={styles.modalFooter}>
+            <div className="cp-modal-footer-actions">
               <Button onClick={this.closeFindGroupDialog}>
                 Cancel
               </Button>

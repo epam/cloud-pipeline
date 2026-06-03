@@ -107,9 +107,3 @@
 .permissions-form-footer .permissions-form-action {
   margin-left: 5px;
 }
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 5px;
-}

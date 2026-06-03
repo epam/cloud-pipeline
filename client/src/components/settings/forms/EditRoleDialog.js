@@ -1061,17 +1061,19 @@ class EditRoleDialog extends React.Component {
       ? this.props.roleInfo.value.blocked
       : false;
     return (
-      <Row type="flex">
+      <div className="cp-modal-footer-actions cp-modal-footer-actions--split">
         {this.isAdmin || this.isUsersAdmin ? (
-          <Button
-            disabled={readOnly}
-            id="edit-user-form-block-unblock"
-            danger
-            onClick={this.operationWrapper(this.blockUnblockClicked)}>
-            {blocked ? 'UNBLOCK' : 'BLOCK'}
-          </Button>
+          <div className="cp-modal-footer-actions-group">
+            <Button
+              disabled={readOnly}
+              id="edit-user-form-block-unblock"
+              danger
+              onClick={this.operationWrapper(this.blockUnblockClicked)}>
+              {blocked ? 'UNBLOCK' : 'BLOCK'}
+            </Button>
+          </div>
         ) : null}
-        <div style={{marginLeft: 'auto'}}>
+        <div className="cp-modal-footer-actions-group cp-modal-footer-actions-group--end">
           <Button
             id="revert-changes-edit-user-form"
             onClick={() => this.revertChanges()}
@@ -1096,7 +1098,7 @@ class EditRoleDialog extends React.Component {
             OK
           </Button>
         </div>
-      </Row>
+      </div>
     );
   };
 

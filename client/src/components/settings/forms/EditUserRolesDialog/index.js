@@ -1181,8 +1181,8 @@ export default class EditUserRolesDialog extends React.Component {
     }
     if (activeTab === 'user') {
       return (
-        <Row type="flex" justify="space-between">
-          <div>
+        <div className="cp-modal-footer-actions cp-modal-footer-actions--split">
+          <div className="cp-modal-footer-actions-group">
             <Button
               disabled={readOnly}
               id="delete-user-button"
@@ -1198,7 +1198,7 @@ export default class EditUserRolesDialog extends React.Component {
               }
             </Button>
           </div>
-          <div>
+          <div className="cp-modal-footer-actions-group">
             <Button
               id="revert-changes-edit-user-form"
               onClick={() => this.revertChanges()}
@@ -1223,11 +1223,11 @@ export default class EditUserRolesDialog extends React.Component {
               OK
             </Button>
           </div>
-        </Row>
+        </div>
       );
     }
     return (
-      <Row type="flex" justify="end">
+      <div className="cp-modal-footer-actions">
         <Button
           id="close-edit-user-form"
           type="primary"
@@ -1235,7 +1235,7 @@ export default class EditUserRolesDialog extends React.Component {
         >
           OK
         </Button>
-      </Row>
+      </div>
     );
   };
 

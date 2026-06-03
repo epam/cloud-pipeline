@@ -842,3 +842,64 @@ h6 {
   cursor: default;
   color: var(--cp-color-text-disabled);
 }
+
+.ant-modal-footer > .ant-row {
+  display: flex;
+  width: 100%;
+  max-width: 100%;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-inline: 0 !important;
+}
+
+.ant-modal-footer > .ant-row:has(> div:nth-child(2)) {
+  justify-content: space-between;
+}
+
+.ant-modal-footer > .ant-row:not(:has(> div)) {
+  justify-content: flex-end;
+}
+
+.ant-modal-footer > .ant-row > div {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ant-modal-footer > .ant-row > div[style*="margin-left"] {
+  margin-left: auto !important;
+}
+
+.ant-modal-footer > div:not(.ant-row) {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+
+.cp-modal-footer-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+  justify-content: flex-end;
+}
+
+.cp-modal-footer-actions--split {
+  justify-content: space-between;
+}
+
+.cp-modal-footer-actions-group {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cp-modal-footer-actions-group--end {
+  margin-left: auto;
+}
