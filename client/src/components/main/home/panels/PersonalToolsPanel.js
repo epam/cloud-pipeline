@@ -596,6 +596,10 @@ export default class PersonalToolsPanel extends React.Component {
               userTagsPayload: defaultPayload
             }
           }, async () => {
+            if (!this.state.runToolInfo) {
+              // cancelled
+              return;
+            }
             const hide = message.loading('Checking tool size...', 0);
             const inputs = getInputPaths(defaultPayload.params);
             const outputs = getOutputPaths(defaultPayload.params);
@@ -606,17 +610,31 @@ export default class PersonalToolsPanel extends React.Component {
               dockerRegistries: this.props.dockerRegistries,
               dataStorages: this.props.dataStorageAvailable
             });
+            if (!this.state.runToolInfo) {
+              // cancelled
+              hide();
+              return;
+            }
             const params = await applyUserCapabilities(
               defaultPayload.params || {},
               this.props.preferences,
               tool.platform
             );
+            if (!this.state.runToolInfo) {
+              // cancelled
+              hide();
+              return;
+            }
             const versionErrors = await checkToolVersionErrors(
               this.state.runToolInfo.payload.dockerImage,
               this.props.preferences,
               this.props.dockerRegistries
             );
             hide();
+            if (!this.state.runToolInfo) {
+              // cancelled
+              return;
+            }
             this.setState({
               runToolInfo: {
                 ...this.state.runToolInfo,
