@@ -122,7 +122,6 @@ const Root = () =>
   <Provider
     {...{
       routing,
-      router: routing,
       googleApi,
       fireCloudMethods,
       localization,

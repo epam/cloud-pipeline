@@ -123,7 +123,7 @@ function buildSLSProperties (properties) {
   return fromJSON(properties);
 }
 
-@inject('awsRegions', 'availableCloudRegions', 'cloudProviders', 'router', 'authenticatedUserInfo')
+@inject('awsRegions', 'availableCloudRegions', 'cloudProviders', 'routing', 'authenticatedUserInfo')
 @observer
 export default class AWSRegionsForm extends React.Component {
   static propTypes = {
@@ -153,10 +153,10 @@ export default class AWSRegionsForm extends React.Component {
   }
 
   componentDidMount () {
-    const {route, router} = this.props;
+    const {route, routing} = this.props;
     this.props.onInitialize && this.props.onInitialize(this);
-    if (route && router) {
-      router.setRouteLeaveHook(route, this.checkSettingsBeforeLeave);
+    if (route && routing) {
+      routing.setRouteLeaveHook(route, this.checkSettingsBeforeLeave);
     }
   }
 
@@ -649,11 +649,11 @@ export default class AWSRegionsForm extends React.Component {
   };
 
   checkSettingsBeforeLeave = (nextLocation) => {
-    const {router} = this.props;
+    const {routing} = this.props;
     const {changesCanBeSkipped} = this.state;
     const makeTransition = nextLocation => {
       this.setState({changesCanBeSkipped: true},
-        () => router.push(nextLocation)
+        () => routing.push(nextLocation)
       );
     };
     if (this.regionModified && !changesCanBeSkipped) {

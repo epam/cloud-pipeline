@@ -2,6 +2,10 @@
  * MobX store synced with React Router 7 (createHashRouter).
  * RouterStore receives the router via setRouter(); it subscribes to router.state
  * and exposes location, action, params and navigation methods (push, replace, go, etc.).
+ *
+ * Injected from Root as `routing` (use @inject('routing') or inject(({routing}) => ...)).
+ * Do not confuse with the `router` prop from the withRouter HOC — that is a separate,
+ * legacy compatibility object for class components still on the migration path.
  */
 
 import {action, makeObservable, observable} from 'mobx';

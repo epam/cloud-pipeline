@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {inject, observer, Provider} from 'mobx-react';
+import {inject, observer} from 'mobx-react';
 import {computed, makeObservable} from 'mobx';
 import AIChat from './ai-chat';
 import styles from './ai-chat.css';
@@ -58,11 +58,9 @@ class AIChatPage extends React.Component {
     const {loaded} = preferences;
     return (
       <div className={styles.pageContainer}>
-        <Provider router={this.props.router}>
-          {
-            loaded ? this.renderContent() : <LoadingView />
-          }
-        </Provider>
+        {
+          loaded ? this.renderContent() : <LoadingView />
+        }
       </div>
     );
   }

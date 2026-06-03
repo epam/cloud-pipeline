@@ -118,7 +118,7 @@ function PoolCard ({
   onRemove,
   onClick,
   nodes,
-  router
+  routing
 }) {
   if (!pool) {
     return null;
@@ -151,11 +151,11 @@ function PoolCard ({
   const totalLabel = displayCount(total);
   const fontSize = total >= 100 ? 10 : 12;
   const navigate = (path) => {
-    if (!router) {
+    if (!routing) {
       return;
     }
     if (path) {
-      router.push(path);
+      routing.push(path);
     }
   };
   return (

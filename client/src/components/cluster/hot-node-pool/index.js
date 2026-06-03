@@ -37,7 +37,6 @@ import HotNodePoolScheduleDelete from '../../../models/cluster/HotNodePoolSchedu
 import PoolCard from './pool-card';
 import styles from './hot-node-pool.css';
 import roleModel from '../../../utils/roleModel';
-import {withRouter} from '../../../utils/with-router';
 import {isAdmin} from '../utilities/access-permissinos';
 
 async function updateSchedule (payload, scheduleId) {
@@ -59,6 +58,7 @@ async function removeSchedule (scheduleId) {
 }
 
 @roleModel.authenticationInfo
+@inject('routing')
 @inject(() => {
   return {
     pools,
@@ -224,15 +224,15 @@ class HotCluster extends React.Component {
   };
 
   onPoolClick = (pool) => {
-    const {router} = this.props;
-    router.push(`/cluster?pool_id=${pool.id}`);
+    const {routing} = this.props;
+    routing.push(`/cluster?pool_id=${pool.id}`);
   }
 
   render () {
     const {
       pools: poolsRequest,
       clusterNodes: nodes,
-      router
+      routing
     } = this.props;
     if (
       (poolsRequest.pending && !poolsRequest.loaded) ||
@@ -306,7 +306,7 @@ class HotCluster extends React.Component {
                 onRemove={this.onRemovePool(pool)}
                 onClick={() => this.onPoolClick(pool)}
                 nodes={(nodes.value || []).map(node => node)}
-                router={router}
+                routing={routing}
               />
             ))
           }
@@ -323,4 +323,4 @@ class HotCluster extends React.Component {
   }
 }
 
-export default withRouter(HotCluster);
+export default HotCluster;

@@ -23,8 +23,8 @@ import Quotas from './quotas';
 import Reports from './reports';
 import roleModel from '../../utils/roleModel';
 
-function billing ({preferences, authenticatedUserInfo, router}) {
-  const location = router?.location || {};
+function billing ({preferences, authenticatedUserInfo, routing}) {
+  const location = routing?.location || {};
   const isBillingPrivilegedUser = authenticatedUserInfo && authenticatedUserInfo.loaded &&
     roleModel.isManager.billing({props: {authenticatedUserInfo}});
   if (
@@ -51,7 +51,7 @@ function billing ({preferences, authenticatedUserInfo, router}) {
         )
       }
       location={location}
-      router={router}
+      router={routing}
     >
       <Outlet />
     </BillingNavigation>
@@ -62,4 +62,4 @@ export {
   Quotas as BillingQuotas,
   Reports as BillingReports
 };
-export default inject('preferences', 'router')(roleModel.authenticationInfo(observer(billing)));
+export default inject('preferences', 'routing')(roleModel.authenticationInfo(observer(billing)));

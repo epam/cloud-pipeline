@@ -29,7 +29,7 @@ import SubSettings from './sub-settings';
 const notificationSettingsRequest = new NotificationSettings();
 const emailTemplatesRequest = new NotificationTemplates();
 
-@inject('router', 'users', 'authenticatedUserInfo')
+@inject('routing', 'users', 'authenticatedUserInfo')
 @inject(() => ({
   notificationSettings: notificationSettingsRequest,
   emailTemplates: emailTemplatesRequest
@@ -53,12 +53,12 @@ export default class EmailNotificationSettings extends React.Component {
   componentDidMount () {
     const {
       route,
-      router,
+      routing,
       notificationSettings,
       emailTemplates
     } = this.props;
-    if (route && router) {
-      router.setRouteLeaveHook(route, this.checkSettingsBeforeLeave);
+    if (route && routing) {
+      routing.setRouteLeaveHook(route, this.checkSettingsBeforeLeave);
     }
     notificationSettings.fetch();
     emailTemplates.fetch();
@@ -100,11 +100,11 @@ export default class EmailNotificationSettings extends React.Component {
   }
 
   checkSettingsBeforeLeave = (nextLocation) => {
-    const {router} = this.props;
+    const {routing} = this.props;
     const {changesCanBeSkipped} = this.state;
     const makeTransition = nextLocation => {
       this.setState({changesCanBeSkipped: true},
-        () => router.push(nextLocation)
+        () => routing.push(nextLocation)
       );
     };
     if (this.templateModified && !changesCanBeSkipped) {

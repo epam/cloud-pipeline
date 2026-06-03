@@ -47,7 +47,7 @@ const DEFAULT_REGISTRY_ID = 1;
   'allowedInstanceTypes',
   'dockerRegistries',
   'awsRegions',
-  'router',
+  'routing',
   'authenticatedUserInfo',
   'preferences',
   'pipelines'

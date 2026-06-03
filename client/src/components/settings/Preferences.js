@@ -23,7 +23,7 @@ import PreferenceGroup from './forms/PreferenceGroup';
 import LoadingView from '../special/LoadingView';
 import SubSettings from './sub-settings';
 
-@inject('preferences', 'router', 'authenticatedUserInfo')
+@inject('preferences', 'routing', 'authenticatedUserInfo')
 @observer
 export default class Preferences extends React.Component {
   state = {
@@ -42,9 +42,9 @@ export default class Preferences extends React.Component {
   }
 
   componentDidMount () {
-    const {route, router, preferences} = this.props;
-    if (route && router) {
-      router.setRouteLeaveHook(route, this.checkSettingsBeforeLeave);
+    const {route, routing, preferences} = this.props;
+    if (route && routing) {
+      routing.setRouteLeaveHook(route, this.checkSettingsBeforeLeave);
     }
     preferences.fetch();
   }
@@ -104,11 +104,11 @@ export default class Preferences extends React.Component {
   };
 
   checkSettingsBeforeLeave = (nextLocation) => {
-    const {router} = this.props;
+    const {routing} = this.props;
     const {changesCanBeSkipped} = this.state;
     const makeTransition = nextLocation => {
       this.setState({changesCanBeSkipped: true},
-        () => router.push(nextLocation)
+        () => routing.push(nextLocation)
       );
     };
     if (this.templateModified && !changesCanBeSkipped) {
@@ -236,7 +236,7 @@ export default class Preferences extends React.Component {
                 preferences={this.getPreferencesForGroup(group.key)}
                 ref={this.preferenceGroupFormRef}
                 search={this.state.search}
-                router={this.props.router}
+                router={this.props.routing}
               />
             )
           }

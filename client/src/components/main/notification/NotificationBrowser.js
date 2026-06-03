@@ -57,7 +57,7 @@ function dateSorter (a, b) {
   }
 };
 
-@inject('userNotifications', 'router')
+@inject('userNotifications', 'routing')
 @observer
 export default class NotificationBrowser extends React.Component {
   state = {
@@ -304,7 +304,7 @@ export default class NotificationBrowser extends React.Component {
                   >
                     <NotificationActions
                       notification={notification}
-                      router={this.props.router}
+                      router={this.props.routing}
                     />
                   </div>
                 </div>

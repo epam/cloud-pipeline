@@ -24,14 +24,14 @@ import ThemedReport from './themed-report';
 import styles from './reports.css';
 import QuotaProvider from '../quotas/quota-provider';
 
-function Reports ({router}) {
-  const location = router?.location || {};
+function Reports ({routing}) {
+  const location = routing?.location || {};
   return (
     <QuotaProvider>
       <ThemedReport>
         <Discounts>
           <RestoreLayoutProvider>
-            <Filters location={location} router={router}>
+            <Filters location={location} router={routing}>
               <Container className={styles.chartsLayout}>
                 <Outlet />
               </Container>
@@ -43,7 +43,7 @@ function Reports ({router}) {
   );
 }
 
-export default inject('router')(Reports);
+export default inject('routing')(Reports);
 export {default as InstanceReport} from './instance-report';
 export {default as StorageReport} from './storage-report';
 export {default as GeneralReport} from './general-report';
