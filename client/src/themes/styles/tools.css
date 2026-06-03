@@ -89,8 +89,8 @@
   border: 1px solid var(--cp-color-bg-elevated-header);
 }
 
-.cp-edit-permissions-selected-row {
-  background-color: var(--cp-color-interactive-selected-bg);
+.cp-edit-permissions-selected-row > td {
+  background-color: var(--cp-color-interactive-selected-bg) !important;
 }
 
 .cp-tool-white-listed-version > td,
