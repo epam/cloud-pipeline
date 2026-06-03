@@ -1720,7 +1720,7 @@ export default class Tool extends localization.LocalizedReactComponent {
   get versionsScanResObject () {
     const versions = {};
     this.props.versions.value.versions.forEach(version => {
-      versions[version.version] = version.scanResult;
+      versions[version.version] = version;
     });
     return versions;
   };
