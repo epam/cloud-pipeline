@@ -36,6 +36,7 @@ import sys
 import math
 import socket
 import jwt
+import signal
 
 SPOT_UNAVAILABLE_EXIT_CODE = 5
 LIMIT_EXCEEDED_EXIT_CODE = 6
@@ -47,6 +48,12 @@ PENDING = 0
 EBS_TYPE_PARAM = "cluster.aws.ebs.type"
 NETWORKS_PARAM = "cluster.networks.config"
 NODE_WAIT_TIME_SEC = "cluster.nodeup.wait.sec"
+NODE_INIT_LOG_COLLECTION_INTERVAL_SEC_PREFERENCE = "cluster.nodeup.log.collection.interval.sec"
+NODE_INIT_LOG_COLLECTION_BUCKET_PATH_PREFERENCE = "cluster.nodeup.log.collection.storage.path"
+NODE_INIT_LOG_COLLECTION_DEFAULT_INTERVAL_SEC = 30
+NODE_INIT_LOG_COLLECTION_DEFAULT_BUCKET_PATH = "nodes-init-logs"
+COMMIT_USERNAME_PREFERENCE = "commit.username"
+COMMIT_DEPLOY_KEY_PREFERENCE = "commit.deploy.key"
 NODEUP_TASK = "InitializeNode"
 LIMIT_EXCEEDED_ERROR_MASSAGE = 'Instance limit exceeded. A new one will be launched as soon as free space will be available.'
 INSUFFICIENT_CAPACITY_ERROR_MASSAGE = 'Insufficient instance capacity.'
@@ -1449,6 +1456,153 @@ def build_tags_from_input(input_tags):
     return instance_tags
 
 
+def collect_and_upload_node_logs(ins_id,
+                                 ins_ip,
+                                 s3_client=None,
+                                 iteration=None):
+    """
+    SSHes into ins_ip, collects init logs, and uploads them to system bucket
+    (CP_PREF_STORAGE_SYSTEM_STORAGE_NAME) under <prefix>/<ins_id>/, where
+    <prefix> is defined in NODE_INIT_LOGS_COLLECTION_BUCKET_PATH_PREFERENCE preference (defaults to NODE_INIT_LOGS_COLLECTION_DEFAULT_BUCKET_PATH)
+    """
+    import subprocess
+
+    commit_username = get_preference(COMMIT_USERNAME_PREFERENCE)
+    commit_deploy_key = get_preference(COMMIT_DEPLOY_KEY_PREFERENCE)
+
+    if not commit_username:
+        pipe_log('Cannot ssh to the node - username is missing. Skipping log collection.')
+        return
+
+    if not commit_deploy_key:
+        pipe_log('Cannot ssh to the node - key is missing. Skipping log collection.')
+        return
+
+    system_bucket = os.environ.get("CP_PREF_STORAGE_SYSTEM_STORAGE_NAME", "")
+
+    if not system_bucket:
+        pipe_log('Cannot determine system bucket for node init logs. Skipping log collection.')
+        return
+
+    s3 = s3_client or boto3.client('s3')
+
+    prefix = NODE_INIT_LOG_COLLECTION_DEFAULT_BUCKET_PATH
+    raw_prefix = get_preference(NODE_INIT_LOG_COLLECTION_BUCKET_PATH_PREFERENCE)
+    if raw_prefix:
+        prefix = raw_prefix
+
+    if prefix.endswith("/"):
+        prefix = prefix[:-1]
+
+    log_prefix = "{}/{}/".format(prefix, ins_id)
+
+    ssh_base = [
+        'ssh', '-o', 'StrictHostKeyChecking=no',
+        '-o', 'ConnectTimeout=10',
+        '-i', commit_deploy_key,
+        '{}@{}'.format(commit_username, ins_ip)
+    ]
+
+    log_sources = {
+        'user_data.log':  'cat /var/log/user_data.log 2>/dev/null || true',
+        'kubelet.log':    'journalctl -u kubelet --no-pager 2>/dev/null || true',
+        'docker.log':     'journalctl -u docker --no-pager 2>/dev/null || true',
+    }
+
+    if iter is not None:
+        pipe_log('Collecting init logs from {} (iter {})'.format(ins_id, iteration))
+    else:
+        pipe_log('Collecting init logs from {}'.format(ins_id))
+
+    for filename, remote_cmd in log_sources.items():
+        try:
+            proc = subprocess.Popen(
+                ssh_base + [remote_cmd],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+            try:
+                log_content, _ = proc.communicate()
+                if not log_content:
+                    pipe_log('Collecting init logs from {}: {} is empty or not yet available'.format(ins_id, filename))
+                    continue
+
+                s3_key = "{}{}".format(log_prefix, filename)
+                s3.put_object(Bucket=system_bucket, Key=s3_key, Body=log_content)
+                pipe_log('Collecting init logs from {}: {} uploaded to s3://{}/{}'.format(ins_id,
+                                                                                          filename,
+                                                                                          system_bucket,
+                                                                                          s3_key))
+            except Exception:
+                proc.kill()
+                proc.communicate()
+                raise
+        except Exception as e:
+            pipe_log_warn('Failed to collect/upload {} from {}: {}'.format(filename, ins_id, str(e)))
+
+
+def iteratively_collect_and_upload_node_logs(ins_id, ins_ip):
+    system_bucket = os.environ.get("CP_PREF_STORAGE_SYSTEM_STORAGE_NAME", "")
+    if not system_bucket:
+        pipe_log_warn('Cannot determine system bucket, skipping log collection for instance {}.'.format(ins_id))
+        return 0
+
+    commit_username = get_preference(COMMIT_USERNAME_PREFERENCE)
+    commit_deploy_key = get_preference(COMMIT_DEPLOY_KEY_PREFERENCE)
+
+    if not commit_username:
+        pipe_log('Cannot ssh to the node - username is missing. Skipping log collection.')
+        return 0
+
+    if not commit_deploy_key:
+        pipe_log('Cannot ssh to the node - key is missing. Skipping log collection.')
+        return 0
+
+    pipe_log('Log collection for instance {}: system bucket {}'.format(ins_id, system_bucket))
+
+    interval_sec = NODE_INIT_LOG_COLLECTION_DEFAULT_INTERVAL_SEC
+    raw_interval = get_preference(NODE_INIT_LOG_COLLECTION_INTERVAL_SEC_PREFERENCE)
+    if raw_interval and str(raw_interval).isdigit():
+        interval_sec = int(raw_interval)
+
+    pipe_log('Log collection for instance {}: interval {} sec'.format(ins_id, interval_sec))
+
+    pid = os.fork()
+    if pid != 0:
+        pipe_log('Log collection for instance {}: forked child process, pid {}'.format(ins_id, pid))
+        # parent process
+        return pid
+
+    # Child process
+    try:
+        _stop = [False]
+        def _handle_sigterm(signum, frame):
+            pipe_log('Log collection for instance {} received stop signal'.format(ins_id))
+            _stop[0] = True
+        signal.signal(signal.SIGTERM, _handle_sigterm)
+
+        s3 = boto3.client('s3')
+        iteration = 0
+        pipe_log('Log collection started for instance {}'.format(ins_id))
+        while not _stop[0]:
+            iteration += 1
+            collect_and_upload_node_logs(ins_id, ins_ip, s3_client=s3, iteration=iteration)
+            pipe_log('Log collection instance {}: waiting {} seconds'.format(ins_id, interval_sec))
+
+            # splitting interval on short (0.1 sec) intervals to receive stop signal
+            for _ in range(interval_sec * 10):
+                if _stop[0]:
+                    break
+                sleep(0.1)
+
+        collect_and_upload_node_logs(ins_id, ins_ip, s3_client=s3, iteration=iteration + 1)
+        pipe_log('Log collection stopped for instance {}'.format(ins_id))
+    except Exception as e:
+        pipe_log_warn('Log collection for instance {} received unexpected error: {}'.format(ins_id, str(e)))
+    finally:
+        os._exit(0)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--ins_key", type=str, required=True)
@@ -1594,7 +1748,16 @@ def main():
                                           global_distribution_url, pre_pull_images, instance_additional_spec,
                                           availability_zone, security_groups, subnet, network_interface, is_dedicated, node_ssh_port, performance_network, input_tags)
 
-        check_instance(ec2, ins_id, run_id, num_rep, time_rep, api)
+        log_collector_pid = iteratively_collect_and_upload_node_logs(ins_id, ins_ip)
+        try:
+            check_instance(ec2, ins_id, run_id, num_rep, time_rep, api)
+        finally:
+            if log_collector_pid:
+                try:
+                    os.kill(log_collector_pid, signal.SIGTERM)
+                    os.waitpid(log_collector_pid, 0)
+                except OSError:
+                    pass
 
         nodename = verify_regnode(ec2, ins_id, num_rep, time_rep, run_id, api)
         label_node(nodename, run_id, api, cluster_name, cluster_role, aws_region, additional_labels)
