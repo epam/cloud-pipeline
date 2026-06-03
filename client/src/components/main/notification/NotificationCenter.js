@@ -545,7 +545,7 @@ export default class NotificationCenter extends React.Component {
               </Button>
             </Row>
           }
-          visible={!!blockingNotification}>
+          open={!!blockingNotification}>
           {
             blockingNotification ? (
               <Markdown
@@ -559,7 +559,7 @@ export default class NotificationCenter extends React.Component {
             onCancel={this.closePreviewNotification}
             footer={false}
             title={(<b>{this.state.previewNotification.title}</b>)}
-            visible
+            open
           >
             <PreviewNotification
               text={this.state.previewNotification.body}

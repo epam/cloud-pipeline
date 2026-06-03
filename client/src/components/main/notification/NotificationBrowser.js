@@ -394,7 +394,7 @@ export default class NotificationBrowser extends React.Component {
             onCancel={() => this.readNotification(previewNotification)}
             footer={false}
             title={(<b>{previewNotification.subject}</b>)}
-            visible
+            open
           >
             <PreviewNotification
               text={previewNotification.text}

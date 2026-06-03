@@ -57,8 +57,13 @@ export default function buildAntdTheme (parsedConfiguration, identifier) {
   if (palette['--cp-color-primary-active']) {
     token.colorLinkActive = palette['--cp-color-primary-active'];
   }
-  token.fontSize = 12;
-  token.fontSizeSM = 12;
+  const fontSize = 12;
+  const lineHeightPx = 18;
+  const lineHeight = lineHeightPx / fontSize;
+  token.fontSize = fontSize;
+  token.fontSizeSM = fontSize;
+  token.lineHeight = lineHeight;
+  token.lineHeightSM = lineHeight;
   return {
     algorithm: dark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
     cssVar: {key: 'cp-ant'},

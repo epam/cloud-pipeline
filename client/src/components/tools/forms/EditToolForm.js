@@ -163,7 +163,7 @@ export default class EditToolForm extends React.Component {
       description: PropTypes.string,
       mask: PropTypes.number,
       defaultCommand: PropTypes.string,
-      endpoints: PropTypes.object
+      endpoints: PropTypes.array
     }),
     toolId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     toolVersion: PropTypes.string,
@@ -1401,8 +1401,12 @@ export default class EditToolForm extends React.Component {
   });
 
   get endpointsAvailable () {
-    const endpoints = this.props.form.getFieldValue('endpoints') || [];
-    return (endpoints || []).length > 0;
+    const form = this.formRef.current;
+    if (!form) {
+      return false;
+    }
+    const endpoints = form.getFieldValue('endpoints') || [];
+    return endpoints.length > 0;
   }
 
   openShareDialog = () => {
