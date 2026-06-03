@@ -136,15 +136,15 @@ export default class CardsPanel extends React.Component {
       }
     };
     return (
-      <Row
+      <div
         onClick={onFavouriteClick}
         className={styles.cardFavouriteContainer}
-        type="flex"
-        align="middle"
-        justify="center">
+        role="button"
+        tabIndex={-1}
+      >
         <StarOutlined className={styles.notFavouriteSelector} style={{fontSize: 'large'}} />
         <StarFilled className={styles.favouriteSelector} style={{fontSize: 'large'}} />
-      </Row>
+      </div>
     );
   };
 
