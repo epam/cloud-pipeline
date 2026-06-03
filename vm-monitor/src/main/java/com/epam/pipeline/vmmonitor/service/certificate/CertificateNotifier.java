@@ -58,7 +58,7 @@ public class CertificateNotifier {
     private Map<String, Object> createCertParameters(final PkiCertificate certificate) {
         final Map<String, Object> parameters = new HashMap<>();
         final X509Certificate x509Cert = certificate.getX509Certificate();
-        parameters.put("san", formatSubjectAlternativeNames(x509Cert));
+        parameters.put("san", StringUtils.defaultIfBlank(formatSubjectAlternativeNames(x509Cert), "N/A"));
         parameters.put("serialNumber", x509Cert.getSerialNumber().toString());
         parameters.put("dn", x509Cert.getSubjectX500Principal().getName());
         parameters.put("issuer", x509Cert.getIssuerX500Principal().getName());
