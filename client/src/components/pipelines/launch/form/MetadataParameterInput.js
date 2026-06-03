@@ -94,7 +94,6 @@ export default class MetadataParameterInput extends React.Component {
           disabled={disabled}
           style={style}
           value={this.inputMask}
-          size="large"
           addonBefore={
             <div
               className={styles.pathType}

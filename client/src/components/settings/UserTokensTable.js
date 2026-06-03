@@ -71,7 +71,7 @@ export default class UserTokensTable extends React.Component {
           loading={this.state.revokingJti === record.jti}
           onClick={() => this.revokeToken(record)}
           size="small"
-          type="danger"
+          danger
           disabled={!!this.state.revokingJti}
         >
           Revoke

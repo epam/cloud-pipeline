@@ -37,6 +37,7 @@ import HotNodePoolScheduleDelete from '../../../models/cluster/HotNodePoolSchedu
 import PoolCard from './pool-card';
 import styles from './hot-node-pool.css';
 import roleModel from '../../../utils/roleModel';
+import {withRouter} from '../../../utils/with-router';
 import {isAdmin} from '../utilities/access-permissinos';
 
 async function updateSchedule (payload, scheduleId) {
@@ -322,4 +323,4 @@ class HotCluster extends React.Component {
   }
 }
 
-export default HotCluster;
+export default withRouter(HotCluster);

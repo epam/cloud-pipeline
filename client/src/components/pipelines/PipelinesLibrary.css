@@ -68,6 +68,12 @@
   width: 100%;
 }
 
+.library-tree :global(.ant-tree-node-content-wrapper),
+.library-tree :global(.ant-tree-title) {
+  white-space: nowrap;
+  padding: 0px;
+}
+
 .library-tree li {
   padding: 0;
 }
@@ -76,6 +82,8 @@
   width: 100%;
   display: flex;
   flex-direction: row;
+  white-space: nowrap;
+  gap: 4px;
 }
 
 .tree-item-title .region-flags {
@@ -91,10 +99,6 @@
 .tree-item-title i {
   margin-right: 5px;
   font-size: larger;
-}
-
-#components .ant-tree-node-content-wrapper {
-  width: 100%;
 }
 
 .search-result {

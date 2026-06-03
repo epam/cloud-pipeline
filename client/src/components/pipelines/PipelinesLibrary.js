@@ -459,7 +459,7 @@ class PipelinesLibrary extends localization.LocalizedReactComponent {
         onExpand={this.onExpand}
         checkStrictly
         loadData={this.loadData}
-        draggable
+        draggable={{ icon: false }}
         onDragStart={this.onDragStart}
         onDrop={this.onDrop}
         expandedKeys={this.state.expandedKeys}

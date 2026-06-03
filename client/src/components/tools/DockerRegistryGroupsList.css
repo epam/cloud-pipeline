@@ -33,8 +33,11 @@
   margin-left: 5px;
   text-align: left;
   width: 100%;
-  border: none;
+  border: 1px solid transparent;
   background-color: transparent;
+  outline: none;
+  box-shadow: none;
+  justify-content: flex-start;
 }
 
 .button.os {
@@ -46,6 +49,7 @@
 .card-container {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   flex-wrap: nowrap;
   padding: 3px 20px;
   cursor: pointer;

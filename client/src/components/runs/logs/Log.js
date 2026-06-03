@@ -837,7 +837,7 @@ class Logs extends localization.LocalizedReactComponent {
     }
     if (details.length > 0) {
       return (
-        <Row>
+        <Row align="middle">
           Instance: {
             details.map(d => {
               return (
@@ -2582,12 +2582,12 @@ class Logs extends localization.LocalizedReactComponent {
           </div>
         </Row>
         <Row>
-          <Col>
+          <Col span={24}>
             {Parameters}
           </Col>
         </Row>
         <Row className={styles.rowDetailLast}>
-          <Col>
+          <Col span={24}>
             {InstanceDetails}
           </Col>
         </Row>

@@ -276,7 +276,7 @@ class JobNotifications extends React.Component {
                       disabled={notifications.length === 0}
                       className={styles.button}
                       onClick={this.clearNotifications}
-                      type="DANGER"
+                      danger
                     >
                       CLEAR
                     </Button>

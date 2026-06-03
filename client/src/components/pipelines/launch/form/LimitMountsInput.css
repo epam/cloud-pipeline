@@ -23,6 +23,11 @@
   cursor: text;
   max-height: 128px;
   padding-right: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  min-height: var(--cp-ant-control-height, 32px);
+  box-sizing: border-box;
 }
 
 .limit-mounts-input.disabled {
@@ -39,6 +44,7 @@
 .limit-mounts-input.summary {
   cursor: pointer;
   padding: 0;
+  min-height: unset;
   border: none !important;
   background: inherit !important;
   color: inherit !important;

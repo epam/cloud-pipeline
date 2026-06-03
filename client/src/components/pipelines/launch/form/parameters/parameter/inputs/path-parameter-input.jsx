@@ -99,7 +99,6 @@ class LaunchFormPathParameterInput extends React.PureComponent {
             </div>
           )}
           placeholder="Path"
-          size="large"
           currentProjectId={currentProjectId}
           currentMetadataEntity={currentMetadataEntity}
           currentProjectMetadata={currentProjectMetadata}

@@ -103,6 +103,7 @@ class DockerRegistryGroupsList extends React.Component {
     return (
       <Button
         key={group.id}
+        type="text"
         className={classNames(styles.button, styles.cardContainer)}
         id={`group-${group.id}-filter`}
         onClick={() => this.onSelectGroup(group.id)}
@@ -134,9 +135,10 @@ class DockerRegistryGroupsList extends React.Component {
     const filteredGroups = groups.filter(this.groupsFilter)
       .map(group => {
         return (
-          <Row key={group.id} type="flex">
+          <Row key={group.id} type="flex" justify="flex-start">
             <Button
               id={`group-${group.id}-button`}
+              type="text"
               className={styles.button}
               style={{
                 fontWeight: group.privateGroup ? 'bold' : 'normal',

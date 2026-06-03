@@ -748,7 +748,6 @@ export class RunCapabilitiesMetadataPreference extends React.Component {
           values={this.values}
           onChange={this.onChange}
           className={styles.runCapabilitiesMetadataInput}
-          style={{minHeight: '28px', lineHeight: '28px'}}
           getPopupContainer={node => node}
         />
       </div>

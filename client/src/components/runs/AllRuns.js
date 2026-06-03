@@ -76,7 +76,8 @@ const CHARTS_INFO_DETAILS = 'details';
   const all = query.hasOwnProperty('all') && /^(true|undefined)$/i.test(`${query.all}`);
   return {
     status,
-    all
+    all,
+    routing
   };
 })
 @observer
@@ -231,7 +232,7 @@ class AllRuns extends React.Component {
 
   navigateToRuns = (status, my = false) => {
     SessionStorageWrapper.setItem(SessionStorageWrapper.ACTIVE_RUNS_KEY, my);
-    SessionStorageWrapper.navigateToRuns(this.props.router, status);
+    SessionStorageWrapper.navigateToRuns(this.props.routing, status);
   };
 
   onChangeRunTableFilters = filters => {
@@ -255,7 +256,7 @@ class AllRuns extends React.Component {
         <Row style={{marginBottom: 5, padding: 2}}>
           Currently viewing <b>all available {description}</b>.
           {' '}
-          <a onClick={() => this.navigateToRuns(current.key, true)}>
+          <a className="cp-link" onClick={() => this.navigateToRuns(current.key, true)}>
             View only <b>your {description}</b>
           </a>
         </Row>
@@ -279,6 +280,7 @@ class AllRuns extends React.Component {
         </b>.
         {' '}
         <a
+          className="cp-link"
           onClick={() => this.navigateToRuns(current.key, false)}
         >
           View <b>other available {description}</b>

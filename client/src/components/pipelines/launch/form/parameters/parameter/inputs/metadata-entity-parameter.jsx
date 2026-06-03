@@ -66,7 +66,6 @@ class LaunchFormMetadataEntityParameter extends React.PureComponent {
         value={mapValue(valueProps, parameter)}
         onChange={onInputChange}
         disabled={disabled}
-        size="large"
         mode={parameter?.config?.multiple ? 'multiple' : 'default'}
         filterOption={this.filterOption}
         optionLabelProp="label"

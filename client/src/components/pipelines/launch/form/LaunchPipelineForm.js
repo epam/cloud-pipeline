@@ -406,50 +406,18 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   formItemLayout = {
     labelCol: {
+      flex: '150px',
       className: styles.formItemLabelColumn
     },
     wrapperCol: {
+      flex: '1 1 0',
       className: styles.formItemWrapperColumn
-    }
-  };
-
-  leftFormItemLayout = {
-    labelCol: {
-      xs: {span: 24},
-      sm: {span: 5},
-      md: {span: 4},
-      lg: {span: 3},
-      xl: {span: 2}
-    },
-    wrapperCol: {
-      xs: {span: 24},
-      sm: {span: 16},
-      md: {span: 15},
-      lg: {span: 15},
-      xl: {span: 10}
     }
   };
 
   parameterItemLayout = {
     wrapperCol: {
       xs: {span: 24}
-    }
-  };
-
-  cmdTemplateFormItemLayout = {
-    labelCol: {
-      xs: {span: 24},
-      sm: {span: 5},
-      md: {span: 4},
-      lg: {span: 3},
-      xl: {span: 2}
-    },
-    wrapperCol: {
-      xs: {span: 24},
-      sm: {span: 19},
-      md: {span: 20},
-      lg: {span: 21},
-      xl: {span: 22}
     }
   };
 
@@ -2924,7 +2892,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       return (
         <FormItem
           className={getFormItemClassName(styles.formItemRow, 'friendly_url')}
-          {...this.leftFormItemLayout}
+          {...this.formItemLayout}
           label="Friendly URL"
           hasFeedback>
           <Col span={10}>
@@ -2961,7 +2929,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       return (
         <FormItem
           className={getFormItemClassName(styles.formItemRow, 'endpointName')}
-          {...this.leftFormItemLayout}
+          {...this.formItemLayout}
           label="Endpoint Name"
           hasFeedback>
           <Col span={10}>
@@ -3572,7 +3540,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return (
       <FormItem
         className={getFormItemClassName(styles.formItemRow, 'runScheduling')}
-        {...this.leftFormItemLayout}
+        {...this.formItemLayout}
         label="Maintenance"
         hasFeedback>
         <RunSchedulingList
@@ -3597,7 +3565,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return (
       <FormItem
         className={getFormItemClassName(styles.formItemRow, 'is_spot')}
-        {...this.leftFormItemLayout}
+        {...this.formItemLayout}
         label="Price type"
         hasFeedback>
         <Row type="flex" align="middle">
@@ -3667,19 +3635,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         return (
           <Row type="flex" align="middle" style={{marginTop: 10, marginBottom: 10}}>
             <Col
-              xs={10}
-              sm={5}
-              md={4}
-              lg={3}
-              xl={2}
-              className="cp-accent"
-              style={{
-                textAlign: 'right',
-                paddingRight: 10
-              }}>
+              className={classNames(styles.formItemLabelColumn, 'cp-accent')}
+              style={{textAlign: 'right', paddingRight: 10}}>
               Auto pause:
             </Col>
-            <Col xs={24} sm={16} md={15} lg={15} xl={10}>
+            <Col flex="1 1 0">
               <Row type="flex" align="middle">
                 <Col span={10}>
                   <Checkbox checked={this.state.autoPause} onChange={onChange}>
@@ -3705,7 +3665,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return (
       <FormItem
         className={getFormItemClassName(styles.formItemRow, 'timeout')}
-        {...this.leftFormItemLayout}
+        {...this.formItemLayout}
         label="Timeout (min)"
         hasFeedback>
         <Col span={10}>
@@ -3741,7 +3701,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return (
       <FormItem
         className={getFormItemClassName(styles.formItemRow, 'stopAfter')}
-        {...this.leftFormItemLayout}
+        {...this.formItemLayout}
         label="Stop after (min)"
         hasFeedback>
         <Col span={10}>
@@ -3826,7 +3786,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       return (
         <FormItem
           className={getFormItemClassName(styles.formItemRow, 'limitMounts')}
-          {...this.cmdTemplateFormItemLayout}
+          {...this.formItemLayout}
           label="Limit mounts">
           <div>
             <Row type="flex" align="middle">
@@ -3910,7 +3870,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return (
       <FormItem
         className={getFormItemClassName(styles.formItemRow, 'hostedApplication')}
-        {...this.leftFormItemLayout}
+        {...this.formItemLayout}
         label="Internal DNS name"
       >
         <Col span={10}>
@@ -3945,7 +3905,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return (
       <FormItem
         className={getFormItemClassName(styles.formItemRow, 'customTags')}
-        {...this.leftFormItemLayout}
+        {...this.formItemLayout}
         label="Tags"
       >
         <CustomTagsControl
@@ -3966,7 +3926,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   renderJobNotificationsItem = () => (
     <FormItem
       className={getFormItemClassName(styles.formItemRow, 'notifications')}
-      {...this.leftFormItemLayout}
+      {...this.formItemLayout}
       label="Notifications"
     >
       <Col span={10}>
@@ -4001,7 +3961,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return (
       <FormItem
         className={getFormItemClassName(styles.formItemRow, 'customUI')}
-        {...this.leftFormItemLayout}
+        {...this.formItemLayout}
         label="Custom UI Pages"
       >
         <Col span={24}>
@@ -4019,7 +3979,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return (
       <FormItem
         className={getFormItemClassName(styles.formItemRow, 'cmdTemplate')}
-        {...this.cmdTemplateFormItemLayout}
+        {...this.formItemLayout}
         label="Cmd template">
         <Row>
           <Row>
