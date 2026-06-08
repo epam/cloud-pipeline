@@ -43,7 +43,7 @@ function autoUpdateJobs (state) {
   return runs.some((run) => /^running$/i.test(run.status));
 }
 
-@inject('systemJobs')
+@inject('systemJobs', 'routing')
 @observer
 class SystemJobs extends React.Component {
   state = {
@@ -189,14 +189,14 @@ class SystemJobs extends React.Component {
     if (scriptContentPending) {
       return <LoadingView />;
     }
-    const {router} = this.props;
+    const {routing} = this.props;
     const openRunDetails = (run, event) => {
       if (event) {
         event.stopPropagation();
         event.preventDefault();
       }
-      if (router) {
-        router.push(`/run/${run.id}`);
+      if (routing) {
+        routing.push(`/run/${run.id}`);
       }
     };
     const openRunLog = (run, event) => {
@@ -409,7 +409,7 @@ class SystemJobs extends React.Component {
 }
 
 SystemJobs.propTypes = {
-  router: PropTypes.object
+  routing: PropTypes.object
 };
 
 export default SystemJobs;

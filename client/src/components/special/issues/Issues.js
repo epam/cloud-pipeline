@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import IssuesLoad from '../../../models/issues/IssuesLoad';
 import IssueCreate from '../../../models/issues/IssueCreate';
 import LoadingView from '../../special/LoadingView';

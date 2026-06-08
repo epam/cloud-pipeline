@@ -36,6 +36,8 @@ import styles from './nat-gateway-configuration.css';
 
 const {Column, ColumnGroup} = Table;
 
+const TABLE_COLUMNS_AMOUNT = columns.external.length + columns.internal.length + 2;
+
 function getRouteIdentifier (route) {
   if (!route) {
     return undefined;
@@ -83,8 +85,6 @@ export default class NATGateway extends React.Component {
     expandedRowKeys: [],
     search: undefined
   }
-
-  tableColumnsAmount;
 
   get sortedContent () {
     const {
@@ -445,15 +445,6 @@ export default class NATGateway extends React.Component {
           </div>
           <Spin spinning={pending}>
             <Table
-              ref={(table) => {
-                if (table) {
-                  this.tableColumnsAmount = table.columns
-                    .reduce((acc, column) => column.children
-                      ? [...acc, ...column.children]
-                      : [...acc, column], [])
-                    .length;
-                }
-              }}
               indentSize={0}
               className={
                 classNames(
@@ -520,7 +511,7 @@ export default class NATGateway extends React.Component {
                       return {
                         children: content,
                         props: {
-                          colSpan: this.tableColumnsAmount
+                          colSpan: TABLE_COLUMNS_AMOUNT
                         }
                       };
                     }

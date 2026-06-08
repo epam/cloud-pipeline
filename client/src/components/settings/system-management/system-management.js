@@ -145,7 +145,7 @@ export default class SystemManagement extends React.Component {
             {
               key: 'jobs',
               title: 'SYSTEM JOBS',
-              render: () => (<SystemJobs router={this.props.router} />)
+              render: () => (<SystemJobs />)
             }
           ] : []),
           this.dtsAllowed ? (
