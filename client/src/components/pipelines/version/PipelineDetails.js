@@ -542,8 +542,7 @@ class PipelineDetails extends localization.LocalizedReactComponent {
             }))}
           />
         </Row>
-        <div
-          className={styles.fullHeightContainer} style={{overflow: 'auto'}}>
+        <div className={styles.tabContentContainer}>
           <Outlet context={{onReloadTree: this.props.onReloadTree, readOnly: this.readOnly}} />
         </div>
         <EditPipelineForm

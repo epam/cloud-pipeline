@@ -1115,7 +1115,6 @@ class WdlGraph extends Graph {
     ) {
       this.loadMainFile();
     }
-    super.componentDidUpdate(prevProps, prevState, snapshot);
   }
 
   componentWillUnmount () {

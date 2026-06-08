@@ -88,7 +88,6 @@ export default class CwlGraph extends Graph {
 
   componentDidUpdate () {
     this.loadFile();
-    super.componentDidUpdate();
   }
 
   getFilePath () {

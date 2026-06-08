@@ -41,7 +41,7 @@ export default class PipelineGraph extends Component {
   render () {
     return (
       <div
-        className={parentStyles.fullHeightContainer}>
+        className={parentStyles.tabContentContainer}>
         <Row className={parentStyles.fullHeightContainer}>
           <WorkflowGraph
             canEdit

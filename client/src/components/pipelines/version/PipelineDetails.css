@@ -64,3 +64,13 @@
   flex: 1;
   padding: 0 2px;
 }
+
+.tab-content-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 0 2px;
+  position: relative;
+  min-height: 0;
+  overflow: auto;
+}
