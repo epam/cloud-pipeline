@@ -28,11 +28,13 @@ export default class AsyncLayout {
         constructor (props) {
           super(props);
           this._mounted = false;
-          this.asyncLayout = new AsyncLayout(loader(props), () => this._mounted);
+          this.asyncLayout = null;
         }
 
         componentDidMount () {
           this._mounted = true;
+          this.asyncLayout = new AsyncLayout(loader(this.props), () => this._mounted);
+          this.forceUpdate();
         }
 
         componentWillUnmount () {
@@ -40,21 +42,26 @@ export default class AsyncLayout {
         }
 
         render () {
-          if (this.asyncLayout.loaded) {
-            if (this.asyncLayout.error) {
+          if (!this.asyncLayout || !this.asyncLayout.loaded) {
+            if (this.asyncLayout?.error) {
               return (
                 <Alert type="error" title={this.asyncLayout.error} />
               );
             }
+            return (<LoadingView />);
+          }
+          if (this.asyncLayout.error) {
             return (
-              <Provider layout={this.asyncLayout.layout}>
-                <Component
-                  {...this.props}
-                />
-              </Provider>
+              <Alert type="error" title={this.asyncLayout.error} />
             );
           }
-          return (<LoadingView />);
+          return (
+            <Provider layout={this.asyncLayout.layout}>
+              <Component
+                {...this.props}
+              />
+            </Provider>
+          );
         }
       }
     );
@@ -79,16 +86,13 @@ export default class AsyncLayout {
           if (isMounted()) {
             this.layout = buildLayout(options);
             this.loaded = true;
+            this.error = undefined;
           }
         })
         .catch(e => {
           if (isMounted()) {
             this.error = e.message;
-          }
-        })
-        .then(() => {
-          if (isMounted()) {
-            this.error = undefined;
+            this.loaded = true;
           }
         });
     } else {

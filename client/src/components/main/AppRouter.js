@@ -26,6 +26,7 @@ import {
 } from 'react-router-dom';
 import {inject, observer} from 'mobx-react';
 import HomePageLoader from './home/HomePageLoader';
+import LoadingView from '../special/LoadingView';
 import PipelinesLibrary from '../pipelines/PipelinesLibrary';
 import Browser from '../pipelines/browser/Browser';
 import FolderBrowser from '../pipelines/browser/Folder';
@@ -120,22 +121,19 @@ const ClusterNodeRedirect = withRedirect(({nodeName}) => `/cluster/${nodeName}/i
 const ToolIdRedirect = withRedirect(({id}) => `/tool/${id}/description`);
 const ToolVersionRedirect = withRedirect(({id, version}) => `/tool/${id}/info/${version}/scaninfo`);
 
-function HomePageRedirectionComponent ({router, uiNavigation}) {
-  if (uiNavigation.loaded && router) {
-    const url = uiNavigation.home || '/dashboard';
-    const absolute = /^http[s]?:\/\//i.test(url);
-    setTimeout(() => {
-      if (absolute) {
-        window.location = url;
-      } else {
-        router.push(url);
-      }
-    }, 0);
+function HomePageRedirectionComponent ({uiNavigation}) {
+  if (!uiNavigation.loaded) {
+    return <LoadingView />;
   }
-  return null;
+  const url = uiNavigation.home || '/dashboard';
+  if (/^http[s]?:\/\//i.test(url)) {
+    window.location = url;
+    return null;
+  }
+  return <Navigate to={url} replace />;
 }
 
-const HomePageRedirection = inject('uiNavigation')(observer(withRouter(HomePageRedirectionComponent)));
+const HomePageRedirection = inject('uiNavigation')(observer(HomePageRedirectionComponent));
 
 const ClusterNodeGeneralInfoWithContext = withContext(ClusterNodeGeneralInfo);
 const ClusterNodePodsWithContext = withContext(ClusterNodePods);
