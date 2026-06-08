@@ -15,7 +15,7 @@
  */
 
 import VSRemote from './base/remote';
-import {action, observable, makeObservable} from 'mobx';
+import {observable, makeObservable, override} from 'mobx';
 
 export default class VSList extends VSRemote {
  fetchId = 0;
@@ -24,7 +24,7 @@ export default class VSList extends VSRemote {
    super(runId);
    makeObservable(this, {
      fetchId: observable,
-     update: action
+     update: override
    });
    this.runId = runId;
    this.url = 'vs/list';
