@@ -724,6 +724,7 @@ export default class PermissionsForm extends React.Component {
     const columns = [
       {
         key: 'icon',
+        width: 20,
         className: styles.userIcon,
         render: (item) => {
           if (item.sid.principal) {
@@ -733,7 +734,7 @@ export default class PermissionsForm extends React.Component {
         }
       },
       {
-        dataIndex: 'sid.name',
+        dataIndex: ['sid', 'name'],
         key: 'name',
         render: (name, item) => getSidName(name, item.sid.principal)
       },

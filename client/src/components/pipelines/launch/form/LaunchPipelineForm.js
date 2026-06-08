@@ -5118,6 +5118,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       configureClusterDisplayConfig.staticVisible;
     return (
       <Form
+        style={{width: '100%'}}
         form={this.props.form}
         preserve
         onValuesChange={(changedValues, allValues) => this.onValuesChange(this.props, allValues)}

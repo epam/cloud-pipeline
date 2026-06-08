@@ -100,15 +100,12 @@ export default class PipelineStorageRuleCreateDialog extends localization.Locali
       pending,
       pipelineId
     } = this.props;
-    const form = this.formRef.current;
     const modalFooter = pending ? false : (
       <Row>
         <Button onClick={onCancel}>Cancel</Button>
         <Button type="primary" htmlType="submit" onClick={this.handleSubmit}>Create</Button>
       </Row>
     );
-    const isMoveToStsDisabled = form.getFieldValue('isResult') || pending;
-    const isRuleNameRequired = Boolean(form.getFieldValue('isResult'));
 
     return (
       <Modal
@@ -150,16 +147,23 @@ export default class PipelineStorageRuleCreateDialog extends localization.Locali
                 </Select>
               </Form.Item>
             </Spin>
-            <Form.Item
-              {...this.formItemLayout}
-              label="Name"
-              name="name"
-              rules={[{required: isRuleNameRequired, message: 'Name is required'}]}
-            >
-              <Input
-                disabled={pending}
-                onPressEnter={this.handleSubmit}
-              />
+            <Form.Item noStyle dependencies={['isResult']}>
+              {({getFieldValue}) => (
+                <Form.Item
+                  {...this.formItemLayout}
+                  label="Name"
+                  name="name"
+                  rules={[{
+                    required: Boolean(getFieldValue('isResult')),
+                    message: 'Name is required'
+                  }]}
+                >
+                  <Input
+                    disabled={pending}
+                    onPressEnter={this.handleSubmit}
+                  />
+                </Form.Item>
+              )}
             </Form.Item>
             <Form.Item
               {...this.formItemLayout}
@@ -184,16 +188,20 @@ export default class PipelineStorageRuleCreateDialog extends localization.Locali
                   <Checkbox disabled={pending} onChange={this.handlePipelineResultsChange} />
                 </Form.Item>
               </Col>
-              <Col {...this.checkboxWrapperLayout}>
-                <Form.Item
-                  {...this.checkboxLayout}
-                  label="Move to STS"
-                  name="moveToSts"
-                  valuePropName="checked"
-                >
-                  <Checkbox disabled={isMoveToStsDisabled} />
-                </Form.Item>
-              </Col>
+              <Form.Item noStyle dependencies={['isResult']}>
+                {({getFieldValue}) => (
+                  <Col {...this.checkboxWrapperLayout}>
+                    <Form.Item
+                      {...this.checkboxLayout}
+                      label="Move to STS"
+                      name="moveToSts"
+                      valuePropName="checked"
+                    >
+                      <Checkbox disabled={getFieldValue('isResult') || pending} />
+                    </Form.Item>
+                  </Col>
+                )}
+              </Form.Item>
             </Row>
           </Form>
         </Spin>

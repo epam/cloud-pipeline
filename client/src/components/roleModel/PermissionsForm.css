@@ -26,6 +26,9 @@
 
 .user-icon {
   width: 20px;
+  max-width: 20px;
+  padding-left: 3px !important;
+  padding-right: 3px !important;
 }
 
 .user-actions {
