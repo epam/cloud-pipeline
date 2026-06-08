@@ -444,36 +444,32 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
 
   getDeleteModalFooter = () => {
     return (
-      <Row type="flex" justify="space-between">
-        <Col span={12}>
-          <Row type="flex" justify="start">
-            <Button
-              id="edit-pipeline-delete-dialog-cancel-button"
-              onClick={this.closeDeleteDialog}
-            >
-              Cancel
-            </Button>
-          </Row>
-        </Col>
-        <Col span={12}>
-          <Row type="flex" justify="end">
-            <Button
-              id="edit-pipeline-delete-dialog-unregister-button"
-              danger
-              onClick={() => this.onDeleteClicked(true)}
-            >
-              Unregister
-            </Button>
-            <Button
-              id="edit-pipeline-delete-dialog-delete-button"
-              danger
-              onClick={() => this.onDeleteClicked(false)}
-            >
-              Delete
-            </Button>
-          </Row>
-        </Col>
-      </Row>
+      <div className="cp-modal-footer-actions cp-modal-footer-actions--split">
+        <div className="cp-modal-footer-actions-group">
+          <Button
+            id="edit-pipeline-delete-dialog-cancel-button"
+            onClick={this.closeDeleteDialog}
+          >
+            Cancel
+          </Button>
+        </div>
+        <div className="cp-modal-footer-actions-group cp-modal-footer-actions-group--end">
+          <Button
+            id="edit-pipeline-delete-dialog-unregister-button"
+            danger
+            onClick={() => this.onDeleteClicked(true)}
+          >
+            Unregister
+          </Button>
+          <Button
+            id="edit-pipeline-delete-dialog-delete-button"
+            danger
+            onClick={() => this.onDeleteClicked(false)}
+          >
+            Delete
+          </Button>
+        </div>
+      </div>
     );
   };
 

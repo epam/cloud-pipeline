@@ -16,7 +16,7 @@
 
 import React, {Component} from 'react';
 import {Outlet} from 'react-router-dom';
-import {Layout, ConfigProvider} from 'antd';
+import {Layout, ConfigProvider, App as AntdApp} from 'antd';
 import {withRouter} from '../../utils/with-router';
 import enUS from 'antd/locale/en_US';
 import {observer, Provider, inject} from 'mobx-react';
@@ -32,6 +32,7 @@ import {Pages} from '../../utils/ui-navigation';
 import {RunContinuationConfirmation} from '../runs/actions/continue-run';
 import ErrorBoundary from './ErrorBoundary';
 import buildAntdTheme from '../../themes/tokens/antd-theme-config';
+import AntdStaticMethodsProvider from './AntdStaticMethodsProvider';
 
 @inject('preferences', 'uiNavigation', 'themes')
 @roleModel.authenticationInfo
@@ -142,26 +143,28 @@ class App extends Component {
     }
     return (
       <ConfigProvider locale={enUS} theme={antdTheme}>
-        <div id="root-container" className={styles.appContainer}>
-          {
-            this.props.uiNavigation.searchEnabled() && !isExternalApp && (
-              <SearchDialog
-                onInitialized={this.onSearchDialogInitialized}
-                router={this.props.router}
-                blockInput={activeTabPath === Pages.run || isSearch}
-                onVisibilityChanged={this.onSearchControlVisibilityChanged}
-              />
-            )
-          }
-          {content}
-          <NotificationCenter
-            delaySeconds={2}
-            disableEmailNotifications={activeTabPath === Pages.notifications}
-            router={this.props.router}
-          />
-          <RunModal />
-          <RunContinuationConfirmation />
-        </div>
+        <AntdStaticMethodsProvider theme={antdTheme}>
+          <AntdApp id="root-container" className={styles.appContainer}>
+            {
+              this.props.uiNavigation.searchEnabled() && !isExternalApp && (
+                <SearchDialog
+                  onInitialized={this.onSearchDialogInitialized}
+                  router={this.props.router}
+                  blockInput={activeTabPath === Pages.run || isSearch}
+                  onVisibilityChanged={this.onSearchControlVisibilityChanged}
+                />
+              )
+            }
+            {content}
+            <NotificationCenter
+              delaySeconds={2}
+              disableEmailNotifications={activeTabPath === Pages.notifications}
+              router={this.props.router}
+            />
+            <RunModal />
+            <RunContinuationConfirmation />
+          </AntdApp>
+        </AntdStaticMethodsProvider>
       </ConfigProvider>
     );
   }

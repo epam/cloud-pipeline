@@ -1615,7 +1615,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
         <div
           id="file-preview-container"
           key="preview body"
-          style={{flex: 1, overflow: 'auto'}}
+          style={{flex: 1, minHeight: 0, overflow: 'auto'}}
         >
           <SampleSheet.Preview
             style={{
@@ -1630,28 +1630,30 @@ export default class Metadata extends localization.LocalizedReactComponent {
       );
     } else if (!mayBeBinary) {
       previewRes.push(
-        <Row
+        <div
           id="file-preview-container"
-          type="flex"
           key="preview body"
           className="cp-text-not-important"
-          style={{flex: 1}}
         >
-          <Input
+          <Input.TextArea
             spellCheck="false"
             autoComplete="off"
             autoCorrect="off"
             autoCapitalize="off"
-            type="textarea"
+            autoSize={false}
             className={classNames(
               styles.disabledTextarea,
               'cp-metadata-item-content-preview'
             )}
+            styles={{
+              affixWrapper: {flex: 1, minHeight: 0, height: '100%'},
+              textarea: {resize: 'none', height: '100%'}
+            }}
             value={preview}
             readOnly
             disabled
           />
-        </Row>
+        </div>
       );
     }
     const renderDownloadLink = () => {
@@ -1872,8 +1874,23 @@ export default class Metadata extends localization.LocalizedReactComponent {
             orientation="vertical"
           >
             {panels.map((panel, i) => (
-              <Splitter.Panel key={i} resizable>
-                {panel}
+              <Splitter.Panel
+                key={i}
+                resizable
+                style={{display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0}}
+              >
+                <div
+                  className="cp-split-panel-panel"
+                  style={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'auto',
+                    minHeight: 0
+                  }}
+                >
+                  {panel}
+                </div>
               </Splitter.Panel>
             ))}
           </Splitter>

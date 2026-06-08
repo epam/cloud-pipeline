@@ -39,6 +39,43 @@
 .cp-metadata-item-content-preview {
   background-color: var(--cp-color-bg-elevated);
   color: var(--cp-color-text);
+  resize: none;
+  height: 100%;
+  white-space: pre;
+  overflow-wrap: normal;
+  overflow: auto;
+  cursor: default;
+}
+
+.cp-metadata-item-content-preview:hover {
+  border-color: var(--cp-color-border-input);
+}
+
+.cp-metadata-item-content-preview:focus {
+  box-shadow: 0 0 0 var(--cp-color-bg-elevated);
+  border-color: var(--cp-color-border-input);
+  outline: var(--cp-color-bg-elevated);
+}
+
+#file-preview-container {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+#file-preview-container .ant-input-textarea-affix-wrapper {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+#file-preview-container textarea.ant-input {
+  resize: none;
+  height: 100%;
+  flex: 1;
+  min-height: 0;
 }
 
 .cp-metadata-item-row.read-only {

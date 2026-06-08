@@ -1498,7 +1498,7 @@ class Folder extends localization.LocalizedReactComponent {
       }, () => {
         switch (type) {
           case pipelineKey:
-            if (identifier) {
+            if (identifier && identifier !== 'default') {
               const [template] = this.props.templates.value.filter(t => t.id === identifier);
               this.openCreatePipelineDialog(template);
             } else {
@@ -1577,7 +1577,7 @@ class Folder extends localization.LocalizedReactComponent {
             .filter(template => !template.defaultTemplate);
           pipelineTemplatesMenuItems = [
             {
-              key: pipelineKey,
+              key: `${pipelineKey}_default`,
               label: (
                 <>
                   <Row>DEFAULT</Row>
