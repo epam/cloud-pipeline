@@ -3322,35 +3322,40 @@ class DataStorage extends React.Component {
           onCancel={this.closeDeleteModal}
           title="Do you want to delete item(s) from object storage or set 'Deletion' marker?"
           footer={
-            <Row type="flex" justify="space-between">
-              <Col span={8}>
-                <Row type="flex" justify="start">
-                  <Button
-                    id="delete-bucket-item-modal-cancel-button"
-                    onClick={this.closeDeleteModal}>Cancel</Button>
-                </Row>
-              </Col>
-              <Col span={16}>
-                <Row type="flex" justify="end">
-                  <Button
-                    id="delete-bucket-item-modal-set-deletion-marker-button"
-                    danger
-                    onClick={() => this.removeItems(this.state.itemsToDelete, false, false, () => {
-                      this.closeDeleteModal();
-                      this.setState({selectedItems: []});
-                      this.afterDataStorageEdit();
-                    })}>Set deletion marker</Button>
-                  <Button
-                    id="delete-bucket-item-modal-delete-from-bucket-button"
-                    danger
-                    onClick={() => this.removeItems(this.state.itemsToDelete, true, false, () => {
-                      this.closeDeleteModal();
-                      this.setState({selectedItems: []});
-                      this.afterDataStorageEdit();
-                    })}>Delete from object storage</Button>
-                </Row>
-              </Col>
-            </Row>
+            <div className="cp-modal-footer-actions cp-modal-footer-actions--split">
+              <div className="cp-modal-footer-actions-group">
+                <Button
+                  id="delete-bucket-item-modal-cancel-button"
+                  onClick={this.closeDeleteModal}
+                >
+                  Cancel
+                </Button>
+              </div>
+              <div className="cp-modal-footer-actions-group cp-modal-footer-actions-group--end">
+                <Button
+                  id="delete-bucket-item-modal-set-deletion-marker-button"
+                  danger
+                  onClick={() => this.removeItems(this.state.itemsToDelete, false, false, () => {
+                    this.closeDeleteModal();
+                    this.setState({selectedItems: []});
+                    this.afterDataStorageEdit();
+                  })}
+                >
+                  Set deletion marker
+                </Button>
+                <Button
+                  id="delete-bucket-item-modal-delete-from-bucket-button"
+                  danger
+                  onClick={() => this.removeItems(this.state.itemsToDelete, true, false, () => {
+                    this.closeDeleteModal();
+                    this.setState({selectedItems: []});
+                    this.afterDataStorageEdit();
+                  })}
+                >
+                  Delete from object storage
+                </Button>
+              </div>
+            </div>
           }>
           {
             (this.state.itemsToDelete || []).map(item => {

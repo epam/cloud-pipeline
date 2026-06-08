@@ -57,7 +57,7 @@ function BashCode (
     style,
     breakLines,
     nowrap,
-    copyable
+    copyable = true
   }
 ) {
   let html = (shScriptToHtml(code) || '');
@@ -113,10 +113,6 @@ BashCode.propTypes = {
   breakLines: PropTypes.bool,
   nowrap: PropTypes.bool,
   copyable: PropTypes.bool
-};
-
-BashCode.defaultProps = {
-  copyable: true
 };
 
 export default BashCode;

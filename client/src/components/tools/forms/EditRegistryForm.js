@@ -195,26 +195,34 @@ export default class EditRegistryForm extends localization.LocalizedReactCompone
 
   render () {
     const modalFooter = this.props.pending ? false : (
-      <Row>
-        <Col span={12}>
-          <Row type="flex" justify="start">
-            {
-              this.props.registry &&
-              <Button danger onClick={this.props.onDelete}>DELETE</Button>
-            }
-          </Row>
-        </Col>
-        <Col span={12}>
-          <Row type="flex" justify="end">
+      this.props.registry ? (
+        <div className="cp-modal-footer-actions cp-modal-footer-actions--split">
+          <div className="cp-modal-footer-actions-group">
+            <Button danger onClick={this.props.onDelete}>DELETE</Button>
+          </div>
+          <div className="cp-modal-footer-actions-group cp-modal-footer-actions-group--end">
             <Button onClick={this.props.onCancel}>CANCEL</Button>
             <Button
-              type="primary" htmlType="submit"
-              onClick={this.handleSubmit}>
-              {this.props.registry ? 'SAVE' : 'ADD'}
+              type="primary"
+              htmlType="submit"
+              onClick={this.handleSubmit}
+            >
+              SAVE
             </Button>
-          </Row>
-        </Col>
-      </Row>
+          </div>
+        </div>
+      ) : (
+        <div className="cp-modal-footer-actions">
+          <Button onClick={this.props.onCancel}>CANCEL</Button>
+          <Button
+            type="primary"
+            htmlType="submit"
+            onClick={this.handleSubmit}
+          >
+            ADD
+          </Button>
+        </div>
+      )
     );
     const onClose = () => {
       this.formRef.current && this.formRef.current.resetFields();

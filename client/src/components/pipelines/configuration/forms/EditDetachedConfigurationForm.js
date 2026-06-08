@@ -122,27 +122,29 @@ export default class EditDetachedConfigurationForm extends React.Component {
 
   getDeleteModalFooter = () => {
     return (
-      <Row type="flex" justify="space-between">
-        <Col span={12}>
-          <Row type="flex" justify="start">
-            <Button
-              id="edit-configuration-delete-dialog-cancel-button"
-              onClick={this.closeDeleteDialog}>Cancel</Button>
-          </Row>
-        </Col>
-        <Col span={12}>
-          <Row type="flex" justify="end">
-            {
-              roleModel.manager.configuration(
-                <Button
-                  id="edit-configuration-delete-dialog-delete-button"
-                  danger
-                  onClick={() => this.onDeleteClicked()}>Delete</Button>
-              )
-            }
-          </Row>
-        </Col>
-      </Row>
+      <div className="cp-modal-footer-actions cp-modal-footer-actions--split">
+        <div className="cp-modal-footer-actions-group">
+          <Button
+            id="edit-configuration-delete-dialog-cancel-button"
+            onClick={this.closeDeleteDialog}
+          >
+            Cancel
+          </Button>
+        </div>
+        <div className="cp-modal-footer-actions-group cp-modal-footer-actions-group--end">
+          {
+            roleModel.manager.configuration(
+              <Button
+                id="edit-configuration-delete-dialog-delete-button"
+                danger
+                onClick={() => this.onDeleteClicked()}
+              >
+                Delete
+              </Button>
+            )
+          }
+        </div>
+      </div>
     );
   };
 

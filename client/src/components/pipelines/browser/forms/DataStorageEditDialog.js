@@ -383,56 +383,64 @@ export class DataStorageEditDialog extends React.Component {
       (roleModel.isManager.storageAdmin(this) || roleModel.isOwner(this.props.dataStorage)) &&
       !this.state.restrictedAccess
     ) {
-      return (
-        <Row type="flex" justify="space-between">
-          <Col span={12}>
-            <Row type="flex" justify="start">
-              {
-                roleModel.isManager.storage(this) ||
-                roleModel.isManager.storageAdmin(this)
-                  ? (
-                    <Button
-                      id="edit-storage-dialog-delete-button"
-                      danger
-                      onClick={this.openDeleteDialog}
-                    >
-                      DELETE
-                    </Button>
-                  ) : null
-              }
-            </Row>
-          </Col>
-          <Col span={12}>
-            <Row type="flex" justify="end">
-              <Button
-                id="edit-storage-dialog-cancel-button"
-                onClick={this.props.onCancel}>CANCEL</Button>
-              <Button
-                id="edit-storage-dialog-save-button"
-                type="primary"
-                htmlType="submit"
-                onClick={this.handleSubmit}>SAVE</Button>
-            </Row>
-          </Col>
-        </Row>
-      );
-    } else {
-      return (
-        <Row type="flex" justify="end">
+      const deleteButton = roleModel.isManager.storage(this) ||
+        roleModel.isManager.storageAdmin(this)
+        ? (
           <Button
-            id="edit-storage-dialog-cancel-button"
-            onClick={this.props.onCancel}>CANCEL</Button>
-        </Row>
+            id="edit-storage-dialog-delete-button"
+            danger
+            onClick={this.openDeleteDialog}
+          >
+            DELETE
+          </Button>
+        ) : null;
+      return (
+        <div className={`cp-modal-footer-actions${deleteButton ? ' cp-modal-footer-actions--split' : ''}`}>
+          {deleteButton ? (
+            <div className="cp-modal-footer-actions-group">
+              {deleteButton}
+            </div>
+          ) : null}
+          <div className="cp-modal-footer-actions-group cp-modal-footer-actions-group--end">
+            <Button
+              id="edit-storage-dialog-cancel-button"
+              onClick={this.props.onCancel}
+            >
+              CANCEL
+            </Button>
+            <Button
+              id="edit-storage-dialog-save-button"
+              type="primary"
+              htmlType="submit"
+              onClick={this.handleSubmit}
+            >
+              SAVE
+            </Button>
+          </div>
+        </div>
       );
     }
+    return (
+      <div className="cp-modal-footer-actions">
+        <Button
+          id="edit-storage-dialog-cancel-button"
+          onClick={this.props.onCancel}
+        >
+          CANCEL
+        </Button>
+      </div>
+    );
   };
 
   getCreateFooter = () => {
     return (
-      <Row>
+      <div className="cp-modal-footer-actions">
         <Button
           id="edit-storage-dialog-cancel-button"
-          onClick={this.props.onCancel}>Cancel</Button>
+          onClick={this.props.onCancel}
+        >
+          Cancel
+        </Button>
         <Button
           id="edit-storage-dialog-create-button"
           type="primary"
@@ -440,42 +448,47 @@ export class DataStorageEditDialog extends React.Component {
           disabled={(this.isNfsMount && !this.isStoragePathValid) ||
             (this.omicsStore && (!this.state.omicsType || !this.isAliasValid))
           }
-          onClick={this.handleSubmit}>Create</Button>
-      </Row>
+          onClick={this.handleSubmit}
+        >
+          Create
+        </Button>
+      </div>
     );
   };
 
   getDeleteModalFooter = () => {
     const isMirrorStorage = !!this.props.dataStorage && !!this.props.dataStorage.sourceStorageId;
     return (
-      <Row type="flex" justify="space-between">
-        <Col span={12}>
-          <Row type="flex" justify="start">
-            <Button
-              id="edit-storage-delete-dialog-cancel-button"
-              onClick={this.closeDeleteDialog}>Cancel</Button>
-          </Row>
-        </Col>
-        <Col span={12}>
-          <Row type="flex" justify="end">
-            <Button
-              id="edit-storage-delete-dialog-unregister-button"
-              danger
-              onClick={() => this.onDeleteClicked(false)}>Unregister</Button>
-            {
-              !isMirrorStorage && (
-                <Button
-                  id="edit-storage-delete-dialog-delete-button"
-                  danger
-                  onClick={() => this.onDeleteClicked(true)}
-                >
-                  Delete
-                </Button>
-              )
-            }
-          </Row>
-        </Col>
-      </Row>
+      <div className="cp-modal-footer-actions cp-modal-footer-actions--split">
+        <div className="cp-modal-footer-actions-group">
+          <Button
+            id="edit-storage-delete-dialog-cancel-button"
+            onClick={this.closeDeleteDialog}
+          >
+            Cancel
+          </Button>
+        </div>
+        <div className="cp-modal-footer-actions-group cp-modal-footer-actions-group--end">
+          <Button
+            id="edit-storage-delete-dialog-unregister-button"
+            danger
+            onClick={() => this.onDeleteClicked(false)}
+          >
+            Unregister
+          </Button>
+          {
+            !isMirrorStorage && (
+              <Button
+                id="edit-storage-delete-dialog-delete-button"
+                danger
+                onClick={() => this.onDeleteClicked(true)}
+              >
+                Delete
+              </Button>
+            )
+          }
+        </div>
+      </div>
     );
   };
 
