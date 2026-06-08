@@ -1,4 +1,4 @@
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import preferences from '../../../models/preferences/PreferencesLoad';
 import {
   defaultStoragePathTemplate,
@@ -8,20 +8,25 @@ import {
 } from './utilities';
 
 class LocalFilesConfiguration {
-  @observable localFilesConfig = false;
-  @observable dataStorage;
-  @observable dataStoragePathGenerator;
+  localFilesConfig = false;
+  dataStorage;
+  dataStoragePathGenerator;
 
   constructor () {
+    makeObservable(this, {
+      localFilesConfig: observable,
+      dataStorage: observable,
+      dataStoragePathGenerator: observable,
+      loaded: computed,
+      enabled: computed
+    });
     (this.update)();
   }
 
-  @computed
   get loaded () {
     return preferences.loaded;
   }
 
-  @computed
   get enabled () {
     return !!this.localFilesConfig && this.dataStorage && this.dataStoragePathGenerator;
   }

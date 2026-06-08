@@ -141,7 +141,7 @@ function PoolsHardwareChart ({
   );
 }
 
-PoolsHardwareChart.PropTypes = {
+PoolsHardwareChart.propTypes = {
   rawData: PropTypes.array,
   title: PropTypes.string,
   mappings: PropTypes.arrayOf(PropTypes.shape({

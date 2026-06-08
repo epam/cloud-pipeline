@@ -24,7 +24,7 @@ function RunHeader (props) {
     run,
     runId,
     runTasks,
-    loaded,
+    loaded = true,
     runTasksLoaded,
     onRefreshRunInfo,
     preferences,
@@ -121,11 +121,6 @@ RunHeader.propTypes = {
   modes: PropTypes.arrayOf(PropTypes.string),
   onChangeMode: PropTypes.func,
   showEstimatedPrice: PropTypes.bool
-};
-
-RunHeader.defaultProps = {
-  loaded: true,
-  showEstimatedPrice: true
 };
 
 export default inject('preferences')(observer(RunHeader));

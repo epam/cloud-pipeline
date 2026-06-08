@@ -1,5 +1,5 @@
 import React from 'react';
-import {Icon} from 'antd';
+import {AreaChartOutlined, BarsOutlined, CodeOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import TaskRuntimePlainTextLogs from './runtime-data/task-runtime-plain-text-logs';
 import styles from './task-details.css';
@@ -11,7 +11,7 @@ const iconStyle = {fontSize: '1.1rem'};
 export const taskDetailsCommand = {
   tab: 'command',
   title: 'Command',
-  icon: <Icon type="code-o" style={iconStyle} />,
+  icon: <CodeOutlined style={iconStyle} />,
   render: (task, props) => (
     <TaskCommand
       {...props}
@@ -24,7 +24,7 @@ export const taskDetailsCommand = {
 export const taskDetailsRun = {
   tab: 'run',
   title: 'Run',
-  icon: <Icon type="code-o" style={iconStyle} />,
+  icon: <CodeOutlined style={iconStyle} />,
   render: (task, props) => (
     <TaskRuntimePlainTextLogs
       {...props}
@@ -40,7 +40,7 @@ export const taskDetailsRun = {
 export const taskDetailsTrace = {
   tab: 'trace',
   title: 'Metrics',
-  icon: <Icon type="area-chart" style={iconStyle} />,
+  icon: <AreaChartOutlined style={iconStyle} />,
   render: (task, props) => (
     <TaskRuntimeMetrics
       {...props}
@@ -53,7 +53,7 @@ export const taskDetailsTrace = {
 export const taskDetailsLog = {
   tab: 'log',
   title: 'Task Log',
-  icon: <Icon type="bars" style={iconStyle} />,
+  icon: <BarsOutlined style={iconStyle} />,
   render: (task, props) => (
     <TaskRuntimePlainTextLogs
       {...props}

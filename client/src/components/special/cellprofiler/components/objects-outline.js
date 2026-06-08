@@ -16,9 +16,14 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer, inject} from 'mobx-react';
+import {
+  observer,
+  inject} from 'mobx-react';
 import classNames from 'classnames';
-import {Button, Checkbox, Icon} from 'antd';
+import {Button,
+  Checkbox
+} from 'antd';
+import {DownOutlined, UpOutlined} from '@ant-design/icons';
 import ColorPicker from '../../color-picker';
 import styles from './cell-profiler.css';
 
@@ -157,7 +162,7 @@ class ObjectsOutline extends React.Component {
                 onClick={() => graphicsOutput.moveUp(index, viewer)}
                 size="small"
               >
-                <Icon type="up" />
+                <UpOutlined />
               </Button>
               <Button
                 style={{marginRight: 5}}
@@ -165,7 +170,7 @@ class ObjectsOutline extends React.Component {
                 onClick={() => graphicsOutput.moveDown(index, viewer)}
                 size="small"
               >
-                <Icon type="down" />
+                <DownOutlined />
               </Button>
               {
                 this.renderColorConfiguration(config)

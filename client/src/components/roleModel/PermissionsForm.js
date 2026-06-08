@@ -21,15 +21,13 @@ import {
   AutoComplete,
   Button,
   Checkbox,
-  Col,
-  Icon,
   Modal,
   Popover,
-  Row,
   Table,
   Select
 } from 'antd';
-import {isObservableArray, observable, computed} from 'mobx';
+import {DeleteOutlined, TeamOutlined, UserAddOutlined, UserOutlined, UsergroupAddOutlined} from '@ant-design/icons';
+import {isObservableArray, observable, computed, makeObservable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
 import GrantGet from '../../models/grant/GrantGet';
@@ -118,8 +116,6 @@ export default class PermissionsForm extends React.Component {
     originalOwner: undefined,
     entity: undefined
   };
-
-  @observable
   groupFind;
 
   static propTypes = {
@@ -169,7 +165,14 @@ export default class PermissionsForm extends React.Component {
     availablePermissions: [PERMISSIONS.read, PERMISSIONS.write, PERMISSIONS.execute]
   }
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      groupFind: observable,
+      allUsers: computed
+    });
+  }
+
   get allUsers () {
     if (this.props.usersInfo.loaded) {
       return this.props.usersInfo.value || [];
@@ -244,14 +247,14 @@ export default class PermissionsForm extends React.Component {
           size="small"
           onClick={this.openFindUserDialog}
         >
-          <Icon type="user-add" />
+          <UserAddOutlined />
         </Button>
         <Button
           disabled={this.props.readonly || this.permissionsAreReadOnly}
           size="small"
           onClick={this.openFindGroupDialog}
         >
-          <Icon type="usergroup-add" />
+          <UsergroupAddOutlined />
         </Button>
       </span>
     );
@@ -523,7 +526,7 @@ export default class PermissionsForm extends React.Component {
           <Alert
             showIcon
             style={{marginBottom: 5}}
-            message={(
+            title={(
               <div>
                 {title}
                 {
@@ -552,7 +555,7 @@ export default class PermissionsForm extends React.Component {
         <Alert
           showIcon
           style={{marginBottom: 5}}
-          message={(
+          title={(
             <div>
               {title}
               {content}
@@ -577,10 +580,10 @@ export default class PermissionsForm extends React.Component {
       };
       const attributesString = getAttributesValues().join(', ');
       return (
-        <Row type="flex" style={{flexDirection: 'column'}}>
-          <Row>{user.userName}</Row>
-          <Row><span style={{fontSize: 'smaller'}}>{attributesString}</span></Row>
-        </Row>
+        <div style={{display: 'flex', flexDirection: 'column'}}>
+          <div>{user.userName}</div>
+          <div><span style={{fontSize: 'smaller'}}>{attributesString}</span></div>
+        </div>
       );
     } else {
       return user.userName;
@@ -702,7 +705,7 @@ export default class PermissionsForm extends React.Component {
       selectedPermission
     } = this.state;
     if (error) {
-      return <Alert type="warning" message={error} />;
+      return <Alert type="warning" title={error} />;
     }
     const getSidName = (name, principal) => {
       const {roles: rolesRequest} = this.props;
@@ -721,16 +724,17 @@ export default class PermissionsForm extends React.Component {
     const columns = [
       {
         key: 'icon',
+        width: 20,
         className: styles.userIcon,
         render: (item) => {
           if (item.sid.principal) {
-            return <Icon type="user" />;
+            return <UserOutlined />;
           }
-          return <Icon type="team" />;
+          return <TeamOutlined />;
         }
       },
       {
-        dataIndex: 'sid.name',
+        dataIndex: ['sid', 'name'],
         key: 'name',
         render: (name, item) => getSidName(name, item.sid.principal)
       },
@@ -738,18 +742,16 @@ export default class PermissionsForm extends React.Component {
         key: 'actions',
         className: styles.userActions,
         render: (item) => (
-          <Row>
-            <Button
-              disabled={(
-                pending ||
-                this.props.readonly ||
-                this.subjectIsReadOnly(item.sid.name, item.sid.principal)
-              )}
-              onClick={this.removeUserOrGroupClicked(item)}
-              size="small">
-              <Icon type="delete" />
-            </Button>
-          </Row>
+          <Button
+            disabled={(
+              pending ||
+              this.props.readonly ||
+              this.subjectIsReadOnly(item.sid.name, item.sid.principal)
+            )}
+            onClick={this.removeUserOrGroupClicked(item)}
+            size="small">
+            <DeleteOutlined />
+          </Button>
         )
       }
     ];
@@ -763,35 +765,35 @@ export default class PermissionsForm extends React.Component {
       this.setState({selectedPermission: item});
     };
     const title = (
-      <Row>
-        <Col span={12}>
+      <div className={styles.tableTitle}>
+        <span className={styles.tableTitleLabel}>
           <b>Groups and users</b>
-        </Col>
-        <Col span={12} style={{textAlign: 'right'}}>
+        </span>
+        <span className={styles.tableTitleActions}>
           {this.renderGroupAndUsersActions()}
-        </Col>
-      </Row>
+        </span>
+      </div>
     );
-    return [
-      <Table
-        className={styles.table}
-        key="users table"
-        style={{
-          maxHeight: 200,
-          overflowY: 'auto'
-        }}
-        rowClassName={getRowClassName}
-        onRowClick={selectPermission}
-        loading={pending}
-        title={() => title}
-        showHeader={false}
-        size="small"
-        columns={columns}
-        pagination={false}
-        rowKey={(item) => item.sid.name}
-        dataSource={(data || []).map(p => p)} />,
-      this.renderUserPermission()
-    ];
+    return (
+      <div className={styles.permissionsTableSection}>
+        <Table
+          className={styles.table}
+          key="users table"
+          scroll={{y: 200}}
+          rowClassName={getRowClassName}
+          onRow={(record) => ({onClick: () => selectPermission(record)})}
+          loading={pending}
+          title={() => title}
+          showHeader={false}
+          size="small"
+          columns={columns}
+          pagination={false}
+          rowKey={(item) => item.sid.name}
+          dataSource={(data || []).map(p => p)}
+        />
+        {this.renderUserPermission()}
+      </div>
+    );
   };
 
   isAdmin = () => {
@@ -821,18 +823,12 @@ export default class PermissionsForm extends React.Component {
           });
         };
         return (
-          <Row
-            className={styles.ownerContainer}
-            type="flex"
-            style={{margin: '0px 5px 10px', height: 22}}
-            align="middle"
-          >
+          <div className={styles.ownerContainer}>
             <span style={{marginRight: 5}}>Owner: </span>
             <AutoComplete
               size="small"
               style={{flex: 1}}
               placeholder="Change owner"
-              optionLabelProp="text"
               value={
                 ownerInput === undefined
                   ? owner
@@ -840,32 +836,20 @@ export default class PermissionsForm extends React.Component {
               }
               onBlur={onBlur}
               onSelect={this.onUserSelect}
-              onSearch={this.findUser}>
-              {
-                fetchedUsers.map(user => {
-                  return (
-                    <AutoComplete.Option
-                      key={user.id}
-                      text={user.userName}>
-                      {this.renderUserName(user)}
-                    </AutoComplete.Option>
-                  );
-                })
-              }
-            </AutoComplete>
-          </Row>
+              onSearch={this.findUser}
+              options={fetchedUsers.map(user => ({
+                value: String(user.id),
+                label: this.renderUserName(user)
+              }))}
+            />
+          </div>
         );
       }
       return (
-        <Row
-          className={styles.ownerContainer}
-          type="flex"
-          style={{margin: '0px 5px 10px', height: 22}}
-          align="middle"
-        >
+        <div className={styles.ownerContainer}>
           <span style={{marginRight: 5}}>Owner: </span>
           <b id="object-owner" style={{paddingLeft: 4}}>{owner}</b>
-        </Row>
+        </div>
       );
     }
     return null;
@@ -932,7 +916,7 @@ export default class PermissionsForm extends React.Component {
     } = this.state;
     const {permissionsChanged} = this;
     return (
-      <Row>
+      <div className={styles.permissionsForm}>
         {this.renderOwner()}
         {this.renderSubObjectsWarnings()}
         {this.renderUsers()}
@@ -960,11 +944,8 @@ export default class PermissionsForm extends React.Component {
           onCancel={this.closeFindUserDialog}
           onOk={this.onSelectUser}
           footer={(
-            <Row type="flex" justify="end">
-              <Button
-                onClick={this.closeFindUserDialog}
-                style={{marginRight: 5}}
-              >
+            <div className="cp-modal-footer-actions">
+              <Button onClick={this.closeFindUserDialog}>
                 Cancel
               </Button>
               <Button
@@ -974,9 +955,9 @@ export default class PermissionsForm extends React.Component {
               >
                 OK
               </Button>
-            </Row>
+            </div>
           )}
-          visible={this.state.findUserVisible}>
+          open={this.state.findUserVisible}>
           <Select
             disabled={!this.props.usersInfo.loaded}
             placeholder="Enter the account info"
@@ -984,50 +965,44 @@ export default class PermissionsForm extends React.Component {
             showSearch
             value={this.state.selectedUser}
             onSelect={this.onUserFindInputChanged}
-            filterOption={(input, option) => option.props.attributes
-              .map(o => o.toLowerCase())
-              .find(o => o.includes((input || '').toLowerCase()))
-            }
+            filterOption={(input, option) => {
+              const attributes = option?.attributes || option?.data?.attributes;
+              if (!attributes) {
+                return false;
+              }
+              return attributes
+                .map(o => `${o}`.toLowerCase())
+                .some(o => o.includes((input || '').toLowerCase()));
+            }}
             onSearch={(value) => this.setState({
-              searchUserTouched: value.length > 2}
-            )}
+              searchUserTouched: value.length > 2
+            })}
             onFocus={() => this.setState({searchUserTouched: false})}
             notFoundContent={this.state.searchUserTouched
               ? 'Not found'
               : 'Start typing to filter users...'
             }
-          >
-            {
-              this.state.searchUserTouched ? (
-                this.allUsers
-                  .map(user => (
-                    <Select.Option
-                      key={user.name}
-                      value={user.name}
-                      attributes={
-                        [
-                          user.name,
-                          ...Object.values(user.attributes || {})
-                        ]
-                      }
-                    >
-                      <UserName userName={user.name} />
-                    </Select.Option>
-                  ))
-              ) : null
+            options={
+              this.state.searchUserTouched
+                ? this.allUsers.map(user => ({
+                  value: user.name,
+                  label: <UserName userName={user.name} />,
+                  attributes: [
+                    user.name,
+                    ...Object.values(user.attributes || {})
+                  ]
+                }))
+                : []
             }
-          </Select>
+          />
         </Modal>
         <Modal
           title="Select group"
           onCancel={this.closeFindGroupDialog}
           onOk={this.onSelectGroup}
           footer={(
-            <Row type="flex" justify="end">
-              <Button
-                onClick={this.closeFindGroupDialog}
-                style={{marginRight: 5}}
-              >
+            <div className="cp-modal-footer-actions">
+              <Button onClick={this.closeFindGroupDialog}>
                 Cancel
               </Button>
               <Button
@@ -1037,17 +1012,18 @@ export default class PermissionsForm extends React.Component {
               >
                 OK
               </Button>
-            </Row>
+            </div>
           )}
-          visible={this.state.findGroupVisible}>
+          open={this.state.findGroupVisible}>
           <AutoComplete
             value={this.selectedGroup}
             style={{width: '100%'}}
-            dataSource={this.findGroupDataSource()}
+            options={this.findGroupDataSource().map(group => ({value: group}))}
             onChange={this.onGroupFindInputChanged}
-            placeholder="Enter the group name" />
+            placeholder="Enter the group name"
+          />
         </Modal>
-      </Row>
+      </div>
     );
   }
 

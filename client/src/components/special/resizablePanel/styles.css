@@ -17,12 +17,12 @@
 .panel {}
 
 .anchor {
-  background-color: #efefef;
+  background-color: var(--cp-color-tag-key-bg);
   position: absolute;
 }
 
 .anchor:hover {
-  background-color: #ccc;
+  background-color: var(--cp-color-border);
 }
 
 .anchor.right,

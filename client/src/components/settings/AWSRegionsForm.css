@@ -90,7 +90,7 @@
   margin-bottom: 2px;
 }
 
-.section-form-item div[class~="ant-form-item-control-wrapper"] {
+.section-form-item div[class~="ant-form-item-control"] {
   width: auto;
   flex-grow: 1;
 }

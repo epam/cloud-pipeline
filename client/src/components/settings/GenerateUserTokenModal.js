@@ -19,6 +19,7 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {Button, DatePicker, Form, Input, message, Modal} from 'antd';
 import moment from 'moment-timezone';
+import {dayjsToMoment, momentToDayjs} from '../../utils/antd-date-utils';
 import UserToken from '../../models/user/UserToken';
 
 const TOKEN_NAME_PATTERN = /^[A-Za-z0-9_-]+$/;
@@ -86,14 +87,15 @@ export default class GenerateUserTokenModal extends React.Component {
   }
 
   disabledDate = (date) => {
-    if (!date) {
+    const m = dayjsToMoment(date);
+    if (!m) {
       return false;
     }
-    if (date.isBefore(moment().startOf('day'))) {
+    if (m.isBefore(moment().startOf('day'))) {
       return true;
     }
     const {jwtTokenDateTo} = this;
-    if (jwtTokenDateTo && date.isAfter(jwtTokenDateTo)) {
+    if (jwtTokenDateTo && m.isAfter(jwtTokenDateTo)) {
       return true;
     }
     return false;
@@ -122,11 +124,12 @@ export default class GenerateUserTokenModal extends React.Component {
   };
 
   onValidTillChanged = (date) => {
-    if (date && date.isBefore(moment().startOf('day'))) {
+    const validTill = dayjsToMoment(date);
+    if (validTill && validTill.isBefore(moment().startOf('day'))) {
       message.info('\'Valid till\' date should not be in past');
       return;
     }
-    this.setState({validTill: date});
+    this.setState({validTill});
   };
 
   onNameChanged = (event) => {
@@ -188,10 +191,10 @@ export default class GenerateUserTokenModal extends React.Component {
             </Button>
           </div>
         )}
-        maskClosable={!confirmLoading}
+        mask={{closable: !confirmLoading}}
         onCancel={onCancel}
         title="Generate access key"
-        visible={visible}
+        open={visible}
       >
         <div style={{display: 'flex', alignItems: 'flex-start'}}>
           <div style={{flex: '0 0 auto', marginRight: 12}}>
@@ -201,9 +204,9 @@ export default class GenerateUserTokenModal extends React.Component {
                 className="generate-user-token-valid-till"
                 allowClear={false}
                 disabledDate={this.disabledDate}
-                onChange={this.onValidTillChanged}
+                onChange={(d) => this.onValidTillChanged(d)}
                 size="default"
-                value={validTill}
+                value={momentToDayjs(validTill)}
               />
             </Form.Item>
           </div>

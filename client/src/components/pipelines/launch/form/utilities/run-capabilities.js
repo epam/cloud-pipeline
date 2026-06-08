@@ -1,8 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Icon, Alert} from 'antd';
-import Dropdown from 'rc-dropdown';
-import Menu, {MenuItem, SubMenu} from 'rc-menu';
+import {Alert, Dropdown} from 'antd';
+import {CloseOutlined} from '@ant-design/icons';
 import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
 import {booleanParameterIsSetToValue} from './parameter-utilities';
@@ -254,9 +253,14 @@ class RunCapabilities extends React.Component {
   };
 
   componentDidMount () {
+    this._mounted = true;
     this.fetchDockerImageOS();
     this.setInitialRequiredCapabilities();
     this.setReservationConfig();
+  }
+
+  componentWillUnmount () {
+    this._mounted = false;
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
@@ -294,7 +298,7 @@ class RunCapabilities extends React.Component {
         const initialRequired = required
           .filter((capability) => enabled.includes(capability.value))
           .map((capability) => capability.value);
-        if (token === this.token) {
+        if (token === this.token && this._mounted) {
           this.setState({
             initialRequiredCapabilities: initialRequired
           });
@@ -390,7 +394,11 @@ class RunCapabilities extends React.Component {
       }, this.correctCapabilitiesSelection);
     } else if (dockerImage) {
       fetchToolOS(dockerImage, dockerRegistries)
-        .then(os => this.setState({os}, this.correctCapabilitiesSelection));
+        .then(os => {
+          if (this._mounted) {
+            this.setState({os}, this.correctCapabilitiesSelection);
+          }
+        });
     } else {
       this.setState({
         os: undefined
@@ -424,6 +432,52 @@ class RunCapabilities extends React.Component {
     const filtered = (values || [])
       .filter(v => capabilities.find(o => o.value === v));
     onChange && onChange(filtered);
+  };
+
+  buildCapabilityMenuItems = (capabilities) => {
+    const {mode} = this.props;
+    return (capabilities || [])
+      .filter(capability => {
+        if (
+          !capability.custom &&
+          this.props.preferences.hiddenRunCapabilities.includes(capability.value)
+        ) {
+          return false;
+        }
+        return true;
+      })
+      .map(capability => {
+        const {capabilities: nested = []} = capability;
+        const selectable = this.capabilityIsRequired(capability.value)
+          ? mode === RUN_CAPABILITIES_MODE.edit
+          : true;
+        const label = nested.length === 0 ? (
+          <Capability
+            capability={capability}
+            selected={this.filteredValues.includes(capability.value)}
+            style={{width: '100%'}}
+          />
+        ) : (
+          <Capability
+            capability={capability}
+            selected={selectable && this.filteredValues.includes(capability.value)}
+            style={{width: '100%', paddingRight: 20}}
+            nested={nested
+              .filter(child => this.filteredValues.includes(child.value))
+              .map(child => child.value)}
+          />
+        );
+        const item = {
+          key: capability.value,
+          label,
+          disabled: capability.disabled,
+          title: capability.description || capability.name
+        };
+        if (nested.length > 0) {
+          item.children = this.buildCapabilityMenuItems(nested);
+        }
+        return item;
+      });
   };
 
   getCapabilityByValue = (value) => {
@@ -552,82 +606,18 @@ class RunCapabilities extends React.Component {
       domEvent.preventDefault();
       this.toggleValue(key);
     };
-    const renderCapability = (capability) => {
-      const {
-        capabilities = []
-      } = capability;
-      const selectable = this.capabilityIsRequired(capability.value)
-        ? mode === RUN_CAPABILITIES_MODE.edit
-        : true;
-      if (
-        !capability.custom &&
-        this.props.preferences.hiddenRunCapabilities.includes(capability.value)
-      ) {
-        return null;
-      }
-      const isDisabled = capability.disabled;
-      if (capabilities.length === 0) {
-        return (
-          <MenuItem
-            key={capability.value}
-            value={capability.value}
-            title={capability.description || capability.name}
-            disabled={isDisabled}
-          >
-            <Capability
-              capability={capability}
-              selected={this.filteredValues.includes(capability.value)}
-              style={{width: '100%'}}
-            />
-          </MenuItem>
-        );
-      }
-      return (
-        <SubMenu
-          key={capability.value}
-          value={capability.value}
-          title={(
-            <Capability
-              capability={capability}
-              selected={
-                selectable &&
-                this.filteredValues.includes(capability.value)
-              }
-              style={{width: '100%', paddingRight: 20}}
-              nested={
-                capabilities
-                  .filter(child => this.filteredValues.includes(child.value))
-                  .map(child => child.value)
-              }
-            />
-          )}
-          disabled={isDisabled}
-          onTitleClick={onCapabilityClick}
-        >
-          {
-            capabilities.map(renderCapability)
-          }
-        </SubMenu>
-      );
-    };
+    const capabilityMenuItems = this.buildCapabilityMenuItems(this.allCapabilities);
     return (
       <div
         className={className}
       >
         <Dropdown
           disabled={disabled}
-          overlay={(
-            <div>
-              <Menu
-                mode="vertical"
-                selectedKeys={[]}
-                onClick={onCapabilityClick}
-                getPopupContainer={getPopupContainer}
-              >
-                {this.allCapabilities.map(renderCapability)}
-              </Menu>
-            </div>
-          )}
+          menu={{
+            items: capabilityMenuItems,
+            onClick: onCapabilityClick
+          }}
+          getPopupContainer={getPopupContainer}
           trigger={[disabled ? undefined : 'click']}
         >
           <div
@@ -665,11 +655,8 @@ class RunCapabilities extends React.Component {
                     style={tagStyle}
                   >
                     <Capability capability={capability} />
-                    <Icon
-                      type="close"
-                      className={styles.runCapabilitiesInputTagClose}
-                      onClick={(domEvent) => onCapabilityClick({domEvent, key: capability.value})}
-                    />
+                    <CloseOutlined className={styles.runCapabilitiesInputTagClose}
+                      onClick={(domEvent) => onCapabilityClick({domEvent, key: capability.value})} />
                   </div>
                 ))
             }
@@ -761,7 +748,6 @@ export class RunCapabilitiesMetadataPreference extends React.Component {
           values={this.values}
           onChange={this.onChange}
           className={styles.runCapabilitiesMetadataInput}
-          style={{minHeight: '28px', lineHeight: '28px'}}
           getPopupContainer={node => node}
         />
       </div>
@@ -1063,7 +1049,7 @@ function CapabilitiesDisclaimerRenderer (
           type="warning"
           className={className}
           style={style}
-          message={
+          title={
             <div>
               {filteredValuesDisclaimers.map((disclaimer, idx) => (
                 <p

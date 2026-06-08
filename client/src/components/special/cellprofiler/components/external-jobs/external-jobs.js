@@ -17,8 +17,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Icon} from 'antd';
-import {computed} from 'mobx';
+import {LoadingOutlined} from '@ant-design/icons';
+import {computed, makeObservable} from 'mobx';
 import {observer} from 'mobx-react';
 import Collapse from '../collapse';
 import {getExternalEvaluations} from '../../model/analysis/external-evaluations';
@@ -73,7 +73,13 @@ class CellProfilerExternalJobs extends React.Component {
     expanded: false
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      currentUserName: computed
+    });
+  }
+
   get currentUserName () {
     const {
       authenticatedUserInfo
@@ -306,10 +312,7 @@ class CellProfilerExternalJobs extends React.Component {
             }
             {
               pending && (
-                <Icon
-                  type="loading"
-                  style={{marginLeft: 5}}
-                />
+                <LoadingOutlined style={{marginLeft: 5}} />
               )
             }
             {

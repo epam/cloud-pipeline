@@ -16,8 +16,11 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {isType} from 'cwlts/models';
-import {Button, Icon} from 'antd';
+import {
+  isType} from 'cwlts/models';
+import {Button
+} from 'antd';
+import {DeleteOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import DockerImageSelector from '../shared/docker-image-selector';
 import CodeEditor from '../../../../../../../special/CodeEditor';
@@ -232,10 +235,10 @@ class CWLCommandLineTool extends React.Component {
                   size="small"
                   disabled={this.props.disabled}
                   onClick={onRemoveCode(index)}
-                  type="danger"
+                  danger
                   style={{marginLeft: 5}}
                 >
-                  <Icon type="delete" />
+                  <DeleteOutlined />
                 </Button>
               </div>
             </div>

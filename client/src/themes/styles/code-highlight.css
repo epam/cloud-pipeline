@@ -1,0 +1,533 @@
+/*
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+.code-highlight {
+  color: var(--cp-color-text);
+  background-color: var(--cp-color-bg-code);
+  border: 1px solid var(--cp-color-border-card);
+  border-radius: 4px;
+}
+
+.markdown pre,
+.markdown code {
+  color: var(--cp-color-text);
+  background-color: var(--cp-color-bg-code);
+  border: 1px solid var(--cp-color-border-card);
+  border-radius: 4px;
+  padding: 10px;
+  margin: 5px 0;
+  white-space: pre-line;
+}
+
+.code-highlight code,
+.markdown code {
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+}
+
+.markdown pre > code {
+  display: block;
+  background-color: transparent;
+  color: inherit;
+  box-shadow: none;
+  border: none;
+}
+
+.markdown code {
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+.markdown h1,
+.markdown h2,
+.markdown h3 {
+  margin: 5px 0;
+}
+
+.markdown h4,
+.markdown h5,
+.markdown h6 {
+  margin: 2px 0;
+}
+
+.markdown:not(.no-margin-markdown) p {
+  margin: 5px 0;
+}
+
+.markdown p a {
+  margin: 0 2px;
+}
+
+.markdown ul,
+.markdown ol {
+  margin-top: 0;
+  margin-bottom: 10px;
+  display: block;
+  list-style: disc inside;
+}
+
+.markdown ol {
+  list-style-type: decimal;
+}
+
+.markdown li {
+  display: list-item;
+  margin: 5px;
+}
+
+.markdown ol ul {
+  list-style: circle;
+}
+
+.markdown ol ul li {
+  margin-left: 35px;
+}
+
+.markdown ol ul ul,
+.markdown ul ul {
+  list-style: square;
+}
+
+.markdown ul ul li {
+  margin-left: 35px;
+}
+
+.markdown blockquote {
+  margin: 0;
+  padding: 10px 0;
+  padding-left: 1rem;
+  border-left: 4px solid var(--cp-color-border-card);
+  background-color: var(--cp-color-bg-code);
+}
+
+.markdown hr {
+  margin: 5px 0;
+  border-top: 1px solid var(--cp-color-border-card);
+  border-right: none;
+  border-left: none;
+  border-bottom: none;
+}
+
+.markdown table {
+  border-collapse: collapse;
+  border: 1px solid var(--cp-color-border-card);
+  margin-bottom: 10px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.markdown table td,
+.markdown table th {
+  border: 1px solid var(--cp-color-border-card);
+  padding: 5px;
+}
+
+.markdown table tr:nth-child(even) {
+  background-color: var(--cp-color-bg-striped);
+}
+
+.hljs {
+  color: var(--cp-color-text);
+  background: var(--cp-color-bg-elevated);
+}
+
+.hljs-comment,
+.hljs-quote {
+  color: var(--cp-color-text-secondary);
+}
+
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-subst {
+  color: var(--cp-color-text);
+}
+
+.hljs-number,
+.hljs-literal,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag .hljs-attr {
+  color: var(--cp-color-aqua);
+}
+
+.hljs-string,
+.hljs-doctag {
+  color: var(--cp-color-pink);
+}
+
+.hljs-title,
+.hljs-section,
+.hljs-selector-id {
+  color: var(--cp-color-red);
+}
+
+.hljs-type,
+.hljs-class .hljs-title {
+  color: var(--cp-color-blue-dimmed);
+}
+
+.hljs-tag,
+.hljs-name,
+.hljs-attribute {
+  color: var(--cp-color-primary);
+  font-weight: normal;
+}
+
+.hljs-regexp,
+.hljs-link {
+  color: var(--cp-color-green);
+}
+
+.hljs-symbol,
+.hljs-bullet {
+  color: var(--cp-color-violet);
+}
+
+.hljs-built_in,
+.hljs-builtin-name {
+  color: var(--cp-color-primary);
+}
+
+.hljs-meta {
+  color: var(--cp-color-text-secondary);
+  font-weight: bold;
+}
+
+.hljs-deletion {
+  background: var(--cp-color-alert-error-bg);
+}
+
+.hljs-addition {
+  background: var(--cp-color-alert-success-bg);
+}
+
+.cp-code-editor {
+  background-color: var(--cp-color-bg-elevated);
+  color: var(--cp-color-text);
+  border-color: var(--cp-color-border-card);
+}
+
+.CodeMirror {
+  background-color: var(--cp-color-bg-elevated);
+  color: var(--cp-color-text);
+  border: 1px solid var(--cp-color-border-card);
+}
+
+.CodeMirror-cursor {
+  border-color: var(--cp-color-text);
+}
+
+.CodeMirror-gutters {
+  background-color: var(--cp-color-bg-elevated-header);
+  border-color: var(--cp-color-border-card);
+}
+
+.CodeMirror-linenumber {
+  color: var(--cp-color-text-secondary);
+}
+
+.CodeMirror-selected {
+  background-color: var(--cp-color-codemirror-selection-bg);
+}
+
+.CodeMirror-focused .CodeMirror-selected {
+  background-color: var(--cp-color-codemirror-selection-focused-bg);
+}
+
+.cm-s-default .cm-header {
+  color: var(--cp-color-blue);
+}
+
+.cm-s-default .cm-quote {
+  color: var(--cp-color-green);
+}
+
+.cm-negative {
+  color: var(--cp-color-sensitive);
+}
+
+.cm-positive {
+  color: var(--cp-color-green);
+}
+
+.cm-s-default .cm-keyword {
+  color: var(--cp-color-violet);
+}
+
+.cm-s-default .cm-atom {
+  color: var(--cp-color-blue);
+}
+
+.cm-s-default .cm-number {
+  color: var(--cp-color-aqua);
+}
+
+.cm-s-default .cm-def {
+  color: var(--cp-color-blue-dimmed);
+}
+
+.cm-s-default .cm-variable-2 {
+  color: var(--cp-color-blue-dimmed);
+}
+
+.cm-s-default .cm-variable-3,
+.cm-s-default .cm-type {
+  color: var(--cp-color-green);
+}
+
+.cm-s-default .cm-comment {
+  color: var(--cp-color-yellow);
+}
+
+.cm-s-default .cm-string {
+  color: var(--cp-color-red);
+}
+
+.cm-s-default .cm-string-2 {
+  color: var(--cp-color-yellow);
+}
+
+.cm-s-default .cm-meta,
+.cm-s-default .cm-qualifier {
+  color: var(--cp-color-text-disabled);
+}
+
+.cm-s-default .cm-builtin {
+  color: var(--cp-color-blue-dimmed);
+}
+
+.cm-s-default .cm-bracket {
+  color: var(--cp-color-grey);
+}
+
+.cm-s-default .cm-tag {
+  color: var(--cp-color-green);
+}
+
+.cm-s-default .cm-hr {
+  color: var(--cp-color-text-secondary);
+}
+
+.cm-s-default .cm-attribute,
+.cm-s-default .cm-link {
+  color: var(--cp-color-primary);
+}
+
+.cm-s-default .cm-error,
+.cm-invalidchar {
+  color: var(--cp-color-red);
+}
+
+div.CodeMirror span.CodeMirror-matchingbracket {
+  color: var(--cp-color-green);
+}
+
+div.CodeMirror span.CodeMirror-nonmatchingbracket {
+  color: var(--cp-color-red);
+}
+
+.CodeMirror-matchingtag { background: color-mix(in srgb, var(--cp-color-yellow) 50%, transparent); }
+
+.CodeMirror-activeline-background {
+  background: var(--cp-color-bg-elevated-header);
+}
+
+.handsontable {
+  color: var(--cp-color-text);
+}
+
+.handsontable th {
+  background-color: var(--cp-color-bg-elevated-header);
+}
+
+.handsontable td {
+  background-color: var(--cp-color-bg-elevated);
+}
+
+.handsontable tr th,
+.handsontable tr td,
+.handsontable tr:first-child th,
+.handsontable tr:first-child td {
+  color: var(--cp-color-text);
+}
+
+.handsontable tr th,
+.handsontable tr td,
+.handsontable tr:first-child th,
+.handsontable tr:first-child td,
+.handsontable.htRowHeaders thead tr th:nth-child(2) {
+  border-color: color-mix(in oklch, var(--cp-color-border-card), black 5%);
+}
+
+.handsontable tbody th.ht__highlight,
+.handsontable thead th.ht__highlight {
+  background-color: var(--cp-color-primary);
+  color: var(--cp-color-primary-on);
+}
+
+.handsontable td.area {
+  background-image: linear-gradient(to bottom, var(--cp-color-primary-muted) 0%, var(--cp-color-primary-muted) 100%);
+  background-color: var(--cp-color-bg-elevated);
+}
+
+.htContextMenu table.htCore,
+.htContextMenu table tbody tr td.htSeparator {
+  border-color: var(--cp-color-border-card);
+}
+
+.htContextMenu table tbody tr td.current,
+.htContextMenu table tbody tr td.zeroclipboard-is-hover {
+  background-color: var(--cp-color-interactive-selected-bg);
+}
+
+.htContextMenu table tbody tr td.htDisabled,
+.htContextMenu table tbody tr td.htDisabled:hover {
+  background-color: var(--cp-color-bg-elevated);
+  color: var(--cp-color-text-disabled);
+}
+
+.cp-pipeline-code-editor-readonly .handsontable td,
+.cp-pipeline-code-editor-readonly .handsontable td.area,
+.cp-pipeline-code-editor-readonly .CodeMirror {
+  background-color: color-mix(in oklch, var(--cp-color-bg-elevated-header), white 2%);
+}
+
+.joint-paper.joint-theme-default {
+  background-color: var(--cp-color-bg-elevated);
+}
+
+.joint-type-visualstep .body,
+.joint-type-visualgroup .body,
+.joint-type-visualworkflow .body {
+  fill: var(--cp-color-bg-elevated);
+  stroke: var(--cp-color-primary);
+}
+
+.joint-type-visualstep .port-body.empty,
+.joint-type-visualgroup .port-body.empty,
+.joint-type-visualworkflow .port-body.empty {
+  fill: var(--cp-color-bg-elevated);
+  stroke: var(--cp-color-primary);
+}
+
+.joint-type-visualstep .port-body,
+.joint-type-visualgroup .port-body,
+.joint-type-visualworkflow .port-body {
+  fill: var(--cp-color-bg-elevated);
+  stroke: var(--cp-color-aqua);
+}
+
+.joint-type-visualstep .port-label,
+.joint-type-visualgroup .port-label,
+.joint-type-visualworkflow .port-label,
+.marker-source,
+.marker-target,
+.joint-type-visualdeclaration .label {
+  fill: var(--cp-color-aqua);
+  stroke: var(--cp-color-aqua);
+}
+
+.joint-link .marker-arrowheads .marker-arrowhead,
+.joint-link .marker-vertex-group .marker-vertex,
+.joint-link .marker-vertex-group .marker-vertex:hover {
+  fill: var(--cp-color-primary);
+}
+
+.marker-vertex-remove-area {
+  fill: var(--cp-color-text);
+}
+
+.joint-link.joint-theme-default .marker-vertex-remove {
+  fill: var(--cp-color-bg-elevated);
+}
+
+.joint-link.joint-theme-default .connection-wrap,
+.joint-link .connection {
+  stroke: var(--cp-color-aqua);
+}
+
+.joint-type-visualstep .label,
+.joint-type-visualgroup .label,
+.joint-type-visualworkflow .label {
+  fill: var(--cp-color-primary);
+}
+
+.joint-link .link-tools .link-tool .tool-remove circle {
+  fill: var(--cp-color-red);
+}
+
+.cp-pipeline-graph-side-panel:hover {
+  background-color: var(--cp-color-bg-elevated);
+  box-shadow: 5px 0 15px var(--cp-color-card-shadow);
+}
+
+.cp-pipeline-graph-properties-panel {
+
+}
+
+.cp-issue-markdown-link {
+  color: var(--cp-color-primary);
+  background-color: var(--cp-color-bg-elevated);
+  box-shadow: inset 0 -1px 0 var(--cp-color-card-shadow);
+  transition: none;
+  border-radius: 5px;
+  padding: 2px 4px;
+}
+
+.cp-issue-markdown-link:hover {
+  color: var(--cp-color-primary-on);
+  background-color: var(--cp-color-primary);
+}
+
+.d2h-file-wrapper,
+.d2h-file-header,
+.d2h-diff-table,
+.d2h-code-linenumber,
+.d2h-code-line.d2h-info,
+.d2h-code-linenumber.d2h-info {
+  background-color: var(--cp-color-bg-elevated);
+  color: var(--cp-color-text);
+  border-color: var(--cp-color-border-card);
+}
+
+.d2h-tag {
+  background-color: var(--cp-color-bg-elevated);
+}
+
+.d2h-info {
+  background-color: var(--cp-color-bg-container);
+}
+
+.d2h-file-diff .d2h-ins.d2h-change,
+.d2h-ins {
+  background-color: var(--cp-color-green-faint);
+}
+
+.d2h-file-diff .d2h-del.d2h-change,
+.d2h-del {
+  background-color: var(--cp-color-red-faint);
+}
+
+.d2h-code-line.d2h-del.d2h-change del {
+  color: var(--cp-color-bg-elevated);
+  background-color: var(--cp-color-red);
+}
+
+.d2h-code-line.d2h-ins.d2h-change ins {
+  color: var(--cp-color-bg-elevated);
+  background-color: var(--cp-color-green);
+}

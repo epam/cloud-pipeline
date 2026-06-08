@@ -16,13 +16,14 @@
 
 import React from 'react';
 import {observer} from 'mobx-react';
+import {withRouter} from '../../../utils/with-router';
 import roleModel from '../../../utils/roleModel';
 import LoadingView from '../../special/LoadingView';
 import HomePage from './HomePage';
 
 @roleModel.authenticationInfo
 @observer
-export default class HomePageLoader extends React.Component {
+class HomePageLoader extends React.Component {
   render () {
     if (!this.props.authenticatedUserInfo.loaded && this.props.authenticatedUserInfo.pending) {
       return <LoadingView />;
@@ -30,3 +31,5 @@ export default class HomePageLoader extends React.Component {
     return <HomePage router={this.props.router} />;
   }
 }
+
+export default withRouter(HomePageLoader);

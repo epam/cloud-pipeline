@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {
   Button,
@@ -60,6 +60,16 @@ class LifeCycleHistoryModal extends React.Component {
     actionFilter: null
   }
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      transitions: computed,
+      prolongations: computed,
+      usersInfo: computed,
+      history: computed
+    });
+  }
+
   componentDidMount () {
     this.fetchHistory();
   }
@@ -70,7 +80,6 @@ class LifeCycleHistoryModal extends React.Component {
     }
   }
 
-  @computed
   get transitions () {
     const {rule} = this.props;
     if (rule && rule.transitions) {
@@ -79,7 +88,6 @@ class LifeCycleHistoryModal extends React.Component {
     return [];
   }
 
-  @computed
   get prolongations () {
     const {rule} = this.props;
     if (rule && rule.prolongations) {
@@ -88,7 +96,6 @@ class LifeCycleHistoryModal extends React.Component {
     return [];
   }
 
-  @computed
   get usersInfo () {
     const {usersInfo} = this.props;
     if (usersInfo.loaded) {
@@ -97,7 +104,6 @@ class LifeCycleHistoryModal extends React.Component {
     return [];
   }
 
-  @computed
   get history () {
     const {executions} = this.state;
     const executionsData = executions.map(execution => ({
@@ -219,7 +225,7 @@ class LifeCycleHistoryModal extends React.Component {
     }
     return (
       <Modal
-        visible={visible}
+        open={visible}
         onCancel={onOk}
         onOk={onOk}
         title="History"

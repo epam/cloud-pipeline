@@ -6,7 +6,7 @@ import styles from './launch-command.css';
 import {getOS, OperationSystems} from '../../../../../utils/OSDetection';
 import {API_PATH, SERVER} from '../../../../../config';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import LoadingView from '../../../../special/LoadingView';
 import BashCode from '../../../../special/bash-code';
 
@@ -59,7 +59,13 @@ class RunLaunchCommandSection extends React.Component {
     tab: defaultCliCommand
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      launchCommandTemplate: computed
+    });
+  }
+
   get launchCommandTemplate () {
     const {preferences} = this.props;
     return preferences.getPreferenceValue('ui.launch.command.template');
@@ -121,7 +127,7 @@ class RunLaunchCommandSection extends React.Component {
     } = this.props;
     if (!pending && error) {
       return (
-        <Alert type="error" message={error} />
+        <Alert type="error" title={error} />
       );
     }
     const {tab} = this.state;
@@ -167,20 +173,16 @@ class RunLaunchCommandSection extends React.Component {
             style={{cursor: 'pointer'}}
             mode="horizontal"
             onClick={this.onTabChange}
-          >
-            {
-              tabs.map((tab) => (
-                <Menu.Item
-                  key={tab.tab}
-                  id={tab.tab}
-                >
-                  <div className={styles.runLaunchCommandTabsMenuItem}>
-                    <span>{tab.title}</span>
-                  </div>
-                </Menu.Item>
-              ))
-            }
-          </Menu>
+            items={tabs.map((t) => ({
+              key: t.tab,
+              id: t.tab,
+              label: (
+                <div className={styles.runLaunchCommandTabsMenuItem}>
+                  <span>{t.title}</span>
+                </div>
+              )
+            }))}
+          />
         </div>
         <div
           className={classNames(

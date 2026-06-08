@@ -16,7 +16,6 @@
 
 import React from 'react';
 import {Provider as MobxProvider} from 'mobx-react';
-import Menu, {MenuItem, Divider, SubMenu} from 'rc-menu';
 import Consumer from './export-consumer';
 import ImageConsumer from './export-image-consumer';
 import exportStore from './export-store';
@@ -36,15 +35,17 @@ const Provider = ({children}) => (
   </MobxProvider>
 );
 
-function renderExportMenu (filterStore, options = {}) {
+/**
+ * Returns antd menu items for the Export submenu.
+ * @param {object} filterStore - filters store
+ * @param {{ exportKeyPrefix?: string }} options
+ * @returns {Array<{ key: string, label: string }|{ type: 'divider', key: string }>}
+ */
+function getExportMenuItems (filterStore, options = {}) {
   if (!filterStore) {
-    return null;
+    return [];
   }
-  const {
-    subMenu = true,
-    exportKeyPrefix = '',
-    onSelect
-  } = options;
+  const {exportKeyPrefix = ''} = options;
   let formats = [ExportFormat.csv, ExportFormat.image];
   if (/^general$/i.test(filterStore.report)) {
     formats = [ExportFormat.csvCostCenters, ExportFormat.csvUsers, ExportFormat.image];
@@ -57,34 +58,13 @@ function renderExportMenu (filterStore, options = {}) {
     ];
   }
   if (!formats || formats.length === 0) {
-    return null;
+    return [];
   }
   const getItemKey = key => [exportKeyPrefix, key].filter(o => o && o.length).join('-');
-  const items = formats.map((format, index) => (
+  return formats.map((format, index) =>
     format === ExportFormat.divider
-      ? (<Divider key={`${format}-${index}`} />)
-      : (<MenuItem key={getItemKey(format)}>{ExportFormatName[format]}</MenuItem>)
-  ));
-  if (subMenu) {
-    return (
-      <SubMenu
-        key="export menu"
-        title="Export"
-        style={{cursor: 'pointer'}}
-        selectedKeys={[]}
-      >
-        {items}
-      </SubMenu>
-    );
-  }
-  return (
-    <Menu
-      onClick={onSelect}
-      style={{cursor: 'pointer'}}
-      selectedKeys={[]}
-    >
-      {items}
-    </Menu>
+      ? {type: 'divider', key: `export-divider-${index}`}
+      : {key: getItemKey(format), label: ExportFormatName[format]}
   );
 }
 
@@ -132,7 +112,7 @@ export {
   Provider,
   Consumer,
   ImageConsumer,
-  renderExportMenu,
+  getExportMenuItems,
   onExport
 };
 export default Exports;

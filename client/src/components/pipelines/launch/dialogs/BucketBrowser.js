@@ -17,10 +17,11 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import connect from '../../../../utils/connect';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
 import SplitPane from 'react-split-pane';
-import {Alert, Button, Checkbox, Col, Icon, Input, Modal, Row, Table, Tree, message} from 'antd';
+import {Alert, Button, Checkbox, Col, Input, Modal, Row, Table, Tree, message} from 'antd';
+import {CaretLeftOutlined, CaretRightOutlined} from '@ant-design/icons';
 import dataStorages from '../../../../models/dataStorage/DataStorages';
 import DataStorageRequest from '../../../../models/dataStorage/DataStoragePage';
 import DTSRequest from '../../../../models/dts/DTSItemsPage';
@@ -48,6 +49,7 @@ import UploadFilesList from './upload-files-list';
 import {
   getAllowedStoragesForCloudRegion
 } from '../../../../utils/limit-mounts/check-cloud-region-rules';
+import OldAntIconsResolver from '../../../../utils/old-ant-icons-resolver';
 
 const PAGE_SIZE = 40;
 const DTS_ITEM_TYPE = 'DTS';
@@ -143,7 +145,6 @@ export default class BucketBrowser extends React.Component {
     filterNonObjectStorages: PropTypes.bool
   };
 
-  @observable
   storage = null;
   rootItems = [];
 
@@ -163,7 +164,17 @@ export default class BucketBrowser extends React.Component {
 
   tableData = [];
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      storage: observable,
+      uploadFilesEnabled: computed,
+      awsRegions: computed,
+      currentCloudRegion: computed,
+      storages: computed
+    });
+  }
+
   get uploadFilesEnabled () {
     const {uiLaunchParametersConfiguration, uploadFilesAllowed} = this.props;
     return uploadFilesAllowed &&
@@ -171,7 +182,6 @@ export default class BucketBrowser extends React.Component {
       uiLaunchParametersConfiguration.localFiles.enabled;
   }
 
-  @computed
   get awsRegions () {
     if (this.props.awsRegions.loaded) {
       return (this.props.awsRegions.value || []).map(r => r);
@@ -179,7 +189,6 @@ export default class BucketBrowser extends React.Component {
     return [];
   }
 
-  @computed
   get currentCloudRegion () {
     const {
       cloudRegionId
@@ -189,7 +198,6 @@ export default class BucketBrowser extends React.Component {
       : undefined;
   }
 
-  @computed
   get storages () {
     const {storages} = this.props;
     return storages.loaded ? (storages.value || []).map(r => r) : [];
@@ -409,15 +417,15 @@ export default class BucketBrowser extends React.Component {
         key: 'type',
         title: '',
         className: styles.itemTypeCell,
-        render: (text, item) => <Icon className={styles.itemType} type={item.type.toLowerCase()} />,
-        onCellClick: (item) => this.didSelectDataStorageItem(item)
+        render: (text, item) => <OldAntIconsResolver className={styles.itemType} type={item.type.toLowerCase()} />,
+        onCell: (item) => ({onClick: () => this.didSelectDataStorageItem(item)})
       },
       {
         dataIndex: 'name',
         key: 'name',
         title: 'Name',
         className: styles.selectableCell,
-        onCellClick: (item) => this.didSelectDataStorageItem(item)
+        onCell: (item) => ({onClick: () => this.didSelectDataStorageItem(item)})
       },
       {
         dataIndex: 'size',
@@ -425,7 +433,7 @@ export default class BucketBrowser extends React.Component {
         title: 'Size',
         render: size => displaySize(size),
         className: styles.selectableCell,
-        onCellClick: (item) => this.didSelectDataStorageItem(item)
+        onCell: (item) => ({onClick: () => this.didSelectDataStorageItem(item)})
       },
       {
         dataIndex: 'changed',
@@ -433,7 +441,7 @@ export default class BucketBrowser extends React.Component {
         title: 'Date changed',
         className: styles.selectableCell,
         render: (date) => date ? displayDate(date) : '',
-        onCellClick: (item) => this.didSelectDataStorageItem(item)
+        onCell: (item) => ({onClick: () => this.didSelectDataStorageItem(item)})
       },
       {
         dataIndex: 'labels',
@@ -441,7 +449,7 @@ export default class BucketBrowser extends React.Component {
         title: '',
         className: styles.selectableCell,
         render: this.labelsRenderer,
-        onCellClick: (item) => this.didSelectDataStorageItem(item)
+        onCell: (item) => ({onClick: () => this.didSelectDataStorageItem(item)})
       }
     ];
 
@@ -639,41 +647,29 @@ export default class BucketBrowser extends React.Component {
       <span
         id={`pipelines-library-tree-node-${item.key}-name`}
         className={styles.treeItemTitle}>
-        {icon && <Icon type={icon} />}<span className="storage-name">{name}</span>{subTitle}
+        {icon && <OldAntIconsResolver type={icon} />}<span className="storage-name">{name}</span>{subTitle}
       </span>
     );
   }
 
-  generateTreeItems (items) {
+  getTreeData (items) {
     if (!items) {
       return [];
     }
     return formatTreeItems(items, {preferences: this.props.preferences})
-      .map(item => {
-        if (item.isLeaf) {
-          return (
-            <Tree.TreeNode
-              className={`pipelines-library-tree-node-${item.key}`}
-              title={this.renderItemTitle(item)}
-              key={item.key}
-              isLeaf={item.isLeaf} />
-          );
-        } else {
-          return (
-            <Tree.TreeNode
-              className={`pipelines-library-tree-node-${item.key}`}
-              title={this.renderItemTitle(item)}
-              key={item.key}
-              isLeaf={item.isLeaf}>
-              {this.generateTreeItems(item.children)}
-            </Tree.TreeNode>
-          );
-        }
-      });
+      .map(item => ({
+        key: item.key,
+        title: this.renderItemTitle(item),
+        isLeaf: item.isLeaf,
+        className: `pipelines-library-tree-node-${item.key}`,
+        ...(item.children && !item.isLeaf
+          ? {children: this.getTreeData(item.children)}
+          : {})
+      }));
   }
 
   onExpand = (expandedKeys, {expanded, node}) => {
-    const item = getTreeItemByKey(node.props.eventKey, this.rootItems);
+    const item = getTreeItemByKey(node.key, this.rootItems);
     if (item) {
       expandItem(item, expanded);
     }
@@ -681,7 +677,7 @@ export default class BucketBrowser extends React.Component {
   };
 
   onSelect = (selectedKeys, {node}) => {
-    const item = getTreeItemByKey(node.props.eventKey, this.rootItems);
+    const item = getTreeItemByKey(node.key, this.rootItems);
     if (item.type === ItemTypes.storage || item.type === DTS_ROOT_ITEM_TYPE) {
       if (item.type === ItemTypes.storage) {
         this.bucketChanged(`storage_${item.id}`);
@@ -802,13 +798,13 @@ export default class BucketBrowser extends React.Component {
     return (
       <Tree
         className={styles.libraryTree}
+        treeData={this.getTreeData(this.rootItems)}
         onSelect={this.onSelect}
         onExpand={this.onExpand}
         checkStrictly
         expandedKeys={this.state.expandedKeys}
-        selectedKeys={this.state.selectedKeys} >
-        {this.generateTreeItems(this.rootItems)}
-      </Tree>
+        selectedKeys={this.state.selectedKeys}
+      />
     );
   }
 
@@ -856,7 +852,7 @@ export default class BucketBrowser extends React.Component {
     }
     let content = <LoadingView />;
     if (!this.props.storages.pending && this.props.storages.error) {
-      content = <Alert message="Error retrieving data storages" type="error" />;
+      content = <Alert title="Error retrieving data storages" type="error" />;
     } else if (!this.props.storages.pending) {
       const table = this.getStorageItemsTable();
       content = (
@@ -886,7 +882,7 @@ export default class BucketBrowser extends React.Component {
           </div>
           {
             !this.state.bucket
-              ? <Alert type="info" message="Select data storage" />
+              ? <Alert type="info" title="Select data storage" />
               : <div>
                 <Table
                   className={styles.table}
@@ -906,12 +902,12 @@ export default class BucketBrowser extends React.Component {
                     id="prev-page-button"
                     onClick={this.prevPage}
                     disabled={this.state.currentPage === 0}
-                    style={{margin: 3}} size="small"><Icon type="caret-left" /></Button>
+                    style={{margin: 3}} size="small"><CaretLeftOutlined /></Button>
                   <Button
                     id="next-page-button"
                     onClick={this.nextPage}
                     disabled={this.state.pageMarkers.length <= this.state.currentPage + 1}
-                    style={{margin: 3}} size="small"><Icon type="caret-right" /></Button>
+                    style={{margin: 3}} size="small"><CaretRightOutlined /></Button>
                 </Row>
               </div>
           }
@@ -995,7 +991,7 @@ export default class BucketBrowser extends React.Component {
     );
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.path !== this.props.path) {
       let path = nextProps.path;
       const allowBucketSelection = nextProps.allowBucketSelection;

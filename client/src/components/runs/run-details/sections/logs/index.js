@@ -1,7 +1,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Button, Icon, Input, message} from 'antd';
+import {Button, Input, message} from 'antd';
+import {ClockCircleFilled, ClockCircleOutlined} from '@ant-design/icons';
 import {inject} from 'mobx-react';
 import styles from './run-logs.css';
 import SplitPane from 'react-split-pane';
@@ -164,10 +165,9 @@ class RunLogsSection extends React.Component {
             size="small"
             title={timings ? 'Hide tasks timings' : 'Show tasks timings'}
           >
-            <Icon
-              style={{fontSize: '0.8rem'}}
-              type={timings ? 'clock-circle' : 'clock-circle-o'}
-            />
+            {timings
+              ? <ClockCircleFilled style={{fontSize: '0.8rem'}} />
+              : <ClockCircleOutlined style={{fontSize: '0.8rem'}} />}
           </Button>
         </div>
         <div className={styles.runTasksList}>

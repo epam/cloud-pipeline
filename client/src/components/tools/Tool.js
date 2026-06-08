@@ -15,26 +15,30 @@
  */
 
 import React from 'react';
-import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {withRouter} from '../../utils/with-router';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {computed, observable, makeObservable} from 'mobx';
 import {
   Alert,
   Button,
   Card,
   Col,
-  Icon,
+  Dropdown,
   Input,
   Menu as MenuHorizontal,
   message,
   Modal,
   Popover,
   Row,
+  Space,
+  Splitter,
   Table,
   Tooltip,
   Upload
 } from 'antd';
-import Menu, {MenuItem, Divider} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
+import {AppstoreFilled, ArrowLeftOutlined, CameraOutlined, CheckCircleFilled, CloseOutlined, DeleteOutlined, DownOutlined, ExclamationCircleFilled, LinkOutlined, LoadingOutlined, SettingOutlined, UploadOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import LoadTool from '../../models/tools/LoadTool';
 import ToolImage from '../../models/tools/ToolImage';
@@ -55,8 +59,7 @@ import {
 import {
   CONTENT_PANEL_KEY,
   METADATA_PANEL_KEY,
-  ISSUES_PANEL_KEY,
-  SplitPanel
+  ISSUES_PANEL_KEY
 } from '../special/splitPanel';
 import Owner from '../special/owner';
 import styles from './Tools.css';
@@ -101,13 +104,14 @@ const DEFAULT_FILE_SIZE_KB = 50;
 @HiddenObjects.injectToolsFilters
 @HiddenObjects.checkTools(props => props?.params?.id)
 @inject('awsRegions', 'dockerRegistries', 'preferences', 'usersInfo')
-@inject(({allowedInstanceTypes, dockerRegistries, authenticatedUserInfo, preferences}, {params}) => {
+@inject(({routing, allowedInstanceTypes, dockerRegistries, authenticatedUserInfo, preferences}) => {
+  const {params} = routing;
   return {
     allowedInstanceTypesCache: allowedInstanceTypes,
     toolId: params.id,
     tool: new LoadTool(params.id),
     versions: new LoadToolAttributes(params.id),
-    section: params.section.toLowerCase(),
+    section: params.section ? params.section.toLowerCase() : undefined,
     preferences,
     docker: dockerRegistries,
     scanPolicy: new LoadToolScanPolicy(),
@@ -117,7 +121,7 @@ const DEFAULT_FILE_SIZE_KB = 50;
 })
 @withCurrentUserAttributes()
 @observer
-export default class Tool extends localization.LocalizedReactComponent {
+class Tool extends localization.LocalizedReactComponent {
   state = {
     metadata: false,
     editDescriptionMode: false,
@@ -134,9 +138,34 @@ export default class Tool extends localization.LocalizedReactComponent {
     launchPending: undefined
   };
 
-  @observable defaultVersionSettings;
+  defaultVersionSettings;
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      defaultVersionSettings: observable,
+      awsRegions: computed,
+      defaultCloudRegionId: computed,
+      defaultVersionSettingsConfiguration: computed,
+      defaultVersionPlatform: computed,
+      defaultVersionAllowCommit: computed,
+      registries: computed,
+      dockerImageWithoutVersion: computed,
+      dockerRegistry: computed,
+      toolGroup: computed,
+      toolImage: computed,
+      link: computed,
+      hasWritableToolGroups: computed,
+      permissionsRestrictions: computed,
+      isLastVersion: computed,
+      toolVersionScanResults: computed,
+      hasPendingScanning: computed,
+      versionsScanResObject: computed,
+      defaultTag: computed,
+      anyTag: computed
+    });
+  }
+
   get awsRegions () {
     if (this.props.awsRegions.loaded) {
       return (this.props.awsRegions.value || []).map(r => r);
@@ -144,7 +173,6 @@ export default class Tool extends localization.LocalizedReactComponent {
     return [];
   }
 
-  @computed
   get defaultCloudRegionId () {
     const [defaultRegion] = this.awsRegions.filter(r => r.default);
     if (defaultRegion) {
@@ -153,7 +181,6 @@ export default class Tool extends localization.LocalizedReactComponent {
     return null;
   }
 
-  @computed
   get defaultVersionSettingsConfiguration () {
     if (this.defaultVersionSettings && this.defaultVersionSettings.loaded) {
       if ((this.defaultVersionSettings.value || []).length > 0 &&
@@ -169,7 +196,6 @@ export default class Tool extends localization.LocalizedReactComponent {
     return null;
   }
 
-  @computed
   get defaultVersionPlatform () {
     if (this.defaultVersionSettings && this.defaultVersionSettings.loaded) {
       if ((this.defaultVersionSettings.value || []).length > 0) {
@@ -179,7 +205,6 @@ export default class Tool extends localization.LocalizedReactComponent {
     return undefined;
   }
 
-  @computed
   get defaultVersionAllowCommit () {
     let allowCommit;
     if (this.defaultVersionSettings && this.defaultVersionSettings.loaded) {
@@ -193,7 +218,6 @@ export default class Tool extends localization.LocalizedReactComponent {
     return allowCommit;
   }
 
-  @computed
   get registries () {
     if (this.props.docker.loaded) {
       return this.props.hiddenToolsTreeFilter(this.props.docker.value)
@@ -202,7 +226,6 @@ export default class Tool extends localization.LocalizedReactComponent {
     return [];
   }
 
-  @computed
   get dockerImageWithoutVersion () {
     const {tool} = this.props;
     if (!tool?.loaded) {
@@ -215,7 +238,6 @@ export default class Tool extends localization.LocalizedReactComponent {
       : `${image}`;
   }
 
-  @computed
   get dockerRegistry () {
     if (this.registries.length > 0 && this.props.tool.loaded) {
       return this.registries
@@ -224,7 +246,6 @@ export default class Tool extends localization.LocalizedReactComponent {
     return null;
   }
 
-  @computed
   get toolGroup () {
     const {tool} = this.props;
     const {dockerRegistry} = this;
@@ -240,7 +261,6 @@ export default class Tool extends localization.LocalizedReactComponent {
     return undefined;
   }
 
-  @computed
   get toolImage () {
     if (this.props.tool.loaded) {
       return `${this.props.tool.value.registry}/${this.props.tool.value.image}`;
@@ -248,7 +268,6 @@ export default class Tool extends localization.LocalizedReactComponent {
     return null;
   }
 
-  @computed
   get link () {
     if (this.props.tool.loaded) {
       return !!this.props.tool.value.link;
@@ -256,7 +275,6 @@ export default class Tool extends localization.LocalizedReactComponent {
     return false;
   }
 
-  @computed
   get hasWritableToolGroups () {
     if (this.registries.length > 0 && this.props.tool.loaded) {
       const toolGroupId = +(this.props.tool.value.toolGroupId);
@@ -270,7 +288,6 @@ export default class Tool extends localization.LocalizedReactComponent {
     return false;
   }
 
-  @computed
   get permissionsRestrictions () {
     const {
       preferences
@@ -317,8 +334,8 @@ export default class Tool extends localization.LocalizedReactComponent {
       message.error(updateToolVersionParametersRequest.error, 5);
     } else {
       await this.props.tool.fetch();
-      this.defaultVersionSettings && await this.defaultVersionSettings.fetch();
-      this.props.versionSettings && await this.props.versionSettings.fetch();
+      this.defaultVersionSettings && (await this.defaultVersionSettings.fetch());
+      this.props.versionSettings && (await this.props.versionSettings.fetch());
     }
   };
 
@@ -440,9 +457,7 @@ export default class Tool extends localization.LocalizedReactComponent {
     } else {
       image = (
         <Row type="flex" align="middle" justify="center" className={styles.noImageContainer}>
-          <Icon
-            className={classNames(styles.noImage, 'cp-text-not-important')}
-            type="camera-o" />
+          <CameraOutlined className={classNames(styles.noImage, 'cp-text-not-important')} />
         </Row>
       );
     }
@@ -505,13 +520,7 @@ export default class Tool extends localization.LocalizedReactComponent {
             showUploadList={false}
             beforeUpload={doUpload}>
             <Row type="flex" align="middle" justify="center" className={styles.uploadToolImage}>
-              <Icon
-                type="upload"
-                style={
-                  this.props.tool.value.iconId
-                    ? {fontSize: 'xx-large', color: 'white', textShadow: '1px 1px black'}
-                    : {fontSize: 'xx-large', color: '#888'}
-                } />
+              <UploadOutlined style={this.props.tool.value.iconId ? {fontSize: 'xx-large', color: 'white', textShadow: '1px 1px black'} : {fontSize: 'xx-large', color: '#888'}} />
             </Row>
           </Upload>
         }
@@ -564,7 +573,7 @@ export default class Tool extends localization.LocalizedReactComponent {
       if (this.state.editDescriptionMode) {
         return (
           <Input.TextArea
-            autosize
+            autoSize
             autoFocus
             id="description-input"
             value={this.state.description}
@@ -661,7 +670,7 @@ export default class Tool extends localization.LocalizedReactComponent {
     if (registry && roleModel.readAllowed(this.props.tool.value) && registry.pipelineAuth) {
       const renderPullCommand = () => {
         if (!registry) {
-          return <Icon type="loading" />;
+          return <LoadingOutlined />;
         }
         return `docker pull ${registry.externalUrl || registry.path}/${this.props.tool.value.image}`;
       };
@@ -732,7 +741,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           <Alert
             style={{marginBottom: 10, marginTop: 5}}
             type="warning"
-            message={warningForLatestVersion} />
+            title={warningForLatestVersion} />
         }
         <Row type="flex" style={{marginBottom: 10}}>
           {this.renderToolImageControl()}
@@ -856,7 +865,6 @@ export default class Tool extends localization.LocalizedReactComponent {
     return null;
   };
 
-  @computed
   get isLastVersion () {
     if (this.props.versions.loaded) {
       return this.props.versions.value.versions.length === 1;
@@ -864,7 +872,6 @@ export default class Tool extends localization.LocalizedReactComponent {
     return false;
   }
 
-  @computed
   get toolVersionScanResults () {
     const data = [];
     if (this.props.versions.loaded &&
@@ -929,7 +936,6 @@ export default class Tool extends localization.LocalizedReactComponent {
     return data;
   }
 
-  @computed
   get hasPendingScanning () {
     return this.toolVersionScanResults.filter(i => i.status === ScanStatuses.pending).length > 0;
   }
@@ -1046,19 +1052,19 @@ export default class Tool extends localization.LocalizedReactComponent {
         this.setVersionListStatus(domEvent, version, menuItem.listType, menuItem.enable);
       }
     };
-    const menu = (
-      <Menu onClick={onSelect} style={{cursor: 'pointer'}}>
-        {menuItems.map((item) => (
-          <MenuItem key={item.key}>{item.label}</MenuItem>
-        ))}
-      </Menu>
-    );
     const blackListWarning = version.fromBlackList
       ? this.getVersionRunningInformation(version.name).tooltip
       : null;
-    const dropdown = (
+    return (
       <Dropdown
-        overlay={menu}
+        menu={{
+          items: menuItems.map((item) => ({
+            key: item.key,
+            label: item.label
+          })),
+          onClick: onSelect,
+          style: {cursor: 'pointer'}
+        }}
         trigger={['click']}
         placement="bottomRight"
       >
@@ -1074,14 +1080,13 @@ export default class Tool extends localization.LocalizedReactComponent {
         >
           {
             blackListWarning &&
-            <Icon type="exclamation-circle" style={{marginRight: 5}} />
+            <ExclamationCircleFilled style={{marginRight: 5}} />
           }
           <span>{label}</span>
-          <Icon type="down" style={{marginLeft: 5}} />
+          <DownOutlined style={{marginLeft: 5}} />
         </Button>
       </Dropdown>
     );
-    return dropdown;
   };
 
   renderVersions = () => {
@@ -1215,7 +1220,7 @@ export default class Tool extends localization.LocalizedReactComponent {
               (
                 <Button
                   size="small"
-                  type="danger"
+                  danger
                   disabled={this.isLastVersion}
                   onClick={(e) => {
                     e.preventDefault();
@@ -1224,7 +1229,7 @@ export default class Tool extends localization.LocalizedReactComponent {
                   }}
                   style={{lineHeight: 1}}
                 >
-                  <Icon type="delete" />
+                  <DeleteOutlined />
                 </Button>
               )
             }
@@ -1251,7 +1256,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           this.props.versions.error &&
           <Alert
             type="error"
-            message={this.props.versions.error}
+            title={this.props.versions.error}
             style={{margin: '5px 0 10px 0'}} />
         }
         <Input
@@ -1280,15 +1285,17 @@ export default class Tool extends localization.LocalizedReactComponent {
           columns={columns}
           dataSource={data}
           pagination={{pageSize: 20}}
-          onRowClick={(version) => {
-            if (this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) &&
-              !/^windows$/i.test(version.platform) &&
-              version.status !== ScanStatuses.notScanned) {
-              this.props.router.push(`/tool/${this.props.toolId}/info/${version.name}/scaninfo`);
-            } else {
-              this.props.router.push(`/tool/${this.props.toolId}/info/${version.name}/settings`);
+          onRow={(version) => ({
+            onClick: () => {
+              if (this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) &&
+                !/^windows$/i.test(version.platform) &&
+                version.status !== ScanStatuses.notScanned) {
+                this.props.router.push(`/tool/${this.props.toolId}/info/${version.name}/scaninfo`);
+              } else {
+                this.props.router.push(`/tool/${this.props.toolId}/info/${version.name}/settings`);
+              }
             }
-          }}
+          })}
           size="small" />
         {
           containsUnScannedVersion &&
@@ -1332,14 +1339,14 @@ export default class Tool extends localization.LocalizedReactComponent {
           <Alert
             style={{marginBottom: 10, marginTop: 5}}
             type="warning"
-            message={warningForLatestVersion} />
+            title={warningForLatestVersion} />
         }
         {
           !this.defaultTag && this.props.versions.loaded &&
           <Alert
             style={{marginBottom: 10, marginTop: 5}}
             type="info"
-            message={
+            title={
               <div>
                 <Row>
                   <b>{image}</b> has no default <b><i>latest</i></b> version.
@@ -1355,7 +1362,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           <Alert
             style={{marginBottom: 10, marginTop: 5}}
             type="info"
-            message={
+            title={
               <div>
                 <Row>
                   <b>{image}</b> has no (<b><i>latest</i></b>) version.
@@ -1442,98 +1449,62 @@ export default class Tool extends localization.LocalizedReactComponent {
           break;
       }
     };
-    return (
-      <SplitPanel
-        style={{flex: 1, overflow: 'auto'}}
-        onPanelClose={onPanelClose}
-        contentInfo={[{
-          key: CONTENT_PANEL_KEY,
-          size: {
-            priority: 0,
-            percentMinimum: 33,
-            percentDefault: 75
-          }
-        }, {
-          key: ISSUES_PANEL_KEY,
-          title: `${this.localizedString('Issue')}s`,
-          closable: true,
-          containerStyle: {
-            display: 'flex',
-            flexDirection: 'column'
-          },
-          size: {
-            keepPreviousSize: true,
-            priority: 1,
-            percentDefault: 25,
-            pxMinimum: 200
-          }
-        }, {
-          key: METADATA_PANEL_KEY,
-          title: 'Attributes',
-          closable: true,
-          containerStyle: {
-            display: 'flex',
-            flexDirection: 'column'
-          },
-          size: {
-            keepPreviousSize: true,
-            priority: 2,
-            percentDefault: 25,
-            pxMinimum: 200
-          }
-        }, {
-          key: INSTANCE_MANAGEMENT_PANEL_KEY,
-          title: 'Instance management',
-          closable: true,
-          containerStyle: {
-            display: 'flex',
-            flexDirection: 'column'
-          },
-          size: {
-            keepPreviousSize: true,
-            priority: 2,
-            percentDefault: 25,
-            pxMinimum: 200
-          }
-        }]}>
-        <div
-          key={CONTENT_PANEL_KEY}
-          style={{
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column'
-          }}>
-          {this.renderToolContent()}
+    const contentInfo = [{
+      key: CONTENT_PANEL_KEY,
+      size: {percentMinimum: 33, percentDefault: 75}
+    }, {
+      key: ISSUES_PANEL_KEY,
+      title: `${this.localizedString('Issue')}s`,
+      closable: true,
+      containerStyle: {display: 'flex', flexDirection: 'column'},
+      size: {percentDefault: 25, pxMinimum: 200}
+    }, {
+      key: METADATA_PANEL_KEY,
+      title: 'Attributes',
+      closable: true,
+      containerStyle: {display: 'flex', flexDirection: 'column'},
+      size: {percentDefault: 25, pxMinimum: 200}
+    }, {
+      key: INSTANCE_MANAGEMENT_PANEL_KEY,
+      title: 'Instance management',
+      closable: true,
+      containerStyle: {display: 'flex', flexDirection: 'column'},
+      size: {percentDefault: 25, pxMinimum: 200}
+    }];
+    const panels = [
+      {key: CONTENT_PANEL_KEY, info: contentInfo[0], content: (<div key={CONTENT_PANEL_KEY} style={{height: '100%', display: 'flex', flexDirection: 'column'}}>{this.renderToolContent()}</div>)},
+      this.state.showIssuesPanel && {key: ISSUES_PANEL_KEY, info: contentInfo[1], content: (<Issues key={ISSUES_PANEL_KEY} readOnly={!!this.link} canNavigateBack={false} onCloseIssuePanel={this.closeIssuesPanel} entityId={this.props.toolId} entityClass="TOOL" entity={this.props.tool.value} />)},
+      this.state.metadata && {key: METADATA_PANEL_KEY, info: contentInfo[2], content: (<Metadata key={METADATA_PANEL_KEY} readOnly={!roleModel.isOwner(this.props.tool.value) || !!this.link} entityId={this.props.toolId} entityClass="TOOL" />)},
+      this.state.instanceTypesManagementPanel && (roleModel.isOwner(this.props.tool.value) || this.isAdmin()) && {key: INSTANCE_MANAGEMENT_PANEL_KEY, info: contentInfo[3], content: (<InstanceTypesManagementForm key={INSTANCE_MANAGEMENT_PANEL_KEY} level="TOOL" resourceId={this.props.toolId} disabled={!!this.link} />)}
+    ].filter(Boolean);
+    if (panels.length <= 1) {
+      return (
+        <div style={{flex: 1, overflow: 'auto'}}>
+          {panels.length === 1 ? panels[0].content : this.renderToolContent()}
         </div>
-        {
-          this.state.showIssuesPanel &&
-          <Issues
-            key={ISSUES_PANEL_KEY}
-            readOnly={!!this.link}
-            canNavigateBack={false}
-            onCloseIssuePanel={this.closeIssuesPanel}
-            entityId={this.props.toolId}
-            entityClass="TOOL"
-            entity={this.props.tool.value} />
-        }
-        {
-          this.state.metadata &&
-          <Metadata
-            key={METADATA_PANEL_KEY}
-            readOnly={!roleModel.isOwner(this.props.tool.value) || !!this.link}
-            entityId={this.props.toolId}
-            entityClass="TOOL" />
-        }
-        {
-          this.state.instanceTypesManagementPanel && (roleModel.isOwner(this.props.tool.value) || this.isAdmin()) &&
-          <InstanceTypesManagementForm
-            key={INSTANCE_MANAGEMENT_PANEL_KEY}
-            level="TOOL"
-            resourceId={this.props.toolId}
-            disabled={!!this.link}
-          />
-        }
-      </SplitPanel>
+      );
+    }
+    return (
+      <Splitter style={{flex: 1, overflow: 'auto'}}>
+        {panels.map(({key, info, content}) => (
+          <Splitter.Panel
+            key={key}
+            defaultSize={info.size?.percentDefault != null ? `${info.size.percentDefault}%` : (info.size?.pxDefault ?? undefined)}
+            min={info.size?.percentMinimum != null ? `${info.size.percentMinimum}%` : (info.size?.pxMinimum ?? 200)}
+            resizable
+          >
+            <div className="cp-split-panel-panel" style={{height: '100%', overflow: 'auto', ...info.containerStyle}}>
+              {(info.title || info.closable) && (
+                <Row type="flex" justify="space-between" align="middle" className="cp-split-panel-header" style={{padding: '0px 5px'}}>
+                  <span>{info.title || ''}</span>
+                  {info.closable && <CloseOutlined onClick={() => onPanelClose && onPanelClose(key)} style={{cursor: 'pointer'}} />}
+                </Row>
+              )}
+              {content}
+            </div>
+          </Splitter.Panel>
+        ))}
+      </Splitter>
     );
   };
 
@@ -1541,29 +1512,20 @@ export default class Tool extends localization.LocalizedReactComponent {
     const onChangeSection = ({key}) => {
       this.props.router.push(`/tool/${this.props.toolId}/${key}`);
     };
+    const menuItems = [
+      {key: 'description', label: 'DESCRIPTION'},
+      {key: 'versions', label: 'VERSIONS'},
+      {key: 'settings', label: 'SETTINGS'},
+      ...(this.historyAvailableForUser() ? [{key: 'history', label: 'HISTORY'}] : [])
+    ];
     return (
       <MenuHorizontal
         className={styles.toolMenu}
         onClick={onChangeSection}
         mode="horizontal"
-        selectedKeys={[this.props.section]}>
-        <MenuHorizontal.Item key="description">
-          DESCRIPTION
-        </MenuHorizontal.Item>
-        <MenuHorizontal.Item key="versions">
-          VERSIONS
-        </MenuHorizontal.Item>
-        <MenuHorizontal.Item key="settings">
-          SETTINGS
-        </MenuHorizontal.Item>
-        {
-          this.historyAvailableForUser() && (
-            <MenuHorizontal.Item key="history">
-              HISTORY
-            </MenuHorizontal.Item>
-          )
-        }
-      </MenuHorizontal>
+        selectedKeys={[this.props.section]}
+        items={menuItems}
+      />
     );
   };
 
@@ -1755,16 +1717,14 @@ export default class Tool extends localization.LocalizedReactComponent {
     this.props.router.push(`/tools/${this.props.tool.value.registryId}/${this.props.tool.value.toolGroupId}`);
   };
 
-  @computed
   get versionsScanResObject () {
     const versions = {};
     this.props.versions.value.versions.forEach(version => {
       versions[version.version] = version;
     });
     return versions;
-  };
+  }
 
-  @computed
   get defaultTag () {
     if (this.props.versions.loaded &&
       this.props.versions.value && this.props.versions.value.versions) {
@@ -1778,7 +1738,6 @@ export default class Tool extends localization.LocalizedReactComponent {
     return null;
   }
 
-  @computed
   get anyTag () {
     if (this.props.versions.loaded &&
       this.props.versions.value &&
@@ -1865,7 +1824,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           >
             {
               tooltip && !notLoaded
-                ? <Icon type="exclamation-circle" style={{marginRight: 5}} />
+                ? <ExclamationCircleFilled style={{marginRight: 5}} />
                 : undefined
             }
             Run
@@ -1896,7 +1855,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           >
             {
               tooltip && !notLoaded
-                ? <Icon type="exclamation-circle" style={{marginRight: 5}} />
+                ? <ExclamationCircleFilled style={{marginRight: 5}} />
                 : undefined
             }
             Run
@@ -1908,56 +1867,40 @@ export default class Tool extends localization.LocalizedReactComponent {
       const runCustomKey = 'custom';
       const onSelect = ({key}) => {
         switch (key) {
-          case runDefaultKey: this.runToolDefault(version); break;
-          case runCustomKey: this.runTool(version); break;
+          case runDefaultKey: this.runToolDefault(version);
+            break;
+          case runCustomKey: this.runTool(version);
+            break;
         }
       };
-      const runMenu = (
-        <Menu
-          selectedKeys={[]}
-          onClick={onSelect}
-          style={{cursor: 'pointer'}}
-        >
-          <MenuItem
-            id="run-default-button"
-            key={runDefaultKey}
-            disabled={!!this.state.launchPending}
-          >
-            {
-              tooltip && !notLoaded
-                ? (
-                  <Tooltip
-                    placement="left"
-                    title={tooltip}
-                    trigger="hover">
-                    Default settings
-                  </Tooltip>
-                )
-                : 'Default settings'
-            }
-          </MenuItem>
-          <MenuItem
-            id="run-custom-button"
-            key={runCustomKey}
-            disabled={!!this.state.launchPending}
-          >
-            {
-              tooltip && !notLoaded
-                ? (
-                  <Tooltip
-                    placement="left"
-                    title={tooltip}
-                    trigger="hover">
-                    Custom settings
-                  </Tooltip>
-                )
-                : 'Custom settings'
-            }
-          </MenuItem>
-        </Menu>
-      );
+      const runMenuItems = [
+        {
+          id: 'run-default-button',
+          key: runDefaultKey,
+          disabled: !!this.state.launchPending,
+          label: tooltip && !notLoaded
+            ? (
+              <Tooltip placement="left" title={tooltip} trigger="hover">
+                <span>Default settings</span>
+              </Tooltip>
+            )
+            : 'Default settings'
+        },
+        {
+          id: 'run-custom-button',
+          key: runCustomKey,
+          disabled: !!this.state.launchPending,
+          label: tooltip && !notLoaded
+            ? (
+              <Tooltip placement="left" title={tooltip} trigger="hover">
+                <span>Custom settings</span>
+              </Tooltip>
+            )
+            : 'Custom settings'
+        }
+      ];
       return (
-        <Button.Group className={styles.runButton}>
+        <Space.Compact className={styles.runButton}>
           <Tooltip
             placement="left"
             title={tooltip}
@@ -1979,7 +1922,7 @@ export default class Tool extends localization.LocalizedReactComponent {
             >
               {
                 tooltip && !notLoaded
-                  ? <Icon type="exclamation-circle" style={{marginRight: 5}} />
+                  ? <ExclamationCircleFilled style={{marginRight: 5}} />
                   : undefined
               }
               <span style={{lineHeight: 'inherit'}}>Run</span>
@@ -1989,7 +1932,11 @@ export default class Tool extends localization.LocalizedReactComponent {
             disabled={!!this.state.launchPending ||
               (!allowedToExecute && !this.isAdmin())
             }
-            overlay={runMenu}
+            menu={{
+              items: runMenuItems,
+              onClick: onSelect,
+              style: {cursor: 'pointer'}
+            }}
             placement="bottomRight">
             <Button
               disabled={!!this.state.launchPending}
@@ -2002,10 +1949,10 @@ export default class Tool extends localization.LocalizedReactComponent {
               type="primary"
               style={{lineHeight: 1, display: 'flex', alignItems: 'center', flexWrap: 'nowrap'}}
             >
-              <Icon type="down" style={{lineHeight: 'inherit'}} />
+              <DownOutlined style={{lineHeight: 'inherit'}} />
             </Button>
           </Dropdown>
-        </Button.Group>
+        </Space.Compact>
       );
     }
   };
@@ -2013,70 +1960,66 @@ export default class Tool extends localization.LocalizedReactComponent {
   renderDisplayOptionsMenu = () => {
     const onSelectDisplayOption = ({key}) => {
       switch (key) {
-        case 'metadata': this.toggleMetadataChange(); break;
-        case 'issues': this.toggleShowIssuesChange(); break;
-        case 'instanceTypeManagement': this.toggleInstanceTypesManagementPanelChange(); break;
+        case 'metadata': this.toggleMetadataChange();
+          break;
+        case 'issues': this.toggleShowIssuesChange();
+          break;
+        case 'instanceTypeManagement': this.toggleInstanceTypesManagementPanelChange();
+          break;
       }
     };
-    const displayOptionsMenuItems = [];
-    displayOptionsMenuItems.push(
-      <MenuItem
-        id={this.state.metadata ? 'hide-metadata-button' : 'show-metadata-button'}
-        key="metadata">
-        <Row type="flex" justify="space-between" align="middle">
-          <span>Attributes</span>
-          <Icon type="check-circle" style={{display: this.state.metadata ? 'inherit' : 'none'}} />
-        </Row>
-      </MenuItem>
-    );
-    displayOptionsMenuItems.push(
-      <MenuItem
-        id={this.state.showIssuesPanel ? 'hide-issues-panel-button' : 'show-issues-panel-button'}
-        key="issues">
-        <Row type="flex" justify="space-between" align="middle">
-          <span>{this.localizedString('Issue')}s</span>
-          <Icon type="check-circle" style={{display: this.state.showIssuesPanel ? 'inherit' : 'none'}} />
-        </Row>
-      </MenuItem>
-    );
+    const displayOptionsMenuItems = [
+      {
+        id: this.state.metadata ? 'hide-metadata-button' : 'show-metadata-button',
+        key: 'metadata',
+        label: (
+          <Row type="flex" justify="space-between" align="middle">
+            <span>Attributes</span>
+            <CheckCircleFilled style={{display: this.state.metadata ? 'inherit' : 'none'}} />
+          </Row>
+        )
+      },
+      {
+        id: this.state.showIssuesPanel ? 'hide-issues-panel-button' : 'show-issues-panel-button',
+        key: 'issues',
+        label: (
+          <Row type="flex" justify="space-between" align="middle">
+            <span>{this.localizedString('Issue')}s</span>
+            <CheckCircleFilled style={{display: this.state.showIssuesPanel ? 'inherit' : 'none'}} />
+          </Row>
+        )
+      }
+    ];
     if (roleModel.isOwner(this.props.tool.value) || this.isAdmin()) {
-      displayOptionsMenuItems.push(
-        <MenuItem
-          id={
-            this.state.instanceTypesManagementPanel
-              ? 'hide-instance-types-management-panel-button'
-              : 'show-instance-types-management-panel-button'
-          }
-          key="instanceTypeManagement">
+      displayOptionsMenuItems.push({
+        id: this.state.instanceTypesManagementPanel
+          ? 'hide-instance-types-management-panel-button'
+          : 'show-instance-types-management-panel-button',
+        key: 'instanceTypeManagement',
+        label: (
           <Row type="flex" justify="space-between" align="middle">
             <span>Instance management</span>
-            <Icon
-              type="check-circle"
-              style={{display: this.state.instanceTypesManagementPanel ? 'inherit' : 'none'}} />
+            <CheckCircleFilled style={{display: this.state.instanceTypesManagementPanel ? 'inherit' : 'none'}} />
           </Row>
-        </MenuItem>
-      );
+        )
+      });
     }
-    const displayOptionsMenu = (
-      <Menu
-        onClick={onSelectDisplayOption}
-        style={{width: 150, cursor: 'pointer'}}
-        selectedKeys={[]}
-      >
-        {displayOptionsMenuItems}
-      </Menu>
-    );
 
     return (
       <Dropdown
         key="display attributes"
-        overlay={displayOptionsMenu}>
+        menu={{
+          items: displayOptionsMenuItems,
+          onClick: onSelectDisplayOption,
+          style: {width: 150, cursor: 'pointer'}
+        }}
+      >
         <Button
           id="display-attributes"
           size="small"
           style={{lineHeight: 1}}
         >
-          <Icon type="appstore" style={{lineHeight: 'inherit'}} />
+          <AppstoreFilled style={{lineHeight: 'inherit'}} />
         </Button>
       </Dropdown>
     );
@@ -2146,7 +2089,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           onClick={this.openCreateLinkForm}
           style={{lineHeight: 1}}
         >
-          <Icon type="link" />
+          <LinkOutlined />
         </Button>
       );
     }
@@ -2158,29 +2101,38 @@ export default class Tool extends localization.LocalizedReactComponent {
     const deleteKey = 'delete';
     const onClick = ({key}) => {
       switch (key) {
-        case permissionsKey: this.openPermissionsForm(); break;
-        case deleteKey: this.deleteToolConfirm(); break;
+        case permissionsKey: this.openPermissionsForm();
+          break;
+        case deleteKey: this.deleteToolConfirm();
+          break;
       }
     };
-    const menu = (
-      <Menu
-        onClick={onClick}
-        style={{cursor: 'pointer'}}
-        selectedKeys={[]}
-      >
-        <MenuItem key={permissionsKey}>
-          <Icon type="setting" /> Permissions
-        </MenuItem>
-        <Divider />
-        <MenuItem key={deleteKey} className="cp-danger">
-          <Icon type="delete" /> Delete tool {this.link ? 'link' : false}
-        </MenuItem>
-      </Menu>
-    );
+    const menuItems = [
+      {
+        key: permissionsKey,
+        label: (
+          <span>
+            <SettingOutlined /> Permissions
+          </span>
+        )
+      },
+      {type: 'divider', key: 'divider'},
+      {
+        key: deleteKey,
+        label: (
+          <span className="cp-danger">
+            <DeleteOutlined /> Delete tool {this.link ? 'link' : false}
+          </span>
+        )
+      }
+    ];
     return (
-      <Dropdown overlay={menu} placement="bottomRight">
+      <Dropdown
+        menu={{items: menuItems, onClick, style: {cursor: 'pointer'}}}
+        placement="bottomRight"
+      >
         <Button id="setting-button" size="small" style={{lineHeight: 1}}>
-          <Icon type="setting" style={{lineHeight: 'inherit'}} />
+          <SettingOutlined style={{lineHeight: 'inherit'}} />
         </Button>
       </Dropdown>
     );
@@ -2193,13 +2145,13 @@ export default class Tool extends localization.LocalizedReactComponent {
       return <LoadingView />;
     }
     if (this.props.tool.error) {
-      return <Alert type="error" message={this.props.tool.error} />;
+      return <Alert type="error" title={this.props.tool.error} />;
     }
     if (this.props.docker.error) {
-      return <Alert type="error" message={this.props.docker.error} />;
+      return <Alert type="error" title={this.props.docker.error} />;
     }
     if (this.props.versionSettings.error) {
-      return <Alert type="error" message={this.props.versionSettings.error} />;
+      return <Alert type="error" title={this.props.versionSettings.error} />;
     }
     if (!roleModel.readAllowed(this.props.tool.value)) {
       return (
@@ -2212,8 +2164,8 @@ export default class Tool extends localization.LocalizedReactComponent {
               'cp-panel-borderless'
             )
           }
-          bodyStyle={{padding: 15, height: '100%', display: 'flex', flexDirection: 'column'}}>
-          <Alert type="error" message="You have no permissions to view tool details" />
+          styles={{body: {padding: 15, height: '100%', display: 'flex', flexDirection: 'column'}}}>
+          <Alert type="error" title="You have no permissions to view tool details" />
         </Card>
       );
     }
@@ -2247,14 +2199,14 @@ export default class Tool extends localization.LocalizedReactComponent {
             'cp-panel-borderless'
           )
         }
-        bodyStyle={{padding: 15, height: '100%', display: 'flex', flexDirection: 'column'}}>
+        styles={{body: {padding: 15, height: '100%', display: 'flex', flexDirection: 'column'}}}>
         <div className={classNames(styles.toolsHeader, 'cp-tool-header')}>
           <div className={styles.title} style={{flex: 1}}>
             <Button
               onClick={this.navigateBack}
               size="small"
               style={{lineHeight: 1}}>
-              <Icon type="arrow-left" />
+              <ArrowLeftOutlined />
             </Button>
             <ToolLink link={this.link} style={{marginLeft: 5}} />
             <span style={{marginLeft: 5}}>{this.props.tool.value.image}</span>
@@ -2296,7 +2248,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           title="Permissions"
           footer={false}
           onCancel={this.closePermissionsForm}
-          visible={this.state.permissionsFormVisible}>
+          open={this.state.permissionsFormVisible}>
           <PermissionsForm
             objectIdentifier={this.props.toolId}
             objectType="TOOL"
@@ -2336,3 +2288,5 @@ export default class Tool extends localization.LocalizedReactComponent {
     this.props.versions.clearInterval();
   }
 }
+
+export default withRouter(Tool);

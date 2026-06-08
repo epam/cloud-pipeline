@@ -16,7 +16,7 @@
 
 import React from 'react';
 import classNames from 'classnames';
-import {Icon} from 'antd';
+import {InfoCircleOutlined} from '@ant-design/icons';
 import {isObservableArray} from 'mobx';
 import {PreviewIcons} from '../../preview/previewIcons';
 import SearchItemTypes from '../../../../models/search/search-item-types';
@@ -75,12 +75,9 @@ function fetchAndParseExtraColumns (preferences) {
 }
 
 const renderIcon = (resultItem) => {
-  if (PreviewIcons[resultItem.type]) {
-    return (
-      <Icon
-        className={classNames('cp-icon-larger', styles.icon, 'cp-search-result-item-main')}
-        type={PreviewIcons[resultItem.type]} />
-    );
+  const ItemIcon = PreviewIcons[resultItem.type];
+  if (ItemIcon) {
+    return <ItemIcon className={classNames('cp-icon-larger', styles.icon, 'cp-search-result-item-main')} />;
   }
   return null;
 };
@@ -99,9 +96,7 @@ const Name = {
       }}
     >
       <div className="cp-search-result-item-actions">
-        <Icon
-          type="info-circle-o"
-          className={
+        <InfoCircleOutlined className={
             classNames(
               'cp-search-result-item-action',
               'cp-icon-larger',
@@ -112,8 +107,7 @@ const Name = {
             e.stopPropagation();
             e.preventDefault();
             onClick && onClick(document);
-          }}
-        />
+          }} />
         {renderCheckBox && renderCheckBox(document)}
         <OpenInToolAction
           file={document.path}

@@ -19,17 +19,19 @@ import FolderLoad from './FolderLoad';
 import MetadataFolder from '../metadata/MetadataFolder';
 import MetadataCache from '../metadata/MetadataCache';
 import defer from '../../utils/defer';
-import {action} from 'mobx';
+import {makeObservable, override} from 'mobx';
 import {authorization} from '../basic/Authorization';
 import mapFolderChildrenMetadata from './mapFolderChildrenMetadata';
 
 export default class FolderLoadWithMetadata extends FolderLoad {
-
   static metadataCache = new MetadataCache();
   _folderId;
 
   constructor (folderId) {
     super(folderId);
+    makeObservable(this, {
+      update: override
+    });
     this._folderId = folderId;
   }
 
@@ -80,7 +82,6 @@ export default class FolderLoadWithMetadata extends FolderLoad {
     return this._fetchPromise;
   }
 
-  @action
   update (value, childrenMetadataRequest, selfMetadataRequest) {
     this._response = value;
     if (value.status && value.status === 401) {
@@ -113,5 +114,4 @@ export default class FolderLoadWithMetadata extends FolderLoad {
       this._loaded = false;
     }
   }
-
 }

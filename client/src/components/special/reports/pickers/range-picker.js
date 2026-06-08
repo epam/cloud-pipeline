@@ -171,9 +171,9 @@ class RangeFilter extends React.Component {
         <Popover
           placement="bottom"
           content={menu}
-          visible={rangeFilterVisible && !disabled}
+          open={rangeFilterVisible && !disabled}
           getPopupContainer={triggerNode => triggerNode.parentNode}
-          onVisibleChange={this.handleRangeFilterVisibility}
+          onOpenChange={this.handleRangeFilterVisibility}
           trigger={['click']}
         >
           <PickerButton

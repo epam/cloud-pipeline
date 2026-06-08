@@ -16,7 +16,7 @@
 
 import React from 'react';
 import classNames from 'classnames';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {Alert} from 'antd';
 import roleModel from '../../../../utils/roleModel';
@@ -48,6 +48,13 @@ function renderRoleName (role) {
 @withCurrentUserAttributes()
 @observer
 class ProfileSettings extends React.Component {
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      notificationsEnabled: computed
+    });
+  }
+
   componentDidMount () {
     this.props.currentUserAttributes.refresh(true);
   }
@@ -56,7 +63,6 @@ class ProfileSettings extends React.Component {
     this.props.currentUserAttributes.refresh(true);
   }
 
-  @computed
   get notificationsEnabled () {
     const {preferences} = this.props;
     if (preferences.loaded) {
@@ -79,7 +85,7 @@ class ProfileSettings extends React.Component {
       return (
         <Alert
           type="error"
-          message={authenticatedUserInfo.error}
+          title={authenticatedUserInfo.error}
         />
       );
     }

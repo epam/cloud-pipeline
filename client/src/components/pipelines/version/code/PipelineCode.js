@@ -15,8 +15,10 @@
  */
 
 import React, {Component} from 'react';
-import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {computed, makeObservable} from 'mobx';
 import PipelineFileUpdate from '../../../../models/pipelines/PipelineFileUpdate';
 import PipelineFileDelete from '../../../../models/pipelines/PipelineFileDelete';
 import PipelineFolderUpdate from '../../../../models/pipelines/PipelineFolderUpdate';
@@ -28,10 +30,11 @@ import {
   Button,
   Col,
   Table,
-  Icon,
   Row,
   Modal,
-  message} from 'antd';
+  message
+} from 'antd';
+import {DeleteOutlined, FolderOutlined, PlusOutlined} from '@ant-design/icons';
 import styles from './PipelineCode.css';
 import parseQueryParameters from '../../../../utils/queryParameters';
 import roleModel from '../../../../utils/roleModel';
@@ -108,6 +111,16 @@ export default class PipelineCode extends Component {
     return false;
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      isBitBucket: computed,
+      configurationPath: computed,
+      canModifySources: computed,
+      rootFolder: computed
+    });
+  }
+
   componentDidMount () {
     this.reloadCodeIfFolderChanged();
   }
@@ -116,7 +129,6 @@ export default class PipelineCode extends Component {
     this.reloadCodeIfFolderChanged();
   }
 
-  @computed
   get isBitBucket () {
     const {pipeline} = this.props;
     if (pipeline && pipeline.loaded) {
@@ -126,7 +138,6 @@ export default class PipelineCode extends Component {
     return false;
   }
 
-  @computed
   get configurationPath () {
     const {pipeline} = this.props;
     if (pipeline && pipeline.loaded) {
@@ -138,16 +149,14 @@ export default class PipelineCode extends Component {
     return 'config.json';
   }
 
-  @computed
   get canModifySources () {
     if (this.props.readOnly || !this.props.pipeline.loaded || this.isBitBucket) {
       return false;
     }
     return roleModel.writeAllowed(this.props.pipeline.value) &&
       this.props.version === this.props.pipeline.value.currentVersion?.name;
-  };
+  }
 
-  @computed
   get rootFolder () {
     const {pipeline} = this.props;
     if (pipeline && pipeline.loaded) {
@@ -159,7 +168,7 @@ export default class PipelineCode extends Component {
 
   renderSourceItemType = (item) => {
     return item.type.toLowerCase() === 'tree'
-      ? <Icon type="folder" className={styles.sourceItemType} />
+      ? <FolderOutlined className={styles.sourceItemType} />
       : <div />;
   };
 
@@ -179,11 +188,11 @@ export default class PipelineCode extends Component {
             <Button
               className={styles.sourceItemAction}
               onClick={(event) => this.deleteFolderConfirm(item, event)}
-              type="danger"
+              danger
               size="small"
               disabled={this.props.readOnly}
             >
-              <Icon type="delete" /> Delete
+              <DeleteOutlined /> Delete
             </Button>
           </Row>
         );
@@ -201,11 +210,11 @@ export default class PipelineCode extends Component {
             <Button
               className={styles.sourceItemAction}
               onClick={(event) => this.deleteFileConfirm(item, event)}
-              type="danger"
+              danger
               size="small"
               disabled={this.props.readOnly}
             >
-              <Icon type="delete" /> Delete
+              <DeleteOutlined /> Delete
             </Button>
           </Row>
         );
@@ -583,29 +592,27 @@ export default class PipelineCode extends Component {
         isCurrent: false
       });
     }
+    const items = navigationParts.map((part, index) => {
+      let title;
+      if (part.isCurrent) {
+        title = <b>{part.name}</b>;
+      } else if (part.isCreateNewFolder) {
+        title = (
+          <Button
+            onClick={() => this.openCreateFolderDialog()}
+            size="small"
+            disabled={this.props.readOnly}
+          >
+            <PlusOutlined />
+          </Button>
+        );
+      } else {
+        title = <a onClick={() => this.navigateToFolder(part)}>{part.name}</a>;
+      }
+      return {key: `navigation_${index}`, title};
+    });
     return (
-      <Breadcrumb className={styles.navigationItem}>
-        {navigationParts.map((part, index) => {
-          let breadcrumbContent = <a onClick={() => this.navigateToFolder(part)}>{part.name}</a>;
-          if (part.isCurrent) {
-            breadcrumbContent = <b>{part.name}</b>;
-          } else if (part.isCreateNewFolder) {
-            breadcrumbContent = (
-              <Button
-                onClick={() => this.openCreateFolderDialog()}
-                size="small"
-                disabled={this.props.readOnly}
-              >
-                <Icon type="plus" />
-              </Button>
-            );
-          }
-          return (
-            <Breadcrumb.Item key={`navigation_${index}`}>
-              {breadcrumbContent}
-            </Breadcrumb.Item>);
-        })}
-      </Breadcrumb>
+      <Breadcrumb className={styles.navigationItem} items={items} />
     );
   };
 
@@ -668,7 +675,7 @@ export default class PipelineCode extends Component {
                 size="small"
                 disabled={this.props.readOnly}
               >
-                <Icon type="plus" />NEW FILE
+                <PlusOutlined />NEW FILE
               </Button>
               <UploadButton
                 multiple
@@ -704,7 +711,7 @@ export default class PipelineCode extends Component {
           dataSource={this.createScriptsTableData()}
           pagination={false}
           showHeader={false}
-          onRowClick={this.didSelectSourceItem}
+          onRow={(record) => ({onClick: () => this.didSelectSourceItem(record)})}
           rowKey={file => file.path}
           rowClassName={() => styles.sourceItemRow}
           title={() => header}

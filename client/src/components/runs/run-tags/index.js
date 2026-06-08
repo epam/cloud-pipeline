@@ -18,7 +18,7 @@ import React from 'react';
 import {Popover, Row} from 'antd';
 import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
 import styles from './run-tags.css';
 import moment from 'moment-timezone';
 import RunTagPopover from './run-tag-popover';

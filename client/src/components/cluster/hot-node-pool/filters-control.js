@@ -18,9 +18,9 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {
   Button,
-  Icon,
   Select
 } from 'antd';
+import {DeleteOutlined, PlusOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import FilterControl, {
   criteriaValid,
@@ -204,10 +204,10 @@ class FiltersControl extends React.Component {
                     disabled={disabled}
                     style={{marginLeft: 5}}
                     size="small"
-                    type="danger"
+                    danger
                     onClick={this.onRemoveFilter(i)}
                   >
-                    <Icon type="delete" />
+                    <DeleteOutlined />
                   </Button>
                 </div>
               ))
@@ -218,7 +218,7 @@ class FiltersControl extends React.Component {
                 type="dashed"
                 onClick={this.onAddFilter}
               >
-                <Icon type="plus" />
+                <PlusOutlined />
                 Add filter
               </Button>
             </div>

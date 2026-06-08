@@ -94,8 +94,8 @@ class ConflictsDialog extends React.Component {
       <Modal
         title="Resolve conflicts"
         closable={!disabled}
-        maskClosable={!disabled}
-        visible={visible}
+        mask={{closable: !disabled}}
+        open={visible}
         width="98%"
         style={{
           top: 10
@@ -108,7 +108,7 @@ class ConflictsDialog extends React.Component {
             {
               mergeInProgress && (
                 <Button
-                  type="danger"
+                  danger
                   disabled={disabled}
                   onClick={this.onAbortClicked}
                 >

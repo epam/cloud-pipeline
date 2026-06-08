@@ -2,16 +2,25 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {
   CP_CAP_FS_PARAMETERS_HINTS,
-  getShareFsDeploymentTypeOptions, getShareFsIOPSOptions, getShareFsThroughputOptions,
+  getShareFsDeploymentTypeOptions,
+  getShareFsIOPSOptions,
+  getShareFsThroughputOptions,
   normalizeFsConfig,
-  ShareFsType, ShareFsTypeName, validateFsDeploymentType,
+  ShareFsType,
+  ShareFsTypeName,
+  validateFsDeploymentType,
   validateFsIops,
   validateFsThroughput,
   validateFsVolume
 } from './utilities';
 import styles from './configure-file-system.css';
 import classNames from 'classnames';
-import {Icon, Input, Select, Tooltip} from 'antd';
+import {
+  Input,
+  Select,
+  Tooltip
+} from 'antd';
+import {QuestionCircleFilled} from '@ant-design/icons';
 import {
   CP_CAP_SHARE_FS_DEPLOYMENT_TYPE, CP_CAP_SHARE_FS_IOPS,
   CP_CAP_SHARE_FS_SIZE,
@@ -25,9 +34,7 @@ function renderParameterTooltip (parameter, style) {
   }
   return (
     <Tooltip title={CP_CAP_FS_PARAMETERS_HINTS[parameter]}>
-      <Icon
-        type="question-circle"
-        style={{...(style || {}), marginLeft: 5, flexShrink: 0}} />
+      <QuestionCircleFilled style={{...(style || {}), marginLeft: 5, flexShrink: 0}} />
     </Tooltip>
   );
 }

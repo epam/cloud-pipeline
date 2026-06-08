@@ -15,10 +15,12 @@
  */
 
 import React, {Component} from 'react';
-import {Layout, LocaleProvider} from 'antd';
-import enUS from 'antd/lib/locale-provider/en_US';
+import {Outlet} from 'react-router-dom';
+import {Layout, ConfigProvider, App as AntdApp} from 'antd';
+import {withRouter} from '../../utils/with-router';
+import enUS from 'antd/locale/en_US';
 import {observer, Provider, inject} from 'mobx-react';
-import {observable} from 'mobx';
+import {observable, makeObservable} from 'mobx';
 import styles from './App.css';
 import Navigation from './navigation/Navigation';
 import RunModal from './RunModal';
@@ -28,18 +30,21 @@ import {SearchDialog} from '../search';
 import roleModel from '../../utils/roleModel';
 import {Pages} from '../../utils/ui-navigation';
 import {RunContinuationConfirmation} from '../runs/actions/continue-run';
+import ErrorBoundary from './ErrorBoundary';
+import buildAntdTheme from '../../themes/tokens/antd-theme-config';
+import AntdStaticMethodsProvider from './AntdStaticMethodsProvider';
 
-@inject('preferences', 'uiNavigation')
+@inject('preferences', 'uiNavigation', 'themes')
 @roleModel.authenticationInfo
 @observer
-export default class App extends Component {
+class App extends Component {
   state = {
     navigationCollapsed: true,
     documentTitleSet: false,
     searchFormVisible: false
   };
 
-  @observable info = {
+  info = {
     searchFormVisible: false
   };
 
@@ -65,12 +70,23 @@ export default class App extends Component {
     });
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      info: observable
+    });
+  }
+
   render () {
     const {
       preferences,
       authenticatedUserInfo,
-      uiNavigation
+      uiNavigation,
+      themes
     } = this.props;
+    const antdTheme = themes && themes.loaded
+      ? buildAntdTheme(themes.currentThemeConfiguration, themes.currentTheme)
+      : undefined;
     uiNavigation.getActivePage(this.props.router);
     const isBillingPrivilegedUser = authenticatedUserInfo.loaded &&
       roleModel.isManager.billing(this);
@@ -83,7 +99,7 @@ export default class App extends Component {
     const isSearch = /[\\/]+search\/advanced/i.test(this.props.router.location.pathname);
     let content;
     if (isExternalApp) {
-      content = this.props.children;
+      content = <Outlet />;
     } else {
       const searchStyle = [searchStyles.searchBlur];
       if (this.state.searchFormVisible) {
@@ -116,36 +132,40 @@ export default class App extends Component {
           <Layout.Content
             id="root-content"
             className={`${styles.contentWrapper} ${searchStyle.join(' ')}`}>
-            <Provider displayInfo={this.info}>
-              {this.props.children}
-            </Provider>
+            <ErrorBoundary>
+              <Provider displayInfo={this.info}>
+                <Outlet />
+              </Provider>
+            </ErrorBoundary>
           </Layout.Content>
         </Layout>
       );
     }
     return (
-      <LocaleProvider locale={enUS}>
-        <div id="root-container" className={styles.appContainer}>
-          {
-            this.props.uiNavigation.searchEnabled() && !isExternalApp && (
-              <SearchDialog
-                onInitialized={this.onSearchDialogInitialized}
-                router={this.props.router}
-                blockInput={activeTabPath === Pages.run || isSearch}
-                onVisibilityChanged={this.onSearchControlVisibilityChanged}
-              />
-            )
-          }
-          {content}
-          <NotificationCenter
-            delaySeconds={2}
-            disableEmailNotifications={activeTabPath === Pages.notifications}
-            router={this.props.router}
-          />
-          <RunModal />
-          <RunContinuationConfirmation />
-        </div>
-      </LocaleProvider>
+      <ConfigProvider locale={enUS} theme={antdTheme}>
+        <AntdStaticMethodsProvider theme={antdTheme}>
+          <AntdApp id="root-container" className={styles.appContainer}>
+            {
+              this.props.uiNavigation.searchEnabled() && !isExternalApp && (
+                <SearchDialog
+                  onInitialized={this.onSearchDialogInitialized}
+                  router={this.props.router}
+                  blockInput={activeTabPath === Pages.run || isSearch}
+                  onVisibilityChanged={this.onSearchControlVisibilityChanged}
+                />
+              )
+            }
+            {content}
+            <NotificationCenter
+              delaySeconds={2}
+              disableEmailNotifications={activeTabPath === Pages.notifications}
+              router={this.props.router}
+            />
+            <RunModal />
+            <RunContinuationConfirmation />
+          </AntdApp>
+        </AntdStaticMethodsProvider>
+      </ConfigProvider>
     );
   }
 
@@ -157,3 +177,5 @@ export default class App extends Component {
     document.title = this.props.preferences.deploymentName || 'Loading...';
   }
 }
+
+export default withRouter(App);

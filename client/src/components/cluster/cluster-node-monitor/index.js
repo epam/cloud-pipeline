@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import GeneralInfoTab from './general-info';
 import GPUInfoHoc from './gpu-info-hoc';
@@ -24,7 +24,13 @@ import SubSettings from '../../settings/sub-settings';
 @inject('preferences')
 @observer
 class ClusterNodeMonitor extends React.Component {
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      chartsData: computed
+    });
+  }
+
   get chartsData () {
     return this.props.chartsData;
   }

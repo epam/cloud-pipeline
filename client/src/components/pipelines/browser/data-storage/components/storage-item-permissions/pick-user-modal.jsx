@@ -6,7 +6,7 @@ import UserName from '../../../../../special/UserName';
 
 @inject('usersInfo')
 @observer
-class PickUserModal extends React.PureComponent {
+class PickUserModal extends React.Component {
   state = {
     selection: undefined,
     filter: undefined
@@ -73,7 +73,7 @@ class PickUserModal extends React.PureComponent {
       <Modal
         className={className}
         style={style}
-        visible={visible}
+        open={visible}
         title="Select user"
         onCancel={onClose}
         footer={(

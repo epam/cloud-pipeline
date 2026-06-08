@@ -17,17 +17,16 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {
-  Icon,
   Dropdown,
-  Menu,
   message,
   DatePicker,
   Button,
   Spin,
   Alert
 } from 'antd';
+import {DownOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
-import {computed, reaction} from 'mobx';
+import {computed, reaction, makeObservable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import moment from 'moment-timezone';
 import ClusterNodeGPUUsage from '../../../models/cluster/ClusterNodeGPUUsage';
@@ -101,6 +100,15 @@ class GPUInfoTab extends React.Component {
     () => this.initRanges(false)
   );
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      themeConfiguration: computed,
+      chartsData: computed,
+      chartsBounds: computed
+    });
+  }
+
   componentDidMount () {
     this.initRanges();
   }
@@ -121,7 +129,6 @@ class GPUInfoTab extends React.Component {
     }
   }
 
-  @computed
   get themeConfiguration () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
@@ -130,13 +137,11 @@ class GPUInfoTab extends React.Component {
     return {};
   }
 
-  @computed
   get chartsData () {
     const {chartsData} = this.props;
     return chartsData;
   }
 
-  @computed
   get chartsBounds () {
     return {
       min: this.chartsData.instanceFrom,
@@ -298,15 +303,11 @@ class GPUInfoTab extends React.Component {
         : [...hideDatasets, key]
       });
     };
-    const menu = (
-      <Menu onClick={onMeasureChange}>
-        {Object.values(MEASURES).map(value => (
-          <Menu.Item style={{minWidth: 80}} key={value}>
-            {`${value[0].toUpperCase()}${value.substring(1)}`}
-          </Menu.Item>
-        ))}
-      </Menu>
-    );
+    const measureMenuItems = Object.values(MEASURES).map(value => ({
+      key: value,
+      label: `${value[0].toUpperCase()}${value.substring(1)}`,
+      style: {minWidth: 80}
+    }));
     // const gpuKeys = Object.keys((metrics?.charts || [])[0]?.gpuDetails || {});
     // const gpuMenu = (
     //   <Menu onClick={onGPUChange}>
@@ -330,7 +331,7 @@ class GPUInfoTab extends React.Component {
         />
         <circle cx="10" cy="5" r="3"
           strokeWidth="2"
-          fill={this.themeConfiguration['@card-background-color'] || 'white'}
+          fill={this.themeConfiguration['--cp-color-bg-elevated'] || 'white'}
           stroke={stroke}
         />
       </svg>
@@ -420,23 +421,15 @@ class GPUInfoTab extends React.Component {
     const renderRangeControls = () => (
       <div className={styles.rangeControls}>
         <Dropdown
-          overlay={(
-            <Menu
-              onClick={setRange}
-              style={{cursor: 'pointer'}}
-              selectedKeys={[]}
-            >
-              {Object.keys(RANGES).map(rangeKey => (
-                <Menu.Item
-                  key={rangeKey}
-                >
-                  {`Last ${rangeKey}`}
-                </Menu.Item>
-              ))}
-            </Menu>
-          )}>
+          menu={{
+            items: Object.keys(RANGES)
+              .map(rangeKey => ({key: rangeKey, label: `Last ${rangeKey}`})),
+            onClick: setRange,
+            style: {cursor: 'pointer'}
+          }}
+        >
           <Button>
-            Set range <Icon type="down" />
+            Set range <DownOutlined />
           </Button>
         </Dropdown>
         <Divider />
@@ -474,7 +467,7 @@ class GPUInfoTab extends React.Component {
           <div className={styles.legend}>
             {Object.entries(DATASET_TYPES).map(([key, value]) => {
               const color = hideDatasets.includes(key)
-                ? this.themeConfiguration['@application-color-disabled'] || '#8c8c8c'
+                ? this.themeConfiguration['--cp-color-text-disabled'] || '#8c8c8c'
                 : DATASET_COLORS[value];
               return (
                 <div
@@ -497,17 +490,17 @@ class GPUInfoTab extends React.Component {
             {/* //TODO: wait for API support */}
             {/* <div style={{display: 'flex', gap: '5px'}}>
               <span>GPU:</span>
-              <Dropdown overlay={gpuMenu}>
+              <Dropdown menu={{items: ['All', ...gpuKeys].map(key => ({key, label: key})), onClick: onGPUChange}}>
                 <a>
-                  {this.state.selectedGPU} <Icon type="down" />
+                  {this.state.selectedGPU} <DownOutlined />
                 </a>
               </Dropdown>
             </div> */}
             <div style={{display: 'flex', gap: '5px'}}>
               <span>Measure:</span>
-              <Dropdown overlay={menu}>
+              <Dropdown menu={{items: measureMenuItems, onClick: onMeasureChange}}>
                 <a>
-                  {`${measure[0].toUpperCase()}${measure.substring(1)}`} <Icon type="down" />
+                  {`${measure[0].toUpperCase()}${measure.substring(1)}`} <DownOutlined />
                 </a>
               </Dropdown>
             </div>
@@ -594,12 +587,12 @@ class GPUInfoTab extends React.Component {
     const {gpuStatisticsAvailable} = this.props;
     if (!gpuStatisticsAvailable) {
       return (
-        <Alert type="warning" message="GPU statistics is not available for this node" />
+        <Alert type="warning" title="GPU statistics is not available for this node" />
       );
     }
     return (
       <div className={styles.container}>
-        <Spin wrapperClassName={styles.spin} spinning={this.state.pending}>
+        <Spin classNames={{root: styles.spin}} spinning={this.state.pending}>
           {this.renderOverallMetrics()}
           {this.renderTelemetry()}
         </Spin>

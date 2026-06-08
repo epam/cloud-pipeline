@@ -14,13 +14,13 @@
  *  limitations under the License.
  */
 
-import {observable} from 'mobx';
+import {observable, makeObservable} from 'mobx';
 import {ModuleParameter} from './base';
 import {AnalysisTypes} from '../common/analysis-types';
 
 class RangeParameter extends ModuleParameter {
-  @observable min;
-  @observable max;
+  min;
+  max;
 
   /**
    * @param {ModuleParameterOptions & {range: {min: number?, max: number?}?}} options
@@ -32,6 +32,10 @@ class RangeParameter extends ModuleParameter {
     super({
       ...options,
       isRange: true
+    });
+    makeObservable(this, {
+      min: observable,
+      max: observable
     });
     const {
       min = -Infinity,

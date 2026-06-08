@@ -18,12 +18,12 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {
-  Icon,
   Input,
   InputNumber,
   Select,
   Popover
 } from 'antd';
+import {QuestionCircleFilled} from '@ant-design/icons';
 import PreferenceLoad from '../../../../models/preferences/PreferenceLoad';
 import {Preferences} from './configuration';
 import ExcludeParametersControl from './exclude-parameters-control';
@@ -176,15 +176,7 @@ class PreferenceControl extends React.Component {
         content={preference.hint}
         placement="left"
       >
-        <Icon
-          style={{
-            marginLeft: 5,
-            marginRight: 10,
-            fontSize: 'larger',
-            cursor: 'pointer'
-          }}
-          type="question-circle"
-        />
+        <QuestionCircleFilled style={{ marginLeft: 5, marginRight: 10, fontSize: 'larger', cursor: 'pointer' }} />
       </Popover>
     );
   };

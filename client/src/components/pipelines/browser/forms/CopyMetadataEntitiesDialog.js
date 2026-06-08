@@ -20,14 +20,15 @@ import {inject, observer} from 'mobx-react';
 import {
   Alert,
   Button,
-  Icon,
   Input,
   message,
   Modal,
   Spin,
+  Splitter,
   Table,
   Tree
 } from 'antd';
+import {FolderOutlined, LockOutlined, SolutionOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import {
   formatTreeItems,
@@ -37,7 +38,6 @@ import {
   ItemTypes,
   search
 } from '../../model/treeStructureFunctions';
-import {SplitPanel} from '../../../special/splitPanel';
 import LoadingView from '../../../special/LoadingView';
 import MetadataEntityFilter from '../../../../models/folderMetadata/MetadataEntityFilter';
 import MetadataClassLoadAll from '../../../../models/folderMetadata/MetadataClassLoadAll';
@@ -133,7 +133,7 @@ class CopyMetadataEntitiesDialog extends React.Component {
       return (
         <Alert
           type="info"
-          message={(
+          title={(
             <div>
               Select folder to copy entities
             </div>
@@ -148,9 +148,9 @@ class CopyMetadataEntitiesDialog extends React.Component {
         render: (item) => {
           if (item.isProject || (item.objectMetadata && item.objectMetadata.type &&
             (item.objectMetadata.type.value || '').toLowerCase() === 'project')) {
-            return (<Icon type="solution" />);
+            return (<SolutionOutlined />);
           } else {
-            return (<Icon type="folder" />);
+            return (<FolderOutlined />);
           }
         }
       },
@@ -171,20 +171,20 @@ class CopyMetadataEntitiesDialog extends React.Component {
         expandedKeys: [...(new Set([...expandedKeys, item.key]))]
       });
     };
-    let icon = 'folder';
+    let IconComponent = FolderOutlined;
     if (
       selectedFolder.isProject ||
       (selectedFolder.objectMetadata && selectedFolder.objectMetadata.type &&
         (selectedFolder.objectMetadata.type.value || '').toLowerCase() === 'project')
     ) {
-      icon = 'solution';
+      IconComponent = SolutionOutlined;
     }
     return (
       <div
         className={styles.treeContainer}
       >
         <div style={{fontSize: 'large', marginLeft: 5}}>
-          <Icon type={icon} />
+          <IconComponent />
           <b style={{marginLeft: 5}}>{selectedFolder.name}</b>
         </div>
         <Table
@@ -195,7 +195,7 @@ class CopyMetadataEntitiesDialog extends React.Component {
           pagination={false}
           rowClassName={() => styles.row}
           showHeader={false}
-          onRowClick={onSelect}
+          onRow={(record) => ({onClick: () => onSelect(record)})}
           size="small"
         />
       </div>
@@ -219,12 +219,12 @@ class CopyMetadataEntitiesDialog extends React.Component {
     }
     if (pipelinesLibrary.error) {
       return (
-        <Alert type="error" message={pipelinesLibrary.error} />
+        <Alert type="error" title={pipelinesLibrary.error} />
       );
     }
     if (!pipelinesLibrary.loaded) {
       return (
-        <Alert type="error" message="Error fetching library" />
+        <Alert type="error" title="Error fetching library" />
       );
     }
     const onSelect = (selection) => {
@@ -271,13 +271,12 @@ class CopyMetadataEntitiesDialog extends React.Component {
       });
     };
     const renderItemTitle = (item) => {
-      let icon;
-      const subIcon = item.locked ? 'lock' : undefined;
+      let IconComponent;
       if (item.isProject || (item.objectMetadata && item.objectMetadata.type &&
         (item.objectMetadata.type.value || '').toLowerCase() === 'project')) {
-        icon = 'solution';
+        IconComponent = SolutionOutlined;
       } else {
-        icon = 'folder';
+        IconComponent = FolderOutlined;
       }
       let {name} = item;
       if (item.searchResult) {
@@ -298,78 +297,57 @@ class CopyMetadataEntitiesDialog extends React.Component {
       }
       return (
         <span>
-          {icon && <Icon type={icon} />}
-          {subIcon && <Icon type={subIcon} />}
+          {IconComponent && <IconComponent />}
+          {item.locked ? <LockOutlined /> : null}
           <span className={styles.treeItemName}>{name}</span>
         </span>
       );
     };
-    const generateTreeItems = (items) => formatTreeItems(
+    const getTreeData = (items) => formatTreeItems(
       items,
       {preferences: this.props.preferences}
     )
       .filter(item => item.searchHit)
-      .map(item => {
-        if (item.isLeaf) {
-          return (
-            <Tree.TreeNode
-              className={styles.treeItem}
-              title={renderItemTitle(item)}
-              key={item.key}
-              isLeaf={item.isLeaf}
-            />
-          );
-        } else {
-          return (
-            <Tree.TreeNode
-              className={styles.treeItem}
-              title={renderItemTitle(item)}
-              key={item.key}
-              isLeaf={item.isLeaf}
-            >
-              {generateTreeItems(item.children)}
-            </Tree.TreeNode>
-          );
-        }
-      });
+      .map(item => ({
+        key: item.key,
+        title: renderItemTitle(item),
+        isLeaf: item.isLeaf,
+        className: styles.treeItem,
+        ...(item.children && !item.isLeaf
+          ? {children: getTreeData(item.children)}
+          : {})
+      }));
     return (
-      <SplitPanel
-        contentInfo={[{
-          key: 'library',
-          size: {
-            pxDefault: 300
-          }
-        }]}
-      >
-        <div
-          key="library"
-        >
-          <div>
-            <Input.Search
-              value={searchValue}
-              onChange={this.onSearchChanged}
-            />
+      <Splitter>
+        <Splitter.Panel defaultSize={300} min={200} resizable>
+          <div key="library">
+            <div>
+              <Input.Search
+                value={searchValue}
+                onChange={this.onSearchChanged}
+              />
+            </div>
+            <div className={styles.treeContainer}>
+              <Spin spinning={pending}>
+                <Tree
+                  disabled={disabled}
+                  treeData={getTreeData(tree)}
+                  onSelect={onSelect}
+                  onExpand={onExpand}
+                  checkStrictly
+                  expandedKeys={expandedKeys}
+                  selectedKeys={selectedKeys}
+                />
+              </Spin>
+            </div>
           </div>
-          <div className={styles.treeContainer}>
-            <Spin spinning={pending}>
-              <Tree
-                disabled={disabled}
-                onSelect={onSelect}
-                onExpand={onExpand}
-                checkStrictly
-                expandedKeys={expandedKeys}
-                selectedKeys={selectedKeys} >
-                {generateTreeItems(tree)}
-              </Tree>
-            </Spin>
+        </Splitter.Panel>
+        <Splitter.Panel resizable>
+          <div key="content">
+            {this.renderFolderContent()}
           </div>
-        </div>
-        <div
-          key="content"
-        >
-          {this.renderFolderContent()}
-        </div>
-      </SplitPanel>
+        </Splitter.Panel>
+      </Splitter>
     );
   };
 
@@ -587,7 +565,7 @@ class CopyMetadataEntitiesDialog extends React.Component {
             </div>
           </div>
         )}
-        visible={visible}
+        open={visible}
       >
         {this.renderContent()}
       </Modal>

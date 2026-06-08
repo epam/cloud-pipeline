@@ -16,8 +16,15 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
-import {Alert, Button, Icon, Input, Popover, Row} from 'antd';
+import {
+  observer} from 'mobx-react';
+import {Alert,
+  Button,
+  Input,
+  Popover,
+  Row
+} from 'antd';
+import {LoadingOutlined} from '@ant-design/icons';
 import ServerlessAPIURL from '../../../models/configuration/ServerlessAPIURL';
 
 const CLOSE_POPOVER_DELAY_MS = 200;
@@ -74,14 +81,14 @@ class ServerlessAPIButton extends React.Component {
     if (error) {
       return (
         <Row className={this.props.overlayClassName}>
-          <Alert type="error" message={error} />
+          <Alert type="error" title={error} />
         </Row>
       );
     }
     if (!url) {
       return (
         <Row className={this.props.overlayClassName}>
-          <Icon type="loading" />
+          <LoadingOutlined />
         </Row>
       );
     }
@@ -124,11 +131,11 @@ class ServerlessAPIButton extends React.Component {
   render () {
     return (
       <Popover
-        overlayClassName="serverless-api-popover"
+        classNames={{root: 'serverless-api-popover'}}
         title="Serverless API"
         content={this.getServerlessAPIPopoverContent()}
-        visible={this.state.visible}
-        onVisibleChange={this.onDropdownVisibilityChanged}
+        open={this.state.visible}
+        onOpenChange={this.onDropdownVisibilityChanged}
         trigger={['click']}
         placement="bottomLeft"
       >

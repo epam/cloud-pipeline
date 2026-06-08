@@ -1,4 +1,4 @@
-import {action, computed, observable} from 'mobx';
+import {observable, makeAutoObservable} from 'mobx';
 import preferences from '../../models/preferences/PreferencesLoad';
 import {io} from 'socket.io-client';
 
@@ -83,16 +83,16 @@ async function _aiApiPost (uri, body) {
 }
 
 class AiChatEngine {
-  @observable _pending = true;
-  @observable _socketPending = false;
-  @observable _messagePending = false;
-  @observable _error = undefined;
-  @observable _socketError = undefined;
-  @observable _messageError = undefined;
-  @observable _chat = undefined;
-  @observable _messages = [];
-  @observable _initialized = false;
-  @observable _chatId = undefined;
+  _pending = true;
+  _socketPending = false;
+  _messagePending = false;
+  _error = undefined;
+  _socketError = undefined;
+  _messageError = undefined;
+  _chat = undefined;
+  _messages = [];
+  _initialized = false;
+  _chatId = undefined;
 
   _initializePromise = undefined;
   _initializeToken = {};
@@ -103,38 +103,33 @@ class AiChatEngine {
   _messageToken = {};
 
   constructor (options = undefined) {
+    makeAutoObservable(this);
     const {
       chatId
     } = options || {};
     (this.changeChat)(chatId);
   }
 
-  @computed
   get pending () {
     return this._pending || this._messagePending || this._socketPending;
   }
 
-  @computed
   get initialized () {
     return this._initialized;
   }
 
-  @computed
   get error () {
     return this._error;
   }
 
-  @computed
   get socketError () {
     return this._socketError;
   }
 
-  @computed
   get messageError () {
     return this._messageError;
   }
 
-  @computed
   get messages () {
     return this._messages;
   }
@@ -145,8 +140,6 @@ class AiChatEngine {
     this._initializePromise = undefined;
     this._messageToken = {};
   }
-
-  @action
   async changeChat (chatId) {
     if (this._chatId === chatId) {
       return;
@@ -165,8 +158,6 @@ class AiChatEngine {
     this._messageError = undefined;
     await this.initialize();
   }
-
-  @action
   async sendMessage (message) {
     const token = this._messageToken = {};
     this._messageError = undefined;
@@ -205,13 +196,9 @@ class AiChatEngine {
       });
     }
   }
-
-  @action
   async reload () {
     await this.initialize(true);
   }
-
-  @action
   async initialize (force = false) {
     if (!this._initializePromise || force) {
       this._initializePromise = (async () => {
@@ -272,8 +259,6 @@ class AiChatEngine {
     }
     return this._initializePromise;
   }
-
-  @action
   async reloadMessages () {
     try {
       await this.initialize();
@@ -301,8 +286,6 @@ class AiChatEngine {
       this._pending = false;
     }
   }
-
-  @action
   async startListeningMessage (message) {
     if (!message) {
       return;

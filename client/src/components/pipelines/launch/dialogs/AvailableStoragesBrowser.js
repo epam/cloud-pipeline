@@ -16,7 +16,7 @@
 
 import React, {Component} from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {Button, Checkbox, Input, Modal, Pagination, Row, Table} from 'antd';
@@ -73,6 +73,13 @@ export default class AvailableStoragesBrowser extends Component {
     page: 0
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      nfsSensitivePolicy: computed
+    });
+  }
+
   componentDidMount () {
     this.updateSelectionFromProps();
   }
@@ -100,7 +107,6 @@ export default class AvailableStoragesBrowser extends Component {
     });
   };
 
-  @computed
   get nfsSensitivePolicy () {
     const {preferences} = this.props;
     return preferences.nfsSensitivePolicy;
@@ -371,7 +377,7 @@ export default class AvailableStoragesBrowser extends Component {
       <Modal
         width="80%"
         title="Select data storages to limit mounts"
-        visible={this.props.visible}
+        open={this.props.visible}
         onCancel={this.onCancel}
         footer={
           <Row type="flex" justify="end">
@@ -413,7 +419,7 @@ export default class AvailableStoragesBrowser extends Component {
             {
               this.state.selectedStorages.length &&
               <Button
-                type="danger"
+                danger
                 style={{marginLeft: 5}}
                 onClick={this.clearSelection}>
                 Clear selection

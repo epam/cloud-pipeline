@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Icon, Dropdown, Menu} from 'antd';
+import {Dropdown, Menu} from 'antd';
+import {CheckOutlined, SettingOutlined} from '@ant-design/icons';
 import PoolShortDescription from '../../pool-short-description';
 import styles from './pool-selector.css';
 
@@ -30,24 +31,25 @@ function PoolSelector ({
   const onSelectChange = ({key}) => {
     onChange && onChange(Number(key));
   };
+  const menuItems = (pools || []).map((pool) => ({
+    key: `${pool.id}`,
+    label: (
+      <>
+        {Number(pool.id) === Number(value)
+          ? <CheckOutlined />
+          : undefined
+        }
+        <span style={{marginLeft: 5}}>
+          {pool.name}
+        </span>
+      </>
+    )
+  }));
   const renderOverlay = () => (
     <Menu
       onClick={onSelectChange}
-    >
-      {
-        (pools || []).map((pool) => (
-          <Menu.Item key={`${pool.id}`}>
-            {Number(pool.id) === Number(value)
-              ? <Icon type="check" />
-              : undefined
-            }
-            <span style={{marginLeft: 5}}>
-              {pool.name}
-            </span>
-          </Menu.Item>
-        ))
-      }
-    </Menu>
+      items={menuItems}
+    />
   );
   const pool = pools.find(p => Number(p.id) === Number(value));
   return (
@@ -55,14 +57,14 @@ function PoolSelector ({
       className={styles.container}
     >
       <Dropdown
-        overlay={renderOverlay()}
+        popupRender={() => renderOverlay()}
         trigger={['click']}
       >
         <div className={styles.selector}>
           <span className={styles.selectorValue}>
             {pool ? pool.name : `Pool #${value}`}
           </span>
-          <Icon type="setting" style={{marginLeft: 2}} />
+          <SettingOutlined style={{marginLeft: 2}} />
         </div>
       </Dropdown>
       {showPoolDescription && <PoolShortDescription

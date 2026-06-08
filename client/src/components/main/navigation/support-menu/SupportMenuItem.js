@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {Button, Icon, message, Popover, Tooltip} from 'antd';
+import {Button, message, Popover, Tooltip} from 'antd';
 import Markdown from '../../../special/markdown';
 import {HcsImageAnalysisJobsModal} from '../../../special/hcs-image/hcs-image-analysis-jobs';
 import GitlabIssueCreate from '../../../../models/gitlab-issues/GitlabIssueCreate';
@@ -75,7 +75,7 @@ class SupportMenuItem extends React.Component {
     visible: PropTypes.bool,
     style: PropTypes.object,
     content: PropTypes.string,
-    icon: PropTypes.string,
+    icon: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
     url: PropTypes.string,
     action: PropTypes.string,
     target: PropTypes.string,
@@ -149,7 +149,7 @@ class SupportMenuItem extends React.Component {
 
   renderIcon = () => {
     const {icon} = this.props;
-    if (urlCheck(icon)) {
+    if (typeof icon === 'string' && urlCheck(icon)) {
       return (
         <img
           src={icon}
@@ -157,9 +157,14 @@ class SupportMenuItem extends React.Component {
         />
       );
     }
-    return (
-      <Icon type={icon} />
-    );
+    if (React.isValidElement(icon)) {
+      return icon;
+    }
+    if (typeof icon === 'function') {
+      const IconComponent = icon;
+      return <IconComponent />;
+    }
+    return null;
   };
 
   openUrl = () => {
@@ -209,6 +214,7 @@ class SupportMenuItem extends React.Component {
         >
           <Button
             id={id}
+            type="text"
             className={className}
             style={style}
             onClick={this.openUrl}
@@ -228,6 +234,7 @@ class SupportMenuItem extends React.Component {
         >
           <Button
             id={id}
+            type="text"
             className={className}
             style={style}
             onClick={this.doAction}
@@ -267,11 +274,12 @@ class SupportMenuItem extends React.Component {
         }
         placement="rightBottom"
         trigger="click"
-        onVisibleChange={onVisibilityChanged}
-        visible={visible}
+        onOpenChange={onVisibilityChanged}
+        open={visible}
       >
         <Button
           id={id}
+          type="text"
           className={className}
           style={style}
         >

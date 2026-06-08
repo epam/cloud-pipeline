@@ -17,8 +17,9 @@
 import React from 'react';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
-import {Link} from 'react-router';
+import {withRouter} from '../../../utils/with-router';
+import {computed, observable, makeObservable} from 'mobx';
+import {Link} from 'react-router-dom';
 import FileSaver from 'file-saver';
 import {
   Alert,
@@ -26,7 +27,6 @@ import {
   Col,
   Collapse,
   Dropdown,
-  Icon,
   Input,
   Menu,
   message,
@@ -35,6 +35,7 @@ import {
   Row,
   Spin
 } from 'antd';
+import {ClockCircleFilled, ClockCircleOutlined, DownOutlined, ExclamationCircleFilled, ExclamationCircleOutlined, LoadingOutlined} from '@ant-design/icons';
 import SplitPane from 'react-split-pane';
 import PausePipeline from '../../../models/pipelines/PausePipeline';
 import ResumePipeline from '../../../models/pipelines/ResumePipeline';
@@ -191,7 +192,26 @@ class Logs extends localization.LocalizedReactComponent {
     runPreviousStatus: undefined
   };
 
-  @observable runScheduleRequest;
+  runScheduleRequest;
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      runScheduleRequest: observable,
+      runSchedule: computed,
+      runPayload: computed,
+      maintenanceMode: computed,
+      dtsList: computed,
+      timeFromStart: computed,
+      runningTime: computed,
+      isDtsEnvironment: computed,
+      isFireCloudEnvironment: computed,
+      initializeEnvironmentFinished: computed,
+      sshEnabled: computed,
+      fsBrowserEnabled: computed,
+      endpointAvailable: computed
+    });
+  }
 
   componentDidMount () {
     this.updateFromProps();
@@ -359,7 +379,6 @@ class Logs extends localization.LocalizedReactComponent {
     }
   }
 
-  @computed
   get runSchedule () {
     if (!this.runScheduleRequest || !this.runScheduleRequest.loaded) {
       return [];
@@ -368,7 +387,6 @@ class Logs extends localization.LocalizedReactComponent {
     return (this.runScheduleRequest.value || []).map(i => i);
   }
 
-  @computed
   get runPayload () {
     const {preferences} = this.props;
     const {run} = this.state;
@@ -416,7 +434,6 @@ class Logs extends localization.LocalizedReactComponent {
     return null;
   }
 
-  @computed
   get maintenanceMode () {
     const {preferences} = this.props;
     if (preferences && preferences.loaded) {
@@ -728,7 +745,6 @@ class Logs extends localization.LocalizedReactComponent {
     );
   };
 
-  @computed
   get dtsList () {
     if (this.props.dtsList.loaded) {
       return (this.props.dtsList.value || []).map(i => i);
@@ -821,7 +837,7 @@ class Logs extends localization.LocalizedReactComponent {
     }
     if (details.length > 0) {
       return (
-        <Row>
+        <Row align="middle">
           Instance: {
             details.map(d => {
               return (
@@ -984,20 +1000,16 @@ class Logs extends localization.LocalizedReactComponent {
         }
         router.push(nodeUrl);
       };
-      const menu = (
-        <Menu onClick={onNavigate}>
-          <Menu.Item key="run">
-            <span><b>Run</b> statistics</span>
-          </Menu.Item>
-          <Menu.Item key="node">
-            <span><b>Node</b> statistics</span>
-          </Menu.Item>
-        </Menu>
-      );
+      const menuItems = [
+        {key: 'run', label: <span><b>Run</b> statistics</span>},
+        {key: 'node', label: <span><b>Node</b> statistics</span>}
+      ];
       return (
-        <Dropdown overlay={menu}>
+        <Dropdown
+          menu={{items: menuItems, onClick: onNavigate}}
+        >
           <a>
-            {title} <Icon type="down" />
+            {title} <DownOutlined />
           </a>
         </Dropdown>
       );
@@ -1299,7 +1311,7 @@ class Logs extends localization.LocalizedReactComponent {
     } else {
       return this.renderContentPlainMode();
     }
-  };
+  }
 
   getTaskUrl = (task) => {
     let url = '';
@@ -1337,34 +1349,36 @@ class Logs extends localization.LocalizedReactComponent {
       status
     } = run || {};
     const selectedTask = this.props.task ? this.getTaskUrl(this.props.task) : null;
-    let Tasks;
+    let taskItems;
 
     if (pending) {
-      Tasks = <Menu.Item key={-3}>...Loading</Menu.Item>;
+      taskItems = [{key: '-3', label: '...Loading'}];
     } else if (runTasks.length === 0) {
-      Tasks = <Menu.Item key={-2}>No tasks</Menu.Item>;
+      taskItems = [{key: '-2', label: 'No tasks'}];
     } else {
-      Tasks = runTasks
+      taskItems = runTasks
         .filter(task => searchTasks
           ? (task.name || '').toLowerCase().includes((searchTasks || '').toLowerCase())
           : true
-        ).map((task, index) => (
-          <Menu.Item key={this.getTaskUrl(task, index)}>
+        ).map((task, index) => ({
+          key: this.getTaskUrl(task, index),
+          label: (
             <TaskLink
               to={`/run/${runId}/${this.props.mode}/${this.getTaskUrl(task)}`}
               location={location}
               task={task}
               searchText={searchTasks}
               timings={timings} />
-          </Menu.Item>
-        ));
+          )
+        }));
     }
 
     const SwitchTimingsButton = (
       <div className={styles.timingBtn}>
         <a onClick={this.switchTimings}>
-          <Icon style={{fontSize: 18}}
-            type={timings ? 'clock-circle' : 'clock-circle-o'} />
+          {timings
+            ? <ClockCircleFilled style={{fontSize: 18}} />
+            : <ClockCircleOutlined style={{fontSize: 18}} />}
         </a>
       </div>
     );
@@ -1404,9 +1418,9 @@ class Logs extends localization.LocalizedReactComponent {
               <Menu
                 selectedKeys={selectedTask ? [selectedTask] : []}
                 mode="inline"
-                className={this.state.timings ? styles.taskListTimings : styles.taskList}>
-                {Tasks}
-              </Menu>
+                className={this.state.timings ? styles.taskListTimings : styles.taskList}
+                items={taskItems}
+              />
             </div>
           </div>
           <div
@@ -1448,7 +1462,6 @@ class Logs extends localization.LocalizedReactComponent {
     }
   }
 
-  @computed
   get timeFromStart () {
     const {run} = this.state;
     if (!run) {
@@ -1458,7 +1471,6 @@ class Logs extends localization.LocalizedReactComponent {
     return displayDuration(startDate);
   }
 
-  @computed
   get runningTime () {
     const {
       runTasks = [],
@@ -1535,27 +1547,23 @@ class Logs extends localization.LocalizedReactComponent {
     }
   };
 
-  @computed
   get isDtsEnvironment () {
     const {run} = this.state;
     return run && run.executionPreferences &&
       run.executionPreferences.environment === DTS_ENVIRONMENT;
   }
 
-  @computed
   get isFireCloudEnvironment () {
     const {run} = this.state;
     return run && run.executionPreferences &&
       run.executionPreferences.environment === FIRE_CLOUD_ENVIRONMENT;
   }
 
-  @computed
   get initializeEnvironmentFinished () {
     const {run} = this.state;
     return run && run.initialized;
   }
 
-  @computed
   get sshEnabled () {
     const {run} = this.state;
     if (
@@ -1575,7 +1583,6 @@ class Logs extends localization.LocalizedReactComponent {
     return false;
   }
 
-  @computed
   get fsBrowserEnabled () {
     const {run} = this.state;
     if (
@@ -1606,7 +1613,6 @@ class Logs extends localization.LocalizedReactComponent {
     return false;
   }
 
-  @computed
   get endpointAvailable () {
     const {run} = this.state;
     if (run && this.initializeEnvironmentFinished) {
@@ -1715,7 +1721,7 @@ class Logs extends localization.LocalizedReactComponent {
           >
             {
               nestedRuns.length === 0 && nestedRunsPending && (
-                <Icon type="loading" />
+                <LoadingOutlined />
               )
             }
             {nestedRuns.map(renderSingleRun)}
@@ -1763,7 +1769,7 @@ class Logs extends localization.LocalizedReactComponent {
       return (
         <Alert
           type="error"
-          message={error}
+          title={error}
         />
       );
     }
@@ -1932,7 +1938,7 @@ class Logs extends localization.LocalizedReactComponent {
           <Alert
             type="warning"
             style={{margin: '5px 0'}}
-            message={resumeFailureReason}
+            title={resumeFailureReason}
           />
         );
       }
@@ -1962,13 +1968,7 @@ class Logs extends localization.LocalizedReactComponent {
                   </span>
                 )}
               >
-                <Icon
-                  type="exclamation-circle"
-                  style={{
-                    marginLeft: 5,
-                    fontSize: 'smaller'
-                  }}
-                />
+                <ExclamationCircleFilled style={{marginLeft: 5, fontSize: 'smaller'}} />
               </Popover>
             </span>
           );
@@ -2368,7 +2368,7 @@ class Logs extends localization.LocalizedReactComponent {
             case 'committing':
               previousStatus = (
                 <span>
-                  <Icon type="loading" /> COMMITTING...
+                  <LoadingOutlined /> COMMITTING...
                 </span>
               );
               break;
@@ -2396,7 +2396,7 @@ class Logs extends localization.LocalizedReactComponent {
           switch ((commitStatus || '').toLowerCase()) {
             case 'not_committed': break;
             case 'committing':
-              CommitStatusButton = (<span><Icon type="loading" /> COMMITTING...</span>);
+              CommitStatusButton = (<span><LoadingOutlined /> COMMITTING...</span>);
               break;
             case 'failure':
               CommitStatusButton = (<span>COMMIT FAILURE ({commitDate})</span>);
@@ -2458,7 +2458,7 @@ class Logs extends localization.LocalizedReactComponent {
     ) {
       NodePendingAlert = (
         <Alert
-          message={(<div>{runStatusTooltips[RunStatuses.nodePending].description}</div>)}
+          title={(<div>{runStatusTooltips[RunStatuses.nodePending].description}</div>)}
           type="warning"
         />
       );
@@ -2484,7 +2484,7 @@ class Logs extends localization.LocalizedReactComponent {
           className="cp-error"
           style={{gap: '5px', fontSize: 'larger'}}
         >
-          <Icon type="exclamation-circle-o" />
+          <ExclamationCircleOutlined />
           Network is limited to
           <b>
             {networkLimitValueRender(networkLimitTag)}
@@ -2507,12 +2507,14 @@ class Logs extends localization.LocalizedReactComponent {
             'cp-panel-borderless'
           )
         }
-        bodyStyle={{
-          padding: 10,
-          display: 'flex',
-          flexDirection: 'column',
-          flex: 1,
-          overflowY: 'auto'
+        styles={{
+          body: {
+            padding: 10,
+            display: 'flex',
+            flexDirection: 'column',
+            flex: 1,
+            overflowY: 'auto'
+          }
         }}>
         <Row type="flex">
           <div style={{flex: 1}}>
@@ -2523,7 +2525,7 @@ class Logs extends localization.LocalizedReactComponent {
             {
               stateReasonMessage && (
                 <Alert
-                  message={`Server failure reason: ${stateReasonMessage}`}
+                  title={`Server failure reason: ${stateReasonMessage}`}
                   type="error"
                 />
               )
@@ -2580,12 +2582,12 @@ class Logs extends localization.LocalizedReactComponent {
           </div>
         </Row>
         <Row>
-          <Col>
+          <Col span={24}>
             {Parameters}
           </Col>
         </Row>
         <Row className={styles.rowDetailLast}>
-          <Col>
+          <Col span={24}>
             {InstanceDetails}
           </Col>
         </Row>
@@ -2628,4 +2630,4 @@ class Logs extends localization.LocalizedReactComponent {
   }
 }
 
-export default Logs;
+export default withRouter(Logs);

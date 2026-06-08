@@ -23,14 +23,29 @@ import DataStorageRules from '../../../../models/dataStorage/DataStorageRules';
 import styles from './PipelineStorageRules.css';
 import roleModel from '../../../../utils/roleModel';
 
-@inject(({pipelines, routing}, {params}) => ({
-  rules: new DataStorageRules(params.id),
-  pipelineId: params.id,
-  pipeline: pipelines.getPipeline(params.id)
-}))
+@inject(({routing, pipelines}) => {
+  const {params} = routing;
+  return {
+    pipelineId: params.id,
+    pipeline: pipelines.getPipeline(params.id)
+  };
+})
 @observer
 export default class PipelineStorageRules extends React.Component {
   state = {createRuleDialogVisible: false};
+
+  rules;
+
+  constructor (props) {
+    super(props);
+    this.rules = new DataStorageRules(props.pipelineId);
+  }
+
+  componentDidUpdate (prevProps) {
+    if (prevProps.pipelineId !== this.props.pipelineId) {
+      this.rules = new DataStorageRules(this.props.pipelineId);
+    }
+  }
 
   rulesTableColumns = [
     {
@@ -96,9 +111,9 @@ export default class PipelineStorageRules extends React.Component {
       okText: 'OK',
       cancelText: 'Cancel',
       onOk: async () => {
-        await this.props.rules.deleteRule(rule);
-        if (this.props.rules.deleteRuleLastError) {
-          message.error(this.props.rules.deleteRuleLastError, 5);
+        await this.rules.deleteRule(rule);
+        if (this.rules.deleteRuleLastError) {
+          message.error(this.rules.deleteRuleLastError, 5);
         } else {
           message.destroy();
         }
@@ -107,9 +122,9 @@ export default class PipelineStorageRules extends React.Component {
   };
 
   createRule = async (rule) => {
-    await this.props.rules.createRule(rule);
-    if (this.props.rules.createRuleLastError) {
-      message.error(this.props.rules.createRuleLastError, 5);
+    await this.rules.createRule(rule);
+    if (this.rules.createRuleLastError) {
+      message.error(this.rules.createRuleLastError, 5);
     } else {
       message.destroy();
       this.closeCreateRuleDialog();
@@ -144,9 +159,9 @@ export default class PipelineStorageRules extends React.Component {
           className={styles.table}
           rowKey="fileMask"
           title={() => header}
-          loading={this.props.rules.pending}
+          loading={this.rules.pending}
           columns={this.rulesTableColumns}
-          dataSource={this.props.rules.list.map(i => i)}
+          dataSource={this.rules.list.map(i => i)}
           locale={{emptyText: 'Rules are not configured'}}
           pagination={{pageSize: 20}}
           size="small"
@@ -155,7 +170,7 @@ export default class PipelineStorageRules extends React.Component {
           visible={this.state.createRuleDialogVisible}
           onCancel={this.closeCreateRuleDialog}
           onSubmit={this.createRule}
-          pending={this.props.rules.pending}
+          pending={this.rules.pending}
           pipelineId={this.props.pipelineId}
         />
       </Row>

@@ -18,12 +18,12 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {
   Button,
-  Icon
+  Dropdown,
+  Space
 } from 'antd';
+import {DownOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import {observer, inject} from 'mobx-react';
-import Menu, {MenuItem} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
 import {
   getAllSkippedSystemParametersList
 } from '../../../form/utilities/launch-cluster';
@@ -156,23 +156,16 @@ class Parameters extends React.Component {
         </Button>
       );
     } else {
-      const menu = (
-        <div>
-          <Menu
-            selectedKeys={[]}
-            onSelect={onSelect}
-          >
-            <MenuItem id="add-string-parameter" key="string">String parameter</MenuItem>
-            <MenuItem id="add-boolean-parameter" key="boolean">Boolean parameter</MenuItem>
-            <MenuItem id="add-path-parameter" key="path">Path parameter</MenuItem>
-            <MenuItem id="add-input-parameter" key="input">Input path parameter</MenuItem>
-            <MenuItem id="add-output-parameter" key="output">Output path parameter</MenuItem>
-            <MenuItem id="add-common-parameter" key="common">Common path parameter</MenuItem>
-          </Menu>
-        </div>
-      );
+      const menuItems = [
+        {key: 'string', label: 'String parameter'},
+        {key: 'boolean', label: 'Boolean parameter'},
+        {key: 'path', label: 'Path parameter'},
+        {key: 'input', label: 'Input path parameter'},
+        {key: 'output', label: 'Output path parameter'},
+        {key: 'common', label: 'Common path parameter'}
+      ];
       button = (
-        <Button.Group>
+        <Space.Compact>
           <Button
             id="add-parameter-button"
             disabled={disabled || !editable}
@@ -181,7 +174,7 @@ class Parameters extends React.Component {
             Add parameter
           </Button>
           <Dropdown
-            overlay={menu}
+            menu={{items: menuItems, onClick: onSelect}}
             trigger={(disabled || !editable) ? [] : ['click']}
             placement="bottomRight"
           >
@@ -189,10 +182,10 @@ class Parameters extends React.Component {
               id="add-typed-parameter-button"
               disabled={disabled || !editable}
             >
-              <Icon type="down" />
+              <DownOutlined />
             </Button>
           </Dropdown>
-        </Button.Group>
+        </Space.Compact>
       );
     }
     return (

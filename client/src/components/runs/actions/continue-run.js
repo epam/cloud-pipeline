@@ -14,9 +14,10 @@
  *  limitations under the License.
  */
 import React from 'react';
-import {Button, Icon, message, Modal} from 'antd';
+import {Button, message, Modal} from 'antd';
+import {QuestionCircleFilled} from '@ant-design/icons';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import RunName from '../run-name';
 import roleModel from '../../../utils/roleModel';
 import {PipelineRunner} from '../../../models/pipelines/PipelineRunner';
@@ -33,7 +34,13 @@ function createRunContinuationConfirmationDialog () {
     promise = undefined;
     resolve = undefined;
 
-    @computed
+    constructor (props) {
+      super(props);
+      makeObservable(this, {
+        continueRunMessage: computed
+      });
+    }
+
     get continueRunMessage () {
       const {preferences} = this.props;
       return preferences.uiContinueRunConfirmation;
@@ -97,14 +104,14 @@ function createRunContinuationConfirmationDialog () {
         <Modal
           className="ant-confirm ant-confirm-confirm"
           onCancel={this.close}
-          visible={run !== undefined}
+          open={run !== undefined}
           footer={false}
         >
           {
             run && (
               <div className="ant-confirm-body-wrapper">
                 <div className="ant-confirm-body">
-                  <Icon type="question-circle" />
+                  <QuestionCircleFilled />
                   <span className="ant-confirm-title">
                     <div style={{display: 'flex', alignItems: 'center'}}>
                       <span>{'Continue '}</span>

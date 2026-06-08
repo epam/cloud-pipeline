@@ -15,10 +15,18 @@
  */
 
 import React from 'react';
-import {observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {
+  observer} from 'mobx-react';
 import PropTypes from 'prop-types';
-import {Modal, Row, Button, Dropdown, Icon, Table, Input, Select} from 'antd';
+import {Modal,
+  Row,
+  Button,
+  Dropdown,
+  Table,
+  Input,
+  Select
+} from 'antd';
+import {CaretRightOutlined, CheckCircleFilled, LoadingOutlined} from '@ant-design/icons';
 import LoadToolTags from '../../../../models/tools/LoadToolTags';
 import styles from './Browser.css';
 import registryName from '../../../tools/registryName';
@@ -52,9 +60,20 @@ export default class DockerImageBrowser extends React.Component {
     }
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+  }
+
+  componentDidMount () {
+    if (!this.state.registry && this.props.registries && this.props.registries.length > 0) {
+      this.setState({
+        registry: this.props.registries[0].path
+      }, this.updateGroups);
+    }
+  }
+
   get currentRegistry () {
-    const [currentRegistry] = this.state.registry
+    const [currentRegistry] = this.state.registry && this.props.registries
       ? this.props.registries.filter(g => g.path === this.state.registry)
       : [null];
     return currentRegistry;
@@ -90,7 +109,7 @@ export default class DockerImageBrowser extends React.Component {
     return (
       <Dropdown
         trigger={['click']}
-        overlay={
+        popupRender={() => (
           <div className={styles.navigationDropdownContainer}>
             {
               registries.map(registry => {
@@ -106,7 +125,8 @@ export default class DockerImageBrowser extends React.Component {
               })
             }
           </div>
-        }>
+        )}
+      >
         <Button size="small" style={{border: 'none', fontWeight: 'bold'}}>
           {this.currentRegistry ? registryName(this.currentRegistry) : 'Unknown registry'}
         </Button>
@@ -114,7 +134,6 @@ export default class DockerImageBrowser extends React.Component {
     );
   };
 
-  @computed
   get groups () {
     if (!this.currentRegistry) {
       return [];
@@ -122,7 +141,6 @@ export default class DockerImageBrowser extends React.Component {
     return (this.currentRegistry.groups || []).map(g => g);
   }
 
-  @computed
   get currentGroup () {
     const [currentGroup] = this.state.group ? this.groups.filter(g => g.name === this.state.group) : [null];
     return currentGroup;
@@ -150,7 +168,7 @@ export default class DockerImageBrowser extends React.Component {
     }
     if (this.groups.filter(r => r.id !== this.currentGroup.id).length === 0) {
       return [
-        <Icon type="caret-right" key="group-arrow" />,
+        <CaretRightOutlined key="group-arrow" />,
         <Button key="group" size="small" style={{border: 'none', fontWeight: 'bold'}} onClick={null}>
           {this.currentGroup ? renderGroupName(this.currentGroup) : 'Unknown group'}
         </Button>
@@ -190,13 +208,13 @@ export default class DockerImageBrowser extends React.Component {
       });
     };
     return [
-      <Icon type="caret-right" key="group-arrow" />,
+      <CaretRightOutlined key="group-arrow" />,
       <Dropdown
-        visible={this.state.groupsDropDownVisible}
-        onVisibleChange={onDropDownVisibleChanged}
+        open={this.state.groupsDropDownVisible}
+        onOpenChange={onDropDownVisibleChanged}
         key="group"
         trigger={['click']}
-        overlay={
+        popupRender={() => (
           <Row className={styles.navigationDropdownContainer}>
             <Row type="flex">
               <Input.Search
@@ -234,7 +252,8 @@ export default class DockerImageBrowser extends React.Component {
               }
             </div>
           </Row>
-        }>
+        )}
+      >
         <Button size="small" style={{border: 'none', fontWeight: 'bold'}}>
           {renderGroupName(this.currentGroup)}
         </Button>
@@ -249,7 +268,7 @@ export default class DockerImageBrowser extends React.Component {
     };
     if (this.currentGroup) {
       return [
-        <Icon key="tool-icon" type="caret-right" />,
+        <CaretRightOutlined key="tool-icon" />,
         <Input.Search
           key="tool-search"
           style={{flex: 1, marginLeft: 10}}
@@ -262,7 +281,6 @@ export default class DockerImageBrowser extends React.Component {
     return null;
   };
 
-  @computed
   get tools () {
     if (!this.currentGroup) {
       return [];
@@ -376,12 +394,12 @@ export default class DockerImageBrowser extends React.Component {
       {
         dataIndex: 'image',
         key: 'image',
-        onCellClick: (tool) => onSelect(tool),
+        onCell: (tool) => ({onClick: () => onSelect(tool)}),
         render: (image, tool) => {
           if (toolIsSelected(tool)) {
             return (
               <span>
-                <Icon type="check-circle" style={{width: 20}} />
+                <CheckCircleFilled style={{width: 20}} />
                 {image}
               </span>
             );
@@ -393,16 +411,16 @@ export default class DockerImageBrowser extends React.Component {
       {
         key: 'version',
         className: styles.toolColumnTags,
-        onCellClick: (tool) => {
+        onCell: (tool) => ({onClick: () => {
           if (!toolIsSelected(tool)) {
             return onSelect(tool);
           }
-        },
+        }}),
         render: (tool) => {
           if (toolIsSelected(tool)) {
             const {tagsPending, tagsError, tags = []} = this.state;
             if (tagsPending) {
-              return <Icon type="loading" />;
+              return <LoadingOutlined />;
             }
             if (tagsError) {
               return <i>Error loading tags</i>;
@@ -450,7 +468,7 @@ export default class DockerImageBrowser extends React.Component {
       <Modal
         width="50%"
         title="Select docker image"
-        visible={this.props.visible}
+        open={this.props.visible}
         onCancel={this.props.onCancel}
         onOk={this.onSave}>
         <Row type="flex" align="middle" style={{marginBottom: 10}}>
@@ -520,11 +538,11 @@ export default class DockerImageBrowser extends React.Component {
     }
   };
 
-  componentWillReceiveProps (nextProps) {
-    if (nextProps.dockerImage !== this.props.dockerImage || nextProps.visible) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
+    if (nextProps.dockerImage !== this.props.dockerImage || (nextProps.visible && !this.props.visible)) {
       this.parseDockerImage(nextProps.dockerImage);
     }
-    if (nextProps.visible) {
+    if (nextProps.visible && !this.props.visible) {
       this.loadToolTags();
     }
   }
@@ -569,9 +587,15 @@ export default class DockerImageBrowser extends React.Component {
     }
   };
 
-  componentDidUpdate (nextProps, nextState) {
-    if (nextState.registry !== this.state.registry || nextProps.registries !== this.props.registries) {
-      this.updateGroups();
+  componentDidUpdate (prevProps, prevState) {
+    if (prevProps.registries !== this.props.registries) {
+      if (!this.state.registry && this.props.registries && this.props.registries.length > 0) {
+        this.setState({
+          registry: this.props.registries[0].path
+        }, this.updateGroups);
+      } else {
+        this.updateGroups();
+      }
     } else if (!this.state.registry && this.props.registries && this.props.registries.length > 0) {
       this.setState({
         registry: this.props.registries[0].path
@@ -595,7 +619,7 @@ export default class DockerImageBrowser extends React.Component {
         }
       }
     }
-    if (this.state.group && nextState.group !== this.state.group) {
+    if (this.state.group && prevState.group !== this.state.group) {
       this.updateTools();
     }
   }

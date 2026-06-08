@@ -17,7 +17,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Icon, Button} from 'antd';
+import {Button} from 'antd';
+import {DownloadOutlined, LoadingOutlined} from '@ant-design/icons';
 import {downloadStorageItems} from '../../../../special/download-omics-storage-items';
 
 export default class DownloadOmicsButton extends React.Component {
@@ -80,7 +81,7 @@ export default class DownloadOmicsButton extends React.Component {
         style={style}
         className={classNames('cp-button', className)}
         onClick={(e) => this.handleClick(e)}>
-        <Icon type={pending ? 'loading' : 'download'} />
+        {pending ? <LoadingOutlined /> : <DownloadOutlined />}
       </Button>
     );
   }

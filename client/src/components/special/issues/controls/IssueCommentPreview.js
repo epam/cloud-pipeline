@@ -85,11 +85,11 @@ export default class IssueCommentPreview extends React.Component {
         <Modal
           width={this.state.previewWidth}
           height={this.state.previewHeight}
-          bodyStyle={{padding: 0}}
+          styles={{body: {padding: 0}}}
           onCancel={this.onClosePreview}
           footer={false}
           title={this.state.previewName}
-          visible={!!this.state.previewUrl}>
+          open={!!this.state.previewUrl}>
           <img src={this.state.previewUrl} style={{width: '100%', height: '100%'}} />
         </Modal>
       </div>

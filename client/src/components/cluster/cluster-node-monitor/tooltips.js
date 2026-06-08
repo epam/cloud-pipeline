@@ -57,8 +57,8 @@ function renderStatisticsGrid ({
   const {gpuId, key} = hoveredItem;
   const {gpuUsage = {}, gpuDetails = {}} = record || {};
   const columns = Math.min(MAX_CELLS_IN_ROW, Math.max(1, Object.keys(gpuDetails).length));
-  const primaryColor = themeConfiguration['@primary-color'] || '#108ee9';
-  const greyColor = themeConfiguration['@color-grey-semi-transparent'] || '#777';
+  const primaryColor = themeConfiguration['--cp-color-primary'] || '#108ee9';
+  const greyColor = themeConfiguration['--cp-color-grey-faint'] || '#777';
   const renderGrid = ({
     title,
     dataKey,

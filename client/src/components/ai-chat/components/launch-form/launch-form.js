@@ -17,9 +17,15 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {autorun, computed} from 'mobx';
-import {observer, inject} from 'mobx-react';
-import {Alert, Icon, Button, Spin, message} from 'antd';
+import {autorun, computed, makeObservable} from 'mobx';
+import {observer,
+  inject} from 'mobx-react';
+import {Alert,
+  Button,
+  Spin,
+  message
+} from 'antd';
+import {LoadingOutlined} from '@ant-design/icons';
 import {Environment, LaunchFormInfo, ParameterGroup} from './index';
 import LaunchFormStore from './launch-form-store';
 import {getDockerImage} from '../../../../utils/get-docker-image';
@@ -41,7 +47,7 @@ const DEFAULT_REGISTRY_ID = 1;
   'allowedInstanceTypes',
   'dockerRegistries',
   'awsRegions',
-  'router',
+  'routing',
   'authenticatedUserInfo',
   'preferences',
   'pipelines'
@@ -51,6 +57,14 @@ const DEFAULT_REGISTRY_ID = 1;
 export default class LaunchForm extends React.Component {
   constructor (props) {
     super(props);
+    makeObservable(this, {
+      isAdmin: computed,
+      registries: computed,
+      dockerRegistry: computed,
+      defaultTag: computed,
+      awsRegions: computed,
+      defaultCloudRegionId: computed
+    });
     this.formStore = new LaunchFormStore();
   }
 
@@ -81,7 +95,6 @@ export default class LaunchForm extends React.Component {
     }
   }
 
-  @computed
   get isAdmin () {
     const {authenticatedUserInfo} = this.props;
     if (authenticatedUserInfo.loaded) {
@@ -90,7 +103,6 @@ export default class LaunchForm extends React.Component {
     return false;
   }
 
-  @computed
   get registries () {
     if (this.props.dockerRegistries.loaded) {
       return this.props.dockerRegistries.value.registries;
@@ -98,7 +110,6 @@ export default class LaunchForm extends React.Component {
     return [];
   }
 
-  @computed
   get dockerRegistry () {
     if (this.registries.length > 0 && this.formStore.toolInfo) {
       return this.registries
@@ -107,7 +118,6 @@ export default class LaunchForm extends React.Component {
     return null;
   }
 
-  @computed
   get defaultTag () {
     if (this.fotmStore.versions?.length) {
       const latest = this.formStore.versions.find(v => v.version === 'latest');
@@ -120,7 +130,6 @@ export default class LaunchForm extends React.Component {
     return null;
   }
 
-  @computed
   get awsRegions () {
     if (this.props.awsRegions.loaded) {
       return (this.props.awsRegions.value || []).map(r => r);
@@ -128,7 +137,6 @@ export default class LaunchForm extends React.Component {
     return [];
   }
 
-  @computed
   get defaultCloudRegionId () {
     const [defaultRegion] = this.awsRegions.filter(r => r.default);
     if (defaultRegion) {
@@ -401,7 +409,7 @@ export default class LaunchForm extends React.Component {
 
   render () {
     if (this.formStore?.error) {
-      return <Alert type="error" message={this.formStore.error} />;
+      return <Alert type="error" title={this.formStore.error} />;
     }
     if (this.formStore.pending) {
       return <Spin />;
@@ -417,7 +425,7 @@ export default class LaunchForm extends React.Component {
             type="primary"
             onClick={this.onLaunch}
             disabled={this.state.launchPending || this.formStore.runLaunched}>
-            {this.state.launchPending ? (<Icon type="loading" />) : null}
+            {this.state.launchPending ? (<LoadingOutlined />) : null}
             {this.formStore.runLaunched ? (
               'LAUNCHED'
             ) : (

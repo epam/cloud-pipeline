@@ -17,18 +17,19 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {observer} from 'mobx-react';
-import {observable, computed} from 'mobx';
+import {
+  observer} from 'mobx-react';
+import {observable, computed, makeObservable} from 'mobx';
 import {
   Button,
   Input,
   Form,
   Row,
   Col,
-  Icon,
   Checkbox,
-  message
+  Space
 } from 'antd';
+import {EditOutlined, PictureOutlined} from '@ant-design/icons';
 import UsersRolesSelect from '../../../../../special/users-roles-select';
 import CodeEditor from '../../../../../special/CodeEditor';
 import EmailPreview from '../../../../../../components/settings/forms/EmailPreview';
@@ -63,11 +64,19 @@ class NotificationForm extends React.Component {
   state = {
     previewMode: false,
     pending: false
-  }
-
-  @observable systemTemplate;
+  };
+  systemTemplate;
 
   notifyFormContainer;
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      systemTemplate: observable,
+      initialBody: computed,
+      initialSubject: computed
+    });
+  }
 
   componentDidMount () {
     this.fetchEmailSettings();
@@ -82,7 +91,6 @@ class NotificationForm extends React.Component {
     }
   }
 
-  @computed
   get initialBody () {
     const {rule} = this.props;
     if (rule.notification && rule.notification.body) {
@@ -94,7 +102,6 @@ class NotificationForm extends React.Component {
     return undefined;
   }
 
-  @computed
   get initialSubject () {
     const {rule} = this.props;
     if (rule.notification && rule.notification.subject) {
@@ -108,7 +115,7 @@ class NotificationForm extends React.Component {
 
   get notifyUsers () {
     const {form} = this.props;
-    return form.getFieldValue('notification.notifyUsers');
+    return form && form.getFieldValue('notification.notifyUsers');
   }
 
   fetchEmailSettings = () => {
@@ -127,14 +134,13 @@ class NotificationForm extends React.Component {
   checkRequiredFields = () => {
     setTimeout(() => {
       const {form} = this.props;
-      form.validateFields(
-        [
+      if (form) {
+        form.validateFields([
           'notification.recipients',
           'notification.body',
           'notification.subject'
-        ],
-        {force: true}
-      );
+        ]).catch(() => {});
+      }
     });
   };
 
@@ -154,7 +160,6 @@ class NotificationForm extends React.Component {
       useDefaultNotify
     } = this.props;
     const {previewMode, pending} = this.state;
-    const {getFieldDecorator} = form;
     if (useDefaultNotify) {
       return null;
     }
@@ -166,20 +171,20 @@ class NotificationForm extends React.Component {
           style={{marginBottom: 5}}
         >
           <Col offset={3}>
-            <Button.Group size="small">
+            <Space.Compact size="small">
               <Button
                 type={this.state.previewMode ? 'default' : 'primary'}
                 style={{width: 80}}
                 onClick={() => this.setPreviewMode(false)}>
-                <Icon type="edit" />Edit
+                <EditOutlined />Edit
               </Button>
               <Button
                 type={!this.state.previewMode ? 'default' : 'primary'}
                 style={{width: 80}}
                 onClick={() => this.setPreviewMode(true)}>
-                <Icon type="picture" />Preview
+                <PictureOutlined />Preview
               </Button>
-            </Button.Group>
+            </Space.Compact>
           </Col>
         </Row>
         <Row>
@@ -188,18 +193,15 @@ class NotificationForm extends React.Component {
             className={styles.formItem}
             label="Subject"
             style={{display: previewMode ? 'none' : 'inherit'}}
+            name={['notification', 'subject']}
+            rules={[{
+              required: !notificationsDisabled,
+              message: ' '
+            }]}
           >
-            {getFieldDecorator('notification.subject', {
-              initialValue: this.initialSubject,
-              rules: [{
-                required: !notificationsDisabled,
-                message: ' '
-              }]
-            })(
-              <Input
-                disabled={notificationsDisabled || pending}
-              />
-            )}
+            <Input
+              disabled={notificationsDisabled || pending}
+            />
           </Form.Item>
           <Row
             style={{
@@ -226,7 +228,7 @@ class NotificationForm extends React.Component {
                   overflow: 'hidden',
                   border: 'transparent'
                 }}
-                value={form.getFieldValue('notification.subject')}
+                value={form ? form.getFieldValue(['notification', 'subject']) : undefined}
               />
             </Col>
           </Row>
@@ -237,25 +239,22 @@ class NotificationForm extends React.Component {
             className={styles.formItem}
             label="Notification"
             style={{display: previewMode ? 'none' : 'inherit'}}
+            name={['notification', 'body']}
+            valuePropName="code"
+            rules={[{
+              required: !notificationsDisabled,
+              message: ' '
+            }]}
           >
-            {getFieldDecorator('notification.body', {
-              valuePropName: 'code',
-              initialValue: this.initialBody,
-              rules: [{
-                required: !notificationsDisabled,
-                message: ' '
-              }]
-            })(
-              <CodeEditor
-                className={classNames(
-                  styles.codeEditor,
-                  'cp-code-editor'
-                )}
-                language="application/x-jsp"
-                lineWrapping
-                readOnly={notificationsDisabled || pending}
-              />
-            )}
+            <CodeEditor
+              className={classNames(
+                styles.codeEditor,
+                'cp-code-editor'
+              )}
+              language="application/x-jsp"
+              lineWrapping
+              readOnly={notificationsDisabled || pending}
+            />
           </Form.Item>
           <div style={{display: previewMode ? 'flex' : 'none'}}>
             <Col offset={3} style={{width: '100%'}}>
@@ -272,7 +271,7 @@ class NotificationForm extends React.Component {
                   width: '100%',
                   borderRadius: 4
                 }}
-                value={form.getFieldValue('notification.body')}
+                value={form ? form.getFieldValue(['notification', 'body']) : undefined}
               />
             </Col>
             <Col offset={2} />
@@ -284,13 +283,10 @@ class NotificationForm extends React.Component {
 
   render () {
     const {
-      form,
-      rule,
       notificationsDisabled,
       useDefaultNotify
     } = this.props;
     const {pending} = this.state;
-    const {getFieldDecorator} = form;
     return (
       <div
         style={{width: '100%'}}
@@ -301,19 +297,14 @@ class NotificationForm extends React.Component {
           <Form.Item
             className={styles.formItem}
             style={{marginLeft: 10}}
+            name={['notification', 'disabled']}
+            valuePropName="checked"
           >
-            {getFieldDecorator('notification.disabled', {
-              valuePropName: 'checked',
-              initialValue: rule.notification && rule.notification.enabled !== undefined
-                ? !rule.notification.enabled
-                : false
-            })(
-              <Checkbox
-                disabled={pending}
-              >
-                Disable all notifications for the current rule
-              </Checkbox>
-            )}
+            <Checkbox
+              disabled={pending}
+            >
+              Disable all notifications for the current rule
+            </Checkbox>
           </Form.Item>
         </Row>
         <Row>
@@ -321,25 +312,19 @@ class NotificationForm extends React.Component {
             {...fullWidthLayout}
             className={styles.formItem}
             label="Recipients"
+            name={['notification', 'recipients']}
+            rules={[{
+              required: !notificationsDisabled && !this.notifyUsers,
+              message: ' '
+            }]}
           >
-            {getFieldDecorator('notification.recipients', {
-              type: 'array',
-              initialValue: rule.notification && rule.notification.recipients
-                ? rule.notification.recipients
-                : [],
-              rules: [{
-                required: !notificationsDisabled && !this.notifyUsers,
-                message: ' '
-              }]
-            })(
-              <UsersRolesSelect
-                disabled={notificationsDisabled || pending}
-                style={{flex: 1}}
-                dropdownStyle={{maxHeight: '80%'}}
-                popupContainerFn={() => this.notifyFormContainer}
-                onChange={this.checkRequiredFields}
-              />
-            )}
+            <UsersRolesSelect
+              disabled={notificationsDisabled || pending}
+              style={{flex: 1}}
+              styles={{popup: {root: {maxHeight: '80%'}}}}
+              popupContainerFn={() => this.notifyFormContainer}
+              onChange={this.checkRequiredFields}
+            />
           </Form.Item>
         </Row>
         <Row>
@@ -348,20 +333,15 @@ class NotificationForm extends React.Component {
             className={styles.formItem}
             label=" "
             colon={false}
+            name={['notification', 'notifyUsers']}
+            valuePropName="checked"
           >
-            {getFieldDecorator('notification.notifyUsers', {
-              valuePropName: 'checked',
-              initialValue: rule.notification && rule.notification.notifyUsers !== undefined
-                ? rule.notification.notifyUsers
-                : false
-            })(
-              <Checkbox
-                disabled={notificationsDisabled || pending}
-                onChange={this.checkRequiredFields}
-              >
-                Storage users
-              </Checkbox>
-            )}
+            <Checkbox
+              disabled={notificationsDisabled || pending}
+              onChange={this.checkRequiredFields}
+            >
+              Storage users
+            </Checkbox>
           </Form.Item>
         </Row>
         <Row
@@ -373,16 +353,11 @@ class NotificationForm extends React.Component {
               {...columnLayout}
               className={styles.formItem}
               label="Notice period (days)"
+              name={['notification', 'notifyBeforeDays']}
             >
-              {getFieldDecorator('notification.notifyBeforeDays', {
-                initialValue: rule.notification && rule.notification.notifyBeforeDays
-                  ? rule.notification.notifyBeforeDays
-                  : undefined
-              })(
-                <Input
-                  disabled={notificationsDisabled || pending}
-                />
-              )}
+              <Input
+                disabled={notificationsDisabled || pending}
+              />
             </Form.Item>
           </Col>
           <Col style={{width: '50%'}}>
@@ -392,17 +367,11 @@ class NotificationForm extends React.Component {
               wrapperCol={{sm: {span: 12}}}
               className={styles.formItem}
               label="Prolongation period (days)"
+              name={['notification', 'prolongDays']}
             >
-              {getFieldDecorator('notification.prolongDays', {
-                initialValue: rule.notification && rule.notification.prolongDays
-                  ? rule.notification.prolongDays
-                  : undefined
-
-              })(
-                <Input
-                  disabled={notificationsDisabled || pending}
-                />
-              )}
+              <Input
+                disabled={notificationsDisabled || pending}
+              />
             </Form.Item>
           </Col>
         </Row>

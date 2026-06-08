@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {inject, observer} from 'mobx-react';
+import {inject} from 'mobx-react';
 import {HIDDEN_OBJECTS_INJECTION} from './hoc';
 import treeFilter from './tree-filter';
 
@@ -23,7 +23,7 @@ export default function injectTreeFilter (WrappedComponent) {
     inject(({hiddenObjects}) => ({
       hiddenObjectsTreeFilter: treeFilter(hiddenObjects)
     }))(
-      observer(WrappedComponent)
+      WrappedComponent
     )
   );
 }

@@ -16,7 +16,8 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {withRouter} from '../../../../utils/with-router';
+import {computed, makeObservable} from 'mobx';
 import {Alert} from 'antd';
 import classNames from 'classnames';
 import OverallPoolChart from './charts/overall-pool-chart';
@@ -41,8 +42,8 @@ import ResourseSharingPoolTable from './resourse-sharing-pool-table';
   const {
     location = {}
   } = params || {};
-  const {query} = location;
-  const {pool: poolString} = query;
+  const {search = ''} = location;
+  const poolString = new URLSearchParams(search).get('pool');
   return {
     currentPoolId: Number.isNaN(Number(poolString))
       ? undefined
@@ -62,20 +63,36 @@ class HotClusterUsage extends React.Component {
     currentPoolId: undefined
   }
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      colors: computed,
+      pendingBarColor: computed,
+      totalBarColor: computed,
+      runsColors: computed,
+      cpuColors: computed,
+      ramColors: computed,
+      gpuColors: computed,
+      limitColor: computed,
+      backgroundColor: computed,
+      lineColor: computed,
+      textColor: computed
+    });
+  }
+
   get colors () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
       return [
-        '@primary-color',
-        '@color-green',
-        '@color-yellow',
-        '@color-violet',
-        '@color-red',
-        '@color-aqua',
-        '@color-grey',
-        '@color-blue-dimmed',
-        '@color-aqua-light'
+        '--cp-color-primary',
+        '--cp-color-green',
+        '--cp-color-yellow',
+        '--cp-color-violet',
+        '--cp-color-red',
+        '--cp-color-aqua',
+        '--cp-color-grey',
+        '--cp-color-blue-dimmed',
+        '--cp-color-aqua-light'
       ]
         .map(color => themes.currentThemeConfiguration[color])
         .filter(Boolean);
@@ -83,30 +100,27 @@ class HotClusterUsage extends React.Component {
     return colors;
   }
 
-  @computed
   get pendingBarColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@application-background-color'];
+      return themes.currentThemeConfiguration['--cp-color-bg-layout'];
     }
     return getColor(1);
   }
 
-  @computed
   get totalBarColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@color-pink'];
+      return themes.currentThemeConfiguration['--cp-color-pink'];
     }
     return getColor(2);
   }
 
-  @computed
   get runsColors () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
       return {
-        active: themes.currentThemeConfiguration['@primary-color'],
+        active: themes.currentThemeConfiguration['--cp-color-primary'],
         pending: this.pendingBarColor,
         total: this.totalBarColor
       };
@@ -118,12 +132,11 @@ class HotClusterUsage extends React.Component {
     };
   }
 
-  @computed
   get cpuColors () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
       return {
-        active: themes.currentThemeConfiguration['@color-green'],
+        active: themes.currentThemeConfiguration['--cp-color-green'],
         pending: this.pendingBarColor,
         total: this.totalBarColor
       };
@@ -135,12 +148,11 @@ class HotClusterUsage extends React.Component {
     };
   }
 
-  @computed
   get ramColors () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
       return {
-        active: themes.currentThemeConfiguration['@color-blue-dimmed'],
+        active: themes.currentThemeConfiguration['--cp-color-blue-dimmed'],
         pending: this.pendingBarColor,
         total: this.totalBarColor
       };
@@ -152,12 +164,11 @@ class HotClusterUsage extends React.Component {
     };
   }
 
-  @computed
   get gpuColors () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
       return {
-        active: themes.currentThemeConfiguration['@color-violet'],
+        active: themes.currentThemeConfiguration['--cp-color-violet'],
         pending: this.pendingBarColor,
         total: this.totalBarColor
       };
@@ -169,40 +180,36 @@ class HotClusterUsage extends React.Component {
     };
   }
 
-  @computed
   get limitColor () {
     const {themes} = this.props;
     const defaultLimitColor = '#ff4d4f';
     if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@color-pink'] || defaultLimitColor;
+      return themes.currentThemeConfiguration['--cp-color-pink'] || defaultLimitColor;
     }
     return defaultLimitColor;
   }
 
-  @computed
   get backgroundColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@card-background-color'] ||
+      return themes.currentThemeConfiguration['--cp-color-bg-elevated'] ||
         backgroundColor;
     }
     return backgroundColor;
   }
 
-  @computed
   get lineColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@card-border-color'] || lineColor;
+      return themes.currentThemeConfiguration['--cp-color-border-card'] || lineColor;
     }
     return lineColor;
   }
 
-  @computed
   get textColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@application-color'] || textColor;
+      return themes.currentThemeConfiguration['--cp-color-text'] || textColor;
     }
     return textColor;
   }
@@ -326,7 +333,7 @@ class HotClusterUsage extends React.Component {
         {
           error && (
             <div>
-              <Alert type="error" message={error} />
+              <Alert type="error" title={error} />
             </div>
           )
         }
@@ -491,4 +498,4 @@ class HotClusterUsage extends React.Component {
   }
 }
 
-export default HotClusterUsage;
+export default withRouter(HotClusterUsage);

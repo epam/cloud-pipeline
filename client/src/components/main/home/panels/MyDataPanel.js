@@ -17,7 +17,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {withRouter} from '../../../../utils/with-router';
+import {computed, makeObservable} from 'mobx';
 import {Alert, Row} from 'antd';
 import classNames from 'classnames';
 import LoadingView from '../../../special/LoadingView';
@@ -31,7 +32,7 @@ import styles from './Panel.css';
 @roleModel.authenticationInfo
 @inject('dataStorages', 'hiddenObjects', 'pipelinesLibrary')
 @observer
-export default class MyDataPanel extends React.Component {
+class MyDataPanel extends React.Component {
   static propTypes = {
     panelKey: PropTypes.string,
     onInitialize: PropTypes.func
@@ -47,7 +48,13 @@ export default class MyDataPanel extends React.Component {
       (item.pathMask && item.pathMask.toLowerCase().indexOf(search.toLowerCase()) >= 0);
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      storages: computed
+    });
+  }
+
   get storages () {
     if (
       this.props.dataStorages.loaded &&
@@ -144,13 +151,13 @@ export default class MyDataPanel extends React.Component {
       return <LoadingView />;
     }
     if (this.props.dataStorages.error) {
-      return <Alert type="warning" message={this.props.dataStorages.error} />;
+      return <Alert type="warning" title={this.props.dataStorages.error} />;
     }
     if (!this.props.authenticatedUserInfo.loaded && this.props.authenticatedUserInfo.pending) {
       return <LoadingView />;
     }
     if (this.props.authenticatedUserInfo.error) {
-      return (<Alert type="warning" message={this.props.authenticatedUserInfo.error} />);
+      return (<Alert type="warning" title={this.props.authenticatedUserInfo.error} />);
     }
     return (
       <div className={styles.container} style={{display: 'flex', flexDirection: 'column'}}>
@@ -168,3 +175,5 @@ export default class MyDataPanel extends React.Component {
     this.props.dataStorages.fetch();
   }
 }
+
+export default withRouter(MyDataPanel);

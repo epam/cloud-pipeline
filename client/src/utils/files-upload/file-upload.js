@@ -1,4 +1,4 @@
-import {observable} from 'mobx';
+import {observable, makeObservable} from 'mobx';
 import moment from 'moment-timezone';
 import dataStorages from '../../models/dataStorage/DataStorages';
 import DataStorageItemUpdate from '../../models/dataStorage/DataStorageItemUpdate';
@@ -80,15 +80,24 @@ class FileUpload {
     return `${root}${name}.${guid}.${ext}`;
   };
 
-  @observable error;
-  @observable progress; // 0..100
-  @observable indeterminate = false;
-  @observable done = false;
-  @observable fullStoragePath;
-  @observable cloudDataPath;
-  @observable resolvedPath;
+  error;
+  progress; // 0..100
+  indeterminate = false;
+  done = false;
+  fullStoragePath;
+  cloudDataPath;
+  resolvedPath;
 
   constructor (file, uploadStorageId, uploadPath) {
+    makeObservable(this, {
+      error: observable,
+      progress: observable,
+      indeterminate: observable,
+      done: observable,
+      fullStoragePath: observable,
+      cloudDataPath: observable,
+      resolvedPath: observable
+    });
     this.file = file;
     this.uploadStorageId = uploadStorageId;
     this.uploadPath = uploadPath;

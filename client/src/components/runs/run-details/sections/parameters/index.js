@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
 import {Popover, Row} from 'antd';
 import DataStorageLink from '../../../../special/data-storage-link';
 import AdaptedLink from '../../../../special/AdaptedLink';

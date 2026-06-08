@@ -17,7 +17,6 @@
 import React from 'react';
 import {
   Button,
-  Icon,
   Input,
   Modal,
   Row,
@@ -26,6 +25,7 @@ import {
   message,
   Popover
 } from 'antd';
+import {TeamOutlined, CopyOutlined} from '@ant-design/icons';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import DataStorageItemPermissionsForm from './DataStorageItemPermissionsForm';
@@ -57,7 +57,7 @@ const SidInfo = ({sid, style}) => {
     <span
       style={style}
     >
-      <Icon type="team" />
+      <TeamOutlined />
       {sid.name}
     </span>
   );
@@ -448,7 +448,7 @@ class SharedItemInfo extends React.Component {
           style={{
             marginLeft: 5
           }}
-          icon="copy"
+          icon={<CopyOutlined />}
         />
       </div>
     );
@@ -538,14 +538,16 @@ class SharedItemInfo extends React.Component {
     );
     return (
       <Modal
-        visible={this.props.visible}
+        open={this.props.visible}
         title={
           editPermissionsMode ? selectUsersTitle : defaultTitle
         }
         onCancel={this.closeShareDialog}
         footer={this.renderModalFooter()}
-        bodyStyle={{
-          padding: 10
+        styles={{
+          body: {
+            padding: 10
+          }
         }}
       >
         <div>
@@ -553,7 +555,7 @@ class SharedItemInfo extends React.Component {
             error && (
               <Alert
                 type="error"
-                message={error}
+                title={error}
                 style={{marginBottom: 5}}
               />
             )
@@ -568,7 +570,7 @@ class SharedItemInfo extends React.Component {
   }
 }
 
-SharedItemInfo.PropTypes = {
+SharedItemInfo.propTypes = {
   shareItems: PropTypes.array,
   close: PropTypes.func,
   visible: PropTypes.bool

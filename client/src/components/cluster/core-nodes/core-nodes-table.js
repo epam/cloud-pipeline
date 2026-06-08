@@ -16,6 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
+import {withRouter} from '../../../utils/with-router';
 import moment from 'moment-timezone';
 import classNames from 'classnames';
 import {
@@ -51,7 +52,7 @@ import styles from '../Cluster.css';
   };
 })
 @observer
-export default class CoreNodesTable extends localization.LocalizedReactComponent {
+class CoreNodesTable extends localization.LocalizedReactComponent {
   state = {
     appliedFilter: {
       haveRunId: null,
@@ -333,9 +334,11 @@ export default class CoreNodesTable extends localization.LocalizedReactComponent
     );
     return {
       filterDropdown,
-      filterDropdownVisible: this.state.filter[parameter].visible,
+      filterDropdownProps: {
+        open: this.state.filter[parameter].visible,
+        onOpenChange: this.onFilterDropdownVisibleChange(parameter)
+      },
       filtered: this.state.filter[parameter].filtered(),
-      onFilterDropdownVisibleChange: this.onFilterDropdownVisibleChange(parameter),
       filteredValue: this.state.filter[parameter].filtered()
         ? [this.state.filter[parameter].value] : []
     };
@@ -413,7 +416,7 @@ export default class CoreNodesTable extends localization.LocalizedReactComponent
         title: 'Name',
         sorter: alphabeticNameSorter,
         className: styles.clusterNodeRowName,
-        onCellClick: this.onNodeInstanceSelect
+        onCell: (record) => ({onClick: () => this.onNodeInstanceSelect(record)})
       },
       {
         dataIndex: 'pipelineRun',
@@ -421,7 +424,7 @@ export default class CoreNodesTable extends localization.LocalizedReactComponent
         title: this.localizedString('Pipeline'),
         render: pipelineRun => this.renderPipelineName(pipelineRun),
         className: styles.clusterNodeRowPipeline,
-        onCellClick: this.onNodeInstanceSelect
+        onCell: (record) => ({onClick: () => this.onNodeInstanceSelect(record)})
       },
       {
         dataIndex: 'labels',
@@ -431,7 +434,7 @@ export default class CoreNodesTable extends localization.LocalizedReactComponent
         ...this.getInputFilter('runId', 'Run Id'),
         sorter: runSorter,
         className: styles.clusterNodeRowLabels,
-        onCellClick: this.onNodeInstanceSelect
+        onCell: (record) => ({onClick: () => this.onNodeInstanceSelect(record)})
       },
       {
         dataIndex: 'addresses',
@@ -440,7 +443,7 @@ export default class CoreNodesTable extends localization.LocalizedReactComponent
         ...this.getInputFilter('address', 'IP'),
         className: styles.clusterNodeRowAddresses,
         render: (addresses) => addressesCellContent(addresses),
-        onCellClick: this.onNodeInstanceSelect
+        onCell: (record) => ({onClick: () => this.onNodeInstanceSelect(record)})
       },
       {
         dataIndex: 'created',
@@ -449,7 +452,7 @@ export default class CoreNodesTable extends localization.LocalizedReactComponent
         sorter: dateSorter,
         className: styles.clusterNodeRowCreated,
         render: (date) => createdCellContent(date),
-        onCellClick: this.onNodeInstanceSelect
+        onCell: (record) => ({onClick: () => this.onNodeInstanceSelect(record)})
       }
     ];
     const dataSource = [];
@@ -475,7 +478,7 @@ export default class CoreNodesTable extends localization.LocalizedReactComponent
         pagination={{pageSize: 25}}
         rowClassName={(item) => `cluster-row-${item.name}`}
         size="small"
-        onRowClick={onNodeInstanceSelect}
+        onRow={(record) => ({ onClick: () => onNodeInstanceSelect(record) })}
       />
     );
   }
@@ -510,4 +513,6 @@ export default class CoreNodesTable extends localization.LocalizedReactComponent
       </div>
     );
   }
-};
+}
+
+export default withRouter(CoreNodesTable);

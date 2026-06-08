@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {
   Button,
   Select,
@@ -50,6 +50,14 @@ class SelectionDownloadCommand extends React.Component {
     os: undefined
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      commandConfiguration: computed,
+      dataStorages: computed
+    });
+  }
+
   componentDidMount () {
     const {preferences, dataStorages} = this.props;
     preferences
@@ -58,7 +66,6 @@ class SelectionDownloadCommand extends React.Component {
     dataStorages.fetchIfNeededOrWait();
   }
 
-  @computed
   get commandConfiguration () {
     const {preferences} = this.props;
     if (preferences.loaded && preferences.facetedFilterDownload) {
@@ -72,7 +79,6 @@ class SelectionDownloadCommand extends React.Component {
     return Object.keys(this.commandConfiguration);
   }
 
-  @computed
   get dataStorages () {
     if (this.props.dataStorages.loaded) {
       return this.props.dataStorages.value || [];
@@ -119,7 +125,7 @@ class SelectionDownloadCommand extends React.Component {
       ...items.map(mapItemTemplate),
       after
     ].filter(Boolean).join('\n');
-  };
+  }
 
   /**
    * @returns {{after: string, before: string, template: string}}
@@ -240,7 +246,7 @@ class SelectionDownloadCommand extends React.Component {
     }
     return (
       <Modal
-        visible={visible}
+        open={visible}
         onCancel={this.onClose}
         title="Generate download command"
         width="50vw"
@@ -275,7 +281,7 @@ class SelectionDownloadCommand extends React.Component {
                 type="info"
                 showIcon
                 style={{marginBottom: 5}}
-                message={(
+                title={(
                   <div>
                     {
                       skipped > 0 && (

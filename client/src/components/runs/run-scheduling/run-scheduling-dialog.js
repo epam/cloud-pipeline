@@ -16,9 +16,11 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Button, Icon, Modal, Row, Select, TimePicker} from 'antd';
+import {Button, Modal, Row, Select, TimePicker} from 'antd';
+import {PlusOutlined, DeleteOutlined, ReloadOutlined} from '@ant-design/icons';
 import {observer} from 'mobx-react';
 import moment from 'moment-timezone';
+import dayjs from 'dayjs';
 import classNames from 'classnames';
 import {
   DailyForm,
@@ -322,7 +324,7 @@ export default class RunScheduleDialog extends React.Component {
   };
 
   renderTimePicker = ({removed, schedule}, i) => {
-    const onTimeChange = (moment, timeString) => {
+    const onTimeChange = (time, timeString) => {
       const {rules} = this.state;
       const [hours, minutes] = timeString.split(':');
 
@@ -330,11 +332,13 @@ export default class RunScheduleDialog extends React.Component {
       this.setState({rules});
     };
     const format = 'HH:mm';
+    const valueMoment = moment(`${schedule.time.hours}:${schedule.time.minutes}`, format);
+    const valueDayjs = valueMoment.isValid() ? dayjs(valueMoment.valueOf()) : null;
     return (
       <div style={{marginRight: 15, marginLeft: 'auto'}}>
         at
         <TimePicker
-          allowEmpty={false}
+          allowClear={false}
           disabled={removed}
           hideDisabledOptions
           format={format}
@@ -348,7 +352,7 @@ export default class RunScheduleDialog extends React.Component {
             return disabledMinutes;
           }}
           onChange={onTimeChange}
-          value={moment(`${schedule.time.hours}:${schedule.time.minutes}`, format)}
+          value={valueDayjs}
           size="small"
           style={{marginLeft: 10, width: 70}}
         />
@@ -450,16 +454,16 @@ export default class RunScheduleDialog extends React.Component {
                 <Button
                   onClick={() => { this.onRuleRemove(i); }}
                   shape="circle"
-                  icon="delete"
+                  icon={<DeleteOutlined />}
                   size="small"
                   style={{marginRight: 15}}
-                  type="danger"
+                  danger
                 />
               ) : (
                 <Button
                   onClick={() => { this.onRuleRestore(i); }}
                   shape="circle"
-                  icon="reload"
+                  icon={<ReloadOutlined />}
                   size="small"
                 />
               )
@@ -479,14 +483,14 @@ export default class RunScheduleDialog extends React.Component {
         title={title}
         onCancel={onClose}
         onOk={this.onOkClicked}
-        visible={visible}
+        open={visible}
         width={showActionType ? '800px' : '700px'}
       >
         <Row type="flex" className={styles.rulesContainer}>
           {rules.map(this.renderRule)}
         </Row>
         <Row type="flex" style={{padding: 5}}>
-          <Button size="small" onClick={this.onAddRow}><Icon type="plus" /> Add rule</Button>
+          <Button size="small" onClick={this.onAddRow}><PlusOutlined /> Add rule</Button>
         </Row>
       </Modal>
     );

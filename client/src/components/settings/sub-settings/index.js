@@ -42,23 +42,24 @@ class SubSettings extends React.Component {
     this.rememberSubSection();
   }
 
-  shouldComponentUpdate (nextProps, nextState, nextContext) {
-    const shallowCompareProp = (property) => nextProps[property] !== this.props[property];
-    const shallowCompareState = (property) => nextState[property] !== this.state[property];
-    const subSectionProp = nextProps.router && nextProps.router.params
-      ? nextProps.router.params.sub
-      : undefined;
-    return shallowCompareProp('activeSectionKey') ||
-      shallowCompareProp('className') ||
-      shallowCompareProp('onSectionChange') ||
-      shallowCompareProp('sections') ||
-      shallowCompareProp('canNavigate') ||
-      shallowCompareProp('children') ||
-      shallowCompareProp('emptyDataPlaceholder') ||
-      shallowCompareState('section') ||
-      shallowCompareState('sub') ||
-      subSectionProp !== this.state.sub;
-  }
+  // TODO: doublecheck, sCU not compatible with observer, observer already has memo
+  // shouldComponentUpdate (nextProps, nextState, nextContext) {
+  //   const shallowCompareProp = (property) => nextProps[property] !== this.props[property];
+  //   const shallowCompareState = (property) => nextState[property] !== this.state[property];
+  //   const subSectionProp = nextProps.router && nextProps.router.params
+  //     ? nextProps.router.params.sub
+  //     : undefined;
+  //   return shallowCompareProp('activeSectionKey') ||
+  //     shallowCompareProp('className') ||
+  //     shallowCompareProp('onSectionChange') ||
+  //     shallowCompareProp('sections') ||
+  //     shallowCompareProp('canNavigate') ||
+  //     shallowCompareProp('children') ||
+  //     shallowCompareProp('emptyDataPlaceholder') ||
+  //     shallowCompareState('section') ||
+  //     shallowCompareState('sub') ||
+  //     subSectionProp !== this.state.sub;
+  // }
 
   updateFromProps = () => {
     const {
@@ -73,9 +74,12 @@ class SubSettings extends React.Component {
     const {
       router
     } = this.props;
-    this.setState({
-      sub: router && router.params ? router.params.sub : undefined
-    });
+    const newSub = router && router.params ? router.params.sub : undefined;
+    if (this.state.sub !== newSub) {
+      this.setState({
+        sub: newSub
+      });
+    }
   };
 
   selectDefaultSection = () => {

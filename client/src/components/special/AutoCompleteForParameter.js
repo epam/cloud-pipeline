@@ -18,14 +18,12 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {
-  Select,
-  Icon,
+  AutoComplete,
   Input
 } from 'antd';
 import styles from './AutoCompleteForParameter.css';
 
 export default class AutoCompleteForParameter extends React.Component {
-
   static propTypes = {
     readOnly: PropTypes.bool,
     hideAutoComplete: PropTypes.bool,
@@ -37,7 +35,7 @@ export default class AutoCompleteForParameter extends React.Component {
     currentProjectMetadata: PropTypes.object,
     rootEntityId: PropTypes.string,
     showWithButton: PropTypes.bool,
-    buttonIcon: PropTypes.string,
+    buttonIcon: PropTypes.node,
     onButtonClick: PropTypes.func
   };
 
@@ -124,6 +122,7 @@ export default class AutoCompleteForParameter extends React.Component {
   };
 
   render () {
+    const IconComponent = this.props.buttonIcon;
     return (
       <Input.Group compact style={{display: 'flex'}}>
         {
@@ -135,16 +134,15 @@ export default class AutoCompleteForParameter extends React.Component {
               this.props.onButtonClick(this.props.parameterKey, this.state.value)}
           >
             <div style={{padding: '5px', cursor: 'pointer'}}>
-              <Icon type={this.props.buttonIcon} />
+              {IconComponent && <IconComponent style={{margin: 10}} />}
             </div>
           </span>
         }
-        <Select
+        <AutoComplete
           disabled={this.props.readOnly}
           style={{width: '100%'}}
           size="large"
           placeholder="Value"
-          mode="combobox"
           value={this.state.value}
           filterOption={false}
           onChange={this.handleSearch}
@@ -159,15 +157,15 @@ export default class AutoCompleteForParameter extends React.Component {
                 currentValue = parseValue.join('.') + '.' + field.name;
               }
               return (
-                <Select.Option
+                <AutoComplete.Option
                   key={field.name}
                   value={currentValue}>
                   {field.name}
-                </Select.Option>
+                </AutoComplete.Option>
               );
             })
           }
-        </Select>
+        </AutoComplete>
       </Input.Group>
     );
   }
@@ -176,7 +174,7 @@ export default class AutoCompleteForParameter extends React.Component {
     this.setState({value: this.props.value});
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if ('value' in nextProps) {
       const value = nextProps.value;
       this.setState({value});

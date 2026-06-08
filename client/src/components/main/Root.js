@@ -15,9 +15,8 @@
  */
 
 import React from 'react';
-import {hashHistory} from 'react-router';
 import {Provider} from 'mobx-react';
-import {RouterStore, syncHistoryWithStore} from 'mobx-react-router';
+import {RouterStore} from '../../utils/routing-store';
 import GoogleApi from '../../models/google/GoogleApi';
 import authenticatedUserInfo from '../../models/user/WhoAmI';
 import preferences from '../../models/preferences/PreferencesLoad';
@@ -48,7 +47,7 @@ import MyIssues from '../../models/issues/MyIssues';
 import Users from '../../models/user/Users';
 import UsersInfo from '../../models/user/UsersInfo';
 import AppLocalization from '../../utils/localization';
-import AppRouter from './AppRouter';
+import AppRouter, {router} from './AppRouter';
 import AllowedInstanceTypes from '../../models/utils/AllowedInstanceTypes';
 import configurationSchedules from '../../models/configurationSchedule/ConfigurationSchedules';
 import SystemDictionariesLoadAll from '../../models/systemDictionaries/SystemDictionariesLoadAll';
@@ -71,7 +70,7 @@ import uiLaunchParametersConfiguration from '../../utils/ui-launch-parameters-co
 import {gcpSpotInstanceType} from '../../models/utils/gcp-spot-instance-type';
 
 const routing = new RouterStore();
-const history = syncHistoryWithStore(hashHistory, routing);
+routing.setRouter(router);
 const counter = new RunCount({usePreferenceValue: true, autoUpdate: true});
 const localization = AppLocalization.localization;
 const hiddenObjects = new HiddenObjects(preferences, authenticatedUserInfo);
@@ -126,7 +125,6 @@ const Root = () =>
       googleApi,
       fireCloudMethods,
       localization,
-      history,
       preferences,
       pipelines,
       projects,

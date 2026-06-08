@@ -116,7 +116,7 @@ class GitCommitDialog extends React.Component {
     return (
       <Modal
         title={title}
-        visible={visible}
+        open={visible}
         footer={footer}
         width="80%"
         onCancel={this.onCancel}

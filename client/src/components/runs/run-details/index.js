@@ -217,7 +217,7 @@ class RunDetails extends React.Component {
     const {error, pending} = this.state;
     if (error && !pending) {
       return (
-        <Alert message={error} showIcon type="error" />
+        <Alert title={error} showIcon type="error" />
       );
     }
     if (currentTab && currentTab.render && typeof currentTab.render === 'function') {

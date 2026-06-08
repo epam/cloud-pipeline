@@ -16,14 +16,16 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {computed, makeObservable} from 'mobx';
 import {
   Alert,
   Button,
-  Icon,
   Select
 } from 'antd';
+import {DeleteOutlined, RightOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import DockerImageDetails from './docker-image-details';
 import MultiSelect from '../../special/multiSelect';
@@ -44,6 +46,13 @@ class AddDockerRegistryControl extends React.Component {
     versionsHash: undefined,
     dockerImageField: undefined,
     dockerImageVersionField: undefined
+  }
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      tools: computed
+    });
   }
 
   componentDidMount () {
@@ -82,7 +91,6 @@ class AddDockerRegistryControl extends React.Component {
     }
   };
 
-  @computed
   get tools () {
     const {dockerRegistries} = this.props;
     const result = [];
@@ -99,7 +107,7 @@ class AddDockerRegistryControl extends React.Component {
               label: (
                 <span>
                   {registry.description || registry.path}
-                  <Icon type="right" />
+                  <RightOutlined />
                   {group.name}
                 </span>
               ),
@@ -441,7 +449,7 @@ class AddDockerRegistryControl extends React.Component {
     if (dockerRegistries.error) {
       if (showError) {
         return (
-          <Alert type="error" message={dockerRegistries.error} />
+          <Alert type="error" title={dockerRegistries.error} />
         );
       }
       return null;
@@ -493,11 +501,11 @@ class AddDockerRegistryControl extends React.Component {
               <Button
                 disabled={disabled}
                 size="small"
-                type="danger"
+                danger
                 onClick={onRemove}
                 className={styles.action}
               >
-                <Icon type="delete" />
+                <DeleteOutlined />
               </Button>
             )
           }

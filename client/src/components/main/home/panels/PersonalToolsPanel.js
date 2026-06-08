@@ -16,8 +16,20 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {withRouter} from '../../../../utils/with-router';
+import {Alert,
+  Button,
+  Col,
+  message,
+  Modal,
+  Row
+} from 'antd';
+import {CaretRightOutlined, PlayCircleOutlined} from '@ant-design/icons';
+import {
+  inject,
+  observer
+} from 'mobx-react';
+import {computed, makeObservable} from 'mobx';
 import LoadTool from '../../../../models/tools/LoadTool';
 import AllowedInstanceTypes from '../../../../models/utils/AllowedInstanceTypes';
 import {names} from '../../../../models/utils/ContextualPreference';
@@ -29,7 +41,6 @@ import {getVersionRunningInfo} from '../../../tools/utils';
 import LoadingView from '../../../special/LoadingView';
 import roleModel from '../../../../utils/roleModel';
 import highlightText from '../../../special/highlightText';
-import {Alert, Button, Col, Icon, message, Modal, Row} from 'antd';
 import {
   getInputPaths,
   getOutputPaths,
@@ -91,12 +102,22 @@ const findGroupByName = (groups, name) => {
 @runPipelineActions
 @withCurrentUserAttributes()
 @observer
-export default class PersonalToolsPanel extends React.Component {
+class PersonalToolsPanel extends React.Component {
   static propTypes = {
     completedRuns: PropTypes.object,
     panelKey: PropTypes.string,
     onInitialize: PropTypes.func
   };
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      awsRegions: computed,
+      defaultCloudRegionId: computed,
+      registries: computed,
+      tools: computed
+    });
+  }
 
   get usesCompletedRuns () {
     return true;
@@ -149,7 +170,6 @@ export default class PersonalToolsPanel extends React.Component {
     return (tool.image || '').toLowerCase().indexOf(search.toLowerCase()) >= 0;
   };
 
-  @computed
   get awsRegions () {
     if (this.props.awsRegions.loaded) {
       return (this.props.awsRegions.value || []).map(r => r);
@@ -157,7 +177,6 @@ export default class PersonalToolsPanel extends React.Component {
     return [];
   }
 
-  @computed
   get defaultCloudRegionId () {
     const [defaultRegion] = this.awsRegions.filter(r => r.default);
     if (defaultRegion) {
@@ -166,7 +185,6 @@ export default class PersonalToolsPanel extends React.Component {
     return null;
   }
 
-  @computed
   get registries () {
     if (this.props.dockerRegistries.loaded) {
       return this.props.hiddenToolsTreeFilter(this.props.dockerRegistries.value)
@@ -175,7 +193,6 @@ export default class PersonalToolsPanel extends React.Component {
     return [];
   }
 
-  @computed
   get tools () {
     if (this.props.dockerRegistries.loaded) {
       const result = [];
@@ -682,7 +699,7 @@ export default class PersonalToolsPanel extends React.Component {
         <Row key="group">
           <span style={{fontSize: 'smaller'}}>
             <span>{tool.registry.description || tool.registry.path}</span>
-            <Icon type="caret-right" style={{fontSize: 'smaller', margin: '0 2px'}} />
+            <CaretRightOutlined style={{fontSize: 'smaller', margin: '0 2px'}} />
             <span>{highlightText(group, search)}</span>
           </span>
         </Row>
@@ -713,7 +730,7 @@ export default class PersonalToolsPanel extends React.Component {
     if (roleModel.executeAllowed(tool)) {
       return [{
         title: 'RUN',
-        icon: 'play-circle-o',
+        icon: PlayCircleOutlined,
         action: this.onRunToolClicked
       }];
     }
@@ -883,13 +900,13 @@ export default class PersonalToolsPanel extends React.Component {
       return <LoadingView />;
     }
     if (this.props.dockerRegistries.error) {
-      return <Alert type="warning" message={this.props.dockerRegistries.error} />;
+      return <Alert type="warning" title={this.props.dockerRegistries.error} />;
     }
     if (!this.props.authenticatedUserInfo.loaded && this.props.authenticatedUserInfo.pending) {
       return <LoadingView />;
     }
     if (this.props.authenticatedUserInfo.error) {
-      return (<Alert type="warning" message={this.props.authenticatedUserInfo.error} />);
+      return (<Alert type="warning" title={this.props.authenticatedUserInfo.error} />);
     }
     let toolImage;
     let toolVersion;
@@ -920,7 +937,7 @@ export default class PersonalToolsPanel extends React.Component {
         {this.renderContent()}
         <Modal
           title={modalTitle}
-          visible={!!this.state.runToolInfo}
+          open={!!this.state.runToolInfo}
           onCancel={this.cancelRunTool}
           width="50%"
           footer={
@@ -1034,3 +1051,5 @@ export default class PersonalToolsPanel extends React.Component {
     this.props.dockerRegistries.fetch();
   }
 }
+
+export default withRouter(PersonalToolsPanel);

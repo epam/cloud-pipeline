@@ -15,9 +15,14 @@
  */
 
 import React from 'react';
-import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
-import {Icon, Button} from 'antd';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {computed, makeObservable} from 'mobx';
+import {
+  Button
+} from 'antd';
+import {CloseOutlined} from '@ant-design/icons';
 import {
   BarChart,
   BillingTable,
@@ -70,6 +75,7 @@ import {
   getSummaryDatasetsByStorageClass
 } from './charts/object-storage/get-datasets-by-storage-class';
 import StorageTable from './storage-table';
+import {withRouter} from '../../../utils/with-router';
 
 const tablePageSize = 10;
 
@@ -83,16 +89,15 @@ const LAYERS_LABELS = {
 function injection (stores, props) {
   const {location, params} = props;
   const {type} = params || {};
-  const {
-    user: userQ,
-    group: groupQ,
-    'billing-group': billingGroupQ,
-    period = Period.month,
-    range,
-    region: regionQ,
-    metrics: metricsQ,
-    layer: aggregateQ
-  } = location.query;
+  const q = new URLSearchParams(location?.search || '');
+  const userQ = q.get('user');
+  const groupQ = q.get('group');
+  const billingGroupQ = q.get('billing-group');
+  const period = q.get('period') ?? Period.month;
+  const range = q.get('range');
+  const regionQ = q.get('region');
+  const metricsQ = q.get('metrics');
+  const aggregateQ = q.get('layer');
   const metrics = parseStorageMetrics(metricsQ);
   const aggregate = /^object$/i.test(type)
     ? parseStorageAggregate(aggregateQ)
@@ -191,6 +196,18 @@ class StorageReports extends React.Component {
     dataSampleKey: StorageFilters.value.key
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      tiersData: computed,
+      summaryDatasets: computed,
+      summaryTableDataExtractors: computed,
+      detailsDatasets: computed,
+      extraTooltipForItemCallback: computed,
+      getExportProperties: computed
+    });
+  }
+
   get layout () {
     const {type} = this.props;
     if (/^object$/i.test(type)) {
@@ -251,7 +268,6 @@ class StorageReports extends React.Component {
     return 'Storages';
   };
 
-  @computed
   get tiersData () {
     const {
       filters = {},
@@ -328,7 +344,6 @@ class StorageReports extends React.Component {
     };
   }
 
-  @computed
   get summaryDatasets () {
     const {
       type,
@@ -347,7 +362,6 @@ class StorageReports extends React.Component {
     return getSummaryDatasetsByStorageClass(storageClass);
   }
 
-  @computed
   get summaryTableDataExtractors () {
     const {
       type,
@@ -366,7 +380,6 @@ class StorageReports extends React.Component {
     return getSummaryDataExtractorsByStorageClass(storageClass);
   }
 
-  @computed
   get detailsDatasets () {
     const {
       type,
@@ -386,7 +399,6 @@ class StorageReports extends React.Component {
     return getDetailsDatasetsByStorageClassAndMetrics(storageClass, metrics);
   }
 
-  @computed
   get extraTooltipForItemCallback () {
     const {
       type,
@@ -401,7 +413,6 @@ class StorageReports extends React.Component {
     return (dataItem) => getItemDetailsByMetrics(dataItem, metrics);
   }
 
-  @computed
   get getExportProperties () {
     const {
       type,
@@ -438,7 +449,7 @@ class StorageReports extends React.Component {
             right: 5
           }}
         >
-          <Icon type="close" /> {layer}
+          <CloseOutlined /> {layer}
         </Button>
       );
     }
@@ -647,10 +658,10 @@ class StorageReports extends React.Component {
   }
 }
 
-export default inject('reportThemes')(
+export default withRouter(inject('reportThemes')(
   inject(injection)(
     BillingNavigation.attach(
       observer(StorageReports)
     )
   )
-);
+));

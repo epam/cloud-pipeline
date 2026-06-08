@@ -15,7 +15,7 @@
  */
 
 import Remote from '../basic/Remote';
-import {observable, computed} from 'mobx';
+import {observable, computed, makeObservable} from 'mobx';
 
 const REFRESH_INTERVAL = 5000;
 
@@ -30,6 +30,10 @@ class PipelineRunFilter extends Remote {
 
   constructor (params) {
     super();
+    makeObservable(this, {
+      _total: observable,
+      total: computed
+    });
     let stringifiedParams;
     try {
       stringifiedParams = JSON.stringify(PipelineRunFilter.getPayload(params));
@@ -60,8 +64,8 @@ class PipelineRunFilter extends Remote {
     }
   }
 
-  @observable _total = 0;
-  @computed
+  _total = 0;
+
   get total () {
     return this._total;
   }

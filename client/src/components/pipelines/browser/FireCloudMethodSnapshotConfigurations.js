@@ -16,18 +16,24 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
-import {Button, Icon, Row, Select, Table} from 'antd';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {computed, observable, makeObservable} from 'mobx';
+import {Button,
+  Row,
+  Select,
+  Table
+} from 'antd';
+import {CheckCircleFilled, SettingOutlined} from '@ant-design/icons';
 import styles from './Browser.css';
 import {ItemTypes} from '../model/treeStructureFunctions';
 import FireCloudMethodSnapshotConfigurationsRequest
-  from '../../../models/firecloud/FireCloudMethodSnapshotConfigurations';
+from '../../../models/firecloud/FireCloudMethodSnapshotConfigurations';
 
 @inject('googleApi', 'fireCloudMethods')
 @observer
 export default class FireCloudMethodSnapshotConfigurations extends React.Component {
-
   static propTypes = {
     namespace: PropTypes.string,
     method: PropTypes.string,
@@ -39,7 +45,6 @@ export default class FireCloudMethodSnapshotConfigurations extends React.Compone
     onCreateNew: PropTypes.func
   };
 
-  @observable
   _configurations = new FireCloudMethodSnapshotConfigurationsRequest(
     this.props.googleApi,
     this.props.namespace,
@@ -47,7 +52,15 @@ export default class FireCloudMethodSnapshotConfigurations extends React.Compone
     this.props.snapshot
   );
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      _configurations: observable,
+      currentMethod: computed,
+      configurations: computed
+    });
+  }
+
   get currentMethod () {
     if (this.props.fireCloudMethods.loaded) {
       return (this.props.fireCloudMethods.value || [])
@@ -57,7 +70,6 @@ export default class FireCloudMethodSnapshotConfigurations extends React.Compone
     return null;
   }
 
-  @computed
   get configurations () {
     if (this._configurations.loaded) {
       const configurations = {};
@@ -97,7 +109,7 @@ export default class FireCloudMethodSnapshotConfigurations extends React.Compone
     if (this.props.isSelected && item.name === this.props.configuration) {
       return (
         <Row type="flex" justify="end">
-          <Icon type="check-circle" />
+          <CheckCircleFilled />
         </Row>
       );
     }
@@ -107,9 +119,7 @@ export default class FireCloudMethodSnapshotConfigurations extends React.Compone
   renderTreeItemType = (item) => {
     switch (item.type) {
       case ItemTypes.fireCloudMethodConfiguration:
-        return <Icon
-          type="setting"
-          style={{color: '#2796dd', fontSize: 'larger', lineHeight: 'inherit'}} />;
+        return <SettingOutlined style={{color: '#2796dd', fontSize: 'larger', lineHeight: 'inherit'}} />;
       default: return <div />;
     }
   };
@@ -140,20 +150,20 @@ export default class FireCloudMethodSnapshotConfigurations extends React.Compone
       key: 'selection',
       className: styles.treeItemSelection,
       render: (item) => this.renderTreeItemSelection(item),
-      onCellClick: (item) => this.onConfigurationSelect(item)
+      onCell: (item) => ({onClick: () => this.onConfigurationSelect(item)})
     },
     {
       key: 'type',
       className: styles.treeItemType,
       render: (item) => this.renderTreeItemType(item),
-      onCellClick: (item) => this.onConfigurationSelect(item)
+      onCell: (item) => ({onClick: () => this.onConfigurationSelect(item)})
     },
     {
       dataIndex: 'name',
       key: 'name',
       title: 'Name',
       className: styles.treeItemName,
-      onCellClick: (item) => this.onConfigurationSelect(item)
+      onCell: (item) => ({onClick: () => this.onConfigurationSelect(item)})
     },
     {
       key: 'actions',
@@ -202,7 +212,6 @@ export default class FireCloudMethodSnapshotConfigurations extends React.Compone
               this.props.fireCloudMethods.pending ||
               (!!this._configurations && this._configurations.pending)
             }
-            expandedRowRender={null}
             pagination={false}
             showHeader={false}
             title={null}
@@ -226,5 +235,4 @@ export default class FireCloudMethodSnapshotConfigurations extends React.Compone
         this.props.snapshot);
     }
   }
-
 }

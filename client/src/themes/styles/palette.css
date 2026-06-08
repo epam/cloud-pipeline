@@ -1,0 +1,610 @@
+/*
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+/*
+ * AUTO-GENERATED FILE — DO NOT EDIT.
+ * Run `npm run gui-themes-prepare` to regenerate from the predefined theme
+ * configurations in src/themes/{light,dark,dark-dimmed}-theme/index.js.
+ */
+
+:root,
+body.light-theme {
+  color-scheme: light;
+
+  /* brand */
+  --cp-color-primary: #108ee9;
+  --cp-color-primary-hover: #49a9ee;
+  --cp-color-primary-active: #0e77ca;
+  --cp-color-primary-on: white;
+  --cp-color-primary-muted: rgba(16, 142, 233, 0.2);
+
+  /* status */
+  --cp-color-success: #09ab5a;
+  --cp-color-error: #f04134;
+  --cp-color-warning: #ff8818;
+  --cp-color-info: #108ee9;
+
+  /* text */
+  --cp-color-text: rgba(0, 0, 0, 0.65);
+  --cp-color-text-secondary: rgba(0, 0, 0, 0.45);
+  --cp-color-text-disabled: rgba(0, 0, 0, 0.25);
+  --cp-color-text-accent: rgba(0, 0, 0, 0.8500000000000001);
+
+  /* surface */
+  --cp-color-bg-layout: #ececec;
+  --cp-color-bg-layout-dark: #000;
+  --cp-color-bg-container: white;
+  --cp-color-bg-elevated: white;
+  --cp-color-bg-elevated-header: #eee;
+  --cp-color-bg-input: #fff;
+  --cp-color-bg-input-disabled: #f7f7f7;
+  --cp-color-bg-code: rgb(242, 242, 242);
+  --cp-color-bg-striped: rgb(242, 242, 242);
+  --cp-color-bg-overlay: rgba(55, 55, 55, 0.6);
+
+  /* border */
+  --cp-color-border: #ccc;
+  --cp-color-border-secondary: #eee;
+  --cp-color-border-card: #ddd;
+  --cp-color-border-input: #d9d9d9;
+  --cp-color-border-table: #ddd;
+
+  /* interactive */
+  --cp-color-interactive-hover-text: rgba(0, 0, 0, 0.65);
+  --cp-color-interactive-hover-bg: #ecf6fd;
+  --cp-color-interactive-selected-text: rgba(0, 0, 0, 0.65);
+  --cp-color-interactive-selected-bg: #f7f7f7;
+
+  /* table */
+  --cp-color-table-hover-text: rgba(0, 0, 0, 0.65);
+  --cp-color-table-hover-bg: #ecf6fd;
+  --cp-color-table-selected-text: rgba(0, 0, 0, 0.65);
+  --cp-color-table-selected-bg: #d2eafb;
+  --cp-color-table-head-text: rgba(0, 0, 0, 0.8500000000000001);
+
+  /* form */
+  --cp-color-input-text: rgba(0, 0, 0, 0.65);
+  --cp-color-input-placeholder: rgba(0, 0, 0, 0.3);
+  --cp-color-input-addon-bg: #eee;
+  --cp-color-input-border-hover: #49a9ee;
+  --cp-color-input-focus-ring: rgba(73, 169, 238, 0.2);
+
+  /* button */
+  --cp-color-btn-disabled-text: rgba(0, 0, 0, 0.25);
+  --cp-color-btn-disabled-bg: #f7f7f7;
+  --cp-color-btn-danger-text: #f04134;
+  --cp-color-btn-danger-bg: #f7f7f7;
+  --cp-color-btn-danger-active-text: white;
+  --cp-color-btn-danger-active-bg: #d73435;
+
+  /* navigation */
+  --cp-color-nav-bg: #2796dd;
+  --cp-color-nav-bg-active: rgb(28, 122, 181);
+  --cp-color-nav-bg-impersonated: #dd5b27;
+  --cp-color-nav-bg-impersonated-active: rgb(181, 72, 28);
+  --cp-color-nav-text: white;
+  --cp-color-nav-runs: #0cff87;
+
+  /* alert */
+  --cp-color-alert-success-bg: #ebf8f2;
+  --cp-color-alert-success-border: #cfefdf;
+  --cp-color-alert-success-icon: #00a854;
+  --cp-color-alert-warning-bg: #fffaeb;
+  --cp-color-alert-warning-border: #fff3cf;
+  --cp-color-alert-warning-icon: #ffbf00;
+  --cp-color-alert-error-bg: #fef0ef;
+  --cp-color-alert-error-border: #fcdbd9;
+  --cp-color-alert-error-icon: #f04134;
+  --cp-color-alert-info-bg: #ecf6fd;
+  --cp-color-alert-info-border: #d2eafb;
+  --cp-color-alert-info-icon: #108ee9;
+
+  /* extended */
+  --cp-color-spinner: #108ee9;
+  --cp-color-green: rgb(9, 171, 90);
+  --cp-color-red: rgb(240, 65, 52);
+  --cp-color-yellow: rgb(255, 136, 24);
+  --cp-color-blue: #108ee9;
+  --cp-color-violet: #8d09ab;
+  --cp-color-aqua: #008080;
+  --cp-color-aqua-light: #7dccc0;
+  --cp-color-pink: #d14;
+  --cp-color-grey: #777;
+  --cp-color-blue-dimmed: #458;
+  --cp-color-sensitive: #ff5c33;
+  --cp-color-search-highlight-bg: #ffff00;
+  --cp-color-search-highlight-bg-inactive: rgba(255, 255, 0, 0.5);
+  --cp-color-search-highlight-text: rgba(0, 0, 0, 0.65);
+  --cp-color-console-bg: #222222;
+  --cp-color-console-text: #ececec;
+  --cp-color-console-text-details: #aaaaaa;
+  --cp-color-menu-active: #108ee9;
+  --cp-color-card-actions-active-bg: rgba(16, 142, 233, 0.2);
+  --cp-color-green-faint: rgba(9, 171, 90, 0.09999999999999998);
+  --cp-color-red-faint: rgba(240, 65, 52, 0.09999999999999998);
+  --cp-color-grey-faint: rgba(119, 119, 119, 0.09999999999999998);
+  --cp-color-grey-light: #aaa;
+  --cp-color-blue-soft: #4db4d9;
+  --cp-color-green-soft: #7dccc0;
+  --cp-color-aqua-accent: #008080;
+  --cp-color-pink-light: #fef0ef;
+  --cp-color-pink-dusty: #f0efef;
+  --cp-color-deleted-row-bg: rgba(240, 65, 52, 0.09999999999999998);
+  --cp-color-nfs-icon: #116118;
+
+  /* tooltip */
+  --cp-color-tooltip-bg: #222222;
+  --cp-color-tooltip-border: #333333;
+  --cp-color-tooltip-text: #ececec;
+  --cp-color-tooltip-accent: #ececec;
+
+  /* card */
+  --cp-color-card-shadow: rgba(0, 0, 0, 0.2);
+  --cp-color-bg-elevated-opaque: rgb(255, 255, 255);
+  --cp-color-bg-service-card: #ffffe0;
+  --cp-color-border-service-card: #ddd;
+  --cp-color-service-card-shadow: rgba(0, 0, 0, 0.2);
+  --cp-color-service-card-actions-active-bg: rgba(16, 142, 233, 0.2);
+  --cp-color-service-card-header-bg: #eee;
+
+  /* code-editor */
+  --cp-color-codemirror-selection-bg: #d9d9d9;
+  --cp-color-codemirror-selection-focused-bg: #d7d4f0;
+
+  /* tag */
+  --cp-color-tag-key-bg: #efefef;
+  --cp-color-tag-divider: #ddd;
+  --cp-color-tag-value-bg: #fefefe;
+
+  /* form */
+  --cp-color-input-search-icon: rgba(0, 0, 0, 0.65);
+  --cp-color-input-search-icon-hover: #49a9ee;
+
+  /* vs-diff */
+  --cp-color-vs-conflict-bg: rgba(237, 75, 48, 0.25);
+  --cp-color-vs-conflict-border: rgba(237, 75, 48, 5);
+  --cp-color-vs-conflict-applied-bg: rgba(237, 75, 48, 0.25);
+  --cp-color-vs-insertion-bg: rgba(9, 171, 90, 0.4);
+  --cp-color-vs-insertion-border: #b4e2b4;
+  --cp-color-vs-insertion-applied-bg: rgba(9, 171, 90, 0.4);
+  --cp-color-vs-deletion-bg: rgba(217, 217, 217, 0.4);
+  --cp-color-vs-deletion-border: #9e9e9e;
+  --cp-color-vs-deletion-applied-bg: #d9d9d9;
+  --cp-color-vs-change-bg: rgba(252, 230, 162, 0.4);
+  --cp-color-vs-change-border: #f5e3aa;
+  --cp-color-vs-change-applied-bg: rgba(252, 230, 162, 0.4);
+
+  /* provider-icon */
+  --cp-asset-aws-icon: url('/icons/providers/aws.svg');
+  --cp-asset-aws-icon-contrast: url('/icons/providers/aws-light.svg');
+  --cp-asset-gcp-icon: url('/icons/providers/gcp.svg');
+  --cp-asset-gcp-icon-contrast: url('/icons/providers/gcp-light.svg');
+  --cp-asset-azure-icon: url('/icons/providers/azure.svg');
+  --cp-asset-azure-icon-contrast: url('/icons/providers/azure.svg');
+  --cp-asset-local-icon: url('/icons/providers/local.svg');
+  --cp-asset-local-icon-contrast: url('/icons/providers/local-ligh.svg');
+
+  /* region-icon */
+  --cp-asset-eu-region-icon: url('/icons/regions/eu.svg');
+  --cp-asset-us-region-icon: url('/icons/regions/us.svg');
+  --cp-asset-sa-region-icon: url('/icons/regions/sa.svg');
+  --cp-asset-cn-region-icon: url('/icons/regions/cn.svg');
+  --cp-asset-ca-region-icon: url('/icons/regions/ca.svg');
+  --cp-asset-ap-northeast-1-region-icon: url('/icons/regions/ap-northeast-1.svg');
+  --cp-asset-ap-northeast-2-region-icon: url('/icons/regions/ap-northeast-2.svg');
+  --cp-asset-ap-northeast-3-region-icon: url('/icons/regions/ap-northeast-3.svg');
+  --cp-asset-ap-south-1-region-icon: url('/icons/regions/ap-south-1.svg');
+  --cp-asset-ap-southeast-1-region-icon: url('/icons/regions/ap-southeast-1.svg');
+  --cp-asset-ap-southeast-2-region-icon: url('/icons/regions/ap-southeast-2.svg');
+  --cp-asset-taiwan-region-icon: url('/icons/regions/taiwan.svg');
+
+  /* asset */
+  --cp-asset-logo: url('/logo.png');
+  --cp-asset-bg-image: none;
+  --cp-asset-nav-bg-image: none;
+}
+
+body.dark-theme {
+  color-scheme: dark;
+
+  /* brand */
+  --cp-color-primary: #00b1f1;
+  --cp-color-primary-hover: rgb(88, 210, 255);
+  --cp-color-primary-active: #00b1f1;
+  --cp-color-primary-on: rgb(14, 17, 22);
+  --cp-color-primary-muted: rgba(0, 177, 241, 0.2);
+
+  /* status */
+  --cp-color-success: #118a4e;
+  --cp-color-error: #ed4b30;
+  --cp-color-warning: #f08732;
+  --cp-color-info: #00b1f1;
+
+  /* text */
+  --cp-color-text: rgb(180, 188, 196);
+  --cp-color-text-secondary: rgba(180, 188, 196, 0.8);
+  --cp-color-text-disabled: rgba(180, 188, 196, 0.4);
+  --cp-color-text-accent: rgb(209, 214, 218);
+
+  /* surface */
+  --cp-color-bg-layout: rgb(14, 17, 22);
+  --cp-color-bg-layout-dark: rgb(14, 17, 22);
+  --cp-color-bg-container: rgb(23, 27, 33);
+  --cp-color-bg-elevated: rgb(23, 27, 33);
+  --cp-color-bg-elevated-header: rgb(41, 46, 54);
+  --cp-color-bg-input: rgb(23, 27, 33);
+  --cp-color-bg-input-disabled: rgb(33, 39, 48);
+  --cp-color-bg-code: rgb(44, 52, 63);
+  --cp-color-bg-striped: rgb(33, 39, 48);
+  --cp-color-bg-overlay: rgba(0, 0, 0, 0.6);
+
+  /* border */
+  --cp-color-border: rgb(41, 46, 54);
+  --cp-color-border-secondary: rgb(41, 46, 54);
+  --cp-color-border-card: rgb(41, 46, 54);
+  --cp-color-border-input: rgb(44, 53, 69);
+  --cp-color-border-table: rgb(41, 46, 54);
+
+  /* interactive */
+  --cp-color-interactive-hover-text: rgb(180, 188, 196);
+  --cp-color-interactive-hover-bg: rgb(33, 39, 48);
+  --cp-color-interactive-selected-text: rgb(180, 188, 196);
+  --cp-color-interactive-selected-bg: rgb(44, 52, 63);
+
+  /* table */
+  --cp-color-table-hover-text: rgb(180, 188, 196);
+  --cp-color-table-hover-bg: rgb(33, 39, 48);
+  --cp-color-table-selected-text: rgb(180, 188, 196);
+  --cp-color-table-selected-bg: rgb(44, 52, 63);
+  --cp-color-table-head-text: rgb(209, 214, 218);
+
+  /* form */
+  --cp-color-input-text: rgb(180, 188, 196);
+  --cp-color-input-placeholder: rgba(180, 188, 196, 0.6);
+  --cp-color-input-addon-bg: rgb(33, 39, 48);
+  --cp-color-input-border-hover: rgb(88, 210, 255);
+  --cp-color-input-focus-ring: rgba(88, 210, 255, 0.1);
+
+  /* button */
+  --cp-color-btn-disabled-text: rgb(108, 126, 152);
+  --cp-color-btn-disabled-bg: rgb(31, 37, 45);
+  --cp-color-btn-danger-text: #ed4b30;
+  --cp-color-btn-danger-bg: rgb(31, 37, 45);
+  --cp-color-btn-danger-active-text: rgb(14, 17, 22);
+  --cp-color-btn-danger-active-bg: rgb(168, 38, 15);
+
+  /* navigation */
+  --cp-color-nav-bg: rgb(14, 17, 22);
+  --cp-color-nav-bg-active: rgb(24, 29, 38);
+  --cp-color-nav-bg-impersonated: #943813;
+  --cp-color-nav-bg-impersonated-active: rgb(103, 39, 13);
+  --cp-color-nav-text: rgb(180, 188, 196);
+  --cp-color-nav-runs: #118a4e;
+
+  /* alert */
+  --cp-color-alert-success-bg: rgba(17, 138, 78, 0.25);
+  --cp-color-alert-success-border: rgba(17, 138, 78, 0.5);
+  --cp-color-alert-success-icon: #118a4e;
+  --cp-color-alert-warning-bg: rgba(240, 135, 50, 0.15);
+  --cp-color-alert-warning-border: rgba(240, 135, 50, 0.5);
+  --cp-color-alert-warning-icon: #f08732;
+  --cp-color-alert-error-bg: rgba(237, 75, 48, 0.25);
+  --cp-color-alert-error-border: rgba(237, 75, 48, 0.5);
+  --cp-color-alert-error-icon: #ed4b30;
+  --cp-color-alert-info-bg: rgba(0, 177, 241, 0.25);
+  --cp-color-alert-info-border: rgba(0, 177, 241, 0.5);
+  --cp-color-alert-info-icon: #00b1f1;
+
+  /* extended */
+  --cp-color-spinner: rgb(180, 188, 196);
+  --cp-color-green: #118a4e;
+  --cp-color-red: #ed4b30;
+  --cp-color-yellow: #f08732;
+  --cp-color-blue: #00b1f1;
+  --cp-color-violet: #c730ea;
+  --cp-color-aqua: #008080;
+  --cp-color-aqua-light: #7dccc0;
+  --cp-color-pink: #d14;
+  --cp-color-grey: #777;
+  --cp-color-blue-dimmed: #458;
+  --cp-color-sensitive: #ff5c33;
+  --cp-color-search-highlight-bg: #943813;
+  --cp-color-search-highlight-bg-inactive: rgba(148, 56, 19, 0.5);
+  --cp-color-search-highlight-text: rgb(180, 188, 196);
+  --cp-color-console-bg: rgb(23, 27, 33);
+  --cp-color-console-text: rgb(180, 188, 196);
+  --cp-color-console-text-details: rgba(180, 188, 196, 0.8);
+  --cp-color-menu-active: rgb(180, 188, 196);
+  --cp-color-card-actions-active-bg: rgb(23, 27, 33);
+  --cp-color-green-faint: rgba(17, 138, 78, 0.09999999999999998);
+  --cp-color-red-faint: rgba(237, 75, 48, 0.09999999999999998);
+  --cp-color-grey-faint: rgba(119, 119, 119, 0.09999999999999998);
+  --cp-color-grey-light: #aaa;
+  --cp-color-blue-soft: #025979;
+  --cp-color-green-soft: #008080;
+  --cp-color-aqua-accent: #7dccc0;
+  --cp-color-pink-light: #fef0ef;
+  --cp-color-pink-dusty: #313030;
+  --cp-color-deleted-row-bg: rgba(237, 75, 48, 0.19999999999999996);
+  --cp-color-nfs-icon: #118a4e;
+
+  /* tooltip */
+  --cp-color-tooltip-bg: #222222;
+  --cp-color-tooltip-border: #333333;
+  --cp-color-tooltip-text: #ececec;
+  --cp-color-tooltip-accent: #ececec;
+
+  /* card */
+  --cp-color-card-shadow: rgb(41, 46, 54);
+  --cp-color-bg-elevated-opaque: rgb(23, 27, 33);
+  --cp-color-bg-service-card: rgb(33, 39, 48);
+  --cp-color-border-service-card: rgb(33, 39, 48);
+  --cp-color-service-card-shadow: transparent;
+  --cp-color-service-card-actions-active-bg: rgb(33, 39, 48);
+  --cp-color-service-card-header-bg: rgb(33, 39, 48);
+
+  /* code-editor */
+  --cp-color-codemirror-selection-bg: #5c5769;
+  --cp-color-codemirror-selection-focused-bg: #5c5769;
+
+  /* tag */
+  --cp-color-tag-key-bg: rgb(33, 39, 48);
+  --cp-color-tag-divider: rgb(23, 27, 33);
+  --cp-color-tag-value-bg: rgb(33, 39, 48);
+
+  /* form */
+  --cp-color-input-search-icon: rgba(180, 188, 196, 0.3);
+  --cp-color-input-search-icon-hover: rgb(88, 210, 255);
+
+  /* vs-diff */
+  --cp-color-vs-conflict-bg: rgba(237, 75, 48, 0.25);
+  --cp-color-vs-conflict-border: rgba(237, 75, 48, 0.5);
+  --cp-color-vs-conflict-applied-bg: rgba(237, 75, 48, 0.25);
+  --cp-color-vs-insertion-bg: rgba(0, 177, 241, 0.25);
+  --cp-color-vs-insertion-border: rgba(0, 177, 241, 0.5);
+  --cp-color-vs-insertion-applied-bg: rgba(0, 177, 241, 0.25);
+  --cp-color-vs-deletion-bg: rgba(217, 217, 217, 0.4);
+  --cp-color-vs-deletion-border: #9e9e9e;
+  --cp-color-vs-deletion-applied-bg: #d9d9d9;
+  --cp-color-vs-change-bg: rgba(240, 135, 50, 0.15);
+  --cp-color-vs-change-border: rgba(240, 135, 50, 0.5);
+  --cp-color-vs-change-applied-bg: rgba(240, 135, 50, 0.15);
+
+  /* provider-icon */
+  --cp-asset-aws-icon: url('/icons/providers/aws-light.svg');
+  --cp-asset-aws-icon-contrast: url('/icons/providers/aws-light.svg');
+  --cp-asset-gcp-icon: url('/icons/providers/gcp-light.svg');
+  --cp-asset-gcp-icon-contrast: url('/icons/providers/gcp-light.svg');
+  --cp-asset-azure-icon: url('/icons/providers/azure.svg');
+  --cp-asset-azure-icon-contrast: url('/icons/providers/azure.svg');
+  --cp-asset-local-icon: url('/icons/providers/local-light.svg');
+  --cp-asset-local-icon-contrast: url('/icons/providers/local-light.svg');
+
+  /* region-icon */
+  --cp-asset-eu-region-icon: url('/icons/regions/eu.svg');
+  --cp-asset-us-region-icon: url('/icons/regions/us.svg');
+  --cp-asset-sa-region-icon: url('/icons/regions/sa.svg');
+  --cp-asset-cn-region-icon: url('/icons/regions/cn.svg');
+  --cp-asset-ca-region-icon: url('/icons/regions/ca.svg');
+  --cp-asset-ap-northeast-1-region-icon: url('/icons/regions/ap-northeast-1.svg');
+  --cp-asset-ap-northeast-2-region-icon: url('/icons/regions/ap-northeast-2.svg');
+  --cp-asset-ap-northeast-3-region-icon: url('/icons/regions/ap-northeast-3.svg');
+  --cp-asset-ap-south-1-region-icon: url('/icons/regions/ap-south-1.svg');
+  --cp-asset-ap-southeast-1-region-icon: url('/icons/regions/ap-southeast-1.svg');
+  --cp-asset-ap-southeast-2-region-icon: url('/icons/regions/ap-southeast-2.svg');
+  --cp-asset-taiwan-region-icon: url('/icons/regions/taiwan.svg');
+
+  /* asset */
+  --cp-asset-logo: url('/logo.png');
+  --cp-asset-bg-image: none;
+  --cp-asset-nav-bg-image: none;
+}
+
+body.dark-dimmed-theme {
+  color-scheme: dark;
+
+  /* brand */
+  --cp-color-primary: #108ee9;
+  --cp-color-primary-hover: rgb(58, 165, 242);
+  --cp-color-primary-active: #108ee9;
+  --cp-color-primary-on: rgb(40, 44, 50);
+  --cp-color-primary-muted: rgba(16, 142, 233, 0.2);
+
+  /* status */
+  --cp-color-success: #118a4e;
+  --cp-color-error: rgb(235, 99, 94);
+  --cp-color-warning: #c28b15;
+  --cp-color-info: #108ee9;
+
+  /* text */
+  --cp-color-text: rgb(202, 202, 216);
+  --cp-color-text-secondary: rgba(202, 202, 216, 0.8);
+  --cp-color-text-disabled: rgba(202, 202, 216, 0.4);
+  --cp-color-text-accent: rgb(231, 231, 238);
+
+  /* surface */
+  --cp-color-bg-layout: rgb(40, 44, 50);
+  --cp-color-bg-layout-dark: rgb(40, 44, 50);
+  --cp-color-bg-container: rgb(44, 49, 55);
+  --cp-color-bg-elevated: rgb(49, 54, 61);
+  --cp-color-bg-elevated-header: rgb(35, 39, 44);
+  --cp-color-bg-input: rgb(44, 49, 55);
+  --cp-color-bg-input-disabled: rgb(55, 62, 69);
+  --cp-color-bg-code: rgb(72, 79, 89);
+  --cp-color-bg-striped: rgb(60, 67, 75);
+  --cp-color-bg-overlay: rgba(0, 0, 0, 0.6);
+
+  /* border */
+  --cp-color-border: rgb(28, 30, 33);
+  --cp-color-border-secondary: rgb(28, 30, 33);
+  --cp-color-border-card: rgb(35, 39, 44);
+  --cp-color-border-input: rgb(74, 81, 92);
+  --cp-color-border-table: rgb(35, 39, 44);
+
+  /* interactive */
+  --cp-color-interactive-hover-text: rgb(202, 202, 216);
+  --cp-color-interactive-hover-bg: rgb(51, 57, 64);
+  --cp-color-interactive-selected-text: rgb(202, 202, 216);
+  --cp-color-interactive-selected-bg: rgb(55, 62, 69);
+
+  /* table */
+  --cp-color-table-hover-text: rgb(202, 202, 216);
+  --cp-color-table-hover-bg: rgb(51, 57, 64);
+  --cp-color-table-selected-text: rgb(202, 202, 216);
+  --cp-color-table-selected-bg: rgb(55, 62, 69);
+  --cp-color-table-head-text: rgb(231, 231, 238);
+
+  /* form */
+  --cp-color-input-text: rgb(202, 202, 216);
+  --cp-color-input-placeholder: rgba(202, 202, 216, 0.6);
+  --cp-color-input-addon-bg: rgb(55, 62, 69);
+  --cp-color-input-border-hover: rgb(58, 165, 242);
+  --cp-color-input-focus-ring: rgba(58, 165, 242, 0.1);
+
+  /* button */
+  --cp-color-btn-disabled-text: rgb(140, 150, 163);
+  --cp-color-btn-disabled-bg: rgb(53, 59, 66);
+  --cp-color-btn-danger-text: rgb(235, 99, 94);
+  --cp-color-btn-danger-bg: rgb(53, 59, 66);
+  --cp-color-btn-danger-active-text: rgb(40, 44, 50);
+  --cp-color-btn-danger-active-bg: rgb(202, 31, 25);
+
+  /* navigation */
+  --cp-color-nav-bg: rgb(40, 44, 50);
+  --cp-color-nav-bg-active: rgb(29, 32, 36);
+  --cp-color-nav-bg-impersonated: #914519;
+  --cp-color-nav-bg-impersonated-active: rgb(101, 48, 17);
+  --cp-color-nav-text: rgb(202, 202, 216);
+  --cp-color-nav-runs: #118a4e;
+
+  /* alert */
+  --cp-color-alert-success-bg: rgba(17, 138, 78, 0.25);
+  --cp-color-alert-success-border: rgba(17, 138, 78, 0.5);
+  --cp-color-alert-success-icon: #118a4e;
+  --cp-color-alert-warning-bg: rgba(194, 139, 21, 0.15);
+  --cp-color-alert-warning-border: rgba(194, 139, 21, 0.5);
+  --cp-color-alert-warning-icon: #c28b15;
+  --cp-color-alert-error-bg: rgba(235, 99, 94, 0.25);
+  --cp-color-alert-error-border: rgba(235, 99, 94, 0.5);
+  --cp-color-alert-error-icon: rgb(235, 99, 94);
+  --cp-color-alert-info-bg: rgba(16, 142, 233, 0.25);
+  --cp-color-alert-info-border: rgba(16, 142, 233, 0.5);
+  --cp-color-alert-info-icon: #108ee9;
+
+  /* extended */
+  --cp-color-spinner: rgb(202, 202, 216);
+  --cp-color-green: #118a4e;
+  --cp-color-red: rgb(235, 99, 94);
+  --cp-color-yellow: #c28b15;
+  --cp-color-blue: #108ee9;
+  --cp-color-violet: #c942ff;
+  --cp-color-aqua: #008080;
+  --cp-color-aqua-light: #7dccc0;
+  --cp-color-pink: #f25e83;
+  --cp-color-grey: #777;
+  --cp-color-blue-dimmed: #458;
+  --cp-color-sensitive: #ff5c33;
+  --cp-color-search-highlight-bg: #914519;
+  --cp-color-search-highlight-bg-inactive: rgba(145, 69, 25, 0.5);
+  --cp-color-search-highlight-text: rgb(202, 202, 216);
+  --cp-color-console-bg: rgb(49, 54, 61);
+  --cp-color-console-text: rgb(202, 202, 216);
+  --cp-color-console-text-details: rgba(202, 202, 216, 0.8);
+  --cp-color-menu-active: rgb(202, 202, 216);
+  --cp-color-card-actions-active-bg: rgb(49, 54, 61);
+  --cp-color-green-faint: rgba(17, 138, 78, 0.09999999999999998);
+  --cp-color-red-faint: rgba(235, 99, 94, 0.09999999999999998);
+  --cp-color-grey-faint: rgba(119, 119, 119, 0.09999999999999998);
+  --cp-color-grey-light: #aaa;
+  --cp-color-blue-soft: #025979;
+  --cp-color-green-soft: #008080;
+  --cp-color-aqua-accent: #7dccc0;
+  --cp-color-pink-light: #fef0ef;
+  --cp-color-pink-dusty: #4f4f4f;
+  --cp-color-deleted-row-bg: rgba(235, 99, 94, 0.19999999999999996);
+  --cp-color-nfs-icon: #118a4e;
+
+  /* tooltip */
+  --cp-color-tooltip-bg: #222222;
+  --cp-color-tooltip-border: #333333;
+  --cp-color-tooltip-text: #ececec;
+  --cp-color-tooltip-accent: #ececec;
+
+  /* card */
+  --cp-color-card-shadow: rgb(35, 39, 44);
+  --cp-color-bg-elevated-opaque: rgb(49, 54, 61);
+  --cp-color-bg-service-card: rgb(60, 67, 75);
+  --cp-color-border-service-card: rgb(60, 67, 75);
+  --cp-color-service-card-shadow: transparent;
+  --cp-color-service-card-actions-active-bg: rgb(60, 67, 75);
+  --cp-color-service-card-header-bg: rgb(60, 67, 75);
+
+  /* code-editor */
+  --cp-color-codemirror-selection-bg: #5c5769;
+  --cp-color-codemirror-selection-focused-bg: #5c5769;
+
+  /* tag */
+  --cp-color-tag-key-bg: rgb(60, 67, 75);
+  --cp-color-tag-divider: rgb(49, 54, 61);
+  --cp-color-tag-value-bg: rgb(60, 67, 75);
+
+  /* form */
+  --cp-color-input-search-icon: rgba(202, 202, 216, 0.3);
+  --cp-color-input-search-icon-hover: rgb(58, 165, 242);
+
+  /* vs-diff */
+  --cp-color-vs-conflict-bg: rgba(235, 99, 94, 0.25);
+  --cp-color-vs-conflict-border: rgba(235, 99, 94, 0.5);
+  --cp-color-vs-conflict-applied-bg: rgba(235, 99, 94, 0.25);
+  --cp-color-vs-insertion-bg: rgba(16, 142, 233, 0.25);
+  --cp-color-vs-insertion-border: rgba(16, 142, 233, 0.5);
+  --cp-color-vs-insertion-applied-bg: rgba(16, 142, 233, 0.25);
+  --cp-color-vs-deletion-bg: rgba(217, 217, 217, 0.4);
+  --cp-color-vs-deletion-border: #9e9e9e;
+  --cp-color-vs-deletion-applied-bg: #d9d9d9;
+  --cp-color-vs-change-bg: rgba(194, 139, 21, 0.15);
+  --cp-color-vs-change-border: rgba(194, 139, 21, 0.5);
+  --cp-color-vs-change-applied-bg: rgba(194, 139, 21, 0.15);
+
+  /* provider-icon */
+  --cp-asset-aws-icon: url('/icons/providers/aws-light.svg');
+  --cp-asset-aws-icon-contrast: url('/icons/providers/aws-light.svg');
+  --cp-asset-gcp-icon: url('/icons/providers/gcp-light.svg');
+  --cp-asset-gcp-icon-contrast: url('/icons/providers/gcp-light.svg');
+  --cp-asset-azure-icon: url('/icons/providers/azure.svg');
+  --cp-asset-azure-icon-contrast: url('/icons/providers/azure.svg');
+  --cp-asset-local-icon: url('/icons/providers/local-light.svg');
+  --cp-asset-local-icon-contrast: url('/icons/providers/local-light.svg');
+
+  /* region-icon */
+  --cp-asset-eu-region-icon: url('/icons/regions/eu.svg');
+  --cp-asset-us-region-icon: url('/icons/regions/us.svg');
+  --cp-asset-sa-region-icon: url('/icons/regions/sa.svg');
+  --cp-asset-cn-region-icon: url('/icons/regions/cn.svg');
+  --cp-asset-ca-region-icon: url('/icons/regions/ca.svg');
+  --cp-asset-ap-northeast-1-region-icon: url('/icons/regions/ap-northeast-1.svg');
+  --cp-asset-ap-northeast-2-region-icon: url('/icons/regions/ap-northeast-2.svg');
+  --cp-asset-ap-northeast-3-region-icon: url('/icons/regions/ap-northeast-3.svg');
+  --cp-asset-ap-south-1-region-icon: url('/icons/regions/ap-south-1.svg');
+  --cp-asset-ap-southeast-1-region-icon: url('/icons/regions/ap-southeast-1.svg');
+  --cp-asset-ap-southeast-2-region-icon: url('/icons/regions/ap-southeast-2.svg');
+  --cp-asset-taiwan-region-icon: url('/icons/regions/taiwan.svg');
+
+  /* asset */
+  --cp-asset-logo: url('/logo.png');
+  --cp-asset-bg-image: none;
+  --cp-asset-nav-bg-image: none;
+}

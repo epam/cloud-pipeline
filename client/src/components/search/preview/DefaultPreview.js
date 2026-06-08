@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
-import {Icon, Row} from 'antd';
+import {Row} from 'antd';
 import classNames from 'classnames';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
@@ -38,6 +38,7 @@ export default class DefaultPreview extends React.Component {
     if (!this.props.item) {
       return null;
     }
+    const ItemIcon = PreviewIcons[this.props.item.type];
     const highlights = renderHighlights(this.props.item);
     return (
       <div
@@ -50,7 +51,7 @@ export default class DefaultPreview extends React.Component {
       >
         <div className={styles.header}>
           <Row className={classNames(styles.title, 'cp-search-header-title')} type="flex" align="middle">
-            <Icon type={PreviewIcons[this.props.item.type]} />
+            {ItemIcon && <ItemIcon />}
             <span>{this.props.item.name}</span>
           </Row>
           {

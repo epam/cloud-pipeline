@@ -17,8 +17,12 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {observer} from 'mobx-react';
-import {Icon, Alert} from 'antd';
+import {
+  observer} from 'mobx-react';
+import {
+  Alert
+} from 'antd';
+import {CloseOutlined, LoadingOutlined} from '@ant-design/icons';
 import FileSaver from 'file-saver';
 import AnalysisOutputTable, {fetchContents} from './analysis-output-table';
 import {generateResourceUrl} from '../model/analysis/output-utilities';
@@ -252,7 +256,7 @@ class AnalysisOutputWithDownload extends React.Component {
           url && (<b>Analysis results</b>)
         }
         {
-          (pending || analysisPending) && (<Icon type="loading" style={{marginLeft: 5}} />)
+          (pending || analysisPending) && (<LoadingOutlined style={{marginLeft: 5}} />)
         }
         {
           url && (
@@ -276,14 +280,7 @@ class AnalysisOutputWithDownload extends React.Component {
         }
         {
           typeof onClose === 'function' && (
-            <Icon
-              type="close"
-              style={{
-                marginLeft: 'auto',
-                cursor: 'pointer'
-              }}
-              onClick={onClose}
-            />
+            <CloseOutlined style={{ marginLeft: 'auto', cursor: 'pointer' }} onClick={onClose} />
           )
         }
       </div>
@@ -315,13 +312,13 @@ class AnalysisOutputWithDownload extends React.Component {
         }
         {
           pending && !url && (
-            <Icon type="loading" />
+            <LoadingOutlined />
           )
         }
         {
           !pending && (!url || !data) ? (
             <Alert
-              message="Analysis results not found."
+              title="Analysis results not found."
               type="info"
             />
           ) : null

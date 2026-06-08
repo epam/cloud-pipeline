@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Button, Input, InputNumber, Icon, Select} from 'antd';
+import {Button, Input, InputNumber, Select} from 'antd';
+import {DeleteOutlined, PlusOutlined} from '@ant-design/icons';
 import {EVERY_UNITS} from '../utils';
 import styles from './local-sync-dts-preference.css';
 
@@ -220,9 +221,9 @@ class LocalSyncDtsPreference extends React.Component {
               <Button
                 onClick={() => this.deleteScheduleRow(scheduleIdx)}
                 size="small"
-                type="danger"
+                danger
               >
-                <Icon type="delete" />
+                <DeleteOutlined />
               </Button>
             ) : (
               this.renderScheduleInput(schedule, dataIndex, scheduleIdx)
@@ -276,7 +277,7 @@ class LocalSyncDtsPreference extends React.Component {
                   style={{width: '150px'}}
                   size="small"
                 >
-                  <Icon type="plus" /> Add schedule
+                  <PlusOutlined /> Add schedule
                 </Button>
               </td>
             </tr>

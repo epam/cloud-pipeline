@@ -17,10 +17,10 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {
-  Input,
-  Icon
+  Input
 } from 'antd';
-import {computed} from 'mobx';
+import {ToolOutlined} from '@ant-design/icons';
+import {computed, makeObservable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import HiddenObjects from '../../../../../../../utils/hidden-objects';
 import DockerImageBrowser from '../../../../../launch/dialogs/DockerImageBrowser';
@@ -33,7 +33,13 @@ class WdlRuntimeDocker extends React.Component {
     browser: false
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      registries: computed
+    });
+  }
+
   get registries () {
     const {
       dockerRegistries,
@@ -97,7 +103,7 @@ class WdlRuntimeDocker extends React.Component {
         onChange={onChangeHandler}
         addonAfter={(
           <div onClick={this.onOpenDockerBrowser}>
-            <Icon type="tool" />
+            <ToolOutlined />
             <DockerImageBrowser
               onChange={this.onPickDockerImage}
               dockerImage={this.dockerImage}

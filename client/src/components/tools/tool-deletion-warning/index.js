@@ -15,9 +15,10 @@
  */
 
 import React from 'react';
-import ReactDOM from 'react-dom';
+import {createRoot} from 'react-dom/client';
 import PropTypes from 'prop-types';
-import {Button, Checkbox, Icon, Modal, message, Row} from 'antd';
+import {Button, Checkbox, Modal, message, Row} from 'antd';
+import {ExclamationCircleFilled} from '@ant-design/icons';
 import LoadTool from '../../../models/tools/LoadTool';
 import dockerRegistries from '../../../models/tools/DockerRegistriesTree';
 import PipelineRunSingleFilter from '../../../models/pipelines/PipelineRunSingleFilter';
@@ -152,10 +153,10 @@ class ToolDeletionWarning extends React.Component {
     const {visible, title, resolve, showGroupAlert, groupAlertConfirmed} = this.state;
     return (
       <Modal
-        visible={visible}
+        open={visible}
         closable={false}
         title={false}
-        bodyStyle={{wordWrap: 'break-word'}}
+        styles={{body: {wordWrap: 'break-word'}}}
         zIndex={1001}
         footer={(
           <Row type="flex" align="center" justify="end">
@@ -168,7 +169,7 @@ class ToolDeletionWarning extends React.Component {
             <Button
               disabled={!groupAlertConfirmed}
               id="remove-button-delete"
-              type="danger"
+              danger
               onClick={resolve ? () => resolve(true) : undefined}
               style={{marginLeft: 5}}
             >
@@ -178,11 +179,7 @@ class ToolDeletionWarning extends React.Component {
         )}
       >
         <h2 style={{margin: 20}}>
-          <Icon
-            type="exclamation-circle"
-            className="cp-warning"
-            style={{marginRight: 10}}
-          />
+          <ExclamationCircleFilled className="cp-warning" style={{marginRight: 10}} />
           {title}
         </h2>
         {showGroupAlert && this.renderGroupAlert()}
@@ -212,9 +209,9 @@ const initializeToolDeletionWarningDialog = (dialog) => {
 const toolDeletionWarningDialogContainer = document.createElement('div');
 document.body.appendChild(toolDeletionWarningDialogContainer);
 
-ReactDOM.render(
-  <ToolDeletionWarning onInitialized={initializeToolDeletionWarningDialog} />,
-  toolDeletionWarningDialogContainer
+const toolDeletionWarningDialogRoot = createRoot(toolDeletionWarningDialogContainer);
+toolDeletionWarningDialogRoot.render(
+  <ToolDeletionWarning onInitialized={initializeToolDeletionWarningDialog} />
 );
 
 const PAGE_SIZE = 5;

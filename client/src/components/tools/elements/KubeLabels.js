@@ -16,17 +16,19 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {computed, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import {
   Button,
   Col,
-  Icon,
   Input,
   Checkbox,
   Row
 } from 'antd';
+import {MinusCircleOutlined} from '@ant-design/icons';
 import styles from './KubeLabels.css';
 
 function kubeLabelArraysEqual (source = [], compare = []) {
@@ -72,7 +74,13 @@ class KubeLabels extends React.Component {
     errors: {}
   }
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      predefinedKeys: computed
+    });
+  }
+
   get predefinedKeys () {
     const {preferences} = this.props;
     if (preferences && preferences.loaded) {
@@ -209,15 +217,12 @@ class KubeLabels extends React.Component {
           />
         </Col>
         <Col>
-          <Icon
-            id="remove-kubeLabel-button"
+          <MinusCircleOutlined id="remove-kubeLabel-button"
             className={classNames(
               'dynamic-delete-button',
               styles.removeButton
             )}
-            type="minus-circle-o"
-            onClick={() => this.onRemoveLabel(index)}
-          />
+            onClick={() => this.onRemoveLabel(index)} />
         </Col>
       </Row>
     );

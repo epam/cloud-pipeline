@@ -14,36 +14,44 @@
  *  limitations under the License.
  */
 
-import {action, computed, observable} from 'mobx';
+import {action, computed, observable, makeObservable} from 'mobx';
 import PipelineRunSingleFilter from '../../../models/pipelines/PipelineRunSingleFilter';
 
 class ChildRuns {
-  @observable _pending = true;
-  @observable _loaded = false;
-  @observable _childRuns = [];
-  @observable _error = undefined;
-  @observable disabled = false;
+  _pending = true;
+  _loaded = false;
+  _childRuns = [];
+  _error = undefined;
+  disabled = false;
 
   constructor (parentId) {
+    makeObservable(this, {
+      _pending: observable,
+      _loaded: observable,
+      _childRuns: observable,
+      _error: observable,
+      disabled: observable,
+      pending: computed,
+      loaded: computed,
+      childRuns: computed,
+      error: computed,
+      fetch: action
+    });
     this.parentId = parentId;
   }
 
-  @computed
   get pending () {
     return this._pending;
   }
 
-  @computed
   get loaded () {
     return this._loaded;
   }
 
-  @computed
   get childRuns () {
     return this._childRuns;
   }
 
-  @computed
   get error () {
     return this._error;
   }
@@ -51,7 +59,6 @@ class ChildRuns {
   _fetchPromise;
   _fetchPromiseOptions;
 
-  @action
   fetch = (count = 50) => {
     if (this._fetchPromise && this._fetchPromiseOptions === count) {
       return this._fetchPromise;

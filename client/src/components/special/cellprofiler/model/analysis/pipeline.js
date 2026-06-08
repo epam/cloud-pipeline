@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {action, computed, observable} from 'mobx';
+import {action, computed, observable, makeObservable} from 'mobx';
 import moment from 'moment-timezone';
 import {AnalysisModule} from '../modules/base';
 import {AnalysisTypes} from '../common/analysis-types';
@@ -25,32 +25,59 @@ import generateUUID from '../common/generate-uuid';
 const CLOUD_PIPELINE_CELL_PROFILER_PIPELINE_TYPE = 'CloudPipeline CellProfiler pipeline';
 
 class AnalysisPipeline {
-  @observable uuid;
-  @observable name;
-  @observable author;
-  @observable description;
-  @observable createdDate;
-  @observable modifiedDate;
-  @observable path;
-  @observable version;
-  @observable isNew = true;
+  uuid;
+  name;
+  author;
+  description;
+  createdDate;
+  modifiedDate;
+  path;
+  version;
+  isNew = true;
   usedChannels = [];
   /**
    * @type {Analysis}
    */
-  @observable analysis;
+  analysis;
   /**
    * @type {AnalysisModule[]}
    */
-  @observable modules = [];
-  @observable changed = false;
+  modules = [];
+  changed = false;
   /**
    * @type {AnalysisModule}
    */
-  @observable defineResults;
-  @observable graphicsOutput = new GraphicsOutputConfiguration();
+  defineResults;
+  graphicsOutput = new GraphicsOutputConfiguration();
 
   constructor (analysis) {
+    // TODO: consider makeAutoObservable
+    makeObservable(this, {
+      uuid: observable,
+      name: observable,
+      author: observable,
+      description: observable,
+      createdDate: observable,
+      modifiedDate: observable,
+      path: observable,
+      version: observable,
+      isNew: observable,
+      analysis: observable,
+      modules: observable,
+      changed: observable,
+      defineResults: observable,
+      graphicsOutput: observable,
+      namesAndTypes: computed,
+      channels: computed,
+      physicalSize: computed,
+      spots: computed,
+      populations: computed,
+      regionsOfInterest: computed,
+      objects: computed,
+      defineResultsAreEmpty: computed,
+      parametersWithErrors: computed,
+      add: action
+    });
     this.analysis = analysis;
     this.createdDate = moment.utc();
     this.modifiedDate = moment.utc();
@@ -62,7 +89,6 @@ class AnalysisPipeline {
     );
   }
 
-  @computed
   get namesAndTypes () {
     if (!this.analysis) {
       return undefined;
@@ -70,7 +96,6 @@ class AnalysisPipeline {
     return this.analysis.namesAndTypes;
   }
 
-  @computed
   get channels () {
     if (!this.namesAndTypes) {
       return [];
@@ -78,7 +103,6 @@ class AnalysisPipeline {
     return this.namesAndTypes.outputs.map(output => output.name);
   }
 
-  @computed
   get physicalSize () {
     if (!this.analysis) {
       return undefined;
@@ -89,7 +113,6 @@ class AnalysisPipeline {
   /**
    * @returns {{parent: string, name: string, image:string}[]}
    */
-  @computed
   get spots () {
     // Spots are objects that are used as "child" within "RelateObjects"/"FindSpots" modules
     // "RelateObjects":
@@ -128,7 +151,6 @@ class AnalysisPipeline {
     });
   }
 
-  @computed
   get populations () {
     // Populations are objects that found using FindNuclei / IdentifyPrimaryObjects methods
     // and NOT used as children within the RelateObjects methods
@@ -158,7 +180,6 @@ class AnalysisPipeline {
     return populations.filter(population => !exclude.has(population.name));
   }
 
-  @computed
   get regionsOfInterest () {
     // ROI are objects found using FindCells, FindCytoplasm, IdentifySecondaryObjects,
     // IdentifyTertiaryObjects modules
@@ -206,7 +227,6 @@ class AnalysisPipeline {
     return rois;
   }
 
-  @computed
   get objects () {
     // All objects found
     const all = this.modules
@@ -218,7 +238,6 @@ class AnalysisPipeline {
     return [...new Set(all)];
   }
 
-  @computed
   get defineResultsAreEmpty () {
     if (!this.defineResults) {
       return true;
@@ -228,7 +247,6 @@ class AnalysisPipeline {
       configuration.filter(o => o.object).length === 0;
   }
 
-  @computed
   get parametersWithErrors () {
     return this.modules
       .reduce((acc, current) => ([
@@ -290,7 +308,6 @@ class AnalysisPipeline {
    * @param {object} analysisModuleConfiguration
    * @returns {AnalysisModule}
    */
-  @action
   add = async (analysisModuleConfiguration) => {
     const newModule = new AnalysisModule(this, analysisModuleConfiguration);
     this.modules.push(newModule);

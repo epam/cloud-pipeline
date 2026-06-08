@@ -15,19 +15,19 @@
  */
 
 import React from 'react';
-import {observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {
+  observer} from 'mobx-react';
+import {computed, makeObservable} from 'mobx';
 import {
   Alert,
   Button,
   Checkbox,
   DatePicker,
-  Icon,
+  Dropdown,
   message,
   Row
 } from 'antd';
-import Menu, {MenuItem, Divider as MenuDivider} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
+import {DownOutlined, ExportOutlined} from '@ant-design/icons';
 import FileSaver from 'file-saver';
 import moment from 'moment-timezone';
 import classNames from 'classnames';
@@ -124,6 +124,18 @@ class GeneralInfoTab extends React.Component {
     exportWindowVisible: false
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      windowsOS: computed,
+      wholeRangeEnabled: computed,
+      lastWeekEnabled: computed,
+      lastDayEnabled: computed,
+      lastHourEnabled: computed,
+      retentionPeriodExceeded: computed
+    });
+  }
+
   componentDidMount () {
     this.initializeRange();
     this.checkWindowsBasedNode();
@@ -142,7 +154,6 @@ class GeneralInfoTab extends React.Component {
     this.stopContinuousMonitorUpdate();
   }
 
-  @computed
   get windowsOS () {
     const {node} = this.props;
     if (node.loaded) {
@@ -158,13 +169,11 @@ class GeneralInfoTab extends React.Component {
     return false;
   }
 
-  @computed
   get wholeRangeEnabled () {
     const {chartsData} = this.props;
     return !!chartsData.instanceFrom;
   }
 
-  @computed
   get lastWeekEnabled () {
     const {chartsData} = this.props;
     return !chartsData.rangeEndIsFixed && (
@@ -174,7 +183,6 @@ class GeneralInfoTab extends React.Component {
     );
   }
 
-  @computed
   get lastDayEnabled () {
     const {chartsData} = this.props;
     return !chartsData.rangeEndIsFixed && (
@@ -184,7 +192,6 @@ class GeneralInfoTab extends React.Component {
     );
   }
 
-  @computed
   get lastHourEnabled () {
     const {chartsData} = this.props;
     return !chartsData.rangeEndIsFixed && (
@@ -194,7 +201,6 @@ class GeneralInfoTab extends React.Component {
     );
   }
 
-  @computed
   get retentionPeriodExceeded () {
     const {preferences, chartsData} = this.props;
     const {end} = this.state;
@@ -554,7 +560,7 @@ class GeneralInfoTab extends React.Component {
     } = this.props;
     if (chartsData?.error) {
       return (
-        <Alert type={'error'} message={chartsData.error} />
+        <Alert type={'error'} title={chartsData.error} />
       );
     }
     if (!chartsData || !chartsData.initialized) {
@@ -609,40 +615,19 @@ class GeneralInfoTab extends React.Component {
           </Checkbox>
           <Divider />
           <Dropdown
-            overlay={(
-              <Menu
-                onClick={this.setRange}
-                style={{cursor: 'pointer'}}
-                selectedKeys={[]}
-              >
-                <MenuItem
-                  key={Range.full}
-                  disabled={!this.wholeRangeEnabled}
-                >
-                  Whole range
-                </MenuItem>
-                <MenuItem
-                  key={Range.week}
-                  disabled={!this.lastWeekEnabled}
-                >
-                  Last week
-                </MenuItem>
-                <MenuItem
-                  key={Range.day}
-                  disabled={!this.lastDayEnabled}
-                >
-                  Last day
-                </MenuItem>
-                <MenuItem
-                  key={Range.hour}
-                  disabled={!this.lastHourEnabled}
-                >
-                  Last hour
-                </MenuItem>
-              </Menu>
-            )}>
+            menu={{
+              items: [
+                {key: Range.full, label: 'Whole range', disabled: !this.wholeRangeEnabled},
+                {key: Range.week, label: 'Last week', disabled: !this.lastWeekEnabled},
+                {key: Range.day, label: 'Last day', disabled: !this.lastDayEnabled},
+                {key: Range.hour, label: 'Last hour', disabled: !this.lastHourEnabled}
+              ],
+              onClick: this.setRange,
+              style: {cursor: 'pointer'}
+            }}
+          >
             <Button>
-              Set range <Icon type="down" />
+              Set range <DownOutlined />
             </Button>
           </Dropdown>
           <Divider />
@@ -668,35 +653,24 @@ class GeneralInfoTab extends React.Component {
           {
             !this.retentionPeriodExceeded && (
               <Dropdown
-                overlay={(
-                  <Menu
-                    onClick={this.onExportClicked}
-                    style={{cursor: 'pointer'}}
-                    selectedKeys={[]}
-                  >
-                    <MenuItem key="XLS" value="XLS">
-                      Excel
-                    </MenuItem>
-                    <MenuItem key="CSV" value="CSV">
-                      CSV
-                    </MenuItem>
-                    {
-                      availableExportIntervals.length > 1 && (<MenuDivider />)
-                    }
-                    {
-                      availableExportIntervals.length > 1 && (
-                        <MenuItem key="custom" value="custom">
-                          Configure export
-                        </MenuItem>
-                      )
-                    }
-                  </Menu>
-                )}>
+                menu={{
+                  items: [
+                    {key: 'XLS', label: 'Excel'},
+                    {key: 'CSV', label: 'CSV'},
+                    ...(availableExportIntervals.length > 1 ? [
+                      {type: 'divider', key: 'divider'},
+                      {key: 'custom', label: 'Configure export'}
+                    ] : [])
+                  ],
+                  onClick: this.onExportClicked,
+                  style: {cursor: 'pointer'}
+                }}
+              >
                 <Button
                   disabled={!start || exporting}
                   onClick={() => this.onExportClicked()}
                 >
-                  <Icon type="export" />Export
+                  <ExportOutlined />Export
                 </Button>
               </Dropdown>
             )

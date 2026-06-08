@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {observable, computed} from 'mobx';
+import {observable, computed, makeObservable} from 'mobx';
 
 const UI_NGS_PROJECT_MACHINE_RUN_PREFERENCE = 'ngs.preprocessing.machine.run.metadata.class.name';
 const MACHINE_RUN_METADATA_CLASS_NAME = 'MachineRun';
@@ -38,9 +38,15 @@ export function getSampleSheetColumnName (preferences) {
 }
 
 class NgsProjectMachineRuns {
-  @observable preferences;
-  @observable metadataClass;
+  preferences;
+  metadataClass;
+
   constructor (options = {}, preferences) {
+    makeObservable(this, {
+      preferences: observable,
+      metadataClass: observable,
+      isMachineRunsMetadataClass: computed
+    });
     this.preferences = preferences;
     const {
       metadataClass
@@ -48,7 +54,6 @@ class NgsProjectMachineRuns {
     this.metadataClass = metadataClass;
   }
 
-  @computed
   get isMachineRunsMetadataClass () {
     const metadataClassName = getMachineRunMetadataClassName(this.preferences);
     return metadataClassName &&

@@ -32,7 +32,7 @@ const {
   warning: WarningMessage
 });
 
-function LayersCheckProvider ({active, children, runId}) {
+function LayersCheckProvider ({active = true, children, runId}) {
   return (
     <CheckProvider active={active} objectId={runId}>
       {children}
@@ -45,9 +45,6 @@ LayersCheckProvider.propTypes = {
   children: PropTypes.node,
   active: PropTypes.bool
 };
-LayersCheckProvider.defaultProps = {
-  active: true
-};
 
 LayersCheckProvider.inject = inject;
 LayersCheckProvider.store = store;
@@ -58,9 +55,6 @@ LayersCheckProvider.Warning.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
   type: PropTypes.string
-};
-LayersCheckProvider.Warning.defaultProps = {
-  type: 'error'
 };
 
 export default LayersCheckProvider;

@@ -17,13 +17,12 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import {
   Dropdown,
-  Icon,
-  Menu,
   message
 } from 'antd';
+import {LoadingOutlined, SettingOutlined} from '@ant-design/icons';
 import PipelineRunInfo from '../../../../models/pipelines/PipelineRunInfo';
 import BillingQuota from '../../../../models/billing/quotas/get-quota';
 import {ACTIONS, ENTITY_CLASSES, NOTIFICATION_TYPES} from './actions';
@@ -38,7 +37,6 @@ class NotificationActions extends React.Component {
     entityRequestPending: false
   };
 
-  @observable
   entityInfoRequest;
 
   groupedActions = {
@@ -99,7 +97,14 @@ class NotificationActions extends React.Component {
     ]
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      entityInfoRequest: observable,
+      actions: computed
+    });
+  }
+
   get actions () {
     const {preferences} = this.props;
     const {type} = this.notificationDetails;
@@ -183,50 +188,34 @@ class NotificationActions extends React.Component {
       style
     } = this.props;
     const {visible, entityRequestPending} = this.state;
-    const menu = (
-      <Menu
-        selectedKeys={[]}
-        style={{cursor: 'default', minWidth: '120px'}}
-        onClick={({key}) => {
-          const action = this.actions.find(action => action.key === key);
-          action && action.actionFn({
-            notification,
-            entity: (this.entityInfoRequest || {}).value,
-            router: this.props.router,
-            callback: this.hideMenu
-          });
-          this.hideMenu();
-        }}
-      >
-        {this.actions.length > 0 ? (
-          this.actions.map(action => (
-            <Menu.Item
-              key={action.key}
-            >
-              {action.key}
-            </Menu.Item>
-          ))
-        ) : (
-          <Menu.Item key="empty" disabled>No actions available</Menu.Item>
-        )}
-      </Menu>
-    );
     return (
       <div>
         {this.showActionsControl ? (
           <Dropdown
-            overlay={menu}
+            menu={{
+              items: this.actions.length > 0
+                ? this.actions.map(action => ({key: action.key, label: action.key}))
+                : [{key: 'empty', label: 'No actions available', disabled: true}],
+              onClick: ({key}) => {
+                const action = this.actions.find(a => a.key === key);
+                action && action.actionFn({
+                  notification,
+                  entity: (this.entityInfoRequest || {}).value,
+                  router: this.props.router,
+                  callback: this.hideMenu
+                });
+                this.hideMenu();
+              }
+            }}
             trigger={['click']}
-            onVisibleChange={this.handleVisibleChange}
-            visible={visible}
+            onOpenChange={this.handleVisibleChange}
+            open={visible}
             disabled={pending}
             onClick={e => e.stopPropagation()}
           >
-            <Icon
-              type={entityRequestPending ? 'loading' : 'setting'}
-              className={styles.controlsIcon}
-              style={style}
-            />
+            {entityRequestPending
+              ? <LoadingOutlined className={styles.controlsIcon} style={style} />
+              : <SettingOutlined className={styles.controlsIcon} style={style} />}
           </Dropdown>
         ) : null}
       </div>

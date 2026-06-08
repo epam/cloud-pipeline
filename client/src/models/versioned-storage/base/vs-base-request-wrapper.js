@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import {fetchToken} from '../../user/UserToken';
 import pipelineRunFSBrowserCache from '../../pipelines/PipelineRunFSBrowserCache';
 import multiZoneManager from '../../../utils/multizone';
@@ -64,13 +64,12 @@ function fetchConfigurations (runId, defaultRegion = undefined) {
 
 export default function wrapStandardRequest (RequestClass) {
   return class extends RequestClass {
-    @observable _endpoint;
-    @observable _token;
-    @observable _endpointsConfiguration;
+    _endpoint;
+    _token;
+    _endpointsConfiguration;
     fetchConfigurationPromise;
     runId;
 
-    @computed
     get endpoint () {
       return this._endpoint;
     }
@@ -84,12 +83,10 @@ export default function wrapStandardRequest (RequestClass) {
       }
     }
 
-    @computed
     get endpointsConfiguration () {
       return this._endpointsConfiguration;
     }
 
-    @computed
     get token () {
       return this._token;
     }
@@ -111,6 +108,14 @@ export default function wrapStandardRequest (RequestClass) {
 
     constructor (runId, defaultRegion = undefined) {
       super();
+      makeObservable(this, {
+        _endpoint: observable,
+        _token: observable,
+        _endpointsConfiguration: observable,
+        endpoint: computed,
+        endpointsConfiguration: computed,
+        token: computed
+      });
       this.runId = runId;
       this.defaultRegion = defaultRegion;
     }

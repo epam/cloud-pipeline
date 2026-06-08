@@ -17,15 +17,16 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {observable, computed} from 'mobx';
+import {withRouter} from '../../utils/with-router';
+import {observable, computed, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import {
-  Icon,
   Input,
   message,
   Tooltip,
   Row
 } from 'antd';
+import {FilterOutlined, LoadingOutlined, QuestionOutlined} from '@ant-design/icons';
 import Preview from './preview';
 import {PreviewIcons} from './preview/previewIcons';
 import {SearchItemTypes} from '../../models/search';
@@ -37,14 +38,19 @@ import {facetedQueryString} from './faceted-search/utilities';
 import {DocumentTypeFilterName} from './faceted-search/filter';
 import getItemUrl from './faceted-search/utilities/get-item-url';
 import {getSearchPrompt} from './utilities/search-utilities';
-import '../../staticStyles/Search.css';
 
 const PAGE_SIZE = 50;
 const INSTANT_SEARCH_DELAY = 1000;
 const PREVIEW_AVAILABLE_DELAY = 500;
 
 class SearchDialogBlocker {
-  @observable blocked = false;
+  blocked = false;
+
+  constructor () {
+    makeObservable(this, {
+      blocked: observable
+    });
+  }
 }
 
 const searchDialogBlocker = new SearchDialogBlocker();
@@ -54,7 +60,7 @@ export {searchDialogBlocker};
 @localization.localizedComponent
 @inject('searchEngine', 'preferences')
 @observer
-export default class SearchDialog extends localization.LocalizedReactComponent {
+class SearchDialog extends localization.LocalizedReactComponent {
   static propTypes = {
     onInitialized: PropTypes.func,
     onVisibilityChanged: PropTypes.func,
@@ -76,9 +82,16 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
 
   inputControl;
 
-  @observable delayedSearch;
+  delayedSearch;
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      delayedSearch: observable,
+      quickSearchDisabled: computed
+    });
+  }
+
   get quickSearchDisabled () {
     const {preferences} = this.props;
     return preferences.uiQuickSearchDisabled;
@@ -286,12 +299,9 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
   };
 
   renderIcon = (resultItem) => {
-    if (PreviewIcons[resultItem.type]) {
-      return (
-        <Icon
-          className={styles.searchResultItemIcon}
-          type={PreviewIcons[resultItem.type]} />
-      );
+    const ItemIcon = PreviewIcons[resultItem.type];
+    if (ItemIcon) {
+      return <ItemIcon className={styles.searchResultItemIcon} />;
     }
     return null;
   };
@@ -658,7 +668,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
           }
         >
           <Tooltip
-            overlayClassName="search-hints-overlay"
+            classNames={{root: 'search-hints-overlay'}}
             placement={hintsTooltipPlacement}
             title={this.renderHints()}>
             <div
@@ -669,7 +679,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
                 )
               }
             >
-              <Icon type="question" />
+              <QuestionOutlined />
             </div>
           </Tooltip>
         </div>
@@ -689,6 +699,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
               this.searchTypesArray.map((type, index) => {
                 const disabled = this.state.aggregates && !this.state.aggregates[type.key];
                 const selected = !disabled && this.state.selectedGroupTypes.indexOf(type.key) >= 0;
+                const TypeIcon = type.icon;
                 return (
                   <div
                     className={
@@ -703,7 +714,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
                     }
                     onClick={this.enableDisableSearchGroup(type.key, disabled)}
                     key={index}>
-                    <Icon type={type.icon} />
+                    {TypeIcon && <TypeIcon />}
                     <span className={styles.typeTitle}>
                       {
                         type.title(this.localizedString)(
@@ -792,7 +803,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
                 align="middle"
                 justify="center"
               >
-                <Icon type="loading" />
+                <LoadingOutlined />
               </Row>
             )
           }
@@ -810,7 +821,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
           }
           onClick={this.navigateToAdvancedFilter}
         >
-          <Icon className={styles.icon} type="filter" />
+          <FilterOutlined className={styles.icon} />
           <span className={styles.buttonText}>Advanced search</span>
         </div>
       </div>
@@ -906,3 +917,5 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
     this.props.onInitialized && this.props.onInitialized(null);
   }
 }
+
+export default withRouter(SearchDialog);

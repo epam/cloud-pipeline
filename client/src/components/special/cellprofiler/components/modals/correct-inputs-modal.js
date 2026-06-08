@@ -104,9 +104,9 @@ class CorrectInputsModal extends React.Component {
       <Modal
         className={className}
         style={style}
-        visible={visible}
+        open={visible}
         onCancel={onCancel}
-        maskClosable={false}
+        mask={{closable: false}}
         closable={false}
         width={600}
         title="Correct inputs for pipeline"
@@ -132,7 +132,7 @@ class CorrectInputsModal extends React.Component {
           showIcon
           type="info"
           style={{marginBottom: 5}}
-          message={(
+          title={(
             <p>
               There are inputs (image channels)
               that are not available for the current image.<br />
@@ -181,8 +181,8 @@ CorrectInputsModal.propTypes = {
   onCorrect: PropTypes.func,
   onCancel: PropTypes.func,
   visible: PropTypes.bool,
-  inputs: PropTypes.oneOfType(PropTypes.object, PropTypes.arrayOf(PropTypes.string)),
-  availableInputs: PropTypes.oneOfType(PropTypes.object, PropTypes.arrayOf(PropTypes.string))
+  inputs: PropTypes.oneOfType([PropTypes.object, PropTypes.arrayOf(PropTypes.string)]),
+  availableInputs: PropTypes.oneOfType([PropTypes.object, PropTypes.arrayOf(PropTypes.string)])
 };
 
 export default CorrectInputsModal;

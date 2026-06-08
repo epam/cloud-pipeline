@@ -16,7 +16,7 @@
 
 import {SERVER, API_PATH} from '../../config';
 import defer from '../../utils/defer';
-import {observable, action, computed} from 'mobx';
+import {observable, action, computed, makeObservable} from 'mobx';
 import {authorization} from './Authorization';
 import maintenanceCheck from './maintenance-check';
 
@@ -29,43 +29,60 @@ class RemotePost {
       'Content-Type': 'application/json; charset=UTF-8;'
     }
   };
+
   static prefix = SERVER + API_PATH;
   static auto = false;
   static isJson = true;
   static noResponse = false;
-
-  @observable error = undefined;
-  @observable networkError = undefined;
+  error = undefined;
+  networkError = undefined;
 
   url;
+  _pending = false;
 
-  @observable _pending = false;
-  @computed
+  constructor () {
+    makeObservable(this, {
+      error: observable,
+      networkError: observable,
+      _pending: observable,
+      _loaded: observable,
+      _response: observable,
+      responseStatus: observable,
+      responseStatusText: observable,
+      responseError: observable,
+      pending: computed,
+      loaded: computed,
+      response: computed,
+      update: action
+    });
+  }
+
   get pending () {
     return this._pending;
   }
 
-  @observable _loaded = false;
-  @computed
+  _loaded = false;
+
   get loaded () {
     return this._loaded;
   }
 
-  @observable _response = undefined;
-  @computed
+  _response = undefined;
+
   get response () {
     return this._response;
   }
 
-  @observable responseStatus = undefined;
-  @observable responseStatusText = undefined;
-  @observable responseError = false;
+  responseStatus = undefined;
+  responseStatusText = undefined;
+  responseError = false;
 
   async fetch () {
     await this.send({});
   }
 
   _fetchIsExecuting = false;
+
   async send (body, abortSignal) {
     if (!this._postIsExecuting) {
       this._pending = true;
@@ -125,7 +142,6 @@ class RemotePost {
     return value.payload;
   }
 
-  @action
   update (value) {
     this._response = value;
     if (value.status && value.status === 401) {

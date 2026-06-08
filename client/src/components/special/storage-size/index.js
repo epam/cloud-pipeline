@@ -20,10 +20,10 @@ import classNames from 'classnames';
 import {
   message,
   Tooltip,
-  Icon,
   Modal
 } from 'antd';
-import {computed, observable} from 'mobx';
+import {InfoCircleFilled} from '@ant-design/icons';
+import {computed, observable, makeObservable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {STORAGE_CLASSES} from '../../pipelines/browser/data-storage';
 import DataStoragePathUsage from '../../../models/dataStorage/DataStoragePathUsage';
@@ -75,23 +75,26 @@ function InfoTooltip ({sizes, isNFS}) {
       title={tooltip}
       placement="top"
     >
-      <Icon
-        type="info-circle"
-        className="cp-text"
-        style={{marginRight: 5, marginLeft: 5}}
-      />
+      <InfoCircleFilled className="cp-text" style={{marginRight: 5, marginLeft: 5}} />
     </Tooltip>
   );
 }
 
 @inject('preferences')
 @observer
-class StorageSize extends React.PureComponent {
+class StorageSize extends React.Component {
   state = {
     showDetailedInfo: false
-  };
+  }; info;
 
-  @observable info;
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      info: observable,
+      usageInfo: computed,
+      hasArchivedData: computed
+    });
+  }
 
   componentDidMount () {
     this.updateStorageSize();
@@ -106,7 +109,6 @@ class StorageSize extends React.PureComponent {
     }
   }
 
-  @computed
   get usageInfo () {
     if (!this.info) {
       return null;
@@ -152,7 +154,6 @@ class StorageSize extends React.PureComponent {
     };
   }
 
-  @computed
   get hasArchivedData () {
     const {storage} = this.props;
     if (!storage || !this.usageInfo) {
@@ -321,7 +322,7 @@ class StorageSize extends React.PureComponent {
     return (
       <Modal
         onCancel={this.closeDetailedInfo}
-        visible={showDetailedInfo}
+        open={showDetailedInfo}
         footer={false}
         title="Usage details"
         width={600}

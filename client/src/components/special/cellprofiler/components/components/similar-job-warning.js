@@ -33,7 +33,7 @@ function SimilarJobWarning (
   return (
     <Modal
       className={className}
-      visible={visible}
+      open={visible}
       onCancel={onCancel}
       footer={(
         <div

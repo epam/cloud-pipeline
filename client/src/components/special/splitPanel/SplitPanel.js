@@ -17,540 +17,136 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
-import {computed} from 'mobx';
-import {Row, Icon} from 'antd';
-import classNames from 'classnames';
+import {Row, Splitter} from 'antd';
+import {CloseOutlined} from '@ant-design/icons';
 import localization from '../../../utils/localization';
-
-const RESIZER_SIZE = 6;
-const MINIMUM_CONTENT_SIZE = 50;
-const MAX_SIZE_ITERATIONS = 10;
 
 export const CONTENT_PANEL_KEY = 'content';
 export const ISSUES_PANEL_KEY = 'issues';
 export const METADATA_PANEL_KEY = 'metadata';
+export const PREVIEW_PANEL_KEY = 'configuration-preview';
 
 const filterRealChild = child => !!child;
 
-@observer
-export class SplitPanel extends React.Component {
-
-  static propTypes = {
-    onPanelClose: PropTypes.func,
-    onPanelResize: PropTypes.func,
-    onPanelResizeDelay: PropTypes.number,
-    resizerSize: PropTypes.number,
-    resizerStyle: PropTypes.object,
-    contentPadding: PropTypes.number,
-    orientation: PropTypes.oneOf(['horizontal', 'vertical']),
-    style: PropTypes.object,
-    contentInfo: PropTypes.arrayOf(PropTypes.shape({
-      key: PropTypes.string,
-      title: PropTypes.string,
-      closable: PropTypes.bool,
-      containerStyle: PropTypes.object,
-      containerClassName: PropTypes.string,
-      size: PropTypes.shape({
-        keepPreviousSize: PropTypes.bool,
-        priority: PropTypes.number,
-        pxMinimum: PropTypes.number,
-        percentMinimum: PropTypes.number,
-        pxMaximum: PropTypes.number,
-        percentMaximum: PropTypes.number,
-        pxDefault: PropTypes.number,
-        percentDefault: PropTypes.number
-      })
-    }))
-  };
-  static defaultProps = {
-    onPanelResizeDelay: 250
-  };
-  state = {
-    sizes: {},
-    container: undefined,
-    activeResizer: null,
-    activeResizerInfo: null
-  };
-  getChildKey = (childIndex, children) => {
-    children = children || (this.props.children || []).filter(filterRealChild);
-    const child = children[childIndex];
-    return child.key || `child_${childIndex}`;
-  };
-
-  getContentInfo = (key, contentInfo) => {
-    contentInfo = contentInfo || this.props.contentInfo;
-    if (contentInfo) {
-      const [info] = contentInfo.filter(i => i.key === key);
-      if (info) {
-        return info;
-      }
-    }
-    return {key};
-  };
-  getResizerIndentifier = (resizerIndex) => {
-    return `resizer_${resizerIndex};`;
-  };
-  renderResizer = (resizerIndex) => {
-    const onMouseDown = (e) => {
-      if (this.state.container) {
-        const coordinate = this.isVertical
-          ? e.nativeEvent.pageY - this.state.container.offsetTop
-          : e.nativeEvent.pageX - this.state.container.offsetLeft;
-        this.setState({
-          activeResizer: resizerIndex,
-          activeResizerInfo: {
-            coordinate
-          }
-        });
-      }
-    };
-    const style = {
-      cursor: this.isVertical ? 'row-resize' : 'col-resize',
-      padding: 0,
-      width: this.isVertical ? undefined : this.resizerSize,
-      height: this.isVertical ? this.resizerSize : undefined
-    };
-    return (
-      <div
-        id={this.getResizerIndentifier(resizerIndex)}
-        onMouseDown={onMouseDown}
-        key={this.getResizerIndentifier(resizerIndex)}
-        style={style}>
-        <div
-          className="cp-split-panel-resizer"
-          style={this.props.resizerStyle}
-        >
-          {'\u00A0'}
-        </div>
-      </div>
-    );
-  };
-  getChildMinimumSizePx = (childIndex) => {
-    const info = this.getContentInfo(this.getChildKey(childIndex));
-    if (info && info.size) {
-      if (info.size.pxMinimum) {
-        return info.size.pxMinimum;
-      } else if (info.size.percentMinimum) {
-        return this.toPXSize(info.size.percentMinimum / 100.0);
-      }
-    }
-    return MINIMUM_CONTENT_SIZE;
-  };
-  getChildMaximumSizePx = (childIndex) => {
-    const info = this.getContentInfo(this.getChildKey(childIndex));
-    if (info && info.size) {
-      if (info.size.pxMaximum) {
-        return info.size.pxMaximum;
-      } else if (info.size.percentMaximum) {
-        return this.toPXSize(info.size.percentMaximum / 100.0);
-      }
-    }
-    return this.totalSize;
-  };
-  getChildSize = (childIndex) => {
-    const childrenCount = (this.props.children || []).filter(filterRealChild).length;
-    const key = this.getChildKey(childIndex);
-    const sizes = this.state.sizes;
-    let size;
-    if (sizes && sizes[key]) {
-      size = sizes[key];
-    } else {
-      size = this.toPercentSize((this.totalSize - (childrenCount - 1) * this.resizerSize) /
-        childrenCount);
-    }
-    return size;
-  };
-  setChildSize = (childIndex, size, sizes, push = false) => {
-    const key = this.getChildKey(childIndex);
-    sizes = sizes || this.state.sizes;
-    if (!sizes) {
-      sizes = {};
-    }
-    sizes[key] = size;
-    if (push) {
-      this.setState({
-        sizes: sizes
-      });
-    }
-    return sizes;
-  };
-  renderChild = (childIndex) => {
-    const content = (this.props.children || []).filter(filterRealChild)[childIndex];
-    const key = this.getChildKey(childIndex);
-    const size = this.getChildSize(childIndex);
-    let style = {
-      overflow: 'auto',
-      padding: this.contentPadding
-    };
-    if (this.isVertical) {
-      style.height = `${size * 100}%`;
-    } else {
-      style.width = `${size * 100}%`;
-    }
-    const info = this.getContentInfo(key);
-    if (info && info.containerStyle !== undefined) {
-      style = Object.assign(style, info.containerStyle);
-    }
-    let renderHeader = false;
-    if (info && (info.title || info.closable)) {
-      renderHeader = true;
-    }
-    return (
-      <div
-        className={classNames(info ? info.containerClassName : undefined, 'cp-split-panel-panel')}
-        key={`child_${childIndex}`}
-        style={style}>
-        {
-          renderHeader &&
-          <Row
-            type="flex"
-            justify="space-between"
-            align="middle"
-            className="cp-split-panel-header"
-            style={{
-              padding: '0px 5px'
-            }}>
-            <span>{info.title || ''}</span>
-            {
-              info.closable &&
-              <Icon
-                type="close"
-                onClick={() => this.props.onPanelClose && info && this.props.onPanelClose(info.key)}
-                style={{cursor: 'pointer'}} />
-            }
-          </Row>
-        }
-        {content}
-      </div>
-    );
-  };
-  renderSplitPaneContent = () => {
-    const children = [];
-    const length = (this.props.children || []).filter(filterRealChild).length;
-    for (let i = 0; i < length; i++) {
-      children.push(this.renderChild(i));
-      if (i < length - 1) {
-        children.push(this.renderResizer(i));
-      }
-    }
-    return children;
-  };
-  initializeSplitPane = (div) => {
-    this.setState({
-      container: div
-    }, () => {
-      if (this.state.container) {
-        this.resetWidthsState((this.props.children || []).filter(filterRealChild), this.props.contentInfo);
-      }
-    });
-  };
-  toPercentSize = (px) => {
-    if (!px) {
-      return 0;
-    }
-    return px / this.totalSize;
-  };
-  // percent [0..1]
-  toPXSize = (percent) => {
-    if (!percent) {
-      return 0;
-    }
-    return this.totalSize * percent;
-  };
-  resetWidthsState = (children, infos) => {
-    const sizes = {};
-    const getChildSizePriority = (key) => {
-      const info = this.getContentInfo(key, infos);
-      if (info && info.size && info.size.priority) {
-        return info.size.priority;
-      }
-      return 0;
-    };
-    const sortedChildren = children
-      .filter(filterRealChild)
-      .sort((childA, childB) => {
-        const priorityA = getChildSizePriority(childA.key);
-        const priorityB = getChildSizePriority(childB.key);
-        if (priorityA > priorityB) {
-          return -1;
-        } else if (priorityA < priorityB) {
-          return 1;
-        }
-        return 0;
-      });
-    const maxSizes = {};
-    const minSizes = {};
-    const getChildKey = (i, array) => {
-      const index = (children || []).filter(filterRealChild).indexOf(array[i]);
-      return this.getChildKey(index, (children || []).filter(filterRealChild));
-    };
-    for (let i = 0; i < sortedChildren.length; i++) {
-      const key = getChildKey(i, sortedChildren);
-      const info = this.getContentInfo(key, infos);
-      if (info && info.size && info.size.keepPreviousSize) {
-        let width = this.state.sizes[key];
-        if (width !== undefined) {
-          sizes[key] = this.state.sizes[key];
-          const min = this.toPercentSize(info.size.pxMinimum) ||
-            (info.size.percentMinimum ? info.size.percentMinimum / 100 : 0);
-          const max = this.toPercentSize(info.size.pxMaximum) ||
-            (info.size.percentMaximum ? info.size.percentMaximum / 100 : 1);
-          width = Math.max(min, Math.min(max, width));
-          maxSizes[key] = width === max;
-          minSizes[key] = width === min;
-        }
-      }
-    }
-    const setSizes = (size, iteration) => {
-      if (iteration === MAX_SIZE_ITERATIONS || size === 0) {
-        return;
-      }
-      let totalWidth = size;
-      const notProcessedChildren = size > 0
-        ? sortedChildren.filter(({key}) => !maxSizes[key])
-        : sortedChildren.filter(({key}) => !minSizes[key]);
-      for (let i = 0; i < notProcessedChildren.length; i++) {
-        const key = getChildKey(i, notProcessedChildren);
-        const info = this.getContentInfo(key, infos);
-        let width = sizes[key];
-        if (!width) {
-          if (info && info.size && info.size.pxDefault) {
-            width = this.toPercentSize(info.size.pxDefault);
-          } else if (info && info.size && info.size.percentDefault) {
-            width = info.size.percentDefault / 100;
-          } else {
-            width = (totalWidth / (notProcessedChildren.length - i));
-          }
-          if (i === notProcessedChildren.length - 1) {
-            width = totalWidth;
-          }
-        } else if (iteration > 0) {
-          width += (totalWidth / (notProcessedChildren.length - i));
-        }
-        if (info && info.size) {
-          const min = this.toPercentSize(info.size.pxMinimum) ||
-            (info.size.percentMinimum ? info.size.percentMinimum / 100 : 0);
-          const max = this.toPercentSize(info.size.pxMaximum) ||
-            (info.size.percentMaximum ? info.size.percentMaximum / 100 : 1);
-          width = Math.max(min, Math.min(max, width));
-          maxSizes[key] = width === max;
-          minSizes[key] = width === min;
-        }
-        let addedWidth = width;
-        if (iteration > 0 && sizes[key]) {
-          const delta = width - sizes[key];
-          sizes[key] = width;
-          addedWidth = delta;
-        } else {
-          sizes[key] = width;
-        }
-        totalWidth -= addedWidth;
-      }
-      setSizes(totalWidth, iteration + 1);
-    };
-    setSizes(1, 0);
-    this.setState({
-      activeResizer: null,
-      activeResizerInfo: null,
-      sizes
-    });
-  };
-  panelResizeTimeout;
-  reportPanelResize = () => {
-    if (!this.props.onPanelResize) {
-      return;
-    }
-    if (this.panelResizeTimeout) {
-      clearTimeout(this.panelResizeTimeout);
-    }
-    this.panelResizeTimeout = setTimeout(() => {
-      this.props.onPanelResize && this.props.onPanelResize(this);
-      this.panelResizeTimeout = undefined;
-    }, this.props.onPanelResizeDelay);
-  };
-  updateState = (e) => {
-    if (this.state.activeResizer !== null && this.state.activeResizerInfo) {
-      if (e.stopPropagation) {
-        e.stopPropagation();
-      }
-      if (e.preventDefault) {
-        e.preventDefault();
-      }
-      e.cancelBubble = true;
-      e.returnValue = false;
-      const coordinate = this.isVertical
-        ? e.pageY - this.state.container.offsetTop
-        : e.pageX - this.state.container.offsetLeft;
-      const delta = coordinate - this.state.activeResizerInfo.coordinate;
-      let leftChildSizePx = this.toPXSize(this.getChildSize(this.state.activeResizer)) +
-        delta;
-      let rightChildSizePx = this.toPXSize(this.getChildSize(this.state.activeResizer + 1)) -
-        delta;
-      const leftChildMinimumSizePx = this.getChildMinimumSizePx(this.state.activeResizer);
-      const leftChildMaximumSizePx = this.getChildMaximumSizePx(this.state.activeResizer);
-      const rightChildMinimumSizePx = this.getChildMinimumSizePx(this.state.activeResizer + 1);
-      const rightChildMaximumSizePx = this.getChildMaximumSizePx(this.state.activeResizer + 1);
-      if (leftChildSizePx >= leftChildMinimumSizePx &&
-        leftChildSizePx <= leftChildMaximumSizePx &&
-        rightChildSizePx >= rightChildMinimumSizePx &&
-        rightChildSizePx <= rightChildMaximumSizePx) {
-        const leftChildWidth = this.toPercentSize(leftChildSizePx);
-        const rightChildWidth = this.toPercentSize(rightChildSizePx);
-        const info = this.setChildSize(this.state.activeResizer, leftChildWidth);
-        this.setChildSize(this.state.activeResizer + 1, rightChildWidth, info);
-        this.setState({
-          sizes: info,
-          activeResizerInfo: {
-            coordinate: coordinate
-          }
-        }, this.reportPanelResize);
-      }
-      return false;
-    }
-    return true;
-  };
-  onMouseMove = (e) => {
-    return this.updateState(e);
-  };
-  onMouseUp = (e) => {
-    this.updateState(e);
-    if (this.state.activeResizer !== null && this.state.activeResizerInfo) {
-      this.setState({
-        activeResizer: null,
-        activeResizerInfo: null
-      });
-    }
-  };
-
-  @computed
-  get isVertical () {
-    return this.props.orientation === 'vertical';
-  }
-
-  @computed
-  get resizerSize () {
-    return this.props.resizerSize || RESIZER_SIZE;
-  }
-
-  @computed
-  get contentPadding () {
-    return this.props.contentPadding;
-  }
-
-  @computed
-  get totalSize () {
-    if (this.state.container) {
-      return this.isVertical
-        ? this.state.container.offsetHeight || this.state.container.clientHeight
-        : this.state.container.offsetWidth || this.state.container.clientWidth;
-    }
-    return undefined;
-  }
-
-  render () {
-    return (
-      <div
-        className={
-          classNames(
-            'split-panel',
-            'cp-split-panel',
-            {
-              vertical: this.isVertical,
-              horizontal: !this.isVertical
-            },
-            this.props.className
-          )
-        }
-        ref={this.initializeSplitPane}
-        style={this.props.style}
-      >
-        {
-          this.totalSize ? this.renderSplitPaneContent() : undefined
-        }
-      </div>
-    );
-  }
-
-  componentWillReceiveProps (nextProps) {
-    const nextPropsChildrenLength = (nextProps.children || []).filter(filterRealChild).length;
-    const currentPropsChildrenLength = (this.props.children || []).filter(filterRealChild).length;
-    if (nextPropsChildrenLength !== currentPropsChildrenLength) {
-      this.resetWidthsState((nextProps.children || []).filter(filterRealChild), nextProps.contentInfo);
-    }
-  }
-
-  componentDidMount () {
-    window.addEventListener('mousemove', this.onMouseMove);
-    window.addEventListener('mouseup', this.onMouseUp);
-  }
-
-  componentWillUnmount () {
-    window.removeEventListener('mousemove', this.onMouseMove);
-    window.removeEventListener('mouseup', this.onMouseUp);
-  }
-}
+const CONTENT_ISSUES_METADATA_PANEL_ORDER = [
+  CONTENT_PANEL_KEY,
+  ISSUES_PANEL_KEY,
+  METADATA_PANEL_KEY,
+  PREVIEW_PANEL_KEY
+];
 
 @localization.localizedComponent
+@observer
 export class ContentIssuesMetadataPanel extends localization.LocalizedReactComponent {
-
   static propTypes = {
     onPanelClose: PropTypes.func,
-    style: PropTypes.object,
+    style: PropTypes.object
   };
 
+  getPanelContentInfo () {
+    return {
+      [CONTENT_PANEL_KEY]: {
+        key: CONTENT_PANEL_KEY,
+        defaultSize: '50%',
+        min: '33%',
+        containerStyle: {display: 'flex', flexDirection: 'column'}
+      },
+      [ISSUES_PANEL_KEY]: {
+        key: ISSUES_PANEL_KEY,
+        title: `${this.localizedString('Issue')}s`,
+        closable: true,
+        defaultSize: '25%',
+        min: 200,
+        containerStyle: {display: 'flex', flexDirection: 'column'}
+      },
+      [METADATA_PANEL_KEY]: {
+        key: METADATA_PANEL_KEY,
+        title: 'Attributes',
+        closable: true,
+        defaultSize: '25%',
+        min: 200,
+        containerStyle: {display: 'flex', flexDirection: 'column'}
+      },
+      [PREVIEW_PANEL_KEY]: {
+        key: PREVIEW_PANEL_KEY,
+        title: 'Preview',
+        defaultSize: '25%',
+        min: 200,
+        containerStyle: {display: 'flex', flexDirection: 'column'}
+      }
+    };
+  }
+
   render () {
+    const children = (this.props.children || []).filter(filterRealChild);
+    const childrenByKey = {};
+    children.forEach(child => {
+      if (child.key) {
+        childrenByKey[child.key] = child;
+      }
+    });
+    const contentInfo = this.getPanelContentInfo();
+    const panels = CONTENT_ISSUES_METADATA_PANEL_ORDER
+      .filter(key => childrenByKey[key])
+      .map(key => ({key, child: childrenByKey[key], info: contentInfo[key]}));
+    if (panels.length === 0) {
+      return null;
+    }
+    if (panels.length === 1) {
+      const {child, info} = panels[0];
+      return (
+        <div style={{...this.props.style, ...info.containerStyle, overflow: 'auto'}}>
+          {child}
+        </div>
+      );
+    }
+
     return (
-      <SplitPanel
-        style={this.props.style}
-        onPanelClose={this.props.onPanelClose}
-        contentInfo={[
-          {
-            key: CONTENT_PANEL_KEY,
-            size: {
-              priority: 0,
-              percentMinimum: 33,
-              percentDefault: 75
-            }
-          },
-          {
-            key: ISSUES_PANEL_KEY,
-            title: `${this.localizedString('Issue')}s`,
-            closable: true,
-            containerStyle: {
-              display: 'flex',
-              flexDirection: 'column'
-            },
-            size: {
-              keepPreviousSize: true,
-              priority: 1,
-              percentDefault: 25,
-              pxMinimum: 200
-            }
-          },
-          {
-            key: METADATA_PANEL_KEY,
-            title: 'Attributes',
-            closable: true,
-            containerStyle: {
-              display: 'flex',
-              flexDirection: 'column'
-            },
-            size: {
-              keepPreviousSize: true,
-              priority: 2,
-              percentDefault: 25,
-              pxMinimum: 200
-            }
-          }
-        ]}>
-        {this.props.children}
-      </SplitPanel>
+      <Splitter style={this.props.style}>
+        {panels.map(({key, child, info}) => (
+          <Splitter.Panel
+            key={key}
+            defaultSize={info.defaultSize}
+            min={info.min}
+            resizable={panels.length > 1}
+          >
+            <div
+              className="cp-split-panel-panel"
+              style={{height: '100%', overflow: 'auto', ...info.containerStyle}}
+            >
+              {(info.title || info.closable) && (
+                <Row
+                  type="flex"
+                  justify="space-between"
+                  align="middle"
+                  className="cp-split-panel-header"
+                  style={{padding: '0px 5px'}}
+                >
+                  <span>{info.title || ''}</span>
+                  {info.closable && (
+                    <CloseOutlined
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        this.props.onPanelClose && this.props.onPanelClose(info.key);
+                      }}
+                      style={{cursor: 'pointer'}}
+                    />
+                  )}
+                </Row>
+              )}
+              {child}
+            </div>
+          </Splitter.Panel>
+        ))}
+      </Splitter>
     );
   }
 }
 
-export class ContentMetadataPanel extends React.Component {
+const CONTENT_METADATA_PANEL_ORDER = [CONTENT_PANEL_KEY, METADATA_PANEL_KEY];
 
+export class ContentMetadataPanel extends React.Component {
   static propTypes = {
     onPanelClose: PropTypes.func,
     contentContainerStyle: PropTypes.object,
@@ -565,46 +161,100 @@ export class ContentMetadataPanel extends React.Component {
     };
     if (this.props.contentContainerStyle) {
       return Object.assign({}, defaultStyle, this.props.contentContainerStyle);
-    } else {
-      return defaultStyle;
     }
+    return defaultStyle;
   };
 
+  getPanelContentInfo () {
+    return {
+      [CONTENT_PANEL_KEY]: {
+        key: CONTENT_PANEL_KEY,
+        defaultSize: '75%',
+        min: '15%',
+        containerStyle: this.getContentContainerStyle()
+      },
+      [METADATA_PANEL_KEY]: {
+        key: METADATA_PANEL_KEY,
+        title: 'Attributes',
+        closable: !!this.props.onPanelClose,
+        defaultSize: '25%',
+        min: 200,
+        containerStyle: {display: 'flex', flexDirection: 'column'}
+      }
+    };
+  }
+
   render () {
+    const children = (this.props.children || []).filter(filterRealChild);
+    const childrenByKey = {};
+    children.forEach(child => {
+      if (child.key) {
+        childrenByKey[child.key] = child;
+      }
+    });
+    const contentInfo = this.getPanelContentInfo();
+    const panels = CONTENT_METADATA_PANEL_ORDER
+      .filter(key => childrenByKey[key])
+      .map(key => ({key, child: childrenByKey[key], info: contentInfo[key]}));
+
+    if (panels.length === 0) {
+      return null;
+    }
+    if (panels.length === 1) {
+      const {child, info} = panels[0];
+      return (
+        <div
+          className={this.props.className}
+          style={{...this.props.style, ...info.containerStyle, overflow: 'auto'}}
+        >
+          {child}
+        </div>
+      );
+    }
+
     return (
-      <SplitPanel
+      <Splitter
         className={this.props.className}
         style={this.props.style}
-        orientation={this.props.orientation}
-        onPanelClose={this.props.onPanelClose}
-        contentInfo={[
-          {
-            key: CONTENT_PANEL_KEY,
-            containerStyle: this.getContentContainerStyle(),
-            size: {
-              priority: 0,
-              percentMinimum: 33,
-              percentDefault: 75
-            }
-          },
-          {
-            key: METADATA_PANEL_KEY,
-            title: 'Attributes',
-            closable: !!this.props.onPanelClose,
-            containerStyle: {
-              display: 'flex',
-              flexDirection: 'column'
-            },
-            size: {
-              keepPreviousSize: true,
-              priority: 2,
-              percentDefault: 25,
-              pxMinimum: 200
-            }
-          }
-        ]}>
-        {this.props.children}
-      </SplitPanel>
+        orientation={this.props.orientation || 'horizontal'}
+      >
+        {panels.map(({key, child, info}) => (
+          <Splitter.Panel
+            key={key}
+            defaultSize={info.defaultSize}
+            min={info.min}
+            resizable
+          >
+            <div
+              className="cp-split-panel-panel"
+              style={{height: '100%', overflow: 'auto', ...info.containerStyle}}
+            >
+              {(info.title || info.closable) && (
+                <Row
+                  type="flex"
+                  justify="space-between"
+                  align="middle"
+                  className="cp-split-panel-header"
+                  style={{padding: '0px 5px'}}
+                >
+                  <span>{info.title || ''}</span>
+                  {info.closable && (
+                    <CloseOutlined
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        this.props.onPanelClose && this.props.onPanelClose(info.key);
+                      }}
+                      style={{cursor: 'pointer'}}
+                    />
+                  )}
+                </Row>
+              )}
+              {child}
+            </div>
+          </Splitter.Panel>
+        ))}
+      </Splitter>
     );
   }
 }

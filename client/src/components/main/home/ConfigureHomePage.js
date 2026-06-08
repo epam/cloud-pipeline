@@ -24,7 +24,8 @@ import {
   PanelInfos,
   AsyncLayout
 } from './layout';
-import {Button, Checkbox, Col, Icon, Modal, Row, Tooltip} from 'antd';
+import {Button, Checkbox, Col, Modal, Row, Tooltip} from 'antd';
+import {QuestionCircleFilled} from '@ant-design/icons';
 import {getDisplayOnlyFavourites, setDisplayOnlyFavourites} from './utils/favourites';
 import localization from '../../../utils/localization';
 
@@ -82,7 +83,7 @@ export default class ConfigureHomePage extends localization.LocalizedReactCompon
         width="33%"
         className="cp-dashboard-configure"
         title="Configure dashboard"
-        visible={this.props.visible}
+        open={this.props.visible}
         onCancel={this.props.onCancel}
         footer={
           <Row type="flex" justify="space-between">
@@ -118,7 +119,7 @@ export default class ConfigureHomePage extends localization.LocalizedReactCompon
                       {
                         panel.info &&
                         <Tooltip title={panel.info} placement="left">
-                          <Icon type="question-circle" />
+                          <QuestionCircleFilled />
                         </Tooltip>
                       }
                     </td>
@@ -139,7 +140,7 @@ export default class ConfigureHomePage extends localization.LocalizedReactCompon
     );
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (this.props.visible !== nextProps.visible) {
       this.updatePanelsState();
     }
@@ -158,22 +159,17 @@ export default class ConfigureHomePage extends localization.LocalizedReactCompon
         if (typeof info === 'function') {
           info = info(this.localizedString);
         }
-        let icon;
-        if (PanelIcons[Panels[key]]) {
-          icon = (
-            <Icon
-              type={PanelIcons[Panels[key]]}
-              style={{
-                fontSize: 'larger',
-                marginRight: 5
-              }} />
-          );
-        }
+        const PanelIcon = PanelIcons[Panels[key]];
         panels.push({
           key: Panels[key],
           title,
           info,
-          icon,
+          icon: <PanelIcon
+            style={{
+              fontSize: 'larger',
+              marginRight: 5
+            }}
+          />,
           visible: layout.filter(item => item.i === Panels[key]).length > 0
         });
       }

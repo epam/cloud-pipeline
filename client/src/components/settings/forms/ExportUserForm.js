@@ -155,7 +155,7 @@ export default function ExportUserForm ({
   return (
     <Modal
       title="CSV fields"
-      visible={visible}
+      open={visible}
       footer={modalControls}
       onCancel={onCancel}
     >

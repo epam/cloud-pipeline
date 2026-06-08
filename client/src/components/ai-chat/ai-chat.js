@@ -15,8 +15,9 @@
  */
 
 import React from 'react';
-import {Alert, Icon} from 'antd';
-import {observable, computed} from 'mobx';
+import {Alert} from 'antd';
+import {DownCircleOutlined} from '@ant-design/icons';
+import {observable, computed, makeObservable} from 'mobx';
 import {observer} from 'mobx-react';
 import classNames from 'classnames';
 import AIChatEngine from './ai-chat-engine';
@@ -42,14 +43,24 @@ export default class AIChat extends React.Component {
     userInput: ''
   };
 
-  @observable chatEngine = getSharedChatEngine();
+  chatEngine = getSharedChatEngine();
   answersContainerRef;
   scrollContainerRef;
   scrollPositionRAF;
   isScrollingTimeout;
+  _scrolledDown = true;
+  _isScrolling = false;
 
-  @observable _scrolledDown = true;
-  @observable _isScrolling = false;
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      chatEngine: observable,
+      _scrolledDown: observable,
+      _isScrolling: observable,
+      isScrolling: computed,
+      scrolledDown: computed
+    });
+  }
 
   componentDidMount () {
     (this.chatEngine.reloadMessages)();
@@ -63,12 +74,10 @@ export default class AIChat extends React.Component {
     }
   }
 
-  @computed
   get isScrolling () {
     return this._isScrolling;
   }
 
-  @computed
   get scrolledDown () {
     return this._scrolledDown;
   }
@@ -78,7 +87,7 @@ export default class AIChat extends React.Component {
     return authenticatedUserInfo.loaded
       ? authenticatedUserInfo.value
       : undefined;
-  };
+  }
 
   get scrollContainerHeight () {
     if (!this.scrollContainerRef) {
@@ -197,7 +206,7 @@ export default class AIChat extends React.Component {
                   data-id={message.id}
                 >
                   <Message
-                    message={message}
+                    title={message}
                     onRunLaunchSuccess={this.onRunLaunchSuccess}
                     first={index === 0}
                     last={index === chat.messages.length - 1}
@@ -212,7 +221,7 @@ export default class AIChat extends React.Component {
           chat.error && (
             <div className={classNames(styles.chatError, styles.chatArea)}>
               <Alert
-                message={(
+                title={(
                   <div>
                     <span>{chat.error}</span>
                     <a style={{marginLeft: 5}} onClick={() => chat.reload()}>
@@ -230,14 +239,14 @@ export default class AIChat extends React.Component {
         {
           chat.socketError && (
             <div className={classNames(styles.chatError, styles.chatArea)}>
-              <Alert message={chat.socketError} type="error" showIcon style={{width: '100%'}} />
+              <Alert title={chat.socketError} type="error" showIcon style={{width: '100%'}} />
             </div>
           )
         }
         {
           chat.messageError && (
             <div className={classNames(styles.chatError, styles.chatArea)}>
-              <Alert message={chat.messageError} type="error" showIcon style={{width: '100%'}} />
+              <Alert title={chat.messageError} type="error" showIcon style={{width: '100%'}} />
             </div>
           )
         }
@@ -247,17 +256,7 @@ export default class AIChat extends React.Component {
           'cp-panel-color', {
             [styles.dropShadow]: !this.scrolledDown
           })}>
-          <Icon
-            type="down-circle-o"
-            className={classNames(
-              'cp-panel-background-color cp-primary',
-              styles.downButton, {
-                [styles.visible]: !this.isScrolling &&
-                !this.scrolledDown
-              }
-            )}
-            onClick={this.scrollToBottom}
-          />
+          <DownCircleOutlined className={classNames('cp-panel-background-color cp-primary', styles.downButton, {[styles.visible]: !this.isScrolling && !this.scrolledDown})} onClick={this.scrollToBottom} />
           {chat.messages?.length ? (
             <a className={styles.clearButton} onClick={() => chat.changeChat()}>
               New chat

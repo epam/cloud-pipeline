@@ -16,11 +16,11 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {Alert, Card, Menu, message, Popover, Row} from 'antd';
 import FileSaver from 'file-saver';
 import classNames from 'classnames';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
 import RunTable, {Columns} from './run-table';
 import PipelineRunExport from '../../models/pipelines/PipelineRunExport';
 import {getFiltersPayload} from '../../models/pipelines/pipeline-runs-filter';
@@ -68,15 +68,16 @@ const CHARTS_INFO_DETAILS = 'details';
 
 @roleModel.authenticationInfo
 @inject('counter', 'preferences')
-@inject(({routing}, {params}) => {
+@inject(({routing}) => {
   const {
     status = 'active'
-  } = params;
+  } = routing.params;
   const query = parseQueryParameters(routing);
   const all = query.hasOwnProperty('all') && /^(true|undefined)$/i.test(`${query.all}`);
   return {
     status,
-    all
+    all,
+    routing
   };
 })
 @observer
@@ -90,6 +91,14 @@ class AllRuns extends React.Component {
 
   countersManagementToken = 0;
   counters = {};
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      uiRunsFilters: computed,
+      runsInfoChartsAvailable: computed
+    });
+  }
 
   componentDidMount () {
     (this.manageCounters)();
@@ -177,7 +186,6 @@ class AllRuns extends React.Component {
     });
   };
 
-  @computed
   get uiRunsFilters () {
     const {preferences} = this.props;
     let runsFilters = [];
@@ -199,7 +207,6 @@ class AllRuns extends React.Component {
     return runsFilters;
   }
 
-  @computed
   get runsInfoChartsAvailable () {
     const {
       authenticatedUserInfo
@@ -225,7 +232,7 @@ class AllRuns extends React.Component {
 
   navigateToRuns = (status, my = false) => {
     SessionStorageWrapper.setItem(SessionStorageWrapper.ACTIVE_RUNS_KEY, my);
-    SessionStorageWrapper.navigateToRuns(this.props.router, status);
+    SessionStorageWrapper.navigateToRuns(this.props.routing, status);
   };
 
   onChangeRunTableFilters = filters => {
@@ -249,7 +256,7 @@ class AllRuns extends React.Component {
         <Row style={{marginBottom: 5, padding: 2}}>
           Currently viewing <b>all available {description}</b>.
           {' '}
-          <a onClick={() => this.navigateToRuns(current.key, true)}>
+          <a className="cp-link" onClick={() => this.navigateToRuns(current.key, true)}>
             View only <b>your {description}</b>
           </a>
         </Row>
@@ -273,6 +280,7 @@ class AllRuns extends React.Component {
         </b>.
         {' '}
         <a
+          className="cp-link"
           onClick={() => this.navigateToRuns(current.key, false)}
         >
           View <b>other available {description}</b>
@@ -380,7 +388,7 @@ class AllRuns extends React.Component {
       preferences
     } = this.props;
     this.setState({exportPending: true}, async () => {
-      const hide = message.loading('Exporting runs...')
+      const hide = message.loading('Exporting runs...');
       try {
         const {runTableFilters = {}} = this.state;
         await preferences.fetchIfNeededOrWait();
@@ -444,17 +452,17 @@ class AllRuns extends React.Component {
             'cp-panel-borderless'
           )
         }
-        bodyStyle={{padding: 15}}
+        styles={{body: {padding: 15}}}
       >
         <div className={styles.headerRow}>
           <Menu
             mode="horizontal"
             selectedKeys={selectedKeys}
             className={styles.tabsMenu}
-          >
-            {
-              this.uiRunsFilters.map((filter) => (
-                <Menu.Item key={filter.key}>
+            items={[
+              ...this.uiRunsFilters.map((filter) => ({
+                key: filter.key,
+                label: (
                   <Popover
                     content={(
                       <RunsFilterDescription
@@ -476,34 +484,36 @@ class AllRuns extends React.Component {
                       }
                     </Link>
                   </Popover>
-                </Menu.Item>
-              ))
-            }
-            {
-              this.runsInfoChartsAvailable && (
-                <Menu.Item key="info">
-                  <Link
-                    id={`runs-info-charts-button`}
-                    to={SessionStorageWrapper.getRunsLink(CHARTS_INFO_TAB)}
-                  >
-                    Info
-                  </Link>
-                </Menu.Item>
-              )
-            }
-            {
-              this.runsInfoChartsAvailable && isRunsInfoChartsDetailsPage && (
-                <Menu.Item key="details">
-                  <Link
-                    id={`runs-info-charts-details-button`}
-                    to={SessionStorageWrapper.getRunsLink(CHARTS_INFO_DETAILS)}
-                  >
-                    Details
-                  </Link>
-                </Menu.Item>
-              )
-            }
-          </Menu>
+                )
+              })),
+              ...(this.runsInfoChartsAvailable
+                ? [{
+                  key: 'info',
+                  label: (
+                    <Link
+                      id="runs-info-charts-button"
+                      to={SessionStorageWrapper.getRunsLink(CHARTS_INFO_TAB)}
+                    >
+                      Info
+                    </Link>
+                  )
+                }]
+                : []),
+              ...(this.runsInfoChartsAvailable && isRunsInfoChartsDetailsPage
+                ? [{
+                  key: 'details',
+                  label: (
+                    <Link
+                      id="runs-info-charts-details-button"
+                      to={SessionStorageWrapper.getRunsLink(CHARTS_INFO_DETAILS)}
+                    >
+                      Details
+                    </Link>
+                  )
+                }]
+                : [])
+            ]}
+          />
           <div style={{
             textTransform: 'uppercase',
             height: 36,
@@ -547,7 +557,7 @@ class AllRuns extends React.Component {
         {
           (isRunsInfoChartsPage || isRunsInfoChartsDetailsPage) &&
           !this.runsInfoChartsAvailable && (
-            <Alert message="Access denied" type="warning" />
+            <Alert title="Access denied" type="warning" />
           )
         }
       </Card>

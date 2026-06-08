@@ -2,7 +2,8 @@ import React from 'react';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import styles from './scheme-parameter-input.css';
-import {Button, Icon} from 'antd';
+import {Button} from 'antd';
+import {DeleteOutlined} from '@ant-design/icons';
 import LaunchFormSchemeParameterEntryProp from './scheme-parameter-entry-prop';
 
 function LaunchFormSchemeParameterEntry (props) {
@@ -46,8 +47,8 @@ function LaunchFormSchemeParameterEntry (props) {
         ))
       }
       <td className={styles.entryAction}>
-        <Button disabled={disabled} onClick={onRemove} type="danger" size="small">
-          <Icon type="delete" />
+        <Button disabled={disabled} onClick={onRemove} danger size="small">
+          <DeleteOutlined />
         </Button>
       </td>
     </tr>

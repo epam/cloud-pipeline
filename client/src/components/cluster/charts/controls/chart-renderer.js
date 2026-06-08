@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {getThemedPlotColors} from './utilities';
 
 function plotsMapper (plot, index) {
@@ -125,7 +125,7 @@ function splitDataParts (data) {
 
 @inject('themes')
 @observer
-class ChartRendererWithOffset extends React.PureComponent {
+class ChartRendererWithOffset extends React.Component {
   state = {
     baseLine: 0,
     data: [],
@@ -137,21 +137,27 @@ class ChartRendererWithOffset extends React.PureComponent {
     plots: []
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      backgroundColor: computed,
+      plotColors: computed,
+      data: computed
+    });
+  }
+
   get backgroundColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@card-background-color'] || 'white';
+      return themes.currentThemeConfiguration['--cp-color-bg-elevated'] || 'white';
     }
     return 'white';
   }
 
-  @computed
   get plotColors () {
     return getThemedPlotColors(this);
   }
 
-  @computed
   get data () {
     const {canvasYStart, data, xRatio, yFrom, yRatio, plots} = this.state;
     const getXCoordinate = (plotX) => {
@@ -187,7 +193,7 @@ class ChartRendererWithOffset extends React.PureComponent {
     this.setState(newState);
   }
 
-  componentWillReceiveProps (nextProps, nextContext) {
+  UNSAFE_componentWillReceiveProps (nextProps, nextContext) {
     const newState = {};
     if (nextProps.baseLine !== this.props.baseLine) {
       newState.baseLine = nextProps.baseLine;

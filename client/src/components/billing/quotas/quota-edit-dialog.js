@@ -16,16 +16,18 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {computed, makeObservable} from 'mobx';
 import {
   Button,
-  Icon,
   InputNumber,
   Modal,
   Row,
   Select
 } from 'antd';
+import {PlusOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import QuotaThreshold from './quotas-threshold';
 import {quotaGroupNames} from './utilities/quota-groups';
@@ -64,7 +66,15 @@ class EditQuotaDialog extends React.Component {
     adGroups: []
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      users: computed,
+      groups: computed,
+      billingCenters: computed
+    });
+  }
+
   get users () {
     const {users} = this.props;
     if (users && users.loaded) {
@@ -73,7 +83,6 @@ class EditQuotaDialog extends React.Component {
     return [];
   }
 
-  @computed
   get groups () {
     const {roles} = this.props;
     const {adGroups = []} = this.state;
@@ -86,7 +95,6 @@ class EditQuotaDialog extends React.Component {
     return adGroups;
   }
 
-  @computed
   get billingCenters () {
     const {billingCenters} = this.props;
     if (billingCenters && billingCenters.loaded) {
@@ -552,7 +560,7 @@ class EditQuotaDialog extends React.Component {
                   disabled={disabled || !this.isNewQuota}
                   onClick={onAddAction}
                 >
-                  <Icon type="plus" /> Add action
+                  <PlusOutlined /> Add action
                 </Button>
               </div>)
           }
@@ -631,7 +639,7 @@ class EditQuotaDialog extends React.Component {
     return (
       <Modal
         width="50%"
-        visible={visible}
+        open={visible}
         onCancel={onCancel}
         footer={(
           <Row
@@ -641,7 +649,7 @@ class EditQuotaDialog extends React.Component {
             {
               !this.isNewQuota && (
                 <Button
-                  type="danger"
+                  danger
                   disabled={disabled}
                   onClick={this.onRemove}
                 >

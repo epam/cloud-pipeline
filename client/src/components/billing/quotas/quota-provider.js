@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observer, Provider} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import BillingQuotasList from '../../../models/billing/quotas/list';
 import QuotaTypes from '../quotas/utilities/quota-types';
 import QuotaPeriods from '../quotas/utilities/quota-periods';
@@ -70,20 +70,27 @@ function groupQuotasBySubject (quotas = []) {
 }
 
 class Quotas {
-  @observable list = [];
-  @observable enabled = true;
+  list = [];
+  enabled = true;
 
-  @computed
+  constructor () {
+    makeObservable(this, {
+      list: observable,
+      enabled: observable,
+      overallGlobal: computed,
+      overallComputeInstances: computed,
+      overallStorages: computed
+    });
+  }
+
   get overallGlobal () {
     return this.getOverallQuotas(QuotaGroups.global);
   }
 
-  @computed
   get overallComputeInstances () {
     return this.getOverallQuotas(QuotaGroups.computeInstances);
   }
 
-  @computed
   get overallStorages () {
     return this.getOverallQuotas(QuotaGroups.storages);
   }
@@ -149,12 +156,19 @@ class Quotas {
     } catch (error) {
       console.warn(error.message);
     }
-  };
+  }
 }
 
 @observer
 class QuotaProvider extends React.Component {
-  @observable quotas = new Quotas();
+  quotas = new Quotas();
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      quotas: observable
+    });
+  }
 
   componentDidMount () {
     (this.quotas.refreshQuotas)();

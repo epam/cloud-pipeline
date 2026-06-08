@@ -15,8 +15,15 @@
  */
 
 import React from 'react';
-import {inject, observer} from 'mobx-react';
-import {Button, Icon, Pagination, Table, Tooltip} from 'antd';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {Button,
+  Pagination,
+  Table,
+  Tooltip
+} from 'antd';
+import {CloseOutlined} from '@ant-design/icons';
 import {
   BarChart,
   BillingTable,
@@ -54,21 +61,21 @@ import {
 } from '../navigation/metrics';
 import {InstanceReportLayout, Layout} from './layout';
 import styles from './reports.css';
+import {withRouter} from '../../../utils/with-router';
 
 const tablePageSize = 10;
 
 function injection (stores, props) {
   const {location, params} = props;
   const {type} = params || {};
-  const {
-    user: userQ,
-    group: groupQ,
-    'billing-group': billingGroupQ,
-    period = Period.month,
-    range,
-    region: regionQ,
-    metrics: metricsQ
-  } = location.query;
+  const q = new URLSearchParams(location?.search || '');
+  const userQ = q.get('user');
+  const groupQ = q.get('group');
+  const billingGroupQ = q.get('billing-group');
+  const period = q.get('period') ?? Period.month;
+  const range = q.get('range');
+  const regionQ = q.get('region');
+  const metricsQ = q.get('metrics');
   const metrics = parseInstanceMetrics(metricsQ);
   const periodInfo = getPeriod(period, range);
   const adGroup = groupQ ? groupQ.split(RUNNER_SEPARATOR) : undefined;
@@ -182,7 +189,7 @@ function renderResourcesSubData (
           return (
             <Tooltip
               title={fullName}
-              overlayStyle={{wordWrap: 'break-word'}}
+              styles={{root: {wordWrap: 'break-word'}}}
             >
               {value}
             </Tooltip>
@@ -512,7 +519,7 @@ class InstanceReport extends React.Component {
                                     right: 5
                                   }}
                                 >
-                                  <Icon type="close" /> {getInstanceMetricsName(metrics)}
+                                  <CloseOutlined /> {getInstanceMetricsName(metrics)}
                                 </Button>
                               )
                             }
@@ -611,10 +618,10 @@ class InstanceReport extends React.Component {
   }
 }
 
-export default inject('awsRegions', 'reportThemes')(
+export default withRouter(inject('awsRegions', 'reportThemes')(
   inject(injection)(
     BillingNavigation.attach(
       observer(InstanceReport)
     )
   )
-);
+));

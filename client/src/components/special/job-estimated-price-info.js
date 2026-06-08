@@ -17,7 +17,6 @@
 import React from 'react';
 import {Tooltip} from 'antd';
 import styles from './job-estimated-price-info.css';
-import '../../staticStyles/tooltip-nowrap.css';
 
 export default function JobEstimatedPriceInfo ({children}) {
   return (
@@ -29,7 +28,7 @@ export default function JobEstimatedPriceInfo ({children}) {
           <div>This additional information will be reflected in the "Billing Reports".</div>
         </div>
       )}
-      overlayClassName="job-estimated-price-info"
+      classNames={{root: 'job-estimated-price-info'}}
       mouseEnterDelay={1}
     >
       <span className={styles.info}>

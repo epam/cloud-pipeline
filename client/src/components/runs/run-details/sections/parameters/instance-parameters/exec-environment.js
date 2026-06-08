@@ -1,7 +1,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
-import {Icon} from 'antd';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {LoadingOutlined} from '@ant-design/icons';
 import {isDtsEnvironment, isFireCloudEnvironment} from './utilities';
 
 const ExecEnvironment = inject(
@@ -42,7 +44,7 @@ const ExecEnvironment = inject(
       result = preferences.deploymentName || 'EPAM Cloud Pipeline';
     }
     if (!result) {
-      return (<Icon type="loading" />);
+      return (<LoadingOutlined />);
     }
     return (
       <span className={className} style={style}>

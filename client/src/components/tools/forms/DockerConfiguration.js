@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {SERVER, API_PATH} from '../../../config';
 import {observer, inject} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {Modal, Row, Button, Collapse} from 'antd';
 import classNames from 'classnames';
 import styles from '../Tools.css';
@@ -47,10 +47,17 @@ export default class DockerConfiguration extends React.Component {
     activeTroubleShootingKeys: []
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      userName: computed
+    });
+  }
+
   getApi () {
     const generateAPIURL = () => {
       const el = document.createElement('div');
-      el.innerHTML= '<a href="'+(SERVER + API_PATH)+'"></a>';
+      el.innerHTML = '<a href="' + (SERVER + API_PATH) + '"></a>';
       return el.firstChild.href;
     };
     let api = generateAPIURL();
@@ -60,13 +67,12 @@ export default class DockerConfiguration extends React.Component {
     return api;
   }
 
-  @computed
   get userName () {
     if (!this.props.authenticatedUserInfo.loaded) {
       return null;
     }
     return this.props.authenticatedUserInfo.value.userName;
-  };
+  }
 
   loginIntoCloudRegistrySection = () => {
     if (this.props.registry && this.props.accessKey.loaded) {

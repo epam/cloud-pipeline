@@ -16,7 +16,7 @@
 
 import React from 'react';
 import getDocumentName from '../utilities/get-document-name';
-import {Icon} from 'antd';
+import {UserOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import styles from './document-list-presentation.css';
 import UserName from '../../../../special/UserName';
@@ -32,12 +32,9 @@ export default function GeneralPresentation (
   }
 ) {
   const renderIcon = () => {
-    if (PreviewIcons[document?.type]) {
-      return (
-        <Icon
-          className={classNames('cp-icon-larger', styles.icon)}
-          type={PreviewIcons[document?.type]} />
-      );
+    const ItemIcon = PreviewIcons[document?.type];
+    if (ItemIcon) {
+      return <ItemIcon className={classNames('cp-icon-larger', styles.icon)} />;
     }
     return null;
   };
@@ -83,7 +80,7 @@ export default function GeneralPresentation (
           <div className={classNames(styles.author, 'cp-search-result-item-sub')}>
             {
               document?.owner && (
-                <Icon type="user" />
+                <UserOutlined />
               )
             }
             <UserName userName={document?.owner} />

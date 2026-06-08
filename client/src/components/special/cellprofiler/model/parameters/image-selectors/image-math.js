@@ -15,9 +15,13 @@
  */
 
 import React from 'react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
-import {Button, Icon, Input, Select} from 'antd';
+import {Button,
+  Input,
+  Select
+} from 'antd';
+import {DeleteOutlined} from '@ant-design/icons';
 import {getFilesForModule} from '../file-parameter';
 import {observer} from 'mobx-react';
 import styles from './image-selectors.css';
@@ -45,6 +49,16 @@ const SINGLE_FILE_OPERATIONS = [
 ];
 
 class ImageMathImagesRenderer extends React.Component {
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      value: computed,
+      operation: computed,
+      filesToProcess: computed,
+      files: computed
+    });
+  }
+
   get parameter () {
     const {parameterValue} = this.props;
     if (!parameterValue) {
@@ -52,7 +66,7 @@ class ImageMathImagesRenderer extends React.Component {
     }
     return parameterValue.parameter;
   }
-  @computed
+
   get value () {
     const {parameterValue} = this.props;
     if (!parameterValue) {
@@ -60,30 +74,32 @@ class ImageMathImagesRenderer extends React.Component {
     }
     return parameterValue.value;
   }
+
   get cpModule () {
     if (!this.parameter) {
       return undefined;
     }
     return this.parameter.cpModule;
   }
-  @computed
+
   get operation () {
     if (!this.cpModule) {
       return 'Add';
     }
     return this.cpModule.getParameterValue('operation') || 'Add';
   }
-  @computed
+
   get filesToProcess () {
     if (!this.value) {
       return [];
     }
     return this.value;
   }
-  @computed
+
   get files () {
     return getFilesForModule(this.cpModule);
   }
+
   setValue = (newValue) => {
     const {parameterValue} = this.props;
     if (parameterValue) {
@@ -91,6 +107,7 @@ class ImageMathImagesRenderer extends React.Component {
       parameterValue.reportChanged();
     }
   };
+
   addConfiguration = () => {
     const current = this.filesToProcess;
     this.setValue([...current, {
@@ -98,6 +115,7 @@ class ImageMathImagesRenderer extends React.Component {
       value: 1.0
     }]);
   };
+
   changeConfigurationFile = (index) => (object) => {
     const objectToOutline = this.filesToProcess[index] || {};
     objectToOutline.name = object;
@@ -105,6 +123,7 @@ class ImageMathImagesRenderer extends React.Component {
     newValue.splice(index, 1, objectToOutline);
     this.setValue(newValue);
   }
+
   changeConfigurationValue = (index) => (e) => {
     const objectToOutline = this.filesToProcess[index] || {};
     objectToOutline.value = e.target.value;
@@ -112,6 +131,7 @@ class ImageMathImagesRenderer extends React.Component {
     newValue.splice(index, 1, objectToOutline);
     this.setValue(newValue);
   }
+
   removeConfiguration = (index) => (event) => {
     if (event) {
       event.stopPropagation();
@@ -120,6 +140,7 @@ class ImageMathImagesRenderer extends React.Component {
     newValue.splice(index, 1);
     this.setValue(newValue);
   };
+
   render () {
     const {
       className,
@@ -171,11 +192,11 @@ class ImageMathImagesRenderer extends React.Component {
               }
               <Button
                 style={{marginLeft: 5}}
-                type="danger"
+                danger
                 size="small"
                 onClick={this.removeConfiguration(index)}
               >
-                <Icon type="delete" />
+                <DeleteOutlined />
               </Button>
             </div>
           ))

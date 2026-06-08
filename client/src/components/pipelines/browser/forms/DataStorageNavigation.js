@@ -15,9 +15,15 @@
  */
 
 import React from 'react';
-import {observer} from 'mobx-react';
+import {
+  observer} from 'mobx-react';
 import PropTypes from 'prop-types';
-import {Row, Breadcrumb, Input, Icon, message} from 'antd';
+import {Row,
+  Breadcrumb,
+  Input,
+  message
+} from 'antd';
+import {LinkOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import styles from './DataStorageNavigation.css';
 import {getDataStorageItemFullPath} from '../../launch/dialogs/BucketBrowser';
@@ -114,10 +120,10 @@ export default class DataStorageNavigation extends React.Component {
   };
 
   initializeInput = (input) => {
-    if (!this.control && input && input.refs.input) {
-      input.refs.input.focus();
+    if (!this.control && input && input.input) {
+      input.input.focus();
       this.control = input;
-      this.moveCursorToEnd(input.refs.input);
+      this.moveCursorToEnd(input.input);
     }
   };
 
@@ -157,38 +163,29 @@ export default class DataStorageNavigation extends React.Component {
         onClick={this.setEditableMode(true)}>
         {!this.state.editable ? (
           <div className={styles.breadcrumbsContainer}>
-            <Breadcrumb style={{padding: 5, marginLeft: 3}}>
-              {this.getComponents().map(part => {
-                if (part.canNavigate) {
-                  return (
-                    <Breadcrumb.Item
-                      className={styles.breadcrumbItem}
-                      key={part.key}>
-                      <a onClick={(event) => this.navigate(event, part.url)}>
-                        {decodeURIComponent(part.title)}
-                      </a>
-                    </Breadcrumb.Item>
-                  );
-                } else {
-                  return (
-                    <Breadcrumb.Item
-                      className={styles.breadcrumbItem}
-                      key={part.key}>{decodeURIComponent(part.title)}</Breadcrumb.Item>
-                  );
-                }
-              })}
-            </Breadcrumb>
+            <Breadcrumb
+              style={{padding: 5, marginLeft: 3}}
+              items={this.getComponents().map(part => ({
+                key: part.key,
+                className: styles.breadcrumbItem,
+                title: part.canNavigate
+                  ? (
+                    <a onClick={(event) => this.navigate(event, part.url)}>
+                      {decodeURIComponent(part.title)}
+                    </a>
+                  )
+                  : decodeURIComponent(part.title)
+              }))}
+            />
             {showCopyPath ? (
-              <Icon
+              <LinkOutlined
                 className={classNames('cp-primary', styles.copyPath, {
                   [styles.hidden]: this.state.editable
                 })}
-                type="link"
                 onClick={event => {
                   event.stopPropagation();
                   this.onCopyPathClick();
-                }}
-              />
+                }} />
             ) : null}
           </div>
         ) : null}

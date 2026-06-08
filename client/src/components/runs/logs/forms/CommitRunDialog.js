@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {observable, computed} from 'mobx';
+import {observable, computed, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
 import {Button, Modal, Row} from 'antd';
 import localization from '../../../../utils/localization';
@@ -37,9 +37,19 @@ export default class CommitRunDialog extends localization.LocalizedReactComponen
     defaultDockerImage: PropTypes.string
   };
 
-  @observable _commitRunForm = null;
+  _commitRunForm = null;
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      _commitRunForm: observable,
+      toolValid: computed,
+      layersCheckPassed: computed,
+      commitCheckPassed: computed,
+      registries: computed
+    });
+  }
+
   get toolValid () {
     if (this._commitRunForm) {
       return this._commitRunForm.toolValid;
@@ -47,7 +57,6 @@ export default class CommitRunDialog extends localization.LocalizedReactComponen
     return false;
   }
 
-  @computed
   get layersCheckPassed () {
     if (this._commitRunForm) {
       return this._commitRunForm.layersCheckPassed;
@@ -55,7 +64,6 @@ export default class CommitRunDialog extends localization.LocalizedReactComponen
     return false;
   }
 
-  @computed
   get commitCheckPassed () {
     if (this._commitRunForm) {
       return this._commitRunForm.commitCheckPassed;
@@ -73,7 +81,6 @@ export default class CommitRunDialog extends localization.LocalizedReactComponen
     }
   };
 
-  @computed
   get registries () {
     if (!this.props.dockerRegistries.loaded) {
       return [];
@@ -109,10 +116,10 @@ export default class CommitRunDialog extends localization.LocalizedReactComponen
     return (
       <Modal
         width="50%"
-        maskClosable={!this.props.pending}
+        mask={{closable: !this.props.pending}}
         afterClose={() => onClose()}
         closable={!this.props.pending}
-        visible={this.props.visible}
+        open={this.props.visible}
         title={`Commit ${this.localizedString('pipeline')} run`}
         onCancel={this.props.onCancel}
         footer={modalFooter}

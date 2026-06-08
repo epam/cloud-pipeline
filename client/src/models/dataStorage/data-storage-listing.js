@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {action, computed, observable} from 'mobx';
+import {makeAutoObservable} from 'mobx';
 import moment from 'moment-timezone';
 import dataStorages from './DataStorages';
 import preferences from '../preferences/PreferencesLoad';
@@ -302,36 +302,36 @@ function setCurrentPage (path, pageFn, markers = {}, options = {}) {
  */
 
 class DataStorageListing {
-  @observable storageId;
-  @observable path;
-  @observable showVersions;
-  @observable showArchives;
-  @observable markers = {};
-  @observable clientPaging = {
+  storageId;
+  path;
+  showVersions;
+  showArchives;
+  markers = {};
+  clientPaging = {
     page: 0
   };
-  @observable _metadataRequest;
+  _metadataRequest;
   /**
    * Storage info (DataStorage request)
    */
-  @observable storageRequest;
-  @observable pagePending = false;
-  @observable pageLoaded = false;
-  @observable pageError = undefined;
-  @observable _pageElements = [];
-  @observable _pageInfo = undefined;
+  storageRequest;
+  pagePending = false;
+  pageLoaded = false;
+  pageError = undefined;
+  _pageElements = [];
+  _pageInfo = undefined;
   /**
    * Current page path. Leading & trailing slashes are removed.
    * "undefined" is returned if current path is root
    */
-  @observable pagePath;
-  @observable downloadEnabled = false;
+  pagePath;
+  downloadEnabled = false;
 
   /**
    * Filters info.
    * Request results may be truncated.
    */
-  @observable filters = {
+  filters = {
     name: undefined,
     sizeGreaterThan: undefined,
     sizeLessThan: undefined,
@@ -339,20 +339,20 @@ class DataStorageListing {
     dateAfter: undefined,
     dateBefore: undefined
   };
-  @observable defaultSortedPageSize;
-  @observable _sorter = {
+  defaultSortedPageSize;
+  _sorter = {
     field: undefined,
     order: undefined
   };
-  @observable resultsTruncated = false;
-  @observable filtersApplied = false;
-
-  @observable ngbSettingsFileExists = false;
+  resultsTruncated = false;
+  filtersApplied = false;
+  ngbSettingsFileExists = false;
 
   /**
    * @param {DataStoragePagesOptions} options
    */
   constructor (options = {}) {
+    makeAutoObservable(this);
     const {
       keepPagesHistory,
       pageSize = PAGE_SIZE
@@ -367,7 +367,6 @@ class DataStorageListing {
     this.markers = undefined;
   }
 
-  @computed
   get pageSize () {
     if (this.sortingApplied) {
       return this.defaultSortedPageSize;
@@ -375,39 +374,32 @@ class DataStorageListing {
     return this._pageSize;
   }
 
-  @computed
   get infoPending () {
     return this.storageRequest && this.storageRequest.pending;
   }
 
-  @computed
   get pending () {
     return this.infoPending || this.pagePending;
   }
 
-  @computed
   get infoLoaded () {
     return this.storageRequest && this.storageRequest.loaded;
   }
 
-  @computed
   get loaded () {
     return this.infoLoaded && this.pageLoaded;
   }
 
-  @computed
   get infoError () {
     return this.storageRequest
       ? this.storageRequest.error
       : undefined;
   }
 
-  @computed
   get error () {
     return this.infoError || this.pageError;
   }
 
-  @computed
   get info () {
     if (!this.storageRequest || !this.storageRequest.loaded) {
       return undefined;
@@ -415,7 +407,6 @@ class DataStorageListing {
     return this.storageRequest.value;
   }
 
-  @computed
   get metadata () {
     if (this._metadataRequest.loaded) {
       return (this._metadataRequest.value || [])[0] || {};
@@ -423,22 +414,18 @@ class DataStorageListing {
     return {};
   }
 
-  @computed
   get readAllowed () {
     return this.info && roleModel.readAllowed(this.info);
   }
 
-  @computed
   get writeAllowed () {
     return this.info && roleModel.writeAllowed(this.info);
   }
 
-  @computed
   get executeAllowed () {
     return this.info && roleModel.executeAllowed(this.info);
   }
 
-  @computed
   get isOwner () {
     return this.info && roleModel.isOwner(this.info);
   }
@@ -446,7 +433,6 @@ class DataStorageListing {
   /**
    * @returns {{page: number, first: boolean, next: boolean, previous: boolean}}
    */
-  @computed
   get currentPagination () {
     const {
       currentPage = 0,
@@ -472,12 +458,10 @@ class DataStorageListing {
     };
   }
 
-  @computed
   get currentFilter () {
     return this.filters;
   }
 
-  @computed
   get filtersEmpty () {
     if (!this.currentFilter) {
       return true;
@@ -486,17 +470,14 @@ class DataStorageListing {
       .every(value => value === undefined);
   }
 
-  @computed
   get resultsFiltered () {
     return this.filtersApplied && !this.filtersEmpty;
   }
 
-  @computed
   get resultsFilteredAndTruncated () {
     return this.resultsFiltered && this.resultsTruncated;
   }
 
-  @computed
   get resultsSortedAndTruncated () {
     if (this.filtersApplied) {
       return false;
@@ -504,7 +485,6 @@ class DataStorageListing {
     return this.sortingApplied && this.pageElements.length === this.pageSize;
   }
 
-  @computed
   get pageElements () {
     const sorterFn = SORTERS[this.currentSorter.field];
     if (this.sortingApplied && sorterFn) {
@@ -518,17 +498,14 @@ class DataStorageListing {
     return this._pageElements;
   }
 
-  @computed
   get pageInfo () {
     return this._pageInfo;
   }
 
-  @computed
   get currentSorter () {
     return this._sorter;
   }
 
-  @computed
   get sortingApplied () {
     return !!(this.currentSorter.field && this.currentSorter.order);
   }
@@ -543,7 +520,6 @@ class DataStorageListing {
     return this.ngbSettingsToken;
   };
 
-  @action
   clearMarkersForPath = (path, including = true) => {
     this.markers = resetMarkersForPath(
       path,
@@ -552,22 +528,18 @@ class DataStorageListing {
     );
   };
 
-  @action
   clearMarkersForCurrentPath = (including = true) => {
     this.clearMarkersForPath(this.path, including);
   };
 
-  @action
   clearMarkers = () => {
     this.markers = resetMarkersForPath();
   };
 
-  @action
   clearClientPaging = () => {
     this.clientPaging.total = undefined;
   };
 
-  @action
   resetFilter = (silent = true) => {
     this.filters = {
       name: undefined,
@@ -582,7 +554,6 @@ class DataStorageListing {
     }
   };
 
-  @action
   initialize = (
     storageId,
     path,
@@ -610,7 +581,6 @@ class DataStorageListing {
     showArchivesChanged;
   };
 
-  @action
   setStorage = (storageId) => {
     if (this.storageId === storageId) {
       return false;
@@ -689,7 +659,6 @@ class DataStorageListing {
     }
   };
 
-  @action
   refreshStorageInfo = (force = true) => {
     if (!this.storageRequest) {
       return Promise.resolve();
@@ -700,7 +669,6 @@ class DataStorageListing {
     return this.storageRequest.fetchIfNeededOrWait();
   }
 
-  @action
   setPath = (path = '') => {
     const corrected = correctPath(path);
     if (this.path === corrected) {
@@ -717,7 +685,6 @@ class DataStorageListing {
     return true;
   };
 
-  @action
   setShowVersions = (showVersions = true) => {
     if (this.showVersions === showVersions) {
       return false;
@@ -730,7 +697,6 @@ class DataStorageListing {
     return true;
   };
 
-  @action
   setShowArchives = (showArchives = false) => {
     if (this.showArchives === showArchives) {
       return false;
@@ -768,7 +734,6 @@ class DataStorageListing {
     });
   };
 
-  @action
   setSorter = (sorter = {}) => {
     const field = (sorter.field || '').toLowerCase();
     if (
@@ -791,7 +756,6 @@ class DataStorageListing {
     this.refreshCurrentPath(false, true);
   };
 
-  @action
   resetSorting = (toDefaults = true) => {
     const sortingConfiguration = (this.metadata?.data || {})['default-sorting'] || {};
     const [
@@ -814,7 +778,6 @@ class DataStorageListing {
     };
   };
 
-  @action
   changeFilterField = (key, value, applyChanges = true) => {
     this.currentFilter[key] = value;
     if (applyChanges) {
@@ -822,7 +785,6 @@ class DataStorageListing {
     }
   };
 
-  @action
   changeFilter = (newFilterObj = {}, applyChanges = true) => {
     Object.keys(newFilterObj).forEach(key => {
       this.changeFilterField(key, newFilterObj[key], false);
@@ -832,7 +794,6 @@ class DataStorageListing {
     }
   };
 
-  @action
   applyFilters = async () => {
     const pathCorrected = correctPath(
       this.path,
@@ -907,7 +868,6 @@ class DataStorageListing {
     }
   };
 
-  @action
   fetchCurrentPage = async () => {
     await Promise.all([
       authenticatedUserInfo.fetchIfNeededOrWait(),
@@ -992,7 +952,6 @@ class DataStorageListing {
     }
   };
 
-  @action
   updateNgbSettingsFileExists = async () => {
     const token = this._increaseUniqueNgbSettingsToken();
     const submitChanges = (fn) => {
@@ -1052,7 +1011,6 @@ class DataStorageListing {
     }
   };
 
-  @action
   navigateToNextPage = () => {
     if (this.sortingApplied && this.currentPagination.next) {
       this.clientPaging.page += 1;
@@ -1074,7 +1032,6 @@ class DataStorageListing {
     return Promise.resolve();
   };
 
-  @action
   navigateToPreviousPage = () => {
     if (this.currentPagination.previous) {
       if (this.sortingApplied && this.currentPagination.previous) {
@@ -1096,7 +1053,6 @@ class DataStorageListing {
     return Promise.resolve();
   };
 
-  @action
   navigateToFirstPage = () => {
     if (this.sortingApplied && this.currentPagination.next) {
       this.clientPaging.page = 0;
@@ -1118,7 +1074,6 @@ class DataStorageListing {
     return Promise.resolve();
   };
 
-  @action
   refreshCurrentPath = (keepCurrentPage = false, keepFilters = false) => {
     if (!keepCurrentPage) {
       this.clearMarkersForCurrentPath();

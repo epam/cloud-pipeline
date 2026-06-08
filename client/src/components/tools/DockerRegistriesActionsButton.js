@@ -15,12 +15,16 @@
  */
 
 import React from 'react';
-import {observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {
+  observer} from 'mobx-react';
+import {computed, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
-import {Icon, message, Button} from 'antd';
-import Menu, {MenuItem, Divider, SubMenu} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
+import {
+  Dropdown,
+  message,
+  Button
+} from 'antd';
+import {DeleteOutlined, EditOutlined, PlusOutlined, QuestionCircleOutlined, SettingOutlined} from '@ant-design/icons';
 import roleModel from '../../utils/roleModel';
 import AddRegistry from '../../models/tools/RegistryCreate';
 import UpdateRegistry from '../../models/tools/RegistryUpdate';
@@ -56,7 +60,13 @@ export default class DockerRegistriesActionsButton extends React.Component {
     registryOperationInProgress: false
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      groupHasChildTools: computed
+    });
+  }
+
   get groupHasChildTools () {
     return this.props.group
       ? (this.props.group.tools || []).length > 0
@@ -109,7 +119,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
       this._closeCreateRegistryForm();
     } else {
       this._closeCreateRegistryForm();
-      this.props.onRefresh && await this.props.onRefresh();
+      this.props.onRefresh && (await this.props.onRefresh());
       this.props.onNavigate && this.props.onNavigate(request.value.id);
     }
   };
@@ -172,7 +182,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
         hide();
       }
       this._closeEditRegistryForm();
-      this.props.onRefresh && await this.props.onRefresh();
+      this.props.onRefresh && (await this.props.onRefresh());
     }
   };
 
@@ -185,7 +195,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
       message.error(request.error);
     } else {
       this._closeEditRegistryForm();
-      this.props.onRefresh && await this.props.onRefresh();
+      this.props.onRefresh && (await this.props.onRefresh());
       this.props.onNavigate && this.props.onNavigate();
     }
   };
@@ -222,7 +232,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
     } else {
       this._closeEditGroupForm();
       hide();
-      this.props.onRefresh && await this.props.onRefresh();
+      this.props.onRefresh && (await this.props.onRefresh());
     }
   };
 
@@ -235,7 +245,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
       const request = new ToolsGroupPrivateCreate(this.props.registry.id);
       await request.send({});
       if (!request.error) {
-        this.props.onRefresh && await this.props.onRefresh();
+        this.props.onRefresh && (await this.props.onRefresh());
         this.props.onNavigate && this.props.onNavigate(this.props.registry.id, request.value.id);
       }
       hide();
@@ -268,7 +278,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
     } else {
       this._closeCreateToolGroupForm();
       hide();
-      this.props.onRefresh && await this.props.onRefresh();
+      this.props.onRefresh && (await this.props.onRefresh());
       this.props.onNavigate && this.props.onNavigate(this.props.registry.id, request.value.id);
     }
   };
@@ -289,7 +299,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
       message.error(request.error, 5);
     } else {
       this._closeEnableToolForm();
-      this.props.onRefresh && await this.props.onRefresh();
+      this.props.onRefresh && (await this.props.onRefresh());
     }
   };
 
@@ -310,7 +320,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
       message.error(request.error, 5);
     } else {
       hide();
-      this.props.onRefresh && await this.props.onRefresh();
+      this.props.onRefresh && (await this.props.onRefresh());
       this.props.onNavigate && this.props.onNavigate(this.props.registry.id);
     }
   };
@@ -337,19 +347,27 @@ export default class DockerRegistriesActionsButton extends React.Component {
       overlayVisible: false
     }, () => {
       switch (key) {
-        case 'add-registry': this._openCreateRegistryForm(); break;
-        case 'edit-registry': this._openEditRegistryForm(); break;
-        case 'configure-registry': this._openDockerConfigurationForm(); break;
-        case 'add-private-group': this._createPrivateGroup(); break;
-        case 'add-group': this._openCreateToolGroupForm(); break;
-        case 'edit-group': this._openEditGroupForm(); break;
-        case 'delete-group': this._confirmDeleteGroup(); break;
-        case 'enable-tool': this._openEnableToolForm(); break;
+        case 'add-registry': this._openCreateRegistryForm();
+          break;
+        case 'edit-registry': this._openEditRegistryForm();
+          break;
+        case 'configure-registry': this._openDockerConfigurationForm();
+          break;
+        case 'add-private-group': this._createPrivateGroup();
+          break;
+        case 'add-group': this._openCreateToolGroupForm();
+          break;
+        case 'edit-group': this._openEditGroupForm();
+          break;
+        case 'delete-group': this._confirmDeleteGroup();
+          break;
+        case 'enable-tool': this._openEnableToolForm();
+          break;
       }
     });
   };
 
-  _renderActionsMenu = () => {
+  _getActionsMenuItems = () => {
     const registryActions = [];
     const toolAdmin = roleModel.isManager.toolAdmin(this);
     const toolGroupAdmin = roleModel.isManager.toolGroup(this);
@@ -359,35 +377,29 @@ export default class DockerRegistriesActionsButton extends React.Component {
         roleModel.writeAllowed(this.props.group) || toolAdmin
       );
     if (roleModel.writeAllowed(this.props.docker) || toolAdmin) {
-      registryActions.push(
-        <MenuItem
-          key="add-registry"
-        >
-          <Icon type="plus" /> Create
-        </MenuItem>
-      );
+      registryActions.push({
+        key: 'add-registry',
+        icon: <PlusOutlined />,
+        label: 'Create'
+      });
     }
     if (this.props.registry && roleModel.writeAllowed(this.props.registry)) {
-      registryActions.push(
-        <MenuItem
-          key="edit-registry"
-        >
-          <Icon type="edit" /> Edit
-        </MenuItem>
-      );
+      registryActions.push({
+        key: 'edit-registry',
+        icon: <EditOutlined />,
+        label: 'Edit'
+      });
     }
     const groupActions = [];
 
     if (this.props.registry &&
       this.props.registry.privateGroupAllowed &&
       !this.props.hasPersonalGroup) {
-      groupActions.push(
-        <MenuItem
-          key="add-private-group"
-        >
-          <Icon type="plus" /> Create personal
-        </MenuItem>
-      );
+      groupActions.push({
+        key: 'add-private-group',
+        icon: <PlusOutlined />,
+        label: 'Create personal'
+      });
     }
     if (this.props.registry &&
       (
@@ -400,99 +412,68 @@ export default class DockerRegistriesActionsButton extends React.Component {
         )
       )
     ) {
-      groupActions.push(
-        <MenuItem
-          key="add-group"
-        >
-          <Icon type="plus" /> Create
-        </MenuItem>
-      );
+      groupActions.push({
+        key: 'add-group',
+        icon: <PlusOutlined />,
+        label: 'Create'
+      });
     }
 
     if (canEditGroup) {
       if (groupActions.length > 0) {
-        groupActions.push(
-          <Divider key="group-divider" />
-        );
+        groupActions.push({type: 'divider', key: 'group-divider'});
       }
-      groupActions.push(
-        <MenuItem
-          key="edit-group"
-        >
-          <Icon type="edit" /> Edit
-        </MenuItem>
-      );
+      groupActions.push({
+        key: 'edit-group',
+        icon: <EditOutlined />,
+        label: 'Edit'
+      });
       if (toolGroupAdmin || toolAdmin) {
-        groupActions.push(
-          <MenuItem
-            key="delete-group"
-            className="cp-danger"
-          >
-            <Icon type="delete" /> Delete
-          </MenuItem>
-        );
+        groupActions.push({
+          key: 'delete-group',
+          icon: <DeleteOutlined />,
+          label: 'Delete',
+          danger: true
+        });
       }
     }
     const toolActions = [];
     if (canEditGroup) {
-      toolActions.push(
-        <MenuItem
-          key="enable-tool"
-        >
-          <Icon type="plus" /> Enable tool
-        </MenuItem>
-      );
+      toolActions.push({
+        key: 'enable-tool',
+        icon: <PlusOutlined />,
+        label: 'Enable tool'
+      });
     }
-    const subMenus = [];
+    const menuItems = [];
     if (registryActions.length > 0) {
-      subMenus.push(
-        <SubMenu
-          key="registry"
-          title="Registry"
-        >
-          {registryActions}
-        </SubMenu>
-      );
+      menuItems.push({
+        key: 'registry',
+        label: 'Registry',
+        children: registryActions
+      });
     }
     if (groupActions.length > 0) {
-      subMenus.push(
-        <SubMenu
-          key="group"
-          title="Group"
-        >
-          {groupActions}
-        </SubMenu>
-      );
+      menuItems.push({
+        key: 'group',
+        label: 'Group',
+        children: groupActions
+      });
     }
     if (toolActions.length > 0) {
-      subMenus.push(...toolActions);
+      menuItems.push(...toolActions);
     }
     if (this.props.registry && this.props.registry.pipelineAuth) {
-      if (subMenus.length > 0) {
-        subMenus.push(<Divider key="divider" />);
+      if (menuItems.length > 0) {
+        menuItems.push({type: 'divider', key: 'divider'});
       }
-      subMenus.push(
-        <MenuItem
-          key="configure-registry"
-        >
-          <Icon type="question-circle-o" /> How to configure
-        </MenuItem>
-      );
+      menuItems.push({
+        key: 'configure-registry',
+        icon: <QuestionCircleOutlined />,
+        label: 'How to configure'
+      });
     }
-    if (subMenus.length > 0) {
-      return (
-        <Menu
-          mode="vertical"
-          selectedKeys={[]}
-          onClick={this._onMenuSelect}
-          openAnimation="zoom"
-          getPopupContainer={node => node.parentNode}
-        >
-          {subMenus}
-        </Menu>
-      );
-    }
-    return null;
+    return menuItems.length > 0 ? menuItems : null;
   };
 
   handleOverlayVisibility = (visible) => {
@@ -502,27 +483,24 @@ export default class DockerRegistriesActionsButton extends React.Component {
   }
 
   render () {
-    const menu = this._renderActionsMenu();
+    const menuItems = this._getActionsMenuItems();
     const {overlayVisible} = this.state;
-    if (menu) {
+    if (menuItems) {
       return (
         <DropDownWrapper visible={overlayVisible}>
           <Dropdown
             trigger={['click']}
-            overlayStyle={{zIndex: 2}}
-            visible={overlayVisible}
-            onVisibleChange={this.handleOverlayVisibility}
-            overlay={(
-              <div>
-                {menu}
-              </div>
-            )}
+            styles={{root: {zIndex: 2}}}
+            open={overlayVisible}
+            onOpenChange={this.handleOverlayVisibility}
+            menu={{
+              items: menuItems,
+              onClick: this._onMenuSelect,
+              style: {minWidth: 160}
+            }}
           >
             <Button size="small" style={{zIndex: 2}}>
-              <Icon type="setting" style={{
-                lineHeight: 'inherit',
-                verticalAlign: 'middle'
-              }} />
+              <SettingOutlined style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
               <EditRegistryForm
                 pending={this.state.registryOperationInProgress}
                 onCancel={() => this._closeCreateRegistryForm()}

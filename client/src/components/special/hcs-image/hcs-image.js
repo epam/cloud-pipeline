@@ -18,8 +18,9 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {observer, Provider} from 'mobx-react';
-import {computed, observable} from 'mobx';
-import {Alert, Button, Icon, Radio} from 'antd';
+import {computed, observable, makeObservable} from 'mobx';
+import {Alert, Button, Radio} from 'antd';
+import {ApiOutlined, AppstoreFilled, AppstoreOutlined, SettingOutlined} from '@ant-design/icons';
 
 import HCSImageViewer from './hcs-image-viewer';
 import HCSInfo from './utilities/hcs-image-info';
@@ -48,7 +49,7 @@ import HCS3DButton from './hcs-3d-button';
 import styles from './hcs-image.css';
 
 @observer
-class HcsImage extends React.PureComponent {
+class HcsImage extends React.Component {
   state = {
     pending: false,
     sequencePending: false,
@@ -68,15 +69,30 @@ class HcsImage extends React.PureComponent {
     selectedFields: [],
     zSelectorMode: Z_SELECTOR_MODES.badge
   };
+  hcsInfo;
+  container;
+  hcsViewerState = new ViewerState();
+  hcsSourceState = new SourceState();
+  hcsVideoSource = new HcsVideoSource();
+  hcsMergedImageSource = new HcsMergedImageSource();
+  hcsImageViewer;
+  hcsAnalysis = new Analysis();
 
-  @observable hcsInfo;
-  @observable container;
-  @observable hcsViewerState = new ViewerState();
-  @observable hcsSourceState = new SourceState();
-  @observable hcsVideoSource = new HcsVideoSource();
-  @observable hcsMergedImageSource = new HcsMergedImageSource();
-  @observable hcsImageViewer;
-  @observable hcsAnalysis = new Analysis();
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      hcsInfo: observable,
+      container: observable,
+      hcsViewerState: observable,
+      hcsSourceState: observable,
+      hcsVideoSource: observable,
+      hcsMergedImageSource: observable,
+      hcsImageViewer: observable,
+      hcsAnalysis: observable,
+      sequences: computed,
+      viewSettings: computed
+    });
+  }
 
   componentDidMount () {
     this.hcsVideoSource.attachViewerState(this.hcsViewerState);
@@ -111,7 +127,6 @@ class HcsImage extends React.PureComponent {
     }
   }
 
-  @computed
   get sequences () {
     if (!this.hcsInfo) {
       return [];
@@ -119,7 +134,6 @@ class HcsImage extends React.PureComponent {
     return (this.hcsInfo.sequences || []).map(s => s);
   }
 
-  @computed
   get viewSettings () {
     return this.hcsInfo?.viewSettings || {
       video: true,
@@ -779,7 +793,7 @@ class HcsImage extends React.PureComponent {
                 size="small"
                 onClick={this.toggleWellView}
               >
-                <Icon type={this.showEntireWell ? 'appstore' : 'appstore-o'} />
+                {this.showEntireWell ? <AppstoreFilled /> : <AppstoreOutlined />}
               </Button>
             )
           }
@@ -816,10 +830,7 @@ class HcsImage extends React.PureComponent {
             size="small"
             onClick={this.showConfiguration}
           >
-            <Icon
-              type="setting"
-              className="cp-larger"
-            />
+            <SettingOutlined className="cp-larger" />
           </Button>
           {
             analysisAvailable && (
@@ -830,10 +841,7 @@ class HcsImage extends React.PureComponent {
                 type={showAnalysis ? 'primary' : 'default'}
                 disabled={this.hcsVideoSource.videoMode}
               >
-                <Icon
-                  type="api"
-                  className="cp-larger"
-                />
+                <ApiOutlined className="cp-larger" />
               </Button>
             )
           }
@@ -1006,7 +1014,7 @@ class HcsImage extends React.PureComponent {
               <Alert
                 className={styles.alert}
                 type="error"
-                message={error}
+                title={error}
               />
             </div>
           )
@@ -1075,7 +1083,7 @@ class HcsImage extends React.PureComponent {
       if (viewSettings.plate) {
         parts.push((
           <HcsCellSelector
-            we
+            key="plate"
             className={styles.selectorContainer}
             title="Plate"
             cells={sequenceInfo.wells}

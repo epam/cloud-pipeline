@@ -264,7 +264,7 @@ class NextflowEngineTasks extends React.Component {
           title={false}
           footer={false}
           onCancel={this.closeTaskDetails}
-          visible={taskDetails !== undefined}
+          open={taskDetails !== undefined}
           width="90%"
           className="cp-run-engine-task-modal"
         >

@@ -16,28 +16,40 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {computed, observable, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import LoadingView from '../special/LoadingView';
-import {SplitPanel} from '../special/splitPanel';
 import {
   Alert,
   Button,
   Checkbox,
-  Icon,
+  Dropdown,
   Input,
   InputNumber,
   Modal,
-  message,
   Form,
+  message,
   Row,
   Select,
+  Splitter,
   Table,
-  Tooltip, Col, AutoComplete
+  Tooltip,
+  Col,
+  AutoComplete
 } from 'antd';
-import Menu, {MenuItem} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
+import {
+  CloseOutlined,
+  DeleteOutlined,
+  InfoCircleFilled,
+  PlusOutlined,
+  TeamOutlined,
+  UserAddOutlined,
+  UserOutlined,
+  UsergroupAddOutlined
+} from '@ant-design/icons';
 import AWSRegionUpdate from '../../models/dataStorage/AWSRegionUpdate';
 import AWSRegionDelete from '../../models/dataStorage/AWSRegionDelete';
 import AWSRegionCreate from '../../models/dataStorage/AWSRegionCreate';
@@ -111,7 +123,7 @@ function buildSLSProperties (properties) {
   return fromJSON(properties);
 }
 
-@inject('awsRegions', 'availableCloudRegions', 'cloudProviders', 'router', 'authenticatedUserInfo')
+@inject('awsRegions', 'availableCloudRegions', 'cloudProviders', 'routing', 'authenticatedUserInfo')
 @observer
 export default class AWSRegionsForm extends React.Component {
   static propTypes = {
@@ -127,23 +139,33 @@ export default class AWSRegionsForm extends React.Component {
     changesCanBeSkipped: false
   };
 
-  @observable awsRegionForm;
-  @observable awsRegionIds;
+  awsRegionForm;
+  awsRegionIds;
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      awsRegionForm: observable,
+      awsRegionIds: observable,
+      cloudProviders: computed,
+      availableRegionIds: computed
+    });
+  }
 
   componentDidMount () {
-    const {route, router} = this.props;
+    const {route, routing} = this.props;
     this.props.onInitialize && this.props.onInitialize(this);
-    if (route && router) {
-      router.setRouteLeaveHook(route, this.checkSettingsBeforeLeave);
+    if (route && routing) {
+      routing.setRouteLeaveHook(route, this.checkSettingsBeforeLeave);
     }
-  };
+  }
 
   componentDidUpdate () {
     const {currentRegionId, currentProvider} = this.state;
     if (!currentRegionId && !currentProvider && this.regions.length > 0) {
       this.selectDefaultRegion();
     }
-  };
+  }
 
   operationWrapper = (fn) => {
     return (...opts) => {
@@ -158,7 +180,6 @@ export default class AWSRegionsForm extends React.Component {
     };
   };
 
-  @computed
   get regions () {
     if (this.props.awsRegions.loaded) {
       const searchFn = (region) => {
@@ -185,7 +206,6 @@ export default class AWSRegionsForm extends React.Component {
     return [];
   }
 
-  @computed
   get cloudProviders () {
     if (this.props.cloudProviders.loaded) {
       return this.props.cloudProviders.value || [];
@@ -202,7 +222,6 @@ export default class AWSRegionsForm extends React.Component {
     }
   };
 
-  @computed
   get availableRegionIds () {
     if (!this.awsRegionIds) {
       return [];
@@ -215,14 +234,12 @@ export default class AWSRegionsForm extends React.Component {
     return [];
   }
 
-  @computed
   get currentRegion () {
     return this.regions
       .filter(r => r.id === this.state.currentRegionId)
       .map(r => ({...r, customInstanceTypes: toJSON(r.customInstanceTypes, [])}))[0];
-  };
+  }
 
-  @computed
   get regionModified () {
     if (!this.awsRegionForm) {
       return false;
@@ -318,7 +335,7 @@ export default class AWSRegionsForm extends React.Component {
             );
           }
         }
-        onRowClick={region => !this.state.newRegion && this.selectRegion(region)}
+        onRow={(region) => ({onClick: () => !this.state.newRegion && this.selectRegion(region)})}
         size="medium" />
     );
   };
@@ -507,30 +524,14 @@ export default class AWSRegionsForm extends React.Component {
     }
   };
 
-  awsRegionFormComponent = Form.create({onFieldsChange: this.onFieldsChanged})(AWSRegionForm);
+  awsRegionFormComponent = AWSRegionFormHOC;
 
   renderAddNewRegionButton = () => {
     if (this.cloudProviders.length > 1) {
-      const menu = (
-        <Menu
-          onClick={({key}) => this.onAddNewRegionClicked(key)}
-          selectedKeys={[]}
-          style={{cursor: 'pointer'}}
-        >
-          {
-            this.cloudProviders.map(c => {
-              return (
-                <MenuItem key={c}>
-                  {c}
-                </MenuItem>
-              );
-            })
-          }
-        </Menu>
-      );
+      const menuItems = this.cloudProviders.map(c => ({key: c, label: c}));
       return (
         <Dropdown
-          overlay={menu}
+          menu={{items: menuItems, onClick: ({key}) => this.onAddNewRegionClicked(key)}}
           disabled={this.regionModified || !!this.state.newRegion}>
           <Button
             disabled={this.regionModified || !!this.state.newRegion}
@@ -572,6 +573,7 @@ export default class AWSRegionsForm extends React.Component {
       return (
         <AWSRegionFormComponent
           onInitialize={this.onInitializeAWSRegionForm}
+          onFieldsChange={this.onFieldsChanged}
           isNew={!!this.state.newRegion}
           pending={this.props.awsRegions.pending || this.state.operationInProgress}
           onSubmit={this.operationWrapper(this.onSaveRegion)}
@@ -596,14 +598,14 @@ export default class AWSRegionsForm extends React.Component {
     }
     if (!this.props.authenticatedUserInfo.value.admin) {
       return (
-        <Alert type="error" message="Access is denied" />
+        <Alert type="error" title="Access is denied" />
       );
     }
     if (this.props.awsRegions.pending && !this.props.awsRegions.loaded) {
       return <LoadingView />;
     }
     if (this.props.awsRegions.error) {
-      return <Alert type="error" message={this.props.awsRegions.error} />;
+      return <Alert type="error" title={this.props.awsRegions.error} />;
     }
 
     return (
@@ -616,31 +618,25 @@ export default class AWSRegionsForm extends React.Component {
             onSearch={this.onSearch} />
           {this.renderAddNewRegionButton()}
         </Row>
-        <SplitPanel
-          contentInfo={[
-            {
-              key: 'regions',
-              size: {
-                pxDefault: 200
-              }
-            }
-          ]}
+        <Splitter
           style={{flex: 1, minHeight: 0}}
-          className={'cp-transparent-background'}
+          className="cp-transparent-background"
         >
-          <div key="regions">
+          <Splitter.Panel
+            defaultSize={200}
+            min={100}
+            style={{overflow: 'auto'}}
+          >
             {this.renderAwsRegionsTable()}
-          </div>
-          <div
-            key="content"
-            style={{
-              display: 'flex',
-              flexDirection: 'column'
-            }}>
+          </Splitter.Panel>
+          <Splitter.Panel
+            min={200}
+            style={{display: 'flex', flexDirection: 'column', overflow: 'auto'}}
+          >
             {this.renderProviderForm()}
             {this.renderRegionForm()}
-          </div>
-        </SplitPanel>
+          </Splitter.Panel>
+        </Splitter>
       </div>
     );
   }
@@ -653,11 +649,11 @@ export default class AWSRegionsForm extends React.Component {
   };
 
   checkSettingsBeforeLeave = (nextLocation) => {
-    const {router} = this.props;
+    const {routing} = this.props;
     const {changesCanBeSkipped} = this.state;
     const makeTransition = nextLocation => {
       this.setState({changesCanBeSkipped: true},
-        () => router.push(nextLocation)
+        () => routing.push(nextLocation)
       );
     };
     if (this.regionModified && !changesCanBeSkipped) {
@@ -720,7 +716,9 @@ class AWSRegionForm extends React.Component {
     onCancelCreate: PropTypes.func,
     onSubmit: PropTypes.func,
     onRemove: PropTypes.func,
-    pending: PropTypes.bool
+    pending: PropTypes.bool,
+    form: PropTypes.object,
+    onFieldsChange: PropTypes.func
   };
 
   contextualSettingsFetchToken = {};
@@ -873,21 +871,42 @@ class AWSRegionForm extends React.Component {
     LOCAL: [launchCommonMountsSetting]
   };
 
-  @observable _modified = false;
-  @observable _contextualSettingValid = true;
+  _modified = false;
+  _contextualSettingValid = true;
 
-  @observable permissions = null;
+  permissions = null;
 
-  @observable userFind;
-  @observable groupFind;
+  userFind;
+  groupFind;
   selectedUser = null;
   selectedGroup = null;
-  @observable usersToAddPermission = [];
-  @observable groupsToAddPermission = [];
-  @observable usersToRemovePermissions = [];
-  @observable groupsToRemovePermissions = [];
+  usersToAddPermission = [];
+  groupsToAddPermission = [];
+  usersToRemovePermissions = [];
+  groupsToRemovePermissions = [];
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      _modified: observable,
+      _contextualSettingValid: observable,
+      permissions: observable,
+      userFind: observable,
+      groupFind: observable,
+      usersToAddPermission: observable,
+      groupsToAddPermission: observable,
+      usersToRemovePermissions: observable,
+      groupsToRemovePermissions: observable,
+      provider: computed,
+      permissionsModified: computed,
+      modified: computed,
+      contextualSettingsValid: computed,
+      permissionsDisplayList: computed,
+      addedUserPermissions: computed,
+      addedGroupPermissions: computed
+    });
+  }
+
   get provider () {
     return this.props.region ? this.props.region.provider : null;
   }
@@ -1105,7 +1124,6 @@ class AWSRegionForm extends React.Component {
       checkRunShiftPolicy();
   };
 
-  @computed
   get permissionsModified () {
     return (this.usersToAddPermission && this.usersToAddPermission.length) ||
       (this.groupsToAddPermission && this.groupsToAddPermission.length) ||
@@ -1113,12 +1131,10 @@ class AWSRegionForm extends React.Component {
       (this.groupsToRemovePermissions && this.groupsToRemovePermissions.length);
   }
 
-  @computed
   get modified () {
     return this._modified || this.permissionsModified;
   }
 
-  @computed
   get contextualSettingsValid () {
     return this._contextualSettingValid;
   }
@@ -1133,7 +1149,6 @@ class AWSRegionForm extends React.Component {
     }
   };
 
-  @computed
   get permissionsDisplayList () {
     let permissions = [];
     if (this.permissions && this.permissions.loaded) {
@@ -1167,7 +1182,6 @@ class AWSRegionForm extends React.Component {
     return filteredPermissions.filter(permission => !this.isRemovingPermission(permission.sid));
   }
 
-  @computed
   get addedUserPermissions () {
     const res = [];
     this.permissionsDisplayList.forEach(permission => {
@@ -1179,7 +1193,6 @@ class AWSRegionForm extends React.Component {
     return res;
   }
 
-  @computed
   get addedGroupPermissions () {
     const res = [];
     this.permissionsDisplayList.forEach(permission => {
@@ -1234,73 +1247,70 @@ class AWSRegionForm extends React.Component {
     if (!this._contextualSettingValid) {
       return;
     }
-    this.props.form.validateFieldsAndScroll(async (err, values) => {
-      if (/^azure$/i.test(this.provider) && !values.priceOfferId && !values.enterpriseAgreements) {
-        this.props.form.validateFields(
-          ['storageAccount', 'storageAccountKey'],
-          {force: true}
-        );
-        message.error('Price Offer ID or Enterprise Agreement must be specified', 5);
-        return;
-      }
-      if (/^azure$/i.test(this.provider)) {
-        delete values['authorizeByManagedIdentity'];
-      }
-      this.cloudRegionFileShareMountsComponent &&
-      this.cloudRegionFileShareMountsComponent.validate &&
-      this.cloudRegionFileShareMountsComponent.validate();
-      if (!err && CloudRegionFileShareMountsFormItem.validationPassed(values.fileShareMounts)) {
-        values.storageLifecycleServiceProperties = buildSLSProperties(
-          values.storageLifecycleServiceProperties
-        );
-        values.clusterStateRegionProperties = buildSLSProperties(
-          values.clusterStateRegionProperties
-        );
-        const {
-          contextualSettingValue,
-          contextualSettingInitialValue
-        } = this.state;
-        const settings = [...new Set([
-          ...Object.keys(contextualSettingValue),
-          ...Object.keys(contextualSettingInitialValue)
-        ])];
-        const contextualSettings = settings
-          .map((setting) => {
-            const config = this.getProviderContextualSettingConfiguration(setting);
-            return {
-              setting,
-              value: contextualSettingValue
-                ? contextualSettingValue[setting]
-                : undefined,
-              initial: contextualSettingInitialValue
-                ? contextualSettingInitialValue[setting]
-                : undefined,
-              type: config ? config.type : undefined
-            };
-          })
-          .filter((o) => (o.value || '') !== (o.initial || ''));
-        if (this.props.isNew) {
-          this.props.onCreate && await this.props.onCreate(values, contextualSettings);
-        } else {
-          this.props.onSubmit && await this.props.onSubmit(values, contextualSettings);
-          await this.submitPermissions();
+    this.props.form.validateFields()
+      .then(async (values) => {
+        if (/^azure$/i.test(this.provider) && !values.priceOfferId && !values.enterpriseAgreements) {
+          this.props.form.validateFields(['storageAccount', 'storageAccountKey']).catch(() => {});
+          message.error('Price Offer ID or Enterprise Agreement must be specified', 5);
+          return;
         }
-      }
-    });
+        if (/^azure$/i.test(this.provider)) {
+          delete values['authorizeByManagedIdentity'];
+        }
+        this.cloudRegionFileShareMountsComponent &&
+        this.cloudRegionFileShareMountsComponent.validate &&
+        this.cloudRegionFileShareMountsComponent.validate();
+        if (CloudRegionFileShareMountsFormItem.validationPassed(values.fileShareMounts)) {
+          values.storageLifecycleServiceProperties = buildSLSProperties(
+            values.storageLifecycleServiceProperties
+          );
+          values.clusterStateRegionProperties = buildSLSProperties(
+            values.clusterStateRegionProperties
+          );
+          const {
+            contextualSettingValue,
+            contextualSettingInitialValue
+          } = this.state;
+          const settings = [...new Set([
+            ...Object.keys(contextualSettingValue),
+            ...Object.keys(contextualSettingInitialValue)
+          ])];
+          const contextualSettings = settings
+            .map((setting) => {
+              const config = this.getProviderContextualSettingConfiguration(setting);
+              return {
+                setting,
+                value: contextualSettingValue
+                  ? contextualSettingValue[setting]
+                  : undefined,
+                initial: contextualSettingInitialValue
+                  ? contextualSettingInitialValue[setting]
+                  : undefined,
+                type: config ? config.type : undefined
+              };
+            })
+            .filter((o) => (o.value || '') !== (o.initial || ''));
+          if (this.props.isNew) {
+            this.props.onCreate && (await this.props.onCreate(values, contextualSettings));
+          } else {
+            this.props.onSubmit && (await this.props.onSubmit(values, contextualSettings));
+            await this.submitPermissions();
+          }
+        }
+      })
+      .catch(() => {});
   };
 
-  jsonValidation = (rule, value, callback) => {
+  jsonValidation = (rule, value) => {
     if (!value) {
-      callback();
-      return;
+      return Promise.resolve();
     }
     try {
       JSON.parse(value);
     } catch (e) {
-      callback(e.toString());
-      return;
+      return Promise.reject(e.toString());
     }
-    callback();
+    return Promise.resolve();
   };
 
   corsRulesEditor;
@@ -1512,7 +1522,7 @@ class AWSRegionForm extends React.Component {
 
   renderPermissionsTable = () => {
     if (this.permissions && this.permissions.error) {
-      return <Alert type="warning" message={this.permissions.error} />;
+      return <Alert type="warning" title={this.permissions.error} />;
     }
 
     const rolesList = (this.props.roles.loaded ? (this.props.roles.value || []) : []).map(r => r);
@@ -1534,9 +1544,9 @@ class AWSRegionForm extends React.Component {
         className: `${styles.permissionIcon} ${styles.permissionCell}`,
         render: (item) => {
           if (item.sid.principal) {
-            return <Icon type="user" />;
+            return <UserOutlined />;
           }
-          return <Icon type="team" />;
+          return <TeamOutlined />;
         }
       },
       {
@@ -1551,11 +1561,11 @@ class AWSRegionForm extends React.Component {
         render: (item) => (
           <Row>
             <Button
-              type="danger"
+              danger
               disabled={this.props.pending}
               onClick={() => this.permissionRemoveClicked(item)}
               size="small">
-              <Icon type="delete" />
+              <DeleteOutlined />
             </Button>
           </Row>
         )
@@ -1569,10 +1579,10 @@ class AWSRegionForm extends React.Component {
         <Col span={12} style={{textAlign: 'right', paddingRight: 8}}>
           <span className={styles.permissionTableActions}>
             <Button disabled={this.props.pending} size="small" onClick={this.openFindUserDialog}>
-              <Icon type="user-add" />
+              <UserAddOutlined />
             </Button>
             <Button disabled={this.props.pending} size="small" onClick={this.openFindGroupDialog}>
-              <Icon type="usergroup-add" />
+              <UsergroupAddOutlined />
             </Button>
           </span>
         </Col>
@@ -1600,17 +1610,16 @@ class AWSRegionForm extends React.Component {
           title="Select user"
           onCancel={this.closeFindUserDialog}
           onOk={this.onSelectUser}
-          visible={this.state.findUserVisible}>
+          open={this.state.findUserVisible}>
           <AutoComplete
             value={this.selectedUser}
-            optionLabelProp="text"
             style={{width: '100%'}}
             onChange={this.onUserFindInputChanged}
             placeholder="Enter the account name">
             {
               (this.findUserDataSource() || []).map(user => {
                 return (
-                  <AutoComplete.Option key={user.userName} text={user.userName}>
+                  <AutoComplete.Option key={user.userName} value={user.userName}>
                     {this.renderUserName(user)}
                   </AutoComplete.Option>
                 );
@@ -1622,7 +1631,7 @@ class AWSRegionForm extends React.Component {
           title="Select group"
           onCancel={this.closeFindGroupDialog}
           onOk={this.onSelectGroup}
-          visible={this.state.findGroupVisible}>
+          open={this.state.findGroupVisible}>
           <AutoComplete
             value={this.selectedGroup}
             style={{width: '100%'}}
@@ -1681,7 +1690,7 @@ class AWSRegionForm extends React.Component {
       return null;
     }
     const {id: internalRegionId} = this.props.region;
-    const {resetFields, getFieldDecorator} = this.props.form;
+    const {resetFields} = this.props.form;
     const revertForm = () => {
       if (this.permissionsModified) {
         this.revertPermissions();
@@ -1699,7 +1708,7 @@ class AWSRegionForm extends React.Component {
       this.props.onCancelCreate && this.props.onCancelCreate();
     };
     const onRemove = async () => {
-      this.props.onRemove && await this.props.onRemove();
+      this.props.onRemove && (await this.props.onRemove());
     };
     const managedIdentityAvailable = /^azure$/i.test(this.provider);
     const authorizeByManagedIdentity = this.props.form.getFieldValue('authorizeByManagedIdentity');
@@ -1714,6 +1723,8 @@ class AWSRegionForm extends React.Component {
           }}
         >
           <Form
+            form={this.props.form}
+            onFieldsChange={this.props.onFieldsChange}
             className="edit-region-form"
             layout="horizontal"
           >
@@ -1721,90 +1732,80 @@ class AWSRegionForm extends React.Component {
               label="Region ID"
               required
               {...this.formItemLayout}
-              className={this.getFieldClassName('regionId', 'edit-region-id-container')}>
-              {getFieldDecorator('regionId', {
-                initialValue: this.props.region.regionId,
-                rules: [{required: true, message: 'Region id is required'}]
-              })(
-                <RegionIdSelector
-                  style={{width: '100%'}}
-                  regions={(this.props.regionIds || [])}
-                  provider={this.provider}
-                  disabled={!this.props.isNew || this.props.pending}
-                  internalId={this.props.isNew ? undefined : internalRegionId}
-                />
-              )}
+              className={this.getFieldClassName('regionId', 'edit-region-id-container')}
+              name="regionId"
+              initialValue={this.props.region.regionId}
+              rules={[{required: true, message: 'Region id is required'}]}>
+              <RegionIdSelector
+                style={{width: '100%'}}
+                regions={(this.props.regionIds || [])}
+                provider={this.provider}
+                disabled={!this.props.isNew || this.props.pending}
+                internalId={this.props.isNew ? undefined : internalRegionId}
+              />
             </Form.Item>
             <Form.Item
               label="Provider"
               required
               className={styles.hiddenItem}
-              {...this.formItemLayout}>
-              {getFieldDecorator('provider', {
-                initialValue: this.props.region.provider,
-                rules: [{required: true, message: 'Provider is required'}]
-              })(
-                <Input
-                  size="small"
-                  disabled={this.props.pending} />
-              )}
+              {...this.formItemLayout}
+              name="provider"
+              initialValue={this.props.region.provider}
+              rules={[{required: true, message: 'Provider is required'}]}>
+              <Input
+                size="small"
+                disabled={this.props.pending} />
             </Form.Item>
             <Form.Item
               label="Name"
               required
               {...this.formItemLayout}
-              className={this.getFieldClassName('name', 'edit-region-name-container')}>
-              {getFieldDecorator('name', {
-                initialValue: this.props.region.name,
-                rules: [{required: true, message: 'Region name is required'}]
-              })(
-                <Input
-                  size="small"
-                  disabled={this.props.pending} />
-              )}
+              className={this.getFieldClassName('name', 'edit-region-name-container')}
+              name="name"
+              initialValue={this.props.region.name}
+              rules={[{required: true, message: 'Region name is required'}]}>
+              <Input
+                size="small"
+                disabled={this.props.pending} />
             </Form.Item>
             <Form.Item
-              {...this.defaultCheckBoxFormItemLayout}>
-              {getFieldDecorator('default', {
-                valuePropName: 'checked',
-                initialValue: this.props.region.default
-              })(
-                <Checkbox
-                  disabled={this.props.region.default}>
-                  This is default cloud region
-                </Checkbox>
-              )}
+              {...this.defaultCheckBoxFormItemLayout}
+              name="default"
+              valuePropName="checked"
+              initialValue={this.props.region.default}>
+              <Checkbox
+                disabled={this.props.region.default}>
+                This is default cloud region
+              </Checkbox>
             </Form.Item>
             <Form.Item
               label="User"
               required={this.props.isNew && this.providerSupportsField('user')}
               className={this.getFieldClassName('user')}
-              {...this.formItemLayout}>
-              {getFieldDecorator('user', {
-                initialValue: this.props.region.user,
-                rules: [{
-                  required: this.props.isNew && this.providerSupportsField('user'),
-                  message: 'User is required'
-                }]
-              })(
-                <Input
-                  size="small"
-                  disabled={this.props.pending} />
-              )}
+              {...this.formItemLayout}
+              name="user"
+              initialValue={this.props.region.user}
+              rules={[{
+                required: this.props.isNew && this.providerSupportsField('user'),
+                message: 'User is required'
+              }]}>
+              <Input
+                size="small"
+                disabled={this.props.pending} />
             </Form.Item>
             <Form.Item
               label="Password"
               required={this.props.isNew && this.providerSupportsField('password')}
               className={this.getFieldClassName('password')}
-              {...this.formItemLayout}>
-              {getFieldDecorator('password', {
-                initialValue: undefined,
-                rules: [{required: this.props.isNew && this.providerSupportsField('password'), message: 'Password is required'}]
-              })(
-                <Input
-                  size="small"
-                  disabled={this.props.pending} />
-              )}
+              {...this.formItemLayout}
+              name="password"
+              initialValue={undefined}
+              rules={[{required: this.props.isNew && this.providerSupportsField('password'), message: 'Password is required'}]}>
+              <Input
+                type="password"
+                autoComplete="off"
+                size="small"
+                disabled={this.props.pending} />
             </Form.Item>
             <AWSRegionForm.Section
               title="Mount rules:"
@@ -1817,21 +1818,18 @@ class AWSRegionForm extends React.Component {
                   this.getFieldClassName('mountStorageRule')
                 )}
                 label="Object storages"
-              >
-                {getFieldDecorator('mountStorageRule', {
-                  initialValue: this.props.region.mountStorageRule
-                })(
-                  <Select
-                    size="small"
-                    allowClear={false}
-                    style={{marginTop: 4}}
-                  >
-                    <Select.Option value="NONE">None</Select.Option>
-                    <Select.Option value="CLOUD">Same cloud</Select.Option>
-                    <Select.Option value="REGION">Same region</Select.Option>
-                    <Select.Option value="ALL">All</Select.Option>
-                  </Select>
-                )}
+                name="mountStorageRule"
+                initialValue={this.props.region.mountStorageRule}>
+                <Select
+                  size="small"
+                  allowClear={false}
+                  style={{marginTop: 4}}
+                >
+                  <Select.Option value="NONE">None</Select.Option>
+                  <Select.Option value="CLOUD">Same cloud</Select.Option>
+                  <Select.Option value="REGION">Same region</Select.Option>
+                  <Select.Option value="ALL">All</Select.Option>
+                </Select>
               </Form.Item>
               <Form.Item
                 className={classNames(
@@ -1840,21 +1838,18 @@ class AWSRegionForm extends React.Component {
                   this.getFieldClassName('mountFileStorageRule')
                 )}
                 label="File storages"
-              >
-                {getFieldDecorator('mountFileStorageRule', {
-                  initialValue: this.props.region.mountFileStorageRule
-                })(
-                  <Select
-                    size="small"
-                    allowClear={false}
-                    style={{marginTop: 4}}
-                  >
-                    <Select.Option value="NONE">None</Select.Option>
-                    <Select.Option value="CLOUD">Same cloud</Select.Option>
-                    <Select.Option value="REGION">Same region</Select.Option>
-                    <Select.Option value="ALL">All</Select.Option>
-                  </Select>
-                )}
+                name="mountFileStorageRule"
+                initialValue={this.props.region.mountFileStorageRule}>
+                <Select
+                  size="small"
+                  allowClear={false}
+                  style={{marginTop: 4}}
+                >
+                  <Select.Option value="NONE">None</Select.Option>
+                  <Select.Option value="CLOUD">Same cloud</Select.Option>
+                  <Select.Option value="REGION">Same region</Select.Option>
+                  <Select.Option value="ALL">All</Select.Option>
+                </Select>
               </Form.Item>
               <Form.Item
                 className={classNames(
@@ -1863,21 +1858,18 @@ class AWSRegionForm extends React.Component {
                   this.getFieldClassName('mountCredentialsRule')
                 )}
                 label="Credentials"
-              >
-                {getFieldDecorator('mountCredentialsRule', {
-                  initialValue: this.props.region.mountCredentialsRule
-                })(
-                  <Select
-                    size="small"
-                    allowClear={false}
-                    style={{marginTop: 4}}
-                  >
-                    <Select.Option value="NONE">None</Select.Option>
-                    <Select.Option value="CLOUD">Same cloud</Select.Option>
-                    <Select.Option value="REGION">Same region</Select.Option>
-                    <Select.Option value="ALL">All</Select.Option>
-                  </Select>
-                )}
+                name="mountCredentialsRule"
+                initialValue={this.props.region.mountCredentialsRule}>
+                <Select
+                  size="small"
+                  allowClear={false}
+                  style={{marginTop: 4}}
+                >
+                  <Select.Option value="NONE">None</Select.Option>
+                  <Select.Option value="CLOUD">Same cloud</Select.Option>
+                  <Select.Option value="REGION">Same region</Select.Option>
+                  <Select.Option value="ALL">All</Select.Option>
+                </Select>
               </Form.Item>
             </AWSRegionForm.Section>
             {
@@ -1895,15 +1887,12 @@ class AWSRegionForm extends React.Component {
                   this.getFieldClassName('dnsHostedZoneBase')
                 )}
                 label="Base"
-              >
-                {getFieldDecorator('dnsHostedZoneBase', {
-                  initialValue: this.props.region.dnsHostedZoneBase
-                })(
-                  <Input
-                    size="small"
-                    disabled={this.props.pending}
-                  />
-                )}
+                name="dnsHostedZoneBase"
+                initialValue={this.props.region.dnsHostedZoneBase}>
+                <Input
+                  size="small"
+                  disabled={this.props.pending}
+                />
               </Form.Item>
               <Form.Item
                 className={classNames(
@@ -1912,15 +1901,12 @@ class AWSRegionForm extends React.Component {
                   this.getFieldClassName('dnsHostedZoneId')
                 )}
                 label="Id"
-              >
-                {getFieldDecorator('dnsHostedZoneId', {
-                  initialValue: this.props.region.dnsHostedZoneId
-                })(
-                  <Input
-                    size="small"
-                    disabled={this.props.pending}
-                  />
-                )}
+                name="dnsHostedZoneId"
+                initialValue={this.props.region.dnsHostedZoneId}>
+                <Input
+                  size="small"
+                  disabled={this.props.pending}
+                />
               </Form.Item>
             </AWSRegionForm.Section>
             <Form.Item
@@ -1930,31 +1916,25 @@ class AWSRegionForm extends React.Component {
                 'fileShareMounts',
                 'edit-region-elastic-file-share-mounts-container'
               )}
-            >
-              {getFieldDecorator('fileShareMounts', {
-                initialValue: this.props.region.fileShareMounts
-              })(
-                <CloudRegionFileShareMountsFormItem
-                  onMount={this.initializeCloudRegionFileShareMountsComponent}
-                  onUnMount={this.unInitializeCloudRegionFileShareMountsComponent}
-                  disabled={this.props.pending}
-                  provider={this.provider} />
-              )}
+              name="fileShareMounts"
+              initialValue={this.props.region.fileShareMounts}>
+              <CloudRegionFileShareMountsFormItem
+                onMount={this.initializeCloudRegionFileShareMountsComponent}
+                onUnMount={this.unInitializeCloudRegionFileShareMountsComponent}
+                disabled={this.props.pending}
+                provider={this.provider} />
             </Form.Item>
             {managedIdentityAvailable ? (
               <Form.Item
                 label="Authorize by Managed Identity"
                 {...this.formItemLayout}
-              >
-                {getFieldDecorator('authorizeByManagedIdentity', {
-                  valuePropName: 'checked',
-                  initialValue: !!this.props.region.managedIdentity
-                })(
-                  <Checkbox
-                    size="small"
-                    disabled={this.props.pending}
-                  />
-                )}
+                name="authorizeByManagedIdentity"
+                valuePropName="checked"
+                initialValue={!!this.props.region.managedIdentity}>
+                <Checkbox
+                  size="small"
+                  disabled={this.props.pending}
+                />
               </Form.Item>
             ) : null}
             {managedIdentityAvailable && authorizeByManagedIdentity ? (
@@ -1962,19 +1942,17 @@ class AWSRegionForm extends React.Component {
                 label="Managed Identity Client Id"
                 required={this.providerSupportsField('managedIdentity')}
                 {...this.formItemLayout}
-                className={this.getFieldClassName('managedIdentity')}>
-                {getFieldDecorator('managedIdentity', {
-                  initialValue: this.props.region.managedIdentity,
-                  rules: [{
-                    required: this.providerSupportsField('managedIdentity') &&
-                      authorizeByManagedIdentity,
-                    message: 'Managed Identity Client Id is required'
-                  }]
-                })(
-                  <Input
-                    size="small"
-                    disabled={this.props.pending} />
-                )}
+                className={this.getFieldClassName('managedIdentity')}
+                name="managedIdentity"
+                initialValue={this.props.region.managedIdentity}
+                rules={[{
+                  required: this.providerSupportsField('managedIdentity') &&
+                    authorizeByManagedIdentity,
+                  message: 'Managed Identity Client Id is required'
+                }]}>
+                <Input
+                  size="small"
+                  disabled={this.props.pending} />
               </Form.Item>
             ) : null}
             <Form.Item
@@ -1983,33 +1961,29 @@ class AWSRegionForm extends React.Component {
                 this.providerSupportsField('storageAccount')
               }
               className={this.getFieldClassName('storageAccount')}
-              {...this.formItemLayout}>
-              {getFieldDecorator('storageAccount', {
-                initialValue: this.props.region.storageAccount,
-                rules: [{
-                  required: this.providerSupportsField('storageAccount'),
-                  message: 'Storage account is required'
-                }]
-              })(
-                <Input
-                  size="small"
-                  disabled={this.props.pending} />
-              )}
+              {...this.formItemLayout}
+              name="storageAccount"
+              initialValue={this.props.region.storageAccount}
+              rules={[{
+                required: this.providerSupportsField('storageAccount'),
+                message: 'Storage account is required'
+              }]}>
+              <Input
+                size="small"
+                disabled={this.props.pending} />
             </Form.Item>
             <Form.Item
               className={this.getFieldClassName(
                 'hierarchicalStorageNamespace',
                 'edit-region-hierarchicalStorageNamespace-container'
               )}
-              {...this.defaultCheckBoxFormItemLayout}>
-              {getFieldDecorator('hierarchicalStorageNamespace', {
-                valuePropName: 'checked',
-                initialValue: this.props.region.hierarchicalStorageNamespace
-              })(
-                <Checkbox>
-                  Hierarchical storage namespace
-                </Checkbox>
-              )}
+              {...this.defaultCheckBoxFormItemLayout}
+              name="hierarchicalStorageNamespace"
+              valuePropName="checked"
+              initialValue={this.props.region.hierarchicalStorageNamespace}>
+              <Checkbox>
+                Hierarchical storage namespace
+              </Checkbox>
             </Form.Item>
             <Form.Item
               label="Storage account key"
@@ -2019,224 +1993,190 @@ class AWSRegionForm extends React.Component {
                 !authorizeByManagedIdentity
               }
               className={this.getFieldClassName('storageAccountKey')}
-              {...this.formItemLayout}>
-              {getFieldDecorator('storageAccountKey', {
-                initialValue: undefined,
-                rules: [{
-                  required: this.props.isNew &&
-                    this.providerSupportsField('storageAccountKey') &&
-                    !authorizeByManagedIdentity,
-                  message: 'Storage account key is required'
-                }]
-              })(
-                <Input
-                  size="small"
-                  disabled={this.props.pending} />
-              )}
+              {...this.formItemLayout}
+              name="storageAccountKey"
+              initialValue={undefined}
+              rules={[{
+                required: this.props.isNew &&
+                  this.providerSupportsField('storageAccountKey') &&
+                  !authorizeByManagedIdentity,
+                message: 'Storage account key is required'
+              }]}>
+              <Input
+                size="small"
+                disabled={this.props.pending} />
             </Form.Item>
             <Form.Item
               label="SSH Public Key Path"
               required={this.providerSupportsField('sshPublicKeyPath')}
               {...this.formItemLayout}
-              className={this.getFieldClassName('sshPublicKeyPath', 'edit-region-sshPublicKeyPath-container')}>
-              {getFieldDecorator('sshPublicKeyPath', {
-                initialValue: this.props.region.sshPublicKeyPath,
-                rules: [{required: this.providerSupportsField('sshPublicKeyPath'), message: 'SSH Public Key Path is required'}]
-              })(
-                <Input
-                  size="small"
-                  disabled={this.props.pending} />
-              )}
+              className={this.getFieldClassName('sshPublicKeyPath', 'edit-region-sshPublicKeyPath-container')}
+              name="sshPublicKeyPath"
+              initialValue={this.props.region.sshPublicKeyPath}
+              rules={[{required: this.providerSupportsField('sshPublicKeyPath'), message: 'SSH Public Key Path is required'}]}>
+              <Input
+                size="small"
+                disabled={this.props.pending} />
             </Form.Item>
             <Form.Item
               label="Meter Region Name"
               required={this.providerSupportsField('meterRegionName')}
               {...this.formItemLayout}
-              className={this.getFieldClassName('meterRegionName', 'edit-region-meterRegionName-container')}>
-              {getFieldDecorator('meterRegionName', {
-                initialValue: this.props.region.meterRegionName,
-                rules: [{required: this.providerSupportsField('meterRegionName'), message: 'Meter Region Name is required'}]
-              })(
-                <Input
-                  size="small"
-                  disabled={this.props.pending} />
-              )}
+              className={this.getFieldClassName('meterRegionName', 'edit-region-meterRegionName-container')}
+              name="meterRegionName"
+              initialValue={this.props.region.meterRegionName}
+              rules={[{required: this.providerSupportsField('meterRegionName'), message: 'Meter Region Name is required'}]}>
+              <Input
+                size="small"
+                disabled={this.props.pending} />
             </Form.Item>
             <Form.Item
               label="Azure API Url"
               required={this.providerSupportsField('azureApiUrl')}
               {...this.formItemLayout}
-              className={this.getFieldClassName('azureApiUrl', 'edit-region-azureApiUrl-container')}>
-              {getFieldDecorator('azureApiUrl', {
-                initialValue: this.props.region.azureApiUrl,
-                rules: [{required: this.providerSupportsField('azureApiUrl'), message: 'Azure API Url is required'}]
-              })(
-                <Input
-                  size="small"
-                  disabled={this.props.pending} />
-              )}
+              className={this.getFieldClassName('azureApiUrl', 'edit-region-azureApiUrl-container')}
+              name="azureApiUrl"
+              initialValue={this.props.region.azureApiUrl}
+              rules={[{required: this.providerSupportsField('azureApiUrl'), message: 'Azure API Url is required'}]}>
+              <Input
+                size="small"
+                disabled={this.props.pending} />
             </Form.Item>
             <Form.Item
               label="Price Offer ID"
               {...this.formItemLayout}
-              className={this.getFieldClassName('priceOfferId', 'edit-region-priceOfferId-container')}>
-              {getFieldDecorator('priceOfferId', {
-                initialValue: this.props.region.priceOfferId
-              })(
-                <Input
-                  size="small"
-                  disabled={this.props.pending}
-                />
-              )}
+              className={this.getFieldClassName('priceOfferId', 'edit-region-priceOfferId-container')}
+              name="priceOfferId"
+              initialValue={this.props.region.priceOfferId}>
+              <Input
+                size="small"
+                disabled={this.props.pending}
+              />
             </Form.Item>
             <Form.Item
               label="Enterprise Agreement"
               {...this.formItemLayout}
-              className={this.getFieldClassName('enterpriseAgreements', 'edit-region-enterpriseAgreements-container')}>
-              {getFieldDecorator('enterpriseAgreements', {
-                valuePropName: 'checked',
-                initialValue: this.props.region.enterpriseAgreements
-              })(
-                <Checkbox>
-                  Enterprise Agreement
-                </Checkbox>
-              )}
+              className={this.getFieldClassName('enterpriseAgreements', 'edit-region-enterpriseAgreements-container')}
+              name="enterpriseAgreements"
+              valuePropName="checked"
+              initialValue={this.props.region.enterpriseAgreements}>
+              <Checkbox>
+                Enterprise Agreement
+              </Checkbox>
             </Form.Item>
             <Form.Item
               label="Resource group"
               className={this.getFieldClassName('resourceGroup')}
-              {...this.formItemLayout}>
-              {getFieldDecorator('resourceGroup', {
-                initialValue: this.props.region.resourceGroup
-              })(
-                <Input
-                  size="small"
-                  disabled={this.props.pending} />
-              )}
+              {...this.formItemLayout}
+              name="resourceGroup"
+              initialValue={this.props.region.resourceGroup}>
+              <Input
+                size="small"
+                disabled={this.props.pending} />
             </Form.Item>
             <Form.Item
               label="Profile"
               {...this.formItemLayout}
-              className={this.getFieldClassName('profile', 'edit-region-profile-container')}>
-              {getFieldDecorator('profile', {
-                initialValue: this.props.region.profile
-              })(
-                <Input
-                  size="small"
-                  disabled={this.props.pending} />
-              )}
+              className={this.getFieldClassName('profile', 'edit-region-profile-container')}
+              name="profile"
+              initialValue={this.props.region.profile}>
+              <Input
+                size="small"
+                disabled={this.props.pending} />
             </Form.Item>
             <Form.Item
               label="SSH Key Name"
               required={this.providerSupportsField('sshKeyName')}
               {...this.formItemLayout}
-              className={this.getFieldClassName('sshKeyName', 'edit-region-sshKeyName-container')}>
-              {getFieldDecorator('sshKeyName', {
-                initialValue: this.props.region.sshKeyName,
-                rules: [{required: this.providerSupportsField('sshKeyName'), message: 'SSH Key Name is required'}]
-              })(
-                <Input
-                  size="small"
-                  disabled={this.props.pending} />
-              )}
+              className={this.getFieldClassName('sshKeyName', 'edit-region-sshKeyName-container')}
+              name="sshKeyName"
+              initialValue={this.props.region.sshKeyName}
+              rules={[{required: this.providerSupportsField('sshKeyName'), message: 'SSH Key Name is required'}]}>
+              <Input
+                size="small"
+                disabled={this.props.pending} />
             </Form.Item>
             <Form.Item
               label="Project"
               required={this.providerSupportsField('project')}
               {...this.formItemLayout}
-              className={this.getFieldClassName('project', 'edit-region-project-container')}>
-              {getFieldDecorator('project', {
-                initialValue: this.props.region.project,
-                rules: [{
-                  required: this.providerSupportsField('project'),
-                  message: 'Project is required'
-                }]
-              })(
-                <Input
-                  size="small"
-                  disabled={this.props.pending} />
-              )}
+              className={this.getFieldClassName('project', 'edit-region-project-container')}
+              name="project"
+              initialValue={this.props.region.project}
+              rules={[{
+                required: this.providerSupportsField('project'),
+                message: 'Project is required'
+              }]}>
+              <Input
+                size="small"
+                disabled={this.props.pending} />
             </Form.Item>
             <Form.Item
               label="Application name"
               required={this.providerSupportsField('applicationName')}
               {...this.formItemLayout}
-              className={this.getFieldClassName('applicationName', 'edit-region-application-name-container')}>
-              {getFieldDecorator('applicationName', {
-                initialValue: this.props.region.applicationName,
-                rules: [{
-                  required: this.providerSupportsField('applicationName'),
-                  message: 'Application name is required'
-                }]
-              })(
-                <Input
-                  size="small"
-                  disabled={this.props.pending} />
-              )}
+              className={this.getFieldClassName('applicationName', 'edit-region-application-name-container')}
+              name="applicationName"
+              initialValue={this.props.region.applicationName}
+              rules={[{
+                required: this.providerSupportsField('applicationName'),
+                message: 'Application name is required'
+              }]}>
+              <Input
+                size="small"
+                disabled={this.props.pending} />
             </Form.Item>
             <Form.Item
               label="Main Service Role"
               {...this.formItemLayout}
-              className={this.getFieldClassName('iamRole', 'edit-region-iam-role-container')}>
-              {getFieldDecorator('iamRole', {
-                initialValue: this.props.region.iamRole
-              })(
-                <Input
-                  size="small"
-                  disabled={this.props.pending} />
-              )}
+              className={this.getFieldClassName('iamRole', 'edit-region-iam-role-container')}
+              name="iamRole"
+              initialValue={this.props.region.iamRole}>
+              <Input
+                size="small"
+                disabled={this.props.pending} />
             </Form.Item>
             <Form.Item
               label="Temp Credentials Role"
               required={this.providerSupportsField('tempCredentialsRole')}
               {...this.formItemLayout}
-              className={this.getFieldClassName('tempCredentialsRole', 'edit-region-tempCredentialsRole-container')}>
-              {getFieldDecorator('tempCredentialsRole', {
-                initialValue: this.props.region.tempCredentialsRole,
-                rules: [{required: this.providerSupportsField('tempCredentialsRole'), message: 'Temp Credentials Role is required'}]
-              })(
-                <Input
-                  size="small"
-                  disabled={this.props.pending} />
-              )}
+              className={this.getFieldClassName('tempCredentialsRole', 'edit-region-tempCredentialsRole-container')}
+              name="tempCredentialsRole"
+              initialValue={this.props.region.tempCredentialsRole}
+              rules={[{required: this.providerSupportsField('tempCredentialsRole'), message: 'Temp Credentials Role is required'}]}>
+              <Input
+                size="small"
+                disabled={this.props.pending} />
             </Form.Item>
             <Form.Item
               label="AWS HealthOmics Service role"
               {...this.formItemLayout}
               className={this.getFieldClassName('omicsServiceRole', 'edit-region-omicsServiceRole-container')}
-            >
-              {getFieldDecorator('omicsServiceRole', {
-                initialValue: this.props.region.omicsServiceRole
-              })(
-                <Input
-                  size="small"
-                  disabled={this.props.pending} />
-              )}
+              name="omicsServiceRole"
+              initialValue={this.props.region.omicsServiceRole}>
+              <Input
+                size="small"
+                disabled={this.props.pending} />
             </Form.Item>
             <Form.Item
               label="AWS HealthOmics ECR Url"
               {...this.formItemLayout}
               className={this.getFieldClassName('omicsEcrUrl', 'edit-region-omicsEcrUrl-container')}
-            >
-              {getFieldDecorator('omicsEcrUrl', {
-                initialValue: this.props.region.omicsEcrUrl
-              })(
-                <Input
-                  size="small"
-                  disabled={this.props.pending} />
-              )}
+              name="omicsEcrUrl"
+              initialValue={this.props.region.omicsEcrUrl}>
+              <Input
+                size="small"
+                disabled={this.props.pending} />
             </Form.Item>
             <Form.Item
               className={this.getFieldClassName('versioningEnabled', 'edit-region-versioningEnabled-container')}
-              {...this.defaultCheckBoxFormItemLayout}>
-              {getFieldDecorator('versioningEnabled', {
-                valuePropName: 'checked',
-                initialValue: this.props.region.versioningEnabled
-              })(
-                <Checkbox>
-                  Versioning enabled
-                </Checkbox>
-              )}
+              {...this.defaultCheckBoxFormItemLayout}
+              name="versioningEnabled"
+              valuePropName="checked"
+              initialValue={this.props.region.versioningEnabled}>
+              <Checkbox>
+                Versioning enabled
+              </Checkbox>
             </Form.Item>
             <Form.Item
               label="Backup Duration"
@@ -2247,119 +2187,103 @@ class AWSRegionForm extends React.Component {
                   'backupDuration',
                   'edit-region-backupDuration-container'
                 )
-              }>
-              {getFieldDecorator('backupDuration', {
-                initialValue: this.props.region.backupDuration,
-                rules: [{
-                  required: this.providerSupportsField('backupDuration'),
-                  message: 'Backup duration is required'
-                }]
-              })(
-                <InputNumber
-                  style={{width: '100%'}}
-                  min={0}
-                  size="small"
-                  disabled={this.props.pending} />
-              )}
+              }
+              name="backupDuration"
+              initialValue={this.props.region.backupDuration}
+              rules={[{
+                required: this.providerSupportsField('backupDuration'),
+                message: 'Backup duration is required'
+              }]}>
+              <InputNumber
+                style={{width: '100%'}}
+                min={0}
+                size="small"
+                disabled={this.props.pending} />
             </Form.Item>
             <Form.Item
               label="KMS Key ID"
               required={this.providerSupportsField('kmsKeyId')}
               {...this.formItemLayout}
-              className={this.getFieldClassName('kmsKeyId', 'edit-region-kmsKeyId-container')}>
-              {getFieldDecorator('kmsKeyId', {
-                initialValue: this.props.region.kmsKeyId,
-                rules: [{required: this.providerSupportsField('kmsKeyId'), message: 'KMS Key ID is required'}]
-              })(
-                <Input
-                  size="small"
-                  disabled={this.props.pending} />
-              )}
+              className={this.getFieldClassName('kmsKeyId', 'edit-region-kmsKeyId-container')}
+              name="kmsKeyId"
+              initialValue={this.props.region.kmsKeyId}
+              rules={[{required: this.providerSupportsField('kmsKeyId'), message: 'KMS Key ID is required'}]}>
+              <Input
+                size="small"
+                disabled={this.props.pending} />
             </Form.Item>
             <Form.Item
               label="KMS Key Arn"
               required={this.providerSupportsField('kmsKeyArn')}
               {...this.formItemLayout}
-              className={this.getFieldClassName('kmsKeyArn', 'edit-region-kmsKeyArn-container')}>
-              {getFieldDecorator('kmsKeyArn', {
-                initialValue: this.props.region.kmsKeyArn,
-                rules: [{required: this.providerSupportsField('kmsKeyArn'), message: 'KMS Key Arn is required'}]
-              })(
-                <Input
-                  size="small"
-                  disabled={this.props.pending} />
-              )}
+              className={this.getFieldClassName('kmsKeyArn', 'edit-region-kmsKeyArn-container')}
+              name="kmsKeyArn"
+              initialValue={this.props.region.kmsKeyArn}
+              rules={[{required: this.providerSupportsField('kmsKeyArn'), message: 'KMS Key Arn is required'}]}>
+              <Input
+                size="small"
+                disabled={this.props.pending} />
             </Form.Item>
             <Form.Item
               label="CORS rules"
               hasFeedback
               {...this.formItemLayout}
-              className={this.getFieldClassName('corsRules', 'edit-region-cors-rules-container')}>
-              {getFieldDecorator('corsRules', {
-                initialValue: this.props.region.corsRules,
-                rules: [{
-                  validator: this.jsonValidation
-                }]
-              })(
-                <CodeEditorFormItem
-                  ref={this.initializeCorsRulesEditor}
-                  editorClassName={styles.codeEditor}
-                  editorLanguage="application/json"
-                  disabled={this.props.pending} />
-              )}
+              className={this.getFieldClassName('corsRules', 'edit-region-cors-rules-container')}
+              name="corsRules"
+              initialValue={this.props.region.corsRules}
+              rules={[{
+                validator: this.jsonValidation
+              }]}>
+              <CodeEditorFormItem
+                ref={this.initializeCorsRulesEditor}
+                editorClassName={styles.codeEditor}
+                editorLanguage="application/json"
+                disabled={this.props.pending} />
             </Form.Item>
             <Form.Item
               label="Policy"
               {...this.formItemLayout}
-              className={this.getFieldClassName('azurePolicy', 'edit-region-subscription-container')}>
-              {getFieldDecorator('azurePolicy', {
-                initialValue: this.props.region.azurePolicy
-              })(
-                <IPRangeFormItem
-                  disabled={this.props.pending} />
-              )}
+              className={this.getFieldClassName('azurePolicy', 'edit-region-subscription-container')}
+              name="azurePolicy"
+              initialValue={this.props.region.azurePolicy}>
+              <IPRangeFormItem
+                disabled={this.props.pending} />
             </Form.Item>
             <Form.Item
               label="Subscription"
               {...this.formItemLayout}
-              className={this.getFieldClassName('subscription', 'edit-region-subscription-container')}>
-              {getFieldDecorator('subscription', {
-                initialValue: this.props.region.subscription
-              })(
-                <Input
-                  size="small"
-                  disabled={this.props.pending} />
-              )}
+              className={this.getFieldClassName('subscription', 'edit-region-subscription-container')}
+              name="subscription"
+              initialValue={this.props.region.subscription}>
+              <Input
+                size="small"
+                disabled={this.props.pending} />
             </Form.Item>
             <Form.Item
               label="Auth file"
               {...this.formItemLayout}
-              className={this.getFieldClassName('authFile', 'edit-region-subscription-container')}>
-              {getFieldDecorator('authFile', {
-                initialValue: this.props.region.authFile
-              })(
-                <Input
-                  size="small"
-                  disabled={this.props.pending} />
-              )}
+              className={this.getFieldClassName('authFile', 'edit-region-subscription-container')}
+              name="authFile"
+              initialValue={this.props.region.authFile}>
+              <Input
+                size="small"
+                disabled={this.props.pending} />
             </Form.Item>
             <Form.Item
               label="Policy"
               hasFeedback
               {...this.formItemLayout}
-              className={this.getFieldClassName('policy', 'edit-region-policy-container')}>
-              {getFieldDecorator('policy', {
-                initialValue: this.props.region.policy,
-                rules: [{
-                  validator: this.jsonValidation
-                }]
-              })(
-                <CodeEditorFormItem
-                  ref={this.initializePolicyEditor}
-                  editorClassName={styles.codeEditor}
-                  editorLanguage="application/json"
-                  disabled={this.props.pending} />
-              )}
+              className={this.getFieldClassName('policy', 'edit-region-policy-container')}
+              name="policy"
+              initialValue={this.props.region.policy}
+              rules={[{
+                validator: this.jsonValidation
+              }]}>
+              <CodeEditorFormItem
+                ref={this.initializePolicyEditor}
+                editorClassName={styles.codeEditor}
+                editorLanguage="application/json"
+                disabled={this.props.pending} />
             </Form.Item>
             <Form.Item
               label="Run shift policy"
@@ -2371,14 +2295,11 @@ class AWSRegionForm extends React.Component {
                   'edit-region-run-shift-policy-container'
                 )
               }
-            >
-              {getFieldDecorator('runShiftPolicy', {
-                initialValue: this.props.region.runShiftPolicy
-              })(
-                <RunShiftPolicy
-                  disabled={this.props.pending}
-                />
-              )}
+              name="runShiftPolicy"
+              initialValue={this.props.region.runShiftPolicy}>
+              <RunShiftPolicy
+                disabled={this.props.pending}
+              />
             </Form.Item>
             <Form.Item
               label="SLS properties"
@@ -2390,37 +2311,32 @@ class AWSRegionForm extends React.Component {
                   'edit-region-sls-policy-container'
                 )
               }
-            >
-              {getFieldDecorator('storageLifecycleServiceProperties', {
-                initialValue: this.props.region.storageLifecycleServiceProperties,
-                rules: [{
-                  validator: this.jsonValidation
-                }]
-              })(
-                <CodeEditorFormItem
-                  ref={this.initializePolicyEditor}
-                  editorClassName={styles.codeEditor}
-                  editorLanguage="application/json"
-                  disabled={this.props.pending} />
-              )}
+              name="storageLifecycleServiceProperties"
+              initialValue={this.props.region.storageLifecycleServiceProperties}
+              rules={[{
+                validator: this.jsonValidation
+              }]}>
+              <CodeEditorFormItem
+                ref={this.initializePolicyEditor}
+                editorClassName={styles.codeEditor}
+                editorLanguage="application/json"
+                disabled={this.props.pending} />
             </Form.Item>
             <Form.Item
               label="Custom instance types"
               hasFeedback
               {...this.formItemLayout}
-              className={this.getFieldClassName('customInstanceTypes', 'edit-region-custom-instance-types-container')}>
-              {getFieldDecorator('customInstanceTypes', {
-                initialValue: this.props.region.customInstanceTypes,
-                rules: [{
-                  validator: this.jsonValidation
-                }]
-              })(
-                <CodeEditorFormItem
-                  ref={this.initializeCustomInstanceTypesEditor}
-                  editorClassName={styles.codeEditor}
-                  editorLanguage="application/json"
-                  disabled={this.props.pending} />
-              )}
+              className={this.getFieldClassName('customInstanceTypes', 'edit-region-custom-instance-types-container')}
+              name="customInstanceTypes"
+              initialValue={this.props.region.customInstanceTypes}
+              rules={[{
+                validator: this.jsonValidation
+              }]}>
+              <CodeEditorFormItem
+                ref={this.initializeCustomInstanceTypesEditor}
+                editorClassName={styles.codeEditor}
+                editorLanguage="application/json"
+                disabled={this.props.pending} />
             </Form.Item>
             <Form.Item
               label="Distribution URL"
@@ -2431,29 +2347,24 @@ class AWSRegionForm extends React.Component {
                   'edit-region-distribution-url-container'
                 )
               }
-            >
-              {getFieldDecorator('globalDistributionUrl', {
-                initialValue: this.props.region.globalDistributionUrl
-              })(
-                <Input
-                  size="small"
-                  disabled={this.props.pending} />
-              )}
+              name="globalDistributionUrl"
+              initialValue={this.props.region.globalDistributionUrl}>
+              <Input
+                size="small"
+                disabled={this.props.pending} />
             </Form.Item>
             <Form.Item
               className={this.getFieldClassName(
                 'clusterInclude',
                 'edit-region-clusterInclude-container'
               )}
-              {...this.defaultCheckBoxFormItemLayout}>
-              {getFieldDecorator('clusterInclude', {
-                valuePropName: 'checked',
-                initialValue: this.props.region.clusterInclude
-              })(
-                <Checkbox>
-                  Show standalone nodes in Cluster State
-                </Checkbox>
-              )}
+              {...this.defaultCheckBoxFormItemLayout}
+              name="clusterInclude"
+              valuePropName="checked"
+              initialValue={this.props.region.clusterInclude}>
+              <Checkbox>
+                Show standalone nodes in Cluster State
+              </Checkbox>
             </Form.Item>
             <Form.Item
               label="Standalone nodes filter"
@@ -2465,19 +2376,16 @@ class AWSRegionForm extends React.Component {
                   'edit-clusterStateRegionProperties-container'
                 )
               }
-            >
-              {getFieldDecorator('clusterStateRegionProperties', {
-                initialValue: this.props.region.clusterStateRegionProperties,
-                rules: [{
-                  validator: this.jsonValidation
-                }]
-              })(
-                <CodeEditorFormItem
-                  ref={this.initializeClusterStateRegionPropertiesEditor}
-                  editorClassName={styles.codeEditor}
-                  editorLanguage="application/json"
-                  disabled={this.props.pending} />
-              )}
+              name="clusterStateRegionProperties"
+              initialValue={this.props.region.clusterStateRegionProperties}
+              rules={[{
+                validator: this.jsonValidation
+              }]}>
+              <CodeEditorFormItem
+                ref={this.initializeClusterStateRegionPropertiesEditor}
+                editorClassName={styles.codeEditor}
+                editorLanguage="application/json"
+                disabled={this.props.pending} />
             </Form.Item>
             <Row type="flex">
               <Col
@@ -2527,8 +2435,8 @@ class AWSRegionForm extends React.Component {
                   id="edit-region-form-remove-button"
                   disabled={this.props.region.default}
                   size="small"
-                  type="danger"
-                  style={{marginRight: 10}}><Icon type="info-circle" /> Remove</Button>
+                  danger
+                  style={{marginRight: 10}}><InfoCircleFilled /> Remove</Button>
               </Tooltip>
             }
             {
@@ -2537,7 +2445,7 @@ class AWSRegionForm extends React.Component {
                 id="edit-region-form-remove-button"
                 disabled={this.props.region.default}
                 size="small"
-                type="danger"
+                danger
                 onClick={onRemove}
                 style={{marginRight: 10}}>Remove</Button>
             }
@@ -2623,6 +2531,9 @@ class AWSRegionForm extends React.Component {
 
   rebuild = () => {
     this.props.form.resetFields();
+    if (this.props.region) {
+      this.props.form.setFieldsValue(this.props.region);
+    }
     if (this.corsRulesEditor) {
       this.corsRulesEditor.reset();
     }
@@ -2641,6 +2552,13 @@ class AWSRegionForm extends React.Component {
     this.props.onInitialize && this.props.onInitialize(this);
     this.rebuild();
   }
+}
+
+function AWSRegionFormHOC (props) {
+  const [form] = Form.useForm();
+  return (
+    <AWSRegionForm {...props} form={form} />
+  );
 }
 
 @observer
@@ -2700,7 +2618,7 @@ class IPRangeFormItem extends React.Component {
     }
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (!!nextProps.value !== !!this.props.value ||
       (!!nextProps.value &&
         (nextProps.value.ipMin !== this.props.value.ipMin ||
@@ -2816,7 +2734,7 @@ class CloudRegionFileShareMountFormItem extends React.Component {
       valueB.mountOptions === valueB.mountOptions;
   };
 
-  componentWillReceiveProps (nextProps, nextContext) {
+  UNSAFE_componentWillReceiveProps (nextProps, nextContext) {
     if (
       !CloudRegionFileShareMountFormItem.valuesAreEqual(this.state, nextProps.value) ||
       nextProps.provider !== this.props.provider
@@ -2966,10 +2884,10 @@ class CloudRegionFileShareMountFormItem extends React.Component {
           <Button
             style={{marginTop: 3, marginLeft: 5}}
             disabled={this.props.disabled}
-            type="danger"
+            danger
             size="small"
             onClick={this.props.onDelete}>
-            <Icon type="close" />
+            <CloseOutlined />
           </Button>
         </Row>
         {
@@ -3054,7 +2972,7 @@ class CloudRegionFileShareMountsFormItem extends React.Component {
     this.props.onUnMount && this.props.onUnMount(this);
   }
 
-  componentWillReceiveProps (nextProps, nextContext) {
+  UNSAFE_componentWillReceiveProps (nextProps, nextContext) {
     if (!CloudRegionFileShareMountsFormItem.fileShareMountsAreEqual(
       this.state.mounts,
       nextProps.value
@@ -3148,7 +3066,7 @@ class CloudRegionFileShareMountsFormItem extends React.Component {
             disabled={this.props.disabled}
             size="small"
             onClick={this.onAddFileShareMount}>
-            <Icon type="plus" />Add file share mount
+            <PlusOutlined />Add file share mount
           </Button>
         </Row>
       </Row>

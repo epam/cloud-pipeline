@@ -21,6 +21,6 @@
 }
 
 .icons-container .sub-icon::before {
-  background-color: white;
+  background-color: var(--cp-color-bg-elevated);
   border-radius: 50%;
 }

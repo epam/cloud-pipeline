@@ -18,9 +18,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
-import {Icon, message} from 'antd';
-import Dropdown from 'rc-dropdown';
-import Menu, {MenuItem} from 'rc-menu';
+import {Dropdown, message} from 'antd';
+import {DownloadOutlined, LoadingOutlined} from '@ant-design/icons';
 import GenerateDownloadUrlRequest from '../../../../../models/dataStorage/GenerateDownloadUrl';
 import DataStorageTags from '../../../../../models/dataStorage/tags/DataStorageTags';
 import auditStorageAccessManager from '../../../../../utils/audit-storage-access';
@@ -192,38 +191,32 @@ class DownloadFileButton extends React.Component {
           onClick={(e) => this.handleClick(e)}
           style={style}
         >
-          <Icon
-            type={pending ? 'loading' : 'download'}
-          />
+          {pending ? <LoadingOutlined /> : <DownloadOutlined />}
         </a>
       );
     }
     return (
       <Dropdown
         trigger={['click']}
-        visible={visible}
-        onVisibleChange={this.handleDropdownVisibility}
-        overlay={
-          <Menu
-            selectedKeys={[]}
-            onClick={this.handleMenuClick}
-            style={{minWidth: 150, cursor: 'pointer'}}>
-            <MenuItem
-              id={`menu-item-download-${path}`}
-              className={`menu-item-download-${path}`}
-              key="original"
-            >
-              {this.fileName}
-            </MenuItem>
-            <MenuItem
-              id={`menu-item-download-${downloadOtherFilePath}`}
-              className={`menu-item-download-${downloadOtherFilePath}`}
-              key="other"
-            >
-              {(downloadOtherFilePath || '').split('/').pop()}
-            </MenuItem>
-          </Menu>
-        }
+        open={visible}
+        onOpenChange={this.handleDropdownVisibility}
+        menu={{
+          items: [
+            {
+              key: 'original',
+              label: this.fileName,
+              id: `menu-item-download-${path}`,
+              className: `menu-item-download-${path}`
+            }, {
+              key: 'other',
+              label: (downloadOtherFilePath || '').split('/').pop(),
+              id: `menu-item-download-${downloadOtherFilePath}`,
+              className: `menu-item-download-${downloadOtherFilePath}`
+            }
+          ],
+          onClick: this.handleMenuClick,
+          style: {minWidth: 150, cursor: 'pointer'}
+        }}
       >
         <a
           id={`download-${path}`}
@@ -234,9 +227,7 @@ class DownloadFileButton extends React.Component {
           }
           onClick={event => event.preventDefault()}
         >
-          <Icon
-            type={pending ? 'loading' : 'download'}
-          />
+          {pending ? <LoadingOutlined /> : <DownloadOutlined />}
         </a>
       </Dropdown>
     );

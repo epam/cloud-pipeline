@@ -16,27 +16,28 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
+import {
+  observer} from 'mobx-react';
 import {
   Checkbox,
+  Dropdown,
+  Form,
   Modal,
   Button,
-  Form,
   Row,
   Input,
   Select,
-  Icon
+  Space
 } from 'antd';
-import Menu, {MenuItem} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
+import {DeleteOutlined, DownOutlined} from '@ant-design/icons';
 import SelectMetadataItems from './SelectMetadataItems';
 import compareArrays from '../../../../utils/compareArrays';
 import styles from './AddInstanceForm.css';
 import classNames from 'classnames';
 
-@Form.create()
 @observer
 export default class AddInstanceForm extends React.Component {
+  formRef = React.createRef();
   static propTypes = {
     pending: PropTypes.bool,
     visible: PropTypes.bool,
@@ -70,52 +71,54 @@ export default class AddInstanceForm extends React.Component {
   handleSubmit = (e) => {
     e.preventDefault();
     const valid = this.validate();
-    this.props.form.validateFieldsAndScroll((err, values) => {
-      if (valid && !err && this.state.customFields.filter(f => !!f.validation).length === 0) {
-        const mapType = (field) => {
-          if (field.multiValue) {
-            return `Array[${field.type}]`;
-          } else if (field.reference) {
-            return `${field.type}:ID`;
-          }
-          return field.type;
-        };
-        const mapValue = (field) => {
-          if (field.multiValue) {
-            return `[${(field.value || []).map(v => `"${v}"`).join(', ')}]`;
-          }
-          return field.value;
-        };
-        const data = this.state.fields.filter(f => !!f.value).map(f => {
-          return {
-            name: f.name,
-            type: mapType(f),
-            value: mapValue(f)
+    this.formRef.current.validateFields()
+      .then((values) => {
+        if (valid && this.state.customFields.filter(f => !!f.validation).length === 0) {
+          const mapType = (field) => {
+            if (field.multiValue) {
+              return `Array[${field.type}]`;
+            } else if (field.reference) {
+              return `${field.type}:ID`;
+            }
+            return field.type;
           };
-        }).reduce((dataObj, field) => {
-          dataObj[field.name] = {
-            type: field.type,
-            value: field.value
+          const mapValue = (field) => {
+            if (field.multiValue) {
+              return `[${(field.value || []).map(v => `"${v}"`).join(', ')}]`;
+            }
+            return field.value;
           };
-          return dataObj;
-        }, {});
-        this.state.customFields.filter(f => !!f.value).map(f => {
-          return {
-            name: f.name,
-            type: mapType(f),
-            value: mapValue(f)
-          };
-        }).reduce((dataObj, field) => {
-          dataObj[field.name] = {
-            type: field.type,
-            value: field.value
-          };
-          return dataObj;
-        }, data);
-        values.data = data;
-        this.props.onCreate(values);
-      }
-    });
+          const data = this.state.fields.filter(f => !!f.value).map(f => {
+            return {
+              name: f.name,
+              type: mapType(f),
+              value: mapValue(f)
+            };
+          }).reduce((dataObj, field) => {
+            dataObj[field.name] = {
+              type: field.type,
+              value: field.value
+            };
+            return dataObj;
+          }, {});
+          this.state.customFields.filter(f => !!f.value).map(f => {
+            return {
+              name: f.name,
+              type: mapType(f),
+              value: mapValue(f)
+            };
+          }).reduce((dataObj, field) => {
+            dataObj[field.name] = {
+              type: field.type,
+              value: field.value
+            };
+            return dataObj;
+          }, data);
+          values.data = data;
+          this.props.onCreate(values);
+        }
+      })
+      .catch(() => {});
   };
 
   validate = () => {
@@ -140,7 +143,7 @@ export default class AddInstanceForm extends React.Component {
   };
 
   onSelectEntityType = (id) => {
-    this.props.form.setFieldsValue({entityClass: id});
+    this.formRef.current && this.formRef.current.setFieldsValue({entityClass: id});
     this.rebuildEntityTypeParameters(id);
   };
 
@@ -348,10 +351,10 @@ export default class AddInstanceForm extends React.Component {
               disabled={disabled}
               size="small"
               onClick={this.onRemoveParameter(f => f.identifier === field.identifier)}
-              type="danger"
+              danger
               style={{marginLeft: 5}}
             >
-              <Icon type="delete" />
+              <DeleteOutlined />
             </Button>
           )
         }
@@ -410,9 +413,9 @@ export default class AddInstanceForm extends React.Component {
               disabled={disabled}
               size="small"
               onClick={this.onRemoveParameter(f => f.identifier === field.identifier)}
-              type="danger"
+              danger
               style={{marginLeft: 5}}>
-              <Icon type="delete" />
+              <DeleteOutlined />
             </Button>
           )
         }
@@ -450,25 +453,13 @@ export default class AddInstanceForm extends React.Component {
       customFields.push(field);
       this.setState({customFields});
     };
-    const parameterTypeMenu = (
-      <Menu
-        onClick={onSelect}
-        style={{cursor: 'pointer'}}
-        selectedKeys={[]}
-      >
-        <MenuItem key="string">String parameter</MenuItem>
-        {
-          this.ownEntityTypes().map(e => {
-            return (
-              <MenuItem key={e.name}>Link to '{e.name}' instance</MenuItem>
-            );
-          })
-        }
-      </Menu>
-    );
+    const parameterTypeMenuItems = [
+      {key: 'string', label: 'String parameter'},
+      ...this.ownEntityTypes().map(e => ({key: e.name, label: `Link to '${e.name}' instance`}))
+    ];
     return (
       <Row type="flex" justify="space-around" style={{marginTop: 10, cursor: 'pointer'}}>
-        <Button.Group>
+        <Space.Compact>
           <Button
             disabled={this.props.pending}
             id="add-parameter-button"
@@ -476,7 +467,7 @@ export default class AddInstanceForm extends React.Component {
             Add parameter
           </Button>
           <Dropdown
-            overlay={parameterTypeMenu}
+            menu={{items: parameterTypeMenuItems, onClick: onSelect}}
             placement="bottomRight"
             style={{minWidth: 200}}
             trigger={this.props.pending ? [] : ['hover']}
@@ -485,18 +476,17 @@ export default class AddInstanceForm extends React.Component {
               id="add-parameter-dropdown-button"
               style={{padding: '0px 8px'}}
               disabled={this.props.pending}>
-              <Icon type="down" />
+              <DownOutlined />
             </Button>
           </Dropdown>
-        </Button.Group>
+        </Space.Compact>
       </Row>
     );
   };
 
   render () {
-    const {resetFields, getFieldDecorator} = this.props.form;
     const onClose = () => {
-      resetFields();
+      this.formRef.current && this.formRef.current.resetFields();
     };
     const footer = this.props.pending
       ? false
@@ -514,7 +504,7 @@ export default class AddInstanceForm extends React.Component {
       );
     return (
       <Modal
-        visible={this.props.visible}
+        open={this.props.visible}
         closable={!this.props.pending}
         onCancel={this.props.onCancel}
         title="Add instance"
@@ -522,52 +512,55 @@ export default class AddInstanceForm extends React.Component {
         width="60%"
         footer={footer}
         afterClose={onClose}>
-        <Form id="add-instance-form">
+        <Form
+          ref={this.formRef}
+          id="add-instance-form"
+          initialValues={{
+            entityClass: this.props.entityType !== undefined && this.props.entityType !== null
+              ? `${this.props.entityType}` : null,
+            id: undefined
+          }}
+          scrollToFirstError={{behavior: 'smooth', block: 'end', focus: true}}
+        >
           <Form.Item
             className={styles.formItem}
             {...this.formItemLayout}
-            label="Instance type">
-            {getFieldDecorator('entityClass', {
-              rules: [{
-                required: true,
-                message: 'Instance type is required'
-              }],
-              initialValue: this.props.entityType !== undefined && this.props.entityType !== null
-                ? `${this.props.entityType}` : null
-            })(
-              <Select
-                disabled={this.props.pending}
-                showSearch
-                style={{width: '100%'}}
-                allowClear
-                optionFilterProp="children"
-                onSelect={this.onSelectEntityType}
-                filterOption={
-                  (input, option) => option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                }
-              >
-                {
-                  this.entityTypes().map(t =>
-                    <Select.Option
-                      key={t.id}
-                      value={`${t.id}`}>
-                      {t.name}
-                    </Select.Option>
-                  )
-                }
-              </Select>
-            )}
+            label="Instance type"
+            name="entityClass"
+            rules={[{required: true, message: 'Instance type is required'}]}
+          >
+            <Select
+              disabled={this.props.pending}
+              showSearch
+              style={{width: '100%'}}
+              allowClear
+              optionFilterProp="children"
+              onSelect={this.onSelectEntityType}
+              filterOption={
+                (input, option) => option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+              }
+            >
+              {
+                this.entityTypes().map(t =>
+                  <Select.Option
+                    key={t.id}
+                    value={`${t.id}`}>
+                    {t.name}
+                  </Select.Option>
+                )
+              }
+            </Select>
           </Form.Item>
           <Form.Item
             className={styles.formItem}
             {...this.formItemLayout}
-            label="Instance ID">
-            {getFieldDecorator('id')(
-              <Input
-                ref={!this.props.dataStorage ? this.initializeNameInput : null}
-                disabled={this.props.pending}
-              />
-            )}
+            label="Instance ID"
+            name="id"
+          >
+            <Input
+              ref={!this.props.dataStorage ? this.initializeNameInput : null}
+              disabled={this.props.pending}
+            />
           </Form.Item>
           {
             this.state.fields && this.state.fields.length > 0 && this.state.fields
@@ -612,8 +605,8 @@ export default class AddInstanceForm extends React.Component {
   }
 
   initializeNameInput = (input) => {
-    if (input && input.refs && input.refs.input) {
-      this.nameInput = input.refs.input;
+    if (input) {
+      this.nameInput = input;
       this.nameInput.onfocus = function () {
         setTimeout(() => {
           this.selectionStart = (this.value || '').length;
@@ -631,7 +624,7 @@ export default class AddInstanceForm extends React.Component {
     }
   };
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     const typesAreEquals = (type1, type2) => type1.metadataClass.id === type2.metadataClass.id;
     if (this.props.entityTypes !== nextProps.entityTypes ||
       !compareArrays(this.props.entityTypes, nextProps.entityTypes, typesAreEquals)) {

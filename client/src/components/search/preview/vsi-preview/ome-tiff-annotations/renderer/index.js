@@ -17,19 +17,17 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {
-  computed
-} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {
   inject,
   observer
 } from 'mobx-react';
 import {
   Button,
-  Icon,
   Input,
   Modal
 } from 'antd';
+import {ArrowUpOutlined, EditOutlined, PlusCircleOutlined, PlusSquareOutlined} from '@ant-design/icons';
 import ColorPicker from '../../../../../special/color-picker';
 import AnnotationsTooltip from './annotations-tooltip';
 import styles from './ome-tiff-annotations-renderer.css';
@@ -64,6 +62,13 @@ class OMETiffAnnotationsRenderer extends React.Component {
 
   container;
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      selectedAnnotation: computed
+    });
+  }
+
   componentDidMount () {
     this.initializeListeners();
   }
@@ -95,7 +100,6 @@ class OMETiffAnnotationsRenderer extends React.Component {
     }
   };
 
-  @computed
   get selectedAnnotation () {
     const {
       annotations,
@@ -572,7 +576,7 @@ class OMETiffAnnotationsRenderer extends React.Component {
             onClick={toggleModeCallback(MODES.circle)}
             type={actionType(MODES.circle)}
           >
-            <Icon type="plus-circle-o" />
+            <PlusCircleOutlined />
           </Button>
           <Button
             size="small"
@@ -580,7 +584,7 @@ class OMETiffAnnotationsRenderer extends React.Component {
             onClick={toggleModeCallback(MODES.rectangle)}
             type={actionType(MODES.rectangle)}
           >
-            <Icon type="plus-square-o" />
+            <PlusSquareOutlined />
           </Button>
           <Button
             size="small"
@@ -588,12 +592,7 @@ class OMETiffAnnotationsRenderer extends React.Component {
             onClick={toggleModeCallback(MODES.arrow)}
             type={actionType(MODES.arrow)}
           >
-            <Icon
-              type="arrow-up"
-              style={{
-                transform: 'rotate(-45deg)'
-              }}
-            />
+            <ArrowUpOutlined style={{transform: 'rotate(-45deg)'}} />
           </Button>
           <Button
             size="small"
@@ -601,9 +600,7 @@ class OMETiffAnnotationsRenderer extends React.Component {
             onClick={toggleModeCallback(MODES.path)}
             type={actionType(MODES.path)}
           >
-            <Icon
-              type="edit"
-            />
+            <EditOutlined />
           </Button>
           <Button
             size="small"
@@ -644,7 +641,7 @@ class OMETiffAnnotationsRenderer extends React.Component {
                 size="small"
                 className={styles.action}
                 style={{marginLeft: 10}}
-                type="danger"
+                danger
                 onClick={this.removeSelected}
               >
                 Remove
@@ -652,7 +649,7 @@ class OMETiffAnnotationsRenderer extends React.Component {
             )
           }
           <Modal
-            visible={!!label}
+            open={!!label}
             title="Add text annotation"
             onCancel={this.onCancelTextAnnotation}
             footer={(

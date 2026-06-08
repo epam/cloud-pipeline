@@ -15,8 +15,9 @@
  */
 
 import React from 'react';
-import {computed} from 'mobx';
-import {observer, inject} from 'mobx-react';
+import {computed, makeObservable} from 'mobx';
+import {observer,
+  inject} from 'mobx-react';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import {
@@ -25,12 +26,13 @@ import {
   Row,
   Button,
   message,
-  Icon,
   Table,
   AutoComplete,
   Select,
-  Checkbox
+  Checkbox,
+  Splitter
 } from 'antd';
+import {DeleteOutlined, PlusOutlined} from '@ant-design/icons';
 import Role from '../../../models/user/Role';
 import UserFind from '../../../models/user/UserFind';
 import RoleAssign from '../../../models/user/RoleAssign';
@@ -45,7 +47,6 @@ import {
 } from '../../../models/cloudCredentials';
 import roleModel from '../../../utils/roleModel';
 import {
-  SplitPanel,
   CONTENT_PANEL_KEY,
   METADATA_PANEL_KEY
 } from '../../special/splitPanel';
@@ -112,6 +113,16 @@ class EditRoleDialog extends React.Component {
 
   instanceTypesForm;
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      isAdmin: computed,
+      restrictedMetadataKeys: computed,
+      dataStorages: computed,
+      cloudCredentialProfiles: computed
+    });
+  }
+
   componentDidMount () {
     this.updateValues();
   }
@@ -124,7 +135,6 @@ class EditRoleDialog extends React.Component {
     }
   }
 
-  @computed
   get isAdmin () {
     const {authenticatedUserInfo} = this.props;
     if (authenticatedUserInfo.loaded) {
@@ -135,9 +145,8 @@ class EditRoleDialog extends React.Component {
 
   get isUsersAdmin () {
     return roleModel.hasRole(roleModel.ROLES.ROLE_USER_ADMIN)(this);
-  };
+  }
 
-  @computed
   get restrictedMetadataKeys () {
     if (this.isAdmin || this.isUsersAdmin) {
       return [];
@@ -364,10 +373,10 @@ class EditRoleDialog extends React.Component {
                 <Button
                   id="delete-user-button"
                   size="small"
-                  type="danger"
+                  danger
                   onClick={() => this.removeRole(user.id)}
                 >
-                  <Icon type="delete" />
+                  <DeleteOutlined />
                 </Button>
               </Row>
             );
@@ -433,7 +442,6 @@ class EditRoleDialog extends React.Component {
     return true;
   }
 
-  @computed
   get dataStorages () {
     if (this.props.dataStorages.loaded) {
       return (this.props.dataStorages.value || [])
@@ -442,7 +450,6 @@ class EditRoleDialog extends React.Component {
     return [];
   }
 
-  @computed
   get cloudCredentialProfiles () {
     if (this.props.cloudCredentialProfiles.loaded) {
       return (this.props.cloudCredentialProfiles.value || [])
@@ -539,7 +546,7 @@ class EditRoleDialog extends React.Component {
           mainHide();
           return;
         } else {
-          this.props.userInfo && await this.props.userInfo.fetch();
+          this.props.userInfo && (await this.props.userInfo.fetch());
           hide();
         }
       }
@@ -769,240 +776,66 @@ class EditRoleDialog extends React.Component {
     const {metadata} = this.state;
     const pending = this.props.credentialProfiles ? this.props.credentialProfiles.pending : false;
     const roleType = predefined ? 'role' : 'group';
-    return (
-      <SplitPanel
-        style={{flex: 1, height: 'unset', overflow: 'auto'}}
-        contentInfo={[
-          {
-            key: CONTENT_PANEL_KEY,
-            containerStyle: {
-              display: 'flex',
-              flexDirection: 'column',
-              overflowX: 'hidden'
-            },
-            size: {
-              priority: 0,
-              percentMinimum: 33,
-              percentDefault: 60
-            }
-          },
-          {
-            key: 'METADATA_AND_INSTANCE_MANAGEMENT',
-            size: {
-              keepPreviousSize: true,
-              priority: 2,
-              percentDefault: 40,
-              pxMinimum: 200
-            }
-          }
-        ]}>
-        <div
-          style={{display: 'flex', flexDirection: 'column', height: '100%'}}
-          key={CONTENT_PANEL_KEY}>
-          <Row type="flex" style={{marginBottom: 8}} align="middle">
-            <Checkbox
-              checked={this.state.userDefault}
-              onChange={this.onChangeUserDefault}
-            >
-              <b>Default {roleType}</b>
-            </Checkbox>
-            <p className="cp-text-not-important" style={{fontSize: 'smaller'}}>
-              This {roleType} will be assigned to all new users upon the registration
-            </p>
-          </Row>
-          <Row type="flex" style={{marginBottom: 10}} align="middle">
-            <span style={{marginRight: 5, fontWeight: 'bold'}}>Default data storage:</span>
-            <Select
-              allowClear
-              showSearch
-              disabled={this.state.operationInProgress || readOnly}
-              value={this.defaultStorageId}
-              style={{flex: 1, textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden'}}
-              onChange={this.onChangeDefaultStorageId}
-              size="small"
-              filterOption={(input, option) =>
-                option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0 ||
-                option.props.pathMask.toLowerCase().indexOf(input.toLowerCase()) >= 0
-              }>
-              {
-                this.dataStorages.map(d => {
-                  return (
-                    <Select.Option
-                      key={d.id}
-                      value={`${d.id}`}
-                      title={d.name}
-                      name={d.name}
-                      pathMask={d.pathMask}
-                    >
-                      <b>{d.name}</b> ({d.pathMask})
-                    </Select.Option>
-                  );
-                })
-              }
-            </Select>
-          </Row>
-          <Row type="flex" style={{marginBottom: 10}} align="middle">
-            <div style={{flex: 1}} id="find-user-autocomplete-container">
-              <AutoComplete
-                disabled={this.state.operationInProgress || readOnly}
-                size="small"
-                style={{width: '100%'}}
-                placeholder="Search user"
-                optionLabelProp="text"
-                value={this.state.search}
-                onSelect={this.onUserSelect}
-                onSearch={this.findUser}>
-                {
-                  this.state.fetchedUsers.map(user => {
-                    return <AutoComplete.Option key={user.id} text={user.userName}>
-                      {this.renderUserName(user)}
-                    </AutoComplete.Option>;
-                  })
-                }
-              </AutoComplete>
-            </div>
-            <div style={{paddingLeft: 10, textAlign: 'right'}}>
-              <Button
-                id="add-user-button"
-                size="small"
-                onClick={this.assignRole}
-                disabled={
-                  this.state.selectedUser === null ||
-                  this.state.selectedUser === undefined ||
-                  this.state.operationInProgress ||
-                  readOnly
-                }>
-                <Icon type="plus" /> Add user
-              </Button>
-            </div>
-          </Row>
-          {this.renderUsersList()}
-        </div>
-        <SplitPanel
-          orientation="vertical"
-          key="METADATA_AND_INSTANCE_MANAGEMENT"
-          contentInfo={[
-            {
-              key: METADATA_PANEL_KEY,
-              title: 'Attributes',
-              containerStyle: {
-                display: 'flex',
-                flexDirection: 'column'
-              },
-              size: {
-                keepPreviousSize: true,
-                priority: 2,
-                percentDefault: 50,
-                pxMinimum: 200
-              }
-            },
-            {
-              key: 'INSTANCE_MANAGEMENT',
-              title: 'Launch options',
-              containerStyle: {
-                display: 'flex',
-                flexDirection: 'column'
-              },
-              size: {
-                keepPreviousSize: true,
-                priority: 2,
-                percentDefault: 50,
-                pxMinimum: 200
-              }
-            }
-          ]}>
-          <Metadata
-            readOnly={this.state.operationInProgress || readOnly}
-            key={METADATA_PANEL_KEY}
-            entityId={this.props.role.id}
-            entityClass="ROLE"
-            value={metadata}
-            applyChanges={ApplyChanges.callback}
-            onChange={this.onChangeMetadata}
-            extraKeys={[CP_CAP_RUN_CAPABILITIES]}
-            restrictedKeys={this.restrictedMetadataKeys}
-          />
-          <div
-            key="INSTANCE_MANAGEMENT"
-          >
-            <InstanceTypesManagementForm
-              className={styles.instanceTypesManagementForm}
-              key="instance types management form"
-              disabled={!this.isAdmin && !this.isUsersAdmin}
-              resourceId={this.props.roleId}
-              level="ROLE"
-              onInitialized={this.onInstanceTypesFormInitialized}
-              onModified={this.onInstanceTypesModified}
-              showApplyButton={false}
+    const rightPanel = (
+      <Splitter orientation="vertical" style={{height: '100%'}}>
+        <Splitter.Panel defaultSize="50%" min={200} resizable>
+          <div className="cp-split-panel-panel" style={{height: '100%', overflow: 'auto', display: 'flex', flexDirection: 'column'}}>
+            <Row type="flex" justify="space-between" align="middle" className="cp-split-panel-header" style={{padding: '0px 5px'}}>
+              <span>Attributes</span>
+            </Row>
+            <Metadata
+              readOnly={this.state.operationInProgress || readOnly}
+              key={METADATA_PANEL_KEY}
+              entityId={this.props.role.id}
+              entityClass="ROLE"
+              value={metadata}
+              applyChanges={ApplyChanges.callback}
+              onChange={this.onChangeMetadata}
+              extraKeys={[CP_CAP_RUN_CAPABILITIES]}
+              restrictedKeys={this.restrictedMetadataKeys}
             />
-            <div style={{marginTop: 5, padding: 2, fontWeight: 'bold', width: 160}}>
-              Cloud Credentials Profiles
-            </div>
-            <div
-              style={{padding: '0 2px'}}
-            >
-              <Select
-                allowClear
-                showSearch
-                mode="multiple"
-                disabled={
-                  this.state.operationInProgress ||
-                  readOnly ||
-                  pending ||
-                  !(this.isAdmin || this.isUsersAdmin)
-                }
-                value={this.state.profiles.map(o => `${o}`)}
-                style={{width: '100%'}}
-                onChange={this.onChangeCredentialProfiles}
-                filterOption={(input, option) =>
-                  option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                }>
-                {
-                  this.cloudCredentialProfiles.map(d => (
-                    <Select.Option
-                      key={`${d.id}`}
-                      value={`${d.id}`}
-                      name={d.profileName}
-                      title={d.profileName}
-                    >
-                      <AWSRegionTag
-                        provider={d.cloudProvider}
-                        showProvider
-                        displayName={false}
-                        displayFlag={false}
-                      />
-                      <span>{d.profileName}</span>
-                    </Select.Option>
-                  ))
-                }
-              </Select>
-            </div>
-            <div style={{marginTop: 5, padding: 2, fontWeight: 'bold', width: 160}}>
-              Default Credentials Profile
-            </div>
-            <div
-              style={{padding: '0 2px'}}
-            >
-              <Select
-                allowClear
-                showSearch
-                disabled={
-                  this.state.operationInProgress ||
-                  readOnly ||
-                  this.state.profiles.length === 0 ||
-                  pending ||
-                  !(this.isAdmin || this.isUsersAdmin)
-                }
-                value={this.defaultProfileId}
-                style={{width: '100%'}}
-                onChange={this.onChangeDefaultProfileId}
-                filterOption={(input, option) =>
-                  option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                }>
-                {
-                  this.cloudCredentialProfiles
-                    .filter(d => this.state.profiles.indexOf(+d.id) >= 0)
-                    .map(d => (
+          </div>
+        </Splitter.Panel>
+        <Splitter.Panel defaultSize="50%" min={200} resizable>
+          <div className="cp-split-panel-panel" style={{height: '100%', overflow: 'auto', display: 'flex', flexDirection: 'column'}}>
+            <Row type="flex" justify="space-between" align="middle" className="cp-split-panel-header" style={{padding: '0px 5px'}}>
+              <span>Launch options</span>
+            </Row>
+            <div key="INSTANCE_MANAGEMENT">
+              <InstanceTypesManagementForm
+                className={styles.instanceTypesManagementForm}
+                key="instance types management form"
+                disabled={!this.isAdmin && !this.isUsersAdmin}
+                resourceId={this.props.roleId}
+                level="ROLE"
+                onInitialized={this.onInstanceTypesFormInitialized}
+                onModified={this.onInstanceTypesModified}
+                showApplyButton={false}
+              />
+              <div style={{marginTop: 5, padding: 2, fontWeight: 'bold', width: 160}}>
+                Cloud Credentials Profiles
+              </div>
+              <div
+                style={{padding: '0 2px'}}
+              >
+                <Select
+                  allowClear
+                  showSearch
+                  mode="multiple"
+                  disabled={
+                    this.state.operationInProgress ||
+                    readOnly ||
+                    pending ||
+                    !(this.isAdmin || this.isUsersAdmin)
+                  }
+                  value={this.state.profiles.map(o => `${o}`)}
+                  style={{width: '100%'}}
+                  onChange={this.onChangeCredentialProfiles}
+                  filterOption={(input, option) =>
+                    option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                  }>
+                  {
+                    this.cloudCredentialProfiles.map(d => (
                       <Select.Option
                         key={`${d.id}`}
                         value={`${d.id}`}
@@ -1018,12 +851,149 @@ class EditRoleDialog extends React.Component {
                         <span>{d.profileName}</span>
                       </Select.Option>
                     ))
-                }
-              </Select>
+                  }
+                </Select>
+              </div>
+              <div style={{marginTop: 5, padding: 2, fontWeight: 'bold', width: 160}}>
+                Default Credentials Profile
+              </div>
+              <div
+                style={{padding: '0 2px'}}
+              >
+                <Select
+                  allowClear
+                  showSearch
+                  disabled={
+                    this.state.operationInProgress ||
+                    readOnly ||
+                    this.state.profiles.length === 0 ||
+                    pending ||
+                    !(this.isAdmin || this.isUsersAdmin)
+                  }
+                  value={this.defaultProfileId}
+                  style={{width: '100%'}}
+                  onChange={this.onChangeDefaultProfileId}
+                  filterOption={(input, option) =>
+                    option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                  }>
+                  {
+                    this.cloudCredentialProfiles
+                      .filter(d => this.state.profiles.indexOf(+d.id) >= 0)
+                      .map(d => (
+                        <Select.Option
+                          key={`${d.id}`}
+                          value={`${d.id}`}
+                          name={d.profileName}
+                          title={d.profileName}
+                        >
+                          <AWSRegionTag
+                            provider={d.cloudProvider}
+                            showProvider
+                            displayName={false}
+                            displayFlag={false}
+                          />
+                          <span>{d.profileName}</span>
+                        </Select.Option>
+                      ))
+                  }
+                </Select>
+              </div>
             </div>
           </div>
-        </SplitPanel>
-      </SplitPanel>
+        </Splitter.Panel>
+      </Splitter>
+    );
+    return (
+      <Splitter style={{flex: 1, height: 'unset', overflow: 'auto'}}>
+        <Splitter.Panel defaultSize="60%" min="33%" resizable>
+          <div
+            style={{display: 'flex', flexDirection: 'column', height: '100%', overflowX: 'hidden'}}
+            key={CONTENT_PANEL_KEY}
+          >
+            <Row type="flex" style={{marginBottom: 8}} align="middle">
+              <Checkbox
+                checked={this.state.userDefault}
+                onChange={this.onChangeUserDefault}
+              >
+                <b>Default {roleType}</b>
+              </Checkbox>
+              <p className="cp-text-not-important" style={{fontSize: 'smaller'}}>
+                This {roleType} will be assigned to all new users upon the registration
+              </p>
+            </Row>
+            <Row type="flex" style={{marginBottom: 10}} align="middle">
+              <span style={{marginRight: 5, fontWeight: 'bold'}}>Default data storage:</span>
+              <Select
+                allowClear
+                showSearch
+                disabled={this.state.operationInProgress || readOnly}
+                value={this.defaultStorageId}
+                style={{flex: 1, textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden'}}
+                onChange={this.onChangeDefaultStorageId}
+                size="small"
+                filterOption={(input, option) =>
+                  option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0 ||
+                (option.props.pathmask || '').toLowerCase().indexOf(input.toLowerCase()) >= 0
+                }>
+                {
+                  this.dataStorages.map(d => {
+                    return (
+                      <Select.Option
+                        key={d.id}
+                        value={`${d.id}`}
+                        title={d.name}
+                        name={d.name}
+                        pathmask={d.pathMask}
+                      >
+                        <b>{d.name}</b> ({d.pathMask})
+                      </Select.Option>
+                    );
+                  })
+                }
+              </Select>
+            </Row>
+            <Row type="flex" style={{marginBottom: 10}} align="middle">
+              <div style={{flex: 1}} id="find-user-autocomplete-container">
+                <AutoComplete
+                  disabled={this.state.operationInProgress || readOnly}
+                  size="small"
+                  style={{width: '100%'}}
+                  placeholder="Search user"
+                  optionLabelProp="text"
+                  value={this.state.search}
+                  onSelect={this.onUserSelect}
+                  onSearch={this.findUser}>
+                  {
+                    this.state.fetchedUsers.map(user => {
+                      return <AutoComplete.Option key={user.id} text={user.userName}>
+                        {this.renderUserName(user)}
+                      </AutoComplete.Option>;
+                    })
+                  }
+                </AutoComplete>
+              </div>
+              <div style={{paddingLeft: 10, textAlign: 'right'}}>
+                <Button
+                  id="add-user-button"
+                  size="small"
+                  onClick={this.assignRole}
+                  disabled={
+                    this.state.selectedUser === null ||
+                  this.state.selectedUser === undefined ||
+                  this.state.operationInProgress ||
+                  readOnly
+                  }>
+                  <PlusOutlined /> Add user
+                </Button>
+              </div>
+            </Row>
+            {this.renderUsersList()}
+          </div>
+        </Splitter.Panel>
+        <Splitter.Panel defaultSize="40%" min={200} resizable>
+          {rightPanel}
+        </Splitter.Panel>
+      </Splitter>
     );
   };
 
@@ -1076,9 +1046,12 @@ class EditRoleDialog extends React.Component {
       <Tabs
         activeKey={activeTab}
         onChange={onChangeTab}
-      >
-        {tabsConfig.map(config => <Tabs.TabPane {...config} />)}
-      </Tabs>
+        items={tabsConfig.map(config => ({
+          key: config.key,
+          label: config.tab,
+          children: null
+        }))}
+      />
     );
   };
 
@@ -1088,17 +1061,19 @@ class EditRoleDialog extends React.Component {
       ? this.props.roleInfo.value.blocked
       : false;
     return (
-      <Row type="flex">
+      <div className="cp-modal-footer-actions cp-modal-footer-actions--split">
         {this.isAdmin || this.isUsersAdmin ? (
-          <Button
-            disabled={readOnly}
-            id="edit-user-form-block-unblock"
-            type="danger"
-            onClick={this.operationWrapper(this.blockUnblockClicked)}>
-            {blocked ? 'UNBLOCK' : 'BLOCK'}
-          </Button>
+          <div className="cp-modal-footer-actions-group">
+            <Button
+              disabled={readOnly}
+              id="edit-user-form-block-unblock"
+              danger
+              onClick={this.operationWrapper(this.blockUnblockClicked)}>
+              {blocked ? 'UNBLOCK' : 'BLOCK'}
+            </Button>
+          </div>
         ) : null}
-        <div style={{marginLeft: 'auto'}}>
+        <div className="cp-modal-footer-actions-group cp-modal-footer-actions-group--end">
           <Button
             id="revert-changes-edit-user-form"
             onClick={() => this.revertChanges()}
@@ -1123,7 +1098,7 @@ class EditRoleDialog extends React.Component {
             OK
           </Button>
         </div>
-      </Row>
+      </div>
     );
   };
 
@@ -1138,14 +1113,16 @@ class EditRoleDialog extends React.Component {
         style={{
           top: 20
         }}
-        bodyStyle={{
-          height: '80vh'
+        styles={{
+          body: {
+            height: '80vh'
+          }
         }}
         closable={activeTab === 'permissions'}
-        maskClosable={activeTab === 'permissions'}
+        mask={{closable: activeTab === 'permissions'}}
         onCancel={this.onClose}
         footer={activeTab === 'permissions' ? false : this.renderFooter()}
-        visible={this.props.visible}
+        open={this.props.visible}
       >
         <div className={styles.modalContainer}>
           {this.renderTabs()}

@@ -1,14 +1,16 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
+import {
+  observer} from 'mobx-react';
 import {
   Checkbox,
   Popover,
-  Icon,
   DatePicker,
   Button
 } from 'antd';
+import {CloseOutlined} from '@ant-design/icons';
 import moment from 'moment';
+import {momentToDayjs, dayjsToMoment} from '../../../../utils/antd-date-utils';
 
 const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';
 const DATE_DISPLAY_FORMAT = 'YYYY-MM-DD';
@@ -86,27 +88,29 @@ class RangeDatePicker extends React.Component {
     if (!startValue || !endValue) {
       return false;
     }
-    return (
-      startValue > endValue
-    );
+    const endDayjs = momentToDayjs(endValue);
+    return endDayjs ? startValue.isAfter(endDayjs, 'day') : false;
   }
   disabledEndDate = (endValue) => {
     const startValue = this.state.dateFrom;
     if (!startValue) {
-      return endValue > toLocalMomentDate(moment().toDate());
+      return endValue && endValue.isAfter(momentToDayjs(toLocalMomentDate(moment().toDate())), 'day');
     } else if (!endValue) {
       return false;
     }
+    const startDayjs = momentToDayjs(startValue);
+    const today = momentToDayjs(toLocalMomentDate(moment().toDate()));
     return (
-      endValue < startValue ||
-      endValue > toLocalMomentDate(moment().toDate())
+      (startDayjs && endValue.isBefore(startDayjs, 'day')) ||
+      (today && endValue.isAfter(today, 'day'))
     );
   }
 
   onStartChange = (value) => {
-    if (value) {
+    const m = value ? dayjsToMoment(value) : null;
+    if (m) {
       this.setState({
-        dateFrom: moment(value).startOf('D')
+        dateFrom: m.clone().startOf('day')
       });
     } else {
       this.setState({
@@ -116,9 +120,10 @@ class RangeDatePicker extends React.Component {
   }
 
   onEndChange = (value) => {
-    if (value) {
+    const m = value ? dayjsToMoment(value) : null;
+    if (m) {
       this.setState({
-        dateTo: moment(value).endOf('D')
+        dateTo: m.clone().endOf('day')
       });
     } else {
       this.setState({
@@ -136,17 +141,17 @@ class RangeDatePicker extends React.Component {
       toPickerVisible: endOpen
     });
   }
-  handleVisibleChange = (visible) => {
-    this.setState({visible});
+  handleOpenChange = (open) => {
+    this.setState({rangeFilterVisible: open});
   }
-  handleRangeFilterVisibility = (visible) => {
+  handleRangeFilterVisibility = (open) => {
     const {fromPickerVisible, toPickerVisible} = this.state;
     const {visibilityChanged} = this.props;
-    if (visible || (!fromPickerVisible && !toPickerVisible)) {
+    if (open || (!fromPickerVisible && !toPickerVisible)) {
       this.setState({
-        rangeFilterVisible: visible
+        rangeFilterVisible: open
       }, () => {
-        visibilityChanged && visibilityChanged(visible);
+        visibilityChanged && visibilityChanged(open);
       });
     }
   };
@@ -224,7 +229,7 @@ class RangeDatePicker extends React.Component {
             disabledDate={this.disabledStartDate}
             placeholder=""
             format={DATE_DISPLAY_FORMAT}
-            value={this.state.dateFrom || null}
+            value={momentToDayjs(this.state.dateFrom) || null}
             onChange={this.onStartChange}
             onOpenChange={this.handleStartOpenChange}
           />
@@ -250,7 +255,7 @@ class RangeDatePicker extends React.Component {
             disabledDate={this.disabledEndDate}
             placeholder=""
             format={DATE_DISPLAY_FORMAT}
-            value={this.state.dateTo || null}
+            value={momentToDayjs(this.state.dateTo) || null}
             onChange={this.onEndChange}
             onOpenChange={this.handleEndOpenChange}
           />
@@ -263,7 +268,7 @@ class RangeDatePicker extends React.Component {
             alignItems: 'center'
           }}>
           <Button
-            type="danger"
+            danger
             onClick={() => this.resetRange()}
             disabled={this.resetDisabled}
           >
@@ -292,15 +297,12 @@ class RangeDatePicker extends React.Component {
               cursor: 'pointer'
             }}>
             <h4>Select date range</h4>
-            <Icon
-              type="close"
-              onClick={() => this.handleRangeFilterVisibility(false)}
-            />
+            <CloseOutlined onClick={() => this.handleRangeFilterVisibility(false)} />
           </div>
         )}
         trigger={['click', 'mouseover']}
-        visible={this.state.rangeFilterVisible}
-        onVisibleChange={this.handleRangeFilterVisibility}
+        open={this.state.rangeFilterVisible}
+        onOpenChange={this.handleRangeFilterVisibility}
       >
         {this.props.children}
       </Popover>

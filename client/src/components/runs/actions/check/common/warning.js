@@ -53,7 +53,7 @@ function RunOperationWarningAlert (
             style={style}
             type={type}
             showIcon={showIcon}
-            message={wrapWarningProp(text)(checkResult)}
+            title={wrapWarningProp(text)(checkResult)}
           />
         ))}
       </div>
@@ -70,7 +70,7 @@ function RunOperationWarningAlert (
       style={style}
       type={type}
       showIcon={showIcon}
-      message={wrapWarningProp(message)(checkResult)}
+      title={wrapWarningProp(message)(checkResult)}
     />
   );
 }

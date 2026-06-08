@@ -15,17 +15,25 @@
  */
 
 import React from 'react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {inject, observer} from 'mobx-react';
+import {withRouter} from '../../utils/with-router';
 import {
   Alert,
   Button,
-  Icon,
   Input,
   Dropdown,
-  Menu,
-  Tabs
+  Tabs,
+  Splitter
 } from 'antd';
+import {
+  CaretDownOutlined,
+  CaretUpOutlined,
+  CloseCircleFilled,
+  CloseOutlined,
+  PlusOutlined,
+  SearchOutlined
+} from '@ant-design/icons';
 import classNames from 'classnames';
 import LoadingView from '../special/LoadingView';
 import {SearchGroupTypes} from './searchGroupTypes';
@@ -54,7 +62,6 @@ import {
   toggleSortingByField,
   removeSortingByField
 } from './faceted-search/utilities';
-import {SplitPanel} from '../special/splitPanel';
 import {filterNonMatchingItemsFn} from './utilities/elastic-item-utilities';
 import styles from './FacetedSearch.css';
 import handleDownloadItems from '../special/download-storage-items';
@@ -125,6 +132,16 @@ class FacetedSearch extends React.Component {
 
   abortController;
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      dataStorageSharingEnabled: computed,
+      nameTag: computed,
+      downloadFileTag: computed,
+      searchColumnsOrder: computed
+    });
+  }
+
   componentDidMount () {
     const {facetedFilters} = this.props;
     this.initAbortController();
@@ -148,14 +165,12 @@ class FacetedSearch extends React.Component {
     }
   }
 
-  @computed
   get dataStorageSharingEnabled () {
     const {preferences} = this.props;
     return preferences && preferences.loaded &&
         preferences.sharedStoragesSystemDirectory && preferences.dataSharingEnabled;
   }
 
-  @computed
   get nameTag () {
     const {preferences} = this.props;
     if (preferences && preferences.loaded) {
@@ -164,7 +179,6 @@ class FacetedSearch extends React.Component {
     return undefined;
   }
 
-  @computed
   get downloadFileTag () {
     const {preferences} = this.props;
     if (preferences && preferences.loaded) {
@@ -204,7 +218,7 @@ class FacetedSearch extends React.Component {
           )
         ))
     };
-  };
+  }
 
   get filters () {
     const {
@@ -288,7 +302,6 @@ class FacetedSearch extends React.Component {
       }));
   }
 
-  @computed
   get searchColumnsOrder () {
     const {
       preferences,
@@ -913,17 +926,10 @@ class FacetedSearch extends React.Component {
       }
       return document.name;
     };
-    const menu = (
-      <Menu onClick={({key}) => {
-        this.changeSortingOrder(key);
-      }}>
-        {this.filteredSortingFields.map(sortingKey => (
-          <Menu.Item key={sortingKey}>
-            {getSortingFieldName(sortingKey)}
-          </Menu.Item>
-        ))}
-      </Menu>
-    );
+    const menuItems = this.filteredSortingFields.map(sortingKey => ({
+      key: sortingKey,
+      label: getSortingFieldName(sortingKey)
+    }));
     return (
       <div className={styles.sortingControlsContainer}>
         <span style={{marginRight: '5px'}}>Sort by: </span>
@@ -934,36 +940,26 @@ class FacetedSearch extends React.Component {
             className={styles.sortingBtn}
             key={sort.field}
           >
-            <Icon
-              style={{fontSize: '10px'}}
-              type={
-                sort.asc
-                  ? 'caret-up'
-                  : 'caret-down'
-              }
-            />
+            {sort.asc
+              ? <CaretUpOutlined style={{fontSize: '10px'}} />
+              : <CaretDownOutlined style={{fontSize: '10px'}} />}
             {getSortingFieldName(sort.field)}
-            <Icon
-              type="close"
+            <CloseOutlined
               className={classNames(
                 styles.removeSortingBtn,
                 'cp-icon-button',
                 {'cp-disabled': pending}
               )}
-              onClick={(event) => this.removeSortingByField(sort.field, event)}
-            />
+              onClick={(event) => this.removeSortingByField(sort.field, event)} />
           </Button>
         ))}
         <Dropdown
-          overlay={menu}
+          menu={{items: menuItems, onClick: ({key}) => this.changeSortingOrder(key)}}
           placement="bottomLeft"
           disabled={pending}
         >
           <Button className={styles.sortingBtn}>
-            <Icon
-              type="plus"
-              style={{fontSize: '14px'}}
-            />
+            <PlusOutlined style={{fontSize: '14px'}} />
           </Button>
         </Dropdown>
       </div>
@@ -1078,18 +1074,14 @@ class FacetedSearch extends React.Component {
     }
     if (systemDictionaries.error) {
       return (
-        <Alert message={systemDictionaries.error} type="error" />
+        <Alert title={systemDictionaries.error} type="error" />
       );
     }
     const noFilters = this.filters.filter(f => f.name !== DocumentTypeFilterName).length === 0;
     const inputSuffix = (
       <div className={styles.suffixContainer}>
         {query ? (
-          <Icon
-            type="close-circle"
-            className={classNames(styles.clearQuery, 'cp-search-clear-button')}
-            onClick={this.onClearQuery}
-          />
+          <CloseCircleFilled className={classNames(styles.clearQuery, 'cp-search-clear-button')} onClick={this.onClearQuery} />
         ) : null}
         <span
           className={classNames(
@@ -1150,103 +1142,93 @@ class FacetedSearch extends React.Component {
             type="primary"
             onClick={this.onChangeQuery}
           >
-            <Icon type="search" />
+            <SearchOutlined />
             Search
           </Button>
         </div>
         <div className={styles.content}>
           {!noFilters ? (
-            <SplitPanel
-              contentInfo={[{
-                key: 'faceted-filter',
-                size: {
-                  pxMinimum: 300,
-                  percentMaximum: 50,
-                  percentDefault: 25
-                }
-              }, {
-                key: 'search-results',
-                containerStyle: {
-                  overflow: 'hidden'
-                }
-              }]}
-              resizerSize={8}
-              className={'cp-transparent-background'}
+            <Splitter
+              className={classNames('cp-transparent-background', styles.contentSplitter)}
+              style={{height: '100%'}}
             >
-              <div
-                key="faceted-filter"
-                className={classNames(styles.panel, styles.facetedFiltersContainer)}
+              <Splitter.Panel
+                defaultSize="25%"
+                min={300}
+                max="50%"
               >
-                {
-                  this.filterDomains.length > 1 && (
-                    <Tabs
-                      className={
-                        classNames(
-                          'cp-tabs-no-content',
-                          'cp-faceted-filters'
-                        )
-                      }
-                      hideAdd
-                      type="card"
-                      activeKey={getDomainKey(domain)}
-                      onChange={this.handleDomainSelection}
-                    >
-                      {
-                        this.filterDomains.map((domain) => (
-                          <Tabs.TabPane
-                            key={getDomainKey(domain)}
-                            closable={false}
-                            tab={domain || otherDomainName}
-                          />
-                        ))
-                      }
-                    </Tabs>
-                  )
-                }
                 <div
-                  className={
-                    classNames(
-                      styles.facetedFilters,
-                      {
-                        [styles.singleGroup]: this.filterDomains.length <= 1,
-                        'cp-tabs-content': this.filterDomains.length > 1
-                      }
+                  className={classNames(styles.panel, styles.facetedFiltersContainer)}
+                >
+                  {
+                    this.filterDomains.length > 1 && (
+                      <Tabs
+                        className={
+                          classNames(
+                            'cp-tabs-no-content',
+                            'cp-faceted-filters'
+                          )
+                        }
+                        hideAdd
+                        type="card"
+                        activeKey={getDomainKey(domain)}
+                        onChange={this.handleDomainSelection}
+                        items={this.filterDomains.map((domainItem) => ({
+                          key: getDomainKey(domainItem),
+                          label: domainItem || otherDomainName,
+                          closable: false,
+                          children: null
+                        }))}
+                      />
                     )
                   }
-                >
-                  <span
-                    className={classNames(
-                      styles.clearFiltersBtn,
-                      'cp-search-clear-filters-button',
-                      {
-                        [styles.disabled]: this.activeFiltersIsEmpty
-                      }
-                    )}
-                    onClick={this.onClearFilters}
+                  <div
+                    className={
+                      classNames(
+                        styles.facetedFilters,
+                        {
+                          [styles.singleGroup]: this.filterDomains.length <= 1,
+                          'cp-tabs-content': this.filterDomains.length > 1
+                        }
+                      )
+                    }
                   >
-                    Clear filters
-                  </span>
-                  {
-                    this.filters
-                      .filter(filterFacetByDomain)
-                      .map((filter) => (
-                        <FacetedFilter
-                          key={filter.name}
-                          name={filter.name}
-                          className={styles.filter}
-                          values={filter.values}
-                          selection={(activeFilters || {})[filter.name]}
-                          onChange={this.onChangeFilter(filter.name)}
-                          preferences={this.getFilterPreferences(filter.name)}
-                          showEmptyValues={!FacetedSearch.HIDE_VALUE_IF_EMPTY || disableCounts}
-                          showCounts={!disableCounts}
-                        />
-                      ))
-                  }
+                    <span
+                      className={classNames(
+                        styles.clearFiltersBtn,
+                        'cp-search-clear-filters-button',
+                        {
+                          [styles.disabled]: this.activeFiltersIsEmpty
+                        }
+                      )}
+                      onClick={this.onClearFilters}
+                    >
+                      Clear filters
+                    </span>
+                    {
+                      this.filters
+                        .filter(filterFacetByDomain)
+                        .map((filter) => (
+                          <FacetedFilter
+                            key={filter.name}
+                            name={filter.name}
+                            className={styles.filter}
+                            values={filter.values}
+                            selection={(activeFilters || {})[filter.name]}
+                            onChange={this.onChangeFilter(filter.name)}
+                            preferences={this.getFilterPreferences(filter.name)}
+                            showEmptyValues={!FacetedSearch.HIDE_VALUE_IF_EMPTY || disableCounts}
+                            showCounts={!disableCounts}
+                          />
+                        ))
+                    }
+                  </div>
                 </div>
-              </div>
-              {this.renderSearchResults()}
-            </SplitPanel>
+              </Splitter.Panel>
+              <Splitter.Panel style={{overflow: 'hidden', minWidth: 0}}>
+                {this.renderSearchResults()}
+              </Splitter.Panel>
+            </Splitter>
           ) : (
             this.renderSearchResults()
           )
@@ -1257,4 +1239,4 @@ class FacetedSearch extends React.Component {
   }
 }
 
-export default FacetedSearch;
+export default withRouter(FacetedSearch);

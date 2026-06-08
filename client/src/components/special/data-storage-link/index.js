@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
 import dataStorages from '../../../models/dataStorage/DataStorages';
 import {getStorageLinkInfo} from './utilities';
 

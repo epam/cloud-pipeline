@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {observable} from 'mobx';
+import {observable, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import {Switch, Alert, Button, Row, Col, Modal, Spin} from 'antd';
@@ -32,7 +32,7 @@ import styles from './PipelineCodeForm.css';
   routing
 }))
 @observer
-class PipelineCodeForm extends React.PureComponent {
+class PipelineCodeForm extends React.Component {
   static propTypes = {
     path: PropTypes.string,
     version: PropTypes.string,
@@ -64,7 +64,14 @@ class PipelineCodeForm extends React.PureComponent {
   };
 
   _modifiedCode = null;
-  @observable _originalCode = null;
+  _originalCode = null;
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      _originalCode: observable
+    });
+  }
 
   componentDidMount () {
     if (this.props.visible) {
@@ -289,7 +296,7 @@ class PipelineCodeForm extends React.PureComponent {
     if (error) {
       return (
         <Alert
-          message={error}
+          title={error}
           type="error"
         />
       );
@@ -332,7 +339,7 @@ class PipelineCodeForm extends React.PureComponent {
         )
         : (
           <Alert
-            message={`Error parsing tabular file ${this.fileName || ''}:
+            title={`Error parsing tabular file ${this.fileName || ''}:
               ${this._tableData.message}`}
             type="error" />
         );
@@ -409,12 +416,12 @@ class PipelineCodeForm extends React.PureComponent {
       : null;
     return (
       <Modal
-        visible={visible && !!path}
+        open={visible && !!path}
         onCancel={this.onClose}
         width="80%"
         title={title}
         closable={false}
-        maskClosable={false}
+        mask={{closable: false}}
         footer={false}
         style={{top: 20}}
       >

@@ -15,13 +15,16 @@
  */
 
 import Remote from '../basic/Remote';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 
 const repeatInterval = 5000;
 
 export default class LoadToolAttributes extends Remote {
   constructor (id, version) {
     super();
+    makeObservable(this, {
+      isUpdating: computed
+    });
     if (version) {
       this.url = `/tool/${id}/attributes?version=${version}`;
     } else {
@@ -45,7 +48,6 @@ export default class LoadToolAttributes extends Remote {
     }
   }
 
-  @computed
   get isUpdating () {
     return !!this.refreshData;
   }

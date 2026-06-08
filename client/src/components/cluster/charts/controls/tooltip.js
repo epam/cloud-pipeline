@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import moment from 'moment-timezone';
 import {getThemedPlotColors} from './utilities';
 
@@ -25,45 +25,51 @@ const MARGIN = 5;
 
 @inject('themes')
 @observer
-class TooltipRenderer extends React.PureComponent {
+class TooltipRenderer extends React.Component {
   state = {
     sizes: {}
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      color: computed,
+      backgroundColor: computed,
+      borderColor: computed,
+      tooltips: computed
+    });
+  }
+
   get color () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@application-color'] || '#666';
+      return themes.currentThemeConfiguration['--cp-color-text'] || '#666';
     }
     return '#666';
   }
 
-  @computed
   get backgroundColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@card-background-color-not-faded'] || 'white';
+      return themes.currentThemeConfiguration['--cp-color-bg-elevated-opaque'] || 'white';
     }
     return 'white';
   }
 
-  @computed
   get borderColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@card-border-color'] || '#ccc';
+      return themes.currentThemeConfiguration['--cp-color-border-card'] || '#ccc';
     }
     return '#ccc';
   }
 
-  componentWillReceiveProps (nextProps, nextContext) {
+  UNSAFE_componentWillReceiveProps (nextProps, nextContext) {
     if (nextProps.tooltipString !== this.props.tooltipString) {
       this.setState({sizes: {}});
     }
   }
 
-  @computed
   get tooltips () {
     const {xPoint, tooltips} = this.props;
     if (tooltips && xPoint) {
@@ -241,10 +247,17 @@ TooltipRenderer.defaultProps = {
 
 @inject('data', 'plot', 'timeline', 'themes')
 @observer
-class Tooltip extends React.PureComponent {
-  @observable hoveredItem;
+class Tooltip extends React.Component {
+  hoveredItem;
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      hoveredItem: observable,
+      plotColors: computed
+    });
+  }
+
   get plotColors () {
     return getThemedPlotColors(this);
   }
@@ -260,7 +273,7 @@ class Tooltip extends React.PureComponent {
     window.removeEventListener('mousemove', this.mouseMove);
   }
 
-  componentWillReceiveProps (nextProps, nextContext) {
+  UNSAFE_componentWillReceiveProps (nextProps, nextContext) {
     if (nextProps.data !== this.props.data) {
       if (this.props.data) {
         this.props.data.unRegisterListener(this.dataUpdated);

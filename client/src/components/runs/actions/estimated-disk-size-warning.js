@@ -16,13 +16,15 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import {
   Alert,
   Button,
-  Icon,
   Row
 } from 'antd';
+import {LoadingOutlined} from '@ant-design/icons';
 import displaySize from '../../../utils/displaySize';
 import DataStorageItemSize from '../../../models/dataStorage/DataStorageItemSize';
 
@@ -126,10 +128,10 @@ class EstimatedDiskSizeWarning extends React.Component {
           type="info"
           showIcon
           style={{margin: 2}}
-          message={(
+          title={(
             <div>
               <p>
-                <Icon type="loading" />
+                <LoadingOutlined />
                 <span>Estimating required disk size...</span>
               </p>
             </div>
@@ -142,7 +144,7 @@ class EstimatedDiskSizeWarning extends React.Component {
         <Alert
           type="error"
           style={{margin: 2}}
-          message={`Required disk size estimation error: ${sizeRequest.error}`}
+          title={`Required disk size estimation error: ${sizeRequest.error}`}
         />
       );
     }
@@ -156,7 +158,7 @@ class EstimatedDiskSizeWarning extends React.Component {
           type="info"
           showIcon
           style={{margin: 2}}
-          message={(
+          title={(
             <div>
               <p>
                 The disk size is set to {displaySize(this.suggestedSize, false)}.
@@ -172,7 +174,7 @@ class EstimatedDiskSizeWarning extends React.Component {
           type="warning"
           showIcon
           style={{margin: 2}}
-          message={(
+          title={(
             <div>
               <p>
                 <span>The requested disk size for this run is </span>
@@ -205,7 +207,7 @@ class EstimatedDiskSizeWarning extends React.Component {
         type="warning"
         showIcon
         style={{margin: 2}}
-        message={(
+        title={(
           <div>
             <p>
               <span>The requested disk size for this run is </span>

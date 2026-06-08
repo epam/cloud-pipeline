@@ -376,7 +376,7 @@ class NestedRunsChart extends React.Component {
     if (error) {
       return (
         <div>
-          <Alert message={error} type="error" />
+          <Alert title={error} type="error" />
         </div>
       );
     }
@@ -416,8 +416,8 @@ class NestedRunsChart extends React.Component {
           {
             tooltip && (
               <Popover
-                visible={!!tooltip}
-                onVisibleChange={this.tooltipVisibilityChange}
+                open={!!tooltip}
+                onOpenChange={this.tooltipVisibilityChange}
                 trigger={['click']}
                 content={this.renderTooltipInfo()}
                 placement="left"
@@ -460,7 +460,7 @@ function NestedRunsModal (props) {
     <Modal
       width="70%"
       title="Cluster usage"
-      visible={visible}
+      open={visible}
       onCancel={onCancel}
       footer={null}
     >

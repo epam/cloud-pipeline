@@ -17,7 +17,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Icon, Button, Input, Select} from 'antd';
+import {Button, Input, Select} from 'antd';
+import {DeleteOutlined, PlusOutlined} from '@ant-design/icons';
 import styles from './exclude-parameters-control.css';
 
 const OPERATORS = {
@@ -100,9 +101,9 @@ function ExcludeParametersControl ({
             onClick={() => onRemoveParameter(index)}
             className={classNames(styles.control, styles.removeBtn)}
             disabled={pending}
-            type="danger"
+            danger
           >
-            <Icon type="delete" />
+            <DeleteOutlined />
           </Button>
         </div>
       ))}
@@ -111,7 +112,7 @@ function ExcludeParametersControl ({
         style={{width: '140px'}}
         disabled={pending}
       >
-        <Icon type="plus" />
+        <PlusOutlined />
         Add parameter
       </Button>
     </div>

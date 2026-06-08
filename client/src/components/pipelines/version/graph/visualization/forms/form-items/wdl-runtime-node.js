@@ -19,14 +19,20 @@ import PropTypes from 'prop-types';
 import {
   AutoComplete
 } from 'antd';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {observer} from 'mobx-react';
 import {names} from '../../../../../../../models/utils/ContextualPreference';
 import {getSelectOptions} from '../../../../../../special/instance-type-info';
 
 @observer
 class WdlRuntimeNode extends React.Component {
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      instanceTypes: computed
+    });
+  }
+
   get instanceTypes () {
     const {
       allowedInstanceTypes

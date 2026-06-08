@@ -16,9 +16,17 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
-import {computed} from 'mobx';
-import {Button, Dropdown, Icon, Input, Menu, Popover, Row} from 'antd';
+import {
+  observer} from 'mobx-react';
+import {computed, makeObservable} from 'mobx';
+import {Button,
+  Dropdown,
+  Input,
+  Menu,
+  Popover,
+  Row
+} from 'antd';
+import {DownOutlined} from '@ant-design/icons';
 
 const CloneOption = {
   https: 'https',
@@ -76,14 +84,25 @@ class GitRepositoryControl extends React.Component {
     ssh: PropTypes.string,
     repositoryType: PropTypes.string
   };
+
   static defaultProps = {
     cloneType: CloneOption.https
   };
+
   state = {
     cloneType: undefined,
     visible: false
   };
-  componentWillReceiveProps (nextProps) {
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      availableCloneOptions: computed,
+      defaultCloneOption: computed
+    });
+  }
+
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (this.props.ssh !== nextProps.ssh || this.props.https !== nextProps.https) {
       this.setState({
         cloneType: undefined
@@ -91,17 +110,17 @@ class GitRepositoryControl extends React.Component {
     }
   }
 
-  @computed
   get availableCloneOptions () {
     return [
       this.props.https ? CloneOption.https : undefined,
       this.props.ssh ? CloneOption.ssh : undefined
     ].filter(Boolean);
-  };
-  @computed
+  }
+
   get defaultCloneOption () {
     return this.availableCloneOptions[0];
-  };
+  }
+
   getGitRepositoryPopoverTitle = () => {
     const cloneType = this.state.cloneType || this.defaultCloneOption;
     if (!cloneType) {
@@ -113,24 +132,22 @@ class GitRepositoryControl extends React.Component {
         preventPopoverFromClosing: true
       });
     };
-    const menu = (
-      <Menu onClick={onSelectOption}>
-        {this.availableCloneOptions.map(o => (
-          <Menu.Item key={o}>{o.toUpperCase()}</Menu.Item>
-        ))}
-      </Menu>
-    );
+    const menuItems = this.availableCloneOptions.map(o => ({
+      key: o,
+      label: o.toUpperCase()
+    }));
     return (
       <Row type="flex" align="middle">
         <b style={{marginRight: 5}}>Clone repository via</b>
-        <Dropdown overlay={menu}>
+        <Dropdown menu={{items: menuItems, onClick: onSelectOption}}>
           <a style={{lineHeight: 1}}>
-            <b>{cloneType.toUpperCase()}<Icon type="down" /></b>
+            <b>{cloneType.toUpperCase()}<DownOutlined /></b>
           </a>
         </Dropdown>
       </Row>
     );
   };
+
   getGitRepositoryPopoverContent = () => {
     const cloneType = this.state.cloneType || this.defaultCloneOption;
     const currentValue = this.props[cloneType];
@@ -142,6 +159,7 @@ class GitRepositoryControl extends React.Component {
       </Row>
     );
   };
+
   onDropdownVisibilityChanged = (visibility) => {
     if (!visibility && this.closePopoverTimeout) {
       clearTimeout(this.closePopoverTimeout);
@@ -165,6 +183,7 @@ class GitRepositoryControl extends React.Component {
       }, CLOSE_POPOVER_DELAY_MS);
     }
   };
+
   render () {
     if (this.availableCloneOptions.length === 0) {
       return null;
@@ -174,11 +193,11 @@ class GitRepositoryControl extends React.Component {
     } = this.props;
     return (
       <Popover
-        overlayClassName="git-repository-popover"
+        classNames={{root: 'git-repository-popover'}}
         title={this.getGitRepositoryPopoverTitle()}
         content={this.getGitRepositoryPopoverContent()}
-        visible={this.state.visible}
-        onVisibleChange={this.onDropdownVisibilityChanged}
+        open={this.state.visible}
+        onOpenChange={this.onDropdownVisibilityChanged}
         trigger={['click']}
         placement="bottomLeft">
         <Button

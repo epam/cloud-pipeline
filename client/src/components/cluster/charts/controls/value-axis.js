@@ -16,14 +16,14 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {inject, observer, Provider} from 'mobx-react';
 import {AxisDataType} from './utilities';
 import tickGenerators from './ticks';
 
 @inject('plot', 'data', 'themes')
 @observer
-class ValueAxis extends React.PureComponent {
+class ValueAxis extends React.Component {
   state = {
     from: undefined,
     to: undefined,
@@ -34,21 +34,32 @@ class ValueAxis extends React.PureComponent {
   startTick;
   endTick;
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      tickColor: computed,
+      offset: computed,
+      dataRange: computed,
+      size: computed,
+      plotToCanvasRatio: computed,
+      canvasToPlotRatio: computed,
+      tickGenerator: computed,
+      ticks: computed
+    });
+  }
+
   get tickColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@application-color-faded'] || '#777';
+      return themes.currentThemeConfiguration['--cp-color-text-secondary'] || '#777';
     }
     return '#777';
   }
 
-  @computed
   get offset () {
     return 0;
   }
 
-  @computed
   get dataRange () {
     const {from, to} = this.state;
     if (from === undefined || to === undefined) {
@@ -57,14 +68,12 @@ class ValueAxis extends React.PureComponent {
     return to - from;
   }
 
-  @computed
   get size () {
     const {plot} = this.props;
     const {chartArea, height} = plot.props;
     return height - chartArea.top - chartArea.bottom;
   }
 
-  @computed
   get plotToCanvasRatio () {
     if (this.dataRange === 0) {
       return 0;
@@ -72,7 +81,6 @@ class ValueAxis extends React.PureComponent {
     return this.size / this.dataRange;
   }
 
-  @computed
   get canvasToPlotRatio () {
     if (this.plotToCanvasRatio === 0) {
       return 0;
@@ -80,13 +88,11 @@ class ValueAxis extends React.PureComponent {
     return 1.0 / this.plotToCanvasRatio;
   }
 
-  @computed
   get tickGenerator () {
     const {dataType} = this.props;
     return tickGenerators[dataType] || tickGenerators.default;
   }
 
-  @computed
   get ticks () {
     const {from, to} = this.state;
     if (from === undefined || to === undefined) {
@@ -102,7 +108,7 @@ class ValueAxis extends React.PureComponent {
     this.processDataGroup(this.props);
   }
 
-  componentWillReceiveProps (nextProps, nextContext) {
+  UNSAFE_componentWillReceiveProps (nextProps, nextContext) {
     if (
       nextProps.from !== this.props.from ||
       nextProps.to !== this.props.to ||

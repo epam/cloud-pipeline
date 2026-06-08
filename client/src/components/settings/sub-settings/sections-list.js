@@ -116,7 +116,7 @@ class SectionsList extends React.Component {
               }
             )
           }
-          onRowClick={(item) => this.onSelectSection(item.key)}
+          onRow={(item) => ({ onClick: () => this.onSelectSection(item.key) })}
         />
       </div>
     );

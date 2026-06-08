@@ -16,9 +16,11 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import classNames from 'classnames';
-import {Icon} from 'antd';
+import {ExportOutlined} from '@ant-design/icons';
 import dataStorages from '../../../../../models/dataStorage/DataStorages';
 import {getStaticResourceUrl} from '../../../../../models/static-resources';
 
@@ -125,7 +127,7 @@ class OpenStaticPreview extends React.Component {
         target="_blank"
         style={style}
       >
-        <Icon type="export" /> Open <b>{this.fileName}</b> in a separate tab
+        <ExportOutlined /> Open <b>{this.fileName}</b> in a separate tab
       </a>
     );
   }

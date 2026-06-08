@@ -15,24 +15,28 @@
  */
 
 import React from 'react';
-import {observable, computed} from 'mobx';
+import {observable, computed, makeObservable} from 'mobx';
 import {inject} from 'mobx-react';
 import Controls from '../models/user/Controls';
 
 class Localization {
-  @observable _dictionaryRequest;
-  constructor () {
-    this._dictionaryRequest = new Controls();
-    this._dictionaryRequest.fetch();
-  }
+ _dictionaryRequest;
 
-  @computed
-  get dictionary () {
-    if (!this._dictionaryRequest.loaded) {
-      return [];
-    }
-    return (this._dictionaryRequest.value || []).map(c => c);
-  }
+ constructor () {
+   makeObservable(this, {
+     _dictionaryRequest: observable,
+     dictionary: computed
+   });
+   this._dictionaryRequest = new Controls();
+   this._dictionaryRequest.fetch();
+ }
+
+ get dictionary () {
+   if (!this._dictionaryRequest.loaded) {
+     return [];
+   }
+   return (this._dictionaryRequest.value || []).map(c => c);
+ }
 
   getDictionaryElement = (key, extraDictionary = []) => {
     return [...this.dictionary, ...extraDictionary]

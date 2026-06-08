@@ -15,7 +15,8 @@
  */
 
 import React from 'react';
-import {Icon, Row, Tooltip} from 'antd';
+import {Row, Tooltip} from 'antd';
+import {QuestionCircleFilled} from '@ant-design/icons';
 
 /*
  * Launch cluster tooltips.
@@ -212,9 +213,7 @@ export function renderTooltip (tooltip, style) {
   }
   return (
     <Tooltip title={tooltips[tooltip]}>
-      <Icon
-        type="question-circle"
-        style={style} />
+      <QuestionCircleFilled style={style} />
     </Tooltip>
   );
 }

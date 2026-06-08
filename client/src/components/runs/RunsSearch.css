@@ -27,5 +27,5 @@
 }
 
 .runs-search-table {
-  background-color: white;
+  background-color: var(--cp-color-bg-elevated);
 }

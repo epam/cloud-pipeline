@@ -15,18 +15,21 @@
  */
 
 import React from 'react';
-import {observer, inject} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {
+  observer,
+  inject} from 'mobx-react';
+import {withRouter} from '../../utils/with-router';
+import {computed, observable, makeObservable} from 'mobx';
 import {
   Alert,
   Row,
   Button,
   Card,
-  Icon,
   Col,
   message
 } from 'antd';
-import {Link} from 'react-router';
+import {InfoCircleOutlined} from '@ant-design/icons';
+import {Link} from 'react-router-dom';
 import classNames from 'classnames';
 import ToolsGroupPrivateCreate from '../../models/tools/ToolsGroupPrivateCreate';
 import LoadingView from '../special/LoadingView';
@@ -61,14 +64,15 @@ const PERSONAL_GROUP_ID = 'create-personal-group';
 @roleModel.authenticationInfo
 @inject('dockerRegistries', 'authenticatedUserInfo', 'preferences')
 @HiddenObjects.injectToolsFilters
-@inject((stores, {params}) => {
+@inject(({routing}) => {
+  const {params} = routing;
   return {
     registryId: params.registryId,
     groupId: params.groupId
   };
 })
 @observer
-export default class Tools extends React.Component {
+class Tools extends React.Component {
   state = {
     metadata: false,
     redirected: false,
@@ -79,18 +83,33 @@ export default class Tools extends React.Component {
     showIssuesPanel: false
   };
 
-  @observable
   _toolsWithIssues;
-  @observable
   _completedRunsRequest;
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      _toolsWithIssues: observable,
+      _completedRunsRequest: observable,
+      isPrivate: computed,
+      filters: computed,
+      filter: computed,
+      registries: computed,
+      currentRegistry: computed,
+      groups: computed,
+      hasPersonalGroup: computed,
+      completedRuns: computed,
+      allTools: computed,
+      currentGroup: computed,
+      defaultGroup: computed
+    });
+  }
+
   get isPrivate () {
     return this.props.groupId === PERSONAL_GROUP_ID ||
     (this.currentGroup && this.currentGroup.privateGroup);
   }
 
-  @computed
   get filters () {
     const {preferences} = this.props;
     if (preferences.loaded && preferences.uiToolsFilters) {
@@ -105,7 +124,6 @@ export default class Tools extends React.Component {
     return DEFAULT_FILTER;
   }
 
-  @computed
   get filter () {
     const {groupId} = this.props;
     if (
@@ -119,7 +137,6 @@ export default class Tools extends React.Component {
     return null;
   }
 
-  @computed
   get registries () {
     if (this.props.dockerRegistries.loaded) {
       return this.props.hiddenToolsTreeFilter(this.props.dockerRegistries.value)
@@ -128,12 +145,10 @@ export default class Tools extends React.Component {
     return [];
   }
 
-  @computed
   get currentRegistry () {
     return this.registries.find(r => `${r.id}` === `${this.props.registryId}`);
   }
 
-  @computed
   get groups () {
     if (this.currentRegistry) {
       const groups = (this.currentRegistry.groups || []).map(g => g);
@@ -156,12 +171,10 @@ export default class Tools extends React.Component {
     return [];
   }
 
-  @computed
   get hasPersonalGroup () {
     return this.groups.filter(g => g.privateGroup && !g.missing).length === 1;
   }
 
-  @computed
   get completedRuns () {
     if (this._completedRunsRequest && this._completedRunsRequest.loaded) {
       return this._completedRunsRequest.value.map(run => run);
@@ -169,7 +182,6 @@ export default class Tools extends React.Component {
     return null;
   }
 
-  @computed
   get allTools () {
     return (this.groups || [])
       .reduce((acc, current) => {
@@ -178,7 +190,6 @@ export default class Tools extends React.Component {
       }, []);
   }
 
-  @computed
   get currentGroup () {
     if (this.filter) {
       let tools;
@@ -218,24 +229,21 @@ export default class Tools extends React.Component {
     )[0];
   }
 
-  @computed
   get defaultGroup () {
     return this.getDefaultGroup(this.groups, false);
   }
 
-  @computed
   get tools () {
     if (this.currentGroup) {
       const checkIssues = (tool = {}) => {
-        const currentTool = tool;
         if (this._toolsWithIssues && this._toolsWithIssues.loaded) {
           const toolWithIssues = (this._toolsWithIssues.value.toolsWithIssues || [])
-            .filter(t => t.id === currentTool.id)[0];
+            .filter(t => t.id === tool.id)[0];
           if (toolWithIssues && toolWithIssues.hasOwnProperty('issuesCount')) {
-            currentTool.issuesCount = toolWithIssues.issuesCount;
+            return {...tool, issuesCount: toolWithIssues.issuesCount};
           }
         }
-        return currentTool;
+        return tool;
       };
       return (this.currentGroup.tools || [])
         .map(t => t)
@@ -255,7 +263,6 @@ export default class Tools extends React.Component {
     return [];
   }
 
-  @computed
   get globalSearchTools () {
     const tools = [];
     if (this.currentGroup) {
@@ -397,7 +404,8 @@ export default class Tools extends React.Component {
                 this.currentGroup
                   ? this.currentGroup.id
                   : undefined
-              } entityClass="TOOL_GROUP" />
+              }
+              entityClass="TOOL_GROUP" />
           }
         </ContentIssuesMetadataPanel>
       );
@@ -527,9 +535,7 @@ export default class Tools extends React.Component {
           style={{borderStyle: 'dashed'}}
         >
           <Row style={{fontSize: 'large', margin: 10}}>
-            <Icon
-              type="info-circle-o"
-              style={{fontSize: 'x-large', verticalAlign: 'middle'}} />
+            <InfoCircleOutlined style={{fontSize: 'x-large', verticalAlign: 'middle'}} />
             <span
               style={{marginLeft: 10, marginRight: 10}}>
               Personal tool group was not found in registry.
@@ -566,19 +572,19 @@ export default class Tools extends React.Component {
       content = <Alert
         style={{width: '100%'}}
         type="error"
-        message={this.props.dockerRegistries.error} />;
+        title={this.props.dockerRegistries.error} />;
       isError = true;
     } else if (this.registries.length === 0) {
       content = <Alert
         style={{width: '100%'}}
         type="warning"
-        message="No registries configured" />;
+        title="No registries configured" />;
       isError = true;
     } else if (this.currentRegistry && this.groups.length === 0) {
       content = <Alert
         style={{width: '100%'}}
         type="warning"
-        message="No groups configured" />;
+        title="No groups configured" />;
       isError = true;
     } else if (this.state.createPrivateGroupInProgress) {
       content = <LoadingView />;
@@ -607,7 +613,7 @@ export default class Tools extends React.Component {
       content = <Alert
         style={{width: '100%'}}
         type="info"
-        message={noToolsMessage()} />;
+        title={noToolsMessage()} />;
       isError = true;
     } else if (
       this.filter &&
@@ -641,7 +647,7 @@ export default class Tools extends React.Component {
             'cp-panel-borderless'
           )
         }
-        bodyStyle={{padding: 5, height: '100%', display: 'flex', flexDirection: 'column'}}>
+        styles={{body: {padding: 5, height: '100%', display: 'flex', flexDirection: 'column'}}}>
         {this.renderHeader()}
         {this.renderContent(content, isError)}
       </Card>
@@ -688,6 +694,14 @@ export default class Tools extends React.Component {
   };
 
   redirectIfNeeded = () => {
+    const pathname = (this.props.router?.location?.pathname || '');
+    if (!pathname.startsWith('/tools')) {
+      return;
+    }
+    const pathSegments = pathname.replace(/^\/+/, '').split('/').filter(Boolean);
+    if (pathSegments.length >= 3) {
+      return;
+    }
     if (!this.state.redirected &&
       this.props.dockerRegistries.loaded &&
       this.props.preferences.loaded &&
@@ -750,10 +764,14 @@ export default class Tools extends React.Component {
   }
 
   componentDidUpdate (prevProps) {
-    this.redirectIfNeeded();
+    // Проверяем, изменился ли registryId или groupId в params маршрута
+    if (prevProps.registryId !== this.props.registryId ||
+      prevProps.groupId !== this.props.groupId) {
+      this.redirectIfNeeded();
+    }
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.registryId !== this.props.registryId ||
       nextProps.groupId !== this.props.groupId) {
       this.setState({
@@ -776,3 +794,5 @@ export default class Tools extends React.Component {
     this.props.dockerRegistries.invalidateCache();
   }
 }
+
+export default withRouter(Tools);

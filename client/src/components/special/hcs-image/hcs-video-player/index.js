@@ -40,7 +40,7 @@ function HcsVideoPlayer ({className, style, videoSource}) {
           style={style}
         >
           <Alert
-            message={videoSource.videoError}
+            title={videoSource.videoError}
             type="error"
           />
         </div>

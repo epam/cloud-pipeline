@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {
   Alert,
   Checkbox,
@@ -100,6 +100,13 @@ class ConfigurationPayload extends React.Component {
     rootEntityId: undefined
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      cloudRegions: computed
+    });
+  }
+
   get pending () {
     const {
       pending,
@@ -137,7 +144,6 @@ class ConfigurationPayload extends React.Component {
     return !!pipelineId;
   }
 
-  @computed
   get cloudRegions () {
     const {cloudRegionsInfo} = this.props;
     if (cloudRegionsInfo.loaded) {
@@ -540,7 +546,7 @@ class ConfigurationPayload extends React.Component {
     if (instanceTypesError) {
       return (
         <Alert
-          message={instanceTypesError}
+          title={instanceTypesError}
           type="error"
         />
       );
@@ -569,7 +575,7 @@ class ConfigurationPayload extends React.Component {
           }
           style={{flex: 1, maxWidth: 300}}
           value={instanceType}
-          dropdownMatchSelectWidth={false}
+          popupMatchSelectWidth={false}
           disabled={disabled || (instanceTypesPending && instanceTypes.length === 0)}
           onChange={onChange}
         >
@@ -613,7 +619,7 @@ class ConfigurationPayload extends React.Component {
           }
           style={{flex: 1, maxWidth: 300}}
           value={cloudRegionId ? `${cloudRegionId}` : undefined}
-          dropdownMatchSelectWidth={false}
+          popupMatchSelectWidth={false}
           disabled={disabled}
           onChange={onChange}
         >
@@ -1007,7 +1013,7 @@ class ConfigurationPayload extends React.Component {
     if (!entry) {
       return (
         <Alert
-          message="Select configuration"
+          title="Select configuration"
           type="info"
         />
       );
@@ -1084,7 +1090,7 @@ class ConfigurationPayload extends React.Component {
         </Collapse>
       </Parameters.Provider>
     );
-  };
+  }
 }
 
 ConfigurationPayload.propTypes = {

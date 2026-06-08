@@ -1,0 +1,111 @@
+/*
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+.cp-settings-sidebar-element:not(.cp-table-element-disabled) {
+  cursor: pointer;
+}
+
+.cp-settings-sidebar-element td {
+  padding: 6px;
+}
+
+.cp-setting-info {
+  color: var(--cp-color-green);
+}
+
+.cp-setting-warning {
+  color: var(--cp-color-yellow);
+}
+
+.cp-setting-critical {
+  color: var(--cp-color-red);
+}
+
+.cp-setting-message {
+  color: var(--cp-color-primary);
+}
+
+.cp-settings-table thead,
+.cp-settings-table thead th {
+  color: var(--cp-color-table-head-text);
+  background-color: var(--cp-color-bg-elevated-header);
+  border-color: var(--cp-color-border-table);
+}
+
+.cp-settings-table tbody tr,
+.cp-settings-table tbody th {
+  color: var(--cp-color-text);
+  background-color: var(--cp-color-bg-elevated);
+}
+
+.cp-settings-table tbody tr:nth-child(even),
+.cp-settings-table tbody tr:nth-child(even) th {
+  color: var(--cp-color-text);
+  background-color: var(--cp-color-bg-striped);
+}
+
+.cp-settings-users-integrity-check.modified:not(.new),
+.cp-settings-users-integrity-check.modified:not(.new) > div {
+  background-color: var(--cp-color-alert-warning-bg);
+}
+
+.cp-settings-users-integrity-check.new > div {
+  background-color: var(--cp-color-alert-info-bg);
+}
+
+.cp-even-row {
+  background-color: var(--cp-color-bg-striped);
+}
+
+.cp-settings-form-item-label {
+  color: var(--cp-color-text-accent);
+}
+
+.cp-settings-form-item-label.required::before {
+  color: var(--cp-color-red);
+  content: '*';
+}
+
+.cp-settings-nat-table thead tr:first-child,
+.cp-settings-nat-table thead tr:first-child th:first-child,
+.cp-settings-nat-table thead tr th.external-column:nth-child(5),
+.cp-settings-nat-table tbody tr td.external-column:nth-child(5),
+.cp-settings-nat-table thead tr th.internal-column:nth-child(8),
+.cp-settings-nat-table tbody tr td.internal-column:nth-child(8) {
+  border-right: 2px solid var(--cp-color-border-table);
+}
+
+.cp-settings-nat-table thead tr:first-child th {
+  background: var(--cp-color-bg-elevated-header);
+}
+
+.cp-nat-route-removed .cp-nat-route-status {
+  color: currentColor;
+}
+
+.cp-nat-route-port-control {
+  border-bottom: 1px solid var(--cp-color-border-table);
+}
+
+.cp-status-online {
+  fill: var(--cp-color-green);
+  stroke: var(--cp-color-green);
+}
+
+.cp-status-offline {
+  stroke: var(--cp-color-grey);
+  fill: transparent;
+}

@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import ObjectTypes from './object-types';
 import {
   checkObjectsHOC,
@@ -27,10 +27,16 @@ import * as toolsFilters from './tools-filter';
 import injectToolsFilters from './inject-tools-filters';
 
 class HiddenObjects {
-  @observable preferences;
-  @observable authenticatedUserInfo;
+  preferences;
+  authenticatedUserInfo;
 
   constructor (preferences, authenticatedUserInfo) {
+    makeObservable(this, {
+      preferences: observable,
+      authenticatedUserInfo: observable,
+      loaded: computed,
+      hiddenObjects: computed
+    });
     this.preferences = preferences;
     this.authenticatedUserInfo = authenticatedUserInfo;
     function treeFilterDetached (...opts) {
@@ -69,12 +75,10 @@ class HiddenObjects {
     ]);
   }
 
-  @computed
   get loaded () {
     return this.preferences?.loaded && this.authenticatedUserInfo?.loaded;
   }
 
-  @computed
   get hiddenObjects () {
     if (this.authenticatedUserInfo.loaded && this.authenticatedUserInfo.value.admin) {
       return {};

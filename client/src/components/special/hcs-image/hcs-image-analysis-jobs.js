@@ -126,14 +126,16 @@ function HcsImageAnalysisJobsModal (props) {
       style={{
         top: 20
       }}
-      bodyStyle={{
-        margin: 0,
-        padding: 0,
-        height: 'calc(100vh - 100px)'
+      styles={{
+        body: {
+          margin: 0,
+          padding: 0,
+          height: 'calc(100vh - 100px)'
+        }
       }}
-      visible={visible}
+      open={visible}
       onCancel={onClose}
-      maskClosable={false}
+      mask={{closable: false}}
       title="HCS Images evaluations"
       footer={false}
     >

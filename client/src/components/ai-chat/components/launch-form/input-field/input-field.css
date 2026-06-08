@@ -31,7 +31,7 @@
 }
 
 .error {
-  color: #f04134;
+  color: var(--cp-color-error);
   font-size: 12px;
   left: 0;
   position: absolute;
@@ -39,12 +39,12 @@
 }
 
 .input-field .input-container .inputError {
-  border-color: #f04134 !important;
+  border-color: var(--cp-color-error) !important;
   box-shadow: none !important;
 
   &:active,
   &:hover {
-    border-color: #f04134 !important;
+    border-color: var(--cp-color-error) !important;
     box-shadow: none !important;
   }
 }

@@ -222,7 +222,7 @@ class LaunchFormSchemeParameterTable extends React.Component {
           emptyListError && (
             <div className={styles.schemeParameterTableWarning}>
               <Alert
-                message={(
+                title={(
                   <div>
                     At least 1 object is required
                   </div>

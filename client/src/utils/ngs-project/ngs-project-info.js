@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {observable, computed} from 'mobx';
+import {observable, computed, makeObservable} from 'mobx';
 import {
   getMachineRunMetadataClassName
 } from './ngs-project-machine-runs';
@@ -69,10 +69,19 @@ function buildMetadataConditions (string, defaultConditions = []) {
 }
 
 class NgsProjectInfo {
-  @observable preferences;
-  @observable ngsProjectFolder;
-  @observable folderId;
+  preferences;
+  ngsProjectFolder;
+  folderId;
+
   constructor (options = {}, preferences, folders) {
+    makeObservable(this, {
+      preferences: observable,
+      ngsProjectFolder: observable,
+      folderId: observable,
+      isNGSProject: computed,
+      machineRunClassName: computed,
+      sampleClassName: computed
+    });
     this.preferences = preferences;
     const {
       folder,
@@ -96,7 +105,6 @@ class NgsProjectInfo {
     return this.ngsProjectFolder && this.ngsProjectFolder.error;
   }
 
-  @computed
   get isNGSProject () {
     if (
       this.preferences &&
@@ -124,7 +132,6 @@ class NgsProjectInfo {
     return false;
   }
 
-  @computed
   get machineRunClassName () {
     if (
       this.preferences &&
@@ -135,7 +142,6 @@ class NgsProjectInfo {
     return undefined;
   }
 
-  @computed
   get sampleClassName () {
     if (
       this.preferences &&

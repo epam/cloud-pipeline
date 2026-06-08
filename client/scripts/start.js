@@ -117,7 +117,13 @@ checkBrowsers(paths.appPath, isInteractive)
     const appName = require(paths.appPackageJson).name;
     const urls = prepareUrls(protocol, HOST, port);
     // Create a webpack compiler that is configured with custom messages.
-    const compiler = createCompiler(webpack, config, appName, urls, useYarn);
+    const compiler = createCompiler({
+      appName,
+      config,
+      urls,
+      useYarn,
+      webpack
+    });
     // Load proxy config
     const proxySetting = require(paths.appPackageJson).proxy;
     const proxyConfig = prepareProxy(proxySetting, paths.appPublic);
@@ -126,12 +132,11 @@ checkBrowsers(paths.appPath, isInteractive)
       proxyConfig,
       urls.lanUrlForConfig
     );
-    const devServer = new WebpackDevServer(compiler, serverConfig);
-    // Launch WebpackDevServer.
-    devServer.listen(port, HOST, err => {
-      if (err) {
-        return console.log(err);
-      }
+    const devServer = new WebpackDevServer(
+      {...serverConfig, port, host: HOST},
+      compiler
+    );
+    devServer.startCallback(() => {
       if (isInteractive) {
         clearConsole();
       }
@@ -141,7 +146,7 @@ checkBrowsers(paths.appPath, isInteractive)
 
     ['SIGINT', 'SIGTERM'].forEach(function (sig) {
       process.on(sig, function () {
-        devServer.close();
+        devServer.stop();
         if (devProxyServer) {
           devProxyServer.close();
         }

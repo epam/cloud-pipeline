@@ -17,17 +17,17 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {computed} from 'mobx';
-import {observer, inject} from 'mobx-react';
+import {computed, makeObservable} from 'mobx';
+import {observer,
+  inject} from 'mobx-react';
 import {
   Alert,
   Button,
-  Icon,
   message,
   Spin,
-  Dropdown,
-  Menu
+  Dropdown
 } from 'antd';
+import {LeftOutlined, PaperClipOutlined} from '@ant-design/icons';
 import moment from 'moment-timezone';
 import CommentCard from '../special/comment-card';
 import CommentEditor from '../special/comment-editor';
@@ -78,9 +78,16 @@ class Ticket extends React.Component {
 
   editorRef;
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      predefinedLabels: computed
+    });
+  }
+
   componentDidMount () {
     (this.fetchTicket)();
-  };
+  }
 
   componentDidUpdate (prevProps) {
     if (this.props.ticketId !== prevProps.ticketId) {
@@ -88,7 +95,6 @@ class Ticket extends React.Component {
     }
   }
 
-  @computed
   get predefinedLabels () {
     const {preferences} = this.props;
     if (preferences && preferences.loaded) {
@@ -292,26 +298,15 @@ class Ticket extends React.Component {
     const filteredLabels = labels
       .filter((aLabel) => this.predefinedLabels.includes(aLabel));
     const [currentLabel] = filteredLabels;
-    const menu = (
-      <Menu
-        onClick={({key}) => this.onSelectMenu(key, ticket)}
-        selectedKeys={[]}
-        style={{cursor: 'default', minWidth: '120px'}}
-      >
-        <Menu.ItemGroup title="Select new status">
-          <Menu.Divider />
-          {
-            this.predefinedLabels
-              .filter(label => label !== currentLabel)
-              .map(label => (
-                <Menu.Item key={label} style={{cursor: 'pointer'}}>
-                  {label}
-                </Menu.Item>
-              ))
-          }
-        </Menu.ItemGroup>
-      </Menu>
-    );
+    const statusMenuItems = [
+      {
+        type: 'group',
+        label: 'Select new status',
+        children: this.predefinedLabels
+          .filter(label => label !== currentLabel)
+          .map(label => ({key: label, label, style: {cursor: 'pointer'}}))
+      }
+    ];
     return (
       <div className={styles.infoSection}>
         <div className={classNames(
@@ -339,7 +334,11 @@ class Ticket extends React.Component {
         >
           <span>Status:</span>
           <Dropdown
-            overlay={menu}
+            menu={{
+              items: statusMenuItems,
+              onClick: ({key}) => this.onSelectMenu(key, ticket),
+              style: {cursor: 'default', minWidth: '120px'}
+            }}
             trigger={['click']}
             disabled={pending}
           >
@@ -393,7 +392,7 @@ class Ticket extends React.Component {
                   href={attachment.link}
                   target="_blank"
                 >
-                  <Icon type="paper-clip" style={{marginRight: 5}} />
+                  <PaperClipOutlined style={{marginRight: 5}} />
                   {attachment.name}
                 </a>
               ))
@@ -435,7 +434,7 @@ class Ticket extends React.Component {
           size="small"
           className={mainStyles.goBackButton}
         >
-          <Icon type="left" />
+          <LeftOutlined />
         </Button>
         <span
           className={mainStyles.heading}
@@ -476,7 +475,7 @@ class Ticket extends React.Component {
         {
           error && (
             <Alert
-              message={error}
+              title={error}
               type="error"
               style={{margin: '5px 0'}}
             />
@@ -490,7 +489,7 @@ class Ticket extends React.Component {
         {
           !pending && !ticket && !error && (
             <Alert
-              message="Ticket not found"
+              title="Ticket not found"
               type="error"
               style={{margin: '5px 0'}}
             />
@@ -523,7 +522,7 @@ class Ticket extends React.Component {
 }
 
 Ticket.propTypes = {
-  ticketId: PropTypes.oneOfType(PropTypes.string, PropTypes.number)
+  ticketId: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
 };
 
 export default Ticket;

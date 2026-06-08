@@ -18,7 +18,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
-import {Alert, Checkbox, Icon, Spin} from 'antd';
+import {Alert, Checkbox, Spin} from 'antd';
+import {CaretDownOutlined, CaretUpOutlined, InfoCircleOutlined} from '@ant-design/icons';
 import PreviewModal from '../preview/preview-modal';
 import {InfiniteScroll, PresentationModes} from '../faceted-search/controls';
 import DocumentListPresentation from './document-presentation/list';
@@ -102,9 +103,7 @@ class SearchResults extends React.Component {
     const {disabled} = this.props;
     return (
       <div className="cp-search-result-item-actions">
-        <Icon
-          type="info-circle-o"
-          className={
+        <InfoCircleOutlined className={
             classNames(
               'cp-search-result-item-action',
               'cp-icon-larger'
@@ -116,8 +115,7 @@ class SearchResults extends React.Component {
               e && e.preventDefault();
               this.setPreview(resultItem);
             }
-          }}
-        />
+          }} />
         {this.renderRowSelectionCheckbox(resultItem)}
         <OpenInToolAction
           file={resultItem.path}
@@ -245,12 +243,12 @@ class SearchResults extends React.Component {
     } = this.props;
     if (error) {
       return (
-        <Alert type="error" message={error} />
+        <Alert type="error" title={error} />
       );
     }
     if (showResults && (documents || []).length === 0) {
       return (
-        <Alert type="info" message="Nothing found" />
+        <Alert type="info" title="Nothing found" />
       );
     }
     return (
@@ -484,14 +482,9 @@ class SearchResults extends React.Component {
         <span
           className={styles.sortingContainer}
         >
-          <Icon
-            className={styles.sortingIcon}
-            type={
-              currentSorting.asc
-                ? 'caret-up'
-                : 'caret-down'
-            }
-          />
+          {currentSorting.asc
+            ? <CaretUpOutlined className={styles.sortingIcon} />
+            : <CaretDownOutlined className={styles.sortingIcon} />}
           {sortingOrder.length > 1 ? (
             <sup className={styles.sortingNumber}>
               {currentIndex + 1}
@@ -561,12 +554,12 @@ class SearchResults extends React.Component {
     } = this.props;
     if (error) {
       return (
-        <Alert type="error" message={error} />
+        <Alert type="error" title={error} />
       );
     }
     if (showResults && (documents || []).length === 0) {
       return (
-        <Alert type="info" message="Nothing found" />
+        <Alert type="info" title="Nothing found" />
       );
     }
     return (

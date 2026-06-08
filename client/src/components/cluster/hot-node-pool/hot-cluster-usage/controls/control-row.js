@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Button, Icon} from 'antd';
+import {Button} from 'antd';
+import {ExportOutlined} from '@ant-design/icons';
 import {Period} from '../../../../special/periods';
 import styles from './control-row.css';
 import DateFilter from '../../../../special/reports/filters/period-filter';
@@ -50,7 +51,7 @@ function ControlRow ({
       {
         onExport && (
           <Button onClick={onExport}>
-            <Icon type="export" />
+            <ExportOutlined />
             Export
           </Button>
         )

@@ -23,6 +23,7 @@ import {
   Tooltip,
   Input
 } from 'antd';
+import {DeleteOutlined, RollbackOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 
 import {NATRules, DeleteRules, SetRules} from '../../../../models/nat';
@@ -34,6 +35,8 @@ import highlightText from '../../../special/highlightText';
 import styles from './nat-gateway-configuration.css';
 
 const {Column, ColumnGroup} = Table;
+
+const TABLE_COLUMNS_AMOUNT = columns.external.length + columns.internal.length + 2;
 
 function getRouteIdentifier (route) {
   if (!route) {
@@ -82,8 +85,6 @@ export default class NATGateway extends React.Component {
     expandedRowKeys: [],
     search: undefined
   }
-
-  tableColumnsAmount;
 
   get sortedContent () {
     const {
@@ -444,15 +445,6 @@ export default class NATGateway extends React.Component {
           </div>
           <Spin spinning={pending}>
             <Table
-              ref={(table) => {
-                if (table) {
-                  this.tableColumnsAmount = table.columns
-                    .reduce((acc, column) => column.children
-                      ? [...acc, ...column.children]
-                      : [...acc, column], [])
-                    .length;
-                }
-              }}
               indentSize={0}
               className={
                 classNames(
@@ -476,8 +468,10 @@ export default class NATGateway extends React.Component {
                 'cp-disabled': this.routeIsRemoved(record),
                 'cp-primary': !this.routeIsRemoved(record) && record.isNew
               })}
-              expandedRowKeys={expandedRowKeys}
-              onExpandedRowsChange={this.onChangeExpandedRows}
+              expandable={{
+                expandedRowKeys,
+                onExpandedRowsChange: this.onChangeExpandedRows
+              }}
             >
               <ColumnGroup title="External resources">
                 {columns.external.map((col) => (
@@ -517,7 +511,7 @@ export default class NATGateway extends React.Component {
                       return {
                         children: content,
                         props: {
-                          colSpan: this.tableColumnsAmount
+                          colSpan: TABLE_COLUMNS_AMOUNT
                         }
                       };
                     }
@@ -533,14 +527,14 @@ export default class NATGateway extends React.Component {
                     }
                     return !this.routeIsRemoved(text) ? (
                       <Button
-                        type="danger"
-                        icon="delete"
+                        danger
+                        icon={<DeleteOutlined />}
                         onClick={() => this.removeRoute(text)}
                         size="small"
                       />
                     ) : (
                       <Button
-                        icon="rollback"
+                        icon={<RollbackOutlined />}
                         size="small"
                         onClick={() => this.revertRoute(text)}
                       />

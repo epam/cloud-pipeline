@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {observable} from 'mobx';
+import {observable, makeObservable} from 'mobx';
 import {inject, observer, Provider} from 'mobx-react';
 import {Alert} from 'antd';
 import buildLayout from './layout';
@@ -25,52 +25,75 @@ export default class AsyncLayout {
   static inject (loader) {
     return Component => observer(
       class extends React.Component {
-        @observable asyncLayout;
         constructor (props) {
           super(props);
-          this.asyncLayout = new AsyncLayout(loader(props));
+          this._mounted = false;
+          this.asyncLayout = null;
+        }
+
+        componentDidMount () {
+          this._mounted = true;
+          this.asyncLayout = new AsyncLayout(loader(this.props), () => this._mounted);
+          this.forceUpdate();
+        }
+
+        componentWillUnmount () {
+          this._mounted = false;
         }
 
         render () {
-          if (this.asyncLayout.loaded) {
-            if (this.asyncLayout.error) {
+          if (!this.asyncLayout || !this.asyncLayout.loaded) {
+            if (this.asyncLayout?.error) {
               return (
-                <Alert type="error" message={this.asyncLayout.error} />
+                <Alert type="error" title={this.asyncLayout.error} />
               );
             }
+            return (<LoadingView />);
+          }
+          if (this.asyncLayout.error) {
             return (
-              <Provider layout={this.asyncLayout.layout}>
-                <Component
-                  {...this.props}
-                />
-              </Provider>
+              <Alert type="error" title={this.asyncLayout.error} />
             );
           }
-          return (<LoadingView />);
+          return (
+            <Provider layout={this.asyncLayout.layout}>
+              <Component
+                {...this.props}
+              />
+            </Provider>
+          );
         }
       }
     );
   }
 
   static use (...opts) {
-    return inject('layout')(observer(...opts));
+    return inject('layout')(...opts);
   }
 
-  @observable loaded = false;
-  @observable error = undefined;
-  @observable layout;
-  constructor (layoutOptionsLoader) {
+  loaded = false;
+  error = undefined;
+  layout;
+  constructor (layoutOptionsLoader, isMounted = () => true) {
+    makeObservable(this, {
+      loaded: observable,
+      error: observable,
+      layout: observable
+    });
     if (layoutOptionsLoader && layoutOptionsLoader.then) {
       layoutOptionsLoader
         .then(options => {
-          this.layout = buildLayout(options);
-          this.loaded = true;
+          if (isMounted()) {
+            this.layout = buildLayout(options);
+            this.loaded = true;
+            this.error = undefined;
+          }
         })
         .catch(e => {
-          this.error = e.message;
-        })
-        .then(() => {
-          this.error = undefined;
+          if (isMounted()) {
+            this.error = e.message;
+            this.loaded = true;
+          }
         });
     } else {
       this.layout = buildLayout(layoutOptionsLoader);

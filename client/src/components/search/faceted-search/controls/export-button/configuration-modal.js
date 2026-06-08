@@ -215,7 +215,7 @@ class ExportConfigurationModal extends React.Component {
     const selectedCount = columns.filter((column) => this.columnSelected(column.key)).length;
     return (
       <Modal
-        visible={visible}
+        open={visible}
         title="Configure export"
         onCancel={onCancel}
         footer={(

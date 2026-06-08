@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {
   Button,
   Checkbox,
@@ -58,8 +58,9 @@ const OmicsServiceTypes = {
 
 @roleModel.authenticationInfo
 @inject('awsRegions', 'preferences')
-@Form.create()
 export class DataStorageEditDialog extends React.Component {
+  formRef = React.createRef();
+
   static propTypes = {
     pending: PropTypes.bool,
     onCancel: PropTypes.func,
@@ -100,7 +101,27 @@ export class DataStorageEditDialog extends React.Component {
     }
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      storageVersioningAllowed: computed,
+      isAdvancedUser: computed,
+      isUserDefaultStorage: computed,
+      permissionsRestrictions: computed,
+      isNfsMount: computed,
+      omicsStore: computed,
+      transitionRulesAvailable: computed,
+      awsRegions: computed,
+      omicsTypes: computed,
+      fileShareMountsList: computed,
+      defaultAwsRegion: computed,
+      currentRegion: computed,
+      currentRegionSupportsPolicy: computed,
+      currentRegionSupportsStoragePermissions: computed,
+      toolsToMount: computed
+    });
+  }
+
   get storageVersioningAllowed () {
     const {
       dataStorage,
@@ -124,7 +145,6 @@ export class DataStorageEditDialog extends React.Component {
     return false;
   }
 
-  @computed
   get isAdvancedUser () {
     const {
       authenticatedUserInfo
@@ -138,7 +158,6 @@ export class DataStorageEditDialog extends React.Component {
     return false;
   }
 
-  @computed
   get isUserDefaultStorage () {
     const {
       authenticatedUserInfo,
@@ -153,7 +172,6 @@ export class DataStorageEditDialog extends React.Component {
     return undefined;
   }
 
-  @computed
   get permissionsRestrictions () {
     const {
       preferences,
@@ -204,10 +222,11 @@ export class DataStorageEditDialog extends React.Component {
       this.props.onDelete(cloud);
     }
   };
+
   handleSubmit = (e) => {
     e && e.preventDefault();
-    this.props.form.validateFieldsAndScroll((err, values) => {
-      if (!err) {
+    this.formRef.current.validateFields()
+      .then((values) => {
         values.serviceType = this.isNfsMount
           ? ServiceTypes.fileShare
           : (this.omicsStore
@@ -243,11 +262,10 @@ export class DataStorageEditDialog extends React.Component {
           values.fileShareMountId = path.fileShareMountId;
         }
         this.props.onSubmit(values);
-      }
-    });
+      })
+      .catch(() => {});
   };
 
-  @computed
   get isNfsMount () {
     return this.props.dataStorage
       ? this.props.dataStorage.storageType
@@ -256,7 +274,6 @@ export class DataStorageEditDialog extends React.Component {
       : this.props.isNfsMount;
   }
 
-  @computed
   get omicsStore () {
     return this.props.dataStorage
       ? this.props.dataStorage.storageType
@@ -287,7 +304,6 @@ export class DataStorageEditDialog extends React.Component {
     };
   }
 
-  @computed
   get transitionRulesAvailable () {
     const {
       dataStorage,
@@ -304,55 +320,46 @@ export class DataStorageEditDialog extends React.Component {
     return this.userPermissions.read && !this.userPermissions.write;
   }
 
-  @computed
   get awsRegions () {
     return this.props.awsRegions.loaded ? (this.props.awsRegions.value || []).map(r => r) : [];
   }
 
-  @computed
   get omicsTypes () {
     return Object.entries(OmicsServiceTypes || []);
   }
 
-  @computed
   get fileShareMountsList () {
     return extractFileShareMountList(this.awsRegions);
   }
 
-  @computed
   get defaultAwsRegion () {
     const region = this.awsRegions.filter(region => region.default === true)[0];
     return region || undefined;
   }
 
-  @computed
   get currentRegion () {
-    const formValue = this.props.form.getFieldValue('regionId');
+    const form = this.formRef.current;
+    const formValue = form ? form.getFieldValue('regionId') : undefined;
     const region = this.awsRegions.filter(region => `${region.id}` === `${formValue}`)[0];
     return region || this.defaultAwsRegion;
   }
 
-  @computed
   get currentRegionSupportsPolicy () {
     return this.currentRegion && ['AWS', 'GCP'].indexOf(this.currentRegion.provider) >= 0;
   }
 
-  @computed
   get currentRegionSupportsStoragePermissions () {
     return this.currentRegion && ['AWS'].indexOf(this.currentRegion.provider) >= 0;
   }
 
-  @computed
   get isStoragePathValid () {
     return this.state.nfsStoragePathValid || false;
   }
 
-  @computed
   get isAliasValid () {
     return this.state.aliasValid || false;
   }
 
-  @computed
   get toolsToMount () {
     const {dataStorage} = this.props;
     if (dataStorage) {
@@ -376,56 +383,64 @@ export class DataStorageEditDialog extends React.Component {
       (roleModel.isManager.storageAdmin(this) || roleModel.isOwner(this.props.dataStorage)) &&
       !this.state.restrictedAccess
     ) {
-      return (
-        <Row type="flex" justify="space-between">
-          <Col span={12}>
-            <Row type="flex" justify="start">
-              {
-                roleModel.isManager.storage(this) ||
-                roleModel.isManager.storageAdmin(this)
-                  ? (
-                    <Button
-                      id="edit-storage-dialog-delete-button"
-                      type="danger"
-                      onClick={this.openDeleteDialog}
-                    >
-                      DELETE
-                    </Button>
-                  ) : null
-              }
-            </Row>
-          </Col>
-          <Col span={12}>
-            <Row type="flex" justify="end">
-              <Button
-                id="edit-storage-dialog-cancel-button"
-                onClick={this.props.onCancel}>CANCEL</Button>
-              <Button
-                id="edit-storage-dialog-save-button"
-                type="primary"
-                htmlType="submit"
-                onClick={this.handleSubmit}>SAVE</Button>
-            </Row>
-          </Col>
-        </Row>
-      );
-    } else {
-      return (
-        <Row type="flex" justify="end">
+      const deleteButton = roleModel.isManager.storage(this) ||
+        roleModel.isManager.storageAdmin(this)
+        ? (
           <Button
-            id="edit-storage-dialog-cancel-button"
-            onClick={this.props.onCancel}>CANCEL</Button>
-        </Row>
+            id="edit-storage-dialog-delete-button"
+            danger
+            onClick={this.openDeleteDialog}
+          >
+            DELETE
+          </Button>
+        ) : null;
+      return (
+        <div className={`cp-modal-footer-actions${deleteButton ? ' cp-modal-footer-actions--split' : ''}`}>
+          {deleteButton ? (
+            <div className="cp-modal-footer-actions-group">
+              {deleteButton}
+            </div>
+          ) : null}
+          <div className="cp-modal-footer-actions-group cp-modal-footer-actions-group--end">
+            <Button
+              id="edit-storage-dialog-cancel-button"
+              onClick={this.props.onCancel}
+            >
+              CANCEL
+            </Button>
+            <Button
+              id="edit-storage-dialog-save-button"
+              type="primary"
+              htmlType="submit"
+              onClick={this.handleSubmit}
+            >
+              SAVE
+            </Button>
+          </div>
+        </div>
       );
     }
+    return (
+      <div className="cp-modal-footer-actions">
+        <Button
+          id="edit-storage-dialog-cancel-button"
+          onClick={this.props.onCancel}
+        >
+          CANCEL
+        </Button>
+      </div>
+    );
   };
 
   getCreateFooter = () => {
     return (
-      <Row>
+      <div className="cp-modal-footer-actions">
         <Button
           id="edit-storage-dialog-cancel-button"
-          onClick={this.props.onCancel}>Cancel</Button>
+          onClick={this.props.onCancel}
+        >
+          Cancel
+        </Button>
         <Button
           id="edit-storage-dialog-create-button"
           type="primary"
@@ -433,42 +448,47 @@ export class DataStorageEditDialog extends React.Component {
           disabled={(this.isNfsMount && !this.isStoragePathValid) ||
             (this.omicsStore && (!this.state.omicsType || !this.isAliasValid))
           }
-          onClick={this.handleSubmit}>Create</Button>
-      </Row>
+          onClick={this.handleSubmit}
+        >
+          Create
+        </Button>
+      </div>
     );
   };
 
   getDeleteModalFooter = () => {
     const isMirrorStorage = !!this.props.dataStorage && !!this.props.dataStorage.sourceStorageId;
     return (
-      <Row type="flex" justify="space-between">
-        <Col span={12}>
-          <Row type="flex" justify="start">
-            <Button
-              id="edit-storage-delete-dialog-cancel-button"
-              onClick={this.closeDeleteDialog}>Cancel</Button>
-          </Row>
-        </Col>
-        <Col span={12}>
-          <Row type="flex" justify="end">
-            <Button
-              id="edit-storage-delete-dialog-unregister-button"
-              type="danger"
-              onClick={() => this.onDeleteClicked(false)}>Unregister</Button>
-            {
-              !isMirrorStorage && (
-                <Button
-                  id="edit-storage-delete-dialog-delete-button"
-                  type="danger"
-                  onClick={() => this.onDeleteClicked(true)}
-                >
-                  Delete
-                </Button>
-              )
-            }
-          </Row>
-        </Col>
-      </Row>
+      <div className="cp-modal-footer-actions cp-modal-footer-actions--split">
+        <div className="cp-modal-footer-actions-group">
+          <Button
+            id="edit-storage-delete-dialog-cancel-button"
+            onClick={this.closeDeleteDialog}
+          >
+            Cancel
+          </Button>
+        </div>
+        <div className="cp-modal-footer-actions-group cp-modal-footer-actions-group--end">
+          <Button
+            id="edit-storage-delete-dialog-unregister-button"
+            danger
+            onClick={() => this.onDeleteClicked(false)}
+          >
+            Unregister
+          </Button>
+          {
+            !isMirrorStorage && (
+              <Button
+                id="edit-storage-delete-dialog-delete-button"
+                danger
+                onClick={() => this.onDeleteClicked(true)}
+              >
+                Delete
+              </Button>
+            )
+          }
+        </div>
+      </div>
     );
   };
 
@@ -476,40 +496,52 @@ export class DataStorageEditDialog extends React.Component {
     this.setState({activeTab: key});
   };
 
-  validateStoragePath = (value, callback) => {
+  validateStoragePath = (rule, value) => {
     if (value && this.isNfsMount) {
       const parseResult = parseFSMountPath(value, this.fileShareMountsList);
       if (!parseResult || !parseResult.storagePath) {
-        // eslint-disable-next-line standard/no-callback-literal
-        callback('Storage path is required');
-      } else if (!parseResult.storagePath.startsWith('/')) {
-        // eslint-disable-next-line standard/no-callback-literal
-        callback('Storage path must begin with \'/\'');
+        return Promise.reject(new Error('Storage path is required'));
+      }
+      if (!parseResult.storagePath.startsWith('/')) {
+        return Promise.reject(new Error('Storage path must begin with \'/\''));
       }
     } else if ((!value || !value.path) && !this.omicsStore) {
-      // eslint-disable-next-line standard/no-callback-literal
-      callback('Storage path is required');
+      return Promise.reject(new Error('Storage path is required'));
     }
-    callback();
+    return Promise.resolve();
   };
 
-  validateAlias = (value, callback) => {
+  validateAlias = (rule, value) => {
     if (!value && this.omicsStore) {
       this.setState({aliasValid: false});
-      // eslint-disable-next-line standard/no-callback-literal
-      callback('Alias is required');
-    } else {
-      this.setState({aliasValid: true});
+      return Promise.reject(new Error('Alias is required'));
     }
-    callback();
+    this.setState({aliasValid: true});
+    return Promise.resolve();
   }
 
   onChangePathPermissionsEnabled = (e) => this.setState({
     pathPermissionsEnabled: e.target.checked
   });
 
+  get initialValues () {
+    const ds = this.props.dataStorage;
+    return {
+      path: ds,
+      name: ds ? ds.name : undefined,
+      omicsType: ds && ds.type ? ds.type : undefined,
+      regionId: ds && ds.regionId
+        ? ds.regionId.toString()
+        : (this.defaultAwsRegion ? this.defaultAwsRegion.id.toString() : undefined),
+      description: ds ? ds.description : undefined,
+      toolsToMount: ds ? ds.toolsToMount : undefined,
+      backupDuration: ds && ds.storagePolicy ? ds.storagePolicy.backupDuration : undefined,
+      mountPoint: ds && ds.mountPoint ? ds.mountPoint : undefined,
+      mountOptions: ds && ds.mountOptions ? ds.mountOptions : undefined
+    };
+  }
+
   render () {
-    const {getFieldDecorator, resetFields} = this.props.form;
     const isReadOnly = this.props.dataStorage
       ? (
         this.props.dataStorage.locked ||
@@ -522,19 +554,283 @@ export class DataStorageEditDialog extends React.Component {
       this.props.dataStorage ? this.getEditFooter() : this.getCreateFooter()
     );
     const onClose = () => {
-      resetFields();
+      this.formRef.current && this.formRef.current.resetFields();
       this.setState({activeTab: 'info'});
     };
     const skipPolicyFlagVisible = !this.props.dataStorage;
 
     const {defaultMask, enabledMask, readOnlyRoles} = this.permissionsRestrictions;
 
+    const InfoContent = (
+      <Form
+        id="edit-storage-form"
+        ref={this.formRef}
+        initialValues={this.initialValues}
+        key={this.props.dataStorage ? this.props.dataStorage.id : 'new'}
+      >
+        {
+          !this.omicsStore &&
+          <Form.Item
+            className={`${styles.dataStorageFormItem} edit-storage-storage-path-container`}
+            {...this.formItemLayout}
+            label="Storage path"
+            name="path"
+            rules={[{validator: this.validateStoragePath}]}
+          >
+            <DataStoragePathInput
+              cloudRegions={this.awsRegions}
+              onValidation={this.onNfsPathValidation}
+              onPressEnter={this.handleSubmit}
+              visible={this.props.visible}
+              isFS={this.isNfsMount}
+              isNew={!this.props.dataStorage}
+              addExistingStorageFlag={this.props.addExistingStorageFlag}
+              disabled={this.props.pending || !!this.props.dataStorage || isReadOnly} />
+          </Form.Item>
+        }
+        <Form.Item
+          className={styles.dataStorageFormItem}
+          {...this.formItemLayout}
+          label="Alias"
+          name="name"
+          rules={[{validator: this.validateAlias}]}
+        >
+          <Input
+            ref={this.props.dataStorage ? this.initializeNameInput : null}
+            onPressEnter={this.handleSubmit}
+            disabled={this.props.pending || isReadOnly} />
+        </Form.Item>
+        {
+          this.omicsStore &&
+          <Form.Item
+            className={styles.dataStorageFormItem}
+            {...this.formItemLayout}
+            label="Service type"
+            name="omicsType"
+          >
+            <Select
+              style={{width: '100%'}}
+              disabled={!!this.props.dataStorage || isReadOnly}
+              onChange={(type) => this.setState({omicsType: type})}
+            >
+              {this.omicsTypes.map(([value, name]) => {
+                return <Select.Option key={value} title={name}>
+                  {name}
+                </Select.Option>;
+              })}
+            </Select>
+          </Form.Item>
+        }
+        {
+          !this.isNfsMount &&
+          <Form.Item
+            className={styles.dataStorageFormItem}
+            {...this.formItemLayout}
+            label="Cloud region"
+            name="regionId"
+          >
+            <Select
+              style={{width: '100%'}}
+              disabled={!!this.props.dataStorage || isReadOnly}
+            >
+              {this.awsRegions
+                .filter(region => (!this.omicsStore || region.provider === 'AWS'))
+                .map(region => {
+                  return <Select.Option key={region.id.toString()} title={region.name}>
+                    <AWSRegionTag regionUID={region.regionId} /> {region.name}
+                  </Select.Option>;
+                })}
+            </Select>
+          </Form.Item>
+        }
+        <Form.Item
+          className={styles.dataStorageFormItem}
+          {...this.formItemLayout}
+          label="Description"
+          name="description"
+        >
+          <Input type="textarea" disabled={this.props.pending || isReadOnly} />
+        </Form.Item>
+        {
+          !this.omicsStore &&
+          <Row>
+            <Col xs={24} sm={6} />
+            <Col xs={24} sm={18}>
+              <Form.Item className={styles.dataStorageFormItem}>
+                <Checkbox
+                  disabled={this.props.pending || isReadOnly}
+                  onChange={(e) => this.setState({mountDisabled: e.target.checked})}
+                  checked={this.state.mountDisabled}>
+                  Disable mount
+                </Checkbox>
+              </Form.Item>
+            </Col>
+          </Row>
+        }
+        {
+          (!this.omicsStore && !this.state.mountDisabled) && (
+            <Form.Item
+              className={styles.dataStorageFormItem}
+              {...this.formItemLayout}
+              label="Allow mount to"
+              name="toolsToMount"
+            >
+              <RestrictDockerImages disabled={this.props.pending || isReadOnly} />
+            </Form.Item>
+          )
+        }
+        {
+          (!this.omicsStore && !this.isNfsMount) &&
+          <Row>
+            <Col xs={24} sm={6} />
+            <Col xs={24} sm={18}>
+              <Form.Item className={styles.dataStorageFormItem}>
+                <Checkbox
+                  disabled={this.props.pending || isReadOnly || !!this.props.dataStorage}
+                  onChange={(e) => this.setState({sensitive: e.target.checked})}
+                  checked={this.state.sensitive}>
+                  Sensitive storage
+                </Checkbox>
+              </Form.Item>
+            </Col>
+          </Row>
+        }
+        {
+          (!this.omicsStore && !this.isNfsMount && skipPolicyFlagVisible) &&
+          <Row>
+            <Col xs={24} sm={6} />
+            <Col xs={24} sm={18}>
+              <Form.Item className={styles.dataStorageFormItem}>
+                <Checkbox
+                  disabled={this.props.pending || isReadOnly || !!this.props.dataStorage}
+                  onChange={(e) => this.setState({skipPolicy: e.target.checked})}
+                  checked={this.state.skipPolicy}>
+                  Skip policy
+                </Checkbox>
+              </Form.Item>
+            </Col>
+          </Row>
+        }
+        {!this.omicsStore &&
+        !this.isNfsMount &&
+        this.props.policySupported &&
+        this.currentRegionSupportsPolicy &&
+        this.storageVersioningAllowed && (
+          <Row>
+            <Col xs={24} sm={6} />
+            <Col xs={24} sm={18}>
+              <Form.Item className={styles.dataStorageFormItem}>
+                <Checkbox
+                  disabled={this.props.pending || isReadOnly || this.state.skipPolicy}
+                  onChange={(e) => this.setState({versioningEnabled: e.target.checked})}
+                  checked={this.state.versioningEnabled}>
+                  Enable versioning
+                </Checkbox>
+              </Form.Item>
+            </Col>
+          </Row>
+        )}
+        {
+          !this.omicsStore &&
+          !this.isNfsMount &&
+          this.currentRegionSupportsStoragePermissions && (
+            <Row>
+              <Col xs={24} sm={6} />
+              <Col xs={24} sm={18}>
+                <Form.Item className={styles.dataStorageFormItem}>
+                  <Checkbox
+                    disabled={
+                      this.props.pending ||
+                      isReadOnly ||
+                      Boolean(this.props.dataStorage)
+                    }
+                    onChange={this.onChangePathPermissionsEnabled}
+                    checked={this.state.pathPermissionsEnabled}
+                  >
+                    Fine-grained permissions
+                  </Checkbox>
+                </Form.Item>
+              </Col>
+            </Row>
+          )
+        }
+        {!this.omicsStore &&
+        !this.isNfsMount &&
+        this.props.policySupported &&
+        this.state.versioningEnabled &&
+        this.currentRegionSupportsPolicy &&
+        this.storageVersioningAllowed && (
+          <Form.Item
+            className={styles.dataStorageFormItem}
+            {...this.formItemLayout}
+            label="Backup duration"
+            name="backupDuration"
+          >
+            <InputNumber
+              style={{width: '100%'}}
+              disabled={this.props.pending || isReadOnly || this.state.skipPolicy} />
+          </Form.Item>
+        )}
+        {
+          !this.omicsStore &&
+          !this.state.mountDisabled && (
+            <Form.Item
+              className={styles.dataStorageFormItem}
+              {...this.formItemLayout}
+              label="Mount-point"
+              name="mountPoint"
+            >
+              <Input
+                style={{width: '100%'}}
+                disabled={this.props.pending || isReadOnly} />
+            </Form.Item>
+          )
+        }
+        {
+          !this.omicsStore &&
+          !this.state.mountDisabled && (
+            <Form.Item
+              className={styles.dataStorageFormItem}
+              {...this.formItemLayout}
+              label="Mount options"
+              name="mountOptions"
+            >
+              <Input
+                style={{width: '100%'}}
+                disabled={this.props.pending || isReadOnly} />
+            </Form.Item>
+          )
+        }
+        {
+          !this.omicsStore &&
+          !this.isNfsMount &&
+          (
+            (!this.props.dataStorage && !this.props.addExistingStorageFlag) ||
+            (this.props.dataStorage)
+          ) &&
+          <Row>
+            <Col xs={24} sm={6} />
+            <Col xs={24} sm={18}>
+              <Form.Item className={styles.dataStorageFormItem}>
+                <Checkbox
+                  disabled={!!this.props.dataStorage || isReadOnly}
+                  onChange={(e) => this.setState({sharingEnabled: e.target.checked})}
+                  checked={this.state.sharingEnabled}>
+                  Enable sharing
+                </Checkbox>
+              </Form.Item>
+            </Col>
+          </Row>
+        }
+      </Form>
+    );
+
     return (
       <Modal
-        maskClosable={!this.props.pending && !this.state.restrictedAccessCheckInProgress}
+        mask={{closable: !this.props.pending && !this.state.restrictedAccessCheckInProgress}}
         afterClose={() => onClose()}
         closable={!this.props.pending && !this.state.restrictedAccessCheckInProgress}
-        visible={this.props.visible}
+        open={this.props.visible}
         title={
           this.props.dataStorage
             ? (this.isNfsMount
@@ -558,329 +854,46 @@ export class DataStorageEditDialog extends React.Component {
           <Tabs
             size="small"
             activeKey={this.state.activeTab}
-            onChange={this.onSectionChange}>
-            <Tabs.TabPane key="info" tab="Info">
-              <Form id="edit-storage-form">
-                {
-                  !this.omicsStore &&
-                  <Form.Item
-                    className={`${styles.dataStorageFormItem} edit-storage-storage-path-container`}
-                    {...this.formItemLayout}
-                    label="Storage path">
-                    {getFieldDecorator('path', {
-                      rules: [{
-                        validator: (rule, value, callback) => this.validateStoragePath(
-                          value,
-                          callback
-                        )
-                      }],
-                      initialValue: this.props.dataStorage
-                    })(
-                      <DataStoragePathInput
-                        cloudRegions={this.awsRegions}
-                        onValidation={this.onNfsPathValidation}
-                        onPressEnter={this.handleSubmit}
-                        visible={this.props.visible}
-                        isFS={this.isNfsMount}
-                        isNew={!this.props.dataStorage}
-                        addExistingStorageFlag={this.props.addExistingStorageFlag}
-                        disabled={this.props.pending || !!this.props.dataStorage || isReadOnly} />
-                    )}
-                  </Form.Item>
-                }
-                <Form.Item
-                  className={styles.dataStorageFormItem}
-                  {...this.formItemLayout}
-                  label="Alias">
-                  {getFieldDecorator('name', {
-                    initialValue: this.props.dataStorage ? this.props.dataStorage.name : undefined,
-                    rules: [{
-                      validator: (rule, value, callback) => this.validateAlias(
-                        value,
-                        callback
-                      )
-                    }]
-                  })(
-                    <Input
-                      ref={this.props.dataStorage ? this.initializeNameInput : null}
-                      onPressEnter={this.handleSubmit}
-                      disabled={this.props.pending || isReadOnly} />
-                  )}
-                </Form.Item>
-                {
-                  this.omicsStore &&
-                  <Form.Item
-                    className={styles.dataStorageFormItem}
-                    {...this.formItemLayout}
-                    label="Service type">
-                    {getFieldDecorator('omicsType', {
-                      initialValue: this.props.dataStorage && this.props.dataStorage.type
-                        ? this.props.dataStorage.type
-                        : undefined
-                    })(
-                      <Select
-                        style={{width: '100%'}}
-                        disabled={!!this.props.dataStorage || isReadOnly}
-                        onChange={(type) => this.setState({omicsType: type})}
-                      >
-                        {this.omicsTypes.map(([value, name]) => {
-                          return <Select.Option key={value} title={name}>
-                            {name}
-                          </Select.Option>;
-                        })}
-                      </Select>
-                    )}
-                  </Form.Item>
-                }
-                {
-                  !this.isNfsMount &&
-                  <Form.Item
-                    className={styles.dataStorageFormItem}
-                    {...this.formItemLayout}
-                    label="Cloud region">
-                    {getFieldDecorator('regionId', {
-                      initialValue: this.props.dataStorage && this.props.dataStorage.regionId
-                        ? this.props.dataStorage.regionId.toString()
-                        : this.defaultAwsRegion ? this.defaultAwsRegion.id.toString() : undefined
-                    })(
-                      <Select
-                        style={{width: '100%'}}
-                        disabled={!!this.props.dataStorage || isReadOnly}
-                      >
-                        {this.awsRegions
-                          .filter(region => (!this.omicsStore || region.provider === 'AWS'))
-                          .map(region => {
-                            return <Select.Option key={region.id.toString()} title={region.name}>
-                              <AWSRegionTag regionUID={region.regionId} /> {region.name}
-                            </Select.Option>;
-                          })}
-                      </Select>
-                    )}
-                  </Form.Item>
-                }
-                <Form.Item
-                  className={styles.dataStorageFormItem}
-                  {...this.formItemLayout}
-                  label="Description">
-                  {getFieldDecorator('description', {
-                    initialValue: this.props.dataStorage
-                      ? this.props.dataStorage.description
-                      : undefined
-                  })(
-                    <Input type="textarea" disabled={this.props.pending || isReadOnly} />
-                  )}
-                </Form.Item>
-                {
-                  !this.omicsStore &&
-                  <Row>
-                    <Col xs={24} sm={6} />
-                    <Col xs={24} sm={18}>
-                      <Form.Item className={styles.dataStorageFormItem}>
-                        <Checkbox
-                          disabled={this.props.pending || isReadOnly}
-                          onChange={(e) => this.setState({mountDisabled: e.target.checked})}
-                          checked={this.state.mountDisabled}>
-                          Disable mount
-                        </Checkbox>
-                      </Form.Item>
-                    </Col>
-                  </Row>
-                }
-                {
-                  (!this.omicsStore && !this.state.mountDisabled) && (
-                    <Form.Item
-                      className={styles.dataStorageFormItem}
-                      {...this.formItemLayout}
-                      label="Allow mount to">
-                      {getFieldDecorator('toolsToMount', {
-                        initialValue: this.props.dataStorage
-                          ? this.props.dataStorage.toolsToMount
-                          : undefined
-                      })(
-                        <RestrictDockerImages disabled={this.props.pending || isReadOnly} />
-                      )}
-                    </Form.Item>
+            onChange={this.onSectionChange}
+            items={[
+              {
+                key: 'info',
+                label: 'Info',
+                children: InfoContent
+              },
+              ...(this.props.dataStorage && this.props.dataStorage.id
+                ? [{
+                  key: 'permissions',
+                  label: 'Permissions',
+                  children: (
+                    <PermissionsForm
+                      readonly={isReadOnly}
+                      objectIdentifier={this.props.dataStorage.id}
+                      objectType="DATA_STORAGE"
+                      defaultMask={defaultMask}
+                      enabledMask={enabledMask}
+                      readOnlyRoles={readOnlyRoles}
+                    />
                   )
-                }
-                {
-                  (!this.omicsStore && !this.isNfsMount) &&
-                  <Row>
-                    <Col xs={24} sm={6} />
-                    <Col xs={24} sm={18}>
-                      <Form.Item className={styles.dataStorageFormItem}>
-                        <Checkbox
-                          disabled={this.props.pending || isReadOnly || !!this.props.dataStorage}
-                          onChange={(e) => this.setState({sensitive: e.target.checked})}
-                          checked={this.state.sensitive}>
-                          Sensitive storage
-                        </Checkbox>
-                      </Form.Item>
-                    </Col>
-                  </Row>
-                }
-                {
-                  (!this.omicsStore && !this.isNfsMount && skipPolicyFlagVisible) &&
-                  <Row>
-                    <Col xs={24} sm={6} />
-                    <Col xs={24} sm={18}>
-                      <Form.Item className={styles.dataStorageFormItem}>
-                        <Checkbox
-                          disabled={this.props.pending || isReadOnly || !!this.props.dataStorage}
-                          onChange={(e) => this.setState({skipPolicy: e.target.checked})}
-                          checked={this.state.skipPolicy}>
-                          Skip policy
-                        </Checkbox>
-                      </Form.Item>
-                    </Col>
-                  </Row>
-                }
-                {!this.omicsStore &&
-                !this.isNfsMount &&
-                this.props.policySupported &&
-                this.currentRegionSupportsPolicy &&
-                this.storageVersioningAllowed && (
-                  <Row>
-                    <Col xs={24} sm={6} />
-                    <Col xs={24} sm={18}>
-                      <Form.Item className={styles.dataStorageFormItem}>
-                        <Checkbox
-                          disabled={this.props.pending || isReadOnly || this.state.skipPolicy}
-                          onChange={(e) => this.setState({versioningEnabled: e.target.checked})}
-                          checked={this.state.versioningEnabled}>
-                          Enable versioning
-                        </Checkbox>
-                      </Form.Item>
-                    </Col>
-                  </Row>
-                )}
-                {
-                  !this.omicsStore &&
-                  !this.isNfsMount &&
-                  this.currentRegionSupportsStoragePermissions && (
-                    <Row>
-                      <Col xs={24} sm={6} />
-                      <Col xs={24} sm={18}>
-                        <Form.Item className={styles.dataStorageFormItem}>
-                          <Checkbox
-                            disabled={
-                              this.props.pending ||
-                              isReadOnly ||
-                              Boolean(this.props.dataStorage)
-                            }
-                            onChange={this.onChangePathPermissionsEnabled}
-                            checked={this.state.pathPermissionsEnabled}
-                          >
-                            Fine-grained permissions
-                          </Checkbox>
-                        </Form.Item>
-                      </Col>
-                    </Row>
+                }]
+                : []),
+              ...(this.transitionRulesAvailable
+                ? [{
+                  key: 'transitionRules',
+                  label: 'Transition rules',
+                  children: (
+                    <LifeCycleRules
+                      storageId={this.props.dataStorage.id}
+                      readOnly={this.transitionRulesReadOnly}
+                    />
                   )
-                }
-                {!this.omicsStore &&
-                !this.isNfsMount &&
-                this.props.policySupported &&
-                this.state.versioningEnabled &&
-                this.currentRegionSupportsPolicy &&
-                this.storageVersioningAllowed && (
-                  <Form.Item
-                    className={styles.dataStorageFormItem}
-                    {...this.formItemLayout}
-                    label="Backup duration">
-                    {getFieldDecorator('backupDuration', {
-                      initialValue: this.props.dataStorage && this.props.dataStorage.storagePolicy
-                        ? this.props.dataStorage.storagePolicy.backupDuration : undefined
-                    })(
-                      <InputNumber
-                        style={{width: '100%'}}
-                        disabled={this.props.pending || isReadOnly || this.state.skipPolicy} />
-                    )}
-                  </Form.Item>
-                )}
-                {
-                  !this.omicsStore &&
-                  !this.state.mountDisabled && (
-                    <Form.Item
-                      className={styles.dataStorageFormItem}
-                      {...this.formItemLayout}
-                      label="Mount-point">
-                      {getFieldDecorator('mountPoint', {
-                        initialValue: this.props.dataStorage && this.props.dataStorage.mountPoint
-                          ? this.props.dataStorage.mountPoint : undefined
-                      })(
-                        <Input
-                          style={{width: '100%'}}
-                          disabled={this.props.pending || isReadOnly} />
-                      )}
-                    </Form.Item>
-                  )
-                }
-                {
-                  !this.omicsStore &&
-                  !this.state.mountDisabled && (
-                    <Form.Item
-                      className={styles.dataStorageFormItem}
-                      {...this.formItemLayout}
-                      label="Mount options">
-                      {getFieldDecorator('mountOptions', {
-                        initialValue: this.props.dataStorage && this.props.dataStorage.mountOptions
-                          ? this.props.dataStorage.mountOptions : undefined
-                      })(
-                        <Input
-                          style={{width: '100%'}}
-                          disabled={this.props.pending || isReadOnly} />
-                      )}
-                    </Form.Item>
-                  )
-                }
-                {
-                  !this.omicsStore &&
-                  !this.isNfsMount &&
-                  (
-                    (!this.props.dataStorage && !this.props.addExistingStorageFlag) ||
-                    (this.props.dataStorage)
-                  ) &&
-                  <Row>
-                    <Col xs={24} sm={6} />
-                    <Col xs={24} sm={18}>
-                      <Form.Item className={styles.dataStorageFormItem}>
-                        <Checkbox
-                          disabled={!!this.props.dataStorage || isReadOnly}
-                          onChange={(e) => this.setState({sharingEnabled: e.target.checked})}
-                          checked={this.state.sharingEnabled}>
-                          Enable sharing
-                        </Checkbox>
-                      </Form.Item>
-                    </Col>
-                  </Row>
-                }
-              </Form>
-            </Tabs.TabPane>
-            {
-              this.props.dataStorage && this.props.dataStorage.id &&
-              <Tabs.TabPane key="permissions" tab="Permissions">
-                <PermissionsForm
-                  readonly={isReadOnly}
-                  objectIdentifier={this.props.dataStorage.id}
-                  objectType="DATA_STORAGE"
-                  defaultMask={defaultMask}
-                  enabledMask={enabledMask}
-                  readOnlyRoles={readOnlyRoles}
-                />
-              </Tabs.TabPane>
-            }
-            {this.transitionRulesAvailable && (
-              <Tabs.TabPane key="transitionRules" tab="Transition rules">
-                <LifeCycleRules
-                  storageId={this.props.dataStorage.id}
-                  readOnly={this.transitionRulesReadOnly}
-                />
-              </Tabs.TabPane>
-            )}
-          </Tabs>
+                }]
+                : [])
+            ]}
+          />
         </Spin>
         <Modal
-          visible={this.state.deleteDialogVisible}
+          open={this.state.deleteDialogVisible}
           onCancel={this.closeDeleteDialog}
           title="Do you want to delete a storage itself or only unregister it?"
           footer={this.getDeleteModalFooter()}>
@@ -940,8 +953,8 @@ export class DataStorageEditDialog extends React.Component {
   }
 
   initializeNameInput = (input) => {
-    if (input && input.refs && input.refs.input) {
-      this.nameInput = input.refs.input;
+    if (input) {
+      this.nameInput = input;
       this.nameInput.onfocus = function () {
         setTimeout(() => {
           this.selectionStart = (this.value || '').length;

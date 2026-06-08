@@ -74,7 +74,7 @@ class CheckoutDialog extends React.Component {
     return (
       <Modal
         title="Select revision to checkout"
-        visible={visible && !!repository}
+        open={visible && !!repository}
         onCancel={onClose}
         footer={(
           <div
@@ -99,7 +99,7 @@ class CheckoutDialog extends React.Component {
       >
         <VSVersions
           className={styles.versionsSelect}
-          dropdownMatchSelectWidth
+          popupMatchSelectWidth
           repository={repository ? repository.id : undefined}
           onChange={this.onChange}
           value={version}

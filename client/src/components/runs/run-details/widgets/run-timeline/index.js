@@ -1,7 +1,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Icon, Popover} from 'antd';
+import {Popover} from 'antd';
+import {ClockCircleOutlined} from '@ant-design/icons';
 import getRunDurationInfo from '../../../../../utils/run-duration';
 import displayDate from '../../../../../utils/displayDate';
 import {displayDurationInSeconds} from '../../../../../utils/displayDuration';
@@ -149,7 +150,7 @@ function RunTimeline (props) {
         style={style}
       >
         {showIcon && (
-          <Icon type="clock-circle-o" style={{marginRight: 5, fontSize: '0.75rem'}} />
+          <ClockCircleOutlined style={{marginRight: 5, fontSize: '0.75rem'}} />
         )}
         <div className={styles.runTimelineInfo}>
           {renderInfo(first)}

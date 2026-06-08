@@ -19,9 +19,9 @@ import PropTypes from 'prop-types';
 import {
   Button,
   Modal,
-  Icon,
   Select
 } from 'antd';
+import {CaretRightOutlined} from '@ant-design/icons';
 
 class SystemDictionaryLinksForm extends React.Component {
   state = {
@@ -200,7 +200,7 @@ class SystemDictionaryLinksForm extends React.Component {
         >
           {selectedDictionary.key}
         </span>
-        <Icon type="caret-right" />
+        <CaretRightOutlined />
         <Select
           showSearch
           disabled={!selectedDictionary}
@@ -227,7 +227,7 @@ class SystemDictionaryLinksForm extends React.Component {
         </Select>
         <Button
           size="small"
-          type="danger"
+          danger
           style={{
             margin: '0 5px'
           }}
@@ -253,7 +253,7 @@ class SystemDictionaryLinksForm extends React.Component {
     });
     return (
       <Modal
-        visible={visible}
+        open={visible}
         title="Linked dictionaries"
         onCancel={onClose}
         footer={null}

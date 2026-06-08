@@ -34,7 +34,7 @@
 }
 
 .row.cloned {
-  color: #aaa;
+  color: var(--cp-color-text-disabled);
   font-style: italic;
 }
 

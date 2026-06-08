@@ -7,6 +7,8 @@ api/src/main/resources/static/
 *.pyc
 .vscode/
 .gnupg/
+.DS_Store
 docs/site
 dist
+portals-ui/
 vscode-cloud-pipeline/.env

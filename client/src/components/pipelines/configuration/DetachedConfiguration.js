@@ -15,10 +15,22 @@
  */
 
 import React from 'react';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {withRouter} from '../../../utils/with-router';
+import {withBlocker} from '../../../utils/with-blocker';
 import classNames from 'classnames';
-import {computed, observable} from 'mobx';
-import {Row, Col, Modal, Button, Alert, Icon, Tabs, message} from 'antd';
+import {computed, observable, makeObservable} from 'mobx';
+import {Row,
+  Col,
+  Modal,
+  Button,
+  Alert,
+  Tabs,
+  message
+} from 'antd';
+import {PlusOutlined, SettingOutlined} from '@ant-design/icons';
 import LaunchPipelineForm from '../launch/form/LaunchPipelineForm';
 import pipelines from '../../../models/pipelines/Pipelines';
 import pipelinesLibrary from '../../../models/folders/FolderLoadTree';
@@ -60,10 +72,9 @@ const DTS_ENVIRONMENT = 'DTS';
 @HiddenObjects.checkConfigurations(props => props?.params?.id)
 @inject('projects')
 @inject((
-  {configurations, projects, folders, pipelinesLibrary, preferences, history, routing},
+  {configurations, projects, folders, pipelinesLibrary, preferences, routing},
   {onReloadTree, params}) => {
   return {
-    history,
     routing,
     onReloadTree,
     configurations: configurations.getConfiguration(params.id),
@@ -78,10 +89,9 @@ const DTS_ENVIRONMENT = 'DTS';
   };
 })
 @observer
-export default class DetachedConfiguration extends localization.LocalizedReactComponent {
-  @observable allowedInstanceTypes;
-
-  @observable configurationModified;
+class DetachedConfiguration extends localization.LocalizedReactComponent {
+  allowedInstanceTypes;
+  configurationModified;
 
   navigationBlockedListener;
   navigationBlocker;
@@ -97,7 +107,19 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
     selectedPipelineParametersIsLoading: true
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      allowedInstanceTypes: observable,
+      configurationModified: observable,
+      selectedConfiguration: computed,
+      selectedConfigurationName: computed,
+      selectedConfigurationIsDefault: computed,
+      defaultConfigurationName: computed,
+      selectedFireCloudMethod: computed
+    });
+  }
+
   get selectedConfiguration () {
     if (this.props.configurations.loaded &&
       this.props.configurations.value.entries) {
@@ -107,7 +129,6 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
     return null;
   }
 
-  @computed
   get selectedConfigurationName () {
     if (this.props.currentConfiguration) {
       return this.props.currentConfiguration;
@@ -124,7 +145,6 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
     return null;
   }
 
-  @computed
   get selectedConfigurationIsDefault () {
     if (!this.props.currentConfiguration) {
       return true;
@@ -139,7 +159,6 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
     return false;
   }
 
-  @computed
   get defaultConfigurationName () {
     if (this.props.configurations.loaded &&
       this.props.configurations.value.entries.length > 0) {
@@ -157,14 +176,14 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
       return false;
     }
     return roleModel.writeAllowed(this.props.configurations.value);
-  };
+  }
 
   get canExecute () {
     if (!this.props.configurations.loaded) {
       return false;
     }
     return roleModel.executeAllowed(this.props.configurations.value);
-  };
+  }
 
   onSelectConfiguration = (key) => {
     if (key !== this.props.currentConfiguration) {
@@ -310,6 +329,9 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
 
   onConfigurationModified = (modified) => {
     this.configurationModified = modified;
+    if (this.props.setNavigationBlocked) {
+      this.props.setNavigationBlocked(!!modified);
+    }
   };
 
   onSaveConfiguration = async (opts) => {
@@ -318,7 +340,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
       this.props.configurations.value.entries.length > 0) {
       const entries = this.props.configurations.value.entries;
       if (entries
-          .filter(c => c.name.toLowerCase() !== this.selectedConfigurationName.toLowerCase() &&
+        .filter(c => c.name.toLowerCase() !== this.selectedConfigurationName.toLowerCase() &&
           c.name === opts.configuration.name).length > 0) {
         message.error(`Configuration ${opts.configuration.name} already exists`, 5);
         return false;
@@ -426,7 +448,6 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
     return false;
   };
 
-  @computed
   get selectedFireCloudMethod () {
     if (this.selectedConfiguration) {
       const configuration = this.selectedConfiguration;
@@ -479,7 +500,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
       }
       return {
         ...extractEndpointNameAndStopAfter(this.state.overriddenConfiguration),
-        ...this.state.overriddenConfiguration.configuration || this.state.overriddenConfiguration,
+        ...(this.state.overriddenConfiguration.configuration || this.state.overriddenConfiguration),
         parameters
       };
     }
@@ -514,7 +535,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
 
     return {
       ...extractEndpointNameAndStopAfter(configuration),
-      ...configuration.configuration || configuration,
+      ...(configuration.configuration || configuration),
       parameters
     };
   };
@@ -999,7 +1020,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
           id="add-configuration-button"
           size="small"
           onClick={this.openCreateConfigurationFormDialog}>
-          <Icon type="plus" style={{lineHeight: 'inherit'}} /> ADD
+          <PlusOutlined style={{lineHeight: 'inherit'}} /> ADD
         </Button>
       );
     }
@@ -1011,19 +1032,14 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
           onChange={this.onSelectConfiguration}
           activeKey={this.selectedConfigurationName}
           tabBarExtraContent={addButton}
-          type="editable-card">
-          {
-            (this.props.configurations.value.entries || [])
-              .map(c => {
-                return (
-                  <Tabs.TabPane
-                    closable={false}
-                    tab={c.default ? <i>{c.name}</i> : c.name}
-                    key={c.name} />
-                );
-              })
-          }
-        </Tabs>
+          type="editable-card"
+          items={(this.props.configurations.value.entries || []).map(c => ({
+            key: c.name,
+            label: c.default ? <i>{c.name}</i> : c.name,
+            closable: false,
+            children: null
+          }))}
+        />
       </Row>
     );
   };
@@ -1037,7 +1053,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
       return <LoadingView />;
     }
     if (this.props.configurations.error) {
-      return <Alert type="error" message={this.props.configurations.error} />;
+      return <Alert type="error" title={this.props.configurations.error} />;
     }
     let defaultPriceTypeIsSpot = false;
     if (this.props.preferences.loaded) {
@@ -1060,7 +1076,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
               onSaveEditableField={this.renameConfiguration}
               editStyleEditableField={{flex: 1}}
               readOnlyEditableField={!this.canModifySources}
-              icon="setting"
+              icon={SettingOutlined}
               iconClassName={`${browserStyles.editableControl} ${configurationTitleClassName}`}
               lock={this.props.configurations.value.locked}
               lockClassName={`${browserStyles.editableControl} ${configurationTitleClassName}`}
@@ -1072,7 +1088,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
               configurationId={this.props.configurationId}
             />
             <Button onClick={this.openEditConfigurationForm} size="small">
-              <Icon type="setting" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
+              <SettingOutlined style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
             </Button>
           </Col>
         </Row>
@@ -1139,54 +1155,37 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
 
   componentDidMount () {
     this.loadSelectedPipelineParameters();
-    this.navigationBlockedListener = this.props.history.listenBefore((location, callback) => {
-      const locationBefore = this.props.routing.location.pathname;
-      if (location.pathname === locationBefore) {
-        callback();
-        return;
-      }
+  }
+
+  componentDidUpdate (prevProps) {
+    const {blocker, router} = this.props;
+    if (blocker && blocker.state === 'blocked' && !this.navigationBlocker) {
+      const targetPathname = blocker.location?.pathname;
+      const currentPathname = router?.location?.pathname;
       const clearBlocker = () => {
-        setTimeout(() => {
-          this.navigationBlocker = null;
-        }, 0);
+        setTimeout(() => { this.navigationBlocker = null; }, 0);
       };
-      if (this.configurationModified && !this.navigationBlocker &&
-        location.pathname !== this.allowedNavigation) {
-        const cancel = () => {
-          if (this.props.history.getCurrentLocation().pathname !== locationBefore) {
-            this.props.history.replace(locationBefore);
-          }
-          clearBlocker();
-        };
+      if (targetPathname === currentPathname) {
+        blocker.proceed();
+      } else if (this.configurationModified && targetPathname !== this.allowedNavigation) {
         this.navigationBlocker = Modal.confirm({
           title: 'You have unsaved changes. Continue?',
-          style: {
-            wordWrap: 'break-word'
-          },
-          onOk () {
-            callback();
+          style: {wordWrap: 'break-word'},
+          onOk: () => {
+            blocker.proceed();
             clearBlocker();
           },
-          onCancel () {
-            cancel();
+          onCancel: () => {
+            blocker.reset();
+            clearBlocker();
           },
           okText: 'Yes',
           cancelText: 'No'
         });
-
       } else {
-        callback();
+        blocker.proceed();
       }
-    });
-  }
-
-  componentWillUnmount () {
-    if (this.navigationBlockedListener) {
-      this.navigationBlockedListener();
     }
-  }
-
-  componentDidUpdate (prevProps) {
     if (prevProps.currentConfiguration !== this.props.currentConfiguration ||
       prevProps.configurationId !== this.props.configurationId) {
       this.loadSelectedPipelineParameters();
@@ -1204,3 +1203,5 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
     }
   }
 }
+
+export default withBlocker(withRouter(DetachedConfiguration));

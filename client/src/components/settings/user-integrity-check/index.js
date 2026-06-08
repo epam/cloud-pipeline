@@ -19,9 +19,9 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {
   Alert,
+  AutoComplete,
   Button,
   Checkbox,
-  Icon,
   Input,
   message,
   Modal,
@@ -29,7 +29,8 @@ import {
   Select,
   Tooltip
 } from 'antd';
-import {computed} from 'mobx';
+import {CaretRightOutlined, ExclamationCircleOutlined, InfoCircleFilled, LockOutlined} from '@ant-design/icons';
+import {computed, makeObservable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import updateUserMetadata from './update-user-metadata';
 import addValueToSystemDictionary from './add-value-to-system-dictionary';
@@ -71,6 +72,13 @@ class UserIntegrityCheck extends React.Component {
     filters: []
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      dictionaries: computed
+    });
+  }
+
   get filteredUsers () {
     const {
       users = []
@@ -108,7 +116,6 @@ class UserIntegrityCheck extends React.Component {
     }, this.fetchUsersAttributes);
   };
 
-  @computed
   get dictionaries () {
     const {systemDictionaries} = this.props;
     return getDictionaries(systemDictionaries.loaded ? systemDictionaries.value : []);
@@ -511,7 +518,7 @@ class UserIntegrityCheck extends React.Component {
               >
                 <span className={styles.userNameCell}>
                   {
-                    blocked && (<Icon type="lock" />)
+                    blocked && (<LockOutlined />)
                   }
                   <UserName userName={user.userName} />
                 </span>
@@ -530,10 +537,7 @@ class UserIntegrityCheck extends React.Component {
                         </ul>
                       )}
                     >
-                      <Icon
-                        type="exclamation-circle-o"
-                        className={classNames(styles.issues, 'cp-setting-warning')}
-                      />
+                      <ExclamationCircleOutlined className={classNames(styles.issues, 'cp-setting-warning')} />
                     </Tooltip>
                   )
                 }
@@ -547,7 +551,7 @@ class UserIntegrityCheck extends React.Component {
                   return (
                     <td key={column}>
                       <div className={styles.cell}>
-                        <Select
+                        <AutoComplete
                           className={
                             classNames(
                               'cp-settings-users-integrity-check',
@@ -558,7 +562,6 @@ class UserIntegrityCheck extends React.Component {
                                   this.isNewValue(dictionary, userMetadata[column])
                               })
                           }
-                          mode="combobox"
                           size="large"
                           style={{flex: 1}}
                           allowClear
@@ -577,29 +580,29 @@ class UserIntegrityCheck extends React.Component {
                               ? userMetadata[column]
                               : undefined
                           }
-                          dropdownMatchSelectWidth={false}
+                          popupMatchSelectWidth={false}
                         >
                           {
                             this.isNewValue(dictionary, userMetadata[column]) && (
-                              <Select.Option
+                              <AutoComplete.Option
                                 key={userMetadata[column]}
                                 value={userMetadata[column]}
                               >
                                 {userMetadata[column]} <i>(new value)</i>
-                              </Select.Option>
+                              </AutoComplete.Option>
                             )
                           }
                           {
                             (dictionary.values || []).map((value) => (
-                              <Select.Option
+                              <AutoComplete.Option
                                 key={value.id}
                                 value={value.value || ''}
                               >
                                 {value.value || (<i>Empty value</i>)}
-                              </Select.Option>
+                              </AutoComplete.Option>
                             ))
                           }
-                        </Select>
+                        </AutoComplete>
                         {
                           fieldParentLink && (
                             <Tooltip
@@ -608,19 +611,14 @@ class UserIntegrityCheck extends React.Component {
                                   <div>This is linked value</div>
                                   <div className={styles.linkDescription}>
                                     <span>{fieldParentLink.from}:{fieldParentLink.fromValue}</span>
-                                    <Icon
-                                      type="caret-right"
-                                    />
+                                    <CaretRightOutlined />
                                     <span>{fieldParentLink.to}:{fieldParentLink.toValue}</span>
                                   </div>
                                 </div>
                               )}
                               getPopupContainer={node => node.parentNode}
                             >
-                              <Icon
-                                className={styles.cellInfo}
-                                type="info-circle"
-                              />
+                              <InfoCircleFilled className={styles.cellInfo} />
                             </Tooltip>
                           )
                         }
@@ -671,7 +669,7 @@ class UserIntegrityCheck extends React.Component {
     } = this.state;
     if (error) {
       return (
-        <Alert type="error" message={error} />
+        <Alert type="error" title={error} />
       );
     }
     if (pending) {
@@ -703,7 +701,7 @@ class UserIntegrityCheck extends React.Component {
           onChange={onChangeFilters}
           mode="multiple"
           getPopupContainer={node => node.parentNode}
-          dropdownStyle={{zIndex: 1054}}
+          styles={{popup: {root: {zIndex: 1054}}}}
         >
           <Select.Option key={FILTERS.blocked} value={FILTERS.blocked}>
             Blocked users
@@ -751,7 +749,7 @@ class UserIntegrityCheck extends React.Component {
         return (
           <Alert
             type="success"
-            message="No issues found"
+            title="No issues found"
             showIcon
           />
         );
@@ -802,11 +800,11 @@ class UserIntegrityCheck extends React.Component {
           title="Integrity check results"
           footer={false}
           onCancel={onClose}
-          visible={visible}
+          open={visible}
         >
           <Alert
             type="success"
-            message="No issues found"
+            title="No issues found"
             showIcon
           />
         </Modal>
@@ -816,9 +814,9 @@ class UserIntegrityCheck extends React.Component {
       <Modal
         className={styles.modal}
         title="Integrity check results"
-        visible={visible}
+        open={visible}
         onCancel={onClose}
-        bodyStyle={{padding: '10px'}}
+        styles={{body: {padding: '10px'}}}
         width={'90vw'}
         footer={(
           <div className={styles.footer}>
@@ -874,7 +872,7 @@ class UserIntegrityCheck extends React.Component {
         </div>
       </Modal>
     );
-  };
+  }
 }
 
 UserIntegrityCheck.propTypes = {

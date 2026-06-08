@@ -15,19 +15,21 @@
  */
 
 import React from 'react';
+import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
-import {observable} from 'mobx';
+import {
+  observer} from 'mobx-react';
+import {observable, makeObservable} from 'mobx';
 import {
   Row,
   Upload,
   Button,
-  Icon,
   Modal,
   Progress,
   Col,
   Tooltip
 } from 'antd';
+import {UploadOutlined, ReloadOutlined, CloseOutlined} from '@ant-design/icons';
 import S3Storage, {MAX_FILE_SIZE_DESCRIPTION} from '../../models/s3-upload/s3-storage';
 import DataStorageGenerateUploadUrl from '../../models/dataStorage/DataStorageGenerateUploadUrl';
 
@@ -61,9 +63,17 @@ class UploadButton extends React.Component {
     synchronousUploadingFiles: []
   };
 
-  @observable s3Storage;
-  @observable s3StorageError;
+  s3Storage;
+  s3StorageError;
   uploadButton;
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      s3Storage: observable,
+      s3StorageError: observable
+    });
+  }
 
   componentDidMount () {
     const {onInitialized} = this.props;
@@ -71,15 +81,17 @@ class UploadButton extends React.Component {
   }
 
   triggerClick = () => {
-    if (
-      this.uploadButton &&
-      this.uploadButton.refs &&
-      this.uploadButton.refs.upload &&
-      this.uploadButton.refs.upload.uploader &&
-      this.uploadButton.refs.upload.uploader.fileInput &&
-      this.uploadButton.refs.upload.uploader.fileInput.click
-    ) {
-      this.uploadButton.refs.upload.uploader.fileInput.click();
+    // In antd 4.x, we need to find the file input through the DOM
+    // since refs no longer expose internal component structure
+    if (this.uploadButton) {
+      // Try to find the file input element in the Upload component
+      const uploadNode = ReactDOM.findDOMNode(this.uploadButton);
+      if (uploadNode) {
+        const fileInput = uploadNode.querySelector('input[type="file"]');
+        if (fileInput && fileInput.click) {
+          fileInput.click();
+        }
+      }
     }
   };
 
@@ -579,7 +591,7 @@ class UploadButton extends React.Component {
         id="upload-button"
         disabled={this.props.disabled || (this.props.uploadToS3 && !!this.s3StorageError)}
       >
-        <Icon type="upload" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
+        <UploadOutlined style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
         <span style={{lineHeight: 'inherit', verticalAlign: 'middle'}}>{this.props.title}</span>
       </Button>
     );
@@ -624,7 +636,7 @@ class UploadButton extends React.Component {
           title="Uploading files..."
           closable={this.state.uploadInfoClosable}
           onCancel={this.hideUploadInfo}
-          visible={this.state.uploadInfoVisible}>
+          open={this.state.uploadInfoVisible}>
           {
             this.state.uploadingFiles.map(f => {
               let status = 'active';
@@ -674,7 +686,7 @@ class UploadButton extends React.Component {
                             <Button
                               size="small"
                               shape="circle"
-                              icon="reload"
+                              icon={<ReloadOutlined />}
                               onClick={() => f.retryCb()} />
                           }
                           {
@@ -682,8 +694,8 @@ class UploadButton extends React.Component {
                             <Button
                               size="small"
                               shape="circle"
-                              type="danger"
-                              icon="close"
+                              danger
+                              icon={<CloseOutlined />}
                               onClick={() => f.cancelCb()} />
                           }
                         </Row>

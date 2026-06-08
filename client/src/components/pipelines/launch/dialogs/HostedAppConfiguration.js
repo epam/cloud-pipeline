@@ -18,11 +18,11 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {
   Button,
-  Icon,
   Input,
   InputNumber,
   Modal
 } from 'antd';
+import {DeleteOutlined, PlusOutlined, SettingOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import styles from './HostedAppConfiguration.css';
 
@@ -204,7 +204,7 @@ class HostedAppConfigurationDialog extends React.Component {
     return (
       <Modal
         title="Configure internal DNS"
-        visible={visible}
+        open={visible}
         onCancel={onClose}
         footer={(
           <div
@@ -215,7 +215,7 @@ class HostedAppConfigurationDialog extends React.Component {
                 configuration
                   ? (
                     <Button
-                      type="danger"
+                      danger
                       onClick={onRemove}
                     >
                       Remove configuration
@@ -350,10 +350,10 @@ class HostedAppConfigurationDialog extends React.Component {
               />
               <Button
                 size="small"
-                type="danger"
+                danger
                 onClick={this.onRemovePorts(index)}
               >
-                <Icon type="delete" />
+                <DeleteOutlined />
               </Button>
             </div>
           ), portsErrors && portsErrors[index] && (
@@ -393,7 +393,7 @@ class HostedAppConfigurationDialog extends React.Component {
           <Button
             onClick={this.onAddPorts}
           >
-            <Icon type="plus" /> Add ports configuration
+            <PlusOutlined /> Add ports configuration
           </Button>
         </div>
         {
@@ -456,7 +456,7 @@ class HostedAppConfiguration extends React.Component {
     if (!value) {
       return (
         <span className={styles.configure}>
-          <Icon type="setting" />Configure
+          <SettingOutlined />Configure
         </span>
       );
     }
@@ -496,7 +496,7 @@ class HostedAppConfiguration extends React.Component {
         }
         <span style={{marginRight: 5}}>)</span>
         <span className={styles.configure}>
-          <Icon type="setting" />Configure
+          <SettingOutlined />Configure
         </span>
       </div>
     );

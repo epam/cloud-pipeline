@@ -18,7 +18,8 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import PropTypes from 'prop-types';
 import SplitPane from 'react-split-pane';
-import {Alert, Button, Col, Icon, Modal, Row, Select, Tree} from 'antd';
+import {Alert, AutoComplete, Button, Col, Modal, Row, Tree} from 'antd';
+import {FolderOutlined, SettingOutlined} from '@ant-design/icons';
 import Folder from '../../browser/Folder';
 import LoadingView from '../../../special/LoadingView';
 import {
@@ -80,14 +81,14 @@ export default class ConfigurationBrowser extends React.Component {
     }
   };
   onExpand = (expandedKeys, {expanded, node}) => {
-    const item = getTreeItemByKey(node.props.eventKey, this.rootItems);
+    const item = getTreeItemByKey(node.key, this.rootItems);
     if (item) {
       expandItem(item, expanded);
     }
     this.setState({expandedKeys: getExpandedKeys(this.rootItems)});
   };
   onSelect = (selectedKeys, {node}) => {
-    const item = getTreeItemByKey(node.props.eventKey, this.rootItems);
+    const item = getTreeItemByKey(node.key, this.rootItems);
     if (item.type === ItemTypes.folder) {
       this.onSelectFolder(item.id);
     }
@@ -166,11 +167,10 @@ export default class ConfigurationBrowser extends React.Component {
     };
 
     return (
-      <Select
+      <AutoComplete
         style={{width: '100%'}}
         disabled={!this.isExpansionExpressionAvailable}
         value={this.state.expansionExpression}
-        mode="combobox"
         filterOption={false}
         onChange={handleSearch}
         onFocus={() => {
@@ -187,14 +187,14 @@ export default class ConfigurationBrowser extends React.Component {
               currentValue = parseValue.join('.') + '.' + field.name;
             }
             return (
-              <Select.Option
+              <AutoComplete.Option
                 key={field.name}
                 value={currentValue}>
                 {field.name}
-              </Select.Option>);
+              </AutoComplete.Option>);
           })
         }
-      </Select>
+      </AutoComplete>
     );
   };
   updateState = () => {
@@ -242,10 +242,10 @@ export default class ConfigurationBrowser extends React.Component {
   }
 
   renderItemTitle (item) {
-    let icon;
+    let IconComponent;
     switch (item.type) {
-      case ItemTypes.folder: icon = 'folder'; break;
-      case ItemTypes.configuration: icon = 'setting'; break;
+      case ItemTypes.folder: IconComponent = FolderOutlined; break;
+      case ItemTypes.configuration: IconComponent = SettingOutlined; break;
     }
     let name = item.name;
     if (item.searchResult) {
@@ -268,34 +268,22 @@ export default class ConfigurationBrowser extends React.Component {
       <span
         id={`pipelines-library-tree-node-${item.key}-name`}
         className={styles.treeItemTitle}>
-        {icon && <Icon type={icon} />}{name}
+        {IconComponent && <IconComponent />}{name}
       </span>
     );
   }
 
-  generateTreeItems (items) {
+  getTreeData (items) {
     return formatTreeItems(items, {preferences: this.props.preferences})
-      .map(item => {
-        if (item.isLeaf) {
-          return (
-            <Tree.TreeNode
-              className={`pipelines-library-tree-node-${item.key}`}
-              title={this.renderItemTitle(item)}
-              key={item.key}
-              isLeaf={item.isLeaf} />
-          );
-        } else {
-          return (
-            <Tree.TreeNode
-              className={`pipelines-library-tree-node-${item.key}`}
-              title={this.renderItemTitle(item)}
-              key={item.key}
-              isLeaf={item.isLeaf}>
-              {this.generateTreeItems(item.children)}
-            </Tree.TreeNode>
-          );
-        }
-      });
+      .map(item => ({
+        key: item.key,
+        title: this.renderItemTitle(item),
+        isLeaf: item.isLeaf,
+        className: `pipelines-library-tree-node-${item.key}`,
+        ...(item.children && !item.isLeaf
+          ? {children: this.getTreeData(item.children)}
+          : {})
+      }));
   }
 
   filterConfigurations = (item, type) => {
@@ -318,20 +306,20 @@ export default class ConfigurationBrowser extends React.Component {
     return (
       <Tree
         className={styles.libraryTree}
+        treeData={this.getTreeData(this.rootItems)}
         onSelect={this.onSelect}
         onExpand={this.onExpand}
         checkStrictly
         expandedKeys={this.state.expandedKeys}
-        selectedKeys={this.state.selectedKeys} >
-        {this.generateTreeItems(this.rootItems)}
-      </Tree>
+        selectedKeys={this.state.selectedKeys}
+      />
     );
   }
 
   render () {
     let content = <LoadingView />;
     if (!this.props.tree || (!this.props.tree.pending && this.props.tree.error)) {
-      content = <Alert message="Error retrieving configurations" type="error" />;
+      content = <Alert title="Error retrieving configurations" type="error" />;
     } else if (!this.props.tree.pending) {
       content = (
         <SplitPane
@@ -405,7 +393,7 @@ export default class ConfigurationBrowser extends React.Component {
             </Col>
           </Row>
         }
-        visible={this.props.visible}>
+        open={this.props.visible}>
         <Row style={{height: 450}}>
           {content}
         </Row>

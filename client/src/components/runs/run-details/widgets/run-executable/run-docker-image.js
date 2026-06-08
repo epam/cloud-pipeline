@@ -1,7 +1,11 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Link} from 'react-router';
-import {Icon, Popover} from 'antd';
+import {
+  Link} from 'react-router-dom';
+import {
+  Popover
+} from 'antd';
+import {ToolOutlined} from '@ant-design/icons';
 import {inject, observer} from 'mobx-react';
 import {getDockerImage} from '../../../../../utils/get-docker-image';
 import ToolImage from '../../../../../models/tools/ToolImage';
@@ -34,7 +38,7 @@ function RunDockerImage (props) {
                 style={style}
               />
             ) : (
-              <Icon type="tool" />
+              <ToolOutlined />
             )
           }
           <Link to={`/tool/${toolInfo.tool.id}`}>

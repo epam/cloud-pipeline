@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Icon, Input, message, Tooltip} from 'antd';
+import {Input, message, Tooltip} from 'antd';
+import {EditOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import styles from './EditableField.css';
 
@@ -118,10 +119,10 @@ export default class EditableField extends React.Component {
       options.style = style;
     }
     const ref = (control) => {
-      if (!this.control && control && control.refs && control.refs.input) {
+      if (!this.control && control) {
         this.control = control;
-        control.refs.input.focus();
-        this.moveCursorToEnd(control.refs.input);
+        control.focus();
+        this.moveCursorToEnd(control);
       }
     };
     return (
@@ -180,7 +181,7 @@ export default class EditableField extends React.Component {
               {[styles.notDisplayed]: this.props.readOnly}
             )}
           >
-            <Icon type="edit" style={{marginRight: 10}} />
+            <EditOutlined style={{marginRight: 10}} />
           </span>
         </div>
       </Tooltip>

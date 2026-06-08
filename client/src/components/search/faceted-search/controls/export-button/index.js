@@ -16,17 +16,18 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {computed} from 'mobx';
-import {inject, observer} from 'mobx-react';
-import {Link} from 'react-router';
+import {computed, makeObservable} from 'mobx';
+import {inject,
+  observer} from 'mobx-react';
+import {Link} from 'react-router-dom';
 import {
   Dropdown,
-  Icon,
   message,
   Button,
-  Modal
+  Modal,
+  Space
 } from 'antd';
-import Menu, {MenuItem, Divider} from 'rc-menu';
+import {BarsOutlined, DownloadOutlined, DownOutlined} from '@ant-design/icons';
 import FileSaver from 'file-saver';
 import ExportConfigurationModal from './configuration-modal';
 import {getSortingPayload} from '../../utilities';
@@ -81,8 +82,44 @@ function checkTemplatePermissions (userInfo, template) {
   });
 }
 
-function ExportMenu ({onExport, onExportTemplate, onConfigure, templates, selectedItems = []}) {
-  const handle = ({key}) => {
+function getExportMenuItems ({
+  templates,
+  selectedItems = []
+}) {
+  const selected = selectedItems.length;
+  const items = [
+    {
+      key: 'export',
+      icon: <DownloadOutlined style={{marginRight: 10}} />,
+      label: 'Default configuration'
+    },
+    {
+      key: 'configure',
+      icon: <BarsOutlined style={{marginRight: 10}} />,
+      label: 'Custom configuration'
+    }
+  ];
+  if (templates.length > 0) {
+    items.push({type: 'divider', key: 'divider'});
+    templates.forEach(template => {
+      items.push({
+        key: `template|${template.key}`,
+        label: (
+          <span>
+            {template['friendly_name'] || template.key}
+            <span className="cp-text-not-important">
+              {selected ? ` - ${selected} file${selected > 1 ? 's' : ''}` : ''}
+            </span>
+          </span>
+        )
+      });
+    });
+  }
+  return items;
+}
+
+function getExportMenuClickHandler ({onExport, onExportTemplate, onConfigure, templates}) {
+  return ({key}) => {
     const [exportType, exportKey] = key.split('|');
     switch (exportType) {
       case 'export':
@@ -97,7 +134,7 @@ function ExportMenu ({onExport, onExportTemplate, onConfigure, templates, select
         break;
       case 'template':
         if (typeof onExportTemplate === 'function') {
-          const currentTemplate = templates.find(({key}) => key === exportKey);
+          const currentTemplate = templates.find(({key: templateKey}) => templateKey === exportKey);
           onExportTemplate(currentTemplate);
         }
         break;
@@ -105,35 +142,6 @@ function ExportMenu ({onExport, onExportTemplate, onConfigure, templates, select
         break;
     }
   };
-  const selected = selectedItems.length;
-  const templatesSection = templates.length ? [
-    <Divider key="divider" />,
-    ...templates.map(template => (
-      <MenuItem key={`template|${template.key}`}>
-        {template['friendly_name'] || template.key}
-        <span className="cp-text-not-important">
-          {selected ? ` - ${selected} file${selected > 1 ? 's' : ''}` : ''}
-        </span>
-      </MenuItem>
-    ))
-  ] : [];
-  return (
-    <Menu
-      onClick={handle}
-      selectedKeys={[]}
-      style={{cursor: 'pointer'}}
-    >
-      <MenuItem key="export">
-        <Icon type="download" style={{marginRight: 10}} />
-        Default configuration
-      </MenuItem>
-      <MenuItem key="configure">
-        <Icon type="bars" style={{marginRight: 10}} />
-        Custom configuration
-      </MenuItem>
-      {templatesSection}
-    </Menu>
-  );
 }
 
 @inject('preferences', 'authenticatedUserInfo', 'dataStorages')
@@ -145,7 +153,14 @@ class ExportButton extends React.Component {
     dropdownVisible: false
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      exportTemplates: computed,
+      isAdmin: computed
+    });
+  }
+
   get exportTemplates () {
     const {preferences} = this.props;
     if (preferences?.loaded) {
@@ -154,7 +169,6 @@ class ExportButton extends React.Component {
     return undefined;
   }
 
-  @computed
   get isAdmin () {
     const {authenticatedUserInfo} = this.props;
     if (authenticatedUserInfo.loaded) {
@@ -369,29 +383,47 @@ class ExportButton extends React.Component {
         }
         return checkTemplatePermissions(this.props.authenticatedUserInfo.value, template);
       });
+    const exportMenuItems = getExportMenuItems({
+      onExport: this.onDefaultExport,
+      onExportTemplate: this.onExportTemplate,
+      onConfigure: this.onConfigure,
+      templates,
+      selectedItems: this.props.selectedItems
+    });
+    const exportMenuClick = getExportMenuClickHandler({
+      onExport: this.onDefaultExport,
+      onExportTemplate: this.onExportTemplate,
+      onConfigure: this.onConfigure,
+      templates
+    });
     return (
-      <Dropdown.Button
-        overlay={(
-          <ExportMenu
-            onExport={this.onDefaultExport}
-            onExportTemplate={this.onExportTemplate}
-            onConfigure={this.onConfigure}
-            templates={templates}
-            storages={this.storages}
-            selectedItems={this.props.selectedItems}
-          />
-        )}
-        className={className}
-        style={style}
-        size={size}
-        type={type}
-        trigger={['click']}
-        visible={dropdownVisible}
-        onVisibleChange={this.handleDropDownVisible}
-        onClick={this.onDefaultExport}
-      >
-        <Icon type="download" />
-        Export
+      <>
+        <Space.Compact className={className} style={style}>
+          <Button
+            size={size}
+            type={type}
+            onClick={this.onDefaultExport}
+            icon={<DownloadOutlined />}
+          >
+            Export
+          </Button>
+          <Dropdown
+            menu={{
+              items: exportMenuItems,
+              onClick: exportMenuClick,
+              style: {cursor: 'pointer'}
+            }}
+            trigger={['click']}
+            open={dropdownVisible}
+            onOpenChange={this.handleDropDownVisible}
+          >
+            <Button
+              size={size}
+              type={type}
+              icon={<DownOutlined />}
+            />
+          </Dropdown>
+        </Space.Compact>
         <ExportConfigurationModal
           visible={modalVisible}
           onCancel={this.closeModal}
@@ -400,7 +432,7 @@ class ExportButton extends React.Component {
         />
         <Modal
           title={null}
-          visible={!!this.state.savedExport}
+          open={!!this.state.savedExport}
           onCancel={this.closeExportResultModal}
           width="fit-content"
           style={{
@@ -417,7 +449,7 @@ class ExportButton extends React.Component {
         >
           {this.renderSavedExportContent()}
         </Modal>
-      </Dropdown.Button>
+      </>
     );
   }
 }

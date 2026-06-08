@@ -15,7 +15,7 @@
  */
 
 import Remote from '../basic/Remote';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import defer from '../../utils/defer';
 import GoogleApi from '../google/GoogleApi';
 
@@ -24,6 +24,10 @@ export default class FireCloudMethodSnapshotConfigurations extends Remote {
   initialized = false;
   constructor (googleApi, namespace, method, snapshot) {
     super();
+    makeObservable(this, {
+      loaded: computed,
+      isSignedIn: computed
+    });
     this.googleApi = googleApi;
     this.url = `/firecloud/methods/${namespace}/${method}/${snapshot}/configurations`;
   }
@@ -36,7 +40,6 @@ export default class FireCloudMethodSnapshotConfigurations extends Remote {
     }
   };
 
-  @computed
   get loaded () {
     if (this.isSignedIn) {
       this._fetchIfNeeded();
@@ -45,7 +48,6 @@ export default class FireCloudMethodSnapshotConfigurations extends Remote {
     return false;
   }
 
-  @computed
   get isSignedIn () {
     if (this.googleApi) {
       return this.googleApi.isSignedIn;

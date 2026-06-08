@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Radio, Icon} from 'antd';
+import {Radio} from 'antd';
+import {CheckCircleOutlined, ClockCircleOutlined, ForkOutlined, HomeOutlined, PlayCircleFilled, PlayCircleOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 
 import styles from './theme-card.css';
@@ -65,9 +66,9 @@ function ThemeCard (
           <div className="cp-theme-preview-navigation-menu-item">
             <img className={styles.previewLogo} src="logo.png" />
           </div>
-          <div className="cp-theme-preview-navigation-menu-item selected"><Icon type="home" /></div>
-          <div className="cp-theme-preview-navigation-menu-item"><Icon type="fork" /></div>
-          <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center'}} className={classNames(styles.runIcon, 'cp-runs-menu-item active')}><Icon type="play-circle" /></div>
+          <div className="cp-theme-preview-navigation-menu-item selected"><HomeOutlined /></div>
+          <div className="cp-theme-preview-navigation-menu-item"><ForkOutlined /></div>
+          <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center'}} className={classNames(styles.runIcon, 'cp-runs-menu-item active')}><PlayCircleFilled /></div>
         </aside>
         <div style={{flex: '1 1 auto', display: 'flex', flexDirection: 'column'}}>
           <div className={styles.previewTopContainer}>
@@ -82,11 +83,11 @@ function ThemeCard (
             <main className={classNames('cp-theme-preview-panel', styles.previewMain)}>
               <section className={classNames(styles.previewText, 'cp-theme-preview-text')}>&nbsp;</section>
               <section className={classNames(styles.previewSection, 'cp-theme-priview-panel-card')}>
-                <Icon style={{marginLeft: '5px'}} type="play-circle-o" className="cp-theme-priview-runs-table-icon-blue" /></section>
+                <PlayCircleOutlined style={{marginLeft: '5px'}} className="cp-theme-priview-runs-table-icon-blue" /></section>
               <section className={classNames(styles.previewSection, 'cp-theme-priview-panel-card')}>
-                <Icon style={{marginLeft: '5px'}} type="clock-circle-o" className="cp-theme-priview-runs-table-icon-yellow" /></section>
+                <ClockCircleOutlined style={{marginLeft: '5px'}} className="cp-theme-priview-runs-table-icon-yellow" /></section>
               <section className={classNames(styles.previewSection, 'cp-theme-priview-panel-card')}>
-                <Icon style={{marginLeft: '5px'}} type="check-circle-o" className="cp-theme-priview-runs-table-icon-green" /></section>
+                <CheckCircleOutlined style={{marginLeft: '5px'}} className="cp-theme-priview-runs-table-icon-green" /></section>
             </main>
             <section className={classNames('cp-theme-preview-panel', styles.previewPanel)}>&nbsp;</section>
           </div>

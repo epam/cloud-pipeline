@@ -1,0 +1,212 @@
+/*
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+.cp-runs-table-service-url-run {
+  background-color: var(--cp-color-bg-service-card);
+}
+
+.cp-runs-table-icon-green {
+  color: var(--cp-color-success);
+}
+
+.cp-runs-table-icon-blue {
+  color: var(--cp-color-info);
+}
+
+.cp-runs-table-icon-red {
+  color: var(--cp-color-error);
+}
+
+.cp-runs-table-icon-yellow {
+  color: var(--cp-color-warning);
+}
+
+.cp-filter-popover-container {
+  background-color: var(--cp-color-bg-elevated);
+  box-shadow: 0 1px 6px var(--cp-color-card-shadow);
+}
+
+.cp-runs-day-picker .DayPicker-Weekday {
+  color: var(--cp-color-text-secondary);
+}
+
+.cp-runs-day-picker .DayPicker-Weekday abbr[title] {
+  text-decoration: none;
+}
+
+.cp-runs-day-picker .DayPicker-Day--outside {
+  color: var(--cp-color-text-secondary);
+}
+
+.cp-runs-day-picker .DayPicker-Day {
+  border-color: color-mix(in srgb, var(--cp-color-border-card) 80%, transparent);
+}
+
+.cp-runs-day-picker .DayPicker-Day:hover {
+  color: var(--cp-color-primary);
+}
+
+.cp-runs-day-picker .DayPicker-Day--today {
+  color: var(--cp-color-primary-active);
+}
+
+.DayPicker-Day--selected:not(.DayPicker-Day--disabled):not(.DayPicker-Day--outside) {
+  background-color: var(--cp-color-primary);
+  color: var(--cp-color-primary-on);
+}
+
+.DayPicker-Day--selected:not(.DayPicker-Day--disabled):not(.DayPicker-Day--outside):hover {
+  background-color: var(--cp-color-primary-active);
+  color: var(--cp-color-primary-on);
+  outline: none;
+}
+
+.cp-runs-advanced-filter-input .CodeMirror-wrap {
+  background-color: var(--cp-color-bg-input);
+  border: 1px solid var(--cp-color-border-input);
+}
+
+.cp-runs-advanced-filter-input-error .CodeMirror-wrap {
+  background-color: var(--cp-color-bg-input);
+  border: 1px solid var(--cp-color-red);
+}
+
+.cp-runs-advanced-filter-input-error .CodeMirror-line span,
+.cp-runs-advanced-filter-input .CodeMirror-line span {
+  color: var(--cp-color-text) !important;
+}
+
+.cp-run-instance-tag {
+  background-color: var(--cp-color-bg-elevated-header);
+  border: 1px solid var(--cp-color-border-card);
+}
+
+.cp-run-nested-run-link,
+.cp-run-nested-run-link:active,
+.cp-run-nested-run-link:focus,
+.cp-run-nested-run-link:visited {
+  color: var(--cp-color-text-accent);
+}
+
+.tooltip-text {
+  color: var(--cp-color-tooltip-accent);
+}
+
+.cp-wdl-task[data-type=VisualStep] rect,
+.cp-wdl-task[data-type=VisualGroup] rect,
+.cp-wdl-task[data-type=VisualWorkflow] rect {
+  fill: var(--cp-color-bg-elevated);
+}
+
+.cp-wdl-task[data-taskstatus=running] rect {
+  fill: color-mix(in srgb, var(--cp-color-info) 20%, transparent);
+  stroke: var(--cp-color-info);
+}
+
+.cp-wdl-task[data-taskstatus=running] text {
+  fill: var(--cp-color-info);
+}
+
+.cp-wdl-task[data-taskstatus=success] rect {
+  fill: color-mix(in srgb, var(--cp-color-success) 20%, transparent);
+  stroke: var(--cp-color-success);
+  opacity: 1;
+}
+
+.cp-wdl-task[data-taskstatus=success] text {
+  fill: var(--cp-color-success);
+}
+
+.cp-wdl-task[data-taskstatus=stopped] rect {
+  fill: var(--cp-color-bg-elevated);
+  stroke: var(--cp-color-text-secondary);
+  opacity: 1;
+}
+
+.cp-wdl-task[data-taskstatus=stopped] text {
+  fill: var(--cp-color-text-secondary);
+}
+
+.cp-wdl-task[data-taskstatus=failure] rect {
+  fill: color-mix(in srgb, var(--cp-color-error) 20%, transparent);
+  stroke: var(--cp-color-error);
+  opacity: 1;
+}
+
+.cp-wdl-task[data-taskstatus=failure] text {
+  fill: var(--cp-color-error);
+}
+
+.cp-stop-run-modal-confirm-icon {
+  color: var(--cp-color-yellow);
+}
+
+.cp-maintenance-rule-deleted {
+  background-color: color-mix(in srgb, var(--cp-color-error) 10%, transparent);
+}
+
+.cp-runs-autocomplete-menu-item {
+  border-bottom: 1px solid var(--cp-color-border-input);
+}
+
+.cp-run-name.editable {
+  outline: 1px solid transparent;
+  padding: 0 2px;
+}
+
+.cp-run-name.editable:hover {
+  outline: 1px solid var(--cp-color-border);
+  background-color: var(--cp-color-interactive-selected-bg) !important;
+}
+
+.cp-run-timeline-table td,
+.cp-run-timeline-table th {
+  background-color: var(--cp-color-bg-container);
+  color: var(--cp-color-text);
+  border: 1px solid var(--cp-color-border);
+}
+
+.cp-console-output {
+  background-color: var(--cp-color-console-bg);
+  color: var(--cp-color-console-text);
+}
+
+.cp-console-output-details {
+  color: var(--cp-color-console-text-details)
+}
+
+.cp-console-follow-log {
+  color: var(--cp-color-console-text);
+}
+
+.cp-console-scroll-down-indicator {
+  background-color: var(--cp-color-bg-container);
+  border: 1px solid var(--cp-color-border);
+  color: var(--cp-color-text);
+}
+
+.cp-run-engine-tasks-group.active,
+.cp-run-engine-tasks-group:hover,
+.cp-run-engine-task.active,
+.cp-run-engine-task:hover,
+.cp-run-engine-task-cell.active,
+.cp-run-engine-task-cell:hover {
+  background-color: var(--cp-color-grey-faint);
+}
+
+.cp-run-engine-task-status-bar {
+  background-color: var(--cp-color-grey-faint);
+}

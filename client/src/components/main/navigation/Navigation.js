@@ -15,12 +15,14 @@
  */
 
 import React from 'react';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {withRouter} from '../../../utils/with-router';
+import {computed, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import {SERVER} from '../../../config';
-import {Button, Icon, message, Popover, Tooltip} from 'antd';
+import {Button, message, Popover, Tooltip} from 'antd';
+import {LeftOutlined, RightOutlined} from '@ant-design/icons';
 import PropTypes from 'prop-types';
 import PipelineRunInfo from '../../../models/pipelines/PipelineRunInfo';
 import CounterMenuItem from './CounterMenuItem';
@@ -40,7 +42,7 @@ import RunsFilterDescription from '../../runs/run-table/runs-filter-description'
   'userNotifications'
 )
 @observer
-export default class Navigation extends React.Component {
+class Navigation extends React.Component {
   static propTypes = {
     router: PropTypes.object,
     onLibraryCollapsedChange: PropTypes.func,
@@ -57,7 +59,25 @@ export default class Navigation extends React.Component {
     versionInfoVisible: false
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      notificationsEnabled: computed,
+      navigationItems: computed,
+      runsCount: computed,
+      notificationsCount: computed
+    });
+    this._isMounted = false;
+  }
+
+  componentDidMount () {
+    this._isMounted = true;
+  }
+
+  componentWillUnmount () {
+    this._isMounted = false;
+  }
+
   get notificationsEnabled () {
     const {preferences} = this.props;
     if (preferences.loaded) {
@@ -66,14 +86,12 @@ export default class Navigation extends React.Component {
     return false;
   }
 
-  @computed
   get navigationItems () {
     const {uiNavigation} = this.props;
     return uiNavigation.navigationItems
       .filter(item => !item.hidden);
   }
 
-  @computed
   get runsCount () {
     const {counter} = this.props;
     if (counter && counter.loaded) {
@@ -82,7 +100,6 @@ export default class Navigation extends React.Component {
     return 0;
   }
 
-  @computed
   get notificationsCount () {
     const {userNotifications} = this.props;
     if (userNotifications && userNotifications.loaded) {
@@ -117,6 +134,7 @@ export default class Navigation extends React.Component {
     } else if (key === 'logout') {
       invalidateEdgeTokens()
         .then(() => {
+          if (!this._isMounted) return;
           let url = `${SERVER}/saml/logout`;
           if (SERVER.endsWith('/')) {
             url = `${SERVER}saml/logout`;
@@ -131,16 +149,21 @@ export default class Navigation extends React.Component {
   };
 
   closeVersionInfoControl = () => {
-    this.setState({versionInfoVisible: false});
+    if (this._isMounted) {
+      this.setState({versionInfoVisible: false});
+    }
   };
 
   handleVersionInfoVisible = (visible) => {
-    this.setState({versionInfoVisible: visible});
+    if (this._isMounted) {
+      this.setState({versionInfoVisible: visible});
+    }
   };
 
   async navigateToRun (runId) {
     const info = new PipelineRunInfo(runId);
     await info.fetch();
+    if (!this._isMounted) return;
     if (info.error) {
       message.error(info.error, 5);
     } else {
@@ -185,6 +208,7 @@ export default class Navigation extends React.Component {
             />
           );
         }
+        const NavIcon = navigationItem.icon;
         if (navigationItem.key === Pages.billing && !this.props.billingEnabled) {
           return null;
         }
@@ -203,10 +227,7 @@ export default class Navigation extends React.Component {
                 text={this.getNavigationItemTitle(navigationItem.title)}
                 mouseEnterDelay={0.5}
                 overlay={this.getNavigationItemTitle(navigationItem.title)}>
-                <Icon
-                  style={navigationItem.iconStyle}
-                  type={navigationItem.icon}
-                />
+                {NavIcon ? <NavIcon style={navigationItem.iconStyle} /> : null}
               </Tooltip>
             </Link>
           );
@@ -258,10 +279,7 @@ export default class Navigation extends React.Component {
                 text={this.getNavigationItemTitle(navigationItem.title)}
                 mouseEnterDelay={0.5}
                 overlay={this.getNavigationItemTitle(navigationItem.title)}>
-                <Icon
-                  style={navigationItem.iconStyle}
-                  type={navigationItem.icon}
-                />
+                {NavIcon ? <NavIcon style={navigationItem.iconStyle} /> : null}
               </Tooltip>
             </Link>
           );
@@ -276,13 +294,11 @@ export default class Navigation extends React.Component {
             <Button
               id={`navigation-button-${navigationItem.key}`}
               key={navigationItem.key}
+              type="text"
               className={this.menuItemClassSelector(navigationItem, activeTabPath)}
               onClick={() => this.navigate(navigationItem)}
             >
-              <Icon
-                style={navigationItem.iconStyle}
-                type={navigationItem.icon}
-              />
+              {NavIcon ? <NavIcon style={navigationItem.iconStyle} /> : null}
             </Button>
           </Tooltip>
         );
@@ -319,10 +335,11 @@ export default class Navigation extends React.Component {
             }
             placement="right"
             trigger="click"
-            onVisibleChange={this.handleVersionInfoVisible}
-            visible={this.state.versionInfoVisible}>
+            onOpenChange={this.handleVersionInfoVisible}
+            open={this.state.versionInfoVisible}>
             <Button
               id="navigation-button-logo"
+              type="text"
               className="cp-navigation-menu-item">
               <div className="cp-navigation-item-logo">
                 {'\u00A0'}
@@ -344,11 +361,12 @@ export default class Navigation extends React.Component {
             activeTabPath === Pages.library &&
             <Button
               id="expand-collapse-library-tree-button"
+              type="text"
               onClick={this.props.onLibraryCollapsedChange}
               className="cp-navigation-menu-item"
               style={{position: 'absolute', left: 0, bottom: 0, right: 0}}
             >
-              <Icon type={this.props.collapsed ? 'right' : 'left'} />
+              {this.props.collapsed ? <RightOutlined /> : <LeftOutlined />}
             </Button>
           }
         </div>
@@ -356,3 +374,5 @@ export default class Navigation extends React.Component {
     );
   }
 }
+
+export default withRouter(Navigation);

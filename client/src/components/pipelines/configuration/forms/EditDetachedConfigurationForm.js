@@ -16,13 +16,13 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Button, Modal, Form, Input, Row, Col, Spin, Tabs} from 'antd';
+import {Button, Form, Modal, Input, Row, Col, Spin, Tabs} from 'antd';
 import PermissionsForm from '../../../roleModel/PermissionsForm';
 import roleModel from '../../../../utils/roleModel';
 
 @roleModel.authenticationInfo
-@Form.create()
 export default class EditDetachedConfigurationForm extends React.Component {
+  formRef = React.createRef();
 
   state = {
     activeTab: 'info',
@@ -60,15 +60,14 @@ export default class EditDetachedConfigurationForm extends React.Component {
 
   handleSubmit = (e) => {
     e.preventDefault();
-    this.props.form.validateFieldsAndScroll((err, values) => {
-      if (!err) {
+    this.formRef.current.validateFields()
+      .then((values) => {
         this.props.onSubmit(values);
-      }
-    });
+      })
+      .catch(() => {});
   };
 
   renderForm = () => {
-    const {getFieldDecorator} = this.props.form;
     const formItems = [];
     const writeAllowed = this.props.configuration
       ? roleModel.writeAllowed(this.props.configuration)
@@ -77,34 +76,30 @@ export default class EditDetachedConfigurationForm extends React.Component {
       <Form.Item
         key="configuration name"
         className="edit-configuration-form-name-container"
-        {...this.formItemLayout} label="Configuration name">
-        {getFieldDecorator('name',
-          {
-            rules: [{required: true, message: 'Configuration name is required'}],
-            initialValue: `${this.props.configuration ? this.props.configuration.name : ''}`
-          })(
-          <Input
-            disabled={this.props.pending || !writeAllowed}
-            ref={this.initializeNameInput}
-            onPressEnter={this.handleSubmit} />
-        )}
+        {...this.formItemLayout}
+        label="Configuration name"
+        name="name"
+        rules={[{required: true, message: 'Configuration name is required'}]}
+      >
+        <Input
+          disabled={this.props.pending || !writeAllowed}
+          ref={this.initializeNameInput}
+          onPressEnter={this.handleSubmit}
+        />
       </Form.Item>
     ));
     formItems.push((
       <Form.Item
         key="configuration description"
         className="edit-configuration-form-description-container"
-        {...this.formItemLayout} label="Configuration description">
-        {getFieldDecorator('description',
-          {
-            initialValue: `${this.props.configuration && this.props.configuration.description
-              ? this.props.configuration.description : ''}`
-          })(
-          <Input
-            type="textarea"
-            autosize={{minRows: 2, maxRows: 6}}
-            disabled={this.props.pending || !writeAllowed} />
-        )}
+        {...this.formItemLayout}
+        label="Configuration description"
+        name="description"
+      >
+        <Input.TextArea
+          autoSize={{minRows: 2, maxRows: 6}}
+          disabled={this.props.pending || !writeAllowed}
+        />
       </Form.Item>
     ));
     return formItems;
@@ -127,27 +122,29 @@ export default class EditDetachedConfigurationForm extends React.Component {
 
   getDeleteModalFooter = () => {
     return (
-      <Row type="flex" justify="space-between">
-        <Col span={12}>
-          <Row type="flex" justify="start">
-            <Button
-              id="edit-configuration-delete-dialog-cancel-button"
-              onClick={this.closeDeleteDialog}>Cancel</Button>
-          </Row>
-        </Col>
-        <Col span={12}>
-          <Row type="flex" justify="end">
-            {
-              roleModel.manager.configuration(
-                <Button
-                  id="edit-configuration-delete-dialog-delete-button"
-                  type="danger"
-                  onClick={() => this.onDeleteClicked()}>Delete</Button>
-              )
-            }
-          </Row>
-        </Col>
-      </Row>
+      <div className="cp-modal-footer-actions cp-modal-footer-actions--split">
+        <div className="cp-modal-footer-actions-group">
+          <Button
+            id="edit-configuration-delete-dialog-cancel-button"
+            onClick={this.closeDeleteDialog}
+          >
+            Cancel
+          </Button>
+        </div>
+        <div className="cp-modal-footer-actions-group cp-modal-footer-actions-group--end">
+          {
+            roleModel.manager.configuration(
+              <Button
+                id="edit-configuration-delete-dialog-delete-button"
+                danger
+                onClick={() => this.onDeleteClicked()}
+              >
+                Delete
+              </Button>
+            )
+          }
+        </div>
+      </div>
     );
   };
 
@@ -168,7 +165,7 @@ export default class EditDetachedConfigurationForm extends React.Component {
           <Button
             disabled={this.props.pending}
             id="edit-configuration-form-delete-button"
-            type="danger"
+            danger
             onClick={this.openDeleteDialog}>DELETE</Button>
           <div>
             <Button
@@ -189,7 +186,7 @@ export default class EditDetachedConfigurationForm extends React.Component {
           <Button
             disabled={this.props.pending}
             id="edit-configuration-form-delete-button"
-            type="danger"
+            danger
             onClick={this.openDeleteDialog}>DELETE</Button>
           <Button
             disabled={this.props.pending}
@@ -232,56 +229,68 @@ export default class EditDetachedConfigurationForm extends React.Component {
     const isReadOnly = this.props.configuration
       ? this.props.configuration.locked || !roleModel.writeAllowed(this.props.configuration)
       : false;
-    const {resetFields} = this.props.form;
     const modalFooter = this.getModalFooter(isNewConfiguration);
     const onClose = () => {
-      resetFields();
+      this.formRef.current && this.formRef.current.resetFields();
       this.setState({activeTab: 'info'});
     };
     return (
       <Modal
-        maskClosable={!this.props.pending}
+        mask={{closable: !this.props.pending}}
         afterClose={() => onClose()}
         closable={!this.props.pending}
-        visible={this.props.visible}
+        open={this.props.visible}
         title={
           isNewConfiguration
             ? (
-            this.props.pipelineTemplate
-              ? `Create configuration (${this.props.pipelineTemplate.id})`
-              : 'Create configuration'
-          )
+              this.props.pipelineTemplate
+                ? `Create configuration (${this.props.pipelineTemplate.id})`
+                : 'Create configuration'
+            )
             : 'Edit configuration info'
         }
         onCancel={this.props.onCancel}
         footer={this.state.activeTab === 'info' ? modalFooter : false}>
         <Spin spinning={this.props.pending}>
-          <Form className="edit-configuration-form">
+          <Form
+            ref={this.formRef}
+            className="edit-configuration-form"
+            initialValues={{
+              name: this.props.configuration ? this.props.configuration.name : '',
+              description: this.props.configuration && this.props.configuration.description
+                ? this.props.configuration.description : ''
+            }}
+          >
             <Tabs
               size="small"
               activeKey={this.state.activeTab}
-              onChange={this.onSectionChange}>
-              <Tabs.TabPane key="info" tab="Info">
-                {this.renderForm()}
-              </Tabs.TabPane>
-              {
-                this.props.configuration &&
-                this.props.configuration.id ?
-                  (
-                    <Tabs.TabPane key="permissions" tab="Permissions">
+              onChange={this.onSectionChange}
+              items={[
+                {
+                  key: 'info',
+                  label: 'Info',
+                  children: this.renderForm()
+                },
+                ...(this.props.configuration && this.props.configuration.id
+                  ? [{
+                    key: 'permissions',
+                    label: 'Permissions',
+                    children: (
                       <PermissionsForm
                         readonly={isReadOnly}
                         objectIdentifier={this.props.configuration.id}
-                        objectType="configuration" />
-                    </Tabs.TabPane>
-                  ) : undefined
-              }
-            </Tabs>
+                        objectType="configuration"
+                      />
+                    )
+                  }]
+                  : [])
+              ]}
+            />
           </Form>
         </Spin>
         <Modal
           onCancel={this.closeDeleteDialog}
-          visible={this.state.deleteDialogVisible}
+          open={this.state.deleteDialogVisible}
           title="Are you sure you want to delete configuration?"
           footer={this.getDeleteModalFooter()}>
           <p>This operation cannot be undone.</p>
@@ -291,8 +300,8 @@ export default class EditDetachedConfigurationForm extends React.Component {
   }
 
   initializeNameInput = (input) => {
-    if (input && input.refs && input.refs.input) {
-      this.nameInput = input.refs.input;
+    if (input) {
+      this.nameInput = input;
       this.nameInput.onfocus = function () {
         setTimeout(() => {
           this.selectionStart = (this.value || '').length;

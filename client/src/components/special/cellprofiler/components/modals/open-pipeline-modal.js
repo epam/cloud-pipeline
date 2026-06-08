@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Alert, Button, Checkbox, Icon, message, Modal, Table} from 'antd';
+import {Alert, Button, Checkbox, message, Modal, Table} from 'antd';
+import {LoadingOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import {observer} from 'mobx-react';
 import {loadAvailablePipelineGroups} from '../../model/analysis/analysis-pipeline-management';
@@ -80,7 +81,7 @@ class OpenPipelineModal extends React.Component {
     } = this.state;
     if (error) {
       return (
-        <Alert message={error} type="error" />
+        <Alert title={error} type="error" />
       );
     }
     if (pipelineFiles.length === 0 && pending) {
@@ -88,7 +89,7 @@ class OpenPipelineModal extends React.Component {
     }
     if (pipelineFiles.length === 0) {
       return (
-        <Alert message="Analysis pipelines not found" type="info" />
+        <Alert title="Analysis pipelines not found" type="info" />
       );
     }
     const pipelineIsSelected = pipeline => pipeline &&
@@ -114,7 +115,7 @@ class OpenPipelineModal extends React.Component {
         className: classNames(styles.analysisPipelineCell, styles.analysisPipelineCellName),
         render: (name, obj) => {
           if (obj.loading) {
-            return (<Icon type="loading" />);
+            return (<LoadingOutlined />);
           }
           return (
             <span>
@@ -168,10 +169,12 @@ class OpenPipelineModal extends React.Component {
         rowKey="key"
         size="small"
         rowClassName={() => classNames(styles.analysisPipelineRow)}
-        onRowClick={(pipeline, opts, event) => togglePipeline(pipeline, event)}
-        onExpand={onExpand}
-        expandedRowKeys={expandedKeys}
-        onExpandedRowsChange={keys => this.setState({expandedKeys: keys})}
+        onRow={(pipeline) => ({ onClick: (event) => togglePipeline(pipeline, event) })}
+        expandable={{
+          onExpand,
+          expandedRowKeys: expandedKeys,
+          onExpandedRowsChange: keys => this.setState({expandedKeys: keys})
+        }}
         bordered={false}
         pagination={{
           total: pipelineFiles.length,
@@ -244,12 +247,12 @@ class OpenPipelineModal extends React.Component {
     } = this.state;
     return (
       <Modal
-        visible={visible}
+        open={visible}
         width="50%"
         title="Open analysis pipeline"
         onCancel={onClose}
         closable={!opening}
-        maskClosable={!opening}
+        mask={{closable: !opening}}
         footer={(
           <div className={styles.modalFooter}>
             <Button

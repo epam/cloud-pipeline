@@ -14,12 +14,23 @@
  * limitations under the License.
  */
 
-import React from 'react';
-import {inject, observer} from 'mobx-react';
+import React, {useState} from 'react';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {withRouter} from '../../../../utils/with-router';
+import {withBlocker} from '../../../../utils/with-blocker';
 import classNames from 'classnames';
 import connect from '../../../../utils/connect';
-import {computed, observable} from 'mobx';
-import {Row, Tabs, Modal, Button, Alert, Icon, message} from 'antd';
+import {computed, observable, makeObservable} from 'mobx';
+import {Row,
+  Tabs,
+  Modal,
+  Button,
+  Alert,
+  message
+} from 'antd';
+import {PlusOutlined} from '@ant-design/icons';
 import {names} from '../../../../models/utils/ContextualPreference';
 import pipelines from '../../../../models/pipelines/Pipelines';
 import AllowedInstanceTypes from '../../../../models/utils/AllowedInstanceTypes';
@@ -36,9 +47,8 @@ import styles from './PipelineConfiguration.css';
 @connect({
   pipelines, preferences
 })
-@inject(({history, pipelines, routing, preferences}, {onReloadTree, params}) => {
+@inject(({pipelines, routing, preferences}, {onReloadTree, params}) => {
   return {
-    history,
     onReloadTree,
     currentConfiguration: params.configuration,
     pipeline: pipelines.getPipeline(params.id),
@@ -52,14 +62,11 @@ import styles from './PipelineConfiguration.css';
   };
 })
 @observer
-export default class PipelineConfiguration extends React.Component {
-  @observable allowedInstanceTypes;
+class PipelineConfiguration extends React.Component {
+  allowedInstanceTypes;
+  configurationModified;
 
-  @observable configurationModified;
-
-  navigationBlockedListener;
-  navigationBlocker;
-  allowedNavigation;
+  blockerModalRef;
 
   state = {
     createConfigurationForm: false,
@@ -67,49 +74,21 @@ export default class PipelineConfiguration extends React.Component {
     pending: false
   };
 
-  componentDidMount () {
-    this.navigationBlockedListener = this.props.history.listenBefore((location, callback) => {
-      const locationBefore = this.props.routing.location.pathname;
-      if (location.pathname === locationBefore) {
-        callback();
-        return;
-      }
-      const clearBlocker = () => {
-        setTimeout(() => {
-          this.navigationBlocker = null;
-        }, 0);
-      };
-      if (
-        !this.isBitBucket &&
-        this.configurationModified &&
-        !this.navigationBlocker &&
-        location.pathname !== this.allowedNavigation
-      ) {
-        const cancel = () => {
-          if (this.props.history.getCurrentLocation().pathname !== locationBefore) {
-            this.props.history.replace(locationBefore);
-          }
-          clearBlocker();
-        };
-        this.navigationBlocker = Modal.confirm({
-          title: 'You have unsaved changes. Continue?',
-          style: {
-            wordWrap: 'break-word'
-          },
-          onOk () {
-            callback();
-            clearBlocker();
-          },
-          onCancel () {
-            cancel();
-          },
-          okText: 'Yes',
-          cancelText: 'No'
-        });
-      } else {
-        callback();
-      }
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      allowedInstanceTypes: observable,
+      configurationModified: observable,
+      selectedConfiguration: computed,
+      selectedConfigurationName: computed,
+      selectedConfigurationIsDefault: computed,
+      defaultConfigurationName: computed,
+      isBitBucket: computed,
+      canModifySources: computed
     });
+  }
+
+  componentDidMount () {
     const parameters = this.getParameters();
     if (!this.allowedInstanceTypes) {
       this.allowedInstanceTypes = new AllowedInstanceTypes();
@@ -122,13 +101,41 @@ export default class PipelineConfiguration extends React.Component {
     }
   }
 
-  componentWillUnmount () {
-    if (this.navigationBlockedListener) {
-      this.navigationBlockedListener();
+  componentDidUpdate () {
+    const {blocker} = this.props;
+    if (blocker?.state !== 'blocked') {
+      this.blockerModalRef = null;
+    } else if (!this.blockerModalRef) {
+      this.blockerModalRef = true;
+      Modal.confirm({
+        title: 'You have unsaved changes. Continue?',
+        style: {
+          wordWrap: 'break-word'
+        },
+        onOk: () => {
+          blocker.proceed();
+          this.blockerModalRef = null;
+        },
+        onCancel: () => {
+          blocker.reset();
+          this.blockerModalRef = null;
+        },
+        okText: 'Yes',
+        cancelText: 'No'
+      });
+    }
+    const parameters = this.getParameters();
+    if (!this.allowedInstanceTypes) {
+      this.allowedInstanceTypes = new AllowedInstanceTypes();
+    }
+    if (this.allowedInstanceTypes && parameters) {
+      this.allowedInstanceTypes.setParameters({
+        isSpot: parameters.is_spot,
+        regionId: parameters.cloudRegionId
+      });
     }
   }
 
-  @computed
   get selectedConfiguration () {
     if (this.props.configurations.loaded) {
       const [configuration] = this.props.configurations.value.filter(c => c.name === this.selectedConfigurationName);
@@ -137,7 +144,6 @@ export default class PipelineConfiguration extends React.Component {
     return null;
   }
 
-  @computed
   get selectedConfigurationName () {
     if (this.props.currentConfiguration) {
       return this.props.currentConfiguration;
@@ -153,7 +159,6 @@ export default class PipelineConfiguration extends React.Component {
     return null;
   }
 
-  @computed
   get selectedConfigurationIsDefault () {
     if (!this.props.currentConfiguration) {
       return true;
@@ -168,7 +173,6 @@ export default class PipelineConfiguration extends React.Component {
     return false;
   }
 
-  @computed
   get defaultConfigurationName () {
     if (this.props.configurations.loaded &&
       this.props.configurations.value.length > 0) {
@@ -183,7 +187,6 @@ export default class PipelineConfiguration extends React.Component {
     return undefined;
   }
 
-  @computed
   get isBitBucket () {
     const {pipeline} = this.props;
     if (!pipeline || !pipeline.loaded) {
@@ -193,17 +196,19 @@ export default class PipelineConfiguration extends React.Component {
     return /^bitbucket$/i.test(repositoryType);
   }
 
-  @computed
   get canModifySources () {
     if (this.props.readOnly || this.props.pipeline.pending || this.isBitBucket) {
       return false;
     }
     return roleModel.writeAllowed(this.props.pipeline.value) &&
       this.props.version === this.props.pipeline.value.currentVersion.name;
-  };
+  }
 
   onConfigurationModified = (modified) => {
     this.configurationModified = modified;
+    if (this.props.onBlockingChange) {
+      this.props.onBlockingChange(modified && !this.isBitBucket);
+    }
   };
 
   onSelectConfiguration = (key) => {
@@ -255,7 +260,10 @@ export default class PipelineConfiguration extends React.Component {
     } else {
       url = `/${this.props.pipelineId}/${this.props.pipeline.value.currentVersion.name}/configuration`;
     }
-    this.allowedNavigation = url;
+    this.configurationModified = false;
+    if (this.props.onBlockingChange) {
+      this.props.onBlockingChange(false);
+    }
     this.props.router.push(url);
   };
 
@@ -438,7 +446,7 @@ export default class PipelineConfiguration extends React.Component {
           id="add-configuration-button"
           size="small"
           onClick={this.openCreateConfigurationFormDialog}>
-          <Icon type="plus" /> ADD
+          <PlusOutlined /> ADD
         </Button>
       );
     }
@@ -450,40 +458,24 @@ export default class PipelineConfiguration extends React.Component {
           onChange={this.onSelectConfiguration}
           activeKey={this.selectedConfigurationName}
           tabBarExtraContent={addButton}
-          type="editable-card">
-          {
-            (this.props.configurations.value || []).sort((cA, cB) => {
-              if (cA.name > cB.name) {
-                return 1;
-              } else if (cA.name < cB.name) {
-                return -1;
-              }
-              return 0;
-            }).map(c => (
-              <Tabs.TabPane
-                closable={false}
-                tab={c.default ? <i>{c.name}</i> : c.name}
-                key={c.name}
-              />
-            ))
-          }
-        </Tabs>
+          type="editable-card"
+          items={(this.props.configurations.value || []).slice().sort((cA, cB) => {
+            if (cA.name > cB.name) {
+              return 1;
+            } else if (cA.name < cB.name) {
+              return -1;
+            }
+            return 0;
+          }).map(c => ({
+            key: c.name,
+            label: c.default ? <i>{c.name}</i> : c.name,
+            closable: false,
+            children: null
+          }))}
+        />
       </Row>
     );
   };
-
-  componentDidUpdate () {
-    const parameters = this.getParameters();
-    if (!this.allowedInstanceTypes) {
-      this.allowedInstanceTypes = new AllowedInstanceTypes();
-    }
-    if (this.allowedInstanceTypes && parameters) {
-      this.allowedInstanceTypes.setParameters({
-        isSpot: parameters.is_spot,
-        regionId: parameters.cloudRegionId
-      });
-    }
-  }
 
   render () {
     if (
@@ -493,10 +485,10 @@ export default class PipelineConfiguration extends React.Component {
       return <LoadingView />;
     }
     if (this.props.configurations.error) {
-      return <Alert type="error" message={this.props.configurations.error} />;
+      return <Alert type="error" title={this.props.configurations.error} />;
     }
     if (!this.getParameters()) {
-      return <Alert type="error" message="Error loading configurations" />;
+      return <Alert type="error" title="Error loading configurations" />;
     }
     let defaultPriceTypeIsSpot = false;
     if (this.props.preferences.loaded) {
@@ -543,3 +535,18 @@ export default class PipelineConfiguration extends React.Component {
     );
   }
 }
+
+const PipelineConfigurationWithBlocker = withBlocker(PipelineConfiguration);
+
+function PipelineConfigurationWithBlockerState (props) {
+  const [navigationBlocked, setNavigationBlocked] = useState(false);
+  return (
+    <PipelineConfigurationWithBlocker
+      {...props}
+      navigationBlocked={navigationBlocked}
+      onBlockingChange={setNavigationBlocked}
+    />
+  );
+}
+
+export default withRouter(PipelineConfigurationWithBlockerState);

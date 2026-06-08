@@ -17,8 +17,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
-import {Input, Row, AutoComplete, Select} from 'antd';
+import {computed, observable, makeObservable} from 'mobx';
+import {Input, Row, AutoComplete} from 'antd';
 import classNames from 'classnames';
 import roleModel from '../../../../utils/roleModel';
 import RegistrySelector from '../../../tools/selectors/RegistrySelector';
@@ -53,7 +53,7 @@ export default class CommitRunDockerImageInput extends React.Component {
 
   state = {};
 
-  @observable _tags;
+  _tags;
 
   updateGroups = () => {
     if (this.currentRegistry && this.groups.length > 0 && !this.state.group) {
@@ -164,7 +164,17 @@ export default class CommitRunDockerImageInput extends React.Component {
     }, this.handleOnChange);
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      _tags: observable,
+      isAdmin: computed,
+      toolVersions: computed,
+      registries: computed,
+      groups: computed
+    });
+  }
+
   get isAdmin () {
     const {authenticatedUserInfo} = this.props;
     if (!authenticatedUserInfo || !authenticatedUserInfo.loaded) {
@@ -173,7 +183,6 @@ export default class CommitRunDockerImageInput extends React.Component {
     return authenticatedUserInfo.value.admin;
   }
 
-  @computed
   get toolVersions () {
     if (this._tags && this._tags.loaded) {
       return (this._tags.value || []).map(t => t);
@@ -181,7 +190,6 @@ export default class CommitRunDockerImageInput extends React.Component {
     return [];
   }
 
-  @computed
   get tags () {
     const tags = this.toolVersions.map(tag => {
       return {
@@ -222,12 +230,10 @@ export default class CommitRunDockerImageInput extends React.Component {
     this.validateTool();
   };
 
-  @computed
   get registries () {
     return this.props.registries;
   }
 
-  @computed
   get groups () {
     const {showOtherPersonalGroups} = this.props;
     if (!this.currentRegistry) {
@@ -244,7 +250,6 @@ export default class CommitRunDockerImageInput extends React.Component {
       });
   }
 
-  @computed
   get tools () {
     if (!this.currentGroup) {
       return [];
@@ -281,7 +286,6 @@ export default class CommitRunDockerImageInput extends React.Component {
     return tools;
   }
 
-  @computed
   get currentRegistry () {
     const [currentRegistry] = this.state.registry
       ? this.registries.filter(g => g.path === this.state.registry)
@@ -289,7 +293,6 @@ export default class CommitRunDockerImageInput extends React.Component {
     return currentRegistry;
   }
 
-  @computed
   get currentGroup () {
     const [currentGroup] = this.state.group
       ? this.groups.filter(g => g.name === this.state.group)
@@ -338,8 +341,7 @@ export default class CommitRunDockerImageInput extends React.Component {
             onChange={this.onSelectGroup}
             emptyValueMessage="Select group" />
         </div>
-        <Select
-          mode="combobox"
+        <AutoComplete
           className={styles.toolAutocomplete}
           disabled={this.props.disabled}
           ref={this.initializeNameInput}
@@ -359,17 +361,17 @@ export default class CommitRunDockerImageInput extends React.Component {
           {
             this.tools.map(tool => {
               return (
-                <Select.Option key={tool.name} text={tool.name}>
+                <AutoComplete.Option key={tool.name} text={tool.name}>
                   {
                     tool.isNew
                       ? `Add new tool '${tool.name}'`
                       : tool.name
                   }
-                </Select.Option>
+                </AutoComplete.Option>
               );
             })
           }
-        </Select>
+        </AutoComplete>
         <AutoComplete
           disabled={this.props.disabled}
           size="large"
@@ -418,7 +420,7 @@ export default class CommitRunDockerImageInput extends React.Component {
     }
   };
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     this.updateState(nextProps);
   }
 
@@ -428,8 +430,8 @@ export default class CommitRunDockerImageInput extends React.Component {
   }
 
   initializeNameInput = (input) => {
-    if (input && input.refs && input.refs.input) {
-      this.nameInput = input.refs.input;
+    if (input) {
+      this.nameInput = input;
       this.nameInput.onfocus = function () {
         setTimeout(() => {
           this.selectionStart = (this.value || '').length;

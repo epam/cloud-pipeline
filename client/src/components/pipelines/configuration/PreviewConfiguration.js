@@ -16,9 +16,10 @@
 
 import React, {Component} from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
-import {Alert, Collapse, Icon, Row} from 'antd';
+import {Alert, Collapse, Row} from 'antd';
+import {BarsOutlined, CodeOutlined, SettingOutlined} from '@ant-design/icons';
 import LoadingView from '../../special/LoadingView';
 import {getSpotTypeName} from '../../special/spot-instance-names';
 import {instanceInfoString} from '../../special/instance-type-info';
@@ -64,16 +65,23 @@ export default class PreviewConfiguration extends Component {
   state = {
     openedPanels: [PARAMETERS]
   };
-  @observable
+
   selectedEntry = null;
-  @observable
   selectedPipeline = null;
-  @observable
   selectedPipelineConfiguration = null;
-  @observable
   selectedRootEntity = null;
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      selectedEntry: observable,
+      selectedPipeline: observable,
+      selectedPipelineConfiguration: observable,
+      selectedRootEntity: observable,
+      currentCloudProvider: computed
+    });
+  }
+
   get currentCloudProvider () {
     if (
       this.selectedEntry &&
@@ -89,17 +97,29 @@ export default class PreviewConfiguration extends Component {
 
   getPanelHeader = (key) => {
     let title;
-    let icon;
+    let IconComponent;
     switch (key) {
-      case EXEC_ENVIRONMENT: title = 'Exec environment'; icon = 'code-o'; break;
-      case ADVANCED: title = 'Advanced'; icon = 'setting'; break;
-      case SYSTEM_PARAMETERS: title = 'System parameters'; icon = 'bars'; break;
-      case PARAMETERS: title = 'Parameters'; icon = 'bars'; break;
+      case EXEC_ENVIRONMENT:
+        title = 'Exec environment';
+        IconComponent = CodeOutlined;
+        break;
+      case ADVANCED:
+        title = 'Advanced';
+        IconComponent = SettingOutlined;
+        break;
+      case SYSTEM_PARAMETERS:
+        title = 'System parameters';
+        IconComponent = BarsOutlined;
+        break;
+      case PARAMETERS:
+        title = 'Parameters';
+        IconComponent = BarsOutlined;
+        break;
     }
     return (
       <Row className={styles.panelHeader} type="flex" justify="space-between" align="middle">
         <span className={styles.itemHeader}>
-          <Icon type={icon} /> {title}
+          {IconComponent && <IconComponent />} {title}
         </span>
       </Row>
     );
@@ -496,6 +516,7 @@ export default class PreviewConfiguration extends Component {
       </tr>
     );
   };
+
   initialize = () => {
     if (!this.props.configuration.pending && this.props.configuration.loaded) {
       [this.selectedEntry] = this.props.configuration.value.entries.filter(e => e.default);
@@ -541,7 +562,7 @@ export default class PreviewConfiguration extends Component {
         <Row type="flex" style={{padding: 7, flex: 1, display: 'flex', flexDirection: 'column'}}>
           <Alert
             type="error"
-            message={
+            title={
               <ul style={{listStyle: 'disc'}}>
                 {
                   errors.filter(e => !!e).map(

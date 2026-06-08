@@ -20,9 +20,9 @@ import {
   Alert,
   Badge,
   Button,
-  Icon,
   Spin
 } from 'antd';
+import {CaretLeftOutlined, CaretRightOutlined, FilterOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import CommitCard from './commit-card';
 import HistoryFilter from './history-filter';
@@ -300,7 +300,7 @@ class VSHistory extends React.Component {
               disabled={pending}
               onClick={this.openFilters}
             >
-              <Icon type="filter" />
+              <FilterOutlined />
             </Button>
           </Badged>
           <HistoryFilter
@@ -315,7 +315,7 @@ class VSHistory extends React.Component {
           error && (
             <Alert
               type="error"
-              message={error}
+              title={error}
             />
           )
         }
@@ -359,7 +359,7 @@ class VSHistory extends React.Component {
             size="small"
             onClick={this.navigateToPreviousPage}
           >
-            <Icon type="caret-left" />
+            <CaretLeftOutlined />
           </Button>
           <Button
             className={styles.paginationButton}
@@ -367,7 +367,7 @@ class VSHistory extends React.Component {
             size="small"
             onClick={this.navigateToNextPage}
           >
-            <Icon type="caret-right" />
+            <CaretRightOutlined />
           </Button>
         </div>
       </div>

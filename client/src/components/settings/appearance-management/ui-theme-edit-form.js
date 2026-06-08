@@ -21,9 +21,10 @@ import {
   Button,
   Input,
   Select,
-  Icon,
-  Tooltip, Modal
+  Tooltip,
+  Modal
 } from 'antd';
+import {QuestionCircleFilled} from '@ant-design/icons';
 import {validateName} from './utilities/theme-validation';
 import {getThemeConfiguration, parseConfiguration} from '../../../themes/themes';
 import ColorVariable from './color-variable';
@@ -114,10 +115,7 @@ const FormItem = (
               title={hint}
               placement="left"
             >
-              <Icon
-                type="question-circle"
-                style={{marginLeft: 5}}
-              />
+              <QuestionCircleFilled style={{marginLeft: 5}} />
             </Tooltip>
           )
         }
@@ -490,7 +488,7 @@ class UIThemeEditForm extends React.PureComponent {
               <div className={styles.remove}>
                 <Button
                   disabled={readOnly}
-                  type="danger"
+                  danger
                   style={{lineHeight: 1}}
                   onClick={this.confirmRemoval}
                 >

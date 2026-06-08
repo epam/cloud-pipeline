@@ -15,19 +15,22 @@
  */
 
 import React from 'react';
-import {observer, inject} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {
+  observer,
+  inject} from 'mobx-react';
+import {computed, observable, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import moment from 'moment-timezone';
 import FileSaver from 'file-saver';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
 import {
   Button,
   message,
-  Icon,
-  Table
+  Table,
+  Space
 } from 'antd';
+import {LeftOutlined, RightOutlined} from '@ant-design/icons';
 import {
   Period,
   getPeriod,
@@ -59,8 +62,6 @@ export default class UserInfoSummary extends React.Component {
     period: moment(getCurrentDate()),
     tableMode: TABLE_MODES.computed
   }
-
-  @observable
   requests
 
   componentDidMount = () => {
@@ -76,7 +77,17 @@ export default class UserInfoSummary extends React.Component {
     }
   }
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      requests: observable,
+      statistics: computed,
+      tableData: computed,
+      filteredTableData: computed,
+      tools: computed
+    });
+  }
+
   get statistics () {
     const runs = {
       pipelines: [],
@@ -97,7 +108,6 @@ export default class UserInfoSummary extends React.Component {
     return runs;
   }
 
-  @computed
   get tableData () {
     const {tableMode} = this.state;
     if (
@@ -129,7 +139,6 @@ export default class UserInfoSummary extends React.Component {
     return [];
   }
 
-  @computed
   get filteredTableData () {
     const {tableMode} = this.state;
     if (tableMode) {
@@ -139,7 +148,6 @@ export default class UserInfoSummary extends React.Component {
     return this.tableData;
   }
 
-  @computed
   get tools () {
     const {dockerRegistries} = this.props;
     const result = [];
@@ -371,7 +379,7 @@ export default class UserInfoSummary extends React.Component {
           Detailed usage data
         </p>
         <div className={styles.tableControls}>
-          <Button.Group>
+          <Space.Compact>
             <Button
               type={tableMode === TABLE_MODES.computed ? 'primary' : 'default'}
               onClick={() => this.setTableMode(TABLE_MODES.computed)}
@@ -386,7 +394,7 @@ export default class UserInfoSummary extends React.Component {
             >
               Storages
             </Button>
-          </Button.Group>
+          </Space.Compact>
         </div>
         <Table
           dataSource={this.filteredTableData}
@@ -414,7 +422,7 @@ export default class UserInfoSummary extends React.Component {
           style={{marginRight: 10}}
           disabled={pending}
         >
-          <Icon type="left" />
+          <LeftOutlined />
         </Button>
         <span>
           {`User statistics for ${currentPeriod}`}
@@ -425,7 +433,7 @@ export default class UserInfoSummary extends React.Component {
           style={{marginLeft: 10}}
           disabled={pending || nexNavigationDisabled}
         >
-          <Icon type="right" />
+          <RightOutlined />
         </Button>
       </div>
     );

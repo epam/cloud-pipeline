@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observable} from 'mobx';
+import {observable, makeObservable} from 'mobx';
 import {inject, observer, Provider} from 'mobx-react';
 import classNames from 'classnames';
 import {Menu} from 'antd';
@@ -73,8 +73,16 @@ class BillingNavigation extends React.Component {
     }
   };
 
-  @observable filterStore = new FilterStore();
-  componentWillReceiveProps (nextProps, nextContext) {
+  filterStore = new FilterStore();
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      filterStore: observable
+    });
+  }
+
+  UNSAFE_componentWillReceiveProps (nextProps, nextContext) {
     this.filterStore.rebuild(this.props);
   }
 
@@ -108,61 +116,55 @@ class BillingNavigation extends React.Component {
       onChange && onChange(key);
     };
     const isSubMenuSelected = (t) => (t === report);
-    const storagesMenu = (
-      <Menu.SubMenu
-        className={
-          classNames(
-            'cp-billing-sub-menu',
-            {
-              'cp-billing-sub-menu-selected': isSubMenuSelected('storages')
-            }
-          )
+    const storagesMenu = {
+      key: 'storages',
+      label: 'Storages',
+      className: classNames(
+        'cp-billing-sub-menu',
+        {
+          'cp-billing-sub-menu-selected': isSubMenuSelected('storages')
         }
-        key="storages"
-        title="Storages"
-        onTitleClick={onSelect}
-      >
-        <Menu.Item key="storages.file">File storages</Menu.Item>
-        <Menu.Item key="storages.object">Object storages</Menu.Item>
-      </Menu.SubMenu>
-    );
-    const instancesMenu = (
-      <Menu.SubMenu
-        className={
-          classNames(
-            'cp-billing-sub-menu',
-            {
-              'cp-billing-sub-menu-selected': isSubMenuSelected('instances')
-            }
-          )
+      ),
+      children: [
+        {key: 'storages.file', label: 'File storages'},
+        {key: 'storages.object', label: 'Object storages'}
+      ]
+    };
+    const instancesMenu = {
+      key: 'instances',
+      label: 'Compute instances',
+      className: classNames(
+        'cp-billing-sub-menu',
+        {
+          'cp-billing-sub-menu-selected': isSubMenuSelected('instances')
         }
-        key="instances"
-        title="Compute instances"
-        onTitleClick={onSelect}
-      >
-        <Menu.Item key="instances.cpu">CPU</Menu.Item>
-        <Menu.Item key="instances.gpu">GPU</Menu.Item>
-      </Menu.SubMenu>
-    );
-    const quotasMenu = (
-      <Menu.SubMenu
-        className={
-          classNames(
-            'cp-billing-sub-menu',
-            {
-              'cp-billing-sub-menu-selected': isSubMenuSelected('quotas')
-            }
-          )
+      ),
+      children: [
+        {key: 'instances.cpu', label: 'CPU'},
+        {key: 'instances.gpu', label: 'GPU'}
+      ]
+    };
+    const quotasMenu = {
+      key: 'quotas',
+      label: 'Quotas',
+      className: classNames(
+        'cp-billing-sub-menu',
+        {
+          'cp-billing-sub-menu-selected': isSubMenuSelected('quotas')
         }
-        key="quotas"
-        title="Quotas"
-        onTitleClick={onSelect}
-      >
-        <Menu.Item key="quotas.storage">Storages</Menu.Item>
-        <Menu.Item key="quotas.compute">Compute instances</Menu.Item>
-      </Menu.SubMenu>
-    );
+      ),
+      children: [
+        {key: 'quotas.storage', label: 'Storages'},
+        {key: 'quotas.compute', label: 'Compute instances'}
+      ]
+    };
     const isBillingManager = roleModel.isManager.billing(this);
+    const menuItems = [
+      {key: 'general', label: 'General'},
+      storagesMenu,
+      instancesMenu,
+      ...(isBillingManager ? [{type: 'divider'}, quotasMenu] : [])
+    ];
     return (
       <Menu
         className="cp-billing-menu"
@@ -171,13 +173,8 @@ class BillingNavigation extends React.Component {
         onClick={onSelect}
         openKeys={['storages', 'instances', 'quotas']}
         selectedKeys={[report]}
-      >
-        <Menu.Item key="general">General</Menu.Item>
-        {storagesMenu}
-        {instancesMenu}
-        {isBillingManager && <Menu.Divider />}
-        {isBillingManager && quotasMenu}
-      </Menu>
+        items={menuItems}
+      />
     );
   };
 

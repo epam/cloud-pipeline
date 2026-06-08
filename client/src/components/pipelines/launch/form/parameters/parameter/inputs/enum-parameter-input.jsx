@@ -73,7 +73,6 @@ function LaunchFormEnumParameterInput (props) {
       value={value}
       onChange={onInputChange}
       disabled={disabled}
-      size="large"
       mode={parameter?.config?.multiple ? 'multiple' : 'default'}
     >
       {enumeration.map((v) => (

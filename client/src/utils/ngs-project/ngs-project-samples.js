@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {observable, computed} from 'mobx';
+import {observable, computed, makeObservable} from 'mobx';
 import {getMachineRunMetadataClassName} from './ngs-project-machine-runs';
 
 const UI_NGS_PROJECT_SAMPLE_PREFERENCE = 'ngs.preprocessing.sample.metadata.class.name';
@@ -29,11 +29,19 @@ export function getSampleMetadataClassName (preferences) {
 }
 
 class NgsProjectSamples {
-  @observable preferences;
-  @observable metadataClass;
-  @observable folderId;
-  @observable entityFields;
+  preferences;
+  metadataClass;
+  folderId;
+  entityFields;
+
   constructor (options = {}, preferences) {
+    makeObservable(this, {
+      preferences: observable,
+      metadataClass: observable,
+      folderId: observable,
+      entityFields: observable,
+      isSamplesMetadataClass: computed
+    });
     this.preferences = preferences;
     const {
       metadataClass,
@@ -45,7 +53,6 @@ class NgsProjectSamples {
     this.folderId = folderId;
   }
 
-  @computed
   get isSamplesMetadataClass () {
     const metadataClassName = getSampleMetadataClassName(this.preferences);
     return metadataClassName &&

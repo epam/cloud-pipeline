@@ -21,13 +21,12 @@ import {
   Button,
   Checkbox,
   Collapse,
-  Icon,
+  Dropdown,
   Input,
   message,
   Modal
 } from 'antd';
-import Dropdown from 'rc-dropdown';
-import Menu, {SubMenu, MenuItem, Divider} from 'rc-menu';
+import {DeleteOutlined, DownOutlined, PlusOutlined, QuestionCircleFilled} from '@ant-design/icons';
 import {
   ContextTypes,
   isCall,
@@ -282,6 +281,31 @@ class WdlPropertiesForm extends React.Component {
       };
       let actionButton;
       if (canAddSubAction && !disabled) {
+        const callItems = (executables || []).length > 0
+          ? [
+            {key: 'call', label: <>Add <b>new task</b> call</>},
+            {type: 'divider', key: 'call-divider'},
+            ...executables.map((executable) => ({
+              key: `call_${executable.name}`,
+              label: <>Add {getEntityName(executable, wdlDocument)} call</>
+            }))
+          ]
+          : [];
+        const actionsMenuItems = (executables || []).length > 0
+          ? [
+            {
+              key: 'call-submenu',
+              label: <span>Add <b>call</b></span>,
+              children: callItems
+            },
+            {key: 'scatter', label: <>Add <b>scatter</b></>},
+            {key: 'conditional', label: <>Add <b>conditional</b></>}
+          ]
+          : [
+            {key: 'call', label: <>Add <b>call</b></>},
+            {key: 'scatter', label: <>Add <b>scatter</b></>},
+            {key: 'conditional', label: <>Add <b>conditional</b></>}
+          ];
         actionButton = (
           <DropDownWrapper
             key="create actions"
@@ -290,70 +314,25 @@ class WdlPropertiesForm extends React.Component {
             <Dropdown
               placement="bottomRight"
               trigger={['click']}
-              visible={actionsDropdownVisible}
-              onVisibleChange={visible => this.setState({actionsDropdownVisible: visible})}
+              open={actionsDropdownVisible}
+              onOpenChange={open => this.setState({actionsDropdownVisible: open})}
               minOverlayWidthMatchTrigger={false}
-              overlay={
-                <div>
-                  <Menu
-                    mode="vertical"
-                    selectedKeys={[]}
-                    subMenuOpenDelay={0.2}
-                    subMenuCloseDelay={0.2}
-                    openAnimation="zoom"
-                    getPopupContainer={node => node.parentNode}
-                    onClick={actionSelect}
-                    style={{width: 200, cursor: 'pointer'}}
-                  >
-                    {
-                      (executables || []).length > 0 && (
-                        <SubMenu
-                          onTitleClick={() => actionSelect({key: 'call'})}
-                          key="call-submenu"
-                          title={(
-                            <span>
-                              Add <b>call</b>
-                            </span>
-                          )}
-                          style={{width: 200, cursor: 'pointer'}}
-                        >
-                          <MenuItem key="call">
-                            Add <b>new task</b> call
-                          </MenuItem>
-                          <Divider />
-                          {
-                            executables.map((executable) => (
-                              <MenuItem key={`call_${executable.name}`}>
-                                Add {getEntityName(executable, wdlDocument)} call
-                              </MenuItem>
-                            ))
-                          }
-                        </SubMenu>
-                      )
-                    }
-                    {
-                      (executables || []).length === 0 && (
-                        <MenuItem key="call">
-                          Add <b>call</b>
-                        </MenuItem>
-                      )
-                    }
-                    <MenuItem key="scatter">
-                      Add <b>scatter</b>
-                    </MenuItem>
-                    <MenuItem key="conditional">
-                      Add <b>conditional</b>
-                    </MenuItem>
-                  </Menu>
-                </div>
-              }
+              menu={{
+                items: actionsMenuItems,
+                onClick: actionSelect,
+                mode: 'vertical',
+                subMenuOpenDelay: 0.2,
+                subMenuCloseDelay: 0.2,
+                style: {width: 200, cursor: 'pointer'}
+              }}
+              getPopupContainer={node => node.parentNode}
               key="actions"
             >
               <Button
                 size="small"
                 disabled={disabled}
               >
-                Actions <Icon type="down" />
+                Actions <DownOutlined />
               </Button>
             </Dropdown>
           </DropDownWrapper>
@@ -369,11 +348,11 @@ class WdlPropertiesForm extends React.Component {
             {
               !disabled && canRemoveEntity && (
                 <Button
-                  type="danger"
+                  danger
                   size="small"
                   onClick={() => this.onRemove()}
                 >
-                  <Icon type="delete" /> Remove
+                  <DeleteOutlined /> Remove
                 </Button>
               )
             }
@@ -660,7 +639,7 @@ class WdlPropertiesForm extends React.Component {
           editable && !disabled && (
             <div className={styles.propertiesRow}>
               <a onClick={onAddClick}>
-                <Icon type="plus" /> {addTitle.toLowerCase()}
+                <PlusOutlined /> {addTitle.toLowerCase()}
               </a>
             </div>
           )
@@ -923,10 +902,7 @@ class WdlPropertiesForm extends React.Component {
                         className={styles.deleteButton}
                         onClick={() => onRemoveClick(r)}
                       >
-                        <Icon
-                          type="delete"
-                          className={'cp-danger'}
-                        />
+                        <DeleteOutlined className={'cp-danger'} />
                       </div>
                     )
                   }
@@ -939,7 +915,7 @@ class WdlPropertiesForm extends React.Component {
             !hasDocker && !disabled && runtimeAttributesEditable && (
               <div className={styles.propertiesRow}>
                 <a onClick={() => addRuntime('docker')}>
-                  <Icon type="plus" /> add docker configuration
+                  <PlusOutlined /> add docker configuration
                 </a>
               </div>
             )
@@ -948,14 +924,14 @@ class WdlPropertiesForm extends React.Component {
             !hasNode && !disabled && runtimeAttributesEditable && (
               <div className={styles.propertiesRow}>
                 <a onClick={() => addRuntime('node')}>
-                  <Icon type="plus" /> add compute node configuration
+                  <PlusOutlined /> add compute node configuration
                 </a>
               </div>
             )
           }
           <div className={styles.propertiesRow}>
             <a onClick={addNewRuntime}>
-              <Icon type="plus" /> add runtime configuration
+              <PlusOutlined /> add runtime configuration
             </a>
           </div>
         </Collapse.Panel>
@@ -1034,7 +1010,7 @@ class WdlPropertiesForm extends React.Component {
           Cancel
         </Button>
         <Button
-          type="danger"
+          danger
           style={{marginLeft: 5}}
           onClick={() => this.onConfirmRemove()}
         >
@@ -1054,7 +1030,7 @@ class WdlPropertiesForm extends React.Component {
       (entity.executable.executions || []).length === 1;
     return (
       <Modal
-        visible={
+        open={
           !disabled &&
           !!entity &&
           !isWorkflow(entity) &&
@@ -1074,11 +1050,7 @@ class WdlPropertiesForm extends React.Component {
             alignItems: 'center'
           }}
         >
-          <Icon
-            type="question-circle"
-            className="cp-warning"
-            style={{fontSize: 'x-large'}}
-          />
+          <QuestionCircleFilled className="cp-warning" style={{fontSize: 'x-large'}} />
           <b>
             Are you sure you want to remove {getEntityName(entity, wdlDocument)}?
           </b>

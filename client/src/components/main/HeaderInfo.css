@@ -15,5 +15,5 @@
  */
 
 .title {
-  color: #c7c7c7;
+  color: var(--cp-color-text-disabled);
 }

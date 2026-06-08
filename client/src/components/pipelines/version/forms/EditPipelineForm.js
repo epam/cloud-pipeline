@@ -17,8 +17,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
-import {Button, Modal, Form, Input, Row, Col, Spin, Tabs, Select} from 'antd';
+import {computed, makeObservable} from 'mobx';
+import {Button, Form, Modal, Input, Row, Col, Spin, Tabs, Select} from 'antd';
 import PermissionsForm from '../../../roleModel/PermissionsForm';
 import roleModel from '../../../../utils/roleModel';
 import localization from '../../../../utils/localization';
@@ -39,9 +39,10 @@ import RepositoryForm from './repository-form/RepositoryForm';
       : undefined
   };
 })
-@Form.create()
 @observer
 export default class EditPipelineForm extends localization.LocalizedReactComponent {
+  formRef = React.createRef();
+
   state = {
     activeTab: 'info',
     deleteDialogVisible: false,
@@ -92,17 +93,26 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
     marginBottom: 5
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      latestConfigurationsTools: computed,
+      tools: computed
+    });
+  }
+
   /**
    * @returns {{docs: string, src: string}}
    */
   get pipelineDefaultPaths () {
-    const {form, preferences, pipeline} = this.props;
+    const {preferences, pipeline} = this.props;
     let repositoryType = RepositoryTypes.GitLab;
     if (pipeline) {
       repositoryType = pipeline.repositoryType || RepositoryTypes.GitLab;
     } else {
       try {
-        repositoryType = form.getFieldValue('repositoryType');
+        const form = this.formRef.current;
+        repositoryType = form ? form.getFieldValue('repositoryType') : RepositoryTypes.GitLab;
       } catch (_) {
         /* empty */
       }
@@ -115,7 +125,6 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
     );
   }
 
-  @computed
   get latestConfigurationsTools () {
     if (this.props.configurations && this.props.configurations.loaded) {
       return (this.props.configurations.value || [])
@@ -125,7 +134,6 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
     return [];
   }
 
-  @computed
   get tools () {
     if (
       this.props.dockerRegistries.loaded &&
@@ -163,8 +171,8 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
 
   handleSubmit = (e) => {
     e.preventDefault();
-    this.props.form.validateFieldsAndScroll((err, values) => {
-      if (!err) {
+    this.formRef.current.validateFields()
+      .then((values) => {
         const payload = {...values};
         if (Object.prototype.hasOwnProperty.call(payload, 'githubRepository')) {
           payload.repository = payload.githubRepository;
@@ -190,8 +198,8 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
           delete payload.githubBranch;
         }
         this.props.onSubmit(payload);
-      }
-    });
+      })
+      .catch(() => {});
   };
 
   displayRepositorySettings = () => {
@@ -199,7 +207,7 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
   };
 
   onRepositoryTypeChanged = (repositoryType) => {
-    if (!this.props.pipeline) {
+    if (!this.props.pipeline && this.formRef.current) {
       const defaultPaths = getPipelineDefaultPaths(
         this.props.preferences
       )[repositoryType] || {
@@ -207,7 +215,7 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
         docs: 'docs'
       };
       this.setState({githubType: RepositoryTypes.GitHubApp});
-      this.props.form.setFieldsValue({
+      this.formRef.current.setFieldsValue({
         codePath: defaultPaths.src,
         docsPath: defaultPaths.docs,
         githubOwner: undefined,
@@ -217,30 +225,49 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
         branch: undefined,
         token: undefined
       });
-      this.props.form.validateFields(
-        ['repository', 'githubRepository', 'branch', 'githubBranch', 'token'],
-        {force: true}
-      );
+      this.formRef.current.validateFields(
+        ['repository', 'githubRepository', 'branch', 'githubBranch', 'token']
+      ).catch(() => {});
     }
   };
 
   onGithubTypeChange = (githubType) => {
     this.setState({githubType});
-    if (!this.props.pipeline) {
+    if (!this.props.pipeline && this.formRef.current) {
       if (githubType === RepositoryTypes.GitHub) {
-        this.props.form.setFieldsValue({
+        this.formRef.current.setFieldsValue({
           githubOwner: undefined,
           githubRepository: undefined,
           githubBranch: undefined
         });
       } else {
-        this.props.form.setFieldsValue({
+        this.formRef.current.setFieldsValue({
           repository: undefined,
           branch: undefined,
           token: undefined
         });
       }
     }
+  };
+
+  getFormInitialValues = () => {
+    const p = this.props.pipeline;
+    const defaultPaths = this.pipelineDefaultPaths;
+    return {
+      name: p ? p.name : '',
+      description: p && p.description ? p.description : '',
+      visibility: p ? p.visibility : 'INHERIT',
+      repositoryType: p && p.repositoryType ? p.repositoryType : RepositoryTypes.GitLab,
+      repository: p && p.repository ? p.repository : '',
+      branch: p && p.branch ? p.branch : undefined,
+      token: p && p.repositoryToken ? p.repositoryToken : '',
+      githubOwner: undefined,
+      githubRepository: p && p.repository ? p.repository : undefined,
+      githubBranch: p && p.branch ? p.branch : undefined,
+      configurationPath: p && p.configurationPath ? p.configurationPath : undefined,
+      codePath: p ? p.codePath : defaultPaths.src,
+      docsPath: p ? p.docsPath : defaultPaths.docs
+    };
   };
 
   renderForm = () => {
@@ -250,7 +277,6 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
     const isVersionedStorage = /^versioned_storage$/i.test(pipelineType);
     const objectName = isVersionedStorage ? 'Versioned storage' : 'Pipeline';
     const readOnly = !!this.props.pipeline && !roleModel.writeAllowed(this.props.pipeline);
-    const {getFieldDecorator} = this.props.form;
     const descriptionLabel = isVersionedStorage
       ? `Description:`
       : `${this.localizedString(objectName)} description`;
@@ -265,24 +291,17 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
         key="pipeline name"
         className="edit-pipeline-form-name-container"
         label={nameLabel}
+        name="name"
+        rules={[{
+          required: true,
+          message: `${this.localizedString(objectName)} name is required`
+        }]}
       >
-        {getFieldDecorator('name', {
-          rules: [
-            {
-              required: true,
-              message: `${this.localizedString(objectName)} name is required`
-            }
-          ],
-          initialValue: `${
-            this.props.pipeline ? this.props.pipeline.name : ''
-          }`
-        })(
-          <Input
-            disabled={this.props.pending || readOnly}
-            onPressEnter={this.handleSubmit}
-            ref={this.initializeNameInput}
-          />
-        )}
+        <Input
+          disabled={this.props.pending || readOnly}
+          onPressEnter={this.handleSubmit}
+          ref={this.initializeNameInput}
+        />
       </Form.Item>
     );
     formItems.push(
@@ -292,20 +311,12 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
         key="pipeline description"
         className="edit-pipeline-form-description-container"
         label={descriptionLabel}
+        name="description"
       >
-        {getFieldDecorator('description', {
-          initialValue: `${
-            this.props.pipeline && this.props.pipeline.description
-              ? this.props.pipeline.description
-              : ''
-          }`
-        })(
-          <Input
-            type="textarea"
-            autosize={{minRows: 2, maxRows: 6}}
-            disabled={this.props.pending || readOnly}
-          />
-        )}
+        <Input.TextArea
+          autoSize={{minRows: 2, maxRows: 6}}
+          disabled={this.props.pending || readOnly}
+        />
       </Form.Item>
     );
     if (!isVersionedStorage) {
@@ -316,21 +327,16 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
           key="Visibility"
           className="edit-pipeline-form-visibility-container"
           label="Visibility"
+          name="visibility"
         >
-          {getFieldDecorator('visibility', {
-            initialValue: this.props.pipeline
-              ? this.props.pipeline.visibility
-              : 'INHERIT'
-          })(
-            <Select allowClear disabled={this.props.pending || readOnly}>
-              <Select.Option key="INHERIT" value="INHERIT">
-                Inherit
-              </Select.Option>
-              <Select.Option key="OWNER" value="OWNER">
-                Owner
-              </Select.Option>
-            </Select>
-          )}
+          <Select allowClear disabled={this.props.pending || readOnly}>
+            <Select.Option key="INHERIT" value="INHERIT">
+              Inherit
+            </Select.Option>
+            <Select.Option key="OWNER" value="OWNER">
+              Owner
+            </Select.Option>
+          </Select>
         </Form.Item>
       );
       if (!this.state.editRepositorySettings) {
@@ -346,7 +352,7 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
         <RepositoryForm
           key="repository-form"
           editRepositorySettings={this.state.editRepositorySettings}
-          form={this.props.form}
+          formRef={this.formRef}
           formItemLayout={this.formItemLayout}
           formItemStyle={this.formItemStyle}
           githubType={this.state.githubType}
@@ -368,13 +374,9 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
             display: this.state.editRepositorySettings ? 'inherit' : 'none'
           }}
           label="Configuration path"
+          name="configurationPath"
         >
-          {getFieldDecorator('configurationPath', {
-            initialValue:
-              this.props.pipeline && this.props.pipeline.configurationPath
-                ? this.props.pipeline.configurationPath
-                : undefined
-          })(<Input disabled={this.props.pending || readOnly} />)}
+          <Input disabled={this.props.pending || readOnly} />
         </Form.Item>
       );
       formItems.push(
@@ -387,21 +389,16 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
             display: this.state.editRepositorySettings ? 'inherit' : 'none'
           }}
           label="Code path"
+          name="codePath"
         >
-          {getFieldDecorator('codePath', {
-            initialValue: this.props.pipeline
-              ? this.props.pipeline.codePath
-              : this.pipelineDefaultPaths.src
-          })(
-            <EnabledPath
-              disabled={this.props.pending || readOnly}
-              defaultPathValue={
-                this.props.pipeline && this.props.pipeline.codePath
-                  ? this.props.pipeline.codePath
-                  : this.pipelineDefaultPaths.src
-              }
-            />
-          )}
+          <EnabledPath
+            disabled={this.props.pending || readOnly}
+            defaultPathValue={
+              this.props.pipeline && this.props.pipeline.codePath
+                ? this.props.pipeline.codePath
+                : this.pipelineDefaultPaths.src
+            }
+          />
         </Form.Item>
       );
       formItems.push(
@@ -414,21 +411,16 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
             display: this.state.editRepositorySettings ? 'inherit' : 'none'
           }}
           label="Docs path"
+          name="docsPath"
         >
-          {getFieldDecorator('docsPath', {
-            initialValue: this.props.pipeline
-              ? this.props.pipeline.docsPath
-              : this.pipelineDefaultPaths.docs
-          })(
-            <EnabledPath
-              disabled={this.props.pending || readOnly}
-              defaultPathValue={
-                this.props.pipeline && this.props.pipeline.docsPath
-                  ? this.props.pipeline.docsPath
-                  : this.pipelineDefaultPaths.docs
-              }
-            />
-          )}
+          <EnabledPath
+            disabled={this.props.pending || readOnly}
+            defaultPathValue={
+              this.props.pipeline && this.props.pipeline.docsPath
+                ? this.props.pipeline.docsPath
+                : this.pipelineDefaultPaths.docs
+            }
+          />
         </Form.Item>
       );
     }
@@ -452,36 +444,32 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
 
   getDeleteModalFooter = () => {
     return (
-      <Row type="flex" justify="space-between">
-        <Col span={12}>
-          <Row type="flex" justify="start">
-            <Button
-              id="edit-pipeline-delete-dialog-cancel-button"
-              onClick={this.closeDeleteDialog}
-            >
-              Cancel
-            </Button>
-          </Row>
-        </Col>
-        <Col span={12}>
-          <Row type="flex" justify="end">
-            <Button
-              id="edit-pipeline-delete-dialog-unregister-button"
-              type="danger"
-              onClick={() => this.onDeleteClicked(true)}
-            >
-              Unregister
-            </Button>
-            <Button
-              id="edit-pipeline-delete-dialog-delete-button"
-              type="danger"
-              onClick={() => this.onDeleteClicked(false)}
-            >
-              Delete
-            </Button>
-          </Row>
-        </Col>
-      </Row>
+      <div className="cp-modal-footer-actions cp-modal-footer-actions--split">
+        <div className="cp-modal-footer-actions-group">
+          <Button
+            id="edit-pipeline-delete-dialog-cancel-button"
+            onClick={this.closeDeleteDialog}
+          >
+            Cancel
+          </Button>
+        </div>
+        <div className="cp-modal-footer-actions-group cp-modal-footer-actions-group--end">
+          <Button
+            id="edit-pipeline-delete-dialog-unregister-button"
+            danger
+            onClick={() => this.onDeleteClicked(true)}
+          >
+            Unregister
+          </Button>
+          <Button
+            id="edit-pipeline-delete-dialog-delete-button"
+            danger
+            onClick={() => this.onDeleteClicked(false)}
+          >
+            Delete
+          </Button>
+        </div>
+      </div>
     );
   };
 
@@ -493,12 +481,11 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
     if (this.props.pending) {
       return false;
     }
-    const {form} = this.props;
-    const fieldsError = form.getFieldsError() || {};
-    const anyError = Object.keys(fieldsError || {}).some((key) => {
-      const err = fieldsError[key];
-      return Array.isArray(err) ? err.length > 0 : !!err;
-    });
+    const form = this.formRef.current;
+    const fieldsError = form ? (form.getFieldsError() || []) : [];
+    const anyError = Array.isArray(fieldsError)
+      ? fieldsError.some(f => f.errors && f.errors.length > 0)
+      : false;
     const disableSubmit = this.props.pending || anyError;
     const isManager = isVersionedStorage
       ? roleModel.isManager.versionedStorage(this)
@@ -517,7 +504,7 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
           <Button
             disabled={this.props.pending}
             id="edit-pipeline-form-delete-button"
-            type="danger"
+            danger
             onClick={this.openDeleteDialog}
           >
             DELETE
@@ -550,7 +537,7 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
           <Button
             disabled={this.props.pending}
             id="edit-pipeline-form-delete-button"
-            type="danger"
+            danger
             onClick={this.openDeleteDialog}
           >
             DELETE
@@ -612,7 +599,6 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
       : undefined;
     const isVersionedStorage = /^versioned_storage$/i.test(pipelineType);
     const objectName = isVersionedStorage ? 'versioned storage' : 'pipeline';
-    const {resetFields} = this.props.form;
     const modalFooter = this.getModalFooter(isNewPipeline, isVersionedStorage);
     const deleteConfirmTitle = (
       <span style={{paddingRight: '25px', display: 'flex'}}>
@@ -622,7 +608,7 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
       </span>
     );
     const onClose = () => {
-      resetFields();
+      this.formRef.current && this.formRef.current.resetFields();
       this.setState({
         activeTab: 'info',
         editRepositorySettings: false,
@@ -631,10 +617,10 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
     };
     return (
       <Modal
-        maskClosable={!this.props.pending}
+        mask={{closable: !this.props.pending}}
         afterClose={() => onClose()}
         closable={!this.props.pending}
-        visible={this.props.visible}
+        open={this.props.visible}
         title={
           isNewPipeline
             ? this.props.pipelineTemplate
@@ -648,59 +634,71 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
         footer={this.state.activeTab === 'info' ? modalFooter : false}
       >
         <Spin spinning={this.props.pending}>
-          <Form className="edit-pipeline-form">
+          <Form
+            ref={this.formRef}
+            className="edit-pipeline-form"
+            initialValues={this.getFormInitialValues()}
+            key={this.props.pipeline ? this.props.pipeline.id : 'new'}
+          >
             <Tabs
               size="small"
               activeKey={this.state.activeTab}
               onChange={this.onSectionChange}
-            >
-              <Tabs.TabPane key="info" tab="Info">
-                {this.renderForm()}
-              </Tabs.TabPane>
-              {this.props.pipeline &&
+              items={[
+                {
+                  key: 'info',
+                  label: 'Info',
+                  children: this.renderForm()
+                },
+                ...(this.props.pipeline &&
                 this.props.pipeline.id &&
-                roleModel.readAllowed(this.props.pipeline) && (
-                <Tabs.TabPane key="permissions" tab="Permissions">
-                  <PermissionsForm
-                    readonly={isReadOnly || !roleModel.writeAllowed(this.props.pipeline)}
-                    objectIdentifier={this.props.pipeline.id}
-                    objectType="pipeline"
-                    subObjectsPermissionsMaskToCheck={roleModel.buildPermissionsMask(
-                      1,
-                      1,
-                      0,
-                      0,
-                      1,
-                      1
-                    )}
-                    subObjectsToCheck={this.tools.map(
-                      ({aclClass: entityClass, id: entityId, image}) => ({
-                        entityId,
-                        entityClass,
-                        name: <b>{image}</b>
-                      })
-                    )}
-                    subObjectsPermissionsErrorTitle={
-                      <span>
-                        Users shall have Read and Execute permissions for the
-                        docker images, used in a current{' '}
-                        {this.localizedString(objectName)}. Please review and
-                        fix permissions issues below:
-                      </span>
-                    }
-                    editOwnerAvailable={
-                      roleModel.isOwner(this.props.pipeline) ||
-                      roleModel.isManager.pipelineAdmin(this)
-                    }
-                  />
-                </Tabs.TabPane>
-              )}
-            </Tabs>
+                roleModel.readAllowed(this.props.pipeline)
+                  ? [{
+                    key: 'permissions',
+                    label: 'Permissions',
+                    children: (
+                      <PermissionsForm
+                        readonly={isReadOnly || !roleModel.writeAllowed(this.props.pipeline)}
+                        objectIdentifier={this.props.pipeline.id}
+                        objectType="pipeline"
+                        subObjectsPermissionsMaskToCheck={roleModel.buildPermissionsMask(
+                          1,
+                          1,
+                          0,
+                          0,
+                          1,
+                          1
+                        )}
+                        subObjectsToCheck={this.tools.map(
+                          ({aclClass: entityClass, id: entityId, image}) => ({
+                            entityId,
+                            entityClass,
+                            name: <b>{image}</b>
+                          })
+                        )}
+                        subObjectsPermissionsErrorTitle={
+                          <span>
+                            Users shall have Read and Execute permissions for the
+                            docker images, used in a current{' '}
+                            {this.localizedString(objectName)}. Please review and
+                            fix permissions issues below:
+                          </span>
+                        }
+                        editOwnerAvailable={
+                          roleModel.isOwner(this.props.pipeline) ||
+                            roleModel.isManager.pipelineAdmin(this)
+                        }
+                      />
+                    )
+                  }]
+                  : [])
+              ]}
+            />
           </Form>
         </Spin>
         <Modal
           onCancel={this.closeDeleteDialog}
-          visible={this.state.deleteDialogVisible}
+          open={this.state.deleteDialogVisible}
           title={deleteConfirmTitle}
           footer={this.getDeleteModalFooter()}
         >
@@ -711,8 +709,8 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
   }
 
   initializeNameInput = (input) => {
-    if (input && input.refs && input.refs.input) {
-      this.nameInput = input.refs.input;
+    if (input) {
+      this.nameInput = input;
       this.nameInput.onfocus = function () {
         setTimeout(() => {
           this.selectionStart = (this.value || '').length;

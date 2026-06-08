@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {action, computed, observable} from 'mobx';
+import {action, computed, observable, makeObservable} from 'mobx';
 import {NamesAndTypes} from '../modules/names-and-types';
 import {HCSSourceFile} from '../common/analysis-file';
 import {
@@ -40,36 +40,35 @@ class Analysis {
   /**
    * @type {NamesAndTypes}
    */
-  @observable namesAndTypes;
+  namesAndTypes;
   /**
    * @type {AnalysisPipeline}
    */
-  @observable pipeline;
-  @observable physicalSize = new PhysicalSize();
-  @observable error;
-  @observable pending;
-  @observable analysing;
-  @observable analysisAPI;
-  @observable pipelineId;
-  @observable status;
-  @observable userInfo;
-  @observable changed = false;
-  @observable alias;
+  pipeline;
+  physicalSize = new PhysicalSize();
+  error;
+  pending;
+  analysing;
+  analysisAPI;
+  pipelineId;
+  status;
+  userInfo;
+  changed = false;
+  alias;
   /**
    * @type {AnalysisOutputResult[]}
    */
-  @observable analysisResults = [];
+  analysisResults = [];
   analysisCache = [];
-  @observable sourceFileChanged = true;
-  @observable showAnalysisResults = true;
-  @observable _hcsImageViewer;
+  sourceFileChanged = true;
+  showAnalysisResults = true;
+  _hcsImageViewer;
   _analysisRequested = false;
   eventListeners = [];
   storageId;
   path;
   analysisDate;
 
-  @computed
   get analysisRequested () {
     return this._analysisRequested;
   }
@@ -86,7 +85,6 @@ class Analysis {
   /**
    * @returns {AnalysisOutputResult[]}
    */
-  @computed
   get defineResultsOutputs () {
     return this.analysisResults.filter(o => o.analysisOutput);
   }
@@ -94,12 +92,10 @@ class Analysis {
   /**
    * @returns {AnalysisOutputResult[]}
    */
-  @computed
   get analysisOutputImages () {
     return this.analysisResults.filter(o => !o.table && !o.xlxs && !o.analysisOutput);
   }
 
-  @computed
   get modules () {
     if (!this.pipeline) {
       return [];
@@ -107,7 +103,6 @@ class Analysis {
     return [...this.pipeline.modules, this.pipeline.defineResults];
   }
 
-  @computed
   get isEmpty () {
     if (!this.pipeline) {
       return [];
@@ -115,12 +110,10 @@ class Analysis {
     return this.pipeline.modules.length === 0;
   }
 
-  @computed
   get batch () {
     return this.namesAndTypes && this.namesAndTypes.multipleFields;
   }
 
-  @computed
   get hcsImageViewer () {
     return this._hcsImageViewer;
   }
@@ -133,6 +126,43 @@ class Analysis {
   }
 
   constructor (hcsImageViewer) {
+    // TODO: consider makeAutoObservable
+    makeObservable(this, {
+      namesAndTypes: observable,
+      pipeline: observable,
+      physicalSize: observable,
+      error: observable,
+      pending: observable,
+      analysing: observable,
+      analysisAPI: observable,
+      pipelineId: observable,
+      status: observable,
+      userInfo: observable,
+      changed: observable,
+      alias: observable,
+      analysisResults: observable,
+      sourceFileChanged: observable,
+      showAnalysisResults: observable,
+      _hcsImageViewer: observable,
+      analysisRequested: computed,
+      defineResultsOutputs: computed,
+      analysisOutputImages: computed,
+      modules: computed,
+      isEmpty: computed,
+      batch: computed,
+      hcsImageViewer: computed,
+      available: computed,
+      updatePhysicalSize: action,
+      authenticate: action,
+      wrapAction: action,
+      clearModulesState: action,
+      buildPipeline: action,
+      attachFileToPipeline: action,
+      checkSimilarBatchAnalysis: action,
+      runBatch: action,
+      run: action,
+      add: action
+    });
     this.pipeline = new AnalysisPipeline(this);
     this.hcsImageViewer = hcsImageViewer;
     this.checkNeedAnalyze();
@@ -245,24 +275,20 @@ class Analysis {
     this.analysisTimeout = setTimeout(this.checkNeedAnalyze, INTERVAL_MS);
   };
 
-  @computed
   get available () {
     return this.namesAndTypes && this.namesAndTypes.available;
   }
 
-  @action
   updatePhysicalSize (unitsInPixel, units) {
     this.physicalSize.update(unitsInPixel, units);
   }
 
-  @action
   authenticate = () => {
     if (this.analysisAPI) {
       return this.analysisAPI.authenticate();
     }
   }
 
-  @action
   wrapAction = async (action, throwError = false) => {
     if (typeof action !== 'function') {
       return;
@@ -287,7 +313,6 @@ class Analysis {
     return actionResult;
   };
 
-  @action
   clearModulesState = () => {
     this.modules.forEach(module => {
       module.pending = false;
@@ -295,7 +320,6 @@ class Analysis {
     });
   }
 
-  @action
   buildPipeline = async () => {
     if (this.pipelineId) {
       return this.pipelineId;
@@ -354,7 +378,6 @@ class Analysis {
     };
   }
 
-  @action
   attachFileToPipeline = async () => {
     if (!this.analysisAPI || !this.pipelineId || !this.sourceFileChanged) {
       return;
@@ -382,7 +405,6 @@ class Analysis {
     }
   };
 
-  @action
   checkSimilarBatchAnalysis = async () => {
     try {
       this.analysing = true;
@@ -421,7 +443,6 @@ class Analysis {
     }
   };
 
-  @action
   runBatch = async () => {
     try {
       this.analysing = true;
@@ -462,7 +483,6 @@ class Analysis {
     }
   };
 
-  @action
   run = async (debug = true) => {
     /**
      * @param {{module: AnalysisModule, done: boolean}} options
@@ -613,7 +633,6 @@ class Analysis {
    * @param {object} analysisModuleConfiguration
    * @returns {AnalysisModule}
    */
-  @action
   add = async (analysisModuleConfiguration) => {
     let newModule;
     try {

@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Provider, inject, observer} from 'mobx-react';
-import {observable} from 'mobx';
+import {observable, makeObservable} from 'mobx';
 import {RunOperationWarningAlert} from './warning';
 
 let storeIndex = 0;
@@ -80,18 +80,26 @@ export default function generateProvider (options) {
     check,
     checkOptionsComparator = ((a, b) => a === b),
     warning,
+    warningDefaultType = 'error',
     storeName = `checkRunStore${storeIndex}`
   } = options || {};
   /**
    * @type {React.ComponentClass & RunOperationCheckProviderType}
    */
   const RunOperationCheckProvider = class extends React.PureComponent {
-    @observable storeObj = {
+    storeObj = {
       pending: false,
       checkResult: {result: false},
       objectId: undefined,
       options: undefined
     };
+
+    constructor (props) {
+      super(props);
+      makeObservable(this, {
+        storeObj: observable
+      });
+    }
 
     componentDidMount () {
       this.checkRun();
@@ -181,7 +189,7 @@ export default function generateProvider (options) {
     const {
       className,
       style,
-      type = 'error',
+      type = warningDefaultType,
       showIcon
     } = props;
     const {
@@ -214,9 +222,6 @@ export default function generateProvider (options) {
     style: PropTypes.object,
     type: PropTypes.string,
     showIcon: PropTypes.bool
-  };
-  WrappedWarning.defaultProps = {
-    type: 'error'
   };
 
   return {

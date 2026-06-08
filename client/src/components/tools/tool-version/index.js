@@ -15,18 +15,22 @@
  */
 
 import React from 'react';
-import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {Outlet} from 'react-router-dom';
+import {
+  inject,
+  observer} from 'mobx-react';
+
+import {computed, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import LoadTool from '../../../models/tools/LoadTool';
 import {
   Alert,
   Button,
-  Icon,
   Row,
   Tabs,
   Card
 } from 'antd';
+import {ArrowLeftOutlined} from '@ant-design/icons';
 import LoadingView from '../../special/LoadingView';
 import Owner from '../../special/owner';
 import roleModel from '../../../utils/roleModel';
@@ -36,7 +40,8 @@ import styles from './ToolVersion.css';
 import LoadToolVersionSettings from '../../../models/tools/LoadToolVersionSettings';
 
 @inject('preferences', 'dockerRegistries')
-@inject((stores, {params}) => {
+@inject(({routing, ...stores}) => {
+  const {params} = routing;
   return {
     ...stores,
     toolId: params.id,
@@ -46,8 +51,14 @@ import LoadToolVersionSettings from '../../../models/tools/LoadToolVersionSettin
   };
 })
 @observer
-export default class ToolVersion extends React.Component {
-  @computed
+class ToolVersion extends React.Component {
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      dockerRegistry: computed
+    });
+  }
+
   get dockerRegistry () {
     if (this.props.dockerRegistries.loaded && this.props.tool.loaded) {
       return (this.props.dockerRegistries.value.registries || [])
@@ -69,7 +80,7 @@ export default class ToolVersion extends React.Component {
       return <LoadingView />;
     }
     if (this.props.tool.error) {
-      return <Alert type="error" message={this.props.tool.error} />;
+      return <Alert type="error" title={this.props.tool.error} />;
     }
     if (!roleModel.readAllowed(this.props.tool.value)) {
       return (
@@ -82,8 +93,8 @@ export default class ToolVersion extends React.Component {
               'cp-panel-borderless'
             )
           }
-          bodyStyle={{padding: 15, height: '100%', display: 'flex', flexDirection: 'column'}}>
-          <Alert type="error" message="You have no permissions to view tool details" />
+          styles={{body: {padding: 15, height: '100%', display: 'flex', flexDirection: 'column'}}}>
+          <Alert type="error" title="You have no permissions to view tool details" />
         </Card>
       );
     }
@@ -97,10 +108,8 @@ export default class ToolVersion extends React.Component {
 
     const isWindowsPlatform = /^windows$/i.test(platform);
 
-    let activeKey = 'scaninfo';
-    if (this.props.routes) {
-      activeKey = this.props.routes[this.props.routes.length - 1].tabKey;
-    }
+    const pathSegments = (this.props.location?.pathname || '').split('/').filter(Boolean);
+    let activeKey = (pathSegments[pathSegments.length - 1]) || 'scaninfo';
 
     if (isWindowsPlatform && ['scaninfo', 'packages'].indexOf(activeKey) >= 0) {
       activeKey = 'settings';
@@ -116,14 +125,14 @@ export default class ToolVersion extends React.Component {
             'cp-panel-borderless'
           )
         }
-        bodyStyle={{padding: 15, height: '100%', display: 'flex', flexDirection: 'column'}}>
+        styles={{body: {padding: 15, height: '100%', display: 'flex', flexDirection: 'column'}}}>
         <Row>
           <Row className={styles.title}>
             <Button
               onClick={this.navigateBack}
               size="small"
               style={{marginBottom: 3, verticalAlign: 'middle', lineHeight: 'inherit'}}>
-              <Icon type="arrow-left" />
+              <ArrowLeftOutlined />
             </Button>
             <ToolLink link={this.props.tool.value.link} style={{marginLeft: 5}} />
             <span style={{marginLeft: 5}}>{this.props.tool.value.image}:{this.props.version}</span>
@@ -137,27 +146,26 @@ export default class ToolVersion extends React.Component {
         <Tabs
           activeKey={activeKey}
           onChange={this.navigateTo}
-          size="small">
-          {
-            this.props.settings.loaded &&
+          size="small"
+          items={[
+            ...(this.props.settings.loaded &&
             !isWindowsPlatform &&
-            this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) && (
-              <Tabs.TabPane key="scaninfo" tab="VULNERABILITIES REPORT" />
-            )
-          }
-          <Tabs.TabPane key="settings" tab="SETTINGS" />
-          {
-            this.props.settings.loaded &&
-            !isWindowsPlatform && (
-              <Tabs.TabPane key="packages" tab="PACKAGES" />
-            )
-          }
-          <Tabs.TabPane key="history" tab="IMAGE HISTORY" />
-        </Tabs>
+            this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry)
+              ? [{key: 'scaninfo', label: 'VULNERABILITIES REPORT', children: null}]
+              : []),
+            {key: 'settings', label: 'SETTINGS', children: null},
+            ...(this.props.settings.loaded && !isWindowsPlatform
+              ? [{key: 'packages', label: 'PACKAGES', children: null}]
+              : []),
+            {key: 'history', label: 'IMAGE HISTORY', children: null}
+          ]}
+        />
         <div style={{flex: 1, overflow: 'auto'}}>
-          {this.props.children}
+          <Outlet />
         </div>
       </Card>
     );
   }
 }
+
+export default ToolVersion;

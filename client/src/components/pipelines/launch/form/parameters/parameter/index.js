@@ -1,7 +1,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Form, Icon} from 'antd';
+import {Form} from 'antd';
+import {MinusCircleOutlined} from '@ant-design/icons';
 import LaunchFormParameterInput from './inputs';
 import styles from './launch-form-parameter.css';
 import ParameterNameInput from './name-input';
@@ -87,20 +88,7 @@ function LaunchFormParameter (props) {
           />
         </Form.Item>
         {removeAllowed && typeof onRemoveParameter === 'function' ? (
-          <Icon
-            className="dynamic-delete-button"
-            type="minus-circle-o"
-            onClick={onRemoveParameterClicked}
-            style={{
-              verticalAlign: 'middle',
-              marginTop: '2px',
-              fontSize: 'larger',
-              cursor: 'pointer',
-              alignSelf: 'flex-start',
-              margin: 'auto -2px auto 15px',
-              height: '100%'
-            }}
-          />
+          <MinusCircleOutlined className="dynamic-delete-button" onClick={onRemoveParameterClicked} style={{ verticalAlign: 'middle', marginTop: '2px', fontSize: 'larger', cursor: 'pointer', alignSelf: 'flex-start', margin: 'auto -2px auto 15px', height: '100%' }} />
         ) : (
           <div
             style={{

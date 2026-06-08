@@ -15,16 +15,18 @@
  */
 
 import React from 'react';
+import {Outlet} from 'react-router-dom';
 import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
 import BillingNavigation from './navigation';
 import Quotas from './quotas';
-import * as Reports from './reports';
+import Reports from './reports';
 import roleModel from '../../utils/roleModel';
 
-function billing ({children, location, router, preferences, authenticatedUserInfo}) {
+function billing ({preferences, authenticatedUserInfo, routing}) {
+  const location = routing?.location || {};
   const isBillingPrivilegedUser = authenticatedUserInfo && authenticatedUserInfo.loaded &&
-    roleModel.isManager.billing(this);
+    roleModel.isManager.billing({props: {authenticatedUserInfo}});
   if (
     !authenticatedUserInfo ||
     !authenticatedUserInfo.loaded ||
@@ -49,9 +51,9 @@ function billing ({children, location, router, preferences, authenticatedUserInf
         )
       }
       location={location}
-      router={router}
+      router={routing}
     >
-      {children}
+      <Outlet />
     </BillingNavigation>
   );
 }
@@ -60,4 +62,4 @@ export {
   Quotas as BillingQuotas,
   Reports as BillingReports
 };
-export default inject('preferences')(roleModel.authenticationInfo(observer(billing)));
+export default inject('preferences', 'routing')(roleModel.authenticationInfo(observer(billing)));

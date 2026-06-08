@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Checkbox, Button} from 'antd';
+import {Checkbox, Button, Space} from 'antd';
 import {booleanParameterValue} from './parameter-utilities';
 import {CP_CAP_RESCHEDULE_RUN} from './parameters';
 
@@ -104,7 +104,7 @@ class RescheduleRunControl extends React.Component {
         className={className}
         style={style}
       >
-        <Button.Group>
+        <Space.Compact>
           {
             values.map((aValue) => (
               <Button
@@ -117,7 +117,7 @@ class RescheduleRunControl extends React.Component {
               </Button>
             ))
           }
-        </Button.Group>
+        </Space.Compact>
       </div>
     );
   }

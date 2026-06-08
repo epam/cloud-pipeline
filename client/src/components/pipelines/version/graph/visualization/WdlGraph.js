@@ -18,7 +18,7 @@ import React from 'react';
 import classNames from 'classnames';
 import Graph from './Graph';
 import {inject, observer} from 'mobx-react';
-import {observable} from 'mobx';
+import {observable, makeObservable} from 'mobx';
 import VersionFile from '../../../../../models/pipelines/VersionFile';
 import AllowedInstanceTypes from '../../../../../models/utils/AllowedInstanceTypes';
 import {
@@ -42,12 +42,12 @@ import {
   AutoComplete,
   Row,
   Button,
-  Icon,
   message,
   Modal,
   Popover,
   Tooltip
 } from 'antd';
+import {AppstoreOutlined, ArrowsAltOutlined, CloseOutlined, MinusCircleOutlined, PlusCircleOutlined, ReloadOutlined, SaveOutlined, ScanOutlined, SearchOutlined, ShrinkOutlined, SwapOutlined} from '@ant-design/icons';
 import WdlPropertiesForm from './forms/wdl-properties-form';
 import {
   generatePipelineCommand,
@@ -67,6 +67,7 @@ import {clearQuotes} from './forms/utilities/string-utilities';
 import buildWdlContentsResolver from './utilities/wdl-contents-resolver';
 import getPipelineFilePath from './utilities/get-pipeline-file-path';
 import {base64toString} from '../../../../../utils/base64';
+import {withBlocker} from '../../../../../utils/with-blocker';
 
 const graphFitContentOpts = {
   padding: 24,
@@ -92,8 +93,7 @@ function reportWDLError (error) {
 }
 
 @inject('runDefaultParameters')
-@inject(({history, routing, pipelines}, params) => ({
-  history,
+@inject(({routing, pipelines}, params) => ({
   routing,
   parameters: pipelines.getVersionParameters(params.pipelineId, params.version),
   pipeline: pipelines.getPipeline(params.pipelineId),
@@ -103,13 +103,20 @@ function reportWDLError (error) {
   allowedInstanceTypes: new AllowedInstanceTypes()
 }))
 @observer
-export default class WdlGraph extends Graph {
+class WdlGraph extends Graph {
   wdlVisualizer;
   wdlDocument;
   wdlProject;
   workflow;
   workflowParameters;
-  @observable previousSuccessfulCode;
+  previousSuccessfulCode;
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      previousSuccessfulCode: observable
+    });
+  }
 
   initializeContainer = async (container) => {
     if (container && !this.wdlVisualizer) {
@@ -373,7 +380,10 @@ export default class WdlGraph extends Graph {
             canZoomIn: true,
             canZoomOut: true,
             error: null,
+            modified: false,
             modifiedConfig: null
+          }, () => {
+            this.props.onBlockingChange && this.props.onBlockingChange(false);
           });
         } else {
           this.setState({
@@ -504,12 +514,16 @@ export default class WdlGraph extends Graph {
           ? params
           : undefined,
         wdlError
+      }, () => {
+        this.props.onBlockingChange && this.props.onBlockingChange(this.state.modified);
       });
     } else {
       this.setState({
         modified,
         modifiedParameters: undefined,
         wdlError
+      }, () => {
+        this.props.onBlockingChange && this.props.onBlockingChange(this.state.modified);
       });
     }
   };
@@ -567,6 +581,8 @@ export default class WdlGraph extends Graph {
       modified: false,
       wdlError: undefined,
       modifiedParameters: undefined
+    }, () => {
+      this.props.onBlockingChange && this.props.onBlockingChange(false);
     });
   }
 
@@ -648,10 +664,7 @@ export default class WdlGraph extends Graph {
         <span>{title}</span>
         {
           onPanelClose &&
-          <Icon
-            type="close"
-            onClick={onPanelClose}
-            style={{cursor: 'pointer'}} />
+          <CloseOutlined onClick={onPanelClose} style={{cursor: 'pointer'}} />
         }
       </Row>
     );
@@ -860,22 +873,22 @@ export default class WdlGraph extends Graph {
     return (
       <Tooltip
         title="Search element"
-        onVisibleChange={onTooltipVisibleChange}
-        visible={this.state.tooltipVisible}
+        onOpenChange={onTooltipVisibleChange}
+        open={this.state.tooltipVisible}
         placement="right">
         <Popover
           content={searchControl}
           placement="rightTop"
           trigger="click"
-          onVisibleChange={this.handleSearchControlVisible}
-          visible={this.state.searchControlVisible}
+          onOpenChange={this.handleSearchControlVisible}
+          open={this.state.searchControlVisible}
         >
           <Button
             id="wdl-graph-search-button"
             className={styles.wdlAppearanceButton}
             shape="circle"
           >
-            <Icon type="search" />
+            <SearchOutlined />
           </Button>
         </Popover>
       </Tooltip>
@@ -907,7 +920,7 @@ export default class WdlGraph extends Graph {
             type="primary"
             shape="circle"
             onClick={this.openCommitFormDialog}>
-            <Icon type="save" />
+            <SaveOutlined />
           </Button>
         </Tooltip>
       }
@@ -925,7 +938,7 @@ export default class WdlGraph extends Graph {
             disabled={!this.state.modified}
             shape="circle"
             onClick={() => this.revertChanges()}>
-            <Icon type="reload" />
+            <ReloadOutlined />
           </Button>
         </Tooltip>
       }
@@ -949,7 +962,7 @@ export default class WdlGraph extends Graph {
           id="wdl-graph-layout-button"
           shape="circle"
           onClick={this.layoutGraph}>
-          <Icon type="appstore-o" />
+          <AppstoreOutlined />
         </Button>
       </Tooltip>
       <Tooltip title="Fit to screen" placement="right">
@@ -958,7 +971,7 @@ export default class WdlGraph extends Graph {
           id="wdl-graph-fit-button"
           shape="circle"
           onClick={this.fitGraph}>
-          <Icon type="scan" />
+          <ScanOutlined />
         </Button>
       </Tooltip>
       <Tooltip
@@ -970,7 +983,7 @@ export default class WdlGraph extends Graph {
           id={`wdl-graph-${this.state.showAllLinks ? 'hide-links' : 'show-links'}-button`}
           shape="circle"
           onClick={this.toggleLinks}>
-          <Icon type="swap" />
+          <SwapOutlined />
         </Button>
       </Tooltip>
       <Tooltip title="Zoom out" placement="right">
@@ -980,7 +993,7 @@ export default class WdlGraph extends Graph {
           shape="circle"
           onClick={this.zoomOut}
           disabled={!this.state.canZoomOut}>
-          <Icon type="minus-circle-o" />
+          <MinusCircleOutlined />
         </Button>
       </Tooltip>
       <Tooltip title="Zoom in" placement="right">
@@ -990,7 +1003,7 @@ export default class WdlGraph extends Graph {
           shape="circle"
           onClick={this.zoomIn}
           disabled={!this.state.canZoomIn}>
-          <Icon type="plus-circle-o" />
+          <PlusCircleOutlined />
         </Button>
       </Tooltip>
       {
@@ -1002,7 +1015,7 @@ export default class WdlGraph extends Graph {
           id="wdl-graph-fuulscreen-button"
           shape="circle"
           onClick={this.toggleFullScreen}>
-          <Icon type={this.state.fullScreen ? 'shrink' : 'arrows-alt'} />
+          {this.state.fullScreen ? <ShrinkOutlined /> : <ArrowsAltOutlined />}
         </Button>
       </Tooltip>
     </div>
@@ -1018,7 +1031,7 @@ export default class WdlGraph extends Graph {
       return <LoadingView />;
     }
     if (loadError) {
-      return <Alert type="warning" message={loadError} />;
+      return <Alert type="warning" title={loadError} />;
     }
     if (error) {
       const errorText = error.message || error;
@@ -1031,7 +1044,7 @@ export default class WdlGraph extends Graph {
       return (
         <Alert
           type="warning"
-          message={errorContent} />
+          title={errorContent} />
       );
     }
     return (
@@ -1056,17 +1069,6 @@ export default class WdlGraph extends Graph {
     );
   }
 
-  componentDidUpdate (prevProps, prevState, snapshot) {
-    if (
-      prevProps.pipelineId !== this.props.pipelineId ||
-      prevProps.pipelineVersion !== this.props.pipelineVersion
-    ) {
-      console.log('pipeline id or version changed');
-      this.loadMainFile();
-    }
-    super.componentDidUpdate(prevProps, prevState, snapshot);
-  }
-
   renderBottomGraphControls = () => {
     return null;
   };
@@ -1076,46 +1078,47 @@ export default class WdlGraph extends Graph {
       this.setState({
         modified: false,
         wdlError: undefined
-      }, () => resolve());
+      }, () => {
+        this.props.onBlockingChange && this.props.onBlockingChange(false);
+        resolve();
+      });
     });
   }
 
-  _removeRouterListener = null;
-  _routeChangeConfirm = null;
+  blockerModalRef = null;
 
   componentDidMount () {
     this.loadMainFile();
-    this._removeRouterListener = this.props.history.listenBefore((location, callback) => {
-      const locationBefore = this.props.routing.location.pathname;
-      if (this.state.modified && !this._routeChangeConfirm) {
-        const onOk = () => {
-          callback();
-          setTimeout(() => {
-            this._routeChangeConfirm = null;
-          }, 0);
-        };
-        const onCancel = () => {
-          if (this.props.history.getCurrentLocation().pathname !== locationBefore) {
-            this.props.history.replace(locationBefore);
-          }
-          setTimeout(() => {
-            this._routeChangeConfirm = null;
-          }, 0);
-        };
-
-        this._routeChangeConfirm = this.unsavedChangesConfirm(onOk, onCancel);
-      } else {
-        callback();
-      }
-    });
     this.props.onGraphReady && this.props.onGraphReady(this);
+  }
+
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    const {blocker} = this.props;
+    if (blocker?.state !== 'blocked') {
+      this.blockerModalRef = null;
+    } else if (!this.blockerModalRef) {
+      this.blockerModalRef = true;
+      this.unsavedChangesConfirm(
+        () => {
+          blocker.proceed();
+          this.blockerModalRef = null;
+        },
+        () => {
+          blocker.reset();
+          this.blockerModalRef = null;
+        }
+      );
+    }
+    if (
+      prevProps.pipelineId !== this.props.pipelineId ||
+      prevProps.pipelineVersion !== this.props.pipelineVersion
+    ) {
+      this.loadMainFile();
+    }
   }
 
   componentWillUnmount () {
     this._loadMainFileToken = {};
-    if (this._removeRouterListener) {
-      this._removeRouterListener();
-    }
   }
 
   loadMainFile = () => {
@@ -1183,3 +1186,5 @@ export default class WdlGraph extends Graph {
     });
   };
 }
+
+export default withBlocker(WdlGraph);

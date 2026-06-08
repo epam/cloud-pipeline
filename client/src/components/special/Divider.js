@@ -45,7 +45,7 @@ function Divider ({style, vertical}) {
   );
 };
 
-Divider.PropTypes = {
+Divider.propTypes = {
   style: PropTypes.object,
   vertical: PropTypes.bool
 };

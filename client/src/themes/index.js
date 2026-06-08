@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import getThemes, {
   DefaultDarkThemeIdentifier,
@@ -29,7 +29,8 @@ import getThemes, {
   getTheme
 } from './themes';
 import injectTheme, {ejectTheme} from './utilities/inject-theme';
-import './default.theme.less';
+import {withLegacyAliases} from './tokens/migrate-v1-to-v2';
+import './styles/index.css';
 
 const _TEMPORARY_SYNC_WITH_SYSTEM_KEY = 'CP-THEMES-SYNC-WITH-SYSTEM';
 const _TEMPORARY_LIGHT_THEME_KEY = 'CP-THEMES-SYSTEM-LIGHT';
@@ -73,32 +74,44 @@ function applyClassNameToBody (className, themes = []) {
 }
 
 class CloudPipelineThemes {
-  @observable themes = [];
-  @observable mode = ThemesPreferenceModes.payload;
-  @observable themesURL;
-  @observable loaded = false;
-  @observable currentTheme = DefaultLightThemeIdentifier;
-  @observable synchronizeWithSystem = false;
-  @observable singleTheme = DefaultDarkThemeIdentifier;
-  @observable systemLightTheme = DefaultLightThemeIdentifier;
-  @observable systemDarkTheme = DefaultDarkThemeIdentifier;
-  @observable isSystemDarkMode = false;
+  themes = [];
+  mode = ThemesPreferenceModes.payload;
+  themesURL;
+  loaded = false;
+  currentTheme = DefaultLightThemeIdentifier;
+  synchronizeWithSystem = false;
+  singleTheme = DefaultDarkThemeIdentifier;
+  systemLightTheme = DefaultLightThemeIdentifier;
+  systemDarkTheme = DefaultDarkThemeIdentifier;
+  isSystemDarkMode = false;
 
-  @computed
   get currentThemeConfiguration () {
     const theme = this.themes.find(o => o.identifier === this.currentTheme);
     if (theme) {
-      return theme.getParsedConfiguration();
+      return withLegacyAliases(theme.getParsedConfiguration());
     }
     return undefined;
   }
 
-  @computed
   get currentThemeObject () {
     return this.themes.find(o => o.identifier === this.currentTheme);
   }
 
   constructor () {
+    makeObservable(this, {
+      themes: observable,
+      mode: observable,
+      themesURL: observable,
+      loaded: observable,
+      currentTheme: observable,
+      synchronizeWithSystem: observable,
+      singleTheme: observable,
+      systemLightTheme: observable,
+      systemDarkTheme: observable,
+      isSystemDarkMode: observable,
+      currentThemeConfiguration: computed,
+      currentThemeObject: computed
+    });
     this.listeners = [];
     (this.initialize)();
     if (window.matchMedia) {

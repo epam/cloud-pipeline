@@ -71,7 +71,7 @@
 .saved-filters-row {
   cursor: pointer;
   height: 30px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--cp-color-interactive-hover-bg);
 }
 
 .saved-filters-actions-row {

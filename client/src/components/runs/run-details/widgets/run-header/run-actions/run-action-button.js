@@ -72,7 +72,7 @@ class RunActionButton extends React.Component {
                 style={style}
                 size="small"
                 onClick={() => this.terminatePipeline()}
-                type="danger"
+                danger
               >
                 TERMINATE
               </Button>
@@ -93,7 +93,7 @@ class RunActionButton extends React.Component {
                 style={style}
                 size="small"
                 onClick={() => this.stopPipeline()}
-                type="danger"
+                danger
               >
                 STOP
               </Button>

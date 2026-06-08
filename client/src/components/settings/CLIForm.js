@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import {API_PATH, SERVER} from '../../config';
 import {
@@ -29,6 +29,8 @@ import styles from './styles.css';
 import UserToken from '../../models/user/UserToken';
 import PipelineGitCredentials from '../../models/pipelines/PipelineGitCredentials';
 import Notifications from '../../models/notifications/Notifications';
+import moment from 'moment-timezone';
+import {momentToDayjs, dayjsToMoment} from '../../utils/antd-date-utils';
 import LoadingView from '../special/LoadingView';
 import DriveMappingWindowsForm from './DriveMappingWindowsForm';
 import {getOS} from '../../utils/OSDetection';
@@ -91,22 +93,36 @@ export default class CLIForm extends React.Component {
     refreshTableToken: 0
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      driveMappintAuthUrl: computed,
+      pipeDriveMapping: computed,
+      fileBrowserApp: computed,
+      hasWritableNFSStorages: computed,
+      isAdmin: computed,
+      jwtTokenExpirationUserLimitSeconds: computed,
+      jwtTokenDateTo: computed,
+      uiVscodeExtensionInstallTemplate: computed
+    });
+  }
+
+  componentDidMount () {
+    this.recalculateDefaultValidTillDate();
+  }
+
   get driveMappintAuthUrl () {
     return this.props.preferences.getPreferenceValue(DRIVE_MAPPING_URL_PREFERENCE);
   }
 
-  @computed
   get pipeDriveMapping () {
     return this.props.preferences.getPreferenceValue(DRIVE_MAPPING_KEY) || '{}';
   }
 
-  @computed
   get fileBrowserApp () {
     return this.props.preferences.getPreferenceValue(FILE_BROWSER_KEY) || '{}';
   }
 
-  @computed
   get hasWritableNFSStorages () {
     if (this.props.dataStorages.loaded) {
       return (this.props.dataStorages.value || [])
@@ -116,11 +132,53 @@ export default class CLIForm extends React.Component {
     return false;
   }
 
-  @computed
+  get isAdmin () {
+    const {authenticatedUserInfo} = this.props;
+    if (authenticatedUserInfo.loaded) {
+      return authenticatedUserInfo.value.admin;
+    }
+    return false;
+  }
+
+  get jwtTokenExpirationUserLimitSeconds () {
+    if (this.isAdmin) {
+      return 0;
+    }
+    const {preferences} = this.props;
+    return preferences.launchJWTTokenExpirationUserLimit;
+  }
+
+  get jwtTokenDateTo () {
+    const {jwtTokenExpirationUserLimitSeconds: seconds} = this;
+    if (seconds > 0) {
+      const now = moment();
+      return now.add(seconds, 'seconds').endOf('day');
+    }
+    return undefined;
+  }
+
   get uiVscodeExtensionInstallTemplate () {
     const {preferences} = this.props;
     return preferences.uiVscodeExtensionInstallTemplate || {};
   }
+
+  recalculateDefaultValidTillDate = () => {
+    (async () => {
+      try {
+        const {preferences} = this.props;
+        await preferences.fetchIfNeededOrWait();
+        const dt = this.jwtTokenDateTo || moment().add(1, 'M');
+        this.setState({
+          cli: {
+            validTill: dt,
+            accessKey: null
+          }
+        });
+      } catch {
+        // noop
+      }
+    })();
+  };
 
   onGenerateToken = (token) => this.setState({
     generateModalVisible: false,
@@ -365,7 +423,7 @@ export default class CLIForm extends React.Component {
       return <LoadingView />;
     }
     if (this.props.pipelineGitCredentials.error) {
-      return <Alert type="error" message={this.props.pipelineGitCredentials.error} />;
+      return <Alert type="error" title={this.props.pipelineGitCredentials.error} />;
     }
     const {email, userName, url, token} = this.props.pipelineGitCredentials.value;
     const getSettingsValue = (key) => {
@@ -411,7 +469,7 @@ export default class CLIForm extends React.Component {
         <Row>
           <Alert
             type="info"
-            message={
+            title={
               <div>
                 <center><b>No supported data storage available</b></center>
                 <center style={{marginTop: '10px'}}><b>Drive mapping</b> feature allows to mount a cloud data storage to your local workstation and manage files/folders as with any general hard drive</center>

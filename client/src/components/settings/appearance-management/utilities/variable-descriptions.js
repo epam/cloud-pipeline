@@ -25,583 +25,583 @@ const VariableTypes = {
 
 const Variables = {
   applicationBackgroundColor: {
-    key: '@application-background-color',
+    key: '--cp-color-bg-layout',
     name: 'Application background color',
     type: VariableTypes.color
   },
   applicationColor: {
-    key: '@application-color',
+    key: '--cp-color-text',
     name: 'Text color',
     type: VariableTypes.color
   },
   applicationColorFaded: {
-    key: '@application-color-faded',
+    key: '--cp-color-text-secondary',
     name: 'Text color faded',
     type: VariableTypes.color
   },
   applicationColorDisabled: {
-    key: '@application-color-disabled',
+    key: '--cp-color-text-disabled',
     name: 'Disabled text color',
     type: VariableTypes.color
   },
   applicationColorAccent: {
-    key: '@application-color-accent',
+    key: '--cp-color-text-accent',
     name: 'Accented text color',
     type: VariableTypes.color
   },
   primaryColor: {
-    key: '@primary-color',
+    key: '--cp-color-primary',
     name: 'Primary action color',
     type: VariableTypes.color
   },
   primaryHoverColor: {
-    key: '@primary-hover-color',
+    key: '--cp-color-primary-hover',
     name: 'Primary action hovered color',
     type: VariableTypes.color
   },
   primaryActiveColor: {
-    key: '@primary-active-color',
+    key: '--cp-color-primary-active',
     name: 'Primary action active color',
     type: VariableTypes.color
   },
   primaryTextColor: {
-    key: '@primary-text-color',
+    key: '--cp-color-primary-on',
     name: 'Primary action text color',
     type: VariableTypes.color
   },
   primaryColorSemiTransparent: {
-    key: '@primary-color-semi-transparent',
+    key: '--cp-color-primary-muted',
     name: 'Metadata table selection background',
     type: VariableTypes.color
   },
   colorSuccess: {
-    key: '@color-success',
+    key: '--cp-color-success',
     name: 'Success status color',
     type: VariableTypes.color
   },
   colorError: {
-    key: '@color-error',
+    key: '--cp-color-error',
     name: 'Error status color',
     type: VariableTypes.color
   },
   colorWarning: {
-    key: '@color-warning',
+    key: '--cp-color-warning',
     name: 'Warning status color',
     type: VariableTypes.color
   },
   colorInfo: {
-    key: '@color-info',
+    key: '--cp-color-info',
     name: 'Info color',
     type: VariableTypes.color
   },
   colorGreen: {
-    key: '@color-green',
+    key: '--cp-color-green',
     name: 'Green color',
     type: VariableTypes.color
   },
   colorRed: {
-    key: '@color-red',
+    key: '--cp-color-red',
     name: 'Red color',
     type: VariableTypes.color
   },
   colorYellow: {
-    key: '@color-yellow',
+    key: '--cp-color-yellow',
     name: 'Yellow color',
     type: VariableTypes.color
   },
   colorBlue: {
-    key: '@color-blue',
+    key: '--cp-color-blue',
     name: 'Blue color',
     type: VariableTypes.color
   },
   colorViolet: {
-    key: '@color-violet',
+    key: '--cp-color-violet',
     name: 'Violet color',
     type: VariableTypes.color
   },
   colorSensitive: {
-    key: '@color-sensitive',
+    key: '--cp-color-sensitive',
     name: 'Sensitive object color',
     type: VariableTypes.color
   },
   colorAqua: {
-    key: '@color-aqua',
+    key: '--cp-color-aqua',
     name: 'Aqua color',
     type: VariableTypes.color
   },
   colorAquaLight: {
-    key: '@color-aqua-light',
+    key: '--cp-color-aqua-light',
     name: 'Aqua light color',
     type: VariableTypes.color
   },
   colorPink: {
-    key: '@color-pink',
+    key: '--cp-color-pink',
     name: 'Pink color',
     type: VariableTypes.color
   },
   colorPinkDusty: {
-    key: '@color-pink-dusty',
+    key: '--cp-color-pink-dusty',
     name: 'Dusty pink color',
     type: VariableTypes.color
   },
   colorPinkLight: {
-    key: '@color-pink-light',
+    key: '--cp-color-pink-light',
     name: 'Light pink color',
     type: VariableTypes.color
   },
   colorBlueDimmed: {
-    key: '@color-blue-dimmed',
+    key: '--cp-color-blue-dimmed',
     name: 'Blue dimmed color',
     type: VariableTypes.color
   },
   colorGrey: {
-    key: '@color-grey',
+    key: '--cp-color-grey',
     name: 'Grey color',
     type: VariableTypes.color
   },
   spinner: {
-    key: '@spinner',
+    key: '--cp-color-spinner',
     name: 'Loading indicator color',
     type: VariableTypes.color
   },
   elementHoverColor: {
-    key: '@element-hover-color',
+    key: '--cp-color-interactive-hover-text',
     name: 'Lists: hovered element text color',
     type: VariableTypes.color
   },
   elementHoverBackgroundColor: {
-    key: '@element-hover-background-color',
+    key: '--cp-color-interactive-hover-bg',
     name: 'Lists: hovered element background',
     type: VariableTypes.color
   },
   elementSelectedColor: {
-    key: '@element-selected-color',
+    key: '--cp-color-interactive-selected-text',
     name: 'Lists: selected element text color',
     type: VariableTypes.color
   },
   elementSelectedBackgroundColor: {
-    key: '@element-selected-background-color',
+    key: '--cp-color-interactive-selected-bg',
     name: 'Lists: selected element background',
     type: VariableTypes.color
   },
   inputBackground: {
-    key: '@input-background',
+    key: '--cp-color-bg-input',
     name: 'Input control background',
     type: VariableTypes.color
   },
   inputBackgroundDisabled: {
-    key: '@input-background-disabled',
+    key: '--cp-color-bg-input-disabled',
     name: 'Disabled input control background',
     type: VariableTypes.color
   },
   inputAddon: {
-    key: '@input-addon',
+    key: '--cp-color-input-addon-bg',
     name: 'Input control addon background',
     type: VariableTypes.color
   },
   inputBorder: {
-    key: '@input-border',
+    key: '--cp-color-border-input',
     name: 'Input control border',
     type: VariableTypes.color
   },
   inputColor: {
-    key: '@input-color',
+    key: '--cp-color-input-text',
     name: 'Input control text color',
     type: VariableTypes.color
   },
   inputPlaceholderColor: {
-    key: '@input-placeholder-color',
+    key: '--cp-color-input-placeholder',
     name: 'Input control placeholder color',
     type: VariableTypes.color
   },
   inputBorderHoverColor: {
-    key: '@input-border-hover-color',
+    key: '--cp-color-input-border-hover',
     name: 'Hovered input control border',
     type: VariableTypes.color
   },
   inputShadowColor: {
-    key: '@input-shadow-color',
+    key: '--cp-color-input-focus-ring',
     name: 'Hovered input control shadow',
     type: VariableTypes.color
   },
   inputSearchIconColor: {
-    key: '@input-search-icon-color',
+    key: '--cp-color-input-search-icon',
     name: 'Input control search icon',
     type: VariableTypes.color
   },
   inputSearchIconHoveredColor: {
-    key: '@input-search-icon-hovered-color',
+    key: '--cp-color-input-search-icon-hover',
     name: 'Input control search icon hovered',
     type: VariableTypes.color
   },
   panelBackgroundColor: {
-    key: '@panel-background-color',
+    key: '--cp-color-bg-container',
     name: 'Panels background color',
     type: VariableTypes.color
   },
   panelBorderColor: {
-    key: '@panel-border-color',
+    key: '--cp-color-border',
     name: 'Panels border color',
     type: VariableTypes.color
   },
   cardBackgroundColor: {
-    key: '@card-background-color',
+    key: '--cp-color-bg-elevated',
     name: 'Cards background color',
     type: VariableTypes.color
   },
   cardBorderColor: {
-    key: '@card-border-color',
+    key: '--cp-color-border-card',
     name: 'Cards border color',
     type: VariableTypes.color
   },
   cardHoveredShadowColor: {
-    key: '@card-hovered-shadow-color',
+    key: '--cp-color-card-shadow',
     name: 'Hovered card shadow',
     type: VariableTypes.color
   },
   cardActionsActiveBackground: {
-    key: '@card-actions-active-background',
+    key: '--cp-color-card-actions-active-bg',
     name: 'Card actions background color',
     type: VariableTypes.color
   },
   cardHeaderBackground: {
-    key: '@card-header-background',
+    key: '--cp-color-bg-elevated-header',
     name: 'Card header background color',
     type: VariableTypes.color
   },
   cardServiceBackgroundColor: {
-    key: '@card-service-background-color',
+    key: '--cp-color-bg-service-card',
     name: 'Service cards background color',
     type: VariableTypes.color
   },
   cardServiceBorderColor: {
-    key: '@card-service-border-color',
+    key: '--cp-color-border-service-card',
     name: 'Service cards border color',
     type: VariableTypes.color
   },
   cardServiceHoveredShadowColor: {
-    key: '@card-service-hovered-shadow-color',
+    key: '--cp-color-service-card-shadow',
     name: 'Service card shadow',
     type: VariableTypes.color
   },
   cardServiceActionsActiveBackground: {
-    key: '@card-service-actions-active-background',
+    key: '--cp-color-service-card-actions-active-bg',
     name: 'Service card actions background color',
     type: VariableTypes.color
   },
   cardServiceHeaderBackground: {
-    key: '@card-service-header-background',
+    key: '--cp-color-service-card-header-bg',
     name: 'Service card header background color',
     type: VariableTypes.color
   },
   navigationPanelColor: {
-    key: '@navigation-panel-color',
+    key: '--cp-color-nav-bg',
     name: 'Navigation panel color',
     type: VariableTypes.color
   },
   navigationPanelColorImpersonated: {
-    key: '@navigation-panel-color-impersonated',
+    key: '--cp-color-nav-bg-impersonated',
     name: 'Impersonated navigation panel color',
     type: VariableTypes.color
   },
   navigationPanelHighlightedColor: {
-    key: '@navigation-panel-highlighted-color',
+    key: '--cp-color-nav-bg-active',
     name: 'Navigation panel active item background',
     type: VariableTypes.color
   },
   navigationPanelHighlightedColorImpersonated: {
-    key: '@navigation-panel-highlighted-color-impersonated',
+    key: '--cp-color-nav-bg-impersonated-active',
     name: 'Impersonated active item background',
     type: VariableTypes.color
   },
   navigationItemColor: {
-    key: '@navigation-item-color',
+    key: '--cp-color-nav-text',
     name: 'Navigation panel icon color',
     type: VariableTypes.color
   },
   navigationItemRunsColor: {
-    key: '@navigation-item-runs-color',
+    key: '--cp-color-nav-runs',
     name: 'Navigation panel jobs icon color',
     type: VariableTypes.color
   },
   tagKeyBackgroundColor: {
-    key: '@tag-key-background-color',
+    key: '--cp-color-tag-key-bg',
     name: 'Key-value attribute: key background',
     type: VariableTypes.color
   },
   tagKeyValueDividerColor: {
-    key: '@tag-key-value-divider-color',
+    key: '--cp-color-tag-divider',
     name: 'Key-value attribute: divider',
     type: VariableTypes.color
   },
   tagValueBackgroundColor: {
-    key: '@tag-value-background-color',
+    key: '--cp-color-tag-value-bg',
     name: 'Key-value attribute: value background',
     type: VariableTypes.color
   },
   nfsIconColor: {
-    key: '@nfs-icon-color',
+    key: '--cp-color-nfs-icon',
     name: 'NFS Storage icon',
     type: VariableTypes.color
   },
   awsIcon: {
-    key: '@aws-icon',
+    key: '--cp-asset-aws-icon',
     name: 'AWS icon',
     type: VariableTypes.providerIcon,
     provider: 'AWS'
   },
   awsIconContrast: {
-    key: '@aws-icon-contrast',
+    key: '--cp-asset-aws-icon-contrast',
     name: 'AWS icon (contrasted)',
     type: VariableTypes.providerIcon,
     provider: 'AWS'
   },
   gcpIcon: {
-    key: '@gcp-icon',
+    key: '--cp-asset-gcp-icon',
     name: 'GCP icon',
     type: VariableTypes.providerIcon,
     provider: 'GCP'
   },
   gcpIconContrast: {
-    key: '@gcp-icon-contrast',
+    key: '--cp-asset-gcp-icon-contrast',
     name: 'GCP icon (contrasted)',
     type: VariableTypes.providerIcon,
     provider: 'GCP'
   },
   azureIcon: {
-    key: '@azure-icon',
+    key: '--cp-asset-azure-icon',
     name: 'AZURE icon',
     type: VariableTypes.providerIcon,
     provider: 'AZURE'
   },
   azureIconContrast: {
-    key: '@azure-icon-contrast',
+    key: '--cp-asset-azure-icon-contrast',
     name: 'AZURE icon (contrasted)',
     type: VariableTypes.providerIcon,
     provider: 'AZURE'
   },
   euRegionIcon: {
-    key: '@eu-region-icon',
+    key: '--cp-asset-eu-region-icon',
     name: 'EU region icon',
     type: VariableTypes.regionIcon
   },
   usRegionIcon: {
-    key: '@us-region-icon',
+    key: '--cp-asset-us-region-icon',
     name: 'US region icon',
     type: VariableTypes.regionIcon
   },
   saRegionIcon: {
-    key: '@sa-region-icon',
+    key: '--cp-asset-sa-region-icon',
     name: 'SA region icon',
     type: VariableTypes.regionIcon
   },
   cnRegionIcon: {
-    key: '@cn-region-icon',
+    key: '--cp-asset-cn-region-icon',
     name: 'CN region icon',
     type: VariableTypes.regionIcon
   },
   caRegionIcon: {
-    key: '@ca-region-icon',
+    key: '--cp-asset-ca-region-icon',
     name: 'CA region icon',
     type: VariableTypes.regionIcon
   },
   apNortheast1RegionIcon: {
-    key: '@ap-northeast-1-region-icon',
+    key: '--cp-asset-ap-northeast-1-region-icon',
     name: 'AP North-East 1 region icon',
     type: VariableTypes.regionIcon
   },
   apNortheast2RegionIcon: {
-    key: '@ap-northeast-2-region-icon',
+    key: '--cp-asset-ap-northeast-2-region-icon',
     name: 'AP North-East 2 region icon',
     type: VariableTypes.regionIcon
   },
   apNortheast3RegionIcon: {
-    key: '@ap-northeast-3-region-icon',
+    key: '--cp-asset-ap-northeast-3-region-icon',
     name: 'AP North-East 3 region icon',
     type: VariableTypes.regionIcon
   },
   apSouth1RegionIcon: {
-    key: '@ap-south-1-region-icon',
+    key: '--cp-asset-ap-south-1-region-icon',
     name: 'AP South 1 region icon',
     type: VariableTypes.regionIcon
   },
   apSoutheast1RegionIcon: {
-    key: '@ap-southeast-1-region-icon',
+    key: '--cp-asset-ap-southeast-1-region-icon',
     name: 'AP South-East 1 region icon',
     type: VariableTypes.regionIcon
   },
   apSoutheast2RegionIcon: {
-    key: '@ap-southeast-2-region-icon',
+    key: '--cp-asset-ap-southeast-2-region-icon',
     name: 'AP South-East 2 region icon',
     type: VariableTypes.regionIcon
   },
   taiwanRegionIcon: {
-    key: '@taiwan-region-icon',
+    key: '--cp-asset-taiwan-region-icon',
     name: 'Taiwan region icon',
     type: VariableTypes.regionIcon
   },
   modalMaskBackground: {
-    key: '@modal-mask-background',
+    key: '--cp-color-bg-overlay',
     name: 'Dialogs overlay background',
     type: VariableTypes.color
   },
   evenElementBackground: {
-    key: '@even-element-background',
+    key: '--cp-color-bg-striped',
     name: 'Even elements background',
     type: VariableTypes.color
   },
   alertSuccessBackground: {
-    key: '@alert-success-background',
+    key: '--cp-color-alert-success-bg',
     name: 'Success alert background',
     type: VariableTypes.color
   },
   alertSuccessBorder: {
-    key: '@alert-success-border',
+    key: '--cp-color-alert-success-border',
     name: 'Success alert border',
     type: VariableTypes.color
   },
   alertSuccessIcon: {
-    key: '@alert-success-icon',
+    key: '--cp-color-alert-success-icon',
     name: 'Success alert icon',
     type: VariableTypes.color
   },
   alertWarningBackground: {
-    key: '@alert-warning-background',
+    key: '--cp-color-alert-warning-bg',
     name: 'Warning alert background',
     type: VariableTypes.color
   },
   alertWarningBorder: {
-    key: '@alert-warning-border',
+    key: '--cp-color-alert-warning-border',
     name: 'Warning alert border',
     type: VariableTypes.color
   },
   alertWarningIcon: {
-    key: '@alert-warning-icon',
+    key: '--cp-color-alert-warning-icon',
     name: 'Warning alert icon',
     type: VariableTypes.color
   },
   alertErrorBackground: {
-    key: '@alert-error-background',
+    key: '--cp-color-alert-error-bg',
     name: 'Error alert background',
     type: VariableTypes.color
   },
   alertErrorBorder: {
-    key: '@alert-error-border',
+    key: '--cp-color-alert-error-border',
     name: 'Error alert border',
     type: VariableTypes.color
   },
   alertErrorIcon: {
-    key: '@alert-error-icon',
+    key: '--cp-color-alert-error-icon',
     name: 'Error alert icon',
     type: VariableTypes.color
   },
   alertInfoBackground: {
-    key: '@alert-info-background',
+    key: '--cp-color-alert-info-bg',
     name: 'Info alert background',
     type: VariableTypes.color
   },
   alertInfoBorder: {
-    key: '@alert-info-border',
+    key: '--cp-color-alert-info-border',
     name: 'Info alert border',
     type: VariableTypes.color
   },
   alertInfoIcon: {
-    key: '@alert-info-icon',
+    key: '--cp-color-alert-info-icon',
     name: 'Info alert icon',
     type: VariableTypes.color
   },
   tableElementSelectedBackgroundColor: {
-    key: '@table-element-selected-background-color',
+    key: '--cp-color-table-selected-bg',
     name: 'Tables: selected element background',
     type: VariableTypes.color
   },
   tableElementSelectedColor: {
-    key: '@table-element-selected-color',
+    key: '--cp-color-table-selected-text',
     name: 'Tables: selected element text color',
     type: VariableTypes.color
   },
   tableElementHoverBackgroundColor: {
-    key: '@table-element-hover-background-color',
+    key: '--cp-color-table-hover-bg',
     name: 'Tables: hovered element background',
     type: VariableTypes.color
   },
   tableElementHoverColor: {
-    key: '@table-element-hover-color',
+    key: '--cp-color-table-hover-text',
     name: 'Tables: hovered element text color',
     type: VariableTypes.color
   },
   tableBorderColor: {
-    key: '@table-border-color',
+    key: '--cp-color-border-table',
     name: 'Tables: border',
     type: VariableTypes.color
   },
   tableHeadColor: {
-    key: '@table-head-color',
+    key: '--cp-color-table-head-text',
     name: 'Tables: header text color',
     type: VariableTypes.color
   },
   menuActiveColor: {
-    key: '@menu-active-color',
+    key: '--cp-color-menu-active',
     name: 'Active/hovered menu item color',
     type: VariableTypes.color
   },
   btnDangerColor: {
-    key: '@btn-danger-color',
+    key: '--cp-color-btn-danger-text',
     name: 'Danger button: text color',
     type: VariableTypes.color
   },
   btnDangerBackgroundColor: {
-    key: '@btn-danger-background-color',
+    key: '--cp-color-btn-danger-bg',
     name: 'Danger button: background color',
     type: VariableTypes.color
   },
   btnDangerActiveColor: {
-    key: '@btn-danger-active-color',
+    key: '--cp-color-btn-danger-active-text',
     name: 'Danger button: active text color',
     type: VariableTypes.color
   },
   btnDangerActiveBackground: {
-    key: '@btn-danger-active-background',
+    key: '--cp-color-btn-danger-active-bg',
     name: 'Danger button: active background color',
     type: VariableTypes.color
   },
   btnDisabledColor: {
-    key: '@btn-disabled-color',
+    key: '--cp-color-btn-disabled-text',
     name: 'Disabled button: text color',
     type: VariableTypes.color
   },
   btnDisabledBackgroundColor: {
-    key: '@btn-disabled-background-color',
+    key: '--cp-color-btn-disabled-bg',
     name: 'Disabled button: background color',
     type: VariableTypes.color
   },
   codeBackgroundColor: {
-    key: '@code-background-color',
+    key: '--cp-color-bg-code',
     name: 'Code editor background color',
     type: VariableTypes.color
   },
   searchHighlightTextColor: {
-    key: '@search-highlight-text-color',
+    key: '--cp-color-search-highlight-text',
     name: 'Search results: highlighted text color',
     type: VariableTypes.color
   },
   searchHighlightTextBackgroundColor: {
-    key: '@search-highlight-text-background-color',
+    key: '--cp-color-search-highlight-bg',
     name: 'Search results: highlighted background',
     type: VariableTypes.color
   },
   backgroundImage: {
-    key: '@background-image',
+    key: '--cp-asset-bg-image',
     name: 'Application background image',
     type: VariableTypes.image
   },
   logoImage: {
-    key: '@logo-image',
+    key: '--cp-asset-logo',
     name: 'Application logo',
     type: VariableTypes.image
   },
   navigationBackgroundImage: {
-    key: '@navigation-background-image',
+    key: '--cp-asset-nav-bg-image',
     name: 'Navigation panel background image',
     type: VariableTypes.image
   }

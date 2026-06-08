@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {ModuleParameter} from './base';
 import {AnalysisTypes} from '../common/analysis-types';
 
@@ -48,9 +48,11 @@ class FileParameter extends ModuleParameter {
       type: AnalysisTypes.file,
       isList: true
     });
+    makeObservable(this, {
+      values: computed
+    });
   }
 
-  @computed
   get values () {
     return this.wrapValuesWithEmptyValue(
       getFilesForModule(this.cpModule)

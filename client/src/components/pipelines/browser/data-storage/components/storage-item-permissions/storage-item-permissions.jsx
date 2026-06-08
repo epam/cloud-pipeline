@@ -152,7 +152,7 @@ class StorageItemPermissions extends React.PureComponent {
       modified
     } = this.state;
     const errorComponent = error && !pending ? (
-      <Alert message={error} showIcon type="error" />
+      <Alert title={error} showIcon type="error" />
     ) : undefined;
 
     const titleComponent = (
@@ -168,7 +168,7 @@ class StorageItemPermissions extends React.PureComponent {
         <Modal
           className={className}
           style={style}
-          visible={visible}
+          open={visible}
           title={titleComponent}
           onCancel={this.onClose}
           footer={(

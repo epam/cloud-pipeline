@@ -18,12 +18,14 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {
   Alert,
-  Button, Popover
+  Button,
+  Popover,
+  Space
 } from 'antd';
 import classNames from 'classnames';
 import ChartJS from 'chart.js';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import moment from 'moment-timezone';
 import UsageNavigation, {runnersEqual, RunnerTypes} from '../navigation';
 import {getPeriod, Period} from '../../../../special/periods';
@@ -300,48 +302,54 @@ class UsersActivityChart extends React.Component {
     tooltip: undefined
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      chartColor: computed,
+      backgroundColor: computed,
+      lineColor: computed,
+      textColor: computed,
+      errorColor: computed
+    });
+  }
+
   get chartColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@primary-color'] || DEFAULT_COLOR;
+      return themes.currentThemeConfiguration['--cp-color-primary'] || DEFAULT_COLOR;
     }
     return DEFAULT_COLOR;
   }
 
-  @computed
   get backgroundColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@card-background-color'] ||
+      return themes.currentThemeConfiguration['--cp-color-bg-elevated'] ||
         DEFAULT_BACKGROUND_COLOR;
     }
     return DEFAULT_BACKGROUND_COLOR;
   }
 
-  @computed
   get lineColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@card-border-color'] || DEFAULT_LINE_COLOR;
+      return themes.currentThemeConfiguration['--cp-color-border-card'] || DEFAULT_LINE_COLOR;
     }
     return DEFAULT_LINE_COLOR;
   }
 
-  @computed
   get textColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@application-color'] || DEFAULT_TEXT_COLOR;
+      return themes.currentThemeConfiguration['--cp-color-text'] || DEFAULT_TEXT_COLOR;
     }
     return DEFAULT_TEXT_COLOR;
   }
 
-  @computed
   get errorColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@color-red'] || DEFAULT_ERROR_COLOR;
+      return themes.currentThemeConfiguration['--cp-color-red'] || DEFAULT_ERROR_COLOR;
     }
     return DEFAULT_ERROR_COLOR;
   }
@@ -556,7 +564,7 @@ class UsersActivityChart extends React.Component {
     if (error) {
       return (
         <div className={className} style={style}>
-          <Alert message={error} type="error" />
+          <Alert title={error} type="error" />
         </div>
       );
     }
@@ -572,7 +580,7 @@ class UsersActivityChart extends React.Component {
         style={style}
       >
         <div className={styles.modeSwitcher}>
-          <Button.Group>
+          <Space.Compact>
             {
               availableModes.length > 1 && availableModes.map(mode => (
                 <Button
@@ -585,7 +593,7 @@ class UsersActivityChart extends React.Component {
                 </Button>
               ))
             }
-          </Button.Group>
+          </Space.Compact>
         </div>
         <div className={styles.chartContainer}>
           <Chart
@@ -615,8 +623,8 @@ class UsersActivityChart extends React.Component {
             {
               tooltip && (
                 <Popover
-                  visible={!!tooltip}
-                  onVisibleChange={this.tooltipVisibilityChange}
+                  open={!!tooltip}
+                  onOpenChange={this.tooltipVisibilityChange}
                   trigger={['click']}
                   content={this.renderTooltipInfo()}
                 >

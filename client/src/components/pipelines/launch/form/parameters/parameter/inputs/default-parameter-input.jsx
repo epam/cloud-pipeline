@@ -24,7 +24,6 @@ function LaunchFormStringParameterInput (props) {
       value={value ? String(value) : ''}
       onChange={onChange}
       disabled={disabled}
-      size="large"
       currentProjectId={currentProjectId}
       currentMetadataEntity={currentMetadataEntity}
       currentProjectMetadata={currentProjectMetadata}

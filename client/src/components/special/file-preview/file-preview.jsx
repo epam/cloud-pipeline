@@ -2,7 +2,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import styles from './file-preview.css';
-import {Alert, Icon} from 'antd';
+import {Alert} from 'antd';
+import {LoadingOutlined} from '@ant-design/icons';
 import {getFilePreviewConfiguration} from './utils';
 
 class FilePreview extends React.Component {
@@ -81,7 +82,7 @@ class FilePreview extends React.Component {
               alignItems: 'center'
             }}
           >
-            <Icon type="loading" style={{marginRight: 5}} />
+            <LoadingOutlined style={{marginRight: 5}} />
             <span>Loading preview...</span>
           </div>
         </div>
@@ -91,7 +92,7 @@ class FilePreview extends React.Component {
       const errorText = error ? `Error loading preview: ${error}` : 'Error loading preview';
       return (
         <div>
-          <Alert message={errorText} type="error" showIcon />
+          <Alert title={errorText} type="error" showIcon />
         </div>
       );
     }
@@ -104,21 +105,21 @@ class FilePreview extends React.Component {
     if (!Renderer) {
       return (
         <div className={styles.centered}>
-          <Alert message="Unsupported file type" type="error" showIcon />
+          <Alert title="Unsupported file type" type="error" showIcon />
         </div>
       );
     }
     if (!storage) {
       return (
         <div className={styles.centered}>
-          <Alert message="Storage not found" type="error" showIcon />
+          <Alert title="Storage not found" type="error" showIcon />
         </div>
       );
     }
     if (!path) {
       return (
         <div className={styles.centered}>
-          <Alert message="File not found" type="error" showIcon />
+          <Alert title="File not found" type="error" showIcon />
         </div>
       );
     }

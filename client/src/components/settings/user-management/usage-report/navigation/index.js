@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observable} from 'mobx';
+import {observable, makeObservable} from 'mobx';
 import {inject, observer, Provider} from 'mobx-react';
 import classNames from 'classnames';
 import FilterStore, {runnersEqual} from './filter-store';
@@ -34,8 +34,16 @@ class UsageNavigation extends React.Component {
       : undefined
   );
 
-  @observable filterStore = new FilterStore();
-  componentWillReceiveProps (nextProps, nextContext) {
+  filterStore = new FilterStore();
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      filterStore: observable
+    });
+  }
+
+  UNSAFE_componentWillReceiveProps (nextProps, nextContext) {
     this.filterStore.rebuild(this.props);
   }
 

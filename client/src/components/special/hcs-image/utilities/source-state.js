@@ -14,17 +14,21 @@
  *  limitations under the License.
  */
 
-import {action, observable} from 'mobx';
+import {action, observable, makeObservable} from 'mobx';
 import HCSBaseState from './base-state';
 
 class SourceState extends HCSBaseState {
-  @observable pending = false;
-  @observable selectedAnnotation;
+  pending = false;
+  selectedAnnotation;
   constructor (viewer) {
     super(viewer, 'stateChanged');
+    makeObservable(this, {
+      pending: observable,
+      selectedAnnotation: observable,
+      onStateChanged: action
+    });
   }
 
-  @action
   onStateChanged (viewer, newState) {
     const {
       imagePending = false,

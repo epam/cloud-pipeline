@@ -27,7 +27,7 @@
 }
 
 .node-resources-detail-row td {
-  background: rgba(0, 0, 0, 0.02);
+  background: color-mix(in srgb, var(--cp-color-text) 2%, transparent);
 }
 
 .node-resources-detail-cell {

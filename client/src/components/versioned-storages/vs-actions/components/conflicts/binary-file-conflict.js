@@ -16,8 +16,11 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
-import {Button, Icon} from 'antd';
+import {
+  observer} from 'mobx-react';
+import {Button
+} from 'antd';
+import {CheckOutlined} from '@ant-design/icons';
 import {HeadBranch, RemoteBranch} from './utilities/conflicted-file/branches';
 import styles from './conflicts.css';
 
@@ -49,7 +52,7 @@ class BinaryFileConflict extends React.PureComponent {
           >
             {
               conflictedFile.acceptedBranch === HeadBranch && (
-                <Icon type="check" />
+                <CheckOutlined />
               )
             }
             Accept yours
@@ -61,7 +64,7 @@ class BinaryFileConflict extends React.PureComponent {
           >
             {
               conflictedFile.acceptedBranch === RemoteBranch && (
-                <Icon type="check" />
+                <CheckOutlined />
               )
             }
             Take remote

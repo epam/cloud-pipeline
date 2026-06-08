@@ -18,10 +18,10 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {
   Button,
-  Icon,
   InputNumber,
   Select
 } from 'antd';
+import {CloseOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import {actionNames, actionsByGroup} from './utilities/quota-actions';
 import styles from './quotas.css';
@@ -115,10 +115,10 @@ class Threshold extends React.Component {
               size="small"
               disabled={disabled}
               onClick={onRemove}
-              type="danger"
+              danger
               style={{marginLeft: 5, lineHeight: 1}}
             >
-              <Icon type="close" />
+              <CloseOutlined />
             </Button>
           )
         }

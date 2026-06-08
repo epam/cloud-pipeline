@@ -16,18 +16,20 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer, inject} from 'mobx-react';
-import {computed} from 'mobx';
+import {
+  observer,
+  inject} from 'mobx-react';
+import {computed, makeObservable} from 'mobx';
 import {
   Alert,
   Table,
   Row,
   Input,
-  Icon,
   Button,
   Modal,
   message
 } from 'antd';
+import {DeleteOutlined, EditOutlined, PlusOutlined} from '@ant-design/icons';
 import RoleRemove from '../../../models/user/RoleRemove';
 import EditRoleDialog from '../forms/EditRoleDialog';
 import LoadingView from '../../special/LoadingView';
@@ -60,6 +62,15 @@ export default class GroupsManagement extends React.Component {
     createGroupDialogVisible: null
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      groupsSharedPermissions: computed,
+      roles: computed,
+      rolesPending: computed
+    });
+  }
+
   componentDidUpdate (prevProps, prevState, snapshot) {
     if (prevProps.predefined !== this.props.predefined) {
       this.prepare();
@@ -78,17 +89,16 @@ export default class GroupsManagement extends React.Component {
     return authenticatedUserInfo.loaded
       ? authenticatedUserInfo.value.admin
       : false;
-  };
+  }
 
   get isReader () {
     return roleModel.hasRole(roleModel.ROLES.ROLE_USER_READER)(this);
-  };
+  }
 
   get isUsersAdmin () {
     return roleModel.hasRole(roleModel.ROLES.ROLE_USER_ADMIN)(this);
-  };
+  }
 
-  @computed
   get groupsSharedPermissions () {
     return {
       read: this.roles.some(r => roleModel.readAllowed(r)),
@@ -105,7 +115,6 @@ export default class GroupsManagement extends React.Component {
     });
   };
 
-  @computed
   get roles () {
     const {roles, predefined = false} = this.props;
     if (roles.loaded) {
@@ -119,7 +128,6 @@ export default class GroupsManagement extends React.Component {
     return [];
   }
 
-  @computed
   get rolesPending () {
     const {roles} = this.props;
     return roles.pending;
@@ -229,16 +237,16 @@ export default class GroupsManagement extends React.Component {
             return (
               <Row className={styles.roleActions} type="flex" justify="end">
                 <Button size="small" onClick={() => this.openEditGroupDialog(role)}>
-                  <Icon type="edit" />
+                  <EditOutlined />
                 </Button>
                 {
                   (this.isAdmin || this.isUsersAdmin) && !predefined && (
                     <Button
                       size="small"
-                      type="danger"
+                      danger
                       onClick={(e) => this.deleteRoleConfirm(e, role)}
                     >
-                      <Icon type="delete" />
+                      <DeleteOutlined />
                     </Button>
                   )
                 }
@@ -256,7 +264,7 @@ export default class GroupsManagement extends React.Component {
         columns={columns}
         dataSource={this.filteredRoles}
         onChange={this.handleGroupsTableChange}
-        onRowClick={(group) => this.openEditGroupDialog(group)}
+        onRow={(group) => ({onClick: () => this.openEditGroupDialog(group)})}
         pagination={{
           total: this.filteredRoles.length,
           PAGE_SIZE,
@@ -294,7 +302,7 @@ export default class GroupsManagement extends React.Component {
       !this.groupsSharedPermissions.write
     ) {
       return (
-        <Alert type="error" message="Access is denied" />
+        <Alert type="error" title="Access is denied" />
       );
     }
     const {predefined} = this.props;
@@ -316,7 +324,7 @@ export default class GroupsManagement extends React.Component {
                   type="primary"
                   onClick={this.openCreateGroupDialog}
                 >
-                  <Icon type="plus" /> Create group
+                  <PlusOutlined /> Create group
                 </Button>
               </div>
             )

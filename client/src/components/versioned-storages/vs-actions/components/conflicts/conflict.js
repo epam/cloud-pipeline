@@ -79,7 +79,7 @@ class Conflict extends React.PureComponent {
     } = this.props;
     if (error) {
       return (
-        <Alert type="error" message={error} />
+        <Alert type="error" title={error} />
       );
     }
     if (!conflictedFile) {

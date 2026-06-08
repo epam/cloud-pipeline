@@ -44,7 +44,7 @@ class GitDiffModal extends React.Component {
     return (
       <Modal
         title={this.getTitle()}
-        visible={visible}
+        open={visible}
         onCancel={onClose}
         width="80%"
         footer={false}

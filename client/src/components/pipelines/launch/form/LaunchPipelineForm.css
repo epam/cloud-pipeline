@@ -122,7 +122,7 @@
 }
 
 .parameter-name {
-  border: 1px dashed #777;
+  border: 1px dashed var(--cp-color-text-secondary);
   font-size: 0.9rem;
 }
 
@@ -255,13 +255,16 @@
 .form-item {
   margin: 0 !important;
   flex: 1;
+}
+
+.form-item:not(:global(.ant-form-item)) {
   display: flex;
   flex-direction: row;
   align-items: flex-start;
 }
 
 .form-item-label-column {
-  float: left;
+  flex: 0 0 150px;
   width: 150px;
 }
 
@@ -274,7 +277,8 @@
 }
 
 .form-item-wrapper-column {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .form-items-container .form-item-wrapper-column {

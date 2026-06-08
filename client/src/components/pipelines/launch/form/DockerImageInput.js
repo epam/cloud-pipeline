@@ -16,9 +16,13 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer, inject} from 'mobx-react';
-import {computed} from 'mobx';
-import {Input, Icon} from 'antd';
+import {
+  observer,
+  inject} from 'mobx-react';
+import {computed, makeObservable} from 'mobx';
+import {Input
+} from 'antd';
+import {ToolOutlined} from '@ant-design/icons';
 import DockerImageBrowser from '../dialogs/DockerImageBrowser';
 import styles from './LaunchPipelineForm.css';
 import HiddenObjects from '../../../../utils/hidden-objects';
@@ -40,11 +44,7 @@ export default class DockerImageInput extends React.Component {
   input;
 
   refInput = (input) => {
-    if (input && input.refs.input) {
-      this.input = input.refs.input;
-    } else {
-      this.input = null;
-    }
+    this.input = input;
   };
 
   openBrowser = () => {
@@ -69,7 +69,13 @@ export default class DockerImageInput extends React.Component {
     }
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      registries: computed
+    });
+  }
+
   get registries () {
     if (this.props.dockerRegistries.loaded) {
       return this.props.hiddenToolsTreeFilter(this.props.dockerRegistries.value)
@@ -89,7 +95,7 @@ export default class DockerImageInput extends React.Component {
             <div
               className={styles.pathType}
               onClick={!this.props.disabled && this.openBrowser}>
-              <Icon type="tool" />
+              <ToolOutlined />
             </div>
           }
           size="large"
@@ -118,7 +124,7 @@ export default class DockerImageInput extends React.Component {
     );
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if ('value' in nextProps) {
       const value = nextProps.value;
       this.setState({value});

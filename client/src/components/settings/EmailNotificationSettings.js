@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import NotificationSettings from '../../models/settings/NotificationSettings';
 import NotificationSettingUpdate from '../../models/settings/NotificationSettingUpdate';
 import NotificationTemplateUpdate from '../../models/settings/NotificationTemplateUpdate';
@@ -29,7 +29,7 @@ import SubSettings from './sub-settings';
 const notificationSettingsRequest = new NotificationSettings();
 const emailTemplatesRequest = new NotificationTemplates();
 
-@inject('router', 'users', 'authenticatedUserInfo')
+@inject('routing', 'users', 'authenticatedUserInfo')
 @inject(() => ({
   notificationSettings: notificationSettingsRequest,
   emailTemplates: emailTemplatesRequest
@@ -40,26 +40,35 @@ export default class EmailNotificationSettings extends React.Component {
     changesCanBeSkipped: false
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      templates: computed,
+      emailTemplates: computed,
+      users: computed,
+      templateModified: computed
+    });
+  }
+
   componentDidMount () {
     const {
       route,
-      router,
+      routing,
       notificationSettings,
       emailTemplates
     } = this.props;
-    if (route && router) {
-      router.setRouteLeaveHook(route, this.checkSettingsBeforeLeave);
+    if (route && routing) {
+      routing.setRouteLeaveHook(route, this.checkSettingsBeforeLeave);
     }
     notificationSettings.fetch();
     emailTemplates.fetch();
-  };
+  }
 
   reload = () => {
     this.props.notificationSettings.fetch();
     this.props.emailTemplates.fetch();
   };
 
-  @computed
   get templates () {
     if (this.props.notificationSettings.loaded) {
       return (this.props.notificationSettings.value || [])
@@ -76,7 +85,6 @@ export default class EmailNotificationSettings extends React.Component {
     return [];
   }
 
-  @computed
   get emailTemplates () {
     if (this.props.emailTemplates.loaded) {
       return (this.props.emailTemplates.value || []).map(t => t);
@@ -84,7 +92,6 @@ export default class EmailNotificationSettings extends React.Component {
     return [];
   }
 
-  @computed
   get users () {
     if (this.props.users.loaded) {
       return (this.props.users.value || []).map(u => u);
@@ -93,11 +100,11 @@ export default class EmailNotificationSettings extends React.Component {
   }
 
   checkSettingsBeforeLeave = (nextLocation) => {
-    const {router} = this.props;
+    const {routing} = this.props;
     const {changesCanBeSkipped} = this.state;
     const makeTransition = nextLocation => {
       this.setState({changesCanBeSkipped: true},
-        () => router.push(nextLocation)
+        () => routing.push(nextLocation)
       );
     };
     if (this.templateModified && !changesCanBeSkipped) {
@@ -184,16 +191,13 @@ export default class EmailNotificationSettings extends React.Component {
 
   editEmailNotificationForm;
 
-  initializeEditEmailNotificationForm = (form) => {
-    this.editEmailNotificationForm = form;
-  };
+  editEmailNotificationFormRef = React.createRef();
 
-  @computed
   get templateModified () {
-    if (!this.editEmailNotificationForm) {
+    if (!this.editEmailNotificationFormRef.current) {
       return false;
     }
-    return this.editEmailNotificationForm.modified;
+    return this.editEmailNotificationFormRef.current.modified;
   }
 
   renderTemplateForm = (template) => {
@@ -208,7 +212,7 @@ export default class EmailNotificationSettings extends React.Component {
         <EditEmailNotification
           users={this.users}
           onSubmit={(values) => this.updateTemplate(template, values)}
-          wrappedComponentRef={this.initializeEditEmailNotificationForm}
+          ref={this.editEmailNotificationFormRef}
           template={
             Object.assign(
               {},
@@ -228,14 +232,14 @@ export default class EmailNotificationSettings extends React.Component {
     }
     if (!this.props.authenticatedUserInfo.value.admin) {
       return (
-        <Alert type="error" message="Access is denied" />
+        <Alert type="error" title="Access is denied" />
       );
     }
     if (!this.props.notificationSettings.loaded && this.props.notificationSettings.pending) {
       return <LoadingView />;
     }
     if (this.props.notificationSettings.error) {
-      return <Alert type="warning" message={this.props.notificationSettings.error} />;
+      return <Alert type="warning" title={this.props.notificationSettings.error} />;
     }
     return (
       <SubSettings

@@ -32,7 +32,7 @@ const {
   warning: WarningMessage
 });
 
-function ToolLayersCheckProvider ({active, children, toolId}) {
+function ToolLayersCheckProvider ({active = true, children, toolId}) {
   return (
     <CheckProvider active={active} objectId={toolId}>
       {children}
@@ -45,9 +45,6 @@ ToolLayersCheckProvider.propTypes = {
   children: PropTypes.node,
   active: PropTypes.bool
 };
-ToolLayersCheckProvider.defaultProps = {
-  active: true
-};
 ToolLayersCheckProvider.inject = inject;
 ToolLayersCheckProvider.store = store;
 ToolLayersCheckProvider.getCheckInfo = getCheckInfo;
@@ -57,9 +54,6 @@ ToolLayersCheckProvider.Warning.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
   type: PropTypes.string
-};
-ToolLayersCheckProvider.Warning.defaultProps = {
-  type: 'error'
 };
 
 export default ToolLayersCheckProvider;

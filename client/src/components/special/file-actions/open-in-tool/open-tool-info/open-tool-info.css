@@ -54,8 +54,8 @@
 }
 
 .list .code {
-  background-color: rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  background-color: color-mix(in srgb, var(--cp-color-text) 5%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cp-color-text) 10%, transparent);
   border-radius: 5px;
   width: 100%;
   max-width: 50vw;
@@ -71,7 +71,7 @@
 }
 
 .list .code .part:not(:first-child) {
-  border-left: 1px solid rgba(0, 0, 0, 0.1);
+  border-left: 1px solid color-mix(in srgb, var(--cp-color-text) 10%, transparent);
 }
 
 .list .code pre {
@@ -82,7 +82,7 @@
 }
 
 .list .code .button {
-  border-left: 1px solid rgba(0, 0, 0, 0.1);
+  border-left: 1px solid color-mix(in srgb, var(--cp-color-text) 10%, transparent);
   min-width: 40px;
   justify-content: center;
   cursor: pointer;

@@ -15,7 +15,9 @@
  */
 
 import React from 'react';
-import {observable, computed} from 'mobx';
+import {Outlet} from 'react-router-dom';
+import {observable, computed, makeObservable} from 'mobx';
+import {withRouter} from '../../utils/with-router';
 import {inject, observer} from 'mobx-react';
 import {Row, Menu} from 'antd';
 import classNames from 'classnames';
@@ -102,9 +104,17 @@ const SettingsTabs = [
 @inject('users')
 @roleModel.authenticationInfo
 @observer
-export default class extends React.Component {
-  @observable
+class SettingsForm extends React.Component {
   _roles = new Roles();
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      _roles: observable,
+      users: computed,
+      roles: computed
+    });
+  }
 
   componentDidMount () {
     this._roles.fetch();
@@ -121,14 +131,12 @@ export default class extends React.Component {
     }
   }
 
-  @computed
   get users () {
     return this.props.users?.loaded
       ? (this.props.users.value || [])
       : [];
   }
 
-  @computed
   get roles () {
     return this._roles.loaded
       ? (this._roles.value || [])
@@ -140,7 +148,7 @@ export default class extends React.Component {
     return authenticatedUserInfo.loaded
       ? authenticatedUserInfo.value
       : undefined;
-  };
+  }
 
   renderSettingsNavigation = () => {
     const {router: {location}} = this.props;
@@ -162,25 +170,22 @@ export default class extends React.Component {
           mode="horizontal"
           selectedKeys={[activeTab]}
           className={styles.tabsMenu}
-        >
-          {
-            tabs.map(tab => (
-              <Menu.Item key={tab.key}>
-                <AdaptedLink
-                  to={tab.path}
-                  location={location}>
-                  {tab.title}
-                </AdaptedLink>
-              </Menu.Item>
-            ))
-          }
-        </Menu>
+          items={tabs.map(tab => ({
+            key: tab.key,
+            label: (
+              <AdaptedLink
+                to={tab.path}
+                location={location}>
+                {tab.title}
+              </AdaptedLink>
+            )
+          }))}
+        />
       </Row>
     );
   };
 
   render () {
-    const {children} = this.props;
     return (
       <div
         className={
@@ -193,8 +198,10 @@ export default class extends React.Component {
         }
       >
         {this.renderSettingsNavigation()}
-        {children}
+        <Outlet />
       </div>
     );
-  };
+  }
 }
+
+export default withRouter(SettingsForm);

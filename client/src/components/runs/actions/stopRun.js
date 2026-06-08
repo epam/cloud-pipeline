@@ -15,11 +15,19 @@
  */
 
 import React from 'react';
-import ReactDOM from 'react-dom';
-import {observable} from 'mobx';
-import {Provider, observer} from 'mobx-react';
+import {createRoot} from 'react-dom/client';
+import {observable, makeObservable} from 'mobx';
+import {Provider,
+  observer} from 'mobx-react';
 import PropTypes from 'prop-types';
-import {Alert, Button, Checkbox, Icon, message, Modal, Row} from 'antd';
+import {Alert,
+  Button,
+  Checkbox,
+  message,
+  Modal,
+  Row
+} from 'antd';
+import {QuestionCircleFilled} from '@ant-design/icons';
 import moment from 'moment-timezone';
 import CommitRunForm from '../logs/forms/CommitRunForm';
 import PipelineRunCommit from '../../../models/pipelines/PipelineRunCommit';
@@ -250,13 +258,25 @@ class TerminateRunDialog extends React.Component {
   static propTypes = {
     onInitialized: PropTypes.func
   };
+
   state = {
     pending: false,
     visible: false
   };
-  @observable run;
-  @observable onClose;
-  @observable displayPromiseResolve;
+
+  run;
+  onClose;
+  displayPromiseResolve;
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      run: observable,
+      onClose: observable,
+      displayPromiseResolve: observable
+    });
+  }
+
   onTerminateClicked = () => {
     this.setState({
       pending: true
@@ -272,6 +292,7 @@ class TerminateRunDialog extends React.Component {
       });
     });
   };
+
   display = async (run) => {
     this.run = run;
     this.setState({
@@ -282,6 +303,7 @@ class TerminateRunDialog extends React.Component {
       this.displayPromiseResolve = resolve;
     });
   };
+
   hide = () => {
     this.setState({
       visible: false,
@@ -290,9 +312,11 @@ class TerminateRunDialog extends React.Component {
       this.displayPromiseResolve && this.displayPromiseResolve(true);
     });
   };
+
   componentDidMount () {
     this.props.onInitialized && this.props.onInitialized(this);
   }
+
   render () {
     if (!this.run) {
       return null;
@@ -303,13 +327,10 @@ class TerminateRunDialog extends React.Component {
         closable={false}
         title={null}
         width="50%"
-        visible={this.state.visible}>
+        open={this.state.visible}>
         <div>
           <Row style={{marginBottom: 10}} type="flex" align="middle">
-            <Icon
-              type="question-circle"
-              className="cp-stop-run-modal-confirm-icon"
-              style={{fontSize: 'x-large', marginLeft: 20}} />
+            <QuestionCircleFilled className="cp-stop-run-modal-confirm-icon" style={{fontSize: 'x-large', marginLeft: 20}} />
             <b
               style={{marginLeft: 10, fontSize: 14}}>Terminate {this.run.podId}?</b>
           </Row>
@@ -317,7 +338,7 @@ class TerminateRunDialog extends React.Component {
             <Alert
               type="info"
               showIcon
-              message="Once a run is terminated - all local data will be deleted (that is not stored within shared data storages)" />
+              title="Once a run is terminated - all local data will be deleted (that is not stored within shared data storages)" />
           </Row>
           <Row type="flex" justify="end" style={{marginTop: 10}}>
             <Button
@@ -327,7 +348,7 @@ class TerminateRunDialog extends React.Component {
             </Button>
             <Button
               disabled={this.state.pending}
-              type="danger"
+              danger
               style={{marginLeft: 10}}
               onClick={this.onTerminateClicked}>
               TERMINATE
@@ -348,9 +369,9 @@ const initializeTerminateRunDialog = (dialog) => {
 const terminateRunDialogContainer = document.createElement('div');
 document.body.appendChild(terminateRunDialogContainer);
 
-ReactDOM.render(
-  <TerminateRunDialog onInitialized={initializeTerminateRunDialog} />,
-  terminateRunDialogContainer
+const terminateRunDialogRoot = createRoot(terminateRunDialogContainer);
+terminateRunDialogRoot.render(
+  <TerminateRunDialog onInitialized={initializeTerminateRunDialog} />
 );
 
 function terminateRunFn (run, callback) {
@@ -426,7 +447,7 @@ class StopRunConfirmation extends React.Component {
           <Alert
             type="info"
             showIcon
-            message={`Once a run is ${this.props.isTermination ? 'terminated' : 'stopped'} - all local data will be deleted (that is not stored within shared data storages)`} />
+            title={`Once a run is ${this.props.isTermination ? 'terminated' : 'stopped'} - all local data will be deleted (that is not stored within shared data storages)`} />
         </Row>
         {
           this.props.canCommitRun && commitAllowed && !maintenanceMode &&

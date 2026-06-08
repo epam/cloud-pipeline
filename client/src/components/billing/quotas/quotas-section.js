@@ -16,9 +16,14 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
-import {Button, Icon, message} from 'antd';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {computed, makeObservable} from 'mobx';
+import {Button,
+  message
+} from 'antd';
+import {PlusOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import QuotaDescription from './utilities/quota-description';
 import EditQuotaDialog from './quota-edit-dialog';
@@ -51,6 +56,13 @@ class QuotasSection extends React.Component {
     editableQuota: null
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      quotaTargets: computed
+    });
+  }
+
   get quotas () {
     const {quotas} = this.props;
     if (quotas.loaded) {
@@ -59,7 +71,6 @@ class QuotasSection extends React.Component {
     return [];
   }
 
-  @computed
   get quotaTargets () {
     const {quotaType} = this.props;
     switch (quotaType) {
@@ -213,7 +224,7 @@ class QuotasSection extends React.Component {
                 onClick={this.addNewQuota}
                 style={{lineHeight: 1}}
               >
-                <Icon type="plus" /> Add quota
+                <PlusOutlined /> Add quota
               </Button>
             </div>
           </div>

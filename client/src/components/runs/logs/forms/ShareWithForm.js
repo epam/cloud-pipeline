@@ -16,12 +16,13 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Table, Row, Col, Button, Icon, AutoComplete, Modal, Checkbox, message} from 'antd';
+import {Table, Row, Col, Button, AutoComplete, Modal, Checkbox, message} from 'antd';
+import {DeleteOutlined, TeamOutlined, UserAddOutlined, UserOutlined, UsergroupAddOutlined} from '@ant-design/icons';
 import {AccessTypes} from '../../../../models/pipelines/PipelineRunUpdateSids';
 import UserFind from '../../../../models/user/UserFind';
 import GroupFind from '../../../../models/user/GroupFind';
 import {observer} from 'mobx-react';
-import {observable} from 'mobx';
+import {observable, makeObservable} from 'mobx';
 import styles from './ShareWithForm.css';
 import UserName from '../../../special/UserName';
 import ConfigureRunAsPermissions from './configure-run-as-permissions';
@@ -111,6 +112,14 @@ export default class ShareWithForm extends React.Component {
     operationInProgress: false
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      userFind: observable,
+      groupFind: observable
+    });
+  }
+
   get hasDetailsConfiguration () {
     const {runAsUserConfiguration} = this.props;
     return runAsUserConfiguration;
@@ -125,8 +134,8 @@ export default class ShareWithForm extends React.Component {
     };
   }
 
-  @observable userFind;
-  @observable groupFind;
+  userFind;
+  groupFind;
 
   onUserFindInputChanged = (value) => {
     if (value) {
@@ -152,10 +161,10 @@ export default class ShareWithForm extends React.Component {
     return (
       <span className={styles.actions}>
         <Button disabled={this.props.pending} size="small" onClick={this.openFindUserDialog}>
-          <Icon type="user-add" />
+          <UserAddOutlined />
         </Button>
         <Button disabled={this.props.pending} size="small" onClick={this.openFindGroupDialog}>
-          <Icon type="usergroup-add" />
+          <UsergroupAddOutlined />
         </Button>
       </span>
     );
@@ -342,9 +351,9 @@ export default class ShareWithForm extends React.Component {
         className: styles.userIcon,
         render: (item) => {
           if (item.isPrincipal) {
-            return <Icon type="user" />;
+            return <UserOutlined />;
           }
-          return <Icon type="team" />;
+          return <TeamOutlined />;
         }
       },
       {
@@ -375,7 +384,7 @@ export default class ShareWithForm extends React.Component {
               disabled={this.props.pending}
               onClick={this.removeUserOrGroupClicked(item)}
               size="small">
-              <Icon type="delete" />
+              <DeleteOutlined />
             </Button>
           </Row>
         )
@@ -445,7 +454,7 @@ export default class ShareWithForm extends React.Component {
           overflowY: 'auto'
         }}
         rowClassName={getRowClassName}
-        onRowClick={selectPermission}
+        onRow={(record) => ({onClick: () => selectPermission(record)})}
         title={() => title}
         showHeader={false}
         size="small"
@@ -484,7 +493,7 @@ export default class ShareWithForm extends React.Component {
   render () {
     return (
       <Modal
-        visible={this.props.visible}
+        open={this.props.visible}
         onOk={this.onSave}
         onCancel={this.props.onClose}
         footer={this.props.pending ? false : undefined}
@@ -496,7 +505,7 @@ export default class ShareWithForm extends React.Component {
             title="Select user"
             onCancel={this.closeFindUserDialog}
             onOk={this.onSelectUser}
-            visible={this.state.findUserVisible}>
+            open={this.state.findUserVisible}>
             <AutoComplete
               value={this.state.userSearchString}
               optionLabelProp="text"
@@ -518,7 +527,7 @@ export default class ShareWithForm extends React.Component {
             title="Select group"
             onCancel={this.closeFindGroupDialog}
             onOk={this.onSelectGroup}
-            visible={this.state.findGroupVisible}>
+            open={this.state.findGroupVisible}>
             <AutoComplete
               value={this.state.groupSearchString}
               style={{width: '100%'}}

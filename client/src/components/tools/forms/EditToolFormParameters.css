@@ -15,7 +15,7 @@
  */
 
 .parameter-name {
-  border: 1px dashed #ccc;
+  border: 1px dashed var(--cp-color-border);
   text-align: right;
 }
 

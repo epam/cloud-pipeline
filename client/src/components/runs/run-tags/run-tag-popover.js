@@ -83,8 +83,8 @@ class RunTagPopover extends React.PureComponent {
     } = this.state;
     return (
       <Popover
-        visible={visible}
-        onVisibleChange={this.onVisibilityChanged}
+        open={visible}
+        onOpenChange={this.onVisibilityChanged}
         content={(
           <div>
             {
@@ -104,7 +104,9 @@ class RunTagPopover extends React.PureComponent {
           </div>
         )}
       >
-        {children}
+        <span style={{display: 'inline'}}>
+          {children}
+        </span>
       </Popover>
     );
   }

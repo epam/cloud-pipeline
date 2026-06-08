@@ -16,7 +16,7 @@ import roleModel from '../../utils/roleModel';
 @inject('awsRegions', 'pipelines', 'preferences', 'dockerRegistries', 'usersInfo')
 @inject('routing')
 @observer
-class Plugin extends React.PureComponent {
+class Plugin extends React.Component {
   state = {
     pluginOptions: {},
     plugin: undefined,

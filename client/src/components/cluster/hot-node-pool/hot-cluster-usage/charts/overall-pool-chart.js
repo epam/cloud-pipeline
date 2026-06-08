@@ -138,7 +138,7 @@ function OverallPoolChart ({
   );
 }
 
-OverallPoolChart.PropTypes = {
+OverallPoolChart.propTypes = {
   rawData: PropTypes.array,
   onClick: PropTypes.func,
   title: PropTypes.string,

@@ -59,10 +59,10 @@ class ConvertToVersionedStorage extends React.Component {
     const storage = storageName ? (<b>{storageName}</b>) : 'the storage';
     return (
       <Modal
-        visible={visible}
+        open={visible}
         onCancel={onCancel}
         closable={!pending}
-        maskClosable={!pending}
+        mask={{closable: !pending}}
         title={(
           <span>
             Convert {storage} to Versioned Storage?

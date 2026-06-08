@@ -163,7 +163,7 @@ class LogsRedirect extends React.Component {
     }
     return (
       <div style={{width: '100%', height: '100%'}}>
-        <Alert message={error || 'Run is not specified'} type="error" />
+        <Alert title={error || 'Run is not specified'} type="error" />
       </div>
     );
   }

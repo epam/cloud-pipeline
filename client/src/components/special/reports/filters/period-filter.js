@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {Button} from 'antd';
+import {Button, Space} from 'antd';
 
 import {Period, getPeriod, Range} from '../../periods';
 import RangeFilter from './range-filter';
@@ -60,7 +60,7 @@ export default function DateFilter ({
         style={style}
       />
       <Divider />
-      <Button.Group className={styles.periodBtnGroup}>
+      <Space.Compact className={styles.periodBtnGroup}>
         {
           periods.map(period => (
             <Button
@@ -75,7 +75,7 @@ export default function DateFilter ({
             </Button>
           ))
         }
-      </Button.Group>
+      </Space.Compact>
     </div>
   );
 }

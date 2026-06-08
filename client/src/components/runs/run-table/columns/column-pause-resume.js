@@ -15,8 +15,13 @@
  */
 
 import React from 'react';
-import {computed} from 'mobx';
-import {Icon, message, Modal, Popover} from 'antd';
+import {computed, makeObservable} from 'mobx';
+import {
+  message,
+  Modal,
+  Popover
+} from 'antd';
+import {ExclamationCircleOutlined} from '@ant-design/icons';
 import {inject, observer} from 'mobx-react';
 import roleModel from '../../../../utils/roleModel';
 import {canPauseRun, runPipelineActions} from '../../actions';
@@ -33,7 +38,13 @@ import {checkRunActionAvailable, runActions} from '../../actions/actions-availab
 const getColumnFilter = () => {};
 
 class PauseResumeButtonComponent extends localization.LocalizedReactComponent {
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      maintenanceMode: computed
+    });
+  }
+
   get maintenanceMode () {
     const {preferences} = this.props;
     if (preferences && preferences.loaded) {
@@ -198,13 +209,7 @@ class PauseResumeButtonComponent extends localization.LocalizedReactComponent {
                         </div>
                       }
                     >
-                      <Icon
-                        type="exclamation-circle-o"
-                        className="cp-danger"
-                        style={{
-                          marginRight: 5
-                        }}
-                      />
+                      <ExclamationCircleOutlined className="cp-danger" style={{marginRight: 5}} />
                     </Popover>
                   )
                   : null

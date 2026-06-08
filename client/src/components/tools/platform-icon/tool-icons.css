@@ -15,7 +15,7 @@
  */
 
 .tool-icon.windows {
-  fill: rgb(74, 172, 233);
+  fill: var(--cp-color-primary);
 }
 
 .tool-icon.windows,

@@ -17,10 +17,17 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {inject, observer} from 'mobx-react';
-import {computed, observable, action} from 'mobx';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {computed, observable, action, makeObservable} from 'mobx';
 import SystemNotification from './SystemNotification';
-import {message, Modal, Button, Row, Icon} from 'antd';
+import {message,
+  Modal,
+  Button,
+  Row
+} from 'antd';
+import {CloseCircleOutlined, ExclamationCircleOutlined, InfoCircleOutlined, LoadingOutlined} from '@ant-design/icons';
 import moment from 'moment-timezone';
 import ConfirmNotification from '../../../models/notifications/ConfirmNotification';
 import {DEFAULT_PAGE_SIZE} from '../../../models/notifications/CurrentUserNotifications';
@@ -92,27 +99,36 @@ export default class NotificationCenter extends React.Component {
     initialized: false,
     previewNotification: null,
     pending: false
-  };
-
-  @observable _notificationsBottomBound = 0;
-  @observable _notificationsOnScreen = 0;
-  @observable readUserNotifications = 0;
+  }; _notificationsBottomBound = 0; _notificationsOnScreen = 0; readUserNotifications = 0;
 
   layoutInfoTimeout;
   resizeTimeout;
   fetchNotificationsTimeout;
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      _notificationsBottomBound: observable,
+      _notificationsOnScreen: observable,
+      readUserNotifications: observable,
+      notificationsBottomBound: computed,
+      notificationsOnScreen: computed,
+      unreadCount: computed,
+      allNotifications: computed,
+      nonBlockingNotifications: computed,
+      userNotificationsEnabled: computed,
+      setVisibleNotificationsInfo: action
+    });
+  }
+
   get notificationsBottomBound () {
     return this._notificationsBottomBound;
   }
 
-  @computed
   get notificationsOnScreen () {
     return this._notificationsOnScreen;
   }
 
-  @computed
   get userNotifications () {
     const {userNotifications} = this.props;
     if (!userNotifications.loaded || !this.state.initialized || !this.userNotificationsEnabled) {
@@ -130,7 +146,6 @@ export default class NotificationCenter extends React.Component {
       .sort(dateSorter);
   }
 
-  @computed
   get systemNotifications () {
     if (!this.props.notifications.loaded || !this.state.initialized) {
       return [];
@@ -151,7 +166,6 @@ export default class NotificationCenter extends React.Component {
     return notifications.sort(dateSorter);
   }
 
-  @computed
   get unreadCount () {
     const {userNotifications} = this.props;
     if (userNotifications.loaded) {
@@ -160,12 +174,10 @@ export default class NotificationCenter extends React.Component {
     return 0;
   }
 
-  @computed
   get allNotifications () {
     return [...this.systemNotifications, ...this.userNotifications];
   }
 
-  @computed
   get nonBlockingNotifications () {
     return this.allNotifications
       .filter(n => !n.blocking);
@@ -178,7 +190,6 @@ export default class NotificationCenter extends React.Component {
       .slice(0, MAX_NOTIFICATIONS);
   }
 
-  @computed
   get userNotificationsEnabled () {
     const {
       userNotifications,
@@ -193,7 +204,6 @@ export default class NotificationCenter extends React.Component {
     return false;
   }
 
-  @action
   setVisibleNotificationsInfo = (notificationsBottomBound, notifications) => {
     if (this.layoutInfoTimeout) {
       clearTimeout(this.layoutInfoTimeout);
@@ -402,21 +412,15 @@ export default class NotificationCenter extends React.Component {
     switch (notification.severity) {
       case 'INFO':
         return (
-          <Icon
-            className="cp-setting-info"
-            type="info-circle-o" />
+          <InfoCircleOutlined className="cp-setting-info" />
         );
       case 'WARNING':
         return (
-          <Icon
-            className="cp-setting-warning"
-            type="exclamation-circle-o" />
+          <ExclamationCircleOutlined className="cp-setting-warning" />
         );
       case 'CRITICAL':
         return (
-          <Icon
-            className="cp-setting-critical"
-            type="close-circle-o" />
+          <CloseCircleOutlined className="cp-setting-critical" />
         );
       default: return undefined;
     }
@@ -470,11 +474,7 @@ export default class NotificationCenter extends React.Component {
         >
           read all
           {this.state.pending ? (
-            <Icon
-              style={{marginLeft: 5}}
-              type="loading"
-              className={classNames({'cp-disabled': this.state.pending})}
-            />
+            <LoadingOutlined style={{marginLeft: 5}} className={classNames({'cp-disabled': this.state.pending})} />
           ) : null}
         </a>
       </div>
@@ -545,7 +545,7 @@ export default class NotificationCenter extends React.Component {
               </Button>
             </Row>
           }
-          visible={!!blockingNotification}>
+          open={!!blockingNotification}>
           {
             blockingNotification ? (
               <Markdown
@@ -559,7 +559,7 @@ export default class NotificationCenter extends React.Component {
             onCancel={this.closePreviewNotification}
             footer={false}
             title={(<b>{this.state.previewNotification.title}</b>)}
-            visible
+            open
           >
             <PreviewNotification
               text={this.state.previewNotification.body}

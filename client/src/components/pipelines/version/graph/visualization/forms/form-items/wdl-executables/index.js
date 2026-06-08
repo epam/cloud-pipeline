@@ -16,9 +16,15 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {isTask, WdlEvent} from '../../../../../../../../utils/pipeline-builder';
+import {
+  isTask,
+  WdlEvent} from '../../../../../../../../utils/pipeline-builder';
 import classNames from 'classnames';
-import {Button, Collapse, Icon, Modal} from 'antd';
+import {Button,
+  Collapse,
+  Modal
+} from 'antd';
+import {DeleteOutlined, PlusOutlined} from '@ant-design/icons';
 import WdlIssues from '../wdl-issues';
 import {addCall, getEntityNameOptions, removeTask} from '../../utilities/workflow-utilities';
 import styles from './wdl-executables.css';
@@ -152,11 +158,11 @@ class WdlExecutables extends React.Component {
             <div className={styles.actions}>
               <Button
                 className={styles.action}
-                type="danger"
+                danger
                 size="small"
                 onClick={this.onRemoveTaskClicked(executable)}
               >
-                <Icon type="delete" />
+                <DeleteOutlined />
               </Button>
             </div>
           )
@@ -228,7 +234,7 @@ class WdlExecutables extends React.Component {
               <a
                 onClick={() => onCreateCall()}
               >
-                <Icon type="plus" /> create new call
+                <PlusOutlined /> create new call
               </a>
             </div>
           )

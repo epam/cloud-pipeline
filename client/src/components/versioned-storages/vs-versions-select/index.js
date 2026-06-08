@@ -18,9 +18,9 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {
   Alert,
-  Icon,
   Select
 } from 'antd';
+import {LoadingOutlined} from '@ant-design/icons';
 import LoadVSCommits from '../../../models/versioned-storage/load-commits';
 import styles from './vs-versions-select.css';
 import UserName from '../../special/UserName';
@@ -170,7 +170,7 @@ class VSVersions extends React.Component {
       onChange,
       style,
       rowClassName,
-      dropdownMatchSelectWidth
+      popupMatchSelectWidth
     } = this.props;
     const {
       versions,
@@ -180,7 +180,7 @@ class VSVersions extends React.Component {
     } = this.state;
     if (error) {
       return (
-        <Alert type="error" message={error} />
+        <Alert type="error" title={error} />
       );
     }
     return (
@@ -189,7 +189,7 @@ class VSVersions extends React.Component {
         value={value}
         onChange={onChange}
         size="small"
-        dropdownMatchSelectWidth={dropdownMatchSelectWidth}
+        popupMatchSelectWidth={popupMatchSelectWidth}
         style={style}
         showSearch
         filterOption={
@@ -246,7 +246,7 @@ class VSVersions extends React.Component {
               >
                 {
                   pending && (
-                    <Icon type="loading" />
+                    <LoadingOutlined />
                   )
                 }
                 <i>
@@ -264,7 +264,7 @@ class VSVersions extends React.Component {
 VSVersions.propTypes = {
   className: PropTypes.string,
   rowClassName: PropTypes.string,
-  dropdownMatchSelectWidth: PropTypes.bool,
+  popupMatchSelectWidth: PropTypes.bool,
   setFirstVersionByDefault: PropTypes.bool,
   repository: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   value: PropTypes.string,
@@ -273,7 +273,7 @@ VSVersions.propTypes = {
 };
 
 VSVersions.defaultProps = {
-  dropdownMatchSelectWidth: false,
+  popupMatchSelectWidth: false,
   setFirstVersionByDefault: false
 };
 

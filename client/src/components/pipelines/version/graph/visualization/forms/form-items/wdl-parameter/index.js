@@ -16,9 +16,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {
-  Icon,
   Input
 } from 'antd';
+import {DeleteOutlined} from '@ant-design/icons';
 import styles from './wdl-parameter.css';
 import WdlTypeSelector from '../wdl-type-selector';
 import WdlIssues from '../wdl-issues';
@@ -166,7 +166,7 @@ class WdlParameter extends React.Component {
         className={styles.wdlParameterDeleteButton}
         onClick={removeParameter}
       >
-        <Icon type="delete" className="cp-danger" />
+        <DeleteOutlined className="cp-danger" />
       </div>
     );
   };

@@ -1,0 +1,310 @@
+/*
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+.cp-search-clear-filters-button {
+  background: var(--cp-color-primary);
+  color: var(--cp-color-primary-on);
+}
+
+.cp-search-clear-button {
+  color: var(--cp-color-text-secondary);
+}
+
+.cp-search-clear-button:hover {
+  color: var(--cp-color-text);
+}
+
+.cp-search-filter .cp-search-filter-header {
+  border-bottom: 1px dashed transparent;
+}
+
+.cp-search-filter .cp-search-filter-header:hover {
+  background-color: var(--cp-color-bg-elevated-header);
+}
+
+.cp-search-filter .cp-search-filter-header.cp-search-filter-header-expanded {
+  border-bottom: 1px dashed var(--cp-color-border);
+}
+
+.cp-search-filter .cp-search-filter-header .cp-search-filter-header-caret {
+  color: var(--cp-color-text);
+}
+
+.cp-search-filter .cp-search-filter-header.cp-search-filter-header-expanded .cp-search-filter-header-caret {
+  transform: rotate(90deg);
+}
+
+.cp-search-results-table-header {
+  background-color: var(--cp-color-bg-elevated);
+  color: var(--cp-color-text);
+  position: sticky;
+  top: 0;
+  font-weight: bold;
+  z-index: 2;
+}
+
+.cp-search-results-table-header-cell {
+  margin: 0;
+  padding: 5px;
+  user-select: none;
+  cursor: default;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  border-bottom: 1px solid transparent;
+}
+
+.cp-search-results-table-cell,
+.cp-search-results-table-divider,
+.cp-search-results-table-header .cp-search-results-table-header-cell {
+  background-color: var(--cp-color-bg-elevated);
+}
+
+.cp-search-results-table-header .cp-search-results-table-header-cell {
+  border-color: var(--cp-color-border-card);
+}
+
+.cp-search-result-list-item {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.cp-search-results-table-cell {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.cp-search-results-table-divider {
+  height: 100%;
+  user-select: none;
+  width: 4px;
+}
+
+.cp-search-results-table-header .cp-search-results-table-divider {
+  cursor: col-resize;
+  border-left: 1px solid var(--cp-color-border-card);
+}
+
+.cp-search-results-table-header .cp-search-results-table-divider:not(:last-child) {
+  border-bottom: 1px solid var(--cp-color-border-card);
+}
+
+.cp-search-results-table-header .cp-search-results-table-divider:hover,
+.cp-search-results-table-divider.active {
+  border-left: 1px solid var(--cp-color-primary);
+}
+
+.cp-search-result-item,
+a.cp-search-result-item {
+  color: var(--cp-color-text);
+}
+
+.cp-search-result-item-main {
+  color: currentColor;
+}
+
+.cp-search-result-table-item {
+  cursor: pointer;
+  color: inherit;
+  text-decoration: none !important;
+  display: grid;
+  transition: background 0.2s ease;
+}
+
+a.cp-search-result-item:not(.disabled):hover,
+.cp-search-result-item:not(.disabled):hover .cp-search-result-item-main {
+  color: var(--cp-color-primary);
+}
+
+.cp-search-result-item-sub {
+  color: var(--cp-color-text-secondary);
+}
+
+a.cp-search-result-item.disabled,
+.cp-search-result-item.disabled,
+.cp-search-result-item.disabled .cp-search-result-item-main,
+.cp-search-result-item.disabled .cp-search-result-item-sub {
+  color: var(--cp-color-text-disabled);
+}
+
+.cp-search-result-item-actions {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  align-self: stretch;
+}
+
+.cp-search-result-item-action {
+  margin-right: 0;
+  padding: 0 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.cp-search-result-item:not(.disabled) .cp-search-result-item-action:hover {
+  background-color: var(--cp-color-primary);
+  color: var(--cp-color-primary-on);
+}
+
+.cp-search-result-item-tag .cp-search-result-item-tag-key,
+.cp-search-result-item-tag .cp-search-result-item-tag-value {
+  border: 1px solid var(--cp-color-border-card);
+}
+
+.cp-search-result-item-tag .cp-search-result-item-tag-key {
+  background-color: var(--cp-color-bg-elevated-header);
+}
+
+.cp-search-result-item-tag .cp-search-result-item-tag-value {
+  background-color: var(--cp-color-bg-elevated);
+}
+
+.cp-search-preview-wrapper {
+  background: var(--cp-color-bg-overlay);
+}
+
+.cp-search-preview {
+  background-color: var(--cp-color-bg-container);
+  border: 1px solid var(--cp-color-border);
+}
+
+.cp-search-preview-button {
+  color: var(--cp-color-text);
+}
+
+.cp-search-preview-button:hover {
+  color: var(--cp-color-text-accent);
+}
+
+.cp-search-preview-error {
+  color: var(--cp-color-red);
+}
+
+.cp-search-comment-header {
+  color: var(--cp-color-text-secondary);
+}
+
+.cp-search-header-image {
+  background-color: transparent;
+}
+
+.cp-search-header-title,
+.cp-search-header-sub-title,
+.cp-search-header-description,
+.cp-search-container .cp-search-content {
+  color: var(--cp-color-text);
+}
+
+.cp-search-content-preview-run,
+.cp-search-content-preview-run i,
+.cp-search-content-preview-run-task {
+  color: var(--cp-color-text);
+}
+
+.cp-search-description-tag {
+  background-color: color-mix(in oklch, var(--cp-color-bg-elevated), black 5%);
+  color: var(--cp-color-text);
+}
+
+.cp-search-attribute-name {
+  background-color: var(--cp-color-tag-key-bg);
+  border-bottom: 1px solid var(--cp-color-tag-divider);
+}
+
+.cp-search-attribute-value {
+  background-color: var(--cp-color-tag-value-bg);
+}
+
+.cp-search-highlight {
+  background-color: var(--cp-color-bg-elevated);
+}
+
+.cp-search-highlight-text {
+  background-color: var(--cp-color-search-highlight-bg);
+  color: var(--cp-color-search-highlight-text);
+}
+
+.cp-search-highlight-text.inactive {
+  background-color: var(--cp-color-search-highlight-bg-inactive);
+  color: var(--cp-color-search-highlight-text);
+}
+
+.cp-search-csv-table {
+  border: 1px solid var(--cp-color-border-card);
+  background-color: var(--cp-color-bg-elevated);
+  color: var(--cp-color-text);
+}
+
+.cp-search-csv-table-cell {
+  border: 1px solid var(--cp-color-border-card);
+  color: var(--cp-color-text);
+}
+
+.cp-search-faceted-button {
+  color: var(--cp-color-text);
+}
+
+.cp-search-faceted-button.selected,
+.cp-search-faceted-button .selected {
+  color: var(--cp-color-primary);
+}
+
+.cp-search-faceted-button.disabled,
+.cp-search-faceted-button:hover.disabled {
+  color: var(--cp-color-btn-disabled-text);
+  cursor: default;
+}
+
+.cp-search-type-button {
+  background-color: color-mix(in srgb, var(--cp-color-bg-elevated) 50%, transparent);
+  color: var(--cp-color-text);
+  border: 2px solid transparent;
+}
+
+.cp-search-type-button.selected {
+  background-color: var(--cp-color-bg-elevated);
+  color: var(--cp-color-text);
+  border: 2px solid var(--cp-color-text);
+}
+
+.cp-search-type-button:hover {
+  background-color: var(--cp-color-bg-elevated);
+}
+
+.cp-search-type-button.disabled {
+  background-color: transparent;
+  color: var(--cp-color-text-disabled);
+  cursor: not-allowed;
+}
+
+.cp-fast-search-result-item {
+  background-color: var(--cp-color-bg-elevated);
+  border-color: var(--cp-color-border-card);
+  color: var(--cp-color-text);
+}
+
+.cp-fast-search-result-item:hover,
+.cp-fast-search-result-item.cp-table-element-hover {
+  background-color: var(--cp-color-table-hover-bg);
+  color: var(--cp-color-table-hover-text);
+}
+

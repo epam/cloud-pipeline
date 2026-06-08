@@ -18,7 +18,8 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import PropTypes from 'prop-types';
 import SplitPane from 'react-split-pane';
-import {Alert, Button, Col, Icon, Input, Modal, Row, Select, Tree} from 'antd';
+import {Alert, AutoComplete, Button, Col, Input, Modal, Row, Tree} from 'antd';
+import {AppstoreOutlined, FolderOutlined} from '@ant-design/icons';
 import Folder from '../../browser/Folder';
 import Metadata from '../../browser/Metadata';
 import MetadataFolder from '../../browser/MetadataFolder';
@@ -165,11 +166,11 @@ export default class MetadataBrowser extends React.Component {
   }
 
   renderItemTitle (item) {
-    let icon;
+    let IconComponent;
     switch (item.type) {
-      case ItemTypes.folder: icon = 'folder'; break;
-      case ItemTypes.metadata: icon = 'appstore-o'; break;
-      case ItemTypes.metadataFolder: icon = 'appstore-o'; break;
+      case ItemTypes.folder: IconComponent = FolderOutlined; break;
+      case ItemTypes.metadata: IconComponent = AppstoreOutlined; break;
+      case ItemTypes.metadataFolder: IconComponent = AppstoreOutlined; break;
     }
     let name = item.name;
     if (item.searchResult) {
@@ -192,50 +193,37 @@ export default class MetadataBrowser extends React.Component {
       <span
         id={`pipelines-library-tree-node-${item.key}-name`}
         className={styles.treeItemTitle}>
-        {icon && <Icon type={icon} />}{name}
+        {IconComponent && <IconComponent />}{name}
       </span>
     );
   }
 
-  generateTreeItems (items) {
+  getTreeData (items) {
     if (!items) {
       return [];
     }
     return formatTreeItems(items, {preferences: this.props.preferences})
-      .map(item => {
-        if (item.isLeaf) {
-          return (
-            <Tree.TreeNode
-              className={`pipelines-library-tree-node-${item.key}`}
-              title={this.renderItemTitle(item)}
-              key={item.key}
-              isLeaf={item.isLeaf}
-            />
-          );
-        } else {
-          return (
-            <Tree.TreeNode
-              className={`pipelines-library-tree-node-${item.key}`}
-              title={this.renderItemTitle(item)}
-              key={item.key}
-              isLeaf={item.isLeaf}>
-              {this.generateTreeItems(item.children)}
-            </Tree.TreeNode>
-          );
-        }
-      });
+      .map(item => ({
+        key: item.key,
+        title: this.renderItemTitle(item),
+        isLeaf: item.isLeaf,
+        className: `pipelines-library-tree-node-${item.key}`,
+        ...(item.children && !item.isLeaf
+          ? {children: this.getTreeData(item.children)}
+          : {})
+      }));
   }
 
   onExpand = (expandedKeys, {expanded, node}) => {
-    const item = getTreeItemByKey(node.props.eventKey, this.rootItems);
+    const item = getTreeItemByKey(node.key, this.rootItems);
     if (item) {
       expandItem(item, expanded);
     }
     this.setState({expandedKeys: getExpandedKeys(this.rootItems)});
   };
 
-  onSelect = (selectedKeys, node) => {
-    const item = getTreeItemByKey(node.node.props.eventKey, this.rootItems);
+  onSelect = (selectedKeys, {node}) => {
+    const item = getTreeItemByKey(node.key, this.rootItems);
     if (item.type === ItemTypes.metadataFolder) {
       this.onSelectMetadataFolder(item.id);
     } else if (item.type === ItemTypes.metadata) {
@@ -246,8 +234,8 @@ export default class MetadataBrowser extends React.Component {
     this.onExpand(
       this.state.expandedKeys,
       {
-        expanded: !node.node.props.expanded,
-        node: node.node
+        expanded: !node.isLeaf && !this.state.expandedKeys.includes(node.key),
+        node
       }
     );
   };
@@ -299,14 +287,13 @@ export default class MetadataBrowser extends React.Component {
     return (
       <Tree
         className={styles.libraryTree}
+        treeData={this.getTreeData(this.rootItems)}
         onSelect={this.onSelect}
         onExpand={this.onExpand}
         checkStrictly
         expandedKeys={this.state.expandedKeys}
         selectedKeys={this.state.selectedKeys}
-      >
-        {this.generateTreeItems(this.rootItems)}
-      </Tree>
+      />
     );
   }
 
@@ -460,11 +447,10 @@ export default class MetadataBrowser extends React.Component {
         <div className={styles.expansionExpressionTitle}>
           Define expression
         </div>
-        <Select
+        <AutoComplete
           style={{width: '100%'}}
           disabled={!this.isExpansionExpressionAvailable}
           value={this.state.expansionExpression}
-          mode="combobox"
           filterOption={false}
           onChange={handleSearch}
           onFocus={() => handleSearch(this.state.expansionExpression)}
@@ -478,15 +464,15 @@ export default class MetadataBrowser extends React.Component {
                 currentValue = parseValue.join('.') + '.' + field.name;
               }
               return (
-                <Select.Option
+                <AutoComplete.Option
                   key={field.name}
                   value={currentValue}
                 >
                   {field.name}
-                </Select.Option>);
+                </AutoComplete.Option>);
             })
           }
-        </Select>
+        </AutoComplete>
       </Row>
     );
   };
@@ -499,7 +485,7 @@ export default class MetadataBrowser extends React.Component {
 
   renderContent = () => {
     if (!this.props.tree.pending && this.props.tree.error) {
-      return <Alert message="Error retrieving library" type="error" />;
+      return <Alert title="Error retrieving library" type="error" />;
     }
     let listingContent;
     if (this.state.isMetadataFolder) {
@@ -598,7 +584,7 @@ export default class MetadataBrowser extends React.Component {
             </Col>
           </Row>
         }
-        visible={this.props.visible}
+        open={this.props.visible}
       >
         <Row style={{height: 450}}>
           {this.renderContent()}

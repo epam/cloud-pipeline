@@ -15,9 +15,12 @@
  */
 
 import React from 'react';
-import {observer} from 'mobx-react';
+import {
+  observer} from 'mobx-react';
 import PropTypes from 'prop-types';
-import {Row, Icon} from 'antd';
+import {Row
+} from 'antd';
+import {CloseCircleOutlined, CloseOutlined, ExclamationCircleOutlined, InfoCircleOutlined, MailOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import displayDate from '../../../utils/displayDate';
 import PreviewNotification from './PreviewNotification';
@@ -106,29 +109,21 @@ export default class SystemNotification extends React.Component {
   renderSeverityIcon = () => {
     if (this.props.notification.type === NOTIFICATION_TYPE.message) {
       return (
-        <Icon
-          className="cp-setting-message"
-          type="mail" />
+        <MailOutlined className="cp-setting-message" />
       );
     }
     switch (this.props.notification.severity) {
       case 'INFO':
         return (
-          <Icon
-            className="cp-setting-info"
-            type="info-circle-o" />
+          <InfoCircleOutlined className="cp-setting-info" />
         );
       case 'WARNING':
         return (
-          <Icon
-            className="cp-setting-warning"
-            type="exclamation-circle-o" />
+          <ExclamationCircleOutlined className="cp-setting-warning" />
         );
       case 'CRITICAL':
         return (
-          <Icon
-            className="cp-setting-critical"
-            type="close-circle-o" />
+          <CloseCircleOutlined className="cp-setting-critical" />
         );
       default: return undefined;
     }
@@ -176,15 +171,7 @@ export default class SystemNotification extends React.Component {
             flexDirection: 'row'
           }}>
             <span className={styles.title} style={{flex: 1}}>{this.props.notification.title}</span>
-            <Icon
-              id="notification-close-button"
-              type="close"
-              onClick={this.onClose}
-              style={{
-                cursor: 'pointer',
-                padding: '5px 0 0 10px'
-              }}
-            />
+            <CloseOutlined id="notification-close-button" onClick={this.onClose} style={{ cursor: 'pointer', padding: '5px 0 0 10px' }} />
           </Row>
           <Row style={{
             maxHeight: 250,

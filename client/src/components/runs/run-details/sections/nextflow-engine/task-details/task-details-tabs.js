@@ -29,21 +29,17 @@ function TaskDetailsTabs (props) {
         style={{cursor: 'pointer'}}
         mode="horizontal"
         onClick={onChange}
-      >
-        {
-          tabs.map((tab) => (
-            <Menu.Item
-              key={tab.tab}
-              id={tab.tab}
-            >
-              <div className={styles.runDetailsTabsMenuItem}>
-                {tab.icon}
-                <span>{tab.title}</span>
-              </div>
-            </Menu.Item>
-          ))
-        }
-      </Menu>
+        items={tabs.map((tab) => ({
+          key: tab.tab,
+          id: tab.tab,
+          label: (
+            <div className={styles.runDetailsTabsMenuItem}>
+              {tab.icon}
+              <span>{tab.title}</span>
+            </div>
+          )
+        }))}
+      />
     </div>
   );
 }

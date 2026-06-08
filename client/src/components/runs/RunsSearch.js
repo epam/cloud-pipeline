@@ -16,6 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
+import {withRouter} from '../../utils/with-router';
 import {Table} from 'antd';
 import classNames from 'classnames';
 import PipelineRunFilter from '../../models/pipelines/PipelineRunFilter';
@@ -55,7 +56,7 @@ const pageSize = 20;
 })
 @localization.localizedComponent
 @observer
-export default class RunsSearch extends localization.LocalizedReactComponent {
+class RunsSearch extends localization.LocalizedReactComponent {
 
   state = {currentPage: 1};
 
@@ -168,7 +169,7 @@ export default class RunsSearch extends localization.LocalizedReactComponent {
         onChange={this.handleTableChange}
         pagination={{total: this.props.runFilter.total, pageSize, current: this.state.currentPage}}
         rowKey="id"
-        onRowClick={run => this.goToRun(run)}
+        onRow={(run) => ({ onClick: () => this.goToRun(run) })}
         rowClassName={() => styles.row}
         className={styles.runsSearchTable}
         size="small" />
@@ -186,3 +187,5 @@ export default class RunsSearch extends localization.LocalizedReactComponent {
     }
   }
 }
+
+export default withRouter(RunsSearch);

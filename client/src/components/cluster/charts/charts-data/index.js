@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import {action, computed, observable} from 'mobx';
+import {action, computed, observable, makeObservable} from 'mobx';
 import moment from 'moment-timezone';
 import {
   ChartData,
@@ -26,23 +26,21 @@ import {
 import NodeInstance from '../../../../models/cluster/NodeInstance';
 
 class ChartsData extends ChartData {
-  @observable initialized = false;
-  @observable error;
-  @observable instanceFrom;
-  @observable instanceTo;
-  @observable followCommonRange = true;
-  @observable from;
-  @observable to;
-  @observable runId;
-  @observable cpuUsage;
-  @observable memoryUsage;
-  @observable lastMemoryUsage;
-  @observable networkUsage;
-  @observable fileSystemUsage;
+  initialized = false;
+  error;
+  instanceFrom;
+  instanceTo;
+  followCommonRange = true;
+  from;
+  to;
+  runId;
+  cpuUsage;
+  memoryUsage;
+  lastMemoryUsage;
+  networkUsage;
+  fileSystemUsage;
+  node;
 
-  @observable node;
-
-  @computed
   get pending () {
     if (!this.initialized) {
       return true;
@@ -67,6 +65,24 @@ class ChartsData extends ChartData {
     const instanceFrom = from ? moment.utc(decodeURIComponent(from), format).unix() : undefined;
     const instanceTo = to ? moment.utc(decodeURIComponent(to), format).unix() : undefined;
     super(nodeName, instanceFrom, instanceTo, runId);
+    makeObservable(this, {
+      initialized: observable,
+      error: observable,
+      instanceFrom: observable,
+      instanceTo: observable,
+      followCommonRange: observable,
+      from: observable,
+      to: observable,
+      runId: observable,
+      cpuUsage: observable,
+      memoryUsage: observable,
+      lastMemoryUsage: observable,
+      networkUsage: observable,
+      fileSystemUsage: observable,
+      node: observable,
+      pending: computed,
+      initialize: action
+    });
     this.preferences = (stores || {}).preferences;
     this.authenticatedUserInfo = (stores || {}).authenticatedUserInfo;
     this.runId = runId;
@@ -75,7 +91,6 @@ class ChartsData extends ChartData {
       .then(this.loadData);
   }
 
-  @action
   initialize = async () => {
     this.node = new NodeInstance(this.nodeName);
     await this.node.fetchIfNeededOrWait();

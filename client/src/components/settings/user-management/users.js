@@ -15,8 +15,10 @@
  */
 
 import React from 'react';
-import {observer, inject} from 'mobx-react';
-import {computed} from 'mobx';
+import {
+  observer,
+  inject} from 'mobx-react';
+import {computed, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import {
   Table,
@@ -24,14 +26,14 @@ import {
   Input,
   Dropdown,
   Card,
-  Icon,
   Button,
   message,
   Alert,
   Select,
+  Space,
   Tooltip
 } from 'antd';
-import Menu, {MenuItem} from 'rc-menu';
+import {BarsOutlined, DownloadOutlined, DownOutlined, EditOutlined, PlusOutlined} from '@ant-design/icons';
 import Roles from '../../../models/user/Roles';
 import UserCreate from '../../../models/user/UserCreate';
 import UserDelete from '../../../models/user/UserDelete';
@@ -92,22 +94,31 @@ export default class UsersManagement extends React.Component {
     filterUsers: USERS_FILTERS.all
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      userHasReadPermissions: computed,
+      dataStorages: computed,
+      users: computed,
+      usersPending: computed
+    });
+  }
+
   get isAdmin () {
     const {authenticatedUserInfo} = this.props;
     return authenticatedUserInfo.loaded
       ? authenticatedUserInfo.value.admin
       : false;
-  };
+  }
 
   get isReader () {
     return roleModel.hasRole(roleModel.ROLES.ROLE_USER_READER)(this);
-  };
+  }
 
   get isUsersAdmin () {
     return roleModel.hasRole(roleModel.ROLES.ROLE_USER_ADMIN)(this);
   }
 
-  @computed
   get userHasReadPermissions () {
     const {
       users
@@ -139,7 +150,6 @@ export default class UsersManagement extends React.Component {
     key === 'default' && doExport();
   };
 
-  @computed
   get dataStorages () {
     if (this.props.dataStorages.loaded) {
       return (this.props.dataStorages.value || [])
@@ -193,7 +203,6 @@ export default class UsersManagement extends React.Component {
     };
   };
 
-  @computed
   get users () {
     const {users} = this.props;
     if (users && users.loaded) {
@@ -204,7 +213,6 @@ export default class UsersManagement extends React.Component {
     return [];
   }
 
-  @computed
   get usersPending () {
     const {users} = this.props;
     return users.pending;
@@ -266,22 +274,18 @@ export default class UsersManagement extends React.Component {
   };
 
   renderUsersTableControls = () => {
-    const exportUserMenu = (
-      <Menu
-        onClick={this.handleExportUsersMenu}
-        selectedKeys={[]}
-        style={{cursor: 'pointer'}}
-      >
-        <MenuItem key="default">
-          <Icon type="download" style={{marginRight: 10}} />
-          Default configuration
-        </MenuItem>
-        <MenuItem key="custom">
-          <Icon type="bars" style={{marginRight: 10}} />
-          Custom configuration
-        </MenuItem>
-      </Menu>
-    );
+    const exportUserMenuItems = [
+      {
+        key: 'default',
+        icon: <DownloadOutlined style={{marginRight: 10}} />,
+        label: 'Default configuration'
+      },
+      {
+        key: 'custom',
+        icon: <BarsOutlined style={{marginRight: 10}} />,
+        label: 'Custom configuration'
+      }
+    ];
     return (
       <Row type="flex" style={{marginBottom: 10}}>
         <Input.Search
@@ -295,7 +299,7 @@ export default class UsersManagement extends React.Component {
           value={this.state.filterUsers}
           style={{width: 175, marginLeft: 5}}
           onChange={this.onChangeUsersFilters}
-          dropdownMatchSelectWidth={false}
+          popupMatchSelectWidth={false}
         >
           <Select.Option
             key={USERS_FILTERS.all}
@@ -342,7 +346,7 @@ export default class UsersManagement extends React.Component {
               style={{marginLeft: 5}}
               onClick={this.openCreateUserDialog}
             >
-              <Icon type="plus" />Create user
+              <PlusOutlined />Create user
             </Button>
           )
         }
@@ -356,14 +360,24 @@ export default class UsersManagement extends React.Component {
         }
         {
           (this.isReader || this.isAdmin || this.isUsersAdmin) && (
-            <Dropdown.Button
-              style={{marginLeft: 5}}
-              onClick={() => doExport()}
-              overlay={exportUserMenu}
-              icon={<Icon type="download" />}
-            >
-              Export users
-            </Dropdown.Button>
+            <Space.Compact style={{marginLeft: 5}}>
+              <Button
+                onClick={() => doExport()}
+                icon={<DownloadOutlined />}
+              >
+                Export users
+              </Button>
+              <Dropdown
+                menu={{
+                  items: exportUserMenuItems,
+                  onClick: this.handleExportUsersMenu,
+                  style: {cursor: 'pointer'}
+                }}
+                trigger={['click']}
+              >
+                <Button icon={<DownOutlined />} />
+              </Dropdown>
+            </Space.Compact>
           )
         }
       </Row>
@@ -395,14 +409,10 @@ export default class UsersManagement extends React.Component {
               ...tags.slice(0, maxTagItems - 1).map(tagRenderer),
               <Dropdown
                 key="more"
-                overlay={
+                popupRender={() => (
                   <Card
                     className="all-tags-container"
-                    bodyStyle={{
-                      padding: 5,
-                      overflowY: 'auto',
-                      maxHeight: '30vh'
-                    }}>
+                    styles={{body: {padding: 5, overflowY: 'auto', maxHeight: '30vh'}}}>
                     {tags.map((tag, index) => (
                       <Row
                         className={
@@ -414,10 +424,11 @@ export default class UsersManagement extends React.Component {
                         key={index}
                         type="flex">
                         {tag.displayName}
-                      </Row>))
-                    }
+                      </Row>
+                    ))}
                   </Card>
-                }>
+                )}
+              >
                 <a
                   id="more-info-link"
                   className={styles.moreInfoLabel}
@@ -591,7 +602,7 @@ export default class UsersManagement extends React.Component {
                   size="small"
                   onClick={() => this.openEditUserRolesDialog(user)}
                 >
-                  <Icon type="edit" />
+                  <EditOutlined />
                 </Button>
               </Row>
             );
@@ -608,7 +619,7 @@ export default class UsersManagement extends React.Component {
         dataSource={this.filteredUsers}
         onChange={this.handleUserTableChange}
         rowClassName={user => `user-${user.id}`}
-        onRowClick={(user) => this.openEditUserRolesDialog(user)}
+        onRow={(user) => ({onClick: () => this.openEditUserRolesDialog(user)})}
         pagination={{
           total: this.filteredUsers.length,
           PAGE_SIZE,
@@ -703,7 +714,7 @@ export default class UsersManagement extends React.Component {
       !this.userHasReadPermissions
     ) {
       return (
-        <Alert type="error" message="Access is denied" />
+        <Alert type="error" title="Access is denied" />
       );
     }
     const {

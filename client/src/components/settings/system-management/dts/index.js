@@ -16,9 +16,16 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {computed} from 'mobx';
-import {inject, observer} from 'mobx-react';
-import {Alert, Modal, message, Button, Icon, Select} from 'antd';
+import {computed, makeObservable} from 'mobx';
+import {inject,
+  observer} from 'mobx-react';
+import {Alert,
+  Modal,
+  message,
+  Button,
+  Select
+} from 'antd';
+import {ReloadOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import displayDate from '../../../../utils/displayDate';
 import SubSettings from '../../sub-settings';
@@ -46,7 +53,13 @@ class DtsManagement extends React.Component {
     statusFilter: STATUS_FILTERS.all
   }
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      dtsList: computed
+    });
+  }
+
   get dtsList () {
     const {dtsList} = this.props;
     if (dtsList.loaded && dtsList.value && dtsList.value.length) {
@@ -55,7 +68,6 @@ class DtsManagement extends React.Component {
     return [];
   }
 
-  @computed
   get filteredDtsList () {
     const {statusFilter} = this.state;
     if (statusFilter === STATUS_FILTERS.all) {
@@ -76,7 +88,6 @@ class DtsManagement extends React.Component {
     }
   };
 
-  @computed
   get pending () {
     const {dtsList} = this.props;
     return (dtsList && dtsList.pending) || this.state.pending;
@@ -251,7 +262,7 @@ class DtsManagement extends React.Component {
       name: 'empty',
       render: () => (
         <Alert
-          message="DTS not found."
+          title="DTS not found."
           type="info"
         />)
     }];
@@ -283,7 +294,7 @@ class DtsManagement extends React.Component {
           disabled={this.pending}
           onClick={this.dtsListFetch}
         >
-          <Icon type="reload" />
+          <ReloadOutlined />
         </Button>
       </div>
     );

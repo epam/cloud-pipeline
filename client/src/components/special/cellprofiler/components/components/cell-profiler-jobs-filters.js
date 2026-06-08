@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Icon} from 'antd';
+import {FileOutlined} from '@ant-design/icons';
 import UsersRolesSelect from '../../../users-roles-select';
 import Collapse from '../collapse';
 import DelayedInput from '../../../DelayedInput';
@@ -83,7 +83,7 @@ class CellProfilerJobsFilters extends React.Component {
             key="source"
             style={{marginRight: 5}}
           >
-            <Icon type="file" />
+            <FileOutlined />
             {source}
           </span>
         ));

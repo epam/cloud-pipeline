@@ -29,7 +29,7 @@ function ImportResult (
     logs,
     onClose,
     visible,
-    mode
+    mode = 'modal'
   }
 ) {
   let content;
@@ -37,7 +37,7 @@ function ImportResult (
     content = (
       <Alert
         type="info"
-        message="No logs are available"
+        title="No logs are available"
       />
     );
   } else {
@@ -65,7 +65,7 @@ function ImportResult (
       onCancel={onClose}
       footer={null}
       title="Import logs"
-      visible={visible}
+      open={visible}
       width="80%"
     >
       <div className={styles.logs}>
@@ -80,10 +80,6 @@ ImportResult.propTypes = {
   onClose: PropTypes.func,
   visible: PropTypes.bool,
   mode: PropTypes.oneOf(['inline', 'modal'])
-};
-
-ImportResult.defaultProps = {
-  mode: 'modal'
 };
 
 export default ImportResult;

@@ -1,8 +1,23 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Icon} from 'antd';
 import classNames from 'classnames';
 import styles from './nextflow-engine-tasks.css';
+import {
+  CheckCircleFilled,
+  CheckCircleOutlined,
+  ClockCircleFilled,
+  ClockCircleOutlined,
+  CloseCircleFilled,
+  CloseCircleOutlined,
+  ExclamationCircleFilled,
+  ExclamationCircleOutlined,
+  MinusCircleFilled,
+  MinusCircleOutlined,
+  PlayCircleFilled,
+  PlayCircleOutlined,
+  PlusCircleFilled,
+  PlusCircleOutlined
+} from '@ant-design/icons';
 
 export const nextflowTaskStatusCompleted = 'COMPLETED';
 export const nextflowTaskStatusFailed = 'FAILED';
@@ -115,20 +130,34 @@ export function getTagNameForNextflowTaskStatus (status) {
 export function getIconForStatus (status, filled = false) {
   switch ((status || '').toUpperCase()) {
     case nextflowTaskStatusCompleted:
-      return filled ? 'check-circle' : 'check-circle-o';
+      return filled
+        ? CheckCircleFilled
+        : CheckCircleOutlined;
     case nextflowTaskStatusAborted:
-      return filled ? 'close-circle' : 'close-circle-o';
+      return filled
+        ? CloseCircleFilled
+        : CloseCircleOutlined;
     case nextflowTaskStatusFailed:
-      return filled ? 'exclamation-circle' : 'exclamation-circle-o';
+      return filled
+        ? ExclamationCircleFilled
+        : ExclamationCircleOutlined;
     case nextflowTaskStatusRunning:
-      return filled ? 'play-circle' : 'play-circle-o';
+      return filled
+        ? PlayCircleFilled
+        : PlayCircleOutlined;
     case nextflowTaskStatusSubmitted:
-      return filled ? 'plus-circle' : 'plus-circle-o';
+      return filled
+        ? PlusCircleFilled
+        : PlusCircleOutlined;
     case nextflowTaskStatusCached:
-      return filled ? 'minus-circle' : 'minus-circle-o';
+      return filled
+        ? MinusCircleFilled
+        : MinusCircleOutlined;
     case nextflowTaskStatusCreated:
     default:
-      return filled ? 'clock-circle' : 'clock-circle-o';
+      return filled
+        ? ClockCircleFilled
+        : ClockCircleOutlined;
   }
 }
 
@@ -162,6 +191,7 @@ function NextflowTaskStatus (props) {
   const tagName = getTagNameForNextflowTaskStatus(status);
   const asTag = Boolean(filled && tagName && showLabel);
   const tagFilled = asTag && isStatusFilled(status);
+  const IconComponent = getIconForStatus(status, tagFilled);
   return (
     <span
       className={classNames(
@@ -175,8 +205,7 @@ function NextflowTaskStatus (props) {
       )}
       style={style}
     >
-      <Icon
-        type={getIconForStatus(status, tagFilled)}
+      <IconComponent
         className={tagFilled ? undefined : getClassNameForNextflowTaskStatus(status)}
       />
       {

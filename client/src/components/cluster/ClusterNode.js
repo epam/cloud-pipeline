@@ -15,16 +15,18 @@
  */
 
 import React, {Component} from 'react';
+import {Outlet, Link} from 'react-router-dom';
 import {Alert, Menu, Row, Button, Modal, message, Popover} from 'antd';
+import {withRouter} from '../../utils/with-router';
+import {ArrowLeftOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import AdaptedLink from '../special/AdaptedLink';
-import {Link} from 'react-router';
 import clusterNodes, {MACHINE_TYPES} from '../../models/cluster/ClusterNodes';
 import pools from '../../models/cluster/HotNodePools';
 import TerminateNodeRequest from '../../models/cluster/TerminateNode';
 import {ChartsData} from './charts';
 import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import styles from './ClusterNode.css';
 import parentStyles from './Cluster.css';
 import {renderNodeLabels as generateNodeLabels} from './renderers';
@@ -35,7 +37,11 @@ import PipelineRunInfo from '../../models/pipelines/PipelineRunInfo';
 
 @inject('authenticatedUserInfo', 'preferences')
 @inject((stores, {params, location}) => {
-  const {type, runId, from, to} = location?.query;
+  const _q = new URLSearchParams(location?.search || '');
+  const type = _q.get('type');
+  const runId = _q.get('runId');
+  const from = _q.get('from');
+  const to = _q.get('to');
   return {
     pools,
     name: params.nodeName,
@@ -52,11 +58,20 @@ class ClusterNode extends Component {
   state = {
     labelsToShow: undefined
   };
-
-  @observable _chartsData;
+  _chartsData;
 
   resizeListener;
   labelRefs = [];
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      _chartsData: observable,
+      chartsData: computed,
+      windowsOS: computed,
+      uiStandaloneNodesAllowTerminate: computed
+    });
+  }
 
   componentDidMount () {
     this.resizeListener = window.addEventListener('resize', this.onResize);
@@ -80,12 +95,10 @@ class ClusterNode extends Component {
     window.removeEventListener('resize', this.onResize);
   }
 
-  @computed
   get chartsData () {
     return this._chartsData;
   }
 
-  @computed
   get windowsOS () {
     const {node} = this.props;
     if (node.loaded) {
@@ -106,13 +119,12 @@ class ClusterNode extends Component {
     return authenticatedUserInfo.loaded
       ? authenticatedUserInfo.value.admin
       : false;
-  };
+  }
 
   get isCloudNode () {
     return this.props.machineType === MACHINE_TYPES.cloud;
   }
 
-  @computed
   get uiStandaloneNodesAllowTerminate () {
     const {preferences} = this.props;
     if (preferences) {
@@ -123,7 +135,10 @@ class ClusterNode extends Component {
 
   initializeChartsData = async () => {
     const {location, name, stores} = this.props;
-    const {from: queryFrom, to: queryTo, runId} = location.query;
+    const _q = new URLSearchParams(location?.search || '');
+    const queryFrom = _q.get('from');
+    const queryTo = _q.get('to');
+    const runId = _q.get('runId');
     let from = queryFrom;
     let to = queryTo;
     if (runId) {
@@ -160,7 +175,7 @@ class ClusterNode extends Component {
         <div key="error">
           <br />
           <Alert
-            message={`The node '${this.props.name}' was not found or was removed`}
+            title={`The node '${this.props.name}' was not found or was removed`}
             type="warning"
           />
         </div>
@@ -185,35 +200,45 @@ class ClusterNode extends Component {
         </div>
       );
     }
+    const menuItems = [
+      {
+        key: 'info',
+        label: (
+          <AdaptedLink
+            id="cluster-node-tab-info"
+            to={`/cluster/${this.props.name}/info`}
+            location={this.props.router.location}>General info</AdaptedLink>
+        )
+      },
+      {
+        key: 'jobs',
+        label: (
+          <AdaptedLink
+            id="cluster-node-tab-jobs"
+            to={`/cluster/${this.props.name}/jobs`}
+            location={this.props.router.location}>Jobs</AdaptedLink>
+        )
+      },
+      ...(!this.windowsOS
+        ? [{
+            key: 'monitor',
+            label: (
+              <AdaptedLink
+                id="cluster-node-tab-monitor"
+                to={`/cluster/${this.props.name}/monitor`}
+                location={this.props.router.location}>Monitor</AdaptedLink>
+            )
+          }]
+        : [])
+    ];
     return (
       <Row gutter={16} type="flex" className={styles.rowMenu} key="menu">
         <Menu
           mode="horizontal"
           selectedKeys={[activeTab]}
-          className={styles.tabsMenu}>
-          <Menu.Item key="info">
-            <AdaptedLink
-              id="cluster-node-tab-info"
-              to={`/cluster/${this.props.name}/info`}
-              location={this.props.router.location}>General info</AdaptedLink>
-          </Menu.Item>
-          <Menu.Item key="jobs">
-            <AdaptedLink
-              id="cluster-node-tab-jobs"
-              to={`/cluster/${this.props.name}/jobs`}
-              location={this.props.router.location}>Jobs</AdaptedLink>
-          </Menu.Item>
-          {
-            !this.windowsOS && (
-              <Menu.Item key="monitor">
-                <AdaptedLink
-                  id="cluster-node-tab-monitor"
-                  to={`/cluster/${this.props.name}/monitor`}
-                  location={this.props.router.location}>Monitor</AdaptedLink>
-              </Menu.Item>
-            )
-          }
-        </Menu>
+          className={styles.tabsMenu}
+          items={menuItems}
+        />
       </Row>
     );
   };
@@ -301,20 +326,16 @@ class ClusterNode extends Component {
 
   render () {
     const {labelsToShow} = this.state;
+    const outletContext = {
+      node: this.props.node,
+      chartsData: this.chartsData,
+      nodeName: this.props.name,
+      isCloudNode: this.isCloudNode
+    };
     const result = [
       this.renderError(),
       this.renderMenu(),
-      React.Children.map(this.props.children,
-        (child) => React.cloneElement(
-          child,
-          {
-            node: this.props.node,
-            chartsData: this.chartsData,
-            nodeName: this.props.name,
-            isCloudNode: this.isCloudNode
-          }
-        )
-      )
+      <Outlet key="outlet" context={outletContext} />
     ];
     const nodeLabels = this.renderNodeLabels().filter(label => label !== ' ');
     let allowToTerminate = this.props.node.loaded &&
@@ -344,7 +365,9 @@ class ClusterNode extends Component {
             gap: 5,
             alignItems: 'center'
           }}>
-          <Link id="back-button" to="/cluster"><Button type="link" icon="arrow-left" /></Link>
+          <Link id="back-button" to="/cluster">
+            <Button type="link" icon={<ArrowLeftOutlined />} />
+          </Link>
           <div
             style={{whiteSpace: 'nowrap'}}
             className={parentStyles.nodeMainInfo}
@@ -403,7 +426,7 @@ class ClusterNode extends Component {
             allowToTerminate && (
               <Button
                 id="terminate-cluster-node-button"
-                type="danger"
+                danger
                 disabled={this.props.node.pending || this.chartsData?.pending}
                 style={{marginRight: 5}}
                 onClick={this.nodeTerminationConfirm}
@@ -425,4 +448,4 @@ class ClusterNode extends Component {
   }
 }
 
-export default ClusterNode;
+export default withRouter(ClusterNode);

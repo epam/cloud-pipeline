@@ -5,7 +5,12 @@ import {
   pluginAssignmentsArraysAreEqual,
   updatePluginsAssignments
 } from '../utilities';
-import {Alert, Modal, message, Icon, Button} from 'antd';
+import {Alert,
+  Modal,
+  message,
+  Button
+} from 'antd';
+import {SettingOutlined} from '@ant-design/icons';
 import ConfigurePluginsControl from './configure-plugins-control';
 import classNames from 'classnames';
 
@@ -176,12 +181,12 @@ class ConfigurePlugins extends React.PureComponent {
       <div>
         {
           error && (
-            <Alert message={error} type="error" />
+            <Alert title={error} type="error" />
           )
         }
         {
           generalError && (
-            <Alert message={generalError} type="error" />
+            <Alert title={generalError} type="error" />
           )
         }
         <ConfigurePluginsControl
@@ -226,7 +231,7 @@ class ConfigurePlugins extends React.PureComponent {
     const modal = (
       <Modal
         title="Configure UI plugins"
-        visible={modalVisible}
+        open={modalVisible}
         onCancel={this.onClose}
         footer={footer}
         width="620px"
@@ -248,7 +253,7 @@ class ConfigurePlugins extends React.PureComponent {
           {
             propsDisabled ? (
               <span>
-                <Icon type="setting" />
+                <SettingOutlined />
                 <span style={{margin: '0 5px'}}>
                   {linkText}
                 </span>
@@ -259,7 +264,7 @@ class ConfigurePlugins extends React.PureComponent {
                 className={classNames('cp-text', 'underline')}
                 style={{textDecoration: 'underline'}}
               >
-                <Icon type="setting" />
+                <SettingOutlined />
                 <span style={{margin: '0 5px'}}>
                   {linkText}
                 </span>

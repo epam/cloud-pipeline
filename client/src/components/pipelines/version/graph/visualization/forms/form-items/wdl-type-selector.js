@@ -95,7 +95,7 @@ function WdlTypeSelector (
       disabled={disabled}
       getPopupContainer={triggerNode => triggerNode.parentNode}
       readOnly={disabled}
-      dropdownMatchSelectWidth={false}
+      popupMatchSelectWidth={false}
     />
   );
 }

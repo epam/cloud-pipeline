@@ -16,16 +16,19 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import classNames from 'classnames';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {
   Alert,
-  Button, Icon,
+  Button,
   Input,
   Modal,
   Select
 } from 'antd';
+import {CaretRightOutlined, CheckCircleFilled, LoadingOutlined} from '@ant-design/icons';
 import roleModel from '../../../../../utils/roleModel';
 import highlightText from '../../../../special/highlightText';
 import ToolImage from '../../../../../models/tools/ToolImage';
@@ -76,7 +79,14 @@ class LaunchVSForm extends React.Component {
     tag: undefined
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      groups: computed,
+      tools: computed
+    });
+  }
+
   get groups () {
     const {dockerRegistries} = this.props;
     if (dockerRegistries.loaded) {
@@ -91,7 +101,6 @@ class LaunchVSForm extends React.Component {
     return [];
   }
 
-  @computed
   get tools () {
     const {dockerRegistries} = this.props;
     if (dockerRegistries.loaded) {
@@ -233,7 +242,7 @@ class LaunchVSForm extends React.Component {
                   : tool.registry
               }
             </span>
-            <Icon type="caret-right" style={{fontSize: 'smaller', margin: '0 2px'}} />
+            <CaretRightOutlined style={{fontSize: 'smaller', margin: '0 2px'}} />
             <span>{highlightText(group, search)}</span>
           </span>
         </div>
@@ -279,16 +288,14 @@ class LaunchVSForm extends React.Component {
             >
               {
                 tagsPending && (
-                  <Icon
-                    type="loading"
-                  />
+                  <LoadingOutlined />
                 )
               }
               {
                 tagsError && (
                   <Alert
                     type="error"
-                    message={tagsError}
+                    title={tagsError}
                   />
                 )
               }
@@ -318,7 +325,7 @@ class LaunchVSForm extends React.Component {
         <div
           className={styles.checkbox}
         >
-          <Icon type="check-circle" />
+          <CheckCircleFilled />
         </div>
       </div>
     );
@@ -336,7 +343,7 @@ class LaunchVSForm extends React.Component {
       return (
         <Alert
           type="warning"
-          message="Tools not found"
+          title="Tools not found"
         />
       );
     }
@@ -433,7 +440,7 @@ class LaunchVSForm extends React.Component {
     return (
       <Modal
         title="Select a tool to launch Versioned Storage"
-        visible={visible}
+        open={visible}
         width="75%"
         onCancel={onClose}
         footer={(
@@ -480,7 +487,7 @@ class LaunchVSForm extends React.Component {
           error && (
             <Alert
               type="error"
-              message={error}
+              title={error}
             />
           )
         }

@@ -16,9 +16,10 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {inject, observer} from 'mobx-react';
-import {Icon, Row} from 'antd';
+import {Row} from 'antd';
+import {LoadingOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
@@ -38,7 +39,6 @@ import MetadataEntityLoad from '../../../models/folderMetadata/MetadataEntityLoa
 })
 @observer
 export default class MetadataEntityPreview extends React.Component {
-
   static propTypes = {
     item: PropTypes.shape({
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
@@ -48,7 +48,14 @@ export default class MetadataEntityPreview extends React.Component {
     })
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      description: computed,
+      rowData: computed
+    });
+  }
+
   get description () {
     if (!this.props.item) {
       return null;
@@ -60,7 +67,6 @@ export default class MetadataEntityPreview extends React.Component {
     return this.props.item.description;
   }
 
-  @computed
   get rowData () {
     if (this.props.metadataEntity.loaded) {
       return this.props.metadataEntity.value.data || null;
@@ -76,7 +82,7 @@ export default class MetadataEntityPreview extends React.Component {
     if (this.props.metadataEntity.pending) {
       return (
         <Row className={styles.contentPreview} type="flex" justify="center">
-          <Icon type="loading" />
+          <LoadingOutlined />
         </Row>
       );
     }
@@ -121,6 +127,7 @@ export default class MetadataEntityPreview extends React.Component {
       return null;
     }
 
+    const ItemIcon = PreviewIcons[this.props.item.type];
     const highlights = renderHighlights(this.props.item);
     const items = this.renderItems();
 
@@ -135,7 +142,7 @@ export default class MetadataEntityPreview extends React.Component {
       >
         <div className={styles.header}>
           <Row className={classNames(styles.title, 'cp-search-header-title')} type="flex" align="middle">
-            <Icon type={PreviewIcons[this.props.item.type]} />
+            {ItemIcon && <ItemIcon />}
             <span>{this.props.item.name}</span>
           </Row>
           {
@@ -154,5 +161,4 @@ export default class MetadataEntityPreview extends React.Component {
       </div>
     );
   }
-
 }

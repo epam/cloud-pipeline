@@ -1,0 +1,61 @@
+/*
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+.cp-node-tag {
+  border-color: var(--cp-color-text-disabled);
+  color: var(--cp-color-text);
+}
+
+.cp-node-tag.cp-node-tag-run,
+.cp-node-tag.cp-node-tag-pool,
+.cp-node-tag.cp-node-tag-master,
+.cp-node-tag.cp-node-tag-cp-role,
+.cp-node-tag.cp-node-tag-pipeline-info {
+  border-color: currentColor;
+}
+
+.cp-node-tag.cp-node-tag-run {
+  color: var(--cp-color-green);
+  font-weight: bold;
+}
+
+.cp-node-tag.cp-node-tag-run:hover {
+  background-color: var(--cp-color-green);
+  border-color: var(--cp-color-green);
+  color: var(--cp-color-primary-on);
+}
+
+.cp-node-tag.cp-node-tag-pipeline-info {
+  color: var(--cp-color-text-secondary);
+}
+
+.cp-node-tag.cp-node-tag-pool {
+  color: var(--cp-color-violet);
+}
+
+.cp-node-tag.cp-node-tag-master,
+.cp-node-tag.cp-node-tag-cp-role {
+  color: var(--cp-color-primary);
+}
+
+.cp-cluster-node-even-row {
+  background-color: var(--cp-color-bg-striped);
+}
+
+.cp-filter-popover-item:hover {
+  background-color: var(--cp-color-interactive-hover-bg);
+  color: var(--cp-color-text);
+}

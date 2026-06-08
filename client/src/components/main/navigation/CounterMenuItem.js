@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Icon, Button, Tooltip} from 'antd';
+import {Button, Tooltip} from 'antd';
 
 function CounterMenuItem (props) {
   const {
@@ -26,7 +26,7 @@ function CounterMenuItem (props) {
     maxCount = 99,
     tooltip,
     onClick,
-    icon
+    icon = null
   } = props;
   const renderCount = () => {
     if (count > maxCount) {
@@ -34,6 +34,7 @@ function CounterMenuItem (props) {
     }
     return count;
   };
+  const IconComponent = icon;
   return (
     <Tooltip
       overlay={tooltip}
@@ -42,12 +43,11 @@ function CounterMenuItem (props) {
     >
       <Button
         id={id}
+        type="text"
         className={className}
         onClick={onClick}
       >
-        <Icon
-          type={icon}
-        />
+        <IconComponent />
         {
           count > 0 &&
           <span>
@@ -62,7 +62,7 @@ function CounterMenuItem (props) {
 CounterMenuItem.propTypes = {
   onClick: PropTypes.func,
   id: PropTypes.string.isRequired,
-  icon: PropTypes.string,
+  icon: PropTypes.elementType,
   className: PropTypes.string,
   tooltip: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
   count: PropTypes.number,

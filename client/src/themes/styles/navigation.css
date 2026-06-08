@@ -1,0 +1,116 @@
+/*
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+.cp-navigation-panel {
+  background-color: var(--cp-color-nav-bg);
+}
+
+.cp-navigation-panel.impersonated {
+  background-color: var(--cp-color-nav-bg-impersonated);
+}
+
+.cp-navigation-panel .cp-navigation-menu-item {
+  color: var(--cp-color-nav-text);
+  background-color: transparent;
+  text-transform: uppercase;
+  border: 0 solid transparent;
+  width: 100%;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: larger;
+  text-decoration: none;
+}
+
+.cp-navigation-panel .cp-navigation-menu-item.ant-btn,
+.cp-navigation-panel .cp-navigation-menu-item.ant-btn:hover,
+.cp-navigation-panel .cp-navigation-menu-item.ant-btn:focus,
+.cp-navigation-panel .cp-navigation-menu-item.ant-btn:focus-visible,
+.cp-navigation-panel .cp-navigation-menu-item.ant-btn:active {
+  outline: none;
+  box-shadow: none;
+  border-color: transparent;
+}
+
+.cp-navigation-panel .cp-navigation-menu-item:not(.selected):hover,
+.cp-navigation-panel .cp-navigation-menu-item:not(.selected):focus-visible,
+.cp-navigation-panel .cp-navigation-menu-item.ant-btn:not(.selected):hover,
+.cp-navigation-panel .cp-navigation-menu-item.ant-btn:not(.selected):focus,
+.cp-navigation-panel .cp-navigation-menu-item.ant-btn:not(.selected):focus-visible,
+.cp-navigation-panel .cp-navigation-menu-item.ant-btn:not(.selected):active,
+.cp-navigation-panel a.cp-navigation-menu-item:not(.selected):hover,
+.cp-navigation-panel a.cp-navigation-menu-item:not(.selected):focus,
+.cp-navigation-panel a.cp-navigation-menu-item:not(.selected):focus-visible {
+  background-color: transparent;
+  color: var(--cp-color-primary-hover);
+}
+
+.cp-navigation-panel .cp-navigation-menu-item:not(.selected):hover .anticon,
+.cp-navigation-panel .cp-navigation-menu-item:not(.selected):focus-visible .anticon {
+  color: var(--cp-color-primary-hover);
+}
+
+.cp-navigation-panel .cp-divider.cp-navigation-divider {
+  background-color: var(--cp-color-nav-text);
+  opacity: 0.5;
+  margin: 0 4px;
+  width: calc(100% - 8px);
+  border: none;
+}
+
+.cp-navigation-panel .cp-navigation-menu-item.selected,
+.cp-navigation-panel .cp-navigation-menu-item.selected.ant-btn:hover,
+.cp-navigation-panel .cp-navigation-menu-item.selected.ant-btn:focus,
+.cp-navigation-panel .cp-navigation-menu-item.selected.ant-btn:focus-visible,
+.cp-navigation-panel .cp-navigation-menu-item.selected.ant-btn:active,
+.cp-navigation-panel a.cp-navigation-menu-item.selected:hover,
+.cp-navigation-panel a.cp-navigation-menu-item.selected:focus,
+.cp-navigation-panel a.cp-navigation-menu-item.selected:focus-visible {
+  background-color: var(--cp-color-nav-bg-active);
+}
+
+.cp-navigation-panel.impersonated .cp-navigation-menu-item.selected,
+.cp-navigation-panel.impersonated .cp-navigation-menu-item.selected.ant-btn:hover,
+.cp-navigation-panel.impersonated .cp-navigation-menu-item.selected.ant-btn:focus,
+.cp-navigation-panel.impersonated .cp-navigation-menu-item.selected.ant-btn:focus-visible,
+.cp-navigation-panel.impersonated .cp-navigation-menu-item.selected.ant-btn:active {
+  background-color: var(--cp-color-nav-bg-impersonated-active);
+}
+
+.cp-navigation-panel .cp-navigation-menu-item i {
+  font-weight: bold;
+  font-size: large;
+}
+
+.cp-navigation-panel .cp-navigation-menu-item.cp-runs-menu-item.active {
+  color: var(--cp-color-nav-runs);
+}
+
+.cp-navigation-panel .cp-navigation-menu-item.cp-runs-menu-item.active:not(.selected):hover,
+.cp-navigation-panel .cp-navigation-menu-item.cp-runs-menu-item.active:not(.selected):hover .anticon {
+  color: var(--cp-color-primary-hover);
+}
+
+.cp-navigation-item-logo {
+  height: 26px;
+  width: 26px;
+  display: block;
+  background-image: var(--cp-asset-logo);
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}

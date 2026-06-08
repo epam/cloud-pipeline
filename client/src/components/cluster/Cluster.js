@@ -16,6 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import {withRouter} from '../../utils/with-router';
 import moment from 'moment-timezone';
 import classNames from 'classnames';
 import {
@@ -28,9 +29,9 @@ import {
   Modal,
   Row,
   Table,
-  Tooltip,
-  Icon
+  Tooltip
 } from 'antd';
+import {CloudOutlined} from '@ant-design/icons';
 import clusterNodes, {MACHINE_TYPES} from '../../models/cluster/ClusterNodes';
 import cloudNodes from '../../models/cluster/CloudNodes';
 import NodesFilter from '../../models/cluster/FilterClusterNodes';
@@ -38,7 +39,7 @@ import pools from '../../models/cluster/HotNodePools';
 import TerminateNodeRequest from '../../models/cluster/TerminateNode';
 import displayDate from '../../utils/displayDate';
 import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import connect from '../../utils/connect';
 import roleModel from '../../utils/roleModel';
 import localization from '../../utils/localization';
@@ -72,7 +73,7 @@ const isCloudNode = (node = {}) => node.machineType === MACHINE_TYPES.all ||
   };
 })
 @observer
-export default class Cluster extends localization.LocalizedReactComponent {
+class Cluster extends localization.LocalizedReactComponent {
   static propTypes = {
     machineType: PropTypes.string,
     highlightCloudNodes: PropTypes.bool,
@@ -120,10 +121,18 @@ export default class Cluster extends localization.LocalizedReactComponent {
     selection: []
   };
 
-  @observable
   nodesFilterRequest = new NodesFilter(this.props.machineType);
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      nodesFilterRequest: observable,
+      nodesFilter: computed,
+      currentNodePool: computed,
+      uiStandaloneNodesAllowTerminate: computed
+    });
+  }
+
   get nodesFilter () {
     return this.nodesFilterRequest;
   }
@@ -133,9 +142,8 @@ export default class Cluster extends localization.LocalizedReactComponent {
     return authenticatedUserInfo.loaded
       ? authenticatedUserInfo.value.admin
       : false;
-  };
+  }
 
-  @computed
   get currentNodePool () {
     const {filter, pools} = this.props;
     if (filter && filter.pool_id && pools.loaded) {
@@ -144,7 +152,6 @@ export default class Cluster extends localization.LocalizedReactComponent {
     return undefined;
   }
 
-  @computed
   get uiStandaloneNodesAllowTerminate () {
     const {preferences} = this.props;
     if (preferences) {
@@ -421,7 +428,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
     ) {
       return <Button
         id="terminate-node-button"
-        type="danger"
+        danger
         size="small"
         onClick={(event) => this.nodeTerminationConfirm(item, event)}>TERMINATE</Button>;
     }
@@ -597,9 +604,11 @@ export default class Cluster extends localization.LocalizedReactComponent {
     );
     return {
       filterDropdown,
-      filterDropdownVisible: this.state.filter[parameter].visible,
+      filterDropdownProps: {
+        open: this.state.filter[parameter].visible,
+        onOpenChange: this.onFilterDropdownVisibleChange(parameter)
+      },
       filtered: this.state.filter[parameter].filtered(),
-      onFilterDropdownVisibleChange: this.onFilterDropdownVisibleChange(parameter),
       filteredValue: this.state.filter[parameter].filtered()
         ? [this.state.filter[parameter].value] : []
     };
@@ -671,7 +680,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
         title: this.localizedString('Pipeline'),
         render: pipelineRun => this.renderPipelineName(pipelineRun),
         className: styles.clusterNodeRowPipeline,
-        onCellClick: this.onNodeInstanceSelect
+        onCell: (record) => ({onClick: () => this.onNodeInstanceSelect(record)})
       });
     }
     const columns = [
@@ -706,13 +715,13 @@ export default class Cluster extends localization.LocalizedReactComponent {
         title: 'Name',
         sorter: this.alphabeticNameSorter,
         className: styles.clusterNodeRowName,
-        onCellClick: this.onNodeInstanceSelect,
+        onCell: (record) => ({onClick: () => this.onNodeInstanceSelect(record)}),
         render: (item, record) => {
           return (
             <span>
               {item}
               {record.isCloudNode ? (
-                <Icon style={{marginLeft: 5, fontSize: 14}} type="cloud-o" />
+                <CloudOutlined style={{marginLeft: 5, fontSize: 14}} />
               ) : null}
             </span>
           );
@@ -727,7 +736,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
         ...(onlyCloudNodes ? {} : this.getInputFilter('runId', 'Run Id')),
         sorter: onlyCloudNodes ? undefined : this.runSorter,
         className: styles.clusterNodeRowLabels,
-        onCellClick: this.onNodeInstanceSelect
+        onCell: (record) => ({onClick: () => this.onNodeInstanceSelect(record)})
       },
       {
         dataIndex: 'addresses',
@@ -736,7 +745,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
         ...this.getInputFilter('address', 'IP'),
         className: styles.clusterNodeRowAddresses,
         render: (addresses) => addressesCellContent(addresses),
-        onCellClick: this.onNodeInstanceSelect
+        onCell: (record) => ({onClick: () => this.onNodeInstanceSelect(record)})
       },
       {
         dataIndex: 'created',
@@ -745,7 +754,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
         sorter: this.dateSorter,
         className: styles.clusterNodeRowCreated,
         render: (date) => createdCellContent(date),
-        onCellClick: this.onNodeInstanceSelect
+        onCell: (record) => ({onClick: () => this.onNodeInstanceSelect(record)})
       },
       {
         key: 'terminate',
@@ -850,7 +859,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
               selectionLength > 0 && (
                 <Button
                   id="cluster-batch-terminate-button"
-                  type="danger"
+                  danger
                   disabled={this.nodesFilter.pending || this.props.clusterNodes.pending}
                   style={{marginRight: 5}}
                   onClick={this.nodesTerminationConfirm}
@@ -872,7 +881,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
             <Row>
               <br />
               <Alert
-                message={`Error retrieving cluster nodes: ${error}`}
+                title={`Error retrieving cluster nodes: ${error}`}
                 type="error" />
             </Row>
           )
@@ -888,4 +897,6 @@ export default class Cluster extends localization.LocalizedReactComponent {
       </div>
     );
   }
-};
+}
+
+export default withRouter(Cluster);

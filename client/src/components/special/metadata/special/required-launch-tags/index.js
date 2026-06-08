@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {Input} from 'antd';
 import {inject} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 
 @inject('preferences')
 class RequiredLaunchTags extends React.Component {
@@ -26,6 +26,13 @@ class RequiredLaunchTags extends React.Component {
 
   state = {
     tagDefaults: undefined
+  }
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      requiredRunTags: computed
+    });
   }
 
   componentDidMount () {
@@ -38,7 +45,6 @@ class RequiredLaunchTags extends React.Component {
     }
   }
 
-  @computed
   get requiredRunTags () {
     return (this.props.preferences?.uiRunsTags || []).filter((tag) => !!tag.required);
   }
