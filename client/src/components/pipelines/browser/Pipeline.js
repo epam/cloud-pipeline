@@ -122,6 +122,7 @@ class Pipeline extends localization.LocalizedReactComponent {
 
   state = {
     editPipeline: false,
+    editDropdownVisible: false,
     releaseCandidate: null,
     configurations: {},
     configurationsPending: [],
@@ -724,6 +725,7 @@ class Pipeline extends localization.LocalizedReactComponent {
       return (
         <Dropdown
           key="display attributes"
+          trigger={['click']}
           menu={{
             items: displayOptionsMenuItems,
             onClick: onSelectDisplayOption,
@@ -745,6 +747,7 @@ class Pipeline extends localization.LocalizedReactComponent {
   renderConfigAction = () => {
     const actions = [];
     const onClick = ({key}) => {
+      this.setState({editDropdownVisible: false});
       switch (key) {
         case 'edit': this.openEditPipelineDialog(); break;
         case 'clone': this.openClonePipelineDialog(); break;
@@ -776,6 +779,9 @@ class Pipeline extends localization.LocalizedReactComponent {
       return (
         <Dropdown
           placement="bottomRight"
+          trigger={['click']}
+          open={this.state.editDropdownVisible}
+          onOpenChange={open => this.setState({editDropdownVisible: open})}
           menu={{
             items: actions,
             onClick,

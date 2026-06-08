@@ -427,6 +427,7 @@ class PipelineDetails extends localization.LocalizedReactComponent {
               style: {cursor: 'pointer'}
             }}
             placement="bottomRight"
+            trigger={['click']}
           >
             <Button size="small" id="run-dropdown-button" type="primary">
               <DownOutlined style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
@@ -549,7 +550,7 @@ class PipelineDetails extends localization.LocalizedReactComponent {
           onSubmit={this.updatePipeline}
           onCancel={this.toggleModal}
           onDelete={this.deletePipeline}
-          open={this.state.isModalVisible}
+          visible={this.state.isModalVisible}
           pending={this.state.updating || this.state.deleting}
           pipeline={this.props.pipeline.value}
         />
