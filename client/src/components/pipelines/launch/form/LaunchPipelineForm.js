@@ -2895,29 +2895,31 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           {...this.formItemLayout}
           label="Friendly URL"
           hasFeedback>
-          <Col span={10}>
-            <FormItem
-              className={styles.formItemRow}
-              hasFeedback
-              name={`${ADVANCED}.friendly_url`}
-              rules={[
-                {
-                  validator: this.checkPrettyURL
-                }
-              ]}
-              initialValue={prettyUrlGenerator.parse(this.getDefaultValue('friendly_url'))}>
-              <Input
-                disabled={(this.props.readOnly && !this.props.canExecute)} />
-            </FormItem>
-          </Col>
-          <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
-            {
-              hints.renderHint(
-                this.localizedStringWithSpotDictionaryFn,
-                sshMode ? hints.prettySSHUrlHint : hints.prettyUrlHint
-              )
-            }
-          </Col>
+          <Row type="flex" align="middle" style={{flexWrap: 'nowrap'}}>
+            <Col span={10}>
+              <FormItem
+                className={styles.formItemRow}
+                hasFeedback
+                name={`${ADVANCED}.friendly_url`}
+                rules={[
+                  {
+                    validator: this.checkPrettyURL
+                  }
+                ]}
+                initialValue={prettyUrlGenerator.parse(this.getDefaultValue('friendly_url'))}>
+                <Input
+                  disabled={(this.props.readOnly && !this.props.canExecute)} />
+              </FormItem>
+            </Col>
+            <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
+              {
+                hints.renderHint(
+                  this.localizedStringWithSpotDictionaryFn,
+                  sshMode ? hints.prettySSHUrlHint : hints.prettyUrlHint
+                )
+              }
+            </Col>
+          </Row>
         </FormItem>
       );
     }
@@ -3668,28 +3670,30 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         {...this.formItemLayout}
         label="Timeout (min)"
         hasFeedback>
-        <Col span={10}>
-          <FormItem
-            className={styles.formItemRow}
-            hasFeedback
-            name={`${ADVANCED}.timeout`}
-            rules={[
-              {
-                pattern: /^\d+(\.\d+)?$/,
-                message: 'Please enter a valid positive number'
-              }
-            ]}
-            initialValue={this.getDefaultValue('timeout')}>
-            <Input
-              disabled={
-                !!this.state.fireCloudMethodName ||
-                  (this.props.readOnly && !this.props.canExecute)
-              } />
-          </FormItem>
-        </Col>
-        <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
-          {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.timeOutHint)}
-        </Col>
+        <Row type="flex" align="middle" style={{flexWrap: 'nowrap'}}>
+          <Col span={10}>
+            <FormItem
+              className={styles.formItemRow}
+              hasFeedback
+              name={`${ADVANCED}.timeout`}
+              rules={[
+                {
+                  pattern: /^\d+(\.\d+)?$/,
+                  message: 'Please enter a valid positive number'
+                }
+              ]}
+              initialValue={this.getDefaultValue('timeout')}>
+              <Input
+                disabled={
+                  !!this.state.fireCloudMethodName ||
+                    (this.props.readOnly && !this.props.canExecute)
+                } />
+            </FormItem>
+          </Col>
+          <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
+            {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.timeOutHint)}
+          </Col>
+        </Row>
       </FormItem>
     );
   };
@@ -3929,21 +3933,23 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       {...this.formItemLayout}
       label="Notifications"
     >
-      <Col span={10}>
-        <FormItem
-          className={styles.formItemRow}
-          name={`${ADVANCED}.notifications`}
-          initialValue={this.getDefaultValue('notifications')}>
-          <JobNotifications
-            disabled={
-              (this.props.readOnly && !this.props.canExecute)
-            }
-          />
-        </FormItem>
-      </Col>
-      <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
-        {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.jobNotificationsHint)}
-      </Col>
+      <Row type="flex" align="middle" style={{flexWrap: 'nowrap'}}>
+        <Col span={10}>
+          <FormItem
+            className={styles.formItemRow}
+            name={`${ADVANCED}.notifications`}
+            initialValue={this.getDefaultValue('notifications')}>
+            <JobNotifications
+              disabled={
+                (this.props.readOnly && !this.props.canExecute)
+              }
+            />
+          </FormItem>
+        </Col>
+        <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
+          {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.jobNotificationsHint)}
+        </Col>
+      </Row>
     </FormItem>
   );
 
@@ -3981,8 +3987,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         className={getFormItemClassName(styles.formItemRow, 'cmdTemplate')}
         {...this.formItemLayout}
         label="Cmd template">
-        <Row>
-          <Row>
+        <div>
+          <Row type="flex" align="middle" style={{flexWrap: 'nowrap'}}>
             <Checkbox
               disabled={
                 !!this.state.fireCloudMethodName ||
@@ -3999,11 +4005,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               checked={this.state.startIdle}>
               Start idle
             </Checkbox>
-            {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.startIdleHint)}
+            <div style={{marginLeft: 7, marginTop: 3}}>
+              {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.startIdleHint)}
+            </div>
           </Row>
           {
             !!this.toolDefaultCmd && (
-              <Row>
+              <Row type="flex" align="middle" style={{flexWrap: 'nowrap'}}>
                 <Checkbox
                   disabled={
                     !!this.state.fireCloudMethodName ||
@@ -4020,68 +4028,66 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   checked={this.state.useDefaultCmd}>
                   Use default command
                 </Checkbox>
-                {hints.renderHint(
-                  this.localizedStringWithSpotDictionaryFn,
-                  hints.useDefaultCommandHint
-                )}
+                <div style={{marginLeft: 7, marginTop: 3}}>
+                  {hints.renderHint(
+                    this.localizedStringWithSpotDictionaryFn,
+                    hints.useDefaultCommandHint
+                  )}
+                </div>
               </Row>
             )
           }
           {
             !this.state.startIdle && !this.state.useDefaultCmd
               ? (
-                <Row>
-                  <Col span={24}>
-                    <FormItem
-                      className={styles.formItemRow}
-                      required={!this.state.fireCloudMethodName}
-                      name={`${ADVANCED}.cmdTemplate`}
-                      rules={[{
-                        required: !this.state.fireCloudMethodName,
-                        message: 'Command template is required'
-                      }]}
-                      initialValue={this.getDefaultValue('cmd_template')}>
-                      <Input
-                        disabled={
-                          (this.props.readOnly && !this.props.canExecute) ||
-                            (this.state.pipeline && this.props.detached && !isRawEditEnabled)
-                        }
-                        className={styles.hiddenItem} />
-                    </FormItem>
-                    <CodeEditor
-                      ref={(editor) => { this.codeEditor = editor; }}
-                      readOnly={
-                        !!this.state.fireCloudMethodName ||
-                          (this.props.readOnly && !this.props.canExecute) ||
+                <div>
+                  <FormItem
+                    className={styles.formItemRow}
+                    required={!this.state.fireCloudMethodName}
+                    name={`${ADVANCED}.cmdTemplate`}
+                    rules={[{
+                      required: !this.state.fireCloudMethodName,
+                      message: 'Command template is required'
+                    }]}
+                    initialValue={this.getDefaultValue('cmd_template')}>
+                    <Input
+                      disabled={
+                        (this.props.readOnly && !this.props.canExecute) ||
                           (this.state.pipeline && this.props.detached && !isRawEditEnabled)
                       }
-                      className={styles.codeEditor}
-                      language="shell"
-                      onChange={this.cmdTemplateEditorValueChanged}
-                      lineWrapping
-                      defaultCode={this.getDefaultValue('cmd_template')}
-                    />
-                  </Col>
-                </Row>
+                      className={styles.hiddenItem} />
+                  </FormItem>
+                  <CodeEditor
+                    ref={(editor) => { this.codeEditor = editor; }}
+                    readOnly={
+                      !!this.state.fireCloudMethodName ||
+                        (this.props.readOnly && !this.props.canExecute) ||
+                        (this.state.pipeline && this.props.detached && !isRawEditEnabled)
+                    }
+                    className={styles.codeEditor}
+                    language="shell"
+                    onChange={this.cmdTemplateEditorValueChanged}
+                    lineWrapping
+                    defaultCode={this.getDefaultValue('cmd_template')}
+                  />
+                </div>
               ) : undefined
           }
           {
             this.state.useDefaultCmd && this.toolDefaultCmd
               ? (
-                <Row>
-                  <Col span={24} className={styles.formItemRow}>
-                    <CodeEditor
-                      readOnly
-                      className={styles.codeEditor}
-                      language="shell"
-                      lineWrapping
-                      defaultCode={this.toolDefaultCmd}
-                    />
-                  </Col>
-                </Row>
+                <div className={styles.formItemRow}>
+                  <CodeEditor
+                    readOnly
+                    className={styles.codeEditor}
+                    language="shell"
+                    lineWrapping
+                    defaultCode={this.toolDefaultCmd}
+                  />
+                </div>
               ) : undefined
           }
-        </Row>
+        </div>
       </FormItem>
     );
   };
