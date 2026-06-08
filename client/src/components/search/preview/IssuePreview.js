@@ -16,9 +16,10 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {inject, observer} from 'mobx-react';
-import {Icon, Row, Tooltip} from 'antd';
+import {Row, Tooltip} from 'antd';
+import {LoadingOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
@@ -49,7 +50,15 @@ export default class IssuePreview extends React.Component {
     })
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      description: computed,
+      issue: computed,
+      comments: computed
+    });
+  }
+
   get description () {
     if (!this.issue) {
       return null;
@@ -69,7 +78,6 @@ export default class IssuePreview extends React.Component {
     return description || this.props.item.description;
   }
 
-  @computed
   get issue () {
     if (this.props.issueInfo && this.props.issueInfo.loaded) {
       return {
@@ -81,7 +89,6 @@ export default class IssuePreview extends React.Component {
     return null;
   }
 
-  @computed
   get comments () {
     if (this.props.issueInfo && this.props.issueInfo.loaded) {
       return (this.props.issueInfo.value.comments || []).map(c => c);
@@ -113,7 +120,7 @@ export default class IssuePreview extends React.Component {
     if (this.props.issueInfo.pending) {
       return (
         <Row className={styles.contentPreview} type="flex" justify="center">
-          <Icon type="loading" />
+          <LoadingOutlined />
         </Row>
       );
     }
@@ -162,7 +169,7 @@ export default class IssuePreview extends React.Component {
     if (this.props.issueInfo.pending) {
       return (
         <Row className={styles.contentPreview} type="flex" justify="center">
-          <Icon type="loading" />
+          <LoadingOutlined />
         </Row>
       );
     }
@@ -189,7 +196,7 @@ export default class IssuePreview extends React.Component {
     if (this.props.issueInfo.pending) {
       return (
         <Row className={styles.contentPreview} type="flex" justify="center">
-          <Icon type="loading" />
+          <LoadingOutlined />
         </Row>
       );
     }
@@ -235,6 +242,7 @@ export default class IssuePreview extends React.Component {
       return null;
     }
 
+    const ItemIcon = PreviewIcons[this.props.item.type];
     const highlights = renderHighlights(this.props.item);
     const labels = this.renderLabels();
     const issue = this.renderIssue();
@@ -251,7 +259,7 @@ export default class IssuePreview extends React.Component {
       >
         <div className={styles.header}>
           <Row className={classNames(styles.title, 'cp-search-header-title')} type="flex" align="middle">
-            <Icon type={PreviewIcons[this.props.item.type]} />
+            {ItemIcon && <ItemIcon />}
             <span>{this.props.item.name}</span>
           </Row>
           {
@@ -273,5 +281,4 @@ export default class IssuePreview extends React.Component {
       </div>
     );
   }
-
 }

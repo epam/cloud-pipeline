@@ -16,9 +16,13 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
+import {
+  observer} from 'mobx-react';
 import moment from 'moment-timezone';
-import {Icon, Popover} from 'antd';
+import {
+  Popover
+} from 'antd';
+import {InfoCircleOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import getRunDurationInfo, {
   getIntervalDuration,
@@ -197,7 +201,7 @@ function RunTimelineInfo (
         >
           <span className={className} style={{...(style || {}), cursor: 'pointer'}}>
             {infoString}
-            <Icon type="info-circle-o" style={{marginLeft: 5}} />
+            <InfoCircleOutlined style={{marginLeft: 5}} />
           </span>
         </Popover>
       );
@@ -219,10 +223,6 @@ RunTimelineInfo.propTypes = {
   analyseSchedulingPhase: PropTypes.bool,
   showDetails: PropTypes.bool,
   dateFormat: PropTypes.string
-};
-
-RunTimelineInfo.defaultProps = {
-  showDetails: true
 };
 
 RunTimelineInfo.Details = observer(RunTimelineInfoDetails);

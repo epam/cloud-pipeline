@@ -16,21 +16,23 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {computed, observable} from 'mobx';
-import {inject, observer} from 'mobx-react';
+import {computed, observable, makeObservable} from 'mobx';
+import {inject,
+  observer} from 'mobx-react';
 import classNames from 'classnames';
 import styles from './filters.css';
 import {
   Button,
   Checkbox,
   DatePicker,
-  Icon,
   Input,
   Row,
   Select,
   Tooltip
 } from 'antd';
+import {InfoCircleFilled} from '@ant-design/icons';
 import moment from 'moment-timezone';
+import {momentToDayjs, dayjsToMoment} from '../../../../utils/antd-date-utils';
 import SystemLogsFilterDictionaries from '../../../../models/system-logs/filter-dictionaries';
 
 const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';
@@ -56,9 +58,19 @@ class Filters extends React.Component {
     showAdvanced: false
   };
 
-  @observable dictionaries = new SystemLogsFilterDictionaries();
+  dictionaries = new SystemLogsFilterDictionaries();
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      dictionaries: observable,
+      hostNames: computed,
+      serviceNames: computed,
+      types: computed,
+      myUserName: computed
+    });
+  }
+
   get hostNames () {
     if (this.dictionaries && this.dictionaries.loaded) {
       return ((this.dictionaries.value || {}).hostnames || []).map(o => o);
@@ -66,7 +78,6 @@ class Filters extends React.Component {
     return [];
   }
 
-  @computed
   get serviceNames () {
     if (this.dictionaries && this.dictionaries.loaded) {
       return ((this.dictionaries.value || {}).serviceNames || []).map(o => o);
@@ -74,7 +85,6 @@ class Filters extends React.Component {
     return [];
   }
 
-  @computed
   get types () {
     if (this.dictionaries && this.dictionaries.loaded) {
       return ((this.dictionaries.value || {}).types || []).map(o => o);
@@ -82,7 +92,6 @@ class Filters extends React.Component {
     return [];
   }
 
-  @computed
   get myUserName () {
     if (this.props.authenticatedUserInfo.loaded) {
       return this.props.authenticatedUserInfo.value.userName;
@@ -217,11 +226,11 @@ class Filters extends React.Component {
     const commonStyle = {flex: 1};
     const getDisabledDate = ({min, max}) => (date) => {
       let disabled = false;
-      if (min) {
-        disabled = disabled || date < min;
+      if (min && date) {
+        disabled = disabled || date.isBefore(momentToDayjs(min), 'day');
       }
-      if (max) {
-        disabled = disabled || date > max;
+      if (max && date) {
+        disabled = disabled || date.isAfter(momentToDayjs(max), 'day');
       }
       return disabled;
     };
@@ -243,10 +252,7 @@ class Filters extends React.Component {
                   </div>
                 )}
               >
-                <Icon
-                  type="info-circle"
-                  style={{marginRight: 5, color: 'orange'}}
-                />
+                <InfoCircleFilled style={{marginRight: 5, color: 'orange'}} />
               </Tooltip>
             )
           }
@@ -256,8 +262,8 @@ class Filters extends React.Component {
             format="YYYY-MM-DD HH:mm:ss"
             placeholder="From"
             style={commonStyle}
-            value={momentDateParser(messageTimestampFrom)}
-            onChange={onFieldChanged('messageTimestampFrom', true, momentDateConverter)}
+            value={momentToDayjs(momentDateParser(messageTimestampFrom))}
+            onChange={(date) => onFieldChanged('messageTimestampFrom', true, momentDateConverter)(dayjsToMoment(date))}
             disabledDate={getDisabledDate({max: momentDateParser(messageTimestampTo)})}
           />
         </Filter>
@@ -267,8 +273,8 @@ class Filters extends React.Component {
             format="YYYY-MM-DD HH:mm:ss"
             placeholder="To"
             style={commonStyle}
-            value={momentDateParser(messageTimestampTo)}
-            onChange={onFieldChanged('messageTimestampTo', true, momentDateConverter)}
+            value={momentToDayjs(momentDateParser(messageTimestampTo))}
+            onChange={(date) => onFieldChanged('messageTimestampTo', true, momentDateConverter)(dayjsToMoment(date))}
             disabledDate={getDisabledDate({min: momentDateParser(messageTimestampFrom)})}
           />
         </Filter>
@@ -302,7 +308,7 @@ class Filters extends React.Component {
           <Select
             allowClear
             showSearch
-            dropdownMatchSelectWidth={false}
+            popupMatchSelectWidth={false}
             optionLabelProp="label"
             mode="multiple"
             placeholder="User"

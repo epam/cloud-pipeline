@@ -15,17 +15,18 @@
  */
 
 import React from 'react';
-import {observable} from 'mobx';
+import {observable, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import moment from 'moment-timezone';
+import {momentToDayjs, dayjsToMoment} from '../../../../../utils/antd-date-utils';
 import {
   message,
   DatePicker,
   Select,
-  Button,
-  Icon
+  Button
 } from 'antd';
+import {CaretLeftOutlined, CaretRightOutlined} from '@ant-design/icons';
 import LoadingView from '../../../../special/LoadingView';
 import OmicsJobsImport from '../../../../../models/dataStorage/OmicsJobsImport';
 import displayDate from '../../../../../utils/displayDate';
@@ -55,11 +56,11 @@ const momentDateConverter = (d) => {
 };
 const getDisabledDate = ({min, max}) => (date) => {
   let disabled = false;
-  if (min) {
-    disabled = disabled || date < min;
+  if (min && date) {
+    disabled = disabled || date.isBefore(momentToDayjs(min), 'day');
   }
-  if (max) {
-    disabled = disabled || date > max;
+  if (max && date) {
+    disabled = disabled || date.isAfter(momentToDayjs(max), 'day');
   }
   return disabled;
 };
@@ -68,6 +69,7 @@ function Filter ({addonBefore, label, children, display = true}) {
   if (!display) {
     return null;
   }
+
   return (
     <div className={classNames(styles.jobFilter)}>
       {addonBefore}
@@ -78,7 +80,7 @@ function Filter ({addonBefore, label, children, display = true}) {
 }
 
 export default class JobList extends React.Component {
-  @observable list = [];
+ list = [];
 
   static propTypes = {
     storageId: PropTypes.oneOfType([
@@ -93,6 +95,13 @@ export default class JobList extends React.Component {
     pages: [undefined],
     emptyPlaceholder: undefined
   };
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      list: observable
+    });
+  }
 
   get pageSize () {
     return PAGE_SIZE;
@@ -253,8 +262,8 @@ export default class JobList extends React.Component {
             format="YYYY-MM-DD HH:mm:ss"
             placeholder="From"
             style={commonStyle}
-            value={momentDateParser(timestampFrom)}
-            onChange={onFieldChanged('timestampFrom', momentDateConverter)}
+            value={momentToDayjs(momentDateParser(timestampFrom))}
+            onChange={(date) => onFieldChanged('timestampFrom', momentDateConverter)(dayjsToMoment(date))}
             disabledDate={getDisabledDate({max: momentDateParser(timestampTo)})}
           />
         </Filter>
@@ -265,8 +274,8 @@ export default class JobList extends React.Component {
             format="YYYY-MM-DD HH:mm:ss"
             placeholder="To"
             style={commonStyle}
-            value={momentDateParser(timestampTo)}
-            onChange={onFieldChanged('timestampTo', momentDateConverter)}
+            value={momentToDayjs(momentDateParser(timestampTo))}
+            onChange={(date) => onFieldChanged('timestampTo', momentDateConverter)(dayjsToMoment(date))}
             disabledDate={getDisabledDate({min: momentDateParser(timestampFrom)})}
           />
         </Filter>
@@ -275,7 +284,7 @@ export default class JobList extends React.Component {
             size="small"
             allowClear
             showSearch
-            dropdownMatchSelectWidth={false}
+            popupMatchSelectWidth={false}
             optionLabelProp="label"
             placeholder="Status"
             style={commonStyle}
@@ -366,7 +375,7 @@ export default class JobList extends React.Component {
           disabled={!this.canNavigateToPreviousPage}
           onClick={this.navigateToPreviousPage}
         >
-          <Icon type="caret-left" />
+          <CaretLeftOutlined />
         </Button>
         <Button
           className={styles.button}
@@ -374,7 +383,7 @@ export default class JobList extends React.Component {
           disabled={!this.canNavigateToNextPage}
           onClick={this.navigateToNextPage}
         >
-          <Icon type="caret-right" />
+          <CaretRightOutlined />
         </Button>
       </div>
     );
@@ -392,7 +401,7 @@ export default class JobList extends React.Component {
         {this.renderPagination()}
       </div>
     );
-  };
+  }
 
   clearPagination = () => {
     this.setState({
@@ -404,7 +413,7 @@ export default class JobList extends React.Component {
   componentDidMount () {
     this.setDefaultFilter();
     this.setJobList();
-  };
+  }
 
   componentDidUpdate (prevProps, prevState) {
     if (!this.state.filters) {
@@ -419,7 +428,7 @@ export default class JobList extends React.Component {
     }
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.updateJobsSearch) {
       this.setJobList();
     }

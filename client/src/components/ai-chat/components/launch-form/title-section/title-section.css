@@ -20,7 +20,7 @@
   position: relative;
 
   &:after {
-    border-top: 1px solid #ddd;
+    border-top: 1px solid var(--cp-color-border);
     content: "";
     left: 0;
     position: absolute;

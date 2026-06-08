@@ -15,7 +15,7 @@
  */
 
 import Remote from '../basic/Remote';
-import {action, computed, observable} from 'mobx';
+import {action, computed, observable, makeObservable} from 'mobx';
 import cloudRegions from '../cloudRegions/CloudRegions';
 import {defaultSorter} from '../../utils/sorting';
 
@@ -111,10 +111,10 @@ function getCacheKey (options = {}) {
 }
 
 export default class AllowedInstanceTypes extends Remote {
-  @observable _isSpot;
-  @observable _toolId;
-  @observable _regionId;
-  @observable _changed = false;
+  _isSpot;
+  _toolId;
+  _regionId;
+  _changed = false;
 
   _requestAllRegionsForProviders = [];
 
@@ -131,6 +131,19 @@ export default class AllowedInstanceTypes extends Remote {
    */
   constructor (options = {}) {
     super();
+    makeObservable(this, {
+      _isSpot: observable,
+      _toolId: observable,
+      _regionId: observable,
+      _changed: observable,
+      isSpot: computed,
+      regionId: computed,
+      toolId: computed,
+      regionsMerged: computed,
+      changed: computed,
+      handleChanged: action,
+      fetchOnChange: action
+    });
     const {
       toolId,
       regionId,
@@ -144,22 +157,18 @@ export default class AllowedInstanceTypes extends Remote {
     this.fetchOnChange();
   }
 
-  @computed
   get isSpot () {
     return this._isSpot;
   }
 
-  @computed
   get regionId () {
     return this._regionId;
   }
 
-  @computed
   get toolId () {
     return this._toolId;
   }
 
-  @computed
   get regionsMerged () {
     return !!this.loaded &&
       !!this.value &&
@@ -216,17 +225,14 @@ export default class AllowedInstanceTypes extends Remote {
     }
   }
 
-  @computed
   get changed () {
     return this._changed;
   }
 
-  @action
   handleChanged () {
     this._changed = false;
   }
 
-  @action
   fetchOnChange () {
     this.initialize();
     this.invalidateCache();

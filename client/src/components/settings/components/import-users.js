@@ -23,8 +23,9 @@ import {
   Modal,
   Upload,
   Dropdown,
-  Menu
+  Space
 } from 'antd';
+import {DownOutlined} from '@ant-design/icons';
 import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
 import displaySize from '../../../utils/displaySize';
@@ -363,15 +364,9 @@ class ImportUsersButton extends React.Component {
       importResultsMode
     } = this.state;
     const disabled = d || (systemDictionaries.pending && !systemDictionaries.loaded);
-    const dropdownMenu = (
-      <Menu
-        onClick={this.onDropdownMenuClick}
-      >
-        <Menu.Item key={DROPDOWN_KEYS.checkUsers}>
-          Check users integrity
-        </Menu.Item>
-      </Menu>
-    );
+    const dropdownMenuItems = [
+      {key: DROPDOWN_KEYS.checkUsers, label: 'Check users integrity'}
+    ];
     return (
       <div
         className={classNames(className)}
@@ -389,20 +384,35 @@ class ImportUsersButton extends React.Component {
               event.stopPropagation();
             }
           }}>
-            <Dropdown.Button
-              disabled={disabled || pending}
-              size={size}
-              overlay={dropdownMenu}
-            >
-              Import users
-            </Dropdown.Button>
+            <Space.Compact>
+              <Button
+                disabled={disabled || pending}
+                size={size}
+              >
+                Import users
+              </Button>
+              <Dropdown
+                disabled={disabled || pending}
+                menu={{
+                  items: dropdownMenuItems,
+                  onClick: this.onDropdownMenuClick
+                }}
+                trigger={['click']}
+              >
+                <Button
+                  disabled={disabled || pending}
+                  size={size}
+                  icon={<DownOutlined />}
+                />
+              </Dropdown>
+            </Space.Compact>
           </div>
         </Upload>
         <Modal
-          visible={dialogVisible && !!file}
+          open={dialogVisible && !!file}
           title="Import settings"
           closable={!pending}
-          maskClosable={!pending}
+          mask={{closable: !pending}}
           onCancel={this.onCancel}
           footer={(
             <div

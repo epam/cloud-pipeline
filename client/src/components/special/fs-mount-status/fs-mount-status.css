@@ -17,19 +17,19 @@
 .mount-status {
   padding: 2px 4px;
   text-transform: uppercase;
-  color: #666;
+  color: var(--cp-color-text-secondary);
 }
 
 .mount-status.active {
-  color: #2282bf;
+  color: var(--cp-color-primary);
 }
 
 .mount-status.mount_disabled {
-  color: #ae1726;
+  color: var(--cp-color-error);
   font-weight: bold;
 }
 
 .mount-status.read_only {
-  color: #ae1726;
+  color: var(--cp-color-error);
   font-weight: bold;
 }

@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Input, Select} from 'antd';
+import {AutoComplete, Input} from 'antd';
 import {observer} from 'mobx-react';
 import classNames from 'classnames';
 import {injectParametersStore} from './store';
@@ -112,7 +112,7 @@ class AutoCompleteInput extends React.Component {
         <Addon>
           {addonBefore}
         </Addon>
-        <Select
+        <AutoComplete
           className={
             classNames(
               {
@@ -123,21 +123,20 @@ class AutoCompleteInput extends React.Component {
           disabled={disabled}
           value={value}
           onChange={this.onChange}
-          mode="combobox"
           filterOption={false}
           style={{flex: 1}}
         >
           {
             this.options.map(option => (
-              <Select.Option
+              <AutoComplete.Option
                 key={option.value}
                 value={option.value}
               >
                 {option.name}
-              </Select.Option>
+              </AutoComplete.Option>
             ))
           }
-        </Select>
+        </AutoComplete>
         <Addon>
           {addonAfter}
         </Addon>
@@ -163,22 +162,21 @@ AutoCompleteInput.defaultProps = {
   size: 'default'
 };
 
-function ParametersAutoCompleteInputComponent (props) {
-  const {
-    className,
-    style,
-    value,
-    disabled,
-    size,
-    error,
-    addonBefore,
-    addonAfter,
-    parametersStore,
-    autoCompleteOptions = {},
-    useEntityFields = true,
-    useProjectFields = true,
-    onChange
-  } = props;
+function ParametersAutoCompleteInputComponent ({
+  className,
+  style,
+  value,
+  disabled,
+  size,
+  error,
+  addonBefore,
+  addonAfter,
+  parametersStore,
+  autoCompleteOptions = {},
+  useEntityFields = true,
+  useProjectFields = true,
+  onChange
+}) {
   const options = {
     ...autoCompleteOptions,
     this: useEntityFields ? parametersStore.entityTypeFields : [],
@@ -213,10 +211,6 @@ ParametersAutoCompleteInputComponent.propTypes = {
   autoCompleteOptions: PropTypes.object,
   useEntityFields: PropTypes.bool,
   useProjectFields: PropTypes.bool
-};
-ParametersAutoCompleteInputComponent.defaultProps = {
-  useEntityFields: true,
-  useProjectFields: true
 };
 
 const ParametersAutoCompleteInput = injectParametersStore(

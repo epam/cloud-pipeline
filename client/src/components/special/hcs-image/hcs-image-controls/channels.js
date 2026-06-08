@@ -16,17 +16,19 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
 import {
-  Icon,
+  inject,
+  observer} from 'mobx-react';
+import {
   Checkbox
 } from 'antd';
+import {LoadingOutlined} from '@ant-design/icons';
 import Channel from './channel';
 import styles from './hcs-image-controls.css';
 
 function HcsImageChannelsControl (
   {
-    allowLockChannels,
+    allowLockChannels = true,
     hcsViewerState
   }
 ) {
@@ -51,7 +53,7 @@ function HcsImageChannelsControl (
       <div className={styles.header}>
         <span>
           Channels:
-          {pending && (<Icon type="loading" style={{marginLeft: 5}} />)}
+          {pending && (<LoadingOutlined style={{marginLeft: 5}} />)}
         </span>
         {
           allowLockChannels && (
@@ -101,10 +103,6 @@ function HcsImageChannelsControl (
 
 HcsImageChannelsControl.propTypes = {
   allowLockChannels: PropTypes.bool
-};
-
-HcsImageChannelsControl.defaultProps = {
-  allowLockChannels: true
 };
 
 export default inject('hcsViewerState')(observer(HcsImageChannelsControl));

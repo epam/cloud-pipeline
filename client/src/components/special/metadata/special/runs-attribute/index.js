@@ -16,7 +16,7 @@
 
 import React from 'react';
 import displayDuration from '../../../../../utils/displayDuration';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
 import {Tooltip} from 'antd';
 import classNames from 'classnames';
 import StatusIcon from '../../../run-status-icon';

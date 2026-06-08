@@ -52,7 +52,7 @@
 
 .header-link,
 .header-link:hover {
-  color: #666;
+  color: var(--cp-color-text-secondary);
 }
 
 .cluster-node-row,

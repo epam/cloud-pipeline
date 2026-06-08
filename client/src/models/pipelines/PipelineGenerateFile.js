@@ -15,18 +15,19 @@
  */
 
 import RemotePost from '../basic/RemotePost';
-import {action} from 'mobx';
+import {makeObservable, override} from 'mobx';
 
 class PipelineGenerateFile extends RemotePost {
-
   static isJson = false;
 
   constructor (id, version, path) {
     super();
+    makeObservable(this, {
+      update: override
+    });
     this.url = `/pipeline/${id}/file/generate?version=${version}&path=${path}`;
   }
 
-  @action
   update (value) {
     this._response = value;
     this._value = this.postprocess(value);

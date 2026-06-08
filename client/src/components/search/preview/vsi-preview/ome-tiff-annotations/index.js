@@ -16,13 +16,15 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import classNames from 'classnames';
 import {
   Alert,
-  Checkbox,
-  Icon
+  Checkbox
 } from 'antd';
+import {LoadingOutlined} from '@ant-design/icons';
 import UserName from '../../../../special/UserName';
 import styles from './ome-tiff-annotations.css';
 
@@ -78,7 +80,7 @@ class OMETiffAnnotations extends React.Component {
           </Checkbox>
           {
             (annotations.pending || annotationsPending) && (
-              <Icon type="loading" style={{marginLeft: 5}} />
+              <LoadingOutlined style={{marginLeft: 5}} />
             )
           }
         </div>
@@ -94,7 +96,7 @@ class OMETiffAnnotations extends React.Component {
           }
           {
             !annotations.pending && annotations.error && (
-              <Alert type="error" message={annotations.error} />
+              <Alert type="error" title={annotations.error} />
             )
           }
           {

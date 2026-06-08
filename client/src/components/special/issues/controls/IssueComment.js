@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Mention, Row, Tabs, Icon} from 'antd';
+import {Mentions, Row, Tabs} from 'antd';
+import {ForkOutlined, HddOutlined, InboxOutlined, SettingOutlined, ToolOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import {ItemTypes} from '../../../pipelines/model/treeStructureFunctions';
 import IssueCommentPreview from './IssueCommentPreview';
@@ -72,15 +73,10 @@ export default class IssueComment extends React.Component {
     if (fetchId === this.lastFetchId) {
       let suggestions = [];
       if (!request.error) {
-        suggestions = (request.value || []).map(user => {
-          return (
-            <Mention.Nav
-              value={user.userName}
-              data={user}>
-              {this.renderUserName(user)}
-            </Mention.Nav>
-          );
-        });
+        suggestions = (request.value || []).map(user => ({
+          value: user.userName,
+          label: this.renderUserName(user)
+        }));
       }
       this.setState({
         pending: false,
@@ -90,6 +86,18 @@ export default class IssueComment extends React.Component {
   };
 
   linkFindPromise = async (search, fetchId) => {
+    const renderIcon = (type) => {
+      switch (type) {
+        case ItemTypes.pipeline: return <ForkOutlined />;
+        case ItemTypes.versionedStorage: return (
+          <InboxOutlined className="cp-versioned-storage" />
+        );
+        case ItemTypes.configuration: return <SettingOutlined />;
+        case ItemTypes.storage: return <HddOutlined />;
+        case 'tool': return <ToolOutlined />;
+      }
+      return undefined;
+    };
     this.setState({
       pending: true,
       suggestions: []
@@ -101,32 +109,14 @@ export default class IssueComment extends React.Component {
             return search && search.length > 0 &&
               (link.displayName || '').toLowerCase().indexOf((search || '').toLowerCase()) >= 0;
           });
-          const renderIcon = (type) => {
-            switch (type) {
-              case ItemTypes.pipeline: return <Icon type="fork" />;
-              case ItemTypes.versionedStorage: return (
-                <Icon
-                  type="inbox"
-                  className="cp-versioned-storage"
-                />
-              );
-              case ItemTypes.configuration: return <Icon type="setting" />;
-              case ItemTypes.storage: return <Icon type="hdd" />;
-              case 'tool': return <Icon type="tool" />;
-            }
-            return undefined;
-          };
-          const suggestions = result.map(link => {
-            return (
-              <Mention.Nav
-                value={`[${link.type}:${link.id}:${link.displayName}]`}
-                data={link}>
-                <Row align="middle">
-                  {renderIcon(link.type)} {link.displayName}
-                </Row>
-              </Mention.Nav>
-            );
-          });
+          const suggestions = result.map(link => ({
+            value: `[${link.type}:${link.id}:${link.displayName}]`,
+            label: (
+              <Row align="middle">
+                {renderIcon(link.type)} {link.displayName}
+              </Row>
+            )
+          }));
           return Promise.resolve(suggestions);
         })
         .catch(() => Promise.resolve([]))
@@ -137,7 +127,7 @@ export default class IssueComment extends React.Component {
     });
   };
 
-  onSearchChange = (value, prefix) => {
+  onSearch = (value, prefix) => {
     this.lastFetchId += 1;
     const fetchId = this.lastFetchId;
     this.setState({
@@ -161,9 +151,9 @@ export default class IssueComment extends React.Component {
     });
   };
 
-  onChange = (contentState) => {
+  onChange = (text) => {
     this.setState({
-      rawText: Mention.toString(contentState)
+      rawText: text
     }, () => {
       this.props.onChange &&
       this.props.onChange({text: this.state.rawText, attachments: this.state.attachments});
@@ -231,51 +221,62 @@ export default class IssueComment extends React.Component {
     }
     return (
       <div className={styles.container} style={this.props.style}>
-        <Tabs type="card">
-          <Tabs.TabPane tab="Write" key="write">
-            <FileDropContainer
-              onFilesLoaded={this.onAttachmentsLoaded}
-              action={IssueAttachmentUpload.url}>
-              {
-                !this.state.clear &&
-                <Mention
-                  ref={this.initializeMentionControl}
-                  placeholder={this.props.placeholder || 'Description'}
-                  disabled={this.props.disabled}
-                  defaultValue={
-                    Mention.toContentState(this.props.value ? (this.props.value.text || '') : '')
+        <Tabs
+          type="card"
+          items={[
+            {
+              key: 'write',
+              label: 'Write',
+              children: (
+                <FileDropContainer
+                  onFilesLoaded={this.onAttachmentsLoaded}
+                  action={IssueAttachmentUpload.url}>
+                  {
+                    !this.state.clear &&
+                    <Mentions
+                      ref={this.initializeMentionControl}
+                      placeholder={this.props.placeholder || 'Description'}
+                      disabled={this.props.disabled}
+                      defaultValue={
+                        this.props.value ? (this.props.value.text || '') : ''
+                      }
+                      loading={this.state.pending}
+                      className={classNames(styles.issueDescription, 'cp-mention')}
+                      style={{height: this.props.height || 300}}
+                      onSearch={this.onSearch}
+                      onSelect={this.onSelect}
+                      onChange={this.onChange}
+                      notFoundContent={notFoundContent}
+                      rows={10}
+                      prefix={['@', '#']}
+                      options={this.state.suggestions}
+                    />
                   }
-                  loading={this.state.pending}
-                  className={classNames(styles.issueDescription, 'cp-mention')}
-                  style={{height: this.props.height || 300}}
-                  suggestions={this.state.suggestions}
-                  onSearchChange={this.onSearchChange}
-                  onSelect={this.onSelect}
-                  onChange={this.onChange}
-                  notFoundContent={notFoundContent}
-                  multiLines
-                  prefix={['@', '#']}
-                />
-              }
-            </FileDropContainer>
-          </Tabs.TabPane>
-          <Tabs.TabPane tab="Preview" key="preview">
-            <div
-              className={styles.issueDescription}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                height: this.props.height || 300
-              }}>
-              <IssueCommentPreview text={this.state.rawText} />
-            </div>
-          </Tabs.TabPane>
-        </Tabs>
+                </FileDropContainer>
+              )
+            },
+            {
+              key: 'preview',
+              label: 'Preview',
+              children: (
+                <div
+                  className={styles.issueDescription}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    height: this.props.height || 300
+                  }}>
+                  <IssueCommentPreview text={this.state.rawText} />
+                </div>
+              )
+            }
+          ]}
+        />
       </div>
     );
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     const nextPropsText = nextProps.value ? nextProps.value.text : undefined;
     const text = this.props.value ? this.props.value.text : undefined;
     if (nextPropsText !== text && nextPropsText !== this.state.rawText) {

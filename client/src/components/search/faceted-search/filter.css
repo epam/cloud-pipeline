@@ -92,7 +92,7 @@
 }
 
 .filter .search-input .clear-btn:hover {
-  color: #1890ff;
+  color: var(--cp-color-primary);
 }
 
 .filter .option-hidden {

@@ -15,7 +15,8 @@
  */
 
 import React from 'react';
-import {Button, Icon, Popover} from 'antd';
+import {Button, Popover} from 'antd';
+import {ArrowUpOutlined, EditOutlined, InfoCircleFilled, PlusCircleOutlined, PlusSquareOutlined} from '@ant-design/icons';
 import styles from './ome-tiff-annotations-renderer.css';
 
 function AnnotationsTooltip () {
@@ -31,7 +32,7 @@ function AnnotationsTooltip () {
               size="small"
               className={styles.actionInfo}
             >
-              <Icon type="plus-circle-o" />
+              <PlusCircleOutlined />
             </Button>
             <span style={{marginLeft: 5}}>
               - add circle annotation
@@ -42,7 +43,7 @@ function AnnotationsTooltip () {
               size="small"
               className={styles.actionInfo}
             >
-              <Icon type="plus-square-o" />
+              <PlusSquareOutlined />
             </Button>
             <span style={{marginLeft: 5}}>
               - add rectangle annotation
@@ -53,12 +54,7 @@ function AnnotationsTooltip () {
               size="small"
               className={styles.actionInfo}
             >
-              <Icon
-                type="arrow-up"
-                style={{
-                  transform: 'rotate(-45deg)'
-                }}
-              />
+              <ArrowUpOutlined style={{ transform: 'rotate(-45deg)' }} />
             </Button>
             <span style={{marginLeft: 5}}>
               - add arrow annotation
@@ -69,7 +65,7 @@ function AnnotationsTooltip () {
               size="small"
               className={styles.actionInfo}
             >
-              <Icon type="edit" />
+              <EditOutlined />
             </Button>
             <span style={{marginLeft: 5}}>
               - add path annotation
@@ -105,7 +101,7 @@ function AnnotationsTooltip () {
             </span>
             <Button
               size="small"
-              type="danger"
+              danger
               className={styles.actionInfo}
             >
               Remove
@@ -117,15 +113,7 @@ function AnnotationsTooltip () {
         </div>
       )}
     >
-      <Icon
-        type="info-circle"
-        className="tooltip-text"
-        style={{
-          cursor: 'pointer',
-          marginRight: 10,
-          fontSize: 'larger'
-        }}
-      />
+      <InfoCircleFilled className="tooltip-text" style={{ cursor: 'pointer', marginRight: 10, fontSize: 'larger' }} />
     </Popover>
   );
 }

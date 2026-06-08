@@ -26,6 +26,7 @@ import {
   Button
 } from 'antd';
 import moment from 'moment-timezone';
+import {momentToDayjs, dayjsToMoment} from '../../../../../../utils/antd-date-utils';
 import filtersAreEqual from './filters-are-equal';
 import UserName from '../../../../../special/UserName';
 import localization from '../../../../../../utils/localization';
@@ -140,12 +141,12 @@ class HistoryFilter extends localization.LocalizedReactComponent {
   };
 
   onDateChange = (fieldType, startOfTheDate) => (date) => {
-    let dateCorrected = date;
+    let dateCorrected = date ? dayjsToMoment(date) : undefined;
     if (dateCorrected) {
       if (startOfTheDate) {
-        dateCorrected = moment(dateCorrected).startOf('D');
+        dateCorrected.startOf('day');
       } else {
-        dateCorrected = moment(dateCorrected).endOf('D');
+        dateCorrected.endOf('day');
       }
     }
     this.setState({
@@ -217,14 +218,14 @@ class HistoryFilter extends localization.LocalizedReactComponent {
           <DatePicker
             format="YYYY-MM-DD"
             placeholder="From"
-            value={dateFrom}
+            value={momentToDayjs(dateFrom)}
             onChange={this.onDateChange('dateFrom', true)}
             style={{width: '50%', marginRight: '10px'}}
           />
           <DatePicker
             format="YYYY-MM-DD"
             placeholder="To"
-            value={dateTo}
+            value={momentToDayjs(dateTo)}
             onChange={this.onDateChange('dateTo')}
             style={{width: '50%'}}
           />
@@ -277,10 +278,10 @@ class HistoryFilter extends localization.LocalizedReactComponent {
       </Row>);
     return (
       <Modal
-        visible={visible}
+        open={visible}
         onOk={this.handleOk}
         onCancel={this.handleCancel}
-        bodyStyle={{padding: '40px 20px'}}
+        styles={{body: {padding: '40px 20px'}}}
         footer={footer}
       >
         {this.renderUserRow()}
@@ -291,7 +292,7 @@ class HistoryFilter extends localization.LocalizedReactComponent {
   };
 }
 
-HistoryFilter.PropTypes = {
+HistoryFilter.propTypes = {
   visible: PropTypes.bool,
   filters: PropTypes.shape({
     authors: PropTypes.array,

@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {observable, computed} from 'mobx';
+import {observable, computed, makeObservable} from 'mobx';
 import {observer} from 'mobx-react';
 import {
   Button,
@@ -40,8 +40,19 @@ export default class PodInfoModal extends React.Component {
     activeTabKey: TAB_KEYS.info
   };
 
-  @observable _info;
-  @observable _pending = false;
+  _info;
+  _pending = false;
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      _info: observable,
+      _pending: observable,
+      events: computed,
+      description: computed,
+      pending: computed
+    });
+  }
 
   componentDidMount () {
     this.fetchInfo();
@@ -55,7 +66,6 @@ export default class PodInfoModal extends React.Component {
     }
   }
 
-  @computed
   get events () {
     if (!this._info) {
       return [];
@@ -63,7 +73,6 @@ export default class PodInfoModal extends React.Component {
     return this._info.events || [];
   }
 
-  @computed
   get description () {
     if (!this._info) {
       return '{}';
@@ -71,7 +80,6 @@ export default class PodInfoModal extends React.Component {
     return this._info.description || '{}';
   }
 
-  @computed
   get pending () {
     return this._pending;
   }
@@ -129,7 +137,7 @@ export default class PodInfoModal extends React.Component {
         {this.events.map((podEvent) => (
           <Alert
             key={`${podEvent.message}-${podEvent.type}`}
-            message={(
+            title={(
               <div style={{
                 display: 'flex',
                 justifyContent: 'space-between'
@@ -203,7 +211,7 @@ export default class PodInfoModal extends React.Component {
     ].filter(tab => tab.visible());
     return (
       <Modal
-        visible={!!pod}
+        open={!!pod}
         onCancel={this.onCancel}
         width={'60vw'}
         cancelText={null}
@@ -221,15 +229,16 @@ export default class PodInfoModal extends React.Component {
             activeKey={activeTabKey}
             onChange={this.onChangeTab}
             size="small"
-          >
-            {tabs.map(tab => (
-              <Tabs.TabPane tab={tab.title} key={tab.key}>
+            items={tabs.map(tab => ({
+              key: tab.key,
+              label: tab.title,
+              children: (
                 <Spin spinning={this.pending}>
                   {tab.render()}
                 </Spin>
-              </Tabs.TabPane>
-            ))}
-          </Tabs>
+              )
+            }))}
+          />
         </div>
       </Modal>
     );

@@ -15,10 +15,22 @@
  */
 
 import React from 'react';
-import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {withRouter} from '../../../utils/with-router';
+import {computed, makeObservable} from 'mobx';
 import connect from '../../../utils/connect';
-import {Checkbox, Modal, Table, Icon, Row, Col, Button, message, Alert} from 'antd';
+import {Checkbox,
+  Modal,
+  Table,
+  Row,
+  Col,
+  Button,
+  message,
+  Alert
+} from 'antd';
+import {AppstoreOutlined, DeleteOutlined, PlusOutlined} from '@ant-design/icons';
 import {ItemTypes, generateTreeData} from '../model/treeStructureFunctions';
 import styles from './Browser.css';
 import roleModel from '../../../utils/roleModel';
@@ -57,7 +69,7 @@ import LoadingView from '../../special/LoadingView';
   };
 })
 @observer
-export default class MetadataFolder extends React.Component {
+class MetadataFolder extends React.Component {
   static propTypes = {
     selectionAvailable: PropTypes.bool,
     hideUploadMetadataBtn: PropTypes.bool,
@@ -71,6 +83,16 @@ export default class MetadataFolder extends React.Component {
     addInstanceFormVisible: false,
     operationInProgress: false
   };
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      parentFolderLinkItem: computed,
+      metadataFolderClassEntities: computed,
+      listingItems: computed,
+      entityTypes: computed
+    });
+  }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
     if (prevProps.folderId !== this.props.folderId) {
@@ -125,7 +147,6 @@ export default class MetadataFolder extends React.Component {
     };
   }
 
-  @computed
   get metadataFolderClassEntities () {
     const {folder} = this.props;
     if (folder && folder.loaded) {
@@ -148,7 +169,6 @@ export default class MetadataFolder extends React.Component {
     ];
   }
 
-  @computed
   get entityTypes () {
     const {
       entityFields: entityFieldsRequest,
@@ -244,7 +264,7 @@ export default class MetadataFolder extends React.Component {
 
   renderTreeItemType = (item) => {
     switch (item.type) {
-      case ItemTypes.metadata: return <Icon type="appstore-o" />;
+      case ItemTypes.metadata: return <AppstoreOutlined />;
       default: return <div />;
     }
   };
@@ -309,14 +329,14 @@ export default class MetadataFolder extends React.Component {
         key: 'type',
         className: styles.treeItemType,
         render: (item) => this.renderTreeItemType(item),
-        onCellClick: (item) => this.navigate(item)
+        onCell: (item) => ({onClick: () => this.navigate(item)})
       },
       {
         key: 'name',
         title: 'Name',
         className: styles.metadataFolderItemName,
         render: (item) => this.renderItemName(item),
-        onCellClick: (item) => this.navigate(item)
+        onCell: (item) => ({onClick: () => this.navigate(item)})
       }
     ].filter(Boolean);
     return (
@@ -329,7 +349,6 @@ export default class MetadataFolder extends React.Component {
           title={null}
           showHeader={false}
           rowClassName={(item) => `folder-item-${item.key}`}
-          expandedRowRender={null}
           loading={false}
           pagination={{pageSize: 40}}
           locale={{emptyText: 'Metadata is empty'}}
@@ -371,7 +390,7 @@ export default class MetadataFolder extends React.Component {
             size="small"
             onClick={this.openAddInstanceForm}
             key="add-metadata">
-            <Icon type="plus" />Add instance
+            <PlusOutlined />Add instance
           </Button>,
           'add-metadata'
         )
@@ -398,11 +417,11 @@ export default class MetadataFolder extends React.Component {
         roleModel.manager.entities(
           <Button
             key="delete-metadata"
-            type="danger"
+            danger
             style={{lineHeight: 1}}
             onClick={this.deleteMetadataConfirm}
             size="small">
-            <Icon type="delete" />
+            <DeleteOutlined />
             Delete metadata
           </Button>,
           'delete-metadata'
@@ -418,7 +437,7 @@ export default class MetadataFolder extends React.Component {
       return null;
     }
     if (folder.error) {
-      return (<Alert message={folder.error} type="error" />);
+      return (<Alert title={folder.error} type="error" />);
     }
     if (folder.pending && !folder.loaded) {
       return (<LoadingView />);
@@ -436,7 +455,7 @@ export default class MetadataFolder extends React.Component {
               type={ItemTypes.metadataFolder}
               textEditableField={'Metadata'}
               readOnlyEditableField
-              icon="appstore-o"
+              icon={AppstoreOutlined}
               iconClassName={styles.editableControl}
               subject={folder.value}
               onNavigate={this.navigate}
@@ -458,3 +477,5 @@ export default class MetadataFolder extends React.Component {
     );
   }
 }
+
+export default withRouter(MetadataFolder);

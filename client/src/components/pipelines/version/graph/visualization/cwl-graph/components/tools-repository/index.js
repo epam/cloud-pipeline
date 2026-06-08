@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import {
   Alert,
@@ -34,7 +34,14 @@ class CWLToolsRepository extends React.Component {
     search: undefined
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      toolGroups: computed,
+      tools: computed
+    });
+  }
+
   get toolGroups () {
     const {
       preferences
@@ -45,7 +52,6 @@ class CWLToolsRepository extends React.Component {
     return [];
   }
 
-  @computed
   get tools () {
     const {
       dockerRegistries
@@ -162,13 +168,13 @@ class CWLToolsRepository extends React.Component {
     }
     if (error) {
       return (
-        <Alert message={error} type="error" />
+        <Alert title={error} type="error" />
       );
     }
     const {tools = []} = this;
     if (tools.length === 0) {
       return (
-        <Alert message="Tools not found" type="info" />
+        <Alert title="Tools not found" type="info" />
       );
     }
     const {
@@ -181,7 +187,7 @@ class CWLToolsRepository extends React.Component {
     if (filtered.length === 0 && search && search.length) {
       return (
         <Alert
-          message={(
+          title={(
             <div>
               Nothing found for <b>{search}</b>
             </div>

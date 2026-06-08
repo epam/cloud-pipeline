@@ -17,13 +17,12 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Spin} from 'antd';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import {Observer, observer} from 'mobx-react';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
 import StatusIcon from '../../../special/run-status-icon';
 import PipelineRunInfo from '../../../../models/pipelines/PipelineRunInfo';
 import RunStatuses, {getRunStatus} from '../../../special/run-status-icon/run-statuses';
-import RunName from '../../../runs/run-name';
 
 const PREPARING_STATUSES = [
   RunStatuses.pausing,
@@ -49,11 +48,18 @@ export default class RunStatusMessage extends React.Component {
   state ={
     run: undefined
   }
-
-  @observable
   _runRequest;
 
   _timeout;
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      _runRequest: observable,
+      run: computed,
+      runId: computed
+    });
+  }
 
   componentDidMount () {
     this.setStateFromProps();
@@ -69,7 +75,6 @@ export default class RunStatusMessage extends React.Component {
     clearTimeout(this._timeout);
   }
 
-  @computed
   get run () {
     if (!this._runRequest) {
       return undefined;
@@ -77,7 +82,6 @@ export default class RunStatusMessage extends React.Component {
     return this._runRequest.value;
   }
 
-  @computed
   get runId () {
     return this.props.run?.id;
   }

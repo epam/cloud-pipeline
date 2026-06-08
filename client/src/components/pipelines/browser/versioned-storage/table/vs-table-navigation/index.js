@@ -63,22 +63,27 @@ class VSTableNavigation extends React.Component {
         )}
         onClick={() => !lastBreadcrumb && this.onBreadcrumbClick(route)}
       >
-        {route.folderName}
+        {route.title}
       </span>
     );
   };
 
   render () {
+    const items = this.navigationParts.map((part, index) => ({
+      key: index,
+      title: part.folderName,
+      path: part.path
+    }));
     return (
       <Breadcrumb
         itemRender={this.breadcrumbRenderer}
-        routes={this.navigationParts}
+        items={items}
       />
     );
   };
 }
 
-VSTableNavigation.PropTypes = {
+VSTableNavigation.propTypes = {
   path: PropTypes.string,
   onNavigate: PropTypes.func
 };

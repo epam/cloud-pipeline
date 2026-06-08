@@ -44,8 +44,8 @@ class PathCell extends React.PureComponent {
                 />
               </div>)}
             trigger="click"
-            visible={moreVisible}
-            onVisibleChange={this.onShowMoreVisibilityChanged}
+            open={moreVisible}
+            onOpenChange={this.onShowMoreVisibilityChanged}
           >
             <a className={styles.showMorePathButton}>
               {showMoreText}

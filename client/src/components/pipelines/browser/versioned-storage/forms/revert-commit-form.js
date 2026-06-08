@@ -17,16 +17,17 @@
 import React from 'react';
 import {
   Button,
-  Modal,
   Form,
+  Modal,
   Input,
   Row,
   Spin
 } from 'antd';
 import PropTypes from 'prop-types';
 
-@Form.create()
 class RevertCommitForm extends React.Component {
+
+  formRef = React.createRef();
   formItemLayout = {
     labelCol: {
       xs: {span: 24},
@@ -39,39 +40,39 @@ class RevertCommitForm extends React.Component {
   };
 
   handleSubmit = (e) => {
-    const {onRevert, form} = this.props;
+    const {onRevert} = this.props;
     e.preventDefault();
-    form.validateFieldsAndScroll((err, values) => {
-      if (!err) {
+    this.formRef.current.validateFields()
+      .then((values) => {
         onRevert && onRevert(values);
-      }
-    });
+      })
+      .catch(() => {});
   };
 
   render () {
     const {
       path,
       commit,
-      form,
       pending,
       onCancel,
       visible
     } = this.props;
-    const {getFieldDecorator, resetFields} = form;
     const modalFooter = pending ? false : (
       <Row>
         <Button onClick={onCancel}>Cancel</Button>
         <Button type="primary" htmlType="submit" onClick={this.handleSubmit}>Revert</Button>
       </Row>
     );
-    const onClose = () => resetFields();
+    const onClose = () => {
+      this.formRef.current && this.formRef.current.resetFields();
+    };
     const objectName = (path || '').split(/[\\/]/).pop();
     return (
       <Modal
-        maskClosable={!pending}
+        mask={{closable: !pending}}
         afterClose={() => onClose()}
         closable={!pending}
-        visible={visible}
+        open={visible}
         title={
           objectName
             ? (<span>Revert <b>{objectName}</b> to revision <b>{commit}</b></span>)
@@ -81,19 +82,18 @@ class RevertCommitForm extends React.Component {
         footer={objectName ? modalFooter : undefined}
       >
         <Spin spinning={pending}>
-          <Form>
+          <Form ref={this.formRef}>
             <Form.Item
               {...this.formItemLayout}
               label="Comment"
+              name="comment"
             >
-              {getFieldDecorator('comment')(
-                <Input
-                  ref={this.initializeCommentInput}
-                  disabled={pending}
-                  onPressEnter={this.handleSubmit}
-                  type="textarea"
-                />
-              )}
+              <Input
+                ref={this.initializeCommentInput}
+                disabled={pending}
+                onPressEnter={this.handleSubmit}
+                type="textarea"
+              />
             </Form.Item>
           </Form>
         </Spin>
@@ -102,8 +102,8 @@ class RevertCommitForm extends React.Component {
   }
 
   initializeCommentInput = (input) => {
-    if (input && input.refs && input.refs.input) {
-      this.commentInput = input.refs.input;
+    if (input) {
+      this.commentInput = input;
       this.commentInput.onfocus = function () {
         setTimeout(() => {
           this.selectionStart = (this.value || '').length;

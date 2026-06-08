@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer, Provider} from 'mobx-react';
-import {computed, isObservableArray} from 'mobx';
+import {computed, isObservableArray, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
 import {
   Alert,
@@ -35,7 +35,6 @@ import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/paramet
 import AllowedInstancesCountWarning from
 '../../pipelines/launch/form/utilities/allowed-instances-count-warning';
 import RunName from '../run-name';
-import '../../../staticStyles/tooltip-nowrap.css';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import {getSpotTypeName} from '../../special/spot-instance-names';
 import awsRegions from '../../../models/cloudRegions/CloudRegions';
@@ -717,21 +716,31 @@ export class RunConfirmation extends React.Component {
     onDemandSelectionAvailable: true
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      currentRegion: computed,
+      currentCloudProvider: computed,
+      dataStorages: computed,
+      initialSelectedDataStorages: computed,
+      conflicting: computed,
+      notConflictingIndecis: computed,
+      initialLimitMountsHaveConflicts: computed
+    });
+  }
+
   get currentRegion () {
     const [currentRegion] = (this.props.cloudRegions || [])
       .filter(p => +p.id === +this.props.cloudRegionId);
     return currentRegion;
   }
 
-  @computed
   get currentCloudProvider () {
     const [currentProvider] = (this.props.cloudRegions || [])
       .filter(p => +p.id === +this.props.cloudRegionId);
     return currentProvider ? currentProvider.provider : null;
   }
 
-  @computed
   get gpuEnabled () {
     const [currentInstanceType] = (this.props.instanceTypes || [])
       .filter(i => i.name === this.state.instanceType);
@@ -739,7 +748,6 @@ export class RunConfirmation extends React.Component {
       +currentInstanceType.gpu > 0;
   }
 
-  @computed
   get dataStorages () {
     const {cloudRegions = []} = this.props;
     const cloudRegion = this.currentRegion;
@@ -747,13 +755,11 @@ export class RunConfirmation extends React.Component {
     return getAllowedStoragesForCloudRegion(storages, cloudRegion, cloudRegions);
   }
 
-  @computed
   get initialSelectedDataStorages () {
     const {limitMounts} = this.props;
     return this.getStoragesByIdentifiersString(limitMounts);
   }
 
-  @computed
   get conflicting () {
     const {initialSelectedDataStorages} = this;
     const mountPoints = initialSelectedDataStorages.map((s) => s.mountPoint);
@@ -762,7 +768,6 @@ export class RunConfirmation extends React.Component {
       .filter((d) => !!d.mountPoint && conflictingMountPoints.has(d.mountPoint));
   }
 
-  @computed
   get notConflictingIndecis () {
     const {initialSelectedDataStorages} = this;
     const mountPoints = initialSelectedDataStorages.map((s) => s.mountPoint);
@@ -774,7 +779,6 @@ export class RunConfirmation extends React.Component {
       .map(d => +d.id);
   }
 
-  @computed
   get initialLimitMountsHaveConflicts () {
     const {initialSelectedDataStorages} = this;
     const mountPoints = initialSelectedDataStorages.map((s) => s.mountPoint);
@@ -877,9 +881,9 @@ export class RunConfirmation extends React.Component {
       <Select.OptGroup key={g.key} label={g.key}>
         {
           g.storages.map(s => (
-            <Select.Option key={s.id} value={s.id.toString()} name={s.name} pathMask={s.pathMask}>
+            <Select.Option key={s.id} value={s.id.toString()} name={s.name} pathmask={s.pathMask}>
               <Tooltip
-                overlayClassName="limit-mounts-warning"
+                classNames={{root: 'limit-mounts-warning'}}
                 title={s.pathMask}>
                 <div
                   style={{
@@ -939,7 +943,7 @@ export class RunConfirmation extends React.Component {
           filterOption={
             (input, option) =>
               option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0 ||
-              option.props.pathMask.toLowerCase().indexOf(input.toLowerCase()) >= 0}
+              (option.props.pathmask || '').toLowerCase().indexOf(input.toLowerCase()) >= 0}
           value={value}
         >
           {this.getSelectStructure()}
@@ -982,7 +986,7 @@ export class RunConfirmation extends React.Component {
             key="allowed-warning"
             type="warning"
             showIcon
-            message={allowedWarning}
+            title={allowedWarning}
           />
         ) : null}
         {!hard && soft ? (
@@ -992,7 +996,7 @@ export class RunConfirmation extends React.Component {
             type="warning"
             showIcon
             // eslint-disable-next-line max-len
-            message="Сontainer size is too large and may lead to unpredictable run behavior."
+            title="Сontainer size is too large and may lead to unpredictable run behavior."
           />
         ) : null}
         {hard ? (
@@ -1001,7 +1005,7 @@ export class RunConfirmation extends React.Component {
             key="error"
             type="error"
             showIcon
-            message="Container size exceeds limit."
+            title="Container size exceeds limit."
           />
         ) : null}
         {
@@ -1011,7 +1015,7 @@ export class RunConfirmation extends React.Component {
             key="general-warning"
             type="warning"
             showIcon
-            message={this.props.warning} />
+            title={this.props.warning} />
         }
         {
           this.props.onDemandSelectionAvailable &&
@@ -1023,7 +1027,7 @@ export class RunConfirmation extends React.Component {
             key="spot warning"
             type="info"
             showIcon
-            message={
+            title={
               <div>
                 <Row style={{marginBottom: 5}}>
                   <b>
@@ -1069,7 +1073,7 @@ export class RunConfirmation extends React.Component {
             key="spot warning"
             type="info"
             showIcon
-            message={
+            title={
               <div>
                 <Row style={{marginBottom: 5}}>
                   <b>
@@ -1101,7 +1105,7 @@ export class RunConfirmation extends React.Component {
             type="info"
             style={{margin: 2}}
             showIcon
-            message={
+            title={
               <Row>
                 Note that clusters cannot be paused, even
                 if {getSpotTypeName(false, this.currentCloudProvider)
@@ -1116,7 +1120,7 @@ export class RunConfirmation extends React.Component {
             type="info"
             style={{margin: 2}}
             showIcon
-            message={
+            title={
               <Row>
                 {/* eslint-disable-next-line max-len */}
                 Note that you will not be able to commit a cluster. Commit feature is only available for single-node runs
@@ -1131,7 +1135,7 @@ export class RunConfirmation extends React.Component {
             type="info"
             style={{margin: 2}}
             showIcon
-            message={
+            title={
               <Row>
                 <Row style={{marginBottom: 5}}>
                   {/* eslint-disable-next-line max-len */}
@@ -1155,7 +1159,7 @@ export class RunConfirmation extends React.Component {
             key="instance type warning"
             type="info"
             showIcon
-            message={
+            title={
               <div>
                 <Row>
                   <b>You should select instance type:</b>
@@ -1186,7 +1190,7 @@ export class RunConfirmation extends React.Component {
             key="instance type missing warning"
             type="warning"
             showIcon
-            message={
+            title={
               <div>
                 <Row>
                   <b>You have no instance types available.</b>
@@ -1200,7 +1204,7 @@ export class RunConfirmation extends React.Component {
               style={{margin: 2}}
               type={hasStorageConflicts ? 'warning' : 'success'}
               showIcon
-              message={
+              title={
                 <div>
                   <Row style={{marginBottom: 5}}>
                     {/* eslint-disable-next-line max-len */}
@@ -1232,7 +1236,7 @@ export class RunConfirmation extends React.Component {
               <Alert
                 type="error"
                 style={{margin: 2}}
-                message={
+                title={
                   <div>
                     <PermissionErrorsTitle />
                     <PermissionErrors errors={this.props.permissionErrors} />
@@ -1248,7 +1252,7 @@ export class RunConfirmation extends React.Component {
               type="error"
               style={{margin: 2}}
               showIcon
-              message={
+              title={
                 <div>
                   <b>Cloud region not available.</b>
                 </div>
@@ -1291,7 +1295,7 @@ export class RunConfirmation extends React.Component {
             type={this.runCapabilitiesErrorSolved ? 'info' : 'error'}
             style={{margin: 2}}
             showIcon
-            message={
+            title={
               <div style={{display: 'flex', flexDirection: 'column'}}>
                 <span style={{marginBottom: 5}}>
                   {this.runCapabilitiesErrorSolved

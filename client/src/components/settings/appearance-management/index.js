@@ -20,15 +20,15 @@ import {
   Alert,
   Button,
   Checkbox,
-  Icon,
   Input,
   message,
   Modal,
   Radio
 } from 'antd';
+import {LeftOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import roleModel from '../../../utils/roleModel';
 import LoadingView from '../../special/LoadingView';
 import UIThemeEditForm from './ui-theme-edit-form';
@@ -59,18 +59,25 @@ class AppearanceManagement extends React.Component {
     mode: undefined
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      themes: computed
+    });
+  }
+
   componentWillUnmount () {
     if (this.injectEditableThemeStylesDelayed) {
       clearTimeout(this.injectEditableThemeStylesDelayed);
     }
   }
 
-  @computed
   get themes () {
     const {
       themes: themesStore
     } = this.props;
     return (themesStore.themes || [])
+      .slice()
       .sort((a, b) => Number(b.predefined) - Number(a.predefined));
   }
 
@@ -575,7 +582,7 @@ class AppearanceManagement extends React.Component {
     ) {
       return (
         <div className={styles.appearanceManagement}>
-          <Alert message="Access denied" type="error" />
+          <Alert title="Access denied" type="error" />
         </div>
       );
     }
@@ -596,7 +603,7 @@ class AppearanceManagement extends React.Component {
               size="small"
               onClick={goBack}
             >
-              <Icon type="left" />
+              <LeftOutlined />
             </Button>
             <h2 className="cp-title">
               <span>{cloudPipelineAppName} UI Themes management</span>

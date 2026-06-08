@@ -15,8 +15,10 @@
  */
 
 import React from 'react';
-import {inject, observer} from 'mobx-react';
-import {Icon} from 'antd';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {RightOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import ToolImage from '../../../models/tools/ToolImage';
 import styles from './docker-image-details.css';
@@ -64,15 +66,7 @@ function DockerImageDetails ({
       >
         {registry}
       </span>
-      <Icon
-        className={
-          classNames(
-            'cp-text-not-important',
-            {[styles.hidden]: onlyImage}
-          )
-        }
-        type="right"
-      />
+      <RightOutlined className={ classNames( 'cp-text-not-important', {[styles.hidden]: onlyImage} ) } />
       <span
         className={
           classNames(
@@ -83,15 +77,7 @@ function DockerImageDetails ({
       >
         {g}
       </span>
-      <Icon
-        className={
-          classNames(
-            'cp-text-not-important',
-            {[styles.hidden]: onlyImage}
-          )
-        }
-        type="right"
-      />
+      <RightOutlined className={ classNames( 'cp-text-not-important', {[styles.hidden]: onlyImage} ) } />
       {
         id && iconId && (
           <img

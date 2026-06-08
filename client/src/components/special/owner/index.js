@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Icon} from 'antd';
+import {UserOutlined} from '@ant-design/icons';
 import UserName from '../UserName';
 import styles from './owner.css';
 
@@ -24,7 +24,7 @@ function Owner ({subject, style}) {
   if (subject && subject.owner) {
     return (
       <div className={styles.container} style={style}>
-        <Icon className={styles.user} type="user" />
+        <UserOutlined className={styles.user} />
         <UserName userName={subject.owner} />
       </div>
     );

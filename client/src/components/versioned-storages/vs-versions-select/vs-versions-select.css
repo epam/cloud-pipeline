@@ -32,9 +32,9 @@
 }
 
 .commit span:not(.accent) {
-  color: #999;
+  color: var(--cp-color-text-disabled);
 }
 
 .commit .accent {
-  color: #666;
+  color: var(--cp-color-text-secondary);
 }

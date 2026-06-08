@@ -17,15 +17,15 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import {
   Button,
   Tabs,
-  Icon,
   Input,
   Popover,
   message
 } from 'antd';
+import {ArrowsAltOutlined, CameraFilled, CopyOutlined, ExportOutlined, ShrinkOutlined, TagFilled, TagOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import html2canvas from 'html2canvas';
 import FileSaver from 'file-saver';
@@ -245,9 +245,17 @@ class VSIPreview extends React.Component {
     showAttributes: false
   };
 
-  @observable s3Storage;
+  s3Storage;
   map;
   pathElement;
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      s3Storage: observable,
+      storage: computed
+    });
+  }
 
   componentDidMount () {
     this.createS3Storage();
@@ -278,7 +286,6 @@ class VSIPreview extends React.Component {
     }
   }
 
-  @computed
   get storage () {
     const {storageId, dataStorages} = this.props;
     if (storageId && dataStorages.loaded) {
@@ -667,16 +674,12 @@ class VSIPreview extends React.Component {
         defaultActiveKey={active}
         onChange={this.onChangePreview}
         className={styles.tabs}
-      >
-        {
-          items.map(item => (
-            <Tabs.TabPane
-              tab={getItemName(item)}
-              key={item.path}
-            />
-          ))
-        }
-      </Tabs>
+        items={items.map(item => ({
+          key: item.path,
+          label: getItemName(item),
+          children: null
+        }))}
+      />
     );
   };
 
@@ -842,11 +845,9 @@ class VSIPreview extends React.Component {
       e.preventDefault();
       if (
         this.pathElement &&
-        this.pathElement.refs &&
-        this.pathElement.refs.input &&
-        this.pathElement.refs.input.select
+        this.pathElement.select
       ) {
-        this.pathElement.refs.input.select();
+        this.pathElement.select();
         if (document.execCommand('copy')) {
           message.info('Copied to clipboard', 3);
           window.getSelection().removeAllRanges();
@@ -867,18 +868,8 @@ class VSIPreview extends React.Component {
           readOnly
           addonAfter={(
             <div>
-              <Icon
-                title="Copy to clipboard"
-                className={styles.shareUrlAction}
-                type="copy"
-                onClick={copy}
-              />
-              <Icon
-                title="Open in separate tab"
-                className={styles.shareUrlAction}
-                type="export"
-                onClick={open}
-              />
+              <CopyOutlined title="Copy to clipboard" className={styles.shareUrlAction} onClick={copy} />
+              <ExportOutlined title="Open in separate tab" className={styles.shareUrlAction} onClick={open} />
             </div>
           )}
         />
@@ -1056,6 +1047,17 @@ class VSIPreview extends React.Component {
             });
         });
     };
+    const icon = fullscreen ? (
+      <ShrinkOutlined
+        onClick={goFullScreen}
+        className={styles.vsiPreviewFullscreenButton}
+      />
+    ) : (
+      <ArrowsAltOutlined
+        onClick={goFullScreen}
+        className={styles.vsiPreviewFullscreenButton}
+      />
+    );
     return (
       <div
         onClick={() => {
@@ -1085,13 +1087,7 @@ class VSIPreview extends React.Component {
         >
         </div>
         {
-          fullScreenAvailable && (
-            <Icon
-              type={fullscreen ? 'shrink' : 'arrows-alt'}
-              onClick={goFullScreen}
-              className={styles.vsiPreviewFullscreenButton}
-            />
-          )
+          fullScreenAvailable && icon
         }
         <div
           className={styles.vsiPreviewButtonContainer}
@@ -1101,17 +1097,17 @@ class VSIPreview extends React.Component {
             className={styles.vsiPreviewButton}
             onClick={capture}
           >
-            <Icon type="camera" />
+            <CameraFilled />
           </Button>
           {
             shareAvailable && (
               <Popover
-                visible={shareUrl !== undefined && shareUrl !== null}
+                open={shareUrl !== undefined && shareUrl !== null}
                 trigger={['click']}
                 title={false}
                 content={this.renderShareUrl()}
-                onVisibleChange={this.shareUrlVisibilityChanged}
-                overlayClassName={styles.shareUrlPopover}
+                onOpenChange={this.shareUrlVisibilityChanged}
+                classNames={{root: styles.shareUrlPopover}}
                 align={fullscreen ? {
                   points: ['tl', 'bl'],
                   offset: ['-10px']
@@ -1123,7 +1119,7 @@ class VSIPreview extends React.Component {
                   className={styles.vsiPreviewButton}
                   onClick={this.openShareUrlModal}
                 >
-                  <Icon type="export" />
+                  <ExportOutlined />
                 </Button>
               </Popover>
             )
@@ -1135,7 +1131,7 @@ class VSIPreview extends React.Component {
                 className={styles.vsiPreviewButton}
                 onClick={showLabel ? this.hideLabelPreview : this.showLabelPreview}
               >
-                <Icon type={showLabel ? 'tag' : 'tag-o'} />
+                {showLabel ? <TagFilled /> : <TagOutlined />}
               </Button>
             )
           }
@@ -1191,11 +1187,7 @@ class VSIPreview extends React.Component {
       >
         {
           fullScreenAvailable && !fullscreen && (
-            <Icon
-              type="arrows-alt"
-              onClick={goFullScreen}
-              className={styles.omeTiffPreviewFullscreenButton}
-            />
+            <ArrowsAltOutlined onClick={goFullScreen} className={styles.omeTiffPreviewFullscreenButton} />
           )
         }
         <OmeTiffRenderer

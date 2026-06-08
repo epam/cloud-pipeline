@@ -15,8 +15,8 @@
  */
 
 import React from 'react';
-import {inject, observer, Provider} from 'mobx-react';
-import {computed} from 'mobx';
+import {inject, observer} from 'mobx-react';
+import {computed, makeObservable} from 'mobx';
 import AIChat from './ai-chat';
 import styles from './ai-chat.css';
 import {Alert} from 'antd';
@@ -25,7 +25,13 @@ import LoadingView from '../special/LoadingView';
 @inject('preferences')
 @observer
 class AIChatPage extends React.Component {
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      aiChatBotAvailable: computed
+    });
+  }
+
   get aiChatBotAvailable () {
     const {preferences} = this.props;
     if (!preferences.loaded) {
@@ -43,7 +49,7 @@ class AIChatPage extends React.Component {
       return (<AIChat />);
     }
     return (
-      <Alert message="Chat not available" type="warning" />
+      <Alert title="Chat not available" type="warning" />
     );
   };
 
@@ -52,11 +58,9 @@ class AIChatPage extends React.Component {
     const {loaded} = preferences;
     return (
       <div className={styles.pageContainer}>
-        <Provider router={this.props.router}>
-          {
-            loaded ? this.renderContent() : <LoadingView />
-          }
-        </Provider>
+        {
+          loaded ? this.renderContent() : <LoadingView />
+        }
       </div>
     );
   }

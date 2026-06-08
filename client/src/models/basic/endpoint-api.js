@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {observable} from 'mobx';
+import {observable, makeObservable} from 'mobx';
 import {fetchToken} from '../user/UserToken';
 
 const removeSlashes = (str) => {
@@ -71,13 +71,16 @@ class EndpointAPI {
       return Promise.resolve(false);
     }
   }
-  @observable endpoint;
+  endpoint;
 
   /**
    * @param {string} endpoint
    * @param {EndpointAPIOptions} options
    */
   constructor (endpoint, options = {}) {
+    makeObservable(this, {
+      endpoint: observable
+    });
     const {
       token,
       fetchToken = true,

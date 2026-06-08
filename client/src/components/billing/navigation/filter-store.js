@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {observable, isObservableArray} from 'mobx';
+import {observable, isObservableArray, makeObservable} from 'mobx';
 import {Period, getPeriod} from '../../special/periods';
 import RunnerType from './runner-types';
 import ReportsRouting from './reports-routing';
@@ -24,25 +24,35 @@ import {parseStorageAggregate, StorageAggregate} from './aggregate';
 class Filter {
   static RUNNER_SEPARATOR = '|';
   static REGION_SEPARATOR = '|';
-  @observable period;
-  @observable range;
-  @observable report;
-  @observable runner;
-  @observable metrics;
-  @observable storageAggregate;
+  period;
+  range;
+  report;
+  runner;
+  metrics;
+  storageAggregate;
+
+  constructor () {
+    makeObservable(this, {
+      period: observable,
+      range: observable,
+      report: observable,
+      runner: observable,
+      metrics: observable,
+      storageAggregate: observable
+    });
+  }
 
   rebuild = ({location, router}) => {
     this.router = router;
-    const {
-      period = Period.month,
-      user,
-      group,
-      'billing-group': billingGroup,
-      range,
-      region,
-      metrics,
-      layer: storageAggregate
-    } = (location || {}).query || {};
+    const q = new URLSearchParams((location || {}).search || '');
+    const period = q.get('period') ?? Period.month;
+    const user = q.get('user');
+    const group = q.get('group');
+    const billingGroup = q.get('billing-group');
+    const range = q.get('range');
+    const region = q.get('region');
+    const metrics = q.get('metrics');
+    const storageAggregate = q.get('layer');
     if (billingGroup) {
       this.runner = {
         type: RunnerType.billingGroup,

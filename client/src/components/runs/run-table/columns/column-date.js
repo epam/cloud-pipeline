@@ -89,9 +89,11 @@ function getColumnFilter (
   );
   return {
     filterDropdown,
-    filterDropdownVisible,
-    filtered,
-    onFilterDropdownVisibleChange
+    filterDropdownProps: {
+      open: filterDropdownVisible,
+      onOpenChange: onFilterDropdownVisibleChange
+    },
+    filtered
   };
 }
 

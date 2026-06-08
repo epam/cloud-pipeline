@@ -15,15 +15,17 @@
  */
 
 import React from 'react';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import {
   Alert,
   Button,
-  Icon,
   message,
   Modal
 } from 'antd';
-import {computed} from 'mobx';
+import {PlusOutlined} from '@ant-design/icons';
+import {computed, makeObservable} from 'mobx';
 import LoadingView from '../../special/LoadingView';
 import EditHotNodePool from './edit-hot-node-pool';
 import clusterNodes from '../../../models/cluster/ClusterNodes';
@@ -56,6 +58,7 @@ async function removeSchedule (scheduleId) {
 }
 
 @roleModel.authenticationInfo
+@inject('routing')
 @inject(() => {
   return {
     pools,
@@ -85,7 +88,13 @@ class HotCluster extends React.Component {
     });
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      isReadOnly: computed
+    });
+  }
+
   get isReadOnly () {
     const {authenticatedUserInfo} = this.props;
     return !authenticatedUserInfo.loaded || !isAdmin(authenticatedUserInfo.value);
@@ -215,15 +224,15 @@ class HotCluster extends React.Component {
   };
 
   onPoolClick = (pool) => {
-    const {router} = this.props;
-    router.push(`/cluster?pool_id=${pool.id}`);
+    const {routing} = this.props;
+    routing.push(`/cluster?pool_id=${pool.id}`);
   }
 
   render () {
     const {
       pools: poolsRequest,
       clusterNodes: nodes,
-      router
+      routing
     } = this.props;
     if (
       (poolsRequest.pending && !poolsRequest.loaded) ||
@@ -237,7 +246,7 @@ class HotCluster extends React.Component {
       return (
         <Alert
           type="error"
-          message={poolsRequest.error || 'Error fetching hot node pools'}
+          title={poolsRequest.error || 'Error fetching hot node pools'}
         />
       );
     }
@@ -245,7 +254,7 @@ class HotCluster extends React.Component {
       return (
         <Alert
           type="error"
-          message={nodes.error || 'Error fetching cluster nodes'}
+          title={nodes.error || 'Error fetching cluster nodes'}
         />
       );
     }
@@ -273,7 +282,7 @@ class HotCluster extends React.Component {
                 type="primary"
                 onClick={this.openEditPoolModal({isNew: true})}
               >
-                <Icon type="plus" />
+                <PlusOutlined />
                 Create
               </Button>
             )}
@@ -297,7 +306,7 @@ class HotCluster extends React.Component {
                 onRemove={this.onRemovePool(pool)}
                 onClick={() => this.onPoolClick(pool)}
                 nodes={(nodes.value || []).map(node => node)}
-                router={router}
+                routing={routing}
               />
             ))
           }

@@ -17,8 +17,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
-import {Icon, Row} from 'antd';
+import {computed, makeObservable} from 'mobx';
+import {Row} from 'antd';
+import {CaretRightOutlined, LoadingOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import LoadTool from '../../../models/tools/LoadTool';
 import LoadToolAttributes from '../../../models/tools/LoadToolInfo';
@@ -53,7 +54,17 @@ export default class ToolPreview extends React.Component {
     })
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      dockerRegistry: computed,
+      name: computed,
+      path: computed,
+      description: computed,
+      toolVersionScanResults: computed
+    });
+  }
+
   get dockerRegistry () {
     if (this.props.dockerRegistries.loaded && this.props.tool.loaded) {
       return (this.props.dockerRegistries.value.registries || [])
@@ -62,7 +73,6 @@ export default class ToolPreview extends React.Component {
     return null;
   }
 
-  @computed
   get name () {
     if (this.props.tool && this.props.tool.loaded && this.props.dockerRegistries.loaded) {
       const [, tool] = this.props.tool.value.image.split('/');
@@ -71,7 +81,6 @@ export default class ToolPreview extends React.Component {
     return this.props.item.name;
   }
 
-  @computed
   get path () {
     if (this.props.tool && this.props.tool.loaded && this.props.dockerRegistries.loaded) {
       const {registries} = this.props.dockerRegistries.value;
@@ -88,14 +97,13 @@ export default class ToolPreview extends React.Component {
       };
       return [
         <span style={style}>{registry}</span>,
-        <Icon type="caret-right" style={style} />,
+        <CaretRightOutlined style={style} />,
         <span style={style}>{group}</span>
       ];
     }
     return null;
   }
 
-  @computed
   get description () {
     if (this.props.tool && this.props.tool.loaded) {
       return this.props.tool.value.shortDescription || this.props.item.description;
@@ -114,7 +122,6 @@ export default class ToolPreview extends React.Component {
     return null;
   };
 
-  @computed
   get toolVersionScanResults () {
     const data = [];
     if (this.props.versions.loaded &&
@@ -179,7 +186,7 @@ export default class ToolPreview extends React.Component {
   renderVersions = () => {
     if (this.props.versions) {
       if (this.props.versions.pending) {
-        return <Row className={styles.contentPreview} type="flex" justify="center"><Icon type="loading"/></Row>;
+        return <Row className={styles.contentPreview} type="flex" justify="center"><LoadingOutlined /></Row>;
       }
       if (this.props.versions.error) {
         return (
@@ -226,9 +233,10 @@ export default class ToolPreview extends React.Component {
 
   renderHeader = () => {
     const renderMainInfo = () => {
+      const ItemIcon = PreviewIcons[this.props.item.type];
       const name = (
         <Row key="name" className={classNames(styles.title, 'cp-search-header-title')} type="flex" align="middle">
-          <Icon type={PreviewIcons[this.props.item.type]} />
+          {ItemIcon && <ItemIcon />}
           <span>{this.name}</span>
         </Row>
       );

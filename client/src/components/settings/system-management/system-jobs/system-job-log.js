@@ -43,7 +43,7 @@ function SystemJobLog (props) {
     <Modal
       className={className}
       onCancel={onClose}
-      visible={visible}
+      open={visible}
       footer={(
         <div
           style={{
@@ -67,7 +67,7 @@ function SystemJobLog (props) {
           </Button>
         </div>
       )}
-      bodyStyle={{padding: 0, margin: 0}}
+      styles={{body: {padding: 0, margin: 0}}}
       title={
         runId
           ? (<span><b>#{runId} job logs</b></span>)

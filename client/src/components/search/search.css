@@ -166,7 +166,7 @@
 
 .hints code {
   padding: 4px;
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: color-mix(in srgb, var(--cp-color-bg-elevated) 10%, transparent);
 }
 
 .search-form.results-available.preview-available {

@@ -16,18 +16,22 @@
 
 import Remote from '../basic/Remote';
 import DataStorageLoad from './DataStorageLoad';
-import {observable} from 'mobx';
+import {observable, makeObservable} from 'mobx';
 
 class DataStorages extends Remote {
   url;
 
   constructor () {
     super();
+    makeObservable(this, {
+      _defaultDataStorageId: observable
+    });
     this.url = '/datastorage/loadAll';
   };
 
-  @observable _defaultDataStorageId = null;
-  get defaultDataStorageId() {
+  _defaultDataStorageId = null;
+
+  get defaultDataStorageId () {
     return this._defaultDataStorageId;
   }
 

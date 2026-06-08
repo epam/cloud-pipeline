@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {
   processLinks,
   prepareCloudPipelineLinks,
@@ -43,6 +43,9 @@ export {
 class Markdown extends React.Component {
   constructor (props) {
     super(props);
+    makeObservable(this, {
+      links: computed
+    });
     this.renderer = getMarkdownRenderer({
       links: () => this.links,
       renderPipelineLinkIcon: () => this.renderPipelineLinkIcon,
@@ -51,7 +54,6 @@ class Markdown extends React.Component {
     });
   }
 
-  @computed
   get links () {
     const {
       dockerRegistries,

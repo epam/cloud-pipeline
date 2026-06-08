@@ -16,10 +16,10 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
-import {Link} from 'react-router';
-import {Icon} from 'antd';
+import {Link} from 'react-router-dom';
+import {CaretRightOutlined, LoadingOutlined, LockOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import EditableField from './EditableField';
 import {
@@ -47,7 +47,7 @@ export default class Breadcrumbs extends React.Component {
     onSaveEditableField: PropTypes.func,
     onNavigate: PropTypes.func,
     displayTextEditableField: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
-    icon: PropTypes.string,
+    icon: PropTypes.elementType,
     iconClassName: PropTypes.string,
     lock: PropTypes.bool,
     lockClassName: PropTypes.string,
@@ -55,7 +55,15 @@ export default class Breadcrumbs extends React.Component {
     subject: PropTypes.object
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      inlineMetadataEntities: computed,
+      rootItems: computed,
+      items: computed
+    });
+  }
+
   get inlineMetadataEntities () {
     const {
       preferences
@@ -63,7 +71,6 @@ export default class Breadcrumbs extends React.Component {
     return preferences.inlineMetadataEntities;
   }
 
-  @computed
   get rootItems () {
     const {
       pipelinesLibrary,
@@ -86,7 +93,6 @@ export default class Breadcrumbs extends React.Component {
     );
   }
 
-  @computed
   get items () {
     let items = [];
     const rootItems = this.rootItems;
@@ -147,7 +153,7 @@ export default class Breadcrumbs extends React.Component {
 
   render () {
     if (!this.props.pipelinesLibrary.loaded && this.props.pipelinesLibrary.pending) {
-      return <Icon type="loading" />;
+      return <LoadingOutlined />;
     }
     if (this.props.pipelinesLibrary.error) {
       return null;
@@ -163,19 +169,17 @@ export default class Breadcrumbs extends React.Component {
         {
           this.items.map((item, index, array) => {
             const isLast = index === array.length - 1;
-            const icon = item.icon ? (
-              <Icon
-                type={item.icon}
-                className={classNames(item.iconClassName, {'cp-sensitive': item.sensitive})}
+            const ItemComponent = item.icon;
+            const icon = ItemComponent ? (
+              <ItemComponent
+                className={classNames(item.iconClassName, {
+                  'cp-sensitive': item.sensitive
+                })}
                 style={{marginRight: 5}}
               />
             ) : null;
             const lock = item.lock ? (
-              <Icon
-                type="lock"
-                className={classNames(item.lockClassName, {'cp-sensitive': item.sensitive})}
-                style={{marginRight: 5}}
-              />
+              <LockOutlined className={classNames(item.lockClassName, {'cp-sensitive': item.sensitive})} style={{marginRight: 5}} />
             ) : null;
             if (isLast) {
               return [
@@ -225,9 +229,8 @@ export default class Breadcrumbs extends React.Component {
                   {lock}
                   {item.name}
                 </div>,
-                <Icon
+                <CaretRightOutlined
                   key={`divider-${index}`}
-                  type="caret-right"
                   style={{
                     lineHeight: 2,
                     verticalAlign: 'middle',
@@ -249,9 +252,8 @@ export default class Breadcrumbs extends React.Component {
                 {lock}
                 {item.name}
               </Link>,
-              <Icon
+              <CaretRightOutlined
                 key={`divider-${index}`}
-                type="caret-right"
                 style={{
                   lineHeight: 2,
                   verticalAlign: 'middle',
@@ -272,7 +274,7 @@ export default class Breadcrumbs extends React.Component {
     );
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (`${this.props.id}` !== `${nextProps.id}` || this.props.type !== nextProps.type) {
       (async () => {
         await this.props.pipelinesLibrary.fetch();

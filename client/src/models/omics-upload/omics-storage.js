@@ -22,7 +22,7 @@ import {
   CompleteMultipartReadSetUploadCommand,
   AbortMultipartReadSetUploadCommand
 } from '@aws-sdk/client-omics';
-import {observable, action} from 'mobx';
+import {observable, action, makeObservable} from 'mobx';
 import fetchTempCredentials from '../s3-upload/fetch-temp-credentials';
 import Credentials from '../s3-upload/credentials';
 import displaySize from '../../utils/displaySize';
@@ -53,14 +53,21 @@ class OmicsStorage {
   _storage;
   listParts = [];
   aborted = false;
-
-  @observable uploadError = null;
+  uploadError = null;
 
   get omics () {
     return this._omics;
   }
 
   constructor (config) {
+    makeObservable(this, {
+      uploadError: observable,
+      createUpload: action,
+      uploadPart: action,
+      getListParts: action,
+      completeUpload: action,
+      abortUpload: action
+    });
     this.regionName = config.region;
     this._storage = config.storage;
   }
@@ -103,7 +110,6 @@ class OmicsStorage {
     }
   }
 
-  @action
   async setCredentials () {
     const credentials = await this.getCredentials()
       .then(cred => cred)
@@ -143,7 +149,6 @@ class OmicsStorage {
     return false;
   }
 
-  @action
   createUpload = async (params) => {
     if (!this._omics) return;
     this.aborted = false;
@@ -197,7 +202,6 @@ class OmicsStorage {
     }
   }
 
-  @action
   uploadPart = async (part, source, attempt) => {
     if (this.aborted) return;
     try {
@@ -223,7 +227,6 @@ class OmicsStorage {
     }
   }
 
-  @action
   getListParts = async (source) => {
     if (this.aborted) return;
     try {
@@ -241,7 +244,6 @@ class OmicsStorage {
     }
   }
 
-  @action
   completeUpload = async () => {
     if (this.aborted) return;
     try {
@@ -264,7 +266,6 @@ class OmicsStorage {
     }
   }
 
-  @action
   abortUpload = async () => {
     if (this.aborted) return;
     try {

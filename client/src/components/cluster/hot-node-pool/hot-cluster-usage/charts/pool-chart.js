@@ -140,7 +140,7 @@ function PoolChart ({
   );
 }
 
-PoolChart.PropTypes = {
+PoolChart.propTypes = {
   rawData: PropTypes.array,
   periodType: PropTypes.string,
   period: PropTypes.string,

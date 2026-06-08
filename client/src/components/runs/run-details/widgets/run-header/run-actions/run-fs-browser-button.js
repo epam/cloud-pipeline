@@ -2,13 +2,12 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject} from 'mobx-react';
 import classNames from 'classnames';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import roleModel from '../../../../../../utils/roleModel';
 import cache from '../../../../../../models/pipelines/PipelineRunFSBrowserCache';
 import MultizoneUrl from '../../../../../special/multizone-url';
 import styles from './run-actions.css';
 import {checkRunActionAvailable, runActions} from '../../../../actions/actions-availability';
-import {Icon} from 'antd';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -18,6 +17,16 @@ class RunFsBrowserButton extends React.Component {
   state = {
     runFsBrowser: undefined
   };
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      isDtsEnvironment: computed,
+      isFireCloudEnvironment: computed,
+      initializeEnvironmentFinished: computed,
+      fsBrowserEnabled: computed
+    });
+  }
 
   componentDidMount () {
     this.updateRunFsBrowser();
@@ -54,27 +63,23 @@ class RunFsBrowserButton extends React.Component {
     }
   };
 
-  @computed
   get isDtsEnvironment () {
     const {run} = this.props;
     return run && run.executionPreferences &&
       run.executionPreferences.environment === DTS_ENVIRONMENT;
   }
 
-  @computed
   get isFireCloudEnvironment () {
     const {run} = this.props;
     return run && run.executionPreferences &&
       run.executionPreferences.environment === FIRE_CLOUD_ENVIRONMENT;
   }
 
-  @computed
   get initializeEnvironmentFinished () {
     const {run} = this.props;
     return run && run.initialized;
   }
 
-  @computed
   get fsBrowserEnabled () {
     const {run} = this.props;
     const {runFsBrowser} = this.state;
@@ -111,12 +116,13 @@ class RunFsBrowserButton extends React.Component {
       className,
       style,
       run,
-      icon
+      icon = null
     } = this.props;
     if (!run) {
       return null;
     }
     const {runFsBrowser} = this.state;
+    const IconComponent = icon;
     if (this.fsBrowserEnabled && runFsBrowser) {
       return (
         <MultizoneUrl
@@ -128,9 +134,7 @@ class RunFsBrowserButton extends React.Component {
             marginLeft: -2
           }}
         >
-          {
-            icon && <Icon type={icon} style={{marginRight: 5}} />
-          }
+          {IconComponent && <IconComponent style={{marginRight: 5}} />}
           <span>BROWSE</span>
         </MultizoneUrl>
       );
@@ -143,7 +147,7 @@ RunFsBrowserButton.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
   run: PropTypes.object,
-  icon: PropTypes.string
+  icon: PropTypes.elementType
 };
 
 export default RunFsBrowserButton;

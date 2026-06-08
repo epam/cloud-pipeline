@@ -19,18 +19,21 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import moment from 'moment-timezone';
 import {
-  Tooltip,
-  Icon
+  Tooltip
 } from 'antd';
+import {
+  CheckCircleFilled,
+  ClockCircleFilled
+} from '@ant-design/icons';
 import displayDate from '../../../../../../utils/displayDate';
 import {STATUS}
   from '../../../../../../models/dataStorage/lifeCycleRules/DataStorageLifeCycleRulesLoad';
 import styles from './restore-status-icon.css';
 
 const ICONS = {
-  [STATUS.INITIATED]: 'clock-circle',
-  [STATUS.RUNNING]: 'clock-circle',
-  [STATUS.SUCCEEDED]: 'check-circle'
+  [STATUS.INITIATED]: ClockCircleFilled,
+  [STATUS.RUNNING]: ClockCircleFilled,
+  [STATUS.SUCCEEDED]: CheckCircleFilled
 };
 const COLORS = {
   [STATUS.INITIATED]: 'cp-primary',
@@ -47,6 +50,7 @@ function RestoreStatusIcon ({restoreInfo, children}) {
   const title = restoreInfo.status === STATUS.SUCCEEDED
     ? `Restored till ${end}`
     : `Restoring started at ${start}`;
+  const RestoreIcon = ICONS[restoreInfo.status];
   return (
     <span
       className={styles.iconsContainer}
@@ -55,20 +59,21 @@ function RestoreStatusIcon ({restoreInfo, children}) {
         title={title}
       >
         {children}
-        <Icon
-          type={ICONS[restoreInfo.status]}
-          style={{
-            fontSize: '11px',
-            position: 'absolute',
-            right: '-5px',
-            top: 'calc(50% - 3px)',
-            transform: 'translateY(-50%)'
-          }}
-          className={classNames(
-            COLORS[restoreInfo.status],
-            styles.subIcon
-          )}
-        />
+        {RestoreIcon && (
+          <RestoreIcon
+            style={{
+              fontSize: '11px',
+              position: 'absolute',
+              right: '-5px',
+              top: 'calc(50% - 3px)',
+              transform: 'translateY(-50%)'
+            }}
+            className={classNames(
+              COLORS[restoreInfo.status],
+              styles.subIcon
+            )}
+          />
+        )}
       </Tooltip>
     </span>
   );

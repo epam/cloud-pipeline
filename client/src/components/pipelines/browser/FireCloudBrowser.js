@@ -16,9 +16,19 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
-import {Alert, Avatar, Button, Col, Icon, Input, Row, Select} from 'antd';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {computed, makeObservable} from 'mobx';
+import {Alert,
+  Avatar,
+  Button,
+  Col,
+  Input,
+  Row,
+  Select
+} from 'antd';
+import {ForkOutlined, LeftOutlined} from '@ant-design/icons';
 import LoadingView from '../../special/LoadingView';
 import FireCloudMethodsBrowser from './FireCloudMethodsBrowser';
 import FireCloudMethodSnapshotConfigurations from './FireCloudMethodSnapshotConfigurations';
@@ -27,7 +37,6 @@ import styles from './Browser.css';
 @inject('googleApi', 'fireCloudMethods')
 @observer
 export default class FireCloudBrowser extends React.Component {
-
   static propTypes = {
     namespace: PropTypes.string,
     method: PropTypes.string,
@@ -47,7 +56,14 @@ export default class FireCloudBrowser extends React.Component {
     methodSearchString: undefined
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      methods: computed,
+      snapshots: computed
+    });
+  }
+
   get methods () {
     if (this.props.fireCloudMethods.loaded) {
       return (this.props.fireCloudMethods.value || []).map(m => m);
@@ -55,7 +71,6 @@ export default class FireCloudBrowser extends React.Component {
     return [];
   }
 
-  @computed
   get currentMethodIsSelected () {
     return this.props.namespace === this.state.selectedNameSpace &&
       this.props.method === this.state.selectedMethod &&
@@ -135,7 +150,6 @@ export default class FireCloudBrowser extends React.Component {
     this.setState({methodSearchString: text});
   };
 
-  @computed
   get currentMethod () {
     if (this.state.selectedMethod) {
       return this.methods
@@ -147,7 +161,6 @@ export default class FireCloudBrowser extends React.Component {
     return null;
   }
 
-  @computed
   get snapshots () {
     if (this.currentMethod) {
       return (this.currentMethod.snapshotIds || [])
@@ -162,7 +175,7 @@ export default class FireCloudBrowser extends React.Component {
 
   render () {
     if (this.props.googleApi.error) {
-      return <Alert type="warning" message="Google auth initialization error" />;
+      return <Alert type="warning" title="Google auth initialization error" />;
     }
     if (!this.props.googleApi.loaded) {
       return <LoadingView />;
@@ -218,9 +231,9 @@ export default class FireCloudBrowser extends React.Component {
                     selectedMethodConfigurationSnapshot: null
                   });
                 }}>
-                <Icon type="left" />
+                <LeftOutlined />
               </Button>
-              <Icon type="fork" style={{color: '#2796dd', margin: '0px 5px'}} />
+              <ForkOutlined style={{color: '#2796dd', margin: '0px 5px'}} />
               {this.state.selectedMethod}
               {
                 this.snapshots &&
@@ -279,7 +292,7 @@ export default class FireCloudBrowser extends React.Component {
     );
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (this.props.method !== nextProps.method ||
       this.props.namespace !== nextProps.namespace ||
       this.props.snapshot !== nextProps.snapshot ||
@@ -294,5 +307,4 @@ export default class FireCloudBrowser extends React.Component {
       });
     }
   }
-
 }

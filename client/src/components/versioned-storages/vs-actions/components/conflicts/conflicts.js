@@ -16,9 +16,14 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observable} from 'mobx';
-import {inject, observer, Provider} from 'mobx-react';
-import {Icon, Table} from 'antd';
+import {observable, makeObservable} from 'mobx';
+import {inject,
+  observer,
+  Provider} from 'mobx-react';
+import {
+  Table
+} from 'antd';
+import {CheckCircleFilled} from '@ant-design/icons';
 import classNames from 'classnames';
 import ChangesDisplayConfig from './controls/changes-display-config';
 import ConflictsSession from './session';
@@ -36,14 +41,18 @@ class Conflicts extends React.Component {
     filesWidth: 200
   };
 
-  @observable session = new ConflictsSession();
-  @observable changesDisplayConfig;
+  session = new ConflictsSession();
+  changesDisplayConfig;
   ideContainer;
   ide;
   resizeInfo;
 
   constructor (props) {
     super(props);
+    makeObservable(this, {
+      session: observable,
+      changesDisplayConfig: observable
+    });
     this.changesDisplayConfig = new ChangesDisplayConfig(this.props.themes);
   }
 
@@ -184,10 +193,7 @@ class Conflicts extends React.Component {
         render: resolved => {
           if (resolved) {
             return (
-              <Icon
-                className="cp-success"
-                type="check-circle"
-              />
+              <CheckCircleFilled className="cp-success" />
             );
           }
           return null;
@@ -213,7 +219,7 @@ class Conflicts extends React.Component {
             {[styles.selectedFile]: file.name === current}
           )
         }
-        onRowClick={file => this.setState({current: file.name})}
+        onRow={(file) => ({onClick: () => this.setState({current: file.name})})}
       />
     );
   };

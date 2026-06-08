@@ -19,6 +19,7 @@ import DarkDimmedTheme from './dark-dimmed-theme';
 import DarkTheme from './dark-theme';
 import LightTheme from './light-theme';
 import parseConfiguration from './utilities/parse-configuration';
+import {migrateV1ToV2, SCHEMA_VERSION} from './tokens/migrate-v1-to-v2';
 import PreferenceLoad from '../models/preferences/PreferenceLoad';
 import PreferencesUpdate from '../models/preferences/PreferencesUpdate';
 
@@ -242,21 +243,34 @@ function parseThemesPreference (preferenceValue) {
 }
 
 export function getTheme (theme, themes) {
-  const result = getThemeConfiguration(theme, themes);
+  const skipExtendsMerge = Number(theme.schemaVersion) === SCHEMA_VERSION &&
+    (theme.fullyResolved || theme.predefined);
+  const result = skipExtendsMerge
+    ? {
+      ...theme,
+      configuration: {...(theme.configuration || {})},
+      properties: theme.properties || {...(theme.configuration || {})}
+    }
+    : getThemeConfiguration(theme, themes);
   result.getParsedConfiguration = parseConfiguration.bind(result, result.configuration);
+  result.schemaVersion = SCHEMA_VERSION;
   return result;
 }
 
 export function extendPredefinedThemesWithCustom (custom = []) {
-  const themes = PredefinedThemes.slice();
   const customThemesProcessed = custom
     .map(mapCustomTheme)
-    .map(correctCustomThemeIdentifier(themes));
-  return [
-    ...themes,
-    ...customThemesProcessed
-  ]
-    .map(theme => getTheme(theme, themes));
+    .map(correctCustomThemeIdentifier(PredefinedThemes));
+  const allRaw = [...PredefinedThemes, ...customThemesProcessed];
+  // Merge `extends` into a full v1 configuration before v2 migration so
+  // derived keys (e.g. @card-border-color: @panel-border-color on dark-theme)
+  // resolve against the complete palette, not the partial override object.
+  const withMergedConfiguration = allRaw.map(theme => {
+    const {configuration} = getThemeConfiguration(theme, allRaw);
+    return {...theme, configuration};
+  });
+  const migrated = withMergedConfiguration.map(migrateV1ToV2);
+  return migrated.map(theme => getTheme(theme, migrated));
 }
 
 export default function getThemes () {

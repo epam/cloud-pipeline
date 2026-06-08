@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import {Button, message} from 'antd';
 import RunScheduleDialog from '../../../runs/run-scheduling/run-scheduling-dialog';
 import RemoveSchedule from '../../../../models/configurationSchedule/RemoveConfigurationSchedule';
@@ -25,39 +25,42 @@ import UpdateSchedule from '../../../../models/configurationSchedule/UpdateConfi
 import CreateSchedule from '../../../../models/configurationSchedule/CreateConfigurationSchedule';
 
 class Schedule extends React.Component {
-  @observable schedule;
+ schedule;
 
-  @computed
-  get rules () {
-    if (this.schedule && this.schedule.loaded) {
-      return (this.schedule.value || []).map(r => r);
-    }
-    return [];
-  }
+ get rules () {
+   if (this.schedule && this.schedule.loaded) {
+     return (this.schedule.value || []).map(r => r);
+   }
+   return [];
+ }
 
-  constructor (props) {
-    super(props);
-    this.state = {
-      opened: false,
-      pending: false
-    };
-  }
+ constructor (props) {
+   super(props);
+   makeObservable(this, {
+     schedule: observable,
+     rules: computed
+   });
+   this.state = {
+     opened: false,
+     pending: false
+   };
+ }
 
-  componentDidMount () {
-    this.reload();
-  }
+ componentDidMount () {
+   this.reload();
+ }
 
-  componentDidUpdate (prevProps, prevState, snapshot) {
-    if (prevProps.configurationId !== this.props.configurationId) {
-      this.reload();
-    } else if (prevState.opened !== this.state.opened && prevState.opened) {
-      this.invalidateCache();
-    }
-  }
+ componentDidUpdate (prevProps, prevState, snapshot) {
+   if (prevProps.configurationId !== this.props.configurationId) {
+     this.reload();
+   } else if (prevState.opened !== this.state.opened && prevState.opened) {
+     this.invalidateCache();
+   }
+ }
 
-  componentWillUnmount () {
-    this.invalidateCache();
-  }
+ componentWillUnmount () {
+   this.invalidateCache();
+ }
 
   reload = () => {
     const {configurationId, configurationSchedules} = this.props;

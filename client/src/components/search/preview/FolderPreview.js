@@ -17,10 +17,11 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import AWSRegionTag from '../../special/AWSRegionTag';
-import {Icon, Row} from 'antd';
+import {Row} from 'antd';
+import {LoadingOutlined, AppstoreOutlined} from '@ant-design/icons';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
 import {renderAttributes} from './renderAttributes';
@@ -46,7 +47,13 @@ export default class FolderPreview extends React.Component {
     })
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      folderMetadataTags: computed
+    });
+  }
+
   get folderMetadataTags () {
     const matadataValue = {};
     for (let tag in this.props.folder.value.objectMetadata || {}) {
@@ -86,7 +93,7 @@ export default class FolderPreview extends React.Component {
     if (this.props.folder.pending) {
       return (
         <Row className={styles.contentPreview} type="flex" justify="center">
-          <Icon type="loading" />
+          <LoadingOutlined />
         </Row>
       );
     }
@@ -173,7 +180,7 @@ export default class FolderPreview extends React.Component {
       ...(this.props.folder.value.storages || []).map(mapChild),
       ...(this.props.folder.value.pipelines || []).map(mapChild),
       ...(this.props.folder.value.configurations || []).map(mapChild),
-      ...(this.props.folder.value.metadata ? [{name: 'Metadata', icon: 'appstore-o'}] : [])
+      ...(this.props.folder.value.metadata ? [{name: 'Metadata', icon: <AppstoreOutlined />}] : [])
     ];
     const rowStyle = {
       // borderBottom: '1px solid #555'
@@ -186,25 +193,18 @@ export default class FolderPreview extends React.Component {
               (items.length > MAX_ITEMS
                 ? items.slice(0, MAX_ITEMS)
                 : items || []).map((item, index) => {
-                  return (
-                    <tr key={index} style={rowStyle}>
-                      <td className={styles.firstCell}>
-                        {
-                          PreviewIcons[item.type]
-                            ? <Icon
-                              className={styles.searchResultItemIcon}
-                              type={PreviewIcons[item.type]} />
-                            : item.icon && <Icon
-                              className={styles.searchResultItemIcon}
-                              type={item.icon} />
-                        }
-                      </td>
-                      <td>
-                        {renderName(item)}
-                      </td>
-                    </tr>
-                  );
-                })
+                const ItemIcon = PreviewIcons[item.type];
+                return (
+                  <tr key={index} style={rowStyle}>
+                    <td className={styles.firstCell}>
+                      <ItemIcon className={styles.searchResultItemIcon} />
+                    </td>
+                    <td>
+                      {renderName(item)}
+                    </td>
+                  </tr>
+                );
+              })
             }
           </tbody>
         </table>
@@ -217,6 +217,7 @@ export default class FolderPreview extends React.Component {
       return null;
     }
 
+    const HeaderIcon = PreviewIcons[this.props.item.type];
     const highlights = renderHighlights(this.props.item);
     const attributes = renderAttributes(this.folderMetadataTags, {tags: true});
     const items = this.renderItems();
@@ -231,8 +232,12 @@ export default class FolderPreview extends React.Component {
         }
       >
         <div className={styles.header}>
-          <Row className={classNames(styles.title, 'cp-search-header-title')} type="flex" align="middle">
-            <Icon type={PreviewIcons[this.props.item.type]} />
+          <Row
+            className={classNames(styles.title, 'cp-search-header-title')}
+            type="flex"
+            align="middle"
+          >
+            {HeaderIcon && <HeaderIcon />}
             <span>{this.props.item.name}</span>
           </Row>
         </div>

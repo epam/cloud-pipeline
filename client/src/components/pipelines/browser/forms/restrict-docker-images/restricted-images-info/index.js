@@ -17,9 +17,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {
-  Icon,
   Popover
 } from 'antd';
+import {ExclamationCircleOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import DockerImageDetails from '../../../../../cluster/hot-node-pool/docker-image-details';
 import styles from './restricted-images-info.css';
@@ -99,18 +99,15 @@ function RestrictedImagesInfo ({
     <div className={styles.container}>
       <Popover
         content={renderContent()}
-        overlayClassName={styles.overlay}
+        classNames={{root: styles.overlay}}
       >
-        <Icon
-          type="exclamation-circle-o"
-          className={classNames('cp-icon-larger', 'cp-danger')}
-        />
+        <ExclamationCircleOutlined className={classNames('cp-icon-larger', 'cp-danger')} />
       </Popover>
     </div>
   );
 }
 
-RestrictedImagesInfo.PropTypes = {
+RestrictedImagesInfo.propTypes = {
   toolsToMount: PropTypes.arrayOf(PropTypes.shape({
     id: PropTypes.number,
     image: PropTypes.string,

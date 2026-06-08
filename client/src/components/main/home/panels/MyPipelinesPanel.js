@@ -17,8 +17,10 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {withRouter} from '../../../../utils/with-router';
+import {computed, makeObservable} from 'mobx';
 import {Alert, message, Row} from 'antd';
+import {CompassOutlined, PlayCircleOutlined} from '@ant-design/icons';
 import LoadPipeline from '../../../../models/pipelines/Pipeline';
 import LoadingView from '../../../special/LoadingView';
 import highlightText from '../../../special/highlightText';
@@ -32,8 +34,7 @@ import styles from './Panel.css';
 @inject('pipelines', 'hiddenObjects', 'pipelinesLibrary')
 @localization.localizedComponent
 @observer
-export default class MyPipelinesPanel extends localization.LocalizedReactComponent {
-
+class MyPipelinesPanel extends localization.LocalizedReactComponent {
   static propTypes = {
     panelKey: PropTypes.string,
     onInitialize: PropTypes.func
@@ -44,7 +45,13 @@ export default class MyPipelinesPanel extends localization.LocalizedReactCompone
       pipeline.name.toLowerCase().indexOf(search.toLowerCase()) >= 0;
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      pipelines: computed
+    });
+  }
+
   get pipelines () {
     if (
       this.props.pipelines.loaded &&
@@ -59,8 +66,14 @@ export default class MyPipelinesPanel extends localization.LocalizedReactCompone
         .filter(s => !this.props.hiddenObjects.isParentHidden(s, folders))
         .filter(s => roleModel.writeAllowed(s) || roleModel.readAllowed(s) || roleModel.isOwner(s));
       result.sort((pA, pB) => {
-        const pAisOwner = pA.owner && pA.owner.toLowerCase() === this.props.authenticatedUserInfo.value.userName.toLowerCase();
-        const pBisOwner = pB.owner && pB.owner.toLowerCase() === this.props.authenticatedUserInfo.value.userName.toLowerCase();
+        const pAisOwner =
+          pA.owner &&
+          pA.owner.toLowerCase() ===
+            this.props.authenticatedUserInfo.value.userName.toLowerCase();
+        const pBisOwner =
+          pB.owner &&
+          pB.owner.toLowerCase() ===
+            this.props.authenticatedUserInfo.value.userName.toLowerCase();
         if (pAisOwner !== pBisOwner) {
           if (pAisOwner) {
             return -1;
@@ -81,7 +94,12 @@ export default class MyPipelinesPanel extends localization.LocalizedReactCompone
         key="title"
         type="flex"
         align="middle"
-        style={{fontWeight: 'bold', fontSize: 'larger', height: pipeline.description ? '50%' : '100%'}}>
+        style={{
+          fontWeight: 'bold',
+          fontSize: 'larger',
+          height: pipeline.description ? '50%' : '100%'
+        }}
+      >
         <span type="main">
           {highlightText(pipeline.name, search)}
         </span>
@@ -150,12 +168,12 @@ export default class MyPipelinesPanel extends localization.LocalizedReactCompone
           actions={[
             {
               title: 'RUN',
-              icon: 'play-circle-o',
+              icon: PlayCircleOutlined,
               action: launch
             },
             {
               title: 'HISTORY',
-              icon: 'compass',
+              icon: CompassOutlined,
               action: history
             }
           ]}
@@ -172,13 +190,13 @@ export default class MyPipelinesPanel extends localization.LocalizedReactCompone
       return <LoadingView />;
     }
     if (this.props.pipelines.error) {
-      return <Alert type="warning" message={this.props.pipelines.error} />;
+      return <Alert type="warning" title={this.props.pipelines.error} />;
     }
     if (!this.props.authenticatedUserInfo.loaded && this.props.authenticatedUserInfo.pending) {
       return <LoadingView />;
     }
     if (this.props.authenticatedUserInfo.error) {
-      return (<Alert type="warning" message={this.props.authenticatedUserInfo.error} />);
+      return (<Alert type="warning" title={this.props.authenticatedUserInfo.error} />);
     }
     return (
       <div className={styles.container} style={{display: 'flex', flexDirection: 'column'}}>
@@ -196,3 +214,5 @@ export default class MyPipelinesPanel extends localization.LocalizedReactCompone
     this.props.pipelines.fetch();
   }
 }
+
+export default withRouter(MyPipelinesPanel);

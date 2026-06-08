@@ -1,4 +1,4 @@
-import {action, isObservableArray} from 'mobx';
+import {action, isObservableArray, makeObservable} from 'mobx';
 import RemotePost from '../basic/RemotePost';
 import TimedOutCache from '../basic/timed-out-cache';
 import {bytesToGbs, costMapper} from './utils';
@@ -62,6 +62,9 @@ export default class BaseBillingRequest extends RemotePost {
    */
   constructor (options = {}) {
     super();
+    makeObservable(this, {
+      loadBillingDataFromCache: action
+    });
     const {
       filters,
       loadDetails = false,
@@ -298,7 +301,6 @@ export default class BaseBillingRequest extends RemotePost {
     ].join('|');
   }
 
-  @action
   loadBillingDataFromCache () {
     this.prepareBody();
     const key = this.getRequestKey();
@@ -312,8 +314,6 @@ export default class BaseBillingRequest extends RemotePost {
     }
     return false;
   }
-
-  @action
   async fetch () {
     this.prepareBody();
     this._pending = true;
@@ -326,8 +326,6 @@ export default class BaseBillingRequest extends RemotePost {
       }
     }
   }
-
-  @action
   async fetchPage (pageNum) {
     if (this.paginated) {
       this.pageNum = pageNum;

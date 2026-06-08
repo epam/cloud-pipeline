@@ -17,9 +17,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {
-  Button,
-  Icon
+  Button
 } from 'antd';
+import {PlusOutlined} from '@ant-design/icons';
 import AddDockerRegistryControl
   from '../../../../../components/cluster/hot-node-pool/add-docker-registry-control';
 import styles from './RestrictDockerDialog.css';
@@ -116,7 +116,7 @@ class DockerImagesEdit extends React.Component {
             disabled={disabled}
             style={{marginTop: '20px'}}
           >
-            <Icon type="plus" />
+            <PlusOutlined />
             Add docker image
           </Button>
         </div>
@@ -125,7 +125,7 @@ class DockerImagesEdit extends React.Component {
   }
 }
 
-DockerImagesEdit.PropTypes = {
+DockerImagesEdit.propTypes = {
   toolsToMount: PropTypes.arrayOf(PropTypes.shape({
     id: PropTypes.number,
     image: PropTypes.string,

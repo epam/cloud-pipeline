@@ -16,9 +16,10 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {inject, observer} from 'mobx-react';
-import {Icon, Row} from 'antd';
+import {Row} from 'antd';
+import {LoadingOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
@@ -43,7 +44,16 @@ export default class DockerRegistryPreview extends React.Component {
     })
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      registries: computed,
+      currentRegistry: computed,
+      groups: computed,
+      name: computed
+    });
+  }
+
   get registries () {
     if (this.props.dockerRegistries.loaded) {
       return (this.props.dockerRegistries.value.registries || []).map(r => r);
@@ -51,7 +61,6 @@ export default class DockerRegistryPreview extends React.Component {
     return [];
   }
 
-  @computed
   get currentRegistry () {
     if (!this.props.item.id) {
       return null;
@@ -59,7 +68,6 @@ export default class DockerRegistryPreview extends React.Component {
     return this.registries.filter(r => `${r.id}` === `${this.props.item.id}`)[0];
   }
 
-  @computed
   get groups () {
     let groups = [];
     if (this.currentRegistry) {
@@ -78,7 +86,7 @@ export default class DockerRegistryPreview extends React.Component {
     if (this.props.dockerRegistries.pending) {
       return (
         <Row className={styles.contentPreview} type="flex" justify="center">
-          <Icon type="loading" />
+          <LoadingOutlined />
         </Row>
       );
     }
@@ -116,8 +124,7 @@ export default class DockerRegistryPreview extends React.Component {
     );
   };
 
-  @computed
-  get name() {
+  get name () {
     if (this.currentRegistry) {
       return this.currentRegistry.description || this.currentRegistry.externalUrl || this.currentRegistry.path;
     }
@@ -129,6 +136,7 @@ export default class DockerRegistryPreview extends React.Component {
       return null;
     }
 
+    const ItemIcon = PreviewIcons[this.props.item.type];
     const highlights = renderHighlights(this.props.item);
     const groups = this.renderGroups();
 
@@ -143,7 +151,7 @@ export default class DockerRegistryPreview extends React.Component {
       >
         <div className={styles.header}>
           <Row className={classNames(styles.title, 'cp-search-header-title')} type="flex" align="middle">
-            <Icon type={PreviewIcons[this.props.item.type]} />
+            {ItemIcon && <ItemIcon />}
             <span>{this.name}</span>
           </Row>
         </div>
@@ -156,5 +164,4 @@ export default class DockerRegistryPreview extends React.Component {
       </div>
     );
   }
-
 }

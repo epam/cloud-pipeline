@@ -1,0 +1,143 @@
+/*
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+/* ============================================================================
+ * Cloud Pipeline — Semantic theme palette (reference, not bundled)
+ * ----------------------------------------------------------------------------
+ * This file documents the semantic CSS variables available at runtime once a
+ * theme is applied. Variables are injected dynamically by
+ * `themes/utilities/inject-css-variables.js`, scoped to `body.{theme-id}`,
+ * and shared with Ant Design via the ConfigProvider theme bridge
+ * (`themes/tokens/antd-theme-config.js`).
+ *
+ * Use these in component CSS:
+ *
+ *   .my-component {
+ *     color: var(--cp-color-text);
+ *     background: var(--cp-color-bg-elevated);
+ *     border: 1px solid var(--cp-color-border);
+ *   }
+ *
+ * The `--cp-*` value and the corresponding Ant Design v6 `token` come from
+ * the same source, so `Button type="primary"` and a `.cp-link` styled with
+ * `var(--cp-color-primary)` always agree.
+ *
+ * Custom theme authors editing `@`-keys in Appearance Management need only
+ * the recommended minimum:
+ *   @primary-color
+ *   @application-color
+ *   @application-background-color
+ *   @panel-background-color
+ *   @card-background-color
+ *   @color-success / @color-error / @color-warning
+ * Everything else is inherited via `extends` and re-projected through the
+ * legacy adapter (see `tokens/legacy-adapter.js`).
+ * ==========================================================================*/
+
+/* Brand */
+/* --cp-color-primary           ← @primary-color           ↔ antd colorPrimary       */
+/* --cp-color-primary-hover     ← @primary-hover-color     ↔ antd colorPrimaryHover  */
+/* --cp-color-primary-active    ← @primary-active-color    ↔ antd colorPrimaryActive */
+/* --cp-color-primary-on        ← @primary-text-color      ↔ antd colorTextLightSolid*/
+/* --cp-color-primary-muted     ← @primary-color-semi-transparent ↔ antd colorPrimaryBg */
+
+/* Status */
+/* --cp-color-success           ← @color-success           ↔ antd colorSuccess */
+/* --cp-color-error             ← @color-error             ↔ antd colorError   */
+/* --cp-color-warning           ← @color-warning           ↔ antd colorWarning */
+/* --cp-color-info              ← @color-info              ↔ antd colorInfo    */
+
+/* Text */
+/* --cp-color-text              ← @application-color           ↔ antd colorText          */
+/* --cp-color-text-secondary    ← @application-color-faded     ↔ antd colorTextSecondary */
+/* --cp-color-text-disabled     ← @application-color-disabled  ↔ antd colorTextDisabled  */
+/* --cp-color-text-accent       ← @application-color-accent    ↔ antd colorTextHeading   */
+
+/* Surfaces / layout */
+/* --cp-color-bg-layout            ← @application-background-color       ↔ antd colorBgLayout            */
+/* --cp-color-bg-layout-dark       ← @application-dark-background-color                                  */
+/* --cp-color-bg-container         ← @panel-background-color             ↔ antd colorBgContainer         */
+/* --cp-color-bg-elevated          ← @card-background-color              ↔ antd colorBgElevated          */
+/* --cp-color-bg-elevated-header   ← @card-header-background                                             */
+/* --cp-color-bg-input             ← @input-background                                                   */
+/* --cp-color-bg-input-disabled    ← @input-background-disabled          ↔ antd colorBgContainerDisabled */
+/* --cp-color-bg-code              ← @code-background-color                                              */
+/* --cp-color-bg-striped           ← @even-element-background                                            */
+/* --cp-color-bg-overlay           ← @modal-mask-background              ↔ antd colorBgMask              */
+
+/* Borders */
+/* --cp-color-border               ← @panel-border-color        ↔ antd colorBorder          */
+/* --cp-color-border-secondary     ← @panel-border-color-light  ↔ antd colorBorderSecondary */
+/* --cp-color-border-card          ← @card-border-color         */
+/* --cp-color-border-input         ← @input-border              */
+/* --cp-color-border-table         ← @table-border-color        */
+
+/* Interactive (lists, hovers, selection) */
+/* --cp-color-interactive-hover-text     ← @element-hover-color                                  */
+/* --cp-color-interactive-hover-bg       ← @element-hover-background-color   ↔ antd controlItemBgHover  */
+/* --cp-color-interactive-selected-text  ← @element-selected-color                               */
+/* --cp-color-interactive-selected-bg    ← @element-selected-background-color ↔ antd controlItemBgActive */
+
+/* Tables */
+/* --cp-color-table-hover-text     ← @table-element-hover-color             */
+/* --cp-color-table-hover-bg       ← @table-element-hover-background-color  */
+/* --cp-color-table-selected-text  ← @table-element-selected-color          */
+/* --cp-color-table-selected-bg    ← @table-element-selected-background-color */
+/* --cp-color-table-head-text      ← @table-head-color                      */
+
+/* Forms */
+/* --cp-color-input-text           ← @input-color                                  */
+/* --cp-color-input-placeholder    ← @input-placeholder-color   ↔ antd colorTextPlaceholder */
+/* --cp-color-input-addon-bg       ← @input-addon                                  */
+/* --cp-color-input-border-hover   ← @input-border-hover-color                     */
+/* --cp-color-input-focus-ring     ← @input-shadow-color                           */
+
+/* Buttons */
+/* --cp-color-btn-disabled-text         ← @btn-disabled-color             */
+/* --cp-color-btn-disabled-bg           ← @btn-disabled-background-color  */
+/* --cp-color-btn-danger-text           ← @btn-danger-color               */
+/* --cp-color-btn-danger-bg             ← @btn-danger-background-color    */
+/* --cp-color-btn-danger-active-text    ← @btn-danger-active-color        */
+/* --cp-color-btn-danger-active-bg      ← @btn-danger-active-background   */
+
+/* Navigation */
+/* --cp-color-nav-bg                          ← @navigation-panel-color                     */
+/* --cp-color-nav-bg-active                   ← @navigation-panel-highlighted-color         */
+/* --cp-color-nav-bg-impersonated             ← @navigation-panel-color-impersonated        */
+/* --cp-color-nav-bg-impersonated-active      ← @navigation-panel-highlighted-color-impersonated */
+/* --cp-color-nav-text                        ← @navigation-item-color                      */
+/* --cp-color-nav-runs                        ← @navigation-item-runs-color                 */
+
+/* Alerts */
+/* --cp-color-alert-{success|warning|error|info}-{bg|border|icon} ← @alert-* */
+
+/* Extended tokens (charts, diff, console, search highlight, generic colors) */
+/* --cp-color-spinner            ← @spinner                                       */
+/* --cp-color-green/red/yellow   ← @color-green / @color-red / @color-yellow      */
+/* --cp-color-blue/violet/aqua   ← @color-blue / @color-violet / @color-aqua      */
+/* --cp-color-aqua-light         ← @color-aqua-light                              */
+/* --cp-color-pink/grey          ← @color-pink / @color-grey                      */
+/* --cp-color-blue-dimmed        ← @color-blue-dimmed                             */
+/* --cp-color-sensitive          ← @color-sensitive                               */
+/* --cp-color-search-highlight-{bg|bg-inactive|text} ← @search-highlight-*        */
+/* --cp-color-console-{bg|text|text-details} ← @application-console-*             */
+/* --cp-color-menu-active        ← @menu-active-color                             */
+/* --cp-color-card-actions-active-bg ← @card-actions-active-background            */
+
+/* Assets */
+/* --cp-asset-logo               ← @logo-image                  */
+/* --cp-asset-bg-image           ← @background-image            */
+/* --cp-asset-nav-bg-image       ← @navigation-background-image */

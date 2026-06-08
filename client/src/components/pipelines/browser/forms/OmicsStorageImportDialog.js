@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {
   Button,
   Form,
@@ -24,9 +24,9 @@ import {
   Modal,
   Row,
   Select,
-  Spin,
-  Icon
+  Spin
 } from 'antd';
+import {FolderOutlined} from '@ant-design/icons';
 import roleModel from '../../../../utils/roleModel';
 import BucketBrowser from '../../launch/dialogs/BucketBrowser';
 import dataStorageRestrictedAccessCheck from '../../../../utils/data-storage-restricted-access';
@@ -97,8 +97,9 @@ const PlaceHolder = {
 };
 
 @roleModel.authenticationInfo
-@Form.create()
 export class OmicsStorageImportDialog extends React.Component {
+  formRef = React.createRef();
+
   static propTypes = {
     visible: PropTypes.bool,
     dataStorage: PropTypes.object,
@@ -129,12 +130,18 @@ export class OmicsStorageImportDialog extends React.Component {
     }
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      sourceFileTypes: computed,
+      storageType: computed
+    });
+  }
+
   get sourceFileTypes () {
     return Object.values(FileTypes[this.storageType] || {}) || [];
   }
 
-  @computed
   get storageType () {
     return this.props.dataStorage && this.props.dataStorage.type;
   }
@@ -172,8 +179,8 @@ export class OmicsStorageImportDialog extends React.Component {
 
   handleSubmit = (e) => {
     e && e.preventDefault();
-    this.props.form.validateFieldsAndScroll((err, values) => {
-      if (!err) {
+    this.formRef.current.validateFields()
+      .then((values) => {
         const sources = {
           name: values.name,
           subjectId: values.subjectId,
@@ -196,85 +203,72 @@ export class OmicsStorageImportDialog extends React.Component {
           sources.referencePath = values.referencePath;
         }
         this.props.onSubmit(sources);
-      }
-    });
+      })
+      .catch(() => {});
   };
 
-  validateRequiredField = (field, value, callback) => {
+  validateRequiredField = (rule, value, field) => {
     if (!value) {
       this.setState({[FieldValid[field]]: false});
-      // eslint-disable-next-line standard/no-callback-literal
-      callback(`${FieldLabel[field]} is required`);
-    } else {
-      this.setState({[FieldValid[field]]: true});
+      return Promise.reject(new Error(`${FieldLabel[field]} is required`));
     }
-    callback();
+    this.setState({[FieldValid[field]]: true});
+    return Promise.resolve();
   }
 
   renderRequiredStringField = (field) => {
-    const {getFieldDecorator} = this.props.form;
     return (
       <Form.Item
         className={styles.omicsStorageFormItem}
         {...this.formItemLayout}
-        label={FieldLabel[field]}>
-        {getFieldDecorator(field, {
-          initialValue: undefined,
-          rules: [{
-            required: true,
-            validator: (rule, value, callback) => this.validateRequiredField(
-              field,
-              value,
-              callback
-            )
-          }]
-        })(
-          <Input
-            style={{width: '100%'}}
-            disabled={this.props.pending} />
-        )}
+        label={FieldLabel[field]}
+        name={field}
+        rules={[{
+          required: true,
+          validator: (rule, value) => this.validateRequiredField(rule, value, field)
+        }]}
+      >
+        <Input
+          style={{width: '100%'}}
+          disabled={this.props.pending} />
       </Form.Item>
     );
   }
 
   renderFileInput = (field) => {
-    const {getFieldDecorator} = this.props.form;
     const isSourceFile1 = field === Fields.sourceFile1;
     const isReferencePath = field === Fields.referencePath;
     const rules = isSourceFile1 || (isReferencePath && this.isReferencePathRequired)
-      ? ([{
+      ? [{
         required: true,
-        validator: (rule, value, callback) => (
-          this.validateRequiredField(field, value, callback)
-        )
-      }])
+        validator: (rule, value) => this.validateRequiredField(rule, value, field)
+      }]
       : undefined;
+    const form = this.formRef.current;
     const label = (isSourceFile1 &&
       this.isFASTQ &&
-      this.props.form.getFieldValue([Fields.sourceFile1]))
+      form && form.getFieldValue(Fields.sourceFile1))
       ? `${FieldLabel[field]} 1` : FieldLabel[field];
     return (
       <Form.Item
         className={styles.omicsStorageFormItem}
         {...this.formItemLayout}
-        label={label}>
-        {getFieldDecorator(field, {
-          initialValue: undefined,
-          rules
-        })(
-          <Input
-            style={{width: '100%'}}
-            disabled={this.props.pending}
-            placeholder={PlaceHolder[field]}
-            addonBefore={
-              <div
-                className={styles.pathType}
-                onClick={() => this.openBucketBrowser(field)}>
-                <Icon type="folder" />
-              </div>
-            }
-          />
-        )}
+        label={label}
+        name={field}
+        rules={rules}
+      >
+        <Input
+          style={{width: '100%'}}
+          disabled={this.props.pending}
+          placeholder={PlaceHolder[field]}
+          addonBefore={
+            <div
+              className={styles.pathType}
+              onClick={() => this.openBucketBrowser(field)}>
+              <FolderOutlined />
+            </div>
+          }
+        />
       </Form.Item>
     );
   }
@@ -325,85 +319,83 @@ export class OmicsStorageImportDialog extends React.Component {
   };
 
   render () {
-    const {getFieldDecorator, resetFields} = this.props.form;
     const bucketTypes = ['S3'];
     const refType = ['AWS_OMICS_REF'];
     const title = this.storageType === ServiceTypes.omicsRef
       ? 'Import to reference store'
       : 'Import to sequence store';
+    const form = this.formRef.current;
     return (
       <Modal
-        maskClosable={!this.props.pending && !this.state.restrictedAccessCheckInProgress}
-        afterClose={() => resetFields()}
+        mask={{closable: !this.props.pending && !this.state.restrictedAccessCheckInProgress}}
+        afterClose={() => this.formRef.current && this.formRef.current.resetFields()}
         closable={!this.props.pending && !this.state.restrictedAccessCheckInProgress}
-        visible={this.props.visible}
+        open={this.props.visible}
         title={title}
         onCancel={this.props.onCancel}
         style={{transition: 'width 0.2s ease'}}
         width={'50%'}
         footer={this.getFooter()}>
         <Spin spinning={this.props.pending || this.state.restrictedAccessCheckInProgress}>
-          <Form id="edit-storage-form">
+          <Form
+            id="edit-storage-form"
+            ref={this.formRef}
+            initialValues={{
+              sourceFileType: this.isReferenceStorage
+                ? FileTypes[ServiceTypes.omicsRef].REFERENCE : undefined
+            }}
+          >
             {this.renderRequiredStringField(Fields.name)}
             {this.renderRequiredStringField(Fields.subjectId)}
             {this.renderRequiredStringField(Fields.sampleId)}
             <Form.Item
               className={styles.omicsStorageFormItem}
               {...this.formItemLayout}
-              label={FieldLabel[Fields.description]}>
-              {getFieldDecorator(Fields.description, {
-                initialValue: undefined
-              })(
-                <Input
-                  type="textarea"
-                  disabled={this.props.pending} />
-              )}
+              label={FieldLabel[Fields.description]}
+              name={Fields.description}
+            >
+              <Input
+                type="textarea"
+                disabled={this.props.pending} />
             </Form.Item>
             <Form.Item
               className={styles.omicsStorageFormItem}
               {...this.formItemLayout}
-              label={FieldLabel[Fields.generatedFrom]}>
-              {getFieldDecorator(Fields.generatedFrom, {
-                initialValue: undefined
-              })(
-                <Input
-                  style={{width: '100%'}}
-                  disabled={this.props.pending} />
-              )}
+              label={FieldLabel[Fields.generatedFrom]}
+              name={Fields.generatedFrom}
+            >
+              <Input
+                style={{width: '100%'}}
+                disabled={this.props.pending} />
             </Form.Item>
             <Form.Item
               className={styles.omicsStorageFormItem}
               {...this.formItemLayout}
-              label={FieldLabel[Fields.sourceFileType]}>
-              {getFieldDecorator(Fields.sourceFileType, {
-                initialValue: this.isReferenceStorage
-                  ? FileTypes[ServiceTypes.omicsRef].REFERENCE : undefined,
-                rules: [{
-                  required: true,
-                  validator: (rule, value, callback) => (
-                    this.validateRequiredField(Fields.sourceFileType, value, callback)
-                  )
-                }]
-              })(
-                <Select
-                  style={{width: '100%'}}
-                  disabled={!this.storageType}
-                  onChange={(type) => this.setState({sourceFileType: type})}
-                >
-                  {this.sourceFileTypes.map((type) => {
-                    return (
-                      <Select.Option key={type} title={type}>
-                        {type}
-                      </Select.Option>
-                    );
-                  })}
-                </Select>
-              )}
+              label={FieldLabel[Fields.sourceFileType]}
+              name={Fields.sourceFileType}
+              rules={[{
+                required: true,
+                validator: (rule, value) => this.validateRequiredField(rule, value, Fields.sourceFileType)
+              }]}
+            >
+              <Select
+                style={{width: '100%'}}
+                disabled={!this.storageType}
+                onChange={(type) => this.setState({sourceFileType: type})}
+              >
+                {this.sourceFileTypes.map((type) => {
+                  return (
+                    <Select.Option key={type} title={type}>
+                      {type}
+                    </Select.Option>
+                  );
+                })}
+              </Select>
             </Form.Item>
             {this.renderFileInput(Fields.sourceFile1)}
             {
               this.isFASTQ &&
-              this.props.form.getFieldValue([Fields.sourceFile1]) &&
+              form && form.getFieldValue(Fields.sourceFile1) &&
               this.renderFileInput(Fields.sourceFile2)
             }
             {this.isSequenceStorage && this.renderFileInput(Fields.referencePath)}
@@ -452,13 +444,15 @@ export class OmicsStorageImportDialog extends React.Component {
 
   selectBucketPath = (path) => {
     const {sourceFileField, referencePathField} = this.state;
-    if (sourceFileField) {
-      this.props.form.setFieldsValue({[Fields[sourceFileField]]: path});
+    if (this.formRef.current) {
+      if (sourceFileField) {
+        this.formRef.current.setFieldsValue({[sourceFileField]: path});
+      }
+      if (referencePathField) {
+        this.formRef.current.setFieldsValue({[referencePathField]: path});
+      }
+      this.formRef.current.validateFields().catch(() => {});
     }
-    if (referencePathField) {
-      this.props.form.setFieldsValue({[Fields[referencePathField]]: path});
-    }
-    this.props.form.validateFieldsAndScroll();
     this.closeBucketBrowser();
   };
 

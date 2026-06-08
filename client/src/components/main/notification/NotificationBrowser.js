@@ -15,18 +15,20 @@
  */
 
 import React from 'react';
-import {observer, inject} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {
+  observer,
+  inject} from 'mobx-react';
+import {computed, observable, makeObservable} from 'mobx';
 import moment from 'moment-timezone';
 import {
   Button,
   Pagination,
-  Icon,
   Modal,
   message,
   Select,
   Spin
 } from 'antd';
+import {MailOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import ReadMessage from '../../../models/notifications/ReadMessage';
 import NotificationsRequest from '../../../models/notifications/CurrentUserNotificationsPaging';
@@ -55,7 +57,7 @@ function dateSorter (a, b) {
   }
 };
 
-@inject('userNotifications', 'router')
+@inject('userNotifications', 'routing')
 @observer
 export default class NotificationBrowser extends React.Component {
   state = {
@@ -64,16 +66,22 @@ export default class NotificationBrowser extends React.Component {
     pending: false,
     mode: MODES.new
   }
-
-  @observable
   _notifications;
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      _notifications: observable,
+      notifications: computed,
+      totalNotifications: computed
+    });
+  }
 
   componentDidMount () {
     const {currentPage, mode} = this.state;
     this.fetchPage(currentPage, mode === MODES.read);
   }
 
-  @computed
   get notifications () {
     if (!this._notifications) {
       return [];
@@ -81,7 +89,6 @@ export default class NotificationBrowser extends React.Component {
     return [...(this._notifications.elements || [])].sort(dateSorter);
   }
 
-  @computed
   get totalNotifications () {
     if (!this._notifications) {
       return 0;
@@ -258,13 +265,7 @@ export default class NotificationBrowser extends React.Component {
                     styles.notificationCell,
                     styles.notificationStatus
                   )}>
-                    <Icon
-                      className={notification.isRead
-                        ? 'cp-disabled'
-                        : 'cp-setting-message'
-                      }
-                      type="mail"
-                    />
+                    <MailOutlined className={notification.isRead ? 'cp-disabled' : 'cp-setting-message'} />
                   </div>
                   <b className={classNames(
                     styles.notificationCell,
@@ -303,7 +304,7 @@ export default class NotificationBrowser extends React.Component {
                   >
                     <NotificationActions
                       notification={notification}
-                      router={this.props.router}
+                      router={this.props.routing}
                     />
                   </div>
                 </div>
@@ -393,7 +394,7 @@ export default class NotificationBrowser extends React.Component {
             onCancel={() => this.readNotification(previewNotification)}
             footer={false}
             title={(<b>{previewNotification.subject}</b>)}
-            visible
+            open
           >
             <PreviewNotification
               text={previewNotification.text}

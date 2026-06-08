@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import {getHDScreenshotSettings} from '../../cellprofiler/model/analysis/job-utilities';
 import AnalysisApi from '../../cellprofiler/model/analysis/analysis-api';
 import dataStorageAvailable from '../../../../models/dataStorage/DataStorageAvailable';
@@ -59,21 +59,21 @@ function zPlanesAreEqual (zPlanesA, zPlanesB) {
 }
 
 class HcsMergedImageSource {
-  @observable path;
-  @observable pathMask;
-  @observable storageId;
-  @observable sequenceId;
-  @observable timePoint = 0;
-  @observable zPlanes = [0];
-  @observable mergeZPlanes = false;
-  @observable well = undefined;
-  @observable imageIds;
-  @observable channels = {};
-  @observable screenshotEndpointAPI;
-  @observable screenshotEndpointAPIError;
-  @observable format = DEFAULT_IMAGE_FORMAT;
-  @observable omeTiff = undefined;
-  @observable urlsManager = new HCSURLsManager(undefined);
+  path;
+  pathMask;
+  storageId;
+  sequenceId;
+  timePoint = 0;
+  zPlanes = [0];
+  mergeZPlanes = false;
+  well = undefined;
+  imageIds;
+  channels = {};
+  screenshotEndpointAPI;
+  screenshotEndpointAPIError;
+  format = DEFAULT_IMAGE_FORMAT;
+  omeTiff = undefined;
+  urlsManager = new HCSURLsManager(undefined);
   /**
    * @type {ObjectStorage}
    */
@@ -81,6 +81,31 @@ class HcsMergedImageSource {
   listeners = [];
 
   constructor () {
+    makeObservable(this, {
+      path: observable,
+      pathMask: observable,
+      storageId: observable,
+      sequenceId: observable,
+      timePoint: observable,
+      zPlanes: observable,
+      mergeZPlanes: observable,
+      well: observable,
+      imageIds: observable,
+      channels: observable,
+      screenshotEndpointAPI: observable,
+      screenshotEndpointAPIError: observable,
+      format: observable,
+      omeTiff: observable,
+      urlsManager: observable,
+      available: computed,
+      initialized: computed,
+      omeTiffAvailable: computed,
+      omeTiffPending: computed,
+      omeTiffStorageId: computed,
+      omeTiffPath: computed,
+      omeTiffOffsetsPath: computed,
+      omeTiffGenerationError: computed
+    });
     (this.initialize)();
   }
 
@@ -119,7 +144,6 @@ class HcsMergedImageSource {
     }
   }
 
-  @computed
   get available () {
     return this.imageIds &&
       this.imageIds.length > 0 &&
@@ -130,12 +154,10 @@ class HcsMergedImageSource {
       Object.keys(this.channels || {}).length > 0;
   }
 
-  @computed
   get initialized () {
     return !!this.screenshotEndpointAPI;
   }
 
-  @computed
   get omeTiffAvailable () {
     return this.omeTiff &&
       !this.omeTiff.pending &&
@@ -143,27 +165,22 @@ class HcsMergedImageSource {
       this.omeTiff.path;
   }
 
-  @computed
   get omeTiffPending () {
     return this.omeTiff && this.omeTiff.pending;
   }
 
-  @computed
   get omeTiffStorageId () {
     return this.omeTiff && this.omeTiff.storageId;
   }
 
-  @computed
   get omeTiffPath () {
     return this.omeTiff && this.omeTiff.path;
   }
 
-  @computed
   get omeTiffOffsetsPath () {
     return this.omeTiff && this.omeTiff.offsetsPath;
   }
 
-  @computed
   get omeTiffGenerationError () {
     return this.omeTiff && this.omeTiff.error;
   }

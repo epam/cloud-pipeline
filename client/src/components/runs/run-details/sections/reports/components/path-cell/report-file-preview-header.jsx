@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Icon} from 'antd';
+import {DownloadOutlined, ExportOutlined} from '@ant-design/icons';
 import {FileExternalPreview} from '../../../../../../special/file-preview';
 import DataStorageFileDownloadButton
 from '../../../../../../special/data-storage-file-download-button';
@@ -47,7 +47,7 @@ export const ReportFilePreviewHeader = (
           className={styles.reportFilePreviewHeaderAction}
         >
           <span style={{display: 'inline-flex', alignItems: 'center'}}>
-            <Icon type="export" style={{marginRight: 5}} />
+            <ExportOutlined style={{marginRight: 5}} />
             <span>Open in a new tab</span>
           </span>
         </FileExternalPreview>
@@ -57,7 +57,7 @@ export const ReportFilePreviewHeader = (
           className={styles.reportFilePreviewHeaderAction}
         >
           <span style={{display: 'inline-flex', alignItems: 'center'}}>
-            <Icon type="download" style={{marginRight: 5}} />
+            <DownloadOutlined style={{marginRight: 5}} />
             <span>Download file</span>
           </span>
         </DataStorageFileDownloadButton>

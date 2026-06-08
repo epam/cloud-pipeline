@@ -17,11 +17,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {
-  Icon,
-  Menu,
-  Dropdown
-} from 'antd';
+import {Dropdown} from 'antd';
+import {DownOutlined} from '@ant-design/icons';
 import ToolImage from '../../../../../models/tools/ToolImage';
 import styles from './tool-selector.css';
 
@@ -77,31 +74,26 @@ class ToolsSelector extends React.Component {
     this.onClick(Number(key), domEvent);
   };
 
-  renderDropdownMenu = () => {
+  getMenuItems = () => {
     const {tools} = this.props;
     if (!tools || !tools.length) {
-      return null;
+      return [];
     }
-    return (
-      <Menu
-        onClick={this.onMenuClick}
-      >
-        {tools.map(tool => (
-          <Menu.Item
-            key={tool.id}
-            className={styles.dropdownItem}
-          >
-            <ToolIcon
-              toolId={tool.id}
-              iconId={tool.iconId}
-            />
-            <span className={styles.toolName}>
-              {tool.image}
-            </span>
-          </Menu.Item>)
-        )}
-      </Menu>
-    );
+    return tools.map(tool => ({
+      key: tool.id,
+      className: styles.dropdownItem,
+      label: (
+        <>
+          <ToolIcon
+            toolId={tool.id}
+            iconId={tool.iconId}
+          />
+          <span className={styles.toolName}>
+            {tool.image}
+          </span>
+        </>
+      )
+    }));
   };
 
   render () {
@@ -130,7 +122,9 @@ class ToolsSelector extends React.Component {
           />
         </span>
       ) : (
-        <Dropdown overlay={this.renderDropdownMenu()}>
+        <Dropdown
+          menu={{items: this.getMenuItems(), onClick: this.onMenuClick}}
+        >
           <span
             className={classNames(styles.selectorBtn, className)}
             onClick={(e) => this.onClick(tools[0].id, e)}
@@ -142,10 +136,7 @@ class ToolsSelector extends React.Component {
               toolName={tools[0].image}
               titleStyle={titleStyle}
             />
-            <Icon
-              type="down"
-              style={{marginLeft: '10px'}}
-            />
+            <DownOutlined style={{marginLeft: '10px'}} />
           </span>
         </Dropdown>
       )

@@ -18,13 +18,13 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {
-  Icon,
   Input,
   Dropdown,
   Checkbox,
   Tag,
   Spin
 } from 'antd';
+import {DownOutlined} from '@ant-design/icons';
 import styles from './styles.css';
 
 class MultiSelect extends React.Component {
@@ -160,11 +160,11 @@ class MultiSelect extends React.Component {
     const {dropdownVisible} = this.state;
     return (
       <Dropdown
-        overlay={this.renderDropdown()}
+        popupRender={() => this.renderDropdown()}
         trigger={['click']}
-        visible={dropdownVisible}
+        open={dropdownVisible}
         disabled={disabled || pending}
-        onVisibleChange={this.onVisibleChange}
+        onOpenChange={this.onVisibleChange}
         placement="bottomLeft"
       >
         <div
@@ -182,12 +182,11 @@ class MultiSelect extends React.Component {
               size="small"
             />) : this.renderTags()
           }
-          <Icon
+          <DownOutlined
             className={classNames(
-              styles.inputArrow,
-              {[styles.expanded]: dropdownVisible}
-            )}
-            type="down"
+              styles.inputArrow, {
+                [styles.expanded]: dropdownVisible})
+            }
             style={{fontSize: '10px'}}
           />
         </div>
@@ -196,7 +195,7 @@ class MultiSelect extends React.Component {
   }
 }
 
-MultiSelect.PropTypes = {
+MultiSelect.propTypes = {
   options: PropTypes.arrayOf(PropTypes.string),
   values: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
   onChange: PropTypes.func,

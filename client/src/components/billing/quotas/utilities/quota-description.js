@@ -17,6 +17,7 @@
 import React from 'react';
 import classNames from 'classnames';
 import {Button, Modal} from 'antd';
+import {CloseOutlined} from '@ant-design/icons';
 
 import QuotaTarget from './quota-target';
 import {QuotaAction} from './quota-actions';
@@ -102,9 +103,9 @@ function QuotaDescription (
           }
         </div>
         <Button
-          icon="close"
+          icon={<CloseOutlined />}
           size="small"
-          type="danger"
+          danger
           onClick={onRemoveQuota}
         />
       </div>

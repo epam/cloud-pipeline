@@ -15,17 +15,19 @@
  */
 
 import Remote from '../basic/Remote';
-import {action} from 'mobx';
+import {makeObservable, override} from 'mobx';
 
 class PipelineLanguage extends Remote {
   url;
 
   constructor (id, version) {
     super();
+    makeObservable(this, {
+      update: override
+    });
     this.url = `/pipeline/${id}/language?version=${version}`;
   };
 
-  @action
   update (value) {
     this._response = value;
     if (value.status && value.status === 'OK') {

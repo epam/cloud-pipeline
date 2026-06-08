@@ -17,12 +17,12 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import IssuesLoad from '../../../models/issues/IssuesLoad';
 import IssueCreate from '../../../models/issues/IssueCreate';
 import LoadingView from '../../special/LoadingView';
 import moment from 'moment-timezone';
-import {Button, Icon, message, Row, Table, Alert} from 'antd';
+import {Button, message, Row, Table, Alert} from 'antd';
 import Issue from './Issue';
 import EditIssueForm from './controls/EditIssueForm';
 import {processUnusedAttachments} from './utilities/UnusedAttachmentsProcessor';
@@ -73,6 +73,13 @@ export default class Issues extends localization.LocalizedReactComponent {
     selectedIssue: null
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      issues: computed
+    });
+  }
+
   operationWrapper = (operation) => (...props) => {
     this.setState({
       operationInProgress: true
@@ -83,6 +90,7 @@ export default class Issues extends localization.LocalizedReactComponent {
       });
     });
   };
+
   renderLabels = (labels) => {
     return (labels || []).map((label, index) => {
       return (
@@ -92,6 +100,7 @@ export default class Issues extends localization.LocalizedReactComponent {
       );
     });
   };
+
   issuesColumns = [
     {
       dataIndex: 'name',
@@ -140,11 +149,13 @@ export default class Issues extends localization.LocalizedReactComponent {
       createNewIssueDialogVisible: true
     });
   };
+
   closeCreateIssueDialog = () => {
     this.setState({
       createNewIssueDialogVisible: false
     });
   };
+
   createIssue = async (values) => {
     const hide = message.loading(`Creating ${this.localizedString('issue')}...`, 0);
     const request = new IssueCreate();
@@ -165,10 +176,11 @@ export default class Issues extends localization.LocalizedReactComponent {
       message.error(request.error, 5);
     } else {
       this.closeCreateIssueDialog();
-      this.props.issues && await this.props.issues.fetch();
-      this.props.onReloadIssues && await this.props.onReloadIssues();
+      this.props.issues && (await this.props.issues.fetch());
+      this.props.onReloadIssues && (await this.props.onReloadIssues());
     }
   };
+
   onSelectIssue = (issue, shouldReload) => {
     this.setState({
       selectedIssue: issue,
@@ -183,7 +195,6 @@ export default class Issues extends localization.LocalizedReactComponent {
     });
   };
 
-  @computed
   get issues () {
     if (this.props.issues && this.props.issues.loaded) {
       return (this.props.issues.value || []).map(i => i);
@@ -194,7 +205,7 @@ export default class Issues extends localization.LocalizedReactComponent {
   render () {
     if (!roleModel.readAllowed(this.props.entity)) {
       return (
-        <Alert type="error" message={`You have no permissions to view ${this.localizedString('issue')}s`} />
+        <Alert type="error" title={`You have no permissions to view ${this.localizedString('issue')}s`} />
       );
     }
     if (this.props.issues && this.props.issues.pending && !this.props.issues.loaded) {
@@ -223,7 +234,7 @@ export default class Issues extends localization.LocalizedReactComponent {
                   size="small"
                   onClick={this.props.onNavigateBack}
                   style={{marginLeft: 2, marginRight: 5}}>
-                  <Icon type="arrow-left" />
+                  <ArrowLeftOutlined />
                 </Button>
               }
               {
@@ -264,7 +275,7 @@ export default class Issues extends localization.LocalizedReactComponent {
               rowKey="id"
               rowClassName={() => styles.issueRow}
               showHeader={false}
-              onRowClick={(item) => this.onSelectIssue(item)}
+              onRow={(item) => ({onClick: () => this.onSelectIssue(item)})}
               columns={this.issuesColumns}
               dataSource={this.issues}
               pagination={false}
@@ -277,7 +288,7 @@ export default class Issues extends localization.LocalizedReactComponent {
     }
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.entityId !== this.props.entityId || nextProps.entityClass !== this.props.entityClass) {
       this.setState({
         selectedIssue: null,

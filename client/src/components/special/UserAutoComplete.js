@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
 import {AutoComplete, Row} from 'antd';
 import UserFind from '../../models/user/UserFind';
@@ -24,7 +24,6 @@ import UserFind from '../../models/user/UserFind';
 @inject('authenticatedUserInfo')
 @observer
 export default class UserAutoComplete extends React.Component {
-
   static propTypes = {
     onChange: PropTypes.func,
     value: PropTypes.string,
@@ -42,6 +41,13 @@ export default class UserAutoComplete extends React.Component {
     operationInProgress: false
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      myUserName: computed
+    });
+  }
+
   operationWrapper = (operation) => (...props) => {
     this.setState({
       operationInProgress: true
@@ -52,6 +58,7 @@ export default class UserAutoComplete extends React.Component {
       });
     });
   };
+
   lastFetchId = 0;
   findUser = (value) => {
     this.lastFetchId += 1;
@@ -76,6 +83,7 @@ export default class UserAutoComplete extends React.Component {
       }
     });
   };
+
   onBlur = () => {
     if (this.state.value === null) {
       this.setState({
@@ -83,8 +91,9 @@ export default class UserAutoComplete extends React.Component {
       });
     }
   };
-  onUserSelect = (key) => {
-    const [user] = this.state.fetchedUsers.filter(u => `${u.id}` === `${key}`);
+
+  onUserSelect = (value) => {
+    const [user] = this.state.fetchedUsers.filter(u => u.userName === value);
     if (user) {
       this.setState({
         valueInput: user.userName,
@@ -94,6 +103,7 @@ export default class UserAutoComplete extends React.Component {
       });
     }
   };
+
   renderUserName = (user) => {
     if (user.attributes) {
       const getAttributesValues = () => {
@@ -117,7 +127,6 @@ export default class UserAutoComplete extends React.Component {
     }
   };
 
-  @computed
   get myUserName () {
     if (this.props.authenticatedUserInfo.loaded) {
       return this.props.authenticatedUserInfo.value.userName;
@@ -140,7 +149,6 @@ export default class UserAutoComplete extends React.Component {
           size={this.props.size || 'default'}
           style={{flex: 1, width: '100%'}}
           placeholder={this.props.placeholder}
-          optionLabelProp="text"
           value={this.state.valueInput !== null ? this.state.valueInput : this.props.value}
           onPressEnter={this.props.onPressEnter}
           onBlur={this.onBlur}
@@ -151,7 +159,7 @@ export default class UserAutoComplete extends React.Component {
               return (
                 <AutoComplete.Option
                   key={user.id}
-                  text={user.userName}>
+                  value={user.userName}>
                   {this.renderUserName(user)}
                 </AutoComplete.Option>
               );
@@ -162,7 +170,7 @@ export default class UserAutoComplete extends React.Component {
     );
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.value !== this.props.value) {
       this.setState({
         value: null,

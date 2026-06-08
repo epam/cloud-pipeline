@@ -17,9 +17,9 @@
 import React from 'react';
 import classNames from 'classnames';
 import {
-  Button,
-  Icon
+  Button
 } from 'antd';
+import {DeleteOutlined, DownloadOutlined, EditOutlined, FileOutlined, FolderOutlined} from '@ant-design/icons';
 import DOCUMENT_TYPES from '../document-types';
 import UserName from '../../../../special/UserName';
 import roleModel from '../../../../../utils/roleModel';
@@ -28,9 +28,9 @@ import displayDate from '../../../../../utils/displayDate';
 import styles from './table.css';
 
 const FILES = {
-  [DOCUMENT_TYPES.blob]: <Icon type="file" />,
-  [DOCUMENT_TYPES.tree]: <Icon type="folder" />,
-  navback: <Icon type="folder" />
+  [DOCUMENT_TYPES.blob]: <FileOutlined />,
+  [DOCUMENT_TYPES.tree]: <FolderOutlined />,
+  navback: <FolderOutlined />
 };
 
 const renderActions = (item) => {
@@ -46,7 +46,7 @@ const renderActions = (item) => {
         data-action="download"
         size="small"
       >
-        <Icon type="download" />
+        <DownloadOutlined />
       </Button>
     ));
     if (roleModel.writeAllowed(item)) {
@@ -57,18 +57,18 @@ const renderActions = (item) => {
           data-action="edit"
           size="small"
         >
-          <Icon type="edit" />
+          <EditOutlined />
         </Button>
       ));
       actions.push((
         <Button
           key="delete"
-          type="danger"
+          danger
           className={styles.action}
           data-action="delete"
           size="small"
         >
-          <Icon type="delete" />
+          <DeleteOutlined />
         </Button>
       ));
     }
@@ -82,18 +82,18 @@ const renderActions = (item) => {
           data-action="edit"
           size="small"
         >
-          <Icon type="edit" />
+          <EditOutlined />
         </Button>
       ));
       actions.push((
         <Button
           key="delete"
-          type="danger"
+          danger
           className={styles.action}
           data-action="delete"
           size="small"
         >
-          <Icon type="delete" />
+          <DeleteOutlined />
         </Button>
       ));
     }

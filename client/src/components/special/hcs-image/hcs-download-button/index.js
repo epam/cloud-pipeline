@@ -16,9 +16,15 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
-import {Button, Dropdown, Icon, message} from 'antd';
-import Menu, {MenuItem} from 'rc-menu';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {Button,
+  Dropdown,
+  message,
+  Space
+} from 'antd';
+import {CameraFilled, DownloadOutlined, DownOutlined} from '@ant-design/icons';
 import FileSaver from 'file-saver';
 import {
   downloadAvailable as downloadCurrentTiffAvailable, downloadCurrentTiff
@@ -97,32 +103,22 @@ class HCSDownloadButton extends React.Component {
       .then(blob => FileSaver.saveAs(blob, hcsVideoSource.getVideoFileName(videoUrl)));
   };
 
-  renderScreenshotMenu = (items) => {
-    const handle = ({key}) => {
-      switch (key) {
-        case 'tiff':
-        case 'png':
-          (this.handleHighResolutionScreenshotDownload)(key);
-          break;
-        case 'default':
-        default:
-          this.handleDownloadScreenshot();
-          break;
-      }
-    };
-    return (
-      <Menu
-        onClick={handle}
-        selectedKeys={[]}
-        style={{cursor: 'pointer'}}
-      >
-        {items.map(item => (
-          <MenuItem key={item.key}>
-            {item.text}
-          </MenuItem>
-        ))}
-      </Menu>
-    );
+  getScreenshotMenuItems = (items) => items.map(item => ({
+    key: item.key,
+    label: item.text
+  }));
+
+  handleScreenshotMenuClick = ({key}) => {
+    switch (key) {
+      case 'tiff':
+      case 'png':
+        this.handleHighResolutionScreenshotDownload(key);
+        break;
+      case 'default':
+      default:
+        this.handleDownloadScreenshot();
+        break;
+    }
   };
 
   render () {
@@ -156,7 +152,7 @@ class HCSDownloadButton extends React.Component {
           {
             showTitle
               ? ('Download current video')
-              : (<Icon type="download" className="cp-larger" />)
+              : (<DownloadOutlined className="cp-larger" />)
           }
         </Button>
       );
@@ -173,7 +169,7 @@ class HCSDownloadButton extends React.Component {
           {
             showTitle
               ? ('Download current image')
-              : (<Icon type="camera" className="cp-larger" />)
+              : (<CameraFilled className="cp-larger" />)
           }
         </Button>
       );
@@ -232,16 +228,29 @@ class HCSDownloadButton extends React.Component {
     }].filter(item => item.visible());
     if (menuItems.length > 1) {
       return (
-        <Dropdown.Button
-          className={className}
-          style={style}
-          disabled={!downloadCurrentTiffAvailable(hcsImageViewer)}
-          onClick={this.handleDownloadScreenshot}
-          overlay={this.renderScreenshotMenu(menuItems)}
-          size={size}
-        >
-          <Icon type="camera" className="cp-larger" />
-        </Dropdown.Button>
+        <Space.Compact className={className} style={style}>
+          <Button
+            disabled={!downloadCurrentTiffAvailable(hcsImageViewer)}
+            onClick={this.handleDownloadScreenshot}
+            size={size}
+          >
+            <CameraFilled className="cp-larger" />
+          </Button>
+          <Dropdown
+            menu={{
+              items: this.getScreenshotMenuItems(menuItems),
+              onClick: this.handleScreenshotMenuClick,
+              style: {cursor: 'pointer'}
+            }}
+            trigger={['click']}
+          >
+            <Button
+              disabled={!downloadCurrentTiffAvailable(hcsImageViewer)}
+              size={size}
+              icon={<DownOutlined />}
+            />
+          </Dropdown>
+        </Space.Compact>
       );
     }
     return (
@@ -252,7 +261,7 @@ class HCSDownloadButton extends React.Component {
         onClick={this.handleDownloadScreenshot}
         size={size}
       >
-        <Icon type="camera" className="cp-larger" />
+        <CameraFilled className="cp-larger" />
       </Button>
     );
   }

@@ -15,8 +15,12 @@
  */
 
 import React from 'react';
-import {observer} from 'mobx-react';
-import {Button, Icon, Row} from 'antd';
+import {
+  observer} from 'mobx-react';
+import {Button,
+  Row
+} from 'antd';
+import {CaretLeftOutlined, CaretRightOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import styles from './storage-pagination.css';
 
@@ -43,8 +47,8 @@ function StoragePagination ({className, style, storage}) {
         disabled={!storage.currentPagination.first}
         size="small"
       >
-        <Icon style={{marginRight: '-3px'}} type="caret-left" />
-        <Icon type="caret-left" />
+        <CaretLeftOutlined style={{marginRight: '-3px'}} />
+        <CaretLeftOutlined />
       </Button>
       <Button
         id="prev-page-button"
@@ -53,7 +57,7 @@ function StoragePagination ({className, style, storage}) {
         style={{margin: 3}}
         size="small"
       >
-        <Icon type="caret-left" />
+        <CaretLeftOutlined />
       </Button>
       <span
         className={classNames(
@@ -71,7 +75,7 @@ function StoragePagination ({className, style, storage}) {
         style={{margin: 3}}
         size="small"
       >
-        <Icon type="caret-right" />
+        <CaretRightOutlined />
       </Button>
     </Row>
   );

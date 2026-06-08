@@ -105,7 +105,7 @@ export default class CoreNodes extends React.Component {
       return (
         <div style={{display: 'flex', flex: 1}}>
           <div style={{width: '100%'}}>
-            <Alert message={error} type="error" style={{width: '100%'}} />
+            <Alert title={error} type="error" style={{width: '100%'}} />
           </div>
         </div>
       );

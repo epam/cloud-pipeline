@@ -16,22 +16,24 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {computed, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import {
   message,
   Popover,
-  Row,
-  Icon
+  Row
 } from 'antd';
+import {CaretLeftOutlined, CloseOutlined} from '@ant-design/icons';
 import ToolsSelector, {ToolIcon} from './tools-selector';
 import OpenToolInfo from './open-tool-info';
 import FileTools from './file-tools';
 import fetchActiveJobs from './fetch-active-jobs';
 import {PipelineRunner} from '../../../../models/pipelines/PipelineRunner';
 import getToolLaunchingOptions
-  from '../../../pipelines/launch/utilities/get-tool-launching-options';
+from '../../../pipelines/launch/utilities/get-tool-launching-options';
 import styles from './open-in-tool.css';
 
 const fileToolsRequest = new FileTools();
@@ -47,6 +49,18 @@ class OpenInToolAction extends React.Component {
     activeJobsFetching: false,
     activeTool: undefined,
     activeJob: undefined
+  }
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      openInFileTools: computed,
+      tools: computed,
+      filteredFileTools: computed,
+      activeToolTemplate: computed,
+      storage: computed,
+      toolLaunchingStores: computed
+    });
   }
 
   componentDidMount () {
@@ -71,7 +85,6 @@ class OpenInToolAction extends React.Component {
     return undefined;
   }
 
-  @computed
   get openInFileTools () {
     const {openInFileTools} = this.props;
     if (openInFileTools.loaded) {
@@ -80,7 +93,6 @@ class OpenInToolAction extends React.Component {
     return undefined;
   }
 
-  @computed
   get tools () {
     const {dockerRegistries} = this.props;
     if (dockerRegistries.loaded) {
@@ -103,7 +115,6 @@ class OpenInToolAction extends React.Component {
     return [];
   }
 
-  @computed
   get filteredFileTools () {
     if (this.openInFileTools) {
       return this.openInFileTools
@@ -113,7 +124,6 @@ class OpenInToolAction extends React.Component {
     return [];
   }
 
-  @computed
   get activeToolTemplate () {
     const {activeTool} = this.state;
     if (!activeTool) {
@@ -124,7 +134,6 @@ class OpenInToolAction extends React.Component {
     return (tool || {}).template;
   }
 
-  @computed
   get storage () {
     const {storageId, dataStorages} = this.props;
     if (storageId && dataStorages.loaded) {
@@ -133,7 +142,6 @@ class OpenInToolAction extends React.Component {
     return undefined;
   }
 
-  @computed
   get toolLaunchingStores () {
     const {preferences, awsRegions} = this.props;
     return {
@@ -282,11 +290,8 @@ class OpenInToolAction extends React.Component {
             >
               Select tool to open:
             </span>
-            <Icon
-              type="close"
-              className={classNames(styles.close, 'cp-close-button')}
-              onClick={() => this.modalVisibilityChanged(false)}
-            />
+            <CloseOutlined className={classNames(styles.close, 'cp-close-button')}
+              onClick={() => this.modalVisibilityChanged(false)} />
           </Row>
           <div className={styles.toolSelectionContainer}>
             {this.filteredFileTools.map(tool => (
@@ -330,7 +335,7 @@ class OpenInToolAction extends React.Component {
                   onClick={this.clearToolSelection}
                   className={styles.tabHeadingBtn}
                 >
-                  <Icon type="caret-left" />
+                  <CaretLeftOutlined />
                 </div>
                 <span className={styles.tabHeading}>
                   <ToolIcon
@@ -344,19 +349,13 @@ class OpenInToolAction extends React.Component {
                   {activeTool.image}
                 </span>
               </div>
-              <Icon
-                type="close"
-                className={classNames(styles.close, 'cp-close-button')}
-                onClick={() => this.modalVisibilityChanged(false)}
-              />
+              <CloseOutlined className={classNames(styles.close, 'cp-close-button')}
+                onClick={() => this.modalVisibilityChanged(false)} />
             </Row>
           )}
           {this.filteredFileTools.length === 1 && (
-            <Icon
-              type="close"
-              className={classNames(styles.close, 'cp-close-button', styles.absolute)}
-              onClick={() => this.modalVisibilityChanged(false)}
-            />
+            <CloseOutlined className={classNames(styles.close, 'cp-close-button', styles.absolute)}
+              onClick={() => this.modalVisibilityChanged(false)} />
           )}
           {this.renderToolInfo()}
         </div>
@@ -385,17 +384,17 @@ class OpenInToolAction extends React.Component {
     }
     return (
       <Popover
-        onVisibleChange={this.modalVisibilityChanged}
-        visible={modalVisible}
+        onOpenChange={this.modalVisibilityChanged}
+        open={modalVisible}
         trigger={['click']}
         title={false}
         content={this.renderModalContent()}
         placement="left"
-        overlayStyle={{
+        styles={{root: {
           width: '35vw',
           minWidth: 200
-        }}
-        overlayClassName={styles.modalOverlay}
+        }}}
+        classNames={{root: styles.modalOverlay}}
       >
         <ToolsSelector
           className={classNames(styles.link, className)}

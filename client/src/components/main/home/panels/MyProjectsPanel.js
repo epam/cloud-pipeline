@@ -17,8 +17,10 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {withRouter} from '../../../../utils/with-router';
+import {computed, makeObservable} from 'mobx';
 import {Alert, Row} from 'antd';
+import {HddOutlined, CompassOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import LoadingView from '../../../special/LoadingView';
 import CardsPanel from './components/CardsPanel';
@@ -34,20 +36,30 @@ const MAX_TAGS = 5;
 @inject('projects', 'hiddenObjects')
 @localization.localizedComponent
 @observer
-export default class MyProjectsPanel extends localization.LocalizedReactComponent {
-
+class MyProjectsPanel extends localization.LocalizedReactComponent {
   static propTypes = {
     panelKey: PropTypes.string,
     onInitialize: PropTypes.func
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      projects: computed
+    });
+  }
+
   searchProjectFn = (project, search) => {
-    return !search || search.length === 0 ||
+    return (
+      !search ||
+      search.length === 0 ||
       project.name.toLowerCase().indexOf(search.toLowerCase()) >= 0 ||
-      project.tags.filter(t => (t.value || '').toLowerCase().indexOf(search.toLowerCase()) >= 0).length > 0;
+      project.tags.filter(
+        (t) => (t.value || '').toLowerCase().indexOf(search.toLowerCase()) >= 0
+      ).length > 0
+    );
   };
 
-  @computed
   get projects () {
     if (this.props.projects.loaded && this.props.hiddenObjects.loaded) {
       return (this.props.projects.value.childFolders || []).map(project => {
@@ -130,7 +142,7 @@ export default class MyProjectsPanel extends localization.LocalizedReactComponen
     const actions = [
       {
         title: 'History',
-        icon: 'compass',
+        icon: CompassOutlined,
         action: history
       }
     ];
@@ -139,13 +151,13 @@ export default class MyProjectsPanel extends localization.LocalizedReactComponen
       if (storages.length === 1) {
         actions.push({
           title: 'Data storage',
-          icon: 'hdd',
+          icon: HddOutlined,
           action: () => this.props.router && this.props.router.push(`/storage/${storages[0].id}`)
         });
       } else {
         actions.push({
           title: 'Data storages',
-          icon: 'hdd',
+          icon: HddOutlined,
           overlay: (
             <div style={{display: 'flex', flexDirection: 'column'}}>
               {
@@ -202,13 +214,13 @@ export default class MyProjectsPanel extends localization.LocalizedReactComponen
       return <LoadingView />;
     }
     if (this.props.projects.error) {
-      return <Alert type="warning" message={this.props.projects.error} />;
+      return <Alert type="warning" title={this.props.projects.error} />;
     }
     if (!this.props.authenticatedUserInfo.loaded && this.props.authenticatedUserInfo.pending) {
       return <LoadingView />;
     }
     if (this.props.authenticatedUserInfo.error) {
-      return (<Alert type="warning" message={this.props.authenticatedUserInfo.error} />);
+      return (<Alert type="warning" title={this.props.authenticatedUserInfo.error} />);
     }
     return (
       <div className={styles.container} style={{display: 'flex', flexDirection: 'column'}}>
@@ -226,3 +238,5 @@ export default class MyProjectsPanel extends localization.LocalizedReactComponen
     this.props.projects.fetch();
   }
 }
+
+export default withRouter(MyProjectsPanel);

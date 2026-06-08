@@ -17,9 +17,10 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import AWSRegionTag from '../../special/AWSRegionTag';
-import {Icon, Row} from 'antd';
+import {Row} from 'antd';
+import {CaretRightOutlined, LoadingOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
@@ -93,7 +94,14 @@ export default class S3FilePreview extends React.Component {
     hideInfo: false
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      filePreview: computed,
+      structuredTableData: computed
+    });
+  }
+
   get filePreview () {
     if (this.props.preview) {
       if (this.props.preview.pending) {
@@ -119,7 +127,6 @@ export default class S3FilePreview extends React.Component {
     return null;
   }
 
-  @computed
   get structuredTableData () {
     if (this.filePreview && this.filePreview.preview &&
       this.props.item && this.props.item.id &&
@@ -154,7 +161,7 @@ export default class S3FilePreview extends React.Component {
     if (this.props.dataStorageInfo.pending) {
       return (
         <Row className={styles.info}>
-          <Icon type="loading" />
+          <LoadingOutlined />
         </Row>
       );
     }
@@ -184,7 +191,7 @@ export default class S3FilePreview extends React.Component {
                   path.reduce((result, current, index, arr) => {
                     result.push(<code key={index}>{current}</code>);
                     if (index < arr.length - 1) {
-                      result.push(<Icon key={`sep_${index}`} type="caret-right" />);
+                      result.push(<CaretRightOutlined key={`sep_${index}`} />);
                     }
                     return result;
                   }, [])
@@ -214,7 +221,7 @@ export default class S3FilePreview extends React.Component {
     if (this.props.preview.pending) {
       return (
         <Row type="flex" justify="center">
-          <Icon type="loading" />
+          <LoadingOutlined />
         </Row>
       );
     }
@@ -344,7 +351,7 @@ export default class S3FilePreview extends React.Component {
       if (this.props.downloadUrl.pending) {
         return (
           <Row className={styles.contentPreview} type="flex" justify="center">
-            <Icon type="loading" />
+            <LoadingOutlined />
           </Row>
         );
       }
@@ -495,6 +502,7 @@ export default class S3FilePreview extends React.Component {
       ? null
       : renderAttributes(this.props.metadata, {tags: true});
     const preview = this.renderPreview();
+    const ItemIcon = PreviewIcons[this.props.item.type];
     return (
       <div
         className={
@@ -506,7 +514,7 @@ export default class S3FilePreview extends React.Component {
       >
         <div className={classNames(styles.header, {[styles.shrinkedHeader]: this.state.hideInfo})}>
           <Row className={classNames(styles.title, 'cp-search-header-title')}>
-            <Icon type={PreviewIcons[this.props.item.type]} />
+            {ItemIcon && <ItemIcon />}
             <span>{this.props.item.name}</span>
           </Row>
           {
@@ -530,7 +538,7 @@ export default class S3FilePreview extends React.Component {
     );
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.item !== this.props.item) {
       this.setState({pdbError: null, imageError: null});
     }

@@ -21,10 +21,6 @@ import {RepositoryTypes} from '../../../../special/git-repository-control';
 
 export default class ManualRepositoryForm extends React.Component {
   static propTypes = {
-    form: PropTypes.shape({
-      getFieldDecorator: PropTypes.func,
-      getFieldValue: PropTypes.func
-    }),
     formItemLayout: PropTypes.object,
     formItemStyle: PropTypes.object,
     onSubmit: PropTypes.func,
@@ -41,7 +37,6 @@ export default class ManualRepositoryForm extends React.Component {
 
   render () {
     const {
-      form,
       formItemLayout,
       formItemStyle,
       onSubmit,
@@ -50,7 +45,6 @@ export default class ManualRepositoryForm extends React.Component {
       readOnly,
       showToken = true
     } = this.props;
-    const {getFieldDecorator} = form;
     return (
       <div>
         <Form.Item
@@ -59,30 +53,26 @@ export default class ManualRepositoryForm extends React.Component {
           {...formItemLayout}
           style={formItemStyle}
           label="Repository"
-        >
-          {getFieldDecorator('repository', {
-            rules: [
-              {
-                validator: (rule, value, callback) => {
-                  let repoType = form.getFieldValue('repositoryType');
-                  if (!repoType && pipeline) {
-                    repoType = pipeline.repositoryType;
-                  }
-                  if (repoType === RepositoryTypes.AzureDevOps && !value) {
-                    callback(new Error('Repository is required'));
-                    return;
-                  }
-                  callback();
+          name="repository"
+          dependencies={['repositoryType']}
+          rules={[
+            ({getFieldValue}) => ({
+              validator: async (_, value) => {
+                let repoType = getFieldValue('repositoryType');
+                if (!repoType && pipeline) {
+                  repoType = pipeline.repositoryType;
+                }
+                if (repoType === RepositoryTypes.AzureDevOps && !value) {
+                  throw new Error('Repository is required');
                 }
               }
-            ],
-            initialValue: `${pipeline && pipeline.repository ? pipeline.repository : ''}`
-          })(
-            <Input
-              onPressEnter={onSubmit}
-              disabled={!!pipeline || pending}
-            />
-          )}
+            })
+          ]}
+        >
+          <Input
+            onPressEnter={onSubmit}
+            disabled={!!pipeline || pending}
+          />
         </Form.Item>
         <Form.Item
           key="branch"
@@ -90,13 +80,9 @@ export default class ManualRepositoryForm extends React.Component {
           {...formItemLayout}
           style={formItemStyle}
           label="Branch"
+          name="branch"
         >
-          {getFieldDecorator('branch', {
-            initialValue:
-              pipeline && pipeline.branch
-                ? pipeline.branch
-                : undefined
-          })(<Input disabled={pending || readOnly} />)}
+          <Input disabled={pending || readOnly} />
         </Form.Item>
         {showToken ? (
           <Form.Item
@@ -105,37 +91,30 @@ export default class ManualRepositoryForm extends React.Component {
             {...formItemLayout}
             style={formItemStyle}
             label="Token"
-          >
-            {getFieldDecorator('token', {
-              rules: [
-                {
-                  validator: (rule, value, callback) => {
-                    let repoType = form.getFieldValue('repositoryType');
-                    if (!repoType && pipeline) {
-                      repoType = pipeline.repositoryType;
-                    }
-                    if (repoType === RepositoryTypes.AzureDevOps && !value) {
-                      callback(new Error('Token is required'));
-                      return;
-                    }
-                    callback();
+            name="token"
+            dependencies={['repositoryType']}
+            rules={[
+              ({getFieldValue}) => ({
+                validator: async (_, value) => {
+                  let repoType = getFieldValue('repositoryType');
+                  if (!repoType && pipeline) {
+                    repoType = pipeline.repositoryType;
+                  }
+                  if (repoType === RepositoryTypes.AzureDevOps && !value) {
+                    throw new Error('Token is required');
                   }
                 }
-              ],
-              initialValue: `${
-                pipeline && pipeline.repositoryToken
-                  ? pipeline.repositoryToken
-                  : ''
-              }`
-            })(
-              <Input
-                onPressEnter={onSubmit}
-                type="password"
-                disabled={pending || readOnly}
-              />
-            )}
+              })
+            ]}
+          >
+            <Input
+              onPressEnter={onSubmit}
+              type="password"
+              autoComplete="off"
+              disabled={pending || readOnly}
+            />
           </Form.Item>
-          ) : null}
+        ) : null}
       </div>
     );
   }

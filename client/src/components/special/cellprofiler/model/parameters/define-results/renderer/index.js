@@ -17,9 +17,12 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
-import {computed, isObservableArray} from 'mobx';
-import {Button, Icon} from 'antd';
+import {
+  observer} from 'mobx-react';
+import {computed, isObservableArray, makeObservable} from 'mobx';
+import {Button
+} from 'antd';
+import {PlusOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import generateId from '../../../common/generate-id';
 import OutputProperty from './output-property';
@@ -30,37 +33,47 @@ import styles from './define-results.css';
 const generateConfigurationId = () => `${generateId()}_configuration`;
 
 class DefineResultsRenderer extends React.Component {
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      parameter: computed,
+      cpModule: computed,
+      pipeline: computed,
+      configurations: computed,
+      objects: computed
+    });
+  }
+
   /**
    * @returns {ModuleParameter}
    */
-  @computed
   get parameter () {
     if (this.props.parameterValue) {
       return this.props.parameterValue.parameter;
     }
     return undefined;
   }
+
   /**
    * @returns {AnalysisModule}
    */
-  @computed
   get cpModule () {
     if (this.parameter) {
       return this.parameter.cpModule;
     }
     return undefined;
   }
+
   /**
    * @returns {AnalysisPipeline}
    */
-  @computed
   get pipeline () {
     if (this.cpModule) {
       return this.cpModule.pipeline;
     }
     return undefined;
   }
-  @computed
+
   get configurations () {
     if (this.props.parameterValue) {
       const value = this.props.parameterValue.value;
@@ -71,7 +84,7 @@ class DefineResultsRenderer extends React.Component {
     }
     return [];
   }
-  @computed
+
   get objects () {
     if (!this.pipeline) {
       return [];
@@ -173,7 +186,7 @@ class DefineResultsRenderer extends React.Component {
             className={styles.action}
             onClick={this.addOutputProperty}
           >
-            <Icon type="plus" />
+            <PlusOutlined />
             <span>Output property</span>
           </Button>
           <Button
@@ -181,7 +194,7 @@ class DefineResultsRenderer extends React.Component {
             className={styles.action}
             onClick={this.addOutputFormula}
           >
-            <Icon type="plus" />
+            <PlusOutlined />
             <span>Output formula</span>
           </Button>
         </div>

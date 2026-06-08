@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import SubSettings from '../sub-settings';
 import ProfileSettings from './profile';
 import AppearanceSettings, {MANAGEMENT_SECTION} from './appearance';
@@ -26,7 +26,13 @@ import UserInfoSummary from '../forms/EditUserRolesDialog/UserInfoSummary';
 @roleModel.authenticationInfo
 @observer
 export default class UserProfile extends React.Component {
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      user: computed
+    });
+  }
+
   get user () {
     if (
       this.props.authenticatedUserInfo &&

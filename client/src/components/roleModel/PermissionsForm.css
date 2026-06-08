@@ -14,12 +14,21 @@
  * limitations under the License.
  */
 
+.permissions-form {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
 .actions button {
   margin-left: 5px;
 }
 
 .user-icon {
   width: 20px;
+  max-width: 20px;
+  padding-left: 3px !important;
+  padding-right: 3px !important;
 }
 
 .user-actions {
@@ -39,8 +48,40 @@
   cursor: pointer;
 }
 
-.table > div > div {
-  filter: none !important;
+.table {
+  width: 100%;
+}
+
+.table :global(.ant-table-title) {
+  padding: 4px 0 8px;
+}
+
+.table :global(tr.cp-edit-permissions-selected-row > td) {
+  background-color: var(--cp-color-interactive-selected-bg) !important;
+}
+
+.table-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 8px;
+}
+
+.table-title-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.table-title-actions {
+  flex-shrink: 0;
+}
+
+.owner-container {
+  display: flex;
+  align-items: center;
+  margin: 0 5px 10px;
+  min-height: 22px;
 }
 
 .owner-container input {
@@ -52,7 +93,11 @@
 
 .owner-container input:focus,
 .owner-container input:hover {
-  border: 1px solid #ccc !important;
+  border: 1px solid var(--cp-color-border) !important;
+}
+
+.permissions-table-section {
+  width: 100%;
 }
 
 .permissions-form-footer {

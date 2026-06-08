@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Button, Icon} from 'antd';
+import {Button, Space} from 'antd';
+import {CalendarOutlined, CloseCircleFilled, LeftOutlined, RightOutlined} from '@ant-design/icons';
 import styles from './pickers.css';
 import '../../../../staticStyles/billing-calendar.css';
 
@@ -73,7 +74,7 @@ class PickerButton extends React.Component {
       hovered ? styles.hovered : undefined
     ].filter(Boolean).join(' ');
     return (
-      <Button.Group
+      <Space.Compact
         className={className}
         style={style}
       >
@@ -84,7 +85,7 @@ class PickerButton extends React.Component {
               disabled={!canNavigateBack}
               onClick={onNavigateBack}
             >
-              <Icon type="left" />
+              <LeftOutlined />
             </Button>
           )
         }
@@ -100,16 +101,12 @@ class PickerButton extends React.Component {
               valueIsSet &&
               onRemoveIsSet &&
               hovered && (
-                <Icon
-                  className={'cp-billing-calendar-set-value-close cp-billing-calendar-icon'}
-                  type="close-circle"
-                  onClick={this.onRemove}
-                />
+                <CloseCircleFilled className={'cp-billing-calendar-set-value-close cp-billing-calendar-icon'} onClick={this.onRemove} />
               )
             }
             {
               (!valueIsSet || !hovered || !onRemoveIsSet) &&
-              <Icon type="calendar" className={'cp-billing-calendar-icon'} />
+              <CalendarOutlined className={'cp-billing-calendar-icon'} />
             }
           </div>
         </Button>
@@ -120,11 +117,11 @@ class PickerButton extends React.Component {
               disabled={!canNavigateForward}
               onClick={onNavigateForward}
             >
-              <Icon type="right" />
+              <RightOutlined />
             </Button>
           )
         }
-      </Button.Group>
+      </Space.Compact>
     );
   }
 }

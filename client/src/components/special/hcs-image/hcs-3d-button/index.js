@@ -16,15 +16,22 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
-import {computed, isObservableArray} from 'mobx';
-import {Slider, Select, Checkbox, Popover, Button, Icon} from 'antd';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {computed, isObservableArray, makeObservable} from 'mobx';
+import {Slider,
+  Select,
+  Checkbox,
+  Popover,
+  Button
+} from 'antd';
+import {DownOutlined} from '@ant-design/icons';
 import displaySize from '../../../../utils/displaySize';
 import styles from './hcs-3d-button.css';
-import classNames from "classnames";
+import classNames from 'classnames';
 
-
-function getSliceRangeSafe(range) {
+function getSliceRangeSafe (range) {
   if (!range || typeof range !== 'object' || !(Array.isArray(range) || isObservableArray(range))) {
     return [0, 100];
   }
@@ -35,7 +42,7 @@ function getSliceRangeSafe(range) {
   return [min, max];
 }
 
-function getSliceEnabled(range) {
+function getSliceEnabled (range) {
   if (!range || typeof range !== 'object' || !(Array.isArray(range) || isObservableArray(range)) || range.length !== 2) {
     return false;
   }
@@ -50,75 +57,81 @@ export default class HCS3DButton extends React.Component {
     modalVisible: false
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      use3dMode: computed,
+      downsamplingMode: computed,
+      renderingMode: computed,
+      xSlice: computed,
+      xSliceRange: computed,
+      xSliceEnabled: computed,
+      ySlice: computed,
+      ySliceRange: computed,
+      ySliceEnabled: computed,
+      zSlice: computed,
+      zSliceRange: computed,
+      zSliceEnabled: computed
+    });
+  }
+
   get use3dMode () {
     const {hcsViewerState} = this.props;
     return hcsViewerState?.use3D;
   }
 
-  @computed
   get downsamplingMode () {
     const {hcsViewerState} = this.props;
     const {downsamplingMode} = hcsViewerState ?? {};
     return downsamplingMode === undefined ? undefined : `${downsamplingMode}`;
   }
 
-  @computed
   get renderingMode () {
     const {hcsViewerState} = this.props;
     const {renderingMode} = hcsViewerState ?? {};
     return renderingMode === undefined ? undefined : `${renderingMode}`;
   }
 
-  @computed
   get xSlice () {
     const {hcsViewerState} = this.props;
     return hcsViewerState?.xSlice || [];
   }
 
-  @computed
   get xSliceRange () {
     const {hcsViewerState} = this.props;
-    return getSliceRangeSafe(hcsViewerState?.xSliceRange)
+    return getSliceRangeSafe(hcsViewerState?.xSliceRange);
   }
 
-  @computed
   get xSliceEnabled () {
     const {hcsViewerState} = this.props;
     return getSliceEnabled(hcsViewerState?.xSlice);
   }
 
-  @computed
   get ySlice () {
     const {hcsViewerState} = this.props;
     return hcsViewerState?.ySlice || [];
   }
 
-  @computed
   get ySliceRange () {
     const {hcsViewerState} = this.props;
-    return getSliceRangeSafe(hcsViewerState?.ySliceRange)
+    return getSliceRangeSafe(hcsViewerState?.ySliceRange);
   }
 
-  @computed
   get ySliceEnabled () {
     const {hcsViewerState} = this.props;
     return getSliceEnabled(hcsViewerState?.ySlice);
   }
 
-  @computed
   get zSlice () {
     const {hcsViewerState} = this.props;
     return hcsViewerState?.zSlice || [];
   }
 
-  @computed
   get zSliceRange () {
     const {hcsViewerState} = this.props;
-    return getSliceRangeSafe(hcsViewerState?.zSliceRange)
+    return getSliceRangeSafe(hcsViewerState?.zSliceRange);
   }
 
-  @computed
   get zSliceEnabled () {
     const {hcsViewerState} = this.props;
     return getSliceEnabled(hcsViewerState?.zSlice);
@@ -257,17 +270,17 @@ export default class HCS3DButton extends React.Component {
         </Button>
         <Popover
           getPopupContainer={triggerNode => triggerNode.parentNode}
-          onVisibleChange={this.visibilityChanged}
-          visible={modalVisible}
+          onOpenChange={this.visibilityChanged}
+          open={modalVisible}
           trigger="click"
           title={false}
           content={this.renderDropdownContent()}
           placement="bottom"
-          overlayStyle={{
+          styles={{root: {
             width: '35vw',
             minWidth: 350
-          }}
-          overlayClassName={styles.modalOverlay}
+          }}}
+          classNames={{root: styles.modalOverlay}}
           maskClosable={false}
         >
           <Button size={size} style={{
@@ -276,7 +289,7 @@ export default class HCS3DButton extends React.Component {
             borderBottomLeftRadius: '0px',
             borderTopLeftRadius: '0px'
           }}>
-            <Icon type="down" />
+            <DownOutlined />
           </Button>
         </Popover>
       </div>
@@ -284,7 +297,7 @@ export default class HCS3DButton extends React.Component {
   }
 }
 
-HCS3DButton.PropTypes = {
+HCS3DButton.propTypes = {
   size: PropTypes.string,
   viewer: PropTypes.object
 };

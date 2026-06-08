@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import moment from 'moment-timezone';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {inject, observer, Provider} from 'mobx-react';
 import DateTimeTicksRules from './ticks/date-time-rules';
 import attachMoveHandler from './utilities/attach-move-handler';
@@ -27,7 +27,7 @@ const SizePerTickPx = 100;
 
 @inject('plot', 'data', 'themes')
 @observer
-class Timeline extends React.PureComponent {
+class Timeline extends React.Component {
   state = {
     from: undefined,
     to: undefined,
@@ -41,34 +41,46 @@ class Timeline extends React.PureComponent {
   detachMoveHandler;
   detachZoomHandler;
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      backgroundColor: computed,
+      lineColor: computed,
+      tickColor: computed,
+      dataRange: computed,
+      size: computed,
+      plotToCanvasRatio: computed,
+      canvasToPlotRatio: computed,
+      ticks: computed,
+      baseTicksCount: computed,
+      baseTickRule: computed
+    });
+  }
+
   get backgroundColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@card-header-background'] || '#ccc';
+      return themes.currentThemeConfiguration['--cp-color-bg-elevated-header'] || '#ccc';
     }
     return '#ccc';
   }
 
-  @computed
   get lineColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@application-color'] || 'rgba(0, 0, 0, 0.65)';
+      return themes.currentThemeConfiguration['--cp-color-text'] || 'rgba(0, 0, 0, 0.65)';
     }
     return 'rgba(0, 0, 0, 0.65)';
   }
 
-  @computed
   get tickColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@application-color-faded'] || '#777';
+      return themes.currentThemeConfiguration['--cp-color-text-secondary'] || '#777';
     }
     return '#777';
   }
 
-  @computed
   get dataRange () {
     const {from, to} = this.state;
     if (!from || !to) {
@@ -77,14 +89,12 @@ class Timeline extends React.PureComponent {
     return to - from;
   }
 
-  @computed
   get size () {
     const {plot} = this.props;
     const {chartArea, width} = plot.props;
     return width - chartArea.left - chartArea.right;
   }
 
-  @computed
   get plotToCanvasRatio () {
     if (this.dataRange === 0) {
       return 0;
@@ -92,7 +102,6 @@ class Timeline extends React.PureComponent {
     return this.size / this.dataRange;
   }
 
-  @computed
   get canvasToPlotRatio () {
     if (this.plotToCanvasRatio === 0) {
       return 0;
@@ -100,7 +109,6 @@ class Timeline extends React.PureComponent {
     return 1.0 / this.plotToCanvasRatio;
   }
 
-  @computed
   get ticks () {
     if (this.baseTickRule === null) {
       return [];
@@ -112,12 +120,10 @@ class Timeline extends React.PureComponent {
     return this.baseTickRule.fillRange(moment.unix(from), moment.unix(to), true);
   }
 
-  @computed
   get baseTicksCount () {
     return Math.floor(this.size / SizePerTickPx);
   }
 
-  @computed
   get baseTickRule () {
     if (this.dataRange === 0) {
       return null;
@@ -150,7 +156,7 @@ class Timeline extends React.PureComponent {
     }
   }
 
-  componentWillReceiveProps (nextProps, nextContext) {
+  UNSAFE_componentWillReceiveProps (nextProps, nextContext) {
     const newState = {};
     if (nextProps.from !== this.props.from) {
       newState.from = nextProps.from;

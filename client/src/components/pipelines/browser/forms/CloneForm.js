@@ -34,9 +34,9 @@ import HiddenObjects from '../../../../utils/hidden-objects';
     pipelinesLibrary
   };
 })
-@Form.create()
 @observer
 export default class CloneForm extends React.Component {
+  formRef = React.createRef();
   static propTypes = {
     onCancel: PropTypes.func,
     onSubmit: PropTypes.func,
@@ -83,12 +83,12 @@ export default class CloneForm extends React.Component {
 
   handleSubmit = (e) => {
     e.preventDefault();
-    this.props.form.validateFieldsAndScroll(async (err, values) => {
-      if (!err) {
+    this.formRef.current.validateFields()
+      .then(async (values) => {
         this.props.onSubmit &&
         await this.props.onSubmit(this.state.value ? this.state.value.id : null, values.name);
-      }
-    });
+      })
+      .catch(() => {});
   }
 
   render () {
@@ -115,39 +115,38 @@ export default class CloneForm extends React.Component {
         loaded: false
       });
     };
-    const {getFieldDecorator} = this.props.form;
     return (
       <Modal
-        maskClosable={!this.props.pending}
+        mask={{closable: !this.props.pending}}
         afterClose={onClose}
         closable={!this.props.pending}
-        visible={this.props.visible}
+        open={this.props.visible}
         title="Select destination folder"
         width="50%"
         onCancel={this.props.onCancel}
         footer={modalFooter}>
-        <Form>
+        <Form
+          ref={this.formRef}
+          scrollToFirstError={{behavior: 'smooth', block: 'end', focus: true}}
+        >
           <Spin spinning={this.props.pending}>
             <div style={{height: '50vh', display: 'flex', flexDirection: 'column', overflow: 'auto'}}>
               <Folder
                 id={this.state.value ? this.state.value.id : null}
                 onSelectItem={this.onSelectFolder}
-                listingMode={true}
-                readOnly={true}
+                listingMode
+                readOnly
                 supportedTypes={[ItemTypes.folder]} />
             </div>
           </Spin>
           <Form.Item
             style={{padding: '5px'}}
             {...this.formItemLayout}
-            label="Name">
-            {getFieldDecorator('name', {
-              rules: [
-                {required: true, message: 'Name is required'}
-              ]
-            })(
-              <Input />
-            )}
+            label="Name"
+            name="name"
+            rules={[{required: true, message: 'Name is required'}]}
+          >
+            <Input />
           </Form.Item>
         </Form>
       </Modal>
@@ -174,7 +173,7 @@ export default class CloneForm extends React.Component {
     }
   };
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.parentId !== this.props.parentId) {
       this.updateState(nextProps);
     }

@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {observer} from 'mobx-react';
 import classNames from 'classnames';
 import {Alert} from 'antd';
@@ -31,12 +31,18 @@ const showContextData = false;
 
 @observer
 export default class Message extends React.Component {
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      message: computed,
+      pending: computed
+    });
+  }
+
   get message () {
     return this.props.message;
   }
 
-  @computed
   get pending () {
     return this.props.message.pending;
   }
@@ -118,7 +124,7 @@ export default class Message extends React.Component {
       contentParts.push(
         <Alert
           key={`${identifier}-errors`}
-          message={(
+          title={(
             <div>
               {errors.map((err, idx) => (<Markdown key={`error-${idx}`} md={err} />))}
             </div>
@@ -132,7 +138,7 @@ export default class Message extends React.Component {
       contentParts.push(
         <Alert
           key={`${identifier}-warnings`}
-          message={(
+          title={(
             <div>
               {warnings.map((warn, idx) => (<Markdown key={`error-${idx}`} md={warn} />))}
             </div>

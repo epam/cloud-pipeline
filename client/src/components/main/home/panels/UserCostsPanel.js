@@ -17,16 +17,16 @@
 import React from 'react';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import moment from 'moment-timezone';
 import {
   Alert,
-  Icon,
   Tooltip,
   message,
   Spin
 } from 'antd';
+import {CaretUpOutlined, CaretDownOutlined} from '@ant-design/icons';
 import roleModel from '../../../../utils/roleModel';
 import {GetBillingData} from '../../../../models/billing';
 import {Period, getPeriod} from '../../../special/periods';
@@ -48,10 +48,9 @@ function renderStatistics (percent) {
           'cp-success': percent < 0
         })}
       >
-        <Icon
-          type={percent > 0 ? 'caret-up' : 'caret-down'}
-          style={{marginRight: '5px'}}
-        />
+        {percent > 0
+          ? <CaretUpOutlined style={{marginRight: '5px'}} />
+          : <CaretDownOutlined style={{marginRight: '5px'}} />}
         <span>
           {`${percent > 0 ? '+' : ''}${percent}%`}
         </span>
@@ -120,8 +119,16 @@ export default class UserCostsPanel extends React.Component {
     pending: false
   }
 
-  @observable
   _billingRequests;
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      _billingRequests: observable,
+      billingInfo: computed,
+      disclaimer: computed
+    });
+  }
 
   componentDidMount () {
     this.updateFromProps();
@@ -143,7 +150,6 @@ export default class UserCostsPanel extends React.Component {
       .then(this.fetchBillingInfo.bind(this));
   };
 
-  @computed
   get billingInfo () {
     if (this._billingRequests && this._billingRequests.length) {
       return this._billingRequests
@@ -159,7 +165,6 @@ export default class UserCostsPanel extends React.Component {
     return [];
   }
 
-  @computed
   get disclaimer () {
     const {preferences} = this.props;
     if (preferences.loaded) {
@@ -219,7 +224,7 @@ export default class UserCostsPanel extends React.Component {
     );
     return (
       <Alert
-        message={message}
+        title={message}
         type="warning"
         style={{padding: '8px 15px', marginBottom: '10px'}}
       />
@@ -332,7 +337,7 @@ export default class UserCostsPanel extends React.Component {
     return (
       <Spin
         spinning={pending}
-        wrapperClassName={styles.spinner}
+        classNames={{root: styles.spinner}}
       >
         <div className={styles.container}>
           {showDisclaimer ? this.renderDisclaimer() : null}
@@ -347,7 +352,7 @@ export default class UserCostsPanel extends React.Component {
   }
 }
 
-UserCostsPanel.PropTypes = {
+UserCostsPanel.propTypes = {
   showDisclaimer: PropTypes.bool,
   userName: PropTypes.string,
   billingPeriods: PropTypes.arrayOf(PropTypes.string),

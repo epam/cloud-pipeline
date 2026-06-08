@@ -16,9 +16,13 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
-import {Select, Icon} from 'antd';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {computed, makeObservable} from 'mobx';
+import {Select
+} from 'antd';
+import {TeamOutlined} from '@ant-design/icons';
 import Roles from '../../../models/user/Roles';
 import GroupFind from '../../../models/user/GroupFind';
 import UserName from '../UserName';
@@ -74,7 +78,14 @@ class UsersRolesSelect extends React.Component {
     adGroups: []
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      users: computed,
+      roles: computed
+    });
+  }
+
   get users () {
     const {users} = this.props;
     if (users && users.loaded) {
@@ -89,7 +100,6 @@ class UsersRolesSelect extends React.Component {
     return [];
   }
 
-  @computed
   get roles () {
     const {roles} = this.props;
     if (roles && roles.loaded) {
@@ -186,6 +196,7 @@ class UsersRolesSelect extends React.Component {
     const {
       className,
       style,
+      styles,
       disabled: disabledProp,
       users,
       roles,
@@ -207,6 +218,7 @@ class UsersRolesSelect extends React.Component {
         disabled={disabled}
         className={className}
         style={style}
+        styles={styles}
         mode="multiple"
         value={value.map(getDataSourceItemValue)}
         onChange={this.onChange}
@@ -254,7 +266,7 @@ class UsersRolesSelect extends React.Component {
                   value={getDataSourceItemValue(role)}
                   title={role.name}
                 >
-                  <Icon type="team" /> {role.displayName}
+                  <TeamOutlined /> {role.displayName}
                 </Select.Option>
               ))
           }
@@ -270,6 +282,7 @@ UsersRolesSelect.propTypes = {
   placeholder: PropTypes.string,
   className: PropTypes.string,
   style: PropTypes.object,
+  styles: PropTypes.object,
   disabled: PropTypes.bool,
   value: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   onChange: PropTypes.func,

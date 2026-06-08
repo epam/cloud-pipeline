@@ -18,10 +18,9 @@ import React from 'react';
 import classNames from 'classnames';
 import {
   Button,
-  Icon
+  Dropdown
 } from 'antd';
-import Menu, {MenuItem} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
+import {DownOutlined, EditOutlined} from '@ant-design/icons';
 import styles from './auto-fill-entities.css';
 import MetadataEntitySave from '../../../../models/folderMetadata/MetadataEntitySave';
 
@@ -554,25 +553,13 @@ class AutoFillEntitiesActions extends React.Component {
           className={classNames(styles.actions, className)}
         >
           <Dropdown
-            overlay={(
-              <Menu
-                style={{
-                  width: 200
-                }}
-                onClick={handleMenuItem}
-                selectedKeys={[]}
-              >
-                {
-                  actions.map((action, index) => (
-                    <MenuItem key={`${index}`}>
-                      {action.title}
-                    </MenuItem>
-                  ))
-                }
-              </Menu>
-            )}
+            menu={{
+              items: actions.map((action, index) => ({key: `${index}`, label: action.title})),
+              onClick: handleMenuItem,
+              style: {width: 200}
+            }}
             trigger={['click']}
-            onVisibleChange={this.handleDropdownVisibility}
+            onOpenChange={this.handleDropdownVisibility}
           >
             <Button
               type="primary"
@@ -584,8 +571,8 @@ class AutoFillEntitiesActions extends React.Component {
               onMouseDown={e => e.stopPropagation()}
               onClick={e => e.stopPropagation()}
             >
-              <Icon type="edit" />
-              <Icon type="down" />
+              <EditOutlined />
+              <DownOutlined />
             </Button>
           </Dropdown>
         </div>

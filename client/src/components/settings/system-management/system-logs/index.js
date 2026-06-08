@@ -55,7 +55,7 @@ class SystemLogs extends React.Component {
     }
     if (!this.props.authenticatedUserInfo.value.admin) {
       return (
-        <Alert type="error" message="Access is denied" />
+        <Alert type="error" title="Access is denied" />
       );
     }
     const {filters} = this.state;

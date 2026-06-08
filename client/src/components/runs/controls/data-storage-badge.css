@@ -20,13 +20,13 @@
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
-  border: 1px solid #dfdfdf;
+  border: 1px solid var(--cp-color-border-input);
   border-radius: 3px;
   transition: background-color 0.2s ease;
 }
 
 .storage-item:hover {
-  background-color: #f0f0f0;
+  background-color: var(--cp-color-interactive-hover-bg);
 }
 
 .storage-name {
@@ -34,11 +34,11 @@
 }
 
 .sensitive-storage-name {
-  color: #cf1322;
+  color: var(--cp-color-error);
 }
 
 .unknown-storage {
-  color: #8c8c8c;
-  background-color: #f0f0f0;
+  color: var(--cp-color-text-disabled);
+  background-color: var(--cp-color-interactive-hover-bg);
   cursor: default;
 }

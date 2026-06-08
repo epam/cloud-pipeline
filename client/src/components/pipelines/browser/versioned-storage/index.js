@@ -17,16 +17,19 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {withRouter} from '../../../../utils/with-router';
+import {computed, makeObservable} from 'mobx';
 import {
   Alert,
   message,
-  Pagination
+  Pagination,
+  Row,
+  Splitter
 } from 'antd';
+import {CloseOutlined} from '@ant-design/icons';
 import FileSaver from 'file-saver';
 import VersionedStorageHeader from './header';
 import VersionedStorageTable from './table';
-import {SplitPanel} from '../../../special/splitPanel';
 import localization from '../../../../utils/localization';
 import HiddenObjects from '../../../../utils/hidden-objects';
 import LoadingView from '../../../special/LoadingView';
@@ -125,8 +128,8 @@ function generateItemsFilter (preferences) {
 @inject(({pipelines}, params) => {
   const {location} = params;
   let path;
-  if (location && location.query.path) {
-    path = location.query.path;
+  if (location) {
+    path = new URLSearchParams(location.search || '').get('path') || undefined;
   }
   let componentParameters = params;
   if (params.params) {
@@ -155,9 +158,17 @@ class VersionedStorage extends localization.LocalizedReactComponent {
 
   updateVSRequest = new UpdatePipeline();
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      lastCommitId: computed,
+      writeAllowed: computed
+    });
+  }
+
   componentDidMount () {
     this.pathWasChanged();
-  };
+  }
 
   componentDidUpdate (prevProps) {
     if (
@@ -167,9 +178,8 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       this.clearSelectedFile();
       this.pathWasChanged();
     }
-  };
+  }
 
-  @computed
   get lastCommitId () {
     const {pipeline} = this.props;
     if (
@@ -181,9 +191,8 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       return pipeline.value.currentVersion.commitId;
     }
     return null;
-  };
+  }
 
-  @computed
   get writeAllowed () {
     const {pipeline} = this.props;
     if (
@@ -194,7 +203,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       return roleModel.writeAllowed(pipeline.value);
     }
     return false;
-  };
+  }
 
   get filteredContents () {
     const {contents} = this.state;
@@ -202,7 +211,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       return [];
     }
     return contents.filter(generateItemsFilter(this.props.preferences));
-  };
+  }
 
   get actions () {
     return {
@@ -212,7 +221,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       runVersionedStorage: this.runVersionedStorage,
       openGenerateReportDialog: this.openGenerateReportDialog
     };
-  };
+  }
 
   get parentPath () {
     const {path} = this.props;
@@ -224,7 +233,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       parentPath = `${parentPath}/`;
     }
     return parentPath || '';
-  };
+  }
 
   folderOperationWrapper = (operation) => (...props) => {
     this.setState({
@@ -958,37 +967,48 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     }
     if (pipeline.error) {
       return (
-        <Alert type="error" message={pipeline.error} />
+        <Alert type="error" title={pipeline.error} />
       );
     }
-    const contentInfo = [{
-      key: 'vstable',
-      containerStyle: {
-        height: '100%'
-      },
-      size: {
-        priority: 0,
-        percentMinimum: 33,
-        percentDefault: 75
-      }
-    },
-    {
-      key: 'vsinfo',
-      containerStyle: {
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'auto'
-      },
-      title: 'Information',
-      closable: true,
-      size: {
-        keepPreviousSize: true,
-        priority: 0,
-        percentDefault: 25,
-        pxMinimum: 200
-      }
-    }];
+    const tableContent = (
+      <div
+        style={{width: '100%', height: '100%', display: 'flex', flexDirection: 'column'}}
+      >
+        <VersionedStorageTable
+          style={{height: 'auto'}}
+          contents={this.filteredContents}
+          onRowClick={this.onRowClick}
+          showNavigateBack={path}
+          pending={pending}
+          lastCommit={this.lastCommitId}
+          controlsEnabled={this.lastCommitId && (pipeline.loaded && !pipeline.pending)}
+          onTableActionClick={this.onTableActionClick}
+          onDeleteDocument={this.onDeleteDocument}
+          onRenameDocument={this.openRenameDocumentDialog}
+          onNavigate={this.navigate}
+          pipelineId={pipelineId}
+          path={path}
+          afterUpload={this.afterUpload}
+          versionedStorage={pipeline?.value}
+        />
+        <div className={styles.paginationRow}>
+          {lastPage >= 0 && (
+            <Pagination
+              current={page + 1}
+              total={(lastPage + 1) * PAGE_SIZE}
+              pageSize={PAGE_SIZE}
+              size="small"
+              onChange={
+                newPage => newPage === (page + 1)
+                  ? undefined
+                  : this.fetchPage(newPage - 1)
+              }
+            />
+          )}
+        </div>
+      </div>
+    );
+
     return (
       <div className={styles.vsContainer} style={{height: 'calc(100vh - 30px)'}}>
         <VersionedStorageHeader
@@ -1003,64 +1023,47 @@ class VersionedStorage extends localization.LocalizedReactComponent {
         {
           error && (
             <Alert
-              message={error}
+              title={error}
               type="error"
             />
           )
         }
-        <SplitPanel
-          style={{flex: 1, overflow: 'auto', width: 'inherited', height: 'auto'}}
-          onPanelClose={this.closeHistoryPanel}
-          contentInfo={contentInfo}
-        >
-          <div
-            style={{width: '100%', height: '100%', display: 'flex', flexDirection: 'column'}}
-            key="vstable"
+        {showHistoryPanel ? (
+          <Splitter
+            style={{flex: 1, overflow: 'auto', width: 'inherited', height: 'auto'}}
           >
-            <VersionedStorageTable
-              style={{height: 'auto'}}
-              contents={this.filteredContents}
-              onRowClick={this.onRowClick}
-              showNavigateBack={path}
-              pending={pending}
-              lastCommit={this.lastCommitId}
-              controlsEnabled={this.lastCommitId && (pipeline.loaded && !pipeline.pending)}
-              onTableActionClick={this.onTableActionClick}
-              onDeleteDocument={this.onDeleteDocument}
-              onRenameDocument={this.openRenameDocumentDialog}
-              onNavigate={this.navigate}
-              pipelineId={pipelineId}
-              path={path}
-              afterUpload={this.afterUpload}
-              versionedStorage={pipeline?.value}
-            />
-            <div
-              className={styles.paginationRow}
+            <Splitter.Panel
+              defaultSize="75%"
+              min="33%"
+              style={{overflow: 'auto'}}
             >
-              {lastPage >= 0 && (
-                <Pagination
-                  current={page + 1}
-                  total={(lastPage + 1) * PAGE_SIZE}
-                  pageSize={PAGE_SIZE}
-                  size="small"
-                  onChange={
-                    newPage => newPage === (page + 1)
-                      ? undefined
-                      : this.fetchPage(newPage - 1)
-                  }
+              {tableContent}
+            </Splitter.Panel>
+            <Splitter.Panel
+              defaultSize="25%"
+              min={200}
+              style={{display: 'flex', flexDirection: 'column', overflow: 'hidden'}}
+            >
+              <Row
+                type="flex"
+                justify="space-between"
+                align="middle"
+                className="cp-split-panel-header"
+                style={{padding: '0px 5px', flexShrink: 0}}
+              >
+                <span>Information</span>
+                <CloseOutlined
+                  onClick={this.closeHistoryPanel}
+                  style={{cursor: 'pointer'}}
                 />
-              )}
-            </div>
-          </div>
-          {
-            showHistoryPanel && (
+              </Row>
               <div
-                key="vsinfo"
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
                   overflow: 'auto',
-                  flex: 1
+                  flex: 1,
+                  minHeight: 0
                 }}
               >
                 <InfoPanel
@@ -1074,9 +1077,22 @@ class VersionedStorage extends localization.LocalizedReactComponent {
                   onGoBack={this.clearSelectedFile}
                 />
               </div>
-            )
-          }
-        </SplitPanel>
+            </Splitter.Panel>
+          </Splitter>
+        ) : (
+          <div
+            style={{
+              flex: 1,
+              overflow: 'auto',
+              width: 'inherited',
+              height: 'auto',
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+          >
+            {tableContent}
+          </div>
+        )}
         <EditPipelineForm
           onSubmit={this.folderOperationWrapper(this.editVersionedStorage)}
           onCancel={this.closeEditStorageDialog}
@@ -1116,4 +1132,4 @@ VersionedStorage.propTypes = {
   path: PropTypes.string
 };
 
-export default VersionedStorage;
+export default withRouter(VersionedStorage);

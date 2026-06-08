@@ -16,7 +16,8 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {Row, Col, Select, Icon} from 'antd';
+import {Row, Col, Select} from 'antd';
+import {CodeFilled, CodeOutlined} from '@ant-design/icons';
 import parseQueryParameters from '../../../utils/queryParameters';
 import EmbeddedMiew from './EmbeddedMiew';
 import $ from 'jquery';
@@ -36,7 +37,6 @@ import styles from './EmbeddedMiew.css';
 })
 @observer
 export default class MiewPage extends React.Component {
-
   displayModes = [
     {
       mode: 'LN',
@@ -181,14 +181,24 @@ export default class MiewPage extends React.Component {
         <Row className={styles.miewToolbar} type="flex" align="middle">
           <div className={styles.miewToolbarOverlay} />
           <Col span={4} style={{textAlign: 'left', paddingLeft: 15}}>
-            <Icon
-              onClick={this.changeTerminalVisibility}
-              type={this.state.terminalVisible ? 'code' : 'code-o'}
-              style={{
-                cursor: 'pointer',
-                verticalAlign: 'middle',
-                fontSize: '16pt'
-              }} />
+            {this.state.terminalVisible ? (
+              <CodeFilled
+                onClick={this.changeTerminalVisibility}
+                style={{
+                  cursor: 'pointer',
+                  verticalAlign: 'middle',
+                  fontSize: '16pt'
+                }}
+              />
+            ) : (
+              <CodeOutlined
+                onClick={this.changeTerminalVisibility}
+                style={{
+                  cursor: 'pointer',
+                  verticalAlign: 'middle',
+                  fontSize: '16pt'
+                }} />
+            )}
           </Col>
           <Col span={20} className={styles.toolbarActions}>
             <span>Display mode: </span>
@@ -225,7 +235,13 @@ export default class MiewPage extends React.Component {
             </Select>
           </Col>
         </Row>
-        <div className={styles.miewTerminal} style={{display: this.state.terminalVisible ? 'block' : 'none'}}>
+        <div
+          className={styles.miewTerminal}
+          style={{display: this.state.terminalVisible
+            ? 'block'
+            : 'none'
+          }}
+        >
           <div className={styles.miewTerminalOverlay} />
           <div className={styles.miewTerminalComponent}>
             <div ref={this.initializeTerminal} />
@@ -271,5 +287,4 @@ export default class MiewPage extends React.Component {
       );
     }
   }
-
 }

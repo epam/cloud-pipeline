@@ -65,7 +65,7 @@ export default class RegistrySelector extends React.Component {
     return (
       <Dropdown
         trigger={['click']}
-        overlay={
+        popupRender={() => (
           <div
             className={
               classNames(
@@ -89,7 +89,8 @@ export default class RegistrySelector extends React.Component {
               })
             }
           </div>
-        }>
+        )}
+      >
         <Button size="small" style={{border: 'none', fontWeight: 'bold', backgroundColor: 'transparent'}}>
           {this.currentRegistry ? registryName(this.currentRegistry) : this.state.value || 'Unknown registry'}
         </Button>
@@ -108,7 +109,7 @@ export default class RegistrySelector extends React.Component {
     }
   };
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     const registriesAreEquals = (reg1, reg2) =>
     reg1.path === reg2.path && reg1.description === reg2.description && reg1.id === reg2.id;
     if (this.props.value !== nextProps.value ||

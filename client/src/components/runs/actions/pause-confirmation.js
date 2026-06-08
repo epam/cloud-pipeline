@@ -14,15 +14,15 @@
  *  limitations under the License.
  */
 import React from 'react';
-import ReactDOM from 'react-dom';
+import {createRoot} from 'react-dom/client';
 import PropTypes from 'prop-types';
 import {
   Button,
-  Icon,
-  LocaleProvider,
+  ConfigProvider,
   Modal
 } from 'antd';
-import enUS from 'antd/lib/locale-provider/en_US';
+import {LoadingOutlined, QuestionCircleFilled} from '@ant-design/icons';
+import enUS from 'antd/locale/en_US';
 import classNames from 'classnames';
 import {observer} from 'mobx-react';
 import PipelineRunInfo from '../../../models/pipelines/PipelineRunInfo';
@@ -179,7 +179,7 @@ class ConfirmPauseContainer extends React.Component {
           <ConfirmPause
             onCancel={this.onCancel}
             onConfirm={this.onConfirm}
-            visible={visible}
+            open={visible}
             title={this.renderTitle()}
           />
         </CommitCheckProvider>
@@ -203,8 +203,8 @@ function ConfirmPauseModal (props) {
     <Modal
       title={false}
       closable={false}
-      maskClosable={false}
-      visible={visible}
+      mask={{closable: false}}
+      open={visible}
       onCancel={onCancel}
       footer={false}
       width={450}
@@ -213,15 +213,7 @@ function ConfirmPauseModal (props) {
         className={styles.body}
       >
         <div className={styles.title}>
-          <Icon
-            type="question-circle"
-            className={
-              classNames(
-                'cp-warning',
-                styles.icon
-              )
-            }
-          />
+          <QuestionCircleFilled className={classNames('cp-warning', styles.icon)} />
           {
             title
           }
@@ -248,7 +240,7 @@ function ConfirmPauseModal (props) {
         >
           {
             pending && (
-              <Icon type="loading" />
+              <LoadingOutlined />
             )
           }
           PAUSE
@@ -280,13 +272,13 @@ function registerCallback (callback) {
   confirmPauseCallback = callback;
 }
 
-ReactDOM.render(
+const pauseRunDialogRoot = createRoot(pauseRunDialogContainer);
+pauseRunDialogRoot.render(
   (
-    <LocaleProvider locale={enUS}>
+    <ConfigProvider locale={enUS}>
       <ConfirmPauseContainer onRegisterCallback={registerCallback} />
-    </LocaleProvider>
-  ),
-  pauseRunDialogContainer
+    </ConfigProvider>
+  )
 );
 
 /**

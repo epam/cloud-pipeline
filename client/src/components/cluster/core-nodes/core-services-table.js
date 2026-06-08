@@ -15,18 +15,19 @@
  */
 
 import React from 'react';
-import {observable, computed} from 'mobx';
+import {observable, computed, makeObservable} from 'mobx';
 import {observer} from 'mobx-react';
 import classNames from 'classnames';
 import {
   Select,
   Input,
   Button,
-  Icon,
   Table,
   Badge,
-  message
+  message,
+  Space
 } from 'antd';
+import {InfoCircleFilled} from '@ant-design/icons';
 import CorePods from '../../../models/cluster/CorePods';
 import highlightText from '../../special/highlightText';
 import styles from '../ClusterNode.css';
@@ -53,17 +54,29 @@ export default class CoreServicesTable extends React.Component {
     expandedRows: [],
     podInfoModal: undefined,
     containerLogsModal: undefined
-  }
+  };
 
-  @observable _pods;
-  @observable _pending;
-  @observable _globalSearchInputValue = '';
+  _pods;
+  _pending;
+  _globalSearchInputValue = '';
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      _pods: observable,
+      _pending: observable,
+      _globalSearchInputValue: observable,
+      pods: computed,
+      filteredPods: computed,
+      pending: computed,
+      globalSearchInputValue: computed
+    });
+  }
 
   componentDidMount () {
     this.fetchCorePods();
   }
 
-  @computed
   get pods () {
     if (!this._pods) {
       return [];
@@ -71,7 +84,6 @@ export default class CoreServicesTable extends React.Component {
     return this._pods;
   }
 
-  @computed
   get filteredPods () {
     const {filters} = this.state;
     return filterPods(this.pods, filters);
@@ -104,12 +116,10 @@ export default class CoreServicesTable extends React.Component {
       });
   }
 
-  @computed
   get pending () {
     return this._pending;
   }
 
-  @computed
   get globalSearchInputValue () {
     return this._globalSearchInputValue;
   }
@@ -236,13 +246,15 @@ export default class CoreServicesTable extends React.Component {
       .map(pod => pod.namespace))
     ];
     const getFiltersState = (key) => ({
-      filterDropdownVisible: this.state.filterDropdownVisible === key,
-      onFilterDropdownVisibleChange: (visible) => {
-        this.setState({
-          filterDropdownVisible: visible
-            ? key
-            : undefined
-        });
+      filterDropdownProps: {
+        open: this.state.filterDropdownVisible === key,
+        onOpenChange: (visible) => {
+          this.setState({
+            filterDropdownVisible: visible
+              ? key
+              : undefined
+          });
+        }
       },
       filtered: filters[key] !== this._initialFilters[key],
       filteredValue: filters[key] !== this._initialFilters[key]
@@ -264,11 +276,8 @@ export default class CoreServicesTable extends React.Component {
             ) : null}
             {highlightText(text, filters.name || globalSearch)}
             {!record.isService ? (
-              <Icon
-                onClick={() => this.openInfoModal(record)}
-                style={{marginLeft: 5, cursor: 'pointer'}}
-                type="info-circle"
-              />
+              <InfoCircleFilled onClick={() => this.openInfoModal(record)}
+                style={{marginLeft: 5, cursor: 'pointer'}} />
             ) : null}
           </span>
         ),
@@ -448,8 +457,10 @@ export default class CoreServicesTable extends React.Component {
         rowKey="uid"
         bordered
         pagination={false}
-        expandedRowKeys={expandedRows}
-        onExpandedRowsChange={this.onExpandedRowsChanged}
+        expandable={{
+          expandedRowKeys: expandedRows,
+          onExpandedRowsChange: this.onExpandedRowsChanged
+        }}
         rowClassName={(row, index) => index % 2 === 0
           ? ''
           : 'cp-cluster-node-even-row'
@@ -470,7 +481,7 @@ export default class CoreServicesTable extends React.Component {
           gap: 5,
           alignItems: 'center'
         }}>
-          <Button.Group
+          <Space.Compact
             size="small"
           >
             <Button
@@ -491,7 +502,7 @@ export default class CoreServicesTable extends React.Component {
             >
               <Badge status="error" />Unhealthy
             </Button>
-          </Button.Group>
+          </Space.Compact>
           <Input
             value={this.globalSearchInputValue}
             onChange={this.onChangeGlobalSearch}

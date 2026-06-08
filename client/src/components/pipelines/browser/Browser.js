@@ -16,7 +16,8 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {withRouter} from '../../../utils/with-router';
+import {computed, makeObservable} from 'mobx';
 import connect from '../../../utils/connect';
 import classNames from 'classnames';
 import roleModel from '../../../utils/roleModel';
@@ -28,7 +29,6 @@ import {
   Alert,
   Button,
   Col,
-  Icon,
   Input,
   message,
   Popover,
@@ -36,6 +36,7 @@ import {
   Table,
   Tooltip
 } from 'antd';
+import {ForkOutlined, HddOutlined, InboxOutlined, LockOutlined} from '@ant-design/icons';
 import dataStorages from '../../../models/dataStorage/DataStorages';
 import {formatTreeItems, generateTreeData, ItemTypes} from '../model/treeStructureFunctions';
 import highlightText from '../../special/highlightText';
@@ -69,10 +70,17 @@ const MAX_INLINE_METADATA_KEYS = 10;
   };
 })
 @observer
-export default class Folder extends localization.LocalizedReactComponent {
+class Folder extends localization.LocalizedReactComponent {
   state = {
     filter: undefined
   };
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      items: computed
+    });
+  }
 
   componentDidUpdate (prevProps) {
     if (prevProps.browserLocation !== this.props.browserLocation) {
@@ -85,7 +93,6 @@ export default class Folder extends localization.LocalizedReactComponent {
     this.setState({filter: e.target.value});
   };
 
-  @computed
   get items () {
     const {folder, browserLocation} = this.props;
     if (folder.loaded) {
@@ -110,16 +117,15 @@ export default class Folder extends localization.LocalizedReactComponent {
 
   renderTreeItemType = (item) => {
     switch (item.type) {
-      case ItemTypes.pipeline: return <Icon type="fork" />;
+      case ItemTypes.pipeline: return <ForkOutlined />;
       case ItemTypes.versionedStorage:
-        return <Icon type="inbox" className="cp-versioned-storage" />;
+        return <InboxOutlined className="cp-versioned-storage" />;
       case ItemTypes.storage:
         const objectStorage = item.storageType && item.storageType.toLowerCase() !== 'nfs';
         return (
-          <Icon
-            type={objectStorage ? 'inbox' : 'hdd'}
-            className={classNames({'cp-sensitive': item.sensitive})}
-          />
+          objectStorage
+            ? <InboxOutlined className={classNames({'cp-sensitive': item.sensitive})} />
+            : <HddOutlined className={classNames({'cp-sensitive': item.sensitive})} />
         );
       default: return <div />;
     }
@@ -280,7 +286,7 @@ export default class Folder extends localization.LocalizedReactComponent {
           if (item.locked) {
             nameComponent = (
               <span>
-                <Icon type="lock" />
+                <LockOutlined />
                 {
                   item.type === ItemTypes.storage && (
                     <AWSRegionTag
@@ -366,20 +372,19 @@ export default class Folder extends localization.LocalizedReactComponent {
         title={null}
         showHeader={false}
         rowClassName={(row) => `folder-item-${row.key}`}
-        expandedRowRender={null}
         loading={this.props.folder.pending}
         pagination={{pageSize: 40}}
         locale={{emptyText: 'Folder is empty'}}
-        onRowClick={(item) => {
-          this.navigate(item);
-        }}
+        onRow={(item) => ({
+          onClick: () => this.navigate(item)
+        })}
         size="small" />
     );
   };
 
   render () {
     if (!this.props.folder.pending && this.props.folder.error) {
-      return <Alert message={this.props.folder.error} type="error" />;
+      return <Alert title={this.props.folder.error} type="error" />;
     }
     if (!this.props.folder.loaded && this.props.folder.pending) {
       return <LoadingView />;
@@ -390,11 +395,9 @@ export default class Folder extends localization.LocalizedReactComponent {
       <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
         <Row type="flex" justify="space-between" align="middle" style={{minHeight: 41}}>
           <Col className={styles.itemHeader}>
-            <Icon
-              className={styles.editableControl}
-              style={{marginRight: 5}}
-              type={isStorages ? 'hdd' : 'fork'}
-            />
+            {isStorages
+              ? <HddOutlined className={styles.editableControl} style={{marginRight: 5}} />
+              : <ForkOutlined className={styles.editableControl} style={{marginRight: 5}} />}
             <span>
               {isStorages ? 'All storages' : `All ${this.localizedString('pipeline')}s`}
             </span>
@@ -420,3 +423,5 @@ export default class Folder extends localization.LocalizedReactComponent {
     );
   }
 }
+
+export default withRouter(Folder);

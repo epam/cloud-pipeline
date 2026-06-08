@@ -30,12 +30,12 @@ export default function getThemedPlotColors (Component) {
   ) {
     const {themes} = Component.props;
     return [
-      themes.currentThemeConfiguration['@primary-color'] || blue,
-      themes.currentThemeConfiguration['@color-red'] || red,
-      themes.currentThemeConfiguration['@color-green'] || green,
-      themes.currentThemeConfiguration['@color-yellow'] || yellow,
-      themes.currentThemeConfiguration['@color-aqua'] || aqua,
-      themes.currentThemeConfiguration['@color-violet'] || violet
+      themes.currentThemeConfiguration['--cp-color-primary'] || blue,
+      themes.currentThemeConfiguration['--cp-color-red'] || red,
+      themes.currentThemeConfiguration['--cp-color-green'] || green,
+      themes.currentThemeConfiguration['--cp-color-yellow'] || yellow,
+      themes.currentThemeConfiguration['--cp-color-aqua'] || aqua,
+      themes.currentThemeConfiguration['--cp-color-violet'] || violet
     ];
   }
   return [

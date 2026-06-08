@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {
   ContextualPreferenceLoad,
   ContextualPreferenceUpdate,
@@ -106,12 +106,19 @@ export default class InstanceTypesManagementForm extends React.Component {
     operationInProgress: false
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      pending: computed,
+      defaultJobsVisibilityValue: computed
+    });
+  }
+
   componentDidMount () {
     const {onInitialized} = this.props;
     onInitialized && onInitialized(this);
   }
 
-  @computed
   get pending () {
     return this.valuePending(valueNames.allowedInstanceMaxCount) ||
       this.valuePending(valueNames.allowedInstanceMaxCountGroup) ||
@@ -123,7 +130,6 @@ export default class InstanceTypesManagementForm extends React.Component {
       this.valuePending(valueNames.gcpSpotInstanceType);
   }
 
-  @computed
   get defaultJobsVisibilityValue () {
     const {preferences} = this.props;
     return preferences.getPreferenceValue(names.jobsVisibility);
@@ -237,13 +243,15 @@ export default class InstanceTypesManagementForm extends React.Component {
 
   valueInputDecorator = (field, disabled, type) => {
     if (type === 'number') {
-      return <InputNumber
-        disabled={disabled}
-        style={{flex: 1}}
-        value={this.getValue(field)}
-        onChange={this.onValueChanged(field)}
-        parser={value => `${value}`.replace(/\D/g, '')}
-      />;
+      return (
+        <InputNumber
+          disabled={disabled}
+          style={{flex: 1}}
+          value={this.getValue(field)}
+          onChange={this.onValueChanged(field)}
+          parser={value => `${value}`.replace(/\D/g, '')}
+        />
+      );
     }
     return <Input
       disabled={disabled}

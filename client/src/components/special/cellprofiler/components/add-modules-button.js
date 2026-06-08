@@ -16,10 +16,14 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
-import {Button, Icon, Input} from 'antd';
-import Menu, {MenuItem, SubMenu} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
+import {
+  observer} from 'mobx-react';
+import {Button,
+  Dropdown,
+  Input,
+  Menu
+} from 'antd';
+import {PlusOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import allModules from '../model/modules';
 import styles from './cell-profiler.css';
@@ -61,6 +65,22 @@ class AddModulesButton extends React.Component {
       : [...(new Set(filtered.map(module => module.group)))].filter(Boolean);
     const rootLevelModules = filtered
       .filter(module => !module.group || !groups.includes(module.group));
+    const menuItems = [
+      ...rootLevelModules.map((cpModule) => ({
+        key: cpModule.name,
+        label: cpModule.title || cpModule.name
+      })),
+      ...groups.map((group) => ({
+        key: group,
+        label: group,
+        children: filtered
+          .filter(module => module.group === group)
+          .map((cpModule) => ({
+            key: cpModule.name,
+            label: cpModule.title || cpModule.name
+          }))
+      }))
+    ];
     const menu = (
       <div
         className={
@@ -102,55 +122,29 @@ class AddModulesButton extends React.Component {
           className={styles.modulesDropdown}
         >
           <Menu
+            mode="vertical"
             openKeys={this.state.openedKeys}
             selectedKeys={[]}
             onClick={onSelect}
             onOpenChange={onOpenChange}
             style={{border: 'none'}}
-          >
-            {
-              rootLevelModules
-                .map((cpModule) => (
-                  <MenuItem key={cpModule.name}>
-                    {cpModule.title || cpModule.name}
-                  </MenuItem>
-                ))
-            }
-            {
-              groups.map((group) => (
-                <SubMenu
-                  key={group}
-                  title={group}
-                  selectedKeys={[]}
-                >
-                  {
-                    filtered
-                      .filter(module => module.group === group)
-                      .map((cpModule) => (
-                        <MenuItem key={cpModule.name}>
-                          {cpModule.title || cpModule.name}
-                        </MenuItem>
-                      ))
-                  }
-                </SubMenu>
-              ))
-            }
-          </Menu>
+            items={menuItems}
+          />
         </div>
       </div>
     );
     return (
       <Dropdown
-        overlay={menu}
+        popupRender={() => menu}
         trigger={['click']}
-        onVisibleChange={handleVisibility}
-        visible={this.state.addModuleSelectorVisible}
+        onOpenChange={handleVisibility}
+        open={this.state.addModuleSelectorVisible}
         getPopupContainer={node => node.parentNode}
       >
         <Button
           size="small"
         >
-          <Icon type="plus" />
+          <PlusOutlined />
           <span>Add module</span>
         </Button>
       </Dropdown>

@@ -56,7 +56,7 @@ function SensitiveBucketsWarning (
       showIcon={showIcon}
       type="warning"
       style={style}
-      message={message || (
+      title={message || (
         <div>
           <div>You are going to launch a job with <b>sensitive storages</b>.</div>
           <div>

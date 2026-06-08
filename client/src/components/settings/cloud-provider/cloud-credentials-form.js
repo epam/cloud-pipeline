@@ -16,14 +16,16 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {computed, makeObservable} from 'mobx';
 import {
   Alert,
   Button,
-  Icon,
   Table
 } from 'antd';
+import {EditOutlined, PlusOutlined} from '@ant-design/icons';
 import CloudCredentialsProfileForm from './cloud-credentials-profile-form';
 import LoadingView from '../../special/LoadingView';
 import styles from './cloud-credentials-form.css';
@@ -34,12 +36,18 @@ class CloudCredentialsForm extends React.Component {
     createNew: false
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      allCredentialProfiles: computed
+    });
+  }
+
   get readOnly () {
     const {provider} = this.props;
     return !/^aws$/i.test(provider);
   }
 
-  @computed
   get allCredentialProfiles () {
     if (this.props.cloudCredentialProfiles.loaded) {
       return (this.props.cloudCredentialProfiles.value || []).map(c => c);
@@ -80,7 +88,7 @@ class CloudCredentialsForm extends React.Component {
                   this.onEditCredentialsClicked(credentials);
                 }}
               >
-                <Icon type="edit" />
+                <EditOutlined />
               </Button>
             </div>
           );
@@ -126,7 +134,7 @@ class CloudCredentialsForm extends React.Component {
     if (this.props.cloudCredentialProfiles.pending && !this.props.cloudCredentialProfiles.loaded) {
       content = (<LoadingView />);
     } else if (this.props.cloudCredentialProfiles.error) {
-      content = (<Alert type="error" message={this.props.cloudCredentialProfiles.error} />);
+      content = (<Alert type="error" title={this.props.cloudCredentialProfiles.error} />);
     } else {
       const {
         currentCredentials,
@@ -144,7 +152,7 @@ class CloudCredentialsForm extends React.Component {
                   size="small"
                   onClick={this.onCreateNewClicked}
                 >
-                  <Icon type="plus" />
+                  <PlusOutlined />
                   <span>Create profile</span>
                 </Button>
               </div>
@@ -156,7 +164,7 @@ class CloudCredentialsForm extends React.Component {
             size="small"
             rowKey="id"
             rowClassName={() => styles.credentialsRow}
-            onRowClick={o => this.onEditCredentialsClicked(o)}
+            onRow={(o) => ({onClick: () => this.onEditCredentialsClicked(o)})}
           />
           <CloudCredentialsProfileForm
             visible={createNew || !!currentCredentials}

@@ -51,7 +51,7 @@ export default class DockerRegistriesGroupsDropdownContent extends React.Compone
     return (
       <div
         id="groups-dropdown"
-        className={classNames(styles.navigationDropdownContainer, 'rc-dropdown-menu')}
+        className={classNames(styles.navigationDropdownContainer)}
         style={{
           display: 'flex',
           flexDirection: 'column'

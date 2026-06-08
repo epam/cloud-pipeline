@@ -15,11 +15,22 @@
  */
 
 import React from 'react';
-import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {computed, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import LoadingView from '../special/LoadingView';
-import {Alert, Button, Card, Dropdown, Icon, Menu, Modal, Row, Table} from 'antd';
+import {Alert,
+  Button,
+  Card,
+  Dropdown,
+  Menu,
+  Modal,
+  Row,
+  Table
+} from 'antd';
+import {DeleteOutlined, DownOutlined} from '@ant-design/icons';
 import RunTable from './run-table';
 import AdaptedLink from '../special/AdaptedLink';
 import SessionStorageWrapper from '../special/SessionStorageWrapper';
@@ -50,6 +61,14 @@ class RunsFilter extends React.Component {
     appliedFilter: null,
     savedFiltersDropDownVisible: false
   };
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      savedFilters: computed,
+      keywords: computed
+    });
+  }
 
   componentDidMount () {
     if (this.props.query) {
@@ -82,7 +101,7 @@ class RunsFilter extends React.Component {
         <Alert
           style={{marginBottom: 10}}
           type="error"
-          message={lines.map((line, index) => <pre key={index}>{line}</pre>)} />
+          title={lines.map((line, index) => <pre key={index}>{line}</pre>)} />
       );
     }
     return undefined;
@@ -230,42 +249,41 @@ class RunsFilter extends React.Component {
       const highlightedKey = isNaN(this.state.autocomplete.hovered)
         ? undefined
         : `${this.state.autocomplete.hovered}`;
+      const menuItems = this.state.autocomplete.filter.map((f, index) => {
+        let fieldDescription;
+        if (f.fieldDescription) {
+          fieldDescription = (
+            <span style={{marginLeft: 5}}>
+              -
+              <i
+                className="cp-text-not-important"
+                style={{
+                  fontSize: 'smaller',
+                  marginLeft: 2
+                }}
+              >
+                {f.fieldDescription}
+              </i>
+            </span>
+          );
+        }
+        return {
+          key: String(index),
+          className: classNames(styles.autocompleteItem, 'cp-runs-autocomplete-menu-item'),
+          label: (
+            <div onMouseOver={() => onHover(index)}>
+              <span>{f.fieldName} - {fieldDescription}</span>
+            </div>
+          )
+        };
+      });
       return (
         <Menu
           onClick={onClick}
           className={classNames(styles.autocompleteMenu, 'cp-runs-autocomplete-menu')}
           selectedKeys={[highlightedKey]}
-        >
-          {this.state.autocomplete.filter.map((f, index) => {
-            let fieldDescription;
-            if (f.fieldDescription) {
-              fieldDescription = (
-                <span style={{marginLeft: 5}}>
-                  -
-                  <i
-                    className="cp-text-not-important"
-                    style={{
-                      fontSize: 'smaller',
-                      marginLeft: 2
-                    }}
-                  >
-                    {f.fieldDescription}
-                  </i>
-                </span>
-              );
-            }
-            return (
-              <Menu.Item
-                className={classNames(styles.autocompleteItem, 'cp-runs-autocomplete-menu-item')}
-                key={index}
-              >
-                <div onMouseOver={() => onHover(index)}>
-                  <span>{f.fieldName} - {fieldDescription}</span>
-                </div>
-              </Menu.Item>
-            );
-          })}
-        </Menu>
+          items={menuItems}
+        />
       );
     }
     return undefined;
@@ -303,7 +321,6 @@ class RunsFilter extends React.Component {
     } catch (___) {}
   };
 
-  @computed
   get savedFilters () {
     const savedFiltersStr = localStorage.getItem('filters');
     if (savedFiltersStr) {
@@ -364,14 +381,14 @@ class RunsFilter extends React.Component {
       className: styles.savedFiltersActionsRow,
       render: (filter) => (
         <Button
-          type="danger"
+          danger
           onClick={onDelete(filter)}
           size="small">
-          <Icon type="delete" />
+          <DeleteOutlined />
         </Button>
       )
     }];
-    const menu = (
+    const menuContent = (
       <Row style={{minWidth: 200}}>
         <Table
           className={styles.table}
@@ -381,7 +398,7 @@ class RunsFilter extends React.Component {
           showHeader={false}
           columns={columns}
           rowClassName={() => styles.savedFiltersRow}
-          onRowClick={onSelect}
+          onRow={(record) => ({onClick: () => onSelect(record)})}
           size="small" />
       </Row>
     );
@@ -389,17 +406,17 @@ class RunsFilter extends React.Component {
       <td style={{width: 50, textAlign: 'center', textTransform: 'uppercase'}}>
         <Dropdown
           placement="bottomRight"
-          visible={this.state.savedFiltersDropDownVisible}
-          onVisibleChange={onDropDownVisibilityChanged}
-          overlay={menu}
+          open={this.state.savedFiltersDropDownVisible}
+          onOpenChange={onDropDownVisibilityChanged}
+          menu={{items: [{key: '_', label: ''}]}}
+          popupRender={() => menuContent}
           trigger={['click']}>
-          <Button><Icon type="down" /></Button>
+          <Button><DownOutlined /></Button>
         </Dropdown>
       </td>
     );
   };
 
-  @computed
   get keywords () {
     if (this.props.keywords.pending || this.props.keywords.error) {
       return [];
@@ -421,7 +438,7 @@ class RunsFilter extends React.Component {
             'cp-panel-borderless'
           )
         }
-        bodyStyle={{padding: 15}}
+        styles={{body: {padding: 15}}}
       >
         <Row type="flex" align="middle">
           <table style={{width: '100%', marginBottom: 10}}>

@@ -1,8 +1,12 @@
 import React, {Component} from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import {createObjectStorageWrapper} from '../../../../../utils/object-storage';
-import {Alert, Icon} from 'antd';
+import {Alert
+} from 'antd';
+import {LoadingOutlined} from '@ant-design/icons';
 
 @inject('dataStorages')
 @observer
@@ -97,14 +101,14 @@ class LabelPreview extends Component {
               style={{display: 'flex', alignItems: 'center'}}
               className="cp-text-not-important"
             >
-              <Icon type="loading" style={{marginRight: 5}} />
+              <LoadingOutlined style={{marginRight: 5}} />
               <span>Loading label...</span>
             </div>
           )
         }
         {
           !url && !pending && error && (
-            <Alert message={<div>Error loading label: {error}</div>} type="error" />
+            <Alert title={<div>Error loading label: {error}</div>} type="error" />
           )
         }
       </div>

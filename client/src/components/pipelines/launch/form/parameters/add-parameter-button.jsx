@@ -1,9 +1,13 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import Menu, {MenuItem} from 'rc-menu';
-import {inject, observer} from 'mobx-react';
-import {Button, Icon} from 'antd';
-import Dropdown from 'rc-dropdown';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {Button,
+  Dropdown,
+  Space
+} from 'antd';
+import {DownOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import {addParameter, addSystemParameters} from '../utilities/parameter-utilities';
 import {
@@ -81,30 +85,43 @@ class AddParameterButton extends React.Component {
       onAddParameter(key);
     };
 
-    const parameterTypeMenu = (
-      <Menu selectedKeys={[]} onClick={onSelect} style={{cursor: 'pointer'}}>
-        <MenuItem id="add-string-parameter" key="string">String parameter</MenuItem>
-        <MenuItem id="add-boolean-parameter" key="boolean">Boolean parameter</MenuItem>
-        <MenuItem id="add-path-parameter" key="path">Path parameter</MenuItem>
-        <MenuItem id="add-input-parameter" key="input">Input path parameter</MenuItem>
-        <MenuItem
-          id="add-output-parameter"
-          key="output"
-          disabled={hasOutput}
-        >
-          <span
-            className={classNames({'cp-text-not-important': hasOutput})}
-          >
-            Output path parameter
-          </span>
-        </MenuItem>
-        <MenuItem id="add-common-parameter" key="common">Common path parameter</MenuItem>
-        <MenuItem id="add-metadata-parameter" key="metadata">Metadata parameter</MenuItem>
-      </Menu>
-    );
+    const parameterTypeMenuItems = [
+      {
+        key: 'string',
+        label: 'String parameter',
+        id: 'add-string-parameter'
+      }, {
+        key: 'boolean',
+        label: 'Boolean parameter',
+        id: 'add-boolean-parameter'
+      }, {
+        key: 'path',
+        label: 'Path parameter',
+        id: 'add-path-parameter'
+      }, {
+        key: 'input',
+        label: 'Input path parameter',
+        id: 'add-input-parameter'
+      }, {
+        key: 'output',
+        label: <span className={classNames({'cp-text-not-important': hasOutput})}>
+          Output path parameter
+        </span>,
+        disabled: hasOutput,
+        id: 'add-output-parameter'
+      }, {
+        key: 'common',
+        label: 'Common path parameter',
+        id: 'add-common-parameter'
+      }, {
+        key: 'metadata',
+        label: 'Metadata parameter',
+        id: 'add-metadata-parameter'
+      }
+    ];
 
     return (
-      <Button.Group className={className} style={style}>
+      <Space.Compact className={className} style={style}>
         <Button
           disabled={disabled}
           id="add-parameter-button"
@@ -112,7 +129,7 @@ class AddParameterButton extends React.Component {
           Add parameter
         </Button>
         <Dropdown
-          overlay={parameterTypeMenu}
+          menu={{items: parameterTypeMenuItems, onClick: onSelect}}
           placement="bottomRight"
           trigger={disabled ? [] : ['hover']}
         >
@@ -121,10 +138,10 @@ class AddParameterButton extends React.Component {
             id="add-parameter-dropdown-button"
             style={{padding: '0px 8px'}}
           >
-            <Icon type="down" />
+            <DownOutlined />
           </Button>
         </Dropdown>
-      </Button.Group>
+      </Space.Compact>
     );
   };
   render () {

@@ -16,9 +16,9 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
-import {Modal, Form, Row, Col, Spin, Checkbox, Alert} from 'antd';
+import {Form, Modal, Row, Col, Spin, Checkbox, Alert} from 'antd';
 import roleModel from '../../../../utils/roleModel';
 import localization from '../../../../utils/localization';
 import LoadToolTags from '../../../../models/tools/LoadToolTags';
@@ -27,7 +27,6 @@ import HiddenObjects from '../../../../utils/hidden-objects';
 import LayersCheckProvider from '../../actions/check/layers/provider';
 import CommitCheckProvider from '../../actions/check/commit/provider';
 
-@Form.create()
 @localization.localizedComponent
 @CommitCheckProvider.inject
 @LayersCheckProvider.inject
@@ -35,6 +34,7 @@ import CommitCheckProvider from '../../actions/check/commit/provider';
 @HiddenObjects.injectToolsFilters
 @observer
 class CommitRunForm extends localization.LocalizedReactComponent {
+  formRef = React.createRef();
   formItemLayout = {
     labelCol: {
       xs: {span: 24},
@@ -50,22 +50,28 @@ class CommitRunForm extends localization.LocalizedReactComponent {
     toolValid: true
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      layersCheckPassed: computed,
+      commitCheckPassed: computed,
+      allowCommitToOtherPersonalGroups: computed,
+      registries: computed
+    });
+  }
+
   get toolValid () {
     return this.state.toolValid;
   }
 
-  @computed
   get layersCheckPassed () {
     return LayersCheckProvider.getCheckResult(this.props);
   }
 
-  @computed
   get commitCheckPassed () {
     return CommitCheckProvider.getCheckResult(this.props);
   }
 
-  @computed
   get allowCommitToOtherPersonalGroups () {
     return this.props.preferences.loaded
       ? this.props.preferences.allowCommitToOtherPersonalGroups
@@ -73,44 +79,39 @@ class CommitRunForm extends localization.LocalizedReactComponent {
   }
 
   validate = async () => {
-    return new Promise((resolve) => {
-      this.props.form.validateFieldsAndScroll((err, values) => {
-        if (!err) {
-          (async () => {
-            const {newTool, newVersion, isLink} = await this.checkDockerImage(values.newImageName);
-            if (isLink) {
-              Modal.error({
-                title: `You cannot push to linked tool ${values.newImageName}`
-              });
-              resolve(null);
-              return;
-            }
-            const doCommit = () => {
-              const registryPath = values.newImageName.split('/')[0];
-              const [registry] = this.registries.filter(r => r.path === registryPath);
-              values.registryToCommitId = registry.id;
-              resolve(values);
-            };
-            if (newTool || newVersion) {
-              doCommit();
-            } else {
-              Modal.confirm({
-                title: `${values.newImageName} already exists. Overwrite?`,
-                style: {
-                  wordWrap: 'break-word'
-                },
-                onOk: () => doCommit(),
-                onCancel: () => resolve(null),
-                okText: 'OK',
-                cancelText: 'CANCEL'
-              });
-            }
-          })();
-        } else {
-          resolve(null);
-        }
+    try {
+      const values = await this.formRef.current.validateFields();
+      const {newTool, newVersion, isLink} = await this.checkDockerImage(values.newImageName);
+      if (isLink) {
+        Modal.error({
+          title: `You cannot push to linked tool ${values.newImageName}`
+        });
+        return null;
+      }
+      const doCommit = () => {
+        const registryPath = values.newImageName.split('/')[0];
+        const [registry] = this.registries.filter(r => r.path === registryPath);
+        values.registryToCommitId = registry.id;
+        return values;
+      };
+      if (newTool || newVersion) {
+        return doCommit();
+      }
+      return new Promise((resolve) => {
+        Modal.confirm({
+          title: `${values.newImageName} already exists. Overwrite?`,
+          style: {
+            wordWrap: 'break-word'
+          },
+          onOk: () => resolve(doCommit()),
+          onCancel: () => resolve(null),
+          okText: 'OK',
+          cancelText: 'CANCEL'
+        });
       });
-    });
+    } catch {
+      return null;
+    }
   };
 
   onToolValidation = (valid) => {
@@ -146,7 +147,6 @@ class CommitRunForm extends localization.LocalizedReactComponent {
     return {newTool: true};
   };
 
-  @computed
   get registries () {
     if (!this.props.dockerRegistries.loaded) {
       return [];
@@ -157,7 +157,7 @@ class CommitRunForm extends localization.LocalizedReactComponent {
 
   get canCommitIntoRegistry () {
     const selectFirstWritableGroup = g =>
-    roleModel.writeAllowed(g) || (g.tools || []).filter(t => roleModel.writeAllowed(t)).length > 0;
+      roleModel.writeAllowed(g) || (g.tools || []).filter(t => roleModel.writeAllowed(t)).length > 0;
     const selectFirstWritableRegistry = r =>
       (r.groups || []).filter(selectFirstWritableGroup).length > 0;
     return this.registries.filter(selectFirstWritableRegistry).length > 0;
@@ -200,7 +200,7 @@ class CommitRunForm extends localization.LocalizedReactComponent {
                 !roleModel.writeAllowed(registryGroup)) {
                 tool = '';
                 const selectFirstWritableGroup = g =>
-                roleModel.writeAllowed(g) || (g.tools || [])
+                  roleModel.writeAllowed(g) || (g.tools || [])
                     .filter(t => roleModel.writeAllowed(t)).length > 0;
                 const selectFirstWritableRegistry = r =>
                   (r.groups || []).filter(selectFirstWritableGroup).length > 0;
@@ -224,66 +224,65 @@ class CommitRunForm extends localization.LocalizedReactComponent {
     return null;
   }
 
-  validateNewImage = (value, callback) => {
+  validateNewImage = (rule, value) => {
     if (value && value.indexOf('___') >= 0) {
-      callback('You cannot use more than two underscores subsequently');
-    } else {
-      if (value) {
-        this.checkDockerImage(value)
-          .then((res) => {
-            const {isLink} = res;
-            if (isLink) {
-              callback('You cannot push to linked tool');
-              return;
-            }
-            const parts = value.split('/');
-            const registry = parts.shift();
-            const group = parts.shift();
-            const toolAndVersion = parts.join('/');
-            if (registry === undefined || group === undefined || toolAndVersion === undefined) {
-              callback('Docker image name is required');
-              return;
-            } else {
-              const nameRegExp = /^[\da-z]([\da-z\\.\-_]*[\da-z]+)*$/;
-              const toolAndVersionParts = toolAndVersion.split(':');
-              const tool = toolAndVersionParts.shift();
-              const version = toolAndVersionParts.join(':');
-              if (!/^[\da-zA-Z.\-_:]+$/.test(registry)) {
-                callback('Registry path should contain valid URL');
-                return;
-              } else if (!nameRegExp.test(group)) {
-                callback('Tool group should contain only lowercase letters, digits, separators (-, ., _) and should not start or end with a separator');
-                return;
-              } else if (!nameRegExp.test(tool)) {
-                callback('Image name should contain only lowercase letters, digits, separators (-, ., _) and should not start or end with a separator');
-                return;
-              } else if (version && !nameRegExp.test(version)) {
-                callback('Version should contain only lowercase letters, digits, separators (-, ., _) and should not start or end with a separator');
-                return;
-              }
-              callback();
-            }
-          })
-          .catch(e => callback(e.toString()));
-      } else {
-        callback();
-      }
+      return Promise.reject(new Error('You cannot use more than two underscores subsequently'));
     }
+    if (!value) return Promise.resolve();
+    return this.checkDockerImage(value)
+      .then((res) => {
+        const {isLink} = res;
+        if (isLink) {
+          return Promise.reject(new Error('You cannot push to linked tool'));
+        }
+        const parts = value.split('/');
+        const registry = parts.shift();
+        const group = parts.shift();
+        const toolAndVersion = parts.join('/');
+        if (registry === undefined || group === undefined || toolAndVersion === undefined) {
+          return Promise.reject(new Error('Docker image name is required'));
+        }
+        const nameRegExp = /^[\da-z]([\da-z\\.\-_]*[\da-z]+)*$/;
+        const toolAndVersionParts = toolAndVersion.split(':');
+        const tool = toolAndVersionParts.shift();
+        const version = toolAndVersionParts.join(':');
+        if (!/^[\da-zA-Z.\-_:]+$/.test(registry)) {
+          return Promise.reject(new Error('Registry path should contain valid URL'));
+        }
+        if (!nameRegExp.test(group)) {
+          return Promise.reject(new Error('Tool group should contain only lowercase letters, digits, separators (-, ., _) and should not start or end with a separator'));
+        }
+        if (!nameRegExp.test(tool)) {
+          return Promise.reject(new Error('Image name should contain only lowercase letters, digits, separators (-, ., _) and should not start or end with a separator'));
+        }
+        if (version && !nameRegExp.test(version)) {
+          return Promise.reject(new Error('Version should contain only lowercase letters, digits, separators (-, ., _) and should not start or end with a separator'));
+        }
+        return Promise.resolve();
+      })
+      .catch(e => Promise.reject(e.toString()));
   };
 
   reset = () => {
-    this.props.form && this.props.form.resetFields();
+    this.formRef.current && this.formRef.current.resetFields();
   };
 
   render () {
-    const {getFieldDecorator} = this.props.form;
     const {pending: layersCheckPending} = LayersCheckProvider.getCheckInfo(this.props);
     const {pending: commitCheckPending} = CommitCheckProvider.getCheckInfo(this.props);
     const pending = this.props.pending || layersCheckPending || commitCheckPending;
     return (
       <Spin spinning={pending}>
         {this.canCommitIntoRegistry ? (
-          <Form className="commit-pipeline-run-form">
+          <Form
+            ref={this.formRef}
+            className="commit-pipeline-run-form"
+            initialValues={{
+              newImageName: this.dockerImage,
+              deleteFiles: this.props.deleteRuntimeFiles,
+              stopPipeline: this.props.stopPipeline
+            }}
+          >
             <CommitCheckProvider.Warning />
             <LayersCheckProvider.Warning />
             <Form.Item
@@ -291,29 +290,21 @@ class CommitRunForm extends localization.LocalizedReactComponent {
               key="Image name"
               className="commit-pipeline-run-form-image-name-container"
               {...this.formItemLayout}
-              label="Docker image">
-              {getFieldDecorator('newImageName',
-                {
-                  rules: [
-                    {
-                      required: true,
-                      message: 'Image name is required'
-                    },
-                    {
-                      validator: (rule, value, callback) => this.validateNewImage(value, callback)
-                    }
-                  ],
-                  initialValue: this.dockerImage
-                })(
-                <CommitRunDockerImageInput
-                  onValidation={this.onToolValidation}
-                  visible={this.props.visible}
-                  onPressEnter={this.props.onPressEnter}
-                  registries={this.registries}
-                  disabled={pending}
-                  showOtherPersonalGroups={this.allowCommitToOtherPersonalGroups}
-                />
-              )}
+              label="Docker image"
+              name="newImageName"
+              rules={[
+                {required: true, message: 'Image name is required'},
+                {validator: this.validateNewImage}
+              ]}
+            >
+              <CommitRunDockerImageInput
+                onValidation={this.onToolValidation}
+                visible={this.props.visible}
+                onPressEnter={this.props.onPressEnter}
+                registries={this.registries}
+                disabled={pending}
+                showOtherPersonalGroups={this.allowCommitToOtherPersonalGroups}
+              />
             </Form.Item>
             {
               this.props.displayDeleteRuntimeFilesSelector &&
@@ -322,15 +313,13 @@ class CommitRunForm extends localization.LocalizedReactComponent {
                 <Col xs={24} sm={18}>
                   <Form.Item
                     key="Delete files"
-                    className="commit-pipeline-run-form-delete-files-container">
-                    {getFieldDecorator('deleteFiles', {
-                      valuePropName: 'checked',
-                      initialValue: this.props.deleteRuntimeFiles
-                    })(
-                      <Checkbox disabled={pending}>
-                        Delete runtime files
-                      </Checkbox>
-                    )}
+                    className="commit-pipeline-run-form-delete-files-container"
+                    name="deleteFiles"
+                    valuePropName="checked"
+                  >
+                    <Checkbox disabled={pending}>
+                      Delete runtime files
+                    </Checkbox>
                   </Form.Item>
                 </Col>
               </Row>
@@ -342,26 +331,25 @@ class CommitRunForm extends localization.LocalizedReactComponent {
                 <Col xs={24} sm={18}>
                   <Form.Item
                     key="Stop pipeline"
-                    className="commit-pipeline-run-form-stop-pipeline-container">
-                    {getFieldDecorator('stopPipeline', {
-                      valuePropName: 'checked',
-                      initialValue: this.props.stopPipeline
-                    })(
-                      <Checkbox disabled={pending}>
-                        Stop {this.localizedString('pipeline')}
-                      </Checkbox>
-                    )}
+                    className="commit-pipeline-run-form-stop-pipeline-container"
+                    name="stopPipeline"
+                    valuePropName="checked"
+                  >
+                    <Checkbox disabled={pending}>
+                      Stop {this.localizedString('pipeline')}
+                    </Checkbox>
                   </Form.Item>
                 </Col>
               </Row>
             }
-          </Form>) : (
-            <Row>
-              <Alert
-                type="warning"
-                message="You don't have permission to write in registries" />
-              <br />
-            </Row>
+          </Form>
+        ) : (
+          <Row>
+            <Alert
+              type="warning"
+              title="You don't have permission to write in registries" />
+            <br />
+          </Row>
         )}
       </Spin>
     );
@@ -375,12 +363,18 @@ class CommitRunForm extends localization.LocalizedReactComponent {
 function CommitRunFormHOC (props) {
   const {
     runId,
-    visible
+    visible,
+    displayDeleteRuntimeFilesSelector = true,
+    displayStopPipelineSelector = true
   } = props;
   return (
     <LayersCheckProvider runId={runId} active={visible}>
       <CommitCheckProvider runId={runId} active={visible}>
-        <CommitRunForm {...props} />
+        <CommitRunForm
+          {...props}
+          displayDeleteRuntimeFilesSelector={displayDeleteRuntimeFilesSelector}
+          displayStopPipelineSelector={displayStopPipelineSelector}
+        />
       </CommitCheckProvider>
     </LayersCheckProvider>
   );
@@ -394,11 +388,6 @@ CommitRunFormHOC.propTypes = {
   visible: PropTypes.bool,
   defaultDockerImage: PropTypes.string
 };
-CommitRunFormHOC.defaultProps = {
-  displayDeleteRuntimeFilesSelector: true,
-  displayStopPipelineSelector: true
-};
 CommitRunForm.propTypes = CommitRunFormHOC.propTypes;
-CommitRunForm.defaultProps = CommitRunFormHOC.defaultProps;
 
 export default CommitRunFormHOC;

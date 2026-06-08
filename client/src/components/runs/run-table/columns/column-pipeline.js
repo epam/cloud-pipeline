@@ -17,13 +17,15 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import {
   Checkbox,
-  Icon,
   Input,
   Row
 } from 'antd';
+import {LoadingOutlined} from '@ant-design/icons';
 import {renderPipelineName} from './utilities';
 import {
   getFiltersState,
@@ -64,7 +66,7 @@ function PipelinesFilterComponent (
           )
         }
       >
-        <Icon type="loading" />
+        <LoadingOutlined />
       </div>
     );
   }
@@ -186,9 +188,11 @@ function getColumnFilter (state, setState) {
         onClear={clear}
       />
     ),
-    filterDropdownVisible,
-    filtered,
-    onFilterDropdownVisibleChange
+    filterDropdownProps: {
+      open: filterDropdownVisible,
+      onOpenChange: onFilterDropdownVisibleChange
+    },
+    filtered
   };
 }
 

@@ -16,9 +16,18 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
-import {Alert, Button, Icon, message, Modal, Row, Tooltip} from 'antd';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {computed, makeObservable} from 'mobx';
+import {Alert,
+  Button,
+  message,
+  Modal,
+  Row,
+  Tooltip
+} from 'antd';
+import {ArrowLeftOutlined, CheckOutlined, CloseOutlined, DeleteOutlined, EditOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import IssueCommentPreview from './controls/IssueCommentPreview';
 import IssueComment from './controls/IssueComment';
@@ -52,7 +61,6 @@ import {
 @injectCloudPipelineLinksHelpers
 @observer
 export default class Issue extends localization.LocalizedReactComponent {
-
   static propTypes = {
     readOnly: PropTypes.bool,
     onNavigateBack: PropTypes.func,
@@ -81,7 +89,18 @@ export default class Issue extends localization.LocalizedReactComponent {
     });
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      isAdmin: computed,
+      isMineIssue: computed,
+      canAddComment: computed,
+      canEditIssue: computed,
+      canRemoveIssue: computed,
+      comments: computed
+    });
+  }
+
   get isAdmin () {
     if (this.props.authenticatedUserInfo && this.props.authenticatedUserInfo.loaded) {
       return this.props.authenticatedUserInfo.value.admin;
@@ -89,7 +108,6 @@ export default class Issue extends localization.LocalizedReactComponent {
     return false;
   }
 
-  @computed
   get isMineIssue () {
     if (this.props.issueInfo && this.props.issueInfo.loaded &&
       this.props.authenticatedUserInfo && this.props.authenticatedUserInfo.loaded) {
@@ -115,6 +133,7 @@ export default class Issue extends localization.LocalizedReactComponent {
     return !this.props.readOnly &&
       (this.isMineComment(comment) || this.isAdmin);
   };
+
   onRenameIssue = async (name) => {
     const text = this.props.issueInfo.loaded ? this.props.issueInfo.value.text : undefined;
     const htmlText = await renderHtml(text, this.props);
@@ -123,7 +142,7 @@ export default class Issue extends localization.LocalizedReactComponent {
       text,
       htmlText,
       name,
-      status: this.props.issueInfo.loaded ? this.props.issueInfo.value.status : 'OPEN',
+      status: this.props.issueInfo.loaded ? this.props.issueInfo.value.status : 'OPEN'
     };
     const hide = message.loading(`Renaming ${this.localizedString('issue')}...`, 0);
     const request = new IssueUpdate(this.props.issueId);
@@ -136,6 +155,7 @@ export default class Issue extends localization.LocalizedReactComponent {
       hide();
     }
   };
+
   onUpdateIssue = async (text, attachments) => {
     const hide = message.loading('Updating comment...', 0);
     const issueAttachments = await processUnusedAttachments(text, attachments);
@@ -159,6 +179,7 @@ export default class Issue extends localization.LocalizedReactComponent {
       hide();
     }
   };
+
   onEditCommentClicked = (comment) => {
     this.setState({
       editableCommentId: comment.id,
@@ -166,12 +187,14 @@ export default class Issue extends localization.LocalizedReactComponent {
       editableCommentOriginalAttachments: comment.attachments || []
     });
   };
+
   onEditComment = ({text, attachments}) => {
     this.setState({
       editableCommentText: text,
       editableCommentAttachments: attachments
     });
   };
+
   onApplyEditCommentClicked = async () => {
     if (this.state.editableCommentId === 'root') {
       await this.onUpdateIssue(this.state.editableCommentText, this.state.editableCommentAttachments);
@@ -209,6 +232,7 @@ export default class Issue extends localization.LocalizedReactComponent {
       }
     }
   };
+
   onCancelEditComment = () => {
     this.setState({
       editableCommentId: null,
@@ -218,6 +242,7 @@ export default class Issue extends localization.LocalizedReactComponent {
       editableCommentOriginalAttachments: []
     });
   };
+
   onCancelEditCommentClicked = () => {
     const onCancel = () => {
       this.onCancelEditComment();
@@ -236,6 +261,7 @@ export default class Issue extends localization.LocalizedReactComponent {
       onCancel();
     }
   };
+
   onDeleteCommentClicked = (comment) => {
     const onDelete = () => {
       this.operationWrapper(async () => {
@@ -252,6 +278,7 @@ export default class Issue extends localization.LocalizedReactComponent {
       }
     });
   };
+
   deleteComment = async (commentId) => {
     const hide = message.loading('Removing comment...', 0);
     const request = new IssueCommentDelete(this.props.issueId, commentId);
@@ -264,6 +291,7 @@ export default class Issue extends localization.LocalizedReactComponent {
       hide();
     }
   };
+
   renderComment = (comment, index) => {
     const isMine = this.isMineComment(comment);
     const date = (
@@ -281,7 +309,7 @@ export default class Issue extends localization.LocalizedReactComponent {
             onClick={this.onApplyEditCommentClicked}
             size="small"
           >
-            <Icon type="check" />
+            <CheckOutlined />
           </Button>
         );
         actions.push(
@@ -290,7 +318,7 @@ export default class Issue extends localization.LocalizedReactComponent {
             onClick={this.onCancelEditCommentClicked}
             size="small"
           >
-            <Icon type="close" />
+            <CloseOutlined />
           </Button>
         );
       } else {
@@ -303,7 +331,7 @@ export default class Issue extends localization.LocalizedReactComponent {
               onClick={() => this.onEditCommentClicked(comment)}
               size="small"
             >
-              <Icon type="edit" />
+              <EditOutlined />
             </Button>
           );
         }
@@ -314,9 +342,9 @@ export default class Issue extends localization.LocalizedReactComponent {
               disabled={disabled}
               onClick={() => this.onDeleteCommentClicked(comment)}
               size="small"
-              type="danger"
+              danger
             >
-              <Icon type="delete" />
+              <DeleteOutlined />
             </Button>
           );
         }
@@ -379,12 +407,14 @@ export default class Issue extends localization.LocalizedReactComponent {
       </Row>
     );
   };
+
   onNewCommentChanged = ({text, attachments}) => {
     this.setState({
       newComment: text,
       newCommentAttachments: attachments
     });
   };
+
   sendComment = async () => {
     const hide = message.loading('Sending comment...', 0);
     const request = new IssueCommentSend(this.props.issueId);
@@ -403,6 +433,7 @@ export default class Issue extends localization.LocalizedReactComponent {
       });
     }
   };
+
   deleteIssueConfirm = () => {
     const onDelete = () => {
       this.operationWrapper(this.deleteIssue)();
@@ -417,6 +448,7 @@ export default class Issue extends localization.LocalizedReactComponent {
       }
     });
   };
+
   deleteIssue = async () => {
     const request = new IssueDelete(this.props.issueId);
     const hide = message.loading(`Deleting ${this.localizedString('issue')}...`, 0);
@@ -429,22 +461,18 @@ export default class Issue extends localization.LocalizedReactComponent {
     }
   };
 
-  @computed
   get canAddComment () {
     return !this.props.readOnly;
   }
 
-  @computed
   get canEditIssue () {
     return !this.props.readOnly && (this.isMineIssue || this.isAdmin);
   }
 
-  @computed
   get canRemoveIssue () {
     return !this.props.readOnly && (this.isMineIssue || this.isAdmin);
   }
 
-  @computed
   get comments () {
     if (this.props.issueInfo && this.props.issueInfo.loaded) {
       const firstComment = {
@@ -459,7 +487,6 @@ export default class Issue extends localization.LocalizedReactComponent {
     return [];
   }
 
-  @computed
   get editCommentInAction () {
     return !!this.state.editableCommentId;
   }
@@ -469,7 +496,7 @@ export default class Issue extends localization.LocalizedReactComponent {
     if (this.props.issueInfo && this.props.issueInfo.pending && !this.props.issueInfo.loaded) {
       content = <LoadingView />;
     } else if (this.props.issueInfo && this.props.issueInfo.error) {
-      content = <Alert type="warning" message={this.props.issueInfo.error} />
+      content = <Alert type="warning" title={this.props.issueInfo.error} />;
     } else {
       content = this.comments.map(this.renderComment);
     }
@@ -486,7 +513,7 @@ export default class Issue extends localization.LocalizedReactComponent {
             size="small"
             onClick={() => this.props.onNavigateBack && this.props.onNavigateBack(false)}
             style={{marginRight: 5}}>
-            <Icon type="arrow-left" />
+            <ArrowLeftOutlined />
           </Button>
           <EditableField
             inputId="issue-name"
@@ -509,12 +536,12 @@ export default class Issue extends localization.LocalizedReactComponent {
             this.canRemoveIssue &&
             <Button
               disabled={this.state.operationInProgress || this.editCommentInAction}
-              type="danger"
+              danger
               onClick={this.deleteIssueConfirm}
               size="small"
               style={{marginLeft: 5}}
             >
-              <Icon type="delete" />
+              <DeleteOutlined />
             </Button>
           }
         </Row>

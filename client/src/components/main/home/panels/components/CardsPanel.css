@@ -109,6 +109,7 @@
   height: 100%;
   position: relative;
   left: 0;
+  transition: left 0.2s ease;
 }
 
 .card.favourite-item .card-content,
@@ -124,21 +125,27 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 20px;
+  left: 0;
   width: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   opacity: 0;
+  transform: scale(0.5);
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 .card.favourite-item .card-favourite-container,
 .card.not-favourite-item.favourite-enabled:hover .card-favourite-container {
   opacity: 1;
-  left: 0;
+  transform: scale(1);
+  pointer-events: auto;
 }
 
 .favourite-selector,
 .not-favourite-selector {
   color: orangered;
-  left: 10px;
 }
 
 .favourite-item .not-favourite-selector,

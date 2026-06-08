@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {observable} from 'mobx';
+import {observable, makeObservable} from 'mobx';
 import {Period} from '../../../../special/periods';
 import RunnerType from './runner-types';
 import reportsRouting from './reports-routing';
@@ -41,17 +41,24 @@ export function runnersEqual (a, b) {
 class Filter {
   static RUNNER_SEPARATOR = '|';
   static REGION_SEPARATOR = '|';
-  @observable period;
-  @observable range;
-  @observable runner;
+  period;
+  range;
+  runner;
+
+  constructor () {
+    makeObservable(this, {
+      period: observable,
+      range: observable,
+      runner: observable
+    });
+  }
 
   rebuild = ({location, router}) => {
     this.router = router;
-    const {
-      period = Period.day,
-      users,
-      range
-    } = (location || {}).query || {};
+    const q = new URLSearchParams((location || {}).search || '');
+    const period = q.get('period') ?? Period.day;
+    const users  = q.get('users');
+    const range  = q.get('range');
     this.runner = (users || '')
       .split(Filter.RUNNER_SEPARATOR)
       .filter(o => !!o && o.length)

@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {observable, computed} from 'mobx';
+import {observable, computed, makeObservable} from 'mobx';
 import {observer} from 'mobx-react';
 import {
   Button,
@@ -37,8 +37,18 @@ export default class ContainerLogsModal extends React.Component {
     scrollToLineToken: 1
   };
 
-  @observable _logs;
-  @observable _pending = false;
+  _logs;
+  _pending = false;
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      _logs: observable,
+      _pending: observable,
+      logs: computed,
+      pending: computed
+    });
+  }
 
   componentDidMount () {
     this.fetchLogs();
@@ -51,12 +61,10 @@ export default class ContainerLogsModal extends React.Component {
     }
   }
 
-  @computed
   get logs () {
     return this._logs;
   }
 
-  @computed
   get pending () {
     return this._pending;
   }
@@ -124,10 +132,10 @@ export default class ContainerLogsModal extends React.Component {
     const {scrollToLineToken, page} = this.state;
     return (
       <Modal
-        visible={!!container}
+        open={!!container}
         onCancel={this.onCancel}
         width={'60vw'}
-        bodyStyle={{paddingTop: '5px'}}
+        styles={{body: {paddingTop: '5px'}}}
         title={`Container ${container?.name || ''} logs`}
         footer={
           <Button

@@ -15,19 +15,21 @@
  */
 
 import React, {Component} from 'react';
-import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {computed, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import {
   Alert,
   Input,
   Row,
   Button,
-  Icon,
   Table,
   message,
   Modal
 } from 'antd';
+import {DeleteOutlined, DownloadOutlined, EditOutlined, FileTextOutlined} from '@ant-design/icons';
 import FileSaver from 'file-saver';
 import VersionFile from '../../../../models/pipelines/VersionFile';
 import PipelineGenerateFile from '../../../../models/pipelines/PipelineGenerateFile';
@@ -42,7 +44,7 @@ import PipelineCodeSourceNameDialog from '../code/forms/PipelineCodeSourceNameDi
 import roleModel from '../../../../utils/roleModel';
 import download from '../utilities/download-pipeline-file';
 import {base64toString} from '../../../../utils/base64';
-import * as styles from './PipelineDocuments.css';
+import styles from './PipelineDocuments.css';
 
 function correctFolderPath (folder) {
   if (!folder) {
@@ -101,6 +103,13 @@ export default class PipelineDocuments extends Component {
   fetchToken;
   fetchFileToken;
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      docsFolder: computed
+    });
+  }
+
   componentDidMount () {
     this.updateDocsPath();
     this.updateDocuments();
@@ -124,7 +133,6 @@ export default class PipelineDocuments extends Component {
     this.fetchFileToken = increaseToken(this.fetchFileToken);
   }
 
-  @computed
   get docsFolder () {
     const {pipeline} = this.props;
     if (pipeline && pipeline.loaded) {
@@ -349,14 +357,14 @@ export default class PipelineDocuments extends Component {
             <span>
               <Button
                 size="small"
-                type="danger"
+                danger
                 onClick={(e) => this.deleteFileConfirm(file, e)}>
-                <Icon type="delete" />
+                <DeleteOutlined />
                 Delete
               </Button>
               <Button
                 size="small" onClick={(e) => this.openRenameFileDialog(file, e)}>
-                <Icon type="edit" />
+                <EditOutlined />
                 Rename
               </Button>
               <span className="ant-divider" />
@@ -367,7 +375,7 @@ export default class PipelineDocuments extends Component {
           onClick={(e) => this.downloadPipelineFile(file, e)}
           size="small"
         >
-          <Icon type="download" />Download
+          <DownloadOutlined />Download
         </Button>
         {
           docx &&
@@ -375,7 +383,7 @@ export default class PipelineDocuments extends Component {
             disabled={!graphReady}
             onClick={() => this.generateDocument(file)}
             size="small">
-            <Icon type="file-text" />Generate
+            <FileTextOutlined />Generate
           </Button>
         }
       </span>
@@ -565,7 +573,7 @@ export default class PipelineDocuments extends Component {
       this.props.version === this.props.pipeline.value.currentVersion.name &&
       !!this.docsFolder &&
       this.docsFolder.length;
-  };
+  }
 
   renderMarkdownControls = () => {
     if (!this.canModifySources) {
@@ -630,23 +638,22 @@ export default class PipelineDocuments extends Component {
     if (defaultFileError) {
       return (
         <Alert
-          message={defaultFileError}
+          title={defaultFileError}
           type="error"
         />
       );
     }
     if (editMode) {
       return (
-        <Input
+        <Input.TextArea
           value={defaultFileModifiedContent}
           onChange={(e) => this.onDefaultFileContentChange(e.target.value)}
-          type="textarea"
           onKeyDown={(e) => {
             if (e.key && e.key === 'Escape') {
               this.toggleEditMode(false);
             }
           }}
-          autosize={{minRows: 25}}
+          autoSize={{minRows: 25}}
           style={{width: '100%', resize: 'none'}}
           className={styles.markdownEditor}
         />
@@ -691,7 +698,7 @@ export default class PipelineDocuments extends Component {
     }
     if (error) {
       return (
-        <Alert message={error} type="error" />
+        <Alert title={error} type="error" />
       );
     }
     const tableData = this.createDocumentsTable();
@@ -716,7 +723,7 @@ export default class PipelineDocuments extends Component {
       <Table
         key="docs table"
         rowKey="name"
-        onRowClick={(file, index, evt) => this.onFileClick(file, index, evt)}
+        onRow={(file, index) => ({ onClick: (evt) => this.onFileClick(file, index, evt) })}
         rowClassName={() => styles.documentRow}
         className={styles.docsTable}
         dataSource={tableData.dataSource}

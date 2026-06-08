@@ -18,20 +18,27 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import moment from 'moment-timezone';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {observer} from 'mobx-react';
 import {
   message
 } from 'antd';
 import displayDate from '../../../../../../utils/displayDate';
 import DataStorageLifeCycleRulesLoad, {STATUS}
-  from '../../../../../../models/dataStorage/lifeCycleRules/DataStorageLifeCycleRulesLoad';
+from '../../../../../../models/dataStorage/lifeCycleRules/DataStorageLifeCycleRulesLoad';
 import styles from './life-cycle-counter.css';
 
 @observer
 class LifeCycleCounter extends React.Component {
   state={
     rulesAmount: undefined
+  }
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      folderRestorationInfo: computed
+    });
   }
 
   componentDidMount () {
@@ -51,7 +58,6 @@ class LifeCycleCounter extends React.Component {
     }
   }
 
-  @computed
   get folderRestorationInfo () {
     const {restoreInfo} = this.props;
     if (restoreInfo && restoreInfo.parentRestore) {

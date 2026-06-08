@@ -16,13 +16,15 @@
 
 import {SERVER} from '../../config';
 import Remote from '../basic/Remote';
-import {action} from 'mobx';
+import {makeObservable, override} from 'mobx';
 import {authorization} from '../basic/Authorization';
 
 export default class MetadataFolder extends Remote {
-
   constructor (parentId) {
     super();
+    makeObservable(this, {
+      update: override
+    });
     if (parentId) {
       this.url = `/metadata/folder?parentFolderId=${parentId}`;
     } else {
@@ -30,7 +32,6 @@ export default class MetadataFolder extends Remote {
     }
   }
 
-  @action
   update (value) {
     this._response = value;
     if (value.status && value.status === 401) {

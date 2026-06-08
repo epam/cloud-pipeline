@@ -24,7 +24,7 @@ import {
   Table,
   Popover
 } from 'antd';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import LoadingView from '../../../special/LoadingView';
 import VersionScanResult from '../../elements/VersionScanResult';
 import roleModel from '../../../../utils/roleModel';
@@ -36,7 +36,8 @@ const DESCEND = 'descend';
 const PAGE_SIZE = 40;
 
 @inject('preferences', 'dockerRegistries')
-@inject((stores, {params}) => {
+@inject(({routing, ...stores}) => {
+  const {params} = routing;
   return {
     ...stores,
     toolId: params.id,
@@ -51,6 +52,16 @@ export default class ToolScanningInfo extends React.Component {
     featureSortOrder: ASCEND,
     severitySortOrder: DESCEND
   };
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      toolPlatform: computed,
+      dockerRegistry: computed,
+      scanningInfo: computed,
+      groupingVulnerabilities: computed
+    });
+  }
 
   componentDidMount () {
     this.checkToolPlatform();
@@ -73,7 +84,6 @@ export default class ToolScanningInfo extends React.Component {
     }
   }
 
-  @computed
   get toolPlatform () {
     const {versions} = this.props;
     if (
@@ -86,7 +96,6 @@ export default class ToolScanningInfo extends React.Component {
     return undefined;
   }
 
-  @computed
   get dockerRegistry () {
     if (this.props.dockerRegistries.loaded && this.props.tool.loaded) {
       return (this.props.dockerRegistries.value.registries || [])
@@ -95,7 +104,6 @@ export default class ToolScanningInfo extends React.Component {
     return null;
   }
 
-  @computed
   get scanningInfo () {
     if (this.props.versions.loaded &&
       this.props.versions.value &&
@@ -106,7 +114,6 @@ export default class ToolScanningInfo extends React.Component {
     return null;
   }
 
-  @computed
   get groupingVulnerabilities () {
     let groupingVulnerabilities = [];
     if (this.scanningInfo && this.scanningInfo.vulnerabilities) {
@@ -309,14 +316,14 @@ export default class ToolScanningInfo extends React.Component {
       return <LoadingView />;
     }
     if (this.props.versions.error) {
-      return <Alert type="error" message={this.props.versions.error} />;
+      return <Alert type="error" title={this.props.versions.error} />;
     }
     if (this.props.tool.error) {
-      return <Alert type="error" message={this.props.tool.error} />;
+      return <Alert type="error" title={this.props.tool.error} />;
     }
     if (!roleModel.readAllowed(this.props.tool.value)) {
       return (
-        <Alert type="error" message="You have no permissions to view tool details" />
+        <Alert type="error" title="You have no permissions to view tool details" />
       );
     }
     if (/^windows$/i.test(this.toolPlatform)) {

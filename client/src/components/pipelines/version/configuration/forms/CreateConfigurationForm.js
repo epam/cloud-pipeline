@@ -16,10 +16,10 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Button, Modal, Form, Input, Row, Col, Spin, Select} from 'antd';
+import {Button, Form, Modal, Input, Row, Spin, Select} from 'antd';
 
-@Form.create()
 export default class CreateConfigurationForm extends React.Component {
+  formRef = React.createRef();
 
   static propTypes = {
     onCancel: PropTypes.func,
@@ -43,15 +43,14 @@ export default class CreateConfigurationForm extends React.Component {
 
   handleSubmit = (e) => {
     e.preventDefault();
-    this.props.form.validateFieldsAndScroll((err, values) => {
-      if (!err) {
+    this.formRef.current.validateFields()
+      .then((values) => {
         this.props.onSubmit(values);
-      }
-    });
+      })
+      .catch(() => {});
   };
 
   render () {
-    const {resetFields, getFieldDecorator} = this.props.form;
     const modalFooter = this.props.pending ? false : (
       <Row type="flex" justify="end">
         <Button
@@ -66,78 +65,73 @@ export default class CreateConfigurationForm extends React.Component {
           onClick={this.handleSubmit}>CREATE</Button>
       </Row>
     );
-    const onClose = () => {
-      resetFields();
-    };
+    const description = this.props.pipeline && this.props.pipeline.description
+      ? this.props.pipeline.description
+      : '';
     return (
       <Modal
-        maskClosable={!this.props.pending}
-        afterClose={() => onClose()}
+        mask={{closable: !this.props.pending}}
+        afterClose={() => this.formRef.current && this.formRef.current.resetFields()}
         closable={!this.props.pending}
-        visible={this.props.visible}
+        open={this.props.visible}
         title="Create configuration"
         onCancel={this.props.onCancel}
         footer={modalFooter}>
         <Spin spinning={this.props.pending}>
-          <Form className="edit-pipeline-form">
+          <Form
+            ref={this.formRef}
+            className="edit-pipeline-form"
+            initialValues={{
+              name: undefined,
+              description,
+              template: this.props.defaultTemplate
+            }}
+          >
             <Form.Item
               className="create-pipeline-configuration-name-container"
               {...this.formItemLayout}
-              label="Configuration name">
-              {
-                getFieldDecorator('name',
-                  {
-                    rules: [
-                      {
-                        required: true, message: 'Configuration name is required'
-                      },
-                      {
-                        pattern: /^[\da-zA-Z._\-@ ]+$/,
-                        message: 'Name can contain only letters, digits, spaces, \'_\', \'-\', \'@\' and \'.\'.'
-                      }
-                      ]
-                  })(
-                  <Input
-                    ref={this.initializeNameInput}
-                    onPressEnter={this.handleSubmit}
-                    disabled={this.props.pending} />
-                )}
+              label="Configuration name"
+              name="name"
+              rules={[
+                {required: true, message: 'Configuration name is required'},
+                {
+                  pattern: /^[\da-zA-Z._\-@ ]+$/,
+                  message: 'Name can contain only letters, digits, spaces, \'_\', \'-\', \'@\' and \'.\'.'
+                }
+              ]}
+            >
+              <Input
+                ref={this.initializeNameInput}
+                onPressEnter={this.handleSubmit}
+                disabled={this.props.pending}
+              />
             </Form.Item>
             <Form.Item
               className="create-pipeline-configuration-description-container"
               {...this.formItemLayout}
-              label="Description">
-              {
-                getFieldDecorator('description',
-                  {
-                    initialValue: `${this.props.pipeline && this.props.pipeline.description
-                      ? this.props.pipeline.description : ''}`
-                  })(
-                    <Input
-                      type="textarea"
-                      autosize={{minRows: 2, maxRows: 6}}
-                      disabled={this.props.pending} />
-                )}
+              label="Description"
+              name="description"
+            >
+              <Input.TextArea
+                autoSize={{minRows: 2, maxRows: 6}}
+                disabled={this.props.pending}
+              />
             </Form.Item>
             <Form.Item
               className="create-pipeline-configuration-template-container"
               {...this.formItemLayout}
-              label="Template">
-              {
-                getFieldDecorator('template',
-                  {
-                    initialValue: this.props.defaultTemplate
-                  })(
-                  <Select>
-                    {this.props.configurations.map(c => {
-                      return (
-                        <Select.Option key={c.name} value={c.name}>
-                          {c.name}
-                        </Select.Option>
-                      );
-                    })}
-                  </Select>
-                )}
+              label="Template"
+              name="template"
+            >
+              <Select>
+                {this.props.configurations.map(c => {
+                  return (
+                    <Select.Option key={c.name} value={c.name}>
+                      {c.name}
+                    </Select.Option>
+                  );
+                })}
+              </Select>
             </Form.Item>
           </Form>
         </Spin>
@@ -146,8 +140,8 @@ export default class CreateConfigurationForm extends React.Component {
   }
 
   initializeNameInput = (input) => {
-    if (input && input.refs && input.refs.input) {
-      this.nameInput = input.refs.input;
+    if (input) {
+      this.nameInput = input;
       this.nameInput.onfocus = function () {
         setTimeout(() => {
           this.selectionStart = (this.value || '').length;

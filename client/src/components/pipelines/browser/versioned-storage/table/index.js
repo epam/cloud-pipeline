@@ -20,13 +20,12 @@ import {
   Table,
   Spin,
   Button,
-  Icon,
+  Dropdown,
   Input,
   Modal,
   Row
 } from 'antd';
-import Menu, {MenuItem} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
+import {DownOutlined, FileOutlined, FolderOutlined, PlusOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import UploadButton from '../../../../special/UploadButton';
 import VSTableNavigation from './vs-table-navigation';
@@ -38,7 +37,6 @@ import TABLE_MENU_KEYS from './table-menu-keys';
 import DOCUMENT_TYPES from '../document-types';
 import downloadPipelineFile from '../../../version/utilities/download-pipeline-file';
 import styles from './table.css';
-import '../../../../../staticStyles/vs-storage.css';
 
 function typeSorter (a, b) {
   return b.type.localeCompare(a.type);
@@ -293,25 +291,30 @@ class VersionedStorageTable extends React.Component {
               <Dropdown
                 placement="bottomRight"
                 trigger={['hover']}
-                overlay={
-                  <Menu
-                    selectedKeys={[]}
-                    onClick={this.onCreateActionSelect}
-                    style={{width: 200}}>
-                    <MenuItem
-                      key={TABLE_MENU_KEYS.folder}
-                      disabled={!controlsEnabled}
-                    >
-                      <Icon type="folder" /> Folder
-                    </MenuItem>
-                    <MenuItem
-                      key={TABLE_MENU_KEYS.file}
-                      disabled={!controlsEnabled}
-                    >
-                      <Icon type="file" /> File
-                    </MenuItem>
-                  </Menu>
-                }
+                menu={{
+                  items: [
+                    {
+                      key: TABLE_MENU_KEYS.folder,
+                      disabled: !controlsEnabled,
+                      label: (
+                        <span>
+                          <FolderOutlined /> Folder
+                        </span>
+                      )
+                    },
+                    {
+                      key: TABLE_MENU_KEYS.file,
+                      disabled: !controlsEnabled,
+                      label: (
+                        <span>
+                          <FileOutlined /> File
+                        </span>
+                      )
+                    }
+                  ],
+                  onClick: this.onCreateActionSelect,
+                  style: {width: 200}
+                }}
                 key="create actions">
                 <Button
                   type="primary"
@@ -320,9 +323,9 @@ class VersionedStorageTable extends React.Component {
                   className={styles.tableControl}
                   disabled={!controlsEnabled}
                 >
-                  <Icon type="plus" />
+                  <PlusOutlined />
                   Create
-                  <Icon type="down" />
+                  <DownOutlined />
                 </Button>
               </Dropdown>
             )
@@ -359,7 +362,7 @@ class VersionedStorageTable extends React.Component {
           Cancel
         </Button>
         <Button
-          type="danger"
+          danger
           onClick={() => {
             onDeleteDocument && onDeleteDocument(deletingDocument, comment);
             this.hideDeleteDialog();
@@ -371,7 +374,7 @@ class VersionedStorageTable extends React.Component {
     );
     return (
       <Modal
-        visible={!!deletingDocument}
+        open={!!deletingDocument}
         title={`Remove ${type}`}
         onCancel={this.hideDeleteDialog}
         footer={footer}
@@ -435,7 +438,7 @@ class VersionedStorageTable extends React.Component {
           rowKey={(record) => record.name}
           dataSource={this.data}
           size="small"
-          onRowClick={this.onRowClick}
+          onRow={(record, index) => ({ onClick: (event) => this.onRowClick(record, index, event) })}
           pagination={false}
           rowClassName={() => styles.tableRow}
           loading={pending}
@@ -446,7 +449,7 @@ class VersionedStorageTable extends React.Component {
   }
 }
 
-VersionedStorageTable.PropTypes = {
+VersionedStorageTable.propTypes = {
   className: PropTypes.string,
   contents: PropTypes.object,
   onRowClick: PropTypes.func,

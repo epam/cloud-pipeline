@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {
   Alert,
   Input,
@@ -31,7 +31,8 @@ import highlightText from '../../../special/highlightText';
 import {defaultSorter} from '../../../../utils/sorting';
 import styles from './packages.css';
 
-@inject((stores, {params}) => {
+@inject(({routing}) => {
+  const {params} = routing;
   return {
     toolId: params.id,
     version: params.version,
@@ -45,6 +46,14 @@ export default class Packages extends React.Component {
     filterDependencies: null,
     selectedEcosystem: null
   };
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      toolPlatform: computed,
+      ecosystems: computed
+    });
+  }
 
   componentDidMount () {
     this.checkToolPlatform();
@@ -72,7 +81,6 @@ export default class Packages extends React.Component {
     }
   }
 
-  @computed
   get toolPlatform () {
     const {versions} = this.props;
     if (
@@ -85,7 +93,6 @@ export default class Packages extends React.Component {
     return undefined;
   }
 
-  @computed
   get ecosystems () {
     if (this.props.versions.loaded &&
         this.props.versions.value &&
@@ -115,7 +122,6 @@ export default class Packages extends React.Component {
     return 0;
   };
 
-  @computed
   get dependencies () {
     if (this.props.versions.loaded &&
         this.state.selectedEcosystem &&
@@ -128,7 +134,6 @@ export default class Packages extends React.Component {
     return [];
   }
 
-  @computed
   get filteredDependencies () {
     if (this.state.filterDependencies && this.props.versions.loaded &&
       this.props.versions.value &&
@@ -143,7 +148,7 @@ export default class Packages extends React.Component {
       return result;
     }
     return [];
-  };
+  }
 
   onChangeEcoSystem = (e) => {
     this.setState({
@@ -210,7 +215,7 @@ export default class Packages extends React.Component {
       return <LoadingView />;
     }
     if (this.props.versions.error) {
-      return <Alert type="error" message={this.props.versions.error} />;
+      return <Alert type="error" title={this.props.versions.error} />;
     }
     if (/^windows$/i.test(this.toolPlatform)) {
       return null;

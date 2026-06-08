@@ -16,9 +16,10 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {inject, observer} from 'mobx-react';
-import {Icon, Row} from 'antd';
+import {Row} from 'antd';
+import {CaretRightOutlined, ExportOutlined, LoadingOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
@@ -39,7 +40,6 @@ const SHOW_DESCRIPTIONS = true;
 })
 @observer
 export default class ToolGroupPreview extends React.Component {
-
   static propTypes = {
     item: PropTypes.shape({
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
@@ -49,7 +49,17 @@ export default class ToolGroupPreview extends React.Component {
     })
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      registries: computed,
+      currentGroup: computed,
+      tools: computed,
+      name: computed,
+      path: computed
+    });
+  }
+
   get registries () {
     if (this.props.dockerRegistries.loaded) {
       return (this.props.dockerRegistries.value.registries || []).map(r => r);
@@ -57,7 +67,6 @@ export default class ToolGroupPreview extends React.Component {
     return [];
   }
 
-  @computed
   get currentGroup () {
     if (!this.props.item.id || this.registries.length === 0) {
       return null;
@@ -74,7 +83,6 @@ export default class ToolGroupPreview extends React.Component {
     return null;
   }
 
-  @computed
   get tools () {
     let tools = [];
 
@@ -102,7 +110,7 @@ export default class ToolGroupPreview extends React.Component {
     nameComponent = (
       <span style={nameStyle}>
         {tool.endpoints && tool.endpoints.length > 0
-          ? <Icon type="export" style={{marginRight: 3, fontWeight: 'normal'}} />
+          ? <ExportOutlined style={{marginRight: 3, fontWeight: 'normal'}} />
           : undefined}
         {tool.image}
       </span>
@@ -160,7 +168,7 @@ export default class ToolGroupPreview extends React.Component {
     if (this.props.dockerRegistries.pending) {
       return (
         <Row className={styles.contentPreview} type="flex" justify="center">
-          <Icon type="loading" />
+          <LoadingOutlined />
         </Row>
       );
     }
@@ -199,7 +207,6 @@ export default class ToolGroupPreview extends React.Component {
     );
   };
 
-  @computed
   get name () {
     if (this.currentGroup) {
       return this.currentGroup.name;
@@ -207,7 +214,6 @@ export default class ToolGroupPreview extends React.Component {
     return this.props.item.name;
   }
 
-  @computed
   get path () {
     if (this.currentGroup) {
       const {registry} = this.currentGroup;
@@ -217,7 +223,7 @@ export default class ToolGroupPreview extends React.Component {
       };
       return [
         <span key="registry" style={style}>{registryName}</span>,
-        <Icon key="arrow" type="caret-right" style={style} />,
+        <CaretRightOutlined key="arrow" style={style} />,
         <span key="name" style={style}>{this.name}</span>
       ];
     }
@@ -232,6 +238,7 @@ export default class ToolGroupPreview extends React.Component {
     const highlights = renderHighlights(this.props.item);
     const attributes = renderAttributes(this.props.metadata);
     const tools = this.renderTools();
+    const ItemIcon = PreviewIcons[this.props.item.type];
 
     return (
       <div
@@ -244,7 +251,7 @@ export default class ToolGroupPreview extends React.Component {
       >
         <div className={styles.header}>
           <Row key="name" className={classNames(styles.title, 'cp-search-header-title')} type="flex" align="middle" >
-            <Icon type={PreviewIcons[this.props.item.type]} />
+            {ItemIcon && <ItemIcon />}
             <span>{this.path}</span>
           </Row>
           {
@@ -265,5 +272,4 @@ export default class ToolGroupPreview extends React.Component {
       </div>
     );
   }
-
 }

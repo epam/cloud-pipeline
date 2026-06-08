@@ -79,10 +79,10 @@ class ClusterUsageExportSettingsDialog extends React.Component {
     return (
       <Modal
         title="Export settings"
-        visible={visible}
+        open={visible}
         onCancel={onCancel}
         closable={!disabled}
-        maskClosable={!disabled}
+        mask={{closable: !disabled}}
         footer={(
           <div
             className={styles.footer}

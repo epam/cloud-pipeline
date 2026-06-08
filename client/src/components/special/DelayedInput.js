@@ -87,7 +87,7 @@ class DelayedInput extends React.Component {
   }
 }
 
-DelayedInput.PropTypes = {
+DelayedInput.propTypes = {
   onChange: PropTypes.func,
   value: PropTypes.string,
   delay: PropTypes.number,

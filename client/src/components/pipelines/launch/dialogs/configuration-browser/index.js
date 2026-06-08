@@ -16,18 +16,16 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Alert, Button, Icon, Modal, Tree} from 'antd';
+import {Alert, Button, Dropdown, Modal, Splitter, Tree} from 'antd';
+import {DownOutlined, FolderOutlined, SettingOutlined, SolutionOutlined} from '@ant-design/icons';
 import {inject} from 'mobx-react';
 import classNames from 'classnames';
-import Menu, {MenuItem} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
 import {
   generateTreeData,
   ItemTypes,
   getTreeItemByKey
 } from '../../../model/treeStructureFunctions';
 import HiddenObjects from '../../../../../utils/hidden-objects';
-import SplitPanel from '../../../../special/splitPanel/split-panel';
 import ConfigurationPayload from './configuration-payload';
 import {getProjectEntityTypeByName} from './utilities/project-utilities';
 import {ParameterName, ParameterRow, ParameterValue} from './parameters/parameter';
@@ -232,14 +230,26 @@ class ConfigurationBrowser extends React.Component {
     } = this.state;
     if (error) {
       return (
-        <Alert message={error} type="error" />
+        <Alert title={error} type="error" />
       );
     }
     return (
-      <SplitPanel>
-        {this.renderConfigurationsTree()}
-        {this.renderConfiguration()}
-      </SplitPanel>
+      <Splitter>
+        <Splitter.Panel
+          defaultSize="200px"
+          min={100}
+          className={styles.treePanel}
+        >
+          {this.renderConfigurationsTree()}
+        </Splitter.Panel>
+        <Splitter.Panel
+          min={200}
+          className={styles.panel}
+          style={{overflow: 'auto'}}
+        >
+          {this.renderConfigurationContent()}
+        </Splitter.Panel>
+      </Splitter>
     );
   };
 
@@ -248,17 +258,17 @@ class ConfigurationBrowser extends React.Component {
       folderStructure
     } = this.state;
     const renderTreeItem = (item) => {
-      let icon;
+      let IconComponent;
       switch (item.type) {
         case ItemTypes.folder:
           if (item.isProject || (item.objectMetadata && item.objectMetadata.type &&
             (item.objectMetadata.type.value || '').toLowerCase() === 'project')) {
-            icon = 'solution';
+            IconComponent = SolutionOutlined;
           } else {
-            icon = 'folder';
+            IconComponent = FolderOutlined;
           }
           break;
-        case ItemTypes.configuration: icon = 'setting'; break;
+        case ItemTypes.configuration: IconComponent = SettingOutlined; break;
       }
       let name = item.name;
       return (
@@ -266,9 +276,8 @@ class ConfigurationBrowser extends React.Component {
           id={`configurations-library-tree-node-${item.key}-name`}
         >
           {
-            icon && (
-              <Icon
-                type={icon}
+            IconComponent && (
+              <IconComponent
                 style={{marginRight: 5}}
               />
             )
@@ -277,40 +286,19 @@ class ConfigurationBrowser extends React.Component {
         </span>
       );
     };
-    const generateTreeItems = (items) => {
-      return (items || [])
-        .map(item => {
-          if (item.isLeaf) {
-            return (
-              <Tree.TreeNode
-                className={
-                  classNames(
-                    `configurations-library-tree-node-${item.key}`,
-                    styles.treeItem
-                  )
-                }
-                title={renderTreeItem(item)}
-                key={item.key}
-                isLeaf={item.isLeaf}
-              />
-            );
-          }
-          return (
-            <Tree.TreeNode
-              className={
-                classNames(
-                  `configurations-library-tree-node-${item.key}`,
-                  styles.treeItem
-                )
-              }
-              title={renderTreeItem(item)}
-              key={item.key}
-              isLeaf={item.isLeaf}
-            >
-              {generateTreeItems(item.children)}
-            </Tree.TreeNode>
-          );
-        });
+    const getTreeData = (items) => {
+      return (items || []).map(item => ({
+        key: item.key,
+        title: renderTreeItem(item),
+        isLeaf: item.isLeaf,
+        className: classNames(
+          `configurations-library-tree-node-${item.key}`,
+          styles.treeItem
+        ),
+        ...(item.children && !item.isLeaf
+          ? {children: getTreeData(item.children)}
+          : {})
+      }));
     };
     const {selection = []} = this.state;
     const onSelect = (keys = []) => {
@@ -326,19 +314,12 @@ class ConfigurationBrowser extends React.Component {
       this.setState({selection: newSelection, entryName});
     };
     return (
-      <SplitPanel.Pane
-        className={styles.treePanel}
-        key="configurations-tree"
-        defaultSize={200}
-      >
-        <Tree
-          checkStrictly
-          onSelect={onSelect}
-          selectedKeys={selection}
-        >
-          {generateTreeItems(folderStructure)}
-        </Tree>
-      </SplitPanel.Pane>
+      <Tree
+        checkStrictly
+        treeData={getTreeData(folderStructure)}
+        onSelect={onSelect}
+        selectedKeys={selection}
+      />
     );
   };
 
@@ -357,32 +338,21 @@ class ConfigurationBrowser extends React.Component {
     const onChangeConfigName = ({key}) => this.setState({
       entryName: key
     });
-    const menu = (
-      <div>
-        <Menu
-          selectedKeys={[]}
-          onSelect={onChangeConfigName}
-        >
-          {
-            entries.map(anEntry => (
-              <MenuItem key={anEntry.name} title={anEntry.name}>
-                {anEntry.name}
-              </MenuItem>
-            ))
-          }
-        </Menu>
-      </div>
-    );
+    const menuItems = entries.map(anEntry => ({
+      key: anEntry.name,
+      label: anEntry.name,
+      title: anEntry.name
+    }));
     let configNameComponent = (<span>{entryName}</span>);
     if (entries.length > 1) {
       configNameComponent = (
         <Dropdown
-          overlay={menu}
+          menu={{items: menuItems, onClick: onChangeConfigName}}
           trigger={['click']}
         >
           <a className="cp-text">
             {entryName}
-            <Icon type="down" />
+            <DownOutlined />
           </a>
         </Dropdown>
       );
@@ -456,7 +426,7 @@ class ConfigurationBrowser extends React.Component {
     );
   };
 
-  renderConfiguration = () => {
+  renderConfigurationContent = () => {
     const {
       folderId
     } = this.props;
@@ -468,10 +438,7 @@ class ConfigurationBrowser extends React.Component {
       valid
     });
     return (
-      <SplitPanel.Pane
-        className={styles.panel}
-        key="configuration"
-      >
+      <>
         {this.renderConfigurationHeader()}
         <ConfigurationPayload
           rootEntityDisabled
@@ -482,7 +449,7 @@ class ConfigurationBrowser extends React.Component {
           onChange={onChange}
         />
         {this.renderExpression()}
-      </SplitPanel.Pane>
+      </>
     );
   };
 
@@ -512,11 +479,11 @@ class ConfigurationBrowser extends React.Component {
     return (
       <Modal
         className={className}
-        visible={visible}
+        open={visible}
         onCancel={onCancel}
         title="Select configuration"
         width="80%"
-        bodyStyle={{padding: 0}}
+        styles={{body: {padding: 0}}}
         footer={(
           <div
             className={styles.footer}

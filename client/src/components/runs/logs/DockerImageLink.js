@@ -15,9 +15,9 @@
  */
 
 import React, {Component} from 'react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
 import {inject, observer} from 'mobx-react';
 import LoadingView from '../../special/LoadingView';
 import HiddenObjects from '../../../utils/hidden-objects';
@@ -33,7 +33,18 @@ const findGroupByName = (groups, name) => {
 @HiddenObjects.injectToolsFilters
 @observer
 export default class DockerImageLink extends Component {
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      registries: computed,
+      namesFromPath: computed,
+      currentRegistry: computed,
+      currentGroup: computed,
+      currentTools: computed,
+      currentToolId: computed
+    });
+  }
+
   get registries () {
     if (this.props.dockerRegistries.loaded) {
       return this.props.hiddenToolsTreeFilter(this.props.dockerRegistries.value)
@@ -42,7 +53,6 @@ export default class DockerImageLink extends Component {
     return [];
   }
 
-  @computed
   get namesFromPath () {
     if (!this.props.path ||
       !this.props.path.includes('/') ||
@@ -57,7 +67,6 @@ export default class DockerImageLink extends Component {
     return {registryPath, groupName, toolName};
   }
 
-  @computed
   get currentRegistry () {
     if (!this.namesFromPath) {
       return null;
@@ -67,7 +76,6 @@ export default class DockerImageLink extends Component {
     return this.registries.filter(r => r.path === registryPath).shift() || null;
   }
 
-  @computed
   get currentGroup () {
     if (!this.namesFromPath) {
       return null;
@@ -78,12 +86,10 @@ export default class DockerImageLink extends Component {
       null;
   }
 
-  @computed
   get currentTools () {
     return (this.currentGroup && this.currentGroup.tools) || [];
   }
 
-  @computed
   get currentToolId () {
     if (!this.namesFromPath) {
       return null;

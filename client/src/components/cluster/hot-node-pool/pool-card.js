@@ -15,12 +15,14 @@
  */
 
 import React from 'react';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import {
   Button,
-  Icon,
   Progress
 } from 'antd';
+import {AreaChartOutlined, DeleteOutlined, EditOutlined} from '@ant-design/icons';
 import moment from 'moment-timezone';
 import classNames from 'classnames';
 import DockerImageDetails from './docker-image-details';
@@ -116,7 +118,7 @@ function PoolCard ({
   onRemove,
   onClick,
   nodes,
-  router
+  routing
 }) {
   if (!pool) {
     return null;
@@ -149,11 +151,11 @@ function PoolCard ({
   const totalLabel = displayCount(total);
   const fontSize = total >= 100 ? 10 : 12;
   const navigate = (path) => {
-    if (!router) {
+    if (!routing) {
       return;
     }
     if (path) {
-      router.push(path);
+      routing.push(path);
     }
   };
   return (
@@ -189,7 +191,7 @@ function PoolCard ({
               type="circle"
               status={runs > 0 ? 'success' : 'active'}
               percent={(runs / (total || 1)) * 100.0}
-              width={55}
+              size={55}
               strokeWidth={8}
               showInfo={false}
             />
@@ -225,7 +227,7 @@ function PoolCard ({
                   size="small"
                   onClick={onEdit}
                 >
-                  <Icon type="edit" />
+                  <EditOutlined />
                 </Button>
               )}
               <Button
@@ -236,16 +238,16 @@ function PoolCard ({
                   navigate(`/cluster/usage?pool=${id}`);
                 }}
               >
-                <Icon type="area-chart" />
+                <AreaChartOutlined />
               </Button>
               {!readOnly && (
                 <Button
                   disabled={disabled}
                   size="small"
-                  type="danger"
+                  danger
                   onClick={onRemove}
                 >
-                  <Icon type="delete" />
+                  <DeleteOutlined />
                 </Button>
               )}
             </div>

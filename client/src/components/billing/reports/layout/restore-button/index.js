@@ -17,13 +17,16 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer, Provider} from 'mobx-react';
-import {observable} from 'mobx';
+import {observable, makeObservable} from 'mobx';
 import styles from './restore-button.css';
 
 class RestoreContext {
-  @observable context;
+  context;
 
   constructor () {
+    makeObservable(this, {
+      context: observable
+    });
     this.context = null;
   }
 

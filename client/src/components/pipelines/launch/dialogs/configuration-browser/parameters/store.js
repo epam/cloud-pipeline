@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {action, computed, observable} from 'mobx';
+import {observable, makeObservable, makeAutoObservable} from 'mobx';
 import {Provider, inject, observer} from 'mobx-react';
 import preferences from '../../../../../../models/preferences/PreferencesLoad';
 import runDefaultParameters from '../../../../../../models/pipelines/PipelineRunDefaultParameters';
@@ -42,19 +42,19 @@ class ParametersStore {
   static Events = {
     onChange: 'onChange'
   };
+
   handle = 0;
 
-  @observable pending = false;
-  @observable error = false;
-  @observable valid = true;
-  @observable parameters = [];
-  @observable entityTypeFields = [];
-  @observable projectFields = [];
-  @observable capabilities = [];
-  @observable limitMounts;
+  pending = false;
+  error = false;
+  valid = true;
+  parameters = [];
+  entityTypeFields = [];
+  projectFields = [];
+  capabilities = [];
+  limitMounts;
   eventListeners = [];
 
-  @computed
   get visibleParameters () {
     return this.parameters
       .filter(parameter => !parameter.skipped &&
@@ -74,6 +74,7 @@ class ParametersStore {
   }
 
   constructor (parameters = {}) {
+    makeAutoObservable(this);
     (this.initialize)(parameters);
   }
 
@@ -92,7 +93,6 @@ class ParametersStore {
     this.projectFields = newProjectFields.slice();
   }
 
-  @action
   async initialize (parameters = {}) {
     this.handle = this.handle + 1;
     const handle = this.handle;
@@ -250,19 +250,30 @@ class ParametersStore {
 }
 
 class ParametersProvider extends React.Component {
-  @observable store = new ParametersStore();
+  store = new ParametersStore();
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      store: observable
+    });
+  }
+
   componentDidMount () {
     this.store.addEventListener(ParametersStore.Events.onChange, this.onChange);
     this.store.update(this.props.parameters);
   }
+
   componentDidUpdate (prevProps, prevState, snapshot) {
     this.store.update(this.props.parameters);
     this.store.updateEntityTypeFields(this.props.entityFields);
     this.store.updateProjectFields(this.props.projectMetadataFields);
   }
+
   componentWillUnmount () {
     this.store.removeEventListener(ParametersStore.Events.onChange, this.onChange);
   }
+
   onChange = () => {
     const {
       onChange
@@ -272,6 +283,7 @@ class ParametersProvider extends React.Component {
       onChange(payload, this.store.valid);
     }
   };
+
   render () {
     const {
       className,

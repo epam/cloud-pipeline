@@ -15,8 +15,9 @@
  */
 
 import React from 'react';
+import {withRouter} from '../../../utils/with-router';
 import QuotasSection from './quotas-section';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import {observer, Provider} from 'mobx-react';
 import {Alert} from 'antd';
 import roleModel from '../../../utils/roleModel';
@@ -47,88 +48,95 @@ function parseQuotaGroupFromParams (params = {}) {
 @roleModel.authenticationInfo
 @observer
 class Quotas extends React.Component {
-  @observable quotasRequest = new BillingQuotasList();
+ quotasRequest = new BillingQuotasList();
 
-  componentDidMount () {
-    this.quotasRequest.fetchIfNeededOrWait();
-    roles.fetchIfNeededOrWait();
-  }
+ constructor (props) {
+   super(props);
+   makeObservable(this, {
+     quotasRequest: observable,
+     quotas: computed
+   });
+ }
 
-  componentWillUnmount () {
-    this.quotasRequest.invalidateCache();
-    roles.invalidateCache();
-  }
+ componentDidMount () {
+   this.quotasRequest.fetchIfNeededOrWait();
+   roles.fetchIfNeededOrWait();
+ }
 
-  get quotaGroup () {
-    return parseQuotaGroupFromParams(this.props.params);
-  }
+ componentWillUnmount () {
+   this.quotasRequest.invalidateCache();
+   roles.invalidateCache();
+ }
 
-  get isGlobalQuotaGroup () {
-    return this.quotaGroup === quotaGroups.global;
-  }
+ get quotaGroup () {
+   return parseQuotaGroupFromParams(this.props.params);
+ }
 
-  @computed
-  get quotas () {
-    if (this.quotasRequest.loaded) {
-      return (this.quotasRequest.value || [])
-        .slice()
-        .filter(quota => quota.quotaGroup === this.quotaGroup)
-        .map(quota => ({
-          ...quota,
-          type: quota.type || quotaTypes.overall
-        }));
-    }
-    return [];
-  }
+ get isGlobalQuotaGroup () {
+   return this.quotaGroup === quotaGroups.global;
+ }
 
-  refreshQuotas () {
-    return this.quotasRequest.fetch();
-  }
+ get quotas () {
+   if (this.quotasRequest.loaded) {
+     return (this.quotasRequest.value || [])
+       .slice()
+       .filter(quota => quota.quotaGroup === this.quotaGroup)
+       .map(quota => ({
+         ...quota,
+         type: quota.type || quotaTypes.overall
+       }));
+   }
+   return [];
+ }
 
-  render () {
-    const {authenticatedUserInfo} = this.props;
-    if (
-      !authenticatedUserInfo.loaded && authenticatedUserInfo.pending
-    ) {
-      return (<LoadingView />);
-    }
-    if (authenticatedUserInfo.error) {
-      return (
-        <Alert
-          message={authenticatedUserInfo.error}
-          type="error"
-        />
-      );
-    }
-    if (!roleModel.isManager.billing(this)) {
-      return (
-        <Alert
-          message="Access denied"
-          type="error"
-        />
-      );
-    }
-    return (
-      <Provider roles={roles}>
-        <div className={styles.container}>
-          {
-            orderedQuotaTypes
-              .filter(type => !this.isGlobalQuotaGroup || type === quotaTypes.overall)
-              .map(type => (
-                <QuotasSection
-                  key={type}
-                  quotaType={type}
-                  quotaGroup={this.quotaGroup}
-                  title={quotaNames[type] || type}
-                  quotas={this.quotas.filter(quota => quota.type === type)}
-                  onRefresh={() => this.refreshQuotas()}
-                />
-              ))
-          }
-        </div>
-      </Provider>
-    );
-  }
+ refreshQuotas () {
+   return this.quotasRequest.fetch();
+ }
+
+ render () {
+   const {authenticatedUserInfo} = this.props;
+   if (
+     !authenticatedUserInfo.loaded && authenticatedUserInfo.pending
+   ) {
+     return (<LoadingView />);
+   }
+   if (authenticatedUserInfo.error) {
+     return (
+       <Alert
+         title={authenticatedUserInfo.error}
+         type="error"
+       />
+     );
+   }
+   if (!roleModel.isManager.billing(this)) {
+     return (
+       <Alert
+         title="Access denied"
+         type="error"
+       />
+     );
+   }
+   return (
+     <Provider roles={roles}>
+       <div className={styles.container}>
+         {
+           orderedQuotaTypes
+             .filter(type => !this.isGlobalQuotaGroup || type === quotaTypes.overall)
+             .map(type => (
+               <QuotasSection
+                 key={type}
+                 quotaType={type}
+                 quotaGroup={this.quotaGroup}
+                 title={quotaNames[type] || type}
+                 quotas={this.quotas.filter(quota => quota.type === type)}
+                 onRefresh={() => this.refreshQuotas()}
+               />
+             ))
+         }
+       </div>
+     </Provider>
+   );
+ }
 }
 
-export default Quotas;
+export default withRouter(Quotas);

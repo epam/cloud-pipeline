@@ -20,7 +20,7 @@ import classNames from 'classnames';
 import {Alert} from 'antd';
 import {inject, observer} from 'mobx-react';
 import {isObservableArray} from 'mobx';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
 import {getBatchJobInfo, getSpecification} from '../model/analysis/batch';
 import {
   getExternalJobInfo,
@@ -499,7 +499,7 @@ class CellProfilerJobResults extends React.PureComponent {
         {
           error && (
             <Alert
-              message={error}
+              title={error}
               type="error"
             />
           )

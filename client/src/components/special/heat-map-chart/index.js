@@ -104,9 +104,9 @@ class HeatMapChart extends React.Component {
       }
       return undefined;
     };
-    const backgroundColor = getColor('@card-background-color') || DEFAULT_BACKGROUND_COLOR;
-    const lineColor = getColor('@card-border-color') || DEFAULT_LINE_COLOR;
-    const textColor = getColor('@application-color') || DEFAULT_TEXT_COLOR;
+    const backgroundColor = getColor('--cp-color-bg-elevated') || DEFAULT_BACKGROUND_COLOR;
+    const lineColor = getColor('--cp-color-border-card') || DEFAULT_LINE_COLOR;
+    const textColor = getColor('--cp-color-text') || DEFAULT_TEXT_COLOR;
     const colors = {
       backgroundColor,
       lineColor,
@@ -338,8 +338,8 @@ HeatMapChart.propTypes = {
     data: PropTypes.arrayOf(PropTypes.shape({
       name: PropTypes.string,
       records: PropTypes.arrayOf(PropTypes.shape({
-        start: PropTypes.oneOfType(PropTypes.number, PropTypes.string),
-        end: PropTypes.oneOfType(PropTypes.number, PropTypes.string),
+        start: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+        end: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
         value: PropTypes.number
       }))
     }))

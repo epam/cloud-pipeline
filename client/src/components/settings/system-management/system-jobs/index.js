@@ -16,10 +16,16 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observable, computed} from 'mobx';
-import {inject, observer} from 'mobx-react';
-import {Alert, Button, Dropdown, Icon, message} from 'antd';
-import Menu, {MenuItem} from 'rc-menu';
+import {observable, computed, makeObservable} from 'mobx';
+import {inject,
+  observer} from 'mobx-react';
+import {Alert,
+  Button,
+  Dropdown,
+  message,
+  Space
+} from 'antd';
+import {CodeOutlined, DownOutlined} from '@ant-design/icons';
 import LoadingView from '../../../special/LoadingView';
 import SubSettings from '../../sub-settings';
 import RunTable, {Columns} from '../../../runs/run-table';
@@ -37,7 +43,7 @@ function autoUpdateJobs (state) {
   return runs.some((run) => /^running$/i.test(run.status));
 }
 
-@inject('systemJobs')
+@inject('systemJobs', 'routing')
 @observer
 class SystemJobs extends React.Component {
   state = {
@@ -49,8 +55,16 @@ class SystemJobs extends React.Component {
     selectedJobId: undefined
   }
 
-  @observable
   jobScriptParameters = {};
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      jobScriptParameters: observable,
+      currentJobParameters: computed,
+      currentJobHasRequiredParameters: computed
+    });
+  }
 
   componentDidMount () {
     const {
@@ -76,7 +90,6 @@ class SystemJobs extends React.Component {
     return jobs;
   }
 
-  @computed
   get currentJobParameters () {
     const {selectedJobId} = this.state;
     return Object
@@ -88,7 +101,6 @@ class SystemJobs extends React.Component {
       }));
   }
 
-  @computed
   get currentJobHasRequiredParameters () {
     return this.currentJobParameters
       .some(parameter => parameter.required);
@@ -177,14 +189,14 @@ class SystemJobs extends React.Component {
     if (scriptContentPending) {
       return <LoadingView />;
     }
-    const {router} = this.props;
+    const {routing} = this.props;
     const openRunDetails = (run, event) => {
       if (event) {
         event.stopPropagation();
         event.preventDefault();
       }
-      if (router) {
-        router.push(`/run/${run.id}`);
+      if (routing) {
+        routing.push(`/run/${run.id}`);
       }
     };
     const openRunLog = (run, event) => {
@@ -202,23 +214,16 @@ class SystemJobs extends React.Component {
     const onRefresh = () => this.setState({refreshToken: refreshToken + 1});
     const handleLaunchMenu = ({key}) => {
       switch (key) {
-        case 'default': this.launchJob(job); break;
+        case 'default': this.launchJob(job);
+          break;
         case 'custom':
           this.openLaunchParametersModal(job);
           break;
       }
     };
-    const launchMenu = (
-      <Menu
-        onClick={handleLaunchMenu}
-        selectedKeys={[]}
-        style={{cursor: 'pointer'}}
-      >
-        <MenuItem key="custom">
-          Launch with parameters
-        </MenuItem>
-      </Menu>
-    );
+    const launchMenuItems = [
+      {key: 'custom', label: 'Launch with parameters'}
+    ];
     return (
       <div className={styles.systemJobContainer}>
         <div
@@ -250,15 +255,29 @@ class SystemJobs extends React.Component {
                   LAUNCH
                 </Button>
               ) : (
-                <Dropdown.Button
-                  type="primary"
-                  size="small"
-                  style={{marginLeft: 5}}
-                  onClick={() => this.launchJob(job)}
-                  overlay={launchMenu}
-                >
-                  LAUNCH
-                </Dropdown.Button>
+                <Space.Compact style={{marginLeft: 5}}>
+                  <Button
+                    type="primary"
+                    size="small"
+                    onClick={() => this.launchJob(job)}
+                  >
+                    LAUNCH
+                  </Button>
+                  <Dropdown
+                    menu={{
+                      items: launchMenuItems,
+                      onClick: handleLaunchMenu,
+                      style: {cursor: 'pointer'}
+                    }}
+                    trigger={['click']}
+                  >
+                    <Button
+                      type="primary"
+                      size="small"
+                      icon={<DownOutlined />}
+                    />
+                  </Dropdown>
+                </Space.Compact>
               )
             }
           </div>
@@ -341,20 +360,20 @@ class SystemJobs extends React.Component {
     }
     if (!pending && error) {
       return (
-        <Alert message={error} type="error" />
+        <Alert title={error} type="error" />
       );
     }
     if (!jobs || !jobs.length) {
       return (
         <Alert
-          message="System jobs not configured"
+          title="System jobs not configured"
           type="info"
         />
       );
     }
     const sections = jobs.map((aJob) => ({
       key: aJob.identifier,
-      title: (<span><Icon type="code-o" style={{marginRight: 5}} />{aJob.identifier}</span>),
+      title: (<span><CodeOutlined style={{marginRight: 5}} />{aJob.identifier}</span>),
       name: aJob.identifier,
       render: () => this.renderSystemJob(aJob)
     }));
@@ -390,7 +409,7 @@ class SystemJobs extends React.Component {
 }
 
 SystemJobs.propTypes = {
-  router: PropTypes.object
+  routing: PropTypes.object
 };
 
 export default SystemJobs;

@@ -16,13 +16,15 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {computed, makeObservable} from 'mobx';
 import {
   Alert,
-  Icon,
   Select
 } from 'antd';
+import {RightOutlined} from '@ant-design/icons';
 import DockerImageDetails from '../../../../../../../../cluster/hot-node-pool/docker-image-details';
 
 @inject('dockerRegistries')
@@ -32,7 +34,13 @@ class DockerImageSelector extends React.Component {
     search: undefined
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      tools: computed
+    });
+  }
+
   get tools () {
     const {dockerRegistries} = this.props;
     const result = [];
@@ -49,7 +57,7 @@ class DockerImageSelector extends React.Component {
               label: (
                 <span>
                   {registry.description || registry.path}
-                  <Icon type="right" />
+                  <RightOutlined />
                   {group.name}
                 </span>
               ),
@@ -159,7 +167,7 @@ class DockerImageSelector extends React.Component {
     const pending = dockerRegistries.pending;
     if (dockerRegistries.error) {
       return (
-        <Alert type="error" message={dockerRegistries.error} />
+        <Alert type="error" title={dockerRegistries.error} />
       );
     }
     const notFoundContent = !search

@@ -159,7 +159,7 @@ class RestrictDockerDialog extends React.Component {
     return (
       <Modal
         title="Select docker images to limit mounts"
-        visible={visible}
+        open={visible}
         onCancel={this.onCancel}
         width="60%"
         footer={(

@@ -16,9 +16,15 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
+import {
+  observer} from 'mobx-react';
 import classNames from 'classnames';
-import {Row, Button, Dropdown, Input, Icon} from 'antd';
+import {Row,
+  Button,
+  Dropdown,
+  Input
+} from 'antd';
+import {LoadingOutlined} from '@ant-design/icons';
 import styles from './Selectors.css';
 import compareArrays from '../../../utils/compareArrays';
 
@@ -53,7 +59,7 @@ export default class ToolGroupSelector extends React.Component {
 
   render () {
     if (this.props.groups && this.props.groups.length === 0 && !this.state.value) {
-      return <Icon type="loading" />;
+      return <LoadingOutlined />;
     }
     const renderGroupName = (group) => {
       if (group.privateGroup) {
@@ -93,11 +99,11 @@ export default class ToolGroupSelector extends React.Component {
     };
     return (
       <Dropdown
-        visible={this.state.groupsDropDownVisible}
-        onVisibleChange={onDropDownVisibleChanged}
+        open={this.state.groupsDropDownVisible}
+        onOpenChange={onDropDownVisibleChanged}
         key="group"
         trigger={['click']}
-        overlay={
+        popupRender={() => (
           <div
             className={
               classNames(
@@ -142,7 +148,8 @@ export default class ToolGroupSelector extends React.Component {
               }
             </div>
           </div>
-        }>
+        )}
+      >
         <Button size="small" style={{border: 'none', fontWeight: 'bold', backgroundColor: 'transparent'}}>
           {this.currentGroup ? renderGroupName(this.currentGroup) : this.state.value || 'Unknown group'}
         </Button>
@@ -166,7 +173,7 @@ export default class ToolGroupSelector extends React.Component {
     }
   };
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     const groupsAreEqual = (group1, group2) => group1.name === group2.name;
     if (this.props.value !== nextProps.value ||
       !compareArrays(this.props.groups, nextProps.groups, groupsAreEqual)) {

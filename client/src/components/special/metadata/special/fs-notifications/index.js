@@ -20,11 +20,11 @@ import classNames from 'classnames';
 import {
   Button,
   Modal,
-  Icon,
   Input,
   Select,
   Tooltip
 } from 'antd';
+import {DeleteOutlined, ExclamationCircleOutlined, NotificationOutlined, PlusOutlined, SettingOutlined} from '@ant-design/icons';
 import {observer} from 'mobx-react';
 import UsersRolesSelect from '../../../users-roles-select';
 import roleModel from '../../../../../utils/roleModel';
@@ -337,19 +337,14 @@ class FSNotificationsDialog extends React.Component {
           trigger="hover"
         >
           {children}
-          <Icon
-            type="exclamation-circle-o"
-            style={{
-              marginRight: 5
-            }}
-          />
+          <ExclamationCircleOutlined style={{ marginRight: 5 }} />
         </Tooltip>
       );
     }
     return (
       <Modal
         title="Configure FS mount notifications"
-        visible={visible}
+        open={visible}
         onCancel={onClose}
         width="800px"
         footer={(
@@ -403,10 +398,10 @@ class FSNotificationsDialog extends React.Component {
           <Button
             disabled={readOnly || recipients.length === 0}
             size="small"
-            type="danger"
+            danger
             onClick={this.clearRecipients}
           >
-            <Icon type="delete" /> Clear all recipients
+            <DeleteOutlined /> Clear all recipients
           </Button>
         </div>
         <div
@@ -533,11 +528,11 @@ class FSNotificationsDialog extends React.Component {
                   </Select>
                   <Button
                     size="small"
-                    type="danger"
+                    danger
                     disabled={readOnly}
                     onClick={this.onRemoveNotification(notification.id)}
                   >
-                    <Icon type="delete" />
+                    <DeleteOutlined />
                   </Button>
                 </div>
               ),
@@ -579,15 +574,15 @@ class FSNotificationsDialog extends React.Component {
             onClick={this.onAddNotification}
             disabled={readOnly}
           >
-            <Icon type="plus" /> Add notification
+            <PlusOutlined /> Add notification
           </Button>
           <Button
             size="small"
-            type="danger"
+            danger
             onClick={this.clearNotification}
             disabled={readOnly || notifications.length === 0}
           >
-            <Icon type="delete" /> Clear all notifications
+            <DeleteOutlined /> Clear all notifications
           </Button>
         </div>
       </Modal>
@@ -685,8 +680,8 @@ class FSNotifications extends React.Component {
       >
         {
           empty && !readOnly
-            ? (<Icon type="setting" />)
-            : (<Icon type="notification" style={{marginRight: 5}} />)
+            ? (<SettingOutlined />)
+            : (<NotificationOutlined style={{marginRight: 5}} />)
         }
         {title}
         <FSNotificationsDialog

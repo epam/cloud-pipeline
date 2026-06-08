@@ -15,10 +15,12 @@
  */
 
 import React from 'react';
+import {observer} from 'mobx-react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import styles from './HomePage.css';
-import {Row, Icon, Tooltip} from 'antd';
+import {Row, Tooltip} from 'antd';
+import {CloseOutlined, QuestionCircleFilled} from '@ant-design/icons';
 import {
   Panels,
   PanelIcons,
@@ -55,6 +57,7 @@ const PanelComponent = {
 
 @localization.localizedComponent
 @AsyncLayout.use
+@observer
 export default class HomePagePanel extends localization.LocalizedReactComponent {
   static propTypes = {
     onInitialize: PropTypes.func,
@@ -87,17 +90,7 @@ export default class HomePagePanel extends localization.LocalizedReactComponent 
     if (typeof info === 'function') {
       info = info(this.localizedString);
     }
-    let icon;
-    if (PanelIcons[this.props.panelKey]) {
-      icon = (
-        <Icon
-          type={PanelIcons[this.props.panelKey]}
-          style={{
-            fontSize: 'larger',
-            marginRight: 5
-          }} />
-      );
-    }
+    const PanelIcon = PanelIcons[this.props.panelKey];
     return (
       <Row
         type="flex"
@@ -107,23 +100,25 @@ export default class HomePagePanel extends localization.LocalizedReactComponent 
           className={styles.panelHeader}
           style={{flex: 1}}>
           <span className={styles.panelHeaderTitle}>
-            {icon}{title}
+            <PanelIcon
+              style={{
+                fontSize: 'larger',
+                marginRight: 5
+              }}
+            />
+            {title}
           </span>
         </Row>
         <div className={styles.panelHeaderActions}>
           {
             info &&
             <Tooltip title={info} placement="left">
-              <Icon type="question-circle" style={{fontSize: 'larger'}} />
+              <QuestionCircleFilled style={{fontSize: 'larger'}} />
             </Tooltip>
           }
           {
             this.props.closable &&
-            <Icon
-              type="close"
-              onClick={this.onCloseClicked}
-              style={{fontSize: 'larger'}}
-              className={styles.panelHeaderCloseIcon} />
+            <CloseOutlined onClick={this.onCloseClicked} style={{fontSize: 'larger'}} className={styles.panelHeaderCloseIcon} />
           }
         </div>
       </Row>

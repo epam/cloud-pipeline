@@ -1,7 +1,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
-import {Popover, Button, Icon, Select, Checkbox} from 'antd';
+import {Popover, Button, Select, Checkbox} from 'antd';
+import {CloseOutlined} from '@ant-design/icons';
 import {defaultSorter} from '../../../../utils/sorting';
 
 function tagsAreEqual (tagsA, tagsB) {
@@ -25,7 +26,7 @@ function tagsAreEqual (tagsA, tagsB) {
 }
 
 @observer
-class FilterControl extends React.PureComponent {
+class FilterControl extends React.Component {
   state = {
     selectedTags: [],
     emptyValue: false,
@@ -141,7 +142,7 @@ class FilterControl extends React.PureComponent {
             mode="tags"
             style={{width: 280}}
             placeholder="Type filter and press enter"
-            dropdownStyle={{display: 'none'}}
+            styles={{popup: {root: {display: 'none'}}}}
             onChange={this.onChange}
             getPopupContainer={triggerNode => triggerNode.parentNode}
           />
@@ -154,7 +155,7 @@ class FilterControl extends React.PureComponent {
           marginTop: 10
         }}>
           <Button
-            type="danger"
+            danger
             onClick={this.resetFilter}
             disabled={!value}
           >
@@ -184,13 +185,13 @@ class FilterControl extends React.PureComponent {
             }}>
             <h4>Specify filter for <span style={{fontWeight: 600}}>{this.props.columnName}</span>
             </h4>
-            <Icon type="close" onClick={() => this.handlePopoverVisibleChange(false)} />
+            <CloseOutlined onClick={() => this.handlePopoverVisibleChange(false)} />
           </div>
         )}
         content={content}
         trigger={['click']}
-        visible={popoverVisible}
-        onVisibleChange={this.handlePopoverVisibleChange}
+        open={popoverVisible}
+        onOpenChange={this.handlePopoverVisibleChange}
       >
         {this.props.children}
       </Popover>

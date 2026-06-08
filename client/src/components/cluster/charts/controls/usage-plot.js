@@ -17,33 +17,39 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {getThemedPlotColors} from './utilities';
 
 const maxHeight = 40;
 
 @inject('themes')
 @observer
-class UsagePlot extends React.PureComponent {
-  @computed
+class UsagePlot extends React.Component {
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      plotColors: computed,
+      backgroundColor: computed,
+      fontColor: computed
+    });
+  }
+
   get plotColors () {
     return getThemedPlotColors(this);
   }
 
-  @computed
   get backgroundColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@card-header-background'] || '#ccc';
+      return themes.currentThemeConfiguration['--cp-color-bg-elevated-header'] || '#ccc';
     }
     return '#ccc';
   }
 
-  @computed
   get fontColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@application-color'] || 'rgba(0, 0, 0, 0.65)';
+      return themes.currentThemeConfiguration['--cp-color-text'] || 'rgba(0, 0, 0, 0.65)';
     }
     return 'rgba(0, 0, 0, 0.65)';
   }

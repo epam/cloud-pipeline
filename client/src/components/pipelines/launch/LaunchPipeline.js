@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {observable, isObservableArray} from 'mobx';
+import {observable, isObservableArray, makeObservable} from 'mobx';
 import {Card, Modal, message, Alert} from 'antd';
 import classNames from 'classnames';
 import localization from '../../../utils/localization';
@@ -59,8 +59,9 @@ const PAYLOAD_STATE_KEY = 'parameters';
 @runPipelineActions
 @roleModel.authenticationInfo
 @inject('awsRegions', 'pipelines', 'preferences', 'dockerRegistries', 'usersInfo')
-@inject(({allowedInstanceTypes, routing, pipelines, preferences}, {params}) => {
+@inject(({allowedInstanceTypes, routing, pipelines, preferences}) => {
   const components = queryParameters(routing);
+  const {params} = routing;
   const isVersionedStorage = components.vs;
   let versionedStorageLaunchInfo;
   if (isVersionedStorage) {
@@ -98,9 +99,16 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
     pending: false
   };
 
-  @observable allowedInstanceTypes;
+  allowedInstanceTypes;
 
   loadingUtilities = new LoadingUtilities();
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      allowedInstanceTypes: observable
+    });
+  }
 
   get currentMetadataEntity () {
     const {currentMetadataEntity} = this.state;
@@ -137,19 +145,24 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
     return undefined;
   }
 
-  get currentConfiguration () {
-    const {configurations, configurationName} = this;
-    if (configurations) {
-      const defaultConfiguration = configurations.find((cfg) => cfg.default) || configurations[0];
-      if (configurationName) {
-        const cfgName = configurationName.toLowerCase();
-        return configurations.find((cfg) => (cfg.name || '').toLowerCase() === cfgName) ||
-          defaultConfiguration;
-      }
-      return defaultConfiguration;
+  resolveCurrentConfiguration = (configurationsList) => {
+    if (!configurationsList || configurationsList.length === 0) {
+      return undefined;
     }
-    return undefined;
+    const configurationName = this.configurationName;
+    const defaultConfiguration = configurationsList.find((cfg) => cfg.default) ||
+      configurationsList[0];
+    if (configurationName) {
+      const cfgName = configurationName.toLowerCase();
+      return configurationsList.find((cfg) => (cfg.name || '').toLowerCase() === cfgName) ||
+        defaultConfiguration;
+    }
+    return defaultConfiguration;
   };
+
+  get currentConfiguration () {
+    return this.resolveCurrentConfiguration(this.configurations);
+  }
 
   getCurrentProject = async () => {
     const folderProjectRequest = new FolderProject(this.runConfigurationId, 'CONFIGURATION');
@@ -535,7 +548,6 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
               runInfo,
               // eslint-disable-next-line no-unused-vars
               pipelineInfo,
-              // eslint-disable-next-line no-unused-vars
               configurations = [],
               vsPayload
             ] = await Promise.all([
@@ -550,7 +562,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
               tool,
               settings
             } = toolInfo || {};
-            const {currentConfiguration} = this;
+            const currentConfiguration = this.resolveCurrentConfiguration(configurations);
             const configuration = currentConfiguration
               ? currentConfiguration.configuration
               : undefined;
@@ -660,7 +672,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
       return <LoadingView />;
     }
     if (error) {
-      return <Alert type="error" message={error} />;
+      return <Alert type="error" title={error} />;
     }
     const alerts = errors.map((er) => ({
       message: er,
@@ -686,7 +698,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
     }
     return (
       <Card
-        bodyStyle={{padding: 0, margin: 0}}
+        styles={{body: {padding: 0, margin: 0}}}
         className={
           classNames(
             styles.container,

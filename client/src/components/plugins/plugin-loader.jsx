@@ -200,7 +200,7 @@ class PluginLoader extends React.PureComponent {
         }
         {
           !render && !pending && error && (
-            <Alert message={error} type="error" />
+            <Alert title={error} type="error" />
           )
         }
         <BucketBrowser

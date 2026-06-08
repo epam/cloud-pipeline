@@ -15,7 +15,7 @@
  */
 
 import Remote from '../basic/Remote';
-import {computed, isObservableArray} from 'mobx';
+import {computed, isObservableArray, makeObservable} from 'mobx';
 import escapeRegExp, {ESCAPE_CHARACTERS} from '../../utils/escape-reg-exp';
 import {parsePermissionsRestrictionsConfig} from './utilities/parse-permissions-restrictions';
 import {parseRunActionCriteria} from '../../components/runs/actions/actions-availability/utilities';
@@ -38,6 +38,91 @@ const SYSTEM_CAPABILITY_PARAMETER_TO_DISPLAY = Object.entries(RUN_CAPABILITIES_P
 class PreferencesLoad extends Remote {
   constructor () {
     super();
+    makeObservable(this, {
+      deploymentName: computed,
+      myCostsDisclaimer: computed,
+      useSpot: computed,
+      toolScanningEnabled: computed,
+      maximumFileSize: computed,
+      forceToolScanningEnabled: computed,
+      searchEnabled: computed,
+      searchExportTemplates: computed,
+      searchPromptTemplate: computed,
+      billingEnabled: computed,
+      billingAdminsEnabled: computed,
+      allowedMasterPriceTypes: computed,
+      storageMountsPerGBRatio: computed,
+      nfsSensitivePolicy: computed,
+      facetedFiltersDictionaries: computed,
+      displayNameTag: computed,
+      storageFileDisplayNameTag: computed,
+      facetedFilterDownloadFileTag: computed,
+      storageDownloadAttribute: computed,
+      metadataSystemKeys: computed,
+      storageAllowSignedUrls: computed,
+      hiddenObjects: computed,
+      searchExtraFieldsConfiguration: computed,
+      searchColumnsOrder: computed,
+      versionStorageIgnoredFiles: computed,
+      metadataMandatoryKeys: computed,
+      groupsUIPreferences: computed,
+      vsiPreviewMagnificationMultiplier: computed,
+      gitlabIssueStatuses: computed,
+      gitlabIssueDefaultFilters: computed,
+      sharedStoragesSystemDirectory: computed,
+      sharedStoragesDefaultPermissions: computed,
+      launchCapabilities: computed,
+      webdavStorageAccessDurationSeconds: computed,
+      storageSizeRequestDisclaimer: computed,
+      storageSortingPageSize: computed,
+      systemMaintenanceMode: computed,
+      systemMaintenanceModeBanner: computed,
+      userNotificationsEnabled: computed,
+      storagePolicyBackupVisibleNonAdmins: computed,
+      autoscalingMultiQueuesTemplate: computed,
+      hcsAnalysisConfiguration: computed,
+      dataStorageItemPreviewMasks: computed,
+      inlineMetadataEntities: computed,
+      allowCommitToOtherPersonalGroups: computed,
+      commitMaxLayers: computed,
+      systemRunTagDateSuffix: computed,
+      hiddenRunCapabilities: computed,
+      toolJobMaintenanceConfiguration: computed,
+      pipelineJobMaintenanceConfiguration: computed,
+      launchDiskSizeThresholds: computed,
+      facetedFilterDownload: computed,
+      uiRunsCounterFilter: computed,
+      uiRunsFilters: computed,
+      uiRunsOwnersFilter: computed,
+      uiRunsClusterDetailsShowActiveOnly: computed,
+      uiRunsTags: computed,
+      uiRunsUserTags: computed,
+      uiToolsFilters: computed,
+      systemJobsPipelineId: computed,
+      systemJobsOutputPipelineTask: computed,
+      systemJobsScriptsLocation: computed,
+      systemLdapUserBlockMonitorGracePeriodDays: computed,
+      uiPersonalToolsPermissionsRestrictions: computed,
+      uiStoragesPermissionsRestrictions: computed,
+      uiPersonalToolsLaunchWarningEnabled: computed,
+      uiCWLToolGroups: computed,
+      storageTagRestrictedAccess: computed,
+      uiUploadChunkCount: computed,
+      uiUploadChunkSizeMB: computed,
+      uiContinueRunConfirmation: computed,
+      storageManagementRestrictedAccess: computed,
+      systemRunFilterMaxPageSize: computed,
+      uiQuickSearchDisabled: computed,
+      uiStandaloneNodesAllowTerminate: computed,
+      uiClusterMonitoringAdminsAllowRange: computed,
+      uiLaunchParameters: computed,
+      uiRunActions: computed,
+      uiMlflowSettings: computed,
+      miscAIPreferences: computed,
+      launchReservationParameters: computed,
+      launchJWTTokenExpirationUserLimit: computed,
+      launchDockerPreflightChecks: computed
+    });
     this.url = '/preferences';
     this[FETCH_ID_SYMBOL] = 0;
   }
@@ -71,42 +156,34 @@ class PreferencesLoad extends Remote {
     return value.payload;
   }
 
-  @computed
   get deploymentName () {
     return this.getPreferenceValue('ui.pipeline.deployment.name');
   }
 
-  @computed
   get myCostsDisclaimer () {
     return this.getPreferenceValue('ui.my.costs.disclaimer');
   }
 
-  @computed
   get useSpot () {
     return `${this.getPreferenceValue('cluster.spot')}` === 'true';
   }
 
-  @computed
   get toolScanningEnabled () {
     return `${this.getPreferenceValue('security.tools.scan.enabled')}` === 'true';
   }
 
-  @computed
   get maximumFileSize () {
     return +this.getPreferenceValue('misc.max.tool.icon.size.kb') || undefined;
   }
 
-  @computed
   get forceToolScanningEnabled () {
     return `${this.getPreferenceValue('security.tools.scan.all.registries')}` === 'true';
   }
 
-  @computed
   get searchEnabled () {
     return !!this.getPreferenceValue('search.elastic.host');
   }
 
-  @computed
   get searchExportTemplates () {
     const value = this.getPreferenceValue('search.export.template.mapping');
     if (value) {
@@ -119,24 +196,20 @@ class PreferencesLoad extends Remote {
     return undefined;
   }
 
-  @computed
   get searchPromptTemplate () {
     return this.getPreferenceValue('search.prompt.template');
   }
 
-  @computed
   get billingEnabled () {
     const value = this.getPreferenceValue('billing.reports.enabled');
     return value && `${value}`.toLowerCase() === 'true';
   }
 
-  @computed
   get billingAdminsEnabled () {
     const value = this.getPreferenceValue('billing.reports.enabled.admins');
     return value && `${value}`.toLowerCase() === 'true';
   }
 
-  @computed
   get allowedMasterPriceTypes () {
     const value = this.getPreferenceValue('cluster.allowed.price.types.master') || '';
     if (!value) {
@@ -145,7 +218,6 @@ class PreferencesLoad extends Remote {
     return value.split(',').map(v => /^spot$/i.test(v));
   }
 
-  @computed
   get storageMountsPerGBRatio () {
     const value = this.getPreferenceValue('storage.mounts.per.gb.ratio');
     if (!value || Number.isNaN(value)) {
@@ -154,12 +226,10 @@ class PreferencesLoad extends Remote {
     return Number(value);
   }
 
-  @computed
   get nfsSensitivePolicy () {
     return this.getPreferenceValue('storage.mounts.nfs.sensitive.policy');
   }
 
-  @computed
   get facetedFiltersDictionaries () {
     const value = this.getPreferenceValue('faceted.filter.dictionaries');
     if (value) {
@@ -172,27 +242,22 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
-  @computed
   get displayNameTag () {
     return this.getPreferenceValue('faceted.filter.display.name.tag');
   }
 
-  @computed
   get storageFileDisplayNameTag () {
     return this.getPreferenceValue('faceted.filter.storage.display.file.name.tag');
   }
 
-  @computed
   get facetedFilterDownloadFileTag () {
     return this.getPreferenceValue('faceted.filter.download.file.tag');
   }
 
-  @computed
   get storageDownloadAttribute () {
     return this.getPreferenceValue('ui.storage.download.attribute');
   }
 
-  @computed
   get metadataSystemKeys () {
     const value = this.getPreferenceValue('misc.metadata.sensitive.keys');
     if (value) {
@@ -205,12 +270,10 @@ class PreferencesLoad extends Remote {
     return [];
   }
 
-  @computed
   get storageAllowSignedUrls () {
     return `${this.getPreferenceValue('storage.allow.signed.urls')}` !== 'false';
   }
 
-  @computed
   get hiddenObjects () {
     const value = this.getPreferenceValue('ui.hidden.objects');
     if (value) {
@@ -223,7 +286,6 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
-  @computed
   get searchExtraFieldsConfiguration () {
     const value = this.getPreferenceValue('search.elastic.index.metadata.fields');
     if (value) {
@@ -236,7 +298,6 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
-  @computed
   get searchColumnsOrder () {
     const value = this.getPreferenceValue('ui.search.columns.order');
     if (value && typeof value === 'string') {
@@ -264,7 +325,6 @@ class PreferencesLoad extends Remote {
     return [];
   }
 
-  @computed
   get versionStorageIgnoredFiles () {
     const value = this.getPreferenceValue('storage.version.storage.ignored.files');
     if (!value) {
@@ -273,7 +333,6 @@ class PreferencesLoad extends Remote {
     return (value || '').split(',').map(o => o.trim());
   }
 
-  @computed
   get metadataMandatoryKeys () {
     const value = this.getPreferenceValue('misc.metadata.mandatory.keys');
     if (value) {
@@ -286,7 +345,6 @@ class PreferencesLoad extends Remote {
     return [];
   }
 
-  @computed
   get groupsUIPreferences () {
     const value = this.getPreferenceValue('misc.groups.ui.preferences');
     if (value) {
@@ -299,7 +357,6 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
-  @computed
   get vsiPreviewMagnificationMultiplier () {
     const value = this.getPreferenceValue('ui.wsi.magnification.factor');
     if (value && !Number.isNaN(Number(value))) {
@@ -308,7 +365,6 @@ class PreferencesLoad extends Remote {
     return 1;
   }
 
-  @computed
   get gitlabIssueStatuses () {
     const value = this.getPreferenceValue('git.gitlab.issue.statuses');
     if (value) {
@@ -321,7 +377,6 @@ class PreferencesLoad extends Remote {
     return [];
   }
 
-  @computed
   get gitlabIssueDefaultFilters () {
     const value = this.getPreferenceValue('git.gitlab.issue.default.filter');
     if (value) {
@@ -334,7 +389,6 @@ class PreferencesLoad extends Remote {
     return undefined;
   }
 
-  @computed
   get sharedStoragesSystemDirectory () {
     const value = this.getPreferenceValue('data.sharing.storage.folders.directory');
     if (value && !Number.isNaN(Number(value))) {
@@ -343,7 +397,6 @@ class PreferencesLoad extends Remote {
     return undefined;
   }
 
-  @computed
   get sharedStoragesDefaultPermissions () {
     const value = this.getPreferenceValue('data.sharing.storage.folders.default.permissions');
     if (value) {
@@ -359,7 +412,6 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
-  @computed
   get launchCapabilities () {
     const value = this.getPreferenceValue('launch.capabilities');
     if (value) {
@@ -468,7 +520,6 @@ class PreferencesLoad extends Remote {
     return [];
   }
 
-  @computed
   get webdavStorageAccessDurationSeconds () {
     const value = this.getPreferenceValue('storage.webdav.access.duration.seconds');
     if (value && !Number.isNaN(Number(value))) {
@@ -477,12 +528,10 @@ class PreferencesLoad extends Remote {
     return 86400; // 24 hours
   }
 
-  @computed
   get storageSizeRequestDisclaimer () {
     return this.getPreferenceValue('ui.storage.refresh.request');
   }
 
-  @computed
   get storageSortingPageSize () {
     const defaultLimit = 1000;
     const value = this.getPreferenceValue('storage.listing.filter.items.limit');
@@ -492,29 +541,24 @@ class PreferencesLoad extends Remote {
     return defaultLimit;
   }
 
-  @computed
   get systemMaintenanceMode () {
     return `${this.getPreferenceValue('system.maintenance.mode')}` === 'true' ||
       `${this.getPreferenceValue('system.blocking.maintenance.mode')}` === 'true';
   }
 
-  @computed
   get systemMaintenanceModeBanner () {
     return this.getPreferenceValue('system.maintenance.mode.banner');
   }
 
-  @computed
   get userNotificationsEnabled () {
     return `${this.getPreferenceValue('system.notifications.enable')}` === 'true';
   }
 
-  @computed
   get storagePolicyBackupVisibleNonAdmins () {
     const value = this.getPreferenceValue('storage.policy.backup.visible.non.admins');
     return value === undefined || `${value}` !== 'false';
   }
 
-  @computed
   get autoscalingMultiQueuesTemplate () {
     const value = this.getPreferenceValue('ge.autoscaling.scale.multi.queues.template');
     if (value) {
@@ -527,7 +571,6 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
-  @computed
   get hcsAnalysisConfiguration () {
     const value = this.getPreferenceValue('ui.hcs.analysis.configuration');
     if (value) {
@@ -540,7 +583,6 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
-  @computed
   get dataStorageItemPreviewMasks () {
     const extensions = this.getPreferenceValue('ui.storage.static.preview.mask') || '';
     return extensions
@@ -550,7 +592,6 @@ class PreferencesLoad extends Remote {
       .map(o => new RegExp(`\\.${o}$`, 'i'));
   }
 
-  @computed
   get inlineMetadataEntities () {
     const value = this.getPreferenceValue('ui.library.metadata.inline');
     return `${value}`.toLowerCase() === 'true';
@@ -622,13 +663,11 @@ class PreferencesLoad extends Remote {
     return this.getPreferenceValue('ui.tools.os.with.warning');
   }
 
-  @computed
   get allowCommitToOtherPersonalGroups () {
     const value = this.getPreferenceValue('commit.allow.other.personal.group');
     return (value || '').toLowerCase() !== 'false';
   }
 
-  @computed
   get commitMaxLayers () {
     const value = this.getPreferenceValue('commit.max.layers');
     if (!value || Number.isNaN(Number(value))) {
@@ -637,12 +676,10 @@ class PreferencesLoad extends Remote {
     return Number(value);
   }
 
-  @computed
   get systemRunTagDateSuffix () {
     return this.getPreferenceValue('system.run.tag.date.suffix') || '_date';
   }
 
-  @computed
   get hiddenRunCapabilities () {
     const value = this.getPreferenceValue('launch.capabilities');
     if (value) {
@@ -697,17 +734,14 @@ class PreferencesLoad extends Remote {
     return defaultSettings;
   }
 
-  @computed
   get toolJobMaintenanceConfiguration () {
     return this.getJobMaintenanceConfigurationRules('ui.run.maintenance.tool.enabled');
   }
 
-  @computed
   get pipelineJobMaintenanceConfiguration () {
     return this.getJobMaintenanceConfigurationRules('ui.run.maintenance.pipeline.enabled');
   }
 
-  @computed
   get launchDiskSizeThresholds () {
     const value = this.getPreferenceValue('launch.job.disk.size.thresholds');
     if (value) {
@@ -738,7 +772,6 @@ class PreferencesLoad extends Remote {
   /**
    * @returns {FacetedFilterDownloadConfiguration}
    */
-  @computed
   get facetedFilterDownload () {
     const processMask = (mask) => {
       if (!mask) {
@@ -817,7 +850,6 @@ class PreferencesLoad extends Remote {
     return processPreference();
   }
 
-  @computed
   get uiRunsCounterFilter () {
     const value = this.getPreferenceValue('ui.runs.counter.filter');
     if (value) {
@@ -830,7 +862,6 @@ class PreferencesLoad extends Remote {
     return undefined;
   }
 
-  @computed
   get uiRunsFilters () {
     const value = this.getPreferenceValue('ui.runs.filters');
     if (value) {
@@ -843,7 +874,6 @@ class PreferencesLoad extends Remote {
     return [];
   }
 
-  @computed
   get uiRunsOwnersFilter () {
     const value = this.getPreferenceValue('ui.runs.owners.filter');
     if (value) {
@@ -856,13 +886,11 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
-  @computed
   get uiRunsClusterDetailsShowActiveOnly () {
     const value = this.getPreferenceValue('ui.runs.cluster.details.show.active.only');
     return (value || '').toLowerCase() !== 'false';
   }
 
-  @computed
   get uiRunsTags () {
     const value = this.getPreferenceValue('ui.runs.tags');
     if (value) {
@@ -890,12 +918,10 @@ class PreferencesLoad extends Remote {
     return [];
   }
 
-  @computed
   get uiRunsUserTags () {
     return this.uiRunsTags.filter((tag) => tag.userTag);
   }
 
-  @computed
   get uiToolsFilters () {
     const value = this.getPreferenceValue('ui.tools.filters');
     if (value) {
@@ -918,7 +944,6 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
-  @computed
   get systemJobsPipelineId () {
     const value = this.getPreferenceValue('system.jobs.pipeline.id');
     if (value && !Number.isNaN(Number(value))) {
@@ -927,17 +952,14 @@ class PreferencesLoad extends Remote {
     return undefined;
   }
 
-  @computed
   get systemJobsOutputPipelineTask () {
     return this.getPreferenceValue('system.jobs.output.pipeline.task') || 'SystemJob';
   }
 
-  @computed
   get systemJobsScriptsLocation () {
     return this.getPreferenceValue('system.jobs.scripts.location') || 'src/system-jobs';
   }
 
-  @computed
   get systemLdapUserBlockMonitorGracePeriodDays () {
     const value = this.getPreferenceValue('system.ldap.user.block.monitor.grace.period.days');
     if (
@@ -953,7 +975,6 @@ class PreferencesLoad extends Remote {
   /**
    * @returns {{role: string, disabledMask: number, defaultMask: number}[]}
    */
-  @computed
   get uiPersonalToolsPermissionsRestrictions () {
     const value = this.getPreferenceValue('ui.personal.tools.permissions.restrictions');
     const defaultValue = [{
@@ -979,7 +1000,6 @@ class PreferencesLoad extends Remote {
   /**
    * @returns {{role: string, disabledMask: number, defaultMask: number}[]}
    */
-  @computed
   get uiStoragesPermissionsRestrictions () {
     const value = this.getPreferenceValue('ui.storages.permissions.restrictions');
     const defaultValue = [];
@@ -999,13 +1019,11 @@ class PreferencesLoad extends Remote {
     return parsePermissionsRestrictionsConfig(restrictions);
   }
 
-  @computed
   get uiPersonalToolsLaunchWarningEnabled () {
     const value = this.getPreferenceValue('ui.personal.tools.launch.warning.enabled');
     return value && `${value}`.toLowerCase() === 'true';
   }
 
-  @computed
   get uiCWLToolGroups () {
     const value = this.getPreferenceValue('ui.cwl.tool.groups');
     return (value || 'library')
@@ -1013,13 +1031,11 @@ class PreferencesLoad extends Remote {
       .filter((group) => group.length > 0);
   }
 
-  @computed
   get storageTagRestrictedAccess () {
     const value = this.getPreferenceValue('storage.tag.restricted.access');
     return value && `${value}`.toLowerCase() === 'true';
   }
 
-  @computed
   get uiUploadChunkCount () {
     const value = this.getPreferenceValue('ui.upload.chunk.count');
     if (value && !Number.isNaN(Number(value)) && Number(value) > 0) {
@@ -1028,7 +1044,6 @@ class PreferencesLoad extends Remote {
     return undefined;
   }
 
-  @computed
   get uiUploadChunkSizeMB () {
     const value = this.getPreferenceValue('ui.upload.chunk.size.mb');
     if (value && !Number.isNaN(Number(value)) && Number(value) > 0) {
@@ -1037,18 +1052,15 @@ class PreferencesLoad extends Remote {
     return undefined;
   }
 
-  @computed
   get uiContinueRunConfirmation () {
     return this.getPreferenceValue('ui.continue.run.confirmation');
   }
 
-  @computed
   get storageManagementRestrictedAccess () {
     const value = this.getPreferenceValue('storage.management.restricted.access');
     return value && `${value}`.toLowerCase() === 'true';
   }
 
-  @computed
   get systemRunFilterMaxPageSize () {
     const value = this.getPreferenceValue('system.run.filter.max.page.size');
     if (value && !Number.isNaN(Number(value)) && Number(value) > 0) {
@@ -1057,25 +1069,21 @@ class PreferencesLoad extends Remote {
     return 500;
   }
 
-  @computed
   get uiQuickSearchDisabled () {
     const value = this.getPreferenceValue('ui.quick.search.disabled');
     return value && `${value}`.toLowerCase() === 'true';
   }
 
-  @computed
   get uiStandaloneNodesAllowTerminate () {
     const value = this.getPreferenceValue('ui.standalone.nodes.allow.terminate');
     return !value || `${value}`.toLowerCase() !== 'false';
   }
 
-  @computed
   get uiClusterMonitoringAdminsAllowRange () {
     const value = this.getPreferenceValue('ui.cluster.monitoring.admins.allow.range');
     return value && `${value}`.toLowerCase() === 'true';
   }
 
-  @computed
   get uiLaunchParameters () {
     const value = this.getPreferenceValue('ui.launch.parameters');
     if (value) {
@@ -1088,7 +1096,6 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
-  @computed
   get uiRunActions () {
     const value = this.getPreferenceValue('ui.run.actions');
     if (value) {
@@ -1109,7 +1116,6 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
-  @computed
   get uiMlflowSettings () {
     const value = this.getPreferenceValue('ui.mlflow.settings');
     if (value) {
@@ -1122,7 +1128,6 @@ class PreferencesLoad extends Remote {
     return undefined;
   }
 
-  @computed
   get miscAIPreferences () {
     const value = this.getPreferenceValue('misc.ai.preferences');
     if (value) {
@@ -1139,7 +1144,6 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
-  @computed
   get launchReservationParameters () {
     const value = this.getPreferenceValue('launch.reservation.parameters');
     if (value) {
@@ -1152,7 +1156,6 @@ class PreferencesLoad extends Remote {
     return undefined;
   }
 
-  @computed
   get launchJWTTokenExpirationUserLimit () {
     const value = this.getPreferenceValue('launch.jwt.token.expiration.user.limit');
     if (value && !Number.isNaN(Number(value)) && Number(value) > 0) {
@@ -1161,7 +1164,6 @@ class PreferencesLoad extends Remote {
     return 0;
   }
 
-  @computed
   get launchDockerPreflightChecks () {
     const value = this.getPreferenceValue('launch.docker.preflight.checks') || 'true';
     return `${value}`.toLowerCase() !== 'false';

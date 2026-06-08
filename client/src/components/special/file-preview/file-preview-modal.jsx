@@ -20,15 +20,17 @@ export const FilePreviewModal = (
     <Modal
       className={classNames(className, styles.filePreviewModal)}
       style={{top: 40, ...style}}
-      bodyStyle={{
-        maxHeight: '85vh',
-        overflow: 'auto',
-        display: 'flex',
-        flexDirection: 'column'
+      styles={{
+        body: {
+          maxHeight: '85vh',
+          overflow: 'auto',
+          display: 'flex',
+          flexDirection: 'column'
+        }
       }}
       width="80%"
       {...modalProps}
-      visible={visible}
+      open={visible}
       footer={false}
     >
       {

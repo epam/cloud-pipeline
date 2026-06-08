@@ -2,7 +2,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import styles from './plugins.css';
-import {Button, Icon, Select} from 'antd';
+import {Button, Select} from 'antd';
+import {DeleteOutlined} from '@ant-design/icons';
 import {getPluginTypeName, UI_PLUGIN_TYPE_LAUNCH_FORM} from '../utilities';
 import UsersRolesSelect from '../../special/users-roles-select';
 
@@ -105,10 +106,10 @@ function ConfigurePlugin (props) {
         <Button
           disabled={disabled}
           size="small"
-          type="danger"
+          danger
           onClick={onRemoveConfirm}
           style={{marginRight: 10}}>
-          <Icon type="delete" />
+          <DeleteOutlined />
         </Button>
       </div>
       <div className={classNames(styles.configurePluginRow, styles.flexStart)}>

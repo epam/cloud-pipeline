@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import {Checkbox} from 'antd';
 import DockerImageSelector from './docker-image-selector';
@@ -21,6 +21,14 @@ class ConfigureRunAsPermissions extends React.Component {
     tools: [],
     toolsAllowed: false
   };
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      availablePipelines: computed,
+      availableTools: computed
+    });
+  }
 
   componentDidMount () {
     this.updateFromProps();
@@ -54,7 +62,6 @@ class ConfigureRunAsPermissions extends React.Component {
     });
   };
 
-  @computed
   get availablePipelines () {
     const {pipelines} = this.props;
     if (
@@ -66,7 +73,6 @@ class ConfigureRunAsPermissions extends React.Component {
     return [];
   }
 
-  @computed
   get availableTools () {
     const {dockerRegistries} = this.props;
     const result = [];

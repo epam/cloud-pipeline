@@ -14,7 +14,13 @@
  *  limitations under the License.
  */
 
-import {action, computed, isObservableArray, observable} from 'mobx';
+import {
+  action,
+  computed as mobxComputed,
+  isObservableArray,
+  observable,
+  makeObservable
+} from 'mobx';
 import {AnalysisTypes} from '../common/analysis-types';
 import generateId from '../common/generate-id';
 import {
@@ -84,8 +90,8 @@ class ModuleParameter {
   /**
    * @type {AnalysisModule}
    */
-  @observable cpModule;
-  @observable _required;
+  cpModule;
+  _required;
   advanced;
   visibilityHandler;
   valueFormatter;
@@ -103,6 +109,18 @@ class ModuleParameter {
    * @param {ModuleParameterOptions} [options]
    */
   constructor (options = {}) {
+    makeObservable(this, {
+      cpModule: observable,
+      _required: observable,
+      pipeline: mobxComputed,
+      physicalSize: mobxComputed,
+      analysis: mobxComputed,
+      channels: mobxComputed,
+      isOutput: mobxComputed,
+      values: mobxComputed,
+      visible: mobxComputed,
+      required: mobxComputed
+    });
     this.id = `parameter_#${generateId()}`;
     const {
       name,
@@ -152,7 +170,6 @@ class ModuleParameter {
     this.exportParameter = exportParameter;
   }
 
-  @computed
   get pipeline () {
     if (!this.cpModule) {
       return undefined;
@@ -160,7 +177,6 @@ class ModuleParameter {
     return this.cpModule.pipeline;
   }
 
-  @computed
   get physicalSize () {
     if (!this.pipeline) {
       return undefined;
@@ -168,7 +184,6 @@ class ModuleParameter {
     return this.pipeline.physicalSize;
   }
 
-  @computed
   get analysis () {
     if (!this.pipeline) {
       return undefined;
@@ -176,7 +191,6 @@ class ModuleParameter {
     return this.pipeline.analysis;
   }
 
-  @computed
   get channels () {
     if (!this.pipeline) {
       return [];
@@ -184,7 +198,6 @@ class ModuleParameter {
     return this.pipeline.channels;
   }
 
-  @computed
   get isOutput () {
     return this.cpModule &&
       !!this.cpModule.outputParameters.find(o => o === this);
@@ -198,7 +211,6 @@ class ModuleParameter {
     return _values.concat(values);
   };
 
-  @computed
   get values () {
     if (typeof this._values === 'function') {
       return this.wrapValuesWithEmptyValue(
@@ -215,7 +227,7 @@ class ModuleParameter {
     }
     return this.wrapValuesWithEmptyValue([]);
   }
-  @computed
+
   get visible () {
     if (this.hidden) {
       return false;
@@ -234,10 +246,11 @@ class ModuleParameter {
     }
     return true;
   }
-  @computed
+
   get required () {
     return this._required && this.visible;
   }
+
   get defaultValue () {
     if (typeof this._defaultValue === 'function') {
       return this._defaultValue(this.cpModule);
@@ -269,18 +282,28 @@ class ModuleParameterValue {
   /**
    * @type {ModuleParameter}
    */
-  @observable parameter;
-  @observable _value;
+  parameter;
+  _value;
 
   /**
    * @param {ModuleParameter} parameter
    */
   constructor (parameter) {
+    makeObservable(this, {
+      parameter: observable,
+      _value: observable,
+      cpModule: mobxComputed,
+      pipeline: mobxComputed,
+      analysis: mobxComputed,
+      channels: mobxComputed,
+      value: mobxComputed,
+      isEmpty: mobxComputed,
+      reportChanged: action
+    });
     this.parameter = parameter;
     this.value = parameter.defaultValue;
   }
 
-  @computed
   get cpModule () {
     if (!this.parameter) {
       return undefined;
@@ -288,7 +311,6 @@ class ModuleParameterValue {
     return this.parameter.cpModule;
   }
 
-  @computed
   get pipeline () {
     if (!this.parameter) {
       return undefined;
@@ -296,7 +318,6 @@ class ModuleParameterValue {
     return this.parameter.pipeline;
   }
 
-  @computed
   get analysis () {
     if (!this.parameter) {
       return undefined;
@@ -304,7 +325,6 @@ class ModuleParameterValue {
     return this.parameter.analysis;
   }
 
-  @computed
   get channels () {
     if (!this.parameter) {
       return undefined;
@@ -312,7 +332,6 @@ class ModuleParameterValue {
     return this.parameter.channels;
   }
 
-  @computed
   get value () {
     return this.getValue();
   }
@@ -321,7 +340,6 @@ class ModuleParameterValue {
     this.setValue(aValue);
   }
 
-  @computed
   get isEmpty () {
     const aValue = this.value;
     return aValue === undefined ||
@@ -475,7 +493,6 @@ class ModuleParameterValue {
     this.parameter.cpModule.changed = true;
   }
 
-  @action
   reportChanged = () => {
     if (!this.cpModule || this.cpModule.predefined) {
       return;
@@ -486,6 +503,7 @@ class ModuleParameterValue {
       this.analysis.analysisRequested = true;
     }
   };
+
   exportParameterValue = () => {
     const payload = this.getPayload(false, true, true);
     return Object.entries(payload)

@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import {getVideoSettings} from '../../cellprofiler/model/analysis/job-utilities';
 import AnalysisApi from '../../cellprofiler/model/analysis/analysis-api';
 import dataStorageAvailable from '../../../../models/dataStorage/DataStorageAvailable';
@@ -41,32 +41,32 @@ function getDefaultVideoCodecForType (aType) {
 }
 
 class HcsVideoSource {
-  @observable path;
-  @observable pathMask;
-  @observable storageId;
-  @observable sequenceId;
-  @observable timePoint = 0;
-  @observable multipleTimePoints = false;
-  @observable zPlane = 0;
-  @observable multipleZPlanes = false;
-  @observable videoByZPlanes = false;
-  @observable wellView = false;
-  @observable well = undefined;
-  @observable imageId;
-  @observable channels = {};
-  @observable videoEndpointAPI;
-  @observable videoEndpointAPIError;
-  @observable generatedFilePath;
-  @observable videoUrl;
-  @observable videoAccessCallback = () => {};
-  @observable videoError;
-  @observable videoPending;
-  @observable videoMode = false;
-  @observable delay = 1;
-  @observable crossOrigin = 'anonymous';
-  @observable loop = true;
-  @observable videoType = DEFAULT_VIDEO_TYPE;
-  @observable videoCodec = getDefaultVideoCodecForType(DEFAULT_VIDEO_TYPE);
+  path;
+  pathMask;
+  storageId;
+  sequenceId;
+  timePoint = 0;
+  multipleTimePoints = false;
+  zPlane = 0;
+  multipleZPlanes = false;
+  videoByZPlanes = false;
+  wellView = false;
+  well = undefined;
+  imageId;
+  channels = {};
+  videoEndpointAPI;
+  videoEndpointAPIError;
+  generatedFilePath;
+  videoUrl;
+  videoAccessCallback = () => {};
+  videoError;
+  videoPending;
+  videoMode = false;
+  delay = 1;
+  crossOrigin = 'anonymous';
+  loop = true;
+  videoType = DEFAULT_VIDEO_TYPE;
+  videoCodec = getDefaultVideoCodecForType(DEFAULT_VIDEO_TYPE);
   /**
    * @type {ObjectStorage}
    */
@@ -74,12 +74,43 @@ class HcsVideoSource {
 
   responseToken = 0;
 
-  @computed
   get hasTimePointsAndZPlanes () {
     return this.multipleZPlanes && this.multipleTimePoints;
   }
 
   constructor () {
+    makeObservable(this, {
+      path: observable,
+      pathMask: observable,
+      storageId: observable,
+      sequenceId: observable,
+      timePoint: observable,
+      multipleTimePoints: observable,
+      zPlane: observable,
+      multipleZPlanes: observable,
+      videoByZPlanes: observable,
+      wellView: observable,
+      well: observable,
+      imageId: observable,
+      channels: observable,
+      videoEndpointAPI: observable,
+      videoEndpointAPIError: observable,
+      generatedFilePath: observable,
+      videoUrl: observable,
+      videoAccessCallback: observable,
+      videoError: observable,
+      videoPending: observable,
+      videoMode: observable,
+      delay: observable,
+      crossOrigin: observable,
+      loop: observable,
+      videoType: observable,
+      videoCodec: observable,
+      hasTimePointsAndZPlanes: computed,
+      available: computed,
+      initialized: computed,
+      videoSourceType: computed
+    });
     (this.initialize)();
   }
 
@@ -118,7 +149,6 @@ class HcsVideoSource {
     }
   }
 
-  @computed
   get available () {
     return this.imageId &&
       this.storageId &&
@@ -128,12 +158,10 @@ class HcsVideoSource {
       Object.keys(this.channels || {}).length > 0;
   }
 
-  @computed
   get initialized () {
     return !!this.videoEndpointAPI;
   }
 
-  @computed
   get videoSourceType () {
     if (/^mp4$/i.test(this.videoType)) {
       return 'video/mp4';

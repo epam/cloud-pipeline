@@ -15,7 +15,7 @@
  */
 
 import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import roleModel from './roleModel';
 import MetadataLoad from '../models/metadata/MetadataLoad';
 import {CP_CAP_LIMIT_MOUNTS} from '../components/pipelines/launch/form/utilities/parameters';
@@ -24,11 +24,19 @@ import {correctLimitMountsParameterValue} from './limit-mounts/get-limit-mounts-
 const FILTER_NON_SENSITIVE_STORAGES = false;
 
 class CurrentUserAttributes {
-  @observable userInfo;
-  @observable attributes = {};
-  @observable loaded = false;
-  @observable request;
+  userInfo;
+  attributes = {};
+  loaded = false;
+  request;
+
   constructor (authenticatedUserInfo, dataStorageAvailable) {
+    makeObservable(this, {
+      userInfo: observable,
+      attributes: observable,
+      loaded: observable,
+      request: observable,
+      user: computed
+    });
     this.userInfo = authenticatedUserInfo;
     this.dataStorages = dataStorageAvailable;
     if (authenticatedUserInfo) {
@@ -40,7 +48,6 @@ class CurrentUserAttributes {
     }
   }
 
-  @computed
   get user () {
     if (this.userInfo && this.userInfo.loaded) {
       return this.userInfo.value;

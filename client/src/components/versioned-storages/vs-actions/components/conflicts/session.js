@@ -14,15 +14,14 @@
  *  limitations under the License.
  */
 
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import analyzeConflicts from './utilities/analyze-conflicts';
 
 class ConflictsSessionFile {
-  @observable _info;
-  @observable error;
-  @observable file;
+  _info;
+  error;
+  file;
 
-  @computed
   get hash () {
     if (this._info) {
       return this._info.changesHash;
@@ -30,7 +29,6 @@ class ConflictsSessionFile {
     return undefined;
   }
 
-  @computed
   get resolved () {
     if (this._info) {
       return this._info.resolved;
@@ -39,6 +37,13 @@ class ConflictsSessionFile {
   }
 
   constructor (runId, storage, mergeInProgress, file, info) {
+    makeObservable(this, {
+      _info: observable,
+      error: observable,
+      file: observable,
+      hash: computed,
+      resolved: computed
+    });
     this.runId = runId;
     this.storage = storage;
     this.mergeInProgress = mergeInProgress;
@@ -84,14 +89,20 @@ class ConflictsSessionFile {
 }
 
 class ConflictsSession {
-  @observable files = [];
+  files = [];
 
-  @computed
+  constructor () {
+    makeObservable(this, {
+      files: observable,
+      resolved: computed,
+      hash: computed
+    });
+  }
+
   get resolved () {
     return !this.files.find(file => !file.resolved);
   }
 
-  @computed
   get hash () {
     return this.files.map(file => file.hash || 0).join('|');
   }

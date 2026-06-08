@@ -286,8 +286,14 @@
 
 .navigation-dropdown-container {
   width: 300px;
-  border: 1px solid transparent;
   max-height: 80vh;
+  background-color: var(--cp-color-bg-elevated);
+  color: var(--cp-color-text);
+  border: 1px solid var(--cp-color-border);
+  border-radius: var(--cp-ant-border-radius-lg, 8px);
+  box-shadow: 0 6px 16px 0 color-mix(in srgb, var(--cp-color-text) 8%, transparent),
+    0 3px 6px -4px color-mix(in srgb, var(--cp-color-text) 12%, transparent),
+    0 9px 28px 8px color-mix(in srgb, var(--cp-color-text) 5%, transparent);
 }
 
 .select-root-access {

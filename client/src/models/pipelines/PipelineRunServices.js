@@ -15,7 +15,7 @@
  */
 
 import RemotePost from '../basic/RemotePost';
-import {observable, computed} from 'mobx';
+import {observable, computed, makeObservable} from 'mobx';
 
 export default class PipelineRunServices extends RemotePost {
   static defaultValue = [];
@@ -24,6 +24,10 @@ export default class PipelineRunServices extends RemotePost {
 
   constructor (params, fetch = true) {
     super();
+    makeObservable(this, {
+      _total: observable,
+      total: computed
+    });
     this.params = params;
     this.url = '/services';
     if (fetch) {
@@ -31,8 +35,8 @@ export default class PipelineRunServices extends RemotePost {
     }
   };
 
-  @observable _total = 0;
-  @computed
+  _total = 0;
+
   get total () {
     return this._total;
   }

@@ -175,7 +175,7 @@ class ColorPicker extends React.Component {
     }
     return (
       <Popover
-        onVisibleChange={this.onVisibilityChange}
+        onOpenChange={this.onVisibilityChange}
         trigger={['click']}
         content={
           visible &&

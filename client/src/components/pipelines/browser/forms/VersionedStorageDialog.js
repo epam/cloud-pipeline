@@ -18,9 +18,9 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {
   Button,
+  Form,
   Input,
   Modal,
-  Form,
   Spin,
   Row,
   Checkbox
@@ -37,28 +37,27 @@ const formItemLayout = {
   }
 };
 
-@Form.create()
 class VersionedStorageDialog extends React.Component {
+  formRef = React.createRef();
+
   state = {
     predefinedFoldersChecked: false
   }
 
   handleSubmit = (e) => {
-    const {form} = this.props;
     e.preventDefault();
-    form.validateFieldsAndScroll((err, values) => {
-      if (!err) {
+    this.formRef.current.validateFields()
+      .then((values) => {
         this.props.onSubmit(values);
-      }
-    });
+      })
+      .catch(() => {});
   };
 
-  validateFolderStructure = (rule, value, callbackFn) => {
+  validateFolderStructure = (rule, value) => {
     if (this.props.name && value && value.toLowerCase() === this.props.name.toLowerCase()) {
-      callbackFn('Name should be unique');
-    } else {
-      callbackFn();
+      return Promise.reject(new Error('Name should be unique'));
     }
+    return Promise.resolve();
   };
 
   togglePredefinedFolders = (e) => {
@@ -70,12 +69,10 @@ class VersionedStorageDialog extends React.Component {
     const {
       visible,
       onCancel,
-      form,
       pending,
       folderStructureArea
     } = this.props;
     const {predefinedFoldersChecked} = this.state;
-    const {getFieldDecorator} = form;
     const modalFooter = (
       <Row>
         <Button
@@ -96,51 +93,52 @@ class VersionedStorageDialog extends React.Component {
     );
     return (
       <Modal
-        visible={visible}
+        open={visible}
         onCancel={onCancel}
         onOk={this.handleSubmit}
         title="Create versioned storage"
         footer={modalFooter}
-        afterClose={form.resetFields}
+        afterClose={() => this.formRef.current && this.formRef.current.resetFields()}
       >
         <Spin spinning={pending}>
-          <Form onSubmit={this.handleSubmit}>
+          <Form
+            ref={this.formRef}
+            onSubmit={this.handleSubmit}
+            initialValues={{
+              name: undefined,
+              description: undefined,
+              foldersStructure: ''
+            }}
+          >
             <Form.Item
               key="name"
               label="Name:"
               {...formItemLayout}
+              name="name"
+              rules={[
+                {required: true, message: 'Please input repository name'},
+                {
+                  pattern: /^[\da-zA-Z.\-_]+$/,
+                  message: 'Repository name can contain only letters, digits, "_", "-", and "."'
+                }
+              ]}
             >
-              {getFieldDecorator('name', {
-                rules: [
-                  {
-                    required: true,
-                    message: 'Please input repository name'
-                  },
-                  {
-                    pattern: /^[\da-zA-Z.\-_]+$/,
-                    message: 'Repository name can contain only letters, digits, "_", "-", and "."'
-                  }
-                ]
-              })(
-                <Input
-                  onPressEnter={this.handleSubmit}
-                  disabled={pending}
-                />
-              )}
+              <Input
+                onPressEnter={this.handleSubmit}
+                disabled={pending}
+              />
             </Form.Item>
             <Form.Item
               key="description"
               label="Description:"
               {...formItemLayout}
+              name="description"
             >
-              {getFieldDecorator('description')(
-                <Input
-                  type="textarea"
-                  autosize={{minRows: 2, maxRows: 6}}
-                  disabled={pending}
-                  onPressEnter={this.handleSubmit}
-                />
-              )}
+              <Input.TextArea
+                autoSize={{minRows: 2, maxRows: 6}}
+                disabled={pending}
+                onPressEnter={this.handleSubmit}
+              />
             </Form.Item>
             <Checkbox
               checked={predefinedFoldersChecked}
@@ -151,29 +149,25 @@ class VersionedStorageDialog extends React.Component {
             {folderStructureArea && predefinedFoldersChecked && (
               <Form.Item
                 key="foldersStructure"
+                name="foldersStructure"
+                rules={[
+                  {
+                    pattern: /^[\da-zA-Z_\n\-/]+$/,
+                    message: 'Path can contain only letters, digits, "_", "-", "/" and "."'
+                  }
+                ]}
               >
-                {getFieldDecorator('foldersStructure', {
-                  rules: [
-                    {
-                      pattern: /^[\da-zA-Z_\n\-/]+$/,
-                      message: 'Path can contain only letters, digits, "_", "-", "/" and "."'
-                    }
-                  ],
-                  initialValue: ''
-                })(
-                  <Input
-                    type="textarea"
-                    disabled={pending}
-                    autosize={{minRows: 5}}
-                    placeholder={[
-                      'To set folder paths, use "/" as divider,',
-                      'for example:\n',
-                      'folderA/folderB',
-                      'folderA/folderC',
-                      'folderC'
-                    ].join('\n')}
-                  />
-                )}
+                <Input.TextArea
+                  disabled={pending}
+                  autoSize={{minRows: 5}}
+                  placeholder={[
+                    'To set folder paths, use "/" as divider,',
+                    'for example:\n',
+                    'folderA/folderB',
+                    'folderA/folderC',
+                    'folderC'
+                  ].join('\n')}
+                />
               </Form.Item>
             )}
           </Form>

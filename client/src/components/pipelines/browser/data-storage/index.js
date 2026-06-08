@@ -16,15 +16,16 @@
 
 import React from 'react';
 import {inject, observer, Observer} from 'mobx-react';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
+import {withRouter} from '../../../../utils/with-router';
 import classNames from 'classnames';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import {
   Alert,
   Button,
   Checkbox,
   Col,
-  Icon,
+  Dropdown,
   Input,
   message,
   Modal,
@@ -33,8 +34,24 @@ import {
   Spin,
   Table
 } from 'antd';
-import Dropdown from 'rc-dropdown';
-import Menu, {MenuItem, Divider} from 'rc-menu';
+import {
+  AppstoreFilled,
+  AppstoreOutlined,
+  CheckOutlined,
+  DeleteOutlined,
+  DownloadOutlined,
+  DownOutlined,
+  EditOutlined,
+  ExportOutlined,
+  FileOutlined,
+  FolderOutlined,
+  HddOutlined,
+  InboxOutlined,
+  LinkOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+  SettingOutlined
+} from '@ant-design/icons';
 import moment from 'moment-timezone';
 import LoadingView from '../../../special/LoadingView';
 import Breadcrumbs from '../../../special/Breadcrumbs';
@@ -173,7 +190,7 @@ const SUBMITTED_STATUS = 'SUBMITTED';
   };
 })
 @observer
-export default class DataStorage extends React.Component {
+class DataStorage extends React.Component {
   state = {
     editDialogVisible: false,
     restoreDialogVisible: false,
@@ -201,12 +218,26 @@ export default class DataStorage extends React.Component {
     importedJobs: false
   };
 
-  @observable storage = new DataStorageListing({
+  storage = new DataStorageListing({
     keepPagesHistory: true
   });
 
-  @observable generateDownloadUrls;
-  @observable filterDropdownVisible;
+  generateDownloadUrls;
+  filterDropdownVisible;
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      storage: observable,
+      generateDownloadUrls: observable,
+      filterDropdownVisible: observable,
+      storageAllowSignedUrls: computed,
+      isAdmin: computed,
+      fileShareMountList: computed,
+      storageVersioningAllowed: computed,
+      lifeCycleRestoreInfo: computed
+    });
+  }
 
   get storageOperationsEnabled () {
     if (!this.storage.loaded) {
@@ -259,7 +290,6 @@ export default class DataStorage extends React.Component {
     return /^azure$/i.test(this.provider) && this.storageAllowSignedUrls;
   }
 
-  @computed
   get storageAllowSignedUrls () {
     return this.props.authenticatedUserInfo.loaded
       ? (
@@ -269,7 +299,6 @@ export default class DataStorage extends React.Component {
       : false;
   }
 
-  @computed
   get isAdmin () {
     return this.props.authenticatedUserInfo.loaded
       ? this.props.authenticatedUserInfo.value.admin
@@ -288,7 +317,6 @@ export default class DataStorage extends React.Component {
     return undefined;
   }
 
-  @computed
   get fileShareMountList () {
     const {awsRegions} = this.props;
     if (awsRegions && awsRegions.loaded) {
@@ -322,7 +350,6 @@ export default class DataStorage extends React.Component {
       preferences.dataSharingEnabled;
   }
 
-  @computed
   get storageVersioningAllowed () {
     const {
       preferences,
@@ -395,7 +422,6 @@ export default class DataStorage extends React.Component {
     ) && showArchives;
   }
 
-  @computed
   get lifeCycleRestoreInfo () {
     const {
       restoreInfo,
@@ -730,7 +756,7 @@ export default class DataStorage extends React.Component {
       };
     }));
     return items;
-  };
+  }
 
   refreshList = async (keepCurrentPage = false) => {
     await Promise.all([
@@ -1359,7 +1385,7 @@ export default class DataStorage extends React.Component {
           key="rename"
           size="small"
           onClick={(event) => this.openRenameItemDialog(event, item)}>
-          <Icon type="edit" />
+          <EditOutlined />
         </Button>
       );
     }
@@ -1371,7 +1397,7 @@ export default class DataStorage extends React.Component {
           size="small"
           onClick={() => this.onRestoreClicked(item, item.isVersion ? item.version : undefined)}
         >
-          <Icon type="reload" />
+          <ReloadOutlined />
         </Button>
       );
     }
@@ -1388,10 +1414,10 @@ export default class DataStorage extends React.Component {
         <Button
           id={`remove ${item.name}`}
           key="remove"
-          type="danger"
+          danger
           size="small"
           onClick={(event) => this.removeItemConfirm(event, item)}>
-          <Icon type="delete" />
+          <DeleteOutlined />
         </Button>
       );
     }
@@ -1671,19 +1697,17 @@ export default class DataStorage extends React.Component {
       if (/^file$/i.test(item.type) && SAMPLE_SHEET_FILE_NAME_REGEXP.test(item.name)) {
         return (
           <RestoreStatusIcon restoreInfo={restoredStatus}>
-            <Icon
-              className={classNames(styles.itemType, 'cp-primary')}
-              type="appstore-o"
-            />
+            <AppstoreOutlined className={classNames(styles.itemType, 'cp-primary')} />
           </RestoreStatusIcon>
         );
       }
       return (
         <RestoreStatusIcon restoreInfo={restoredStatus}>
-          <Icon
-            className={styles.itemType}
-            type={item.type.toLowerCase()}
-          />
+          {/^folder$/i.test(item.type) ? (
+            <FolderOutlined className={styles.itemType} />
+          ) : (
+            <FileOutlined className={styles.itemType} />
+          )}
         </RestoreStatusIcon>
       );
     };
@@ -1721,7 +1745,7 @@ export default class DataStorage extends React.Component {
       key: 'type',
       title: '',
       className: styles.itemTypeCell,
-      onCellClick: (item) => this.didSelectDataStorageItem(item),
+      onCell: (item) => ({onClick: () => this.didSelectDataStorageItem(item)}),
       render: (text, item) => (
         <Observer>
           {() => getItemIcon(item)}
@@ -1804,11 +1828,7 @@ export default class DataStorage extends React.Component {
               onClick={(event) => this.openDataStorageItemPreview(item, event)}
               key={item.key}
             >
-              <Icon
-                type="export"
-                className="cp-primary"
-                style={{fontSize: 'larger'}}
-              />
+              <ExportOutlined className="cp-primary" style={{fontSize: 'larger'}} />
             </div>
           );
         }
@@ -1849,14 +1869,11 @@ export default class DataStorage extends React.Component {
           <span>
             {name}
             {item.selectable ? (
-              <Icon
-                className={styles.copyUrl}
-                type="link"
+              <LinkOutlined className={styles.copyUrl}
                 onClick={event => {
                   event.stopPropagation();
                   this.copyPathsToClipboard([item]);
-                }}
-              />) : null
+                }} />) : null
             }
           </span>
         );
@@ -1871,12 +1888,14 @@ export default class DataStorage extends React.Component {
           submitDisabled={value => (value || '').length < 3}
         />
       ),
-      filterDropdownVisible: this.filterDropdownVisible === 'name',
-      onFilterDropdownVisibleChange: (visible) => {
-        this.filterDropdownVisible = visible ? 'name' : undefined;
+      filterDropdownProps: {
+        open: this.filterDropdownVisible === 'name',
+        onOpenChange: (visible) => {
+          this.filterDropdownVisible = visible ? 'name' : undefined;
+        }
       },
       ...filteredStatus([FILTER_FIELDS.name]),
-      onCellClick: (item) => this.didSelectDataStorageItem(item)
+      onCell: (item) => ({onClick: () => this.didSelectDataStorageItem(item)})
     };
     const sizeColumn = {
       dataIndex: 'size',
@@ -1894,12 +1913,14 @@ export default class DataStorage extends React.Component {
           visible={this.filterDropdownVisible === 'size'}
         />
       ),
-      filterDropdownVisible: this.filterDropdownVisible === 'size',
-      onFilterDropdownVisibleChange: (visible) => {
-        this.filterDropdownVisible = visible ? 'size' : undefined;
+      filterDropdownProps: {
+        open: this.filterDropdownVisible === 'size',
+        onOpenChange: (visible) => {
+          this.filterDropdownVisible = visible ? 'size' : undefined;
+        }
       },
       ...filteredStatus([FILTER_FIELDS.sizeGreaterThan, FILTER_FIELDS.sizeLessThan]),
-      onCellClick: (item) => this.didSelectDataStorageItem(item)
+      onCell: (item) => ({onClick: () => this.didSelectDataStorageItem(item)})
     };
     const changedColumn = {
       dataIndex: 'changed',
@@ -1917,12 +1938,14 @@ export default class DataStorage extends React.Component {
           visible={this.filterDropdownVisible === 'date'}
         />
       ),
-      filterDropdownVisible: this.filterDropdownVisible === 'date',
-      onFilterDropdownVisibleChange: (visible) => {
-        this.filterDropdownVisible = visible ? 'date' : undefined;
+      filterDropdownProps: {
+        open: this.filterDropdownVisible === 'date',
+        onOpenChange: (visible) => {
+          this.filterDropdownVisible = visible ? 'date' : undefined;
+        }
       },
       ...filteredStatus([FILTER_FIELDS.dateAfter, FILTER_FIELDS.dateBefore]),
-      onCellClick: (item) => this.didSelectDataStorageItem(item)
+      onCell: (item) => ({onClick: () => this.didSelectDataStorageItem(item)})
     };
     const labelsColumn = {
       dataIndex: 'labels',
@@ -1935,7 +1958,7 @@ export default class DataStorage extends React.Component {
           labels={labels}
         />
       ),
-      onCellClick: (item) => this.didSelectDataStorageItem(item)
+      onCell: (item) => ({onClick: () => this.didSelectDataStorageItem(item)})
     };
     const actionsColumn = {
       key: 'actions',
@@ -1966,7 +1989,7 @@ export default class DataStorage extends React.Component {
       labelsColumn,
       actionsColumn
     ].filter(Boolean);
-  };
+  }
 
   didSelectDataStorageItem = (item) => {
     if (item.type.toLowerCase() === 'folder') {
@@ -2126,7 +2149,7 @@ export default class DataStorage extends React.Component {
       .find(file => file.name === this.state.selectedFile.name);
 
     return !selectedFile || selectedFile.size === 0 || !(selectedFile.size);
-  };
+  }
 
   openConvertToVersionedStorageDialog = (callback) => {
     this.setState({
@@ -2226,46 +2249,46 @@ export default class DataStorage extends React.Component {
           }
         });
       };
+      const editMenuItems = [
+        {
+          id: 'edit-storage-action-button',
+          key: 'edit',
+          className: 'edit-storage-button',
+          label: (
+            <span>
+              <EditOutlined /> Edit
+            </span>
+          )
+        },
+        {
+          id: 'convert-storage-button',
+          key: 'convert',
+          className: 'convert-storage-action-button',
+          label: (
+            <span>
+              <InboxOutlined className="cp-versioned-storage" /> Convert to Versioned Storage
+            </span>
+          )
+        }
+      ];
       return (
         <Dropdown
           placement="bottomRight"
           trigger={['click']}
-          visible={editDropdownVisible}
-          onVisibleChange={visible => this.setState({editDropdownVisible: visible})}
-          overlay={
-            <Menu
-              selectedKeys={[]}
-              onClick={editActionSelect}
-              style={{width: 200, cursor: 'pointer'}}>
-              <MenuItem
-                id="edit-storage-action-button"
-                className="edit-storage-button"
-                key="edit"
-              >
-                <Icon type="edit" /> Edit
-              </MenuItem>
-              <MenuItem
-                id="convert-storage-button"
-                className="convert-storage-action-button"
-                key="convert"
-              >
-                <Icon type="inbox" className="cp-versioned-storage" /> Convert to Versioned Storage
-              </MenuItem>
-            </Menu>
-          }
+          open={editDropdownVisible}
+          onOpenChange={open => this.setState({editDropdownVisible: open})}
+          menu={{
+            items: editMenuItems,
+            onClick: editActionSelect,
+            style: {width: 200, cursor: 'pointer'}
+          }}
           key="edit actions"
         >
           <Button
             id="edit-storage-button"
             size="small"
           >
-            <Icon
-              type="setting"
-              style={{
-                lineHeight: 'inherit',
-                verticalAlign: 'middle'
-              }}
-            />
+            <SettingOutlined style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
           </Button>
         </Dropdown>
       );
@@ -2275,13 +2298,7 @@ export default class DataStorage extends React.Component {
         id="edit-storage-button"
         size="small"
         onClick={() => this.openEditDialog()}>
-        <Icon
-          type="setting"
-          style={{
-            lineHeight: 'inherit',
-            verticalAlign: 'middle'
-          }}
-        />
+        <SettingOutlined style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
       </Button>
     );
   };
@@ -2333,13 +2350,13 @@ export default class DataStorage extends React.Component {
     const downloadAction = {
       key: Keys.download,
       title: 'Download',
-      icon: 'download',
+      icon: <DownloadOutlined />,
       available: itemsAvailableForDownload.length > 0 && !this.isOmicsStore
     };
     const downloadOmicsAction = {
       key: Keys.downloadOmics,
       title: 'Download',
-      icon: 'download',
+      icon: <DownloadOutlined />,
       available: this.isOmicsStore && omicsItemsForDownload.length > 0 &&
         this.isSequenceStorage
     };
@@ -2349,7 +2366,7 @@ export default class DataStorage extends React.Component {
       available: this.storageOperationsEnabled &&
         this.userLifeCyclePermissions.write &&
         this.restorableItems.length > 0 && !this.isOmicsStore,
-      icon: 'reload'
+      icon: <ReloadOutlined />
     };
     const restoreOmicsAction = {
       key: Keys.restoreOmics,
@@ -2357,13 +2374,13 @@ export default class DataStorage extends React.Component {
       available: this.storageOperationsEnabled &&
         this.userLifeCyclePermissions.write &&
         this.restorableItems.length > 0 && this.isSequenceStorage && this.isOmicsFolder,
-      icon: 'reload'
+      icon: <ReloadOutlined />
     };
     const permissionsAction = {
       key: Keys.permissions,
       title: 'Manage permissions',
       available: this.userCanChangeStorageItemsPermissions && selectedItems.length > 0,
-      icon: 'setting'
+      icon: <SettingOutlined />
     };
     const getShareActionTitle = () => {
       if (itemsAvailableForShare.length === 1) {
@@ -2386,7 +2403,7 @@ export default class DataStorage extends React.Component {
       key: Keys.share,
       title: getShareActionTitle(),
       available: this.sharingEnabled && itemsAvailableForShare.length > 0,
-      icon: 'export'
+      icon: <ExportOutlined />
     };
     const generateURLAction = {
       key: Keys.generateUrl,
@@ -2394,12 +2411,12 @@ export default class DataStorage extends React.Component {
       available: this.bulkDownloadEnabled &&
         this.storageAllowSignedUrls &&
         (!this.isOmicsStore || (this.isSequenceStorage && !this.isOmicsFolder)),
-      icon: 'link'
+      icon: <LinkOutlined />
     };
     const copyPathsAction = {
       key: Keys.copyPaths,
       title: 'Copy Paths',
-      icon: 'link',
+      icon: <LinkOutlined />,
       available: this.clearSelectionVisible
     };
     const removeAllAction = {
@@ -2408,7 +2425,7 @@ export default class DataStorage extends React.Component {
       available: this.removeAllSelectedItemsEnabled &&
         (!this.isOmicsStore || (this.isSequenceStorage && this.isOmicsFolder)),
       className: 'cp-danger',
-      icon: 'delete'
+      icon: <DeleteOutlined />
     };
     const divider = {};
     const actions = [];
@@ -2493,7 +2510,7 @@ export default class DataStorage extends React.Component {
           onClick={(event) => doAction(action, event)}
           style={{lineHeight: 1}}
         >
-          {action.icon && (<Icon type={action.icon} style={{marginRight: 5}} />)}
+          {action.icon}
           {action.title}
         </Button>
       );
@@ -2501,49 +2518,46 @@ export default class DataStorage extends React.Component {
     const title = selectedItems && selectedItems.length > 0
       ? `${selectedItems.length} item${selectedItems.length === 1 ? '' : 's'} selected`
       : 'Selection';
-    const renderAction = (action, idx) => {
+    const menuItems = actions.map((action, idx) => {
       if (action === divider) {
-        return (
-          <Divider key={`divider-${idx}`} />
-        );
+        return {type: 'divider', key: `divider-${idx}`};
       }
-      return (
-        <MenuItem
-          id={`selection-action-${action.key}`}
-          key={action.key}
-          className={classNames(action.className, `selection-action-${action.key}`)}
-        >
+      return {
+        id: `selection-action-${action.key}`,
+        key: action.key,
+        className: classNames(action.className, `selection-action-${action.key}`),
+        label: (
           <div style={{display: 'flex', alignItems: 'center'}}>
-            {action.icon && (<Icon type={action.icon} style={{marginRight: 5}} />)}
+            {action.icon}
             {action.title}
           </div>
-        </MenuItem>
-      );
+        )
+      };
+    });
+    const onMenuClick = ({key}) => {
+      const action = actions.find(a => a !== divider && a.key === key);
+      if (action) {
+        doAction(action);
+      }
     };
     return (
       <Dropdown
         placement="bottomRight"
         trigger={['click']}
-        overlayClassName="selection-actions-dropdown"
-        overlay={
-          <Menu
-            selectedKeys={[]}
-            onClick={doAction}
-            style={{width: 200, cursor: 'pointer'}}
-            className="selection-actions-menu"
-          >
-            {
-              actions.map(renderAction)
-            }
-          </Menu>
-        }
+        classNames={{root: 'selection-actions-dropdown'}}
+        menu={{
+          items: menuItems,
+          onClick: onMenuClick,
+          style: {width: 200, cursor: 'pointer'},
+          className: 'selection-actions-menu'
+        }}
         key="create actions">
         <Button
           id="selection-actions"
           size="small"
         >
           {title}
-          <Icon type="down" />
+          <DownOutlined />
         </Button>
       </Dropdown>
     );
@@ -2579,7 +2593,7 @@ export default class DataStorage extends React.Component {
         >
           <br />
           <Alert
-            message={`Error retrieving data storage items: ${this.storage.pageError}`}
+            title={`Error retrieving data storage items: ${this.storage.pageError}`}
             type="error"
           />
         </div>
@@ -2634,31 +2648,38 @@ export default class DataStorage extends React.Component {
                 <Dropdown
                   placement="bottomRight"
                   trigger={['hover']}
-                  overlay={
-                    <Menu
-                      selectedKeys={[]}
-                      onClick={onCreateActionSelect}
-                      style={{width: 200, cursor: 'pointer'}}>
-                      <MenuItem
-                        id="create-folder-button"
-                        className="create-folder-button"
-                        key={folderKey}>
-                        <Icon type="folder" /> Folder
-                      </MenuItem>
-                      <MenuItem
-                        id="create-file-button"
-                        className="create-file-button"
-                        key={fileKey}>
-                        <Icon type="file" /> File
-                      </MenuItem>
-                    </Menu>
-                  }
+                  menu={{
+                    items: [
+                      {
+                        id: 'create-folder-button',
+                        key: folderKey,
+                        className: 'create-folder-button',
+                        label: (
+                          <span>
+                            <FolderOutlined /> Folder
+                          </span>
+                        )
+                      },
+                      {
+                        id: 'create-file-button',
+                        key: fileKey,
+                        className: 'create-file-button',
+                        label: (
+                          <span>
+                            <FileOutlined /> File
+                          </span>
+                        )
+                      }
+                    ],
+                    onClick: onCreateActionSelect,
+                    style: {width: 200, cursor: 'pointer'}
+                  }}
                   key="create actions">
                   <Button
                     type="primary"
                     id="create-button"
                     size="small">
-                    <Icon type="plus" /> Create <Icon type="down" />
+                    <PlusOutlined /> Create <DownOutlined />
                   </Button>
                 </Dropdown>
               )
@@ -2798,10 +2819,14 @@ export default class DataStorage extends React.Component {
         return;
       }
       switch (action.key) {
-        case 'attributes': this.onToggleMetadata(); break;
-        case 'jobs': this.onToggleJobs(); break;
-        case 'archive': this.showArchivedFilesChanged(!this.showArchives); break;
-        case 'version': this.showFilesVersionsChanged(!this.showVersions); break;
+        case 'attributes': this.onToggleMetadata();
+          break;
+        case 'jobs': this.onToggleJobs();
+          break;
+        case 'archive': this.showArchivedFilesChanged(!this.showArchives);
+          break;
+        case 'version': this.showFilesVersionsChanged(!this.showVersions);
+          break;
         default:
           break;
       }
@@ -2819,49 +2844,45 @@ export default class DataStorage extends React.Component {
     if (actions.length === 0) {
       return null;
     }
-    const renderAction = (action) => (
-      <MenuItem
-        id={`presentation-action-${action.key}`}
-        key={action.key}
-        className={classNames(action.className, `presentation-action-${action.key}`)}
-      >
+    const menuItems = actions.map((action) => ({
+      id: `presentation-action-${action.key}`,
+      key: action.key,
+      className: classNames(action.className, `presentation-action-${action.key}`),
+      label: (
         <div style={{display: 'flex', alignItems: 'center'}}>
-          {action.icon && (<Icon type={action.icon} style={{marginRight: 5}} />)}
+          {action.icon}
           {action.title}
           {
             action.checked && (
-              <Icon
-                type="check"
-                style={{marginLeft: 'auto'}}
-              />
+              <CheckOutlined style={{marginLeft: 'auto'}} />
             )
           }
         </div>
-      </MenuItem>
-    );
+      )
+    }));
+    const onMenuClick = ({key}) => {
+      const action = actions.find(a => a.key === key);
+      if (action) {
+        doAction(action);
+      }
+    };
     return (
       <Dropdown
         placement="bottomRight"
         trigger={['click']}
-        overlayClassName="presentation-actions-dropdown"
-        overlay={
-          <Menu
-            selectedKeys={[]}
-            onClick={doAction}
-            style={{width: 150, cursor: 'pointer'}}
-            className="presentation-actions-menu"
-          >
-            {
-              actions.map(renderAction)
-            }
-          </Menu>
-        }
+        classNames={{root: 'presentation-actions-dropdown'}}
+        menu={{
+          items: menuItems,
+          onClick: onMenuClick,
+          style: {width: 150, cursor: 'pointer'},
+          className: 'presentation-actions-menu'
+        }}
         key="create actions">
         <Button
           id="presentation-actions"
           size="small"
         >
-          <Icon type="appstore" />
+          <AppstoreFilled />
         </Button>
       </Dropdown>
     );
@@ -2875,10 +2896,10 @@ export default class DataStorage extends React.Component {
       return <LoadingView />;
     }
     if (this.storage.infoError) {
-      return <Alert message={this.storage.infoError} type="error" />;
+      return <Alert title={this.storage.infoError} type="error" />;
     }
     if (this.props.authenticatedUserInfo.error) {
-      return <Alert message={this.props.authenticatedUserInfo.error} type="error" />;
+      return <Alert title={this.props.authenticatedUserInfo.error} type="error" />;
     }
     const {
       name,
@@ -2933,7 +2954,7 @@ export default class DataStorage extends React.Component {
               onSaveEditableField={this.renameDataStorage}
               readOnlyEditableField={!this.storage.writeAllowed || this.isOmicsStore}
               editStyleEditableField={{flex: 1}}
-              icon={!/^nfs$/i.test(type) ? 'inbox' : 'hdd'}
+              icon={!/^nfs$/i.test(type) ? InboxOutlined : HddOutlined}
               iconClassName={
                 classNames(
                   styles.editableControl,
@@ -3034,7 +3055,7 @@ export default class DataStorage extends React.Component {
             {this.storage.resultsFilteredAndTruncated || this.storage.resultsSortedAndTruncated ? (
               <Alert
                 style={{marginBottom: 3}}
-                message={`Current folder contains too many objects.
+                title={`Current folder contains too many objects.
                 Filtered data does not include all of them.`}
                 type="info"
               />
@@ -3185,7 +3206,7 @@ export default class DataStorage extends React.Component {
         <Modal
           title="Download file url"
           width="80%"
-          visible={this.state.downloadUrlModalVisible}
+          open={this.state.downloadUrlModalVisible}
           onOk={() => this.closeDownloadUrlModal(true)}
           onCancel={() => this.closeDownloadUrlModal()}
           afterClose={() => { this.generateDownloadUrls = null; }}
@@ -3219,7 +3240,7 @@ export default class DataStorage extends React.Component {
           }
           {
             this.generateDownloadUrls && this.generateDownloadUrls.error && (
-              <Alert type="error" message={this.generateDownloadUrls.error} />
+              <Alert type="error" title={this.generateDownloadUrls.error} />
             )
           }
           {
@@ -3275,7 +3296,7 @@ export default class DataStorage extends React.Component {
             );
             return text ? (
               <Alert
-                message={text}
+                title={text}
                 type="info"
               />
             ) : null;
@@ -3297,39 +3318,44 @@ export default class DataStorage extends React.Component {
           )
         }
         <Modal
-          visible={!!this.state.itemsToDelete}
+          open={!!this.state.itemsToDelete}
           onCancel={this.closeDeleteModal}
           title="Do you want to delete item(s) from object storage or set 'Deletion' marker?"
           footer={
-            <Row type="flex" justify="space-between">
-              <Col span={8}>
-                <Row type="flex" justify="start">
-                  <Button
-                    id="delete-bucket-item-modal-cancel-button"
-                    onClick={this.closeDeleteModal}>Cancel</Button>
-                </Row>
-              </Col>
-              <Col span={16}>
-                <Row type="flex" justify="end">
-                  <Button
-                    id="delete-bucket-item-modal-set-deletion-marker-button"
-                    type="danger"
-                    onClick={() => this.removeItems(this.state.itemsToDelete, false, false, () => {
-                      this.closeDeleteModal();
-                      this.setState({selectedItems: []});
-                      this.afterDataStorageEdit();
-                    })}>Set deletion marker</Button>
-                  <Button
-                    id="delete-bucket-item-modal-delete-from-bucket-button"
-                    type="danger"
-                    onClick={() => this.removeItems(this.state.itemsToDelete, true, false, () => {
-                      this.closeDeleteModal();
-                      this.setState({selectedItems: []});
-                      this.afterDataStorageEdit();
-                    })}>Delete from object storage</Button>
-                </Row>
-              </Col>
-            </Row>
+            <div className="cp-modal-footer-actions cp-modal-footer-actions--split">
+              <div className="cp-modal-footer-actions-group">
+                <Button
+                  id="delete-bucket-item-modal-cancel-button"
+                  onClick={this.closeDeleteModal}
+                >
+                  Cancel
+                </Button>
+              </div>
+              <div className="cp-modal-footer-actions-group cp-modal-footer-actions-group--end">
+                <Button
+                  id="delete-bucket-item-modal-set-deletion-marker-button"
+                  danger
+                  onClick={() => this.removeItems(this.state.itemsToDelete, false, false, () => {
+                    this.closeDeleteModal();
+                    this.setState({selectedItems: []});
+                    this.afterDataStorageEdit();
+                  })}
+                >
+                  Set deletion marker
+                </Button>
+                <Button
+                  id="delete-bucket-item-modal-delete-from-bucket-button"
+                  danger
+                  onClick={() => this.removeItems(this.state.itemsToDelete, true, false, () => {
+                    this.closeDeleteModal();
+                    this.setState({selectedItems: []});
+                    this.afterDataStorageEdit();
+                  })}
+                >
+                  Delete from object storage
+                </Button>
+              </div>
+            </div>
           }>
           {
             (this.state.itemsToDelete || []).map(item => {
@@ -3409,7 +3435,7 @@ export default class DataStorage extends React.Component {
     }
   };
 
-  componentWillReceiveProps (nextProps, nextState) {
+  UNSAFE_componentWillReceiveProps (nextProps, nextState) {
     if (nextProps.storageId !== this.props.storageId) {
       this.setState({selectedFile: null});
     }
@@ -3425,3 +3451,4 @@ export default class DataStorage extends React.Component {
 }
 
 export {STORAGE_CLASSES, isStandardClass};
+export default withRouter(DataStorage);

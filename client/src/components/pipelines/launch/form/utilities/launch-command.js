@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observer, inject} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import PipelineRunCmd from '../../../../../models/pipelines/PipelineRunCmd';
 import {Alert, Modal, Row, Select, Tabs} from 'antd';
 import {applyCustomCapabilitiesParameters} from './run-capabilities';
@@ -72,7 +72,13 @@ class LaunchCommand extends React.Component {
     osType: DEFAULT_OS
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      launchCommandTemplate: computed
+    });
+  }
+
   get launchCommandTemplate () {
     const {preferences} = this.props;
     return preferences.getPreferenceValue('ui.launch.command.template');
@@ -85,7 +91,7 @@ class LaunchCommand extends React.Component {
     }
   }
 
-  componentWillReceiveProps (nextProps, nextContext) {
+  UNSAFE_componentWillReceiveProps (nextProps, nextContext) {
     if (nextProps.visible !== this.props.visible && nextProps.visible) {
       this.rebuild(nextProps.payload);
     }
@@ -143,7 +149,7 @@ class LaunchCommand extends React.Component {
     } = this.state;
     if (error) {
       return (
-        <Alert type="warning" message={error} />
+        <Alert type="warning" title={error} />
       );
     }
     const onChangeOS = (os) => {
@@ -183,7 +189,7 @@ class LaunchCommand extends React.Component {
     const {payload} = this.state;
     if (!payload) {
       return (
-        <Alert type="warning" message="Payload is not set" />
+        <Alert type="warning" title="Payload is not set" />
       );
     }
     return (
@@ -207,18 +213,16 @@ class LaunchCommand extends React.Component {
       <Modal
         onCancel={onClose}
         title="Launch commands"
-        visible={visible}
+        open={visible}
         width="50%"
         footer={false}
       >
-        <Tabs>
-          <Tabs.TabPane key="CLI" tab="CLI">
-            {this.renderCLICommand()}
-          </Tabs.TabPane>
-          <Tabs.TabPane key="API" tab="API">
-            {this.renderAPICommand()}
-          </Tabs.TabPane>
-        </Tabs>
+        <Tabs
+          items={[
+            {key: 'CLI', label: 'CLI', children: this.renderCLICommand()},
+            {key: 'API', label: 'API', children: this.renderAPICommand()}
+          ]}
+        />
       </Modal>
     );
   }

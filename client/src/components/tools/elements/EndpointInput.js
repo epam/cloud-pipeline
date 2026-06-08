@@ -15,18 +15,20 @@
  */
 
 import React from 'react';
-import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {
+  inject,
+  observer
+} from 'mobx-react';
+import {computed, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
 import {
   Button,
   Col,
   Dropdown,
-  Icon,
   Input,
-  Menu,
   Row
 } from 'antd';
+import {CheckOutlined, SettingOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import CodeEditor from '../../special/CodeEditor';
 import styles from '../Tools.css';
@@ -92,7 +94,13 @@ export default class EndpointInput extends React.Component {
     validation: {}
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      additionalConfigurationEditable: computed
+    });
+  }
+
   get additionalConfigurationEditable () {
     const {
       authenticatedUserInfo
@@ -357,28 +365,12 @@ export default class EndpointInput extends React.Component {
           break;
       }
     };
-    const overlay = (
-      <Menu
-        onClick={onChange}
-      >
-        <Menu.Item key="isDefault">
-          {this.isDefault ? (<Icon type="check" />) : undefined}
-          <span style={{marginLeft: 5}}>Default</span>
-        </Menu.Item>
-        <Menu.Item key="sslBackend">
-          {this.sslBackend ? (<Icon type="check" />) : undefined}
-          <span style={{marginLeft: 5}}>SSL backend</span>
-        </Menu.Item>
-        <Menu.Item key="customDNS">
-          {this.customDNS ? (<Icon type="check" />) : undefined}
-          <span style={{marginLeft: 5}}>Use sub-domain</span>
-        </Menu.Item>
-        <Menu.Item key="sameTab">
-          {this.sameTab ? (<Icon type="check" />) : undefined}
-          <span style={{marginLeft: 5}}>Open in same tab</span>
-        </Menu.Item>
-      </Menu>
-    );
+    const overlayMenuItems = [
+      {key: 'isDefault', label: <>{this.isDefault ? <CheckOutlined /> : null}<span style={{marginLeft: 5}}>Default</span></>},
+      {key: 'sslBackend', label: <>{this.sslBackend ? <CheckOutlined /> : null}<span style={{marginLeft: 5}}>SSL backend</span></>},
+      {key: 'customDNS', label: <>{this.customDNS ? <CheckOutlined /> : null}<span style={{marginLeft: 5}}>Use sub-domain</span></>},
+      {key: 'sameTab', label: <>{this.sameTab ? <CheckOutlined /> : null}<span style={{marginLeft: 5}}>Open in same tab</span></>}
+    ];
     return (
       <div
         className={classNames({'cp-tool-add-endpoint': this.props.even})}
@@ -465,12 +457,12 @@ export default class EndpointInput extends React.Component {
           </Col>
           <Col style={{paddingLeft: 5, flex: 1, textAlign: 'right'}}>
             <Dropdown
-              overlay={overlay}
+              menu={{items: overlayMenuItems, onClick: onChange}}
               trigger={['click']}
             >
               <a>
                 {options.join(', ')}
-                <Icon type="setting" style={{marginLeft: 2}} />
+                <SettingOutlined style={{marginLeft: 2}} />
               </a>
             </Dropdown>
           </Col>
@@ -480,7 +472,7 @@ export default class EndpointInput extends React.Component {
                 disabled={this.props.disabled}
                 onClick={e => this.props.onRemove && this.props.onRemove()}
                 size="small"
-                type="danger">
+                danger>
                 Delete
               </Button>
             </Row>
@@ -523,7 +515,7 @@ export default class EndpointInput extends React.Component {
     );
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.value !== this.state.value) {
       this.editor && this.editor.clear();
       this.setState({

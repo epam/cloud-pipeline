@@ -16,8 +16,14 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
-import {Button, Dropdown, Icon, Input, Row} from 'antd';
+import {
+  observer} from 'mobx-react';
+import {Button,
+  Dropdown,
+  Input,
+  Row
+} from 'antd';
+import {CaretRightOutlined} from '@ant-design/icons';
 import registryName from './registryName';
 import DockerRegistriesGroupsDropdownContent from './DockerRegistriesGroupsDropdownContent';
 import styles from './Tools.css';
@@ -55,8 +61,8 @@ export default class DockerRegistriesNavigation extends React.Component {
       return (
         <Dropdown
           trigger={['click']}
-          overlayClassName="registry-dropdown-container"
-          overlay={
+          classNames={{root: 'registry-dropdown-container'}}
+          popupRender={() => (
             <div
               id="registries-dropdown"
               className={styles.navigationDropdownContainer}
@@ -77,7 +83,8 @@ export default class DockerRegistriesNavigation extends React.Component {
                 })
               }
             </div>
-          }>
+          )}
+        >
           <Button
             id="current-registry-button"
             size="small"
@@ -151,9 +158,9 @@ export default class DockerRegistriesNavigation extends React.Component {
       return (
         <Dropdown
           trigger={['click']}
-          visible={this.state.groupsDropDownVisible}
-          onVisibleChange={onDropDownVisibleChanged}
-          overlay={
+          open={this.state.groupsDropDownVisible}
+          onOpenChange={onDropDownVisibleChanged}
+          popupRender={() => (
             <DockerRegistriesGroupsDropdownContent
               groups={groups}
               filter={this.props.filter}
@@ -174,7 +181,8 @@ export default class DockerRegistriesNavigation extends React.Component {
                 });
               }}
             />
-          }>
+          )}
+        >
           <Button
             id="current-group-button"
             size="small"
@@ -208,9 +216,9 @@ export default class DockerRegistriesNavigation extends React.Component {
       return (
         <Row type="flex" align="middle" style={{flex: 1}}>
           {registrySelector}
-          {groupSelector && <Icon type="caret-right" />}
+          {groupSelector && <CaretRightOutlined />}
           {groupSelector}
-          {groupSelector && <Icon type="caret-right" />}
+          {groupSelector && <CaretRightOutlined />}
           {groupSelector && renderToolSelector}
         </Row>
       );

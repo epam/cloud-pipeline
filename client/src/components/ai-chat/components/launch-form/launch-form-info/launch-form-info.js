@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import styles from './launch-form-info.css';
 import {observer} from 'mobx-react';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
 import {LAUNCH_MODES} from '../utils';
 
 @observer

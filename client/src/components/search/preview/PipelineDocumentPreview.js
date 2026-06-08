@@ -17,8 +17,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
-import {Icon, Row} from 'antd';
+import {computed, makeObservable} from 'mobx';
+import {Row} from 'antd';
+import {CaretRightOutlined, ForkOutlined, LoadingOutlined, TagFilled} from '@ant-design/icons';
 import classNames from 'classnames';
 import Papa from 'papaparse';
 import VersionFile from '../../../models/pipelines/VersionFile';
@@ -66,7 +67,16 @@ export default class PipelineDocumentPreview extends React.Component {
     imageError: null
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      filePreview: computed,
+      structuredTableData: computed,
+      parentFolders: computed,
+      fileName: computed
+    });
+  }
+
   get filePreview () {
     if (this.props.preview) {
       if (this.props.preview.pending) {
@@ -94,7 +104,6 @@ export default class PipelineDocumentPreview extends React.Component {
     return null;
   }
 
-  @computed
   get structuredTableData () {
     if (this.filePreview && this.filePreview.preview &&
       this.props.item && this.props.item.path.split('.').pop().toLowerCase() === 'csv') {
@@ -112,7 +121,6 @@ export default class PipelineDocumentPreview extends React.Component {
     return null;
   }
 
-  @computed
   get parentFolders () {
     if (this.props.item.path) {
       return this.props.item.path.split('/').slice(0, -1);
@@ -120,12 +128,12 @@ export default class PipelineDocumentPreview extends React.Component {
     return [];
   }
 
-  @computed
   get fileName () {
     if (this.props.item.path || this.props.item.name) {
+      const ItemIcon = PreviewIcons[this.props.item.type];
       return (
         <span>
-          <Icon type={PreviewIcons[this.props.item.type]} />
+          {ItemIcon && <ItemIcon />}
           {(this.props.item.path || this.props.item.name).split('/').pop()}
         </span>
       );
@@ -138,7 +146,7 @@ export default class PipelineDocumentPreview extends React.Component {
     if (this.props.pipeline && this.props.pipeline.loaded) {
       paths.push(
         <span>
-          <Icon type="fork" />
+          <ForkOutlined />
           {this.props.pipeline.value.name}
         </span>
       );
@@ -146,7 +154,7 @@ export default class PipelineDocumentPreview extends React.Component {
     if (this.props.version) {
       paths.push(
         <span>
-          <Icon type="tag" />
+          <TagFilled />
           {this.props.version}
         </span>
       );
@@ -155,7 +163,7 @@ export default class PipelineDocumentPreview extends React.Component {
     return paths.reduce((result, current, index, arr) => {
       result.push(<span key={index * 2} style={{marginRight: 0}}>{current}</span>);
       if (index < arr.length - 1) {
-        result.push(<Icon key={index * 2 + 1} type="caret-right" />);
+        result.push(<CaretRightOutlined key={index * 2 + 1} />);
       }
       return result;
     }, []);
@@ -168,7 +176,7 @@ export default class PipelineDocumentPreview extends React.Component {
     if (this.props.preview.pending) {
       return (
         <Row type="flex" justify="center">
-          <Icon type="loading" />
+          <LoadingOutlined />
         </Row>
       );
     }
@@ -270,7 +278,7 @@ export default class PipelineDocumentPreview extends React.Component {
       if (this.props.downloadUrl.pending) {
         return (
           <Row className={styles.contentPreview} type="flex" justify="center">
-            <Icon type="loading" />
+            <LoadingOutlined />
           </Row>
         );
       }
@@ -376,7 +384,7 @@ export default class PipelineDocumentPreview extends React.Component {
     );
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.item !== this.props.item) {
       this.setState({pdbError: null, imageError: null});
     }

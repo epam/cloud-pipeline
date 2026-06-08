@@ -16,14 +16,14 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {Alert, Input, message, Modal, Row} from 'antd';
 import PreferencesUpdate from '../../models/preferences/PreferencesUpdate';
 import PreferenceGroup from './forms/PreferenceGroup';
 import LoadingView from '../special/LoadingView';
 import SubSettings from './sub-settings';
 
-@inject('preferences', 'router', 'authenticatedUserInfo')
+@inject('preferences', 'routing', 'authenticatedUserInfo')
 @observer
 export default class Preferences extends React.Component {
   state = {
@@ -32,13 +32,22 @@ export default class Preferences extends React.Component {
     changesCanBeSkipped: false
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      preferencesGroups: computed,
+      preferences: computed,
+      templateModified: computed
+    });
+  }
+
   componentDidMount () {
-    const {route, router, preferences} = this.props;
-    if (route && router) {
-      router.setRouteLeaveHook(route, this.checkSettingsBeforeLeave);
+    const {route, routing, preferences} = this.props;
+    if (route && routing) {
+      routing.setRouteLeaveHook(route, this.checkSettingsBeforeLeave);
     }
     preferences.fetch();
-  };
+  }
 
   operationWrapper = (operation) => (...props) => {
     this.setState({
@@ -51,7 +60,6 @@ export default class Preferences extends React.Component {
     });
   };
 
-  @computed
   get preferencesGroups () {
     if (this.props.preferences.loaded) {
       return (this.props.preferences.value || [])
@@ -71,7 +79,6 @@ export default class Preferences extends React.Component {
     return [];
   }
 
-  @computed
   get preferences () {
     if (this.props.preferences.loaded) {
       return (this.props.preferences.value || []).slice();
@@ -97,11 +104,11 @@ export default class Preferences extends React.Component {
   };
 
   checkSettingsBeforeLeave = (nextLocation) => {
-    const {router} = this.props;
+    const {routing} = this.props;
     const {changesCanBeSkipped} = this.state;
     const makeTransition = nextLocation => {
       this.setState({changesCanBeSkipped: true},
-        () => router.push(nextLocation)
+        () => routing.push(nextLocation)
       );
     };
     if (this.templateModified && !changesCanBeSkipped) {
@@ -143,18 +150,13 @@ export default class Preferences extends React.Component {
     });
   };
 
-  preferenceGroupForm;
+  preferenceGroupFormRef = React.createRef();
 
-  initializePreferenceGroupForm = (wrappedComponent) => {
-    this.preferenceGroupForm = wrappedComponent;
-  };
-
-  @computed
   get templateModified () {
-    if (!this.preferenceGroupForm) {
+    if (!this.preferenceGroupFormRef.current) {
       return false;
     }
-    return this.preferenceGroupForm.modified;
+    return this.preferenceGroupFormRef.current.modified;
   }
 
   updatePreferences = async (preferences) => {
@@ -166,7 +168,7 @@ export default class Preferences extends React.Component {
       message.error(request.error, 5);
     } else {
       await this.props.preferences.fetch();
-      this.preferenceGroupForm && this.preferenceGroupForm.resetFormFields();
+      this.preferenceGroupFormRef.current && this.preferenceGroupFormRef.current.resetFormFields();
       hide();
     }
   };
@@ -191,14 +193,14 @@ export default class Preferences extends React.Component {
     }
     if (!this.props.authenticatedUserInfo.value.admin) {
       return (
-        <Alert type="error" message="Access is denied" />
+        <Alert type="error" title="Access is denied" />
       );
     }
     if (!this.props.preferences.loaded && this.props.preferences.pending) {
       return <LoadingView />;
     }
     if (this.props.preferences.error) {
-      return <Alert type="warning" message={this.props.preferences.error} />;
+      return <Alert type="warning" title={this.props.preferences.error} />;
     }
     return (
       <div
@@ -232,9 +234,9 @@ export default class Preferences extends React.Component {
                 onSubmit={this.operationWrapper(this.updatePreferences)}
                 group={group.key}
                 preferences={this.getPreferencesForGroup(group.key)}
-                wrappedComponentRef={this.initializePreferenceGroupForm}
+                ref={this.preferenceGroupFormRef}
                 search={this.state.search}
-                router={this.props.router}
+                router={this.props.routing}
               />
             )
           }

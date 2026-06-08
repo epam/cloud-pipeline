@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import LoadTool from '../../../../models/tools/LoadTool';
 import LoadToolVersionSettings from '../../../../models/tools/LoadToolVersionSettings';
 import UpdateToolVersionSettings from '../../../../models/tools/UpdateToolVersionSettings';
@@ -32,7 +32,8 @@ import HiddenObjects from '../../../../utils/hidden-objects';
 
 @HiddenObjects.injectToolsFilters
 @inject('preferences', 'dockerRegistries')
-@inject((stores, {params}) => {
+@inject(({routing, ...stores}) => {
+  const {params} = routing;
   return {
     toolId: params.id,
     version: params.version,
@@ -43,16 +44,27 @@ import HiddenObjects from '../../../../utils/hidden-objects';
     versions: new LoadToolAttributes(params.id)
   };
 })
-
 @observer
 export default class ToolSetttings extends React.Component {
   state = {
     operationInProgress: false
   };
 
-  @observable versionSettingsForm;
+  versionSettingsForm;
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      versionSettingsForm: observable,
+      registries: computed,
+      dockerImage: computed,
+      toolVersionOS: computed,
+      settings: computed,
+      allowCommit: computed,
+      platform: computed
+    });
+  }
+
   get registries () {
     if (this.props.docker.loaded) {
       return this.props.hiddenToolsTreeFilter(this.props.docker.value)
@@ -61,7 +73,6 @@ export default class ToolSetttings extends React.Component {
     return [];
   }
 
-  @computed
   get dockerImage () {
     const {tool, version} = this.props;
     if (!tool?.loaded) {
@@ -74,7 +85,6 @@ export default class ToolSetttings extends React.Component {
       : `${image}${version ? `:${version}` : ''}`;
   }
 
-  @computed
   get toolVersionOS () {
     const {versions, version} = this.props;
     if (versions.loaded) {
@@ -113,7 +123,6 @@ export default class ToolSetttings extends React.Component {
     });
   };
 
-  @computed
   get settings () {
     if (this.props.settings.loaded) {
       if ((this.props.settings.value || []).length > 0 &&
@@ -127,7 +136,6 @@ export default class ToolSetttings extends React.Component {
     return null;
   }
 
-  @computed
   get allowCommit () {
     const {settings} = this.props;
     if (settings.loaded) {
@@ -139,7 +147,6 @@ export default class ToolSetttings extends React.Component {
     return false;
   }
 
-  @computed
   get platform () {
     if (this.props.settings.loaded) {
       if ((this.props.settings.value || []).length > 0) {
@@ -178,17 +185,17 @@ export default class ToolSetttings extends React.Component {
       return <LoadingView />;
     }
     if (this.props.settings.error) {
-      return <Alert type="error" message={this.props.settings.error} />;
+      return <Alert type="error" title={this.props.settings.error} />;
     }
     if (this.props.tool.error) {
-      return <Alert type="error" message={this.props.tool.error} />;
+      return <Alert type="error" title={this.props.tool.error} />;
     }
     if (this.props.preferences.error) {
-      return <Alert type="error" message={this.props.preferences.error} />;
+      return <Alert type="error" title={this.props.preferences.error} />;
     }
     if (!roleModel.readAllowed(this.props.tool.value)) {
       return (
-        <Alert type="error" message="You have no permissions to view tool details" />
+        <Alert type="error" title="You have no permissions to view tool details" />
       );
     }
     return (

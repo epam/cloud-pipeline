@@ -71,10 +71,12 @@ function stringifyResult (stringify, value) {
 }
 
 function build (value, stringified = true) {
-  if (!value) {
+  const normalized = parse(value);
+  if (!normalized) {
     return stringifyResult(stringified, undefined);
   }
-  const [domain, ...path] = value.split('/');
+  const url = typeof normalized === 'string' ? normalized : `${normalized}`;
+  const [domain, ...path] = url.split('/');
   if (!path || path.length === 0) {
     // pretty url: "some-string-here"
     if (endpointURIMask.test(domain)) {

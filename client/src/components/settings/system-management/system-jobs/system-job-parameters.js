@@ -79,7 +79,7 @@ class SystemJobParameters extends React.Component {
           alerts.map(alert => (
             <Alert
               key={alert.parameter}
-              message={(
+              title={(
                 <p>
                   <b>{alert.parameter}: </b>
                   <span>
@@ -111,7 +111,7 @@ class SystemJobParameters extends React.Component {
         style={style}
         title="Job parameters"
         onCancel={onCancel}
-        visible={visible}
+        open={visible}
         footer={(
           <div
             style={{

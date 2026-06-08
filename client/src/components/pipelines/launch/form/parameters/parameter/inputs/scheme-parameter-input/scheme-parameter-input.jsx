@@ -74,13 +74,15 @@ class LaunchFormSchemeParameterInput extends React.Component {
         </div>
         <Modal
           title={(<b>{prettyName}</b>)}
-          visible={modalVisible}
+          open={modalVisible}
           footer={false}
           width={`${modalWidth}%`}
           closable={false}
-          bodyStyle={{
-            margin: 0,
-            padding: '2px 10px 10px'
+          styles={{
+            body: {
+              margin: 0,
+              padding: '2px 10px 10px'
+            }
           }}
         >
           <LaunchFormSchemeParameterTable

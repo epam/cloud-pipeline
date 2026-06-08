@@ -19,16 +19,23 @@ import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {TitleSection} from '../index';
 import styles from './parameter-group.css';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 
 @observer
 export default class ParameterGroup extends React.Component {
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      noParameters: computed
+    });
+  }
+
   get noParameters () {
     const {formStore} = this.props;
     const {parameters} = formStore;
     return !parameters || Object.keys(parameters).length === 0;
   }
+
   renderParameters = () => {
     const {formStore} = this.props;
     const {parameters} = formStore;

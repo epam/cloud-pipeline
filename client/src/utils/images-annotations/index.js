@@ -14,12 +14,7 @@
  *  limitations under the License.
  */
 
-import {
-  action,
-  autorun,
-  computed,
-  observable
-} from 'mobx';
+import {action, autorun, computed, observable, makeObservable} from 'mobx';
 import {createObjectStorageWrapper} from '../object-storage';
 import storages from '../../models/dataStorage/DataStorageAvailable';
 import whoAmI from '../../models/user/WhoAmI';
@@ -33,19 +28,19 @@ import HCSBaseState from '../../components/special/hcs-image/utilities/base-stat
  */
 
 class ImagesAnnotations extends HCSBaseState {
-  @observable pending = true;
-  @observable error = undefined;
-  @observable initialized = false;
+  pending = true;
+  error = undefined;
+  initialized = false;
   /**
    * @type {ObjectStorage}
    */
-  @observable storage = undefined;
+  storage = undefined;
   /**
    * @type {UserAnnotations[]}
    */
-  @observable usersAnnotations = [];
-  @observable actions = [];
-  @observable position = 0;
+  usersAnnotations = [];
+  actions = [];
+  position = 0;
   listeners = [];
   /**
    * @param {ImagesAnnotationsOptions} options
@@ -56,6 +51,19 @@ class ImagesAnnotations extends HCSBaseState {
       storageIdentifier
     } = options || {};
     super(undefined, 'projectionChanged');
+    makeObservable(this, {
+      pending: observable,
+      error: observable,
+      initialized: observable,
+      storage: observable,
+      usersAnnotations: observable,
+      actions: observable,
+      position: observable,
+      myAnnotations: computed,
+      annotations: computed,
+      initialize: action,
+      onStateChanged: action
+    });
     this.root = root;
     this.storageIdentifier = storageIdentifier;
     (this.fetch)();
@@ -100,7 +108,6 @@ class ImagesAnnotations extends HCSBaseState {
   /**
    * @type {UserAnnotations}
    */
-  @computed
   get myAnnotations () {
     if (whoAmI.loaded) {
       const {userName} = whoAmI.value || {};
@@ -109,7 +116,6 @@ class ImagesAnnotations extends HCSBaseState {
     return undefined;
   }
 
-  @computed
   get annotations () {
     return (this.usersAnnotations || [])
       .reduce((r, c) => ([...r, ...(c.annotations || []).map((annotation) => ({
@@ -118,7 +124,6 @@ class ImagesAnnotations extends HCSBaseState {
       }))]), []);
   }
 
-  @action
   initialize () {
     if (!this._initializePromise) {
       this._initializePromise = new Promise(async (resolve) => {
@@ -147,7 +152,6 @@ class ImagesAnnotations extends HCSBaseState {
     return this._initializePromise;
   }
 
-  @action
   async fetch (force = false) {
     if (this._fetchPromise && !force) {
       return this._fetchPromise;
@@ -339,7 +343,6 @@ class ImagesAnnotations extends HCSBaseState {
     this.projection = projection;
   }
 
-  @action
   onStateChanged (viewer, newState) {
     this.updateProjection(newState);
   }

@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {observer, inject} from 'mobx-react';
 import {Button, Dropdown, Input, Row, Tooltip} from 'antd';
 import classNames from 'classnames';
@@ -99,7 +99,15 @@ export class DataStoragePathInput extends React.Component {
     storagePath: undefined
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      storageObjectPrefix: computed,
+      cloudRegions: computed,
+      fileShareMountsList: computed
+    });
+  }
+
   get storageObjectPrefix () {
     if (this.props.preferences.loaded) {
       return this.props.preferences.getPreferenceValue('storage.object.prefix');
@@ -108,12 +116,10 @@ export class DataStoragePathInput extends React.Component {
     return null;
   }
 
-  @computed
   get cloudRegions () {
     return this.props.cloudRegions;
   }
 
-  @computed
   get fileShareMountsList () {
     if (!this.cloudRegions) {
       return [];
@@ -121,7 +127,6 @@ export class DataStoragePathInput extends React.Component {
     return extractFileShareMountList(this.cloudRegions);
   }
 
-  @computed
   get currentFileShareMount () {
     return this.state.fileShareMountId
       ? this.fileShareMountsList.filter(r => r.id === this.state.fileShareMountId)[0]
@@ -282,7 +287,7 @@ export class DataStoragePathInput extends React.Component {
             ) : (
               <Dropdown
                 id="edit-storage-storage-path-nfs-mount"
-                overlay={
+                popupRender={() => (
                   <div
                     className={styles.navigationDropdownContainer}
                   >
@@ -305,7 +310,8 @@ export class DataStoragePathInput extends React.Component {
                         })
                     }
                   </div>
-                }>
+                )}
+              >
                 <Button
                   size="small"
                   style={{
@@ -397,7 +403,7 @@ export class DataStoragePathInput extends React.Component {
     }
   };
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     this.updateState(nextProps);
   }
 
@@ -407,8 +413,8 @@ export class DataStoragePathInput extends React.Component {
   }
 
   initializeNameInput = (input) => {
-    if (input && input.refs && input.refs.input) {
-      this.nameInput = input.refs.input;
+    if (input) {
+      this.nameInput = input;
       this.nameInput.onfocus = function () {
         setTimeout(() => {
           this.selectionStart = (this.value || '').length;

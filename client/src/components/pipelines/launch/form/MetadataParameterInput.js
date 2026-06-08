@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Input, Icon} from 'antd';
+import {Input} from 'antd';
+import {AppstoreOutlined} from '@ant-design/icons';
 import MetadataBrowser from './../dialogs/MetadataBrowser';
 import styles from './LaunchPipelineForm.css';
 
@@ -93,13 +94,12 @@ export default class MetadataParameterInput extends React.Component {
           disabled={disabled}
           style={style}
           value={this.inputMask}
-          size="large"
           addonBefore={
             <div
               className={styles.pathType}
               onClick={this.showMetadataBrowser}
             >
-              <Icon type="appstore-o" />
+              <AppstoreOutlined />
             </div>
           }
           placeholder="Select metadata"
@@ -123,7 +123,7 @@ export default class MetadataParameterInput extends React.Component {
   }
 }
 
-MetadataParameterInput.PropTypes = {
+MetadataParameterInput.propTypes = {
   value: PropTypes.string,
   style: PropTypes.object,
   disabled: PropTypes.bool,

@@ -18,9 +18,9 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {
-  Button,
-  Icon
+  Button
 } from 'antd';
+import {DeleteOutlined, PlusOutlined} from '@ant-design/icons';
 import compareArrays from '../../../../utils/compareArrays';
 import InputWrapper from './input-wrapper';
 import styles from './sample-sheet-edit-form.css';
@@ -196,9 +196,9 @@ class EditSection extends React.Component {
             <Button
               disabled={readOnly}
               onClick={onRemove}
-              type="danger"
+              danger
             >
-              <Icon type="delete" />
+              <DeleteOutlined />
             </Button>
           )
         }
@@ -260,9 +260,9 @@ class EditSection extends React.Component {
               <Button
                 disabled={readOnly}
                 onClick={onRemove}
-                type="danger"
+                danger
               >
-                <Icon type="delete" />
+                <DeleteOutlined />
               </Button>
             )
           }
@@ -285,7 +285,7 @@ class EditSection extends React.Component {
                 onClick={this.onAddSectionItem}
                 className={styles.addSectionItem}
               >
-                <Icon type="plus" /> Add row
+                <PlusOutlined /> Add row
               </Button>
             </div>
           )

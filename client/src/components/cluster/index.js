@@ -15,7 +15,9 @@
  */
 
 import React from 'react';
+import {Outlet} from 'react-router-dom';
 import {observer} from 'mobx-react';
+import {withRouter} from '../../utils/with-router';
 import {Row, Menu} from 'antd';
 import classNames from 'classnames';
 import AdaptedLink from '../special/AdaptedLink';
@@ -59,7 +61,7 @@ const Tabs = [
 
 @roleModel.authenticationInfo
 @observer
-export default class extends React.Component {
+class ClusterRoot extends React.Component {
   get currentUser () {
     const {authenticatedUserInfo} = this.props;
     return authenticatedUserInfo.loaded
@@ -85,27 +87,24 @@ export default class extends React.Component {
           mode="horizontal"
           selectedKeys={[activeTab]}
           className={styles.tabsMenu}
-        >
-          {
-            tabs.map(tab => (
-              <Menu.Item key={tab.key}>
-                <AdaptedLink
-                  to={tab.path}
-                  location={location}
-                  ignoreCurrentPath
-                >
-                  {tab.title}
-                </AdaptedLink>
-              </Menu.Item>
-            ))
-          }
-        </Menu>
+          items={tabs.map(tab => ({
+            key: tab.key,
+            label: (
+              <AdaptedLink
+                to={tab.path}
+                location={location}
+                ignoreCurrentPath
+              >
+                {tab.title}
+              </AdaptedLink>
+            )
+          }))}
+        />
       </Row>
     );
   };
 
   render () {
-    const {children} = this.props;
     return (
       <div
         className={
@@ -118,8 +117,10 @@ export default class extends React.Component {
         }
       >
         {this.renderClusterNavigation()}
-        {children}
+        <Outlet />
       </div>
     );
   };
 }
+
+export default withRouter(ClusterRoot);

@@ -1,7 +1,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Alert, Icon, Pagination} from 'antd';
+import {Alert, Pagination} from 'antd';
+import {DownOutlined, LoadingOutlined, UpOutlined} from '@ant-design/icons';
 import displayDate from '../../../../../../../utils/displayDate';
 import {NextflowTaskStatus} from '../utilities';
 import TasksTableTagFilter from './tasks-table-tag-filter';
@@ -206,9 +207,7 @@ function TasksTableColumn (props) {
           <div
             className={styles.cellSorting}
           >
-            <Icon
-              type="up"
-              className={classNames(
+            <UpOutlined className={classNames(
                 styles.cellSortingControl,
                 {
                   [styles.active]: sortedAsc,
@@ -216,11 +215,8 @@ function TasksTableColumn (props) {
                   'cp-text-not-important': !sortedAsc
                 }
               )}
-              onClick={(event) => onChangeSorting(sortedAsc ? undefined : false, event)}
-            />
-            <Icon
-              type="down"
-              className={classNames(
+              onClick={(event) => onChangeSorting(sortedAsc ? undefined : false, event)} />
+            <DownOutlined className={classNames(
                 styles.cellSortingControl,
                 {
                   [styles.active]: sortedDesc,
@@ -228,8 +224,7 @@ function TasksTableColumn (props) {
                   'cp-text-not-important': !sortedDesc
                 }
               )}
-              onClick={(event) => onChangeSorting(sortedDesc ? undefined : true, event)}
-            />
+              onClick={(event) => onChangeSorting(sortedDesc ? undefined : true, event)} />
           </div>
         )
       }
@@ -373,7 +368,7 @@ class TasksTable extends React.PureComponent {
             )
           }
           {
-            pending && (<Icon type="loading" style={{marginLeft: 5}} />)
+            pending && (<LoadingOutlined style={{marginLeft: 5}} />)
           }
         </div>
         <div className={styles.tasksGrid} style={tableStyle} onMouseLeave={this.onUnHover}>
@@ -439,13 +434,13 @@ class TasksTable extends React.PureComponent {
             >
               {
                 error && (
-                  <Alert message={error} showIcon type="warning" />
+                  <Alert title={error} showIcon type="warning" />
                 )
               }
               {
                 pending && !error && (
                   <div className="cp-text-not-important">
-                    <Icon type="loading" style={{marginRight: 5}} />
+                    <LoadingOutlined style={{marginRight: 5}} />
                     <span>Loading tasks...</span>
                   </div>
                 )

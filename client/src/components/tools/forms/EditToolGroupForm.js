@@ -17,16 +17,16 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
-import {Button, Modal, Form, Input, Row, Spin, Tabs} from 'antd';
+import {computed, makeObservable} from 'mobx';
+import {Button, Form, Modal, Input, Row, Spin, Tabs} from 'antd';
 import PermissionsForm from '../../roleModel/PermissionsForm';
 import roleModel from '../../../utils/roleModel';
 
-@Form.create()
 @inject('preferences')
 @roleModel.authenticationInfo
 @observer
 export default class EditToolGroupForm extends React.Component {
+  formRef = React.createRef();
   static propTypes = {
     toolGroup: PropTypes.shape({
       id: PropTypes.oneOfType([
@@ -58,7 +58,13 @@ export default class EditToolGroupForm extends React.Component {
     }
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      permissionsRestrictions: computed
+    });
+  }
+
   get permissionsRestrictions () {
     const {
       preferences
@@ -71,36 +77,33 @@ export default class EditToolGroupForm extends React.Component {
 
   handleSubmit = (e) => {
     e.preventDefault();
-    this.props.form.validateFieldsAndScroll((err, values) => {
-      if (!err) {
+    this.formRef.current.validateFields()
+      .then((values) => {
         this.props.onSubmit(values);
-      }
-    });
+      })
+      .catch(() => {});
   };
 
-  validateGroupName = (value, callback) => {
+  validateGroupName = (rule, value) => {
     if (value && value.indexOf('___') >= 0) {
-      // eslint-disable-next-line standard/no-callback-literal
-      callback('You cannot use more than two underscores subsequently');
-    } else {
-      callback();
+      return Promise.reject(new Error('You cannot use more than two underscores subsequently'));
     }
+    return Promise.resolve();
   };
 
   renderForm = () => {
-    const {getFieldDecorator} = this.props.form;
+    const toolGroup = this.props.toolGroup;
     const formItems = [];
-    if (this.props.toolGroup) {
+    if (toolGroup) {
       formItems.push((
         <Form.Item
           key="tool group id"
           style={{display: 'none'}}
           className="edit-tool-group-form-id-container"
-          {...this.formItemLayout}>
-          {getFieldDecorator('id',
-            {
-              initialValue: `${this.props.toolGroup ? this.props.toolGroup.id : ''}`
-            })(<Input disabled />)}
+          {...this.formItemLayout}
+          name="id"
+        >
+          <Input disabled />
         </Form.Item>
       ));
     }
@@ -108,46 +111,38 @@ export default class EditToolGroupForm extends React.Component {
       <Form.Item
         key="tool group name"
         className="edit-tool-group-form-name-container"
-        {...this.formItemLayout} label="Name">
-        {getFieldDecorator('name',
+        {...this.formItemLayout}
+        label="Name"
+        name="name"
+        rules={[
+          {required: true, message: 'Name is required'},
           {
-            rules: [
-              {
-                required: true,
-                message: 'Name is required'
-              },
-              {
-                pattern: /^[\da-z]([\da-z\\.\-_]*[\da-z]+)*$/,
-                // eslint-disable-next-line max-len
-                message: 'Image name should contain only lowercase letters, digits, separators (-, ., _) and should not start or end with a separator'
-              },
-              {
-                validator: (rule, value, callback) => this.validateGroupName(value, callback)
-              }
-            ],
-            initialValue: `${this.props.toolGroup ? this.props.toolGroup.name : ''}`
-          })(
-          <Input
-            disabled={!!this.props.toolGroup}
-            ref={!this.props.toolGroup ? this.initializeNameInput : null}
-            onPressEnter={this.handleSubmit} />
-        )}
+            pattern: /^[\da-z]([\da-z\\.\-_]*[\da-z]+)*$/,
+            message: 'Image name should contain only lowercase letters, digits, separators (-, ., _) and should not start or end with a separator'
+          },
+          {validator: this.validateGroupName}
+        ]}
+      >
+        <Input
+          disabled={!!toolGroup}
+          ref={!toolGroup ? this.initializeNameInput : null}
+          onPressEnter={this.handleSubmit}
+        />
       </Form.Item>
     ));
     formItems.push((
       <Form.Item
         key="tool group description"
         className="edit-tool-group-form-description-container"
-        {...this.formItemLayout} label="Description">
-        {getFieldDecorator('description',
-          {
-            initialValue: `${this.props.toolGroup ? this.props.toolGroup.description || '' : ''}`
-          })(
-          <Input
-            type="textarea"
-            ref={this.props.toolGroup ? this.initializeNameInput : null}
-            disabled={this.props.pending} />
-        )}
+        {...this.formItemLayout}
+        label="Description"
+        name="description"
+      >
+        <Input
+          type="textarea"
+          ref={toolGroup ? this.initializeNameInput : null}
+          disabled={this.props.pending}
+        />
       </Form.Item>
     ));
     return formItems;
@@ -195,7 +190,6 @@ export default class EditToolGroupForm extends React.Component {
       mask: rule.enabledMask
     }));
     const isNewToolGroup = this.props.toolGroup === undefined || this.props.toolGroup === null;
-    const {resetFields} = this.props.form;
     const modalFooter = this.props.pending ? false : (
       <Row type="flex" justify="space-between">
         <Button
@@ -210,15 +204,15 @@ export default class EditToolGroupForm extends React.Component {
       </Row>
     );
     const onClose = () => {
-      resetFields();
+      this.formRef.current && this.formRef.current.resetFields();
       this.setState({activeTab: 'info'});
     };
     return (
       <Modal
-        maskClosable={!this.props.pending}
+        mask={{closable: !this.props.pending}}
         afterClose={() => onClose()}
         closable={!this.props.pending}
-        visible={this.props.visible}
+        open={this.props.visible}
         title={
           isNewToolGroup
             ? 'Create group'
@@ -227,34 +221,48 @@ export default class EditToolGroupForm extends React.Component {
         onCancel={this.props.onCancel}
         footer={this.state.activeTab === 'info' ? modalFooter : false}>
         <Spin spinning={this.props.pending}>
-          <Form className="edit-tool-group-form">
+          <Form
+            ref={this.formRef}
+            className="edit-tool-group-form"
+            initialValues={{
+              id: toolGroup ? `${toolGroup.id}` : '',
+              name: toolGroup ? toolGroup.name : '',
+              description: toolGroup ? (toolGroup.description || '') : ''
+            }}
+          >
             <Tabs
               size="small"
               activeKey={this.state.activeTab}
-              onChange={this.onSectionChange}>
-              <Tabs.TabPane key="info" tab="Info">
-                {this.renderForm()}
-              </Tabs.TabPane>
-              {
-                this.props.toolGroup &&
+              onChange={this.onSectionChange}
+              items={[
+                {
+                  key: 'info',
+                  label: 'Info',
+                  children: this.renderForm()
+                },
+                ...(this.props.toolGroup &&
                 this.props.toolGroup.id &&
-                roleModel.isOwner(this.props.toolGroup) && (
-                  <Tabs.TabPane key="permissions" tab="Permissions">
-                    <PermissionsForm
-                      objectIdentifier={this.props.toolGroup.id}
-                      objectType="TOOL_GROUP"
-                      defaultMask={defaultMask}
-                      enabledMask={enabledMask}
-                      readOnlyRoles={readOnlyRoles}
-                      editOwnerAvailable={
-                        roleModel.isOwner(this.props.toolGroup) ||
-                        roleModel.isManager.toolAdmin(this)
-                      }
-                    />
-                  </Tabs.TabPane>
-                )
-              }
-            </Tabs>
+                roleModel.isOwner(this.props.toolGroup)
+                  ? [{
+                    key: 'permissions',
+                    label: 'Permissions',
+                    children: (
+                      <PermissionsForm
+                        objectIdentifier={this.props.toolGroup.id}
+                        objectType="TOOL_GROUP"
+                        defaultMask={defaultMask}
+                        enabledMask={enabledMask}
+                        readOnlyRoles={readOnlyRoles}
+                        editOwnerAvailable={
+                          roleModel.isOwner(this.props.toolGroup) ||
+                            roleModel.isManager.toolAdmin(this)
+                        }
+                      />
+                    )
+                  }]
+                  : [])
+              ]}
+            />
           </Form>
         </Spin>
       </Modal>
@@ -262,8 +270,8 @@ export default class EditToolGroupForm extends React.Component {
   }
 
   initializeNameInput = (input) => {
-    if (input && input.refs && input.refs.input) {
-      this.nameInput = input.refs.input;
+    if (input) {
+      this.nameInput = input;
       this.nameInput.onfocus = function () {
         setTimeout(() => {
           this.selectionStart = (this.value || '').length;

@@ -16,16 +16,18 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import classNames from 'classnames';
 import {
   Alert,
   Button,
-  Icon,
   Input,
   Modal,
   Table
 } from 'antd';
+import {CheckOutlined} from '@ant-design/icons';
 import VSVersions from '../vs-versions-select';
 import styles from './vs-browse-dialog.css';
 
@@ -44,19 +46,19 @@ class VSBrowseDialog extends React.Component {
   vsTableColumns = [{
     key: 'selection',
     className: styles.checkCell,
-    render: () => (<Icon type="check" className={styles.check} />),
-    onCellClick: storage => this.wrapPromiseAction(this.onSelectStorage)(storage)
+    render: () => (<CheckOutlined className={styles.check} />),
+    onCell: (storage) => ({onClick: () => this.wrapPromiseAction(this.onSelectStorage)(storage)})
   }, {
     title: 'Storage',
     key: 'name',
     dataIndex: 'name',
     className: styles.cell,
-    onCellClick: storage => this.wrapPromiseAction(this.onSelectStorage)(storage)
+    onCell: (storage) => ({onClick: () => this.wrapPromiseAction(this.onSelectStorage)(storage)})
   }, {
     key: 'versions',
     className: styles.versions,
     render: storage => this.renderVSVersions(storage),
-    onCellClick: storage => this.onVersionsCellClicked(storage)
+    onCell: (storage) => ({onClick: () => this.onVersionsCellClicked(storage)})
   }];
 
   componentDidUpdate (prevProps, prevState, snapshot) {
@@ -265,10 +267,10 @@ class VSBrowseDialog extends React.Component {
       <Modal
         width="60%"
         title="Select Version Storage"
-        visible={visible}
+        open={visible}
         onCancel={onClose}
         closable={!disabled}
-        maskClosable={!disabled}
+        mask={{closable: !disabled}}
         footer={(
           <div
             className={styles.footer}
@@ -293,7 +295,7 @@ class VSBrowseDialog extends React.Component {
       >
         {
           pipelines && pipelines.error && (
-            <Alert type="error" message={pipelines.error} />
+            <Alert type="error" title={pipelines.error} />
           )
         }
         {

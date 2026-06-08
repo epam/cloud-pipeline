@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import styles from './AWSRegionTag.css';
@@ -45,7 +45,14 @@ class AWSRegionTag extends React.Component {
     showProvider: undefined
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      region: computed,
+      shouldDisplayProvider: computed
+    });
+  }
+
   get region () {
     if (this.props.awsRegions.loaded && this.props.regionId) {
       return this.props.awsRegions.getRegion(this.props.regionId);
@@ -56,7 +63,6 @@ class AWSRegionTag extends React.Component {
     return null;
   }
 
-  @computed
   get shouldDisplayProvider () {
     if (this.props.showProvider) {
       return true;

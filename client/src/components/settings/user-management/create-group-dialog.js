@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observer, inject} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {
   Row,
   Checkbox,
@@ -45,6 +45,13 @@ export default class CreateGroupDialog extends React.Component {
     pending: false
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      dataStorages: computed
+    });
+  }
+
   componentDidUpdate (prevProps, prevState, snapshot) {
     if (prevProps.visible !== this.props.visible && this.props.visible) {
       this.prepare();
@@ -61,7 +68,6 @@ export default class CreateGroupDialog extends React.Component {
     this.props.dataStorages.fetch();
   }
 
-  @computed
   get dataStorages () {
     if (this.props.dataStorages.loaded) {
       return (this.props.dataStorages.value || [])
@@ -139,7 +145,7 @@ export default class CreateGroupDialog extends React.Component {
       <Modal
         title="Create group"
         closable={!pending}
-        maskClosable={!pending}
+        mask={{closable: !pending}}
         footer={
           <Row type="flex" justify="space-between">
             <Button
@@ -157,7 +163,7 @@ export default class CreateGroupDialog extends React.Component {
           </Row>
         }
         onCancel={() => onClose(false)}
-        visible={visible}
+        open={visible}
       >
         <Row type="flex" align="middle">
           <div style={{flex: 1}}>

@@ -23,10 +23,10 @@ import {
   Select,
   Input,
   Button,
-  Icon,
   Alert
 } from 'antd';
-import moment from 'moment-timezone';
+import {DeleteOutlined, PlusOutlined} from '@ant-design/icons';
+import {momentToDayjs, dayjsToMoment} from '../../../../../../utils/antd-date-utils';
 import {DESTINATIONS} from '../modals';
 import styles from './life-cycle-forms.css';
 
@@ -56,8 +56,9 @@ class TransitionsForm extends React.Component {
   get formDestinations () {
     const {transitions} = this.state;
     const {form} = this.props;
+    if (!form) return [];
     return transitions
-      .map((_, index) => form.getFieldValue(`transitions[${index}].storageClass`));
+      .map((_, index) => form.getFieldValue(['transitions', index, 'storageClass']));
   }
 
   componentDidMount () {
@@ -74,7 +75,7 @@ class TransitionsForm extends React.Component {
     const {transitions} = this.state;
     const {form} = this.props;
     this.setState({transitions: [...transitions, rule]}, () => {
-      form.setFieldsValue({});
+      form && form.setFieldsValue({});
     });
   };
 
@@ -85,7 +86,7 @@ class TransitionsForm extends React.Component {
       const transitionsState = [...transitions];
       transitionsState[key] = undefined;
       this.setState({transitions: transitionsState}, () => {
-        form.setFieldsValue({});
+        form && form.setFieldsValue({});
       });
     }
   };
@@ -97,16 +98,20 @@ class TransitionsForm extends React.Component {
     const dateTypes = {...userDefinedDateTypes};
     dateTypes[index] = periodType;
     this.setState({userDefinedDateTypes: dateTypes}, () => {
-      form.setFields({
-        [`transitions[${index}].transitionAfterDays`]: {
-          value: undefined,
-          errors: undefined
-        },
-        [`transitions[${index}].transitionDate`]: {
-          value: undefined,
-          errors: undefined
-        }
-      });
+      if (form) {
+        form.setFields([
+          {
+            name: ['transitions', index, 'transitionAfterDays'],
+            value: undefined,
+            errors: undefined
+          },
+          {
+            name: ['transitions', index, 'transitionDate'],
+            value: undefined,
+            errors: undefined
+          }
+        ]);
+      }
     });
   };
 
@@ -120,7 +125,7 @@ class TransitionsForm extends React.Component {
       transitions: rule.transitions && rule.transitions.length
         ? rule.transitions
         : [blankRule]
-    }, () => form.setFieldsValue({}));
+    }, () => form && form.setFieldsValue({}));
   };
 
   getTransitionDateType = (index) => {
@@ -137,7 +142,7 @@ class TransitionsForm extends React.Component {
     if (this.formDestinations.some(value => DESTINATIONS[value] === DESTINATIONS.GLACIER_IR)) {
       return (
         <Alert
-          message={(
+          title={(
             <p>
               Due to the AWS restrictions, files smaller
               than <b>128 kB</b> will not be transitioned to
@@ -173,25 +178,22 @@ class TransitionsForm extends React.Component {
                   <Form.Item
                     className={styles.transitionFormItem}
                     style={{marginRight: 15}}
+                    name={['transitions', index, 'storageClass']}
+                    rules={[{
+                      required: true,
+                      message: ' '
+                    }]}
                   >
-                    {form.getFieldDecorator(`transitions[${index}].storageClass`, {
-                      initialValue: transition.storageClass,
-                      rules: [{
-                        required: true,
-                        message: ' '
-                      }]
-                    })(
-                      <Select className={styles.destinationSelect}>
-                        {Object.entries(DESTINATIONS).map(([key, description]) => (
-                          <Select.Option
-                            value={key}
-                            key={key}
-                          >
-                            {description}
-                          </Select.Option>
-                        ))}
-                      </Select>
-                    )}
+                    <Select className={styles.destinationSelect}>
+                      {Object.entries(DESTINATIONS).map(([key, description]) => (
+                        <Select.Option
+                          value={key}
+                          key={key}
+                        >
+                          {description}
+                        </Select.Option>
+                      ))}
+                    </Select>
                   </Form.Item>
                 </div>
                 <div className={styles.transitionDateBlock}>
@@ -210,19 +212,16 @@ class TransitionsForm extends React.Component {
                       </Radio>
                       <Form.Item
                         className={styles.transitionFormItem}
+                        name={['transitions', index, 'transitionAfterDays']}
+                        rules={[{
+                          required: this.getTransitionDateType(index) === TRANSITION_PERIOD.after,
+                          message: ' '
+                        }]}
                       >
-                        {form.getFieldDecorator(`transitions[${index}].transitionAfterDays`, {
-                          initialValue: transition.transitionAfterDays,
-                          rules: [{
-                            required: this.getTransitionDateType(index) === TRANSITION_PERIOD.after,
-                            message: ' '
-                          }]
-                        })(
-                          <Input
-                            style={{minWidth: '35px'}}
-                            disabled={this.getTransitionDateType(index) !== TRANSITION_PERIOD.after}
-                          />
-                        )}
+                        <Input
+                          style={{minWidth: '35px'}}
+                          disabled={this.getTransitionDateType(index) !== TRANSITION_PERIOD.after}
+                        />
                       </Form.Item>
                       <span style={{margin: '0 15px 0 5px'}}>
                         days
@@ -239,32 +238,29 @@ class TransitionsForm extends React.Component {
                       </Radio>
                       <Form.Item
                         className={styles.transitionFormItem}
+                        name={['transitions', index, 'transitionDate']}
+                        getValueProps={(v) => ({value: momentToDayjs(v)})}
+                        getValueFromEvent={(d) => dayjsToMoment(d)}
+                        rules={[{
+                          required: this.getTransitionDateType(index) === TRANSITION_PERIOD.at,
+                          message: ' '
+                        }]}
                       >
-                        {form.getFieldDecorator(`transitions[${index}].transitionDate`, {
-                          initialValue: transition.transitionDate
-                            ? moment(transition.transitionDate)
-                            : undefined,
-                          rules: [{
-                            required: this.getTransitionDateType(index) === TRANSITION_PERIOD.at,
-                            message: ' '
-                          }]
-                        })(
-                          <DatePicker
-                            disabled={this.getTransitionDateType(index) !== TRANSITION_PERIOD.at}
-                            style={{marginRight: 15, minWidth: 90}}
-                          />
-                        )}
+                        <DatePicker
+                          disabled={this.getTransitionDateType(index) !== TRANSITION_PERIOD.at}
+                          style={{marginRight: 15, minWidth: 90}}
+                        />
                       </Form.Item>
                     </div>
                   </div>
                 </div>
                 <Button
-                  type="danger"
+                  danger
                   onClick={() => this.removeTransitionRule(index)}
                   className={styles.deleteTransitionBtn}
                   disabled={!this.removeTransitionsEnabled}
                 >
-                  <Icon type="delete" />
+                  <DeleteOutlined />
                 </Button>
               </div>
             );
@@ -274,7 +270,7 @@ class TransitionsForm extends React.Component {
             className={styles.addTransitionRuleBtn}
             disabled={this.limitTransitionsReached}
           >
-            <Icon type="plus" />
+            <PlusOutlined />
             Add
           </Button>
         </div>

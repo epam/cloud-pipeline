@@ -15,7 +15,8 @@
  */
 
 import React from 'react';
-import {Icon, Button} from 'antd';
+import {Button, Space} from 'antd';
+import {BarsOutlined, LayoutOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import styles from './controls.css';
@@ -46,22 +47,22 @@ function TogglePresentationMode (
         className
       )}
     >
-      <Button.Group size={size}>
+      <Space.Compact size={size}>
         <Button
           type={mode === Modes.list ? 'primary' : 'default'}
           style={{width: 80}}
           onClick={(e) => onButtonClick(e, Modes.list)}>
-          <Icon type="bars" />
+          <BarsOutlined />
           List
         </Button>
         <Button
           type={mode === Modes.table ? 'primary' : 'default'}
           style={{width: 80}}
           onClick={(e) => onButtonClick(e, Modes.table)}>
-          <Icon type="layout" />
+          <LayoutOutlined />
           Table
         </Button>
-      </Button.Group>
+      </Space.Compact>
     </div>
   );
 }

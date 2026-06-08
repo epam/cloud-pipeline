@@ -16,8 +16,14 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
-import {Button, Icon, Input, Select} from 'antd';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {Button,
+  Input,
+  Select
+} from 'antd';
+import {DeleteOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import notificationValidationError from './notification-validation-error';
 import compareArrays from '../../../../../utils/compareArrays';
@@ -449,10 +455,10 @@ class JobNotification extends React.Component {
             >
               <Button
                 size="small"
-                type="danger"
+                danger
                 onClick={this.handleRemove}
               >
-                <Icon type="delete" /> Remove
+                <DeleteOutlined /> Remove
               </Button>
             </div>
           )

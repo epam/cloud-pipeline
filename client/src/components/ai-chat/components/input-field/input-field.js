@@ -40,7 +40,7 @@ export default class InputField extends React.Component {
           onKeyDown={onKeyDown}
           onPressEnter={onPressEnter}
           disabled={disabled}
-          autosize={{minRows: 1, maxRows: 6}}
+          autoSize={{minRows: 1, maxRows: 6}}
         />
         <button disabled={disabled} onClick={onClick} className={styles.iconChat}>
           <ChatIconBtn />

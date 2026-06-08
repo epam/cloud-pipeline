@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import LoadingView from '../../../special/LoadingView';
 import localization from '../../../../utils/localization';
 import {Alert, Row} from 'antd';
@@ -55,7 +55,17 @@ export default class WorkflowGraph extends localization.LocalizedReactComponent 
     configurations: PropTypes.object
   };
 
-  @computed
+  state = {
+    navigationBlocked: false
+  };
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      language: computed
+    });
+  }
+
   get language () {
     if (this.props.language.loaded) {
       return this.props.language.value.toLowerCase();
@@ -68,7 +78,7 @@ export default class WorkflowGraph extends localization.LocalizedReactComponent 
       return this._graph.getImage();
     }
     return '';
-  };
+  }
 
   get imageSize () {
     if (this._graph) {
@@ -78,7 +88,7 @@ export default class WorkflowGraph extends localization.LocalizedReactComponent 
       width: 1,
       height: 1
     };
-  };
+  }
 
   updateData () {
     if (this._graph) {
@@ -111,7 +121,7 @@ export default class WorkflowGraph extends localization.LocalizedReactComponent 
       } else {
         return (
           <Row ref={() => this.props.onGraphReady && this.props.onGraphReady(null)}>
-            <Alert type="warning" message={
+            <Alert type="warning" title={
               <div>
                 <span>Graph is not supported for current {this.localizedString('pipeline')}</span>
               </div>
@@ -124,6 +134,8 @@ export default class WorkflowGraph extends localization.LocalizedReactComponent 
       <GraphComponent
         {...this.props}
         language={this.language}
+        navigationBlocked={this.state.navigationBlocked}
+        onBlockingChange={(value) => this.setState({navigationBlocked: value})}
         onGraphReady={this.onGraphReady} />
     );
   }

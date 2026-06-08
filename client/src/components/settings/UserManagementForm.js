@@ -74,7 +74,7 @@ function UserManagementForm (
     !groupsHasSharedPermissions
   ) {
     return (
-      <Alert type="error" message="Access is denied" />
+      <Alert type="error" title="Access is denied" />
     );
   }
   const sections = [

@@ -57,7 +57,7 @@ function OOMCheck (
         type="warning"
         style={style}
         showIcon
-        message={(
+        title={(
           <div>
             <div style={{fontWeight: 'bold'}}>
               A large number of the object data storages ({storages})

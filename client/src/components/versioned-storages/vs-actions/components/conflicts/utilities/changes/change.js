@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import LineStates from '../conflicted-file/line-states';
 import ModificationType from './types';
 import ChangeStatuses from './statuses';
@@ -63,7 +63,7 @@ export default class Change {
    * Identifies whether change is a conflict
    * @type {boolean}
    */
-  @observable conflict = false;
+  conflict = false;
   /**
    * Change type
    * @type {string}
@@ -75,20 +75,18 @@ export default class Change {
    * @type {Change[]}
    * @private
    */
-  @observable _parentChanges = [];
+  _parentChanges = [];
 
   /**
    * Nested change; applicable only for conflicts
    * @private
    */
-  @observable _childChange;
-
-  @observable _status;
+  _childChange;
+  _status;
   /**
    * Change's status
    * @type {string}
    */
-  @computed
   get status () {
     if (this._parentChanges.length > 0) {
       const applied = this._parentChanges
@@ -127,12 +125,19 @@ export default class Change {
     );
   }
 
-  @computed
   get resolved () {
     return this.status === ChangeStatuses.applied || this.status === ChangeStatuses.discarded;
   }
 
   constructor (conflictedFile, line, branch) {
+    makeObservable(this, {
+      conflict: observable,
+      _parentChanges: observable,
+      _childChange: observable,
+      _status: observable,
+      status: computed,
+      resolved: computed
+    });
     this.conflictedFile = conflictedFile;
     this.start = line;
     this.end = line;

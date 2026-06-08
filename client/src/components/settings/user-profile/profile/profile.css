@@ -50,7 +50,7 @@
 
 .role {
   margin: 0 5px 5px 0;
-  border: 1px solid #ddd;
+  border: 1px solid var(--cp-color-border);
   padding: 2px 5px;
   border-radius: 5px;
 }

@@ -15,11 +15,19 @@
  */
 
 import React from 'react';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 // todo: move MetadataStyles file
 import classNames from 'classnames';
 import MetadataStyles from '../metadata/Metadata.css';
-import {Button, Icon, Input, message, Modal, Row} from 'antd';
+import {Button,
+  Input,
+  message,
+  Modal,
+  Row
+} from 'antd';
+import {CheckOutlined, CloseOutlined, DeleteOutlined, PlusOutlined, ReloadOutlined} from '@ant-design/icons';
 import MetadataEntityDeleteKey from '../../../models/folderMetadata/MetadataEntityDeleteKey';
 import MetadataEntityDelete from '../../../models/folderMetadata/MetadataEntityDelete';
 import MetadataEntityUpdateKey from '../../../models/folderMetadata/MetadataEntityUpdateKey';
@@ -197,8 +205,8 @@ export default class MetadataPanel extends React.Component {
   }
 
   autoFocusInputRef = (input) => {
-    if (input && input.refs && input.refs.input && input.refs.input.focus) {
-      input.refs.input.focus();
+    if (input && input.focus) {
+      input.focus();
     }
   }
 
@@ -283,8 +291,8 @@ export default class MetadataPanel extends React.Component {
       const refKeyInput = (input) => {
         if (this.state.addKey &&
           !this.state.addKey.autofocused &&
-          input && input.refs && input.refs.input && input.refs.input.focus) {
-          input.refs.input.focus();
+          input && input.focus) {
+          input.focus();
           const addKey = this.state.addKey;
           addKey.autofocused = true;
           this.setState({addKey});
@@ -327,7 +335,7 @@ export default class MetadataPanel extends React.Component {
             Value:
           </td>
           <td colSpan={2}>
-            <Input
+            <Input.TextArea
               onPressEnter={onEnter}
               onKeyDown={(e) => {
                 if (e.key && e.key === 'Escape') {
@@ -337,8 +345,7 @@ export default class MetadataPanel extends React.Component {
               value={this.state.addKey.value}
               onChange={onChange('value')}
               size="small"
-              type="textarea"
-              autosize
+              autoSize
             />
           </td>
         </tr>,
@@ -349,13 +356,13 @@ export default class MetadataPanel extends React.Component {
               size="small"
               type="primary"
               onClick={this.saveMetadata('key', this.state.addKey.key, this.state.addKey.value)}>
-              <Icon type="check" /> Add
+              <CheckOutlined /> Add
             </Button>
             <Button
               id="cancel-add-metadata-item-button"
               size="small"
               onClick={addKeyCancelClicked}>
-              <Icon type="close" /> Cancel
+              <CloseOutlined /> Cancel
             </Button>
           </td>
         </tr>
@@ -387,7 +394,7 @@ export default class MetadataPanel extends React.Component {
             size="small"
             onClick={this.onCancelChanges}
           >
-            <Icon type="reload" /> Undo
+            <ReloadOutlined /> Undo
           </Button>
         );
       }
@@ -399,7 +406,7 @@ export default class MetadataPanel extends React.Component {
             size="small"
             onClick={addKeyClicked}
           >
-            <Icon type="plus" /> Add
+            <PlusOutlined /> Add
           </Button>
         );
       }
@@ -409,10 +416,10 @@ export default class MetadataPanel extends React.Component {
             id="remove-all-keys-button"
             key="remove all keys button"
             size="small"
-            type="danger"
+            danger
             onClick={this.confirmDeleteMetadata}
           >
-            <Icon type="delete" /> Remove all
+            <DeleteOutlined /> Remove all
           </Button>
         );
       }
@@ -551,10 +558,10 @@ export default class MetadataPanel extends React.Component {
                     <td style={{minWidth: 30, textAlign: 'right'}}>
                       <Button
                         id={`delete-metadata-key-${key}-button`}
-                        type="danger"
+                        danger
                         size="small"
                         onClick={() => this.confirmDeleteKey(key)}>
-                        <Icon type="delete" />
+                        <DeleteOutlined />
                       </Button>
                     </td>
                   )
@@ -595,10 +602,9 @@ export default class MetadataPanel extends React.Component {
               }
             >
               <td colSpan={6}>
-                <Input
+                <Input.TextArea
                   {...inputOptions('value', key, metadataItem[key].value)}
-                  type="textarea"
-                  autosize
+                  autoSize
                 />
               </td>
             </tr>
@@ -677,7 +683,7 @@ export default class MetadataPanel extends React.Component {
     );
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.entityId !== this.props.entityId) {
       this.setState({
         undoItems: [],

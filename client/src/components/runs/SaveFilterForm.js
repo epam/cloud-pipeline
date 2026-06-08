@@ -15,11 +15,11 @@
  */
 
 import React from 'react';
-import {Button, Modal, Form, Input, Row, Spin} from 'antd';
+import {Button, Form, Modal, Input, Row, Spin} from 'antd';
 import PropTypes from 'prop-types';
 
-@Form.create()
 export default class SaveFilterForm extends React.Component {
+  formRef = React.createRef();
 
   static propTypes = {
     onCancel: PropTypes.func,
@@ -42,15 +42,14 @@ export default class SaveFilterForm extends React.Component {
 
   handleSubmit = (e) => {
     e.preventDefault();
-    this.props.form.validateFieldsAndScroll((err, values) => {
-      if (!err) {
+    this.formRef.current.validateFields()
+      .then((values) => {
         this.props.onSubmit(values);
-      }
-    });
+      })
+      .catch(() => {});
   };
 
   render () {
-    const {getFieldDecorator, resetFields} = this.props.form;
     const modalFooter = this.props.pending ? false : (
       <Row>
         <Button
@@ -64,33 +63,35 @@ export default class SaveFilterForm extends React.Component {
       </Row>
     );
     const onClose = () => {
-      resetFields();
+      this.formRef.current && this.formRef.current.resetFields();
     };
     return (
       <Modal
-        maskClosable={!this.props.pending}
+        mask={{closable: !this.props.pending}}
         afterClose={() => onClose()}
         closable={!this.props.pending}
-        visible={this.props.visible}
+        open={this.props.visible}
         title="Save filter"
         onCancel={this.props.onCancel}
         footer={modalFooter}>
         <Spin spinning={this.props.pending}>
-          <Form className="filter-edit-form">
+          <Form
+            ref={this.formRef}
+            className="filter-edit-form"
+            initialValues={{name: this.props.name}}
+          >
             <Form.Item
               className="filter-edit-form-name-container"
-              {...this.formItemLayout} label="Name">
-              {getFieldDecorator('name', {
-                rules: [
-                  {required: true, message: 'Name is required'}
-                ],
-                initialValue: this.props.name
-              })(
-                <Input
-                  ref={this.initializeNameInput}
-                  onPressEnter={this.handleSubmit}
-                  disabled={this.props.pending} />
-              )}
+              {...this.formItemLayout}
+              label="Name"
+              name="name"
+              rules={[{required: true, message: 'Name is required'}]}
+            >
+              <Input
+                ref={this.initializeNameInput}
+                onPressEnter={this.handleSubmit}
+                disabled={this.props.pending}
+              />
             </Form.Item>
           </Form>
         </Spin>
@@ -99,8 +100,8 @@ export default class SaveFilterForm extends React.Component {
   }
 
   initializeNameInput = (input) => {
-    if (input && input.refs && input.refs.input) {
-      this.nameInput = input.refs.input;
+    if (input) {
+      this.nameInput = input;
       this.nameInput.onfocus = function () {
         setTimeout(() => {
           this.selectionStart = (this.value || '').length;

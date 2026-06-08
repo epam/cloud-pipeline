@@ -17,7 +17,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Icon, message} from 'antd';
+import {CopyOutlined, LoadingOutlined} from '@ant-design/icons';
+import {message} from 'antd';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
 import copyTextToClipboard from '../copy-text-to-clipboard';
@@ -56,7 +57,7 @@ function BashCode (
     style,
     breakLines,
     nowrap,
-    copyable
+    copyable = true
   }
 ) {
   let html = (shScriptToHtml(code) || '');
@@ -80,7 +81,7 @@ function BashCode (
       style={style}
     >
       {
-        loading && (<Icon type="loading" />)
+        loading && (<LoadingOutlined />)
       }
       {
         !loading && (
@@ -91,7 +92,7 @@ function BashCode (
                   className={styles.copyIcon}
                   onClick={(event) => handleCopy(event, code)}
                 >
-                  <Icon type="copy" />
+                  <CopyOutlined />
                 </span>
               )
             }
@@ -112,10 +113,6 @@ BashCode.propTypes = {
   breakLines: PropTypes.bool,
   nowrap: PropTypes.bool,
   copyable: PropTypes.bool
-};
-
-BashCode.defaultProps = {
-  copyable: true
 };
 
 export default BashCode;

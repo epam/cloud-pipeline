@@ -1,0 +1,138 @@
+/*
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+.theme-preview {
+  border-color: var(--cp-color-border-card);
+}
+
+.theme-preview.selected {
+  border-color: var(--cp-color-primary);
+}
+
+.theme-preview:not(.read-only):hover {
+  border-color: var(--cp-color-primary);
+  box-shadow: 0 0 2px 2px color-mix(in srgb, var(--cp-color-primary) 20%, transparent);
+}
+
+.cp-themes-group {
+  color: var(--cp-color-text);
+  background-color: var(--cp-color-bg-elevated);
+  border: 1px solid var(--cp-color-border-card);
+}
+
+.cp-themes-group .cp-themes-group-header {
+  background-color: var(--cp-color-bg-elevated-header);
+  border-bottom: 1px solid var(--cp-color-border-card);
+}
+
+.cp-themes-group-active-tag {
+  background-color: var(--cp-color-primary);
+  color: var(--cp-color-primary-on);
+}
+
+.theme-identifier.theme-preview .cp-theme-preview-navigation-panel {
+  background-color: var(--cp-color-nav-bg);
+}
+
+.theme-identifier.theme-preview .cp-theme-preview-layout {
+  background-color: var(--cp-color-bg-layout);
+  color: var(--cp-color-text);
+  background-image: var(--cp-asset-bg-image);
+  background-size: cover;
+}
+
+.theme-identifier.theme-preview .cp-theme-preview-panel {
+  border: 1px solid var(--cp-color-border);
+  background-color: var(--cp-color-bg-container);
+  color: var(--cp-color-text);
+}
+
+.theme-identifier.theme-preview .cp-theme-priview-panel-card {
+  border: 1px solid var(--cp-color-border-card);
+  background-color: var(--cp-color-bg-elevated);
+  margin: 2px;
+}
+
+.theme-identifier.theme-preview .cp-theme-preview-button-primary {
+  color: var(--cp-color-primary-on);
+  background-color: var(--cp-color-primary);
+  border-color: var(--cp-color-primary);
+}
+
+.theme-identifier.theme-preview .cp-theme-preview-button-danger {
+  background-color: var(--cp-color-btn-danger-active-bg);
+  border-color: var(--cp-color-btn-danger-active-bg);
+}
+
+.theme-identifier.theme-preview .cp-theme-preview-button {
+  color: var(--cp-color-primary);
+  background-color: var(--cp-color-bg-container);
+}
+
+.theme-identifier.theme-preview .cp-theme-priview-runs-table-icon-blue {
+  color: var(--cp-color-info);
+}
+
+.theme-identifier.theme-preview .cp-theme-priview-runs-table-icon-yellow {
+  color: var(--cp-color-warning);
+}
+
+.theme-identifier.theme-preview .cp-theme-priview-runs-table-icon-green {
+  color: var(--cp-color-success);
+}
+
+.theme-identifier.theme-preview .cp-theme-preview-navigation-menu-item.selected {
+  background-color: var(--cp-color-nav-bg-active);
+}
+
+.theme-identifier.theme-preview .cp-theme-preview-navigation-menu-item i {
+  text-align: center;
+  padding: 5px;
+}
+
+.theme-identifier.theme-preview .cp-runs-menu-item.active {
+  color: var(--cp-color-nav-runs);
+}
+
+.theme-identifier.theme-preview .cp-theme-preview-navigation-menu-item,
+.theme-identifier.theme-preview .cp-runs-menu-item {
+  color: var(--cp-color-nav-text);
+  background-color: transparent;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.theme-identifier.theme-preview .cp-theme-preview-text {
+  background-color: var(--cp-color-text);
+}
+
+.theme-identifier .theme-preview-bordered {
+  border: 1px solid var(--cp-color-text);
+}
+
+.color-presenter {
+  stroke: var(--cp-color-text);
+}
+
+.image-uploader {
+  border-color: var(--cp-color-text);
+  background-color: var(--cp-color-bg-layout);
+}
+
+.image-uploader .uploader-thumb-image {
+  background-color: color-mix(in srgb, var(--cp-color-bg-layout) 25%, transparent);
+}

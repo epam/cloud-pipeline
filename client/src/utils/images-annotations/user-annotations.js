@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {action, autorun, observable} from 'mobx';
+import {action, autorun, observable, makeObservable} from 'mobx';
 
 /**
  * @typedef {Object} UserAnnotationsOptions
@@ -134,24 +134,35 @@ function generateIdentifier (userName, nextIdentifier) {
 }
 
 class UserAnnotations {
-  @observable pending = false;
-  @observable error = undefined;
+  pending = false;
+  error = undefined;
   /**
    * @type {UserAnnotation[]}
    */
-  @observable annotations = [];
+  annotations = [];
   /**
    * @type {string}
    */
-  @observable userName;
-  @observable currentUser;
-  @observable visible = true;
-  @observable modified = false;
+  userName;
+  currentUser;
+  visible = true;
+  modified = false;
   nextIdentifier = 1;
   /**
    * @param {UserAnnotationsOptions} options
    */
   constructor (options) {
+    makeObservable(this, {
+      pending: observable,
+      error: observable,
+      annotations: observable,
+      userName: observable,
+      currentUser: observable,
+      visible: observable,
+      modified: observable,
+      createOrUpdateAnnotation: action,
+      removeAnnotation: action
+    });
     const {
       storage,
       path,
@@ -184,7 +195,6 @@ class UserAnnotations {
     }
   }
 
-  @action
   async fetch (force = false) {
     if (this._fetchPromise && !force) {
       return this._fetchPromise;
@@ -266,8 +276,6 @@ class UserAnnotations {
    * @param {{save: boolean}} [options]
    * @returns {string|*}
    */
-
-  @action
   createOrUpdateAnnotation (annotation, options = {}) {
     const {
       save = false
@@ -308,7 +316,6 @@ class UserAnnotations {
    * @param {UserAnnotation} annotation
    * @param {{save: boolean}} options
    */
-  @action
   removeAnnotation (annotation, options = {}) {
     const {
       save = false
@@ -322,8 +329,6 @@ class UserAnnotations {
       (this.save)();
     }
   }
-
-  @action
   async save (reFetch = true) {
     if (!this.storage) {
       throw new Error('Unknown storage');

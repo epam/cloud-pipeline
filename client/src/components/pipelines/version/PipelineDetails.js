@@ -15,12 +15,24 @@
  */
 
 import React from 'react';
-import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {Outlet} from 'react-router-dom';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {withRouter} from '../../../utils/with-router';
+import {computed, makeObservable} from 'mobx';
 import classNames from 'classnames';
-import {Alert, Menu as TabMenu, message, Row, Button, Icon, Col} from 'antd';
-import Menu, {MenuItem} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
+import {
+  Alert,
+  Menu,
+  message,
+  Row,
+  Button,
+  Col,
+  Dropdown,
+  Space
+} from 'antd';
+import {DownOutlined, SettingOutlined, TagFilled} from '@ant-design/icons';
 import {graphIsSupportedForLanguage} from './graph/visualization';
 import pipelines from '../../../models/pipelines/Pipelines';
 import pipelinesLibrary from '../../../models/folders/FolderLoadTree';
@@ -64,10 +76,23 @@ import HiddenObjects from '../../../utils/hidden-objects';
   pipelinesLibrary
 }))
 @observer
-export default class PipelineDetails extends localization.LocalizedReactComponent {
+class PipelineDetails extends localization.LocalizedReactComponent {
   state = {isModalVisible: false, updating: false, deleting: false};
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      repositoryType: computed,
+      codePath: computed,
+      docsPath: computed,
+      displayGraph: computed,
+      isCWLPipeline: computed,
+      tabs: computed,
+      readOnly: computed,
+      configurations: computed
+    });
+  }
+
   get repositoryType () {
     const {pipeline} = this.props;
     if (pipeline && pipeline.loaded) {
@@ -77,7 +102,6 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
     return undefined;
   }
 
-  @computed
   get codePath () {
     const {pipeline} = this.props;
     if (pipeline && pipeline.loaded) {
@@ -89,7 +113,6 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
     return undefined;
   }
 
-  @computed
   get docsPath () {
     const {pipeline} = this.props;
     if (pipeline && pipeline.loaded) {
@@ -101,7 +124,6 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
     return undefined;
   }
 
-  @computed
   get displayGraph () {
     const {language} = this.props;
     if (language && language.loaded) {
@@ -110,7 +132,6 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
     return false;
   }
 
-  @computed
   get isCWLPipeline () {
     const {language} = this.props;
     if (language && language.loaded) {
@@ -127,7 +148,6 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
     return activeTab ? activeTab.toLowerCase() : undefined;
   }
 
-  @computed
   get tabs () {
     const {
       pipelineId: id,
@@ -189,7 +209,6 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
     }
   }
 
-  @computed
   get readOnly () {
     const {pipeline} = this.props;
     return pipeline?.value?.repositoryType === RepositoryTypes.AzureDevOps;
@@ -333,7 +352,6 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
     });
   };
 
-  @computed
   get configurations () {
     if (this.props.configurations.loaded) {
       return (this.props.configurations.value || []).map(c => c).sort((cA, cB) => {
@@ -391,23 +409,9 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
       const onSelectConfiguration = ({key}) => {
         this.runPipelineConfiguration(key);
       };
-      const configurationsMenu = (
-        <Menu
-          onClick={onSelectConfiguration}
-          style={{cursor: 'pointer'}}
-          selectedKeys={[]}
-        >
-          {
-            configurations.map(c => {
-              return (
-                <MenuItem key={c.name}>{c.name}</MenuItem>
-              );
-            })
-          }
-        </Menu>
-      );
+      const configurationItems = configurations.map(c => ({key: c.name, label: c.name}));
       return (
-        <Button.Group style={{display: 'inline-flex'}}>
+        <Space.Compact style={{display: 'inline-flex'}}>
           <Button
             id="launch-pipeline-button"
             size="small"
@@ -416,12 +420,20 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
             onClick={() => this.runPipeline()}>
             RUN
           </Button>
-          <Dropdown overlay={configurationsMenu} placement="bottomRight">
+          <Dropdown
+            menu={{
+              items: configurationItems,
+              onClick: onSelectConfiguration,
+              style: {cursor: 'pointer'}
+            }}
+            placement="bottomRight"
+            trigger={['click']}
+          >
             <Button size="small" id="run-dropdown-button" type="primary">
-              <Icon type="down" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
+              <DownOutlined style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
             </Button>
           </Dropdown>
-        </Button.Group>
+        </Space.Compact>
       );
     } else {
       return (
@@ -449,7 +461,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
       return <LoadingView />;
     }
     if (pipeline.error) {
-      return <Alert type="error" message={this.props.pipeline.error} />;
+      return <Alert type="error" title={this.props.pipeline.error} />;
     }
 
     const {description, pipelineType} = this.props.pipeline.value;
@@ -474,7 +486,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
               editStyleEditableField={{flex: 1}}
               displayTextEditableField={`${this.props.pipeline.value.name} (${this.props.version})`}
               textEditableField={this.props.pipeline.value.name}
-              icon="tag"
+              icon={TagFilled}
               iconClassName={browserStyles.editableControl}
               lock={this.props.pipeline.value.locked}
               lockClassName={browserStyles.editableControl}
@@ -491,7 +503,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
               onClick={this.toggleModal}
               style={{lineHeight: 1}}
               size="small">
-              <Icon type="setting" />
+              <SettingOutlined />
             </Button>
             <GitRepositoryControl
               overlayClassName={browserStyles.gitRepositoryPopover}
@@ -515,35 +527,24 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
             )
           }
         >
-          <TabMenu
+          <Menu
             mode="horizontal"
             selectedKeys={[activeTab]}
             className={styles.tabsMenu}
-          >
-            {
-              this.tabs.map((tab) => (
-                <TabMenu.Item key={tab.key}>
-                  <AdaptedLink
-                    to={tab.link}
-                    location={location}>
-                    {tab.title}
-                  </AdaptedLink>
-                </TabMenu.Item>
-              ))
-            }
-          </TabMenu>
+            items={this.tabs.map((tab) => ({
+              key: tab.key,
+              label: (
+                <AdaptedLink
+                  to={tab.link}
+                  location={location}>
+                  {tab.title}
+                </AdaptedLink>
+              )
+            }))}
+          />
         </Row>
-        <div
-          className={styles.fullHeightContainer} style={{overflow: 'auto'}}>
-          {
-            React.Children.map(
-              this.props.children,
-              (child) => React.cloneElement(child, {
-                onReloadTree: this.props.onReloadTree,
-                readOnly: this.readOnly
-              })
-            )
-          }
+        <div className={styles.tabContentContainer}>
+          <Outlet context={{onReloadTree: this.props.onReloadTree, readOnly: this.readOnly}} />
         </div>
         <EditPipelineForm
           onSubmit={this.updatePipeline}
@@ -557,3 +558,5 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
     );
   }
 }
+
+export default withRouter(PipelineDetails);

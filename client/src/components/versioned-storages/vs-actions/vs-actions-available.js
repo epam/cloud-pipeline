@@ -14,16 +14,18 @@
  *  limitations under the License.
  */
 
-import {computed, observable} from 'mobx';
-import {inject, observer} from 'mobx-react';
+import {computed, observable, makeObservable} from 'mobx';
+import {inject} from 'mobx-react';
 
 class VsActionsAvailable {
   constructor (pipelines) {
+    makeObservable(this, {
+      available: computed
+    });
     this.pipelines = observable(pipelines);
     pipelines.fetchIfNeededOrWait();
   }
 
-  @computed
   get available () {
     if (this.pipelines.loaded) {
       return !!(this.pipelines.value || [])
@@ -34,7 +36,7 @@ class VsActionsAvailable {
 }
 
 function vsAvailabilityCheck (...opts) {
-  return inject('vsActions')(observer(...opts));
+  return inject('vsActions')(...opts);
 }
 
 export {vsAvailabilityCheck};

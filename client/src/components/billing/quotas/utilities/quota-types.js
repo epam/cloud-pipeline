@@ -15,7 +15,7 @@
  */
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Icon} from 'antd';
+import {SolutionOutlined, TeamOutlined, UserOutlined} from '@ant-design/icons';
 
 const types = {
   overall: 'OVERALL',
@@ -26,9 +26,9 @@ const types = {
 
 function QuotaTypeIcon ({type}) {
   switch (type) {
-    case types.billingCenter: return (<Icon type="solution" />);
-    case types.user: return (<Icon type="user" />);
-    case types.group: return (<Icon type="team" />);
+    case types.billingCenter: return (<SolutionOutlined />);
+    case types.user: return (<UserOutlined />);
+    case types.group: return (<TeamOutlined />);
   }
   return null;
 }

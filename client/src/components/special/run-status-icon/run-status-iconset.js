@@ -14,25 +14,32 @@
  * limitations under the License.
  */
 
+import {
+  CheckCircleOutlined,
+  ClockCircleFilled,
+  DownloadOutlined,
+  ExclamationCircleFilled,
+  HourglassOutlined,
+  LoadingOutlined,
+  PauseCircleOutlined,
+  PlayCircleOutlined
+} from '@ant-design/icons';
 import Statuses from './run-statuses';
 
-// ant.design icon set
-// https://2x.ant.design/components/icon/
-
 export const DefaultIconSet = {
-  [Statuses.failure]: 'exclamation-circle',
-  [Statuses.paused]: 'pause-circle-o',
-  [Statuses.pausing]: 'pause-circle-o',
-  [Statuses.pulling]: 'download',
-  [Statuses.queued]: 'hourglass',
-  [Statuses.nodePending]: 'hourglass',
-  [Statuses.resuming]: 'play-circle-o',
-  [Statuses.running]: 'play-circle-o',
-  [Statuses.scheduled]: 'loading',
-  [Statuses.stopped]: 'clock-circle',
-  [Statuses.success]: 'check-circle-o',
+  [Statuses.failure]: ExclamationCircleFilled,
+  [Statuses.paused]: PauseCircleOutlined,
+  [Statuses.pausing]: PauseCircleOutlined,
+  [Statuses.pulling]: DownloadOutlined,
+  [Statuses.queued]: HourglassOutlined,
+  [Statuses.nodePending]: HourglassOutlined,
+  [Statuses.resuming]: PlayCircleOutlined,
+  [Statuses.running]: PlayCircleOutlined,
+  [Statuses.scheduled]: LoadingOutlined,
+  [Statuses.stopped]: ClockCircleFilled,
+  [Statuses.success]: CheckCircleOutlined,
 
-  [Statuses.unknown]: 'play-circle-o'
+  [Statuses.unknown]: PlayCircleOutlined
 };
 
 export function getRunStatusIcon (status, iconSet) {

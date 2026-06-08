@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import AvailableStoragesBrowser, {filterNFSStorages}
 from '../dialogs/AvailableStoragesBrowser';
 import AWSRegionTag from '../../../special/AWSRegionTag';
@@ -50,7 +50,16 @@ export class LimitMountsInput extends React.Component {
     limitMountsDialogVisible: false
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      awsRegions: computed,
+      nfsSensitivePolicy: computed,
+      availableStorages: computed,
+      availableNonSensitiveStorages: computed
+    });
+  }
+
   get awsRegions () {
     if (this.props.awsRegions.loaded) {
       return (this.props.awsRegions.value || []).map(r => r);
@@ -103,13 +112,11 @@ export class LimitMountsInput extends React.Component {
     }
   };
 
-  @computed
   get nfsSensitivePolicy () {
     const {preferences} = this.props;
     return preferences.nfsSensitivePolicy;
   }
 
-  @computed
   get availableStorages () {
     const {
       cloudRegion
@@ -123,7 +130,6 @@ export class LimitMountsInput extends React.Component {
     return [];
   }
 
-  @computed
   get availableNonSensitiveStorages () {
     return this.availableStorages.filter(s => !s.sensitive);
   }

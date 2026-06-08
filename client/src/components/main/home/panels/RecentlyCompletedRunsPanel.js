@@ -16,8 +16,9 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Link} from 'react-router';
+import {Link} from 'react-router-dom';
 import {inject, observer} from 'mobx-react';
+import {withRouter} from '../../../../utils/with-router';
 import LoadingView from '../../../special/LoadingView';
 import localization from '../../../../utils/localization';
 import {Alert, message, Modal, Row} from 'antd';
@@ -39,7 +40,7 @@ import {confirmRunContinuation, continueRun} from "../../../runs/actions/continu
 @inject('pipelines', 'multiZoneManager', 'preferences')
 @VSActions.check
 @observer
-export default class RecentlyCompletedRunsPanel extends localization.LocalizedReactComponent {
+class RecentlyCompletedRunsPanel extends localization.LocalizedReactComponent {
   static propTypes = {
     panelKey: PropTypes.string,
     completedRuns: PropTypes.object,
@@ -131,7 +132,7 @@ export default class RecentlyCompletedRunsPanel extends localization.LocalizedRe
     if (!this.props.completedRuns.loaded && this.props.completedRuns.pending) {
       content = <LoadingView />;
     } else if (this.props.completedRuns.error) {
-      content = <Alert type="warning" message={this.props.completedRuns.error} />;
+      content = <Alert type="warning" title={this.props.completedRuns.error} />;
     } else {
       content = [
         <Row key="runs" style={{flex: 1, overflowY: 'auto'}}>
@@ -196,7 +197,7 @@ export default class RecentlyCompletedRunsPanel extends localization.LocalizedRe
       return <LoadingView />;
     }
     if (this.props.authenticatedUserInfo.error) {
-      return (<Alert type="warning" message={this.props.authenticatedUserInfo.error} />);
+      return (<Alert type="warning" title={this.props.authenticatedUserInfo.error} />);
     }
     return (
       <div className={styles.container}>
@@ -213,3 +214,5 @@ export default class RecentlyCompletedRunsPanel extends localization.LocalizedRe
     this.props.onInitialize && this.props.onInitialize(this);
   }
 }
+
+export default withRouter(RecentlyCompletedRunsPanel);

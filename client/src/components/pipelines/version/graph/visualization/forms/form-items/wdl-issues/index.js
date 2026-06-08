@@ -42,7 +42,7 @@ function WdlIssues (
           key={`issue-${idx}`}
           type={issue.level}
           className={styles.wdlAlertIssue}
-          message={(
+          title={(
             <div
               className={
                 classNames(

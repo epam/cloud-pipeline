@@ -18,7 +18,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import moment from 'moment-timezone';
-import {computed} from 'mobx';
+import {momentToDayjs, dayjsToMoment} from '../../../../../utils/antd-date-utils';
+import {computed, makeObservable} from 'mobx';
 import {
   Radio,
   InputNumber,
@@ -43,6 +44,13 @@ class InputFilter extends React.Component {
     value: undefined
   }
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      storage: computed
+    });
+  }
+
   componentDidMount () {
     this.rebuildState();
   }
@@ -53,7 +61,6 @@ class InputFilter extends React.Component {
     }
   }
 
-  @computed
   get storage () {
     return this.props.storage;
   }
@@ -146,6 +153,13 @@ class SizeFilter extends React.Component {
     [FILTER_FIELDS.sizeLessThan]: undefined
   }
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      storage: computed
+    });
+  }
+
   componentDidMount () {
     this.rebuildState();
   }
@@ -156,7 +170,6 @@ class SizeFilter extends React.Component {
     }
   }
 
-  @computed
   get storage () {
     return this.props.storage;
   }
@@ -257,6 +270,13 @@ class DateFilter extends React.Component {
 
   containerRef;
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      storage: computed
+    });
+  }
+
   componentDidMount () {
     this.rebuildState();
   }
@@ -267,7 +287,6 @@ class DateFilter extends React.Component {
     }
   }
 
-  @computed
   get storage () {
     return this.props.storage;
   }
@@ -337,19 +356,13 @@ class DateFilter extends React.Component {
   };
 
   onChangeFrom = (date) => {
-    let dateString;
-    if (date) {
-      dateString = moment(date).startOf('d');
-    }
-    this.setState({[FILTER_FIELDS.dateAfter]: dateString});
+    const m = date ? dayjsToMoment(date) : null;
+    this.setState({[FILTER_FIELDS.dateAfter]: m ? m.clone().startOf('day') : undefined});
   };
 
   onChangeTo = (date) => {
-    let dateString;
-    if (date) {
-      dateString = moment(date).endOf('d');
-    }
-    this.setState({[FILTER_FIELDS.dateBefore]: dateString});
+    const m = date ? dayjsToMoment(date) : null;
+    this.setState({[FILTER_FIELDS.dateBefore]: m ? m.clone().endOf('day') : undefined});
   };
 
   onKeyDown = event => {
@@ -376,7 +389,7 @@ class DateFilter extends React.Component {
           <DatePicker
             getCalendarContainer={node => node.parentNode}
             onChange={this.onChangeFrom}
-            value={this.state[FILTER_FIELDS.dateAfter]}
+            value={momentToDayjs(this.state[FILTER_FIELDS.dateAfter])}
             onOpenChange={this.onOpenChange}
           />
         </div>
@@ -386,7 +399,7 @@ class DateFilter extends React.Component {
             getCalendarContainer={node => node.parentNode}
             onChange={this.onChangeTo}
             onOpenChange={this.onOpenChange}
-            value={this.state[FILTER_FIELDS.dateBefore]}
+            value={momentToDayjs(this.state[FILTER_FIELDS.dateBefore])}
           />
         </div>
       </div>

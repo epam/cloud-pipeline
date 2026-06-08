@@ -17,9 +17,15 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {inject, observer} from 'mobx-react';
-import {observable} from 'mobx';
-import {Icon, Select, Tooltip} from 'antd';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {observable, makeObservable} from 'mobx';
+import {
+  Select,
+  Tooltip
+} from 'antd';
+import {MinusCircleOutlined, PlusCircleOutlined, ShrinkOutlined} from '@ant-design/icons';
 import createBuffers from './buffers';
 import {mat4translate, mat4scale, mat4identity} from './matrix-functions';
 import {createGLProgram, resizeCanvas, getLinesToDraw} from './canvas-utilities';
@@ -113,14 +119,12 @@ class HcsCellSelector extends React.Component {
 
   maxColumnLabelSize = 20;
   maxRowLabelSize = 20;
-
-  @observable _hoveredElement = undefined;
+  _hoveredElement = undefined;
   _scrollBarHovered = {vertical: false, horizontal: false};
-
-  @observable zoomOutAvailable;
-  @observable zoomInAvailable;
-  @observable fitScale;
-  @observable fitCenter;
+  zoomOutAvailable;
+  zoomInAvailable;
+  fitScale;
+  fitCenter;
 
   backgroundColor = [1.0, 1.0, 1.0, 1.0];
   textColor = [0, 0, 0, 0.65];
@@ -149,12 +153,12 @@ class HcsCellSelector extends React.Component {
     let selectedColor = '#ff8818';
     let selectedHoverColor = '#ff8818';
     if (themes && themes.currentThemeConfiguration) {
-      backgroundColor = themes.currentThemeConfiguration['@card-background-color'] || backgroundColor;
-      textColor = themes.currentThemeConfiguration['@application-color'] || textColor;
-      primaryColor = themes.currentThemeConfiguration['@primary-color'] || primaryColor;
-      primaryHoverColor = themes.currentThemeConfiguration['@primary-hover-color'] || primaryHoverColor;
-      selectedColor = themes.currentThemeConfiguration['@color-warning'] || selectedColor;
-      selectedHoverColor = themes.currentThemeConfiguration['@color-sensitive'] || selectedHoverColor;
+      backgroundColor = themes.currentThemeConfiguration['--cp-color-bg-elevated'] || backgroundColor;
+      textColor = themes.currentThemeConfiguration['--cp-color-text'] || textColor;
+      primaryColor = themes.currentThemeConfiguration['--cp-color-primary'] || primaryColor;
+      primaryHoverColor = themes.currentThemeConfiguration['--cp-color-primary-hover'] || primaryHoverColor;
+      selectedColor = themes.currentThemeConfiguration['--cp-color-warning'] || selectedColor;
+      selectedHoverColor = themes.currentThemeConfiguration['--cp-color-sensitive'] || selectedHoverColor;
     }
     this.backgroundColor = colorToVec4(backgroundColor);
     this.textColor = textColor;
@@ -166,6 +170,17 @@ class HcsCellSelector extends React.Component {
     this.selectedHoverColor = colorToVec4(selectedHoverColor);
     this.setNeedRedraw();
   };
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      _hoveredElement: observable,
+      zoomOutAvailable: observable,
+      zoomInAvailable: observable,
+      fitScale: observable,
+      fitCenter: observable
+    });
+  }
 
   get center () {
     return this._center;
@@ -1691,7 +1706,7 @@ class HcsCellSelector extends React.Component {
           allowClear
           mode="multiple"
           className={styles.tagsSelector}
-          dropdownClassName={styles.tagDropdown}
+          classNames={{popup: {root: styles.tagDropdown}}}
           placeholder={searchPlaceholder}
           notFoundContent="Not found"
           value={selectedTags}
@@ -1751,34 +1766,23 @@ class HcsCellSelector extends React.Component {
             {
               this.fitScale &&
               this.fitCenter && (
-                <Icon
-                  type="shrink"
-                  className={classNames(
-                    'cp-hcs-zoom-button',
-                    styles.zoomControlBtn
-                  )}
-                  onClick={this.fit}
-                />
+                <ShrinkOutlined className={classNames('cp-hcs-zoom-button', styles.zoomControlBtn)} onClick={this.fit} />
               )
             }
-            <Icon
-              type="minus-circle-o"
+            <MinusCircleOutlined
               className={classNames(
                 'cp-hcs-zoom-button',
                 {'cp-disabled': !this.zoomOutAvailable},
                 styles.zoomControlBtn
               )}
-              onClick={() => this.zoom(-1)}
-            />
-            <Icon
-              type="plus-circle-o"
+              onClick={() => this.zoom(-1)} />
+            <PlusCircleOutlined
               className={classNames(
                 'cp-hcs-zoom-button',
                 {'cp-disabled': !this.zoomInAvailable},
                 styles.zoomControlBtn
               )}
-              onClick={() => this.zoom(1)}
-            />
+              onClick={() => this.zoom(1)} />
           </div>
         </div>
         {this.renderTagsSelector()}
@@ -1793,9 +1797,9 @@ class HcsCellSelector extends React.Component {
           {
             this.hoveredElement && showElementHint && (
               <Tooltip
-                visible
+                open
                 title={(<ElementHint element={this.hoveredElement} />)}
-                overlayStyle={{pointerEvents: 'none'}}
+                styles={{root: {pointerEvents: 'none'}}}
               >
                 <div
                   className={styles.tooltipPoint}

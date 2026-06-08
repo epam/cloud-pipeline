@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Input, Select} from 'antd';
+import {AutoComplete, Input} from 'antd';
 import classNames from 'classnames';
 import styles from './launch-form-parameter-input.css';
 
@@ -135,7 +135,7 @@ class MetadataAutoComplete extends React.PureComponent {
             {addonBefore}
           </span>
         }
-        <Select
+        <AutoComplete
           className={className}
           style={style}
           value={value}
@@ -144,19 +144,18 @@ class MetadataAutoComplete extends React.PureComponent {
           disabled={disabled}
           placeholder={placeholder}
           size={size}
-          mode="combobox"
           filterOption={false}
         >
           {
             filteredEntityFields.map((field) => (
-              <Select.Option
+              <AutoComplete.Option
                 key={field.name}
                 value={field.value}>
                 {field.name}
-              </Select.Option>
+              </AutoComplete.Option>
             ))
           }
-        </Select>
+        </AutoComplete>
       </Input.Group>
     );
   }

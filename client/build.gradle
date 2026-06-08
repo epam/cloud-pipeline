@@ -1,21 +1,21 @@
 
 plugins {
-  id "com.github.node-gradle.node" version "7.0.2"
+  id "com.moowork.node" version "1.1.1"
 }
 
-tasks.register("npmPrune", NpmTask) {
-  args.set(["prune"])
+task npmPrune(type: NpmTask) {
+  args = ['prune']
 }
 
-tasks.register("clean", Delete) {
-  delete(project.layout.buildDirectory)
+task clean(type: Delete) {
+   delete("$project.buildDir")
 }
 
 npmInstall.dependsOn npmPrune
 nodeSetup.dependsOn clean
 npmSetup.dependsOn clean
 
-tasks.register("buildUI", NpmTask) {
+task buildUI(type: NpmTask) {
   group = 'build'
   environment = ['PUBLIC_URL': '/pipeline', 'VERSION': "$version"]
   dependsOn npmInstall
@@ -30,8 +30,10 @@ tasks.register("buildUI", NpmTask) {
   args = ['run', 'build']
   doLast {
     copy {
-      from(project.layout.buildDirectory)
-      into("$rootDir/api/src/main/resources/static/")
+      from "${project.buildDir}"
+      into "$rootDir/api/src/main/resources/static/"
     }
   }
+
+
 }

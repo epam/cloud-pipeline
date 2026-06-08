@@ -15,8 +15,9 @@
  */
 
 import React from 'react';
-import {observable, computed} from 'mobx';
-import {inject, observer} from 'mobx-react';
+import {observable, computed, makeObservable} from 'mobx';
+import {inject,
+  observer} from 'mobx-react';
 import {
   DeletionPlugin,
   SelectionPlugin,
@@ -36,9 +37,9 @@ import yaml from 'js-yaml';
 import {
   Alert,
   Button,
-  Icon,
   message
 } from 'antd';
+import {SaveOutlined} from '@ant-design/icons';
 import moment from 'moment-timezone';
 import classNames from 'classnames';
 import Graph from '../Graph';
@@ -67,10 +68,19 @@ const readOnly = true;
 }))
 @observer
 export default class CwlGraph extends Graph {
-  @observable _fileRequest;
+  _fileRequest;
+  model;
+  selected;
 
-  @observable model;
-  @observable selected;
+  constructor (...args) {
+    super(...args);
+    makeObservable(this, {
+      _fileRequest: observable,
+      model: observable,
+      selected: observable,
+      commandLineTool: computed
+    });
+  }
 
   componentDidMount () {
     this.loadFile();
@@ -78,7 +88,6 @@ export default class CwlGraph extends Graph {
 
   componentDidUpdate () {
     this.loadFile();
-    super.componentDidUpdate();
   }
 
   getFilePath () {
@@ -122,7 +131,6 @@ export default class CwlGraph extends Graph {
     this._fileRequest = null;
   }
 
-  @computed
   get commandLineTool () {
     if (!this.selected || !this.selected.run) {
       return undefined;
@@ -453,10 +461,10 @@ export default class CwlGraph extends Graph {
       return <LoadingView />;
     }
     if (parameters.error) {
-      return <Alert type="warning" message={parameters.error} />;
+      return <Alert type="warning" title={parameters.error} />;
     }
     if (this._fileRequest && this._fileRequest.error) {
-      return <Alert type="warning" message={this._fileRequest.error} />;
+      return <Alert type="warning" title={this._fileRequest.error} />;
     }
     return (
       <div className={styles.cwlGraph}>
@@ -475,7 +483,7 @@ export default class CwlGraph extends Graph {
             disabled={!modified || readOnly}
             onClick={this.openCommitFormDialog}
           >
-            <Icon type="save" />
+            <SaveOutlined />
           </Button>
         </div>
         <CWLProperties

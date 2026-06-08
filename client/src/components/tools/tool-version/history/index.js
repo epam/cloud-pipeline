@@ -25,7 +25,8 @@ import styles from './history.css';
 import BashCode from '../../../special/bash-code';
 import GenerateDockerfile from '../../../../models/tools/GenerateDockerfile';
 
-@inject((stores, {params}) => {
+@inject(({routing}) => {
+  const {params} = routing;
   return {
     toolId: params.id,
     version: params.version,
@@ -72,7 +73,7 @@ export default class History extends React.Component {
     } = this.state;
     return (
       <Modal
-        visible={generateDockerfileModalVisible}
+        open={generateDockerfileModalVisible}
         onCancel={this.closeGenerateDockerfileModal}
         title="Dockerfile"
         footer={(
@@ -93,7 +94,7 @@ export default class History extends React.Component {
         <div>
           <Alert
             type="info"
-            message={(
+            title={(
               <div style={{textAlign: 'justify'}}>
                 Please specify a docker image name, which is going to be used as a base layer to generate a Dockerfile. This name will be used in the "FROM" instruction.
               </div>
@@ -117,7 +118,7 @@ export default class History extends React.Component {
       return <LoadingView />;
     }
     if (this.props.history.error) {
-      return <Alert type="error" message={this.props.history.error} />;
+      return <Alert type="error" title={this.props.history.error} />;
     }
     const selectedLayer = (this.props.history.value || [])[this.state.selectedLayer];
     return (

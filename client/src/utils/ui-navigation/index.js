@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {action, computed, observable} from 'mobx';
+import {action, computed, observable, makeObservable} from 'mobx';
 import Pages from './pages';
 import NavigationItems from './navigation-items';
 import MetadataMultiLoad from '../../models/metadata/MetadataMultiLoad';
@@ -257,23 +257,41 @@ class UINavigation {
       .find(item => (item.keys || [item.key]).find(key => pathRegExp.test(key)));
   }
 
-  @observable userPages;
-  @observable dashboard;
-  @observable homePage;
-  @observable searchDocumentTypes;
-  @observable supportTemplate;
-  @observable launchForm;
-  @observable runLogsMainTask;
-  @observable _libraryExpanded;
-  @observable _loaded;
+  userPages;
+  dashboard;
+  homePage;
+  searchDocumentTypes;
+  supportTemplate;
+  launchForm;
+  runLogsMainTask;
+  _libraryExpanded;
+  _loaded;
 
   constructor (authenticatedUserInfo, preferences) {
+    makeObservable(this, {
+      userPages: observable,
+      dashboard: observable,
+      homePage: observable,
+      searchDocumentTypes: observable,
+      supportTemplate: observable,
+      launchForm: observable,
+      runLogsMainTask: observable,
+      _libraryExpanded: observable,
+      _loaded: observable,
+      aiChatBotAvailable: computed,
+      availablePages: computed,
+      navigationItems: computed,
+      loaded: computed,
+      home: computed,
+      libraryExpanded: computed,
+      utils: computed,
+      fetch: action
+    });
     this.user = authenticatedUserInfo;
     this.preferences = preferences;
     this.fetch();
   }
 
-  @computed
   get aiChatBotAvailable () {
     if (!this._loaded) {
       return false;
@@ -284,7 +302,6 @@ class UINavigation {
     return !!api && api.length > 0;
   }
 
-  @computed
   get availablePages () {
     if (!this._loaded) {
       return [];
@@ -296,7 +313,6 @@ class UINavigation {
     return new Set(pages);
   }
 
-  @computed
   get navigationItems () {
     if (!this._loaded) {
       return [];
@@ -306,12 +322,10 @@ class UINavigation {
       .filter(page => page.static || pages.has(page.key));
   }
 
-  @computed
   get loaded () {
     return this._loaded;
   }
 
-  @computed
   get home () {
     const homePageKey = this.homePage || Pages.dashboard;
     const available = this.navigationItems.find(item => item.key === homePageKey);
@@ -321,7 +335,6 @@ class UINavigation {
     return homePageKey;
   }
 
-  @computed
   get libraryExpanded () {
     if (this._libraryExpanded === undefined) {
       try {
@@ -377,7 +390,6 @@ class UINavigation {
     }
   }
 
-  @action
   fetch () {
     if (this.loaded) {
       return Promise.resolve();
@@ -431,7 +443,6 @@ class UINavigation {
     });
   };
 
-  @computed
   get utils () {
     return {
       estimatedPriceVisible: () => estimatedPriceVisible(this.launchForm),

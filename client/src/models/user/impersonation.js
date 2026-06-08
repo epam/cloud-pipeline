@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import Remote from '../basic/Remote';
 import {SERVER} from '../../config';
 import invalidateEdgeTokens from '../../utils/invalidate-edge-tokens';
@@ -45,10 +45,16 @@ class GetImpersonatedUser extends Remote {
 }
 
 class Impersonation {
-  @observable impersonatedUser;
-  @observable originalUser;
+  impersonatedUser;
+  originalUser;
 
   constructor () {
+    makeObservable(this, {
+      impersonatedUser: observable,
+      originalUser: observable,
+      isImpersonated: computed,
+      impersonatedUserName: computed
+    });
     this.impersonatedInfo = new GetImpersonatedUser();
     this.impersonatedInfo
       .fetch()
@@ -65,12 +71,10 @@ class Impersonation {
       .catch(() => {});
   }
 
-  @computed
   get isImpersonated () {
     return !!this.impersonatedUser;
   }
 
-  @computed
   get impersonatedUserName () {
     return this.impersonatedUser
       ? this.impersonatedUser.userName

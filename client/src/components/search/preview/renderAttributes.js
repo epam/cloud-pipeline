@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {Icon} from 'antd';
+import {LoadingOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 
 import styles from './preview.css';
@@ -66,7 +66,7 @@ export function renderAttributes (metadataRequest, options = {}) {
             justifyContent: 'center'
           }}
         >
-          <Icon type="loading" />
+          <LoadingOutlined />
         </div>
       );
     }

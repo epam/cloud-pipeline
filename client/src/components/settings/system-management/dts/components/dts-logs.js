@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import {observer} from 'mobx-react';
 import {message, Alert, Spin} from 'antd';
 import dataStorageAvailable from '../../../../../models/dataStorage/DataStorageAvailable';
@@ -39,12 +39,17 @@ class DtsLogs extends React.Component {
     logsString: undefined,
     pending: false
   }
-
-  @observable
   storage;
-
-  @observable
   relativePathToFile;
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      storage: observable,
+      relativePathToFile: observable,
+      downloadAvailable: computed
+    });
+  }
 
   componentDidMount () {
     this.fetchLogs();
@@ -56,7 +61,6 @@ class DtsLogs extends React.Component {
     }
   }
 
-  @computed
   get downloadAvailable () {
     return this.storage && this.relativePathToFile;
   }
@@ -130,7 +134,7 @@ class DtsLogs extends React.Component {
     if (error) {
       return (
         <Alert
-          message={error}
+          title={error}
           type="error"
         />
       );
@@ -138,7 +142,7 @@ class DtsLogs extends React.Component {
     if (!pending && sizeExceeded) {
       return (
         <Alert
-          message={(
+          title={(
             <p>
               Logs size is more than <b>{SIZE_THRESHOLD_MB}mb</b> and cannot be viewed.
               {this.downloadAvailable ? (
@@ -157,13 +161,13 @@ class DtsLogs extends React.Component {
     if (!pending && !logsString) {
       return (
         <Alert
-          message={(<p>Logs are not available or empty.</p>)}
+          title={(<p>Logs are not available or empty.</p>)}
           type="error"
         />
       );
     }
     return (
-      <Spin wrapperClassName={styles.spin} spinning={pending}>
+      <Spin classNames={{root: styles.spin}} spinning={pending}>
         <div className={styles.logsContainer}>
           <div className={styles.controls}>
             {this.downloadAvailable ? (

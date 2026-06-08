@@ -1,0 +1,144 @@
+/*
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+.cp-billing-menu {
+  width: fit-content;
+  margin-left: 0;
+  min-height: 100%;
+}
+
+.cp-billing-table td {
+  border: 1px solid var(--cp-color-border);
+}
+
+.cp-billing-table td.cp-billing-table-pending {
+  background-color: var(--cp-color-bg-elevated);
+}
+
+.cp-billing-calendar-container {
+  background-color: var(--cp-color-bg-container);
+  box-shadow: 0 0 2px 2px var(--cp-color-card-shadow);
+  color: var(--cp-color-text);
+}
+
+.cp-billing-calendar-years-container {
+  border-bottom: 1px solid var(--cp-color-border);
+}
+
+.cp-billing-calendar-navigation:hover {
+  color: var(--cp-color-primary);
+}
+
+.cp-billing-calendar-navigation.disabled {
+  color: var(--cp-color-text-disabled);
+}
+
+.cp-billing-calendar-row-item {
+  border-right: 1px solid var(--cp-color-border-card);
+  border-bottom: 1px solid var(--cp-color-border-card);
+}
+
+.cp-billing-calendar-row-item:last-child {
+  border-right: none;
+}
+
+.cp-billing-calendar-row:last-child .cp-billing-calendar-row-item {
+  border-bottom: none;
+}
+
+.cp-billing-calendar-row-item.selected {
+  color: var(--cp-color-primary);
+  background-color: var(--cp-color-bg-container);
+}
+
+.cp-billing-calendar-row-item:hover {
+  color: var(--cp-color-primary-on);
+  background-color: var(--cp-color-primary);
+}
+
+.cp-billing-calendar-row-item.disabled {
+  color: var(--cp-color-text-disabled);
+  background-color: var(--cp-color-bg-container);
+}
+
+.cp-billing-calendar-set-value {
+  color: var(--cp-color-text);
+}
+
+.cp-billing-calendar-set-value-close {
+  color: var(--cp-color-text-secondary);
+}
+
+.cp-billing-calendar-icon {
+  color: var(--cp-color-text);
+}
+
+.cp-billing-button-link:hover {
+  color: var(--cp-color-primary);
+}
+
+.cp-billing-layout-panel-move {
+  background-color: var(--cp-color-bg-striped);
+}
+
+.cp-billing-layout .react-resizable-handle::after {
+  border-right-color: var(--cp-color-text);
+  border-bottom-color: var(--cp-color-text);
+}
+
+.cp-billing-layout .react-grid-item {
+  transition: none;
+}
+
+.cp-quota-status-green {
+  fill: var(--cp-color-success);
+  background-color: var(--cp-color-success);
+}
+
+.cp-quota-status-green.hide {
+  fill: transparent;
+  background-color: transparent;
+}
+
+.cp-quota-status-yellow {
+  fill: var(--cp-color-warning);
+  background-color: var(--cp-color-warning);
+}
+
+.cp-quota-status-red {
+  fill: var(--cp-color-error);
+  background-color: var(--cp-color-error);
+}
+
+.cp-report-table td,
+.cp-report-table th {
+  background-color: var(--cp-color-bg-container);
+  color: var(--cp-color-text);
+  border-bottom: 1px solid var(--cp-color-border-card);
+}
+
+.cp-report-table tbody tr:not(:last-child) > *,
+.cp-report-table th {
+  border-bottom: 1px solid var(--cp-color-border-card);
+}
+
+.cp-report-table tr > *.fixed-column {
+  border-right: 1px solid var(--cp-color-border-card);
+}
+
+.cp-report-table tr.cp-warning-row {
+  background-color: color-mix(in srgb, var(--cp-color-error) 20%, transparent);
+}

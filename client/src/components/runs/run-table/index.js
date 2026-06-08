@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
 import {Alert, Pagination, Table, Row, Button} from 'antd';
-import {isObservableArray, observable} from 'mobx';
+import {isObservableArray, observable, makeObservable} from 'mobx';
 import {
   filtersAreEqual,
   getFiltersPayload,
@@ -238,7 +238,14 @@ class RunTable extends localization.LocalizedReactComponent {
   /**
    * @type {ChildRuns[]}
    */
-  @observable childrenRunsCollection = [];
+  childrenRunsCollection = [];
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      childrenRunsCollection: observable
+    });
+  }
 
   get estimatedPriceVisible () {
     const {uiNavigation} = this.props;
@@ -625,7 +632,7 @@ class RunTable extends localization.LocalizedReactComponent {
       >
         {
           runs.length === 0 && !pending && (
-            <Alert message={emptyDataMessage} type="info" />
+            <Alert title={emptyDataMessage} type="info" />
           )
         }
         {
@@ -704,14 +711,16 @@ class RunTable extends localization.LocalizedReactComponent {
           }
         )}
         dataSource={runs}
-        onRowClick={onRunClick || this.onRunClick}
+        onRow={(record) => ({onClick: () => (onRunClick || this.onRunClick)(record)})}
         pagination={false}
         loading={pending}
         size="small"
         indentSize={10}
         locale={{emptyText: emptyDataMessage, filterConfirm: 'OK', filterReset: 'Clear'}}
-        expandedRowKeys={expandedRows}
-        onExpandedRowsChange={this.onExpandedRowsChanged}
+        expandable={{
+          expandedRowKeys: expandedRows,
+          onExpandedRowsChange: this.onExpandedRowsChanged
+        }}
       />
     );
   };
@@ -773,7 +782,7 @@ class RunTable extends localization.LocalizedReactComponent {
         {
           error && (
             <Alert
-              message={error}
+              title={error}
               type="error"
               style={{
                 margin: '5px 0'

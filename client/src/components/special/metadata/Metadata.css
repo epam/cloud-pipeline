@@ -45,10 +45,6 @@
 }
 
 .disabled-textarea {
-  resize: none;
-  height: 100%;
-  white-space: pre;
-  overflow-wrap: normal;
-  overflow: auto;
-  cursor: default;
+  flex: 1;
+  min-height: 0;
 }

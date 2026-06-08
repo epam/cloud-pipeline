@@ -205,8 +205,8 @@ CloudRegionContextualSetting.propTypes = {
   setting: PropTypes.string,
   value: PropTypes.string,
   onChange: PropTypes.func,
-  labelCol: PropTypes.oneOfType(PropTypes.object, PropTypes.number),
-  wrapperCol: PropTypes.oneOfType(PropTypes.object, PropTypes.number),
+  labelCol: PropTypes.oneOfType([PropTypes.object, PropTypes.number]),
+  wrapperCol: PropTypes.oneOfType([PropTypes.object, PropTypes.number]),
   title: PropTypes.node,
   type: PropTypes.oneOf(['OBJECT']),
   resetToken: PropTypes.object

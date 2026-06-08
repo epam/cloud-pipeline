@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {ModuleParameter} from './base';
 import {AnalysisTypes} from '../common/analysis-types';
 
@@ -28,9 +28,11 @@ class ChannelsParameter extends ModuleParameter {
       type: AnalysisTypes.channel,
       isList: true
     });
+    makeObservable(this, {
+      values: computed
+    });
   }
 
-  @computed
   get values () {
     return this.channels.map((channel, idx) => ({
       key: channel,

@@ -16,14 +16,17 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
+import {
+  inject,
+  observer} from 'mobx-react';
 import {
   Button,
-  Icon,
   Popover,
   Row,
-  Dropdown
+  Dropdown,
+  Space
 } from 'antd';
+import {DownOutlined, ExclamationCircleFilled, ExclamationCircleOutlined} from '@ant-design/icons';
 import roleModel from '../../../utils/roleModel';
 import preferences from '../../../models/preferences/PreferencesLoad';
 
@@ -65,7 +68,7 @@ function checkPermission (parameter, storageList, permissionChecker, permissionN
 function getPaths (parameters, types) {
   return Object.entries(parameters || {})
     .map(([name, param]) => ({name, ...param}))
-    .filter(p => types.indexOf(p.type) >= 0)
+    .filter(p => types.indexOf(p.type) >= 0);
 }
 
 export function getInputPaths (parameters) {
@@ -286,11 +289,7 @@ export async function performAsyncCheck (props, state = undefined) {
 export function PermissionErrorsTitle () {
   return (
     <Row style={{fontWeight: 'bold'}}>
-      <Icon
-        type="exclamation-circle-o"
-        style={{marginRight: 5}}
-        className="cp-error"
-      />
+      <ExclamationCircleOutlined style={{marginRight: 5}} className="cp-error" />
       <span>Permission issues</span>
     </Row>
   );
@@ -314,16 +313,24 @@ class SubmitButton extends React.Component {
   static propTypes = {
     dockerImage: PropTypes.string,
     id: PropTypes.string,
-    inputs: PropTypes.object,
+    inputs: PropTypes.array,
     onClick: PropTypes.func,
-    outputs: PropTypes.object,
+    outputs: PropTypes.array,
     type: PropTypes.string,
     htmlType: PropTypes.string,
     size: PropTypes.string,
     style: PropTypes.object,
     skipCheck: PropTypes.bool,
     disabled: PropTypes.bool,
-    loading: PropTypes.bool
+    loading: PropTypes.bool,
+    dropdown: PropTypes.bool,
+    dropdownId: PropTypes.string,
+    dropdownRenderer: PropTypes.func,
+    dropdownMenuItems: PropTypes.arrayOf(PropTypes.shape({
+      key: PropTypes.string,
+      label: PropTypes.node
+    })),
+    dropdownMenuOnClick: PropTypes.func
   };
 
   state = {
@@ -342,7 +349,7 @@ class SubmitButton extends React.Component {
     }
   }
 
-  componentWillReceiveProps (nextProps, nextContext) {
+  UNSAFE_componentWillReceiveProps (nextProps, nextContext) {
     return this.performAsyncCheck(nextProps, true);
   }
 
@@ -368,15 +375,18 @@ class SubmitButton extends React.Component {
       type,
       dropdown,
       dropdownRenderer,
-      dropdownId
+      dropdownId,
+      dropdownMenuItems,
+      dropdownMenuOnClick
     } = this.props;
     const {
       errors
     } = this.state;
     const pending = (dataStorages.pending && !dataStorages.loaded) ||
       (dockerRegistries.pending && !dockerRegistries.loaded);
-    const submitButton = dropdown && dropdownRenderer ? (
-      <Button.Group
+    const hasDropdownMenu = dropdown && (dropdownMenuItems?.length > 0 || dropdownRenderer);
+    const submitButton = hasDropdownMenu ? (
+      <Space.Compact
         size={size}
       >
         <Button
@@ -388,11 +398,14 @@ class SubmitButton extends React.Component {
           disabled={this.props.disabled || pending || errors.length > 0}
           loading={this.props.loading}
         >
-          {errors.length > 0 ? <Icon type="exclamation-circle" /> : null}
+          {errors.length > 0 ? <ExclamationCircleFilled /> : null}
           {children}
         </Button>
         <Dropdown
-          overlay={dropdownRenderer()}
+          menu={dropdownMenuItems?.length > 0
+            ? {items: dropdownMenuItems, onClick: dropdownMenuOnClick, style: {cursor: 'pointer'}}
+            : {items: [{key: '_', label: ''}]}}
+          popupRender={dropdownRenderer ? () => dropdownRenderer() : undefined}
           placement="bottomRight"
           disabled={this.props.disabled || pending || errors.length > 0}
         >
@@ -405,15 +418,10 @@ class SubmitButton extends React.Component {
             type="primary"
             loading={this.props.loading}
           >
-            <Icon
-              type="down"
-              style={{
-                lineHeight: 'inherit'
-              }}
-            />
+            <DownOutlined style={{lineHeight: 'inherit'}} />
           </Button>
         </Dropdown>
-      </Button.Group>
+      </Space.Compact>
     ) : (
       <Button
         id={id}
@@ -425,7 +433,7 @@ class SubmitButton extends React.Component {
         size={size}
         loading={this.props.loading}
       >
-        {errors.length > 0 ? <Icon type="exclamation-circle" /> : null}
+        {errors.length > 0 ? <ExclamationCircleFilled /> : null}
         {children}
       </Button>
     );

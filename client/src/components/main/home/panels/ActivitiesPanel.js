@@ -16,14 +16,20 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
-import {Link} from 'react-router';
-import {computed} from 'mobx';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {Link} from 'react-router-dom';
+import {computed, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import IssueCommentPreview from '../../../special/issues/controls/IssueCommentPreview';
 import LoadingView from '../../../special/LoadingView';
 import localization from '../../../../utils/localization';
-import {Alert, Card, Icon, Row} from 'antd';
+import {Alert,
+  Card,
+  Row
+} from 'antd';
+import {FolderOutlined, ForkOutlined, HddOutlined, SettingOutlined, ToolOutlined} from '@ant-design/icons';
 import roleModel from '../../../../utils/roleModel';
 import styles from './Panel.css';
 import moment from 'moment-timezone';
@@ -127,7 +133,13 @@ export default class ActivitiesPanel extends localization.LocalizedReactComponen
     }
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      issuesEvents: computed
+    });
+  }
+
   get issuesEvents () {
     if (this.props.issues.loaded) {
       const events = [];
@@ -200,23 +212,23 @@ export default class ActivitiesPanel extends localization.LocalizedReactComponen
       let name, type;
       switch (event.entity.type) {
         case 'PIPELINE':
-          name = <span><Icon type="fork" /> {event.entity.name}</span>;
+          name = <span><ForkOutlined /> {event.entity.name}</span>;
           type = this.localizedString('pipeline');
           break;
         case 'TOOL':
-          name = <span><Icon type="tool" /> {event.entity.name}</span>;
+          name = <span><ToolOutlined /> {event.entity.name}</span>;
           type = this.localizedString('tool');
           break;
         case 'FOLDER':
-          name = <span><Icon type="folder" /> {event.entity.name}</span>;
+          name = <span><FolderOutlined /> {event.entity.name}</span>;
           type = this.localizedString('folder');
           break;
         case 'DATA_STORAGE':
-          name = <span><Icon type="hdd" /> {event.entity.name}</span>;
+          name = <span><HddOutlined /> {event.entity.name}</span>;
           type = this.localizedString('storage');
           break;
         case 'CONFIGURATION':
-          name = <span><Icon type="setting" /> {event.entity.name}</span>;
+          name = <span><SettingOutlined /> {event.entity.name}</span>;
           type = this.localizedString('configuration');
           break;
       }
@@ -314,7 +326,7 @@ export default class ActivitiesPanel extends localization.LocalizedReactComponen
                   )
                 }
                 key={index}
-                bodyStyle={{padding: 0}} style={{margin: 2, marginBottom: 5}}>
+                styles={{body: {padding: 0}}} style={{margin: 2, marginBottom: 5}}>
                 {this.renderEvent(event)}
               </Card>
             );
@@ -329,25 +341,25 @@ export default class ActivitiesPanel extends localization.LocalizedReactComponen
       return <LoadingView />;
     }
     if (this.props.issues.error) {
-      return <Alert type="warning" message={this.props.issues.error} />;
+      return <Alert type="warning" title={this.props.issues.error} />;
     }
     if (!this.props.pipelinesLibrary.loaded && this.props.pipelinesLibrary.pending) {
       return <LoadingView />;
     }
     if (this.props.pipelinesLibrary.error) {
-      return <Alert type="warning" message={this.props.pipelinesLibrary.error} />;
+      return <Alert type="warning" title={this.props.pipelinesLibrary.error} />;
     }
     if (!this.props.dockerRegistries.loaded && this.props.dockerRegistries.pending) {
       return <LoadingView />;
     }
     if (this.props.dockerRegistries.error) {
-      return <Alert type="warning" message={this.props.dockerRegistries.error} />;
+      return <Alert type="warning" title={this.props.dockerRegistries.error} />;
     }
     if (!this.props.authenticatedUserInfo.loaded && this.props.authenticatedUserInfo.pending) {
       return <LoadingView />;
     }
     if (this.props.authenticatedUserInfo.error) {
-      return (<Alert type="warning" message={this.props.authenticatedUserInfo.error} />);
+      return (<Alert type="warning" title={this.props.authenticatedUserInfo.error} />);
     }
     return (
       <div className={styles.container}>

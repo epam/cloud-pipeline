@@ -16,9 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Alert, Button, Checkbox, Icon, message} from 'antd';
-import Menu, {MenuItem} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
+import {Alert, Button, Checkbox, Dropdown, message} from 'antd';
+import {BarsOutlined, CaretRightOutlined, DownloadOutlined, FileOutlined, FolderOpenOutlined, LoadingOutlined} from '@ant-design/icons';
 import {observer} from 'mobx-react';
 import classNames from 'classnames';
 import CellProfilerPipeline from './pipeline';
@@ -164,37 +163,22 @@ class CellProfiler extends React.Component {
       }
       handleVisibility(false);
     };
-    const menu = (
-      <div>
-        <Menu
-          selectedKeys={[]}
-          onClick={onSelect}
-        >
-          <MenuItem key="New" disabled={disabled}>
-            <Icon type="file" /> New
-          </MenuItem>
-          <MenuItem key="Open" disabled={disabled}>
-            <Icon type="folder-open" /> Open
-          </MenuItem>
-          <MenuItem key="Save" disabled={disabled}>
-            <Icon type="download" /> Save
-          </MenuItem>
-          <MenuItem key="SaveAsNew" disabled={disabled}>
-            <Icon type="download" /> Save as new
-          </MenuItem>
-        </Menu>
-      </div>
-    );
+    const menuItems = [
+      {key: 'New', label: <><FileOutlined /> New</>, disabled},
+      {key: 'Open', label: <><FolderOpenOutlined /> Open</>, disabled},
+      {key: 'Save', label: <><DownloadOutlined /> Save</>, disabled},
+      {key: 'SaveAsNew', label: <><DownloadOutlined /> Save as new</>, disabled}
+    ];
     return (
       <Dropdown
-        overlay={menu}
+        menu={{items: menuItems, onClick: onSelect}}
         trigger={['click']}
-        onVisibleChange={handleVisibility}
+        onOpenChange={handleVisibility}
       >
         <Button
           size="small"
         >
-          <Icon type="bars" />
+          <BarsOutlined />
           <span>Pipeline</span>
           <OpenPipelineModal
             visible={openPipelineModalVisible}
@@ -351,10 +335,10 @@ class CellProfiler extends React.Component {
             disabled={this.analysisDisabled}
             onClick={() => this.runAnalysis()}
           >
-            <Icon type="caret-right" />
+            <CaretRightOutlined />
             {
               analysis.pending && (
-                <Icon type="loading" />
+                <LoadingOutlined />
               )
             }
           </Button>
@@ -366,7 +350,7 @@ class CellProfiler extends React.Component {
           analysis.pipeline.defineResultsAreEmpty && (
             <Alert
               className={styles.block}
-              message={(
+              title={(
                 <div>
                   To run evaluation please specify output at the <b>Define Results</b> section
                 </div>

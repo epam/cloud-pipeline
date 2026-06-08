@@ -17,8 +17,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
-import {computed} from 'mobx';
-import {Icon} from 'antd';
+import {computed, makeObservable} from 'mobx';
+import {LoadingOutlined, MinusCircleOutlined, PlusCircleOutlined} from '@ant-design/icons';
 import styles from './chart.css';
 
 const TITLE_HEIGHT = 26;
@@ -48,7 +48,13 @@ class Chart extends React.Component {
 
   state = {};
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      canZoomIn: computed,
+      canZoomOut: computed
+    });
+  }
   get canZoomIn () {
     let {start, end} = this.state;
     if (!start || !end) {
@@ -57,7 +63,6 @@ class Chart extends React.Component {
     return (end - start) > MINUTE;
   }
 
-  @computed
   get canZoomOut () {
     const {data} = this.props;
     let {start, end} = this.state;
@@ -88,7 +93,7 @@ class Chart extends React.Component {
     this.updateRange(this.props);
   }
 
-  componentWillReceiveProps (nextProps, nextContext) {
+  UNSAFE_componentWillReceiveProps (nextProps, nextContext) {
     const {start, end} = this.state;
     if (
       nextProps.followCommonScale &&
@@ -119,8 +124,7 @@ class Chart extends React.Component {
         className={styles.title}
         style={{height}}
       >
-        <Icon
-          type={'loading'}
+        <LoadingOutlined
           style={{opacity: data && data.pending ? 1 : 0, marginRight: 5}}
         />
         {title}
@@ -213,14 +217,12 @@ class Chart extends React.Component {
       <div
         className={styles.zoomControls}
       >
-        <Icon
+        <PlusCircleOutlined
           className={zoomInClassNames.join(' ')}
-          type={'plus-circle-o'}
           onClick={zoomIn}
         />
-        <Icon
+        <MinusCircleOutlined
           className={zoomOutClassNames.join(' ')}
-          type={'minus-circle-o'}
           onClick={zoomOut}
         />
       </div>

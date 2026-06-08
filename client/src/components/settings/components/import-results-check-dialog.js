@@ -113,9 +113,9 @@ class ImportResultsCheckDialog extends React.Component {
     return (
       <Modal
         title={false}
-        visible={visible}
+        open={visible}
         onCancel={onClose}
-        bodyStyle={{padding: '10px'}}
+        styles={{body: {padding: '10px'}}}
         width={'90vw'}
         footer={(
           <div className={styles.footer}>
@@ -134,24 +134,36 @@ class ImportResultsCheckDialog extends React.Component {
           </div>
         )}
       >
-        <Tabs activeKey={tab} onChange={this.onChangeTab}>
-          <Tabs.TabPane key="check" tab="Integrity check results">
-            <UserIntegrityCheck
-              mode="inline"
-              visible={visible}
-              users={users}
-              errors={errors}
-              onInitialized={this.initializeCheckForm}
-            />
-          </Tabs.TabPane>
-          <Tabs.TabPane key="logs" tab="Import logs">
-            <ImportResult
-              logs={logs}
-              mode="inline"
-              visible={visible}
-            />
-          </Tabs.TabPane>
-        </Tabs>
+        <Tabs
+          activeKey={tab}
+          onChange={this.onChangeTab}
+          items={[
+            {
+              key: 'check',
+              label: 'Integrity check results',
+              children: (
+                <UserIntegrityCheck
+                  mode="inline"
+                  visible={visible}
+                  users={users}
+                  errors={errors}
+                  onInitialized={this.initializeCheckForm}
+                />
+              )
+            },
+            {
+              key: 'logs',
+              label: 'Import logs',
+              children: (
+                <ImportResult
+                  logs={logs}
+                  mode="inline"
+                  visible={visible}
+                />
+              )
+            }
+          ]}
+        />
       </Modal>
     );
   }

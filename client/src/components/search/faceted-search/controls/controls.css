@@ -57,8 +57,8 @@
 }
 
 .hint code {
-  color: #c7254e;
-  background-color: #f9f2f4;
+  color: var(--cp-color-red);
+  background-color: var(--cp-color-bg-code);
 }
 
 .view-toggler {

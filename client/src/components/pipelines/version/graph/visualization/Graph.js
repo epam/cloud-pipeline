@@ -16,10 +16,10 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
-import {observable} from 'mobx';
+import {observable, makeObservable} from 'mobx';
 import classNames from 'classnames';
-import {Row, Col, Icon, message} from 'antd';
+import {Row, Col, message} from 'antd';
+import {ArrowsAltOutlined, MinusCircleOutlined, PlusCircleOutlined, ShrinkOutlined} from '@ant-design/icons';
 import styles from './Graph.css';
 import CodeFileCommitForm from '../../code/forms/CodeFileCommitForm';
 import PipelineFilesUpdate from '../../../../../models/pipelines/PipelineFilesUpdate';
@@ -27,7 +27,6 @@ import PipelineConfigurationUpdate
 from '../../../../../models/pipelines/PipelineConfigurationUpdate';
 import roleModel from '../../../../../utils/roleModel';
 
-@observer
 export default class Graph extends React.Component {
   static propTypes = {
     canEdit: PropTypes.bool,
@@ -56,7 +55,15 @@ export default class Graph extends React.Component {
     commitDialogVisible: false,
     configChanged: false
   };
-  @observable _error = false;
+
+  _error = false;
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      _error: observable
+    });
+  }
 
   get canModifySources () {
     if (this.props.pipeline.pending) {
@@ -65,7 +72,7 @@ export default class Graph extends React.Component {
     return this.props.canEdit &&
       roleModel.writeAllowed(this.props.pipeline.value) &&
       this.props.version === this.props.pipeline.value.currentVersion.name;
-  };
+  }
 
   toggleFullScreen = () => {
     this.setState({fullScreen: !this.state.fullScreen},
@@ -73,7 +80,7 @@ export default class Graph extends React.Component {
   };
   // Override 'onFullScreenChanged' method to perform
   // any after-fullscreen change logic.
-  onFullScreenChanged () {};
+  onFullScreenChanged () {}
   // override zoomIn method to perform 'zoom in' action
   // for specific graph visualization component
   zoomIn () {}
@@ -87,14 +94,14 @@ export default class Graph extends React.Component {
 
   base64Image () {
     return '';
-  };
+  }
 
   get imageSize () {
     return {
       width: 1,
       height: 1
     };
-  };
+  }
 
   updateData () {}
 
@@ -201,7 +208,7 @@ export default class Graph extends React.Component {
 
   getModifiedParameters () {
     return null;
-  };
+  }
 
   renderBottomGraphControls = () => {
     if (this._error) {
@@ -221,20 +228,23 @@ export default class Graph extends React.Component {
         className={classNames(styles.graphInterface, 'cp-primary')}
       >
         <Col className={styles.graphInterfaceButton}>
-          <Icon
-            onClick={() => this.zoomOut()}
-            className={getIconClassName(this.state.canZoomOut)} type="minus-circle-o" />
+          <MinusCircleOutlined onClick={() => this.zoomOut()}
+            className={getIconClassName(this.state.canZoomOut)} />
         </Col>
         <Col className={styles.graphInterfaceButton}>
-          <Icon
-            onClick={() => this.zoomIn()}
-            className={getIconClassName(this.state.canZoomIn)} type="plus-circle-o" />
+          <PlusCircleOutlined onClick={() => this.zoomIn()}
+            className={getIconClassName(this.state.canZoomIn)} />
         </Col>
         <Col className={styles.graphInterfaceButton}>
-          <Icon
-            onClick={this.toggleFullScreen}
-            className={getIconClassName(true)}
-            type={this.state.fullScreen ? 'shrink' : 'arrows-alt'} />
+          {this.state.fullScreen
+            ? <ShrinkOutlined
+                onClick={this.toggleFullScreen}
+                className={getIconClassName(true)}
+            />
+            : <ArrowsAltOutlined
+                onClick={this.toggleFullScreen}
+                className={getIconClassName(true)}
+            />}
         </Col>
       </Row>
     );
@@ -271,6 +281,7 @@ export default class Graph extends React.Component {
       </div>
     );
   }
+
   componentDidMount () {}
   componentWillUnmount () {}
 }

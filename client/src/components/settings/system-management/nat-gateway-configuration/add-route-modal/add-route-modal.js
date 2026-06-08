@@ -19,7 +19,6 @@ import PropTypes from 'prop-types';
 import {
   Checkbox,
   Modal,
-  Icon,
   Input,
   Button,
   message,
@@ -27,6 +26,7 @@ import {
   Spin,
   Select
 } from 'antd';
+import {QuestionCircleFilled, DeleteOutlined, PlusOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 
 import protocols from '../protocols';
@@ -57,14 +57,7 @@ function Hint ({className, style, children}) {
         </div>
       )}
     >
-      <Icon
-        type="question-circle"
-        className={className}
-        style={{
-          ...(style || {}),
-          cursor: 'pointer'
-        }}
-      />
+      <QuestionCircleFilled className={className} style={{ ...(style || {}), cursor: 'pointer' }} />
     </Popover>
   );
 }
@@ -383,7 +376,7 @@ export default class AddRouteForm extends React.Component {
     return (
       <Modal
         title="Add new route"
-        visible={visible}
+        open={visible}
         onCancel={onCancel}
         footer={this.renderFooter()}
       >
@@ -491,8 +484,8 @@ export default class AddRouteForm extends React.Component {
                       {
                         ports.length > 1 && (
                           <Button
-                            type="danger"
-                            icon="delete"
+                            danger
+                            icon={<DeleteOutlined />}
                             onClick={() => this.removePortInput(portIdentifier)}
                             style={{marginLeft: 5}}
                           />
@@ -519,7 +512,7 @@ export default class AddRouteForm extends React.Component {
               }
               <div className={styles.addButtonContainer}>
                 <Button
-                  icon="plus"
+                  icon={<PlusOutlined />}
                   onClick={this.addPortInput}
                 >
                   Add port

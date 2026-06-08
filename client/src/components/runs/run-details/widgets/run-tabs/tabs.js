@@ -1,5 +1,5 @@
 import React from 'react';
-import {Icon} from 'antd';
+import {BarsOutlined, CodeOutlined, CopyOutlined, ExportOutlined, FileTextOutlined, SettingOutlined} from '@ant-design/icons';
 import {isMlflowEngine, isNextflowEngine} from '../../utilities/helpers';
 import NextflowEngineTasks from '../../sections/nextflow-engine/tasks';
 import RunParametersSection from '../../sections/parameters';
@@ -16,14 +16,14 @@ const iconStyle = {fontSize: '1.1rem'};
 export const parametersTab = {
   tab: 'config',
   title: 'Configuration',
-  icon: <Icon type="setting" style={iconStyle} />,
+  icon: <SettingOutlined style={iconStyle} />,
   render: ({run}, refreshRun) => (<RunParametersSection run={run} refreshRun={refreshRun} />)
 };
 
 export const nextflowTasksTab = {
   tab: 'engine',
   title: 'Tasks',
-  icon: <Icon type="bars" style={iconStyle} />,
+  icon: <BarsOutlined style={iconStyle} />,
   render: ({run}) => (
     <InitializeWrapper run={run}>
       <NextflowEngineTasks run={run} />
@@ -47,7 +47,7 @@ function NavigateToMlFlowActionRenderer ({run, preferences}) {
       window.open(mlflowEndpoint, '_blank');
     };
     return (
-      <Icon type="export" style={{fontSize: 'large', 'cursor': 'pointer'}} onClick={onClick} />
+      <ExportOutlined style={{fontSize: 'large', 'cursor': 'pointer'}} onClick={onClick} />
     );
   }
   return null;
@@ -72,7 +72,7 @@ export const mlflowTab = {
 export const reportTab = {
   tab: 'reports',
   title: 'Reports',
-  icon: <Icon type="copy" style={iconStyle} />,
+  icon: <CopyOutlined style={iconStyle} />,
   render: ({run}) => (
     <InitializeWrapper run={run}>
       <Reports runId={run.id} />
@@ -83,7 +83,7 @@ export const reportTab = {
 export const logsTab = {
   tab: 'logs',
   title: 'Logs',
-  icon: <Icon type="file-text" style={iconStyle} />,
+  icon: <FileTextOutlined style={iconStyle} />,
   render: ({run, runTasks, pending, loaded}) => (
     <RunLogsSection
       run={run}
@@ -97,7 +97,7 @@ export const logsTab = {
 export const launchCommandTab = {
   tab: 'launchCommand',
   title: 'Launch Command',
-  icon: <Icon type="code-o" style={iconStyle} />,
+  icon: <CodeOutlined style={iconStyle} />,
   render: (
     {
       run,

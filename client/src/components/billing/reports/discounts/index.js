@@ -16,19 +16,25 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observable} from 'mobx';
+import {observable, makeObservable} from 'mobx';
 import {inject, observer, Provider as MobxProvider} from 'mobx-react';
 import {InputNumber, Modal, Slider} from 'antd';
 import * as discounts from './apply';
 import styles from './discounts.css';
 
 class DiscountsStore {
-  @observable compute = 0;
-  @observable storage = 0;
-  @observable computeRaw = 0;
-  @observable storageRaw = 0;
+  compute = 0;
+  storage = 0;
+  computeRaw = 0;
+  storageRaw = 0;
 
   constructor () {
+    makeObservable(this, {
+      compute: observable,
+      storage: observable,
+      computeRaw: observable,
+      storageRaw: observable
+    });
     this.compute = 0;
     this.storage = 0;
     this.computeRaw = 0;
@@ -154,7 +160,7 @@ class DiscountsModalComponent extends React.Component {
     return (
       <Modal
         onCancel={onClose}
-        visible={visible}
+        open={visible}
         footer={false}
         title="Configure discounts"
       >

@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {Popover} from 'antd';
 import DataStorageBadge from './data-storage-badge';
 import styles from './data-storage-list.css';
@@ -26,7 +26,13 @@ import {getStoragesByIdentifiers} from '../../../utils/limit-mounts/get-limit-mo
 const MAX_ITEMS_TO_SHOW = 5;
 
 class DataStorageList extends React.Component {
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      storages: computed
+    });
+  }
+
   get storages () {
     const {dataStorages, identifiers} = this.props;
     if (dataStorages.loaded) {

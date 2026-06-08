@@ -20,14 +20,14 @@ import {
   Alert,
   Button,
   Checkbox,
-  Icon,
   Input,
+  Menu,
   Select,
   Spin,
   Table,
   Tabs
 } from 'antd';
-import Menu, {MenuItem} from 'rc-menu';
+import {ExportOutlined, HomeOutlined, PlayCircleFilled, SearchOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import {sectionNames} from './utilities/variable-sections';
 import StatusIcon from '../../special/run-status-icon';
@@ -204,7 +204,7 @@ const NavigationPanel = ({impersonated}) => (
           )
         }
       >
-        <Icon type="home" />
+        <HomeOutlined />
       </div>
       <div
         className={
@@ -215,12 +215,12 @@ const NavigationPanel = ({impersonated}) => (
           )
         }
       >
-        <Icon type="play-circle" />
+        <PlayCircleFilled />
       </div>
       <div
         className={classNames('cp-navigation-menu-item')}
       >
-        <Icon type="search" />
+        <SearchOutlined />
       </div>
     </div>
   </div>
@@ -274,7 +274,7 @@ class ElementPreview extends React.Component {
         Primary
       </Button>
       <Button
-        type="danger"
+        danger
         className={styles.button}
       >
         Danger
@@ -336,22 +336,16 @@ class ElementPreview extends React.Component {
     return (
       <PreviewContainer>
         <div style={{marginBottom: 5}}>
-          <Menu>
-            <MenuItem style={{minWidth: 180}}>Pipeline</MenuItem>
-            <MenuItem
-              style={{minWidth: 180}}
-              className="rc-menu-item-active"
-            >
-              Storage (hovered)
-            </MenuItem>
-            <MenuItem style={{minWidth: 180}}>Folder</MenuItem>
-            <MenuItem
-              style={{minWidth: 180}}
-              className="ant-select-dropdown-menu-item-selected"
-            >
-              Configuration (selected)
-            </MenuItem>
-          </Menu>
+          <Menu
+            selectedKeys={['config']}
+            style={{minWidth: 180}}
+            items={[
+              {key: 'pipeline', label: 'Pipeline'},
+              {key: 'storage', label: 'Storage (hovered)', className: 'ant-menu-item-active'},
+              {key: 'folder', label: 'Folder'},
+              {key: 'config', label: 'Configuration (selected)'}
+            ]}
+          />
         </div>
         <Table
           style={{width: '100%'}}
@@ -378,7 +372,7 @@ class ElementPreview extends React.Component {
         <Input
           value="Input text"
           onChange={() => {}}
-          addonBefore={(<Icon type="export" />)}
+          addonBefore={(<ExportOutlined />)}
         />
       </div>
       <Input
@@ -420,25 +414,25 @@ class ElementPreview extends React.Component {
       <Alert
         type="info"
         showIcon
-        message="Info alert"
+        title="Info alert"
         className={styles.alert}
       />
       <Alert
         type="success"
         showIcon
-        message="Success alert"
+        title="Success alert"
         className={styles.alert}
       />
       <Alert
         type="warning"
         showIcon
-        message="Warning alert"
+        title="Warning alert"
         className={styles.alert}
       />
       <Alert
         type="error"
         showIcon
-        message="Error alert"
+        title="Error alert"
         className={styles.alert}
       />
     </PreviewContainer>
@@ -479,10 +473,11 @@ class ElementPreview extends React.Component {
         <Tabs
           activeKey="tab1"
           style={{margin: '0 10px'}}
-        >
-          <Tabs.TabPane key="tab1" tab="Active tab" />
-          <Tabs.TabPane key="tab2" tab="Another tab" />
-        </Tabs>
+          items={[
+            {key: 'tab1', label: 'Active tab', children: null},
+            {key: 'tab2', label: 'Another tab', children: null}
+          ]}
+        />
         <div className={classNames('cp-panel', styles.mainPanel)}>
           <div className={styles.elementName}>Panel</div>
           <TextPreview style={{margin: 10}} />

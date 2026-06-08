@@ -1,12 +1,13 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import {ExportOutlined, CodeOutlined, FolderOpenOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import styles from './run-endpoints.css';
-import {parseRunServiceUrlConfiguration} from '../../../../../../utils/multizone';
+import {
+  parseRunServiceUrlConfiguration} from '../../../../../../utils/multizone';
 import MultizoneUrl from '../../../../../special/multizone-url';
 import RunSSHButton from '../run-actions/run-ssh-button';
 import RunFsBrowserButton from '../run-actions/run-fs-browser-button';
-import {Icon} from 'antd';
 
 function RunEndpoints (props) {
   const {
@@ -35,13 +36,13 @@ function RunEndpoints (props) {
             dropDownIconStyle={{marginTop: 5}}
             className={styles.runEndpoint}
           >
-            <Icon style={{marginRight: 5}} type="export" />
+            <ExportOutlined style={{marginRight: 5}} />
             <span>{regionedUrl.name}</span>
           </MultizoneUrl>
         ))
       }
-      <RunSSHButton run={run} className={styles.runEndpoint} icon="code-o" />
-      <RunFsBrowserButton run={run} className={styles.runEndpoint} icon="folder-open" />
+      <RunSSHButton run={run} className={styles.runEndpoint} icon={CodeOutlined} />
+      <RunFsBrowserButton run={run} className={styles.runEndpoint} icon={FolderOpenOutlined} />
     </div>
   );
 }

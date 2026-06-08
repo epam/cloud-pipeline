@@ -16,21 +16,22 @@
 
 import React from 'react';
 import classNames from 'classnames';
-import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {computed, makeObservable} from 'mobx';
 import {
   Button,
   Select,
   Dropdown,
-  Icon,
   Pagination,
-  Menu,
   Input,
   Spin,
   Alert,
   message,
   Modal
 } from 'antd';
+import {EllipsisOutlined} from '@ant-design/icons';
 import measureTextWidth from '../../../../utils/measure-text-width';
 import displayDate from '../../../../utils/displayDate';
 import highlightText from '../../highlightText';
@@ -86,6 +87,14 @@ class TicketsList extends React.Component {
     newTicketPending: false
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      enableControls: computed,
+      predefinedLabels: computed
+    });
+  }
+
   componentDidMount () {
     this.fetchCurrentPage();
   }
@@ -96,7 +105,6 @@ class TicketsList extends React.Component {
     }
   }
 
-  @computed
   get enableControls () {
     const {authenticatedUserInfo} = this.props;
     if (authenticatedUserInfo && authenticatedUserInfo.loaded) {
@@ -105,7 +113,6 @@ class TicketsList extends React.Component {
     return false;
   }
 
-  @computed
   get predefinedLabels () {
     const {preferences} = this.props;
     if (preferences && preferences.loaded) {
@@ -405,26 +412,15 @@ class TicketsList extends React.Component {
     const getLabel = (labels) => (labels || [])
       .find(label => this.predefinedLabels.includes(label));
     const currentLabel = getLabel(ticket.labels);
-    const menu = (
-      <Menu
-        onClick={({key}) => this.onSelectNewStatus(key, ticket)}
-        selectedKeys={[]}
-        style={{cursor: 'default', minWidth: '120px'}}
-      >
-        <Menu.ItemGroup title="Select new status">
-          <Menu.Divider />
-          {
-            this.predefinedLabels
-              .filter(label => label !== currentLabel)
-              .map(label => (
-                <Menu.Item key={label} style={{cursor: 'pointer'}}>
-                  {label}
-                </Menu.Item>
-              ))
-          }
-        </Menu.ItemGroup>
-      </Menu>
-    );
+    const statusMenuItems = [
+      {
+        type: 'group',
+        label: 'Select new status',
+        children: this.predefinedLabels
+          .filter(label => label !== currentLabel)
+          .map(label => ({key: label, label, style: {cursor: 'pointer'}}))
+      }
+    ];
     return (
       <div
         key={ticket.iid}
@@ -476,15 +472,16 @@ class TicketsList extends React.Component {
           {
             this.enableControls && (
               <Dropdown
-                overlay={menu}
+                menu={{
+                  items: statusMenuItems,
+                  onClick: ({key}) => this.onSelectNewStatus(key, ticket),
+                  style: {cursor: 'default', minWidth: '120px'}
+                }}
                 trigger={['click']}
                 onClick={e => e.stopPropagation()}
                 disabled={pending}
               >
-                <Icon
-                  type="ellipsis"
-                  className={styles.controlsIcon}
-                />
+                <EllipsisOutlined className={styles.controlsIcon} />
               </Dropdown>
             )
           }
@@ -678,7 +675,7 @@ class TicketsList extends React.Component {
           error && (
             (
               <Alert
-                message={`Error retrieving tickets: ${error}`}
+                title={`Error retrieving tickets: ${error}`}
                 type="error"
               />
             )
@@ -692,7 +689,7 @@ class TicketsList extends React.Component {
               {this.renderTableHeader()}
               <Spin
                 spinning={pending}
-                wrapperClassName={styles.tableSpin}
+                classNames={{root: styles.tableSpin}}
               >
                 {tickets.map(this.renderTicket)}
               </Spin>

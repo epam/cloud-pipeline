@@ -17,7 +17,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Button, Icon} from 'antd';
+import {Button} from 'antd';
+import {DeleteOutlined, DownOutlined, PictureOutlined, UpOutlined} from '@ant-design/icons';
 import {observer} from 'mobx-react';
 import CellProfilerParameter from './parameter';
 import styles from './cell-profiler.css';
@@ -51,8 +52,8 @@ function Circle ({className, pending, empty}) {
 function CellProfilerModuleHeaderRenderer (props) {
   const {
     cpModule,
-    movable,
-    removable,
+    movable = true,
+    removable = true,
     hasErrors = false
   } = props;
   if (!cpModule) {
@@ -144,21 +145,7 @@ function CellProfilerModuleHeaderRenderer (props) {
         {cpModule.displayName}
         {
           hasOutputImage && (
-            <Icon
-              type="picture"
-              className={
-                classNames({
-                  'cp-text-not-important': !selected,
-                  'cp-primary': selected
-                })
-              }
-              style={{
-                cursor: 'pointer',
-                marginLeft: 5,
-                fontWeight: 'normal'
-              }}
-              onClick={onSelectOutput}
-            />
+            <PictureOutlined className={ classNames({ 'cp-text-not-important': !selected, 'cp-primary': selected }) } style={{ cursor: 'pointer', marginLeft: 5, fontWeight: 'normal' }} onClick={onSelectOutput} />
           )
         }
       </b>
@@ -170,9 +157,7 @@ function CellProfilerModuleHeaderRenderer (props) {
             disabled={cpModule.isFirst}
             onClick={moveUp}
           >
-            <Icon
-              type="up"
-            />
+            <UpOutlined />
           </Button>
         )
       }
@@ -184,9 +169,7 @@ function CellProfilerModuleHeaderRenderer (props) {
             disabled={cpModule.isLast}
             onClick={moveDown}
           >
-            <Icon
-              type="down"
-            />
+            <DownOutlined />
           </Button>
         )
       }
@@ -195,12 +178,10 @@ function CellProfilerModuleHeaderRenderer (props) {
           <Button
             className={styles.action}
             size="small"
-            type="danger"
+            danger
             onClick={remove}
           >
-            <Icon
-              type="delete"
-            />
+            <DeleteOutlined />
           </Button>
         )
       }
@@ -235,11 +216,6 @@ CellProfilerModuleHeaderRenderer.propTypes = {
   cpModule: PropTypes.object,
   removable: PropTypes.bool,
   movable: PropTypes.bool
-};
-
-CellProfilerModuleHeaderRenderer.defaultProps = {
-  removable: true,
-  movable: true
 };
 
 const CellProfilerModule = observer(CellProfilerModuleRenderer);

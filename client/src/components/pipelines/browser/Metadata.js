@@ -16,7 +16,8 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {withRouter} from '../../../utils/with-router';
+import {computed, observable, makeObservable} from 'mobx';
 import classNames from 'classnames';
 import connect from '../../../utils/connect';
 import folders from '../../../models/folders/Folders';
@@ -28,15 +29,28 @@ import MetadataEntityLoadExternal from '../../../models/folderMetadata/MetadataE
 import {
   Button,
   Checkbox,
-  Icon,
+  Dropdown,
   Input,
   message,
   Modal,
   Pagination,
-  Row
+  Row,
+  Space
 } from 'antd';
-import Menu, {MenuItem, Divider} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
+import {
+  AppstoreOutlined,
+  CaretDownOutlined,
+  CaretUpOutlined,
+  CloseOutlined,
+  CloudUploadOutlined,
+  DeleteOutlined,
+  DownOutlined,
+  FilterOutlined,
+  LoadingOutlined,
+  PlusOutlined,
+  SettingOutlined,
+  UploadOutlined
+} from '@ant-design/icons';
 import {
   ContentMetadataPanel,
   CONTENT_PANEL_KEY,
@@ -87,6 +101,7 @@ import {
   getPredefinedFilterForItem,
   parseScheme
 } from './metadata-controls/predefined-filter-utilities';
+import OldAntIconsResolver from '../../../utils/old-ant-icons-resolver';
 
 const AutoFillEntitiesMarker = autoFillEntities.AutoFillEntitiesMarker;
 const AutoFillEntitiesActions = autoFillEntities.AutoFillEntitiesActions;
@@ -186,7 +201,9 @@ function makeCurrentOrderSort (array) {
     // Router renderer
     componentParameters = params.params;
     filters = routing && routing.location
-      ? metadataFilterUtilities.parse(routing.location.query)
+      ? metadataFilterUtilities.parse(
+        Object.fromEntries(new URLSearchParams(routing.location.search || ''))
+      )
       : [];
   }
   return {
@@ -208,7 +225,7 @@ function makeCurrentOrderSort (array) {
 @ngsProjectMachineRuns
 @ngsProjectSamples
 @observer
-export default class Metadata extends React.Component {
+class Metadata extends React.Component {
   static propTypes = {
     onSelectItems: PropTypes.func,
     onNavigate: PropTypes.func,
@@ -217,7 +234,7 @@ export default class Metadata extends React.Component {
     readOnly: PropTypes.bool
   };
 
-  @observable keys;
+  keys;
 
   metadataRequest = {};
   externalMetadataEntity = {};
@@ -264,7 +281,19 @@ export default class Metadata extends React.Component {
 
   uploadButton;
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      keys: observable,
+      entityTypes: computed,
+      transferJobId: computed,
+      transferJobVersion: computed,
+      currentClassEntityFields: computed,
+      currentClassEntityPathFields: computed,
+      currentMetadataClassId: computed
+    });
+  }
+
   get entityTypes () {
     const {entityFields, metadataClasses} = this.props;
     if (entityFields.loaded && metadataClasses.loaded) {
@@ -285,7 +314,6 @@ export default class Metadata extends React.Component {
     return [];
   }
 
-  @computed
   get transferJobId () {
     const {preferences} = this.props;
     if (preferences.loaded) {
@@ -294,7 +322,6 @@ export default class Metadata extends React.Component {
     return null;
   }
 
-  @computed
   get transferJobVersion () {
     const {preferences} = this.props;
     if (preferences.loaded) {
@@ -303,7 +330,6 @@ export default class Metadata extends React.Component {
     return null;
   }
 
-  @computed
   get currentClassEntityFields () {
     if (!this.keys) {
       return [];
@@ -320,7 +346,6 @@ export default class Metadata extends React.Component {
     return [];
   }
 
-  @computed
   get currentClassEntityPathFields () {
     if (!this.keys) {
       return [];
@@ -337,7 +362,6 @@ export default class Metadata extends React.Component {
     return [];
   }
 
-  @computed
   get currentMetadataClassId () {
     const [metadataClassObj] = this.entityTypes
       .map(e => e.metadataClass)
@@ -667,14 +691,7 @@ export default class Metadata extends React.Component {
           border: 'none'
         }}
       >
-        <Icon
-          type="filter"
-          className={
-            classNames(
-              {'cp-primary': !!values || (key === 'createdDate' && (startDateFrom || endDateTo))}
-            )
-          }
-        />
+        <FilterOutlined className={classNames({'cp-primary': !!values || (key === 'createdDate' && (startDateFrom || endDateTo))})} />
       </Button>
     );
     if (/^date$/i.test(this.getColumnType(key))) {
@@ -1329,6 +1346,7 @@ export default class Metadata extends React.Component {
       );
     }
   };
+
   getCurrentSelection = () => {
     const {cellsSelection} = this.state;
     if (cellsSelection) {
@@ -1351,6 +1369,7 @@ export default class Metadata extends React.Component {
     }
     return undefined;
   }
+
   getSpreadSelection = () => {
     const selection = this.getCurrentSelection();
     if (selection && selection.spread) {
@@ -1373,6 +1392,7 @@ export default class Metadata extends React.Component {
     }
     return undefined;
   }
+
   handleStartSelection = (opts) => {
     if (this.props.readOnly || this.state.filterComponentVisible) {
       return;
@@ -1549,10 +1569,12 @@ export default class Metadata extends React.Component {
       });
     }
   }
+
   isHoveredCell = (row, column) => {
     const {hoveredCell} = this.state;
     return hoveredCell && hoveredCell.row === row && hoveredCell.column === column;
   }
+
   handleCellSelection = (opts) => {
     if (this.props.readOnly || this.state.filterComponentVisible) {
       return;
@@ -1654,6 +1676,7 @@ export default class Metadata extends React.Component {
       }
     }
   }
+
   resetSelection = (e) => {
     if (e.key === 'Escape') {
       this.setState({
@@ -1663,9 +1686,11 @@ export default class Metadata extends React.Component {
       });
     }
   }
+
   clearHovering = () => {
     this.setState({hoveredCell: undefined});
   }
+
   clearSelection = () => {
     this.setState({
       cellsSelection: undefined,
@@ -1843,6 +1868,7 @@ export default class Metadata extends React.Component {
       <ContentMetadataPanel
         className={'cp-transparent-background'}
         style={{flex: 1, overflow: 'auto'}}
+        attributesVisible={this.state.metadata}
         onPanelClose={onPanelClose}>
         <div key={CONTENT_PANEL_KEY}>
           {this.renderTableActions()}
@@ -1960,88 +1986,66 @@ export default class Metadata extends React.Component {
             break;
         }
       };
-      const menuItems = [];
-      menuItems.push((
-        <MenuItem
-          key={Actions.addMetadata}
-          className={classNames(styles.menuItem, Actions.addMetadata)}
-        >
-          <Icon
-            type="plus"
-            style={{marginRight: 5}}
-          />
-          Add instance
-        </MenuItem>
-      ));
-      menuItems.push((
-        <MenuItem
-          key={Actions.upload}
-          className={classNames(styles.menuItem, Actions.upload)}
-        >
-          <Icon
-            type="upload"
-            style={{marginRight: 5}}
-          />
-          Upload metadata
-        </MenuItem>
-      ));
+      const menuItems = [
+        {
+          key: Actions.addMetadata,
+          className: classNames(styles.menuItem, Actions.addMetadata),
+          label: (
+            <span>
+              <PlusOutlined style={{marginRight: 5}} />
+              Add instance
+            </span>
+          )
+        },
+        {
+          key: Actions.upload,
+          className: classNames(styles.menuItem, Actions.upload),
+          label: (
+            <span>
+              <UploadOutlined style={{marginRight: 5}} />
+              Upload metadata
+            </span>
+          )
+        }
+      ];
       if (
         this.transferJobId &&
         this.transferJobVersion &&
         this.currentClassEntityPathFields.length > 0
       ) {
-        menuItems.push((
-          <MenuItem
-            key={Actions.transfer}
-            className={classNames(styles.menuItem, Actions.transfer)}
-          >
-            <Icon
-              type="cloud-upload-o"
-              style={{marginRight: 5}}
-            />
-            Transfer to the cloud
-          </MenuItem>
-        ));
-        menuItems.push((
-          <Divider key="divider-1" />
-        ));
+        menuItems.push({
+          key: Actions.transfer,
+          className: classNames(styles.menuItem, Actions.transfer),
+          label: (
+            <span>
+              <CloudUploadOutlined style={{marginRight: 5}} />
+              Transfer to the cloud
+            </span>
+          )
+        });
+        menuItems.push({type: 'divider', key: 'divider-1'});
       }
-      menuItems.push((
-        <MenuItem
-          key={Actions.deleteClass}
-          className={classNames(styles.menuItem, Actions.deleteClass, 'cp-danger')}
-        >
-          <Icon
-            type="delete"
-            style={{marginRight: 5}}
-          />
-          Delete class
-        </MenuItem>
-      ));
-      menuItems.push((
-        <Divider key="divider-2" />
-      ));
-      menuItems.push((
-        <MenuItem
-          key={Actions.showAttributes}
-          className={classNames(styles.menuItem, Actions.showAttributes)}
-        >
-          {
-            this.state.metadata ? 'Hide attributes' : 'Show attributes'
-          }
-        </MenuItem>
-      ));
-      const menu = (
-        <Menu
-          onClick={triggerMenuItem}
-          selectedKeys={[]}
-        >
-          {menuItems}
-        </Menu>
+      menuItems.push(
+        {
+          key: Actions.deleteClass,
+          className: classNames(styles.menuItem, Actions.deleteClass, 'cp-danger'),
+          label: (
+            <span>
+              <DeleteOutlined style={{marginRight: 5}} />
+              Delete class
+            </span>
+          )
+        },
+        {type: 'divider', key: 'divider-2'},
+        {
+          key: Actions.showAttributes,
+          className: classNames(styles.menuItem, Actions.showAttributes),
+          label: this.state.metadata ? 'Hide attributes' : 'Show attributes'
+        }
       );
       return (
         <Dropdown
-          overlay={menu}
+          menu={{items: menuItems, onClick: triggerMenuItem}}
           trigger={['click']}
         >
           <Button
@@ -2049,9 +2053,7 @@ export default class Metadata extends React.Component {
             size="small"
             style={{lineHeight: 1, margin: '0 0 0 5px'}}
           >
-            <Icon
-              type="setting"
-            />
+            <SettingOutlined />
           </Button>
         </Dropdown>
       );
@@ -2112,9 +2114,9 @@ export default class Metadata extends React.Component {
           orderNumber = <sup style={{marginRight: 5}}>{number}</sup>;
         }
         if (orderBy.desc) {
-          icon = <Icon style={iconStyle} type="caret-down" />;
+          icon = <CaretDownOutlined style={iconStyle} />;
         } else {
-          icon = <Icon style={iconStyle} type="caret-up" />;
+          icon = <CaretUpOutlined style={iconStyle} />;
         }
       }
       return (
@@ -2239,7 +2241,7 @@ export default class Metadata extends React.Component {
             const item = props.original;
             const condition = currentMetadataConditions[props.index];
             const icon = index === 0 && condition && condition.scheme && condition.scheme.icon
-              ? (<Icon type={condition.scheme.icon} style={{marginRight: 5}} />)
+              ? (<OldAntIconsResolver type={condition.scheme.icon} style={{marginRight: 5}} />)
               : undefined;
             if (this.isSampleSheetColumn(key)) {
               return (
@@ -2324,7 +2326,7 @@ export default class Metadata extends React.Component {
           })
         };
       })];
-  };
+  }
 
   renderTableActions = () => {
     const {
@@ -2355,9 +2357,7 @@ export default class Metadata extends React.Component {
             onClick={this.onClearFilters}
             style={{margin: '0 5px'}}
           >
-            <Icon
-              type="close"
-            />
+            <CloseOutlined />
             Clear filters
           </Button>
         );
@@ -2401,48 +2401,34 @@ export default class Metadata extends React.Component {
             break;
         }
       };
-      const menuItems = [(
-        <MenuItem
-          key={Actions.clearSelection}
-          className={classNames(styles.menuItem, Actions.clearSelection)}
-        >
-          Clear selection
-        </MenuItem>
-      )];
+      const menuItems = [
+        {
+          key: Actions.clearSelection,
+          className: classNames(styles.menuItem, Actions.clearSelection),
+          label: 'Clear selection'
+        }
+      ];
       if (
         roleModel.writeAllowed(this.props.folder.value) &&
         !this.props.readOnly &&
         roleModel.isManager.entities(this)
       ) {
-        menuItems.push((
-          <MenuItem
-            key={Actions.copySelection}
-            className={classNames(styles.menuItem, Actions.copySelection)}
-          >
-            Copy
-          </MenuItem>
-        ));
-        menuItems.push((<Divider key="divider" />));
-        menuItems.push((
-          <MenuItem
-            key={Actions.delete}
-            className={classNames(styles.menuItem, Actions.delete, 'cp-danger')}
-          >
-            Delete
-          </MenuItem>
-        ));
+        menuItems.push(
+          {
+            key: Actions.copySelection,
+            className: classNames(styles.menuItem, Actions.copySelection),
+            label: 'Copy'
+          },
+          {type: 'divider', key: 'divider'},
+          {
+            key: Actions.delete,
+            className: classNames(styles.menuItem, Actions.delete, 'cp-danger'),
+            label: 'Delete'
+          }
+        );
       }
-      const menu = (
-        <Menu
-          onClick={triggerMenuItem}
-          style={{width: 150}}
-          selectedKeys={[]}
-        >
-          {menuItems}
-        </Menu>
-      );
       return (
-        <Button.Group style={{margin: '0 5px'}}>
+        <Space.Compact style={{margin: '0 5px'}}>
           <Button
             size="small"
             onClick={this.handleClickShowSelectedItems}
@@ -2454,16 +2440,16 @@ export default class Metadata extends React.Component {
             }
           </Button>
           <Dropdown
-            overlay={menu}
+            menu={{items: menuItems, onClick: triggerMenuItem, style: {width: 150}}}
             trigger={['click']}
           >
             <Button
               size="small"
             >
-              <Icon type="down" />
+              <DownOutlined />
             </Button>
           </Dropdown>
-        </Button.Group>
+        </Space.Compact>
       );
     };
     const renderRunButton = () => {
@@ -2510,7 +2496,7 @@ export default class Metadata extends React.Component {
             >
               {totalRecordsInfo}
               {
-                loading && (<Icon type="loading" />)
+                loading && (<LoadingOutlined />)
               }
             </span>
           }
@@ -2623,7 +2609,7 @@ export default class Metadata extends React.Component {
               type={ItemTypes.metadata}
               textEditableField={this.props.metadataClass}
               readOnlyEditableField
-              icon="appstore-o"
+              icon={AppstoreOutlined}
               iconClassName={styles.editableControl}
               subject={this.props.folder.value}
               onNavigate={this.props.onNavigate}
@@ -2695,7 +2681,7 @@ export default class Metadata extends React.Component {
         />
       </div>
     );
-  };
+  }
 
   getParents = async () => {
     const {folderId, pipelinesLibrary} = this.props;
@@ -2753,7 +2739,7 @@ export default class Metadata extends React.Component {
       .then(() => this.fetchDefaultMetadataProperties());
     document.addEventListener('keydown', this.resetSelection);
     window.addEventListener('mouseup', this.handleFinishSelection);
-  };
+  }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
     const metadataClassChanged = prevProps.metadataClass !== this.props.metadataClass;
@@ -2938,7 +2924,7 @@ export default class Metadata extends React.Component {
       });
       return false;
     }
-  };
+  }
 
   componentWillUnmount () {
     this.resetSelectedItemsTimeout && clearTimeout(this.resetSelectedItemsTimeout);
@@ -2946,3 +2932,5 @@ export default class Metadata extends React.Component {
     window.removeEventListener('mouseup', this.handleFinishSelection);
   }
 }
+
+export default withRouter(Metadata);

@@ -19,9 +19,9 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {
   Checkbox,
-  Icon,
   Slider
 } from 'antd';
+import {LockOutlined, UnlockOutlined} from '@ant-design/icons';
 import ColorPicker from '../../color-picker';
 import styles from './hcs-image-controls.css';
 
@@ -42,16 +42,25 @@ function LockCheckbox (
     }
   };
   return (
-    <Icon
-      style={{
-        cursor: 'pointer',
-        fontSize: 'larger',
-        opacity: locked && !disabled ? 1 : 0.25,
-        ...(style || {})
-      }}
-      type={locked ? 'lock' : 'unlock'}
-      onClick={onClick}
-    />
+    locked
+      ? <LockOutlined
+          style={{
+            cursor: 'pointer',
+            fontSize: 'larger',
+            opacity: locked && !disabled ? 1 : 0.25,
+            ...(style || {})
+          }}
+          onClick={onClick}
+        />
+      : <UnlockOutlined
+          style={{
+            cursor: 'pointer',
+            fontSize: 'larger',
+            opacity: locked && !disabled ? 1 : 0.25,
+            ...(style || {})
+          }}
+          onClick={onClick}
+        />
   );
 }
 

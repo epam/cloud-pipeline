@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {
@@ -91,21 +91,29 @@ export default class DataStorageCodeForm extends React.Component {
   };
 
   _modifiedCode = null;
-  @observable
   _originalCode = null;
-  @observable
   _fileContents = null;
-  @observable
   _generateDownloadUrl = null;
-  @observable
   _errors = null;
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      _originalCode: observable,
+      _fileContents: observable,
+      _generateDownloadUrl: observable,
+      _errors: observable,
+      codeTruncated: computed,
+      downloadUrl: computed,
+      errors: computed,
+      isEditable: computed
+    });
+  }
+
   get codeTruncated () {
     return this._fileContents && this._fileContents.loaded && this._fileContents.value.truncated;
   }
 
-  @computed
   get downloadUrl () {
     if (this._generateDownloadUrl && this._generateDownloadUrl.loaded) {
       return this._generateDownloadUrl.value.url;
@@ -113,12 +121,11 @@ export default class DataStorageCodeForm extends React.Component {
     return undefined;
   }
 
-  @computed
   get errors () {
     return this._errors;
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.file && nextProps.file !== this.props.file) {
       this._generateDownloadUrl = new GenerateDownloadUrlRequest(
         nextProps.storageId,
@@ -240,7 +247,7 @@ export default class DataStorageCodeForm extends React.Component {
             </span>
             {this.props.onSaveDisclaimer ? (
               <Alert
-                message={this.props.onSaveDisclaimer}
+                title={this.props.onSaveDisclaimer}
                 style={{
                   marginTop: '20px',
                   marginBottom: '-10px',
@@ -309,7 +316,6 @@ export default class DataStorageCodeForm extends React.Component {
     this.setState({editTabularAsText});
   };
 
-  @computed
   get isEditable () {
     return !!(this._fileContents.loaded && !this.codeTruncated && this.props.file.editable);
   }
@@ -446,7 +452,7 @@ export default class DataStorageCodeForm extends React.Component {
         )
         : (
           <Alert
-            message={`Error parsing tabular file ${this.props.file.name}:
+            title={`Error parsing tabular file ${this.props.file.name}:
               ${this._tableData.message}`}
             type="error"
           />
@@ -558,7 +564,7 @@ export default class DataStorageCodeForm extends React.Component {
             this.errors.map(error => (
               <Alert
                 key={error}
-                message={error}
+                title={error}
                 type="error"
                 style={{marginTop: '5px'}}
               />
@@ -569,15 +575,15 @@ export default class DataStorageCodeForm extends React.Component {
       : null;
     return (
       <Modal
-        visible={!!this.props.file}
+        open={!!this.props.file}
         onCancel={this.onClose}
         width="80%"
         title={title}
         closable={false}
-        maskClosable={false}
+        mask={{closable: false}}
         footer={false}
         style={{top: 20}}
-        bodyStyle={{padding: 8}}
+        styles={{body: {padding: 8}}}
       >
         <Spin spinning={this._fileContents && this._fileContents.pending}>
           <div className={`${styles.editorContainer} ${tableClassName}`}>

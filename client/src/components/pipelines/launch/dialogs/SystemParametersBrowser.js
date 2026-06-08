@@ -15,18 +15,20 @@
  */
 
 import React, {Component} from 'react';
-import {observer, inject} from 'mobx-react';
-import {computed} from 'mobx';
+import {
+  observer,
+  inject} from 'mobx-react';
+import {computed, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
 import {
   Alert,
   Button,
-  Icon,
   Input,
   Modal,
   Row,
   Table
 } from 'antd';
+import {CheckCircleFilled} from '@ant-design/icons';
 import roleModel from '../../../../utils/roleModel';
 import LoadingView from '../../../special/LoadingView';
 import styles from './Browser.css';
@@ -74,7 +76,15 @@ export default class SystemParametersBrowser extends Component {
       this.state.selectedParameters.filter(p => p.name === parameter.name).length > 0;
   };
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      authenticatedUserRolesNames: computed,
+      isAdmin: computed,
+      systemParameters: computed
+    });
+  }
+
   get authenticatedUserRolesNames () {
     if (!this.props.authenticatedUserInfo.loaded) {
       return [];
@@ -85,7 +95,6 @@ export default class SystemParametersBrowser extends Component {
     return roles.map(r => r.name);
   }
 
-  @computed
   get isAdmin () {
     if (!this.props.authenticatedUserInfo.loaded) {
       return false;
@@ -96,7 +105,6 @@ export default class SystemParametersBrowser extends Component {
     return admin;
   }
 
-  @computed
   get systemParameters () {
     const {runDefaultParameters} = this.props;
     if (!runDefaultParameters.loaded) {
@@ -151,7 +159,7 @@ export default class SystemParametersBrowser extends Component {
       authenticatedUserInfo
     } = this.props;
     if (runDefaultParameters.error) {
-      return <Alert type="error" message={runDefaultParameters.error} />;
+      return <Alert type="error" title={runDefaultParameters.error} />;
     }
     if (
       (authenticatedUserInfo.pending && !authenticatedUserInfo.loaded) ||
@@ -176,7 +184,7 @@ export default class SystemParametersBrowser extends Component {
                 }}>
                   {
                     this.isParameterSelected(parameter) &&
-                    <Icon type="check-circle" style={{width: 20}} />
+                    <CheckCircleFilled style={{width: 20}} />
                   }
                   {name}
                 </Row>
@@ -195,7 +203,7 @@ export default class SystemParametersBrowser extends Component {
             }}>
               {
                 this.isParameterSelected(parameter) &&
-                <Icon type="check-circle" style={{width: 20}} />
+                <CheckCircleFilled style={{width: 20}} />
               }
               {name}
             </span>
@@ -222,7 +230,7 @@ export default class SystemParametersBrowser extends Component {
           dataSource={this.currentParameters}
           columns={columns}
           showHeader
-          onRowClick={(parameter) => this.onSelect(parameter)}
+          onRow={(parameter) => ({ onClick: () => this.onSelect(parameter) })}
           rowKey="name"
           rowClassName={() => styles.parameterRow}
           pagination={false}
@@ -238,7 +246,7 @@ export default class SystemParametersBrowser extends Component {
       <Modal
         width="50%"
         title="Select system parameter to override"
-        visible={this.props.visible}
+        open={this.props.visible}
         onCancel={this.onCancel}
         footer={
           <Row type="flex" justify="end">
@@ -269,7 +277,7 @@ export default class SystemParametersBrowser extends Component {
     );
   }
 
-  componentWillReceiveProps () {
+  UNSAFE_componentWillReceiveProps () {
     this.setState({
       selectedParameters: [],
       searchString: null

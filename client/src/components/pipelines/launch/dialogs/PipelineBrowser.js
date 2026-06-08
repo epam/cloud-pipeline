@@ -16,12 +16,20 @@
 
 import React from 'react';
 import {observer, inject} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import connect from '../../../../utils/connect';
 import localization from '../../../../utils/localization';
 import PropTypes from 'prop-types';
 import SplitPane from 'react-split-pane';
-import {Modal, Button, Row, Col, Alert, Icon, Tree, Input} from 'antd';
+import {Modal, Button, Row, Col, Alert, Tree, Input} from 'antd';
+import {
+  CloudOutlined,
+  FolderOutlined,
+  ForkOutlined,
+  HddOutlined,
+  InboxOutlined,
+  TagOutlined
+} from '@ant-design/icons';
 import Folder from '../../browser/Folder';
 import Pipeline from '../../browser/Pipeline';
 import FireCloudBrowser from '../../browser/FireCloudBrowser';
@@ -145,31 +153,39 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
     }
   };
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      libraryItems: computed,
+      fireCloudItems: computed
+    });
+  }
+
   renderItemTitle (item) {
-    let icon;
+    let IconComponent;
     const style = {};
     switch (item.type) {
-      case ItemTypes.pipeline: icon = 'fork'; break;
+      case ItemTypes.pipeline: IconComponent = ForkOutlined; break;
       case ItemTypes.versionedStorage:
         style.color = '#2796dd';
-        icon = 'inbox';
+        IconComponent = InboxOutlined;
         break;
-      case ItemTypes.folder: icon = 'folder'; break;
-      case ItemTypes.version: icon = 'tag'; break;
+      case ItemTypes.folder: IconComponent = FolderOutlined; break;
+      case ItemTypes.version: IconComponent = TagOutlined; break;
       case ItemTypes.storage:
         if (item.storageType && item.storageType.toLowerCase() !== 'nfs') {
-          icon = 'inbox';
+          IconComponent = InboxOutlined;
         } else {
-          icon = 'hdd';
+          IconComponent = HddOutlined;
         }
         break;
       case ItemTypes.fireCloud:
-        icon = 'cloud-o';
+        IconComponent = CloudOutlined;
         style.color = '#2796dd';
         style.fontWeight = 'bold';
         break;
       case ItemTypes.fireCloudMethod:
-        icon = 'fork';
+        IconComponent = ForkOutlined;
         style.color = '#2796dd';
         style.fontWeight = 'bold';
         break;
@@ -195,41 +211,29 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
       <span
         id={`pipelines-library-tree-node-${item.key}-name`}
         className={styles.treeItemTitle}>
-        {icon && <Icon type={icon} style={style} />}{name}
+        {IconComponent && <IconComponent style={style} />}{name}
       </span>
     );
   }
 
-  generateTreeItems (items) {
+  getTreeData (items) {
     if (!items) {
       return [];
     }
     return formatTreeItems(items, {preferences: this.props.preferences})
-      .map(item => {
-        if (item.isLeaf) {
-          return (
-            <Tree.TreeNode
-              className={`pipelines-library-tree-node-${item.key}`}
-              title={this.renderItemTitle(item)}
-              key={item.key}
-              isLeaf={item.isLeaf} />
-          );
-        } else {
-          return (
-            <Tree.TreeNode
-              className={`pipelines-library-tree-node-${item.key}`}
-              title={this.renderItemTitle(item)}
-              key={item.key}
-              isLeaf={item.isLeaf}>
-              {this.generateTreeItems(item.children)}
-            </Tree.TreeNode>
-          );
-        }
-      });
+      .map(item => ({
+        key: item.key,
+        title: this.renderItemTitle(item),
+        isLeaf: item.isLeaf,
+        className: `pipelines-library-tree-node-${item.key}`,
+        ...(item.children && !item.isLeaf
+          ? {children: this.getTreeData(item.children)}
+          : {})
+      }));
   }
 
   onExpand = (expandedKeys, {expanded, node}) => {
-    const item = getTreeItemByKey(node.props.eventKey, this.rootItems);
+    const item = getTreeItemByKey(node.key, this.rootItems);
     if (item) {
       expandItem(item, expanded);
     }
@@ -237,7 +241,7 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
   };
 
   onSelect = (selectedKeys, {node}) => {
-    const item = getTreeItemByKey(node.props.eventKey, this.rootItems);
+    const item = getTreeItemByKey(node.key, this.rootItems);
     if (item.type === ItemTypes.pipeline) {
       this.onSelectPipeline(item);
     } else if (item.type === ItemTypes.folder) {
@@ -249,7 +253,6 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
     }
   };
 
-  @computed
   get libraryItems () {
     if (this.props.library.loaded) {
       return this.props.library.value;
@@ -257,7 +260,6 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
     return {};
   }
 
-  @computed
   get fireCloudItems () {
     if (this.props.fireCloudMethods.loaded) {
       return (this.props.fireCloudMethods.value || []).map(m => m);
@@ -278,13 +280,13 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
     return (
       <Tree
         className={styles.libraryTree}
+        treeData={this.getTreeData(this.rootItems)}
         onSelect={this.onSelect}
         onExpand={this.onExpand}
         checkStrictly
         expandedKeys={this.state.expandedKeys}
-        selectedKeys={this.state.selectedKeys} >
-        {this.generateTreeItems(this.rootItems)}
-      </Tree>
+        selectedKeys={this.state.selectedKeys}
+      />
     );
   }
 
@@ -435,7 +437,7 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
   render () {
     let content = <LoadingView />;
     if (!this.props.library.pending && this.props.library.error) {
-      content = <Alert message="Error retrieving library" type="error" />;
+      content = <Alert title="Error retrieving library" type="error" />;
     } else if (!this.props.library.pending) {
       let listingContent;
       const listingContainerStyle = {};
@@ -628,7 +630,7 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
     this.props.library.fetch();
   }
 
-  componentWillReceiveProps (nextProps) {
+  UNSAFE_componentWillReceiveProps (nextProps) {
     if (nextProps.visible && nextProps.visible !== this.props.visible) {
       this.props.library.fetch();
       this.rootItems = null;

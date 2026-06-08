@@ -2,7 +2,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import styles from './parameters-payload.css';
-import {Button, Checkbox, Icon, Popover} from 'antd';
+import {Button, Checkbox, Popover} from 'antd';
+import {DeleteOutlined, ExclamationCircleOutlined} from '@ant-design/icons';
 
 function payloadIsInvalid (payload) {
   const {parameters = []} = payload;
@@ -55,10 +56,7 @@ function ParametersPayloadName (props) {
       </span>
       {
         invalid && (
-          <Icon
-            type="exclamation-circle-o"
-            className={classNames('cp-error', styles.parametersPayloadInvalidIcon)}
-          />
+          <ExclamationCircleOutlined className={classNames('cp-error', styles.parametersPayloadInvalidIcon)} />
         )
       }
       {
@@ -68,7 +66,7 @@ function ParametersPayloadName (props) {
             style={{marginLeft: 'auto'}}
             onClick={onRemoveClick}
           >
-            <Icon type="delete" />
+            <DeleteOutlined />
           </Button>
         )
       }
@@ -278,8 +276,8 @@ class ParametersPayloadSelector extends React.PureComponent {
     })();
     return (
       <Popover
-        visible={opened}
-        onVisibleChange={this.onOpenChange}
+        open={opened}
+        onOpenChange={this.onOpenChange}
         content={this.renderSelectorContent()}
         trigger="click"
         placement="bottomLeft"
@@ -298,11 +296,7 @@ class ParametersPayloadSelector extends React.PureComponent {
               {triggerText}
             </span>
             {hasInvalidPayloads && (
-              <Icon
-                type="exclamation-circle-o"
-                className="cp-warning"
-                style={{marginLeft: 5, textDecoration: 'none'}}
-              />
+              <ExclamationCircleOutlined className="cp-warning" style={{marginLeft: 5, textDecoration: 'none'}} />
             )}
           </a>
         </div>

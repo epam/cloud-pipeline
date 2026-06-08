@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {action, computed, observable} from 'mobx';
+import {action, computed, observable, makeObservable} from 'mobx';
 import measureUrlLatency, {clearPerformanceEntries} from './measure-url-latency';
 import PreferenceLoad from '../../models/preferences/PreferenceLoad';
 
@@ -26,19 +26,25 @@ function getRegionLatency (region, url) {
 }
 
 class Multizone {
-  @observable _defaultRegion;
-  @observable _defaultRegionPreference;
+  _defaultRegion;
+  _defaultRegionPreference;
   _defaultRegionPreferenceFetched;
-  @observable _latencies = {};
+  _latencies = {};
   _checkRegions = {};
   _checkCall = 0;
 
   constructor (defaultRegion) {
+    makeObservable(this, {
+      _defaultRegion: observable,
+      _defaultRegionPreference: observable,
+      _latencies: observable,
+      defaultRegion: computed,
+      updateDefaultRegion: action
+    });
     this._defaultRegion = defaultRegion;
     this.fetchDefaultRegionPreference();
   }
 
-  @computed
   get defaultRegion () {
     return this._defaultRegion || this._defaultRegionPreference;
   }
@@ -131,7 +137,6 @@ class Multizone {
     });
   }
 
-  @action
   updateDefaultRegion () {
     const latencies = Object
       .entries(this._latencies)

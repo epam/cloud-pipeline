@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {computed, observable} from 'mobx';
+import {computed, observable, makeObservable} from 'mobx';
 import {Checkbox, Tooltip} from 'antd';
 import Slider from 'rc-slider';
 import {observer} from 'mobx-react';
@@ -71,19 +71,23 @@ class HcsZPositionSlider extends React.Component {
   sliderRef;
   sliderContainerRef;
   arrangeRAF;
-
-  @observable
   _height;
-
-  @observable
   _marks = {};
 
-  @computed
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      _height: observable,
+      _marks: observable,
+      marks: computed,
+      height: computed
+    });
+  }
+
   get marks () {
     return this._marks;
   }
 
-  @computed
   get height () {
     return this._height;
   }
@@ -185,7 +189,7 @@ class HcsZPositionSlider extends React.Component {
         </div>
       </div>
     );
-  };
+  }
 }
 
 function HcsZPositionSelector (props) {
@@ -309,6 +313,7 @@ function HcsZPositionSelector (props) {
       />
     );
   };
+
   return (
     <div
       className={

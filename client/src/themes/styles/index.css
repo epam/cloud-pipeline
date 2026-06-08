@@ -1,0 +1,41 @@
+/*
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+/*
+ * Aggregated theme stylesheet. Imports the static palette (CSS variables for
+ * predefined themes) followed by component-level CSS modules that consume
+ * those variables via var(--cp-*) and color-mix().
+ */
+
+@import "./palette.css";
+@import "./theme.preview.css";
+@import "./layout.css";
+@import "./panels.css";
+@import "./navigation.css";
+@import "./dashboard.css";
+@import "./providers.css";
+@import "./animation.css";
+@import "./tools.css";
+@import "./runs.css";
+@import "./billing.css";
+@import "./search.css";
+@import "./versioned-storage.css";
+@import "./metadata.css";
+@import "./cluster.css";
+@import "./settings.css";
+@import "./code-highlight.css";
+@import "./cell-profiler.css";
+@import "./wdl.css";

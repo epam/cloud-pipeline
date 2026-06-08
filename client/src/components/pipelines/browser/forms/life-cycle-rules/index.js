@@ -15,25 +15,27 @@
  */
 
 import React from 'react';
-import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {
+  inject,
+  observer} from 'mobx-react';
+import {computed, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
 import {
   Button,
   Modal,
   Tooltip,
   Spin,
-  Icon,
   message
 } from 'antd';
+import {BookOutlined, DeleteOutlined, EditOutlined, PlusOutlined} from '@ant-design/icons';
 import DataStorageLifeCycleRulesLoad
-  from '../../../../../models/dataStorage/lifeCycleRules/DataStorageLifeCycleRulesLoad';
+from '../../../../../models/dataStorage/lifeCycleRules/DataStorageLifeCycleRulesLoad';
 import DataStorageLifeCycleRulesUpdate
-  from '../../../../../models/dataStorage/lifeCycleRules/DataStorageLifeCycleRulesUpdate';
+from '../../../../../models/dataStorage/lifeCycleRules/DataStorageLifeCycleRulesUpdate';
 import DataStorageLifeCycleRulesCreate
-  from '../../../../../models/dataStorage/lifeCycleRules/DataStorageLifeCycleRulesCreate';
+from '../../../../../models/dataStorage/lifeCycleRules/DataStorageLifeCycleRulesCreate';
 import DataStorageLifeCycleRulesDelete
-  from '../../../../../models/dataStorage/lifeCycleRules/DataStorageLifeCycleRulesDelete';
+from '../../../../../models/dataStorage/lifeCycleRules/DataStorageLifeCycleRulesDelete';
 import {
   LifeCycleEditModal,
   DESTINATIONS,
@@ -52,6 +54,13 @@ class LifeCycleRules extends React.Component {
     pending: false
   }
 
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      rules: computed
+    });
+  }
+
   componentDidMount () {
     this.fetchLifeCycleRules();
   }
@@ -63,7 +72,6 @@ class LifeCycleRules extends React.Component {
     }
   }
 
-  @computed
   get rules () {
     const {lifeCycleRules} = this.props;
     if (lifeCycleRules && lifeCycleRules.loaded && !lifeCycleRules.error) {
@@ -184,7 +192,7 @@ class LifeCycleRules extends React.Component {
           size="small"
           key="edit"
         >
-          <Icon type="edit" />
+          <EditOutlined />
         </Button>
       ),
       <Button
@@ -193,17 +201,17 @@ class LifeCycleRules extends React.Component {
         size="small"
         key="history"
       >
-        <Icon type="book" />
+        <BookOutlined />
       </Button>,
       !readOnly && (
         <Button
           className={styles.controlBtn}
-          type="danger"
+          danger
           onClick={() => this.deleteRule(rule.id)}
           size="small"
           key="delete"
         >
-          <Icon type="delete" />
+          <DeleteOutlined />
         </Button>
       )
     ].filter(Boolean);
@@ -246,7 +254,7 @@ class LifeCycleRules extends React.Component {
                 className="cp-primary"
                 style={{marginLeft: 5, cursor: 'pointer'}}
               >
-                <Icon type="plus" />
+                <PlusOutlined />
                 {`${rule.transitions.length - 1} more`}
               </span>
             </Tooltip>
@@ -275,7 +283,7 @@ class LifeCycleRules extends React.Component {
             size="small"
             disabled={readOnly}
           >
-            <Icon type="plus" />
+            <PlusOutlined />
             Create
           </Button>
           {this.rules.length > 0 ? (

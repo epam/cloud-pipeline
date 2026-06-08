@@ -19,6 +19,10 @@
   overflow-y: auto;
 }
 
+.table {
+  width: 100%;
+}
+
 .table > div > div {
   filter: none !important;
 }

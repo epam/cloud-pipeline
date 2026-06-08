@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, makeObservable} from 'mobx';
 import {
   Select,
   message,
@@ -46,7 +46,7 @@ function getTopEntriesFilters (maxEntriesCount = 0, thresholds = [10, 25, 50]) {
 
 @inject('reportThemes', 'usersInfo')
 @observer
-class RunsInfo extends React.PureComponent {
+class RunsInfo extends React.Component {
   state = {
     statistics: {},
     pending: false,
@@ -56,6 +56,13 @@ class RunsInfo extends React.PureComponent {
     topEntries: undefined,
     topEntriesFilters: getTopEntriesFilters(0)
   };
+
+  constructor (props) {
+    super(props);
+    makeObservable(this, {
+      users: computed
+    });
+  }
 
   componentDidMount () {
     (this.fetchFiltersConfiguration)();
@@ -72,7 +79,6 @@ class RunsInfo extends React.PureComponent {
     return this.state.pending;
   }
 
-  @computed
   get users () {
     const {usersInfo} = this.props;
     if (usersInfo.loaded) {
