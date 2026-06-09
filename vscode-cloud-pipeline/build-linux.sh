@@ -32,14 +32,22 @@ if [[ ! -f "$VSC_EXTENSION_ROOT/package-lock.json" ]]; then
   exit 1
 fi
 
+VSC_COMMIT_HASH=$(git log --pretty=tformat:"%H" -n1 "${VSC_EXTENSION_ROOT}")
+
 docker pull "$VSC_EXTENSION_BUILD_DOCKER_IMAGE" &> /dev/null
 
 docker run --rm -i \
   -e "VSC_EXTENSION_ROOT=$VSC_EXTENSION_ROOT" \
+  -e "VSC_COMMIT_HASH=$VSC_COMMIT_HASH" \
   -v "$VSC_EXTENSION_ROOT:$VSC_EXTENSION_ROOT" \
   -w "$VSC_EXTENSION_ROOT" \
   "$VSC_EXTENSION_BUILD_DOCKER_IMAGE" \
   bash -c 'set -euo pipefail
+    version_file="${VSC_EXTENSION_ROOT}/src/version.ts"
+    sed -i "s/COMPONENT_VERSION = '"'"'[a-f0-9]*'"'"'/COMPONENT_VERSION = '"'"'${VSC_COMMIT_HASH}'"'"'/" "$version_file"
+    if [ -n "${VSC_EXTENSION_VERSION:-}" ]; then
+      sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"${VSC_EXTENSION_VERSION}\"/" "${VSC_EXTENSION_ROOT}/package.json"
+    fi
     node --version
     npm --version
     npm ci

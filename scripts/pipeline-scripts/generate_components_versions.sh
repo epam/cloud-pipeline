@@ -17,7 +17,7 @@
 project_root_dir="$1"
 versions_file_path="$2"
 
-components_list="pipe-cli data-transfer-service cloud-pipeline-webdav-client"
+components_list="pipe-cli data-transfer-service cloud-pipeline-webdav-client vscode-cloud-pipeline"
 components_json=""
 for component in $components_list; do
     echo $component

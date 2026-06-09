@@ -22,6 +22,7 @@ import { runListDisplayName } from './runDisplayName';
 import { CloudPipelineRunsProvider, RunTreeItem } from './runsProvider';
 import { syncMcpFromWorkspaceSettings } from './mcpCursorConfig';
 import { runStartNewRunFlow } from './startNewRun';
+import { COMPONENT_VERSION } from './version';
 
 function normalizeApiBase(input: string): string {
   return input.trim().replace(/\/$/, '');
@@ -125,6 +126,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       await vscode.commands.executeCommand(
         'workbench.action.openSettings',
         'cloudPipeline'
+      );
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('cloudPipeline.showVersion', () => {
+      const pkgVersion = context.extension.packageJSON.version as string;
+      vscode.window.showInformationMessage(
+        `${brand} version: ${pkgVersion}.${COMPONENT_VERSION}`
       );
     })
   );

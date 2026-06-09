@@ -1,8 +1,9 @@
 task buildVSCodeExtension(type: Exec) {
     group = 'build'
 
-    environment "VSC_EXTENSION_ROOT": "$project.rootDir/vscode-cloud-pipeline"
-    
+    environment "VSC_EXTENSION_ROOT": "$project.rootDir/vscode-cloud-pipeline",
+                "VSC_EXTENSION_VERSION": "$version"
+
     commandLine "bash", "$project.rootDir/vscode-cloud-pipeline/build-linux.sh"
     doLast {
         delete("$project.rootDir/api/src/main/resources/static/cloud-pipeline-remote.vsix")
