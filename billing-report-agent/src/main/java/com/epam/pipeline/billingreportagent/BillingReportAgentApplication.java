@@ -24,9 +24,9 @@ import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfigura
 
 
 @SpringBootApplication(exclude = {
-        DataSourceAutoConfiguration.class,
-        HttpClientAutoConfiguration.class,
-        RestClientAutoConfiguration.class
+    DataSourceAutoConfiguration.class,
+    HttpClientAutoConfiguration.class,
+    RestClientAutoConfiguration.class
 })
 @SuppressWarnings("checkstyle:HideUtilityClassConstructor")
 public class BillingReportAgentApplication {
