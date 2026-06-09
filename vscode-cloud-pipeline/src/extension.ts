@@ -22,6 +22,7 @@ import { runListDisplayName } from './runDisplayName';
 import { CloudPipelineRunsProvider, RunTreeItem } from './runsProvider';
 import { syncMcpFromWorkspaceSettings } from './mcpCursorConfig';
 import { runStartNewRunFlow } from './startNewRun';
+import { startUpdateChecker } from './updateChecker';
 import { COMPONENT_VERSION } from './version';
 
 function normalizeApiBase(input: string): string {
@@ -75,6 +76,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   });
 
   updateSignInStatusBar();
+  startUpdateChecker(context);
 
   context.subscriptions.push(
     vscode.commands.registerCommand('cloudPipeline.refreshRuns', () => {

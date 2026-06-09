@@ -130,6 +130,12 @@ function configure_vscode_extension() {
     cd $extension_tmp
     unzip -q $extension_filename
 
+    local repackaged_extension_filename="${extension_name}.vsix"
+    if [ "$VSC_EXTENSION_NAME" ]; then
+        repackaged_extension_filename="${VSC_EXTENSION_PUBLISHER}-remote.vsix"
+    fi
+    local VSC_EXTENSION_UPDATE_URL="https://${CP_API_SRV_EXTERNAL_HOST}:${CP_API_SRV_EXTERNAL_PORT}/pipeline/${repackaged_extension_filename}"
+
     # Create .env file for the extension branding and API URL
     while IFS= read -r line || [[ -n "$line" ]]; do
         case "$line" in
@@ -140,6 +146,9 @@ function configure_vscode_extension() {
             if [ "$VSC_EXTENSION_NAME" ]; then
                 printf 'CLOUD_PIPELINE_BRAND_NAME=%s\n' "${VSC_EXTENSION_NAME}"
             fi
+            ;;
+            '# CLOUD_PIPELINE_VSIX_UPDATE_URL='*)
+            printf 'CLOUD_PIPELINE_VSIX_UPDATE_URL=%s\n' "${VSC_EXTENSION_UPDATE_URL}"
             ;;
             *)
             printf '%s\n' "$line"
@@ -159,11 +168,7 @@ function configure_vscode_extension() {
         rm -f "$extension_tmp/extension/resources/logo.png"
         cp "$VSC_EXTENSION_LOGO_PATH" "$extension_tmp/extension/resources/logo.png"
     fi
-    
-    local repackaged_extension_filename="${extension_name}.vsix"
-    if [ "$VSC_EXTENSION_NAME" ]; then
-        repackaged_extension_filename="${VSC_EXTENSION_PUBLISHER}-remote.vsix"
-    fi
+
     zip -q -r "$output_dir/${repackaged_extension_filename}" .
 
     rm -rf "$extension_tmp"

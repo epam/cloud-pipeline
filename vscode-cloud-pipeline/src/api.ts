@@ -156,6 +156,12 @@ export interface WhoamiPayload {
   userName?: string;
 }
 
+export interface AppInfoPayload {
+  version?: string;
+  prettyName?: string;
+  components?: Record<string, string>;
+}
+
 export interface MetadataAttributeValue {
   value: string;
   type: string;
@@ -403,6 +409,10 @@ export class CloudPipelineApi {
     }
     const q = parts.length ? `?${parts.join('&')}` : '';
     return this.callJson<AllowedInstanceAndPriceTypesPayload>('GET', `cluster/instance/allowed${q}`);
+  }
+
+  getAppInfo(): Promise<AppInfoPayload> {
+    return this.callJson<AppInfoPayload>('GET', 'app/info');
   }
 
   launchRun(payload: Record<string, unknown>): Promise<PipelineRunStarted> {
