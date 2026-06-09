@@ -1848,22 +1848,40 @@ class Logs extends localization.LocalizedReactComponent {
       }
       let endpoints;
       let kubeServices;
-      if (this.endpointAvailable) {
-        const regionedUrls = parseRunServiceUrlConfiguration(serviceUrl);
+      const activeRunStatuses = ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING'];
+      const isActiveRun = activeRunStatuses.includes(status);
+      let externalTagUrls = [];
+      const externalUrlsTagValue = run.tags && run.tags.EXTERNAL_URLS;
+      if (externalUrlsTagValue) {
+        try {
+          const parsed = JSON.parse(externalUrlsTagValue);
+          if (Array.isArray(parsed)) {
+            externalTagUrls = parsed.filter(({displayOnCompletion}) => {
+              if (displayOnCompletion === false) {
+                return isActiveRun;
+              }
+              return true;
+            });
+          }
+        } catch (_) {
+          // ignore malformed tag value
+        }
+      }
+      const regionedUrls = this.endpointAvailable
+        ? parseRunServiceUrlConfiguration(serviceUrl)
+        : [];
+      if (regionedUrls.length > 0 || externalTagUrls.length > 0) {
+        const totalCount = regionedUrls.length + externalTagUrls.length;
         endpoints = (
           <tr style={{fontSize: '11pt'}}>
             <th style={{verticalAlign: 'middle'}}>
-              {
-                regionedUrls.length > 1
-                  ? 'Endpoints: '
-                  : 'Endpoint: '
-              }
+              {totalCount > 1 ? 'Endpoints: ' : 'Endpoint: '}
             </th>
             <td>
               <ul>
                 {
                   regionedUrls.map(({name, url, sameTab}, index) =>
-                    <li key={index}>
+                    <li key={`service-${index}`}>
                       <MultizoneUrl
                         target={sameTab ? '_top' : '_blank'}
                         configuration={url}
@@ -1872,6 +1890,19 @@ class Logs extends localization.LocalizedReactComponent {
                       >
                         {name}
                       </MultizoneUrl>
+                    </li>
+                  )
+                }
+                {
+                  externalTagUrls.map(({url, name}, index) =>
+                    <li key={`external-${index}`}>
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {name || url}
+                      </a>
                     </li>
                   )
                 }
