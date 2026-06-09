@@ -151,6 +151,21 @@ export interface CloudRegionPayload {
   default?: boolean;
 }
 
+export interface WhoamiPayload {
+  id: number;
+  userName?: string;
+}
+
+export interface MetadataAttributeValue {
+  value: string;
+  type: string;
+}
+
+export interface MetadataEntityPayload {
+  entity: { entityId: number; entityClass: string };
+  data: Record<string, MetadataAttributeValue>;
+}
+
 export interface RunDetailPayload {
   id: number;
   status: string;
@@ -302,6 +317,33 @@ export class CloudPipelineApi {
     try {
       const u = await this.callJson<{ userName?: string }>('GET', 'whoami');
       return u?.userName?.split('@')[0];
+    } catch (e) {
+      if (e instanceof ApiAuthError) {
+        throw e;
+      }
+      return undefined;
+    }
+  }
+
+  async whoami(): Promise<WhoamiPayload | undefined> {
+    try {
+      return await this.callJson<WhoamiPayload>('GET', 'whoami');
+    } catch (e) {
+      if (e instanceof ApiAuthError) {
+        throw e;
+      }
+      return undefined;
+    }
+  }
+
+  async loadUserMetadata(entityId: number): Promise<MetadataEntityPayload | undefined> {
+    try {
+      const result = await this.callJson<MetadataEntityPayload[]>(
+        'POST',
+        'metadata/load',
+        [{ entityId, entityClass: 'PIPELINE_USER' }]
+      );
+      return Array.isArray(result) ? result[0] : undefined;
     } catch (e) {
       if (e instanceof ApiAuthError) {
         throw e;
