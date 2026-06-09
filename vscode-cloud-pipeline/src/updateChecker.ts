@@ -7,7 +7,7 @@ import * as vscode from 'vscode';
 import { CloudPipelineApi } from './api';
 import { resolveCredentials } from './config';
 import { getVsixUpdateUrl } from './extensionEnv';
-import { COMPONENT_VERSION } from './version';
+import { COMPONENT_VERSION, EXTENSION_VERSION } from './version';
 
 const CHECK_INTERVAL_MS = 10 * 60 * 1000;
 const INITIAL_CHECK_DELAY_MS = 30_000;
@@ -20,16 +20,14 @@ export function startUpdateChecker(context: vscode.ExtensionContext): void {
     return;
   }
 
-  const pkgVersion = context.extension.packageJSON.version as string;
-
-  const check = (): void => { void checkForUpdate(vsixUrl, pkgVersion); };
+  const check = (): void => { void checkForUpdate(vsixUrl); };
 
   setTimeout(check, INITIAL_CHECK_DELAY_MS);
   const timer = setInterval(check, CHECK_INTERVAL_MS);
   context.subscriptions.push({ dispose: () => clearInterval(timer) });
 }
 
-async function checkForUpdate(vsixUrl: string, pkgVersion: string): Promise<void> {
+async function checkForUpdate(vsixUrl: string): Promise<void> {
   if (notified) {
     return;
   }
@@ -46,20 +44,20 @@ async function checkForUpdate(vsixUrl: string, pkgVersion: string): Promise<void
     }
     notified = true;
     const answer = await vscode.window.showInformationMessage(
-      `A new version of the Cloud Pipeline extension is available (installed: ${pkgVersion}.${COMPONENT_VERSION.slice(0, 8)}).`,
+      `A new version of the Cloud Pipeline extension is available (installed: ${EXTENSION_VERSION}.${COMPONENT_VERSION.slice(0, 8)}).`,
       'Update',
       'Later'
     );
     if (answer !== 'Update') {
       return;
     }
-    await downloadAndInstall(vsixUrl, pkgVersion);
+    await downloadAndInstall(vsixUrl);
   } catch {
     // best-effort — silent on network errors
   }
 }
 
-async function downloadAndInstall(vsixUrl: string, pkgVersion: string): Promise<void> {
+async function downloadAndInstall(vsixUrl: string): Promise<void> {
   const tmpPath = path.join(os.tmpdir(), 'cloud-pipeline-remote-update.vsix');
   try {
     await vscode.window.withProgress(
