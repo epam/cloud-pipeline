@@ -3,6 +3,11 @@ plugins {
   id "com.github.node-gradle.node" version "7.0.2"
 }
 
+node {
+  version = '24.11.0'
+  download = true
+}
+
 tasks.register("npmPrune", NpmTask) {
   args.set(["prune"])
 }

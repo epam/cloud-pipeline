@@ -28,8 +28,8 @@ cd -
 
 # Setup node
 source ~/.nvm/nvm.sh
-nvm install 24.11.0
-nvm use 24.11.0
+nvm install 14.21.3
+nvm use 14.21.3
 echo "node binary: $(which node)"
 #
 
