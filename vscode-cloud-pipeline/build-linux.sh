@@ -47,8 +47,16 @@ docker run --rm -i \
     version_file="${VSC_EXTENSION_ROOT}/src/version.ts"
     sed -i "s/COMPONENT_VERSION = '"'"'[a-f0-9]*'"'"'/COMPONENT_VERSION = '"'"'${VSC_COMMIT_HASH}'"'"'/" "$version_file"
     if [ -n "${VSC_EXTENSION_VERSION:-}" ]; then
-      sed -i "s/EXTENSION_VERSION = '"'"'[0-9.]*'"'"'/EXTENSION_VERSION = '"'"'${VSC_EXTENSION_VERSION}'"'"'/" "$version_file"
-      sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"${VSC_EXTENSION_VERSION}\"/" "${VSC_EXTENSION_ROOT}/package.json"
+      IFS='"'"'.'"'"' read -ra _vp <<< "${VSC_EXTENSION_VERSION}"
+      if [ ${#_vp[@]} -gt 3 ]; then
+        _vsc_semver="${_vp[0]}.${_vp[1]}.${_vp[3]}"
+        _vsc_ext_ver="${_vp[0]}.${_vp[1]}.${_vp[2]}.${_vp[3]}"
+      else
+        _vsc_semver="${VSC_EXTENSION_VERSION}"
+        _vsc_ext_ver="${VSC_EXTENSION_VERSION}"
+      fi
+      sed -i "s/EXTENSION_VERSION = '"'"'[0-9.]*'"'"'/EXTENSION_VERSION = '"'"'${_vsc_ext_ver}'"'"'/" "$version_file"
+      sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"${_vsc_semver}\"/" "${VSC_EXTENSION_ROOT}/package.json"
     fi
     node --version
     npm --version
