@@ -44,19 +44,28 @@ import {parametersModified} from "./parameter-utilities";
 import {readReservationParameters, reservationParametersDiffer} from "../components/reservation-parameters/utilities";
 import * as prettyUrlGenerator from './pretty-url';
 
+function getFormNamePath (formName) {
+  return formName.split('.');
+}
+
+function getFormFieldValue (form, formName) {
+  return form.getFieldValue(getFormNamePath(formName));
+}
+
 function formItemInitialized (form, formName) {
   if (!formName) {
     return false;
   }
-  const values = form.getFieldsValue();
-  const names = formName.split('.');
-  const test = (o, keyIndex) => {
-    if (keyIndex >= names.length) {
-      return true;
+  const names = getFormNamePath(formName);
+  const values = form.getFieldsValue(true);
+  let current = values;
+  for (let i = 0; i < names.length; i++) {
+    if (!current || !Object.prototype.hasOwnProperty.call(current, names[i])) {
+      return false;
     }
-    return o.hasOwnProperty(names[keyIndex]) && test(o[names[keyIndex]], keyIndex + 1);
-  };
-  return values.hasOwnProperty(formName) || test(values, 0);
+    current = current[names[i]];
+  }
+  return true;
 }
 
 function modified (
@@ -70,7 +79,7 @@ function modified (
   if (!formItemInitialized(form, formName)) {
     return false;
   }
-  const formValue = formValueAccessor(form.getFieldValue(formName));
+  const formValue = formValueAccessor(getFormFieldValue(form, formName));
   return `${formValue || defaultValue}` !==
     `${parameters[parametersName] || defaultValue}`;
 }
@@ -171,14 +180,14 @@ function spotOnDemandCheck (form, {spotInitialValue}) {
   if (!formItemInitialized(form, `${ADVANCED}.is_spot`)) {
     return false;
   }
-  return `${form.getFieldValue(`${ADVANCED}.is_spot`)}` !== `${spotInitialValue}`;
+  return `${getFormFieldValue(form, `${ADVANCED}.is_spot`)}` !== `${spotInitialValue}`;
 }
 
 function autoPauseCheck (form, state) {
   if (!formItemInitialized(form, `${ADVANCED}.is_spot`)) {
     return false;
   }
-  return `${form.getFieldValue(`${ADVANCED}.is_spot`)}` === 'false' && !state.autoPause;
+  return `${getFormFieldValue(form, `${ADVANCED}.is_spot`)}` === 'false' && !state.autoPause;
 }
 
 function limitMountsCheck (form, parameters) {
@@ -193,7 +202,7 @@ function limitMountsCheck (form, parameters) {
   };
   const isNull = o => o === null || o === undefined;
   const initial = getDefaultValue();
-  const formValue = form.getFieldValue(`${ADVANCED}.limitMounts`);
+  const formValue = getFormFieldValue(form, `${ADVANCED}.limitMounts`);
   if (isNull(formValue) && isNull(initial)) {
     return false;
   }
@@ -307,7 +316,7 @@ function notificationsCheck (parameters, form) {
   if (!formItemInitialized(form, `${ADVANCED}.notifications`)) {
     return false;
   }
-  const formNotifications = form.getFieldValue(`${ADVANCED}.notifications`);
+  const formNotifications = getFormFieldValue(form, `${ADVANCED}.notifications`);
   const propsNotifications = parameters ? parameters.notifications : [];
   return !notificationArraysAreEqual(formNotifications, propsNotifications);
 }

@@ -510,19 +510,20 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         const formParametersPayload = parameterUtilities.parametersToPayloadParams(formParameters);
         this.inputPaths = getInputPaths(formParametersPayload);
         this.outputPaths = getOutputPaths(formParametersPayload);
-        const currentDockerImage = form.getFieldValue(`${EXEC_ENVIRONMENT}.dockerImage`);
+        const currentDockerImage = form.getFieldValue([EXEC_ENVIRONMENT, 'dockerImage']);
         if (!this.toolSettingsPending && this.dockerImage !== currentDockerImage) {
           if (currentDockerImage) {
             await this.loadToolSettings(currentDockerImage);
             checkIfNotAborted();
-            const currentValue = this.props.form.getFieldValue(`${EXEC_ENVIRONMENT}.cloudRegionId`);
+            const currentValue = this.props.form.getFieldValue([EXEC_ENVIRONMENT, 'cloudRegionId']);
             const regionId = this.correctCloudRegion(
               currentValue ||
               this.defaultCloudRegionId
             );
-            this.props.form.setFieldsValue({
-              [`${EXEC_ENVIRONMENT}.cloudRegionId`]: this.toolCloudRegion || regionId
-            });
+            this.props.form.setFieldValue(
+              [EXEC_ENVIRONMENT, 'cloudRegionId'],
+              this.toolCloudRegion || regionId
+            );
           } else {
             this.resetToolSettings();
           }
@@ -621,7 +622,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             values={this.state.runCapabilities}
             onChange={this.onRunCapabilitiesSelect}
             platform={this.toolPlatform}
-            dockerImage={this.props.form.getFieldValue(`${EXEC_ENVIRONMENT}.dockerImage`)}
+            dockerImage={this.props.form.getFieldValue([EXEC_ENVIRONMENT, 'dockerImage'])}
             provider={this.currentCloudRegionProvider}
             region={this.currentCloudRegion}
             mode={RUN_CAPABILITIES_MODE.launch}
@@ -1105,7 +1106,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           if (this.props.onLaunch) {
             const result = await this.props.onLaunch(
               payload,
-              values[ADVANCED].hostedApplication,
+              (values[ADVANCED] || this.getSectionValue(ADVANCED) || {}).hostedApplication,
               this.toolPlatform,
               this.props.parameters.run_as &&
               this.currentUserName() !== this.props.parameters.run_as,
@@ -1123,6 +1124,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         }
       })
       .catch((err) => {
+        console.log('handleSubmitFailed', err);
         this.setState({pending: false});
         this.expandErroredPanels(err?.errorFields || err);
       });
@@ -1371,7 +1373,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       skipReservationParameters = false,
       applyAdditionalReservationParameters = true
     } = options || {};
-    let cmd = values[ADVANCED].cmdTemplate;
+    const advancedValues = values[ADVANCED] ||
+      this.getSectionValue(ADVANCED) ||
+      {};
+    const execValues = values[EXEC_ENVIRONMENT] ||
+      this.getSectionValue(EXEC_ENVIRONMENT) ||
+      {};
+    let cmd = advancedValues.cmdTemplate ?? this.getDefaultValue('cmd_template');
     if (this.state.useDefaultCmd && this.toolDefaultCmd) {
       cmd = this.toolDefaultCmd;
     } else if (this.state.startIdle) {
@@ -1382,27 +1390,27 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       parameters,
       conditionalParameters
     } = parameterUtilities.parametersToConfigurationParams(this.getParameters());
-    const instanceType = values[EXEC_ENVIRONMENT].type;
+    const instanceType = execValues.type;
     let payload = {
       instance_size: instanceType,
-      instance_disk: +values[EXEC_ENVIRONMENT].disk,
-      friendly_url: prettyUrlGenerator.build(values[ADVANCED].friendly_url),
-      timeout: +(values[ADVANCED].timeout || 0),
-      stopAfter: stopAfterIsIncorrect(values[ADVANCED].stopAfter)
+      instance_disk: +execValues.disk,
+      friendly_url: prettyUrlGenerator.build(advancedValues.friendly_url),
+      timeout: +(advancedValues.timeout || 0),
+      stopAfter: stopAfterIsIncorrect(advancedValues.stopAfter)
         ? undefined
-        : (+values[ADVANCED].stopAfter || 0),
-      endpointName: values[ADVANCED].endpointName,
+        : (+advancedValues.stopAfter || 0),
+      endpointName: advancedValues.endpointName,
       cmd_template: cmd,
       node_count: this.state.launchCluster ? this.state.nodesCount : undefined,
-      docker_image: values[EXEC_ENVIRONMENT].dockerImage,
+      docker_image: execValues.dockerImage,
       parameters,
       conditional_parameters: conditionalParameters,
       configuration: values.configuration,
-      is_spot: (values[ADVANCED].is_spot || `${this.getDefaultValue('is_spot')}`) === 'true',
-      cloudRegionId: values[EXEC_ENVIRONMENT].cloudRegionId
-        ? +values[EXEC_ENVIRONMENT].cloudRegionId
+      is_spot: (advancedValues.is_spot || `${this.getDefaultValue('is_spot')}`) === 'true',
+      cloudRegionId: execValues.cloudRegionId
+        ? +execValues.cloudRegionId
         : undefined,
-      notifications: (values[ADVANCED].notifications || []).slice(),
+      notifications: (advancedValues.notifications || []).slice(),
       raw: this.state.isRawEditEnabled
     };
     if (this.isWindowsPlatform) {
@@ -1418,15 +1426,15 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       payload.timeout = undefined;
       payload.is_spot = undefined;
       payload.cloudRegionId = undefined;
-      payload.coresNumber = +values[EXEC_ENVIRONMENT].coresNumber || null;
+      payload.coresNumber = +execValues.coresNumber || null;
       payload.dtsId = +this.state.dtsId;
     }
     if (!this.isFireCloudSelected) {
-      if (values[ADVANCED].limitMounts && !this.isWindowsPlatform) {
+      if (advancedValues.limitMounts && !this.isWindowsPlatform) {
         payload.parameters[CP_CAP_LIMIT_MOUNTS] = {
           type: 'string',
           required: false,
-          value: values[ADVANCED].limitMounts
+          value: advancedValues.limitMounts
         };
       }
       if (this.state.launchCluster && this.state.autoScaledCluster) {
@@ -1563,36 +1571,42 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   generateLaunchPayload = async (values, parametersPayloadId = undefined) => {
-    let cmd = values[ADVANCED].cmdTemplate;
+    const advancedValues = values[ADVANCED] ||
+      this.getSectionValue(ADVANCED) ||
+      {};
+    const execValues = values[EXEC_ENVIRONMENT] ||
+      this.getSectionValue(EXEC_ENVIRONMENT) ||
+      {};
+    let cmd = advancedValues.cmdTemplate ?? this.getDefaultValue('cmd_template');
     if (this.state.useDefaultCmd && this.toolDefaultCmd) {
       cmd = this.toolDefaultCmd;
     } else if (this.state.startIdle) {
       cmd = 'sleep infinity';
     }
-    const instanceType = values[EXEC_ENVIRONMENT].type;
+    const instanceType = execValues.type;
     const tags = filterVisibleTagsSync(
       this.state.userTags,
       this.state.userTagsVisibleTags
     );
     const payload = {
       instanceType,
-      hddSize: +values[EXEC_ENVIRONMENT].disk,
-      timeout: +(values[ADVANCED].timeout || 0),
+      hddSize: +execValues.disk,
+      timeout: +(advancedValues.timeout || 0),
       cmdTemplate: cmd,
       nodeCount: this.state.launchCluster ? this.state.nodesCount : undefined,
-      dockerImage: values[EXEC_ENVIRONMENT].dockerImage,
+      dockerImage: execValues.dockerImage,
       pipelineId: this.props.pipeline ? this.props.pipeline.id : undefined,
       version: this.props.version,
       tags,
       params: parameterUtilities.parametersToPayloadParams(this.getParameters(parametersPayloadId)),
-      isSpot: (values[ADVANCED].is_spot || `${this.getDefaultValue('is_spot')}`) === 'true',
-      cloudRegionId: values[EXEC_ENVIRONMENT].cloudRegionId
-        ? +values[EXEC_ENVIRONMENT].cloudRegionId
+      isSpot: (advancedValues.is_spot || `${this.getDefaultValue('is_spot')}`) === 'true',
+      cloudRegionId: execValues.cloudRegionId
+        ? +execValues.cloudRegionId
         : undefined,
       prettyUrl: this.prettyUrlEnabled
-        ? prettyUrlGenerator.build(values[ADVANCED].friendly_url)
+        ? prettyUrlGenerator.build(advancedValues.friendly_url)
         : undefined,
-      notifications: (values[ADVANCED].notifications || []).slice()
+      notifications: (advancedValues.notifications || []).slice()
     };
     if (this.isWindowsPlatform) {
       payload.node_count = undefined;
@@ -1600,7 +1614,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (this.state.runNameAlias) {
       payload.runNameAlias = this.state.runNameAlias;
     }
-    if ((values[ADVANCED].is_spot ||
+    if ((advancedValues.is_spot ||
       `${this.getDefaultValue('is_spot')}`) !== 'true' &&
       !this.state.autoScaledCluster &&
       !this.state.launchCluster &&
@@ -1636,11 +1650,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         };
       }
     }
-    if (values[ADVANCED].limitMounts && !this.isWindowsPlatform) {
+    if (advancedValues.limitMounts && !this.isWindowsPlatform) {
       payload.params[CP_CAP_LIMIT_MOUNTS] = {
         type: 'string',
         required: false,
-        value: values[ADVANCED].limitMounts
+        value: advancedValues.limitMounts
       };
     }
     const launchAutoScaledCluster = this.state.launchCluster && this.state.autoScaledCluster;
@@ -1789,7 +1803,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   getSectionFieldValue = (section) => (name, ...opts) => {
     if (name) {
-      return this.props.form.getFieldValue(`${section}.${name}`, ...opts);
+      return this.props.form.getFieldValue([section, name], ...opts);
     } else {
       return this.props.form.getFieldValue(section, ...opts);
     }
@@ -2055,8 +2069,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const [instanceType] = this.instanceTypes.filter(t => t.name === newType);
     if (instanceType) {
       try {
-        const formField = `${EXEC_ENVIRONMENT}.cloudRegionId`;
-        const currentRegion = this.props.form.getFieldValue(formField);
+        const currentRegion = this.props.form.getFieldValue([EXEC_ENVIRONMENT, 'cloudRegionId']);
         const regionId = this.correctCloudRegion(
           currentRegion ||
           this.defaultCloudRegionId
@@ -2069,9 +2082,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           !iRegionIds.some((id) => Number(id) === Number(regionId));
         if (changed) {
           const switchTo = iRegionIds[0];
-          this.props.form.setFieldsValue({
-            [formField]: `${switchTo}`
-          });
+          this.props.form.setFieldValue([EXEC_ENVIRONMENT, 'cloudRegionId'], `${switchTo}`);
         }
       } catch (e) {
         console.warn(e);
@@ -2631,7 +2642,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               validateStatus={this.state.validation[EXEC_ENVIRONMENT].coresNumber.result}
               help={this.state.validation[EXEC_ENVIRONMENT].coresNumber.message}
               hasFeedback
-              name={`${EXEC_ENVIRONMENT}.coresNumber`}
+              name={[EXEC_ENVIRONMENT, 'coresNumber']}
               rules={[
                 {
                   pattern: /^\d+(\.\d+)?$/,
@@ -2842,7 +2853,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         label="Docker image"
         required={!this.state.fireCloudMethodName}
         hasFeedback
-        name={`${EXEC_ENVIRONMENT}.dockerImage`}
+        name={[EXEC_ENVIRONMENT, 'dockerImage']}
         rules={[
           {
             required: !this.state.fireCloudMethodName,
@@ -2900,7 +2911,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               <FormItem
                 className={styles.formItemRow}
                 hasFeedback
-                name={`${ADVANCED}.friendly_url`}
+                name={[ADVANCED, 'friendly_url']}
                 rules={[
                   {
                     validator: this.checkPrettyURL
@@ -2938,7 +2949,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             <FormItem
               className={styles.formItemRow}
               hasFeedback
-              name={`${ADVANCED}.endpointName`}
+              name={[ADVANCED, 'endpointName']}
               initialValue={this.getDefaultValue('endpointName')}>
               <Input
                 disabled={(this.props.readOnly && !this.props.canExecute)} />
@@ -2968,7 +2979,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         required={!this.state.fireCloudMethodName && !this.state.isDts}
         label="Node type"
         hasFeedback
-        name={`${EXEC_ENVIRONMENT}.type`}
+        name={[EXEC_ENVIRONMENT, 'type']}
         rules={[
           {
             required: !this.state.fireCloudMethodName && !this.state.isDts,
@@ -3143,7 +3154,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   getInitialCloudRegionNotAvailable = () => {
     const {getFieldValue} = this.props.form;
     const initialValue = `${this.getDefaultCloudRegionValue()}`;
-    const currentValue = getFieldValue(`${EXEC_ENVIRONMENT}.cloudRegionId`);
+    const currentValue = getFieldValue([EXEC_ENVIRONMENT, 'cloudRegionId']);
     return (!currentValue || currentValue === initialValue) &&
       initialValue &&
       this.awsRegions.filter((region) => `${region.id}` === initialValue).length === 0;
@@ -3160,7 +3171,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         required={this.awsRegions.length > 0 && !this.state.isDts}
         hasFeedback
         label="Cloud Region"
-        name={`${EXEC_ENVIRONMENT}.cloudRegionId`}
+        name={[EXEC_ENVIRONMENT, 'cloudRegionId']}
         rules={[
           {
             required: this.awsRegions.length > 0 && !this.state.isDts,
@@ -3323,10 +3334,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       this.closeConfigureClusterDialog();
       const priceType = this.getSectionFieldValue(ADVANCED)('is_spot') ||
         this.getDefaultValue('is_spot');
-      const priceTypeField = `${ADVANCED}.is_spot`;
-      this.props.form.setFieldsValue({
-        [priceTypeField]: this.correctPriceTypeValue(priceType)
-      });
+      this.props.form.setFieldValue(
+        [ADVANCED, 'is_spot'],
+        this.correctPriceTypeValue(priceType)
+      );
     });
   };
 
@@ -3425,7 +3436,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         label="Disk (Gb)"
         required={!this.state.fireCloudMethodName && !this.state.isDts}
         hasFeedback
-        name={`${EXEC_ENVIRONMENT}.disk`}
+        name={[EXEC_ENVIRONMENT, 'disk']}
         rules={[
           {
             pattern: /^\d+(\.\d+)?$/,
@@ -3499,11 +3510,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       this.getDefaultValue('instance_size');
     const priceType = this.getSectionFieldValue(ADVANCED)('is_spot') ||
       this.getDefaultValue('is_spot');
-    const instanceTypeField = `${EXEC_ENVIRONMENT}.type`;
-    const priceTypeField = `${ADVANCED}.is_spot`;
     this.props.form.setFieldsValue({
-      [instanceTypeField]: this.correctInstanceTypeValue(instanceType),
-      [priceTypeField]: this.correctPriceTypeValue(priceType)
+      [EXEC_ENVIRONMENT]: {
+        type: this.correctInstanceTypeValue(instanceType)
+      },
+      [ADVANCED]: {
+        is_spot: this.correctPriceTypeValue(priceType)
+      }
     });
   };
 
@@ -3575,7 +3588,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             <FormItem
               className={styles.formItemRow}
               hasFeedback
-              name={`${ADVANCED}.is_spot`}
+              name={[ADVANCED, 'is_spot']}
               rules={[
                 {
                   required: !this.state.isDts,
@@ -3675,7 +3688,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             <FormItem
               className={styles.formItemRow}
               hasFeedback
-              name={`${ADVANCED}.timeout`}
+              name={[ADVANCED, 'timeout']}
               rules={[
                 {
                   pattern: /^\d+(\.\d+)?$/,
@@ -3712,7 +3725,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           <FormItem
             className={styles.formItemRow}
             hasFeedback
-            name={`${ADVANCED}.stopAfter`}
+            name={[ADVANCED, 'stopAfter']}
             rules={[
               {
                 pattern: /^\d+(\.\d+)?$/,
@@ -3768,7 +3781,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           cloudRegions: this.awsRegions
         }
       );
-      let currentValue = this.props.form.getFieldValue(`${ADVANCED}.limitMounts`);
+      let currentValue = this.props.form.getFieldValue([ADVANCED, 'limitMounts']);
       if (currentValue === undefined) {
         currentValue = defaultValue;
       }
@@ -3778,13 +3791,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       const instance = this.instanceTypes.find(t => t.name === instanceType);
       const toggleDoNotMountStorages = (e) => {
         if (e.target.checked) {
-          this.props.form.setFieldsValue({
-            [`${ADVANCED}.limitMounts`]: 'None'
-          });
+          this.props.form.setFieldValue([ADVANCED, 'limitMounts'], 'None');
         } else {
-          this.props.form.setFieldsValue({
-            [`${ADVANCED}.limitMounts`]: null
-          });
+          this.props.form.setFieldValue([ADVANCED, 'limitMounts'], null);
         }
       };
       return (
@@ -3815,7 +3824,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               <div style={{flex: 1}}>
                 <FormItem
                   className={styles.formItemRow}
-                  name={`${ADVANCED}.limitMounts`}
+                  name={[ADVANCED, 'limitMounts']}
                   initialValue={defaultValue}>
                   <LimitMountsInput
                     allowSensitive={this.toolAllowSensitive}
@@ -3880,7 +3889,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         <Col span={10}>
           <FormItem
             className={styles.formItemRow}
-            name={`${ADVANCED}.hostedApplication`}>
+            name={[ADVANCED, 'hostedApplication']}>
             <HostedAppConfiguration />
           </FormItem>
         </Col>
@@ -3937,7 +3946,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         <Col span={10}>
           <FormItem
             className={styles.formItemRow}
-            name={`${ADVANCED}.notifications`}
+            name={[ADVANCED, 'notifications']}
             initialValue={this.getDefaultValue('notifications')}>
             <JobNotifications
               disabled={
@@ -4044,7 +4053,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   <FormItem
                     className={styles.formItemRow}
                     required={!this.state.fireCloudMethodName}
-                    name={`${ADVANCED}.cmdTemplate`}
+                    name={[ADVANCED, 'cmdTemplate']}
                     rules={[{
                       required: !this.state.fireCloudMethodName,
                       message: 'Command template is required'
@@ -4058,6 +4067,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       className={styles.hiddenItem} />
                   </FormItem>
                   <CodeEditor
+                    key={`${this.props.configurationId || ''}-${this.props.currentConfigurationName || ''}`}
                     ref={(editor) => { this.codeEditor = editor; }}
                     readOnly={
                       !!this.state.fireCloudMethodName ||
@@ -4944,7 +4954,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               key="input"
               className={styles.formItemRow}
               hasFeedback
-              name="configuration.name"
+              name={['configuration', 'name']}
               rules={[
                 {
                   required: true,
@@ -4967,7 +4977,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         pipelineName = this.props.pipeline.name;
       } else {
         const dockerImageParts = (
-          this.props.form.getFieldValue(`${EXEC_ENVIRONMENT}.dockerImage`) || ''
+          this.props.form.getFieldValue([EXEC_ENVIRONMENT, 'dockerImage']) || ''
         ).split('/');
         if (dockerImageParts.length > 0) {
           pipelineName = dockerImageParts[dockerImageParts.length - 1].split(':')[0];
@@ -5123,7 +5133,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         preserve
         onValuesChange={(changedValues, allValues) => this.onValuesChange(this.props, allValues)}
         onFieldsChange={(changedFields, allFields) => this.onFieldsChange(this.props, changedFields)}
-        onSubmit={this.handleSubmit}>
+        onFinish={() => this.handleSubmit({preventDefault: () => {}})}
+        onFinishFailed={(errorInfo) => {
+          this.setState({pending: false});
+          this.expandErroredPanels(errorInfo?.errorFields || errorInfo);
+        }}>
         <div className={styles.layout}>
           <div className={classNames(styles.layoutHeader, 'cp-divider', 'bottom')}>
             <div
@@ -5296,6 +5310,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             <Collapse.Panel
               id="launch-pipeline-advanced-panel"
               key={ADVANCED}
+              forceRender
               className={
                 classNames(styles.section, {[styles.hidden]: !this.advancedSectionVisible})
               }
