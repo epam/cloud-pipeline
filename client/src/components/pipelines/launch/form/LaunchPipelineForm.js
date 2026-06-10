@@ -237,6 +237,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   static propTypes = {
+    className: PropTypes.string,
+    style: PropTypes.object,
     pending: PropTypes.bool,
     pipeline: PropTypes.shape(),
     pipelines: PropTypes.array,
@@ -282,7 +284,16 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     }),
     onInitialized: PropTypes.func,
     onModified: PropTypes.func,
-    continueRun: PropTypes.oneOfType([PropTypes.number, PropTypes.string])
+    onLaunchProfileDelete: PropTypes.func,
+    launchProfileSaveDisabled: PropTypes.bool,
+    continueRun: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    launchProfile: PropTypes.oneOfType([PropTypes.bool, PropTypes.shape({
+      onSave: PropTypes.func,
+      onReset: PropTypes.func,
+      onDelete: PropTypes.func,
+      saveDisabled: PropTypes.bool,
+      newProfile: PropTypes.bool
+    })])
   };
 
   static defaultProps = {
@@ -406,18 +417,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   leftFormItemLayout = {
     labelCol: {
-      xs: {span: 24},
-      sm: {span: 5},
-      md: {span: 4},
-      lg: {span: 3},
-      xl: {span: 2}
+      className: styles.formItemLabelColumn
     },
     wrapperCol: {
-      xs: {span: 24},
-      sm: {span: 16},
-      md: {span: 15},
-      lg: {span: 15},
-      xl: {span: 10}
+      className: styles.formItemWrapperColumn
     }
   };
 
@@ -429,22 +432,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   cmdTemplateFormItemLayout = {
     labelCol: {
-      xs: {span: 24},
-      sm: {span: 5},
-      md: {span: 4},
-      lg: {span: 3},
-      xl: {span: 2}
+      className: styles.formItemLabelColumn
     },
     wrapperCol: {
-      xs: {span: 24},
-      sm: {span: 19},
-      md: {span: 20},
-      lg: {span: 21},
-      xl: {span: 22}
+      className: styles.formItemWrapperColumn
     }
   };
 
-  prevParameters = {};
   sectionRefs = {};
   parametersNavigationWrapperRef;
   parametersNavigationRef;
@@ -812,6 +806,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   @computed
   get defaultCloudRegionId () {
+    if (this.props.launchProfile) {
+      return null;
+    }
     const [defaultRegion] = this.awsRegions.filter(r => r.default);
     if (defaultRegion) {
       return `${defaultRegion.id}`;
@@ -1063,7 +1060,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       if (!err && this.validateFireCloudConnections()) {
         let payload;
         try {
-          if (this.props.editConfigurationMode) {
+          if (this.props.launchProfile) {
+            payload = await this.generateLaunchPayload(values);
+          } else if (this.props.editConfigurationMode) {
             payload = await this.generateConfigurationPayload(values, {
               skipReservationParameters: false,
               applyAdditionalParameters: false
@@ -1077,6 +1076,20 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           }
         } catch (e) {
           message.error(e.message, 5);
+          return;
+        }
+        const {
+          launchProfile
+        } = this.props;
+        if (launchProfile) {
+          if (typeof launchProfile === 'object') {
+            const {
+              onSave
+            } = launchProfile;
+            if (onSave) {
+              await onSave(payload);
+            }
+          }
           return;
         }
         if (this.props.onLaunch) {
@@ -1545,9 +1558,18 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       this.state.userTags,
       this.state.userTagsVisibleTags
     );
+    let disk = values[EXEC_ENVIRONMENT].disk;
+    if (typeof disk === 'string' && disk.trim() === '') {
+      disk = undefined;
+    }
+    if (disk !== undefined && !Number.isNaN(disk)) {
+      disk = Number(disk);
+    } else {
+      disk = undefined;
+    }
     const payload = {
       instanceType,
-      hddSize: +values[EXEC_ENVIRONMENT].disk,
+      hddSize: disk,
       timeout: +(values[ADVANCED].timeout || 0),
       cmdTemplate: cmd,
       nodeCount: this.state.launchCluster ? this.state.nodesCount : undefined,
@@ -2274,7 +2296,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 fireCloudMethodConfigurationSnapshot: pipeline.configurationSnapshot,
                 isFireCloud: true
               }, () => {
-                this.prevParameters = this.props.form.getFieldsValue().parameters;
                 this.reset(true);
                 this.evaluateEstimatedPrice({});
               });
@@ -2333,7 +2354,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               if (anError) {
                 message.error(anError, 5);
               } else {
-                this.prevParameters = this.props.form.getFieldsValue().parameters;
                 this.reset(true);
                 this.evaluateEstimatedPrice({});
               }
@@ -2824,6 +2844,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   }
 
   renderDockerImageFormItem = () => {
+    if (this.props.launchProfile) return null;
     return (
       <FormItem
         className={getFormItemClassName(styles.formItem, 'dockerImage')}
@@ -2882,6 +2903,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   renderPrettyUrlFormItem = () => {
+    if (this.props.launchProfile) return null;
     if (this.prettyUrlEnabled && this.prettyUrlAvailable()) {
       const sshMode = this.prettyUrlSSHMode;
       return (
@@ -2890,34 +2912,33 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           {...this.leftFormItemLayout}
           label="Friendly URL"
           hasFeedback>
-          <Col span={10}>
-            <FormItem
-              className={styles.formItemRow}
-              hasFeedback
-            >
-              {this.getSectionFieldDecorator(ADVANCED)('friendly_url',
-                {
-                  rules: [
-                    {
-                      validator: this.checkPrettyURL
-                    }
-                  ],
-                  initialValue: prettyUrlGenerator.parse(this.getDefaultValue('friendly_url'))
-                }
-              )(
-                <Input
-                  disabled={(this.props.readOnly && !this.props.canExecute)} />
-              )}
-            </FormItem>
-          </Col>
-          <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
-            {
-              hints.renderHint(
-                this.localizedStringWithSpotDictionaryFn,
-                sshMode ? hints.prettySSHUrlHint : hints.prettyUrlHint
-              )
-            }
-          </Col>
+          <Row type="flex" align="top">
+            <div className={styles.formItemMiniCol}>
+              <FormItem hasFeedback style={{marginBottom: 0}}>
+                {this.getSectionFieldDecorator(ADVANCED)('friendly_url',
+                  {
+                    rules: [
+                      {
+                        validator: this.checkPrettyURL
+                      }
+                    ],
+                    initialValue: prettyUrlGenerator.parse(this.getDefaultValue('friendly_url'))
+                  }
+                )(
+                  <Input
+                    disabled={(this.props.readOnly && !this.props.canExecute)} />
+                )}
+              </FormItem>
+            </div>
+            <div className={styles.hintContainer}>
+              {
+                hints.renderHint(
+                  this.localizedStringWithSpotDictionaryFn,
+                  sshMode ? hints.prettySSHUrlHint : hints.prettyUrlHint
+                )
+              }
+            </div>
+          </Row>
         </FormItem>
       );
     }
@@ -2932,24 +2953,23 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           {...this.leftFormItemLayout}
           label="Endpoint Name"
           hasFeedback>
-          <Col span={10}>
-            <FormItem
-              className={styles.formItemRow}
-              hasFeedback
-            >
-              {this.getSectionFieldDecorator(ADVANCED)('endpointName',
-                {
-                  initialValue: this.getDefaultValue('endpointName')
-                }
-              )(
-                <Input
-                  disabled={(this.props.readOnly && !this.props.canExecute)} />
-              )}
-            </FormItem>
-          </Col>
-          <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
-            {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.endpointNameHint)}
-          </Col>
+          <Row type="flex" align="top">
+            <div className={styles.formItemMiniCol}>
+              <FormItem hasFeedback style={{marginBottom: 0}}>
+                {this.getSectionFieldDecorator(ADVANCED)('endpointName',
+                  {
+                    initialValue: this.getDefaultValue('endpointName')
+                  }
+                )(
+                  <Input
+                    disabled={(this.props.readOnly && !this.props.canExecute)} />
+                )}
+              </FormItem>
+            </div>
+            <div className={styles.hintContainer}>
+              {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.endpointNameHint)}
+            </div>
+          </Row>
         </FormItem>
       );
     }
@@ -2968,14 +2988,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       <FormItem
         className={getFormItemClassName(styles.formItem, 'type')}
         {...this.formItemLayout}
-        required={!this.state.fireCloudMethodName && !this.state.isDts}
+        required={!this.state.fireCloudMethodName && !this.state.isDts && !this.props.launchProfile}
         label="Node type"
         hasFeedback>
         {this.getSectionFieldDecorator(EXEC_ENVIRONMENT)('type',
           {
             rules: [
               {
-                required: !this.state.fireCloudMethodName && !this.state.isDts,
+                required: !this.state.fireCloudMethodName && !this.state.isDts && !this.props.launchProfile,
                 message: 'Node type is required'
               }
             ],
@@ -2991,7 +3011,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 (this.props.allowedInstanceTypes.changed || this.props.allowedInstanceTypes.pending)
               )}
             showSearch
-            allowClear={false}
+            allowClear={!!this.props.launchProfile}
             placeholder="Node type"
             optionFilterProp="children"
             onChange={this.instanceTypeChanged}
@@ -3164,14 +3184,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       <FormItem
         className={getFormItemClassName(styles.formItem, 'cloudRegionId')}
         {...this.formItemLayout}
-        required={this.awsRegions.length > 0 && !this.state.isDts}
+        required={this.awsRegions.length > 0 && !this.state.isDts && !this.props.launchProfile}
         hasFeedback
         label="Cloud Region">
         {this.getSectionFieldDecorator(EXEC_ENVIRONMENT)('cloudRegionId',
           {
             rules: [
               {
-                required: this.awsRegions.length > 0 && !this.state.isDts,
+                required: this.awsRegions.length > 0 && !this.state.isDts && !this.props.launchProfile,
                 message: 'Cloud region id is required'
               }
             ],
@@ -3189,7 +3209,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               )
             }
             showSearch
-            allowClear={false}
+            allowClear={!!this.props.launchProfile}
             placeholder="Cloud Region"
             optionFilterProp="children"
             onSelect={(cloudRegionId) => this.evaluateEstimatedPrice({cloudRegionId})}
@@ -3233,7 +3253,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   renderRescheduleRunControl = () => {
-    if (this.props.detached || this.props.editConfigurationMode) {
+    if (this.props.detached || this.props.editConfigurationMode || this.props.launchProfile) {
       return undefined;
     }
     const {
@@ -3413,7 +3433,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             }
           </div>
         </div>,
-        <div key="hint" style={{width: 30, textAlign: 'center'}}>
+        <div key="hint" className={styles.hintContainer}>
           {hints.renderHint(
             this.localizedStringWithSpotDictionaryFn,
             hints.executionEnvironmentSummaryHint
@@ -3434,7 +3454,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         className={getFormItemClassName(styles.formItem, 'disk')}
         {...this.formItemLayout}
         label="Disk (Gb)"
-        required={!this.state.fireCloudMethodName && !this.state.isDts}
+        required={!this.state.fireCloudMethodName && !this.state.isDts && !this.props.launchProfile}
         hasFeedback>
         {this.getSectionFieldDecorator(EXEC_ENVIRONMENT)('disk',
           {
@@ -3445,7 +3465,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               },
               {
                 required: !this.state.fireCloudMethodName &&
-                  !this.state.isDts,
+                  !this.state.isDts &&
+                  !this.props.launchProfile,
                 message: 'Instance disk is required'
               },
               {
@@ -3454,12 +3475,20 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                     callback();
                     return;
                   }
-                  if (!isNaN(value)) {
-                    if (+value > 15360) {
+                  let v = value;
+                  if (typeof v === 'string' && v.trim() === '') {
+                    v = undefined;
+                  }
+                  if (v === undefined && !this.props.launchProfile) {
+                    callback('Instance disk is required');
+                    return;
+                  }
+                  if (v !== undefined && !isNaN(v)) {
+                    if (+v > 15360) {
                       // eslint-disable-next-line
                       callback('Maximum value is 15360');
                       return;
-                    } else if (+value < 15) {
+                    } else if (+v < 15) {
                       // eslint-disable-next-line
                       callback('Minimum value is 15');
                       return;
@@ -3532,6 +3561,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const {
       editConfigurationMode,
       isDetachedConfiguration,
+      launchProfile,
       preferences,
       pipeline
     } = this.props;
@@ -3539,7 +3569,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const isSpot = `${this.getSectionFieldValue(ADVANCED)('is_spot') ||
       this.correctPriceTypeValue(this.getDefaultValue('is_spot'))}` === 'true';
 
-    if (editConfigurationMode || isDetachedConfiguration || isSpot || launchCluster) {
+    if (
+      editConfigurationMode ||
+      isDetachedConfiguration ||
+      isSpot ||
+      launchCluster ||
+      launchProfile
+    ) {
       return null;
     }
     const isPipeline = !!pipeline && !!pipeline.id;
@@ -3585,11 +3621,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         {...this.leftFormItemLayout}
         label="Price type"
         hasFeedback>
-        <Row type="flex" align="middle">
-          <Col span={10}>
-            <FormItem
-              className={styles.formItemRow}
-              hasFeedback>
+        <Row type="flex" align="top">
+          <div className={styles.formItemMiniCol}>
+            <FormItem hasFeedback style={{marginBottom: 0}}>
               {this.getSectionFieldDecorator(ADVANCED)('is_spot',
                 {
                   rules: [
@@ -3625,10 +3659,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 </Select>
               )}
             </FormItem>
-          </Col>
-          <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
+          </div>
+          <div className={styles.hintContainer}>
             {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.priceTypeHint)}
-          </Col>
+          </div>
         </Row>
       </FormItem>
     );
@@ -3654,33 +3688,24 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           }, this.formFieldsChanged);
         };
         return (
-          <Row type="flex" align="middle" style={{marginTop: 10, marginBottom: 10}}>
-            <Col
-              xs={10}
-              sm={5}
-              md={4}
-              lg={3}
-              xl={2}
-              className="cp-accent"
-              style={{
-                textAlign: 'right',
-                paddingRight: 10
-              }}>
-              Auto pause:
-            </Col>
-            <Col xs={24} sm={16} md={15} lg={15} xl={10}>
-              <Row type="flex" align="middle">
-                <Col span={10}>
+          <FormItem
+            className={getFormItemClassName(styles.formItemRow, 'autoPause')}
+            {...this.leftFormItemLayout}
+            label="Auto pause"
+            hasFeedback>
+            <Row type="flex" align="top">
+              <div className={styles.formItemMiniCol}>
+                <FormItem hasFeedback style={{marginBottom: 0}}>
                   <Checkbox checked={this.state.autoPause} onChange={onChange}>
                     Enabled
                   </Checkbox>
-                </Col>
-                <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
-                  {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.autoPauseHint)}
-                </Col>
-              </Row>
-            </Col>
-          </Row>
+                </FormItem>
+              </div>
+              <div className={styles.hintContainer}>
+                {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.autoPauseHint)}
+              </div>
+            </Row>
+          </FormItem>
         );
       }
     }
@@ -3697,32 +3722,32 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         {...this.leftFormItemLayout}
         label="Timeout (min)"
         hasFeedback>
-        <Col span={10}>
-          <FormItem
-            className={styles.formItemRow}
-            hasFeedback>
-            {this.getSectionFieldDecorator(ADVANCED)('timeout',
-              {
-                rules: [
-                  {
-                    pattern: /^\d+(\.\d+)?$/,
-                    message: 'Please enter a valid positive number'
-                  }
-                ],
-                initialValue: this.getDefaultValue('timeout')
-              }
-            )(
-              <Input
-                disabled={
-                  !!this.state.fireCloudMethodName ||
-                  (this.props.readOnly && !this.props.canExecute)
-                } />
-            )}
-          </FormItem>
-        </Col>
-        <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
-          {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.timeOutHint)}
-        </Col>
+        <Row type="flex" align="top">
+          <div className={styles.formItemMiniCol}>
+            <FormItem hasFeedback style={{marginBottom: 0}}>
+              {this.getSectionFieldDecorator(ADVANCED)('timeout',
+                {
+                  rules: [
+                    {
+                      pattern: /^\d+(\.\d+)?$/,
+                      message: 'Please enter a valid positive number'
+                    }
+                  ],
+                  initialValue: this.getDefaultValue('timeout')
+                }
+              )(
+                <Input
+                  disabled={
+                    !!this.state.fireCloudMethodName ||
+                    (this.props.readOnly && !this.props.canExecute)
+                  } />
+              )}
+            </FormItem>
+          </div>
+          <div className={styles.hintContainer}>
+            {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.timeOutHint)}
+          </div>
+        </Row>
       </FormItem>
     );
   };
@@ -3737,32 +3762,32 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         {...this.leftFormItemLayout}
         label="Stop after (min)"
         hasFeedback>
-        <Col span={10}>
-          <FormItem
-            className={styles.formItemRow}
-            hasFeedback>
-            {this.getSectionFieldDecorator(ADVANCED)('stopAfter',
-              {
-                rules: [
-                  {
-                    pattern: /^\d+(\.\d+)?$/,
-                    message: 'Please enter a valid positive number'
-                  }
-                ],
-                initialValue: this.getDefaultValue('stopAfter')
-              }
-            )(
-              <Input
-                disabled={
-                  (this.props.readOnly && !this.props.canExecute)
+        <Row type="flex" align="top">
+          <div className={styles.formItemMiniCol}>
+            <FormItem hasFeedback style={{marginBottom: 0}}>
+              {this.getSectionFieldDecorator(ADVANCED)('stopAfter',
+                {
+                  rules: [
+                    {
+                      pattern: /^\d+(\.\d+)?$/,
+                      message: 'Please enter a valid positive number'
+                    }
+                  ],
+                  initialValue: this.getDefaultValue('stopAfter')
                 }
-              />
-            )}
-          </FormItem>
-        </Col>
-        <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
-          {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.stopAfterHint)}
-        </Col>
+              )(
+                <Input
+                  disabled={
+                    (this.props.readOnly && !this.props.canExecute)
+                  }
+                />
+              )}
+            </FormItem>
+          </div>
+          <div className={styles.hintContainer}>
+            {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.stopAfterHint)}
+          </div>
+        </Row>
       </FormItem>
     );
   };
@@ -3826,14 +3851,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           {...this.cmdTemplateFormItemLayout}
           label="Limit mounts">
           <div>
-            <Row type="flex" align="middle">
+            <Row type="flex" align="top">
               <Checkbox
                 checked={/^none$/i.test(currentValue)}
                 onChange={toggleDoNotMountStorages}
               >
                 Do not mount storages
               </Checkbox>
-              <div style={{marginLeft: 7, marginTop: 3}}>
+              <div className={styles.hintContainer}>
                 {hints.renderHint(
                   this.localizedStringWithSpotDictionaryFn,
                   hints.doNotMountStoragesHint
@@ -3842,13 +3867,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             </Row>
             <Row
               type="flex"
-              align="middle"
-              style={{display: noStoragesSelected ? 'none' : undefined}}
+              align="top"
+              style={{display: noStoragesSelected ? 'none' : undefined, marginBottom: 5}}
             >
               <div style={{flex: 1}}>
-                <FormItem
-                  className={styles.formItemRow}
-                >
+                <FormItem style={{marginBottom: 0}}>
                   {this.getSectionFieldDecorator(ADVANCED)('limitMounts',
                     {
                       initialValue: defaultValue
@@ -3865,7 +3888,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   )}
                 </FormItem>
               </div>
-              <div style={{marginLeft: 7, marginTop: 3}}>
+              <div className={styles.hintContainer}>
                 {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.limitMountsHint)}
               </div>
             </Row>
@@ -3904,7 +3927,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (
       this.props.detached ||
       this.props.isDetachedConfiguration ||
-      this.props.editConfigurationMode
+      this.props.editConfigurationMode ||
+      this.props.launchProfile
     ) {
       return null;
     }
@@ -3915,20 +3939,20 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         {...this.leftFormItemLayout}
         label="Internal DNS name"
       >
-        <Col span={10}>
-          <FormItem
-            className={styles.formItemRow}
-          >
-            {
-              this.getSectionFieldDecorator(ADVANCED)('hostedApplication')(
-                <HostedAppConfiguration />
-              )
-            }
-          </FormItem>
-        </Col>
-        <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
-          {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.hostedApplicationHint)}
-        </Col>
+        <Row type="flex" align="top">
+          <div className={styles.formItemMiniCol}>
+            <FormItem style={{marginBottom: 0}}>
+              {
+                this.getSectionFieldDecorator(ADVANCED)('hostedApplication')(
+                  <HostedAppConfiguration />
+                )
+              }
+            </FormItem>
+          </div>
+          <div className={styles.hintContainer}>
+            {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.hostedApplicationHint)}
+          </div>
+        </Row>
       </FormItem>
     );
   };
@@ -3937,7 +3961,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (
       this.props.detached ||
       this.props.isDetachedConfiguration ||
-      this.props.editConfigurationMode
+      this.props.editConfigurationMode ||
+      this.props.launchProfile
     ) {
       return null;
     }
@@ -3969,34 +3994,37 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     );
   };
 
-  renderJobNotificationsItem = () => (
-    <FormItem
-      className={getFormItemClassName(styles.formItemRow, 'notifications')}
-      {...this.leftFormItemLayout}
-      label="Notifications"
-    >
-      <Col span={10}>
-        <FormItem
-          className={styles.formItemRow}
-        >
-          {this.getSectionFieldDecorator(ADVANCED)('notifications',
-            {
-              initialValue: this.getDefaultValue('notifications')
-            }
-          )(
-            <JobNotifications
-              disabled={
-                (this.props.readOnly && !this.props.canExecute)
-              }
-            />
-          )}
-        </FormItem>
-      </Col>
-      <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
-        {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.jobNotificationsHint)}
-      </Col>
-    </FormItem>
-  );
+  renderJobNotificationsItem = () => {
+    if (this.props.launchProfile) return null;
+    return (
+      <FormItem
+        className={getFormItemClassName(styles.formItemRow, 'notifications')}
+        {...this.leftFormItemLayout}
+        label="Notifications"
+      >
+        <Row type="flex" align="top">
+          <div className={styles.formItemMiniCol}>
+            <FormItem style={{marginBottom: 0}}>
+              {this.getSectionFieldDecorator(ADVANCED)('notifications',
+                {
+                  initialValue: this.getDefaultValue('notifications')
+                }
+              )(
+                <JobNotifications
+                  disabled={
+                    (this.props.readOnly && !this.props.canExecute)
+                  }
+                />
+              )}
+            </FormItem>
+          </div>
+          <div className={styles.hintContainer}>
+            {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.jobNotificationsHint)}
+          </div>
+        </Row>
+      </FormItem>
+    );
+  };
 
   renderCustomUIItem = () => {
     const {
@@ -4033,7 +4061,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         {...this.cmdTemplateFormItemLayout}
         label="Cmd template">
         <Row>
-          <Row>
+          <Row type="flex" align="top">
             <Checkbox
               disabled={
                 !!this.state.fireCloudMethodName ||
@@ -4050,11 +4078,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               checked={this.state.startIdle}>
               Start idle
             </Checkbox>
-            {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.startIdleHint)}
+            <div className={styles.hintContainer}>
+              {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.startIdleHint)}
+            </div>
           </Row>
           {
             !!this.toolDefaultCmd && (
-              <Row>
+              <Row type="flex" align="top">
                 <Checkbox
                   disabled={
                     !!this.state.fireCloudMethodName ||
@@ -4071,10 +4101,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   checked={this.state.useDefaultCmd}>
                   Use default command
                 </Checkbox>
-                {hints.renderHint(
-                  this.localizedStringWithSpotDictionaryFn,
-                  hints.useDefaultCommandHint
-                )}
+                <div className={styles.hintContainer}>
+                  {hints.renderHint(
+                    this.localizedStringWithSpotDictionaryFn,
+                    hints.useDefaultCommandHint
+                  )}
+                </div>
               </Row>
             )
           }
@@ -4084,12 +4116,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 <Row>
                   <Col span={24}>
                     <FormItem
-                      className={styles.formItemRow}
-                      required={!this.state.fireCloudMethodName}>
+                      required={!this.state.fireCloudMethodName && !this.props.launchProfile}>
                       {this.getSectionFieldDecorator(ADVANCED)('cmdTemplate',
                         {
                           rules: [{
-                            required: !this.state.fireCloudMethodName,
+                            required: !this.state.fireCloudMethodName && !this.props.launchProfile,
                             message: 'Command template is required'
                           }],
                           initialValue: this.getDefaultValue('cmd_template')
@@ -4124,7 +4155,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             this.state.useDefaultCmd && this.toolDefaultCmd
               ? (
                 <Row>
-                  <Col span={24} className={styles.formItemRow}>
+                  <Col span={24}>
                     <CodeEditor
                       readOnly
                       className={styles.codeEditor}
@@ -4664,6 +4695,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   renderUploadParametersControls = (style = {}) => {
+    if (this.props.launchProfile) return null;
     const {preferences} = this.props;
     const {isRawEditEnabled} = this.state;
     const preventDefault = (e) => {
@@ -4848,8 +4880,70 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     }
   };
 
+  onResetLaunchProfile = () => {
+    const {launchProfile} = this.props;
+    this.reset();
+    if (launchProfile && typeof launchProfile === 'object') {
+      const {
+        onReset
+      } = launchProfile;
+      if (onReset) {
+        onReset();
+      }
+    }
+  };
+
+  renderLaunchProfileFooter = () => {
+    const {launchProfile} = this.props;
+    if (!launchProfile || typeof launchProfile !== 'object') {
+      return null;
+    }
+    const {
+      onSave,
+      onDelete,
+      onReset,
+      saveDisabled,
+      newProfile = false
+    } = launchProfile;
+    return (
+      <div
+        className={classNames(styles.layoutFooter, 'cp-divider', 'top')}
+        style={{
+          padding: '8px 16px',
+          display: 'flex',
+          gap: 8,
+        }}
+      >
+        <Button
+          type="primary"
+          htmlType="submit"
+          disabled={this.props.pending || saveDisabled}
+        >
+          Save
+        </Button>
+        <Button
+          disabled={this.props.pending || saveDisabled}
+          onClick={this.onResetLaunchProfile}
+        >
+          {newProfile ? 'Cancel' : 'Revert changes'}
+        </Button>
+        <Button
+          type="danger"
+          disabled={this.props.pending || !onDelete}
+          onClick={onDelete}
+          style={{marginLeft: 'auto'}}
+        >
+          Delete
+        </Button>
+      </div>
+    )
+  };
+
   render () {
     const renderSubmitButton = () => {
+      if (this.props.launchProfile) {
+        return undefined;
+      }
       if (this.props.editConfigurationMode) {
         return (
           <div className={styles.actions}>
@@ -4971,6 +5065,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       return undefined;
     };
     const renderFormTitle = () => {
+      if (this.props.launchProfile) return null;
       if (this.props.editConfigurationMode) {
         const nameError =
           'Name can contain only letters, digits, spaces, \'_\', \'-\', \'@\' and \'.\'.';
@@ -5173,10 +5268,17 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const configureClusterDisplayConfig = getDisplayConfig();
     const configureClusterEnabled = configureClusterDisplayConfig.autoScaledVisible ||
       configureClusterDisplayConfig.staticVisible;
+    const {
+      className,
+      style,
+    } = this.props;
     return (
-      <Form onSubmit={this.handleSubmit}>
+      <Form onSubmit={this.handleSubmit} className={classNames(styles.form, className)} style={style}>
         <div className={styles.layout}>
-          <div className={classNames(styles.layoutHeader, 'cp-divider', 'bottom')}>
+          <div
+            className={classNames(styles.layoutHeader, 'cp-divider', 'bottom')}
+            style={this.props.launchProfile ? {display: 'none'} : undefined}
+          >
             <div
               id="launch-pipeline-form-header-container"
               style={{width: '100%', display: 'flex', alignItems: 'flex-start', margin: 5}}
@@ -5387,6 +5489,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             }
           </Collapse>
         </div>
+        {this.renderLaunchProfileFooter()}
         <BucketBrowser
           multiple
           onSelect={this.selectBucketPath}
@@ -5510,6 +5613,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       detached !== prevDetached ||
       prevPipeline !== pipeline
     ) {
+      this.prepare();
       this.updateFromProps();
       this.updateCustomValidators();
     }
@@ -6009,7 +6113,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     }
     if (prevProps.currentConfigurationName !== this.props.currentConfigurationName ||
       prevProps.configurationId !== this.props.configurationId) {
-      this.prevParameters = {};
       this.reset();
       this.evaluateEstimatedPrice({});
       this.prepare(true);
@@ -6125,6 +6228,9 @@ export default class extends React.Component {
 
   onInitialized = (form) => {
     this.launchForm = form;
+    if (typeof this.props.onInitialized === 'function') {
+      this.props.onInitialized(form);
+    }
   };
 
   onValuesChange = (props, fields) => {
