@@ -42,6 +42,7 @@ import roleModel from '../../../utils/roleModel';
 import {LaunchFormPlugin} from '../../plugins';
 import {LoadingUtilities} from './utilities/loading-utilities';
 import {getRunLaunchPayload, getToolLaunchPayload} from './utilities/payload-utilities';
+import {withRouter} from '../../../utils/with-router';
 
 const DTS_ENVIRONMENT = 'DTS';
 
@@ -748,4 +749,4 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
   }
 }
 
-export default LaunchPipeline;
+export default withRouter(LaunchPipeline);
