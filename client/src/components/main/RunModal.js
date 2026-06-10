@@ -15,7 +15,7 @@
  */
 
 import React, {Component} from 'react';
-import {Modal, Button} from 'antd';
+import {Modal} from 'antd';
 import {QuestionCircleFilled} from '@ant-design/icons';
 
 let openCallback;
@@ -52,10 +52,10 @@ export default class RunModal extends Component {
           await onOk();
           this.setState({
             loading: false,
-            visible: false
+            visible: false,
+            opts: undefined
           });
         } catch {
-          // noop
           this.setState({
             loading: false
           });
@@ -64,7 +64,8 @@ export default class RunModal extends Component {
       return;
     }
     this.setState({
-      visible: false
+      visible: false,
+      opts: undefined
     });
   };
 
@@ -96,49 +97,43 @@ export default class RunModal extends Component {
     } = opts || {};
     return (
       <Modal
-        className="ant-confirm ant-confirm-confirm"
         open={visible}
-        onCancel={this.handleCancel}
-        okText={okText}
         title={false}
+        onCancel={this.handleCancel}
+        onOk={this.handleOk}
+        okText={okText || 'OK'}
+        cancelText="Cancel"
+        confirmLoading={loading}
         width={width}
         closable={closable}
-        mask={{closable: maskClosable}}
-        onOk={this.handleOk}
-        confirmLoading={loading}
-        styles={bodyStyle ? {body: bodyStyle} : undefined}
-        footer={false}
+        maskClosable={maskClosable}
+        okButtonProps={{
+          disabled: loading || okDisabled,
+          ...okButtonProps
+        }}
+        cancelButtonProps={cancelButtonProps}
+        style={style}
+        styles={{
+          body: {
+            wordWrap: 'break-word',
+            ...(bodyStyle || {})
+          }
+        }}
       >
-        <div className="ant-confirm-body-wrapper">
-          <div className="ant-confirm-body">
-            <QuestionCircleFilled />
-            <span className="ant-confirm-title">{title}</span>
-            <div className="ant-confirm-content" style={style}>
-              {content}
-            </div>
-          </div>
-          <div
-            className="ant-confirm-btns"
+        <div style={{display: 'flex', alignItems: 'flex-start', gap: 16}}>
+          <QuestionCircleFilled
             style={{
-              display: 'flex',
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'flex-end'
+              color: '#faad14',
+              fontSize: 22,
+              flexShrink: 0,
+              marginTop: 2
             }}
-          >
-            <Button size="large" onClick={this.handleCancel} {...(cancelButtonProps || {})}>
-              Cancel
-            </Button>
-            <Button
-              size="large"
-              onClick={this.handleOk}
-              disabled={this.state.loading || okDisabled}
-              loading={this.state.loading}
-              type="primary"
-              {...okButtonProps || {}}
-            >
-              {okText || 'OK'}
-            </Button>
+          />
+          <div style={{flex: 1, minWidth: 0, wordWrap: 'break-word', ...(style || {})}}>
+            {title != null ? (
+              <div style={{fontWeight: 600, marginBottom: 8}}>{title}</div>
+            ) : null}
+            {content}
           </div>
         </div>
       </Modal>

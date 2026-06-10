@@ -1600,10 +1600,9 @@ class RunSpotConfirmationWithPrice extends React.Component {
       <div
         className="cp-run-name-title"
         style={{
-          marginTop: '-16px',
-          marginBottom: '6px',
+          marginBottom: 12,
           fontWeight: 700,
-          fontSize: '14px',
+          fontSize: 16,
           display: 'flex',
           flexWrap: 'wrap',
           lineHeight: '32px'

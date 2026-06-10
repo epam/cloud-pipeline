@@ -3989,8 +3989,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     );
   };
 
+  isAdvancedPanelOpen = () => (this.state.openedPanels || []).includes(ADVANCED);
+
   renderCmdTemplateFormItem = () => {
     const {isRawEditEnabled} = this.state;
+    const advancedPanelOpen = this.isAdvancedPanelOpen();
+    const cmdTemplateValue = this.getSectionFieldValue(ADVANCED)('cmdTemplate') ??
+      this.cmdTemplateValue ??
+      this.getDefaultValue('cmd_template');
     return (
       <FormItem
         className={getFormItemClassName(styles.formItemRow, 'cmdTemplate')}
@@ -4066,25 +4072,27 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       }
                       className={styles.hiddenItem} />
                   </FormItem>
-                  <CodeEditor
-                    key={`${this.props.configurationId || ''}-${this.props.currentConfigurationName || ''}`}
-                    ref={(editor) => { this.codeEditor = editor; }}
-                    readOnly={
-                      !!this.state.fireCloudMethodName ||
-                        (this.props.readOnly && !this.props.canExecute) ||
-                        (this.state.pipeline && this.props.detached && !isRawEditEnabled)
-                    }
-                    className={styles.codeEditor}
-                    language="shell"
-                    onChange={this.cmdTemplateEditorValueChanged}
-                    lineWrapping
-                    defaultCode={this.getDefaultValue('cmd_template')}
-                  />
+                  {advancedPanelOpen ? (
+                    <CodeEditor
+                      key={`${this.props.configurationId || ''}-${this.props.currentConfigurationName || ''}`}
+                      ref={(editor) => { this.codeEditor = editor; }}
+                      readOnly={
+                        !!this.state.fireCloudMethodName ||
+                          (this.props.readOnly && !this.props.canExecute) ||
+                          (this.state.pipeline && this.props.detached && !isRawEditEnabled)
+                      }
+                      className={styles.codeEditor}
+                      language="shell"
+                      onChange={this.cmdTemplateEditorValueChanged}
+                      lineWrapping
+                      defaultCode={cmdTemplateValue}
+                    />
+                  ) : null}
                 </div>
               ) : undefined
           }
           {
-            this.state.useDefaultCmd && this.toolDefaultCmd
+            this.state.useDefaultCmd && this.toolDefaultCmd && advancedPanelOpen
               ? (
                 <div className={styles.formItemRow}>
                   <CodeEditor
@@ -5186,7 +5194,15 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           }
           <Collapse
             bordered={false}
-            onChange={(tabs) => this.setState({openedPanels: tabs})}
+            onChange={(tabs) => {
+              const advancedWasOpen = this.isAdvancedPanelOpen();
+              const advancedWillOpen = tabs.includes(ADVANCED);
+              this.setState({openedPanels: tabs}, () => {
+                if (!advancedWasOpen && advancedWillOpen && this.codeEditor?.codeMirrorInstance) {
+                  process.nextTick(() => this.codeEditor.codeMirrorInstance.refresh());
+                }
+              });
+            }}
             activeKey={this.state.openedPanels}>
             <Collapse.Panel
               id="launch-pipeline-exec-environment-panel"
