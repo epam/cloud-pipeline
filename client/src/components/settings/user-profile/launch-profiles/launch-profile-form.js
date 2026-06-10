@@ -18,9 +18,9 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {Input, Modal} from 'antd';
+import {observable} from 'mobx';
 import AllowedInstanceTypes from '../../../../models/utils/AllowedInstanceTypes';
 import LaunchPipelineForm from '../../../pipelines/launch/form/LaunchPipelineForm';
-import {observable} from "mobx";
 
 const emptyConfigurations = [];
 
