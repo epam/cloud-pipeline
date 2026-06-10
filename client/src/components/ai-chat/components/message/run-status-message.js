@@ -144,7 +144,7 @@ export default class RunStatusMessage extends React.Component {
 
           )
         }
-        <Link to={`run/${runId}`}>
+        <Link to={`/run/${runId}`}>
           {run?.podId || `pipeline-${runId}`}
         </Link>
         <span>was successfully launched!</span>

@@ -223,7 +223,7 @@ export default class PipelineDocuments extends Component {
     const {routing, pipeline} = this.props;
     const {value} = pipeline;
     routing
-      .push(`${value?.id}/${value?.currentVersion?.name}/documents`);
+      .push(`/${value?.id}/${value?.currentVersion?.name}/documents`);
   };
 
   setDefaultFile = (defaultFile) => {

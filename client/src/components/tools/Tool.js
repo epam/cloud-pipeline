@@ -2054,7 +2054,7 @@ class Tool extends localization.LocalizedReactComponent {
             createLinkInProgress: false,
             createLinkFormVisible: false
           }, () => {
-            this.props.router.push(`tool/${id}`);
+            this.props.router.push(`/tool/${id}`);
           });
         }
       });

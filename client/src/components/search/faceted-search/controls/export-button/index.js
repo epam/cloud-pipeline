@@ -353,7 +353,7 @@ class ExportButton extends React.Component {
         Data exported to
         <Link
           style={{marginLeft: 5}}
-          to={`storage/${savedExport.storageId}?path=${folder}`}
+          to={`/storage/${savedExport.storageId}?path=${folder}`}
         >
           {`${storage?.name || savedExport.storageId}/${folder}/${file}`}
         </Link>.

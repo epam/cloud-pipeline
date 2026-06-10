@@ -550,7 +550,7 @@ export default class PipelineCode extends Component {
   };
 
   navigateToFolder = (folder) => {
-    const rootPath = `${this.props.pipeline.value.id}/${this.props.version}/code`;
+    const rootPath = `/${this.props.pipeline.value.id}/${this.props.version}/code`;
     if (folder.path && !this.isRootFolder(folder.path)) {
       this.props.routing.push(`${rootPath}?path=${folder.path}`);
     } else {
@@ -628,7 +628,7 @@ export default class PipelineCode extends Component {
     const {
       name
     } = currentVersion;
-    const rootPath = `${this.props.pipelineId}/${name}/code`;
+    const rootPath = `/${this.props.pipelineId}/${name}/code`;
     if (this.props.path) {
       this.props.routing.push(`${rootPath}?path=${this.props.path}`);
     } else {

@@ -374,7 +374,7 @@ class CellProfilerJobResults extends React.PureComponent {
         {
           !job.other && renderInfo(
             'Job ID',
-            (<Link to={`run/${job.id}`} target="_blank">#{job.id}</Link>)
+            (<Link to={`/run/${job.id}`} target="_blank">#{job.id}</Link>)
           )
         }
         {renderLocation('HCS Image', input)}

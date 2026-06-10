@@ -39,7 +39,7 @@ import styles from './PipelineHistory.css';
 export default class PipelineHistory extends React.Component {
   renderVersionsSwitch = () => {
     if (this.props.allVersions) {
-      const currentVersionLink = `${this.props.pipelineId}/${this.props.version}/history`;
+      const currentVersionLink = `/${this.props.pipelineId}/${this.props.version}/history`;
       return (
         <Row style={{marginBottom: 5, padding: 2}}>
           {/* eslint-disable-next-line max-len */}
@@ -47,7 +47,7 @@ export default class PipelineHistory extends React.Component {
         </Row>
       );
     } else {
-      const allVersionsLink = `${this.props.pipelineId}/${this.props.version}/history?all`;
+      const allVersionsLink = `/${this.props.pipelineId}/${this.props.version}/history?all`;
       return (
         <Row style={{marginBottom: 5, padding: 2}}>
           {/* eslint-disable-next-line max-len */}

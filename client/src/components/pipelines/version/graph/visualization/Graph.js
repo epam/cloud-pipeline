@@ -179,7 +179,7 @@ export default class Graph extends React.Component {
         }
         await this.afterSaveChanges();
         hide();
-        this.props.routing.push(`${pipeline.id}/${pipeline.currentVersion.name}/graph`);
+        this.props.routing.push(`/${pipeline.id}/${pipeline.currentVersion.name}/graph`);
       }
     };
     if (modifiedParameters &&
