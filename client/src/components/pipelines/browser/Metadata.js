@@ -197,9 +197,12 @@ function makeCurrentOrderSort (array) {
 ) => {
   let componentParameters = params;
   let filters = [];
-  if (params.params) {
-    // Router renderer
-    componentParameters = params.params;
+  const routeParams = params.params;
+  const hasExplicitParameters = params.id !== undefined ||
+    params.metadataClass !== undefined ||
+    params.class !== undefined;
+  if (routeParams && !hasExplicitParameters) {
+    componentParameters = routeParams;
     filters = routing && routing.location
       ? metadataFilterUtilities.parse(
         Object.fromEntries(new URLSearchParams(routing.location.search || ''))
@@ -210,7 +213,7 @@ function makeCurrentOrderSort (array) {
     folders,
     folder: componentParameters.id ? folders.load(componentParameters.id) : pipelinesLibrary,
     folderId: componentParameters.id,
-    metadataClass: componentParameters.class,
+    metadataClass: componentParameters.class ?? componentParameters.metadataClass,
     entityFields: new MetadataEntityFields(componentParameters.id),
     metadataClasses: new MetadataClassLoadAll(),
     onReloadTree: params.onReloadTree,

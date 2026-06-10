@@ -36,6 +36,29 @@ import {
 import styles from './Browser.css';
 import HiddenObjects from '../../../../utils/hidden-objects';
 
+function isSelectionEqual (a, b) {
+  if (a === b) {
+    return true;
+  }
+  if (!a || !b) {
+    return !a && !b;
+  }
+  const keysA = Object.keys(a);
+  const keysB = Object.keys(b);
+  if (keysA.length === 0 && keysB.length === 0) {
+    return true;
+  }
+  if (keysA.length !== keysB.length) {
+    return false;
+  }
+  const entitiesIdsA = a.entitiesIds || [];
+  const entitiesIdsB = b.entitiesIds || [];
+  return a.folderId === b.folderId &&
+    a.metadataClassName === b.metadataClassName &&
+    entitiesIdsA.length === entitiesIdsB.length &&
+    entitiesIdsA.every((id, index) => id === entitiesIdsB[index]);
+}
+
 @inject('folders', 'preferences', 'pipelinesLibrary')
 @inject(({routing, folders, pipelinesLibrary}, params) => {
   if (!params.initialFolderId) {
@@ -224,6 +247,9 @@ export default class MetadataBrowser extends React.Component {
 
   onSelect = (selectedKeys, {node}) => {
     const item = getTreeItemByKey(node.key, this.rootItems);
+    if (!item) {
+      return;
+    }
     if (item.type === ItemTypes.metadataFolder) {
       this.onSelectMetadataFolder(item.id);
     } else if (item.type === ItemTypes.metadata) {
@@ -340,6 +366,10 @@ export default class MetadataBrowser extends React.Component {
   };
 
   onSelectMetadata = (metadata) => {
+    const metadataClassName = metadata && metadata.name;
+    if (!metadataClassName) {
+      return;
+    }
     let expandedKeys = this.state.expandedKeys;
     if (this.rootItems) {
       const item = getTreeItemByKey(`${ItemTypes.metadata}_${metadata.id}`, this.rootItems);
@@ -352,7 +382,7 @@ export default class MetadataBrowser extends React.Component {
       isMetadata: true,
       isMetadataFolder: false,
       selectedMetadataClassEntity: [],
-      metadataClassName: metadata.name,
+      metadataClassName,
       folderId: parseInt(metadata.id, 10),
       selectedKeys: [`${ItemTypes.metadata}_${metadata.id}`],
       expandedKeys
@@ -504,6 +534,7 @@ export default class MetadataBrowser extends React.Component {
         <div style={{height: 450}}>
           <Metadata
             id={this.state.folderId}
+            metadataClass={this.state.metadataClassName}
             class={this.state.metadataClassName}
             initialSelection={this.state.selectedMetadata}
             onSelectItems={this.onSelectMetadataItems}
@@ -526,8 +557,13 @@ export default class MetadataBrowser extends React.Component {
     }
     return (
       <SplitPane
+        className={styles.browserSplitPane}
         split="vertical"
         minSize={200}
+        pane1Style={{
+          overflowY: 'auto',
+          overflowX: 'hidden'
+        }}
         pane2Style={{
           overflowY: 'auto',
           overflowX: 'hidden'
@@ -541,11 +577,11 @@ export default class MetadataBrowser extends React.Component {
           backgroundClip: 'padding',
           zIndex: 1
         }}>
-        <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
+        <div className={styles.browserTreePane}>
           <Row>
             <Input.Search onSearch={this.onSearchChanged} />
           </Row>
-          <div style={{flex: 1, overflowY: 'auto', overflowX: 'hidden'}}>
+          <div className={styles.browserTreeContainer}>
             {this.generateTree()}
           </div>
         </div>
@@ -585,34 +621,57 @@ export default class MetadataBrowser extends React.Component {
           </Row>
         }
         open={this.props.visible}
+        destroyOnHidden
       >
-        <Row style={{height: 450}}>
+        <div className={styles.browserContent}>
           {this.renderContent()}
-        </Row>
+        </div>
         {this.renderExpansionExpression()}
       </Modal>
     );
   }
 
+  getInitialBrowseState = () => ({
+    isMetadataFolder: false,
+    isMetadata: false,
+    metadataClassName: null,
+    selectedMetadata: [],
+    selectedMetadataClassEntity: [],
+    expansionExpression: '',
+    filteredEntityFields: []
+  });
+
   updateInitialSelection = (navigate = true) => {
     if (this.props.selection && Object.keys(this.props.selection).length) {
       const {entitiesIds, folderId, metadataClassName} = this.props.selection;
+      if (!metadataClassName) {
+        return;
+      }
       const selectionId = `${folderId}/metadata/${metadataClassName}`;
-      navigate && this.onSelectMetadata({
-        id: selectionId,
-        name: metadataClassName
-      });
-      this.setState({
-        selectedMetadata: this.state.metadataClassName === metadataClassName
-          ? entitiesIds
-          : []
-      });
+      const selectionFolderId = parseInt(selectionId, 10);
+      const shouldNavigate = navigate &&
+        (
+          !this.state.isMetadata ||
+          this.state.metadataClassName !== metadataClassName ||
+          this.state.folderId !== selectionFolderId
+        );
+      if (shouldNavigate) {
+        this.onSelectMetadata({
+          id: selectionId,
+          name: metadataClassName
+        });
+      } else if (this.state.metadataClassName === metadataClassName) {
+        this.setState({
+          selectedMetadata: entitiesIds
+        });
+      }
     }
   };
 
-  updateState = () => {
+  updateState = ({resetBrowseState = false} = {}) => {
     const {initialFolderId, initialActiveFolderId} = this.props;
     const id = initialActiveFolderId || initialFolderId;
+    const browseState = resetBrowseState ? this.getInitialBrowseState() : {};
     if (id) {
       let expandedKeys = this.state.expandedKeys;
       if (this.rootItems) {
@@ -626,20 +685,21 @@ export default class MetadataBrowser extends React.Component {
         }
       }
       this.setState({
+        ...browseState,
         folderId: id,
         selectedKeys: [`${ItemTypes.folder}_${id}`],
         expandedKeys,
         search: null
-      });
+      }, () => this.updateInitialSelection(true));
     } else {
       this.setState({
+        ...browseState,
         folderId: null,
         selectedKeys: [`${ItemTypes.folder}_root`],
         expandedKeys: getExpandedKeys(this.rootItems),
         search: null
-      });
+      }, () => this.updateInitialSelection(true));
     }
-    this.updateInitialSelection(true);
   };
 
   componentDidMount () {
@@ -649,17 +709,31 @@ export default class MetadataBrowser extends React.Component {
   componentDidUpdate (prevProps) {
     if (prevProps.initialFolderId !== this.props.initialFolderId) {
       this.props.tree.invalidateCache();
+      this.rootItems = null;
+    }
+    const selectionChanged = !isSelectionEqual(prevProps.selection, this.props.selection);
+    const visibilityChanged = prevProps.visible !== this.props.visible;
+    const folderIdChanged = prevProps.initialFolderId !== this.props.initialFolderId;
+    if (visibilityChanged && this.props.visible) {
+      this.rootItems = null;
+      this.setState({treeReady: false});
     }
     if (
-      prevProps.initialFolderId !== this.props.initialFolderId ||
-      prevProps.visible !== this.props.visible ||
-      prevProps.selection !== this.props.selection
+      folderIdChanged ||
+      visibilityChanged ||
+      (this.props.visible && selectionChanged)
     ) {
-      this.updateState();
+      this.updateState({
+        resetBrowseState: visibilityChanged && this.props.visible
+      });
     } else if (!this.state.treeReady && this.rootItems && this.rootItems.length > 0) {
       this.setState({
         treeReady: true
-      }, this.updateState);
+      }, () => {
+        if (!this.state.isMetadata && !this.state.isMetadataFolder) {
+          this.updateState();
+        }
+      });
     }
   }
 

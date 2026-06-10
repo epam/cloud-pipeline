@@ -26,9 +26,11 @@ const mapMetadataParameter = ({folderId, entitiesIds, metadataClassName}) => {
   return `${folderId}:${metadataClassName}:${entitiesIds}`;
 };
 
+const EMPTY_METADATA_SELECTION = {};
+
 const unmapMetadataParameter = (string = '') => {
   if (!string) {
-    return {};
+    return EMPTY_METADATA_SELECTION;
   }
   const [folderId, metadataClassName, ids = ''] = string.split(':');
   return {
@@ -50,6 +52,18 @@ export default class MetadataParameterInput extends React.Component {
     }
     const {metadataClassName, entitiesIds} = unmapMetadataParameter(value);
     return `${metadataClassName} (${entitiesIds.length})`;
+  }
+
+  get selection () {
+    const {value} = this.props;
+    if (!value) {
+      return EMPTY_METADATA_SELECTION;
+    }
+    if (this._cachedSelectionValue !== value) {
+      this._cachedSelectionValue = value;
+      this._cachedSelection = unmapMetadataParameter(value);
+    }
+    return this._cachedSelection;
   }
 
   showMetadataBrowser = () => {
@@ -125,7 +139,7 @@ export default class MetadataParameterInput extends React.Component {
           initialActiveFolderId={currentProjectId}
           rootEntityId={rootEntityId}
           currentMetadataEntity={currentMetadataEntity}
-          selection={unmapMetadataParameter(value)}
+          selection={this.selection}
           browseLibrary
           hideExpansionExpression
           disableMetadataFolderSelection

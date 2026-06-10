@@ -23,7 +23,7 @@ function LaunchFormMetadataParameterInput (props) {
       onSelectMetadata={onChange}
       currentProjectId={currentProjectId}
       rootEntityId={rootEntityId}
-      currentMetadataEntity={currentMetadataEntity.slice()}
+      currentMetadataEntity={currentMetadataEntity}
       value={value}
     />
   );
