@@ -37,7 +37,8 @@ const KNOWN_TAG_NAMES = {
   network_pressure: 'network_pressure',
   long_running: 'long_running',
   mlflow_experiment: 'CP_MLFLOW_EXPERIMENT_ID',
-  mlflow_run: 'CP_MLFLOW_RUN_UUID'
+  mlflow_run: 'CP_MLFLOW_RUN_UUID',
+  external_urls: 'EXTERNAL_URLS'
 };
 
 const KNOWN_TAG_RENDER = {
@@ -202,6 +203,7 @@ const getValue = (tags, tag) => {
 const skipTag = (tag, tags, preferences) => {
   return `${tags[tag]}` === 'false' ||
     /^alias$/i.test(tag) ||
+    tag.toLowerCase() === KNOWN_TAG_NAMES.external_urls.toLowerCase() ||
     isKnownTagWithDateSuffix(tag, preferences);
 };
 
