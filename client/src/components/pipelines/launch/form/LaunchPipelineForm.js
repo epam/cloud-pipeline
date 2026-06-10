@@ -105,7 +105,7 @@ import RunCapabilities, {
   applyCapabilities,
   correctRequiredCapabilities,
   getEnabledCapabilities,
-  getUserCapabilities,
+  getUserCapabilitiesCached,
   hasPlatformSpecificCapabilities,
   RUN_CAPABILITIES_MODE
 } from './utilities/run-capabilities';
@@ -1993,6 +1993,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   evaluateEstimatedPrice = async ({disk, type, isSpot, cloudRegionId}) => {
+    if (this.props.launchProfile) {
+      return;
+    }
     if (!disk) {
       disk = this.getSectionFieldValue(EXEC_ENVIRONMENT)('disk') ||
         this.getDefaultValue('instance_disk');
@@ -5548,7 +5551,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     }, () => {
       this.props.preferences
         .fetchIfNeededOrWait()
-        .then(() => getUserCapabilities())
+        .then(() => getUserCapabilitiesCached())
         .then((userRunCapabilities = []) => {
           let {runCapabilities} = this.state;
           if (
@@ -5611,6 +5614,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       detached !== prevDetached ||
       prevPipeline !== pipeline
     ) {
+      this.reset();
       this.prepare();
       this.updateFromProps();
       this.updateCustomValidators();

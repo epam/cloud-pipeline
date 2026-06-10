@@ -924,6 +924,16 @@ export async function getUserCapabilities () {
     .filter((o) => o.length);
 }
 
+export const getUserCapabilitiesCached = (() => {
+  let _promise;
+  return async () => {
+    if (!_promise) {
+      _promise = getUserCapabilities();
+    }
+    return _promise;
+  };
+})();
+
 export async function applyUserCapabilities (parameters, preferences, platform) {
   const userCapabilities = await getUserCapabilities();
   return applyCapabilities(

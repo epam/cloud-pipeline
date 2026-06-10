@@ -20,6 +20,7 @@ import {inject, observer} from 'mobx-react';
 import {Input, Modal} from 'antd';
 import AllowedInstanceTypes from '../../../../models/utils/AllowedInstanceTypes';
 import LaunchPipelineForm from '../../../pipelines/launch/form/LaunchPipelineForm';
+import {observable} from "mobx";
 
 const emptyConfigurations = [];
 
@@ -61,25 +62,43 @@ class LaunchProfileForm extends React.Component {
     parameters: {}
   };
 
-  allowedInstanceTypes = new AllowedInstanceTypes({
+  @observable allowedInstanceTypes = new AllowedInstanceTypes({
     requestAllRegionsForProviders: ['GCP', 'AWS']
   });
 
   componentDidMount () {
-    const {profile} = this.props;
-    this.setState({
-      name: profile ? profile.name : '',
-      parameters: payloadToFormParameters(profile ? profile.payload : undefined)
-    });
+    this.updateFromProps();
   }
 
   componentDidUpdate (prevProps, prevState) {
-    const {onModified} = this.props;
-    if (onModified && this.isModified !== this._lastModified) {
+    const {onModified, profileId, profile} = this.props;
+    if (profileId !== prevProps.profileId || profile !== prevProps.profile) {
+      this.updateFromProps();
+    } else if (onModified && this.isModified !== this._lastModified) {
       this._lastModified = this.isModified;
       onModified(this.isModified);
     }
   }
+
+  updateFromProps = () => {
+    const {profile} = this.props;
+    this.setState({
+      name: profile ? profile.name : '',
+      parameters: payloadToFormParameters(profile ? profile.payload : undefined),
+      formModified: false
+    });
+    const {payload} = profile || {};
+    if (payload && typeof payload === 'object') {
+      const {
+        cloudRegionId,
+        isSpot
+      } = payload;
+      this.allowedInstanceTypes.setParameters({
+        regionId: cloudRegionId,
+        spot: isSpot
+      });
+    }
+  };
 
   handleSave = async (payload) => {
     const {name} = this.state;
@@ -90,20 +109,13 @@ class LaunchProfileForm extends React.Component {
     const {onSave} = this.props;
     if (onSave) {
       await onSave(name.trim(), payload);
-      this.setState({
-        parameters: payloadToFormParameters(payload),
-        formModified: false
-      });
+      this.updateFromProps();
     }
   };
 
   handleReset = () => {
     const {profile, onDelete} = this.props;
-    this.setState({
-      name: profile ? profile.name : '',
-      parameters: payloadToFormParameters(profile ? profile.payload : undefined),
-      formModified: false
-    });
+    this.updateFromProps();
     if (!profile && onDelete) {
       onDelete();
     }
@@ -132,7 +144,7 @@ class LaunchProfileForm extends React.Component {
   }
 
   render () {
-    const {onDelete, saving, preferences, profile} = this.props;
+    const {saving, preferences, profile, profileId} = this.props;
     const {name, nameError, parameters} = this.state;
     return (
       <div style={{display: 'flex', flexDirection: 'column', height: '100%', overflow: 'auto'}}>
@@ -164,6 +176,7 @@ class LaunchProfileForm extends React.Component {
         </div>
         <div style={{flex: 1, overflow: 'auto'}}>
           <LaunchPipelineForm
+            key={profileId}
             style={{height: '100%', overflow: 'auto'}}
             launchProfile={{
               onSave: this.handleSave,

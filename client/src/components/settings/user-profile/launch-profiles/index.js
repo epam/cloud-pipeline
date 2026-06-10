@@ -263,7 +263,7 @@ class LaunchProfilesSettings extends React.Component {
         <div className={styles.content}>
           {hasDetail ? (
             <LaunchProfileForm
-              key={selectedId}
+              key={selectedId} // re-mount component
               profileId={selectedId}
               profile={this.selectedProfile}
               onSave={this.handleSave}
