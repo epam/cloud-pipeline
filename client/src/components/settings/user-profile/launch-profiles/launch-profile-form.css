@@ -1,0 +1,42 @@
+.container {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  overflow: auto;
+}
+
+.profile-list-container {
+  height: 100%;
+  overflow: auto;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.list-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding-right: 5px;
+}
+
+.list-profiles {
+  flex-shrink: 1;
+}
+
+.content {
+  margin-left: 5px;
+  flex: 1;
+  height: 100%;
+  overflow: auto;
+}
+
+.no-content-container {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
