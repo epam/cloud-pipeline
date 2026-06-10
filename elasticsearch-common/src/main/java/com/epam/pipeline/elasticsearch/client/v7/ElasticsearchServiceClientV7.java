@@ -36,31 +36,31 @@ import com.epam.pipeline.elasticsearch.model.v7.action.search.SearchResponseV7;
 import com.epam.pipeline.elasticsearch.model.v7.search.ScrollV7;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpHost;
-import org.opensearch.action.admin.indices.alias.IndicesAliasesRequest;
-import org.opensearch.action.admin.indices.delete.DeleteIndexRequest;
-import org.opensearch.action.bulk.BulkRequest;
-import org.opensearch.action.bulk.BulkResponse;
-import org.opensearch.action.search.SearchScrollRequest;
-import org.opensearch.client.RequestOptions;
-import org.opensearch.client.RestClient;
-import org.opensearch.client.RestClientBuilder;
-import org.opensearch.client.RestHighLevelClient;
-import org.opensearch.client.indices.CreateIndexRequest;
-import org.opensearch.client.indices.CreateIndexResponse;
-import org.opensearch.client.indices.GetIndexRequest;
-import org.opensearch.client.indices.GetIndexResponse;
-import org.opensearch.common.unit.TimeValue;
-import org.opensearch.common.xcontent.XContentType;
-import org.opensearch.index.query.QueryBuilders;
-import org.opensearch.rest.RestStatus;
-import org.opensearch.search.builder.SearchSourceBuilder;
+import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.http.message.BasicHeader;
+import org.apache.hc.core5.util.Timeout;
+import org.opensearch.client.json.jackson.JacksonJsonpMapper;
+import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.MsearchResponse;
+import org.opensearch.client.opensearch.core.ScrollRequest;
+import org.opensearch.client.opensearch.core.bulk.BulkOperation;
+import org.opensearch.client.opensearch.indices.CreateIndexRequest;
+import org.opensearch.client.opensearch.indices.CreateIndexResponse;
+import org.opensearch.client.opensearch.indices.GetIndexResponse;
+import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
 
 import jakarta.annotation.Nullable;
 import java.io.IOException;
+import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -69,10 +69,15 @@ import java.util.stream.Collectors;
 
 @Slf4j
 public class ElasticsearchServiceClientV7 implements ElasticsearchServiceClient {
-    private static final org.opensearch.search.Scroll TIME_SCROLL =
-            new org.opensearch.search.Scroll(new TimeValue(60000));
 
-    private final RestHighLevelClient client;
+    private static final String DEFAULT_SCROLL_KEEPALIVE = "1m";
+
+    @SuppressWarnings("unchecked")
+    private static final Class<Map<String, Object>> DOCUMENT_CLASS =
+            (Class<Map<String, Object>>) (Class<?>) Map.class;
+
+    private final OpenSearchClient client;
+    private final JacksonJsonpMapper mapper;
 
     public ElasticsearchServiceClientV7(final String elasticsearchUrl,
                                         final int elasticsearchPort,
@@ -86,17 +91,24 @@ public class ElasticsearchServiceClientV7 implements ElasticsearchServiceClient 
                                         final String elasticsearchScheme,
                                         final Integer socketTimeout,
                                         final String elasticsearchAuth) {
+        this.mapper = new JacksonJsonpMapper();
+        final HttpHost host = new HttpHost(elasticsearchScheme, elasticsearchUrl, elasticsearchPort);
+        final ApacheHttpClient5TransportBuilder builder =
+                ApacheHttpClient5TransportBuilder.builder(host)
+                        .setMapper(mapper);
 
-        final RestClientBuilder builder = RestClient.builder(
-                new HttpHost(elasticsearchUrl, elasticsearchPort, elasticsearchScheme));
         if (StringUtils.isNotBlank(elasticsearchAuth)) {
-            builder.setDefaultHeaders(ElasticsearchServiceClient.getAuthHeaders(elasticsearchAuth));
+            final String encodedAuth = Base64.getEncoder()
+                    .encodeToString(elasticsearchAuth.getBytes(StandardCharsets.UTF_8));
+            builder.setHttpClientConfigCallback(httpClientBuilder ->
+                    httpClientBuilder.setDefaultHeaders(List.of(
+                            new BasicHeader("Authorization", "Basic " + encodedAuth))));
         }
         if (socketTimeout != null && socketTimeout != 0) {
-            builder.setRequestConfigCallback(requestConfigBuilder ->
-                    requestConfigBuilder.setSocketTimeout(socketTimeout));
+            builder.setRequestConfigCallback(reqConfigBuilder ->
+                    reqConfigBuilder.setResponseTimeout(Timeout.ofMilliseconds(socketTimeout)));
         }
-        this.client = new RestHighLevelClient(builder);
+        this.client = new OpenSearchClient(builder.build());
     }
 
     @Override
@@ -105,26 +117,26 @@ public class ElasticsearchServiceClientV7 implements ElasticsearchServiceClient 
     }
 
     @Override
-    public void createIndex(String indexName, String source) {
+    public void createIndex(final String indexName, final String source) {
         log.debug("Start to create Elasticsearch index ...");
-
-        CreateIndexRequest request = new CreateIndexRequest(indexName);
-        request.source(source, XContentType.JSON);
-
         try {
             if (isIndexExists(indexName)) {
                 log.debug("Index with name {} already exists", indexName);
                 return;
             }
-            CreateIndexResponse createIndexResponse = client.indices().create(request, RequestOptions.DEFAULT);
-
-            if (!createIndexResponse.isAcknowledged()) {
-                throw new IllegalStateException("Create Elasticsearch index: " + createIndexResponse);
+            final CreateIndexRequest request = CreateIndexRequest._DESERIALIZER
+                    .deserialize(
+                            mapper.jsonProvider().createParser(new StringReader(source)),
+                            mapper
+                    ).toBuilder()
+                    .index(indexName).build();
+            final CreateIndexResponse response = client.indices().create(request);
+            if (!response.acknowledged()) {
+                throw new IllegalStateException("Create Elasticsearch index: " + response);
             }
         } catch (IOException e) {
             throw new ElasticsearchException("Failed to create index request: " + e.getMessage(), e);
         }
-
         log.debug("Elasticsearch index with name {} was created.", indexName);
     }
 
@@ -135,24 +147,34 @@ public class ElasticsearchServiceClientV7 implements ElasticsearchServiceClient 
             log.warn("Index requests are empty. ");
             return null;
         }
-        BulkRequest bulkRequest = new BulkRequest();
-        docWriteRequests.stream()
+        final List<BulkOperation> bulkOperations = docWriteRequests.stream()
                 .map(DocWriterRequestFactoryV7::toRequest)
-                .forEach(bulkRequest::add);
+                .collect(Collectors.toList());
 
         if (StringUtils.isNotBlank(indexName)) {
             log.debug("Start to insert documents for index {}", indexName);
+        } else {
+            log.debug("Start to bulk insert of {} documents", docWriteRequests.size());
         }
 
         try {
-            BulkResponse bulkResponse = client.bulk(bulkRequest, RequestOptions.DEFAULT);
+            final org.opensearch.client.opensearch.core.BulkResponse bulkResponse =
+                    client.bulk(BulkRequest.of(r -> {
+                        r.operations(bulkOperations);
+                        if (StringUtils.isNotBlank(indexName)) {
+                            r.index(indexName);
+                        }
+                        return r;
+                    }));
 
-            if (!(bulkResponse.status() == RestStatus.OK)) {
-                throw new IllegalStateException("Failed to create Elasticsearch documents: " + bulkResponse);
+            if (bulkResponse.errors()) {
+                throw new IllegalStateException("Failed to create Elasticsearch documents");
             }
 
             if (StringUtils.isNotBlank(indexName)) {
                 log.debug("Stop to insert documents for index {}", indexName);
+            } else {
+                log.debug("Stop to bulk documents insert");
             }
 
             return BulkResponseV7.builder()
@@ -187,35 +209,24 @@ public class ElasticsearchServiceClientV7 implements ElasticsearchServiceClient 
     }
 
     @Override
-    public void deleteIndex(String indexName) {
+    public void deleteIndex(final String indexName) {
         log.debug("Start to delete index...");
         try {
             if (!isIndexExists(indexName)) {
                 log.debug("Index with name does not exist. ");
                 return;
             }
-
-            DeleteIndexRequest request = new DeleteIndexRequest(indexName);
-            client.indices().delete(request, RequestOptions.DEFAULT);
-
-        } catch (org.opensearch.OpenSearchException exception) {
-            if (exception.status() == RestStatus.NOT_FOUND) {
-                throw new ElasticsearchException("Response status " + RestStatus.NOT_FOUND + ": " +
-                        exception.getMessage(), exception);
-            }
-            throw new ElasticsearchException("Failed to delete Elasticsearch index: " + exception.getMessage(),
-                    exception);
-        } catch (IOException e) {
+            client.indices().delete(r -> r.index(indexName));
+        } catch (OpenSearchException | IOException e) {
             throw new ElasticsearchException("Failed to delete Elasticsearch index: " + e.getMessage(), e);
         }
         log.debug("Stop to delete index...");
     }
 
     @Override
-    public boolean isIndexExists(String indexName) {
-        GetIndexRequest request = new GetIndexRequest(indexName);
+    public boolean isIndexExists(final String indexName) {
         try {
-            return client.indices().exists(request, RequestOptions.DEFAULT);
+            return client.indices().exists(r -> r.index(indexName)).value();
         } catch (IOException e) {
             throw new ElasticsearchException("Failed to send the request to checks index " + e.getMessage(), e);
         }
@@ -223,14 +234,9 @@ public class ElasticsearchServiceClientV7 implements ElasticsearchServiceClient 
 
     @Override
     public void createIndexAlias(final String indexName, final String indexAlias) {
-        IndicesAliasesRequest request = new IndicesAliasesRequest();
-        IndicesAliasesRequest.AliasActions aliasAction =
-                new IndicesAliasesRequest.AliasActions(IndicesAliasesRequest.AliasActions.Type.ADD)
-                        .index(indexName)
-                        .alias(indexAlias);
-        request.addAliasAction(aliasAction);
         try {
-            client.indices().updateAliases(request, RequestOptions.DEFAULT);
+            client.indices().updateAliases(r -> r.actions(a ->
+                    a.add(add -> add.index(indexName).alias(indexAlias))));
         } catch (IOException e) {
             throw new ElasticsearchException("Failed to send create alias request" + e.getMessage(), e);
         }
@@ -242,17 +248,15 @@ public class ElasticsearchServiceClientV7 implements ElasticsearchServiceClient 
             return null;
         }
         try {
-            GetIndexRequest request = new GetIndexRequest(alias);
-
-            GetIndexResponse getIndexResponse = client.indices().get(request, RequestOptions.DEFAULT);
-            if (getIndexResponse.getAliases().isEmpty()) {
+            final GetIndexResponse response = client.indices().get(r -> r.index(alias));
+            if (response.result().isEmpty()) {
                 throw new ElasticsearchException("No alias is available.");
             }
-            String[] indices = getIndexResponse.getIndices();
-            if (indices.length != 1) {
-                throw new ElasticsearchException(String.format("Unexpected indexes count: %s", indices.length));
+            if (response.result().size() != 1) {
+                throw new ElasticsearchException(
+                        String.format("Unexpected indexes count: %s", response.result().size()));
             }
-            return indices[0];
+            return response.result().keySet().iterator().next();
         } catch (IOException e) {
             throw new ElasticsearchException("Failed to get alias name:" + e.getMessage(), e);
         }
@@ -261,14 +265,11 @@ public class ElasticsearchServiceClientV7 implements ElasticsearchServiceClient 
     @Override
     public List<String> findIndices(final String pattern) {
         try {
-            final GetIndexRequest request = new GetIndexRequest(pattern);
-
-            final GetIndexResponse getIndexResponse = client.indices().get(request, RequestOptions.DEFAULT);
-            final String[] indices = getIndexResponse.getIndices();
-            if (ArrayUtils.isEmpty(indices)) {
+            final GetIndexResponse response = client.indices().get(r -> r.index(pattern));
+            if (response.result().isEmpty()) {
                 return Collections.emptyList();
             }
-            return Arrays.asList(indices);
+            return new ArrayList<>(response.result().keySet());
         } catch (IOException e) {
             throw new ElasticsearchException("Failed to get indices for pattern:" + e.getMessage(), e);
         }
@@ -277,8 +278,8 @@ public class ElasticsearchServiceClientV7 implements ElasticsearchServiceClient 
     @Override
     public SearchResponse search(final SearchRequest request) {
         try {
-            return new SearchResponseV7(client.search(((SearchRequestV7) request.getInner()).getInner(),
-                    RequestOptions.DEFAULT));
+            final SearchRequestV7 inner = (SearchRequestV7) request.getInner();
+            return new SearchResponseV7(client.search(inner.build(), DOCUMENT_CLASS));
         } catch (IOException e) {
             throw new ElasticsearchException("Failed to find results for search query:" + e.getMessage(), e);
         }
@@ -286,11 +287,13 @@ public class ElasticsearchServiceClientV7 implements ElasticsearchServiceClient 
 
     @Override
     public SearchResponse nextScrollPage(final String scrollId, final Scroll scroll) {
-        final SearchScrollRequest searchScrollRequest = new SearchScrollRequest();
-        searchScrollRequest.scrollId(scrollId);
-        searchScrollRequest.scroll(((ScrollV7) scroll).getInner());
+        final String keepAlive = (scroll instanceof ScrollV7)
+                ? ((ScrollV7) scroll).getKeepAlive()
+                : DEFAULT_SCROLL_KEEPALIVE;
         try {
-            return new SearchResponseV7(client.scroll(searchScrollRequest, RequestOptions.DEFAULT));
+            return new SearchResponseV7(
+                    client.scroll(ScrollRequest.of(r ->
+                            r.scrollId(scrollId).scroll(t -> t.time(keepAlive))), DOCUMENT_CLASS));
         } catch (IOException e) {
             throw new ElasticsearchException(String.format("Failed to retrieve next scroll page for [%s]: %s",
                     scrollId, e.getMessage()), e);
@@ -299,15 +302,16 @@ public class ElasticsearchServiceClientV7 implements ElasticsearchServiceClient 
 
     @Override
     public SearchResponse nextScrollPage(final String scrollId) {
-        return nextScrollPage(scrollId, new ScrollV7(TIME_SCROLL));
+        return nextScrollPage(scrollId, new ScrollV7(DEFAULT_SCROLL_KEEPALIVE));
     }
 
     @Override
     public MultiSearchResponse search(final MultiSearchRequest request) {
         try {
-            final MultiSearchResponseV7 response = new MultiSearchResponseV7(
-                    client.msearch(((MultiSearchRequestV7) request.getInner()).getInner(), RequestOptions.DEFAULT));
-            return new MultiSearchResponse(response);
+            final MultiSearchRequestV7 inner = (MultiSearchRequestV7) request.getInner();
+            final MsearchResponse<Map<String, Object>> response =
+                    client.msearch(inner.buildMsearchRequest(), DOCUMENT_CLASS);
+            return new MultiSearchResponse(new MultiSearchResponseV7(response));
         } catch (IOException e) {
             throw new ElasticsearchException("Failed to find results for multi-search query:" + e.getMessage(), e);
         }
@@ -317,14 +321,10 @@ public class ElasticsearchServiceClientV7 implements ElasticsearchServiceClient 
     public List<DocWriteRequest> getDeleteRequestsByTerm(final String field,
                                                          final String value,
                                                          final String indexName) {
-        final SearchSourceBuilder searchSource = new SearchSourceBuilder()
-                .query(QueryBuilders.termQuery(field, value));
-        final org.opensearch.action.search.SearchRequest request =
-                new org.opensearch.action.search.SearchRequest(indexName).source(searchSource);
-        log.debug("Search request: {}", request);
+        final Query query = Query.of(q -> q.term(t -> t.field(field).value(FieldValue.of(value))));
         try {
-            return buildDeleteRequests(indexName, request);
-        } catch (org.opensearch.OpenSearchException | IOException e) {
+            return buildDeleteRequests(indexName, query);
+        } catch (OpenSearchException | IOException e) {
             return Collections.emptyList();
         }
     }
@@ -332,44 +332,36 @@ public class ElasticsearchServiceClientV7 implements ElasticsearchServiceClient 
     @Override
     public List<DocWriteRequest> getDeleteRequests(final String id,
                                                    final String indexName) {
-        org.opensearch.action.search.SearchRequest request =
-                buildSearchRequestForConfigEntries(id, indexName);
-        log.debug("Search request: {}", request);
+        final String wildcardId = getWildcardId(id);
+        final Query query = Query.of(q -> q.wildcard(w -> w.field("id").value(wildcardId)));
+        log.debug("Search request: {}", query);
         try {
-            final List<DocWriteRequest> requests = buildDeleteRequests(indexName, request);
-            // return dummy doc, since we need it to clear events DB
+            final List<DocWriteRequest> requests = buildDeleteRequests(indexName, query);
             if (CollectionUtils.isEmpty(requests)) {
                 return Collections.singletonList(
-                        new DeleteRequest(indexName, getWildcardId(id), ElasticStackVersion.V7));
+                        new DeleteRequest(indexName, wildcardId, ElasticStackVersion.V7));
             }
             return requests;
-        } catch (org.opensearch.OpenSearchException | IOException e) {
+        } catch (OpenSearchException | IOException e) {
             return Collections.emptyList();
         }
     }
 
-    private List<DocWriteRequest> buildDeleteRequests(
-            final String indexName,
-            final org.opensearch.action.search.SearchRequest request) throws IOException {
-        org.opensearch.action.search.SearchResponse search =
-                client.search(request, RequestOptions.DEFAULT);
-        if (search.getHits().getTotalHits().value == 0) {
-            log.debug("No documents found for {} {}", indexName, request);
+    private List<DocWriteRequest> buildDeleteRequests(final String indexName,
+                                                      final Query query) throws IOException {
+        final org.opensearch.client.opensearch.core.SearchResponse<Map<String, Object>> response =
+                client.search(org.opensearch.client.opensearch.core.SearchRequest.of(r ->
+                        r.index(indexName).query(query)), DOCUMENT_CLASS);
+        if (response.hits().total() == null || response.hits().total().value() == 0) {
+            log.debug("No documents found for {} {}", indexName, query);
             return Collections.emptyList();
         }
-        return Arrays.stream(search.getHits().getHits())
+        return response.hits().hits().stream()
                 .map(hit -> {
-                    log.debug("Found {} entry doc: {}", indexName, hit.getId());
-                    return new DeleteRequest(indexName, hit.getId(), ElasticStackVersion.V7);
+                    log.debug("Found {} entry doc: {}", indexName, hit.id());
+                    return (DocWriteRequest) new DeleteRequest(indexName, hit.id(), ElasticStackVersion.V7);
                 })
                 .collect(Collectors.toList());
-    }
-
-    private org.opensearch.action.search.SearchRequest buildSearchRequestForConfigEntries(
-            final String id, final String indexName) {
-        final SearchSourceBuilder searchSource = new SearchSourceBuilder()
-                .query(QueryBuilders.wildcardQuery("id", getWildcardId(id)));
-        return new org.opensearch.action.search.SearchRequest(indexName).source(searchSource);
     }
 
     private String getWildcardId(final String id) {
