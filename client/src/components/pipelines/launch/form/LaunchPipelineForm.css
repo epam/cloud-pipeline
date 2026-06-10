@@ -16,6 +16,8 @@
 
 .layout {
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   background-color: transparent;
   position: relative;
   padding: 5px;
@@ -59,6 +61,8 @@
 .form-item-row {
   margin: 2px 0 !important;
   flex: 1;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .pipeline-name-form-item-row {
@@ -179,7 +183,10 @@
 .hint-container {
   width: 30px;
   text-align: center;
-  padding-top: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
 }
 
 .hint {
@@ -250,11 +257,16 @@
   padding: 2px;
   border-radius: 5px;
   flex-wrap: nowrap;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .form-item {
   margin: 0 !important;
   flex: 1;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .form-item:not(:global(.ant-form-item)) {
@@ -278,7 +290,10 @@
 
 .form-item-wrapper-column {
   flex: 1 1 0;
+  width: 0;
   min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .form-items-container .form-item-wrapper-column {
@@ -287,6 +302,85 @@
 
 .form-items-container > div:only-child .form-item-wrapper-column {
   max-width: initial;
+}
+
+.layout :global(.ant-form),
+.layout :global(.ant-collapse),
+.layout :global(.ant-collapse-item),
+.layout :global(.ant-collapse-content),
+.layout :global(.ant-collapse-content-box) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.layout :global(.ant-form-item-row) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.layout :global(.ant-form-item .ant-form-item-control) {
+  flex: 1 1 0;
+  width: 0;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.layout :global(.ant-form-item-control-input),
+.layout :global(.ant-form-item-control-input-content) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.layout :global(.ant-input-group-wrapper),
+.layout :global(.ant-input-group) {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.layout :global(.ant-input-group) {
+  display: flex;
+}
+
+.layout :global(.ant-input-group-addon) {
+  flex: 0 0 auto;
+}
+
+.layout :global(.ant-input-group > .ant-input),
+.layout :global(.ant-input-group > .ant-input-affix-wrapper),
+.layout :global(.ant-input-group > .ant-select),
+.layout :global(.ant-input-group > .ant-select-auto-complete) {
+  flex: 1 1 0;
+  width: 0;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.layout :global(.ant-input),
+.layout :global(.ant-input-affix-wrapper),
+.layout :global(.ant-input-number),
+.layout :global(.ant-input-number-group-wrapper),
+.layout :global(.ant-select),
+.layout :global(.ant-picker) {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.layout :global(.ant-input),
+.layout :global(.ant-input-affix-wrapper > input.ant-input) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.layout :global(.ant-select-selector) {
+  overflow: hidden;
+}
+
+.layout :global(.ant-select-selection-item),
+.layout :global(.ant-select-selection-search-input) {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .summary-container {

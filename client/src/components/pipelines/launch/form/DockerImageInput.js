@@ -16,15 +16,15 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
 import {
   observer,
   inject} from 'mobx-react';
 import {computed, makeObservable} from 'mobx';
-import {Input
-} from 'antd';
+import {Input} from 'antd';
 import {ToolOutlined} from '@ant-design/icons';
 import DockerImageBrowser from '../dialogs/DockerImageBrowser';
-import styles from './LaunchPipelineForm.css';
+import styles from './launch-form-addon-input.css';
 import HiddenObjects from '../../../../utils/hidden-objects';
 
 @inject('dockerRegistries')
@@ -85,28 +85,34 @@ export default class DockerImageInput extends React.Component {
   }
 
   render () {
+    const disabled = this.props.disabled ||
+      this.props.dockerRegistries.pending ||
+      this.registries.length === 0;
     return (
       <div
-        className={this.props.className}>
-        <Input
-          id="docker-image-input"
-          style={{width: '100%'}}
-          addonBefore={
+        className={classNames(this.props.className, styles.launchFormAddonInput)}
+        style={{width: '100%', minWidth: 0, maxWidth: '100%'}}>
+        <Input.Group
+          compact
+          style={{display: 'flex', width: '100%', minWidth: 0, maxWidth: '100%'}}>
+          <span className={classNames(styles.launchFormAddonInputAddon, 'cp-input-group-addon')}>
             <div
-              className={styles.pathType}
-              onClick={!this.props.disabled && this.openBrowser}>
+              className={classNames(
+                styles.launchFormAddonInputAddonButton,
+                {[styles.disabled]: disabled}
+              )}
+              onClick={disabled ? undefined : this.openBrowser}>
               <ToolOutlined />
             </div>
-          }
-          size="large"
-          disabled={
-            this.props.disabled ||
-            this.props.dockerRegistries.pending ||
-            this.registries.length === 0
-          }
-          ref={this.refInput}
-          onFocus={this.openBrowser}
-          value={this.state.value} />
+          </span>
+          <Input
+            id="docker-image-input"
+            style={{flex: '1 1 0', minWidth: 0, width: 0, maxWidth: '100%'}}
+            disabled={disabled}
+            ref={this.refInput}
+            onFocus={this.openBrowser}
+            value={this.state.value || ''} />
+        </Input.Group>
         {
           this.registries.length > 0
             ? (

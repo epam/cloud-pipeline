@@ -32,12 +32,14 @@ function LaunchFormParameter (props) {
   if (!parameter) {
     return null;
   }
-  const {name, config = {}, error, warning, system} = parameter;
+  const {name, config = {}, error, warning, system, type: parameterType = 'string'} = parameter;
   const {
     description,
     required = false,
     readOnly = false
   } = config;
+  const normalizedType = String(parameterType).toLowerCase();
+  const isBoolean = normalizedType === 'boolean' || normalizedType === 'bool';
   const removeAllowed = !readOnly &&
     !disabled &&
     typeof onRemoveParameter === 'function' &&
@@ -54,49 +56,50 @@ function LaunchFormParameter (props) {
         'ant-row', // for tests compatability
         'ant-form-item', // for tests compatability
         styles.launchFormParameter,
+        isBoolean && styles.launchFormParameterBoolean,
         name ? `launch-form-parameter-${name}` : undefined,
         getParameterKeyClassName(parameter)
       )}
       style={style}
     >
-      <ParameterNameInput
-        disabled={disabled || (detached && pipeline)}
-        rawEdit={rawEdit}
-        parameter={parameter}
-        onChange={onChange}
-        style={{paddingRight: 30}}
-        editConfiguration={editConfiguration}
-      />
-      <div style={{display: 'flex', flexWrap: 'nowrap', fontSize: 'larger'}}>
-        <Form.Item
-          validateStatus={error ? 'error' : warning ? 'warning' : 'success'}
-          hasFeedback
-          style={{flex: 1, marginBottom: 0}}>
-          <LaunchFormParameterInput
-            style={{width: '100%', minHeight: 32}}
-            parameter={parameter}
-            onChange={onChange}
-            disabled={disabled}
-            rawEdit={rawEdit}
-            currentCloudRegionId={currentCloudRegionId}
-            currentProjectId={currentProjectId}
-            currentProjectMetadata={currentProjectMetadata}
-            currentMetadataEntity={currentMetadataEntity}
-            rootEntityId={rootEntityId}
-            metadataAutoComplete={metadataAutoComplete}
-            parametersMetadata={parametersMetadata}
-          />
-        </Form.Item>
-        {removeAllowed && typeof onRemoveParameter === 'function' ? (
-          <MinusCircleOutlined className="dynamic-delete-button" onClick={onRemoveParameterClicked} style={{ verticalAlign: 'middle', marginTop: '2px', fontSize: 'larger', cursor: 'pointer', alignSelf: 'flex-start', margin: 'auto -2px auto 15px', height: '100%' }} />
-        ) : (
-          <div
-            style={{
-              marginLeft: 15,
-              width: 15,
-              display: 'inline-block'
-            }}>{'\u00A0'}</div>
-        )}
+      <div className={styles.launchFormParameterRow}>
+        <ParameterNameInput
+          disabled={disabled || (detached && pipeline)}
+          rawEdit={rawEdit}
+          parameter={parameter}
+          onChange={onChange}
+          style={{paddingRight: 30}}
+          editConfiguration={editConfiguration}
+        />
+        <div className={styles.launchFormParameterInputRow}>
+          <Form.Item
+            validateStatus={error ? 'error' : warning ? 'warning' : 'success'}
+            hasFeedback
+            style={{flex: 1, marginBottom: 0}}>
+            <LaunchFormParameterInput
+              style={{width: '100%', minHeight: isBoolean ? undefined : 32}}
+              parameter={parameter}
+              onChange={onChange}
+              disabled={disabled}
+              rawEdit={rawEdit}
+              currentCloudRegionId={currentCloudRegionId}
+              currentProjectId={currentProjectId}
+              currentProjectMetadata={currentProjectMetadata}
+              currentMetadataEntity={currentMetadataEntity}
+              rootEntityId={rootEntityId}
+              metadataAutoComplete={metadataAutoComplete}
+              parametersMetadata={parametersMetadata}
+            />
+          </Form.Item>
+          {removeAllowed && typeof onRemoveParameter === 'function' ? (
+            <MinusCircleOutlined
+              className={classNames('dynamic-delete-button', styles.launchFormParameterRemove)}
+              onClick={onRemoveParameterClicked}
+            />
+          ) : (
+            <div className={styles.launchFormParameterRemovePlaceholder}>{'\u00A0'}</div>
+          )}
+        </div>
       </div>
       {
         error && (

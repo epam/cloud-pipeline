@@ -1,10 +1,68 @@
 .launch-parameter-input {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
 
+.launch-parameter-input :global(.ant-input-group-wrapper),
+.launch-parameter-input :global(.ant-input-group) {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.launch-parameter-input :global(.ant-input-group) {
+  display: flex;
+}
+
+.launch-parameter-input :global(.ant-input-group-addon) {
+  flex: 0 0 auto;
+}
+
+.launch-parameter-input :global(.ant-input-group > .ant-input),
+.launch-parameter-input :global(.ant-input-group > .ant-input-affix-wrapper),
+.launch-parameter-input :global(.ant-input-group > .ant-select),
+.launch-parameter-input :global(.ant-input-group > .ant-select-auto-complete) {
+  flex: 1 1 0;
+  width: 0;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.launch-parameter-input :global(.ant-input),
+.launch-parameter-input :global(.ant-input-affix-wrapper),
+.launch-parameter-input :global(.ant-input-affix-wrapper > input.ant-input),
+.launch-parameter-input :global(.ant-select),
+.launch-parameter-input :global(.ant-select-selector) {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.launch-parameter-input :global(.ant-input),
+.launch-parameter-input :global(.ant-input-affix-wrapper > input.ant-input) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.launch-parameter-input :global(.ant-select-selector) {
+  overflow: hidden;
+}
+
+.launch-parameter-input :global(.ant-select-selection-item) {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .launch-parameter-path-input-addon {
   padding: 5px;
   cursor: pointer;
+}
+
+.launch-parameter-bool-input:global(.ant-checkbox-wrapper) {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
 }
 
 .metadata-auto-complete {

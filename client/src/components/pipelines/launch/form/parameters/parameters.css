@@ -1,7 +1,10 @@
 .parameters-container {
   display: flex;
   align-items: flex-start;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .parameters-container .parameters-navigation {
@@ -12,7 +15,10 @@
 
 .parameters-container .parameters-content {
   flex: 1;
-  overflow: auto;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .parameters-group-container {
@@ -23,6 +29,9 @@
 
 .parameters-group-container .parameter-row {
   width: 50%;
+  max-width: 50%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .parameters-group-section-divider {

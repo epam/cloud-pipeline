@@ -63,9 +63,9 @@ class ParameterNameInput extends React.PureComponent {
     this.input = input;
   }
 
-  onInitPrettyNameInput = (input) => {
-    this.prettyNameInput = input;
-  }
+  onInitContainer = (container) => {
+    this.container = container;
+  };
 
   onBlur = () => {
     clearTimeout(this.checkFocusTimeout);
@@ -74,10 +74,10 @@ class ParameterNameInput extends React.PureComponent {
 
   checkFocus = () => {
     clearTimeout(this.checkFocusTimeout);
-    const isFocused = (input) => input ? document.activeElement === input : false;
-    if (!isFocused(this.input) && !isFocused(this.prettyNameInput)) {
-      this.onUnSetEditMode();
+    if (this.container && this.container.contains(document.activeElement)) {
+      return;
     }
+    this.onUnSetEditMode();
   };
 
   onNameChange = (event) => {
@@ -147,81 +147,77 @@ class ParameterNameInput extends React.PureComponent {
     );
     return (
       <div
+        ref={this.onInitContainer}
         className={classNames(className, styles.parameterNameInputContainer)}
         style={style}
       >
-        {
-          editMode && (
-            <div className={styles.parameterNameInputRow}>
-              <span>Name:</span>
-              <Input
-                style={{flex: 1}}
-                placeholder="Parameter name"
-                className={classNames(styles.parameterNameInput, {'cp-error': nameError})}
-                autoFocus
-                ref={this.onInitNameInput}
-                onBlur={this.onBlur}
-                value={name}
-                onChange={this.onNameChange}
-              />
-              {editConfiguration && (
-                <span>Pretty name:</span>
-              )}
-              {editConfiguration && (
+        <div className={styles.parameterNameInputRow}>
+          {
+            editMode ? (
+              <>
+                <span>Name:</span>
                 <Input
-                  style={{flex: 1}}
-                  placeholder="Parameter pretty name"
-                  className={styles.parameterNameInput}
-                  ref={this.onInitPrettyNameInput}
+                  placeholder="Parameter name"
+                  className={classNames(styles.parameterNameInput, {'cp-error': nameError})}
+                  autoFocus
+                  ref={this.onInitNameInput}
                   onBlur={this.onBlur}
-                  value={prettyName}
-                  onChange={this.onPrettyNameChange}
+                  value={name}
+                  onChange={this.onNameChange}
                 />
-              )}
-            </div>
-          )
-        }
-        {!editMode && (
-          <div className={styles.parameterNameInputRow}>
-            <Popover
-              content={popoverContent}
-            >
-              <span
-                className={classNames(
-                  'ant-form-item-title',
-                  styles.parameterName,
-                  {
-                    'cp-error': nameError,
-                    [styles.editingEnabled]: this.editingEnabled,
-                    [styles.editingDisabled]: !this.editingEnabled,
-                    'cp-text-not-important': !nameError &&
-                      (!displayName || displayName.trim().length === 0)
-                  }
+                {editConfiguration && (
+                  <span>Pretty name:</span>
                 )}
-                style={{textWrap: 'nowrap'}}
-                onClick={system ? undefined : this.onSetEditMode}
-              >
+                {editConfiguration && (
+                  <Input
+                    placeholder="Parameter pretty name"
+                    className={styles.parameterNameInput}
+                    ref={this.onInitPrettyNameInput}
+                    onBlur={this.onBlur}
+                    value={prettyName}
+                    onChange={this.onPrettyNameChange}
+                  />
+                )}
+              </>
+            ) : (
+              <Popover content={popoverContent}>
+                <span
+                  className={classNames(
+                    'ant-form-item-title',
+                    styles.parameterName,
+                    {
+                      'cp-error': nameError,
+                      [styles.editingEnabled]: this.editingEnabled,
+                      [styles.editingDisabled]: !this.editingEnabled,
+                      'cp-text-not-important': !nameError &&
+                        (!displayName || displayName.trim().length === 0)
+                    }
+                  )}
+                  style={{textWrap: 'nowrap'}}
+                  onClick={system ? undefined : this.onSetEditMode}
+                >
+                  {
+                    displayName && displayName.trim().length > 0
+                      ? displayName
+                      : '<parameter name>'
+                  }
+                  <EditOutlined className={styles.parameterNameEditIcon} />
+                </span>
                 {
-                  displayName && displayName.trim().length > 0
-                    ? displayName
-                    : '<parameter name>'
+                  nameError && (
+                    <span
+                      className="cp-error"
+                      style={{marginLeft: 5}}
+                    >
+                      {' - '}
+                      {nameError}
+                    </span>
+                  )
                 }
-                <EditOutlined className={styles.parameterNameEditIcon} />
-              </span>
-              {
-                nameError && (
-                  <span
-                    className="cp-error"
-                    style={{marginLeft: 5}}
-                  >
-                    {' - '}
-                    {nameError}
-                  </span>
-                )
-              }
-            </Popover>
-          </div>
-        )}
+              </Popover>
+            )
+          }
+        </div>
         {
           nameError && editMode && (
             <div className="cp-error" style={{margin: 0}}>

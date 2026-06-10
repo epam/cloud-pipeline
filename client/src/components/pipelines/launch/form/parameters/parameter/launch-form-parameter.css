@@ -1,5 +1,67 @@
 .launch-form-parameter {
   margin: 7px 0;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.launch-form-parameter-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+}
+
+.launch-form-parameter-boolean .launch-form-parameter-row {
+  flex-direction: row;
+  align-items: center;
+}
+
+.launch-form-parameter-input-row {
+  display: flex;
+  flex-wrap: nowrap;
+  font-size: larger;
+  min-width: 0;
+  max-width: 100%;
+  flex: 1;
+}
+
+.launch-form-parameter-boolean .launch-form-parameter-input-row {
+  font-size: inherit;
+}
+
+.launch-form-parameter-remove {
+  font-size: larger;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin: auto -2px auto 15px;
+  align-self: flex-start;
+}
+
+.launch-form-parameter-boolean .launch-form-parameter-remove {
+  align-self: center;
+}
+
+.launch-form-parameter-remove-placeholder {
+  margin-left: 15px;
+  width: 15px;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.launch-form-parameter :global(.ant-form-item) {
+  min-width: 0;
+  flex: 1 1 0;
+  width: 0;
+  max-width: 100%;
+}
+
+.launch-form-parameter :global(.ant-form-item-control),
+.launch-form-parameter :global(.ant-form-item-control-input),
+.launch-form-parameter :global(.ant-form-item-control-input-content) {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .launch-form-parameter > *:not(:last-child) {

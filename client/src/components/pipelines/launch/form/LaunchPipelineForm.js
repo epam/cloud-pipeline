@@ -46,6 +46,7 @@ import {
   BarsOutlined
 } from '@ant-design/icons';
 import styles from './LaunchPipelineForm.css';
+import launchFormAddonInputStyles from './launch-form-addon-input.css';
 import BucketBrowser from './../dialogs/BucketBrowser';
 import PipelineBrowser from './../dialogs/PipelineBrowser';
 import DockerImageInput from './DockerImageInput';
@@ -2465,32 +2466,59 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const ref = (input) => {
       this.pipelineInput = input;
     };
+    const disabled = this.props.readOnly && !this.props.canExecute;
     return (
       <FormItem
         className={getFormItemClassName(styles.formItem, 'pipeline')}
         {...this.formItemLayout}
         label={this.localizedString('Pipeline')} >
-        <Input
-          size="large"
-          disabled={this.props.readOnly && !this.props.canExecute}
-          ref={ref}
-          onFocus={this.openPipelineBrowser}
-          value={inputValue}
-          onChange={(e) => {}}
-          addonBefore={
-            <div
-              className={styles.pathType}
-              onClick={!(this.props.readOnly && !this.props.canExecute) &&
-              this.openPipelineBrowser}>
-              <ExportOutlined />
-            </div>
-          }
-          addonAfter={isLatestVersion ? (
-            <div className={styles.inputAddonButton} onClick={onRefreshClick}>
-              Refresh configuration
-            </div>
-          ) : undefined}
-        />
+        <div className={launchFormAddonInputStyles.launchFormAddonInput}>
+          <Input.Group
+            compact
+            style={{display: 'flex', width: '100%', minWidth: 0, maxWidth: '100%'}}>
+            <span
+              className={
+                classNames(
+                  launchFormAddonInputStyles.launchFormAddonInputAddon,
+                  'cp-input-group-addon'
+                )
+              }>
+              <div
+                className={
+                  classNames(
+                    launchFormAddonInputStyles.launchFormAddonInputAddonButton,
+                    {[launchFormAddonInputStyles.disabled]: disabled}
+                  )
+                }
+                onClick={disabled ? undefined : this.openPipelineBrowser}>
+                <ExportOutlined />
+              </div>
+            </span>
+            <Input
+              disabled={disabled}
+              ref={ref}
+              onFocus={this.openPipelineBrowser}
+              value={inputValue || ''}
+              onChange={(e) => {}}
+              style={{flex: '1 1 0', minWidth: 0, width: 0, maxWidth: '100%'}}
+            />
+            {
+              isLatestVersion && (
+                <span
+                  className={
+                    classNames(
+                      launchFormAddonInputStyles.launchFormAddonInputAddon,
+                      'cp-input-group-addon'
+                    )
+                  }>
+                  <div className={styles.inputAddonButton} onClick={onRefreshClick}>
+                    Refresh configuration
+                  </div>
+                </span>
+              )
+            }
+          </Input.Group>
+        </div>
       </FormItem>
     );
   };
@@ -2515,7 +2543,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         {...this.formItemLayout}
         label="Execution environment" >
         <Select
-          size="large"
           value={`${this.state.execEnvSelectValue}`}
           onSelect={onChange}
           disabled={

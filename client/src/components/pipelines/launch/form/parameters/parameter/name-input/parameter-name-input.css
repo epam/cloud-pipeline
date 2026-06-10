@@ -3,9 +3,18 @@
   --parameter-name-icon-size: calc(var(--parameter-name-input-height) - 5px);
 }
 
+.parameter-name-input-container {
+  min-height: var(--parameter-name-input-height);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
 .parameter-name-input-container .parameter-name-input-row {
   display: flex;
   align-items: center;
+  flex-wrap: nowrap;
+  min-height: var(--parameter-name-input-height);
   line-height: var(--parameter-name-input-height);
 }
 
@@ -28,9 +37,23 @@
 }
 
 .parameter-name-input-row .parameter-name-input {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
   height: var(--parameter-name-input-height);
   line-height: var(--parameter-name-input-height);
+}
+
+.parameter-name-input-row :global(.ant-input) {
+  height: var(--parameter-name-input-height);
+  min-height: var(--parameter-name-input-height);
+  padding-block: 0;
+  line-height: calc(var(--parameter-name-input-height) - 2px);
+}
+
+.parameter-name-input-row .parameter-name {
+  min-height: var(--parameter-name-input-height);
+  display: inline-flex;
+  align-items: center;
 }
 
 .parameter-name-input-row .parameter-name-edit-icon {

@@ -1,0 +1,64 @@
+.launch-form-addon-input {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.launch-form-addon-input :global(.ant-input-group-wrapper),
+.launch-form-addon-input :global(.ant-input-group) {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.launch-form-addon-input :global(.ant-input-group) {
+  display: flex;
+  align-items: stretch;
+}
+
+.launch-form-addon-input :global(.ant-input-group-addon) {
+  flex: 0 0 auto;
+}
+
+.launch-form-addon-input :global(.ant-input-group > .ant-input),
+.launch-form-addon-input :global(.ant-input-group > .ant-input-affix-wrapper) {
+  flex: 1 1 0;
+  width: 0;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.launch-form-addon-input :global(.ant-input),
+.launch-form-addon-input :global(.ant-input-affix-wrapper > input.ant-input) {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.launch-form-addon-input-addon {
+  padding: 4px 7px;
+  font-size: 12px;
+  font-weight: normal;
+  line-height: 1;
+  text-align: center;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  align-self: stretch;
+}
+
+.launch-form-addon-input-addon-button {
+  padding: 5px 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 100%;
+}
+
+.launch-form-addon-input-addon-button.disabled {
+  cursor: not-allowed;
+}

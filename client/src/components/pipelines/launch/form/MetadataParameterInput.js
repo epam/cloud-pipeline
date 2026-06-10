@@ -16,10 +16,11 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
 import {Input} from 'antd';
 import {AppstoreOutlined} from '@ant-design/icons';
 import MetadataBrowser from './../dialogs/MetadataBrowser';
-import styles from './LaunchPipelineForm.css';
+import styles from './launch-form-addon-input.css';
 
 const mapMetadataParameter = ({folderId, entitiesIds, metadataClassName}) => {
   return `${folderId}:${metadataClassName}:${entitiesIds}`;
@@ -80,6 +81,7 @@ export default class MetadataParameterInput extends React.Component {
 
   render () {
     const {
+      className,
       disabled,
       style,
       value,
@@ -89,21 +91,31 @@ export default class MetadataParameterInput extends React.Component {
     } = this.props;
     const {showMetadataBrowser} = this.state;
     return (
-      <div>
-        <Input
-          disabled={disabled}
-          style={style}
-          value={this.inputMask}
-          addonBefore={
+      <div
+        className={classNames(className, styles.launchFormAddonInput)}
+        style={{width: '100%', minWidth: 0, maxWidth: '100%', ...style}}>
+        <Input.Group
+          compact
+          style={{display: 'flex', width: '100%', minWidth: 0, maxWidth: '100%'}}>
+          <span className={classNames(styles.launchFormAddonInputAddon, 'cp-input-group-addon')}>
             <div
-              className={styles.pathType}
-              onClick={this.showMetadataBrowser}
-            >
+              className={classNames(
+                styles.launchFormAddonInputAddonButton,
+                {[styles.disabled]: disabled}
+              )}
+              onClick={disabled ? undefined : this.showMetadataBrowser}>
               <AppstoreOutlined />
             </div>
-          }
-          placeholder="Select metadata"
-        />
+          </span>
+          <Input
+            disabled={disabled}
+            style={{flex: '1 1 0', minWidth: 0, width: 0, maxWidth: '100%'}}
+            value={this.inputMask}
+            onFocus={disabled ? undefined : this.showMetadataBrowser}
+            placeholder="Select metadata"
+            readOnly
+          />
+        </Input.Group>
         <MetadataBrowser
           readOnly
           onCancel={this.closeMetadataBrowser}
@@ -124,6 +136,7 @@ export default class MetadataParameterInput extends React.Component {
 }
 
 MetadataParameterInput.propTypes = {
+  className: PropTypes.string,
   value: PropTypes.string,
   style: PropTypes.object,
   disabled: PropTypes.bool,

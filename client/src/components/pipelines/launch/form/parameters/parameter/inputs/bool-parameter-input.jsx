@@ -20,7 +20,7 @@ function LaunchFormBoolParameterInput (props) {
   };
   return (
     <Checkbox
-      className={classNames(className, styles.launchParameterInput)}
+      className={classNames(className, styles.launchParameterInput, styles.launchParameterBoolInput)}
       style={style}
       checked={checked}
       onChange={onCheckboxValueChange}

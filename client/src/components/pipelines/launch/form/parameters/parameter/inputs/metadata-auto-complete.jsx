@@ -128,7 +128,7 @@ class MetadataAutoComplete extends React.PureComponent {
     }
     const {filteredEntityFields = []} = this.state;
     return (
-      <Input.Group compact style={{display: 'flex'}}>
+      <Input.Group compact style={{display: 'flex', width: '100%', minWidth: 0, maxWidth: '100%'}}>
         {
           addonBefore &&
           <span className={classNames(styles.metadataAutoComplete, 'cp-input-group-addon')}>
@@ -137,7 +137,7 @@ class MetadataAutoComplete extends React.PureComponent {
         }
         <AutoComplete
           className={className}
-          style={style}
+          style={{...style, flex: '1 1 0', minWidth: 0, width: 0, maxWidth: '100%'}}
           value={value}
           onChange={this.onChange}
           onSelect={this.onSelect}
