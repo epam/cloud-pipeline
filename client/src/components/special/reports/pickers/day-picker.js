@@ -18,6 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import moment from 'moment-timezone';
 import {DatePicker} from 'antd';
+import {momentToDayjs, dayjsToMoment} from '../../../../utils/antd-date-utils';
 
 export default class DayPicker extends React.Component {
   static propTypes = {
@@ -57,14 +58,21 @@ export default class DayPicker extends React.Component {
       this.setState({visible: visible});
     };
 
+    handleChange = (date) => {
+      const {onChange} = this.props;
+      if (onChange) {
+        onChange(dayjsToMoment(date));
+      }
+    };
+
     render () {
-      const {onChange, style = {}} = this.props;
+      const {style = {}} = this.props;
       const {day} = this.state;
       return (
         <DatePicker
           format="D MMM YYYY"
-          value={day}
-          onChange={onChange}
+          value={momentToDayjs(day)}
+          onChange={this.handleChange}
           style={Object.assign({
             marginRight: 15
           }, style)}

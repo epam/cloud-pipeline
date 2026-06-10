@@ -18,6 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {DatePicker, Button, Popover} from 'antd';
 import moment from 'moment-timezone';
+import {momentToDayjs, dayjsToMoment} from '../../../../utils/antd-date-utils';
 
 import {Range, Period} from '../../periods';
 import styles from './range-picker.css';
@@ -116,10 +117,10 @@ class RangeFilter extends React.Component {
       return undefined;
     };
     const onStartChange = (value) => {
-      this.setState({startValue: value});
+      this.setState({startValue: dayjsToMoment(value)});
     };
     const onEndChange = (value) => {
-      this.setState({endValue: value});
+      this.setState({endValue: dayjsToMoment(value)});
     };
     const handleFromPickerVisibility = (visible) => {
       this.setState({fromPickerVisible: visible});
@@ -133,7 +134,7 @@ class RangeFilter extends React.Component {
           <DatePicker
             disabledDate={this.disabledStartDate}
             format="D MMM YYYY"
-            value={startValue}
+            value={momentToDayjs(startValue)}
             placeholder="From"
             onChange={onStartChange}
             style={{marginRight: 15}}
@@ -142,7 +143,7 @@ class RangeFilter extends React.Component {
           <DatePicker
             disabledDate={this.disabledEndDate}
             format="D MMM YYYY"
-            value={endValue}
+            value={momentToDayjs(endValue)}
             placeholder="To"
             onChange={onEndChange}
             onOpenChange={handleToPickerVisibility}

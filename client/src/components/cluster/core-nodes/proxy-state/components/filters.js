@@ -19,6 +19,7 @@ import PropTypes from 'prop-types';
 import {Input, Select, DatePicker} from 'antd';
 import {checkDateInRange} from '../utils';
 import moment from 'moment-timezone';
+import {momentToDayjs, dayjsToMoment} from '../../../../../utils/antd-date-utils';
 
 export default class Filters extends React.Component {
   get filtersApplied () {
@@ -59,12 +60,12 @@ export default class Filters extends React.Component {
     }
   };
 
-  onDateChanged = (key) => (date, a, b) => {
+  onDateChanged = (key) => (date) => {
     const {onChange, filters = {}} = this.props;
     if (onChange) {
       onChange({
         ...filters,
-        [key]: moment(date)
+        [key]: dayjsToMoment(date)
       });
     }
   }
@@ -143,7 +144,7 @@ export default class Filters extends React.Component {
           placeholder="Start"
           onChange={this.onDateChanged('from')}
           style={{minWidth: 150}}
-          value={filters.from}
+          value={momentToDayjs(filters.from)}
           disabledDate={this.disabledStartDate}
         />
         <DatePicker
@@ -152,7 +153,7 @@ export default class Filters extends React.Component {
           placeholder="End"
           onChange={this.onDateChanged('to')}
           style={{minWidth: 150}}
-          value={filters.to}
+          value={momentToDayjs(filters.to)}
           disabledDate={this.disabledEndDate}
         />
         {this.filtersApplied ? (

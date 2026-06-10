@@ -30,6 +30,7 @@ import {
 import {DownOutlined, ExportOutlined} from '@ant-design/icons';
 import FileSaver from 'file-saver';
 import moment from 'moment-timezone';
+import {momentToDayjs, dayjsToMoment} from '../../../utils/antd-date-utils';
 import classNames from 'classnames';
 import LoadingView from '../../special/LoadingView';
 import {
@@ -382,6 +383,7 @@ class GeneralInfoTab extends React.Component {
     if (!chartsData.initialized) {
       return;
     }
+    start = dayjsToMoment(start);
     if (!start) {
       this.setState({
         start: chartsData.instanceFrom
@@ -412,6 +414,7 @@ class GeneralInfoTab extends React.Component {
     if (!chartsData.initialized) {
       return;
     }
+    end = dayjsToMoment(end);
     if (!end) {
       this.setState({
         end
@@ -635,7 +638,7 @@ class GeneralInfoTab extends React.Component {
             format="YYYY-MM-DD HH:mm"
             placeholder="Start"
             onChange={this.onStartChanged}
-            value={start ? moment.unix(start) : undefined}
+            value={start ? momentToDayjs(moment.unix(start)) : null}
             disabledDate={this.disabledDate}
           />
           <Divider />
@@ -644,7 +647,7 @@ class GeneralInfoTab extends React.Component {
             format="YYYY-MM-DD HH:mm"
             placeholder="End"
             onChange={this.onEndChanged}
-            value={end ? moment.unix(end) : undefined}
+            value={end ? momentToDayjs(moment.unix(end)) : null}
             disabledDate={this.disabledDate}
           />
           {

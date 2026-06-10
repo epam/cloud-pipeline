@@ -29,6 +29,7 @@ import classNames from 'classnames';
 import {computed, reaction, makeObservable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import moment from 'moment-timezone';
+import {momentToDayjs, dayjsToMoment} from '../../../utils/antd-date-utils';
 import ClusterNodeGPUUsage from '../../../models/cluster/ClusterNodeGPUUsage';
 import TimelineChart from '../../special/timeline-chart';
 import HeatMapChart from '../../special/heat-map-chart';
@@ -339,6 +340,7 @@ class GPUInfoTab extends React.Component {
     const onStartChange = (date) => {
       let {to} = this.state;
       const {chartsData} = this.props;
+      date = dayjsToMoment(date);
       if (!chartsData.initialized || !date) {
         return;
       }
@@ -362,6 +364,7 @@ class GPUInfoTab extends React.Component {
     const onEndChange = (date) => {
       let {from} = this.state;
       const {chartsData} = this.props;
+      date = dayjsToMoment(date);
       if (!chartsData.initialized || !date) {
         return;
       }
@@ -437,7 +440,7 @@ class GPUInfoTab extends React.Component {
           format="YYYY-MM-DD HH:mm"
           placeholder="Start"
           onChange={onStartChange}
-          value={moment.unix(this.state.from)}
+          value={this.state.from ? momentToDayjs(moment.unix(this.state.from)) : null}
           disabledDate={disabledDate}
         />
         <Divider />
@@ -445,7 +448,7 @@ class GPUInfoTab extends React.Component {
           format="YYYY-MM-DD HH:mm"
           placeholder="End"
           onChange={onEndChange}
-          value={moment.unix(this.state.to)}
+          value={this.state.to ? momentToDayjs(moment.unix(this.state.to)) : null}
           disabledDate={disabledDate}
         />
       </div>

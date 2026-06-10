@@ -24,6 +24,7 @@ import {
 import {DeleteOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import moment from 'moment-timezone';
+import {momentToDayjs, dayjsToMoment} from '../../../utils/antd-date-utils';
 import formStyles from './edit-hot-node-pool.css';
 
 const Dates = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -181,7 +182,7 @@ class ScheduleControl extends React.Component {
 
   onChangeFromTime = (time) => {
     this.setState({
-      fromTime: formatTime(time)
+      fromTime: formatTime(dayjsToMoment(time))
     }, this.handleChange);
   };
 
@@ -193,7 +194,7 @@ class ScheduleControl extends React.Component {
 
   onChangeToTime = (time) => {
     this.setState({
-      toTime: formatTime(time)
+      toTime: formatTime(dayjsToMoment(time))
     }, this.handleChange);
   };
 
@@ -249,7 +250,7 @@ class ScheduleControl extends React.Component {
           <TimePicker
             className={classNames({'cp-error': invalid})}
             style={{marginLeft: 5}}
-            value={fromTime}
+            value={momentToDayjs(fromTime)}
             format="HH:mm"
             onChange={this.onChangeFromTime}
           />
@@ -283,7 +284,7 @@ class ScheduleControl extends React.Component {
           <TimePicker
             className={classNames({'cp-error': invalid})}
             style={{marginLeft: 5}}
-            value={toTime}
+            value={momentToDayjs(toTime)}
             format="HH:mm"
             onChange={this.onChangeToTime}
           />
