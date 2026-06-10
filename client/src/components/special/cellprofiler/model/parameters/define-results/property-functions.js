@@ -23,7 +23,7 @@ const PropertyFunctions = {
   cv: 'CV %',
   max: 'Max',
   min: 'Min',
-  sum: 'Sum'
+  sum: 'Sum',
 };
 
 const PropertyFunctionNames = {
@@ -33,7 +33,7 @@ const PropertyFunctionNames = {
   [PropertyFunctions.cv]: 'CV %',
   [PropertyFunctions.max]: 'Max',
   [PropertyFunctions.min]: 'Min',
-  [PropertyFunctions.sum]: 'Sum'
+  [PropertyFunctions.sum]: 'Sum',
 };
 
 const PropertyFunctionHints = {
@@ -43,10 +43,10 @@ const PropertyFunctionHints = {
   [PropertyFunctions.cv]: 'Coefficient of variation (standard deviation divided by mean)',
   [PropertyFunctions.max]: 'Maximum value of the property',
   [PropertyFunctions.min]: 'Minimum value of the property',
-  [PropertyFunctions.sum]: 'Summary of all values of the selected property'
+  [PropertyFunctions.sum]: 'Summary of all values of the selected property',
 };
 
-function getObjectPropertyFunction (objectProperty) {
+function getObjectPropertyFunction(objectProperty) {
   switch (objectProperty) {
     case ObjectProperty.numberOfObjects:
     case undefined:
@@ -64,7 +64,7 @@ const AllStats = [
   PropertyFunctions.cv,
   PropertyFunctions.max,
   PropertyFunctions.min,
-  PropertyFunctions.sum
+  PropertyFunctions.sum,
 ];
 
 export {
@@ -72,5 +72,5 @@ export {
   PropertyFunctions,
   PropertyFunctionNames,
   PropertyFunctionHints,
-  getObjectPropertyFunction
+  getObjectPropertyFunction,
 };

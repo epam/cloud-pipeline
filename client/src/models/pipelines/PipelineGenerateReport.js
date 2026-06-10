@@ -19,7 +19,7 @@ import RemotePost from '../basic/RemotePost';
 class PipelineGenerateReport extends RemotePost {
   static isJson = false;
 
-  constructor (storageId) {
+  constructor(storageId) {
     super();
     this.url = `/pipeline/${storageId}/report`;
   }

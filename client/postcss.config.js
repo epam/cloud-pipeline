@@ -14,21 +14,21 @@
  * limitations under the License.
  */
 
-const postcssPresetEnv = require('postcss-preset-env');
-const postcssFlexbugsFixes = require('postcss-flexbugs-fixes');
-const postcssReporter = require('postcss-reporter');
+import postcssPresetEnv from 'postcss-preset-env';
+import postcssFlexbugsFixes from 'postcss-flexbugs-fixes';
+import postcssReporter from 'postcss-reporter';
 
-module.exports = {
+export default {
   plugins: [
     postcssFlexbugsFixes,
     postcssPresetEnv({
       autoprefixer: {
-        flexbox: 'no-2009'
+        flexbox: 'no-2009',
       },
-      stage: 3
+      stage: 3,
     }),
     postcssReporter({
-      clearAllMessages: true
-    })
-  ]
+      clearAllMessages: true,
+    }),
+  ],
 };

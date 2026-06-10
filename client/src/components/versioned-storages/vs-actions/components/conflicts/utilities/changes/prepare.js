@@ -21,32 +21,26 @@ import ChangeStatuses from './statuses';
 import ModificationType from './types';
 import findModification from './find';
 
-function processEdition (branch, edition) {
+function processEdition(branch, edition) {
   Object.defineProperty(edition, 'removed', {
     get: function () {
-      return this.items.filter(line =>
-        line.state[branch] === LineStates.removed
-      );
+      return this.items.filter((line) => line.state[branch] === LineStates.removed);
     },
     enumerable: true,
-    configurable: false
+    configurable: false,
   });
   Object.defineProperty(edition, 'inserted', {
     get: function () {
-      return this.items.filter(line =>
-        line.state[branch] === LineStates.inserted
-      );
+      return this.items.filter((line) => line.state[branch] === LineStates.inserted);
     },
     enumerable: true,
-    configurable: false
+    configurable: false,
   });
 }
 
-function processConflict (branch, conflict) {
+function processConflict(branch, conflict) {}
 
-}
-
-function processModification (conflictedFile, branch, modification) {
+function processModification(conflictedFile, branch, modification) {
   switch (modification.type) {
     case ModificationType.edition:
       processEdition(branch, modification);
@@ -59,10 +53,10 @@ function processModification (conflictedFile, branch, modification) {
   }
 }
 
-function getModificationsCountBefore (branch, line, modifications) {
+function getModificationsCountBefore(branch, line, modifications) {
   const lineNumber = line.lineNumber[branch];
-  const before = modifications.filter(m => m.start.lineNumber[branch] < lineNumber);
-  return (new Set(before.map(m => m.key()))).size;
+  const before = modifications.filter((m) => m.start.lineNumber[branch] < lineNumber);
+  return new Set(before.map((m) => m.key())).size;
 }
 
 /**
@@ -71,7 +65,7 @@ function getModificationsCountBefore (branch, line, modifications) {
  * @param branch
  * @returns {*[]}
  */
-function processBranch (conflictedFile, branch) {
+function processBranch(conflictedFile, branch) {
   const skip = new Set([LineStates.omit]);
   const lines = conflictedFile.getLines(branch, skip);
   const result = [];
@@ -92,42 +86,36 @@ function processBranch (conflictedFile, branch) {
     currentModification.status = ChangeStatuses.prepared;
     result.push(currentModification);
   }
-  result.forEach(modification => processModification(conflictedFile, branch, modification));
+  result.forEach((modification) => processModification(conflictedFile, branch, modification));
   return result;
 }
 
-function buildChangesBefore (list, branch, modifications = []) {
-  const currentModifications = modifications.filter(modification =>
-    branch === Merged || modification.branch === branch
+function buildChangesBefore(list, branch, modifications = []) {
+  const currentModifications = modifications.filter(
+    (modification) => branch === Merged || modification.branch === branch,
   );
-  list.getLines(branch, new Set([]))
-    .forEach(line => {
-      line.changesBefore[branch] = getModificationsCountBefore(
-        branch,
-        line,
-        currentModifications
-      );
-    });
+  list.getLines(branch, new Set([])).forEach((line) => {
+    line.changesBefore[branch] = getModificationsCountBefore(branch, line, currentModifications);
+  });
 }
 
-function markLines (list, branch, modifications = []) {
-  const currentModifications = modifications.filter(modification =>
-    branch === Merged || modification.branch === branch
+function markLines(list, branch, modifications = []) {
+  const currentModifications = modifications.filter(
+    (modification) => branch === Merged || modification.branch === branch,
   );
-  list.getLines(branch, new Set([]))
-    .forEach(line => {
-      line.change[branch] = findModification(line, currentModifications, branch);
-    });
+  list.getLines(branch, new Set([])).forEach((line) => {
+    line.change[branch] = findModification(line, currentModifications, branch);
+  });
 }
 
-export default function prepare (conflictedFile) {
+export default function prepare(conflictedFile) {
   const result = [
     ...processBranch(conflictedFile, HeadBranch),
     ...processBranch(conflictedFile, RemoteBranch),
-    ...processBranch(conflictedFile, Merged)
+    ...processBranch(conflictedFile, Merged),
   ];
   result.sort((a, b) => a.start.lineNumber[a.branch] - b.start.lineNumber[b.branch]);
-  Branches.forEach(branch => {
+  Branches.forEach((branch) => {
     buildChangesBefore(conflictedFile, branch, result);
     markLines(conflictedFile, branch, result);
   });
@@ -135,7 +123,7 @@ export default function prepare (conflictedFile) {
     const modification = result[m];
     const filtered = result
       .slice(0, m)
-      .filter(oModification => oModification.key() !== modification.key());
+      .filter((oModification) => oModification.key() !== modification.key());
     const getBeforeCount = (branch) => {
       const allowedBranches = [branch];
       if (branch === Merged) {
@@ -147,18 +135,16 @@ export default function prepare (conflictedFile) {
       const branches = new Set(allowedBranches);
       const lineNumber = modification.start.lineNumber[branch];
       const before = filtered
-        .filter(oModification => branches.has(oModification.branch))
-        .filter(oModification =>
-          oModification.start.lineNumber[branch] <= lineNumber
-        )
-        .map(oModification => oModification.key());
-      return (new Set(before)).size;
+        .filter((oModification) => branches.has(oModification.branch))
+        .filter((oModification) => oModification.start.lineNumber[branch] <= lineNumber)
+        .map((oModification) => oModification.key());
+      return new Set(before).size;
     };
     modification.changesBefore = {
       [modification.branch]: getBeforeCount(modification.branch),
-      [Merged]: getBeforeCount(Merged)
+      [Merged]: getBeforeCount(Merged),
     };
-    for (let oModification of result) {
+    for (const oModification of result) {
       if (oModification !== modification) {
         oModification.tryAppendParentChange(modification);
         modification.tryAppendParentChange(oModification);

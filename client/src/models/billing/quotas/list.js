@@ -17,7 +17,7 @@
 import Remote from '../../basic/Remote';
 
 export default class BillingQuotasList extends Remote {
-  constructor (loadActive = true) {
+  constructor(loadActive = true) {
     super();
     this.url = `/quotas?loadActive=${!!loadActive}`;
   }

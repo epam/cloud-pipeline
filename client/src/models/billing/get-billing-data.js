@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import moment from 'moment';
+import dayjs from '../../utils/dayjs';
 import BaseBillingRequest from './base-billing-request';
 import GetDataWithPrevious from './get-data-with-previous';
 import {costMapper} from './utils';
@@ -24,14 +24,11 @@ class GetBillingData extends BaseBillingRequest {
   /**
    * @param {BaseBillingRequestOptions} options
    */
-  constructor (options = {}) {
+  constructor(options = {}) {
     super(options);
-    const {
-      filters = {},
-      loadCostDetails
-    } = options;
+    const {filters = {}, loadCostDetails} = options;
     const {dateFilter, dateMapper} = filters;
-    this.dateMapper = dateMapper || (o => o);
+    this.dateMapper = dateMapper || ((o) => o);
     this.dateFilter = dateFilter || (() => true);
     this.loadCostDetails = loadCostDetails;
   }
@@ -42,42 +39,42 @@ class GetBillingData extends BaseBillingRequest {
     fileStorages: 'FILE_STORAGE',
     compute: 'COMPUTE',
     cpu: 'CPU',
-    gpu: 'GPU'
+    gpu: 'GPU',
   };
 
-  prepareBody () {
+  prepareBody() {
     super.prepareBody();
     if (this.filters && this.filters.tick) {
       this.body.interval = this.filters.tick;
     }
     this.body.filters = extendFiltersWithFilterBy(
       this.body.filters,
-      this.filters ? this.filters.filterBy : {}
+      this.filters ? this.filters.filterBy : {},
     );
     if (this.loadCostDetails) {
       this.body.loadCostDetails = true;
     }
   }
 
-  postprocess (value) {
+  postprocess(value) {
     const payload = super.postprocess(value);
 
     const res = {
       quota: null,
       previousQuota: null,
-      values: []
+      values: [],
     };
     (payload || []).forEach((item) => {
-      const initialDate = moment.utc(item.periodStart, 'YYYY-MM-DD HH:mm:ss.SSS');
+      const initialDate = dayjs.utc(item.periodStart, 'YYYY-MM-DD HH:mm:ss.SSS');
       if (this.dateFilter(initialDate)) {
-        const momentDate = this.dateMapper(initialDate);
+        const mappedDate = this.dateMapper(initialDate);
         res.values.push({
           costDetails: item.costDetails,
-          date: moment(momentDate).format('DD MMM YYYY'),
+          date: dayjs(mappedDate).format('DD MMM YYYY'),
           value: isNaN(item.accumulatedCost) ? undefined : costMapper(item.accumulatedCost),
           cost: isNaN(item.cost) ? undefined : costMapper(item.cost),
-          dateValue: momentDate,
-          initialDate
+          dateValue: mappedDate,
+          initialDate,
         });
       }
     });
@@ -90,33 +87,33 @@ class GetBillingDataWithPreviousRange extends GetDataWithPrevious {
   /**
    * @param {BaseBillingRequestOptions} options
    */
-  constructor (options) {
+  constructor(options) {
     super(GetBillingData, options);
   }
 
   static FILTER_BY = GetBillingData.FILTER_BY;
 
-  send () {
+  send() {
     return this.fetch();
   }
 
-  postprocess (value) {
+  postprocess(value) {
     const {current, previous} = super.postprocess(value);
     if (!previous) {
       return current;
     }
     const {values: previousValues = []} = previous;
     const {values: currentValues = [], ...rest} = current || {};
-    const result = previousValues.length > 0
-      ? previousValues.map((o) => (
-        {
-          ...o,
-          previous: o.value,
-          previousCost: o.cost,
-          previousInitialDate: o.initialDate,
-          previousCostDetails: o.costDetails
-        }))
-      : [];
+    const result =
+      previousValues.length > 0
+        ? previousValues.map((o) => ({
+            ...o,
+            previous: o.value,
+            previousCost: o.cost,
+            previousInitialDate: o.initialDate,
+            previousCostDetails: o.costDetails,
+          }))
+        : [];
     result.forEach((o) => {
       delete o.value;
       delete o.cost;

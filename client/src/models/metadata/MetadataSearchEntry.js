@@ -17,12 +17,12 @@
 import Remote from '../basic/Remote';
 
 export default class MetadataSearchEntry extends Remote {
-  constructor (entityClass, key, value) {
+  constructor(entityClass, key, value) {
     super();
     const query = [
       `entityClass=${entityClass}`,
       `key=${decodeURIComponent(key)}`,
-      value !== undefined ? `value=${decodeURIComponent(value)}` : undefined
+      value !== undefined ? `value=${decodeURIComponent(value)}` : undefined,
     ]
       .filter(Boolean)
       .join('&');

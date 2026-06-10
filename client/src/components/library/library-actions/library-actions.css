@@ -1,0 +1,9 @@
+@reference "../../../index.css";
+
+.library-actions {
+  @apply leading-8 h-8;
+}
+
+.library-actions-flex {
+  @apply inline-flex items-center gap-2;
+}

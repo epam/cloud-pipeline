@@ -19,14 +19,8 @@ import {getQuotaType} from './get-quota-type';
 import {__TOTAL__} from '../../../quotas/quota-provider';
 import {discounts} from '../../discounts';
 
-export function getQuotaSummary (options = {}) {
-  const {
-    request,
-    data,
-    discount,
-    quotas,
-    quotaGroup
-  } = options;
+export function getQuotaSummary(options = {}) {
+  const {request, data, discount, quotas, quotaGroup} = options;
   const periods = getAffectiveQuotaPeriods(request);
   const {type: quotaType, subject: aSubject} = getQuotaType(request);
   if (!quotaType) {
@@ -35,11 +29,10 @@ export function getQuotaSummary (options = {}) {
   const subject = aSubject || __TOTAL__;
   const quotaSummary = quotas.getSubjectQuotasByTypeAndGroup(quotaType, quotaGroup)[subject];
   const usage = Object.values(discounts.applyDiscountsToObjectProperties(data, discount) || {})
-    .filter(item => item.value && !Number.isNaN(Number(item.value)))
-    .map(item => Number(item.value))
+    .filter((item) => item.value && !Number.isNaN(Number(item.value)))
+    .map((item) => Number(item.value))
     .reduce((total, current) => total + current, 0);
-  const affectedQuotas = Object
-    .entries(quotaSummary || {})
+  const affectedQuotas = Object.entries(quotaSummary || {})
     .map(([period, quota]) => ({period, quota}))
     .filter(({period}) => periods.includes(period))
     .reduce((result, current) => ({...result, [current.period]: current.quota}), {});
@@ -49,15 +42,14 @@ export function getQuotaSummary (options = {}) {
     quota: Number.isFinite(lowestQuota) ? lowestQuota : undefined,
     quotaSummary: affectedQuotas,
     periods,
-    exceeds: usage && lowestQuota && usage >= lowestQuota
+    exceeds: usage && lowestQuota && usage >= lowestQuota,
   };
 }
 
-export function getQuotaSummaries (requestsWithDiscounts = []) {
-  return requestsWithDiscounts
-    .map(getQuotaSummary);
+export function getQuotaSummaries(requestsWithDiscounts = []) {
+  return requestsWithDiscounts.map(getQuotaSummary);
 }
 
-export function getQuotaSummariesExceeded (requestsWithDiscounts = []) {
-  return requestsWithDiscounts.map(getQuotaSummary).some(o => o.exceeds);
+export function getQuotaSummariesExceeded(requestsWithDiscounts = []) {
+  return requestsWithDiscounts.map(getQuotaSummary).some((o) => o.exceeds);
 }

@@ -29,18 +29,18 @@ import NATRouteStatuses from './route-statuses';
  * @param {undefined|boolean|ThrowErrorConfiguration} throwError
  * @return {ThrowErrorConfiguration}
  */
-function parseThrowErrorConfiguration (throwError) {
+function parseThrowErrorConfiguration(throwError) {
   const {
     required = false,
     maxPorts = false,
-    format = false
-  } = (typeof throwError === 'boolean')
+    format = false,
+  } = typeof throwError === 'boolean'
     ? {required: throwError, maxPorts: throwError, format: throwError}
-    : (throwError || {});
+    : throwError || {};
   return {
     required,
     maxPorts,
-    format
+    format,
   };
 }
 
@@ -50,15 +50,12 @@ function parseThrowErrorConfiguration (throwError) {
  * @param options
  * @return {Generator<number, void, *>}
  */
-function * parsePortEntry (portEntry, options = {}) {
-  const {
-    throwError = false,
-    maxPorts = Infinity
-  } = options;
+function* parsePortEntry(portEntry, options = {}) {
+  const {throwError = false, maxPorts = Infinity} = options;
   const {
     required: throwRequired,
     maxPorts: throwMaxPorts,
-    format: throwFormat
+    format: throwFormat,
   } = parseThrowErrorConfiguration(throwError);
   if (portEntry === undefined || portEntry === null) {
     if (throwRequired) {
@@ -90,7 +87,7 @@ function * parsePortEntry (portEntry, options = {}) {
   }
 }
 
-function getPortEntryCount (portEntry) {
+function getPortEntryCount(portEntry) {
   if (portEntry === undefined || portEntry === null) {
     return 0;
   }
@@ -111,15 +108,10 @@ function getPortEntryCount (portEntry) {
   return 1;
 }
 
-export function * parsePorts (string, options = {}) {
-  const {
-    throwError = false,
-    maxPorts = Infinity
-  } = options;
-  const {
-    required: throwRequired,
-    maxPorts: throwMaxPorts
-  } = parseThrowErrorConfiguration(throwError);
+export function* parsePorts(string, options = {}) {
+  const {throwError = false, maxPorts = Infinity} = options;
+  const {required: throwRequired, maxPorts: throwMaxPorts} =
+    parseThrowErrorConfiguration(throwError);
   if (!string) {
     if (throwRequired) {
       throw new Error('Port is required');
@@ -137,12 +129,12 @@ export function * parsePorts (string, options = {}) {
         }
         return;
       }
-      yield * parsePortEntry(part, options);
+      yield* parsePortEntry(part, options);
     }
   }
 }
 
-export function getPortsCount (string) {
+export function getPortsCount(string) {
   if (!string) {
     return 0;
   }
@@ -150,17 +142,18 @@ export function getPortsCount (string) {
     return 1;
   }
   if (typeof string === 'string') {
-    return string.split(',')
-      .map(o => getPortEntryCount(o.trim()))
+    return string
+      .split(',')
+      .map((o) => getPortEntryCount(o.trim()))
       .reduce((r, c) => r + c, 0);
   }
   return 0;
 }
 
-export function combinePorts (ports = []) {
+export function combinePorts(ports = []) {
   const portNumbers = ports
-    .filter(p => !Number.isNaN(Number(p)))
-    .map(p => Number(p))
+    .filter((p) => !Number.isNaN(Number(p)))
+    .map((p) => Number(p))
     .sort((a, b) => a - b);
   const groups = [];
   for (let i = 0; i < portNumbers.length; i++) {
@@ -169,13 +162,13 @@ export function combinePorts (ports = []) {
     if (!group || group.end < port - 1) {
       group = {
         start: port,
-        end: port
+        end: port,
       };
       groups.push(group);
     }
     group.end = port;
   }
-  const wrongValues = ports.filter(p => Number.isNaN(Number(p)));
+  const wrongValues = ports.filter((p) => Number.isNaN(Number(p)));
   const format = (group) => {
     if (group.start === group.end) {
       return `${group.start}`;
@@ -185,81 +178,73 @@ export function combinePorts (ports = []) {
   return groups.map(format).concat(wrongValues);
 }
 
-function processProtocolPorts (routes, mapPort = (o => o.externalPort)) {
+function processProtocolPorts(routes, mapPort = (o) => o.externalPort) {
   const ports = routes.map(mapPort).filter(Boolean);
   const presentation = combinePorts(ports);
   return {
     ports,
-    presentation
+    presentation,
   };
 }
 
-function sortByPorts (a, b) {
+function sortByPorts(a, b) {
   return (a.externalPort || 0) - (b.externalPort || 0);
 }
 
-export function groupRoutes (routes) {
+export function groupRoutes(routes) {
   const keys = [];
   for (const route of routes) {
     const {externalIp, internalIp, protocol} = route;
     if (
-      !keys.find(o => o.externalIp === externalIp &&
-        o.internalIp === internalIp &&
-        o.protocol === protocol
+      !keys.find(
+        (o) =>
+          o.externalIp === externalIp && o.internalIp === internalIp && o.protocol === protocol,
       )
     ) {
       keys.push({
         externalIp,
         internalIp,
-        protocol
+        protocol,
       });
     }
   }
-  return keys.map(key => {
-    const {
-      externalIp,
-      internalIp,
-      protocol
-    } = key;
+  return keys.map((key) => {
+    const {externalIp, internalIp, protocol} = key;
     const ipRoutes = routes
-      .filter(o =>
-        o.protocol === protocol &&
-        o.externalIp === externalIp &&
-        o.internalIp === internalIp
+      .filter(
+        (o) =>
+          o.protocol === protocol && o.externalIp === externalIp && o.internalIp === internalIp,
       )
       .sort(sortByPorts);
-    const statuses = [...(new Set(ipRoutes.map(o => o.status)))];
+    const statuses = [...new Set(ipRoutes.map((o) => o.status))];
     const [any] = ipRoutes;
-    const {
-      externalPort,
-      ...routeConfiguration
-    } = any || {};
-    const {
-      presentation: externalPortsPresentation,
-      ports: externalPorts
-    } = processProtocolPorts(ipRoutes, o => o.externalPort);
-    const {
-      presentation: internalPortsPresentation
-    } = processProtocolPorts(ipRoutes, o => o.internalPort);
+    const {externalPort, ...routeConfiguration} = any || {};
+    const {presentation: externalPortsPresentation, ports: externalPorts} = processProtocolPorts(
+      ipRoutes,
+      (o) => o.externalPort,
+    );
+    const {presentation: internalPortsPresentation} = processProtocolPorts(
+      ipRoutes,
+      (o) => o.internalPort,
+    );
     return {
       ...routeConfiguration,
-      status: statuses.length > 1
-        ? NATRouteStatuses.PENDING
-        : statuses.pop(),
+      status: statuses.length > 1 ? NATRouteStatuses.PENDING : statuses.pop(),
       protocol: protocolNames[protocol] || protocol,
-      externalPorts: externalPorts,
+      externalPorts,
       externalPortsPresentation,
       internalPortsPresentation,
       grouped: true,
       routes: ipRoutes,
-      children: ipRoutes.length > 1
-        ? ipRoutes.map(o => ({
-          ...o,
-          protocol: protocolNames[protocol] || protocol,
-          externalPortsPresentation: o.externalPort,
-          internalPortsPresentation: o.internalPort
-        }))
-        : undefined
+      children:
+        ipRoutes.length > 1
+          ? ipRoutes.map((o) => ({
+              ...o,
+              protocol: protocolNames[protocol] || protocol,
+              externalPortsPresentation: o.externalPort,
+              internalPortsPresentation: o.internalPort,
+            }))
+          : undefined,
     };
   });
 }

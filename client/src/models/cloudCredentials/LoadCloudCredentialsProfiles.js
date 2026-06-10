@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 export default class LoadCloudCredentialsProfiles extends Remote {
-  constructor (opts) {
+  constructor(opts) {
     super();
     const {id, userId} = opts || {};
     if (id) {

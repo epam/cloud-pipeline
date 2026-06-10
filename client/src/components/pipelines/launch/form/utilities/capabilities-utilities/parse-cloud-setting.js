@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-export default function parseCapabilityCloudSetting (cloudSetting) {
+export default function parseCapabilityCloudSetting(cloudSetting) {
   const [providerString, ...rest] = cloudSetting.split(':');
   let cloud;
   let region;

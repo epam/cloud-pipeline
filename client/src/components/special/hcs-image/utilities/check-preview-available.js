@@ -28,11 +28,8 @@ import HCSInfo from './hcs-image-info';
  * @param {CheckHCSOptions} options
  * @return {boolean}
  */
-function fastCheckPreviewAvailable (options = {}) {
-  const {
-    storageId,
-    path
-  } = options;
+function fastCheckPreviewAvailable(options = {}) {
+  const {storageId, path} = options;
   return !!Viewer && storageId && path && /\.hcs$/i.test(path);
 }
 
@@ -43,18 +40,14 @@ function fastCheckPreviewAvailable (options = {}) {
  * @param {string|number} [options.path]
  * @return {Promise<boolean>}
  */
-function checkPreviewAvailable (options = {}) {
+function checkPreviewAvailable(options = {}) {
   if (!fastCheckPreviewAvailable(options)) {
     return Promise.resolve(false);
   }
-  const {
-    storageId,
-    path
-  } = options;
+  const {storageId, path} = options;
   return new Promise((resolve) => {
-    HCSInfo
-      .fetch({storageId, path})
-      .then(info => {
+    HCSInfo.fetch({storageId, path})
+      .then((info) => {
         if (info && info.sequences && info.sequences.length) {
           return Promise.resolve();
         }

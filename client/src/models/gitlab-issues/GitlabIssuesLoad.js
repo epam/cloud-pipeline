@@ -17,7 +17,7 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class GitlabIssuesLoad extends RemotePost {
-  constructor (page = 1, pageSize = 10) {
+  constructor(page = 1, pageSize = 10) {
     super();
     this.url = `/issue/gitlab/filter?page=${page}&pageSize=${pageSize}`;
   }

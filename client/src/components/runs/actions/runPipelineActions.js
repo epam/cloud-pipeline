@@ -16,7 +16,7 @@
 
 import {inject} from 'mobx-react';
 
-export default function runPipelineActions (WrappedComponent) {
+export default function runPipelineActions(WrappedComponent) {
   return inject(
     'awsRegions',
     'dataStorageAvailable',
@@ -25,6 +25,6 @@ export default function runPipelineActions (WrappedComponent) {
     'preferences',
     'pipelines',
     'hiddenObjects',
-    'authenticatedUserInfo'
+    'authenticatedUserInfo',
   )(WrappedComponent);
 }

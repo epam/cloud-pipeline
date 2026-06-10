@@ -44,7 +44,7 @@ export const systemCapabilitiesParameters = [
   CP_DISABLE_HYPER_THREADING,
   CP_CAP_DCV,
   CP_CAP_DCV_DESKTOP,
-  CP_CAP_DCV_WEB
+  CP_CAP_DCV_WEB,
 ];
 
 export const reservedParameters = [
@@ -69,7 +69,7 @@ export const reservedParameters = [
 
   CP_CAP_REQUESTS_CPU,
   CP_CAP_REQUESTS_GPU,
-  CP_CAP_REQUESTS_RAM
+  CP_CAP_REQUESTS_RAM,
 ];
 
 export const RUN_CAPABILITIES = {
@@ -79,7 +79,7 @@ export const RUN_CAPABILITIES = {
   noMachine: 'NoMachine',
   module: 'Module',
   disableHyperThreading: 'Disable Hyper-Threading',
-  dcv: 'NICE DCV'
+  dcv: 'NICE DCV',
 };
 
 export const RUN_CAPABILITIES_PARAMETERS = {
@@ -89,5 +89,5 @@ export const RUN_CAPABILITIES_PARAMETERS = {
   [RUN_CAPABILITIES.noMachine]: CP_CAP_DESKTOP_NM,
   [RUN_CAPABILITIES.module]: CP_CAP_MODULES,
   [RUN_CAPABILITIES.disableHyperThreading]: CP_DISABLE_HYPER_THREADING,
-  [RUN_CAPABILITIES.dcv]: CP_CAP_DCV
+  [RUN_CAPABILITIES.dcv]: CP_CAP_DCV,
 };

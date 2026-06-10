@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-export function guessParentFolderForLocalPath (path, isFolder) {
+export function guessParentFolderForLocalPath(path, isFolder) {
   if (isFolder === true) {
     return path;
   }
@@ -30,7 +30,7 @@ export function guessParentFolderForLocalPath (path, isFolder) {
   return path;
 }
 
-export function correctNFSPath (path) {
+export function correctNFSPath(path) {
   let correctedPath = (path || '').trim();
   const e = /^\/?cloud-data\/([^/]+)\/(.*)$/i.exec(correctedPath);
   if (e && e.length === 3) {
@@ -39,21 +39,20 @@ export function correctNFSPath (path) {
   return correctedPath;
 }
 
-export function findStorageByPath (path, storages = [], showShared = false) {
+export function findStorageByPath(path, storages = [], showShared = false) {
   let lowerCasedPath = (path || '').toLowerCase();
   if (lowerCasedPath.endsWith('/')) {
     lowerCasedPath = lowerCasedPath.slice(0, -1);
   }
   const storageMatch = (aStorage) => {
-    const {
-      pathMask = ''
-    } = aStorage || {};
+    const {pathMask = ''} = aStorage || {};
     let pathMaskCorrected = pathMask.toLowerCase();
     if (pathMaskCorrected.endsWith('/')) {
       pathMaskCorrected = pathMaskCorrected.slice(0, -1);
     }
-    return pathMaskCorrected === lowerCasedPath ||
-      lowerCasedPath.startsWith(`${pathMaskCorrected}/`);
+    return (
+      pathMaskCorrected === lowerCasedPath || lowerCasedPath.startsWith(`${pathMaskCorrected}/`)
+    );
   };
   if (showShared) {
     return storages.find(storageMatch);
@@ -62,9 +61,8 @@ export function findStorageByPath (path, storages = [], showShared = false) {
   return notSharedStorages.find(storageMatch);
 }
 
-export function findStorageByIdentifier (identifier, storages = []) {
-  return storages
-    .find((aStorage) => aStorage.id === Number(identifier));
+export function findStorageByIdentifier(identifier, storages = []) {
+  return storages.find((aStorage) => aStorage.id === Number(identifier));
 }
 
 /**
@@ -79,16 +77,10 @@ export function findStorageByIdentifier (identifier, storages = []) {
  * @param {StorageLinkInfoOptions} options
  * @returns {{storage: object, relativePath: string, folderPath: string, storageId: number}}
  */
-export function getStorageLinkInfo (options) {
-  const {
-    storages = [],
-    storageId,
-    path,
-    isFolder,
-    showShared = false
-  } = options;
+export function getStorageLinkInfo(options) {
+  const {storages = [], storageId, path, isFolder, showShared = false} = options;
   let storage;
-  let correctedPath = correctNFSPath(path);
+  const correctedPath = correctNFSPath(path);
   if (storageId && !Number.isNaN(Number(storageId))) {
     storage = findStorageByIdentifier(Number(storageId), storages);
   } else if (correctedPath) {
@@ -112,6 +104,6 @@ export function getStorageLinkInfo (options) {
     storage,
     storageId: objectStorageId,
     folderPath,
-    relativePath
+    relativePath,
   };
 }

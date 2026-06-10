@@ -14,20 +14,15 @@
  *  limitations under the License.
  */
 
-export default function getAuthor (ticket = {}) {
-  const {
-    labels = [],
-    author,
-    body
-  } = ticket;
-  let authorLabel = (labels || [])
-    .find(label => label.toLowerCase().includes('on behalf of'));
+export default function getAuthor(ticket = {}) {
+  const {labels = [], author, body} = ticket;
+  let authorLabel = (labels || []).find((label) => label.toLowerCase().includes('on behalf of'));
   if (authorLabel) {
     return authorLabel.split('of').pop().trim();
   }
   authorLabel = (body || '')
     .split('\n')
-    .find(part => part.toLowerCase().includes('on behalf of'));
+    .find((part) => part.toLowerCase().includes('on behalf of'));
   if (authorLabel) {
     return authorLabel.split('of').pop().trim();
   }
@@ -35,4 +30,4 @@ export default function getAuthor (ticket = {}) {
     return author.name;
   }
   return '';
-};
+}

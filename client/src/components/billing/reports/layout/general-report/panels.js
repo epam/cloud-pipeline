@@ -17,5 +17,5 @@
 export default {
   summary: 'summary',
   resources: 'resources',
-  runners: 'runners'
+  runners: 'runners',
 };

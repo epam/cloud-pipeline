@@ -4,11 +4,11 @@ import classNames from 'classnames';
 import {Button, Dropdown, message, Space} from 'antd';
 import {DownOutlined} from '@ant-design/icons';
 import {readParametersFile} from './utilities';
-import styles from './upload-parameters-button.css';
+import styles from './upload-parameters-button.module.css';
 import {downloadParametersTemplate} from '../../utilities/parameter-utilities';
 
 class UploadParametersButton extends React.PureComponent {
-  get showDownload () {
+  get showDownload() {
     const {parametersToDownload = []} = this.props;
     return parametersToDownload.length > 0;
   }
@@ -28,34 +28,38 @@ class UploadParametersButton extends React.PureComponent {
       for (let i = 0; i < input.files.length; i++) {
         newFiles.push(input.files[i]);
       }
-      void this.onSelect(newFiles);
+      this.onSelect(newFiles);
     }
-  }
+  };
 
   onSelect = async (files) => {
     const {onParametersUploaded} = this.props;
     const hide = message.loading(`Processing file${files.length === 1 ? '' : 's'}...`, -1);
     try {
-      const params = await Promise.all(files.map(async (file) => {
-        const parameters = await readParametersFile(file);
-        return {
-          file: file.name,
-          parameters
-        };
-      }));
+      const params = await Promise.all(
+        files.map(async (file) => {
+          const parameters = await readParametersFile(file);
+          return {
+            file: file.name,
+            parameters,
+          };
+        }),
+      );
       if (onParametersUploaded) {
         onParametersUploaded(params);
       }
     } catch (error) {
       console.error('Error processing parameters file', error);
       message.error(
-        <div>Error processing parameters file:<span>{error.message}</span></div>,
-        5
+        <div>
+          Error processing parameters file:<span>{error.message}</span>
+        </div>,
+        5,
       );
     } finally {
       hide();
     }
-  }
+  };
 
   initializeInput = (input) => {
     this.input = input;
@@ -77,26 +81,21 @@ class UploadParametersButton extends React.PureComponent {
       return (
         <span className="cp-text-not-important">
           {children}
-          {this.showDownload ? (
-            <span style={{marginLeft: 8}}>Download template</span>
-          ) : null}
+          {this.showDownload ? <span style={{marginLeft: 8}}>Download template</span> : null}
         </span>
       );
     }
     return (
       <span>
         <a onClick={this.onClick}>{children}</a>
-        <a
-          onClick={() => downloadParametersTemplate(parametersToDownload)}
-          style={{marginLeft: 8}}
-        >
+        <a onClick={() => downloadParametersTemplate(parametersToDownload)} style={{marginLeft: 8}}>
           Download template
         </a>
       </span>
     );
   };
 
-  render () {
+  render() {
     const {
       className,
       style,
@@ -104,7 +103,7 @@ class UploadParametersButton extends React.PureComponent {
       children = 'Upload',
       multiple = true,
       accept,
-      disabled
+      disabled,
     } = this.props;
     if (asLink) {
       return (
@@ -125,41 +124,24 @@ class UploadParametersButton extends React.PureComponent {
       );
     }
     return (
-      <div
-        className={classNames(className, styles.uploadParametersButtonContainer)}
-        style={style}
-      >
+      <div className={classNames(className, styles.uploadParametersButtonContainer)} style={style}>
         {this.showDownload ? (
           <Space.Compact>
-            <Button
-              onClick={this.onClick}
-              size="small"
-              disabled={disabled}
-              type="primary"
-            >
+            <Button onClick={this.onClick} size="small" disabled={disabled} type="primary">
               {children}
             </Button>
             <Dropdown
               menu={{
                 items: [{key: 'download', label: 'Download template'}],
-                onClick: this.onMenuClick
+                onClick: this.onMenuClick,
               }}
               trigger={['click']}
             >
-              <Button
-                size="small"
-                disabled={disabled}
-                type="primary"
-                icon={<DownOutlined />}
-              />
+              <Button size="small" disabled={disabled} type="primary" icon={<DownOutlined />} />
             </Dropdown>
           </Space.Compact>
         ) : (
-          <Button
-            onClick={this.onClick}
-            size="small"
-            disabled={disabled}
-            type="primary">
+          <Button onClick={this.onClick} size="small" disabled={disabled} type="primary">
             {children}
           </Button>
         )}
@@ -185,7 +167,7 @@ UploadParametersButton.propTypes = {
   accept: PropTypes.string,
   asLink: PropTypes.bool,
   onParametersUploaded: PropTypes.func,
-  parametersToDownload: PropTypes.arrayOf(PropTypes.shape({}))
+  parametersToDownload: PropTypes.arrayOf(PropTypes.shape({})),
 };
 
 export default UploadParametersButton;

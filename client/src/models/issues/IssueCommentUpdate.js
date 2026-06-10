@@ -17,15 +17,15 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class IssueCommentUpdate extends RemotePost {
-  constructor (issueId, commentId) {
+  constructor(issueId, commentId) {
     super();
     this.constructor.fetchOptions = {
       headers: {
-        'Content-type': 'application/json; charset=UTF-8'
+        'Content-type': 'application/json; charset=UTF-8',
       },
       mode: 'cors',
       credentials: 'include',
-      method: 'PUT'
+      method: 'PUT',
     };
     this.url = `/issues/${issueId}/comments/${commentId}`;
   }

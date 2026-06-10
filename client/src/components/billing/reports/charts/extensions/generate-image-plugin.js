@@ -40,11 +40,13 @@ const plugin = {
         onImageReady(data);
       };
       image.onerror = function () {
-        onImageError && onImageError('Error loading image');
+        if (onImageError) {
+          onImageError('Error loading image');
+        }
       };
       image.src = chart.toBase64Image();
     }
-  }
+  },
 };
 
 export {id, plugin};

@@ -18,10 +18,10 @@ export default function (value, separator = ',') {
   if (isNaN(value)) {
     return value;
   }
-  return (value || 0).toLocaleString(
-    'en',
-    {
+  return (value || 0)
+    .toLocaleString('en', {
       useGrouping: true,
-      style: 'decimal'
-    }).replace(/,/g, separator);
+      style: 'decimal',
+    })
+    .replace(/,/g, separator);
 }

@@ -17,16 +17,16 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class ReadAllUserNotifications extends RemotePost {
-  constructor () {
+  constructor() {
     super();
     this.constructor.fetchOptions = {
       headers: {
-        'Content-type': 'application/json; charset=UTF-8'
+        'Content-type': 'application/json; charset=UTF-8',
       },
       mode: 'cors',
       credentials: 'include',
-      method: 'PUT'
+      method: 'PUT',
     };
-    this.url = `/user-notification/message/readAll`;
+    this.url = '/user-notification/message/readAll';
   }
 }

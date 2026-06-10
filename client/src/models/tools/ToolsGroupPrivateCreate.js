@@ -17,7 +17,7 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class ToolsGroupPrivateCreate extends RemotePost {
-  constructor (registryId) {
+  constructor(registryId) {
     super();
     this.url = `/toolGroup/private?registryId=${registryId}`;
   }

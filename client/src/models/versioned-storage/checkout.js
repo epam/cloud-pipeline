@@ -17,7 +17,7 @@
 import VSRemotePost from './base/remote-post';
 
 export default class VSCheckout extends VSRemotePost {
-  constructor (runId, storageId, revision) {
+  constructor(runId, storageId, revision) {
     super(runId);
     this.url = `vs/${storageId}/checkout?revision=${revision}`;
   }

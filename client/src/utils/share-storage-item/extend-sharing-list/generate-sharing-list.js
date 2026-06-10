@@ -19,12 +19,10 @@ import rules from './rules';
 
 const extendFNs = rules.map(generateRule);
 
-function generateExtendedListForItem (item, delimiter) {
-  return [item].concat(
-    extendFNs
-      .map(fn => fn(item, delimiter))
-      .reduce((r, c) => [...r, ...c], [])
-  ).filter(Boolean);
+function generateExtendedListForItem(item, delimiter) {
+  return [item]
+    .concat(extendFNs.map((fn) => fn(item, delimiter)).reduce((r, c) => [...r, ...c], []))
+    .filter(Boolean);
 }
 
 /**
@@ -34,11 +32,11 @@ function generateExtendedListForItem (item, delimiter) {
  * @param {string} [delimiter='/']
  * @return {string[]}
  */
-export default function generateSharingList (items, delimiter = '/') {
+export default function generateSharingList(items, delimiter = '/') {
   const asArray = items && Array.isArray(items) ? items : [items];
   const fullList = asArray
     .filter(Boolean)
-    .map(item => generateExtendedListForItem(item, delimiter))
+    .map((item) => generateExtendedListForItem(item, delimiter))
     .reduce((r, c) => [...r, ...c], []);
-  return [...(new Set(fullList))];
+  return [...new Set(fullList)];
 }

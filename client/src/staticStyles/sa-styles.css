@@ -18,6 +18,6 @@
   display: none;
 }
 
-.sa-view-button[title=help] {
+.sa-view-button[title="help"] {
   display: none;
 }

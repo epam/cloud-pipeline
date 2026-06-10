@@ -17,7 +17,7 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class RoleCreate extends RemotePost {
-  constructor (roleName, userDefault, defaultStorageId = null) {
+  constructor(roleName, userDefault, defaultStorageId = null) {
     super();
     let url = `/role/create?roleName=${roleName}`;
     if (userDefault) {

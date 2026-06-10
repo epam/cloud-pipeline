@@ -20,50 +20,37 @@ import preferencesLoad from '../preferences/PreferencesLoad';
 import continuousFetch from '../../utils/continuous-fetch';
 import {filtersAreEqual} from './pipeline-runs-filter';
 
-const DEFAULT_STATUSES = [
-  'RUNNING',
-  'PAUSED',
-  'PAUSING',
-  'RESUMING'
-];
+const DEFAULT_STATUSES = ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING'];
 
-const ALL_STATUSES = [
-  'RUNNING',
-  'PAUSED',
-  'PAUSING',
-  'RESUMING',
-  'STOPPED',
-  'FAILURE',
-  'SUCCESS'
-];
+const ALL_STATUSES = ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING', 'STOPPED', 'FAILURE', 'SUCCESS'];
 
 export {ALL_STATUSES};
 
 class UserRunCount extends RemotePost {
   static fetchOptions = {
     headers: {
-      'Content-type': 'application/json; charset=UTF-8'
+      'Content-type': 'application/json; charset=UTF-8',
     },
     mode: 'cors',
     credentials: 'include',
-    method: 'POST'
+    method: 'POST',
   };
 
   url = '/run/count';
 
-  constructor (user, statuses, countChildNodes = false) {
+  constructor(user, statuses, countChildNodes = false) {
     super();
     this.user = user;
     this.countChildNodes = countChildNodes;
     this.statuses = statuses || DEFAULT_STATUSES;
   }
 
-  fetch () {
+  fetch() {
     return super.send({
       statuses: this.statuses,
       userModified: this.countChildNodes,
       eagerGrouping: false,
-      owners: this.user ? [this.user] : undefined
+      owners: this.user ? [this.user] : undefined,
     });
   }
 }
@@ -92,7 +79,7 @@ class RunCount extends RemotePost {
   /**
    * @param {RunCounterOptions} [options]
    */
-  constructor (options) {
+  constructor(options) {
     super();
     makeObservable(this, {
       usePreferenceValue: observable,
@@ -102,7 +89,7 @@ class RunCount extends RemotePost {
       parentId: observable,
       _runsCount: observable,
       isDefault: computed,
-      runsCount: computed
+      runsCount: computed,
     });
     this.url = '/run/count';
     const {
@@ -111,7 +98,7 @@ class RunCount extends RemotePost {
       onlyMasterJobs = true,
       autoUpdate,
       pipelineIds = [],
-      parentId
+      parentId,
     } = options || {};
     this.statuses = statuses;
     this.onlyMasterJobs = onlyMasterJobs;
@@ -121,7 +108,7 @@ class RunCount extends RemotePost {
     if (autoUpdate) {
       continuousFetch({
         request: this,
-        intervalMS: 10000
+        intervalMS: 10000,
       });
     }
   }
@@ -135,38 +122,33 @@ class RunCount extends RemotePost {
     this.listeners = this.listeners.filter((aListener) => aListener !== listener);
   };
 
-  get isDefault () {
-    return filtersAreEqual(
-      this,
-      {
-        statuses: DEFAULT_STATUSES,
-        onlyMasterJobs: true
-      }
-    );
+  get isDefault() {
+    return filtersAreEqual(this, {
+      statuses: DEFAULT_STATUSES,
+      onlyMasterJobs: true,
+    });
   }
 
   /**
    * @param {RunCount} otherRequest
    * @returns {boolean}
    */
-  filtersEquals (otherRequest) {
+  filtersEquals(otherRequest) {
     if (!otherRequest) {
       return false;
     }
     return filtersAreEqual(this, otherRequest);
   }
 
-  get runsCount () {
+  get runsCount() {
     return this._runsCount || 0;
   }
 
-  async fetch () {
+  async fetch() {
     if (this.usePreferenceValue) {
       await preferencesLoad.fetchIfNeededOrWait();
-      const {
-        statuses = this.statuses,
-        onlyMasterJobs = this.onlyMasterJobs
-      } = preferencesLoad.uiRunsCounterFilter || {};
+      const {statuses = this.statuses, onlyMasterJobs = this.onlyMasterJobs} =
+        preferencesLoad.uiRunsCounterFilter || {};
       this.statuses = statuses;
       this.onlyMasterJobs = onlyMasterJobs;
     }
@@ -175,7 +157,7 @@ class RunCount extends RemotePost {
       userModified: !this.onlyMasterJobs,
       parentId: this.parentId,
       pipelineIds: this.pipelineIds,
-      eagerGrouping: false
+      eagerGrouping: false,
     });
     this._runsCount = this.value;
     (this.listeners || [])
@@ -189,19 +171,16 @@ class RunCountDefault extends RunCount {
    * @param {RunCount} globalCounter
    * @param {{statuses: string[], onlyMasterJobs: boolean}} [filters]
    */
-  constructor (globalCounter, filters = {}) {
-    const {
-      statuses = DEFAULT_STATUSES,
-      onlyMasterJobs = true
-    } = filters;
+  constructor(globalCounter, filters = {}) {
+    const {statuses = DEFAULT_STATUSES, onlyMasterJobs = true} = filters;
     super({
       autoUpdate: false,
       statuses,
       onlyMasterJobs,
-      usePreferenceValue: false
+      usePreferenceValue: false,
     });
     makeObservable(this, {
-      fetch: action
+      fetch: action,
     });
     this.globalCounter = globalCounter;
     this.updateFromGlobalCounter();
@@ -216,13 +195,13 @@ class RunCountDefault extends RunCount {
     }
   };
 
-  destroy () {
+  destroy() {
     if (this.globalCounter) {
       this.globalCounter.removeListener(this.updateFromGlobalCounter);
     }
   }
 
-  async fetch () {
+  async fetch() {
     if (this.globalCounter && this.globalCounter.filtersEquals(this)) {
       this._runsCount = this.globalCounter.runsCount;
       return;

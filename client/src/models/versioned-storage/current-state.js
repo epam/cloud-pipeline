@@ -17,7 +17,7 @@
 import VSRemote from './base/remote';
 
 export default class VSCurrentState extends VSRemote {
-  constructor (runId, storageId) {
+  constructor(runId, storageId) {
     super(runId);
     this.runId = runId;
     this.storageId = storageId;

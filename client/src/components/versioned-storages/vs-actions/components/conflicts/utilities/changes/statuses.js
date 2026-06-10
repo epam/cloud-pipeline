@@ -18,5 +18,5 @@ export default {
   building: 'building',
   prepared: 'prepared',
   applied: 'applied',
-  discarded: 'discarded'
+  discarded: 'discarded',
 };

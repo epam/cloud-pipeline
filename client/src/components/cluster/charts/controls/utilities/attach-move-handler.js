@@ -36,7 +36,7 @@ export default function (controller, area, onMoveFinished) {
     move.config = {
       from,
       range: controller.dataRange,
-      ratio: controller.canvasToPlotRatio
+      ratio: controller.canvasToPlotRatio,
     };
     controller.setState({move});
     event.preventDefault();
@@ -69,8 +69,11 @@ export default function (controller, area, onMoveFinished) {
 
   const keydown = (event) => {
     switch (event.keyCode) {
-      case ESCAPE_KEY: cancelMove(true); break;
-      default: break;
+      case ESCAPE_KEY:
+        cancelMove(true);
+        break;
+      default:
+        break;
     }
   };
 
@@ -84,22 +87,25 @@ export default function (controller, area, onMoveFinished) {
     let start = Math.max(minimum || -Infinity, move.config.from - delta);
     const end = Math.min(maximum || Infinity, start + move.config.range);
     start = Math.max(minimum || -Infinity, end - move.config.range);
-    controller.setState({
-      from: start,
-      to: end,
-      move
-    }, () => {
-      if (onMoveFinished && move.moved) {
-        onMoveFinished(start, end, final);
-      }
-    });
+    controller.setState(
+      {
+        from: start,
+        to: end,
+        move,
+      },
+      () => {
+        if (onMoveFinished && move.moved) {
+          onMoveFinished(start, end, final);
+        }
+      },
+    );
   };
 
   const cancelMove = (revert = false) => {
-    let {move} = controller.state;
+    const {move} = controller.state;
     if (revert && move) {
       const newState = {
-        move: undefined
+        move: undefined,
       };
       newState.from = move.config.from;
       newState.end = move.config.from + move.config.range;

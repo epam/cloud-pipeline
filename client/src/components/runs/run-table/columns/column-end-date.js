@@ -14,23 +14,13 @@
  *  limitations under the License.
  */
 
-import {
-  getColumnFilter as getDateColumnFilters,
-  getColumn as getDateColumn
-} from './column-date';
-import styles from './run-table-columns.css';
+import {getColumnFilter as getDateColumnFilters, getColumn as getDateColumn} from './column-date';
+import styles from './run-table-columns.module.css';
 
-function getColumnFilter (state, setState) {
+function getColumnFilter(state, setState) {
   return getDateColumnFilters('endDateTo', true, state, setState);
 }
 
-const getColumn = () => getDateColumn(
-  'Completed',
-  'endDate',
-  styles.runRowCompleted
-);
+const getColumn = () => getDateColumn('Completed', 'endDate', styles.runRowCompleted);
 
-export {
-  getColumn,
-  getColumnFilter
-};
+export {getColumn, getColumnFilter};

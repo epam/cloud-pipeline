@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 export default class LoadToolHistory extends Remote {
-  constructor (id, version) {
+  constructor(id, version) {
     super();
     this.url = `/tool/${id}/history?version=${version}`;
   }

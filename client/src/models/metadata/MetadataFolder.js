@@ -14,16 +14,15 @@
  * limitations under the License.
  */
 
-import {SERVER} from '../../config';
 import Remote from '../basic/Remote';
 import {makeObservable, override} from 'mobx';
 import {authorization} from '../basic/Authorization';
 
 export default class MetadataFolder extends Remote {
-  constructor (parentId) {
+  constructor(parentId) {
     super();
     makeObservable(this, {
-      update: override
+      update: override,
     });
     if (parentId) {
       this.url = `/metadata/folder?parentFolderId=${parentId}`;
@@ -32,7 +31,7 @@ export default class MetadataFolder extends Remote {
     }
   }
 
-  update (value) {
+  update(value) {
     this._response = value;
     if (value.status && value.status === 401) {
       this.error = value.message;

@@ -1,0 +1,50 @@
+@reference "../../../index.css";
+
+.library-tree {
+  @apply text-sm flex min-h-0 flex-col gap-1;
+}
+
+.library-tree-search {
+  @apply shrink-0 flex items-center;
+}
+
+.library-tree-item {
+  @apply whitespace-nowrap hover:bg-table-hover flex items-center;
+}
+
+.library-tree-item.interactive {
+  @apply cursor-pointer hover:underline
+}
+
+.library-tree-item.active {
+  @apply bg-table-selected;
+}
+
+.library-tree-item .library-tree-item-offset {
+  @apply inline h-full;
+}
+
+.library-tree-item .library-tree-item-container {
+  @apply p-1.5 flex-1 overflow-auto flex items-center h-full;
+}
+
+.library-tree-item .expand-icon {
+  transform: rotate(0deg);
+  transition: transform .2s ease-in-out;
+}
+
+.library-tree-item.expanded .expand-icon {
+  transform: rotate(90deg);
+}
+
+.library-tree-item .library-tree-item-name {
+  @apply truncate mr-1;
+}
+
+.library-tree-item:not(.library-item-type-metadata-class) .library-tree-item-name {
+  @apply flex-1;
+}
+
+.library-tree-item:not(.library-item-type-metadata-class) .library-tree-item-details {
+  @apply ml-auto;
+}

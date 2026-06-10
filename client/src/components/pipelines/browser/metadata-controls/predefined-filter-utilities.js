@@ -15,9 +15,9 @@
  */
 
 import classNames from 'classnames';
-import moment from 'moment-timezone';
+import {localDateToUtcDayjs, toUtcDayjs} from '../../../../utils/dayjs';
 
-function parseClassName (className) {
+function parseClassName(className) {
   if (typeof className === 'string') {
     if (/^danger$/i.test(className)) {
       return 'danger';
@@ -29,40 +29,31 @@ function parseClassName (className) {
   return 'default';
 }
 
-export function parseScheme (scheme) {
+export function parseScheme(scheme) {
   if (typeof scheme === 'string') {
     return {
       type: parseClassName(scheme),
-      style: {}
+      style: {},
     };
   }
-  if (
-    typeof scheme === 'object' &&
-    (scheme.style || scheme.icon || scheme.type)
-  ) {
-    const {
-      icon,
-      type,
-      style = {}
-    } = scheme;
+  if (typeof scheme === 'object' && (scheme.style || scheme.icon || scheme.type)) {
+    const {icon, type, style = {}} = scheme;
     return {
       icon,
       type: parseClassName(type),
-      style
+      style,
     };
   }
   if (typeof scheme === 'object') {
     return scheme;
   }
   return {
-    style: {}
+    style: {},
   };
 }
 
-export function getPredefinedFilterClassName (scheme, applied = false) {
-  const {
-    type
-  } = scheme;
+export function getPredefinedFilterClassName(scheme, applied = false) {
+  const {type} = scheme;
   let className;
   switch (type) {
     case 'primary':
@@ -76,23 +67,15 @@ export function getPredefinedFilterClassName (scheme, applied = false) {
       className = applied ? 'cp-primary' : undefined;
       break;
   }
-  return classNames(
-    'cp-metadata-predefined-filter',
-    {applied},
-    className
-  );
+  return classNames('cp-metadata-predefined-filter', {applied}, className);
 }
 
-export function localDateToUTC (date) {
-  if (!date) {
-    return undefined;
-  }
-  const localTime = moment(date).toDate();
-  return moment(localTime).utc();
+export function localDateToUTC(date) {
+  return localDateToUtcDayjs(date) ?? undefined;
 }
 
-function conditionMatchesItem (item, condition) {
-  const getPropValue = property => {
+function conditionMatchesItem(item, condition) {
+  const getPropValue = (property) => {
     return item && item[property] ? item[property].value : undefined;
   };
   const matchSimpleCondition = (property, values = []) => {
@@ -106,15 +89,9 @@ function conditionMatchesItem (item, condition) {
     return values.includes(`${value}`);
   };
   const createdDateValue = getPropValue('createdDate');
-  const createdDate = createdDateValue ? moment.utc(createdDateValue) : undefined;
-  const {
-    filters = {}
-  } = condition || {};
-  const {
-    startDateFrom,
-    endDateTo,
-    ...properties
-  } = filters;
+  const createdDate = createdDateValue ? toUtcDayjs(createdDateValue) : undefined;
+  const {filters = {}} = condition || {};
+  const {startDateFrom, endDateTo, ...properties} = filters;
   let match = true;
   if (startDateFrom) {
     match = match && createdDate && localDateToUTC(startDateFrom).isBefore(createdDate);
@@ -130,19 +107,19 @@ function conditionMatchesItem (item, condition) {
   return match;
 }
 
-export function getPredefinedFilterForItem (item, conditions) {
-  const dangerIndex = o => (o.type || []).includes('danger') ? -1 : 0;
+export function getPredefinedFilterForItem(item, conditions) {
+  const dangerIndex = (o) => ((o.type || []).includes('danger') ? -1 : 0);
   return conditions
     .slice()
     .sort((a, b) => dangerIndex(a) - dangerIndex(b))
-    .find(c => conditionMatchesItem(item, c));
+    .find((c) => conditionMatchesItem(item, c));
 }
 
-export function getConditionStyles (condition, applied = false) {
+export function getConditionStyles(condition, applied = false) {
   if (condition) {
     return {
       className: getPredefinedFilterClassName(condition.scheme, applied),
-      style: (condition.scheme || {}).style
+      style: (condition.scheme || {}).style,
     };
   }
   return {};

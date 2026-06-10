@@ -1,9 +1,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import styles from './file-preview-renderers.css';
+import styles from './file-preview-renderers.module.css';
 import {ObjectStorage} from '../../../../utils/object-storage';
-import LoadingView from '../../LoadingView';
+import LoadingView from '../../LoadingView.tsx';
 import {Alert} from 'antd';
 
 class ImageRenderer extends React.PureComponent {
@@ -12,44 +12,38 @@ class ImageRenderer extends React.PureComponent {
   state = {
     pending: false,
     error: undefined,
-    url: undefined
+    url: undefined,
   };
 
-  componentDidMount () {
+  componentDidMount() {
     this.updateFromProps();
   }
 
-  componentDidUpdate (prevProps, prevState, snapshot) {
-    if (
-      prevProps.filePath !== this.props.filePath ||
-      prevProps.storage !== this.props.storage
-    ) {
+  componentDidUpdate(prevProps, prevState, snapshot) {
+    if (prevProps.filePath !== this.props.filePath || prevProps.storage !== this.props.storage) {
       this.updateFromProps();
     }
   }
 
-  componentWillUnmount () {
+  componentWillUnmount() {
     this.token = {};
   }
 
   updateFromProps = () => {
-    const token = this.token = {};
+    const token = (this.token = {});
     const commit = (fn) => {
       if (this.token === token) {
         fn();
       }
     };
-    const {
-      storage,
-      filePath
-    } = this.props;
+    const {storage, filePath} = this.props;
     if (storage && filePath) {
       (async () => {
         commit(() => {
           this.setState({
             pending: true,
             error: undefined,
-            url: undefined
+            url: undefined,
           });
         });
         try {
@@ -60,7 +54,7 @@ class ImageRenderer extends React.PureComponent {
             this.setState({
               pending: false,
               error: undefined,
-              url
+              url,
             });
           });
         } catch (error) {
@@ -68,7 +62,7 @@ class ImageRenderer extends React.PureComponent {
             this.setState({
               pending: false,
               error: error.message,
-              url: undefined
+              url: undefined,
             });
           });
         }
@@ -77,58 +71,37 @@ class ImageRenderer extends React.PureComponent {
       this.setState({
         pending: false,
         error: undefined,
-        url: undefined
+        url: undefined,
       });
     }
   };
 
-  render () {
-    const {
-      className,
-      style,
-      storage,
-      filePath
-    } = this.props;
+  render() {
+    const {className, style, storage, filePath} = this.props;
     if (!storage || !filePath) {
       return (
-        <div
-          className={classNames(className, styles.filePreviewRenderer)}
-          style={style}
-        >
+        <div className={classNames(className, styles.filePreviewRenderer)} style={style}>
           File preview not available
         </div>
       );
     }
-    const {
-      pending,
-      error,
-      url
-    } = this.state;
+    const {pending, error, url} = this.state;
     if (pending) {
       return (
-        <div
-          className={classNames(className, styles.filePreviewRenderer)}
-          style={style}
-        >
+        <div className={classNames(className, styles.filePreviewRenderer)} style={style}>
           <LoadingView />
         </div>
       );
     }
     if (error) {
       return (
-        <div
-          className={classNames(className, styles.filePreviewRenderer)}
-          style={style}
-        >
+        <div className={classNames(className, styles.filePreviewRenderer)} style={style}>
           <Alert title={error} type="error" showIcon />
         </div>
       );
     }
     return (
-      <div
-        className={classNames(className, styles.filePreviewRenderer)}
-        style={style}
-      >
+      <div className={classNames(className, styles.filePreviewRenderer)} style={style}>
         <img src={url} style={{width: '100%'}} alt={filePath} />
       </div>
     );
@@ -140,7 +113,7 @@ ImageRenderer.propTypes = {
   style: PropTypes.object,
   storage: PropTypes.object,
   filePath: PropTypes.string,
-  fileData: PropTypes.string
+  fileData: PropTypes.string,
 };
 
 export default ImageRenderer;

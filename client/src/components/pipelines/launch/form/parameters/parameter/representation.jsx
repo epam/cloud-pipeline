@@ -8,14 +8,14 @@ import {plural} from '../../../../../special/metadata/items-table/utilities';
 class ParameterValueRepresentation extends React.PureComponent {
   state = {
     value: undefined,
-    isBase64: false
+    isBase64: false,
   };
 
-  componentDidMount () {
+  componentDidMount() {
     this.updateFromProps();
   }
 
-  componentDidUpdate (prevProps) {
+  componentDidUpdate(prevProps) {
     if (prevProps.value !== this.props.value) {
       this.updateFromProps();
     }
@@ -39,62 +39,54 @@ class ParameterValueRepresentation extends React.PureComponent {
       }
       this.setState({
         value: val,
-        isBase64
+        isBase64,
       });
     } else {
       this.setState({
         value: undefined,
-        isBase64: false
+        isBase64: false,
       });
     }
   };
 
-  renderComponent () {
-    const {
-      className,
-      style,
-      missingLabel = false,
-      showBase64Tag = false
-    } = this.props;
+  renderComponent() {
+    const {className, style, missingLabel = false, showBase64Tag = false} = this.props;
     const {value, isBase64} = this.state;
     if (value === undefined || value === null) {
-      return <span className={className} style={style}>{missingLabel}</span>;
+      return (
+        <span className={className} style={style}>
+          {missingLabel}
+        </span>
+      );
     }
-    const isBase64Tag = showBase64Tag && isBase64
-      ? <Tag style={{marginLeft: 5}}>BASE64</Tag>
-      : undefined;
+    const isBase64Tag =
+      showBase64Tag && isBase64 ? <Tag style={{marginLeft: 5}}>BASE64</Tag> : undefined;
     if (typeof value === 'object') {
       if (Array.isArray(value) || isObservableArray(value)) {
         const count = value.length;
         return (
-          <span
-            className={className}
-            style={style}
-          >
-            {plural(count, 'record')}{isBase64Tag}
+          <span className={className} style={style}>
+            {plural(count, 'record')}
+            {isBase64Tag}
           </span>
         );
       }
       return (
-        <span
-          className={className}
-          style={style}
-        >
-          <i>Object</i>{isBase64Tag}
+        <span className={className} style={style}>
+          <i>Object</i>
+          {isBase64Tag}
         </span>
       );
     }
     return (
-      <span
-        className={className}
-        style={style}
-      >
-        {String(value)}{isBase64Tag}
+      <span className={className} style={style}>
+        {String(value)}
+        {isBase64Tag}
       </span>
     );
   }
 
-  render () {
+  render() {
     const {value} = this.state;
     const comp = this.renderComponent();
     if (value === undefined || value === null || typeof value !== 'object') {
@@ -103,19 +95,19 @@ class ParameterValueRepresentation extends React.PureComponent {
     const repr = JSON.stringify(value, undefined, ' ');
     return (
       <Popover
-        content={(
+        content={
           <div
             style={{
               minWidth: 300,
               minHeight: 200,
               maxHeight: '50vh',
               maxWidth: '75vw',
-              overflow: 'auto'
+              overflow: 'auto',
             }}
           >
             <code style={{whiteSpace: 'pre'}}>{repr}</code>
           </div>
-        )}
+        }
       >
         {comp}
       </Popover>
@@ -128,7 +120,7 @@ ParameterValueRepresentation.propTypes = {
   style: PropTypes.object,
   value: PropTypes.any,
   missingLabel: PropTypes.node,
-  showBase64Tag: PropTypes.bool
+  showBase64Tag: PropTypes.bool,
 };
 
 export default ParameterValueRepresentation;

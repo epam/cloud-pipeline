@@ -20,7 +20,7 @@ import {HCSSourceFile} from '../common/analysis-file';
 import {
   findJobWithDockerImage,
   getAnalysisEndpointSetting,
-  waitForJobToBeInitialized
+  waitForJobToBeInitialized,
 } from './job-utilities';
 import {AnalysisPipeline} from './pipeline';
 import AnalysisApi from './analysis-api';
@@ -29,14 +29,15 @@ import {savePipeline} from './analysis-pipeline-management';
 import {submitBatchAnalysis} from './batch';
 import {findSimilarAnalysis} from './similar-analysis';
 import PhysicalSize from './physical-size';
-import moment from 'moment-timezone';
+import dayjs from '../../../../../utils/dayjs';
 
 const AUTOUPDATE = false;
 
 class Analysis {
   static Events = {
-    analysisDone: 'analysis done'
+    analysisDone: 'analysis done',
   };
+
   /**
    * @type {NamesAndTypes}
    */
@@ -69,11 +70,11 @@ class Analysis {
   path;
   analysisDate;
 
-  get analysisRequested () {
+  get analysisRequested() {
     return this._analysisRequested;
   }
 
-  set analysisRequested (requested) {
+  set analysisRequested(requested) {
     if (this._analysisRequested !== requested) {
       this._analysisRequested = requested;
     }
@@ -85,47 +86,47 @@ class Analysis {
   /**
    * @returns {AnalysisOutputResult[]}
    */
-  get defineResultsOutputs () {
-    return this.analysisResults.filter(o => o.analysisOutput);
+  get defineResultsOutputs() {
+    return this.analysisResults.filter((o) => o.analysisOutput);
   }
 
   /**
    * @returns {AnalysisOutputResult[]}
    */
-  get analysisOutputImages () {
-    return this.analysisResults.filter(o => !o.table && !o.xlxs && !o.analysisOutput);
+  get analysisOutputImages() {
+    return this.analysisResults.filter((o) => !o.table && !o.xlxs && !o.analysisOutput);
   }
 
-  get modules () {
+  get modules() {
     if (!this.pipeline) {
       return [];
     }
     return [...this.pipeline.modules, this.pipeline.defineResults];
   }
 
-  get isEmpty () {
+  get isEmpty() {
     if (!this.pipeline) {
       return [];
     }
     return this.pipeline.modules.length === 0;
   }
 
-  get batch () {
+  get batch() {
     return this.namesAndTypes && this.namesAndTypes.multipleFields;
   }
 
-  get hcsImageViewer () {
+  get hcsImageViewer() {
     return this._hcsImageViewer;
   }
 
-  set hcsImageViewer (aViewer) {
+  set hcsImageViewer(aViewer) {
     this._hcsImageViewer = aViewer;
     if (this.pipeline && this._hcsImageViewer) {
-      (this.pipeline.graphicsOutput.renderOutlines)(this._hcsImageViewer);
+      this.pipeline.graphicsOutput.renderOutlines(this._hcsImageViewer);
     }
   }
 
-  constructor (hcsImageViewer) {
+  constructor(hcsImageViewer) {
     // TODO: consider makeAutoObservable
     makeObservable(this, {
       namesAndTypes: observable,
@@ -161,35 +162,36 @@ class Analysis {
       checkSimilarBatchAnalysis: action,
       runBatch: action,
       run: action,
-      add: action
+      add: action,
     });
     this.pipeline = new AnalysisPipeline(this);
     this.hcsImageViewer = hcsImageViewer;
     this.checkNeedAnalyze();
   }
 
-  addEventListener (event, listener) {
+  addEventListener(event, listener) {
     this.eventListeners.push({event, listener});
   }
 
-  removeEventListeners (event, listener) {
+  removeEventListeners(event, listener) {
     if (!event && !listener) {
       this.eventListeners = [];
     } else if (!listener) {
-      this.eventListeners = this.eventListeners.filter(o => o.event === event);
+      this.eventListeners = this.eventListeners.filter((o) => o.event === event);
     } else if (!event) {
-      this.eventListeners = this.eventListeners.filter(o => o.listener === listener);
+      this.eventListeners = this.eventListeners.filter((o) => o.listener === listener);
     } else {
-      this.eventListeners = this.eventListeners
-        .filter(o => o.event === event && o.listener === listener);
+      this.eventListeners = this.eventListeners.filter(
+        (o) => o.event === event && o.listener === listener,
+      );
     }
   }
 
-  fireEvent (eventName) {
+  fireEvent(eventName) {
     this.eventListeners
-      .filter(o => o.event === eventName)
-      .map(o => o.listener)
-      .forEach(eventListener => {
+      .filter((o) => o.event === eventName)
+      .map((o) => o.listener)
+      .forEach((eventListener) => {
         eventListener();
       });
   }
@@ -204,7 +206,7 @@ class Analysis {
         }
       })();
     }
-  }
+  };
 
   setSource = (storageId, path) => {
     this.storageId = storageId;
@@ -264,22 +266,22 @@ class Analysis {
       return;
     }
     if (this.analysisRequested && !this.analysing && !!this.pipelineId) {
-      (this.run)();
+      this.run();
     }
     this.scheduleAnalyzeCheck();
   };
 
   scheduleAnalyzeCheck = () => {
     clearTimeout(this.analysisTimeout);
-    const INTERVAL_MS = 2000;// 2 seconds
+    const INTERVAL_MS = 2000; // 2 seconds
     this.analysisTimeout = setTimeout(this.checkNeedAnalyze, INTERVAL_MS);
   };
 
-  get available () {
+  get available() {
     return this.namesAndTypes && this.namesAndTypes.available;
   }
 
-  updatePhysicalSize (unitsInPixel, units) {
+  updatePhysicalSize(unitsInPixel, units) {
     this.physicalSize.update(unitsInPixel, units);
   }
 
@@ -287,7 +289,7 @@ class Analysis {
     if (this.analysisAPI) {
       return this.analysisAPI.authenticate();
     }
-  }
+  };
 
   wrapAction = async (action, throwError = false) => {
     if (typeof action !== 'function') {
@@ -314,11 +316,11 @@ class Analysis {
   };
 
   clearModulesState = () => {
-    this.modules.forEach(module => {
+    this.modules.forEach((module) => {
       module.pending = false;
       module.done = false;
     });
-  }
+  };
 
   buildPipeline = async () => {
     if (this.pipelineId) {
@@ -357,26 +359,26 @@ class Analysis {
   getInputsPayload = () => {
     if (!this.namesAndTypes) {
       return {
-        files: []
+        files: [],
       };
     }
-    const files = this.namesAndTypes.sourceFiles.map(aFile => ({
+    const files = this.namesAndTypes.sourceFiles.map((aFile) => ({
       x: aFile.x,
       y: aFile.y,
       z: aFile.z,
       timepoint: aFile.t,
       fieldId: aFile.fieldID,
       channel: aFile.c,
-      channelName: aFile.channel
+      channelName: aFile.channel,
     }));
     const zPlanes = this.namesAndTypes.mergeZPlanes
-      ? ([...new Set(files.map(aFile => aFile.z))].sort((a, b) => a - b))
+      ? [...new Set(files.map((aFile) => aFile.z))].sort((a, b) => a - b)
       : undefined;
     return {
       files,
-      zPlanes
+      zPlanes,
     };
-  }
+  };
 
   attachFileToPipeline = async () => {
     if (!this.analysisAPI || !this.pipelineId || !this.sourceFileChanged) {
@@ -387,10 +389,7 @@ class Analysis {
       this.status = 'Attaching image to CellProfiler pipeline...';
       this.pending = true;
       this.error = undefined;
-      await this.analysisAPI.attachFiles(
-        this.pipelineId,
-        this.getInputsPayload()
-      );
+      await this.analysisAPI.attachFiles(this.pipelineId, this.getInputsPayload());
       this.sourceFileChanged = false;
       this.analysisCache = [];
       this.status = `Image attached to pipeline: #${this.pipelineId}`;
@@ -412,7 +411,7 @@ class Analysis {
       this.error = undefined;
       this.status = 'Checking batch analysis...';
       if (!this.namesAndTypes || !this.namesAndTypes.sourceDirectory) {
-        throw new Error('HCS file\'s measurement UUID not specified');
+        throw new Error("HCS file's measurement UUID not specified");
       }
       /**
        * @type {BatchAnalysisSpecification}
@@ -424,12 +423,11 @@ class Analysis {
         pipeline: this.pipeline.exportPipeline(true),
         measurementUUID: this.namesAndTypes.sourceDirectory,
         inputs: this.getInputsPayload(),
-        modules: getPipelineModules(this.modules)
-          .map((module, idx) => ({
-            moduleName: module.name,
-            moduleId: idx + 1,
-            parameters: module.getPayload()
-          }))
+        modules: getPipelineModules(this.modules).map((module, idx) => ({
+          moduleName: module.name,
+          moduleId: idx + 1,
+          parameters: module.getPayload(),
+        })),
       };
       const similar = await findSimilarAnalysis(specification);
       this.status = 'Batch analysis checked';
@@ -450,7 +448,7 @@ class Analysis {
       this.error = undefined;
       this.status = 'Submitting batch analysis...';
       if (!this.namesAndTypes || !this.namesAndTypes.sourceDirectory) {
-        throw new Error('HCS file\'s measurement UUID not specified');
+        throw new Error("HCS file's measurement UUID not specified");
       }
       /**
        * @type {BatchAnalysisSpecification}
@@ -462,16 +460,13 @@ class Analysis {
         pipeline: this.pipeline.exportPipeline(true),
         measurementUUID: this.namesAndTypes.sourceDirectory,
         inputs: this.getInputsPayload(),
-        modules: getPipelineModules(this.modules)
-          .map((module, idx) => ({
-            moduleName: module.name,
-            moduleId: idx + 1,
-            parameters: module.getPayload()
-          }))
+        modules: getPipelineModules(this.modules).map((module, idx) => ({
+          moduleName: module.name,
+          moduleId: idx + 1,
+          parameters: module.getPayload(),
+        })),
       };
-      const batchAnalysis = await submitBatchAnalysis(
-        specification
-      );
+      const batchAnalysis = await submitBatchAnalysis(specification);
       this.status = 'Batch analysis submitted';
       return batchAnalysis;
     } catch (error) {
@@ -489,12 +484,12 @@ class Analysis {
      */
     const reportModuleStatus = (options) => {
       if (!options) {
-        this.modules.forEach(module => {
+        this.modules.forEach((module) => {
           module.pending = false;
           module.done = true;
         });
       } else if (!debug) {
-        this.modules.forEach(module => {
+        this.modules.forEach((module) => {
           module.pending = true;
           module.done = false;
         });
@@ -525,15 +520,12 @@ class Analysis {
         throw new Error(this.error || 'Error attaching images to the analysis pipeline');
       }
       if (!debug) {
-        this.modules.forEach(module => {
+        this.modules.forEach((module) => {
           module.pending = true;
           module.done = false;
         });
       }
-      const {
-        results,
-        cache
-      } = await runAnalysisPipeline(
+      const {results, cache} = await runAnalysisPipeline(
         this.analysisAPI,
         this.pipelineId,
         this.modules,
@@ -541,20 +533,15 @@ class Analysis {
         {
           debug,
           objectsOutput: !this.batch,
-          callback: reportModuleStatus
-        }
+          callback: reportModuleStatus,
+        },
       );
-      this.analysisDate = moment.utc().format('YYYY-MM-DD HH:mm:ss.SSS');
-      this.analysisResults = results.filter(o => !o.object);
-      const objectResults = results.filter(o => o.object);
-      const lastOverlay = objectResults.length > 0
-        ? undefined
-        : this.analysisOutputImages.slice().pop();
-      this.pipeline.graphicsOutput.update(
-        objectResults,
-        lastOverlay,
-        this.hcsImageViewer
-      );
+      this.analysisDate = dayjs.utc().format('YYYY-MM-DD HH:mm:ss.SSS');
+      this.analysisResults = results.filter((o) => !o.object);
+      const objectResults = results.filter((o) => o.object);
+      const lastOverlay =
+        objectResults.length > 0 ? undefined : this.analysisOutputImages.slice().pop();
+      this.pipeline.graphicsOutput.update(objectResults, lastOverlay, this.hcsImageViewer);
       this.analysisCache = cache;
       this.showAnalysisResults = true;
       this.status = 'Analysis done';
@@ -597,17 +584,17 @@ class Analysis {
     this.status = 'Ready';
     this.pending = false;
     return this.analysisAPI;
-  }
+  };
 
   /**
    * @param {HCSSourceFileOptions[]} hcsSourceFiles
    * @param {boolean} [mergeZPlanes=false]
    */
-  changeFile (hcsSourceFiles, mergeZPlanes = false) {
+  changeFile(hcsSourceFiles, mergeZPlanes = false) {
     const onChange = () => {
       this.pipelineId = undefined;
       this.analysisResults = [];
-      this.modules.forEach(aModule => {
+      this.modules.forEach((aModule) => {
         aModule.pending = false;
         aModule.done = false;
       });
@@ -622,7 +609,7 @@ class Analysis {
     } else {
       changed = this.namesAndTypes.changeFiles(hcsSourceFiles);
     }
-    changed = changed || (this.namesAndTypes.mergeZPlanes !== mergeZPlanes);
+    changed = changed || this.namesAndTypes.mergeZPlanes !== mergeZPlanes;
     this.namesAndTypes.mergeZPlanes = mergeZPlanes;
     if (HCSSourceFile.check(...hcsSourceFiles) && changed) {
       onChange();
@@ -665,13 +652,12 @@ class Analysis {
     if (!aModule) {
       return undefined;
     }
-    return this.analysisOutputImages
-      .find(o => o.originalModuleId === aModule.id);
+    return this.analysisOutputImages.find((o) => o.originalModuleId === aModule.id);
   };
 
   getMissingInputs = () => {
     return this.pipeline ? this.pipeline.getMissingInputs() : [];
-  }
+  };
 
   correctInputsForModules = (correctedInputs = {}) => {
     const corrected = this.pipeline

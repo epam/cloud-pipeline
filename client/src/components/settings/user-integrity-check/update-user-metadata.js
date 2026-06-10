@@ -16,17 +16,18 @@
 
 import MetadataUpdate from '../../../models/metadata/MetadataUpdate';
 
-function updateUserMetadata (userId, data) {
+function updateUserMetadata(userId, data) {
   return new Promise((resolve, reject) => {
     const updateRequest = new MetadataUpdate();
     const entity = {
       entityId: +userId,
-      entityClass: 'PIPELINE_USER'
+      entityClass: 'PIPELINE_USER',
     };
-    updateRequest.send({
-      entity,
-      data
-    })
+    updateRequest
+      .send({
+        entity,
+        data,
+      })
       .then(() => {
         if (updateRequest.error || !updateRequest.loaded) {
           throw new Error(updateRequest.error || 'Error updating user');

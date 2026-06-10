@@ -21,10 +21,10 @@ class StringParameter extends ModuleParameter {
   /**
    * @param {ModuleParameterOptions} options
    */
-  constructor (options = {}) {
+  constructor(options = {}) {
     super({
       ...options,
-      type: AnalysisTypes.string
+      type: AnalysisTypes.string,
     });
   }
 }
@@ -33,10 +33,10 @@ class ColorParameter extends ModuleParameter {
   /**
    * @param {ModuleParameterOptions} options
    */
-  constructor (options = {}) {
+  constructor(options = {}) {
     super({
       ...options,
-      type: AnalysisTypes.color
+      type: AnalysisTypes.color,
     });
   }
 }
@@ -45,10 +45,10 @@ class IntegerParameter extends ModuleParameter {
   /**
    * @param {ModuleParameterOptions} options
    */
-  constructor (options = {}) {
+  constructor(options = {}) {
     super({
       ...options,
-      type: AnalysisTypes.integer
+      type: AnalysisTypes.integer,
     });
   }
 }
@@ -57,10 +57,10 @@ class FloatParameter extends ModuleParameter {
   /**
    * @param {ModuleParameterOptions} options
    */
-  constructor (options = {}) {
+  constructor(options = {}) {
     super({
       ...options,
-      type: AnalysisTypes.float
+      type: AnalysisTypes.float,
     });
   }
 }
@@ -69,10 +69,10 @@ class BooleanParameter extends ModuleParameter {
   /**
    * @param {ModuleParameterOptions} options
    */
-  constructor (options = {}) {
+  constructor(options = {}) {
     super({
       ...options,
-      type: AnalysisTypes.boolean
+      type: AnalysisTypes.boolean,
     });
   }
 }
@@ -81,15 +81,13 @@ class ListParameter extends ModuleParameter {
   /**
    * @param {ModuleParameterOptions} options
    */
-  constructor (options = {}) {
-    const {
-      values = []
-    } = options;
+  constructor(options = {}) {
+    const {values = []} = options;
     super({
       ...options,
       type: AnalysisTypes.string,
       isList: true,
-      values
+      values,
     });
   }
 }
@@ -100,5 +98,5 @@ export {
   BooleanParameter,
   ListParameter,
   IntegerParameter,
-  FloatParameter
+  FloatParameter,
 };

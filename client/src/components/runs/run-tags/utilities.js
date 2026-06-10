@@ -2,18 +2,18 @@ import preferences from '../../../models/preferences/PreferencesLoad';
 import escapeRegExp from '../../../utils/escape-reg-exp';
 import {
   CP_CAP_AUTOSCALE,
-  CP_CAP_AUTOSCALE_WORKERS
+  CP_CAP_AUTOSCALE_WORKERS,
 } from '../../pipelines/launch/form/utilities/parameters';
 import whoAmI from '../../../models/user/WhoAmI';
 import fetchToolOSCached from '../../pipelines/launch/form/utilities/fetch-tool-os';
 import RequiredLaunchTags from '../../special/metadata/special/required-launch-tags';
 
-export async function fillUserTagsWithDefaultValues (
+export async function fillUserTagsWithDefaultValues(
   tags = {},
   tagsTouched = [],
   visibleTags = [],
   userAttributes,
-  launchPayload
+  launchPayload,
 ) {
   const result = tags || {};
   let defaults = {};
@@ -24,9 +24,8 @@ export async function fillUserTagsWithDefaultValues (
     return tags;
   }
   try {
-    defaults = JSON.parse(
-      userAttributes.getAttributeValue(RequiredLaunchTags.metadataKey) || '{}'
-    ) || {};
+    defaults =
+      JSON.parse(userAttributes.getAttributeValue(RequiredLaunchTags.metadataKey) || '{}') || {};
   } catch (e) {
     console.error('Error parsing required launch tags defaults.', e);
     return tags;
@@ -47,19 +46,12 @@ export async function fillUserTagsWithDefaultValues (
   return result;
 }
 
-export async function getUserTagsValidationResult (tags, opts) {
+export async function getUserTagsValidationResult(tags, opts) {
   await preferences.fetchIfNeededOrWait();
-  const {
-    launchPayload,
-    requiredTags,
-    visibleTags
-  } = opts || {};
-  const required = requiredTags === undefined
-    ? await getRequiredUserTags(launchPayload)
-    : requiredTags;
-  const visible = visibleTags === undefined
-    ? await getVisibleUserTags(launchPayload)
-    : visibleTags;
+  const {launchPayload, requiredTags, visibleTags} = opts || {};
+  const required =
+    requiredTags === undefined ? await getRequiredUserTags(launchPayload) : requiredTags;
+  const visible = visibleTags === undefined ? await getVisibleUserTags(launchPayload) : visibleTags;
   const result = [];
   const runUserTags = preferences.uiRunsUserTags || [];
   for (const requiredTag of required) {
@@ -69,37 +61,35 @@ export async function getUserTagsValidationResult (tags, opts) {
     const value = (tags || {})[requiredTag];
     if (value === undefined || value.trim().length === 0) {
       const tag = runUserTags.find((t) => t.tag === requiredTag);
-      const displayName = tag ? (tag.display || tag.tag || requiredTag) : requiredTag;
+      const displayName = tag ? tag.display || tag.tag || requiredTag : requiredTag;
       result.push({
         tag: requiredTag,
-        error: `${displayName} is required`
+        error: `${displayName} is required`,
       });
     }
   }
   return result;
 }
 
-async function prepareCheckPayload (launchPayload) {
+async function prepareCheckPayload(launchPayload) {
   if (launchPayload) {
-    const {
-      dockerImage
-    } = launchPayload;
+    const {dockerImage} = launchPayload;
     const [os] = await Promise.all([
       fetchToolOSCached(dockerImage),
       whoAmI.fetchIfNeededOrWait(),
-      preferences.fetchIfNeededOrWait()
+      preferences.fetchIfNeededOrWait(),
     ]);
     const user = whoAmI.value || undefined;
     return {
       payload: launchPayload,
       os,
-      user
+      user,
     };
   }
   return {};
 }
 
-export async function getVisibleUserTags (launchPayload) {
+export async function getVisibleUserTags(launchPayload) {
   if (launchPayload) {
     await preferences.fetchIfNeededOrWait();
     const opts = await prepareCheckPayload(launchPayload);
@@ -110,7 +100,7 @@ export async function getVisibleUserTags (launchPayload) {
   return [];
 }
 
-export async function getRequiredUserTags (launchPayload) {
+export async function getRequiredUserTags(launchPayload) {
   if (launchPayload) {
     await preferences.fetchIfNeededOrWait();
     const opts = await prepareCheckPayload(launchPayload);
@@ -121,37 +111,36 @@ export async function getRequiredUserTags (launchPayload) {
   return [];
 }
 
-export function filterVisibleTagsSync (tags, visible = []) {
+export function filterVisibleTagsSync(tags, visible = []) {
   return Object.entries(tags || {})
     .filter(([tag]) => visible.includes(tag))
     .map(([tag, value]) => ({[tag]: value}))
-    .reduce((acc, tag) => ({
-      ...acc,
-      ...tag
-    }), {});
+    .reduce(
+      (acc, tag) => ({
+        ...acc,
+        ...tag,
+      }),
+      {},
+    );
 }
 
-function checkTagConfigMatches (config, opts) {
+function checkTagConfigMatches(config, opts) {
   if (typeof config === 'boolean') {
     return config;
   }
   if (typeof config !== 'object') {
     return Boolean(config);
   }
-  const {
-    payload,
-    os: currentOs,
-    user: currentUser
-  } = opts || {};
+  const {payload, os: currentOs, user: currentUser} = opts || {};
   const {
     userName: currentUserName,
     groups: userGroups = [],
-    roles: userRoles = []
+    roles: userRoles = [],
   } = currentUser || {};
   const currentUserGroups = new Set(
     (userRoles || [])
       .map((role) => role.name.toLowerCase())
-      .concat((userGroups || []).map((group) => group.toLowerCase()))
+      .concat((userGroups || []).map((group) => group.toLowerCase())),
   );
   const {
     // eslint-disable-next-line camelcase
@@ -165,29 +154,31 @@ function checkTagConfigMatches (config, opts) {
     clusterSize: _clusterSize = cluster_size,
     os: _os,
     user,
-    users: _users = user
+    users: _users = user,
   } = config || {};
   const asArray = (o) => {
     if (o === undefined) {
       return [];
     }
     if (typeof o === 'string') {
-      return o.split(',').map((oo) => oo.trim()).filter((oo) => oo.length > 0);
+      return o
+        .split(',')
+        .map((oo) => oo.trim())
+        .filter((oo) => oo.length > 0);
     }
     return [];
   };
   const dockerImage = asArray(_dockerImage);
   const instanceType = asArray(_instanceType);
-  const clusterSize = _clusterSize && !Number.isNaN(Number(_clusterSize))
-    ? Number(_clusterSize)
-    : Infinity;
+  const clusterSize =
+    _clusterSize && !Number.isNaN(Number(_clusterSize)) ? Number(_clusterSize) : Infinity;
   const users = asArray(_users);
   const os = asArray(_os);
   const {
     dockerImage: pDockerImage,
     instanceType: pInstanceType,
     nodeCount: pNodeCount,
-    params = {}
+    params = {},
   } = payload;
   const getParameterValue = (parameterName) => {
     return (params[parameterName] || {}).value;
@@ -198,14 +189,12 @@ function checkTagConfigMatches (config, opts) {
   };
   const isAutoScaled = parameterIsEnabled(CP_CAP_AUTOSCALE);
   const maxAutoScaleNodesCountRaw = getParameterValue(CP_CAP_AUTOSCALE_WORKERS);
-  const maxAutoScaleNodesCount = isAutoScaled &&
-  maxAutoScaleNodesCountRaw &&
-  !Number.isNaN(Number(maxAutoScaleNodesCountRaw))
-    ? Number(maxAutoScaleNodesCountRaw)
-    : undefined;
+  const maxAutoScaleNodesCount =
+    isAutoScaled && maxAutoScaleNodesCountRaw && !Number.isNaN(Number(maxAutoScaleNodesCountRaw))
+      ? Number(maxAutoScaleNodesCountRaw)
+      : undefined;
   const match = (criteria, s) => {
-    const o = escapeRegExp(criteria.replace(/\*/g, '___STAR___'))
-      .replace(/(___STAR___)/g, '.*');
+    const o = escapeRegExp(criteria.replace(/\*/g, '___STAR___')).replace(/(___STAR___)/g, '.*');
     const r = new RegExp(`^${o}$`, 'i');
     return r.test(s);
   };
@@ -224,7 +213,7 @@ function checkTagConfigMatches (config, opts) {
         `${g}/${image}`, // i.e., "library/ubuntu"
         `${g}/${image}:${version}`, // i.e., "library/ubuntu:20.04"
         `${r}/${g}/${image}`, // i.e., "registry/library/ubuntu"
-        `${r}/${g}/${image}:${version}` // i.e., "registry/library/ubuntu:20.04"
+        `${r}/${g}/${image}:${version}`, // i.e., "registry/library/ubuntu:20.04"
       ];
       return candidates.some((candidate) => match(criteria, candidate));
     };
@@ -241,7 +230,7 @@ function checkTagConfigMatches (config, opts) {
   };
   const maxClusterSize = Math.max(
     pNodeCount || 0,
-    (pNodeCount || 0) + (maxAutoScaleNodesCount || 0)
+    (pNodeCount || 0) + (maxAutoScaleNodesCount || 0),
   );
   const checkClusterSize = () => {
     if (!maxClusterSize || !Number.isFinite(clusterSize)) {
@@ -253,10 +242,7 @@ function checkTagConfigMatches (config, opts) {
     if (/^all$/i.test(mask)) {
       return /.*/;
     }
-    const regExpValue = mask
-      .trim()
-      .replace(/\./g, '\\.')
-      .replace(/\*/g, '.*');
+    const regExpValue = mask.trim().replace(/\./g, '\\.').replace(/\*/g, '.*');
     return new RegExp(`^${regExpValue}$`, 'i');
   };
   const checkOs = () => {
@@ -272,26 +258,22 @@ function checkTagConfigMatches (config, opts) {
     if (users.length === 0) {
       return true;
     }
-    return users.some((u) => currentUserName.toLowerCase() === u.toLowerCase()) ||
-      users.some((u) => currentUserGroups.has(u.toLowerCase()));
+    return (
+      users.some((u) => currentUserName.toLowerCase() === u.toLowerCase()) ||
+      users.some((u) => currentUserGroups.has(u.toLowerCase()))
+    );
   };
-  return checkDockerImage() &&
-    checkInstanceType() &&
-    checkClusterSize() &&
-    checkOs() &&
-    checkUser();
+  return (
+    checkDockerImage() && checkInstanceType() && checkClusterSize() && checkOs() && checkUser()
+  );
 }
 
-function userTagIsVisible (tag, opts) {
-  const {
-    visible = true
-  } = tag;
+function userTagIsVisible(tag, opts) {
+  const {visible = true} = tag;
   return checkTagConfigMatches(visible, opts);
 }
 
-function userTagIsRequired (tag, opts) {
-  const {
-    required = false
-  } = tag;
+function userTagIsRequired(tag, opts) {
+  const {required = false} = tag;
   return userTagIsVisible(tag, opts) && checkTagConfigMatches(required, opts);
 }

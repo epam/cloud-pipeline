@@ -44,7 +44,7 @@ export const reserved = [
 
   'if',
   'then',
-  'else'
+  'else',
 ];
 
 const reservedRegExpString = `^(${reserved.join('|')})$`;

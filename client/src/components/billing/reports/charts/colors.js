@@ -26,7 +26,7 @@ const colors = {
   previous: 'rgb(83, 157, 210)',
   blue: 'rgb(11, 127, 214)',
   lightBlue: 'rgb(83, 157, 210)',
-  orange: 'rgb(245, 124, 62)'
+  orange: 'rgb(245, 124, 62)',
 };
 
 export default colors;

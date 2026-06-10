@@ -17,15 +17,15 @@
 import Remote from '../basic/Remote';
 
 export default class ToolsGroupDelete extends Remote {
-  constructor (id, force = false) {
+  constructor(id, force = false) {
     super();
     this.constructor.fetchOptions = {
       headers: {
-        'Content-type': 'application/json; charset=UTF-8'
+        'Content-type': 'application/json; charset=UTF-8',
       },
       mode: 'cors',
       credentials: 'include',
-      method: 'DELETE'
+      method: 'DELETE',
     };
     this.url = `/toolGroup?id=${id}&force=${force}`;
   }

@@ -17,7 +17,7 @@
 import RemotePost from '../basic/RemotePost';
 
 class HotNodePoolScheduleUpdate extends RemotePost {
-  constructor () {
+  constructor() {
     super();
     this.url = '/cluster/nodeSchedule';
   }

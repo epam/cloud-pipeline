@@ -23,38 +23,32 @@ class HCSBaseState {
    * @param {Object} viewer
    * @param {string} stateChangeEvent
    */
-  constructor (viewer, stateChangeEvent) {
+  constructor(viewer, stateChangeEvent) {
     this.stateChangeEvent = stateChangeEvent;
     this.attachToViewer(viewer);
   }
 
-  attachToViewer (viewer) {
+  attachToViewer(viewer) {
     this.detachFromViewer();
     if (viewer) {
       this.viewer = viewer;
       this.callback = this.onStateChanged.bind(this);
       if (this.stateChangeEvent && this.viewer.Events[this.stateChangeEvent]) {
-        this.viewer.addEventListener(
-          this.viewer.Events[this.stateChangeEvent],
-          this.callback
-        );
+        this.viewer.addEventListener(this.viewer.Events[this.stateChangeEvent], this.callback);
       }
     }
   }
 
-  detachFromViewer () {
+  detachFromViewer() {
     if (this.viewer) {
       if (this.stateChangeEvent && this.viewer.Events[this.stateChangeEvent]) {
-        this.viewer.removeEventListener(
-          this.viewer.Events[this.stateChangeEvent],
-          this.callback
-        );
+        this.viewer.removeEventListener(this.viewer.Events[this.stateChangeEvent], this.callback);
       }
       this.viewer = undefined;
     }
   }
 
-  onStateChanged (viewer, newState) {
+  onStateChanged(viewer, newState) {
     // empty
   }
 }

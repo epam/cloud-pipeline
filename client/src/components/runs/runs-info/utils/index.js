@@ -16,19 +16,19 @@
 
 import {colors} from '../../../billing/reports/charts';
 import {fadeout} from '../../../../themes/utilities/color-utilities';
-import {getUserDisplayName} from '../../../special/UserName';
+import {getUserDisplayName} from '../../../shared/user-name/utilities.ts';
 
 const STATUSES = {
   PAUSED: 'PAUSED',
   PAUSING: 'PAUSING',
   RESUMING: 'RESUMING',
-  RUNNING: 'RUNNING'
+  RUNNING: 'RUNNING',
 };
 
-function getDatasetStyles (key, reportThemes, b) {
+function getDatasetStyles(key, reportThemes, b) {
   const common = {
     stack: 'DEFAULT',
-    showDataLabel (item) {
+    showDataLabel(item) {
       return typeof item === 'number' && item !== 0;
     },
     maxBarThickness: 50,
@@ -42,7 +42,7 @@ function getDatasetStyles (key, reportThemes, b) {
       flagColor: reportThemes.current,
       textColor: reportThemes.textColor,
       borderWidth: 2,
-      ...common
+      ...common,
     };
   }
   if (key === 'PAUSED') {
@@ -52,86 +52,88 @@ function getDatasetStyles (key, reportThemes, b) {
       flagColor: reportThemes.previous,
       textColor: reportThemes.textColor,
       borderWidth: 2,
-      ...common
+      ...common,
     };
   }
   return {
     backgroundColor: fadeout(colors.grey, 0.65),
     flagColor: colors.grey,
-    ...common
+    ...common,
   };
 }
 
-function formatDockerImage (docker = '') {
-  // eslint-disable-next-line no-unused-vars
+function formatDockerImage(docker = '') {
   const [_r, g, iv] = docker.split('/');
   const image = iv.split(':').slice(0, -1).join(':');
   return [g, image].join('/').toLowerCase();
 }
 
-function formatDockerImages (images = []) {
+function formatDockerImages(images = []) {
   return images.map(formatDockerImage);
 }
 
-function formatUserName (user, users = []) {
-  const userInstance = users
-    .find((u) => (u.name || '').toLowerCase() === user.toLowerCase() ||
-      (u.name || '').toLowerCase().split('@')[0] === user.toLowerCase().split('@')[0]);
+function formatUserName(user, users = []) {
+  const userInstance = users.find(
+    (u) =>
+      (u.name || '').toLowerCase() === user.toLowerCase() ||
+      (u.name || '').toLowerCase().split('@')[0] === user.toLowerCase().split('@')[0],
+  );
   return (userInstance ? getUserDisplayName(userInstance) : undefined) || user;
 }
 
-function extractDatasetByField (field, data = {}, top = undefined) {
+function extractDatasetByField(field, data = {}, top = undefined) {
   const dataField = data[field];
   if (!dataField) {
     return {
-      labels: []
+      labels: [],
     };
   }
   const categoriesKeys = Object.keys(dataField);
-  const getLabelSum = (label) => categoriesKeys
-    .reduce((sum, key) => sum + (dataField[key][label] || 0), 0);
-  const labels = [...new Set(Object
-    .values(dataField)
-    .reduce((acc, cur) => [...acc, ...Object.keys(cur)], [])
-  )]
+  const getLabelSum = (label) =>
+    categoriesKeys.reduce((sum, key) => sum + (dataField[key][label] || 0), 0);
+  const labels = [
+    ...new Set(Object.values(dataField).reduce((acc, cur) => [...acc, ...Object.keys(cur)], [])),
+  ]
     .map((label) => ({
       label,
-      value: getLabelSum(label)
+      value: getLabelSum(label),
     }))
     .sort((a, b) => b.value - a.value)
     .filter((a, idx) => top === undefined || top > idx)
     .map((a) => a.label);
-  const dataSets = categoriesKeys.reduce((acc, key) => ({
-    ...acc,
-    [key]: labels.map(label => (dataField[key] || {})[label] || 0)
-  }), {});
+  const dataSets = categoriesKeys.reduce(
+    (acc, key) => ({
+      ...acc,
+      [key]: labels.map((label) => (dataField[key] || {})[label] || 0),
+    }),
+    {},
+  );
   return {
     labels,
-    ...dataSets
+    ...dataSets,
   };
 }
 
-function extractMaxEntriesCountByField (field, data = {}) {
+function extractMaxEntriesCountByField(field, data = {}) {
   const dataField = data[field];
   if (!dataField) {
     return 0;
   }
-  return [...new Set(Object
-    .values(dataField)
-    .reduce((acc, cur) => [...acc, ...Object.keys(cur)], [])
-  )].length;
+  return [
+    ...new Set(Object.values(dataField).reduce((acc, cur) => [...acc, ...Object.keys(cur)], [])),
+  ].length;
 }
 
-function extractDatasets (data = {}, top = undefined) {
+function extractDatasets(data = {}, top = undefined) {
   return {
     owners: extractDatasetByField('owners', data, top),
     dockerImages: extractDatasetByField('dockerImages', data, top),
     instanceTypes: extractDatasetByField('instanceTypes', data, top),
-    tags: extractDatasetByField('tags', data, top)
+    tags: extractDatasetByField('tags', data, top),
   };
 }
 
-function extractMaxEntriesCount (data = {}) {
+function extractMaxEntriesCount(data = {}) {
   return Math.max(
     extractMaxEntriesCountByField('owners', data),
     extractMaxEntriesCountByField('dockerImages', data),
@@ -147,5 +149,5 @@ export {
   formatDockerImage,
   formatUserName,
   extractDatasets,
-  extractMaxEntriesCount
+  extractMaxEntriesCount,
 };

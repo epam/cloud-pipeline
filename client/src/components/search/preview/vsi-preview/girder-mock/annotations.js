@@ -19,13 +19,8 @@ import getAnnotation from './utilities/get-annotation';
 import updateAnnotation from './utilities/update-annotation';
 import whoAmI from '../../../../../models/user/WhoAmI';
 
-function annotations (item, resolve) {
-  const {
-    storage,
-    path,
-    method,
-    data
-  } = item;
+function annotations(item, resolve) {
+  const {storage, path, method, data} = item;
   if (/^post$/i.test(method) && data) {
     whoAmI
       .fetchIfNeededOrWait()
@@ -42,32 +37,27 @@ function annotations (item, resolve) {
   } else {
     getStorageContents(
       storage,
-      path
-        ? `${path}/annotations`.replace(/\/\//g, '/')
-        : 'annotations'
-    )
-      .then((contents) => {
-        const annotationFiles = (contents || [])
-          .filter(item => /^file$/i.test(item.type) && /^[\d]+\.json$/i.test(item.name))
-          .map(item => {
-            const exec = /^([\d]+)\.json$/i.exec(item.name);
-            if (exec && exec.length > 1) {
-              return {
-                _id: +exec[1],
-                ...item
-              };
-            }
-            return undefined;
-          })
-          .filter(Boolean);
-        Promise.all(
-          annotationFiles.map(file => getAnnotation(storage, path, file._id))
-        )
-          .then(results => {
-            resolve(results);
-          })
-          .catch(() => resolve([]));
-      });
+      path ? `${path}/annotations`.replace(/\/\//g, '/') : 'annotations',
+    ).then((contents) => {
+      const annotationFiles = (contents || [])
+        .filter((item) => /^file$/i.test(item.type) && /^[\d]+\.json$/i.test(item.name))
+        .map((item) => {
+          const exec = /^([\d]+)\.json$/i.exec(item.name);
+          if (exec && exec.length > 1) {
+            return {
+              _id: +exec[1],
+              ...item,
+            };
+          }
+          return undefined;
+        })
+        .filter(Boolean);
+      Promise.all(annotationFiles.map((file) => getAnnotation(storage, path, file._id)))
+        .then((results) => {
+          resolve(results);
+        })
+        .catch(() => resolve([]));
+    });
   }
 }
 
@@ -78,7 +68,7 @@ annotations.test = function (url, method, data) {
       storage: +exec[1],
       path: exec[2],
       method,
-      data
+      data,
     };
   }
   return undefined;

@@ -17,11 +17,11 @@
 import FilterExpression from './filterExpression';
 
 export default class LogicalExpression extends FilterExpression {
-  constructor (field, operand, value, options) {
+  constructor(field, operand, value, options) {
     super(field, value, FilterExpression.types.LOGICAL, operand, undefined, undefined, options);
   }
 
-  toStringExpression () {
+  toStringExpression() {
     return `${this.field} ${this.operand} ${this.value}`;
   }
 }

@@ -26,18 +26,12 @@ Chart.controllers['previous-line-bar'] = Chart.controllers.line.extend({
     if (xAxisID && chart && chart.scales[xAxisID]) {
       const ctx = this.chart.ctx;
       const {data = [], index} = meta || {};
-      const {
-        borderWidth,
-        borderColor,
-        borderDash,
-        textColor,
-        showDataLabels
-      } = this.getDataset();
+      const {borderWidth, borderColor, borderDash, textColor, showDataLabels} = this.getDataset();
       const bars = this.chart.config.data.datasets
         .map((d, i) => this.chart.getDatasetMeta(i))
-        .filter(d => d.index !== index && d.type === 'bar');
+        .filter((d) => d.index !== index && d.type === 'bar');
       const [values] = this.chart.config.data.datasets
-        .filter(dataset => dataset.type === 'previous-line-bar')
+        .filter((dataset) => dataset.type === 'previous-line-bar')
         .map((dataset) => dataset.data);
       if (bars.length) {
         for (let i = 0; i < data.length; i++) {
@@ -48,21 +42,19 @@ Chart.controllers['previous-line-bar'] = Chart.controllers.line.extend({
           }
           const left = Math.min(
             ...bars
-              .filter(b => b.data && b.data.length > i)
-              .map(b => b.data[i]._view.x - b.data[i]._view.width / 2.0)
+              .filter((b) => b.data && b.data.length > i)
+              .map((b) => b.data[i]._view.x - b.data[i]._view.width / 2.0),
           );
           const right = Math.max(
             ...bars
-              .filter(b => b.data && b.data.length > i)
-              .map(b => b.data[i]._view.x + b.data[i]._view.width / 2.0)
+              .filter((b) => b.data && b.data.length > i)
+              .map((b) => b.data[i]._view.x + b.data[i]._view.width / 2.0),
           );
           const y = Math.max(
             Math.round(lineWidth / 2.0),
-            Math.round(dataItem._view.y) - Math.round(lineWidth / 2.0)
+            Math.round(dataItem._view.y) - Math.round(lineWidth / 2.0),
           );
-          const labelViewY = y < 20
-            ? y + 15
-            : y - 5;
+          const labelViewY = y < 20 ? y + 15 : y - 5;
           ctx.save();
           ctx.beginPath();
           if (borderColor) {
@@ -90,7 +82,7 @@ Chart.controllers['previous-line-bar'] = Chart.controllers.line.extend({
         }
       }
     }
-  }
+  },
 });
 
 Chart.defaults.global.datasets['previous-line-bar'] = {showLine: false};

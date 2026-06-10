@@ -17,7 +17,7 @@
 import getStorageInfo from './utilities/get-storage-info';
 import roleModel from '../../../../../utils/roleModel';
 
-function folderInfo (item, resolve) {
+function folderInfo(item, resolve) {
   getStorageInfo(item?.storage)
     .then((info) => {
       if (info && info.mask) {
@@ -36,7 +36,7 @@ folderInfo.test = function (url) {
   if (exec && exec.length > 2) {
     return {
       storage: +exec[1],
-      path: exec[2]
+      path: exec[2],
     };
   }
   return undefined;

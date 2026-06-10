@@ -28,23 +28,28 @@ const PALETTE = [
   '#bf1dec',
   '#da6d29',
   '#0ab07e',
-  '#333333'
+  '#333333',
 ];
 
-function pickColor (existing = []) {
-  const existingCorrected = existing.map(o => o.toUpperCase());
-  return PALETTE.map(color => ({
-    color,
-    weight: existingCorrected.filter(o => o === color.toUpperCase()).length
-  }))
-    .sort((a, b) => a.weight - b.weight)
-    .map(o => o.color)[0] || PALETTE[0] || '#FFFFFF';
+function pickColor(existing = []) {
+  const existingCorrected = existing.map((o) => o.toUpperCase());
+  return (
+    PALETTE.map((color) => ({
+      color,
+      weight: existingCorrected.filter((o) => o === color.toUpperCase()).length,
+    }))
+      .sort((a, b) => a.weight - b.weight)
+      .map((o) => o.color)[0] ||
+    PALETTE[0] ||
+    '#FFFFFF'
+  );
 }
 
 class OutlineObjectConfiguration {
-  static importConfiguration (options) {
+  static importConfiguration(options) {
     return new OutlineObjectConfiguration(options);
   }
+
   object;
   visible;
   color;
@@ -53,23 +58,15 @@ class OutlineObjectConfiguration {
   fetchUrl;
   fetchBackgroundUrl;
 
-  constructor (options = {}) {
+  constructor(options = {}) {
     makeObservable(this, {
       object: observable,
       visible: observable,
       color: observable,
       url: observable,
-      backgroundUrl: observable
+      backgroundUrl: observable,
     });
-    const {
-      object,
-      visible,
-      color,
-      url,
-      backgroundUrl,
-      fetchUrl,
-      fetchBackgroundUrl
-    } = options;
+    const {object, visible, color, url, backgroundUrl, fetchUrl, fetchBackgroundUrl} = options;
     this.object = object;
     this.visible = visible;
     this.color = color;
@@ -82,12 +79,7 @@ class OutlineObjectConfiguration {
   fetchUrls = async () => {
     try {
       const [url, backgroundUrl] = await Promise.all(
-        [
-          this.fetchUrl,
-          this.fetchBackgroundUrl
-        ]
-          .filter(Boolean)
-          .map(fn => fn())
+        [this.fetchUrl, this.fetchBackgroundUrl].filter(Boolean).map((fn) => fn()),
       );
       this.url = url || this.url;
       this.backgroundUrl = backgroundUrl || this.backgroundUrl;
@@ -100,18 +92,20 @@ class OutlineObjectConfiguration {
     return {
       object: this.object,
       color: this.color,
-      visible: this.visible
+      visible: this.visible,
     };
   };
 }
 
 export default class GraphicsOutputConfiguration {
-  static importConfigurations (configurations) {
+  static importConfigurations(configurations) {
     const result = new GraphicsOutputConfiguration();
-    result.configurations = JSON.parse(configurations)
-      .map(config => OutlineObjectConfiguration.importConfiguration(config));
+    result.configurations = JSON.parse(configurations).map((config) =>
+      OutlineObjectConfiguration.importConfiguration(config),
+    );
     return result;
   }
+
   /**
    * @type {OutlineObjectConfiguration[]}
    */
@@ -122,14 +116,14 @@ export default class GraphicsOutputConfiguration {
    * @private
    */
   _overlayImage = undefined;
-  constructor (analysisOutputs = []) {
+  constructor(analysisOutputs = []) {
     makeObservable(this, {
       configurations: observable,
       hidden: observable,
       _overlayImage: observable,
       update: action,
       moveDown: action,
-      moveUp: action
+      moveUp: action,
     });
     this.update(analysisOutputs);
   }
@@ -139,70 +133,73 @@ export default class GraphicsOutputConfiguration {
    * @param {AnalysisOutputResult} overlayImage
    * @param {*} [viewer]
    */
-  update (analysisOutputs = [], overlayImage, viewer) {
-    const objectNames = [...new Set(analysisOutputs.filter(o => o.object).map(o => o.object))];
+  update(analysisOutputs = [], overlayImage, viewer) {
+    const objectNames = [...new Set(analysisOutputs.filter((o) => o.object).map((o) => o.object))];
     /**
      * @type {OutlineObjectConfiguration[]}
      */
-    const objects = objectNames.map(name => {
-      const outline = analysisOutputs.find(o => o.object === name && !o.background);
-      const background = analysisOutputs.find(o => o.object === name && o.background);
-      if (outline || background) {
-        return new OutlineObjectConfiguration({
-          object: name,
-          url: outline ? outline.url : undefined,
-          fetchUrl: outline ? outline.fetchUrlAndReportAccess : undefined,
-          backgroundUrl: background ? background.url : undefined,
-          fetchBackgroundUrl: background ? background.fetchUrlAndReportAccess : undefined,
-          visible: true
-        });
-      }
-      return undefined;
-    }).filter(Boolean);
-    const newObjects = objects
-      .filter(object => !this.configurations.find(c => c.object === object.object));
+    const objects = objectNames
+      .map((name) => {
+        const outline = analysisOutputs.find((o) => o.object === name && !o.background);
+        const background = analysisOutputs.find((o) => o.object === name && o.background);
+        if (outline || background) {
+          return new OutlineObjectConfiguration({
+            object: name,
+            url: outline ? outline.url : undefined,
+            fetchUrl: outline ? outline.fetchUrlAndReportAccess : undefined,
+            backgroundUrl: background ? background.url : undefined,
+            fetchBackgroundUrl: background ? background.fetchUrlAndReportAccess : undefined,
+            visible: true,
+          });
+        }
+        return undefined;
+      })
+      .filter(Boolean);
+    const newObjects = objects.filter(
+      (object) => !this.configurations.find((c) => c.object === object.object),
+    );
     const updated = this.configurations
-      .filter(config => !!objects.find(o => o.object === config.object))
+      .filter((config) => !!objects.find((o) => o.object === config.object))
       .concat(newObjects);
-    updated.forEach(config => {
-      const existed = objects.find(o => o.object === config.object);
+    updated.forEach((config) => {
+      const existed = objects.find((o) => o.object === config.object);
       config.url = existed ? existed.url : config.url;
       config.fetchUrl = existed ? existed.fetchUrl : config.fetchUrl;
       config.backgroundUrl = existed ? existed.backgroundUrl : config.backgroundUrl;
       config.fetchBackgroundUrl = existed ? existed.fetchBackgroundUrl : config.fetchBackgroundUrl;
       if (!config.color) {
-        const currentColors = updated.map(o => o.color).filter(Boolean);
+        const currentColors = updated.map((o) => o.color).filter(Boolean);
         config.color = pickColor(currentColors);
       }
     });
     this.configurations = updated;
     this._overlayImage = overlayImage;
-    (this.renderOutlines)(viewer);
+    this.renderOutlines(viewer);
   }
 
   detachResults = (hcsImageViewer) => {
     this._overlayImage = undefined;
-    this.configurations.forEach(aConfiguration => {
+    this.configurations.forEach((aConfiguration) => {
       aConfiguration.url = undefined;
       aConfiguration.backgroundUrl = undefined;
       aConfiguration.fetchUrl = undefined;
       aConfiguration.fetchBackgroundUrl = undefined;
     });
-    (this.renderOutlines)(hcsImageViewer);
+    this.renderOutlines(hcsImageViewer);
   };
 
-  moveDown (idx, viewer) {
+  moveDown(idx, viewer) {
     const current = this.configurations[idx];
     const next = this.configurations[idx + 1];
     if (current && next) {
       const result = [...this.configurations];
       result.splice(idx, 2, next, current);
       this.configurations = result;
-      (this.renderOutlines)(viewer);
+      this.renderOutlines(viewer);
     }
   }
 
-  moveUp (idx, viewer) {
+  moveUp(idx, viewer) {
     if (idx === 0) {
       return;
     }
@@ -212,7 +209,7 @@ export default class GraphicsOutputConfiguration {
       const result = [...this.configurations];
       result.splice(idx - 1, 2, current, previous);
       this.configurations = result;
-      (this.renderOutlines)(viewer);
+      this.renderOutlines(viewer);
     }
   }
 
@@ -222,16 +219,14 @@ export default class GraphicsOutputConfiguration {
   };
 
   outputIsSelectedAsOverlayImage = (overlayImage) => {
-    return this._overlayImage &&
-      overlayImage &&
-      this._overlayImage.id === overlayImage.id;
+    return this._overlayImage && overlayImage && this._overlayImage.id === overlayImage.id;
   };
 
   renderOutlines = async (hcsImageViewer) => {
     if (!hcsImageViewer) {
       return;
     }
-    const setOverlayImages = images => hcsImageViewer.setOverlayImages(images);
+    const setOverlayImages = (images) => hcsImageViewer.setOverlayImages(images);
     const overlays = [];
     if (this._overlayImage) {
       const url = await this._overlayImage.fetchUrl();
@@ -239,7 +234,7 @@ export default class GraphicsOutputConfiguration {
         url,
         color: '#FFFFFF',
         ignoreColor: '#000000',
-        ignoreColorAccuracy: 0.08
+        ignoreColorAccuracy: 0.08,
       });
     }
     if (this.hidden) {
@@ -247,32 +242,27 @@ export default class GraphicsOutputConfiguration {
     } else {
       await Promise.all(
         this.configurations
-          .filter(configuration => configuration.visible)
-          .map(configuration => configuration.fetchUrls())
+          .filter((configuration) => configuration.visible)
+          .map((configuration) => configuration.fetchUrls()),
       );
       const objectImages = this.configurations
-        .filter(outline => outline.visible)
-        .map(outline => [
-          outline.backgroundUrl ? {
-            url: outline.backgroundUrl,
-            color: fadeoutHex(outline.color, 0.6)
-          } : undefined,
-          outline.url ? {url: outline.url, color: outline.color} : undefined
+        .filter((outline) => outline.visible)
+        .map((outline) => [
+          outline.backgroundUrl
+            ? {
+                url: outline.backgroundUrl,
+                color: fadeoutHex(outline.color, 0.6),
+              }
+            : undefined,
+          outline.url ? {url: outline.url, color: outline.color} : undefined,
         ])
-        .reduce((r, c) => ([...r, ...c]), [])
+        .reduce((r, c) => [...r, ...c], [])
         .filter(Boolean);
-      setOverlayImages(
-        [
-          ...overlays,
-          ...objectImages
-        ]
-      );
+      setOverlayImages([...overlays, ...objectImages]);
     }
   };
 
-  exportConfigurations () {
-    return JSON.stringify(
-      this.configurations.map(config => config.exportConfiguration())
-    );
+  exportConfigurations() {
+    return JSON.stringify(this.configurations.map((config) => config.exportConfiguration()));
   }
 }

@@ -18,13 +18,13 @@ import RemotePost from '../basic/RemotePost';
 
 const AccessTypes = {
   endpoint: 'ENDPOINT',
-  ssh: 'SSH'
+  ssh: 'SSH',
 };
 
 export {AccessTypes};
 
 export default class PipelineRunUpdateSids extends RemotePost {
-  constructor (id) {
+  constructor(id) {
     super();
     this.url = `/run/${id}/updateSids`;
   }

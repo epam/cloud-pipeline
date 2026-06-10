@@ -17,10 +17,10 @@
 import Remote from '../basic/Remote';
 
 class PipelineConfigurations extends Remote {
-  constructor (id, version) {
+  constructor(id, version) {
     super();
     this.url = `/pipeline/${id}/configurations?version=${version}`;
-  };
+  }
 }
 
 export default PipelineConfigurations;

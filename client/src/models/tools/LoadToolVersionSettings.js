@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 export default class LoadToolVersionSettings extends Remote {
-  constructor (id, version) {
+  constructor(id, version) {
     super();
     if (version) {
       this.url = `/tool/${id}/settings?version=${version}`;

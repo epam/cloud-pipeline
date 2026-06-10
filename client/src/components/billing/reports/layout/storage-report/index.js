@@ -26,7 +26,7 @@ const Layout = buildLayout({
   storage: 'panelsLayout-Billing-Storages-Report',
   defaultSizes,
   panelNeighbors: [],
-  gridStyle: GridStyles
+  gridStyle: GridStyles,
 });
 
 const ObjectsLayout = buildLayout({
@@ -34,7 +34,7 @@ const ObjectsLayout = buildLayout({
   storage: 'panelsLayout-Billing-Storages-Report-Objects',
   defaultSizes: defaultObjectsSizes,
   panelNeighbors: [],
-  gridStyle: GridStyles
+  gridStyle: GridStyles,
 });
 
 export {GridStyles, Layout, ObjectsLayout, Panels};

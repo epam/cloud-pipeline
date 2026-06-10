@@ -15,7 +15,7 @@
  */
 
 import {makeAutoObservable} from 'mobx';
-import moment from 'moment-timezone';
+import dayjs, {localDateToUtcDayjs} from '../../utils/dayjs';
 import dataStorages from './DataStorages';
 import preferences from '../preferences/PreferencesLoad';
 import authenticatedUserInfo from '../user/WhoAmI';
@@ -29,7 +29,7 @@ const PAGE_SIZE = 40;
 
 const SORTING_ORDER = {
   ascend: 'ascend',
-  descend: 'descend'
+  descend: 'descend',
 };
 
 const SORTERS = {
@@ -42,8 +42,8 @@ const SORTERS = {
     return bName.localeCompare(aName);
   },
   changed: (a, b, order) => {
-    const aDate = moment(a.changed);
-    const bDate = moment(b.changed);
+    const aDate = dayjs(a.changed);
+    const bDate = dayjs(b.changed);
     if (!a.changed) return 1;
     if (!b.changed) return -1;
     if (order === SORTING_ORDER.ascend) {
@@ -58,23 +58,25 @@ const SORTERS = {
       return a.size - b.size;
     }
     return b.size - a.size;
-  }
+  },
 };
 
-const mbToBytes = mb => {
+const mbToBytes = (mb) => {
   if (isNaN(mb)) {
     return;
   }
-  return Math.round(mb * (1024 ** 2));
+  return Math.round(mb * 1024 ** 2);
 };
 
-function generateStorageItemMapper (storageMask) {
+function generateStorageItemMapper(storageMask) {
   const mapper = (o) => ({
     ...o,
     mask: o.mask ?? storageMask,
-    versions: Object.entries(o.versions || {}).map(([version, versionData]) => ({
-      [version]: mapper(versionData)
-    })).reduce((acc, curr) => ({...acc, ...curr}), {})
+    versions: Object.entries(o.versions || {})
+      .map(([version, versionData]) => ({
+        [version]: mapper(versionData),
+      }))
+      .reduce((acc, curr) => ({...acc, ...curr}), {}),
   });
   return mapper;
 }
@@ -86,7 +88,7 @@ function generateStorageItemMapper (storageMask) {
  * @param userGroupsSet
  * @returns {boolean}
  */
-export function checkStorageDownloadEnabledAttributeValue (value, userGroupsSet) {
+export function checkStorageDownloadEnabledAttributeValue(value, userGroupsSet) {
   if (value === undefined) {
     return true;
   }
@@ -96,7 +98,7 @@ export function checkStorageDownloadEnabledAttributeValue (value, userGroupsSet)
     }
     const array = value.split(/[,;\s]/g).map((item) => item.trim().toLowerCase());
     if (Array.isArray(array)) {
-      return array.some((item) => userGroupsSet.has((item.toLowerCase())));
+      return array.some((item) => userGroupsSet.has(item.toLowerCase()));
     }
   } catch (_) {
     // empty
@@ -117,17 +119,15 @@ export function checkStorageDownloadEnabledAttributeValue (value, userGroupsSet)
  * @param {CorrectPathOptions} [options]
  * @returns {string}
  */
-function correctPath (path = '', options = {}) {
+function correctPath(path = '', options = {}) {
   const {
     delimiter = DEFAULT_DELIMITER,
     trailingSlash = true,
     leadingSlash = true,
-    undefinedAsEmpty = false
+    undefinedAsEmpty = false,
   } = options;
   // Removing leading / trailing slashes and double/triple/... slashes
-  const parts = path
-    .split(delimiter)
-    .filter(pathComponent => pathComponent.length);
+  const parts = path.split(delimiter).filter((pathComponent) => pathComponent.length);
   // Formatting path to the "/...", ".../" or "/.../" format
   if (parts.length === 0 && (trailingSlash || leadingSlash)) {
     return '/';
@@ -135,11 +135,7 @@ function correctPath (path = '', options = {}) {
   if (parts.length === 0) {
     return undefinedAsEmpty ? undefined : '';
   }
-  return [
-    ...(leadingSlash ? [''] : []),
-    ...parts,
-    ...(trailingSlash ? [''] : [])
-  ].join(delimiter);
+  return [...(leadingSlash ? [''] : []), ...parts, ...(trailingSlash ? [''] : [])].join(delimiter);
 }
 
 /**
@@ -162,25 +158,21 @@ function correctPath (path = '', options = {}) {
  * @param {{delimiter: string?, keepCurrent: boolean?}} [options]
  * @returns {Markers}
  */
-function resetMarkersForPath (path = '', markers = {}, options = {}) {
-  const {
-    delimiter = DEFAULT_DELIMITER,
-    keepCurrent = false
-  } = options;
+function resetMarkersForPath(path = '', markers = {}, options = {}) {
+  const {delimiter = DEFAULT_DELIMITER, keepCurrent = false} = options;
   const correctedPath = correctPath(path, {delimiter});
   /**
    * @type {Markers}
    */
   const result = {};
-  Object.entries(markers)
-    .forEach(([pathKey, markers]) => {
-      if (
-        (keepCurrent && pathKey === correctedPath) ||
-        (pathKey !== correctedPath && !pathKey.startsWith(correctedPath))
-      ) {
-        result[pathKey] = markers;
-      }
-    });
+  Object.entries(markers).forEach(([pathKey, markers]) => {
+    if (
+      (keepCurrent && pathKey === correctedPath) ||
+      (pathKey !== correctedPath && !pathKey.startsWith(correctedPath))
+    ) {
+      result[pathKey] = markers;
+    }
+  });
   return result;
 }
 
@@ -190,10 +182,8 @@ function resetMarkersForPath (path = '', markers = {}, options = {}) {
  * @param {{delimiter: string?}} [options]
  * @returns {Markers}
  */
-function ensureMarkersForPath (path = '', markers = {}, options = {}) {
-  const {
-    delimiter = DEFAULT_DELIMITER
-  } = options;
+function ensureMarkersForPath(path = '', markers = {}, options = {}) {
+  const {delimiter = DEFAULT_DELIMITER} = options;
   const correctedPath = correctPath(path, {delimiter});
   if (markers[correctedPath]) {
     return markers;
@@ -202,8 +192,8 @@ function ensureMarkersForPath (path = '', markers = {}, options = {}) {
     ...markers,
     [correctedPath]: {
       currentPage: 0,
-      markers: [undefined]
-    }
+      markers: [undefined],
+    },
   };
 }
 
@@ -212,11 +202,13 @@ function ensureMarkersForPath (path = '', markers = {}, options = {}) {
  * @param {Markers} markers
  * @returns {PathMarkers}
  */
-function getPathMarkers (path, markers = {}) {
-  return markers[path] || {
-    currentPage: 0,
-    markers: [undefined]
-  };
+function getPathMarkers(path, markers = {}) {
+  return (
+    markers[path] || {
+      currentPage: 0,
+      markers: [undefined],
+    }
+  );
 }
 
 /**
@@ -224,11 +216,8 @@ function getPathMarkers (path, markers = {}) {
  * @param {Markers} markers
  * @returns {PageMarker}
  */
-function getCurrentPageMarker (path, markers = {}) {
-  const {
-    currentPage = 0,
-    markers: pathMarkers = [undefined]
-  } = getPathMarkers(path, markers);
+function getCurrentPageMarker(path, markers = {}) {
+  const {currentPage = 0, markers: pathMarkers = [undefined]} = getPathMarkers(path, markers);
   return pathMarkers[currentPage];
 }
 
@@ -239,24 +228,19 @@ function getCurrentPageMarker (path, markers = {}) {
  * @param {{delimiter: string?}} options
  * @returns {Markers}
  */
-function insertNextPageMarker (path, marker, markers = {}, options = {}) {
-  const {
-    delimiter = DEFAULT_DELIMITER
-  } = options;
+function insertNextPageMarker(path, marker, markers = {}, options = {}) {
+  const {delimiter = DEFAULT_DELIMITER} = options;
   const correctedPath = correctPath(path, {delimiter});
   const newMarkers = ensureMarkersForPath(correctedPath, markers);
-  const {
-    currentPage,
-    markers: pathMarkers = [undefined]
-  } = newMarkers[correctedPath];
+  const {currentPage, markers: pathMarkers = [undefined]} = newMarkers[correctedPath];
   if (currentPage + 1 <= pathMarkers.length && marker) {
     const newPathMarkers = pathMarkers.slice(0, currentPage + 1).concat(marker);
     return {
       ...markers,
       [correctedPath]: {
         currentPage,
-        markers: newPathMarkers
-      }
+        markers: newPathMarkers,
+      },
     };
   }
   return markers;
@@ -269,27 +253,22 @@ function insertNextPageMarker (path, marker, markers = {}, options = {}) {
  * @param {{delimiter: string?}} options
  * @returns {Markers|undefined} Returns new markers or undefined if nothing changed
  */
-function setCurrentPage (path, pageFn, markers = {}, options = {}) {
+function setCurrentPage(path, pageFn, markers = {}, options = {}) {
   if (typeof pageFn !== 'function') {
     return undefined;
   }
-  const {
-    delimiter = DEFAULT_DELIMITER
-  } = options;
+  const {delimiter = DEFAULT_DELIMITER} = options;
   const correctedPath = correctPath(path, {delimiter});
   const newMarkers = ensureMarkersForPath(correctedPath, markers);
-  const {
-    currentPage = 0,
-    markers: pathMarkers = [undefined]
-  } = newMarkers[correctedPath];
+  const {currentPage = 0, markers: pathMarkers = [undefined]} = newMarkers[correctedPath];
   const page = pageFn(currentPage);
   if (page >= 0 && page < pathMarkers.length && page !== currentPage) {
     return {
       ...markers,
       [correctedPath]: {
         currentPage: page,
-        markers: pathMarkers.slice(0, page + 1)
-      }
+        markers: pathMarkers.slice(0, page + 1),
+      },
     };
   }
   return undefined;
@@ -308,8 +287,9 @@ class DataStorageListing {
   showArchives;
   markers = {};
   clientPaging = {
-    page: 0
+    page: 0,
   };
+
   _metadataRequest;
   /**
    * Storage info (DataStorage request)
@@ -337,13 +317,15 @@ class DataStorageListing {
     sizeLessThan: undefined,
     dateFilterType: undefined,
     dateAfter: undefined,
-    dateBefore: undefined
+    dateBefore: undefined,
   };
+
   defaultSortedPageSize;
   _sorter = {
     field: undefined,
-    order: undefined
+    order: undefined,
   };
+
   resultsTruncated = false;
   filtersApplied = false;
   ngbSettingsFileExists = false;
@@ -351,93 +333,85 @@ class DataStorageListing {
   /**
    * @param {DataStoragePagesOptions} options
    */
-  constructor (options = {}) {
+  constructor(options = {}) {
     makeAutoObservable(this);
-    const {
-      keepPagesHistory,
-      pageSize = PAGE_SIZE
-    } = options;
+    const {keepPagesHistory, pageSize = PAGE_SIZE} = options;
     this.keepPagesHistory = keepPagesHistory;
     this._pageSize = pageSize;
   }
 
-  destroy () {
+  destroy() {
     this._increaseUniqueToken();
     this.storageRequest = undefined;
     this.markers = undefined;
   }
 
-  get pageSize () {
+  get pageSize() {
     if (this.sortingApplied) {
       return this.defaultSortedPageSize;
     }
     return this._pageSize;
   }
 
-  get infoPending () {
+  get infoPending() {
     return this.storageRequest && this.storageRequest.pending;
   }
 
-  get pending () {
+  get pending() {
     return this.infoPending || this.pagePending;
   }
 
-  get infoLoaded () {
+  get infoLoaded() {
     return this.storageRequest && this.storageRequest.loaded;
   }
 
-  get loaded () {
+  get loaded() {
     return this.infoLoaded && this.pageLoaded;
   }
 
-  get infoError () {
-    return this.storageRequest
-      ? this.storageRequest.error
-      : undefined;
+  get infoError() {
+    return this.storageRequest ? this.storageRequest.error : undefined;
   }
 
-  get error () {
+  get error() {
     return this.infoError || this.pageError;
   }
 
-  get info () {
+  get info() {
     if (!this.storageRequest || !this.storageRequest.loaded) {
       return undefined;
     }
     return this.storageRequest.value;
   }
 
-  get metadata () {
+  get metadata() {
     if (this._metadataRequest.loaded) {
       return (this._metadataRequest.value || [])[0] || {};
     }
     return {};
   }
 
-  get readAllowed () {
+  get readAllowed() {
     return this.info && roleModel.readAllowed(this.info);
   }
 
-  get writeAllowed () {
+  get writeAllowed() {
     return this.info && roleModel.writeAllowed(this.info);
   }
 
-  get executeAllowed () {
+  get executeAllowed() {
     return this.info && roleModel.executeAllowed(this.info);
   }
 
-  get isOwner () {
+  get isOwner() {
     return this.info && roleModel.isOwner(this.info);
   }
 
   /**
    * @returns {{page: number, first: boolean, next: boolean, previous: boolean}}
    */
-  get currentPagination () {
-    const {
-      currentPage = 0,
-      markers = [undefined]
-    } = getPathMarkers(this.path, this.markers);
+  get currentPagination() {
+    const {currentPage = 0, markers = [undefined]} = getPathMarkers(this.path, this.markers);
     if (this.sortingApplied) {
       const {page} = this.clientPaging;
       const totalPages = this.sortingApplied
@@ -447,66 +421,64 @@ class DataStorageListing {
         page,
         first: page > 0,
         previous: page > 0,
-        next: page + 1 < totalPages
+        next: page + 1 < totalPages,
       };
     }
     return {
       page: currentPage,
       first: currentPage > 0,
       previous: currentPage > 0,
-      next: currentPage + 1 < markers.length
+      next: currentPage + 1 < markers.length,
     };
   }
 
-  get currentFilter () {
+  get currentFilter() {
     return this.filters;
   }
 
-  get filtersEmpty () {
+  get filtersEmpty() {
     if (!this.currentFilter) {
       return true;
     }
-    return Object.values(this.currentFilter)
-      .every(value => value === undefined);
+    return Object.values(this.currentFilter).every((value) => value === undefined);
   }
 
-  get resultsFiltered () {
+  get resultsFiltered() {
     return this.filtersApplied && !this.filtersEmpty;
   }
 
-  get resultsFilteredAndTruncated () {
+  get resultsFilteredAndTruncated() {
     return this.resultsFiltered && this.resultsTruncated;
   }
 
-  get resultsSortedAndTruncated () {
+  get resultsSortedAndTruncated() {
     if (this.filtersApplied) {
       return false;
     }
     return this.sortingApplied && this.pageElements.length === this.pageSize;
   }
 
-  get pageElements () {
+  get pageElements() {
     const sorterFn = SORTERS[this.currentSorter.field];
     if (this.sortingApplied && sorterFn) {
       const from = this.currentPagination.page * PAGE_SIZE;
-      const sorted = [...this._pageElements]
-        .sort((a, b) => sorterFn(a, b, this.currentSorter.order));
-      return this.filtersApplied
-        ? sorted
-        : sorted.slice(from, from + PAGE_SIZE);
+      const sorted = [...this._pageElements].sort((a, b) =>
+        sorterFn(a, b, this.currentSorter.order),
+      );
+      return this.filtersApplied ? sorted : sorted.slice(from, from + PAGE_SIZE);
     }
     return this._pageElements;
   }
 
-  get pageInfo () {
+  get pageInfo() {
     return this._pageInfo;
   }
 
-  get currentSorter () {
+  get currentSorter() {
     return this._sorter;
   }
 
-  get sortingApplied () {
+  get sortingApplied() {
     return !!(this.currentSorter.field && this.currentSorter.order);
   }
 
@@ -521,11 +493,7 @@ class DataStorageListing {
   };
 
   clearMarkersForPath = (path, including = true) => {
-    this.markers = resetMarkersForPath(
-      path,
-      this.markers,
-      {keepCurrent: !including}
-    );
+    this.markers = resetMarkersForPath(path, this.markers, {keepCurrent: !including});
   };
 
   clearMarkersForCurrentPath = (including = true) => {
@@ -547,38 +515,25 @@ class DataStorageListing {
       sizeLessThan: undefined,
       dateFilterType: undefined,
       dateAfter: undefined,
-      dateBefore: undefined
+      dateBefore: undefined,
     };
     if (!silent) {
       this.refreshCurrentPath(true);
     }
   };
 
-  initialize = (
-    storageId,
-    path,
-    showVersions,
-    showArchives
-  ) => {
+  initialize = (storageId, path, showVersions, showArchives) => {
     const storageChanged = this.setStorage(storageId);
     const pathChanged = this.setPath(path);
     const showVersionsChanged = this.setShowVersions(showVersions);
     const showArchivesChanged = this.setShowArchives(showArchives);
-    if (
-      storageChanged ||
-      pathChanged ||
-      showVersionsChanged ||
-      showArchivesChanged
-    ) {
+    if (storageChanged || pathChanged || showVersionsChanged || showArchivesChanged) {
       (async () => {
         await this.fetchCurrentPage();
         await this.updateNgbSettingsFileExists();
       })();
     }
-    return storageChanged ||
-    pathChanged ||
-    showVersionsChanged ||
-    showArchivesChanged;
+    return storageChanged || pathChanged || showVersionsChanged || showArchivesChanged;
   };
 
   setStorage = (storageId) => {
@@ -598,10 +553,11 @@ class DataStorageListing {
     this.path = correctPath('');
     this.clearMarkers();
     this.storageRequest = dataStorages.load(this.storageId);
-    this.storageRequest.fetchIfNeededOrWait()
-      .catch((error) => console.warn(
-        `Error fetching storage #${storageId || '<unknown>'}: ${error.message}`
-      ));
+    this.storageRequest
+      .fetchIfNeededOrWait()
+      .catch((error) =>
+        console.warn(`Error fetching storage #${storageId || '<unknown>'}: ${error.message}`),
+      );
     this.initializeMetadataAndSorting();
     return true;
   };
@@ -614,7 +570,7 @@ class DataStorageListing {
         authenticatedUserInfo.fetchIfNeededOrWait(),
         preferences.fetchIfNeededOrWait(),
         this._metadataRequest.fetchIfNeededOrWait(),
-        this.storageRequest.fetchIfNeededOrWait()
+        this.storageRequest.fetchIfNeededOrWait(),
       ])
         .then(() => {
           if (
@@ -641,13 +597,10 @@ class DataStorageListing {
             ) {
               const userGroups = new Set([
                 ...(authenticatedUserInfo.value.groups || []).map((group) => group.toLowerCase()),
-                ...(authenticatedUserInfo.value.roles || []).map((role) => role.name.toLowerCase())
+                ...(authenticatedUserInfo.value.roles || []).map((role) => role.name.toLowerCase()),
               ]);
               const value = this.metadata.data[preferences.storageDownloadAttribute].value;
-              return checkStorageDownloadEnabledAttributeValue(
-                value,
-                userGroups
-              );
+              return checkStorageDownloadEnabledAttributeValue(value, userGroups);
             }
           }
           return Promise.resolve(true);
@@ -667,7 +620,7 @@ class DataStorageListing {
       return this.storageRequest.fetch();
     }
     return this.storageRequest.fetchIfNeededOrWait();
-  }
+  };
 
   setPath = (path = '') => {
     const corrected = correctPath(path);
@@ -711,9 +664,8 @@ class DataStorageListing {
 
   toggleSorter = (field = '') => {
     field = field.toLowerCase();
-    const currentColumnOrder = this.currentSorter.field === field
-      ? this.currentSorter.order
-      : undefined;
+    const currentColumnOrder =
+      this.currentSorter.field === field ? this.currentSorter.order : undefined;
     let nextOrder;
     switch (currentColumnOrder) {
       case SORTING_ORDER.ascend:
@@ -730,16 +682,13 @@ class DataStorageListing {
     }
     this.setSorter({
       order: nextOrder,
-      field: field
+      field,
     });
   };
 
   setSorter = (sorter = {}) => {
     const field = (sorter.field || '').toLowerCase();
-    if (
-      this.currentSorter.field === field &&
-      this.currentSorter.order === sorter.order
-    ) {
+    if (this.currentSorter.field === field && this.currentSorter.order === sorter.order) {
       return;
     }
     if (!Object.keys(sorter).length && !this.filtersApplied) {
@@ -747,7 +696,7 @@ class DataStorageListing {
       this.resetSorting(false);
       return this.refreshCurrentPath(false, true);
     }
-    let skipFetch = this.filtersApplied || this.sortingApplied;
+    const skipFetch = this.filtersApplied || this.sortingApplied;
     this._sorter.field = field;
     this._sorter.order = sorter.order;
     if (skipFetch) {
@@ -758,10 +707,9 @@ class DataStorageListing {
 
   resetSorting = (toDefaults = true) => {
     const sortingConfiguration = (this.metadata?.data || {})['default-sorting'] || {};
-    const [
-      column,
-      order = SORTING_ORDER.descend
-    ] = (sortingConfiguration.value || '').toLowerCase().split(':');
+    const [column, order = SORTING_ORDER.descend] = (sortingConfiguration.value || '')
+      .toLowerCase()
+      .split(':');
     const getOrder = (order) => {
       if (['asc', 'ascend', 'ascending'].includes(order)) {
         return SORTING_ORDER.ascend;
@@ -772,9 +720,7 @@ class DataStorageListing {
     };
     this._sorter = {
       field: column && toDefaults ? column.toLowerCase() : undefined,
-      order: column && toDefaults
-        ? getOrder(order)
-        : undefined
+      order: column && toDefaults ? getOrder(order) : undefined,
     };
   };
 
@@ -786,7 +732,7 @@ class DataStorageListing {
   };
 
   changeFilter = (newFilterObj = {}, applyChanges = true) => {
-    Object.keys(newFilterObj).forEach(key => {
+    Object.keys(newFilterObj).forEach((key) => {
       this.changeFilterField(key, newFilterObj[key], false);
     });
     if (applyChanges) {
@@ -795,39 +741,31 @@ class DataStorageListing {
   };
 
   applyFilters = async () => {
-    const pathCorrected = correctPath(
-      this.path,
-      {
-        leadingSlash: false,
-        trailingSlash: false,
-        undefinedAsEmpty: true
-      }
-    );
-    const formatToUTCString = date => date
-      ? moment.utc(date).format('YYYY-MM-DD HH:mm:ss.SSS')
-      : undefined;
+    const pathCorrected = correctPath(this.path, {
+      leadingSlash: false,
+      trailingSlash: false,
+      undefinedAsEmpty: true,
+    });
+    const formatToUTCString = (date) =>
+      date ? localDateToUtcDayjs(date)?.format('YYYY-MM-DD HH:mm:ss.SSS') : undefined;
     try {
-      await Promise.all([
-        this.storageRequest.fetchIfNeededOrWait()
-      ]);
-      const {
-        mask: storageMask
-      } = this.info ?? {};
+      await Promise.all([this.storageRequest.fetchIfNeededOrWait()]);
+      const {mask: storageMask} = this.info ?? {};
       const request = new DataStorageFilter(
         this.storageId,
         pathCorrected ? decodeURIComponent(pathCorrected) : undefined,
         this.showVersions,
-        this.showArchives
+        this.showArchives,
       );
       let payload = {
         nameFilter: this.currentFilter?.name,
         sizeGreaterThan: mbToBytes(this.currentFilter?.sizeGreaterThan),
         sizeLessThan: mbToBytes(this.currentFilter?.sizeLessThan),
         dateAfter: formatToUTCString(this.currentFilter?.dateAfter),
-        dateBefore: formatToUTCString(this.currentFilter?.dateBefore)
+        dateBefore: formatToUTCString(this.currentFilter?.dateBefore),
       };
-      payload = Object.fromEntries(Object.entries(payload)
-        .filter(([_, value]) => value !== undefined)
+      payload = Object.fromEntries(
+        Object.entries(payload).filter(([_, value]) => value !== undefined),
       );
       if (!Object.keys(payload).length) {
         return this.refreshCurrentPath(true);
@@ -839,11 +777,7 @@ class DataStorageListing {
       if (!request.loaded) {
         throw new Error('Error loading page');
       }
-      const {
-        results = [],
-        nextPageMarker,
-        parentFolderMask
-      } = request.value || {};
+      const {results = [], nextPageMarker, parentFolderMask} = request.value || {};
       this.resultsTruncated = !!nextPageMarker;
       this.filtersApplied = true;
       const mapper = generateStorageItemMapper(storageMask);
@@ -851,7 +785,7 @@ class DataStorageListing {
       this._pageInfo = {
         path: pathCorrected ?? '/',
         name: (pathCorrected ?? '/').split('/').pop(),
-        mask: parentFolderMask ?? storageMask
+        mask: parentFolderMask ?? storageMask,
       };
       this.pageLoaded = true;
       this.pagePath = pathCorrected;
@@ -873,7 +807,7 @@ class DataStorageListing {
       authenticatedUserInfo.fetchIfNeededOrWait(),
       preferences.fetchIfNeededOrWait(),
       this._metadataRequest.fetchIfNeededOrWait(),
-      this.storageRequest.fetchIfNeededOrWait()
+      this.storageRequest.fetchIfNeededOrWait(),
     ]);
     const token = this._increaseUniqueToken();
     const submitChanges = (fn) => {
@@ -881,14 +815,11 @@ class DataStorageListing {
         fn();
       }
     };
-    const pathCorrected = correctPath(
-      this.path,
-      {
-        leadingSlash: false,
-        trailingSlash: false,
-        undefinedAsEmpty: true
-      }
-    );
+    const pathCorrected = correctPath(this.path, {
+      leadingSlash: false,
+      trailingSlash: false,
+      undefinedAsEmpty: true,
+    });
     try {
       this.pagePending = true;
       this.pageError = undefined;
@@ -899,7 +830,7 @@ class DataStorageListing {
         this.showVersions,
         this.showArchives,
         this.pageSize,
-        marker
+        marker,
       );
       await request.fetchPage(marker);
       if (request.error) {
@@ -908,21 +839,15 @@ class DataStorageListing {
       if (!request.loaded) {
         throw new Error('Error loading page');
       }
-      const {
-        mask: storageMask
-      } = this.info ?? {};
-      const {
-        results = [],
-        parentFolderMask,
-        nextPageMarker
-      } = request.value || {};
+      const {mask: storageMask} = this.info ?? {};
+      const {results = [], parentFolderMask, nextPageMarker} = request.value || {};
       submitChanges(() => {
         const mapper = generateStorageItemMapper(storageMask);
         this._pageElements = results.map(mapper);
         this._pageInfo = {
           path: pathCorrected ?? '/',
           name: (pathCorrected ?? '/').split('/').pop(),
-          mask: parentFolderMask ?? storageMask
+          mask: parentFolderMask ?? storageMask,
         };
         this.pageLoaded = true;
         this.pagePath = pathCorrected;
@@ -959,17 +884,15 @@ class DataStorageListing {
         fn();
       }
     };
-    let ngbSettingsFile = correctPath(
-      this.path,
-      {
-        leadingSlash: false,
-        trailingSlash: true,
-        undefinedAsEmpty: false
-      }
-    );
+    let ngbSettingsFile = correctPath(this.path, {
+      leadingSlash: false,
+      trailingSlash: true,
+      undefinedAsEmpty: false,
+    });
     ngbSettingsFile = ngbSettingsFile.concat('ngb.settings');
-    const fileExistsOnPage = !!this.pageElements
-      .find((o) => (o.path || '').toLowerCase() === ngbSettingsFile.toLowerCase());
+    const fileExistsOnPage = !!this.pageElements.find(
+      (o) => (o.path || '').toLowerCase() === ngbSettingsFile.toLowerCase(),
+    );
     if (fileExistsOnPage) {
       submitChanges(() => {
         this.ngbSettingsFileExists = true;
@@ -988,7 +911,7 @@ class DataStorageListing {
         decodeURIComponent(ngbSettingsFile),
         false,
         false,
-        100
+        100,
       );
       await request.fetchPage(undefined);
       if (request.error) {
@@ -997,12 +920,11 @@ class DataStorageListing {
       if (!request.loaded) {
         throw new Error('Error loading page');
       }
-      const {
-        results = []
-      } = request.value || {};
+      const {results = []} = request.value || {};
       submitChanges(() => {
-        this.ngbSettingsFileExists = !!results
-          .find((o) => (o.path || '').toLowerCase() === ngbSettingsFile.toLowerCase());
+        this.ngbSettingsFileExists = !!results.find(
+          (o) => (o.path || '').toLowerCase() === ngbSettingsFile.toLowerCase(),
+        );
       });
     } catch (error) {
       submitChanges(() => {
@@ -1017,11 +939,7 @@ class DataStorageListing {
       return;
     }
     if (this.currentPagination.next) {
-      const newMarkers = setCurrentPage(
-        this.path,
-        (currentPage) => currentPage + 1,
-        this.markers
-      );
+      const newMarkers = setCurrentPage(this.path, (currentPage) => currentPage + 1, this.markers);
       if (newMarkers) {
         this.markers = newMarkers;
         if (!this.sortingApplied) {
@@ -1038,11 +956,7 @@ class DataStorageListing {
         this.clientPaging.page -= 1;
         return;
       }
-      const newMarkers = setCurrentPage(
-        this.path,
-        (currentPage) => currentPage - 1,
-        this.markers
-      );
+      const newMarkers = setCurrentPage(this.path, (currentPage) => currentPage - 1, this.markers);
       if (newMarkers) {
         this.markers = newMarkers;
         if (!this.sortingApplied) {
@@ -1059,11 +973,7 @@ class DataStorageListing {
       return;
     }
     if (this.currentPagination.first) {
-      const newMarkers = setCurrentPage(
-        this.path,
-        () => 0,
-        this.markers
-      );
+      const newMarkers = setCurrentPage(this.path, () => 0, this.markers);
       if (newMarkers) {
         this.markers = newMarkers;
         if (!this.sortingApplied) {
@@ -1082,7 +992,7 @@ class DataStorageListing {
       this.resetFilter();
     }
     return this.fetchCurrentPage();
-  }
+  };
 }
 
 export default DataStorageListing;

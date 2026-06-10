@@ -22,9 +22,5 @@ SampleSheet.Preview = SampleSheetPreview;
 SampleSheet.MetadataActions = MetadataSampleSheetValue;
 
 export * as utilities from './utilities';
-export {
-  MetadataSampleSheetValue,
-  SampleSheetPreview,
-  SampleSheet
-};
+export {MetadataSampleSheetValue, SampleSheetPreview, SampleSheet};
 export default SampleSheet;

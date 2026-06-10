@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-export function isJson (string) {
+export function isJson(string) {
   try {
     const obj = JSON.parse(string);
     return !!obj && typeof obj === 'object';
@@ -22,11 +22,11 @@ export function isJson (string) {
   return false;
 }
 
-export function plural (count, itemName) {
+export function plural(count, itemName) {
   return `${count} ${itemName}${count !== 1 ? 's' : ''}`;
 }
 
-export function parse (string) {
+export function parse(string) {
   try {
     let obj = JSON.parse(string);
     if (!obj) {
@@ -40,7 +40,7 @@ export function parse (string) {
       const ownKeys = Object.keys(obj[i]);
       for (let j = 0; j < ownKeys.length; j++) {
         const key = ownKeys[j];
-        if (obj[i].hasOwnProperty(key) && keys.indexOf(key) === -1) {
+        if (Object.hasOwn(obj[i], key) && keys.indexOf(key) === -1) {
           keys.push(key);
         }
       }
@@ -48,13 +48,13 @@ export function parse (string) {
     return {
       keys,
       items: obj,
-      length: obj.length
+      length: obj.length,
     };
   } catch (_) {}
   return null;
 }
 
-export function makePretty (json) {
+export function makePretty(json) {
   try {
     const obj = JSON.parse(json);
     return JSON.stringify(obj, null, 2);

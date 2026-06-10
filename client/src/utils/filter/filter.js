@@ -20,19 +20,19 @@ import OrExpression from './expressions/orExpression';
 import LogicalExpression from './expressions/logicalExpression';
 
 export default class Filter {
-  constructor () {
+  constructor() {
     parser.yy.AndExpression = AndExpression;
     parser.yy.OrExpression = OrExpression;
     parser.yy.LogicalExpression = LogicalExpression;
   }
 
-  parse (input) {
+  parse(input) {
     let result;
     try {
       result = parser.parse(input);
     } catch (e) {
       result = {
-        error: e.message
+        error: e.message,
       };
     }
     return result;

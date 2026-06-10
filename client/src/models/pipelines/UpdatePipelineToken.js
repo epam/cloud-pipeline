@@ -19,7 +19,7 @@ import RemotePost from '../basic/RemotePost';
 class UpdatePipelineToken extends RemotePost {
   static auto = false;
 
-  constructor () {
+  constructor() {
     super();
     this.url = '/pipeline/updateToken';
   }

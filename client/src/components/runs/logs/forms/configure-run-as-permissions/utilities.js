@@ -1,8 +1,8 @@
-export function correctIdentifiers (identifiers) {
+export function correctIdentifiers(identifiers) {
   return identifiers.filter((p) => p !== undefined && p !== null && !Number.isNaN(Number(p)));
 }
 
-function correctRunAsPermission (permission) {
+function correctRunAsPermission(permission) {
   let {
     pipelinesAllowed = true,
     toolsAllowed = true,
@@ -25,15 +25,15 @@ function correctRunAsPermission (permission) {
     pipelines,
     pipelinesAllowed,
     tools,
-    toolsAllowed
+    toolsAllowed,
   };
 }
 
-export function correctRunAsPermissions (permissions = []) {
+export function correctRunAsPermissions(permissions = []) {
   return permissions.map(correctRunAsPermission);
 }
 
-function numberArraysAreEqual (numberArrayA, numberArrayB) {
+function numberArraysAreEqual(numberArrayA, numberArrayB) {
   const a = [...new Set(numberArrayA || [])].sort((i, j) => i - j);
   const b = [...new Set(numberArrayB || [])].sort((i, j) => i - j);
   if (a.length !== b.length) {
@@ -47,7 +47,7 @@ function numberArraysAreEqual (numberArrayA, numberArrayB) {
   return true;
 }
 
-export function runAsPermissionsEqual (permissionA, permissionB, principalProperty = 'principal') {
+export function runAsPermissionsEqual(permissionA, permissionB, principalProperty = 'principal') {
   const {
     accessType: accessTypeA,
     name: nameA,
@@ -55,7 +55,7 @@ export function runAsPermissionsEqual (permissionA, permissionB, principalProper
     pipelinesAllowed: pipelinesAllowedA = true,
     toolsAllowed: toolsAllowedA = true,
     pipelines: pipelinesA = [],
-    tools: toolsA = []
+    tools: toolsA = [],
   } = permissionA;
   const {
     accessType: accessTypeB,
@@ -64,13 +64,15 @@ export function runAsPermissionsEqual (permissionA, permissionB, principalProper
     pipelinesAllowed: pipelinesAllowedB = true,
     toolsAllowed: toolsAllowedB = true,
     pipelines: pipelinesB = [],
-    tools: toolsB = []
+    tools: toolsB = [],
   } = permissionB;
-  return nameA === nameB &&
+  return (
+    nameA === nameB &&
     principalA === principalB &&
     accessTypeA === accessTypeB &&
     pipelinesAllowedA === pipelinesAllowedB &&
     toolsAllowedA === toolsAllowedB &&
     numberArraysAreEqual(pipelinesA, pipelinesB) &&
-    numberArraysAreEqual(toolsA, toolsB);
+    numberArraysAreEqual(toolsA, toolsB)
+  );
 }

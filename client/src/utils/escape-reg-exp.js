@@ -17,11 +17,10 @@
 const ESCAPE_CHARACTERS = ['.', '-', '+', '*', '?', '^', '$', '(', ')', '[', ']', '{', '}'];
 
 export {ESCAPE_CHARACTERS};
-export default function escapeRegExp (string, characters = ESCAPE_CHARACTERS) {
+export default function escapeRegExp(string, characters = ESCAPE_CHARACTERS) {
   let result = string;
-  characters.forEach(character => {
-    result = result
-      .replace(new RegExp('\\' + character, 'g'), `\\${character}`);
+  characters.forEach((character) => {
+    result = result.replace(new RegExp('\\' + character, 'g'), `\\${character}`);
   });
   return result;
 }

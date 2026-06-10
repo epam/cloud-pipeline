@@ -16,7 +16,7 @@
 
 import VSFileCheck from '../../../../../models/versioned-storage/file-check';
 
-function checkFileExistence (storageId, path) {
+function checkFileExistence(storageId, path) {
   return new Promise((resolve) => {
     const request = new VSFileCheck(storageId, path);
     request
@@ -30,6 +30,6 @@ function checkFileExistence (storageId, path) {
       })
       .catch(() => resolve(false));
   });
-};
+}
 
 export default checkFileExistence;

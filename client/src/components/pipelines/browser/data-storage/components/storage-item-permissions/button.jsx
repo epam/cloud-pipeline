@@ -9,8 +9,10 @@ class StorageItemPermissionsButton extends React.PureComponent {
 
   onOpen = () => this.setState({visible: true});
   onClose = () => this.setState({visible: false});
+  handleOpen = () => this.onOpen();
+  handleClose = () => this.onClose();
 
-  render () {
+  render() {
     const {
       storageId,
       storagePaths = [],
@@ -20,7 +22,7 @@ class StorageItemPermissionsButton extends React.PureComponent {
       size,
       type,
       children,
-      asLink
+      asLink,
     } = this.props;
     const {visible} = this.state;
     let content = children;
@@ -38,33 +40,20 @@ class StorageItemPermissionsButton extends React.PureComponent {
         className={className}
         style={{
           display: 'inline',
-          ...(style ?? {})
+          ...(style ?? {}),
         }}
       >
-        {
-          asLink && (
-            <a onClick={this.onOpen}>
-              {content}
-            </a>
-          )
-        }
-        {
-          !asLink && (
-            <Button
-              disabled={disabled}
-              size={size}
-              type={type}
-              onClick={this.onOpen}
-            >
-              {content}
-            </Button>
-          )
-        }
+        {asLink && <a onClick={this.handleOpen}>{content}</a>}
+        {!asLink && (
+          <Button disabled={disabled} size={size} type={type} onClick={this.handleOpen}>
+            {content}
+          </Button>
+        )}
         <StorageItemPermissionsModal
           storageId={storageId}
           storagePaths={storagePaths}
           visible={visible}
-          onClose={this.onClose}
+          onClose={this.handleClose}
         />
       </div>
     );
@@ -80,7 +69,7 @@ StorageItemPermissionsButton.propTypes = {
   size: PropTypes.oneOf(['small', 'medium', 'large']),
   type: PropTypes.oneOf(['primary', 'success', 'warning', 'danger']),
   children: PropTypes.node,
-  asLink: PropTypes.bool
+  asLink: PropTypes.bool,
 };
 
 export default StorageItemPermissionsButton;

@@ -19,13 +19,13 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class UsersInfoFilter extends RemotePost {
-  constructor (users) {
+  constructor(users) {
     super();
-    this.url = `/users/info`;
+    this.url = '/users/info';
     this.users = users;
   }
 
-  async fetch () {
+  async fetch() {
     return this.send(this.users);
   }
 }

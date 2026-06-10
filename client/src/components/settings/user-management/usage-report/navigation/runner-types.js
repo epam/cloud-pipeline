@@ -17,10 +17,10 @@
 export default {
   user: 'user',
   group: 'group',
-  parse (o) {
+  parse(o) {
     if (/^group/i.test(o)) {
       return 'group';
     }
     return 'user';
-  }
+  },
 };

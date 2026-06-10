@@ -17,10 +17,10 @@
 import Remote from '../basic/Remote';
 
 class CloudNodes extends Remote {
-  constructor () {
+  constructor() {
     super();
-    this.url = `/cluster/node/loadAll?machineType=CLOUD`;
-  };
+    this.url = '/cluster/node/loadAll?machineType=CLOUD';
+  }
 }
 
 export default new CloudNodes();

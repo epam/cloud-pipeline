@@ -13,7 +13,6 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-/* eslint-disable max-len */
 
 export default {
   name: 'RelateObjects',
@@ -25,6 +24,6 @@ export default {
     'Calculate per-parent means for all child measurements?|flag|true',
     'Calculate child-parent distances?|[None,Centroid,Minimum,Both]|None',
     'Do you want to save the children with parents as a new object set?|flag|false|ALIAS saveAsNew',
-    'Name the output object|IF saveAsNew==true|ALIAS name|REQUIRED'
-  ]
+    'Name the output object|IF saveAsNew==true|ALIAS name|REQUIRED',
+  ],
 };

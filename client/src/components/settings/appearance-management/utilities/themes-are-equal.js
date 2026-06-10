@@ -16,7 +16,7 @@
 
 import {defaultSorter} from '../../../../utils/sorting';
 
-function propertiesAreEqual (a, b) {
+function propertiesAreEqual(a, b) {
   if (!a && !b) {
     return true;
   }
@@ -29,7 +29,7 @@ function propertiesAreEqual (a, b) {
     return false;
   }
   for (const aKey of aKeys) {
-    const bKey = bKeys.find(o => o === aKey);
+    const bKey = bKeys.find((o) => o === aKey);
     if (bKey !== aKey || a[aKey] !== b[bKey]) {
       return false;
     }
@@ -37,24 +37,14 @@ function propertiesAreEqual (a, b) {
   return true;
 }
 
-export default function themesAreEqual (a, b) {
+export default function themesAreEqual(a, b) {
   if (!a && !b) {
     return true;
   }
   if (!a || !b) {
     return false;
   }
-  const {
-    name: aName,
-    extends: aExtends,
-    properties: aProperties
-  } = a;
-  const {
-    name: bName,
-    extends: bExtends,
-    properties: bProperties
-  } = b;
-  return aName === bName &&
-    aExtends === bExtends &&
-    propertiesAreEqual(aProperties, bProperties);
+  const {name: aName, extends: aExtends, properties: aProperties} = a;
+  const {name: bName, extends: bExtends, properties: bProperties} = b;
+  return aName === bName && aExtends === bExtends && propertiesAreEqual(aProperties, bProperties);
 }

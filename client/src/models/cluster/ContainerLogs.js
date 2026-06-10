@@ -17,12 +17,12 @@
 import Remote from '../basic/Remote';
 
 class ContainerLogs extends Remote {
-  constructor (podId, containerId, limit) {
+  constructor(podId, containerId, limit) {
     super();
     const query = [
       `podId=${encodeURIComponent(podId)}`,
       `containerId=${encodeURIComponent(containerId)}`,
-      !!limit && `limit=${limit}`
+      !!limit && `limit=${limit}`,
     ]
       .filter(Boolean)
       .join('&');

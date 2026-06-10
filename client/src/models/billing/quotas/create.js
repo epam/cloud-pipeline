@@ -14,11 +14,10 @@
  *  limitations under the License.
  */
 
-
 import RemotePost from '../../basic/RemotePost';
 
 export default class CreateBillingQuota extends RemotePost {
-  constructor () {
+  constructor() {
     super();
     this.url = '/quotas';
   }

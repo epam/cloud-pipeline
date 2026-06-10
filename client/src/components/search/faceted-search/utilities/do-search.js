@@ -17,7 +17,7 @@
 import {FacetedSearch} from '../../../../models/search';
 import {getSortingPayload} from './sorting';
 
-function doSearch ({
+function doSearch({
   query,
   filters,
   sortingOrder,
@@ -25,7 +25,7 @@ function doSearch ({
   pageSize,
   facets,
   scrollingParameters,
-  abortSignal
+  abortSignal,
 }) {
   const payload = {
     query: query || '*',
@@ -35,28 +35,26 @@ function doSearch ({
     facets,
     pageSize,
     highlight: false,
-    scrollingParameters
+    scrollingParameters,
   };
   return new Promise((resolve) => {
     const request = new FacetedSearch();
-    request.send(payload, abortSignal)
+    request
+      .send(payload, abortSignal)
       .then(() => {
         if (request.aborted) {
           resolve({aborted: true});
         } else if (request.error || !request.loaded) {
           resolve({error: request.error || 'Error performing faceted search'});
         } else {
-          const {
-            documents = [],
-            facets = {}
-          } = request.value || {};
+          const {documents = [], facets = {}} = request.value || {};
           resolve({
             documents,
-            facets
+            facets,
           });
         }
       })
-      .catch(e => {
+      .catch((e) => {
         resolve({error: e.message});
       });
   });

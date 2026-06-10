@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-function createGenerator () {
+function createGenerator() {
   let id = 0;
   return () => {
     id = id + 1;

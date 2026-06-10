@@ -17,7 +17,7 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class GitlabIssueComment extends RemotePost {
-  constructor (issueId) {
+  constructor(issueId) {
     super();
     this.url = `/issue/gitlab/${issueId}/comment`;
   }

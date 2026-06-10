@@ -14,11 +14,9 @@
  * limitations under the License.
  */
 
-import {SERVER} from '../../config';
 import FolderLoad from './FolderLoad';
 import MetadataFolder from '../metadata/MetadataFolder';
 import MetadataCache from '../metadata/MetadataCache';
-import defer from '../../utils/defer';
 import {makeObservable, override} from 'mobx';
 import {authorization} from '../basic/Authorization';
 import mapFolderChildrenMetadata from './mapFolderChildrenMetadata';
@@ -27,47 +25,49 @@ export default class FolderLoadWithMetadata extends FolderLoad {
   static metadataCache = new MetadataCache();
   _folderId;
 
-  constructor (folderId) {
+  constructor(folderId) {
     super(folderId);
     makeObservable(this, {
-      update: override
+      update: override,
     });
     this._folderId = folderId;
   }
 
-  async fetch () {
+  async fetch() {
     this._loadRequired = false;
     if (!this._fetchPromise) {
-      const originalPromise = new Promise(async (resolve) => {
+      const originalPromise = (async () => {
         const {prefix, fetchOptions} = this.constructor;
         try {
-          await defer();
           let headers = fetchOptions.headers;
           if (!headers) {
             headers = {};
           }
           fetchOptions.headers = headers;
           const response = await fetch(`${prefix}${this.url}`, fetchOptions);
-          const data = this.constructor.isJson ? (await response.json()) : (await response.blob());
-          resolve({data, error: null});
+          const data = this.constructor.isJson ? await response.json() : await response.blob();
+          return {data, error: null};
         } catch (e) {
-          resolve({data: null, error: e.toString()});
+          return {data: null, error: e.toString()};
         }
-      });
-      const childrenMetadataPromise = new Promise(async (resolve) => {
+      })();
+      const childrenMetadataPromise = (async () => {
         const request = new MetadataFolder(this._folderId);
         await request.fetch();
-        resolve(request);
-      });
-      const selfMetadataPromise = new Promise(async (resolve) => {
+        return request;
+      })();
+      const selfMetadataPromise = (async () => {
         const request = FolderLoadWithMetadata.metadataCache.getMetadata(this._folderId, 'FOLDER');
         await request.fetchIfNeededOrWait();
-        resolve(request);
-      });
-      this._fetchPromise = new Promise(async (resolve) => {
+        return request;
+      })();
+      this._fetchPromise = (async () => {
         this._pending = true;
-        const [originalResult, childrenMetadataResult, selfMetadataResult] =
-          await Promise.all([originalPromise, childrenMetadataPromise, selfMetadataPromise]);
+        const [originalResult, childrenMetadataResult, selfMetadataResult] = await Promise.all([
+          originalPromise,
+          childrenMetadataPromise,
+          selfMetadataPromise,
+        ]);
         if (originalResult.error) {
           this.failed = true;
           this.error = originalResult.error;
@@ -76,13 +76,12 @@ export default class FolderLoadWithMetadata extends FolderLoad {
         }
         this._pending = false;
         this._fetchPromise = null;
-        resolve();
-      });
+      })();
     }
     return this._fetchPromise;
   }
 
-  update (value, childrenMetadataRequest, selfMetadataRequest) {
+  update(value, childrenMetadataRequest, selfMetadataRequest) {
     this._response = value;
     if (value.status && value.status === 401) {
       this.error = value.message;
@@ -95,9 +94,11 @@ export default class FolderLoadWithMetadata extends FolderLoad {
     } else if (value.status && value.status === 'OK') {
       this._value = this.postprocess(value);
       mapFolderChildrenMetadata(childrenMetadataRequest, this._value);
-      if (selfMetadataRequest.loaded &&
+      if (
+        selfMetadataRequest.loaded &&
         selfMetadataRequest.value &&
-        (selfMetadataRequest.value || []).length > 0) {
+        (selfMetadataRequest.value || []).length > 0
+      ) {
         this._value.objectMetadata = (selfMetadataRequest.value || [])[0].data;
         this._value.hasMetadata = !!this._value.objectMetadata;
       }

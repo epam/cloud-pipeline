@@ -15,7 +15,7 @@
  */
 
 import {action, computed, observable, makeObservable} from 'mobx';
-import moment from 'moment-timezone';
+import dayjs, {toUtcDayjs} from '../../utils/dayjs';
 import whoAmI from '../user/WhoAmI';
 import continuousFetch from '../../utils/continuous-fetch';
 import CurrentUserNotificationsPaging from './CurrentUserNotificationsPaging';
@@ -27,46 +27,40 @@ const FETCH_INTERVAL_SECONDS = 60;
 
 /**
  * @param {string} value
- * @returns {{muted: boolean, displayAfter: moment.Moment|undefined}}
+ * @returns {{muted: boolean, displayAfter: import('dayjs').Dayjs|undefined}}
  */
-export function parseMuteEmailNotificationValue (value) {
+export function parseMuteEmailNotificationValue(value) {
   try {
     if (/^(true|false)$/i.test(value)) {
       return {
-        muted: /^true$/i.test(value)
+        muted: /^true$/i.test(value),
       };
     }
     const json = JSON.parse(value);
-    const {
-      muted = false,
-      displayAfter
-    } = json;
+    const {muted = false, displayAfter} = json;
     return {
       muted,
-      displayAfter: displayAfter ? moment.utc(displayAfter) : undefined
+      displayAfter: displayAfter ? toUtcDayjs(displayAfter) : undefined,
     };
   } catch (_) {
     // empty
   }
   return {
-    muted: false
+    muted: false,
   };
 }
 
 /**
- * @param {{muted: boolean, displayAfter: string|moment.Moment|undefined}} options
+ * @param {{muted: boolean, displayAfter: string|import('dayjs').Dayjs|undefined}} options
  * @returns {string}
  */
-export function buildMuteEmailNotificationValue (options) {
-  const {
-    muted = false,
-    displayAfter
-  } = options;
+export function buildMuteEmailNotificationValue(options) {
+  const {muted = false, displayAfter} = options;
   const value = {
     muted,
     displayAfter: displayAfter
-      ? moment.utc(displayAfter).format('YYYY-MM-DD HH:mm:ss')
-      : undefined
+      ? toUtcDayjs(displayAfter)?.format('YYYY-MM-DD HH:mm:ss')
+      : undefined,
   };
   return JSON.stringify(value);
 }
@@ -81,7 +75,7 @@ class CurrentUserNotifications extends CurrentUserNotificationsPaging {
 
   userNotificationsConfigurationPromise;
 
-  constructor () {
+  constructor() {
     super(0, DEFAULT_PAGE_SIZE, false);
     makeObservable(this, {
       _hideNotificationsTill: observable,
@@ -89,28 +83,28 @@ class CurrentUserNotifications extends CurrentUserNotificationsPaging {
       hideNotificationsTill: computed,
       muted: computed,
       hideNotifications: action,
-      setUserConfiguration: action
+      setUserConfiguration: action,
     });
     this.userNotificationsConfigurationPromise = this.readUserConfiguration();
     continuousFetch({
       request: this,
-      intervalMS: FETCH_INTERVAL_SECONDS * 1000
+      intervalMS: FETCH_INTERVAL_SECONDS * 1000,
     });
   }
 
-  get hideNotificationsTill () {
+  get hideNotificationsTill() {
     return this._hideNotificationsTill;
   }
 
-  get muted () {
+  get muted() {
     return this._muteNotifications;
   }
 
-  hideNotifications (date = moment.utc()) {
+  hideNotifications(date = dayjs.utc()) {
     this._hideNotificationsTill = date;
     const attributeValue = buildMuteEmailNotificationValue({
       muted: this._muteNotifications,
-      displayAfter: date
+      displayAfter: date,
     });
     (async () => {
       try {
@@ -118,21 +112,19 @@ class CurrentUserNotifications extends CurrentUserNotificationsPaging {
         if (!whoAmI.loaded) {
           throw new Error('error fetching authenticated user info');
         }
-        const {
-          id
-        } = whoAmI.value || {};
+        const {id} = whoAmI.value || {};
         const metadata = new MetadataUpdateKeys();
         await metadata.send({
           entity: {
             entityId: id,
-            entityClass: 'PIPELINE_USER'
+            entityClass: 'PIPELINE_USER',
           },
           data: {
             [USER_NOTIFICATIONS_CONFIGURATION_ATTRIBUTE]: {
               value: attributeValue,
-              type: 'string'
-            }
-          }
+              type: 'string',
+            },
+          },
         });
         if (!metadata.loaded) {
           throw new Error('error updating authenticated user attributes');
@@ -156,23 +148,16 @@ class CurrentUserNotifications extends CurrentUserNotificationsPaging {
       if (!whoAmI.loaded) {
         throw new Error('error fetching authenticated user info');
       }
-      const {
-        id
-      } = whoAmI.value || {};
+      const {id} = whoAmI.value || {};
       const metadata = new MetadataLoad(id, 'PIPELINE_USER');
       await metadata.fetch();
       if (!metadata.loaded) {
         throw new Error('error fetching authenticated user attributes');
       }
       const [currentMetadata = {}] = metadata.value || [];
-      const {
-        data = {}
-      } = currentMetadata;
+      const {data = {}} = currentMetadata;
       const attribute = data[USER_NOTIFICATIONS_CONFIGURATION_ATTRIBUTE] || {};
-      const {
-        muted,
-        displayAfter
-      } = parseMuteEmailNotificationValue(attribute.value);
+      const {muted, displayAfter} = parseMuteEmailNotificationValue(attribute.value);
       this.setUserConfiguration(muted, displayAfter);
     } catch (error) {
       console.warn(`Error reading user notifications configuration: ${error.message}`);
@@ -181,7 +166,7 @@ class CurrentUserNotifications extends CurrentUserNotificationsPaging {
 
   onFetched;
 
-  async preFetch () {
+  async preFetch() {
     await this.userNotificationsConfigurationPromise;
     await super.preFetch();
   }

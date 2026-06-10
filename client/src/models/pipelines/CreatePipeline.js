@@ -19,7 +19,7 @@ import RemotePost from '../basic/RemotePost';
 class CreatePipeline extends RemotePost {
   static auto = false;
 
-  constructor () {
+  constructor() {
     super();
     this.url = '/pipeline/register';
   }

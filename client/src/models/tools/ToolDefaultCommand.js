@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 export default class ToolDefaultCommand extends Remote {
-  constructor (id, version) {
+  constructor(id, version) {
     super();
     this.url = `/tool/${id}/defaultCmd?version=${version || 'latest'}`;
   }

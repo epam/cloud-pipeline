@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-export function alphabeticSorter (a, b) {
+export function alphabeticSorter(a, b) {
   if (a === b) {
     return 0;
   } else if (a > b) {
@@ -24,7 +24,7 @@ export function alphabeticSorter (a, b) {
   }
 }
 
-export function splitRoleName (role) {
+export function splitRoleName(role) {
   if (!role) {
     return '';
   }
@@ -38,14 +38,14 @@ export function splitRoleName (role) {
   return name;
 }
 
-export function getRoleType (role) {
+export function getRoleType(role) {
   if (!role || role.predefined) {
     return 'role';
   }
   return 'group';
 }
 
-export function capitalized (string) {
+export function capitalized(string) {
   if (!string) {
     return string;
   }

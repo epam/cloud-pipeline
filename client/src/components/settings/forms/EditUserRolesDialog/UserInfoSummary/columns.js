@@ -16,93 +16,101 @@
 
 import {
   numberFormatter,
-  costTickFormatter
+  costTickFormatter,
 } from '../../../../../components/billing/reports/utilities';
-import styles from './UserInfoSummary.css';
+import styles from './UserInfoSummary.module.css';
 
 const TABLE_MODES = {
   computed: 'computed',
-  storages: 'storages'
+  storages: 'storages',
 };
 
 const GROUPING = {
   TOOL: 'Tool',
   PIPELINE: 'Pipeline',
-  STORAGE: 'Storage'
+  STORAGE: 'Storage',
 };
 
 const TABLE_CATEGORIES = {
   [TABLE_MODES.computed]: [GROUPING.TOOL, GROUPING.PIPELINE],
-  [TABLE_MODES.storages]: [GROUPING.STORAGE]
+  [TABLE_MODES.storages]: [GROUPING.STORAGE],
 };
 
 const COLUMNS = {
-  [TABLE_MODES.computed]: [{
-    key: 'name',
-    dataIndex: 'name',
-    title: 'Name',
-    className: styles.tableCell
-  }, {
-    key: 'type',
-    dataIndex: 'type',
-    title: 'Type',
-    className: styles.tableCell
-  }, {
-    key: 'usage',
-    dataIndex: 'usage',
-    title: 'Usage (hours)',
-    className: styles.tableCell,
-    render: (value) => value ? numberFormatter(value) : null
-  }, {
-    key: 'runsCount',
-    dataIndex: 'runsCount',
-    title: 'Runs count',
-    className: styles.tableCell
-  }, {
-    key: 'cost',
-    dataIndex: 'value',
-    title: 'Cost',
-    className: styles.tableCell,
-    render: (value) => value ? costTickFormatter(value) : null
-  }],
-  [TABLE_MODES.storages]: [{
-    key: 'name',
-    dataIndex: 'name',
-    title: 'Name',
-    className: styles.tableCell
-  }, {
-    key: 'type',
-    dataIndex: 'type',
-    title: 'Type',
-    className: styles.tableCell
-  }, {
-    key: 'storageType',
-    title: 'Storage type',
-    dataIndex: 'storageType'
-  }, {
-    key: 'cost',
-    title: 'Cost',
-    dataIndex: 'value',
-    className: styles.tableCell,
-    render: (value) => value ? costTickFormatter(value) : null
-  }, {
-    key: 'volume',
-    title: 'Avg. Vol. (GB)',
-    dataIndex: 'usage',
-    className: styles.tableCell,
-    render: (value) => value ? numberFormatter(value) : null
-  }, {
-    key: 'volume current',
-    title: 'Cur. Vol. (GB)',
-    dataIndex: 'usageLast',
-    className: styles.tableCell,
-    render: (value) => value ? numberFormatter(value) : null
-  }]
+  [TABLE_MODES.computed]: [
+    {
+      key: 'name',
+      dataIndex: 'name',
+      title: 'Name',
+      className: styles.tableCell,
+    },
+    {
+      key: 'type',
+      dataIndex: 'type',
+      title: 'Type',
+      className: styles.tableCell,
+    },
+    {
+      key: 'usage',
+      dataIndex: 'usage',
+      title: 'Usage (hours)',
+      className: styles.tableCell,
+      render: (value) => (value ? numberFormatter(value) : null),
+    },
+    {
+      key: 'runsCount',
+      dataIndex: 'runsCount',
+      title: 'Runs count',
+      className: styles.tableCell,
+    },
+    {
+      key: 'cost',
+      dataIndex: 'value',
+      title: 'Cost',
+      className: styles.tableCell,
+      render: (value) => (value ? costTickFormatter(value) : null),
+    },
+  ],
+  [TABLE_MODES.storages]: [
+    {
+      key: 'name',
+      dataIndex: 'name',
+      title: 'Name',
+      className: styles.tableCell,
+    },
+    {
+      key: 'type',
+      dataIndex: 'type',
+      title: 'Type',
+      className: styles.tableCell,
+    },
+    {
+      key: 'storageType',
+      title: 'Storage type',
+      dataIndex: 'storageType',
+    },
+    {
+      key: 'cost',
+      title: 'Cost',
+      dataIndex: 'value',
+      className: styles.tableCell,
+      render: (value) => (value ? costTickFormatter(value) : null),
+    },
+    {
+      key: 'volume',
+      title: 'Avg. Vol. (GB)',
+      dataIndex: 'usage',
+      className: styles.tableCell,
+      render: (value) => (value ? numberFormatter(value) : null),
+    },
+    {
+      key: 'volume current',
+      title: 'Cur. Vol. (GB)',
+      dataIndex: 'usageLast',
+      className: styles.tableCell,
+      render: (value) => (value ? numberFormatter(value) : null),
+    },
+  ],
 };
 
-export {
-  COLUMNS,
-  TABLE_CATEGORIES,
-  TABLE_MODES,
-  GROUPING
-};
+export {COLUMNS, TABLE_CATEGORIES, TABLE_MODES, GROUPING};

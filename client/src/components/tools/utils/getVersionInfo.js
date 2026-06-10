@@ -15,28 +15,29 @@
  */
 
 import {LaunchMessages, ScanStatuses, ScanStatusDescriptionsFn} from './constants';
-import moment from 'moment-timezone';
+import dayjs, {toUtcDayjs} from '../../../utils/dayjs';
 import displayDate from '../../../utils/displayDate';
 
-export default function getVersionRunningInfo (
+export default function getVersionRunningInfo(
   version,
   versions,
   scanPolicy,
   isAdmin,
   preferences,
-  registry) {
+  registry,
+) {
   if (!preferences.toolScanningEnabledForRegistry(registry)) {
     return {
       allowedToExecute: true,
       tooltip: null,
       launchTooltip: null,
-      notLoaded: false
+      notLoaded: false,
     };
   }
   if (version && versions && scanPolicy) {
     const isGracePeriod = (versionObject) => {
       if (versionObject && versionObject.gracePeriod) {
-        return moment.utc(versionObject.gracePeriod) > moment.utc();
+        return toUtcDayjs(versionObject.gracePeriod)?.isAfter(dayjs.utc());
       }
       return false;
     };
@@ -45,55 +46,53 @@ export default function getVersionRunningInfo (
       const countCriticalVulnerabilities = vulnerabilities.Critical || 0;
       const countHighVulnerabilities = vulnerabilities.High || 0;
       const countMediumVulnerabilities = vulnerabilities.Medium || 0;
-      return countCriticalVulnerabilities > scanPolicy.maxCriticalVulnerabilities ||
+      return (
+        countCriticalVulnerabilities > scanPolicy.maxCriticalVulnerabilities ||
         countHighVulnerabilities > scanPolicy.maxHighVulnerabilities ||
-        countMediumVulnerabilities > scanPolicy.maxMediumVulnerabilities;
+        countMediumVulnerabilities > scanPolicy.maxMediumVulnerabilities
+      );
     };
-    const versionScanResult = versions[version]
-      ? versions[version].scanResult
-      : undefined;
-    const versionPlatform = versions[version] && versions[version].attributes
-      ? versions[version].attributes.platform
-      : undefined;
+    const versionScanResult = versions[version] ? versions[version].scanResult : undefined;
+    const versionPlatform =
+      versions[version] && versions[version].attributes
+        ? versions[version].attributes.platform
+        : undefined;
     if (/^windows$/i.test(versionPlatform)) {
       return {
         allowedToExecute: true,
         tooltip: null,
         launchTooltip: null,
-        notLoaded: false
+        notLoaded: false,
       };
     }
-    const allowedToExecuteFlag = versionScanResult
-      ? versionScanResult.allowedToExecute
-      : false;
+    const allowedToExecuteFlag = versionScanResult ? versionScanResult.allowedToExecute : false;
     const {
       distribution,
       version: distrVersion,
-      isAllowed = true
+      isAllowed = true,
     } = (versionScanResult ? versionScanResult.toolOSVersion : undefined) || {};
     let tooltip, launchTooltip;
     let defaultTag;
-    if (versions['latest']) {
+    if (versions.latest) {
       defaultTag = 'latest';
     } else if (Object.keys(versions).length === 1) {
       defaultTag = Object.keys(versions)[0];
     }
     const isGrace = isGracePeriod(versionScanResult);
-    let gracePeriodEnd = isGrace && !isAdmin
-      ? displayDate(versionScanResult.gracePeriod, 'D MMMM YYYY')
-      : null;
+    const gracePeriodEnd =
+      isGrace && !isAdmin ? displayDate(versionScanResult.gracePeriod, 'D MMMM YYYY') : null;
     const isLatest = version === defaultTag;
     if (versionScanResult && versionScanResult.fromBlackList) {
       tooltip = ScanStatusDescriptionsFn(isLatest, false).blackListed;
       launchTooltip = LaunchMessages(gracePeriodEnd).blackListed;
       return {
-        allowedToExecute: isAdmin ? true :false,
+        allowedToExecute: !!isAdmin,
         tooltip,
         launchTooltip,
-        notLoaded: false
+        notLoaded: false,
       };
     }
-    let allowedToExecute = allowedToExecuteFlag || isAdmin || isGrace;
+    const allowedToExecute = allowedToExecuteFlag || isAdmin || isGrace;
     if (!isAllowed) {
       const distributionDescription = distribution
         ? ` (${distribution}${distrVersion ? ` ${distrVersion}` : ''})`
@@ -114,13 +113,13 @@ export default function getVersionRunningInfo (
       allowedToExecute,
       tooltip,
       launchTooltip,
-      notLoaded: false
+      notLoaded: false,
     };
   }
   return {
     allowedToExecute: false,
     tooltip: null,
     launchTooltip: null,
-    notLoaded: true
+    notLoaded: true,
   };
 }

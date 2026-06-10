@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-import moment from 'moment-timezone';
+import dayjs, {toUtcDayjs} from './dayjs';
+
 const dateDisplayFormat = 'YYYY-MM-DD HH:mm:ss';
 const displayDate = (date, format = dateDisplayFormat) => {
-  if (!date) {
+  const utc = toUtcDayjs(date);
+  if (!utc) {
     return '';
   }
-  const localTime = moment.utc(date).toDate();
-  return moment(localTime).format(format);
+  const localTime = utc.toDate();
+  return dayjs(localTime).format(format);
 };
 export default displayDate;

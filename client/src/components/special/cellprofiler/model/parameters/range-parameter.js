@@ -25,22 +25,17 @@ class RangeParameter extends ModuleParameter {
   /**
    * @param {ModuleParameterOptions & {range: {min: number?, max: number?}?}} options
    */
-  constructor (options = {name: 'range'}) {
-    const {
-      range = {}
-    } = options;
+  constructor(options = {name: 'range'}) {
+    const {range = {}} = options;
     super({
       ...options,
-      isRange: true
+      isRange: true,
     });
     makeObservable(this, {
       min: observable,
-      max: observable
+      max: observable,
     });
-    const {
-      min = -Infinity,
-      max = Infinity
-    } = range;
+    const {min = -Infinity, max = Infinity} = range;
     this.min = min;
     this.max = max;
   }
@@ -50,7 +45,7 @@ class FloatRangeParameter extends RangeParameter {
   /**
    * @param {ModuleParameterOptions & {range: {min: number?, max: number?}?}} options
    */
-  constructor (options = {name: 'floatRange'}) {
+  constructor(options = {name: 'floatRange'}) {
     super({...options, type: AnalysisTypes.float});
   }
 }
@@ -59,13 +54,9 @@ class IntegerRangeParameter extends RangeParameter {
   /**
    * @param {ModuleParameterOptions & {range: {min: number?, max: number?}?}} options
    */
-  constructor (options = {name: 'integerRange'}) {
+  constructor(options = {name: 'integerRange'}) {
     super({...options, type: AnalysisTypes.integer});
   }
 }
 
-export {
-  RangeParameter,
-  FloatRangeParameter,
-  IntegerRangeParameter
-};
+export {RangeParameter, FloatRangeParameter, IntegerRangeParameter};

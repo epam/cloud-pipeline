@@ -17,7 +17,7 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class PipelineRunEstimatedPrice extends RemotePost {
-  constructor (id, version, configurationName) {
+  constructor(id, version, configurationName) {
     super();
     if (id && version && configurationName) {
       this.url = `/pipeline/${id}/price?version=${version}&config=${configurationName}`;

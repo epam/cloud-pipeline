@@ -16,7 +16,7 @@
 
 const DOCUMENT_TYPES = {
   tree: 'tree',
-  blob: 'blob'
+  blob: 'blob',
 };
 
 export default DOCUMENT_TYPES;

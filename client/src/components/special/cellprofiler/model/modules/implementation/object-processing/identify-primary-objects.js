@@ -14,8 +14,6 @@
  *  limitations under the License.
  */
 
-/* eslint-disable max-len */
-
 export default {
   name: 'IdentifyPrimaryObjects',
   group: 'Object Processing',
@@ -31,7 +29,7 @@ export default {
 
     // Thresholding
     'Threshold strategy|[Global,Adaptive]|ADVANCED|ALIAS strategy',
-    `Thresholding method|[Minimum Cross-Entropy,Otsu,Robust Background,Savuola|if strategy==Adaptive,Measurement|if strategy!=Adaptive,Manual|if strategy!=Adaptive]|Minimum Cross-Entropy|ALIAS thresholdingMethod|ADVANCED`,
+    'Thresholding method|[Minimum Cross-Entropy,Otsu,Robust Background,Savuola|if strategy==Adaptive,Measurement|if strategy!=Adaptive,Manual|if strategy!=Adaptive]|Minimum Cross-Entropy|ALIAS thresholdingMethod|ADVANCED',
 
     // Thresholding > Otsu
     'Two-class or three-class thresholding?|[Two classes, Three classes]|Two classes|IF thresholdingMethod==Otsu|ADVANCED|ALIAS otsuMethodType',
@@ -62,11 +60,20 @@ export default {
             inputName = outputs[0].name;
           }
         }
-        return ['FileName', 'Frame', 'Height', 'MD5Digest', 'PathName', 'Scaling', 'Series', 'URL', 'Width']
-          .map(method => ({title: method, value: `${method}_${inputName}`}));
+        return [
+          'FileName',
+          'Frame',
+          'Height',
+          'MD5Digest',
+          'PathName',
+          'Scaling',
+          'Series',
+          'URL',
+          'Width',
+        ].map((method) => ({title: method, value: `${method}_${inputName}`}));
       },
       visibilityHandler: (cpModule) =>
-        cpModule.getParameterValue('thresholdingMethod') === 'Measurement'
+        cpModule.getParameterValue('thresholdingMethod') === 'Measurement',
     },
 
     // Thresholding > Manual
@@ -92,6 +99,6 @@ export default {
     'Select maxima size|integer|1|ADVANCED|IF displayLocalMaxima==true',
     'Fill holes in identified objects?|[After both thresholding and declumping,After declumping only,Never]|ADVANCED',
     'Handling of objects if excessive number of objects identified|[Continue,Erase]|Continue|ADVANCED|ALIAS excessiveMethod',
-    'Maximum number of objects|integer|500|ADVANCED|IF excessiveMethod==Erase'
-  ]
+    'Maximum number of objects|integer|500|ADVANCED|IF excessiveMethod==Erase',
+  ],
 };

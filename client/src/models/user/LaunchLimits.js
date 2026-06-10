@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 export default class LaunchLimits extends Remote {
-  constructor (loadAll = false) {
+  constructor(loadAll = false) {
     super();
     this.url = `/user/launchLimits?loadAll=${loadAll}`;
   }

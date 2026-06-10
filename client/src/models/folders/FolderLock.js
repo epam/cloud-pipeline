@@ -17,14 +17,14 @@
 import RemotePost from '../basic/RemotePost';
 
 export class FolderLock extends RemotePost {
-  constructor (id) {
+  constructor(id) {
     super();
     this.url = `/folder/${id}/lock`;
   }
 }
 
 export class FolderUnLock extends RemotePost {
-  constructor (id) {
+  constructor(id) {
     super();
     this.url = `/folder/${id}/unlock`;
   }

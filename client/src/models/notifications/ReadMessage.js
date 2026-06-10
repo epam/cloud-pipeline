@@ -17,7 +17,7 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class ReadMessage extends RemotePost {
-  constructor () {
+  constructor() {
     super();
     this.url = '/user-notification/message';
   }

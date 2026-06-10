@@ -16,7 +16,7 @@
 
 import RemotePost from '../basic/RemotePost';
 
-function trimTrailingSlash (o) {
+function trimTrailingSlash(o) {
   if (!o || !o.endsWith('/')) {
     return o;
   }
@@ -24,22 +24,16 @@ function trimTrailingSlash (o) {
 }
 
 class PipelineFileUpdate extends RemotePost {
-  constructor (id) {
+  constructor(id) {
     super();
     this.url = `/pipeline/${id}/file`;
   }
 
-  static uploadUrl (id, folder, options = {}) {
-    const {
-      trimTrailingSlash: trimTrailingSlashOption = false
-    } = options;
-    const folderCorrected = trimTrailingSlashOption
-      ? trimTrailingSlash(folder)
-      : folder;
+  static uploadUrl(id, folder, options = {}) {
+    const {trimTrailingSlash: trimTrailingSlashOption = false} = options;
+    const folderCorrected = trimTrailingSlashOption ? trimTrailingSlash(folder) : folder;
     const queryParameters = [
-      folderCorrected && folderCorrected.length > 0
-        ? `path=${folderCorrected}`
-        : undefined
+      folderCorrected && folderCorrected.length > 0 ? `path=${folderCorrected}` : undefined,
     ]
       .filter(Boolean)
       .join('&');

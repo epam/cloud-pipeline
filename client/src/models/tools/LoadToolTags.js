@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 export default class LoadToolTags extends Remote {
-  constructor (id) {
+  constructor(id) {
     super();
     this.id = id;
     this.url = `/tool/${id}/tags`;
@@ -25,8 +25,7 @@ export default class LoadToolTags extends Remote {
 }
 
 class ToolTagsCache {
-  /* eslint-disable */
-  static getCache (cache, id) {
+  static getCache(cache, id) {
     if (!cache.has(`${id}`)) {
       cache.set(`${id}`, new LoadToolTags(id));
     }
@@ -34,8 +33,7 @@ class ToolTagsCache {
     return cache.get(`${id}`);
   }
 
-  /* eslint-enable */
-  static invalidateCache (cache, id) {
+  static invalidateCache(cache, id) {
     if (cache.has(`${id}`)) {
       if (cache.get(`${id}`).invalidateCache) {
         cache.get(`${id}`).invalidateCache();
@@ -47,15 +45,15 @@ class ToolTagsCache {
 
   cache = new Map();
 
-  getToolTags (id) {
+  getToolTags(id) {
     return ToolTagsCache.getCache(this.cache, id);
   }
 
-  invalidateToolTags (id) {
+  invalidateToolTags(id) {
     ToolTagsCache.invalidateCache(this.cache, id);
   }
 
-  invalidateAllToolsTags () {
+  invalidateAllToolsTags() {
     this.cache.clear();
   }
 }

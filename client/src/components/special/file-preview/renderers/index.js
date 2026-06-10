@@ -9,13 +9,7 @@ export const renderers = [
   HtmlRenderer,
   TabularDataRenderer,
   ImageRenderer,
-  MiewRenderer
+  MiewRenderer,
 ];
 
-export {
-  PlainTextRenderer,
-  HtmlRenderer,
-  TabularDataRenderer,
-  ImageRenderer,
-  MiewRenderer
-};
+export {PlainTextRenderer, HtmlRenderer, TabularDataRenderer, ImageRenderer, MiewRenderer};

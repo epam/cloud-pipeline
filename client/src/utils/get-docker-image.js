@@ -1,9 +1,9 @@
-export function getDockerImage (dockerImage, dockerRegistries) {
+export function getDockerImage(dockerImage, dockerRegistries) {
   if (!dockerImage || !dockerRegistries) {
     return undefined;
   }
   if (!dockerRegistries.loaded) {
-    (dockerRegistries.fetchIfNeededOrWait)();
+    dockerRegistries.fetchIfNeededOrWait();
     return undefined;
   }
   const {registries = []} = dockerRegistries.value;
@@ -32,6 +32,6 @@ export function getDockerImage (dockerImage, dockerRegistries) {
     registry,
     group,
     tool,
-    version: diVersion
+    version: diVersion,
   };
 }

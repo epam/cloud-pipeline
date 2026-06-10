@@ -22,27 +22,27 @@ class ChannelsParameter extends ModuleParameter {
   /**
    * @param {ModuleParameterOptions} options
    */
-  constructor (options = {}) {
+  constructor(options = {}) {
     super({
       ...options,
       type: AnalysisTypes.channel,
-      isList: true
+      isList: true,
     });
     makeObservable(this, {
-      values: computed
+      values: computed,
     });
   }
 
-  get values () {
+  get values() {
     return this.channels.map((channel, idx) => ({
       key: channel,
       value: idx + 1,
       title: channel,
-      id: channel
+      id: channel,
     }));
   }
 
-  get defaultValue () {
+  get defaultValue() {
     const firstValue = this.values[0];
     return firstValue ? firstValue.value : undefined;
   }

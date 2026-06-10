@@ -14,7 +14,15 @@
  *  limitations under the License.
  */
 
-const pipelineBuilder = window['pipeline-builder'] || {};
+import '../../vendor/pipeline-builder';
+
+function getPipelineBuilder() {
+  if (typeof window === 'undefined') {
+    return {};
+  }
+
+  return window['pipeline-builder'] || {};
+}
 
 const {
   VERSION,
@@ -45,19 +53,22 @@ const {
   isConditional,
   WdlVersion,
   WdlErrors = {},
-  WdlErrorType = {}
-} = pipelineBuilder || {};
+  WdlErrorType = {},
+} = getPipelineBuilder();
 
-const available = !!Visualizer;
+export function initPipelineBuilder() {
+  const pipelineBuilder = getPipelineBuilder();
+  const available = !!pipelineBuilder.Visualizer;
 
-if (available && process.env.DEVELOPMENT) {
-  Project.default.debug = true;
-}
+  if (available && DEVELOPMENT) {
+    pipelineBuilder.Project.default.debug = true;
+  }
 
-if (available) {
-  console.info('pipeline-builder version', VERSION);
-} else {
-  console.warn('pipeline-builder not available');
+  if (available) {
+    console.info('pipeline-builder version', pipelineBuilder.VERSION);
+  } else {
+    console.warn('pipeline-builder not available');
+  }
 }
 
 export {
@@ -89,5 +100,5 @@ export {
   isConditional,
   WdlVersion,
   WdlErrors,
-  WdlErrorType
+  WdlErrorType,
 };

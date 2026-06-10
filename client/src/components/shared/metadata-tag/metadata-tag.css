@@ -1,0 +1,34 @@
+@reference "../../../index.css";
+
+.metadata-tag {
+  @apply text-xs inline-flex;
+}
+
+.metadata-tag.vertical {
+  @apply flex-col;
+}
+
+.metadata-tag.horizontal {
+  @apply flex-row;
+}
+
+.metadata-tag .metadata-tag-name,
+.metadata-tag .metadata-tag-value {
+  @apply px-0.5;
+}
+
+.metadata-tag .metadata-tag-name {
+  @apply bg-tag-key;
+}
+
+.metadata-tag .metadata-tag-value {
+  @apply bg-tag-value;
+}
+
+.metadata-tag.horizontal .metadata-tag-name {
+  @apply border-r border-tag-divider;
+}
+
+.metadata-tag.vertical .metadata-tag-name {
+  @apply border-b border-tag-divider;
+}

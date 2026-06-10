@@ -16,31 +16,22 @@
 
 import {alphabeticalSorter, defaultSorter} from '../../../../utils/sorting';
 
-function getFacetFilterToken ({
-  query,
-  filters,
-  sortingOrder,
-  pageSize,
-  scrollingParameters
-}) {
+function getFacetFilterToken({query, filters, sortingOrder, pageSize, scrollingParameters}) {
   const filtersKeys = Object.keys(filters || {}).sort(alphabeticalSorter);
-  const filtersParts = filtersKeys
-    .map(key => `${key}:${(filters[key] || []).sort(defaultSorter).join(',')}`);
+  const filtersParts = filtersKeys.map(
+    (key) => `${key}:${(filters[key] || []).sort(defaultSorter).join(',')}`,
+  );
   const sortingParts = (sortingOrder || [])
-    .map(({field, asc}) => `${field}:${asc ? 'ASC' : 'DESC'}`).join(',');
-  const {
-    docId,
-    docScore,
-    scrollingBackward = false
-  } = scrollingParameters || {};
-  const scrollingParametersPresentation =
-    `[${docId || ''}|${docScore || ''}|${scrollingBackward}]`;
+    .map(({field, asc}) => `${field}:${asc ? 'ASC' : 'DESC'}`)
+    .join(',');
+  const {docId, docScore, scrollingBackward = false} = scrollingParameters || {};
+  const scrollingParametersPresentation = `[${docId || ''}|${docScore || ''}|${scrollingBackward}]`;
   return [
     query || '*',
     ...filtersParts,
     sortingParts,
     scrollingParametersPresentation,
-    `${pageSize}`
+    `${pageSize}`,
   ].join('|');
 }
 

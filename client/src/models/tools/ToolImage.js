@@ -15,18 +15,18 @@
  */
 
 import RemotePost from '../basic/RemotePost';
-import {SERVER, API_PATH} from '../../config';
 
 export default class ToolImage extends RemotePost {
-
   static url = (id, iconId) => {
     const el = document.createElement('div');
-    let url = (SERVER || '') + (API_PATH + `/tool/${id}/icon` + (iconId ? `?iconId=${iconId}` : '')).replace(/\/\//g, '/');
+    const url =
+      (SERVER || '') +
+      (API_PATH + `/tool/${id}/icon` + (iconId ? `?iconId=${iconId}` : '')).replace(/\/\//g, '/');
     el.innerHTML = '<a href="' + url + '"></a>';
     return el.firstChild.href;
   };
 
-  constructor (id) {
+  constructor(id) {
     super();
     this.url = `/tool/${id}/icon`;
   }

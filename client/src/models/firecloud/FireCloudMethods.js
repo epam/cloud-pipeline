@@ -22,11 +22,11 @@ import GoogleApi from '../google/GoogleApi';
 export default class FireCloudMethods extends Remote {
   googleApi;
   initialized = false;
-  constructor (googleApi) {
+  constructor(googleApi) {
     super();
     makeObservable(this, {
       loaded: override,
-      isSignedIn: computed
+      isSignedIn: computed,
     });
     this.googleApi = googleApi;
     this.url = '/firecloud/methods';
@@ -40,7 +40,7 @@ export default class FireCloudMethods extends Remote {
     }
   };
 
-  get loaded () {
+  get loaded() {
     if (this.isSignedIn) {
       this._fetchIfNeeded();
       return this._loaded;
@@ -48,7 +48,7 @@ export default class FireCloudMethods extends Remote {
     return false;
   }
 
-  get isSignedIn () {
+  get isSignedIn() {
     if (this.googleApi) {
       return this.googleApi.isSignedIn;
     }
@@ -59,7 +59,7 @@ export default class FireCloudMethods extends Remote {
     this.fetch();
   };
 
-  async fetch () {
+  async fetch() {
     await this._initialize();
     let headers = this.constructor.fetchOptions.headers;
     if (!headers) {
@@ -74,7 +74,10 @@ export default class FireCloudMethods extends Remote {
     this.constructor.fetchOptions.headers = headers;
     if (this.isSignedIn) {
       await super.fetch();
-      if (this.error && this.error.toLowerCase().indexOf('an error during google authorization') >= 0) {
+      if (
+        this.error &&
+        this.error.toLowerCase().indexOf('an error during google authorization') >= 0
+      ) {
         GoogleApi.setRefreshToken('');
       }
     } else {
@@ -82,7 +85,10 @@ export default class FireCloudMethods extends Remote {
       this._pending = true;
       await defer();
       this.update({payload: [], message: 'Unauthorized'});
-      if (this.error && this.error.toLowerCase().indexOf('an error during google authorization') >= 0) {
+      if (
+        this.error &&
+        this.error.toLowerCase().indexOf('an error during google authorization') >= 0
+      ) {
         GoogleApi.setRefreshToken('');
       }
       this._value = [];

@@ -16,11 +16,15 @@
 
 export {default as LuigiGraph} from './LuigiGraph';
 export {default as WdlGraph} from './WdlGraph';
-export {default as CwlGraph} from './cwl-graph';
+// export {default as CwlGraph} from './cwl-graph';
 
-const supportedLanguages = ['luigi', 'wdl', 'cwl'];
+const supportedLanguages = [
+  'luigi',
+  'wdl',
+  //  'cwl'
+];
 
-export function graphIsSupportedForLanguage (language) {
+export function graphIsSupportedForLanguage(language) {
   if (!language) {
     return false;
   }

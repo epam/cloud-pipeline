@@ -20,22 +20,22 @@ export default class PhysicalSize {
   unitsInPixel = 1;
   unit = 'px';
 
-  constructor (unitsInPixel, unit) {
+  constructor(unitsInPixel, unit) {
     makeObservable(this, {
       unitsInPixel: observable,
-      unit: observable
+      unit: observable,
     });
     this.update(unitsInPixel, unit);
   }
 
-  update (unitsInPixel, unit) {
+  update(unitsInPixel, unit) {
     if (unitsInPixel && unit) {
       this.unitsInPixel = unitsInPixel;
       this.unit = unit;
     }
   }
 
-  getPixels (physicalSize) {
+  getPixels(physicalSize) {
     if (physicalSize === undefined || Number.isNaN(Number(physicalSize))) {
       return physicalSize;
     }
@@ -43,7 +43,7 @@ export default class PhysicalSize {
     return p / this.unitsInPixel;
   }
 
-  getSquarePixels (physicalSize) {
+  getSquarePixels(physicalSize) {
     if (physicalSize === undefined || Number.isNaN(Number(physicalSize))) {
       return physicalSize;
     }
@@ -51,7 +51,7 @@ export default class PhysicalSize {
     return p / Math.pow(this.unitsInPixel, 2);
   }
 
-  getPhysicalSize (pixels) {
+  getPhysicalSize(pixels) {
     if (pixels === undefined || Number.isNaN(Number(pixels))) {
       return pixels;
     }
@@ -59,7 +59,7 @@ export default class PhysicalSize {
     return p * this.unitsInPixel;
   }
 
-  getSquarePhysicalSize (pixels) {
+  getSquarePhysicalSize(pixels) {
     if (pixels === undefined || Number.isNaN(Number(pixels))) {
       return pixels;
     }

@@ -16,7 +16,7 @@
 
 import SearchItemTypes from './search-item-types';
 
-export default function mapElasticDocument (document) {
+export default function mapElasticDocument(document) {
   switch (document.type) {
     case SearchItemTypes.pipelineCode:
       document.pipelineVersion = document.description;
@@ -25,10 +25,11 @@ export default function mapElasticDocument (document) {
     case SearchItemTypes.azFile:
     case SearchItemTypes.s3File:
     case SearchItemTypes.NFSFile:
-    case SearchItemTypes.gsFile:
+    case SearchItemTypes.gsFile: {
       const path = document.name || document.description || document.path || '';
       document.name = path.split('/').pop();
       break;
+    }
     case SearchItemTypes.dockerRegistry:
       document.name = document.name || document.description || document.path;
       break;

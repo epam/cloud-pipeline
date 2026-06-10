@@ -39,39 +39,8 @@
   box-shadow: 0 1px 6px var(--cp-color-card-shadow);
 }
 
-.cp-runs-day-picker .DayPicker-Weekday {
-  color: var(--cp-color-text-secondary);
-}
-
-.cp-runs-day-picker .DayPicker-Weekday abbr[title] {
-  text-decoration: none;
-}
-
-.cp-runs-day-picker .DayPicker-Day--outside {
-  color: var(--cp-color-text-secondary);
-}
-
-.cp-runs-day-picker .DayPicker-Day {
-  border-color: color-mix(in srgb, var(--cp-color-border-card) 80%, transparent);
-}
-
-.cp-runs-day-picker .DayPicker-Day:hover {
-  color: var(--cp-color-primary);
-}
-
-.cp-runs-day-picker .DayPicker-Day--today {
-  color: var(--cp-color-primary-active);
-}
-
-.DayPicker-Day--selected:not(.DayPicker-Day--disabled):not(.DayPicker-Day--outside) {
-  background-color: var(--cp-color-primary);
-  color: var(--cp-color-primary-on);
-}
-
-.DayPicker-Day--selected:not(.DayPicker-Day--disabled):not(.DayPicker-Day--outside):hover {
-  background-color: var(--cp-color-primary-active);
-  color: var(--cp-color-primary-on);
-  outline: none;
+.cp-runs-day-picker.ant-picker-calendar-mini {
+  border: none;
 }
 
 .cp-runs-advanced-filter-input .CodeMirror-wrap {

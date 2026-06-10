@@ -21,7 +21,7 @@ const yellow = '#fd9135';
 const aqua = '#32cecd';
 const violet = '#814cfb';
 
-export default function getThemedPlotColors (Component) {
+export default function getThemedPlotColors(Component) {
   if (
     Component &&
     Component.props &&
@@ -35,15 +35,8 @@ export default function getThemedPlotColors (Component) {
       themes.currentThemeConfiguration['--cp-color-green'] || green,
       themes.currentThemeConfiguration['--cp-color-yellow'] || yellow,
       themes.currentThemeConfiguration['--cp-color-aqua'] || aqua,
-      themes.currentThemeConfiguration['--cp-color-violet'] || violet
+      themes.currentThemeConfiguration['--cp-color-violet'] || violet,
     ];
   }
-  return [
-    blue,
-    red,
-    green,
-    yellow,
-    aqua,
-    violet
-  ];
+  return [blue, red, green, yellow, aqua, violet];
 }

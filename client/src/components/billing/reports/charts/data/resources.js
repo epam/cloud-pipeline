@@ -18,27 +18,27 @@ const data = {
   storages: {
     object: {
       current: 429,
-      previous: 208
+      previous: 208,
     },
     file: {
       current: 472,
-      previous: 167
-    }
+      previous: 167,
+    },
   },
   compute: {
     cpu: {
       current: 137,
-      previous: 185
+      previous: 185,
     },
     gpu: {
       current: 161,
-      previous: 246
-    }
+      previous: 246,
+    },
   },
   networking: {
     current: 255,
-    previous: 344
-  }
+    previous: 344,
+  },
 };
 
 export default data;

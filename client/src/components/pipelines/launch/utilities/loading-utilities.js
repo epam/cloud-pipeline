@@ -1,13 +1,9 @@
 class Loader {
-  constructor (key, callbacks) {
+  constructor(key, callbacks) {
     this.key = key;
     this.promise = undefined;
     this.token = undefined;
-    const {
-      onStart = () => {},
-      onError = () => {},
-      onLoaded = () => {}
-    } = callbacks || {};
+    const {onStart = () => {}, onError = () => {}, onLoaded = () => {}} = callbacks || {};
     this.onStart = onStart;
     this.onError = onError;
     this.onLoaded = onLoaded;
@@ -40,7 +36,7 @@ class Loader {
 }
 
 export class LoadingUtilities {
-  constructor () {
+  constructor() {
     this.loaders = [];
   }
 
@@ -54,31 +50,33 @@ export class LoadingUtilities {
   };
 
   generateSetStateCallbacks = (key, setState) => ({
-    onStart: () => { setState({[key]: {pending: true, error: undefined, value: undefined}}); },
-    onError: (e) => { setState({[key]: {pending: false, error: e, value: undefined}}); },
-    onLoaded: (v) => { setState({[key]: {pending: false, error: undefined, value: v}}); }
-  })
+    onStart: () => {
+      setState({[key]: {pending: true, error: undefined, value: undefined}});
+    },
+    onError: (e) => {
+      setState({[key]: {pending: false, error: e, value: undefined}});
+    },
+    onLoaded: (v) => {
+      setState({[key]: {pending: false, error: undefined, value: v}});
+    },
+  });
 
   load = async (key, token, fn, callbacks = undefined) => {
     const loader = this.ensureLoader(key, callbacks);
     return loader.load(token, fn);
-  }
+  };
 
   loadWithSetStateCallbacks = async (key, token, fn, setState) => {
     return this.load(key, token, fn, this.generateSetStateCallbacks(key, setState));
-  }
+  };
 
   getLoadingState = (key, state) => {
     const {[key]: keyedState = {}} = state;
-    const {
-      pending = false,
-      error = undefined,
-      value = undefined
-    } = keyedState;
+    const {pending = false, error = undefined, value = undefined} = keyedState;
     return {
       pending,
       error,
-      value
+      value,
     };
   };
 }

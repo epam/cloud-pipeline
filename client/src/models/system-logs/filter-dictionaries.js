@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 export default class SystemLogsFilterDictionaries extends Remote {
-  constructor () {
+  constructor() {
     super();
     this.url = '/log/filter';
   }

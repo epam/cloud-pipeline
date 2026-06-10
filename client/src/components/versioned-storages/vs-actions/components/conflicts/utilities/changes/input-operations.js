@@ -16,36 +16,26 @@
 
 import LineStates from '../conflicted-file/line-states';
 import Branches from '../conflicted-file/branches';
-import {
-  getBranchCodeRangeFromSelection
-} from '../../controls/branch-code/utilities/branch-code-selection';
+import {getBranchCodeRangeFromSelection} from '../../controls/branch-code/utilities/branch-code-selection';
 
-function getLineTextWithoutBreak (line, branch) {
+function getLineTextWithoutBreak(line, branch) {
   return (line?.text[branch] || '').replace(/\n/g, '');
 }
 
-function fireCaretUpdateEvent (file, branch, line, offset) {
+function fireCaretUpdateEvent(file, branch, line, offset) {
   file.fireEvent(
     'caretUpdate',
     {
-      line: line.hasOwnProperty('lineNumber')
-        ? line.lineNumber[branch]
-        : line,
-      offset
+      line: Object.hasOwn(line, 'lineNumber') ? line.lineNumber[branch] : line,
+      offset,
     },
-    branch
+    branch,
   );
 }
 
 const wrapApplyFunction = (file, branch, newPosition, oldPosition, apply, revert) => {
-  const {
-    line: newLine,
-    offset: newOffset
-  } = newPosition || {};
-  const {
-    line: oldLine,
-    offset: oldOffset
-  } = oldPosition || {};
+  const {line: newLine, offset: newOffset} = newPosition || {};
+  const {line: oldLine, offset: oldOffset} = oldPosition || {};
   return (finalOperation = true) => {
     apply();
     if (finalOperation) {
@@ -64,23 +54,8 @@ const wrapApplyFunction = (file, branch, newPosition, oldPosition, apply, revert
   };
 };
 
-const wrapOperation = (
-  operationInfo,
-  file,
-  branch,
-  newPosition,
-  oldPosition,
-  apply,
-  revert
-) => {
-  const applyFn = wrapApplyFunction(
-    file,
-    branch,
-    newPosition,
-    oldPosition,
-    apply,
-    revert
-  );
+const wrapOperation = (operationInfo, file, branch, newPosition, oldPosition, apply, revert) => {
+  const applyFn = wrapApplyFunction(file, branch, newPosition, oldPosition, apply, revert);
   const revertFn = applyFn();
   return {
     handled: true,
@@ -88,15 +63,15 @@ const wrapOperation = (
       apply: applyFn,
       revert: revertFn,
       isFinite: false,
-      ...(operationInfo || {})
-    }
+      ...(operationInfo || {}),
+    },
   };
 };
 
 export const INSERT_TEXT_KEY = 'paste-text';
 export const INSERTED_TEXT = Symbol('inserted text');
 
-export default function inputOperation (event, file, branch, currentLine, offset) {
+export default function inputOperation(event, file, branch, currentLine, offset) {
   const {key} = event;
   let inputOperation;
   const parameters = [];
@@ -115,16 +90,7 @@ export default function inputOperation (event, file, branch, currentLine, offset
     parameters.push(key);
   }
   if (file && inputOperation) {
-    const {
-      operation,
-      handled
-    } = inputOperation(
-      file,
-      branch,
-      currentLine,
-      offset,
-      ...parameters
-    );
+    const {operation, handled} = inputOperation(file, branch, currentLine, offset, ...parameters);
     if (operation) {
       file.registerOperation(operation);
     }
@@ -133,7 +99,7 @@ export default function inputOperation (event, file, branch, currentLine, offset
   return false;
 }
 
-export function clearSelection () {
+export function clearSelection() {
   if (window.getSelection) {
     if (window.getSelection().empty) {
       // Chrome
@@ -148,46 +114,34 @@ export function clearSelection () {
   }
 }
 
-function removeCurrentSelection (file, branch) {
+function removeCurrentSelection(file, branch) {
   const selection = getBranchCodeRangeFromSelection(document.getSelection());
   if (!selection) {
     return undefined;
   }
-  const {
-    start,
-    end
-  } = selection;
+  const {start, end} = selection;
   clearSelection();
   if (!start || !end) {
     return undefined;
   }
-  const {
-    lineKey: startLineKey
-  } = start;
-  let {
-    offset: startOffset
-  } = start;
-  const {
-    lineKey: endLineKey
-  } = end;
-  let {
-    offset: endOffset
-  } = end;
+  const {lineKey: startLineKey} = start;
+  let {offset: startOffset} = start;
+  const {lineKey: endLineKey} = end;
+  let {offset: endOffset} = end;
   if (startLineKey === endLineKey && startOffset === endOffset) {
     return undefined;
   }
   const lines = file.getLines(branch, new Set([]));
   const allowedStates = new Set([LineStates.inserted, LineStates.original]);
   const ignoredStates = new Set(
-    Object.values(LineStates)
-      .filter(state => !allowedStates.has(state))
+    Object.values(LineStates).filter((state) => !allowedStates.has(state)),
   );
-  let _startLine = lines.find(line => line.key === startLineKey);
+  let _startLine = lines.find((line) => line.key === startLineKey);
   while (_startLine && !allowedStates.has(_startLine.state[branch])) {
     _startLine = _startLine[branch];
     startOffset = 0;
   }
-  let _endLine = lines.find(line => line.key === endLineKey);
+  let _endLine = lines.find((line) => line.key === endLineKey);
   while (_endLine && !allowedStates.has(_endLine.state[branch])) {
     _endLine = _endLine.previous[branch];
     endOffset = Infinity;
@@ -204,21 +158,21 @@ function removeCurrentSelection (file, branch) {
   const endLineOriginalText = endLine.text[branch];
   const linesBetween = file
     .getLines(branch, ignoredStates, startLine, endLine)
-    .filter(line => line !== startLine);
+    .filter((line) => line !== startLine);
   const statesMap = new WeakMap();
-  linesBetween.forEach(line => {
+  linesBetween.forEach((line) => {
     statesMap[line] = line.state[branch];
   });
   actions.push(() => {
     startLine.text[branch] =
       `${startLineOriginalText.slice(0, startOffset)}${endLineOriginalText.slice(endOffset)}`;
-    linesBetween.forEach(line => {
+    linesBetween.forEach((line) => {
       line.state[branch] = LineStates.omit;
     });
   });
   undoActions.push(() => {
     startLine.text[branch] = startLineOriginalText;
-    linesBetween.forEach(line => {
+    linesBetween.forEach((line) => {
       line.state[branch] = statesMap[line];
     });
   });
@@ -226,23 +180,23 @@ function removeCurrentSelection (file, branch) {
   undoActions.reverse();
   undoActions.push(() => file.preProcessLines(branch));
   const apply = () => {
-    actions.forEach(f => f());
+    actions.forEach((f) => f());
   };
   const revert = () => {
-    undoActions.forEach(f => f());
+    undoActions.forEach((f) => f());
   };
   apply();
   return {
     position: {
       line: startLine,
-      offset: startOffset
+      offset: startOffset,
     },
     apply,
-    revert
+    revert,
   };
 }
 
-function wrapSelectionRemoval (operationFn, ignoreIfSelectionRemoved = false) {
+function wrapSelectionRemoval(operationFn, ignoreIfSelectionRemoved = false) {
   return function (file, branch, currentLine, offset, ...parameters) {
     const removeSelectionOperation = removeCurrentSelection(file, branch);
     if (!removeSelectionOperation) {
@@ -251,12 +205,9 @@ function wrapSelectionRemoval (operationFn, ignoreIfSelectionRemoved = false) {
     const {
       apply: applyRemovalFn = () => {},
       revert: revertRemovalFn = () => {},
-      position = {}
+      position = {},
     } = removeSelectionOperation || {};
-    const {
-      line: lineAfterRemoval = currentLine,
-      offset: offsetAfterRemoval = offset
-    } = position;
+    const {line: lineAfterRemoval = currentLine, offset: offsetAfterRemoval = offset} = position;
     if (ignoreIfSelectionRemoved || typeof operationFn !== 'function') {
       return wrapOperation(
         {type: 'removeSelection', isFinite: true},
@@ -265,38 +216,44 @@ function wrapSelectionRemoval (operationFn, ignoreIfSelectionRemoved = false) {
         position,
         position,
         applyRemovalFn,
-        revertRemovalFn
+        revertRemovalFn,
       );
     }
-    const {
-      operation,
-      ...rest
-    } = operationFn(file, branch, lineAfterRemoval, offsetAfterRemoval, ...parameters);
+    const {operation, ...rest} = operationFn(
+      file,
+      branch,
+      lineAfterRemoval,
+      offsetAfterRemoval,
+      ...parameters,
+    );
     if (operation) {
       return {
         operation: {
           ...operation,
           apply: (...args) => {
             applyRemovalFn();
-            operation.apply && operation.apply(...args);
+            if (operation.apply) {
+              operation.apply(...args);
+            }
           },
           revert: (...args) => {
-            operation.revert && operation.revert(...args);
+            if (operation.revert) {
+              operation.revert(...args);
+            }
             revertRemovalFn();
           },
-          isFinite: true
+          isFinite: true,
         },
-        ...rest
+        ...rest,
       };
     }
     return rest;
   };
 }
 
-function insertText (file, branch, currentLine, offset, text) {
+function insertText(file, branch, currentLine, offset, text) {
   if (text && text.length) {
-    const lines = text
-      .split('\n');
+    const lines = text.split('\n');
     const originalText = currentLine.text[branch] || '';
     const before = originalText.slice(0, offset);
     const after = originalText.slice(offset);
@@ -351,26 +308,26 @@ function insertText (file, branch, currentLine, offset, text) {
       branch,
       {
         line: finalLine,
-        offset: (finalLine.text[branch] || '').length - after.length
+        offset: (finalLine.text[branch] || '').length - after.length,
       },
       {
         line: currentLine,
-        offset
+        offset,
       },
       () => {
-        subOperations.forEach(f => f());
+        subOperations.forEach((f) => f());
       },
       () => {
-        undoSubOperations.forEach(f => f());
-      }
+        undoSubOperations.forEach((f) => f());
+      },
     );
   }
   return {
-    handled: false
+    handled: false,
   };
 }
 
-function insertSymbol (file, branch, currentLine, offset, symbol) {
+function insertSymbol(file, branch, currentLine, offset, symbol) {
   const originalText = currentLine.text[branch] || '';
   const before = originalText.slice(0, offset);
   const after = originalText.slice(offset);
@@ -381,22 +338,22 @@ function insertSymbol (file, branch, currentLine, offset, symbol) {
     branch,
     {
       line: currentLine,
-      offset: offset + 1
+      offset: offset + 1,
     },
     {
       line: currentLine,
-      offset
+      offset,
     },
     () => {
       currentLine.text[branch] = `${before}${symbol}${after}`;
     },
     () => {
       currentLine.text[branch] = originalText;
-    }
+    },
   );
 }
 
-function insertLineBreak (file, branch, currentLine, offset) {
+function insertLineBreak(file, branch, currentLine, offset) {
   const originalText = currentLine.text[branch] || '';
   const before = originalText.slice(0, offset);
   const after = originalText.slice(offset);
@@ -409,11 +366,11 @@ function insertLineBreak (file, branch, currentLine, offset) {
       branch,
       {
         line: newLine,
-        offset: 0
+        offset: 0,
       },
       {
         line: currentLine,
-        offset
+        offset,
       },
       () => {
         currentLine.text[branch] = `${before}\n`;
@@ -421,22 +378,22 @@ function insertLineBreak (file, branch, currentLine, offset) {
       },
       () => {
         currentLine.text[branch] = originalText;
-        Branches.forEach(b => {
+        Branches.forEach((b) => {
           newLine.state[b] = LineStates.omit;
         });
-      }
+      },
     );
   }
   return {
     line: currentLine.lineNumber[branch],
-    offset
+    offset,
   };
 }
 
-function deleteSymbolBefore (file, branch, currentLine, offset) {
+function deleteSymbolBefore(file, branch, currentLine, offset) {
   const lineIndex = currentLine.lineNumber[branch];
   const lines = file.getLines(branch).slice(1);
-  const prevLine = lines.find(l => l.lineNumber[branch] === lineIndex - 1);
+  const prevLine = lines.find((l) => l.lineNumber[branch] === lineIndex - 1);
   const originalText = currentLine.text[branch] || '';
   const before = originalText.slice(0, offset);
   const after = originalText.slice(offset);
@@ -448,18 +405,18 @@ function deleteSymbolBefore (file, branch, currentLine, offset) {
       branch,
       {
         line: currentLine,
-        offset: offset - 1
+        offset: offset - 1,
       },
       {
         line: currentLine,
-        offset
+        offset,
       },
       () => {
         currentLine.text[branch] = `${before.slice(0, -1)}${after}`;
       },
       () => {
         currentLine.text[branch] = originalText;
-      }
+      },
     );
   }
   if (prevLine) {
@@ -473,11 +430,11 @@ function deleteSymbolBefore (file, branch, currentLine, offset) {
       branch,
       {
         line: prevLine,
-        offset: newOffset
+        offset: newOffset,
       },
       {
         line: currentLine,
-        offset
+        offset,
       },
       () => {
         currentLine.state[branch] = LineStates.omit;
@@ -486,24 +443,24 @@ function deleteSymbolBefore (file, branch, currentLine, offset) {
       () => {
         currentLine.state[branch] = currentLineState;
         prevLine.text[branch] = prevLineOriginalText;
-      }
+      },
     );
   }
   return {
-    handled: false
+    handled: false,
   };
 }
 
-function deleteSymbolAfter (file, branch, currentLine, offset) {
+function deleteSymbolAfter(file, branch, currentLine, offset) {
   if (!file) {
     return {
       line: currentLine.lineNumber[branch],
-      offset
+      offset,
     };
   }
   const lineIndex = currentLine.lineNumber[branch];
   const lines = file.getLines(branch).slice(1);
-  const nextLine = lines.find(l => l.lineNumber[branch] === lineIndex + 1);
+  const nextLine = lines.find((l) => l.lineNumber[branch] === lineIndex + 1);
   const originalText = currentLine.text[branch] || '';
   const before = originalText.slice(0, offset);
   const after = originalText.slice(offset);
@@ -516,18 +473,18 @@ function deleteSymbolAfter (file, branch, currentLine, offset) {
       branch,
       {
         line: currentLine,
-        offset
+        offset,
       },
       {
         line: currentLine,
-        offset
+        offset,
       },
       () => {
         currentLine.text[branch] = `${before}${after.slice(1)}`;
       },
       () => {
         currentLine.text[branch] = originalText;
-      }
+      },
     );
   } else if (nextLine) {
     // join this line and next one into 1 (remove line break)
@@ -539,11 +496,11 @@ function deleteSymbolAfter (file, branch, currentLine, offset) {
       branch,
       {
         line: currentLine,
-        offset
+        offset,
       },
       {
         line: currentLine,
-        offset
+        offset,
       },
       () => {
         currentLine.text[branch] = `${before}${nextLineText}`;
@@ -552,7 +509,7 @@ function deleteSymbolAfter (file, branch, currentLine, offset) {
       () => {
         currentLine.text[branch] = originalText;
         nextLine.state[branch] = nextLineState;
-      }
+      },
     );
   } else if (isLineBreakSymbol || after.length === 1) {
     // no next line; we must remove line break symbol
@@ -565,21 +522,21 @@ function deleteSymbolAfter (file, branch, currentLine, offset) {
       branch,
       {
         line: currentLine,
-        offset
+        offset,
       },
       {
         line: currentLine,
-        offset
+        offset,
       },
       () => {
         currentLine.text[branch] = before;
       },
       () => {
         currentLine.text[branch] = originalText;
-      }
+      },
     );
   }
   return {
-    handled: false
+    handled: false,
   };
 }

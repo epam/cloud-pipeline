@@ -18,7 +18,8 @@
 
 // Set the name of the hidden property and the change event for visibility
 let hidden, visibilityChange;
-if (typeof document.hidden !== 'undefined') { // Opera 12.10 and Firefox 18 and later support
+if (typeof document.hidden !== 'undefined') {
+  // Opera 12.10 and Firefox 18 and later support
   hidden = 'hidden';
   visibilityChange = 'visibilitychange';
 } else if (typeof document.msHidden !== 'undefined') {
@@ -29,7 +30,7 @@ if (typeof document.hidden !== 'undefined') { // Opera 12.10 and Firefox 18 and 
   visibilityChange = 'webkitvisibilitychange';
 }
 
-function handleVisibilityChange (onHidden = () => {}, onVisible = () => {}) {
+function handleVisibilityChange(onHidden = () => {}, onVisible = () => {}) {
   if (document[hidden]) {
     onHidden();
   } else {
@@ -37,7 +38,7 @@ function handleVisibilityChange (onHidden = () => {}, onVisible = () => {}) {
   }
 }
 
-export default function attachDocumentVisibilityHandlers (onHidden, onVisible) {
+export default function attachDocumentVisibilityHandlers(onHidden, onVisible) {
   // Warn if the browser doesn't support addEventListener or the Page Visibility API
   if (typeof document.addEventListener === 'undefined' || hidden === undefined) {
     return () => {};

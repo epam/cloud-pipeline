@@ -17,13 +17,13 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class MetadataMultiLoad extends RemotePost {
-  constructor (entities) {
+  constructor(entities) {
     super();
     this.url = '/metadata/load';
     this.entities = entities;
   }
 
-  async fetch () {
+  async fetch() {
     return this.send(this.entities);
   }
 }

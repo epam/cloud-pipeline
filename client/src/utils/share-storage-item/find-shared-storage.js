@@ -17,28 +17,29 @@
 import FolderLoad from '../../models/folders/FolderLoad';
 import getStoragePath from './get-storage-path';
 
-function wrapRequest (request) {
+function wrapRequest(request) {
   return new Promise((resolve, reject) => {
-    request.fetch()
+    request
+      .fetch()
       .then(() => resolve(request))
       .catch(reject);
   });
 }
 
-function removeTrailingSlash (path) {
+function removeTrailingSlash(path) {
   if (path && path.endsWith('/')) {
     return path.slice(0, -1);
   }
   return path;
 }
 
-export default function findSharedStorage (preferences, sharedStorage, sharedFolder, skip = false) {
+export default function findSharedStorage(preferences, sharedStorage, sharedFolder, skip = false) {
   if (skip) {
     return Promise.resolve(undefined);
   }
   if (!preferences) {
     return Promise.reject(
-      new Error('Shared storages system directory not specified (no preferences)')
+      new Error('Shared storages system directory not specified (no preferences)'),
     );
   }
   if (!sharedStorage) {
@@ -60,10 +61,8 @@ export default function findSharedStorage (preferences, sharedStorage, sharedFol
         if (request.error) {
           throw new Error(request.error);
         } else if (request.loaded) {
-          const {
-            storages = []
-          } = request.value;
-          const sharedStorage = storages.find(s => removeTrailingSlash(s.path) === path);
+          const {storages = []} = request.value;
+          const sharedStorage = storages.find((s) => removeTrailingSlash(s.path) === path);
           if (sharedStorage) {
             return Promise.resolve(sharedStorage);
           }

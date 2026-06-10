@@ -20,27 +20,28 @@ const repeatInterval = 5000;
 export default class RunTasks extends Remote {
   static defaultValue = {};
 
-  constructor (runId) {
+  constructor(runId) {
     super();
     this.url = `/run/${runId}/tasks`;
-  };
+  }
 
-  postprocess (value) {
-    if (!value.payload) { return []; }
+  postprocess(value) {
+    if (!value.payload) {
+      return [];
+    }
     return value.payload;
   }
 
   refreshData;
 
-  clearInterval () {
+  clearInterval() {
     clearInterval(this.refreshData);
     delete this.refreshData;
   }
 
-  startInterval (value) {
+  startInterval(value) {
     if (!this.refreshData) {
-      this.refreshData = setInterval(::this.silentFetch, repeatInterval);
+      this.refreshData = setInterval(() => this.silentFetch(), repeatInterval);
     }
   }
-
 }

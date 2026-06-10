@@ -16,9 +16,7 @@
 
 import ConvertObjectsToImage from './convert-objects-to-image';
 import ExpandOrShrinkObjects from './expand-or-shrink-objects';
-import FilterObjects, {
-  FilterObjectsBySize
-} from './filter-objects';
+import FilterObjects, {FilterObjectsBySize} from './filter-objects';
 import IdentifyPrimaryObjects from './identify-primary-objects';
 import IdentifySecondaryObjects from './identify-secondary-objects';
 import IdentifyTertiaryObjects from './identify-tertiary-objects';
@@ -38,5 +36,5 @@ export default [
   MaskObjects,
   RelateObjects,
   ResizeObjects,
-  SplitOrMergeObjects
+  SplitOrMergeObjects,
 ];

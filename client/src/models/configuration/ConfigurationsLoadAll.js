@@ -17,8 +17,8 @@
 import Remote from '../basic/Remote';
 
 export default class ConfigurationsLoadAll extends Remote {
-  constructor () {
+  constructor() {
     super();
     this.url = '/configuration/loadAll';
-  };
+  }
 }

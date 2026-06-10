@@ -17,28 +17,26 @@
 import EndpointAPI from '../../../../../models/basic/endpoint-api';
 
 class AnalysisApi extends EndpointAPI {
-  constructor (endpoint) {
-    super(
-      endpoint,
-      {
-        fetchToken: true,
-        credentials: true,
-        name: 'Analysis endpoint',
-        testConnectionURI: 'hcs/pipelines'
-      }
-    );
+  constructor(endpoint) {
+    super(endpoint, {
+      fetchToken: true,
+      credentials: true,
+      name: 'Analysis endpoint',
+      testConnectionURI: 'hcs/pipelines',
+    });
   }
 
-  buildPipeline = (measurementUUID) => this.apiCall({
-    uri: 'hcs/pipelines',
-    query: {measurementUUID},
-    httpMethod: 'POST'
-  });
+  buildPipeline = (measurementUUID) =>
+    this.apiCall({
+      uri: 'hcs/pipelines',
+      query: {measurementUUID},
+      httpMethod: 'POST',
+    });
 
   getPipeline = async (pipelineId) => {
     const payload = await this.apiCall({
       uri: 'hcs/pipelines',
-      query: {pipelineId}
+      query: {pipelineId},
     });
     if (!payload || !payload.pipelineId) {
       throw new Error(`#${pipelineId} pipeline not found`);
@@ -55,73 +53,82 @@ class AnalysisApi extends EndpointAPI {
     return modules[index];
   };
 
-  runPipeline = (pipelineId) => this.apiCall({
-    uri: 'hcs/run/pipelines',
-    query: {pipelineId},
-    httpMethod: 'POST',
-    ignoreResponse: true
-  });
+  runPipeline = (pipelineId) =>
+    this.apiCall({
+      uri: 'hcs/run/pipelines',
+      query: {pipelineId},
+      httpMethod: 'POST',
+      ignoreResponse: true,
+    });
 
-  runPipelineModule = (pipelineId, moduleId) => this.apiCall({
-    uri: 'hcs/run/pipelines',
-    query: {pipelineId, moduleId},
-    httpMethod: 'POST'
-  });
+  runPipelineModule = (pipelineId, moduleId) =>
+    this.apiCall({
+      uri: 'hcs/run/pipelines',
+      query: {pipelineId, moduleId},
+      httpMethod: 'POST',
+    });
 
-  attachFiles = (pipelineId, filesPayload) => this.apiCall({
-    uri: 'hcs/pipelines/files',
-    query: {pipelineId},
-    httpMethod: 'POST',
-    body: filesPayload
-  });
+  attachFiles = (pipelineId, filesPayload) =>
+    this.apiCall({
+      uri: 'hcs/pipelines/files',
+      query: {pipelineId},
+      httpMethod: 'POST',
+      body: filesPayload,
+    });
 
-  createModule = (pipelineId, cpModule) => this.apiCall({
-    uri: 'hcs/modules',
-    query: {pipelineId},
-    httpMethod: 'POST',
-    body: cpModule
-  });
+  createModule = (pipelineId, cpModule) =>
+    this.apiCall({
+      uri: 'hcs/modules',
+      query: {pipelineId},
+      httpMethod: 'POST',
+      body: cpModule,
+    });
 
-  removeModule = (pipelineId, moduleId) => this.apiCall({
-    uri: 'hcs/modules',
-    query: {pipelineId, moduleId},
-    httpMethod: 'DELETE'
-  });
+  removeModule = (pipelineId, moduleId) =>
+    this.apiCall({
+      uri: 'hcs/modules',
+      query: {pipelineId, moduleId},
+      httpMethod: 'DELETE',
+    });
 
-  getModuleStatus = (pipelineId, moduleId) => this.apiCall({
-    uri: 'hcs/run/statuses',
-    query: {pipelineId, moduleId}
-  });
+  getModuleStatus = (pipelineId, moduleId) =>
+    this.apiCall({
+      uri: 'hcs/run/statuses',
+      query: {pipelineId, moduleId},
+    });
 
-  getPipelineStatus = (pipelineId) => this.apiCall({
-    uri: 'hcs/run/statuses',
-    query: {pipelineId}
-  });
+  getPipelineStatus = (pipelineId) =>
+    this.apiCall({
+      uri: 'hcs/run/statuses',
+      query: {pipelineId},
+    });
 
   getPipelineModulesStatuses = async (pipelineId) => {
     const pipeline = await this.getPipeline(pipelineId);
     const {modules = []} = pipeline;
     const modulesStatuses = await Promise.all(
-      modules.map((cpModule, idx) => this.getModuleStatus(pipelineId, idx + 1))
+      modules.map((cpModule, idx) => this.getModuleStatus(pipelineId, idx + 1)),
     );
     return {
       pipeline,
-      statuses: modulesStatuses.map((status, idx) => ({cpModule: modules[idx], status}))
+      statuses: modulesStatuses.map((status, idx) => ({cpModule: modules[idx], status})),
     };
-  }
+  };
 
-  generateVideo = (options) => this.apiCall({
-    uri: 'hcs/clip',
-    query: options
-  });
+  generateVideo = (options) =>
+    this.apiCall({
+      uri: 'hcs/clip',
+      query: options,
+    });
 
-  generateScreenshot = (options, pollingIntervalSeconds, abortSignal) => this.pollingApiCall({
-    uri: '/hcs/images',
-    pollingURI: 'hcs/images/statuses',
-    pollingIntervalSeconds,
-    query: options,
-    abortSignal
-  });
+  generateScreenshot = (options, pollingIntervalSeconds, abortSignal) =>
+    this.pollingApiCall({
+      uri: '/hcs/images',
+      pollingURI: 'hcs/images/statuses',
+      pollingIntervalSeconds,
+      query: options,
+      abortSignal,
+    });
 }
 
 export default AnalysisApi;

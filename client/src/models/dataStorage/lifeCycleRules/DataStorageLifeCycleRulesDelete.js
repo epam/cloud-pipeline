@@ -17,15 +17,15 @@
 import RemotePost from '../../basic/RemotePost';
 
 export default class DataStorageLifeCycleRulesDelete extends RemotePost {
-  constructor (datastorageId, ruleId) {
+  constructor(datastorageId, ruleId) {
     super();
     this.constructor.fetchOptions = {
       headers: {
-        'Content-type': 'application/json; charset=UTF-8'
+        'Content-type': 'application/json; charset=UTF-8',
       },
       mode: 'cors',
       credentials: 'include',
-      method: 'DELETE'
+      method: 'DELETE',
     };
     this.url = `/datastorage/${datastorageId}/lifecycle/rule/${ruleId}`;
   }

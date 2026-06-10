@@ -17,8 +17,8 @@
 import Remote from '../basic/Remote';
 
 export default class ServerlessAPIURL extends Remote {
-  constructor (id, name) {
+  constructor(id, name) {
     super();
     this.url = `/serverless/url/${id}?config=${name}`;
-  };
+  }
 }

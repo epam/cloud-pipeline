@@ -41,14 +41,14 @@ export default class ConflictedFileLine {
    */
   file;
 
-  constructor (line, meta = {}) {
+  constructor(line, meta = {}) {
     ConflictedFileLine.keyIncrement += 1;
     this.key = ConflictedFileLine.keyIncrement;
     this.line = line;
     this.text = {
       [HeadBranch]: line,
       [Merged]: line,
-      [RemoteBranch]: line
+      [RemoteBranch]: line,
     };
     this.meta = meta;
     this.previous = {};
@@ -59,59 +59,59 @@ export default class ConflictedFileLine {
     this.state = {
       [HeadBranch]: States.original,
       [RemoteBranch]: States.original,
-      [Merged]: States.original
+      [Merged]: States.original,
     };
     this.file = undefined;
   }
 
-  copy () {
+  copy() {
     const copy = new ConflictedFileLine(this.line, this.meta);
     copy.previous = {
-      ...this.previous
+      ...this.previous,
     };
     copy.changesBefore = {
-      ...this.changesBefore
+      ...this.changesBefore,
     };
     copy.lineNumber = {
-      ...this.lineNumber
+      ...this.lineNumber,
     };
     copy.text = {
-      ...this.text
+      ...this.text,
     };
     copy.state = {
-      ...this.state
+      ...this.state,
     };
     copy.change = this.change;
     copy.file = this.file;
-    Branches.forEach(branch => {
+    Branches.forEach((branch) => {
       copy[branch] = this[branch];
     });
     return copy;
   }
 
-  getBranchState (branch) {
+  getBranchState(branch) {
     return this.state[branch];
   }
 
-  get isConflict () {
+  get isConflict() {
     return this.meta && this.meta.conflict;
   }
 
-  isParentFor (line) {
+  isParentFor(line) {
     if (!line || line === this) {
       return false;
     }
     const parents = new Set([
       line.previous[HeadBranch],
       line.previous[RemoteBranch],
-      line.previous[Merged]
+      line.previous[Merged],
     ]);
-    for (let parent of parents) {
+    for (const parent of parents) {
       if (parent === this) {
         return true;
       }
     }
-    for (let parent of parents) {
+    for (const parent of parents) {
       if (parent && this.isParentFor(parent)) {
         return true;
       }
@@ -119,10 +119,10 @@ export default class ConflictedFileLine {
     return false;
   }
 
-  changeParent (parent, ...branches) {
+  changeParent(parent, ...branches) {
     if (parent) {
       const currentParentLinks = this.previous;
-      branches.forEach(branch => {
+      branches.forEach((branch) => {
         if (currentParentLinks[branch]) {
           parent[branch] = this;
           this.previous[branch] = parent;

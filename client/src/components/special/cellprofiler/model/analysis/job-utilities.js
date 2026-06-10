@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import moment from 'moment-timezone';
+import dayjs from '../../../../../utils/dayjs';
 import PipelineRunFilter from '../../../../../models/pipelines/PipelineRunSingleFilter';
 import {parseRunServiceUrlConfiguration} from '../../../../../utils/multizone';
 import PipelineRunInfo from '../../../../../models/pipelines/PipelineRunInfo';
@@ -27,7 +27,7 @@ import LoadToolVersionSettings from '../../../../../models/tools/LoadToolVersion
 
 const DEFAULT_DOCKER_IMAGE = 'library/cellprofiler-web-api';
 
-export async function getAnalysisSettings (refresh = false) {
+export async function getAnalysisSettings(refresh = false) {
   if (refresh) {
     await preferences.fetch();
   } else {
@@ -36,18 +36,14 @@ export async function getAnalysisSettings (refresh = false) {
   return preferences.hcsAnalysisConfiguration || {};
 }
 
-export async function getAnalysisEndpointSetting () {
+export async function getAnalysisEndpointSetting() {
   const configuration = await getAnalysisSettings();
-  const {
-    endpoint,
-    api = endpoint
-  } = configuration;
+  const {endpoint, api = endpoint} = configuration;
   return api;
 }
 
-const containsPlaceholder = (placeholder) =>
-  (string) =>
-    (new RegExp(`{${placeholder}}`, 'i')).test(string);
+const containsPlaceholder = (placeholder) => (string) =>
+  new RegExp(`{${placeholder}}`, 'i').test(string);
 const hasUserPlaceholder = containsPlaceholder('user');
 const hasUserStoragePlaceholder = containsPlaceholder('user-storage');
 const fetchUserRequired = (specsFolder, resultsFolder) =>
@@ -56,26 +52,19 @@ const fetchUserRequired = (specsFolder, resultsFolder) =>
   hasUserPlaceholder(resultsFolder) ||
   hasUserStoragePlaceholder(resultsFolder);
 
-export async function getDockerImageInfo (dockerImage, dockerImageVersion = 'latest') {
+export async function getDockerImageInfo(dockerImage, dockerImageVersion = 'latest') {
   if (!dockerImage) {
     throw new Error('Batch analysis: analysis tool not specified');
   }
   let toolRequestPayload = dockerImage;
   let registry;
   if (Number.isNaN(Number(dockerImage))) {
-    const [
-      toolAndVersion,
-      group,
-      parsedRegistry
-    ] = dockerImage.split('/').reverse();
+    const [toolAndVersion, group, parsedRegistry] = dockerImage.split('/').reverse();
     registry = parsedRegistry;
     if (!group) {
       throw new Error('Batch analysis: tool image format is incorrect (group is missing)');
     }
-    const [
-      tool,
-      version = 'latest'
-    ] = toolAndVersion.split(':');
+    const [tool, version = 'latest'] = toolAndVersion.split(':');
     dockerImageVersion = version;
     toolRequestPayload = [group, tool].filter(Boolean).join('/');
   }
@@ -93,7 +82,7 @@ export async function getDockerImageInfo (dockerImage, dockerImageVersion = 'lat
   if (toolSettings.error) {
     throw new Error(toolSettings.error);
   }
-  const info = (toolSettings.value || []).find(o => o.version === dockerImageVersion);
+  const info = (toolSettings.value || []).find((o) => o.version === dockerImageVersion);
   let versionSettings = {};
   if (info && info.settings && info.settings.length > 0) {
     versionSettings = info.settings[0].configuration;
@@ -102,20 +91,14 @@ export async function getDockerImageInfo (dockerImage, dockerImageVersion = 'lat
     dockerImage: `${toolInfo.registry}/${toolInfo.image}:${dockerImageVersion}`,
     dockerImageWithoutVersion: `${toolInfo.registry}/${toolInfo.image}`,
     tool: toolInfo,
-    settings: versionSettings
+    settings: versionSettings,
   };
 }
 
-export async function getBatchAnalysisDockerImage (refresh = false) {
+export async function getBatchAnalysisDockerImage(refresh = false) {
   const settings = await getAnalysisSettings(refresh);
-  const {
-    dockerImage: analysisDockerImage,
-    batch = {}
-  } = settings || {};
-  let {
-    dockerImage = analysisDockerImage,
-    dockerImageVersion = 'latest'
-  } = batch;
+  const {dockerImage: analysisDockerImage, batch = {}} = settings || {};
+  const {dockerImage = analysisDockerImage, dockerImageVersion = 'latest'} = batch;
   try {
     return getDockerImageInfo(dockerImage, dockerImageVersion);
   } catch (e) {
@@ -123,11 +106,9 @@ export async function getBatchAnalysisDockerImage (refresh = false) {
   }
 }
 
-export async function getBatchAnalysisSettings (refresh = false) {
+export async function getBatchAnalysisSettings(refresh = false) {
   const settings = await getAnalysisSettings(refresh);
-  const {
-    batch = {}
-  } = settings || {};
+  const {batch = {}} = settings || {};
   let {
     specsFolder,
     resultsFolder,
@@ -145,7 +126,7 @@ export async function getBatchAnalysisSettings (refresh = false) {
   }
   let userName;
   let userStorage = defaultStorage;
-  const date = moment.utc().format('YYYY-MM-DD');
+  const date = dayjs.utc().format('YYYY-MM-DD');
   if (fetchUserRequired(specsFolder, resultsFolder)) {
     await whoAmI.fetchIfNeededOrWait();
     if (whoAmI.error || !whoAmI.loaded) {
@@ -154,8 +135,9 @@ export async function getBatchAnalysisSettings (refresh = false) {
     userName = whoAmI.value.userName;
     await storages.fetchIfNeededOrWait();
     if (whoAmI.value.defaultStorageId) {
-      const aStorage = (storages.value || [])
-        .find(s => Number(s.id) === Number(whoAmI.value.defaultStorageId));
+      const aStorage = (storages.value || []).find(
+        (s) => Number(s.id) === Number(whoAmI.value.defaultStorageId),
+      );
       if (aStorage) {
         userStorage = aStorage.pathMask;
       }
@@ -164,15 +146,15 @@ export async function getBatchAnalysisSettings (refresh = false) {
   const replacePlaceholders = (string) => {
     let result = string;
     if (/{user}/i.test(result)) {
-      result = result.replace(/{user}/ig, userName);
+      result = result.replace(/{user}/gi, userName);
     }
     if (/{user-storage}/i.test(result)) {
       if (!userStorage) {
         throw new Error('Batch analysis: default user storage not specified');
       }
-      result = result.replace(/{user-storage}/ig, userStorage);
+      result = result.replace(/{user-storage}/gi, userStorage);
     }
-    return result.replace(/{date}/ig, date);
+    return result.replace(/{date}/gi, date);
   };
   specsFolder = replacePlaceholders(specsFolder);
   resultsFolder = replacePlaceholders(resultsFolder);
@@ -180,7 +162,7 @@ export async function getBatchAnalysisSettings (refresh = false) {
     storages,
     specsFolder,
     {write: true, read: true},
-    {generateCredentials: false, isURL: true}
+    {generateCredentials: false, isURL: true},
   );
   if (!specsStorage) {
     throw new Error(`Batch analysis: storage for path "${specsFolder}" not found`);
@@ -189,20 +171,20 @@ export async function getBatchAnalysisSettings (refresh = false) {
     storages,
     resultsFolder,
     {write: true, read: true},
-    {generateCredentials: false, isURL: true}
+    {generateCredentials: false, isURL: true},
   );
   if (!resultsStorage) {
     throw new Error(`Batch analysis: storage for path "${resultsFolder}" not found`);
   }
   const dockerImageInfo = await getBatchAnalysisDockerImage(false);
-  const additionalMounts = new Set(mounts.map(o => Number(o)));
+  const additionalMounts = new Set(mounts.map((o) => Number(o)));
   let rawImagesPath;
   if (predefinedRawImageDataRoot) {
     const rawImagesStorage = await createObjectStorageWrapper(
       storages,
       predefinedRawImageDataRoot,
       {read: true, write: false},
-      {generateCredentials: true, isURL: true}
+      {generateCredentials: true, isURL: true},
     );
     if (rawImagesStorage) {
       additionalMounts.add(rawImagesStorage.id);
@@ -214,139 +196,108 @@ export async function getBatchAnalysisSettings (refresh = false) {
     ...rest,
     specs: {
       folder: specsStorage.getRelativePath(specsFolder),
-      storage: specsStorage
+      storage: specsStorage,
     },
     results: {
       folder: resultsStorage.getRelativePath(resultsFolder),
-      storage: resultsStorage
+      storage: resultsStorage,
     },
     mounts: [...additionalMounts],
     rawImagesPath,
-    tempFilesPath
+    tempFilesPath,
   };
 }
 
-export async function getExternalEvaluationsSettings (refresh = false) {
+export async function getExternalEvaluationsSettings(refresh = false) {
   const settings = await getAnalysisSettings(refresh);
-  const {
-    hcsFilesFolder,
-    batch = {}
-  } = settings || {};
-  const {
-    otherEvaluations = {}
-  } = batch;
+  const {hcsFilesFolder, batch = {}} = settings || {};
+  const {otherEvaluations = {}} = batch;
   const {
     specPath = '{HCS_FILE_INFO.previewDir}/eval/{EVALUATION_ID}/spec.json',
     resultsPath = '{HCS_FILE_INFO.previewDir}/eval/{EVALUATION_ID}/Results.csv',
-    analysisPath = '{HCS_FILE_INFO.previewDir}/eval/{EVALUATION_ID}/AnalysisFile.aas'
+    analysisPath = '{HCS_FILE_INFO.previewDir}/eval/{EVALUATION_ID}/AnalysisFile.aas',
   } = otherEvaluations;
   return {
     hcsFilesFolder,
     specPath,
     resultsPath,
-    analysisPath
+    analysisPath,
   };
 }
 
-export async function getVideoSettings (refresh = false) {
+export async function getVideoSettings(refresh = false) {
   const settings = await getAnalysisSettings(refresh);
-  const {
-    api: mainAPI,
-    video
-  } = settings || {};
-  const {
-    api = mainAPI,
-    ...rest
-  } = video || {};
+  const {api: mainAPI, video} = settings || {};
+  const {api = mainAPI, ...rest} = video || {};
   return {
     ...rest,
-    api
+    api,
   };
 }
 
-export async function getHDScreenshotSettings (refresh = false) {
+export async function getHDScreenshotSettings(refresh = false) {
   const settings = await getAnalysisSettings(refresh);
-  const {
-    api: mainAPI,
-    images
-  } = settings || {};
-  const {
-    api = mainAPI,
-    ...rest
-  } = images || {};
+  const {api: mainAPI, images} = settings || {};
+  const {api = mainAPI, ...rest} = images || {};
   return {
     ...rest,
-    api
+    api,
   };
 }
 
-export async function getBatchAnalysisSimilarCheckSettings (refresh = false) {
+export async function getBatchAnalysisSimilarCheckSettings(refresh = false) {
   const settings = await getAnalysisSettings(refresh);
-  const {
-    batch = {}
-  } = settings || {};
-  const {
-    similar = {}
-  } = batch;
-  const {
-    'max-different-parameters': maxDifferentParameters,
-    mode = 'total'
-  } = similar;
+  const {batch = {}} = settings || {};
+  const {similar = {}} = batch;
+  const {'max-different-parameters': maxDifferentParameters, mode = 'total'} = similar;
   return {
     maxDifferentParameters,
-    mode
+    mode,
   };
 }
 
-export async function findJobWithDockerImage (options = {}) {
+export async function findJobWithDockerImage(options = {}) {
   const configuration = await getAnalysisSettings();
-  const {
-    dockerImage = DEFAULT_DOCKER_IMAGE,
-    jobId
-  } = configuration;
+  const {dockerImage = DEFAULT_DOCKER_IMAGE, jobId} = configuration;
   if (jobId) {
     return {
       id: jobId,
       status: 'RUNNING',
-      __predefined__: true
+      __predefined__: true,
     };
   }
   if (!dockerImage) {
     throw new Error('CellProfiler docker image is not specified');
   }
-  const {
-    dockerImage: fullDockerImage
-  } = await getDockerImageInfo(dockerImage);
-  const {
-    userInfo
-  } = options;
+  const {dockerImage: fullDockerImage} = await getDockerImageInfo(dockerImage);
+  const {userInfo} = options;
   let owners;
   const dockerImageRegExp = new RegExp(`^${fullDockerImage}$`, 'i');
   if (userInfo) {
     await userInfo.fetchIfNeededOrWait();
-    if (userInfo.loaded) {}
     owners = [userInfo.value.userName];
   }
-  const request = new PipelineRunFilter({
-    page: 1,
-    pageSize: 1000,
-    userModified: false,
-    statuses: ['RUNNING'],
-    owners
-  }, false);
+  const request = new PipelineRunFilter(
+    {
+      page: 1,
+      pageSize: 1000,
+      userModified: false,
+      statuses: ['RUNNING'],
+      owners,
+    },
+    false,
+  );
   await request.filter();
   if (request.error) {
     throw new Error(request.error);
   }
   const jobs = request.value || [];
-  return jobs.find(aJob => aJob.id === jobId || dockerImageRegExp.test(aJob.dockerImage));
+  return jobs.find((aJob) => aJob.id === jobId || dockerImageRegExp.test(aJob.dockerImage));
 }
 
-export async function launchJobWithDockerImage () {
+export async function launchJobWithDockerImage() {
   const configuration = await getAnalysisSettings();
-  const {
-    dockerImage = DEFAULT_DOCKER_IMAGE
-  } = configuration;
+  const {dockerImage = DEFAULT_DOCKER_IMAGE} = configuration;
   if (!dockerImage) {
     throw new Error('CellProfiler docker image is not specified');
   }
@@ -363,7 +314,7 @@ export async function launchJobWithDockerImage () {
   return Promise.reject(new Error('CellProfiler job not found'));
 }
 
-export async function fetchJobInfo (jobId) {
+export async function fetchJobInfo(jobId) {
   const request = new PipelineRunInfo(jobId);
   await request.fetch();
   if (request.error) {
@@ -375,18 +326,16 @@ export async function fetchJobInfo (jobId) {
   return undefined;
 }
 
-async function jobIsInitialized (job) {
+async function jobIsInitialized(job) {
   if (job) {
     const {initialized, serviceUrl} = job;
     const parsed = parseRunServiceUrlConfiguration(serviceUrl);
     if (initialized && parsed.length) {
-      const defaultUrl = parsed.find(o => o.isDefault) || parsed[0];
+      const defaultUrl = parsed.find((o) => o.isDefault) || parsed[0];
       if (defaultUrl && defaultUrl.url) {
         const {url} = defaultUrl;
         const configuration = await getAnalysisSettings();
-        const {
-          endpointRegion
-        } = configuration;
+        const {endpointRegion} = configuration;
         if (url && url[endpointRegion]) {
           return url[endpointRegion];
         }
@@ -407,7 +356,7 @@ const MAX_ATTEMPTS = TIMEOUT_MS / REFETCH_INTERVAL_MS;
  * @param attempt
  * @returns {Promise<never>|Promise<string>}
  */
-export async function waitForJobToBeInitialized (job, attempt = 0) {
+export async function waitForJobToBeInitialized(job, attempt = 0) {
   if (!job) {
     throw new Error('Job not specified');
   }
@@ -425,7 +374,7 @@ export async function waitForJobToBeInitialized (job, attempt = 0) {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       fetchJobInfo(job.id)
-        .then(info => waitForJobToBeInitialized(info, attempt + 1))
+        .then((info) => waitForJobToBeInitialized(info, attempt + 1))
         .then(resolve)
         .catch(reject);
     }, interval);

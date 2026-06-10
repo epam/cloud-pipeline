@@ -17,12 +17,9 @@
 import Remote from '../basic/Remote';
 
 class CorePodsInfo extends Remote {
-  constructor (podName, detailed = false) {
+  constructor(podName, detailed = false) {
     super();
-    const query = [
-      `podId=${encodeURIComponent(podName)}`,
-      `detailed=${detailed}`
-    ].join('&');
+    const query = [`podId=${encodeURIComponent(podName)}`, `detailed=${detailed}`].join('&');
     this.url = `/cluster/pods/info?${query}`;
   }
 }

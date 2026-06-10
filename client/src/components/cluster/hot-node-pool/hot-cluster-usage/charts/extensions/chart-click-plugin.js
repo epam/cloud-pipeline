@@ -27,7 +27,7 @@ const plugin = {
         event,
         'nearest',
         {intersect: true},
-        false
+        false,
       );
       if (nearestActivePoint) {
         const datasetIndex = nearestActivePoint._datasetIndex;
@@ -44,7 +44,7 @@ const plugin = {
       }
     }
     return null;
-  }
+  },
 };
 
 export {id, plugin};

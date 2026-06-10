@@ -29,7 +29,7 @@ import PipelineRunLayers from '../../../../../models/pipelines/PipelineRunLayers
  * @param {boolean} [skip=false]
  * @returns {Promise<{LayersCheckResult}>} true if layers check passed, false otherwise
  */
-export default async function checkLayers (runId, skip = false) {
+export default async function checkLayers(runId, skip = false) {
   if (skip) {
     return Promise.resolve({result: true});
   }
@@ -44,7 +44,7 @@ export default async function checkLayers (runId, skip = false) {
     return {
       result: Number(request.value) < maxLayers,
       allowed: maxLayers,
-      current: Number(request.value)
+      current: Number(request.value),
     };
   }
   return {result: true};

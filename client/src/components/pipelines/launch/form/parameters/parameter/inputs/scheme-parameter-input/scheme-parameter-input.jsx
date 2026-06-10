@@ -3,13 +3,13 @@ import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import {Modal} from 'antd';
 import LaunchFormSchemeParameterTable from './scheme-parameter-table';
-import mainStyles from '../launch-form-parameter-input.css';
-import styles from './scheme-parameter-input.css';
+import mainStyles from '../launch-form-parameter-input.module.css';
+import styles from './scheme-parameter-input.module.css';
 import ParameterValueRepresentation from '../../representation';
 
 class LaunchFormSchemeParameterInput extends React.Component {
   state = {
-    modalVisible: false
+    modalVisible: false,
   };
 
   onOpenModal = () => this.setState({modalVisible: true});
@@ -21,59 +21,35 @@ class LaunchFormSchemeParameterInput extends React.Component {
       onChange(newValue);
     }
     this.onCloseModal();
-  }
+  };
 
-  render () {
-    const {
-      className,
-      style,
-      disabled,
-      onChange,
-      ...rest
-    } = this.props;
+  render() {
+    const {className, style, disabled, onChange, ...rest} = this.props;
     const {parameter} = rest;
-    const {
-      name,
-      config = {},
-      value,
-      valid
-    } = parameter || {};
-    const {
-      prettyName = name,
-      scheme = {}
-    } = config || {};
-    const {
-      properties = []
-    } = scheme;
+    const {name, config = {}, value, valid} = parameter || {};
+    const {prettyName = name, scheme = {}} = config || {};
+    const {properties = []} = scheme;
     const propsCount = (properties || []).length;
     const modalWidth = Math.min(95, Math.max(75, propsCount * 15));
     const {modalVisible} = this.state;
     return (
-      <div
-        className={classNames(className, mainStyles.launchParameterInput)}
-        style={style}
-      >
+      <div className={classNames(className, mainStyles.launchParameterInput)} style={style}>
         <div
           onClick={this.onOpenModal}
-          className={
-            classNames(
-              styles.schemeParameterInput,
-              {
-                disabled,
-                'cp-limit-mounts-input': valid,
-                'cp-error border': !valid
-              }
-            )
-          }
+          className={classNames(styles.schemeParameterInput, {
+            disabled,
+            'cp-limit-mounts-input': valid,
+            'cp-error border': !valid,
+          })}
           style={{padding: '0 5px'}}
         >
           <ParameterValueRepresentation
             value={value}
-            missingLabel={(<i className="cp-text-not-important">Empty value</i>)}
+            missingLabel={<i className="cp-text-not-important">Empty value</i>}
           />
         </div>
         <Modal
-          title={(<b>{prettyName}</b>)}
+          title={<b>{prettyName}</b>}
           open={modalVisible}
           footer={false}
           width={`${modalWidth}%`}
@@ -81,8 +57,8 @@ class LaunchFormSchemeParameterInput extends React.Component {
           styles={{
             body: {
               margin: 0,
-              padding: '2px 10px 10px'
-            }
+              padding: '2px 10px 10px',
+            },
           }}
         >
           <LaunchFormSchemeParameterTable
@@ -109,7 +85,7 @@ LaunchFormSchemeParameterInput.propTypes = {
   currentProjectMetadata: PropTypes.object,
   currentMetadataEntity: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
   rootEntityId: PropTypes.string,
-  metadataAutoComplete: PropTypes.bool
+  metadataAutoComplete: PropTypes.bool,
 };
 
 export default LaunchFormSchemeParameterInput;

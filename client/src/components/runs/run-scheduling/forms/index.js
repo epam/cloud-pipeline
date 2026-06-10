@@ -25,7 +25,7 @@ import {
   MONTHS,
   COMPUTED_DAYS,
   getMaximumDaysInMonth,
-  getOrdinalSuffix
+  getOrdinalSuffix,
 } from './days';
 
 export {
@@ -40,5 +40,5 @@ export {
   MONTHS,
   COMPUTED_DAYS,
   getMaximumDaysInMonth,
-  getOrdinalSuffix
+  getOrdinalSuffix,
 };

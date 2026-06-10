@@ -20,7 +20,7 @@ import {
   UploadReadSetPartCommand,
   ListReadSetUploadPartsCommand,
   CompleteMultipartReadSetUploadCommand,
-  AbortMultipartReadSetUploadCommand
+  AbortMultipartReadSetUploadCommand,
 } from '@aws-sdk/client-omics';
 import {observable, action, makeObservable} from 'mobx';
 import fetchTempCredentials from '../s3-upload/fetch-temp-credentials';
@@ -55,43 +55,41 @@ class OmicsStorage {
   aborted = false;
   uploadError = null;
 
-  get omics () {
+  get omics() {
     return this._omics;
   }
 
-  constructor (config) {
+  constructor(config) {
     makeObservable(this, {
       uploadError: observable,
       createUpload: action,
       uploadPart: action,
       getListParts: action,
       completeUpload: action,
-      abortUpload: action
+      abortUpload: action,
     });
     this.regionName = config.region;
     this._storage = config.storage;
   }
 
-  async createClient () {
+  async createClient() {
     await this.setCredentials();
     if (this._credentials) {
       return this.setOmicsClient();
     }
   }
 
-  async getCredentials () {
+  async getCredentials() {
     try {
       const updateCredentialsAttempt = (attempt = 0, error = undefined) => {
         if (attempt >= FETCH_CREDENTIALS_MAX_ATTEMPTS) {
           return Promise.reject(error || new Error('credentials API is not available'));
         }
         return new Promise((resolve, reject) => {
-          fetchTempCredentials(
-            this._storage.id,
-            {
-              read: this._storage.read === undefined ? true : this._storage.read,
-              write: this._storage.write === undefined ? true : this._storage.write
-            })
+          fetchTempCredentials(this._storage.id, {
+            read: this._storage.read === undefined ? true : this._storage.read,
+            write: this._storage.write === undefined ? true : this._storage.write,
+          })
             .then(resolve)
             .catch((e) => {
               updateCredentialsAttempt(attempt + 1, e)
@@ -110,10 +108,10 @@ class OmicsStorage {
     }
   }
 
-  async setCredentials () {
+  async setCredentials() {
     const credentials = await this.getCredentials()
-      .then(cred => cred)
-      .catch(err => {
+      .then((cred) => cred)
+      .catch((err) => {
         this.uploadError = err.message;
         return undefined;
       });
@@ -124,7 +122,7 @@ class OmicsStorage {
         credentials.token,
         credentials.expiration,
         credentials.region,
-        this.getCredentials
+        this.getCredentials,
       );
     } else if (this._credentials.needsRefresh) {
       this._credentials.update(
@@ -132,17 +130,17 @@ class OmicsStorage {
         credentials.accessKey,
         credentials.token,
         credentials.expiration,
-        credentials.region
+        credentials.region,
       );
     }
   }
 
-  setOmicsClient () {
+  setOmicsClient() {
     if (this._credentials && this.regionName) {
       this._omics = new OmicsClient({
         omics: '2022-11-28',
         region: this.regionName,
-        credentials: this._credentials
+        credentials: this._credentials,
       });
       return true;
     }
@@ -166,21 +164,21 @@ class OmicsStorage {
       this.uploadError = err.message;
       return false;
     }
-  }
+  };
 
   getParts = (file, partCounts) => {
     const parts = [];
     for (let partNumber = 1; partNumber <= partCounts; partNumber++) {
       const start = (partNumber - 1) * MAX_PART_SIZE;
-      let end = Math.min(start + MAX_PART_SIZE, file.size);
+      const end = Math.min(start + MAX_PART_SIZE, file.size);
       parts.push({
         filePart: file.slice(start, end),
         partNumber,
-        name: file.name
+        name: file.name,
       });
     }
     return parts;
-  }
+  };
 
   uploadFile = async (file, source) => {
     if (this.uploadId) {
@@ -200,7 +198,7 @@ class OmicsStorage {
         return false;
       }
     }
-  }
+  };
 
   uploadPart = async (part, source, attempt) => {
     if (this.aborted) return;
@@ -211,7 +209,7 @@ class OmicsStorage {
           uploadId: this.uploadId,
           partSource: source,
           partNumber: part.partNumber,
-          payload: part.filePart
+          payload: part.filePart,
         };
         const command = new UploadReadSetPartCommand(input);
         const response = await this._omics.send(command);
@@ -219,13 +217,13 @@ class OmicsStorage {
       }
     } catch (err) {
       this.uploadError = err.message;
-      if (attempt < (UPLOAD_PART_MAX_ATTEMPTS - 1)) {
+      if (attempt < UPLOAD_PART_MAX_ATTEMPTS - 1) {
         await this.uploadPart(part, source, attempt + 1);
       } else {
         return null;
       }
     }
-  }
+  };
 
   getListParts = async (source) => {
     if (this.aborted) return;
@@ -233,7 +231,7 @@ class OmicsStorage {
       const input = {
         sequenceStoreId: this.sequenceStoreId,
         uploadId: this.uploadId,
-        partSource: source
+        partSource: source,
       };
       const command = new ListReadSetUploadPartsCommand(input);
       const response = await this._omics.send(command);
@@ -242,7 +240,7 @@ class OmicsStorage {
       this.uploadError = err.message;
       return false;
     }
-  }
+  };
 
   completeUpload = async () => {
     if (this.aborted) return;
@@ -250,11 +248,11 @@ class OmicsStorage {
       const input = {
         sequenceStoreId: this.sequenceStoreId,
         uploadId: this.uploadId,
-        parts: this.listParts.map(part => ({
+        parts: this.listParts.map((part) => ({
           partNumber: part.partNumber,
           partSource: part.partSource,
-          checksum: part.checksum
-        }))
+          checksum: part.checksum,
+        })),
       };
       const command = new CompleteMultipartReadSetUploadCommand(input);
       const response = await this._omics.send(command);
@@ -264,14 +262,14 @@ class OmicsStorage {
       this.uploadError = err.message;
       return false;
     }
-  }
+  };
 
   abortUpload = async () => {
     if (this.aborted) return;
     try {
       const input = {
         sequenceStoreId: this.sequenceStoreId,
-        uploadId: this.uploadId
+        uploadId: this.uploadId,
       };
       const command = new AbortMultipartReadSetUploadCommand(input);
       await this._omics.send(command);
@@ -281,7 +279,7 @@ class OmicsStorage {
       this.uploadError = err.message;
       return false;
     }
-  }
+  };
 }
 
 export default OmicsStorage;

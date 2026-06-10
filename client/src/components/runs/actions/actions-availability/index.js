@@ -3,11 +3,11 @@ import preferences from '../../../../models/preferences/PreferencesLoad';
 
 export {runActions};
 
-export function checkRunActionAvailable (run, runAction) {
+export function checkRunActionAvailable(run, runAction) {
   if (!run || !runAction) {
     return false;
   }
-  (preferences.fetchIfNeededOrWait)();
+  preferences.fetchIfNeededOrWait();
   const {uiRunActions = {}} = preferences;
   const criteria = uiRunActions[runAction];
   if (criteria && typeof criteria === 'function') {
@@ -16,7 +16,7 @@ export function checkRunActionAvailable (run, runAction) {
   return true;
 }
 
-export async function checkRunActionAvailableAsync (run, runAction) {
+export async function checkRunActionAvailableAsync(run, runAction) {
   if (!run || !runAction) {
     return false;
   }

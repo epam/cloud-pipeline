@@ -19,7 +19,7 @@ import fetchFacets from './fetch-facets';
 import getItemUrl from './get-item-url';
 import getFacetFilterToken from './facet-filter-token';
 
-export default function facetsSearch (fetchFacetsOptions) {
+export default function facetsSearch(fetchFacetsOptions) {
   const {
     query,
     filters,
@@ -28,20 +28,20 @@ export default function facetsSearch (fetchFacetsOptions) {
     options,
     scrollingParameters,
     abortSignal,
-    skipFacets = false
+    skipFacets = false,
   } = fetchFacetsOptions;
   const {
     facets = [],
     facetsToken: currentFacetsToken,
     facetsCount,
     stores,
-    metadataFields = []
+    metadataFields = [],
   } = options;
   const facetsToken = getFacetFilterToken({
     query,
     filters,
     sortingOrder,
-    pageSize: 1
+    pageSize: 1,
   });
   const doFetchFacets = currentFacetsToken !== facetsToken && !skipFacets;
   return new Promise((resolve) => {
@@ -54,56 +54,42 @@ export default function facetsSearch (fetchFacetsOptions) {
         pageSize,
         facets,
         scrollingParameters,
-        abortSignal
-      })
+        abortSignal,
+      }),
     ];
     if (doFetchFacets && Object.keys(filters || {}).length > 0) {
       // if {filters} is empty (Object.keys.length === 0)
       // we can get results (facets count) from doSearch() call
-      promises.push(
-        fetchFacets(facets, filters, query, sortingOrder, abortSignal)
-      );
+      promises.push(fetchFacets(facets, filters, query, sortingOrder, abortSignal));
     }
-    Promise
-      .all(promises)
-      .then(result => {
-        const [
-          searchResult,
-          facetsCountResult
-        ] = result;
-        const {
+    Promise.all(promises).then((result) => {
+      const [searchResult, facetsCountResult] = result;
+      const {error, documents = [], facets: facetsCountFromSearch} = searchResult;
+      if (result.some((r) => r.aborted)) {
+        resolve({aborted: true});
+      }
+      let facetsCountUpdated, facetsTokenUpdated;
+      if (facetsCountResult) {
+        facetsCountUpdated = facetsCountResult.facetsCount || facetsCount;
+        facetsTokenUpdated = facetsCountResult.facetsToken || facetsToken;
+      } else if (doFetchFacets) {
+        facetsCountUpdated = facetsCountFromSearch || facetsCount;
+        facetsTokenUpdated = facetsToken;
+      } else {
+        facetsCountUpdated = facetsCount;
+        facetsTokenUpdated = facetsToken;
+      }
+      Promise.all(documents.map((doc) => getItemUrl(doc, stores))).then((urls) => {
+        urls.forEach((url, index) => {
+          documents[index].url = url;
+        });
+        resolve({
           error,
-          documents = [],
-          facets: facetsCountFromSearch
-        } = searchResult;
-        if (result.some(r => r.aborted)) {
-          resolve({aborted: true});
-        }
-        let facetsCountUpdated, facetsTokenUpdated;
-        if (facetsCountResult) {
-          facetsCountUpdated = facetsCountResult.facetsCount || facetsCount;
-          facetsTokenUpdated = facetsCountResult.facetsToken || facetsToken;
-        } else if (doFetchFacets) {
-          facetsCountUpdated = facetsCountFromSearch || facetsCount;
-          facetsTokenUpdated = facetsToken;
-        } else {
-          facetsCountUpdated = facetsCount;
-          facetsTokenUpdated = facetsToken;
-        }
-        Promise.all(
-          documents.map(doc => getItemUrl(doc, stores))
-        )
-          .then(urls => {
-            urls.forEach((url, index) => {
-              documents[index].url = url;
-            });
-            resolve({
-              error,
-              facetsCount: facetsCountUpdated,
-              facetsToken: facetsTokenUpdated,
-              documents: documents.slice()
-            });
-          });
+          facetsCount: facetsCountUpdated,
+          facetsToken: facetsTokenUpdated,
+          documents: documents.slice(),
+        });
       });
+    });
   });
 }

@@ -19,7 +19,7 @@ import dockerRegistries from '../../../../../models/tools/DockerRegistriesTree';
 
 const cache = new Map();
 
-async function fetchToolOS (dockerImage, tree = dockerRegistries) {
+async function fetchToolOS(dockerImage, tree = dockerRegistries) {
   if (!dockerImage) {
     return undefined;
   }
@@ -28,30 +28,20 @@ async function fetchToolOS (dockerImage, tree = dockerRegistries) {
     if (!tree.loaded) {
       throw new Error(`Error fetching docker images: ${tree.error}`);
     }
-    const [
-      registryPath,
-      groupName,
-      imageAndVersion
-    ] = dockerImage.split('/');
+    const [registryPath, groupName, imageAndVersion] = dockerImage.split('/');
     const [image, version] = (imageAndVersion || '').split(':');
-    const {
-      registries = []
-    } = tree.value || {};
-    const registry = registries.find(o => o.path === registryPath);
+    const {registries = []} = tree.value || {};
+    const registry = registries.find((o) => o.path === registryPath);
     if (!registry) {
       throw new Error(`Registry ${registryPath} not found`);
     }
-    const {
-      groups = []
-    } = registry;
-    const group = groups.find(g => g.name === groupName);
+    const {groups = []} = registry;
+    const group = groups.find((g) => g.name === groupName);
     if (!group) {
       throw new Error(`Group ${groupName} not found`);
     }
-    const {
-      tools = []
-    } = group;
-    const tool = tools.find(o => o.image === `${groupName}/${image}`);
+    const {tools = []} = group;
+    const tool = tools.find((o) => o.image === `${groupName}/${image}`);
     if (!tool) {
       throw new Error(`Tool ${groupName}/${image} not found`);
     }
@@ -59,29 +49,20 @@ async function fetchToolOS (dockerImage, tree = dockerRegistries) {
     await toolInfoRequest.fetch();
     if (!toolInfoRequest.loaded) {
       throw new Error(
-        `Error fetching tool info: ${toolInfoRequest ? toolInfoRequest.error : 'unknown'}`
+        `Error fetching tool info: ${toolInfoRequest ? toolInfoRequest.error : 'unknown'}`,
       );
     }
-    const {
-      versions = []
-    } = toolInfoRequest.value || {};
-    const versionInfo = versions.find(v => v.version === version);
+    const {versions = []} = toolInfoRequest.value || {};
+    const versionInfo = versions.find((v) => v.version === version);
     if (
       versionInfo &&
       versionInfo.scanResult &&
       versionInfo.scanResult.toolOSVersion &&
       versionInfo.scanResult.toolOSVersion.distribution
     ) {
-      const {
-        distribution,
-        version: distributionVersion = ''
-      } = versionInfo.scanResult.toolOSVersion;
-      return [
-        distribution,
-        distributionVersion
-      ]
-        .filter(Boolean)
-        .join(' ');
+      const {distribution, version: distributionVersion = ''} =
+        versionInfo.scanResult.toolOSVersion;
+      return [distribution, distributionVersion].filter(Boolean).join(' ');
     }
   } catch (e) {
     console.warn(e.message);
@@ -89,7 +70,7 @@ async function fetchToolOS (dockerImage, tree = dockerRegistries) {
   return undefined;
 }
 
-export default async function fetchToolOSCached (dockerImage, tree = dockerRegistries) {
+export default async function fetchToolOSCached(dockerImage, tree = dockerRegistries) {
   if (!dockerImage) {
     return undefined;
   }

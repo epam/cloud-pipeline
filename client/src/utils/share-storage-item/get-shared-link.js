@@ -21,11 +21,11 @@ import DataStorageGenerateSharedLink from '../../models/dataStorage/DataStorageG
  * @param {number} storageId
  * @returns {Promise<string|undefined>}
  */
-export default function getSharedLink (storageId) {
+export default function getSharedLink(storageId) {
   if (!storageId) {
     return Promise.resolve(undefined);
   }
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     const request = new DataStorageGenerateSharedLink(storageId);
     request
       .fetch()

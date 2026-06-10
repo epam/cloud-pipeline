@@ -17,7 +17,7 @@
 import RemotePost from '../basic/RemotePost';
 
 class PipelineRunKubeServices extends RemotePost {
-  constructor (id, service) {
+  constructor(id, service) {
     super();
     this.url = `/run/${id}/kube/services?serviceName=${service}`;
   }

@@ -1,0 +1,14 @@
+.cloud-provider-tag::before {
+  content: "\00a0";
+}
+
+.cloud-provider-tag {
+  margin-right: 2px;
+  background: no-repeat 50%;
+  background-size: contain;
+  position: relative;
+  display: inline-block;
+  width: 1.33em;
+  height: 1.33em;
+  line-height: 1.33em;
+}

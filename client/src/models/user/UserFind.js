@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 export default class UserFind extends Remote {
-  constructor (prefix) {
+  constructor(prefix) {
     super();
     this.url = `/user/find?prefix=${prefix}`;
   }

@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 export default class LoadEntityCredentialProfiles extends Remote {
-  constructor (id, principal = false) {
+  constructor(id, principal = false) {
     super();
     this.url = `/cloud/credentials/assigners?id=${id}&principal=${principal}`;
   }

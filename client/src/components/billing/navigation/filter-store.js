@@ -18,6 +18,7 @@ import {observable, isObservableArray, makeObservable} from 'mobx';
 import {Period, getPeriod} from '../../special/periods';
 import RunnerType from './runner-types';
 import ReportsRouting from './reports-routing';
+import {routing as globalRouting} from '../../../mobx-stores/legacy-stores.js';
 import {parseInstanceMetrics, parseStorageMetrics} from './metrics';
 import {parseStorageAggregate, StorageAggregate} from './aggregate';
 
@@ -31,14 +32,14 @@ class Filter {
   metrics;
   storageAggregate;
 
-  constructor () {
+  constructor() {
     makeObservable(this, {
       period: observable,
       range: observable,
       report: observable,
       runner: observable,
       metrics: observable,
-      storageAggregate: observable
+      storageAggregate: observable,
     });
   }
 
@@ -56,17 +57,17 @@ class Filter {
     if (billingGroup) {
       this.runner = {
         type: RunnerType.billingGroup,
-        id: (billingGroup || '').split(Filter.RUNNER_SEPARATOR)
+        id: (billingGroup || '').split(Filter.RUNNER_SEPARATOR),
       };
     } else if (user) {
       this.runner = {
         type: RunnerType.user,
-        id: (user || '').split(Filter.RUNNER_SEPARATOR)
+        id: (user || '').split(Filter.RUNNER_SEPARATOR),
       };
     } else if (group) {
       this.runner = {
         type: RunnerType.group,
-        id: (group || '').split(Filter.RUNNER_SEPARATOR)
+        id: (group || '').split(Filter.RUNNER_SEPARATOR),
       };
     } else {
       this.runner = undefined;
@@ -90,15 +91,7 @@ class Filter {
   };
 
   navigate = (navigation, strictRange = false) => {
-    let {
-      report,
-      runner,
-      period,
-      range,
-      region,
-      metrics,
-      storageAggregate
-    } = navigation || {};
+    let {report, runner, period, range, region, metrics, storageAggregate} = navigation || {};
     if (report === undefined) {
       report = this.report;
     }
@@ -126,10 +119,7 @@ class Filter {
     if (storageAggregate === undefined) {
       storageAggregate = this.storageAggregate;
     }
-    if (
-      !ReportsRouting.isObjectStorage(report) ||
-      storageAggregate === StorageAggregate.default
-    ) {
+    if (!ReportsRouting.isObjectStorage(report) || storageAggregate === StorageAggregate.default) {
       storageAggregate = undefined;
     }
     if (ReportsRouting.isQuota(report)) {
@@ -138,7 +128,7 @@ class Filter {
       period = undefined;
       region = undefined;
     }
-    const regions = (region || []);
+    const regions = region || [];
     const mapRunnerId = (id) => {
       if (id && (Array.isArray(id) || isObservableArray(id))) {
         return id.join(Filter.RUNNER_SEPARATOR);
@@ -153,35 +143,36 @@ class Filter {
     };
     const params = [
       runner && runner.type === RunnerType.user && `user=${mapRunnerId(runner.id)}`,
-      runner && runner.type === RunnerType.billingGroup &&
+      runner &&
+        runner.type === RunnerType.billingGroup &&
         `billing-group=${mapRunnerId(runner.id)}`,
       runner && runner.type === RunnerType.group && `group=${mapRunnerId(runner.id)}`,
       period && `period=${period}`,
       range && `range=${range}`,
       regions.length > 0 && `region=${mapRegionId(regions)}`,
       metrics && `metrics=${metrics}`,
-      storageAggregate && `layer=${storageAggregate}`
+      storageAggregate && `layer=${storageAggregate}`,
     ].filter(Boolean);
     let query = '';
     if (params.length) {
       query = `?${params.join('&')}`;
     }
-    if (this.router) {
-      this.router.push(`${ReportsRouting.getPath(report)}${query}`);
+    const router = this.router ?? globalRouting;
+    if (router?.push) {
+      router.push(`${ReportsRouting.getPath(report)}${query}`);
     }
   };
 
   getDescription = ({users, cloudRegionsInfo, discounts}) => {
-    const {
-      computeRaw = 0,
-      storageRaw = 0
-    } = discounts || {};
+    const {computeRaw = 0, storageRaw = 0} = discounts || {};
     let discountsTitle = '';
     if (computeRaw !== 0 || storageRaw !== 0) {
       const parts = [
         computeRaw !== 0 ? `Computes ${-computeRaw}%` : undefined,
-        storageRaw !== 0 ? `Storages ${-storageRaw}%` : undefined
-      ].filter(Boolean).join(' and ');
+        storageRaw !== 0 ? `Storages ${-storageRaw}%` : undefined,
+      ]
+        .filter(Boolean)
+        .join(' and ');
       discountsTitle = `(${parts})`;
     }
     let title = ReportsRouting.getTitle(this.report) || 'Report';
@@ -194,20 +185,14 @@ class Filter {
       dates = `${start.format('YYYY-MM-DD')} - ${endStrict.format('YYYY-MM-DD')}`;
     }
     let runner;
-    if (
-      this.runner &&
-      this.runner.type === RunnerType.user &&
-      users &&
-      users.loaded
-    ) {
-      const userList = (users.value || [])
-        .filter(({id}) => (this.runner.id || [])
-          .filter((rId) => `${id}` === `${rId}`).length > 0
-        );
+    if (this.runner && this.runner.type === RunnerType.user && users && users.loaded) {
+      const userList = (users.value || []).filter(
+        ({id}) => (this.runner.id || []).filter((rId) => `${id}` === `${rId}`).length > 0,
+      );
       if (userList.length > 0) {
-        runner = userList.map(u => u.userName).join(' ');
+        runner = userList.map((u) => u.userName).join(' ');
       } else {
-        runner = `user ${this.runner.id.map(i => `#${i}`).join(' ')}`;
+        runner = `user ${this.runner.id.map((i) => `#${i}`).join(' ')}`;
       }
     } else if (this.runner) {
       runner = `${this.runner.type} ${this.runner.id.join(' ')}`;
@@ -217,23 +202,18 @@ class Filter {
       if (cloudRegionsInfo && cloudRegionsInfo.loaded) {
         const cloudRegions = cloudRegionsInfo.value || [];
         const names = this.region
-          .map(r => +r)
-          .map(r => cloudRegions.find(cr => cr.id === r) || {name: `${r}`})
-          .map(r => r.name);
+          .map((r) => +r)
+          .map((r) => cloudRegions.find((cr) => cr.id === r) || {name: `${r}`})
+          .map((r) => r.name);
         regions = `regions ${names.join(' ')}`;
       } else {
         regions = `regions ${this.region.join(' ')}`;
       }
     }
-    return [
-      title,
-      dates,
-      runner,
-      regions
-    ].filter(Boolean).join(' - ');
+    return [title, dates, runner, regions].filter(Boolean).join(' - ');
   };
 
-  buildNavigationFn = (property) => e => this.navigate({[property]: e});
+  buildNavigationFn = (property) => (e) => this.navigate({[property]: e});
 
   periodNavigation = (period, range) => this.navigate({period, range}, true);
 

@@ -4,22 +4,22 @@ import {Spin} from 'antd';
 import classNames from 'classnames';
 import ResultTable from './components/result-table';
 import PipelineRunResults from '../../../../../models/pipelines/PipelineRunResults';
-import styles from './reports.css';
+import styles from './reports.module.css';
 
 export class Reports extends Component {
   static propTypes = {
     runId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
     className: PropTypes.string,
-    style: PropTypes.object
+    style: PropTypes.object,
   };
 
   state = {
     results: [],
-    pending: false
-  }
+    pending: false,
+  };
 
-  componentDidMount () {
-    (this.fetchRunResults)();
+  componentDidMount() {
+    this.fetchRunResults();
   }
 
   fetchRunResults = async () => {
@@ -36,20 +36,17 @@ export class Reports extends Component {
     }
 
     this.setState({pending: false});
-  }
+  };
 
-  render () {
-    const {
-      className,
-      style
-    } = this.props;
+  render() {
+    const {className, style} = this.props;
     if (this.state.pending) {
       return (
         <div
           className={classNames(
             className,
             styles.runReportsContainer,
-            styles.runReportsContainerLoading
+            styles.runReportsContainerLoading,
           )}
           style={style}
         >
@@ -60,10 +57,7 @@ export class Reports extends Component {
 
     return (
       <ResultTable
-        className={classNames(
-          className,
-          styles.runReportsContainer
-        )}
+        className={classNames(className, styles.runReportsContainer)}
         style={style}
         resultItems={this.state.results}
       />

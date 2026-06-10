@@ -24,5 +24,5 @@ export default {
   configuration: 'configuration',
   storage: 'data_storage',
   metadataClass: 'metadata_class',
-  metadataFolder: 'metadata_folder'
+  metadataFolder: 'metadata_folder',
 };

@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 export default class MetadataEntityFields extends Remote {
-  constructor (folderId) {
+  constructor(folderId) {
     super();
     this.url = `/metadataEntity/fields?folderId=${folderId}`;
   }

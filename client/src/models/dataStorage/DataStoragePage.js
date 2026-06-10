@@ -16,7 +16,7 @@
 
 import Remote from '../basic/Remote';
 
-function isEncodedString (str) {
+function isEncodedString(str) {
   return decodeURIComponent(str) !== str;
 }
 
@@ -27,14 +27,7 @@ class DataStoragePage extends Remote {
   path;
   type;
 
-  constructor (
-    id,
-    path,
-    showVersion,
-    showArchives,
-    pageSize,
-    marker
-  ) {
+  constructor(id, path, showVersion, showArchives, pageSize, marker) {
     super();
     this.id = id;
     this.path = path;
@@ -43,22 +36,22 @@ class DataStoragePage extends Remote {
     this.showArchives = showArchives;
     this.marker = marker;
     this.buildUrl();
-  };
+  }
 
-  async fetchPage (marker) {
+  async fetchPage(marker) {
     this.marker = marker;
     this.buildUrl();
     this._pending = true;
     await super.fetch();
   }
 
-  buildUrl () {
+  buildUrl() {
     const query = [
       !!this.path && `path=${encodeURIComponent(this.path)}`,
       `showVersion=${!!this.showVersion}`,
       `showArchived=${!!this.showArchives}`,
       `pageSize=${this.pageSize}`,
-      !!this.marker && `marker=${encodeURIComponent(this.marker)}`
+      !!this.marker && `marker=${encodeURIComponent(this.marker)}`,
     ]
       .filter(Boolean)
       .join('&');

@@ -1,25 +1,18 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import styles from './parameter-name-input.css';
+import styles from './parameter-name-input.module.css';
 
-function StaticParameterName (props) {
-  const {
-    className,
-    style,
-    children
-  } = props;
+function StaticParameterName(props) {
+  const {className, style, children} = props;
   return (
-    <div
-      className={classNames(className, styles.parameterNameInputContainer)}
-      style={style}
-    >
+    <div className={classNames(className, styles.parameterNameInputContainer)} style={style}>
       <div className={styles.parameterNameInputRow}>
         <span
           className={classNames(
             'ant-form-item-title',
             styles.parameterName,
-            styles.editingDisabled
+            styles.editingDisabled,
           )}
           style={{textWrap: 'nowrap'}}
         >
@@ -33,7 +26,7 @@ function StaticParameterName (props) {
 StaticParameterName.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
-  children: PropTypes.node
+  children: PropTypes.node,
 };
 
 export default StaticParameterName;

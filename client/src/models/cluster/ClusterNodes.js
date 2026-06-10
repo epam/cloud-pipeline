@@ -20,18 +20,18 @@ import NodeInstance from './NodeInstance';
 export const MACHINE_TYPES = {
   all: 'ALL',
   cloud: 'CLOUD',
-  kube: 'KUBE'
+  kube: 'KUBE',
 };
 
 class ClusterNodes extends Remote {
-  constructor () {
+  constructor() {
     super();
-    this.url = `/cluster/node/loadAll?machineType=ALL`;
-  };
+    this.url = '/cluster/node/loadAll?machineType=ALL';
+  }
 
   _nodesCache = new Map();
 
-  getNode (name, type = MACHINE_TYPES.kube) {
+  getNode(name, type = MACHINE_TYPES.kube) {
     if (!this._nodesCache.has(name)) {
       const instance = new NodeInstance(name, type);
       this._nodesCache.set(name, instance);
@@ -40,7 +40,7 @@ class ClusterNodes extends Remote {
     return this._nodesCache.get(name);
   }
 
-  clearCachedNode (name) {
+  clearCachedNode(name) {
     if (this._nodesCache.has(name)) {
       this._nodesCache.delete(name);
     }

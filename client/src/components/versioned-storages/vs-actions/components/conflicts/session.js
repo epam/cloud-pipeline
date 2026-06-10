@@ -22,27 +22,27 @@ class ConflictsSessionFile {
   error;
   file;
 
-  get hash () {
+  get hash() {
     if (this._info) {
       return this._info.changesHash;
     }
     return undefined;
   }
 
-  get resolved () {
+  get resolved() {
     if (this._info) {
       return this._info.resolved;
     }
     return false;
   }
 
-  constructor (runId, storage, mergeInProgress, file, info) {
+  constructor(runId, storage, mergeInProgress, file, info) {
     makeObservable(this, {
       _info: observable,
       error: observable,
       file: observable,
       hash: computed,
-      resolved: computed
+      resolved: computed,
     });
     this.runId = runId;
     this.storage = storage;
@@ -51,7 +51,7 @@ class ConflictsSessionFile {
     this.info = info;
   }
 
-  fetch () {
+  fetch() {
     return new Promise((resolve, reject) => {
       analyzeConflicts(this.runId, this.storage, this.mergeInProgress, this.file, this.info)
         .then((info) => {
@@ -59,7 +59,7 @@ class ConflictsSessionFile {
           this.error = undefined;
           resolve(this._info);
         })
-        .catch(e => {
+        .catch((e) => {
           this._info = undefined;
           this.error = e.message;
           reject(this.error);
@@ -67,18 +67,17 @@ class ConflictsSessionFile {
     });
   }
 
-  getInfo () {
+  getInfo() {
     if (this._info) {
       return Promise.resolve(this._info);
     }
     return this.fetch();
   }
 
-  getText () {
+  getText() {
     return new Promise((resolve) => {
-      this
-        .getInfo()
-        .then(conflictedFile => {
+      this.getInfo()
+        .then((conflictedFile) => {
           resolve(conflictedFile.getMergedText());
         })
         .catch(() => {
@@ -91,55 +90,55 @@ class ConflictsSessionFile {
 class ConflictsSession {
   files = [];
 
-  constructor () {
+  constructor() {
     makeObservable(this, {
       files: observable,
       resolved: computed,
-      hash: computed
+      hash: computed,
     });
   }
 
-  get resolved () {
-    return !this.files.find(file => !file.resolved);
+  get resolved() {
+    return !this.files.find((file) => !file.resolved);
   }
 
-  get hash () {
-    return this.files.map(file => file.hash || 0).join('|');
+  get hash() {
+    return this.files.map((file) => file.hash || 0).join('|');
   }
 
-  setFiles (runId, storage, mergeInProgress, files = [], filesInfo = []) {
-    this.files = files.map(file =>
-      new ConflictsSessionFile(
-        runId,
-        storage,
-        mergeInProgress,
-        file,
-        filesInfo.find(f => f.path === file)
-      )
+  setFiles(runId, storage, mergeInProgress, files = [], filesInfo = []) {
+    this.files = files.map(
+      (file) =>
+        new ConflictsSessionFile(
+          runId,
+          storage,
+          mergeInProgress,
+          file,
+          filesInfo.find((f) => f.path === file),
+        ),
     );
   }
 
-  getFile (file) {
-    return this.files.find(f => f.file === file);
+  getFile(file) {
+    return this.files.find((f) => f.file === file);
   }
 
-  getAllFilesContents () {
-    const wrapper = (file) => new Promise((resolve) => {
-      this.getFileContents(file.file)
-        .then(contents => {
+  getAllFilesContents() {
+    const wrapper = (file) =>
+      new Promise((resolve) => {
+        this.getFileContents(file.file).then((contents) => {
           resolve({[file.file]: contents});
         });
-    });
+      });
     return new Promise((resolve) => {
-      Promise.all(this.files.map(wrapper))
-        .then(payloads => {
-          resolve(payloads.reduce((res, cur) => ({...res, ...cur}), {}));
-        });
+      Promise.all(this.files.map(wrapper)).then((payloads) => {
+        resolve(payloads.reduce((res, cur) => ({...res, ...cur}), {}));
+      });
     });
   }
 
-  getFileContents (file) {
-    const info = this.files.find(f => f.file === file);
+  getFileContents(file) {
+    const info = this.files.find((f) => f.file === file);
     if (info) {
       return info.getText();
     }

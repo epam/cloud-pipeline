@@ -18,7 +18,7 @@ import VSRemote from './base/remote';
 import VSConflictError from './conflict-error';
 
 class VSTaskStatus extends VSRemote {
-  constructor (runId, statusId) {
+  constructor(runId, statusId) {
     super(runId);
     this.statusId = statusId;
     this.url = `status/${statusId}`;
@@ -44,12 +44,13 @@ class VSTaskStatus extends VSRemote {
         resolve();
         self.abortFn = undefined;
       };
-      function fetch () {
+      function fetch() {
         if (self.timeout) {
           clearTimeout(self.timeout);
           self.timeout = null;
         }
-        self.fetch()
+        self
+          .fetch()
           .then(() => {
             if (self.error) {
               self.abortFn = undefined;
@@ -71,7 +72,7 @@ class VSTaskStatus extends VSRemote {
               }
             }
           })
-          .catch(e => {
+          .catch((e) => {
             self.abortFn = undefined;
             reject(e);
           });

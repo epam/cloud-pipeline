@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 export default class DataStorageGenerateUploadUrl extends Remote {
-  constructor (id, path) {
+  constructor(id, path) {
     super();
     this.url = `/datastorage/${id}/generateUploadUrl?path=${encodeURIComponent(path)}`;
   }

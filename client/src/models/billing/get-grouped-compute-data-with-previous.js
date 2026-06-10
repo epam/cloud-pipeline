@@ -22,21 +22,16 @@ class GetGroupedComputeDataWithPrevious extends GetDataWithPrevious {
    * @param {BaseBillingRequestOptions} options
    * @param {string} computeDataFilterName
    */
-  constructor (
-    Model,
-    options,
-    computeDataFilterName
-  ) {
+  constructor(Model, options, computeDataFilterName) {
     super(Model, options, (currentPeriodData) => {
-      const computeDataIdentifiers = Object.entries(currentPeriodData || {})
-        .map(([key, data]) => {
-          if (data && data.groupingInfo && data.groupingInfo.name) {
-            return data.groupingInfo.name;
-          }
-          return key;
-        });
+      const computeDataIdentifiers = Object.entries(currentPeriodData || {}).map(([key, data]) => {
+        if (data && data.groupingInfo && data.groupingInfo.name) {
+          return data.groupingInfo.name;
+        }
+        return key;
+      });
       return {
-        [computeDataFilterName]: computeDataIdentifiers
+        [computeDataFilterName]: computeDataIdentifiers,
       };
     });
   }

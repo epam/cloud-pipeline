@@ -17,15 +17,15 @@
 import Remote from '../basic/Remote';
 
 export default class GrantRemove extends Remote {
-  constructor (id, type, user, principal) {
+  constructor(id, type, user, principal) {
     super();
     this.constructor.fetchOptions = {
       headers: {
-        'Content-type': 'application/json; charset=UTF-8'
+        'Content-type': 'application/json; charset=UTF-8',
       },
       mode: 'cors',
       credentials: 'include',
-      method: 'DELETE'
+      method: 'DELETE',
     };
     this.url = `/grant?id=${id}&aclClass=${type.toUpperCase()}&user=${user}&isPrincipal=${principal}`;
   }

@@ -26,48 +26,48 @@ export const names = {
   jobsVisibility: 'launch.run.visibility',
   jwtTokenExpirationRefreshThreshold: 'launch.jwt.token.expiration.refresh.threshold',
   storageManagementRestrictedAccess: 'storage.management.restricted.access',
-  gcpSpotInstanceType: 'gcp.spot.instance.type'
+  gcpSpotInstanceType: 'gcp.spot.instance.type',
 };
 
 export class ContextualPreferenceLoad extends Remote {
-  constructor (level, name, resourceId) {
+  constructor(level, name, resourceId) {
     super();
     this.url = `/contextual/preference/load?name=${name}&level=${level}&resourceId=${resourceId}`;
   }
 }
 
 export class ContextualPreferenceUpdate extends RemotePost {
-  constructor () {
+  constructor() {
     super();
     this.constructor.fetchOptions = {
       headers: {
-        'Content-type': 'application/json; charset=UTF-8'
+        'Content-type': 'application/json; charset=UTF-8',
       },
       mode: 'cors',
       credentials: 'include',
-      method: 'PUT'
+      method: 'PUT',
     };
     this.url = '/contextual/preference';
   }
 }
 
 export class ContextualPreferenceSearch extends RemotePost {
-  constructor () {
+  constructor() {
     super();
     this.url = '/contextual/preference';
   }
 }
 
 export class ContextualPreferenceDelete extends RemotePost {
-  constructor (name, level, resourceId) {
+  constructor(name, level, resourceId) {
     super();
     this.constructor.fetchOptions = {
       headers: {
-        'Content-type': 'application/json; charset=UTF-8'
+        'Content-type': 'application/json; charset=UTF-8',
       },
       mode: 'cors',
       credentials: 'include',
-      method: 'DELETE'
+      method: 'DELETE',
     };
     this.url = `/contextual/preference?name=${name}&level=${level}&resourceId=${resourceId}`;
   }

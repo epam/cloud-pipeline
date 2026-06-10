@@ -22,24 +22,19 @@ import prepareChanges from './changes/prepare';
 import VSFileContent from '../../../../../../models/versioned-storage/file-content';
 import VSConflictDiff from '../../../../../../models/versioned-storage/conflict-diff';
 
-function fetchDiff (run, storage, file, options = {}) {
+function fetchDiff(run, storage, file, options = {}) {
   return new Promise((resolve) => {
-    const request = new VSConflictDiff(
-      run,
-      storage?.id,
-      file,
-      {
-        linesCount: 0,
-        ...options
-      }
-    );
+    const request = new VSConflictDiff(run, storage?.id, file, {
+      linesCount: 0,
+      ...options,
+    });
     request
       .fetch()
       .then(() => {
         if (request.loaded) {
           resolve({
             lines: (request.value?.lines || []).slice(),
-            binary: request.value?.binary
+            binary: request.value?.binary,
           });
         } else {
           resolve(undefined);
@@ -49,13 +44,13 @@ function fetchDiff (run, storage, file, options = {}) {
   });
 }
 
-function parse (contents, mergeInProgress) {
+function parse(contents, mergeInProgress) {
   const linkedList = new ConflictedFile();
   const regExp = /^<<<<<<< [^\n]+\n(.*?)=======\n(.*?)>>>>>>> (.*?)$/gms;
   let result = regExp.exec(contents);
   let previousIndex = 0;
   let conflictId = 0;
-  const isEOF = index => contents.length - 1 <= index;
+  const isEOF = (index) => contents.length - 1 <= index;
   while (result && result.length === 4) {
     const conflict = {id: conflictId};
     linkedList.appendText(contents.slice(previousIndex, result.index), {}, isEOF(result.index));
@@ -79,19 +74,11 @@ function parse (contents, mergeInProgress) {
   return linkedList;
 }
 
-function prepareConflicts (list) {
+function prepareConflicts(list) {
   const conflicts = list.getConflicts();
-  for (let conflict of conflicts) {
-    const head = ConflictedFile.processText(
-      conflict[HeadBranch],
-      HeadBranch,
-      true
-    );
-    const remote = ConflictedFile.processText(
-      conflict[RemoteBranch],
-      RemoteBranch,
-      true
-    );
+  for (const conflict of conflicts) {
+    const head = ConflictedFile.processText(conflict[HeadBranch], HeadBranch, true);
+    const remote = ConflictedFile.processText(conflict[RemoteBranch], RemoteBranch, true);
     const original = head || remote;
     const subList = new ConflictedFile();
     subList.appendMergedText(original);
@@ -104,7 +91,7 @@ function prepareConflicts (list) {
   }
 }
 
-function processDiffs (contents, head, remote, mergeInProgress) {
+function processDiffs(contents, head, remote, mergeInProgress) {
   const list = parse(contents, mergeInProgress);
   const headRest = (head || []).slice();
   const remoteRest = (remote || []).slice();
@@ -135,28 +122,22 @@ function processDiffs (contents, head, remote, mergeInProgress) {
       if (headModification.origin === '+') {
         headLine = list.getLineAtIndex(HeadBranch, headModification.new_lineno);
       } else if (headModification.origin === '-') {
-        headLine = list.getLineAtOriginalIndex(
-          HeadBranch,
-          headModification.old_lineno
-        );
+        headLine = list.getLineAtOriginalIndex(HeadBranch, headModification.old_lineno);
       }
     }
     if (remoteModification) {
       if (remoteModification.origin === '+') {
         remoteLine = list.getLineAtIndex(RemoteBranch, remoteModification.new_lineno);
       } else if (remoteModification.origin === '-') {
-        remoteLine = list.getLineAtOriginalIndex(
-          RemoteBranch,
-          remoteModification.old_lineno
-        );
+        remoteLine = list.getLineAtOriginalIndex(RemoteBranch, remoteModification.old_lineno);
       }
     }
     let sameModifications = false;
     let performHead = false;
     let performRemote = false;
     if (remoteLine && headLine) {
-      sameModifications = remoteLine === headLine &&
-        modificationsAreTheSame(headModification, remoteModification);
+      sameModifications =
+        remoteLine === headLine && modificationsAreTheSame(headModification, remoteModification);
       const headIsParent = headLine.isParentFor(remoteLine);
       const remoteIsParent = headIsParent ? false : remoteLine.isParentFor(headLine);
       if (!headIsParent && !remoteIsParent) {
@@ -173,21 +154,12 @@ function processDiffs (contents, head, remote, mergeInProgress) {
       performRemote = !!remoteLine;
     }
     if (sameModifications) {
-      performModification(
-        remoteLine,
-        remoteModification,
-        HeadBranch,
-        RemoteBranch
-      );
+      performModification(remoteLine, remoteModification, HeadBranch, RemoteBranch);
       headRest.splice(0, 1);
       remoteRest.splice(0, 1);
     } else {
       if (performHead) {
-        performModification(
-          headLine,
-          headModification,
-          HeadBranch
-        );
+        performModification(headLine, headModification, HeadBranch);
         headRest.splice(0, 1);
       }
       if (performRemote) {
@@ -208,7 +180,7 @@ function processDiffs (contents, head, remote, mergeInProgress) {
   return list;
 }
 
-export default function analyzeConflicts (run, storage, mergeInProgress, file, fileInfo) {
+export default function analyzeConflicts(run, storage, mergeInProgress, file, fileInfo) {
   if (!run || !storage || !file) {
     return Promise.resolve({});
   }
@@ -232,14 +204,12 @@ export default function analyzeConflicts (run, storage, mergeInProgress, file, f
         if (mergeInProgress) {
           // merge conflict
           // head:
-          promises.push(
-            fetchDiff(run, storage, file, {mergeInProgress})
-          );
+          promises.push(fetchDiff(run, storage, file, {mergeInProgress}));
           // remote:
           promises.push(
             remoteSHA
               ? fetchDiff(run, storage, file, {revision: remoteSHA, mergeInProgress})
-              : Promise.resolve(undefined)
+              : Promise.resolve(undefined),
           );
         } else {
           // head:
@@ -250,13 +220,9 @@ export default function analyzeConflicts (run, storage, mergeInProgress, file, f
         return Promise.all([...promises, Promise.resolve(contents)]);
       })
       .then((payloads) => {
-        const [
-          head,
-          remote,
-          contents
-        ] = payloads;
+        const [head, remote, contents] = payloads;
         if (head?.binary || remote?.binary) {
-          throw new Error(`Binary file`);
+          throw new Error('Binary file');
         }
         const headLines = head?.lines;
         const remoteLines = remote?.lines;

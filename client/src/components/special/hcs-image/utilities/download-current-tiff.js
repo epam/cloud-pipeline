@@ -14,45 +14,31 @@
  *  limitations under the License.
  */
 
-export function downloadAvailable (viewer) {
+export function downloadAvailable(viewer) {
   if (!viewer) {
     return false;
   }
-  const {
-    viewerState
-  } = viewer;
-  const {
-    loader,
-    pending
-  } = viewerState || {};
-  return !pending &&
-    loader &&
-    loader.length > 0;
+  const {viewerState} = viewer;
+  const {loader, pending} = viewerState || {};
+  return !pending && loader && loader.length > 0;
 }
 
 /**
  * @param {object} viewer
  * @param {{wellView: boolean?, wellId: string?}} options
  */
-export function downloadCurrentTiff (viewer, options = {}) {
+export function downloadCurrentTiff(viewer, options = {}) {
   if (downloadAvailable(viewer)) {
-    const {
-      wellId,
-      wellView
-    } = options;
+    const {wellId, wellView} = options;
     let fileName;
     if (wellId && wellView) {
       fileName = wellId;
     } else if (wellId) {
-      const {
-        viewerState
-      } = viewer;
-      const {
-        metadata
-      } = viewerState || {};
+      const {viewerState} = viewer;
+      const {metadata} = viewerState || {};
       const {Name = wellId} = metadata;
-      const parts = Name.split(',').map(o => o.trim());
-      fileName = parts.map(o => /(\s|^)well(\s|$)/i.test(o) ? wellId : o).join(', ');
+      const parts = Name.split(',').map((o) => o.trim());
+      fileName = parts.map((o) => (/(\s|^)well(\s|$)/i.test(o) ? wellId : o)).join(', ');
     }
     viewer.makeSnapshot(fileName);
   }

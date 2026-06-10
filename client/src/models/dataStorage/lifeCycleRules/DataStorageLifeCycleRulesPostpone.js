@@ -21,18 +21,12 @@ const DEFAULT_DAYS = 14;
 export default class DataStorageLifeCycleRulesPostpone extends Remote {
   url;
 
-  constructor ({
-    datastorageId,
-    ruleId,
-    path,
-    days = DEFAULT_DAYS,
-    force = false
-  }) {
+  constructor({datastorageId, ruleId, path, days = DEFAULT_DAYS, force = false}) {
     super();
     const parts = [
       path !== undefined && `path=${encodeURIComponent(path)}`,
       days !== undefined && `days=${days}`,
-      force !== undefined && `force=${force}`
+      force !== undefined && `force=${force}`,
     ].filter(Boolean);
     const query = `?${parts.join('&')}`;
     this.url = `/datastorage/${datastorageId}/lifecycle/rule/${ruleId}/prolong${query}`;

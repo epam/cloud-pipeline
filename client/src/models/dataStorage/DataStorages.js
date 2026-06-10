@@ -21,21 +21,21 @@ import {observable, makeObservable} from 'mobx';
 class DataStorages extends Remote {
   url;
 
-  constructor () {
+  constructor() {
     super();
     makeObservable(this, {
-      _defaultDataStorageId: observable
+      _defaultDataStorageId: observable,
     });
     this.url = '/datastorage/loadAll';
-  };
+  }
 
   _defaultDataStorageId = null;
 
-  get defaultDataStorageId () {
+  get defaultDataStorageId() {
     return this._defaultDataStorageId;
   }
 
-  postprocess (value) {
+  postprocess(value) {
     const payload = value.payload || [];
     if (payload.length > 0) {
       this._defaultDataStorageId = `${payload[0].id}`;
@@ -43,17 +43,15 @@ class DataStorages extends Remote {
     return payload;
   }
 
-  /* eslint-disable */
-  static getCache (cache, id, model) {
+  static getCache(cache, id, Model) {
     if (!cache.has(id)) {
-      cache.set(id, new model(id));
+      cache.set(id, new Model(id));
     }
 
     return cache.get(id);
   }
 
-  /* eslint-disable */
-  static invalidateCache (cache, id) {
+  static invalidateCache(cache, id) {
     if (cache.has(id)) {
       if (cache.get(id).invalidateCache) {
         cache.get(id).invalidateCache();
@@ -72,7 +70,6 @@ class DataStorages extends Remote {
   invalidateCache(id) {
     return DataStorages.invalidateCache(this._storagesCache, `${id}`);
   }
-
 }
 
 export default new DataStorages();

@@ -3,13 +3,9 @@ import PropTypes from 'prop-types';
 import {
   fetchAvailablePlugins,
   pluginAssignmentsArraysAreEqual,
-  updatePluginsAssignments
+  updatePluginsAssignments,
 } from '../utilities';
-import {Alert,
-  Modal,
-  message,
-  Button
-} from 'antd';
+import {Alert, Modal, message, Button} from 'antd';
 import {SettingOutlined} from '@ant-design/icons';
 import ConfigurePluginsControl from './configure-plugins-control';
 import classNames from 'classnames';
@@ -21,42 +17,39 @@ class ConfigurePlugins extends React.PureComponent {
     pending: false,
     error: undefined,
     visible: false,
-    updateTrigger: {}
+    updateTrigger: {},
   };
-  _token = {}
 
-  get modified () {
+  _token = {};
+
+  get modified() {
     const {plugins, initial} = this.state;
     return !pluginAssignmentsArraysAreEqual(initial, plugins);
   }
 
-  componentDidMount () {
+  componentDidMount() {
     this.loadPlugins();
   }
 
-  componentDidUpdate (prevProps, prevState, snapshot) {
+  componentDidUpdate(prevProps, prevState, snapshot) {
     const {mode = 'default'} = this.props;
     if (
       prevProps.pipelineId !== this.props.pipelineId ||
       prevProps.pipelineVersion !== this.props.pipelineVersion ||
       prevProps.toolId !== this.props.toolId ||
       prevProps.toolVersion !== this.props.toolVersion ||
-      (
-        mode.toLowerCase() === 'modal' &&
+      (mode.toLowerCase() === 'modal' &&
         prevProps.visible !== this.props.visible &&
-        this.props.visible
-      ) ||
-      (
-        mode.toLowerCase() !== 'modal' &&
+        this.props.visible) ||
+      (mode.toLowerCase() !== 'modal' &&
         prevState.visible !== this.state.visible &&
-        this.state.visible
-      )
+        this.state.visible)
     ) {
       this.loadPlugins();
     }
   }
 
-  componentWillUnmount () {
+  componentWillUnmount() {
     this.abort();
   }
 
@@ -65,7 +58,7 @@ class ConfigurePlugins extends React.PureComponent {
   };
 
   loadPlugins = () => {
-    const token = this._token = {};
+    const token = (this._token = {});
     const commit = async (st, cb) => {
       if (token === this._token) {
         return new Promise((resolve) => {
@@ -81,17 +74,12 @@ class ConfigurePlugins extends React.PureComponent {
     (async () => {
       try {
         await commit({pending: true, error: undefined});
-        const {
-          pipelineId,
-          pipelineVersion,
-          toolId,
-          toolVersion
-        } = this.props;
+        const {pipelineId, pipelineVersion, toolId, toolVersion} = this.props;
         const plugins = await fetchAvailablePlugins({
           pipelineId,
           pipelineVersion,
           toolId,
-          toolVersion
+          toolVersion,
         });
         await commit({pending: false, plugins, initial: plugins.slice()});
       } catch (error) {
@@ -118,7 +106,7 @@ class ConfigurePlugins extends React.PureComponent {
             <b style={{marginRight: 5}}>Error updating plugins:</b>
             <span>{error.message}</span>
           </div>,
-          5
+          5,
         );
       } finally {
         hide();
@@ -139,7 +127,7 @@ class ConfigurePlugins extends React.PureComponent {
     }
   };
 
-  render () {
+  render() {
     const {
       className,
       style,
@@ -149,9 +137,10 @@ class ConfigurePlugins extends React.PureComponent {
       pipelineVersion,
       toolId,
       toolVersion,
-      mode = 'default'
+      mode = 'default',
     } = this.props;
-    const disabled = propsDisabled ||
+    const disabled =
+      propsDisabled ||
       (pipelineId && !pipelineVersion) ||
       (toolId && !toolVersion) ||
       (!pipelineId && !toolId);
@@ -160,7 +149,7 @@ class ConfigurePlugins extends React.PureComponent {
       error,
       plugins,
       visible: stateVisible,
-      updateTrigger: stateUpdateTrigger
+      updateTrigger: stateUpdateTrigger,
     } = this.state;
     const {modified} = this;
     const modalVisible = mode.toLowerCase() === 'modal' ? visible : stateVisible;
@@ -179,16 +168,8 @@ class ConfigurePlugins extends React.PureComponent {
     })();
     const content = (
       <div>
-        {
-          error && (
-            <Alert title={error} type="error" />
-          )
-        }
-        {
-          generalError && (
-            <Alert title={generalError} type="error" />
-          )
-        }
+        {error && <Alert title={error} type="error" />}
+        {generalError && <Alert title={generalError} type="error" />}
         <ConfigurePluginsControl
           disabled={pending || disabled}
           plugins={plugins}
@@ -206,23 +187,19 @@ class ConfigurePlugins extends React.PureComponent {
         style={{
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'flex-end'
+          justifyContent: 'flex-end',
         }}
       >
-        {
-          mode.toLowerCase() === 'default' && (
-            <Button onClick={this.onClose} style={{marginRight: 5}} disabled={!modified}>
-              Revert
-            </Button>
-          )
-        }
-        {
-          mode.toLowerCase() !== 'default' && (
-            <Button onClick={this.onClose} style={{marginRight: 5}}>
-              Cancel
-            </Button>
-          )
-        }
+        {mode.toLowerCase() === 'default' && (
+          <Button onClick={this.onClose} style={{marginRight: 5}} disabled={!modified}>
+            Revert
+          </Button>
+        )}
+        {mode.toLowerCase() !== 'default' && (
+          <Button onClick={this.onClose} style={{marginRight: 5}}>
+            Cancel
+          </Button>
+        )}
         <Button disabled={disabled || pending || !modified} onClick={this.onSubmit} type="primary">
           Save
         </Button>
@@ -246,31 +223,28 @@ class ConfigurePlugins extends React.PureComponent {
       return (
         <div
           className={className}
-          style={Object.assign({
-            width: 'fit-content'
-          }, style)}
+          style={Object.assign(
+            {
+              width: 'fit-content',
+            },
+            style,
+          )}
         >
-          {
-            propsDisabled ? (
-              <span>
-                <SettingOutlined />
-                <span style={{margin: '0 5px'}}>
-                  {linkText}
-                </span>
-              </span>
-            ) : (
-              <a
-                onClick={this.onOpen}
-                className={classNames('cp-text', 'underline')}
-                style={{textDecoration: 'underline'}}
-              >
-                <SettingOutlined />
-                <span style={{margin: '0 5px'}}>
-                  {linkText}
-                </span>
-              </a>
-            )
-          }
+          {propsDisabled ? (
+            <span>
+              <SettingOutlined />
+              <span style={{margin: '0 5px'}}>{linkText}</span>
+            </span>
+          ) : (
+            <a
+              onClick={this.onOpen}
+              className={classNames('cp-text', 'underline')}
+              style={{textDecoration: 'underline'}}
+            >
+              <SettingOutlined />
+              <span style={{margin: '0 5px'}}>{linkText}</span>
+            </a>
+          )}
           {modal}
         </div>
       );
@@ -297,11 +271,11 @@ ConfigurePlugins.propTypes = {
   pipelineVersion: PropTypes.string,
   toolId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   toolVersion: PropTypes.string,
-  mode: PropTypes.oneOf(['default', 'button', 'modal'])
+  mode: PropTypes.oneOf(['default', 'button', 'modal']),
 };
 
 ConfigurePlugins.defaultProps = {
-  mode: 'button'
+  mode: 'button',
 };
 
 export default ConfigurePlugins;

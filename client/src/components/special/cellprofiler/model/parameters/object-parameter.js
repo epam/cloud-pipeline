@@ -22,11 +22,11 @@ import {AnalysisTypes} from '../common/analysis-types';
  * @param {AnalysisModule} cpModule
  * @returns {*[]}
  */
-function getObjectsForModule (cpModule) {
+function getObjectsForModule(cpModule) {
   if (cpModule) {
     return cpModule.modulesBefore
       .filter((cpModule) => !cpModule.hidden)
-      .reduce((outputs, cpModule) => ([...outputs, ...cpModule.outputs]), [])
+      .reduce((outputs, cpModule) => [...outputs, ...cpModule.outputs], [])
       .filter((output) => output.type === AnalysisTypes.object)
       .map((output) => output.name);
   }
@@ -37,29 +37,29 @@ class ObjectParameter extends ModuleParameter {
   /**
    * @param {ModuleParameterOptions} options
    */
-  constructor (options = {}) {
+  constructor(options = {}) {
     super({
       ...options,
       type: AnalysisTypes.object,
-      isList: true
+      isList: true,
     });
     makeObservable(this, {
-      values: computed
+      values: computed,
     });
   }
 
-  get values () {
+  get values() {
     return this.wrapValuesWithEmptyValue(
-      getObjectsForModule(this.cpModule)
-        .map((object) => ({
-          value: object,
-          id: object,
-          key: object,
-          title: object
-        })));
+      getObjectsForModule(this.cpModule).map((object) => ({
+        value: object,
+        id: object,
+        key: object,
+        title: object,
+      })),
+    );
   }
 
-  get defaultValue () {
+  get defaultValue() {
     let defaultValue;
     if (typeof this._defaultValue === 'function') {
       defaultValue = this._defaultValue(this.cpModule);
@@ -68,7 +68,7 @@ class ObjectParameter extends ModuleParameter {
     }
     const firstValue = this.values[0];
     const predefinedValue = defaultValue
-      ? this.values.find(o => o.value === defaultValue)
+      ? this.values.find((o) => o.value === defaultValue)
       : undefined;
     if (predefinedValue) {
       return predefinedValue.value;

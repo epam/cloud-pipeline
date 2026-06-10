@@ -17,7 +17,7 @@
 import RemotePost from '../basic/RemotePost';
 
 class CreateConfigurationSchedule extends RemotePost {
-  constructor (configurationId) {
+  constructor(configurationId) {
     super();
     this.url = `/schedule/configuration/${configurationId}`;
   }

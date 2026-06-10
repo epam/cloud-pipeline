@@ -13,9 +13,8 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-/* eslint-disable max-len */
 
-export function getParentParameter (modules, parameter) {
+export function getParentParameter(modules, parameter) {
   if (!modules) {
     return undefined;
   }
@@ -26,7 +25,7 @@ export function getParentParameter (modules, parameter) {
   return parent.getParameterValue(parameter);
 }
 
-function getThresholdingMethod (modules) {
+function getThresholdingMethod(modules) {
   return getParentParameter(modules, 'thresholdingMethod');
 }
 
@@ -44,7 +43,7 @@ const thresholdingOld = (options = {}) => {
   const {
     method = 'Adaptive Otsu (three classes)',
     manualDefault = 1,
-    manualThresholdRange
+    manualThresholdRange,
   } = options;
   let manualThresholdType = 'float';
   if (manualThresholdRange && manualThresholdRange.length === 2) {
@@ -59,7 +58,7 @@ const thresholdingOld = (options = {}) => {
       'Threshold smoothing scale|float|1.3488|ALIAS thresholdSmoothingScale|ADVANCED|IF configureThreshold==true',
       'Threshold correction factor|float|1.0|IF thresholdingMethod!==Manual AND configureThreshold==true|ALIAS thresholdCorrectionFactor|ADVANCED',
       `Adaptive size|units|10|IF configureThreshold==true AND ${adaptiveThresholdingIf}|ALIAS adaptive|ADVANCED`,
-      `Manual threshold|${manualThresholdType}|${manualDefault}|IF ${globalThresholdingIf}|ALIAS manualThreshold|ADVANCED`
+      `Manual threshold|${manualThresholdType}|${manualDefault}|IF ${globalThresholdingIf}|ALIAS manualThreshold|ADVANCED`,
     ],
     values: {
       strategy: (cpModule, modules) => {
@@ -111,8 +110,8 @@ const thresholdingOld = (options = {}) => {
       thresholdCorrectionFactor: '{parent.thresholdCorrectionFactor}|COMPUTED',
       adaptive: '{parent.adaptive}|COMPUTED',
       manualThreshold: '{parent.manualThreshold}|COMPUTED',
-      clumpedObjectsMethod: 'Shape'
-    }
+      clumpedObjectsMethod: 'Shape',
+    },
   };
 };
 
@@ -136,13 +135,13 @@ const thresholding = (options = {}) => {
     adaptive = 10,
     logTransform = false,
     condition,
-    prefix = ''
+    prefix = '',
   } = options;
   let manualThresholdType = 'float';
   if (manualThresholdRange && manualThresholdRange.length === 2) {
     manualThresholdType = `float(${manualThresholdRange[0]},${manualThresholdRange[1]})`;
   }
-  const property = name => `{parent.${prefix}${name}}|COMPUTED`;
+  const property = (name) => `{parent.${prefix}${name}}|COMPUTED`;
   const displayCondition = condition ? `(${condition})` : `${prefix}configureThreshold==true`;
   return {
     parameters: [
@@ -170,7 +169,7 @@ const thresholding = (options = {}) => {
       `Threshold correction factor|float|${thresholdCorrectionFactor}|IF (${prefix}thresholdingMethod!==Manual AND ${displayCondition})|ALIAS ${prefix}thresholdCorrectionFactor`,
       `Lower and upper bounds on threshold|float[]|[${bounds.join(',')}]|IF (${prefix}thresholdingMethod!==Manual AND ${displayCondition})|ALIAS ${prefix}bounds`,
       `Size of adaptive window|units|${adaptive}|IF (${prefix}strategy==Adaptive AND ${displayCondition})|ALIAS ${prefix}adaptive`,
-      `Log transform before thresholding?|flag|${logTransform}|IF ((${prefix}thresholdingMethod==Otsu OR ${prefix}thresholdingMethod=="Minimum Cross-Entropy") AND ${displayCondition})|ALIAS ${prefix}logTransform`
+      `Log transform before thresholding?|flag|${logTransform}|IF ((${prefix}thresholdingMethod==Otsu OR ${prefix}thresholdingMethod=="Minimum Cross-Entropy") AND ${displayCondition})|ALIAS ${prefix}logTransform`,
     ].filter(Boolean),
     values: {
       strategy: property('strategy'),
@@ -187,8 +186,8 @@ const thresholding = (options = {}) => {
       thresholdCorrectionFactor: property('thresholdCorrectionFactor'),
       bounds: property('bounds'),
       adaptive: property('adaptive'),
-      logTransform: property('logTransform')
-    }
+      logTransform: property('logTransform'),
+    },
   };
 };
 

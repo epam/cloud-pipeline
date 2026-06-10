@@ -14,8 +14,4 @@
  *  limitations under the License.
  */
 
-export default [
-  '#155ebd',
-  '#1bb765',
-  '#cb0955'
-];
+export default ['#155ebd', '#1bb765', '#cb0955'];

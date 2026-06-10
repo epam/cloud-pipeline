@@ -14,29 +14,21 @@
  * limitations under the License.
  */
 
-function applyDiscountsForObject (
-  obj,
-  discountFn,
-  keysToProcess,
-  discountPeriodsConfiguration
-) {
+function applyDiscountsForObject(obj, discountFn, keysToProcess, discountPeriodsConfiguration) {
   if (!obj) {
     return obj;
   }
   const result = {...obj};
   for (let i = 0; i < keysToProcess.length; i++) {
     const key = keysToProcess[i];
-    if (result.hasOwnProperty(key) && !isNotSet(result[key]) && discountFn) {
-      result[key] = discountFn(
-        result[key],
-        discountPeriodsConfiguration(key, obj)
-      );
+    if (Object.hasOwn(result, key) && !isNotSet(result[key]) && discountFn) {
+      result[key] = discountFn(result[key], discountPeriodsConfiguration(key, obj));
     }
   }
   return result;
 }
 
-function applyDiscountsForTierCostDetails (tier, discountFn, periodFn) {
+function applyDiscountsForTierCostDetails(tier, discountFn, periodFn) {
   if (!tier) {
     return tier;
   }
@@ -44,54 +36,41 @@ function applyDiscountsForTierCostDetails (tier, discountFn, periodFn) {
     'cost',
     'oldVersionCost',
     'accumulativeCost',
-    'accumulativeOldVersionCost'
+    'accumulativeOldVersionCost',
   ];
-  function discountPeriodConfiguration (key, item) {
+  function discountPeriodConfiguration(key, item) {
     return periodFn(item);
   }
-  return applyDiscountsForObject(
-    tier,
-    discountFn,
-    keysToProcess,
-    discountPeriodConfiguration
-  );
+  return applyDiscountsForObject(tier, discountFn, keysToProcess, discountPeriodConfiguration);
 }
 
-function applyDiscountsForCostDetails (costDetails, discountFn, periodFn) {
+function applyDiscountsForCostDetails(costDetails, discountFn, periodFn) {
   if (!costDetails) {
     return costDetails;
   }
-  const {
-    tiers = {},
-    ...rest
-  } = costDetails;
+  const {tiers = {}, ...rest} = costDetails;
   const processedTiers = {};
   Object.entries(tiers).forEach(([tierKey, tier]) => {
     processedTiers[tierKey] = applyDiscountsForTierCostDetails(tier, discountFn, periodFn);
   });
   const result = {
     ...rest,
-    tiers: processedTiers
+    tiers: processedTiers,
   };
   return applyDiscountsForObject(
     result,
     discountFn,
-    [
-      'computeCost',
-      'accumulatedComputeCost',
-      'diskCost',
-      'accumulatedDiskCost'
-    ],
-    periodFn
+    ['computeCost', 'accumulatedComputeCost', 'diskCost', 'accumulatedDiskCost'],
+    periodFn,
   );
 }
 
-function applyDiscounts (obj, discountFn) {
+function applyDiscounts(obj, discountFn) {
   if (!obj) {
     return obj;
   }
   const keysToProcess = ['value', 'cost', 'previous', 'previousCost', 'spendings'];
-  function discountPeriodConfiguration (key, item) {
+  function discountPeriodConfiguration(key, item) {
     switch (key) {
       case 'value':
       case 'cost':
@@ -108,22 +87,22 @@ function applyDiscounts (obj, discountFn) {
     obj,
     discountFn,
     keysToProcess,
-    discountPeriodConfiguration
+    discountPeriodConfiguration,
   );
   result.costDetails = applyDiscountsForCostDetails(
     result.costDetails,
     discountFn,
-    (item) => item.initialDate || item.startDate
+    (item) => item.initialDate || item.startDate,
   );
   result.previousCostDetails = applyDiscountsForCostDetails(
     result.previousCostDetails,
     discountFn,
-    (item) => item.previousInitialDate
+    (item) => item.previousInitialDate,
   );
   return result;
 }
 
-function applySummaryDiscounts (request, discountFn) {
+function applySummaryDiscounts(request, discountFn) {
   if (!request || !request.loaded) {
     return undefined;
   }
@@ -132,19 +111,19 @@ function applySummaryDiscounts (request, discountFn) {
   return {
     quota,
     previousQuota,
-    values
+    values,
   };
 }
 
-function simpleDiscount (percent) {
-  return (value) => +value * percent / 100.0;
+function simpleDiscount(percent) {
+  return (value) => (+value * percent) / 100.0;
 }
 
-function isNotSet (a) {
+function isNotSet(a) {
   return a === undefined || a === null;
 }
 
-function safelySumm (a, b) {
+function safelySumm(a, b) {
   if (isNotSet(a) && isNotSet(b)) {
     return undefined;
   }
@@ -153,7 +132,7 @@ function safelySumm (a, b) {
   return aa + bb;
 }
 
-function applyGroupedDataDiscounts (groupedData, discountFn) {
+function applyGroupedDataDiscounts(groupedData, discountFn) {
   if (!groupedData) {
     return groupedData;
   }
@@ -163,19 +142,19 @@ function applyGroupedDataDiscounts (groupedData, discountFn) {
   return applyDiscountsToObjectProperties(groupedData, discountFn);
 }
 
-function applyDiscountsToObjectProperties (object, discountFn) {
+function applyDiscountsToObjectProperties(object, discountFn) {
   if (!object) {
     return object;
   }
   return Object.keys(object)
-    .map(key => ({
+    .map((key) => ({
       key,
-      data: applyDiscounts(object[key], discountFn)
+      data: applyDiscounts(object[key], discountFn),
     }))
     .reduce((r, c) => ({...r, [c.key]: c.data}), {});
 }
 
-function joinObjects (joins) {
+function joinObjects(joins) {
   const processSumm = (objA, join, isGroupingInfoProcessing = false) => {
     const result = {...(objA || {})};
     const summKeys = Object.keys(join || {});
@@ -184,8 +163,10 @@ function joinObjects (joins) {
       const current = result[summKey];
       const summ = join[summKey];
       if (
-        typeof current !== 'object' && !isNaN(current) &&
-        typeof summ !== 'object' && !isNaN(summ)
+        typeof current !== 'object' &&
+        !isNaN(current) &&
+        typeof summ !== 'object' &&
+        !isNaN(summ)
       ) {
         result[summKey] = safelySumm(current, summ);
       }
@@ -205,7 +186,7 @@ function joinObjects (joins) {
       const joinKeys = Object.keys(join);
       for (let jk = 0; jk < joinKeys.length; jk++) {
         const joinKey = joinKeys[jk];
-        if (!result.hasOwnProperty(joinKey)) {
+        if (!Object.hasOwn(result, joinKey)) {
           result[joinKey] = join[joinKey];
         } else {
           result[joinKey] = processSumm(result[joinKey], join[joinKey]);
@@ -216,13 +197,11 @@ function joinObjects (joins) {
   return result;
 }
 
-function applyDiscountsToObjects (objects, discountFn) {
+function applyDiscountsToObjects(objects, discountFn) {
   if (!objects) {
     return objects;
   }
-  const asArray = Array.isArray(objects)
-    ? objects
-    : [objects];
+  const asArray = Array.isArray(objects) ? objects : [objects];
   const joins = [];
   for (let i = 0; i < asArray.length; i++) {
     const data = asArray[i];
@@ -240,41 +219,31 @@ function applyDiscountsToObjects (objects, discountFn) {
   return joins;
 }
 
-function joinSummaryDiscounts (summaries, discounts) {
+function joinSummaryDiscounts(summaries, discounts) {
   let result;
   const addTierCostDetails = (targetTier, addTier, onlyAccumulative = true) => {
     if (!isNotSet(targetTier.accumulativeCost)) {
       targetTier.accumulativeCost = safelySumm(
         targetTier.accumulativeCost,
-        addTier.accumulativeCost
+        addTier.accumulativeCost,
       );
     }
     if (!isNotSet(targetTier.accumulativeOldVersionCost)) {
       targetTier.accumulativeOldVersionCost = safelySumm(
         targetTier.accumulativeOldVersionCost,
-        addTier.accumulativeOldVersionCost
+        addTier.accumulativeOldVersionCost,
       );
     }
     if (!isNotSet(targetTier.cost) && !onlyAccumulative) {
-      targetTier.cost = safelySumm(
-        targetTier.cost,
-        addTier.cost
-      );
+      targetTier.cost = safelySumm(targetTier.cost, addTier.cost);
     }
     if (!isNotSet(targetTier.oldVersionCost) && !onlyAccumulative) {
-      targetTier.oldVersionCost = safelySumm(
-        targetTier.oldVersionCost,
-        addTier.oldVersionCost
-      );
+      targetTier.oldVersionCost = safelySumm(targetTier.oldVersionCost, addTier.oldVersionCost);
     }
   };
   const addCostDetails = (target, add, onlyAccumulative = true) => {
-    const {
-      tiers: targetTiers = {}
-    } = target || {};
-    const {
-      tiers: addTiers = {}
-    } = add || {};
+    const {tiers: targetTiers = {}} = target || {};
+    const {tiers: addTiers = {}} = add || {};
     Object.entries(targetTiers).forEach(([tier, costDetails]) => {
       const addTier = addTiers[tier] || {};
       addTierCostDetails(costDetails, addTier, onlyAccumulative);
@@ -318,14 +287,14 @@ function joinSummaryDiscounts (summaries, discounts) {
           const [first] = current;
           const last = current.slice().pop();
           if (first) {
-            const before = values.filter(v => v.dateValue < first.dateValue);
+            const before = values.filter((v) => v.dateValue < first.dateValue);
             current.push(...before);
             current.sort(sorter);
           }
           // update current values after last value
           const lastValue = values.slice().pop();
           if (lastValue) {
-            const afterLast = current.filter(c => c.dateValue > lastValue.dateValue);
+            const afterLast = current.filter((c) => c.dateValue > lastValue.dateValue);
             if (afterLast.length > 0) {
               for (let j = 0; j < afterLast.length; j++) {
                 const value = afterLast[j];
@@ -335,7 +304,7 @@ function joinSummaryDiscounts (summaries, discounts) {
           }
           // join values with date after last date of current array
           if (last) {
-            const after = values.filter(value => value.dateValue > last.dateValue);
+            const after = values.filter((value) => value.dateValue > last.dateValue);
             for (let j = 0; j < after.length; j++) {
               const value = after[j];
               add(value, last);
@@ -343,17 +312,20 @@ function joinSummaryDiscounts (summaries, discounts) {
             }
           }
           // join overlapping values
-          const filterStart = value => first ? value.dateValue >= first.dateValue : true;
-          const filterEnd = value => last ? value.dateValue <= last.dateValue : true;
-          const overlappingValues = values.filter(v => filterStart(v) && filterEnd(v));
+          const filterStart = (value) => (first ? value.dateValue >= first.dateValue : true);
+          const filterEnd = (value) => (last ? value.dateValue <= last.dateValue : true);
+          const overlappingValues = values.filter((v) => filterStart(v) && filterEnd(v));
           for (let j = 0; j < (overlappingValues || []).length; j++) {
             const value = overlappingValues[j];
-            const [existing] = current.filter(e => e.date === value.date);
+            const [existing] = current.filter((e) => e.date === value.date);
             if (!existing) {
               // This is a gap.
               // We need to find last value and summ only accumulative values
               // (e.g. 'value', 'previous')
-              const lastGap = current.filter(c => c.dateValue < value.dateValue).slice().pop();
+              const lastGap = current
+                .filter((c) => c.dateValue < value.dateValue)
+                .slice()
+                .pop();
               if (lastGap) {
                 add(value, lastGap);
               }
@@ -375,5 +347,5 @@ export {
   applyDiscountsToObjects,
   applyDiscountsToObjectProperties,
   joinSummaryDiscounts,
-  simpleDiscount
+  simpleDiscount,
 };

@@ -17,7 +17,7 @@
 export default class SessionStorageWrapper {
   static ACTIVE_RUNS_KEY = 'active_runs';
 
-  static getItem (key, defaultValue) {
+  static getItem(key, defaultValue) {
     const data = sessionStorage.getItem(key);
     if (data) {
       try {
@@ -28,39 +28,40 @@ export default class SessionStorageWrapper {
     }
     return defaultValue;
   }
-  static setItem (key, value) {
+
+  static setItem(key, value) {
     try {
       const data = JSON.stringify(value);
       sessionStorage.setItem(key, data);
     } catch (___) {}
   }
 
-  static navigateToActiveRuns (router) {
+  static navigateToActiveRuns(router) {
     if (!router || !router.push) {
       return;
     }
     router.push(SessionStorageWrapper.getActiveRunsLink());
   }
 
-  static navigateToRuns (router, status = 'active') {
+  static navigateToRuns(router, status = 'active') {
     if (!router || !router.push) {
       return;
     }
     router.push(SessionStorageWrapper.getRunsLink(status));
   }
 
-  static navigateToRun (router, runId) {
+  static navigateToRun(router, runId) {
     if (!router || !router.push) {
       return;
     }
     router.push(SessionStorageWrapper.getRunLink(runId));
   }
 
-  static getActiveRunsLink () {
+  static getActiveRunsLink() {
     return SessionStorageWrapper.getRunsLink('active');
   }
 
-  static getRunsLink (status, ignoreMyRunsSetting = false) {
+  static getRunsLink(status, ignoreMyRunsSetting = false) {
     const myRuns = SessionStorageWrapper.getItem(SessionStorageWrapper.ACTIVE_RUNS_KEY, true);
     if (myRuns || ignoreMyRunsSetting) {
       return `/runs/${status}`;
@@ -69,7 +70,7 @@ export default class SessionStorageWrapper {
     }
   }
 
-  static getRunLink (runId) {
+  static getRunLink(runId) {
     return `/runs/${runId}`;
   }
 }

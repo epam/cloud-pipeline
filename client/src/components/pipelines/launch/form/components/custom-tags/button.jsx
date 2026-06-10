@@ -3,12 +3,10 @@ import PropTypes from 'prop-types';
 import {SettingOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import RunTags from '../../../../../runs/run-tags';
-import styles from './custom-tags.css';
-import {
-  filterVisibleTagsSync
-} from '../../../../../runs/run-tags/utilities';
+import styles from './custom-tags.module.css';
+import {filterVisibleTagsSync} from '../../../../../runs/run-tags/utilities';
 
-function CustomTagsButton (props) {
+function CustomTagsButton(props) {
   const {
     className,
     style,
@@ -17,7 +15,7 @@ function CustomTagsButton (props) {
     onClick,
     buttonText = 'Configure tags',
     validation = [],
-    visibleTags = []
+    visibleTags = [],
   } = props;
 
   let component = (
@@ -46,9 +44,11 @@ function CustomTagsButton (props) {
   const validationComponent = (() => {
     if (validation && validation.length > 0) {
       const count = validation.length;
-      return (<span className={classNames(styles.uiRunTagsValidation, 'cp-error')}>
-        {count} tag{count === 1 ? ' is' : 's are'} required
-      </span>);
+      return (
+        <span className={classNames(styles.uiRunTagsValidation, 'cp-error')}>
+          {count} tag{count === 1 ? ' is' : 's are'} required
+        </span>
+      );
     }
     return null;
   })();
@@ -57,7 +57,8 @@ function CustomTagsButton (props) {
     return (
       <span
         className={classNames(className, styles.link, {'cp-text': valid, 'cp-error': !valid})}
-        style={style}>
+        style={style}
+      >
         {component}
         {validationComponent}
       </span>
@@ -67,7 +68,8 @@ function CustomTagsButton (props) {
     <a
       className={classNames(className, styles.link, {'cp-text': valid, 'cp-error': !valid})}
       style={style}
-      onClick={onClick}>
+      onClick={onClick}
+    >
       {component}
       {validationComponent}
     </a>
@@ -83,7 +85,7 @@ CustomTagsButton.propTypes = {
   visibleTags: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   payload: PropTypes.object,
   onClick: PropTypes.func,
-  buttonText: PropTypes.node
+  buttonText: PropTypes.node,
 };
 
 export default CustomTagsButton;

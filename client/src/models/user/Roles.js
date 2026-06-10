@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 export default class Roles extends Remote {
-  constructor () {
+  constructor() {
     super();
     this.url = '/role/loadAll';
   }

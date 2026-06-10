@@ -1,0 +1,40 @@
+.loading-message {
+  display: inline-block;
+  background: linear-gradient(
+    90deg,
+    var(--cp-color-text-secondary) 0%,
+    var(--cp-color-text-secondary) 35%,
+    var(--cp-color-text) 50%,
+    var(--cp-color-text-secondary) 65%,
+    var(--cp-color-text-secondary) 100%
+  );
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: loading-message-shimmer 1.5s linear infinite;
+}
+
+@keyframes loading-message-shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+
+  50% {
+    background-position: 0% 50%;
+  }
+
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-message {
+    animation: none;
+    color: var(--cp-color-text-secondary);
+    background: none;
+    -webkit-background-clip: unset;
+    background-clip: unset;
+  }
+}

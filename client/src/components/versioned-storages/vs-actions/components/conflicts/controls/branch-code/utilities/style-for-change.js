@@ -17,32 +17,40 @@
 import ChangeType from '../../../utilities/changes/types';
 import ChangeStatuses from '../../../utilities/changes/statuses';
 
-export default function getStyleForChange (change, renderingConfig, hidden = false) {
+export default function getStyleForChange(change, renderingConfig, hidden = false) {
   const {type, status} = change || {};
   if (hidden) {
     return {
       backgroundColor: 'transparent',
-      borderColor: 'transparent'
+      borderColor: 'transparent',
     };
   }
   let config;
   switch (type) {
-    case ChangeType.edition: config = renderingConfig.edition; break;
-    case ChangeType.conflict: config = renderingConfig.conflict; break;
-    case ChangeType.deletion: config = renderingConfig.deletion; break;
-    case ChangeType.insertion: config = renderingConfig.insertion; break;
+    case ChangeType.edition:
+      config = renderingConfig.edition;
+      break;
+    case ChangeType.conflict:
+      config = renderingConfig.conflict;
+      break;
+    case ChangeType.deletion:
+      config = renderingConfig.deletion;
+      break;
+    case ChangeType.insertion:
+      config = renderingConfig.insertion;
+      break;
     default:
       break;
   }
   const applied = status !== ChangeStatuses.prepared;
   if (config) {
     return {
-      backgroundColor: applied ? 'transparent' : (config.background || config.color),
-      borderColor: applied ? config.applied : config.color
+      backgroundColor: applied ? 'transparent' : config.background || config.color,
+      borderColor: applied ? config.applied : config.color,
     };
   }
   return {
     backgroundColor: 'transparent',
-    borderColor: 'transparent'
+    borderColor: 'transparent',
   };
 }

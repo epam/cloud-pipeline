@@ -16,60 +16,57 @@
 
 import {SearchItemTypes} from '../../../models/search';
 
-export function filterMatchingItemsFn (item) {
-  return function filter (arrayItem) {
-    return item &&
+export function filterMatchingItemsFn(item) {
+  return function filter(arrayItem) {
+    return (
+      item &&
       arrayItem &&
       item.id === arrayItem.id &&
       item.parentId === arrayItem.parentId &&
-      item.type === arrayItem.type;
+      item.type === arrayItem.type
+    );
   };
 }
 
-export function filterNonMatchingItemsFn (item) {
-  return function filter (arrayItem) {
-    return !item ||
+export function filterNonMatchingItemsFn(item) {
+  return function filter(arrayItem) {
+    return (
+      !item ||
       !arrayItem ||
       item.id !== arrayItem.id ||
       item.parentId !== arrayItem.parentId ||
-      item.type !== arrayItem.type;
+      item.type !== arrayItem.type
+    );
   };
 }
 
-export function itemSharingAvailable (item) {
-  return item && (
-    item.type === SearchItemTypes.s3File ||
-    item.type === SearchItemTypes.azFile ||
-    item.type === SearchItemTypes.gsFile
+export function itemSharingAvailable(item) {
+  return (
+    item &&
+    (item.type === SearchItemTypes.s3File ||
+      item.type === SearchItemTypes.azFile ||
+      item.type === SearchItemTypes.gsFile)
   );
 }
 
-function itemFitsMask (item, mask) {
+function itemFitsMask(item, mask) {
   if (!item) {
     return false;
   }
   if (!mask) {
     return true;
   }
-  const {
-    path
-  } = item;
+  const {path} = item;
   return mask.test(path);
 }
 
-export function itemIsDownloadable (
-  item,
-  preferences,
-  notDownloadableStorages = []
-) {
+export function itemIsDownloadable(item, preferences, notDownloadableStorages = []) {
   if (
     !item ||
-    (
-      item.type !== SearchItemTypes.NFSFile &&
+    (item.type !== SearchItemTypes.NFSFile &&
       item.type !== SearchItemTypes.s3File &&
       item.type !== SearchItemTypes.azFile &&
-      item.type !== SearchItemTypes.gsFile
-    ) ||
+      item.type !== SearchItemTypes.gsFile) ||
     !preferences ||
     !preferences.loaded
   ) {
@@ -78,18 +75,15 @@ export function itemIsDownloadable (
   if (notDownloadableStorages.includes(Number(item.parentId || item.storageId))) {
     return false;
   }
-  const {
-    allow = [],
-    deny = []
-  } = preferences.facetedFilterDownload;
-  return (allow.length === 0 || allow.some(mask => itemFitsMask(item, mask))) &&
-    (deny.length === 0 || !deny.some(mask => itemFitsMask(item, mask)));
+  const {allow = [], deny = []} = preferences.facetedFilterDownload;
+  return (
+    (allow.length === 0 || allow.some((mask) => itemFitsMask(item, mask))) &&
+    (deny.length === 0 || !deny.some((mask) => itemFitsMask(item, mask)))
+  );
 }
 
-export function filterDownloadableItems (items, preferences, notDownloadableStorages = []) {
-  return (items || []).filter((item) => itemIsDownloadable(
-    item,
-    preferences,
-    notDownloadableStorages
-  ));
+export function filterDownloadableItems(items, preferences, notDownloadableStorages = []) {
+  return (items || []).filter((item) =>
+    itemIsDownloadable(item, preferences, notDownloadableStorages),
+  );
 }

@@ -23,10 +23,10 @@ export const OperationSystems = {
   windows: OS_WINDOWS,
   linux: OS_LINUX,
   macOS: OS_MACOS,
-  other: OS_OTHER
+  other: OS_OTHER,
 };
 
-export function getOS () {
+export function getOS() {
   if (navigator.appVersion.indexOf('Win') !== -1) {
     return OperationSystems.windows;
   }

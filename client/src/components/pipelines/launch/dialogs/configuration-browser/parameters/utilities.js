@@ -18,7 +18,7 @@ import * as parameterUtilities from '../../../form/utilities/parameter-utilities
 import {getAllSkippedSystemParametersList} from '../../../form/utilities/launch-cluster';
 
 class ParameterError extends Error {
-  constructor (parameter, error) {
+  constructor(parameter, error) {
     super(error);
     this.parameter = parameter;
   }
@@ -27,15 +27,15 @@ class ParameterError extends Error {
 export class ParameterNameError extends ParameterError {}
 export class ParameterValueError extends ParameterError {}
 
-export function parseParameters (parameters = {}) {
+export function parseParameters(parameters = {}) {
   return Object.entries(parameters).map(([key, parameter]) => ({
     name: key,
     enumeration: parameter.enum,
-    ...parameter
+    ...parameter,
   }));
 }
 
-function buildParameter (parameter) {
+function buildParameter(parameter) {
   const {
     name,
     skipped,
@@ -49,45 +49,37 @@ function buildParameter (parameter) {
     ...parameterValue
   } = parameter;
   return {
-    [name]: parameterValue
+    [name]: parameterValue,
   };
 }
 
-export function buildParameters (parameters = [], final = false) {
+export function buildParameters(parameters = [], final = false) {
   const built = parameters
-    .filter(parameter => !parameter.removed)
+    .filter((parameter) => !parameter.removed)
     .map(buildParameter)
     .reduce((r, c) => ({...r, ...c}), {});
   if (final) {
     parameters
-      .filter(parameter => parameterUtilities.isVisible(parameter, built))
+      .filter((parameter) => parameterUtilities.isVisible(parameter, built))
       .map(buildParameter)
       .reduce((r, c) => ({...r, ...c}), {});
   }
   return built;
 }
 
-export function parametersAreEqual (a, b) {
+export function parametersAreEqual(a, b) {
   if (!a && !b) {
     return true;
   }
   if (!a || !b) {
     return false;
   }
-  const {
-    name: aName,
-    value: aValue,
-    type: aType = 'string'
-  } = a;
-  const {
-    name: bName,
-    value: bValue,
-    type: bType = 'string'
-  } = b;
+  const {name: aName, value: aValue, type: aType = 'string'} = a;
+  const {name: bName, value: bValue, type: bType = 'string'} = b;
   return aName === bName && aValue === bValue && aType === bType;
 }
 
-export function parametersSetAreEqual (a, b) {
+export function parametersSetAreEqual(a, b) {
   if (!a && !b) {
     return true;
   }
@@ -98,7 +90,7 @@ export function parametersSetAreEqual (a, b) {
   }
   for (let i = 0; i < paramsA.length; i++) {
     const parameterA = paramsA[i];
-    const parameterB = paramsB.find(p => p.name === parameterA.name);
+    const parameterB = paramsB.find((p) => p.name === parameterA.name);
     if (!parametersAreEqual(parameterA, parameterB)) {
       return false;
     }
@@ -106,18 +98,11 @@ export function parametersSetAreEqual (a, b) {
   return true;
 }
 
-export function validateParameter (parameter, parameters = [], preferences) {
+export function validateParameter(parameter, parameters = [], preferences) {
   if (!parameter) {
     throw new ParameterNameError(parameter, 'Parameter is missing');
   }
-  const {
-    name,
-    skipped,
-    required,
-    value,
-    removed,
-    system
-  } = parameter;
+  const {name, skipped, required, value, removed, system} = parameter;
   if (removed) {
     return true;
   }
@@ -128,9 +113,9 @@ export function validateParameter (parameter, parameters = [], preferences) {
     throw new ParameterNameError(parameter, 'Parameter name is reserved');
   }
   if (
-    parameters
-      .filter(aParameter => (aParameter.name || '').trim().toLowerCase() === name.toLowerCase())
-      .length > 1
+    parameters.filter(
+      (aParameter) => (aParameter.name || '').trim().toLowerCase() === name.toLowerCase(),
+    ).length > 1
   ) {
     throw new ParameterNameError(parameter, 'Parameter name must be unique');
   }
@@ -140,8 +125,8 @@ export function validateParameter (parameter, parameters = [], preferences) {
   return true;
 }
 
-export function validateParameters (parameters = [], preferences) {
-  parameters.forEach(parameter => {
+export function validateParameters(parameters = [], preferences) {
+  parameters.forEach((parameter) => {
     try {
       parameter.nameError = undefined;
       parameter.valueError = undefined;
@@ -157,31 +142,22 @@ export function validateParameters (parameters = [], preferences) {
   return true;
 }
 
-export function isSystemParameter (parameterName, runDefaultParameters) {
+export function isSystemParameter(parameterName, runDefaultParameters) {
   if (runDefaultParameters && runDefaultParameters.loaded) {
-    return (runDefaultParameters.value || [])
-      .find(p => p.name.toUpperCase() === (parameterName || '').toUpperCase());
+    return (runDefaultParameters.value || []).find(
+      (p) => p.name.toUpperCase() === (parameterName || '').toUpperCase(),
+    );
   }
   return false;
 }
 
-export function isSystemParameterRestrictedByRole (parameterName, runDefaultParameters, userInfo) {
-  const {
-    admin: isAdmin = false,
-    roles: userRoles = []
-  } = userInfo || {};
-  const roles = userRoles.map(r => r.name);
-  if (
-    parameterName &&
-    isSystemParameter(parameterName) &&
-    !isAdmin
-  ) {
+export function isSystemParameterRestrictedByRole(parameterName, runDefaultParameters, userInfo) {
+  const {admin: isAdmin = false, roles: userRoles = []} = userInfo || {};
+  const roles = userRoles.map((r) => r.name);
+  if (parameterName && isSystemParameter(parameterName) && !isAdmin) {
     const systemParam = isSystemParameter(parameterName, runDefaultParameters);
     if (systemParam && systemParam.roles && systemParam.roles.length > 0) {
-      return !(
-        systemParam.roles
-          .some(roleName => roles.includes(roleName))
-      );
+      return !systemParam.roles.some((roleName) => roles.includes(roleName));
     }
   }
   return false;
@@ -193,17 +169,12 @@ export function isSystemParameterRestrictedByRole (parameterName, runDefaultPara
  * @param {{showSystem: boolean?, showNonSystem: boolean?}} options
  * @returns {boolean}
  */
-export function parameterIsVisible (parameter, parameters = [], options = {}) {
+export function parameterIsVisible(parameter, parameters = [], options = {}) {
   if (!parameter || parameter.skipped || parameter.removed) {
     return false;
   }
-  const {
-    showNonSystem = true,
-    showSystem = true
-  } = options;
-  const {
-    system
-  } = parameter;
+  const {showNonSystem = true, showSystem = true} = options;
+  const {system} = parameter;
   if (!showSystem && system) {
     return false;
   }

@@ -16,9 +16,11 @@
 
 const INTERSECTION_MARGIN = 1;
 
-export function sectionsIntersects (a, b) {
+export function sectionsIntersects(a, b) {
   const {p1: ap1, p2: ap2} = a;
   const {p1: bp1, p2: bp2} = b;
-  return Math.max(ap1, ap2, bp1, bp2) - Math.min(ap1, ap2, bp1, bp2) - 2 * INTERSECTION_MARGIN <
-    Math.max(ap1, ap2) - Math.min(ap1, ap2) + Math.max(bp1, bp2) - Math.min(bp1, bp2);
+  return (
+    Math.max(ap1, ap2, bp1, bp2) - Math.min(ap1, ap2, bp1, bp2) - 2 * INTERSECTION_MARGIN <
+    Math.max(ap1, ap2) - Math.min(ap1, ap2) + Math.max(bp1, bp2) - Math.min(bp1, bp2)
+  );
 }

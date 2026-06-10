@@ -17,16 +17,15 @@
 import Remote from '../../basic/Remote';
 
 export class DataStorageRuleDelete extends Remote {
-
   constructor(pipelineId, mask) {
     super();
     this.constructor.fetchOptions = {
       headers: {
-        'Content-type': 'application/json; charset=UTF-8'
+        'Content-type': 'application/json; charset=UTF-8',
       },
       mode: 'cors',
       credentials: 'include',
-      method: 'DELETE'
+      method: 'DELETE',
     };
     this.url = `/datastorage/rule/delete?id=${pipelineId}&fileMask=${encodeURIComponent(mask)}`;
   }

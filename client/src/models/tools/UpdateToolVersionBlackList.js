@@ -17,8 +17,7 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class UpdateToolVersionBlackList extends RemotePost {
-
-  constructor (id, version, blackList = true) {
+  constructor(id, version, blackList = true) {
     super();
     this.url = `/tool/updateBlackList?toolId=${id}&version=${version}&blackList=${blackList}`;
   }

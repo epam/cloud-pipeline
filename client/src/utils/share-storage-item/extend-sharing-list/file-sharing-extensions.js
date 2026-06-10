@@ -17,7 +17,7 @@
 export const FILE_NAME_TEMPLATE = '<FILE_NAME>';
 export const FILE_EXTENSION_TEMPLATE = '<FILE_EXTENSION>';
 
-function parseFileInfo (filePath, delimiter = '/') {
+function parseFileInfo(filePath, delimiter = '/') {
   if (filePath) {
     const pathComponents = filePath.split(delimiter);
     const fileNameWithExtension = pathComponents.pop();
@@ -30,67 +30,60 @@ function parseFileInfo (filePath, delimiter = '/') {
       fileName,
       extension,
       fileNameWithExtension,
-      delimiter
+      delimiter,
     };
   }
   return undefined;
 }
 
-function shareRelativeItems (relativeItems = [], appendix = undefined) {
+function shareRelativeItems(relativeItems = [], appendix = undefined) {
   return (parseOptions) => {
     if (parseOptions) {
-      const {
-        parentFolder,
-        fileName,
-        extension,
-        delimiter
-      } = parseOptions;
+      const {parentFolder, fileName, extension, delimiter} = parseOptions;
       const FILE_NAME_REG_EXP = new RegExp(`${FILE_NAME_TEMPLATE}`, 'ig');
       const FILE_EXTENSION_REG_EXP = new RegExp(`${FILE_EXTENSION_TEMPLATE}`, 'ig');
       const relativeItemsParsed = relativeItems
-        .map(o => o.replace(FILE_NAME_REG_EXP, fileName))
-        .map(o => o.replace(FILE_EXTENSION_REG_EXP, extension))
-        .map(o => o.replace(/[/]/g, delimiter))
-        .map(o => o.split(delimiter).filter(o => o.length).join(delimiter));
-      return relativeItemsParsed
-        .map(relativeItem => [parentFolder, relativeItem, appendix]
-          .filter(Boolean)
-          .join(delimiter)
+        .map((o) => o.replace(FILE_NAME_REG_EXP, fileName))
+        .map((o) => o.replace(FILE_EXTENSION_REG_EXP, extension))
+        .map((o) => o.replace(/[/]/g, delimiter))
+        .map((o) =>
+          o
+            .split(delimiter)
+            .filter((o) => o.length)
+            .join(delimiter),
         );
+      return relativeItemsParsed.map((relativeItem) =>
+        [parentFolder, relativeItem, appendix].filter(Boolean).join(delimiter),
+      );
     }
     return [];
   };
 }
 
-export function generateRule (ruleDescription) {
-  const {
-    extension,
-    relativeFolders = [],
-    relativeFiles = []
-  } = ruleDescription;
+export function generateRule(ruleDescription) {
+  const {extension, relativeFolders = [], relativeFiles = []} = ruleDescription;
   if (extension) {
     let testRegExp;
     if (typeof extension.test === 'function') {
       testRegExp = extension;
     } else {
-      const prepare = o => o.startsWith('.') ? o.slice(1) : o;
-      const extensions = (Array.isArray(extension) ? extension : [extension])
-        .map(prepare);
+      const prepare = (o) => (o.startsWith('.') ? o.slice(1) : o);
+      const extensions = (Array.isArray(extension) ? extension : [extension]).map(prepare);
       testRegExp = new RegExp(`^(${extensions.join('|')})$`, 'i');
     }
-    return function extend (filePath, delimiter = '/') {
+    return function extend(filePath, delimiter = '/') {
       const parsed = parseFileInfo(filePath, delimiter);
       const {extension: fileExtension} = parsed;
       if (testRegExp.test(fileExtension)) {
         return [
           ...shareRelativeItems(relativeFolders, '**')(parsed),
-          ...shareRelativeItems(relativeFiles)(parsed)
+          ...shareRelativeItems(relativeFiles)(parsed),
         ];
       }
       return [];
     };
   }
-  return function byPass () {
+  return function byPass() {
     return [];
   };
 }

@@ -17,8 +17,8 @@
 import Remote from '../basic/Remote';
 
 export default class DataStorageLoad extends Remote {
-  constructor (id) {
+  constructor(id) {
     super();
     this.url = `/datastorage/${id}/load`;
-  };
+  }
 }

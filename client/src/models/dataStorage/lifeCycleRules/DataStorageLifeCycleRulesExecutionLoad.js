@@ -20,11 +20,11 @@ const EXECUTION_STATUSES = {
   NOTIFICATION_SENT: 'NOTIFICATION_SENT',
   RUNNING: 'RUNNING',
   SUCCESS: 'SUCCESS',
-  FAILED: 'FAILED'
+  FAILED: 'FAILED',
 };
 
 export default class DataStorageLifeCycleRulesExecutionLoad extends Remote {
-  constructor (datastorageId, ruleId) {
+  constructor(datastorageId, ruleId) {
     super();
     this.url = `/datastorage/${datastorageId}/lifecycle/rule/${ruleId}/execution`;
   }

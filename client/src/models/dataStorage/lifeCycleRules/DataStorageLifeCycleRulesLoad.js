@@ -17,16 +17,16 @@
 import Remote from '../../basic/Remote';
 
 const STATUS = {
-  'INITIATED': 'INITIATED',
-  'RUNNING': 'RUNNING',
-  'SUCCEEDED': 'SUCCEEDED'
+  INITIATED: 'INITIATED',
+  RUNNING: 'RUNNING',
+  SUCCEEDED: 'SUCCEEDED',
 };
 
 class DataStorageLifeCycleRulesLoad extends Remote {
   url;
   path;
 
-  constructor (id, path = '') {
+  constructor(id, path = '') {
     super();
     if (path) {
       this.path = path.startsWith('/') ? path : `/${path}`;
@@ -34,7 +34,7 @@ class DataStorageLifeCycleRulesLoad extends Remote {
     } else {
       this.url = `/datastorage/${id}/lifecycle/rule`;
     }
-  };
+  }
 }
 
 export {STATUS};

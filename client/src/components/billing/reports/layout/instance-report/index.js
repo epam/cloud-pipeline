@@ -23,7 +23,7 @@ const GridStyles = buildGridStyle({
   top: 0,
   maxLayoutColumns: 4,
   minimumHeight: 1400,
-  rows: 48
+  rows: 48,
 });
 
 const Layout = buildLayout({
@@ -31,7 +31,7 @@ const Layout = buildLayout({
   storage: 'panelsLayout-Billing-Instances-new',
   defaultSizes,
   panelNeighbors: [],
-  gridStyle: GridStyles
+  gridStyle: GridStyles,
 });
 
 export {GridStyles, Layout, Panels};

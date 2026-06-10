@@ -19,7 +19,7 @@ import RemotePost from '../basic/RemotePost';
 class TerminatePipeline extends RemotePost {
   static auto = false;
 
-  constructor (runId) {
+  constructor(runId) {
     super();
     this.url = `/run/${runId}/terminate`;
   }

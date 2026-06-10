@@ -18,7 +18,7 @@ export default function (id, path, version, rewrite = false) {
   const query = [
     !!path && `path=${encodeURIComponent(path)}`,
     !!version && `version=${version}`,
-    rewrite && `rewrite=true`
+    rewrite && 'rewrite=true',
   ]
     .filter(Boolean)
     .join('&');

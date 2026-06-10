@@ -2,18 +2,18 @@ import BaseBillingRequest from './base-billing-request';
 import {costMapper} from './utils';
 
 export class GetGroupedStorageTypes extends BaseBillingRequest {
-  constructor (filters, pagination = null) {
+  constructor(filters, pagination = null) {
     super({filters, pagination});
     this.grouping = 'STORAGE_TYPE';
   }
 
-  postprocess (value) {
+  postprocess(value) {
     const payload = super.postprocess(value);
     return this.prepareStorageTypes(payload);
   }
 
-  prepareStorageTypes (raw) {
-    function renameStorage (value) {
+  prepareStorageTypes(raw) {
+    function renameStorage(value) {
       if (/^object_storage$/i.test(value)) {
         return 'Object';
       }
@@ -24,12 +24,12 @@ export class GetGroupedStorageTypes extends BaseBillingRequest {
     }
     const res = {};
     if (raw) {
-      raw.forEach(i => {
+      raw.forEach((i) => {
         const name = renameStorage(i.groupingInfo[this.grouping]);
         if (name && name !== 'unknown') {
           res[name] = {
             ...i,
-            value: isNaN(i.cost) ? 0 : costMapper(i.cost)
+            value: isNaN(i.cost) ? 0 : costMapper(i.cost),
           };
         }
       });

@@ -25,7 +25,7 @@
 
 import injectCssVariables, {ejectCssVariables} from './inject-css-variables';
 
-function isPredefined (theme) {
+function isPredefined(theme) {
   if (!theme || !theme.predefined) {
     return false;
   }
@@ -38,7 +38,7 @@ function isPredefined (theme) {
   return true;
 }
 
-export function ejectTheme (theme) {
+export function ejectTheme(theme) {
   try {
     ejectCssVariables(theme);
   } catch (e) {
@@ -46,7 +46,7 @@ export function ejectTheme (theme) {
   }
 }
 
-export default function injectTheme (theme) {
+export default function injectTheme(theme) {
   if (!theme || !theme.identifier) {
     return Promise.resolve();
   }
@@ -55,7 +55,9 @@ export default function injectTheme (theme) {
     // We still eject any stale <style> from earlier sessions just in case.
     try {
       ejectCssVariables(theme);
-    } catch (_) { /* noop */ }
+    } catch (_) {
+      /* noop */
+    }
     return Promise.resolve();
   }
   return injectCssVariables(theme);

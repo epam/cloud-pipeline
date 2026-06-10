@@ -22,18 +22,15 @@ import {AnalysisTypes} from '../common/analysis-types';
  * @param {AnalysisModule} cpModule
  * @returns {*[]}
  */
-function getFilesForModule (cpModule) {
+function getFilesForModule(cpModule) {
   if (cpModule) {
     const files = cpModule.modulesBefore
       .filter(Boolean)
       .filter((cpModule) => !cpModule.hidden)
-      .reduce((outputs, cpModule) => ([...outputs, ...cpModule.outputs]), [])
+      .reduce((outputs, cpModule) => [...outputs, ...cpModule.outputs], [])
       .filter((output) => output.type === AnalysisTypes.file)
       .map((output) => output.name);
-    return [
-      ...cpModule.channels,
-      ...files
-    ];
+    return [...cpModule.channels, ...files];
   }
   return [];
 }
@@ -42,29 +39,29 @@ class FileParameter extends ModuleParameter {
   /**
    * @param {ModuleParameterOptions} options
    */
-  constructor (options = {}) {
+  constructor(options = {}) {
     super({
       ...options,
       type: AnalysisTypes.file,
-      isList: true
+      isList: true,
     });
     makeObservable(this, {
-      values: computed
+      values: computed,
     });
   }
 
-  get values () {
+  get values() {
     return this.wrapValuesWithEmptyValue(
-      getFilesForModule(this.cpModule)
-        .map((output) => ({
-          value: output,
-          id: output,
-          key: output,
-          title: output
-        })));
+      getFilesForModule(this.cpModule).map((output) => ({
+        value: output,
+        id: output,
+        key: output,
+        title: output,
+      })),
+    );
   }
 
-  get defaultValue () {
+  get defaultValue() {
     const firstValue = this.values[0];
     return firstValue ? firstValue.value : undefined;
   }

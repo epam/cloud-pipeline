@@ -24,7 +24,7 @@ class HCSURLsManager {
   /**
    * @param {ObjectStorage} objectStorage
    */
-  constructor (objectStorage) {
+  constructor(objectStorage) {
     /**
      * @type {ObjectStorage}
      */
@@ -52,13 +52,9 @@ class HCSURLsManager {
     this.error = undefined;
   }
 
-  changeObjectStorage (objectStorage) {
-    const {
-      id: currentId
-    } = this.objectStorage || {};
-    const {
-      id
-    } = objectStorage || {};
+  changeObjectStorage(objectStorage) {
+    const {id: currentId} = this.objectStorage || {};
+    const {id} = objectStorage || {};
     if (currentId !== id && objectStorage) {
       this.objectStorage = objectStorage;
       this.clearTimeouts();
@@ -78,7 +74,7 @@ class HCSURLsManager {
     this.offsetsJsonURL = undefined;
     this.currentPromise = this.generateURLs();
     return this.currentPromise;
-  }
+  };
 
   destroy = () => {
     this.clearTimeouts();
@@ -93,7 +89,7 @@ class HCSURLsManager {
   };
 
   removeURLsGeneratedListener = (listener) => {
-    this.listeners = this.listeners.filter(aListener => aListener !== listener);
+    this.listeners = this.listeners.filter((aListener) => aListener !== listener);
   };
 
   clearTimeouts = () => {
@@ -101,7 +97,7 @@ class HCSURLsManager {
     this.urlsRegenerationTimer = undefined;
   };
 
-  generateOMETiffURL () {
+  generateOMETiffURL() {
     if (!this.objectStorage) {
       this.omeTiffURL = undefined;
       return Promise.resolve();
@@ -118,7 +114,7 @@ class HCSURLsManager {
     return promise;
   }
 
-  generateOffsetsJsonURL () {
+  generateOffsetsJsonURL() {
     if (!this.objectStorage) {
       this.offsetsJsonURL = undefined;
       return Promise.resolve();
@@ -135,32 +131,29 @@ class HCSURLsManager {
   reportReadAccess = () => {
     if (!this._reported && this.objectStorage) {
       this._reported = true;
-      auditStorageAccessManager.reportReadAccess({
-        storageId: this.objectStorage.id,
-        path: this.omeTiff,
-        reportStorageType: 'S3'
-      }, {
-        storageId: this.objectStorage.id,
-        path: this.offsetsJson,
-        reportStorageType: 'S3'
-      });
+      auditStorageAccessManager.reportReadAccess(
+        {
+          storageId: this.objectStorage.id,
+          path: this.omeTiff,
+          reportStorageType: 'S3',
+        },
+        {
+          storageId: this.objectStorage.id,
+          path: this.offsetsJson,
+          reportStorageType: 'S3',
+        },
+      );
     }
   };
 
   generateURLs = async () => {
     this.clearTimeouts();
     this._reported = false;
-    await Promise.all([
-      this.generateOMETiffURL(),
-      this.generateOffsetsJsonURL()
-    ]);
+    await Promise.all([this.generateOMETiffURL(), this.generateOffsetsJsonURL()]);
     this.listeners
-      .filter(aListener => typeof aListener === 'function')
-      .forEach(aListener => aListener(this));
-    this.urlsRegenerationTimer = setTimeout(
-      () => this.generateURLs(),
-      REGENERATE_URLS_TIMEOUT
-    );
+      .filter((aListener) => typeof aListener === 'function')
+      .forEach((aListener) => aListener(this));
+    this.urlsRegenerationTimer = setTimeout(() => this.generateURLs(), REGENERATE_URLS_TIMEOUT);
   };
 }
 

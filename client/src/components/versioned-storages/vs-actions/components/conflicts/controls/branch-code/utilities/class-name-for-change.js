@@ -15,21 +15,18 @@
  */
 
 import classNames from 'classnames';
-import styles from '../../../conflicts.css';
+import styles from '../../../conflicts.module.css';
 import ChangeStatuses from '../../../utilities/changes/statuses';
 
-export default function getClassNameForChange (change, options) {
+export default function getClassNameForChange(change, options) {
   const {type, status} = change || {};
   const {isFirst, isLast, hidden} = options || {};
-  return classNames(
-    styles.line,
-    {
-      [styles.modification]: !!type,
-      [styles.firstLine]: !!type && isFirst,
-      [styles.lastLine]: !!type && isLast,
-      [styles.applied]: status === ChangeStatuses.applied,
-      [styles.discarded]: status === ChangeStatuses.discarded,
-      [styles.hidden]: hidden
-    }
-  );
+  return classNames(styles.line, {
+    [styles.modification]: !!type,
+    [styles.firstLine]: !!type && isFirst,
+    [styles.lastLine]: !!type && isLast,
+    [styles.applied]: status === ChangeStatuses.applied,
+    [styles.discarded]: status === ChangeStatuses.discarded,
+    [styles.hidden]: hidden,
+  });
 }

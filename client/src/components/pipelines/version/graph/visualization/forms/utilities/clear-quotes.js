@@ -1,6 +1,6 @@
 const quotesRegExp = /^"([^"]+)"$/;
 
-function clearQuotes (string) {
+function clearQuotes(string) {
   if (string) {
     const result = quotesRegExp.exec(string);
     if (result && result.length > 1) {
@@ -10,27 +10,27 @@ function clearQuotes (string) {
   return string;
 }
 
-function testQuotes (string) {
+function testQuotes(string) {
   if (string) {
     const result = quotesRegExp.exec(string);
     if (result && result.length > 1) {
       return {
         string: result[1],
-        useQuotes: true
+        useQuotes: true,
       };
     }
   }
   return {
     string,
-    useQuotes: false
+    useQuotes: false,
   };
 }
 
-function quotedStringsAreEqual (stringA, stringB) {
+function quotedStringsAreEqual(stringA, stringB) {
   return clearQuotes(stringA) === clearQuotes(stringB);
 }
 
-function wrapInQuotes (string) {
+function wrapInQuotes(string) {
   if (!string) {
     return string;
   }
@@ -41,5 +41,5 @@ export default {
   clear: clearQuotes,
   equals: quotedStringsAreEqual,
   test: testQuotes,
-  wrap: wrapInQuotes
+  wrap: wrapInQuotes,
 };

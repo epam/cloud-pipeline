@@ -16,10 +16,10 @@
 
 import RemotePost from '../basic/RemotePost';
 
-function buildQuery (pageSize, nextToken) {
+function buildQuery(pageSize, nextToken) {
   const query = [
     !!pageSize && `pageSize=${encodeURIComponent(pageSize)}`,
-    !!nextToken && `nextToken=${nextToken}`
+    !!nextToken && `nextToken=${nextToken}`,
   ]
     .filter(Boolean)
     .join('&');
@@ -27,7 +27,7 @@ function buildQuery (pageSize, nextToken) {
 }
 
 export default class OmicsJobsImport extends RemotePost {
-  constructor (id, pageSize, nextToken) {
+  constructor(id, pageSize, nextToken) {
     super();
     const query = buildQuery(pageSize, nextToken);
     this.url = `/omicsstore/${id}/import/list${query}`;

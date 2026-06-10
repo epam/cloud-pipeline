@@ -17,10 +17,8 @@
 import Remote from '../basic/Remote';
 
 export default class MetadataEntityLoad extends Remote {
-
-  constructor (id) {
+  constructor(id) {
     super();
     this.url = `/metadataEntity/${id}/load`;
   }
-
 }

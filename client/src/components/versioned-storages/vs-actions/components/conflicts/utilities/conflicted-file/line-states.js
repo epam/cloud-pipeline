@@ -21,5 +21,5 @@ export default {
   original: 'original',
   conflict: (conflict) => `conflict#${conflict?.id}`,
   conflictStart: 'conflict start',
-  conflictEnd: 'conflict end'
+  conflictEnd: 'conflict end',
 };

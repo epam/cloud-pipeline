@@ -21,7 +21,7 @@ class HCSImageMetadataCache {
   /**
    * @param {ObjectStorage} objectStorage
    */
-  constructor (objectStorage) {
+  constructor(objectStorage) {
     /**
      * @type {Map<string, Promise>}
      */
@@ -36,37 +36,36 @@ class HCSImageMetadataCache {
 
   clear = () => {
     this.cache.clear();
-  }
+  };
 
   /**
    * @param {HCSImageWell} well
    */
   getMetadata = (well) => {
-    const {
-      omeTiffFileName,
-      offsetsJsonFileName
-    } = well;
+    const {omeTiffFileName, offsetsJsonFileName} = well;
     const key = `${omeTiffFileName}|${offsetsJsonFileName}`.toUpperCase();
     if (!this.cache.has(key)) {
-      this.cache.set(key, new Promise(async (resolve, reject) => {
-        try {
+      this.cache.set(
+        key,
+        (async () => {
           const url = await this.objectStorage.generateFileUrl(omeTiffFileName);
           const offsets = await this.objectStorage.generateFileUrl(offsetsJsonFileName);
-          auditStorageAccessManager.reportReadAccess({
-            storageId: this.objectStorage ? this.objectStorage.id : undefined,
-            path: omeTiffFileName,
-            reportStorageType: 'S3'
-          }, {
-            storageId: this.objectStorage ? this.objectStorage.id : undefined,
-            path: offsetsJsonFileName,
-            reportStorageType: 'S3'
-          });
+          auditStorageAccessManager.reportReadAccess(
+            {
+              storageId: this.objectStorage ? this.objectStorage.id : undefined,
+              path: omeTiffFileName,
+              reportStorageType: 'S3',
+            },
+            {
+              storageId: this.objectStorage ? this.objectStorage.id : undefined,
+              path: offsetsJsonFileName,
+              reportStorageType: 'S3',
+            },
+          );
           const info = await fetchSourceInfo({url, offsetsUrl: offsets});
-          resolve(info.map((item) => item.metadata));
-        } catch (error) {
-          reject(error);
-        }
-      }));
+          return info.map((item) => item.metadata);
+        })(),
+      );
     }
     return this.cache.get(key);
   };

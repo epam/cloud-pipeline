@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 export default class IssuesLoad extends Remote {
-  constructor (entityId, entityClass) {
+  constructor(entityId, entityClass) {
     super();
     this.url = `/issues?entityId=${entityId || ''}&entityClass=${(entityClass || '').toUpperCase()}`;
   }

@@ -18,12 +18,10 @@ import {inject} from 'mobx-react';
 import {HIDDEN_OBJECTS_INJECTION} from './hoc';
 import treeFilter from './tree-filter';
 
-export default function injectTreeFilter (WrappedComponent) {
+export default function injectTreeFilter(WrappedComponent) {
   return inject(HIDDEN_OBJECTS_INJECTION)(
     inject(({hiddenObjects}) => ({
-      hiddenObjectsTreeFilter: treeFilter(hiddenObjects)
-    }))(
-      WrappedComponent
-    )
+      hiddenObjectsTreeFilter: treeFilter(hiddenObjects),
+    }))(WrappedComponent),
   );
 }

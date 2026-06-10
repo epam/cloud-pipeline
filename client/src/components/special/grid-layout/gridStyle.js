@@ -14,18 +14,16 @@
  * limitations under the License.
  */
 
-export function buildGridStyle (
-  {
-    cols = 24,
-    rows = 24,
-    padding = 0,
-    panelMargin = 5,
-    top = 40,
-    maxLayoutColumns = 4,
-    scrollBarSize = 15,
-    minimumHeight = 1
-  }
-) {
+export function buildGridStyle({
+  cols = 24,
+  rows = 24,
+  padding = 0,
+  panelMargin = 5,
+  top = 40,
+  maxLayoutColumns = 4,
+  scrollBarSize = 15,
+  minimumHeight = 1,
+}) {
   return {
     gridCols: cols,
     gridRows: rows,
@@ -35,12 +33,13 @@ export function buildGridStyle (
     maxLayoutColumns,
     rowHeight: function (containerHeight) {
       return (
-        Math.max(containerHeight, minimumHeight) -
+        (Math.max(containerHeight, minimumHeight) -
           2 * this.padding -
           this.gridRows * this.panelMargin -
-          this.top
-      ) / this.gridRows;
+          this.top) /
+        this.gridRows
+      );
     },
-    scrollBarSize
+    scrollBarSize,
   };
 }

@@ -31,7 +31,7 @@ import * as ColumnTags from './column-tags';
 import ExpandColumn from './column-expand';
 import {
   RUN_LOADING_PLACEHOLDER_PROPERTY,
-  RUN_LOADING_ERROR_PROPERTY
+  RUN_LOADING_ERROR_PROPERTY,
 } from './run-loading-placeholder';
 
 /**
@@ -48,24 +48,21 @@ import {
  * @param {string} type
  * @param {GetColumnOptions} options
  */
-function getColumn (
-  type,
-  options
-) {
+function getColumn(type, options) {
   const {
     localizedString,
     reload,
     state,
     setState,
     disabledFilters = [],
-    estimatedPriceVisible = true
+    estimatedPriceVisible = true,
   } = options || {};
   /**
    * @type {{getColumnFilter: function, getColumn: function}}
    */
   let config = {
     getColumn: () => undefined,
-    getColumnFilter: () => undefined
+    getColumnFilter: () => undefined,
   };
   switch (type) {
     case Columns.docker:
@@ -113,19 +110,15 @@ function getColumn (
   const column = config.getColumn(localizedString, reload, {estimatedPriceVisible});
   if (column && !disabledFilters.includes(type)) {
     const filters = config.getColumnFilter(state, setState);
-    const {
-      filtered = false
-    } = filters || {};
+    const {filtered = false} = filters || {};
     const filteredValue = {
-      filteredValue: filtered
-        ? ['filtered']
-        : [],
-      filtered
+      filteredValue: filtered ? ['filtered'] : [],
+      filtered,
     };
     return {
       ...column,
       ...filteredValue,
-      ...(filters || {})
+      ...(filters || {}),
     };
   }
   return column;
@@ -144,23 +137,15 @@ const AllColumns = [
   Columns.links,
   Columns.pauseResume,
   Columns.stopReRun,
-  Columns.logs
+  Columns.logs,
 ];
 
 /**
  * @param {string[]} columns
  * @param {GetColumnOptions} options
  */
-function getColumns (
-  columns,
-  options
-) {
-  return (columns || [])
-    .map((column) => getColumn(
-      column,
-      options
-    ))
-    .filter(Boolean);
+function getColumns(columns, options) {
+  return (columns || []).map((column) => getColumn(column, options)).filter(Boolean);
 }
 
 export {
@@ -169,5 +154,5 @@ export {
   ExpandColumn,
   getColumns,
   RUN_LOADING_PLACEHOLDER_PROPERTY,
-  RUN_LOADING_ERROR_PROPERTY
+  RUN_LOADING_ERROR_PROPERTY,
 };

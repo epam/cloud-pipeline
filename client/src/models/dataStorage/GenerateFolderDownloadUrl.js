@@ -19,10 +19,10 @@ import RemotePost from '../basic/RemotePost';
 class GenerateFolderDownloadUrl extends RemotePost {
   url;
 
-  constructor (id) {
+  constructor(id) {
     super();
     this.url = `/datastorage/${id}/generateUrl`;
-  };
+  }
 }
 
 export default GenerateFolderDownloadUrl;

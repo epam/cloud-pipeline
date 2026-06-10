@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import moment from 'moment-timezone';
+import dayjs, {toUtcDayjs} from '../../utils/dayjs';
 import Remote from '../basic/Remote';
 
 const second = 1;
@@ -27,68 +27,67 @@ const UsageTickIntervals = [
   {
     duration: minute,
     name: '1 minute',
-    value: 'PT1M'
+    value: 'PT1M',
   },
   {
     duration: 5 * minute,
     name: '5 minutes',
-    value: 'PT5M'
+    value: 'PT5M',
   },
   {
     duration: 15 * minute,
     name: '15 minutes',
-    value: 'PT15M'
+    value: 'PT15M',
   },
   {
     duration: 30 * minute,
     name: '30 minutes',
-    value: 'PT30M'
+    value: 'PT30M',
   },
   {
     duration: hour,
     name: '1 hour',
-    value: 'PT1H'
+    value: 'PT1H',
   },
   {
     duration: 4 * hour,
     name: '4 hours',
-    value: 'PT4H'
+    value: 'PT4H',
   },
   {
     duration: 12 * hour,
     value: 'PT12H',
-    name: '12 hours'
+    name: '12 hours',
   },
   {
     duration: day,
     value: 'P1D',
-    name: '1 day'
+    name: '1 day',
   },
   {
     duration: 7 * day,
     value: 'P7D',
-    name: '1 week'
-  }
+    name: '1 week',
+  },
 ];
 
-function getTickIntervalsCount (fromUnix, toUnix) {
-  const toCorrected = toUnix || moment().unix();
+function getTickIntervalsCount(fromUnix, toUnix) {
+  const toCorrected = toUnix || dayjs().unix();
   if (!fromUnix) {
     return UsageTickIntervals.map((unit) => ({...unit, count: Infinity}));
   }
   const duration = toCorrected - fromUnix;
-  return UsageTickIntervals
-    .map((unit) => ({...unit, count: duration / unit.duration}))
-    .filter(({count}) => count > 1);
+  return UsageTickIntervals.map((unit) => ({...unit, count: duration / unit.duration})).filter(
+    ({count}) => count > 1,
+  );
 }
 
-function getAvailableTickIntervals (fromUnix, toUnix) {
-  return getTickIntervalsCount(fromUnix, toUnix)
-    .map(({count, ...unit}) => unit);
+function getAvailableTickIntervals(fromUnix, toUnix) {
+  return getTickIntervalsCount(fromUnix, toUnix).map(({count, ...unit}) => unit);
 }
 
-function autoDetectTickInterval (fromUnix, toUnix) {
-  const toCorrected = toUnix || moment().unix();
+function autoDetectTickInterval(fromUnix, toUnix) {
+  const toCorrected = toUnix || dayjs().unix();
   if (!fromUnix) {
     return 'P1D'; // 1 day
   }
@@ -100,7 +99,7 @@ function autoDetectTickInterval (fromUnix, toUnix) {
   const hours = Math.floor(intervalInSeconds / hour);
   intervalInSeconds -= hours * hour;
   const minutes = Math.floor(intervalInSeconds / minute);
-  function getDurationString (value, unit) {
+  function getDurationString(value, unit) {
     if (value > 0) {
       return `${value}${unit}`;
     }
@@ -117,24 +116,25 @@ function autoDetectTickInterval (fromUnix, toUnix) {
 export {autoDetectTickInterval, getAvailableTickIntervals};
 
 export default class ClusterNodeUsageReport extends Remote {
-  constructor (name, from, to, tick, type = 'XLS', runId) {
+  constructor(name, from, to, tick, type = 'XLS', runId) {
     super();
     this.constructor.isJson = false;
     this.name = name;
     this.from = from;
     this.to = to;
     this.runId = runId;
-    this.interval = tick ||
+    this.interval =
+      tick ||
       autoDetectTickInterval(
-        from ? moment.utc(from).unix() : undefined,
-        to ? moment.utc(to).unix() : undefined
+        from ? toUtcDayjs(from)?.unix() : undefined,
+        to ? toUtcDayjs(to)?.unix() : undefined,
       );
     const parts = [
       from && `from=${encodeURIComponent(from)}`,
       to && `to=${encodeURIComponent(to)}`,
       tick && `interval=${tick}`,
       type && `type=${type}`,
-      runId && `runId=${runId}`
+      runId && `runId=${runId}`,
     ].filter(Boolean);
     const query = parts.length > 0 ? `?${parts.join('&')}` : '';
     this.url = `/cluster/node/${this.name}/usage/report${query}`;

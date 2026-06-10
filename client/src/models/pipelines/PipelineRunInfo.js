@@ -20,11 +20,11 @@ class PipelineRunInfo extends Remote {
   url;
   runId;
 
-  constructor (runId) {
+  constructor(runId) {
     super();
     this.runId = runId;
     this.url = `/run/${runId}`;
-  };
+  }
 }
 
 export default PipelineRunInfo;

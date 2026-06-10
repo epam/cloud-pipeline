@@ -17,15 +17,15 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class UserDelete extends RemotePost {
-  constructor (userId) {
+  constructor(userId) {
     super();
     this.constructor.fetchOptions = {
       headers: {
-        'Content-type': 'application/json; charset=UTF-8'
+        'Content-type': 'application/json; charset=UTF-8',
       },
       mode: 'cors',
       credentials: 'include',
-      method: 'DELETE'
+      method: 'DELETE',
     };
     this.url = `/user/${userId}`;
   }

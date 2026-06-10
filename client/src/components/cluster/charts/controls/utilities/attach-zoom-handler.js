@@ -66,21 +66,27 @@ export default function (controller, area, onZoomFinished) {
 
   const keydown = (event) => {
     switch (event.keyCode) {
-      case ESCAPE_KEY: cancelZoom(); break;
-      default: break;
+      case ESCAPE_KEY:
+        cancelZoom();
+        break;
+      default:
+        break;
     }
   };
 
   const zoom = ({start, end}) => {
-    controller.setState({
-      from: Math.min(start, end),
-      to: Math.max(start, end)
-    }, () => {
-      cancelZoom();
-      if (onZoomFinished) {
-        onZoomFinished(start, end, true);
-      }
-    });
+    controller.setState(
+      {
+        from: Math.min(start, end),
+        to: Math.max(start, end),
+      },
+      () => {
+        cancelZoom();
+        if (onZoomFinished) {
+          onZoomFinished(start, end, true);
+        }
+      },
+    );
   };
 
   const cancelZoom = () => {

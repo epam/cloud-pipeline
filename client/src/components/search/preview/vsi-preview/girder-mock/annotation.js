@@ -18,37 +18,18 @@ import deleteAnnotation from './utilities/delete-annotation';
 import getAnnotation from './utilities/get-annotation';
 import updateAnnotation from './utilities/update-annotation';
 
-function annotation (item, resolve) {
-  const {
-    storage,
-    path,
-    annotationId,
-    method,
-    data
-  } = item;
+function annotation(item, resolve) {
+  const {storage, path, annotationId, method, data} = item;
   if (/^put$/i.test(method)) {
-    updateAnnotation(
-      storage,
-      path,
-      annotationId,
-      data
-    )
+    updateAnnotation(storage, path, annotationId, data)
       .then(resolve)
       .catch(() => resolve());
   } else if (/^delete$/i.test(method)) {
-    deleteAnnotation(
-      storage,
-      path,
-      annotationId
-    )
+    deleteAnnotation(storage, path, annotationId)
       .then(resolve)
       .catch(() => resolve());
   } else {
-    getAnnotation(
-      storage,
-      path,
-      annotationId
-    )
+    getAnnotation(storage, path, annotationId)
       .then(resolve)
       .catch(() => resolve());
   }
@@ -62,7 +43,7 @@ annotation.test = function (url, method, data) {
       path: exec[2],
       annotationId: exec[3],
       method: method || 'GET',
-      data
+      data,
     };
   }
   return undefined;

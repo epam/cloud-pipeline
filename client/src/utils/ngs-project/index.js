@@ -29,21 +29,22 @@ import NgsProjectSamples from './ngs-project-samples';
  * @param {NgsProjectConfiguration} configuration
  * @returns {function(*=): any}
  */
-export function ngsProjectConfiguration (configuration = {}) {
-  const {
-    folderIdProperty = 'folderId',
-    folderRequestProperty = 'folder'
-  } = configuration;
-  return (WrappedComponent) => inject('preferences', 'folders')(
-    inject((stores = {}, props = {}) => {
-      const {preferences, folders} = stores;
-      const folderId = props[folderIdProperty];
-      const folder = props[folderRequestProperty];
-      return {
-        ngsProjectInfo: new NgsProjectInfo({folder, folderId}, preferences, folders)
-      };
-    })(WrappedComponent)
-  );
+export function ngsProjectConfiguration(configuration = {}) {
+  const {folderIdProperty = 'folderId', folderRequestProperty = 'folder'} = configuration;
+  return (WrappedComponent) =>
+    inject(
+      'preferences',
+      'folders',
+    )(
+      inject((stores = {}, props = {}) => {
+        const {preferences, folders} = stores;
+        const folderId = props[folderIdProperty];
+        const folder = props[folderRequestProperty];
+        return {
+          ngsProjectInfo: new NgsProjectInfo({folder, folderId}, preferences, folders),
+        };
+      })(WrappedComponent),
+    );
 }
 
 /**
@@ -58,30 +59,34 @@ export function ngsProjectConfiguration (configuration = {}) {
  * @param {NgsProjectClassConfiguration} configuration
  * @returns {function(*=): any}
  */
-export function ngsProjectMachineRunsConfiguration (configuration = {}) {
+export function ngsProjectMachineRunsConfiguration(configuration = {}) {
   const {
     metadataClassProperty = 'metadataClass',
     folderIdProperty = 'folderId',
-    fieldsRequestProperty = 'entityFields'
+    fieldsRequestProperty = 'entityFields',
   } = configuration;
-  return (WrappedComponent) => inject('preferences')(
-    inject((stores = {}, props = {}) => {
-      const {preferences} = stores;
-      const metadataClass = props[metadataClassProperty];
-      const folderId = props[folderIdProperty];
-      const entityFields = props[fieldsRequestProperty];
-      return {
-        ngsProjectMachineRuns: new NgsProjectMachineRuns({
-          metadataClass,
-          folderId,
-          entityFields
-        }, preferences)
-      };
-    })(WrappedComponent)
-  );
+  return (WrappedComponent) =>
+    inject('preferences')(
+      inject((stores = {}, props = {}) => {
+        const {preferences} = stores;
+        const metadataClass = props[metadataClassProperty];
+        const folderId = props[folderIdProperty];
+        const entityFields = props[fieldsRequestProperty];
+        return {
+          ngsProjectMachineRuns: new NgsProjectMachineRuns(
+            {
+              metadataClass,
+              folderId,
+              entityFields,
+            },
+            preferences,
+          ),
+        };
+      })(WrappedComponent),
+    );
 }
 
-export function ngsProjectMachineRuns (WrappedComponent) {
+export function ngsProjectMachineRuns(WrappedComponent) {
   return ngsProjectMachineRunsConfiguration({})(WrappedComponent);
 }
 
@@ -90,33 +95,37 @@ export function ngsProjectMachineRuns (WrappedComponent) {
  * @param {NgsProjectClassConfiguration} configuration
  * @returns {function(*=): any}
  */
-export function ngsProjectSamplesConfiguration (configuration = {}) {
+export function ngsProjectSamplesConfiguration(configuration = {}) {
   const {
     metadataClassProperty = 'metadataClass',
     folderIdProperty = 'folderId',
-    fieldsRequestProperty = 'entityFields'
+    fieldsRequestProperty = 'entityFields',
   } = configuration;
-  return (WrappedComponent) => inject('preferences')(
-    inject((stores = {}, props = {}) => {
-      const {preferences} = stores;
-      const metadataClass = props[metadataClassProperty];
-      const folderId = props[folderIdProperty];
-      const entityFields = props[fieldsRequestProperty];
-      return {
-        ngsProjectSamples: new NgsProjectSamples({
-          metadataClass,
-          folderId,
-          entityFields
-        }, preferences)
-      };
-    })(WrappedComponent)
-  );
+  return (WrappedComponent) =>
+    inject('preferences')(
+      inject((stores = {}, props = {}) => {
+        const {preferences} = stores;
+        const metadataClass = props[metadataClassProperty];
+        const folderId = props[folderIdProperty];
+        const entityFields = props[fieldsRequestProperty];
+        return {
+          ngsProjectSamples: new NgsProjectSamples(
+            {
+              metadataClass,
+              folderId,
+              entityFields,
+            },
+            preferences,
+          ),
+        };
+      })(WrappedComponent),
+    );
 }
 
-export function ngsProjectSamples (WrappedComponent) {
+export function ngsProjectSamples(WrappedComponent) {
   return ngsProjectSamplesConfiguration({})(WrappedComponent);
 }
 
-export default function ngsProject (WrappedComponent) {
+export default function ngsProject(WrappedComponent) {
   return ngsProjectConfiguration({})(WrappedComponent);
 }

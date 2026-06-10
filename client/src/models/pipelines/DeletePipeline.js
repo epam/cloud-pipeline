@@ -17,16 +17,15 @@
 import Remote from '../basic/Remote';
 
 export default class DeletePipeline extends Remote {
-
-  constructor (pipelineId, keepRepository = true) {
+  constructor(pipelineId, keepRepository = true) {
     super();
     this.constructor.fetchOptions = {
       headers: {
-        'Content-type': 'application/json; charset=UTF-8'
+        'Content-type': 'application/json; charset=UTF-8',
       },
       mode: 'cors',
       credentials: 'include',
-      method: 'DELETE'
+      method: 'DELETE',
     };
     this.url = `/pipeline/${pipelineId}/delete?keep_repository=${keepRepository}`;
   }

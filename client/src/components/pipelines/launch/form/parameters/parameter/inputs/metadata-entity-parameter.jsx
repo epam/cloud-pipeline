@@ -1,16 +1,16 @@
 import React from 'react';
 import classNames from 'classnames';
 import {Select} from 'antd';
-import styles from './launch-form-parameter-input.css';
+import styles from './launch-form-parameter-input.module.css';
 
-function unMapValue (value, parameter) {
+function unMapValue(value, parameter) {
   if (parameter?.config?.multiple && Array.isArray(value)) {
     return value.join(',');
   }
   return value;
 }
 
-function mapValue (value = '', parameter) {
+function mapValue(value = '', parameter) {
   if (parameter?.config?.multiple) {
     return (value || '').split(',').filter(Boolean);
   }
@@ -18,22 +18,22 @@ function mapValue (value = '', parameter) {
 }
 
 class LaunchFormMetadataEntityParameter extends React.PureComponent {
-  get metadata () {
+  get metadata() {
     const {parameter, parametersMetadata = {}} = this.props;
     return parametersMetadata[parameter.name]?.elements || [];
   }
 
-  get enum () {
-    return this.metadata.map(entry => ({
+  get enum() {
+    return this.metadata.map((entry) => ({
       key: entry.id,
-      value: entry.externalId
+      value: entry.externalId,
     }));
   }
 
   getDisplayLabel = (externalId) => {
     const {parameter} = this.props;
     const metadataConfig = parameter?.config?.metadata_config || {};
-    const entry = this.metadata.find(m => m.externalId === externalId);
+    const entry = this.metadata.find((m) => m.externalId === externalId);
     if (entry?.data && metadataConfig.nameField) {
       return entry.data[metadataConfig.nameField]?.value || externalId;
     }
@@ -45,15 +45,8 @@ class LaunchFormMetadataEntityParameter extends React.PureComponent {
     return label.toLowerCase().includes(input.toLowerCase());
   };
 
-  render () {
-    const {
-      className,
-      style,
-      value: valueProps,
-      parameter,
-      onChange,
-      disabled
-    } = this.props;
+  render() {
+    const {className, style, value: valueProps, parameter, onChange, disabled} = this.props;
     const onInputChange = (e) => {
       if (typeof onChange === 'function') {
         onChange(unMapValue(e, parameter));

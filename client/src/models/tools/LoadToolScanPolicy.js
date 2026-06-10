@@ -17,8 +17,8 @@
 import Remote from '../basic/Remote';
 
 export default class LoadToolScanPolicy extends Remote {
-  constructor () {
+  constructor() {
     super();
-    this.url = `/tool/scan/policy`;
+    this.url = '/tool/scan/policy';
   }
 }

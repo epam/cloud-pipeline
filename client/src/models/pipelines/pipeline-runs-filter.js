@@ -1,11 +1,11 @@
-import moment from 'moment-timezone';
+import {localDateToUtcDayjs, toUtcDayjs} from '../../utils/dayjs';
 import {alphabeticalSorter} from '../../utils/sorting';
 
-function asStringArray (array) {
+function asStringArray(array) {
   return (array || []).map((item) => `${item}`);
 }
 
-export function simpleArraysAreEqual (array1, array2) {
+export function simpleArraysAreEqual(array1, array2) {
   const a = [...new Set(asStringArray(array1))].sort(alphabeticalSorter);
   const b = [...new Set(asStringArray(array2))].sort(alphabeticalSorter);
   if (a.length !== b.length) {
@@ -19,24 +19,20 @@ export function simpleArraysAreEqual (array1, array2) {
   return true;
 }
 
-function isUndefined (o) {
+function isUndefined(o) {
   return o === undefined || o === null;
 }
 
-function asMomentDate (date) {
+function asUtcDate(date) {
   if (isUndefined(date)) {
     return undefined;
   }
-  const momentDate = moment.utc(date);
-  if (momentDate.isValid()) {
-    return momentDate;
-  }
-  return undefined;
+  return toUtcDayjs(date) || undefined;
 }
 
-export function datesAreEqual (date1, date2) {
-  const a = asMomentDate(date1);
-  const b = asMomentDate(date2);
+export function datesAreEqual(date1, date2) {
+  const a = asUtcDate(date1);
+  const b = asUtcDate(date2);
   if (isUndefined(a) && isUndefined(b)) {
     return true;
   }
@@ -46,11 +42,11 @@ export function datesAreEqual (date1, date2) {
   return a.isSame(b);
 }
 
-export function statusesArraysAreEqual (array1, array2) {
+export function statusesArraysAreEqual(array1, array2) {
   return simpleArraysAreEqual(array1, array2);
 }
 
-export function parentIdsAreEqual (parentId1, parentId2) {
+export function parentIdsAreEqual(parentId1, parentId2) {
   if (isUndefined(parentId1) && isUndefined(parentId2)) {
     return true;
   }
@@ -60,45 +56,45 @@ export function parentIdsAreEqual (parentId1, parentId2) {
   return Number(parentId1) === Number(parentId2);
 }
 
-export function projectsArraysAreEqual (array1, array2) {
+export function projectsArraysAreEqual(array1, array2) {
   return simpleArraysAreEqual(array1, array2);
 }
 
-export function pipelineIdArraysAreEqual (array1, array2) {
+export function pipelineIdArraysAreEqual(array1, array2) {
   return simpleArraysAreEqual(array1, array2);
 }
 
-export function versionArraysAreEqual (array1, array2) {
+export function versionArraysAreEqual(array1, array2) {
   return simpleArraysAreEqual(array1, array2);
 }
 
-export function dockerImagesArraysAreEqual (array1, array2) {
+export function dockerImagesArraysAreEqual(array1, array2) {
   return simpleArraysAreEqual(array1, array2);
 }
 
-export function startDatesAreEqual (startDate1, startDate2) {
+export function startDatesAreEqual(startDate1, startDate2) {
   return datesAreEqual(startDate1, startDate2);
 }
 
-export function endDatesAreEqual (endDate1, endDate2) {
+export function endDatesAreEqual(endDate1, endDate2) {
   return datesAreEqual(endDate1, endDate2);
 }
 
-export function ownerArraysAreEqual (array1, array2) {
+export function ownerArraysAreEqual(array1, array2) {
   return simpleArraysAreEqual(array1, array2);
 }
 
-export function rolesArraysAreEqual (array1, array2) {
+export function rolesArraysAreEqual(array1, array2) {
   return simpleArraysAreEqual(array1, array2);
 }
 
-export function tagsAreEqual (tagsA, tagsB) {
+export function tagsAreEqual(tagsA, tagsB) {
   const a = Object.entries(tagsA || {}).map(([key, value]) => `${key}=${value}`);
   const b = Object.entries(tagsB || {}).map(([key, value]) => `${key}=${value}`);
   return simpleArraysAreEqual(a, b);
 }
 
-export function filtersAreEqual (filter1, filter2) {
+export function filtersAreEqual(filter1, filter2) {
   const {
     statuses: statusesA,
     parentId: parentIdA,
@@ -112,7 +108,7 @@ export function filtersAreEqual (filter1, filter2) {
     regionIds: regionIdsA,
     projectIds: projectIdsA,
     onlyMasterJobs: onlyMasterJobsA = true,
-    tags: tagsA = {}
+    tags: tagsA = {},
   } = filter1 || {};
   const {
     statuses: statusesB,
@@ -127,9 +123,10 @@ export function filtersAreEqual (filter1, filter2) {
     regionIds: regionIdsB,
     projectIds: projectIdsB,
     onlyMasterJobs: onlyMasterJobsB = true,
-    tags: tagsB = {}
+    tags: tagsB = {},
   } = filter2 || {};
-  return statusesArraysAreEqual(statusesA, statusesB) &&
+  return (
+    statusesArraysAreEqual(statusesA, statusesB) &&
     parentIdsAreEqual(parentIdA, parentIdB) &&
     pipelineIdArraysAreEqual(pipelineIdsA, pipelineIdsB) &&
     versionArraysAreEqual(versionsA, versionsB) &&
@@ -141,23 +138,20 @@ export function filtersAreEqual (filter1, filter2) {
     rolesArraysAreEqual(rolesA, rolesB) &&
     simpleArraysAreEqual(regionIdsA, regionIdsB) &&
     onlyMasterJobsA === onlyMasterJobsB &&
-    tagsAreEqual(tagsA, tagsB);
+    tagsAreEqual(tagsA, tagsB)
+  );
 }
 
-export function getFiltersPayload (filters) {
-  const {
-    startDateFrom,
-    endDateTo,
-    onlyMasterJobs = true,
-    ...rest
-  } = filters || {};
-  const formatDate = (date) => date
-    ? (moment.utc(date).format('YYYY-MM-DD HH:mm:ss.SSS'))
-    : undefined;
+export function getFiltersPayload(filters) {
+  const {startDateFrom, endDateTo, onlyMasterJobs = true, ...rest} = filters || {};
+  const formatDate = (date) => {
+    const utc = localDateToUtcDayjs(date);
+    return utc ? utc.format('YYYY-MM-DD HH:mm:ss.SSS') : undefined;
+  };
   return {
     ...rest,
     startDateFrom: formatDate(startDateFrom),
     endDateTo: formatDate(endDateTo),
-    userModified: !onlyMasterJobs
+    userModified: !onlyMasterJobs,
   };
 }

@@ -19,12 +19,7 @@ const id = 'highlight-ticks-plugin';
 const plugin = {
   id,
   beforeDraw: function (chart, e, configuration) {
-    const {
-      axis = 'x-axis',
-      highlightTickFn,
-      request,
-      tickValues
-    } = configuration;
+    const {axis = 'x-axis', highlightTickFn, request, tickValues} = configuration;
     if (!chart || typeof highlightTickFn !== 'function') {
       return;
     }
@@ -37,7 +32,7 @@ const plugin = {
         tick.major = highlightTickFn(value, tick);
       }
     }
-  }
+  },
 };
 
 export {id, plugin};

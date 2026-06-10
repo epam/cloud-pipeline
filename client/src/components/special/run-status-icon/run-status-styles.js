@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import styles from './StatusIcon.css';
+import styles from './StatusIcon.module.css';
 import Statuses from './run-statuses';
 
 export default {
@@ -30,5 +30,5 @@ export default {
   [Statuses.stopped]: 'cp-runs-table-icon-yellow',
   [Statuses.success]: 'cp-runs-table-icon-green',
 
-  [Statuses.unknown]: 'cp-runs-table-icon-yellow'
+  [Statuses.unknown]: 'cp-runs-table-icon-yellow',
 };

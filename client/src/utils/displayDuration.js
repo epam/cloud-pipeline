@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import moment from 'moment-timezone';
+import dayjs, {toUtcDayjs} from './dayjs';
 
 /**
  * Returns presentation of a duration specified in seconds
@@ -21,7 +21,7 @@ import moment from 'moment-timezone';
  * @param {boolean} [details=false]
  * @returns {string}
  */
-export function displayDurationInSeconds (duration = 0, details = false) {
+export function displayDurationInSeconds(duration = 0, details = false) {
   const MINUTE = 60;
   const HOUR = 60 * MINUTE;
   const DAY = 24 * HOUR;
@@ -34,7 +34,7 @@ export function displayDurationInSeconds (duration = 0, details = false) {
     days > 0 ? plural(days, 'day') : undefined,
     hours > 0 ? plural(hours, 'hour') : undefined,
     minutes > 0 ? plural(minutes, 'minute') : undefined,
-    plural(seconds, 'second')
+    plural(seconds, 'second'),
   ].filter(Boolean);
   if (details) {
     return parts.join(', ');
@@ -46,8 +46,11 @@ export default (start, end = undefined) => {
   if (!start && !end) {
     return null;
   }
-  const diff = moment
-    .utc(end ? moment.utc(end) : moment.utc())
-    .diff(moment.utc(start), 'seconds', false);
+  const endUtc = toUtcDayjs(end) || dayjs.utc();
+  const startUtc = toUtcDayjs(start);
+  if (!startUtc) {
+    return null;
+  }
+  const diff = endUtc.diff(startUtc, 'second', false);
   return displayDurationInSeconds(diff);
 };

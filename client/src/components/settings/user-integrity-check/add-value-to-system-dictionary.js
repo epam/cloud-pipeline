@@ -16,31 +16,25 @@
 
 import SystemDictionariesUpdate from '../../../models/systemDictionaries/SystemDictionariesUpdate';
 
-function addValueToSystemDictionary (
-  dictionary,
-  values = []
-) {
+function addValueToSystemDictionary(dictionary, values = []) {
   const request = new SystemDictionariesUpdate();
   if (!dictionary) {
     return Promise.resolve();
   }
-  const {
-    id: currentId,
-    key: currentKey,
-    values: currentValues = []
-  } = dictionary;
+  const {id: currentId, key: currentKey, values: currentValues = []} = dictionary;
   return new Promise((resolve, reject) => {
-    request.send({
-      id: currentId,
-      key: currentKey,
-      values: [
-        ...currentValues,
-        ...values.map(value => ({
-          autofill: true,
-          value
-        }))
-      ]
-    })
+    request
+      .send({
+        id: currentId,
+        key: currentKey,
+        values: [
+          ...currentValues,
+          ...values.map((value) => ({
+            autofill: true,
+            value,
+          })),
+        ],
+      })
       .then(() => {
         if (request.error || !request.loaded) {
           reject(new Error(request.error || `Error updating dictionary ${currentKey}`));

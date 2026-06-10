@@ -1,4 +1,4 @@
-export function normalizeRunParameter (runParameter) {
+export function normalizeRunParameter(runParameter) {
   const {name, type} = runParameter || {};
   if (type === undefined && name) {
     // trying to parse "unparsed" name
@@ -10,18 +10,18 @@ export function normalizeRunParameter (runParameter) {
         ...runParameter,
         name: paramName,
         type: paramType,
-        value: restParts.join('=')
+        value: restParts.join('='),
       };
     }
   }
   return runParameter;
 }
 
-export function normalizeRunParameters (runParameters) {
+export function normalizeRunParameters(runParameters) {
   return (runParameters || []).map(normalizeRunParameter);
 }
 
-function compareRunParameters (parameter1, parameter2) {
+function compareRunParameters(parameter1, parameter2) {
   const {name: p1Name} = parameter1 || {};
   const {name: p2Name} = parameter2 || {};
   if (p1Name.startsWith('CP_') && !p2Name.startsWith('CP_')) {
@@ -33,6 +33,6 @@ function compareRunParameters (parameter1, parameter2) {
   return p1Name.localeCompare(p2Name);
 }
 
-export function sortRunParameters (runParameters) {
+export function sortRunParameters(runParameters) {
   return (runParameters || []).slice().sort(compareRunParameters);
 }

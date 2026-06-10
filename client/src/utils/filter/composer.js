@@ -21,20 +21,20 @@ import LogicalExpression from './expressions/logicalExpression';
 import IncompleteLogicalExpression from './expressions/incompleteLogicalExpression';
 
 export default class Composer {
-  constructor () {
+  constructor() {
     parser.yy.AndExpression = AndExpression;
     parser.yy.OrExpression = OrExpression;
     parser.yy.LogicalExpression = LogicalExpression;
     parser.yy.IncompleteLogicalExpression = IncompleteLogicalExpression;
   }
 
-  parse (input) {
+  parse(input) {
     let result;
     try {
       result = parser.parse(input);
     } catch (e) {
       result = {
-        error: e.message
+        error: e.message,
       };
     }
     return result;

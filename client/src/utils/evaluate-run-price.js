@@ -30,42 +30,28 @@ const SECONDS_IN_HOUR = 3600;
  * @param {RunPriceEstimationOptions} [options]
  * @returns {{total: number, master: number, workers: number}}
  */
-export default function evaluateRunPrice (
-  run,
-  options = {}
-) {
-  const {
-    analyseSchedulingPhase = false,
-    runTasks = []
-  } = options || {};
+export default function evaluateRunPrice(run, options = {}) {
+  const {analyseSchedulingPhase = false, runTasks = []} = options || {};
   if (!run) {
     return {
       total: 0,
       master: 0,
-      workers: 0
+      workers: 0,
     };
   }
-  const {
-    totalBillableDuration,
-    totalBillableRunningDuration
-  } = getRunDurationInfo(
+  const {totalBillableDuration, totalBillableRunningDuration} = getRunDurationInfo(
     run,
     analyseSchedulingPhase,
-    runTasks
+    runTasks,
   );
-  const {
-    computePricePerHour = 0,
-    workersPrice = 0,
-    pricePerHour = 0
-  } = run;
+  const {computePricePerHour = 0, workersPrice = 0, pricePerHour = 0} = run;
   const format = (value) => Math.ceil(value * 100.0) / 100.0;
   const hours = totalBillableDuration / SECONDS_IN_HOUR;
   const computedHours = totalBillableRunningDuration / SECONDS_IN_HOUR;
-  const master = (computedHours * computePricePerHour) +
-    hours * (pricePerHour - computePricePerHour);
+  const master = computedHours * computePricePerHour + hours * (pricePerHour - computePricePerHour);
   return {
     master: format(master),
     workers: format(workersPrice),
-    total: format(master + workersPrice)
+    total: format(master + workersPrice),
   };
 }

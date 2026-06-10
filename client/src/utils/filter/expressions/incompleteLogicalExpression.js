@@ -17,7 +17,7 @@
 import FilterExpression from './filterExpression';
 
 export default class IncompleteLogicalExpression extends FilterExpression {
-  constructor (field, operand, value, options) {
+  constructor(field, operand, value, options) {
     super(field, value, FilterExpression.types.LOGICAL, operand, undefined, undefined, options);
   }
 }

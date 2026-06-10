@@ -14,24 +14,21 @@
  *  limitations under the License.
  */
 
-export function ascSorter (a, b) {
+export function ascSorter(a, b) {
   return a - b;
 }
 
-export function cellsAreEqual (a, b) {
+export function cellsAreEqual(a, b) {
   if (!a && !b) {
     return true;
   }
   if (!a || !b) {
     return false;
   }
-  return a.id === b.id &&
-    a.selectable === b.selectable &&
-    a.info === b.info &&
-    a.tags === b.tags;
+  return a.id === b.id && a.selectable === b.selectable && a.info === b.info && a.tags === b.tags;
 }
 
-export function cellsArraysAreEqual (a, b) {
+export function cellsArraysAreEqual(a, b) {
   if (!a && !b) {
     return true;
   }
@@ -42,8 +39,8 @@ export function cellsArraysAreEqual (a, b) {
     const aa = a[i];
     const bb = b[i];
     if (
-      !b.find(bCell => cellsAreEqual(bCell, aa)) ||
-      !a.find(aCell => cellsAreEqual(aCell, bb))
+      !b.find((bCell) => cellsAreEqual(bCell, aa)) ||
+      !a.find((aCell) => cellsAreEqual(aCell, bb))
     ) {
       return false;
     }

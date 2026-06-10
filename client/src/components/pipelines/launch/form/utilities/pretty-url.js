@@ -13,11 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/* eslint-disable max-len */
 const endpointURIMask = /^[a-zA-Z\d_]+$/;
-const domainMask = /^[-a-zA-Z0-9_\.]+(:\d+)?$/i;
+const domainMask = /^[-a-zA-Z0-9_.]+(:\d+)?$/i;
 
-function parse (value) {
+function parse(value) {
   if (!value) {
     return null;
   }
@@ -34,7 +33,7 @@ function parse (value) {
   return value;
 }
 
-function validate (url, sshMode = false) {
+function validate(url, sshMode = false) {
   if (!url) {
     return undefined;
   }
@@ -44,33 +43,29 @@ function validate (url, sshMode = false) {
       return 'You can not use domain name for the SSH URL';
     }
     if (path && !endpointURIMask.test(path)) {
-      return 'Please enter valid endpoint name (only characters, numbers and \'_\' symbols are allowed)';
+      return "Please enter valid endpoint name (only characters, numbers and '_' symbols are allowed)";
     }
   }
   if (
     domain &&
-    (
-      !domainMask.test(domain) ||
-      domain.indexOf('..') >= 0 ||
-      domain.indexOf('.') === -1
-    )
+    (!domainMask.test(domain) || domain.indexOf('..') >= 0 || domain.indexOf('.') === -1)
   ) {
-    return 'Please enter valid domain name (only characters, numbers, \'-\', \'_\' and dots symbols are allowed)';
+    return "Please enter valid domain name (only characters, numbers, '-', '_' and dots symbols are allowed)";
   }
   if (path && !endpointURIMask.test(path)) {
-    return 'Please enter valid endpoint name (only characters, numbers and \'_\' symbols are allowed)';
+    return "Please enter valid endpoint name (only characters, numbers and '_' symbols are allowed)";
   }
   return undefined;
 }
 
-function stringifyResult (stringify, value) {
+function stringifyResult(stringify, value) {
   if (!stringify || !value) {
     return value;
   }
   return JSON.stringify(value);
 }
 
-function build (value, stringified = true) {
+function build(value, stringified = true) {
   const normalized = parse(value);
   if (!normalized) {
     return stringifyResult(stringified, undefined);
@@ -88,18 +83,21 @@ function build (value, stringified = true) {
   return stringifyResult(stringified, {domain, path: path.join('/')});
 }
 
-function isPrettyUrlSSHMode (dockerImage, dockerRegistries) {
+function isPrettyUrlSSHMode(dockerImage, dockerRegistries) {
   if (dockerImage && dockerRegistries?.loaded) {
     const [registry, group, toolAndVersion] = dockerImage.toLowerCase().split('/');
-    const [imageRegistry] = (dockerRegistries.value.registries || [])
-      .filter(r => r.path.toLowerCase() === registry);
+    const [imageRegistry] = (dockerRegistries.value.registries || []).filter(
+      (r) => r.path.toLowerCase() === registry,
+    );
     if (imageRegistry) {
-      const [imageGroup] = (imageRegistry.groups || [])
-        .filter(g => g.name.toLowerCase() === group);
+      const [imageGroup] = (imageRegistry.groups || []).filter(
+        (g) => g.name.toLowerCase() === group,
+      );
       if (imageGroup) {
         const [image] = toolAndVersion.split(':');
-        const [im] = (imageGroup.tools || [])
-          .filter(i => i.image.toLowerCase() === `${group}/${image}`);
+        const [im] = (imageGroup.tools || []).filter(
+          (i) => i.image.toLowerCase() === `${group}/${image}`,
+        );
         return !(im && im.endpoints && (im.endpoints || []).length > 0);
       }
     }

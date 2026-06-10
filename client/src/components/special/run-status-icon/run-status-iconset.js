@@ -22,7 +22,7 @@ import {
   HourglassOutlined,
   LoadingOutlined,
   PauseCircleOutlined,
-  PlayCircleOutlined
+  PlayCircleOutlined,
 } from '@ant-design/icons';
 import Statuses from './run-statuses';
 
@@ -39,11 +39,11 @@ export const DefaultIconSet = {
   [Statuses.stopped]: ClockCircleFilled,
   [Statuses.success]: CheckCircleOutlined,
 
-  [Statuses.unknown]: PlayCircleOutlined
+  [Statuses.unknown]: PlayCircleOutlined,
 };
 
-export function getRunStatusIcon (status, iconSet) {
-  if (iconSet && iconSet.hasOwnProperty(status) && !!iconSet[status]) {
+export function getRunStatusIcon(status, iconSet) {
+  if (iconSet && Object.hasOwn(iconSet, status) && !!iconSet[status]) {
     return iconSet[status];
   } else {
     return DefaultIconSet[status];

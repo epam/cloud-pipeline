@@ -17,7 +17,7 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class DataStorageTempCredentials extends RemotePost {
-  constructor () {
+  constructor() {
     super();
     this.url = '/datastorage/tempCredentials/';
   }

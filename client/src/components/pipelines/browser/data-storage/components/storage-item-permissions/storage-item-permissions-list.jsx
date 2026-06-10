@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import {Button, Checkbox, Table} from 'antd';
 import {DeleteOutlined, UserAddOutlined, UsergroupAddOutlined} from '@ant-design/icons';
 import {getSIDKey, normalizePermissions, parseSIDKey} from './utilities';
-import UserName from '../../../../../special/UserName';
+import UserName from '../../../../../shared/user-name';
 import PickUserModal from './pick-user-modal';
 import PickGroupsModal from './pick-group-modal';
 import GroupName from './group-name';
@@ -21,14 +21,14 @@ class StorageItemPermissionsList extends React.PureComponent {
     data: [],
     active: undefined,
     pickUserModalVisible: false,
-    pickGroupModalVisible: false
+    pickGroupModalVisible: false,
   };
 
-  componentDidMount () {
+  componentDidMount() {
     this.updateFromProps();
   }
 
-  componentDidUpdate (prevProps, prevState, snapshot) {
+  componentDidUpdate(prevProps, prevState, snapshot) {
     if (prevProps.permissions !== this.props.permissions) {
       this.updateFromProps();
     }
@@ -45,13 +45,14 @@ class StorageItemPermissionsList extends React.PureComponent {
     const data = [];
     for (const sidKey of sidsArray) {
       const sid = parseSIDKey(sidKey);
-      const sidPermissions = permissions
-        .filter((p) => p.sid.isPrincipal === sid.isPrincipal && p.sid.name === sid.name);
+      const sidPermissions = permissions.filter(
+        (p) => p.sid.isPrincipal === sid.isPrincipal && p.sid.name === sid.name,
+      );
       data.push({
         sid,
         sidKey,
         permissions: sidPermissions,
-        ...normalizePermissions(sidPermissions)
+        ...normalizePermissions(sidPermissions),
       });
     }
     let {active: currentActive} = this.state;
@@ -66,9 +67,7 @@ class StorageItemPermissionsList extends React.PureComponent {
   };
 
   onChange = () => {
-    const {
-      onPermissionsChange
-    } = this.props;
+    const {onPermissionsChange} = this.props;
     if (typeof onPermissionsChange === 'function') {
       const {data = []} = this.state;
       const payload = data.reduce((acc, current) => acc.concat(current.permissions), []);
@@ -89,18 +88,20 @@ class StorageItemPermissionsList extends React.PureComponent {
       storageId,
       storagePath: sp.path,
       type: sp.type,
-      mask
+      mask,
     }));
     const sidKey = getSIDKey(sid);
     const updated = data
       .filter((d) => d.sidKey !== sidKey)
-      .concat([{
-        sid,
-        sidKey: getSIDKey(sid),
-        permissions,
-        writeAllowed: normalized.writeAllowed,
-        writeAllowedIndeterminate: false
-      }]);
+      .concat([
+        {
+          sid,
+          sidKey: getSIDKey(sid),
+          permissions,
+          writeAllowed: normalized.writeAllowed,
+          writeAllowedIndeterminate: false,
+        },
+      ]);
     this.setState({data: updated, active: sidKey}, this.onChange);
   };
 
@@ -111,25 +112,23 @@ class StorageItemPermissionsList extends React.PureComponent {
     const {data = []} = this.state;
     const {storageId, storagePaths} = this.props;
     const sidKey = getSIDKey(sid);
-    const currentIdx = data
-      .findIndex((d) => d.sidKey === sidKey);
+    const currentIdx = data.findIndex((d) => d.sidKey === sidKey);
     if (currentIdx === -1) {
       this.onChangePermission(sid, {writeAllowed: false});
     } else {
       const current = data[currentIdx];
       const modified = current.permissions.slice();
       for (const sp of storagePaths) {
-        const spCurrent = modified
-          .find((p) => p.storageId === storageId &&
-            p.storagePath === sp.path &&
-            p.type === sp.type);
+        const spCurrent = modified.find(
+          (p) => p.storageId === storageId && p.storagePath === sp.path && p.type === sp.type,
+        );
         if (!spCurrent) {
           modified.push({
             storageId,
             storagePath: sp.path,
             type: sp.type,
             mask: 0b0001, // read only
-            sid
+            sid,
           });
         }
       }
@@ -145,8 +144,7 @@ class StorageItemPermissionsList extends React.PureComponent {
   onRemovePermission = (sid) => {
     const {data = []} = this.state;
     const sidKey = getSIDKey(sid);
-    const updated = data
-      .filter((d) => d.sidKey !== sidKey);
+    const updated = data.filter((d) => d.sidKey !== sidKey);
     const active = updated.length > 0 ? updated[0].sidKey : undefined;
     this.setState({data: updated, active}, this.onChange);
   };
@@ -160,24 +158,18 @@ class StorageItemPermissionsList extends React.PureComponent {
   onClosePickGroupModal = () => this.setState({pickGroupModalVisible: false});
 
   renderSidsTable = () => {
-    const {
-      data = []
-    } = this.state;
+    const {data = []} = this.state;
     const columns = [
       {
         key: 'name',
         render: (item) => {
           return (
             <div style={{display: 'inline-flex', alignItems: 'center', gap: 5}}>
-              {
-                item.sid.isPrincipal && <UserName userName={item.sid.name} showIcon />
-              }
-              {
-                !item.sid.isPrincipal && <GroupName group={item.sid.name} showIcon />
-              }
+              {item.sid.isPrincipal && <UserName userName={item.sid.name} showIcon />}
+              {!item.sid.isPrincipal && <GroupName group={item.sid.name} showIcon />}
             </div>
           );
-        }
+        },
       },
       {
         key: 'permissions',
@@ -186,28 +178,21 @@ class StorageItemPermissionsList extends React.PureComponent {
           <Checkbox
             checked={item.writeAllowed}
             indeterminate={item.writeAllowedIndeterminate}
-            onChange={(e) => this.onChangePermission(
-              item.sid,
-              {writeAllowed: e.target.checked})
-            }
+            onChange={(e) => this.onChangePermission(item.sid, {writeAllowed: e.target.checked})}
           >
             Write access
           </Checkbox>
-        )
+        ),
       },
       {
         key: 'actions',
         width: 40,
         render: (item) => (
-          <Button
-            onClick={() => this.onRemovePermission(item.sid)}
-            size="small"
-            danger
-          >
+          <Button onClick={() => this.onRemovePermission(item.sid)} size="small" danger>
             <DeleteOutlined />
           </Button>
-        )
-      }
+        ),
+      },
     ];
     return (
       <Table
@@ -219,19 +204,13 @@ class StorageItemPermissionsList extends React.PureComponent {
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 5,
-                marginLeft: 'auto'
+                marginLeft: 'auto',
               }}
             >
-              <Button
-                size="small"
-                onClick={this.onPickUserClicked}
-              >
+              <Button size="small" onClick={this.onPickUserClicked}>
                 <UserAddOutlined />
               </Button>
-              <Button
-                size="small"
-                onClick={this.onPickGroupClicked}
-              >
+              <Button size="small" onClick={this.onPickGroupClicked}>
                 <UsergroupAddOutlined />
               </Button>
             </div>
@@ -257,14 +236,10 @@ class StorageItemPermissionsList extends React.PureComponent {
     this.onClosePickGroupModal();
   };
 
-  render () {
+  render() {
     const {data = []} = this.state;
-    const usersSids = data
-      .filter((o) => o.sid.isPrincipal)
-      .map((o) => o.sid.name);
-    const groupsSids = data
-      .filter((o) => !o.sid.isPrincipal)
-      .map((o) => o.sid.name);
+    const usersSids = data.filter((o) => o.sid.isPrincipal).map((o) => o.sid.name);
+    const groupsSids = data.filter((o) => !o.sid.isPrincipal).map((o) => o.sid.name);
     return (
       <div>
         {this.renderSidsTable()}
@@ -303,7 +278,7 @@ StorageItemPermissionsList.propTypes = {
    * ```
    */
   permissions: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
-  onPermissionsChange: PropTypes.func
+  onPermissionsChange: PropTypes.func,
 };
 
 export default StorageItemPermissionsList;

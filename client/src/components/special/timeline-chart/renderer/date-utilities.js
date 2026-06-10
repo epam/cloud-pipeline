@@ -14,26 +14,26 @@
  *  limitations under the License.
  */
 
-import moment from 'moment-timezone';
+import dayjs, {isDayjs} from '../../../../utils/dayjs';
 
-function isNumber (number) {
+function isNumber(number) {
   return number !== undefined && number !== null && !Number.isNaN(Number(number));
 }
 
-function isDate (date) {
-  return isNumber(date) || (typeof date === 'string') || moment.isMoment(date);
+function isDate(date) {
+  return isNumber(date) || typeof date === 'string' || isDayjs(date);
 }
 
-function parseDate (date) {
+function parseDate(date) {
   let dateValue, unix;
-  if (moment.isMoment(date)) {
+  if (isDayjs(date)) {
     dateValue = date;
     unix = dateValue.unix();
   } else if (isNumber(date)) {
     unix = Number(date);
-    dateValue = moment.unix(unix);
+    dateValue = dayjs.unix(unix);
   } else if (typeof date === 'string') {
-    dateValue = moment.utc(date).local();
+    dateValue = dayjs.utc(date).local();
     if (!dateValue.isValid()) {
       dateValue = undefined;
     } else {
@@ -43,14 +43,10 @@ function parseDate (date) {
   if (unix !== undefined && dateValue !== undefined) {
     return {
       unix,
-      date: dateValue
+      date: dateValue,
     };
   }
   return undefined;
 }
 
-export {
-  parseDate,
-  isDate,
-  isNumber
-};
+export {parseDate, isDate, isNumber};

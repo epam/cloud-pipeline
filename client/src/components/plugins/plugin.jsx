@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import PluginLoader from './plugin-loader';
 import {fetchPlugin, UI_PLUGIN_TYPE_LAUNCH_FORM, UI_PLUGIN_TYPE_RUN_LOG} from './utilities';
-import LoadingView from '../special/LoadingView';
+import LoadingView from '../special/LoadingView.tsx';
 import {inject, observer} from 'mobx-react';
 import {run, runPipelineActions, submitsRun} from '../runs/actions';
 import SessionStorageWrapper from '../special/SessionStorageWrapper';
@@ -21,17 +21,17 @@ class Plugin extends React.Component {
     pluginOptions: {},
     plugin: undefined,
     pending: false,
-    initialized: false
+    initialized: false,
   };
 
   _token = {};
 
-  componentDidMount () {
+  componentDidMount() {
     this.updatePluginOptions();
     this.loadPlugin();
   }
 
-  componentDidUpdate (prevProps) {
+  componentDidUpdate(prevProps) {
     const {
       pipelineId,
       pipelineVersion,
@@ -39,7 +39,7 @@ class Plugin extends React.Component {
       runId,
       toolId,
       toolVersion,
-      pluginType
+      pluginType,
     } = this.props;
     const {
       pipelineId: prevPipelineId,
@@ -48,7 +48,7 @@ class Plugin extends React.Component {
       runId: prevRunId,
       toolId: prevToolId,
       toolVersion: prevToolVersion,
-      pluginType: prevPluginType
+      pluginType: prevPluginType,
     } = prevProps;
     if (
       pipelineId !== prevPipelineId ||
@@ -72,7 +72,7 @@ class Plugin extends React.Component {
     }
   }
 
-  componentWillUnmount () {
+  componentWillUnmount() {
     this.abortFetchPlugin();
   }
 
@@ -81,14 +81,8 @@ class Plugin extends React.Component {
   };
 
   updatePluginOptions = () => {
-    const {
-      pipelineId,
-      pipelineVersion,
-      pipelineConfiguration,
-      runId,
-      toolId,
-      toolVersion
-    } = this.props;
+    const {pipelineId, pipelineVersion, pipelineConfiguration, runId, toolId, toolVersion} =
+      this.props;
     this.setState({
       pluginOptions: {
         pipelineId,
@@ -96,17 +90,17 @@ class Plugin extends React.Component {
         pipelineConfiguration,
         run: runId,
         dockerImage: toolId,
-        toolVersion
-      }
+        toolVersion,
+      },
     });
   };
 
   loadPlugin = () => {
     this.abortFetchPlugin();
-    const token = this._token = {};
+    const token = (this._token = {});
     const commit = async (st, cb) => {
       if (token === this._token) {
-        return new Promise(resolve => {
+        return new Promise((resolve) => {
           this.setState(st, () => {
             if (cb) {
               cb();
@@ -116,20 +110,13 @@ class Plugin extends React.Component {
         });
       }
     };
-    const {
-      pipelineId,
-      pipelineVersion,
-      runId,
-      toolId,
-      toolVersion,
-      pluginType
-    } = this.props;
+    const {pipelineId, pipelineVersion, runId, toolId, toolVersion, pluginType} = this.props;
     (async () => {
       if (pipelineId || toolId || runId) {
         await commit({
           initialized: false,
           pending: false,
-          plugin: undefined
+          plugin: undefined,
         });
         try {
           const uiPlugin = await fetchPlugin({
@@ -138,26 +125,26 @@ class Plugin extends React.Component {
             runId,
             toolId,
             toolVersion,
-            pluginType
+            pluginType,
           });
           await commit({
             initialized: true,
             pending: false,
-            plugin: uiPlugin
+            plugin: uiPlugin,
           });
         } catch (error) {
           console.error('error fetching plugin', error);
           await commit({
             initialized: true,
             pending: false,
-            plugin: undefined
+            plugin: undefined,
           });
         }
       } else {
         await commit({
           initialized: true,
           pending: false,
-          plugin: undefined
+          plugin: undefined,
         });
       }
     })();
@@ -165,20 +152,18 @@ class Plugin extends React.Component {
 
   onLaunchPlugin = async (payload) => {
     const {routing} = this.props;
-    const runResolved = await run(this)(
-      payload
-    );
+    const runResolved = await run(this)(payload);
     if (runResolved) {
       SessionStorageWrapper.navigateToActiveRuns(routing);
     }
-  }
+  };
 
   onLaunched = async (runId) => {
     const {routing} = this.props;
     SessionStorageWrapper.navigateToRun(routing, runId);
-  }
+  };
 
-  render () {
+  render() {
     const {className, style, children, pluginType} = this.props;
     const {plugin, pending, initialized, pluginOptions} = this.state;
     if (!initialized && pending) {
@@ -219,11 +204,11 @@ Plugin.propTypes = {
   pipelineConfiguration: PropTypes.string,
   runId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   toolId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-  toolVersion: PropTypes.string
+  toolVersion: PropTypes.string,
 };
 
-function LaunchFormPlugin (props) {
-  return (<Plugin {...props} pluginType={UI_PLUGIN_TYPE_LAUNCH_FORM} />);
+function LaunchFormPlugin(props) {
+  return <Plugin {...props} pluginType={UI_PLUGIN_TYPE_LAUNCH_FORM} />;
 }
 
 LaunchFormPlugin.propTypes = {
@@ -235,11 +220,11 @@ LaunchFormPlugin.propTypes = {
   pipelineConfiguration: PropTypes.string,
   runId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   toolId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-  toolVersion: PropTypes.string
+  toolVersion: PropTypes.string,
 };
 
-function RunLogPlugin (props) {
-  return (<Plugin {...props} pluginType={UI_PLUGIN_TYPE_RUN_LOG} />);
+function RunLogPlugin(props) {
+  return <Plugin {...props} pluginType={UI_PLUGIN_TYPE_RUN_LOG} />;
 }
 
 RunLogPlugin.propTypes = {
@@ -251,7 +236,7 @@ RunLogPlugin.propTypes = {
   pipelineConfiguration: PropTypes.string,
   runId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   toolId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-  toolVersion: PropTypes.string
+  toolVersion: PropTypes.string,
 };
 
 export {LaunchFormPlugin, RunLogPlugin};

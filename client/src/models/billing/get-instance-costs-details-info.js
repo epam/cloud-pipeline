@@ -20,31 +20,25 @@ class GetInstanceCostsDetailsInfo extends BaseBillingRequest {
   /**
    * @param {BaseBillingRequestOptions} options
    */
-  constructor (options = {}) {
-    const {
-      filters = {},
-      ...restOptions
-    } = options;
-    const {
-      filterBy = {},
-      ...restFilters
-    } = filters;
+  constructor(options = {}) {
+    const {filters = {}, ...restOptions} = options;
+    const {filterBy = {}, ...restFilters} = filters;
     super({
       ...restOptions,
       filters: {
         ...restFilters,
         filterBy: {
           ...filterBy,
-          resourceType: 'COMPUTE'
-        }
+          resourceType: 'COMPUTE',
+        },
       },
       loadDetails: true,
-      pagination: undefined
+      pagination: undefined,
     });
     this.grouping = 'RUN_COMPUTE_TYPE';
   }
 
-  postprocess (value) {
+  postprocess(value) {
     const payload = super.postprocess(value) || [];
     const copy = (a, b) => {
       if (a === undefined && b === undefined) {
@@ -60,17 +54,23 @@ class GetInstanceCostsDetailsInfo extends BaseBillingRequest {
     };
     return payload
       .map((o) => o.costDetails || {})
-      .reduce((result, current) => ({
-        computeCost: copy(result.computeCost, current.computeCost),
-        diskCost: copy(result.diskCost, current.diskCost),
-        accumulatedComputeCost: copy(result.accumulatedComputeCost, current.accumulatedComputeCost),
-        accumulatedDiskCost: copy(result.accumulatedDiskCost, current.accumulatedDiskCost)
-      }), {
-        computeCost: undefined,
-        diskCost: undefined,
-        accumulatedComputeCost: undefined,
-        accumulatedDiskCost: undefined
-      });
+      .reduce(
+        (result, current) => ({
+          computeCost: copy(result.computeCost, current.computeCost),
+          diskCost: copy(result.diskCost, current.diskCost),
+          accumulatedComputeCost: copy(
+            result.accumulatedComputeCost,
+            current.accumulatedComputeCost,
+          ),
+          accumulatedDiskCost: copy(result.accumulatedDiskCost, current.accumulatedDiskCost),
+        }),
+        {
+          computeCost: undefined,
+          diskCost: undefined,
+          accumulatedComputeCost: undefined,
+          accumulatedDiskCost: undefined,
+        },
+      );
   }
 }
 

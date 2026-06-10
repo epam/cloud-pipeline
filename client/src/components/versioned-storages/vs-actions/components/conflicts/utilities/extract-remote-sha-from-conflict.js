@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-export default function extractRemoteSHA (contents) {
+export default function extractRemoteSHA(contents) {
   const result = /^<<<<<<< [^\n]+\n(.*?)\n=======\n(.*?)\n>>>>>>> (.*?)$/gms.exec(contents);
   if (result && result.length === 4) {
     return result[3];

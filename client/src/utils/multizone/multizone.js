@@ -18,10 +18,9 @@ import {action, computed, observable, makeObservable} from 'mobx';
 import measureUrlLatency, {clearPerformanceEntries} from './measure-url-latency';
 import PreferenceLoad from '../../models/preferences/PreferenceLoad';
 
-function getRegionLatency (region, url) {
+function getRegionLatency(region, url) {
   return new Promise((resolve) => {
-    measureUrlLatency(url)
-      .then(latency => resolve({region, latency}));
+    measureUrlLatency(url).then((latency) => resolve({region, latency}));
   });
 }
 
@@ -33,23 +32,23 @@ class Multizone {
   _checkRegions = {};
   _checkCall = 0;
 
-  constructor (defaultRegion) {
+  constructor(defaultRegion) {
     makeObservable(this, {
       _defaultRegion: observable,
       _defaultRegionPreference: observable,
       _latencies: observable,
       defaultRegion: computed,
-      updateDefaultRegion: action
+      updateDefaultRegion: action,
     });
     this._defaultRegion = defaultRegion;
     this.fetchDefaultRegionPreference();
   }
 
-  get defaultRegion () {
+  get defaultRegion() {
     return this._defaultRegion || this._defaultRegionPreference;
   }
 
-  fetchDefaultRegionPreference () {
+  fetchDefaultRegionPreference() {
     if (this._defaultRegionPreferenceFetched) {
       return Promise.resolve(this._defaultRegionPreference);
     }
@@ -67,39 +66,37 @@ class Multizone {
           this._defaultRegionPreferenceFetched = true;
           console.info(
             'Default region (preference):',
-            this._defaultRegionPreference || '<not set>'
+            this._defaultRegionPreference || '<not set>',
           );
           console.info('Default region:', this.defaultRegion);
         });
     });
   }
 
-  check (urlConfiguration, recalculate = false) {
+  check(urlConfiguration, recalculate = false) {
     const result = {...this._latencies};
     const configurations = Object.entries(urlConfiguration)
       .map(([region, url]) => ({region, url}))
-      .filter(({region}) => recalculate ||
-        !result.hasOwnProperty(region) ||
-        result[region] === Infinity
+      .filter(
+        ({region}) => recalculate || !Object.hasOwn(result, region) || result[region] === Infinity,
       );
-    const regionsToCheck = [...new Set(configurations.map(configuration => configuration.region))]
-      .filter(region => !this._checkRegions[region]);
+    const regionsToCheck = [
+      ...new Set(configurations.map((configuration) => configuration.region)),
+    ].filter((region) => !this._checkRegions[region]);
     if (regionsToCheck.length === 0) {
       return Promise.resolve(this.defaultRegion);
     }
-    regionsToCheck.forEach(region => {
+    regionsToCheck.forEach((region) => {
       this._checkRegions[region] = true;
     });
     const check = regionsToCheck
-      .map(region => configurations.find(configuration => configuration.region === region))
+      .map((region) => configurations.find((configuration) => configuration.region === region))
       .filter(Boolean);
     this._checkCall += 1;
     const checkCall = this._checkCall;
     return new Promise((resolve) => {
-      Promise.all(
-        check.map(({region, url}) => getRegionLatency(region, url))
-      )
-        .then(latencies => {
+      Promise.all(check.map(({region, url}) => getRegionLatency(region, url)))
+        .then((latencies) => {
           let changed = false;
           latencies.forEach(({region, latency}) => {
             if (result[region] !== latency) {
@@ -109,14 +106,13 @@ class Multizone {
           });
           if (changed) {
             this._latencies = result;
-            const ms = value => value === Infinity
-              ? '---'
-              : (`${Math.round(value * 100) / 100.0}ms`);
+            const ms = (value) =>
+              value === Infinity ? '---' : `${Math.round(value * 100) / 100.0}ms`;
             console.info(
               'Multi-zone latency check:',
               Object.entries(result)
                 .map(([key, value]) => `${key}: ${ms(value)}`)
-                .join(', ')
+                .join(', '),
             );
             this.updateDefaultRegion();
           }
@@ -125,7 +121,7 @@ class Multizone {
           resolve(this.defaultRegion);
         })
         .then(() => {
-          regionsToCheck.forEach(region => {
+          regionsToCheck.forEach((region) => {
             delete this._checkRegions[region];
           });
         })
@@ -137,11 +133,10 @@ class Multizone {
     });
   }
 
-  updateDefaultRegion () {
-    const latencies = Object
-      .entries(this._latencies)
+  updateDefaultRegion() {
+    const latencies = Object.entries(this._latencies)
       .map(([region, latency]) => ({region, latency: Number(latency)}))
-      .filter(info => info.latency !== Infinity)
+      .filter((info) => info.latency !== Infinity)
       .sort((latencyA, latencyB) => latencyA.latency - latencyB.latency);
     const defaultRegion = latencies.length > 0 ? latencies[0].region : undefined;
     if (defaultRegion !== this._defaultRegion) {
@@ -150,35 +145,33 @@ class Multizone {
     }
   }
 
-  getDefaultRegion (...regions) {
+  getDefaultRegion(...regions) {
     if (regions.length === 0) {
       return this.defaultRegion;
     }
-    const latencies = Object
-      .entries(this._latencies || {})
+    const latencies = Object.entries(this._latencies || {})
       .map(([region, latency]) => ({region, latency: Number(latency)}))
       .sort((latencyA, latencyB) => latencyA.latency - latencyB.latency);
-    const defaultRegion = latencies.find(latencyInfo => regions.indexOf(latencyInfo.region) >= 0);
+    const defaultRegion = latencies.find((latencyInfo) => regions.indexOf(latencyInfo.region) >= 0);
     if (defaultRegion) {
       return defaultRegion.region;
     }
     return this.defaultRegion;
   }
 
-  getDefaultURLRegion (configuration) {
+  getDefaultURLRegion(configuration) {
     const regions = Object.keys(configuration || {});
     const defaultRegion = this.getDefaultRegion(...regions) || regions[0];
-    if (configuration.hasOwnProperty(defaultRegion)) {
+    if (Object.hasOwn(configuration, defaultRegion)) {
       return defaultRegion;
     }
     return undefined;
   }
 
-  getSortedRegions (regions) {
+  getSortedRegions(regions) {
     const sorted = [...regions];
-    const getRegionLatency = region => this._latencies.hasOwnProperty(region)
-      ? this._latencies[region]
-      : Infinity;
+    const getRegionLatency = (region) =>
+      Object.hasOwn(this._latencies, region) ? this._latencies[region] : Infinity;
     sorted
       .sort((a, b) => {
         if (a === this._defaultRegionPreference) {
@@ -193,13 +186,11 @@ class Multizone {
     return sorted;
   }
 
-  getSortedRegionsWithUrls (configuration) {
-    return this
-      .getSortedRegions(Object.keys(configuration || {}))
-      .map(region => ({
-        region,
-        url: configuration[region]
-      }));
+  getSortedRegionsWithUrls(configuration) {
+    return this.getSortedRegions(Object.keys(configuration || {})).map((region) => ({
+      region,
+      url: configuration[region],
+    }));
   }
 }
 

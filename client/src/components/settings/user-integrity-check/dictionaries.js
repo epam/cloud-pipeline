@@ -14,15 +14,15 @@
  *  limitations under the License.
  */
 
-export default function getDictionaries (systemDictionaries = []) {
+export default function getDictionaries(systemDictionaries = []) {
   if (systemDictionaries) {
     const extractLinkedDictionariesIds = (value) => {
       const {links = []} = value || {};
-      return new Set(links.map(link => link.key));
+      return new Set(links.map((link) => link.key));
     };
     const getLinkedDictionaries = (dictionary) => {
       const {values = []} = dictionary || {};
-      const valuesWithLinks = values.filter(value => value.links && value.links.length > 0);
+      const valuesWithLinks = values.filter((value) => value.links && value.links.length > 0);
       if (valuesWithLinks.length === 0) {
         return [];
       }
@@ -41,17 +41,15 @@ export default function getDictionaries (systemDictionaries = []) {
       }
       return [...linkedDictionariesIds];
     };
-    const dictionaries = systemDictionaries
-      .slice()
-      .map(dictionary => ({
-        ...dictionary,
-        linksTo: getLinkedDictionaries(dictionary),
-        linksFrom: []
-      }));
+    const dictionaries = systemDictionaries.slice().map((dictionary) => ({
+      ...dictionary,
+      linksTo: getLinkedDictionaries(dictionary),
+      linksFrom: [],
+    }));
     for (let d = 0; d < dictionaries.length; d++) {
       const dictionary = dictionaries[d];
-      dictionary.linksTo.forEach(link => {
-        const linkedDictionary = dictionaries.find(dict => dict.key === link);
+      dictionary.linksTo.forEach((link) => {
+        const linkedDictionary = dictionaries.find((dict) => dict.key === link);
         if (linkedDictionary) {
           linkedDictionary.linksFrom.push(dictionary.key);
         }

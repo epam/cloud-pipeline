@@ -1,17 +1,14 @@
 import {computed, observable, makeObservable, action} from 'mobx';
 import {ContextualPreferenceSearch, names as ContextualPreferences} from './ContextualPreference';
 
-async function getGcpSpotInstanceTypeName () {
+async function getGcpSpotInstanceTypeName() {
   try {
     const request = new ContextualPreferenceSearch();
     await request.send({
-      preferences: [ContextualPreferences.gcpSpotInstanceType]
+      preferences: [ContextualPreferences.gcpSpotInstanceType],
     });
     if (request.loaded && request.value) {
-      const {
-        type,
-        value
-      } = request.value;
+      const {type, value} = request.value;
       let result = String(value);
       if (/^object$/i.test(type)) {
         try {
@@ -33,20 +30,20 @@ export class GcpSpotInstanceType {
   static SPOT = 'SPOT';
   value = GcpSpotInstanceType.PREEMPTIBLE;
 
-  constructor () {
+  constructor() {
     makeObservable(this, {
       value: observable,
       spotName: computed,
-      fetch: action
+      fetch: action,
     });
-    (this.fetch)();
+    this.fetch();
   }
 
-  async fetch () {
+  async fetch() {
     this.value = (await getGcpSpotInstanceTypeName()) || GcpSpotInstanceType.SPOT;
   }
 
-  get spotName () {
+  get spotName() {
     return this.value === GcpSpotInstanceType.PREEMPTIBLE ? 'Preemptible' : 'Spot';
   }
 }

@@ -30,26 +30,24 @@ const plugin = {
         top: (chart.scales[yAxisId] || {}).top || 0,
         bottom: (chart.scales[yAxisId] || {}).bottom || 0,
         left: (chart.scales[xAxisId] || {}).left || 0,
-        right: (chart.scales[xAxisId] || {}).right || 0
+        right: (chart.scales[xAxisId] || {}).right || 0,
       };
-      const ticks = chart.scales[xAxisId].ticks
-        .map((tick, index) => chart.scales[xAxisId].getPixelForTick(index));
+      const ticks = chart.scales[xAxisId].ticks.map((tick, index) =>
+        chart.scales[xAxisId].getPixelForTick(index),
+      );
       const tickCenter = ticks[highlightAxis];
-      const width = highlightAxis > 0
-        ? tickCenter - ticks[highlightAxis - 1]
-        : (ticks[highlightAxis] - globalBounds.left) * 2;
+      const width =
+        highlightAxis > 0
+          ? tickCenter - ticks[highlightAxis - 1]
+          : (ticks[highlightAxis] - globalBounds.left) * 2;
       return {
         xFrom: tickCenter - width / 2,
         yFrom: globalBounds.top,
         height: globalBounds.bottom,
-        width
+        width,
       };
     };
-    this.highlightTick(
-      chart.ctx,
-      configuration,
-      getSegmentBounds()
-    );
+    this.highlightTick(chart.ctx, configuration, getSegmentBounds());
   },
   highlightTick: function (ctx, configuration, bounds) {
     ctx.save();
@@ -57,7 +55,7 @@ const plugin = {
     ctx.fillStyle = configuration.backgroundColor;
     ctx.fillRect(bounds.xFrom, bounds.yFrom, bounds.width, bounds.height);
     ctx.restore();
-  }
+  },
 };
 
 export {id, plugin};

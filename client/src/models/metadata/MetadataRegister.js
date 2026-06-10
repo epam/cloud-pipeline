@@ -17,7 +17,7 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class MetadataRegister extends RemotePost {
-  constructor () {
+  constructor() {
     super();
     this.url = '/metadata/register';
   }

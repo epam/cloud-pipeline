@@ -18,7 +18,7 @@ import {Project} from '../../../../../../utils/pipeline-builder';
 import VersionFile from '../../../../../../models/pipelines/VersionFile';
 import {base64toString} from '../../../../../../utils/base64';
 
-export default function buildWdlContentsResolver (pipelineId, version) {
+export default function buildWdlContentsResolver(pipelineId, version) {
   return async (uri) => {
     if (!uri) {
       return '';

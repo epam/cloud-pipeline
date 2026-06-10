@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 class WhoAmI extends Remote {
-  constructor () {
+  constructor() {
     super();
     this.url = '/whoami';
   }

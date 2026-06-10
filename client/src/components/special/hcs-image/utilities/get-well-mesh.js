@@ -14,25 +14,22 @@
  *  limitations under the License.
  */
 
-export function getWellMesh (well, fields = []) {
+export function getWellMesh(well, fields = []) {
   if (!well) {
     return undefined;
   }
-  const {
-    images = [],
-    meshSize
-  } = well;
+  const {images = [], meshSize} = well;
   if (images.length === 0 || !meshSize) {
     return undefined;
   }
   return {
     meshSize,
-    cells: images.map(image => ({x: image.realX, y: image.realY, id: image.id})),
-    selected: fields.map(image => ({x: image.realX, y: image.realY, id: image.id}))
+    cells: images.map((image) => ({x: image.realX, y: image.realY, id: image.id})),
+    selected: fields.map((image) => ({x: image.realX, y: image.realY, id: image.id})),
   };
 }
 
-export function getWellImageFromMesh (well, cell) {
+export function getWellImageFromMesh(well, cell) {
   if (!well || !cell) {
     return undefined;
   }
@@ -40,5 +37,5 @@ export function getWellImageFromMesh (well, cell) {
   if (images.length === 0) {
     return undefined;
   }
-  return images.find(image => image.id === cell.id);
+  return images.find((image) => image.id === cell.id);
 }

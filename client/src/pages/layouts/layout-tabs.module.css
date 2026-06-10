@@ -1,0 +1,5 @@
+.tabs-menu :global(.ant-menu-item),
+.tabs-menu :global(.ant-menu-overflow-item) {
+  min-width: 80px;
+  text-align: center;
+}

@@ -14,36 +14,45 @@
  *  limitations under the License.
  */
 
-import AWS from 'aws-sdk/index';
-import moment from 'moment-timezone';
+import dayjs from '../../utils/dayjs';
 
-export default class Credentials extends AWS.Credentials {
+const REFRESH_WINDOW_MS = 5 * 60 * 1000;
+
+/**
+ * Temporary AWS credentials from the Cloud Pipeline API.
+ * Plain credential identity for @aws-sdk/* clients — no SDK credential providers.
+ */
+export default class Credentials {
+  accessKeyId;
+  secretAccessKey;
+  sessionToken;
+  expireTime;
   updateCredentials;
 
-  constructor (
-    accessKeyId,
-    secretAccessKey,
-    sessionToken,
-    expireDate,
-    updateCredentialsFn
-  ) {
-    super(accessKeyId, secretAccessKey, sessionToken);
-    const expireTime = expireDate ? moment.utc(expireDate, 'YYYY-MM-DD HH:mm:ss') : undefined;
-    this.expireTime = expireTime ? expireTime.toDate() : this.expireTime;
-    this.updateCredentials = updateCredentialsFn;
-  }
-
-  update (
-    accessKeyId,
-    secretAccessKey,
-    sessionToken,
-    expireDate
-  ) {
+  constructor(accessKeyId, secretAccessKey, sessionToken, expireDate, updateCredentialsFn) {
     this.accessKeyId = accessKeyId;
     this.secretAccessKey = secretAccessKey;
     this.sessionToken = sessionToken;
-    const expireTime = expireDate ? moment.utc(expireDate, 'YYYY-MM-DD HH:mm:ss') : undefined;
-    this.expireTime = expireTime ? expireTime.toDate() : undefined;
+    this.expireTime = parseExpireDate(expireDate);
+    this.updateCredentials = updateCredentialsFn;
+  }
+
+  update(accessKeyId, secretAccessKey, sessionToken, expireDate) {
+    this.accessKeyId = accessKeyId;
+    this.secretAccessKey = secretAccessKey;
+    this.sessionToken = sessionToken;
+    this.expireTime = parseExpireDate(expireDate);
+  }
+
+  get() {
+    // Kept for callers that trigger a refresh check before signing (v2 compat).
+  }
+
+  needsRefresh() {
+    if (!this.expireTime) {
+      return false;
+    }
+    return this.expireTime.getTime() - Date.now() < REFRESH_WINDOW_MS;
   }
 
   refresh = (callback) => {
@@ -58,11 +67,17 @@ export default class Credentials extends AWS.Credentials {
             });
         });
       }
-      this.updateCredentialsPromise
-        .then(() => callback())
-        .catch(callback);
+      this.updateCredentialsPromise.then(() => callback()).catch(callback);
     } else {
-      super.refresh(callback);
+      callback();
     }
+  };
+}
+
+function parseExpireDate(expireDate) {
+  if (!expireDate) {
+    return undefined;
   }
+  const expireTime = dayjs.utc(expireDate, 'YYYY-MM-DD HH:mm:ss');
+  return expireTime.isValid() ? expireTime.toDate() : undefined;
 }

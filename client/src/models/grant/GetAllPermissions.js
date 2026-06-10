@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 export default class GetAllPermissions extends Remote {
-  constructor (entityId, entityClass) {
+  constructor(entityId, entityClass) {
     super();
     this.url = `/permissions?id=${entityId}&aclClass=${entityClass}`;
   }

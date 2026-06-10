@@ -19,7 +19,7 @@ import Remote from '../basic/Remote';
 class PipelineRunDefaultParameters extends Remote {
   static defaultValue = [];
 
-  constructor () {
+  constructor() {
     super();
     this.url = '/run/defaultParameters';
   }

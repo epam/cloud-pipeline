@@ -19,11 +19,11 @@ import getDictionaries from './dictionaries';
 
 const USER_ENTITY_CLASS = 'PIPELINE_USER';
 
-async function loadUsersMetadata (usersIds) {
+async function loadUsersMetadata(usersIds) {
   if (usersIds && usersIds.length > 0) {
-    const entities = usersIds.map(id => ({
+    const entities = usersIds.map((id) => ({
       entityId: id,
-      entityClass: USER_ENTITY_CLASS
+      entityClass: USER_ENTITY_CLASS,
     }));
     const request = new MetadataMultiLoad(entities);
     await request.fetch();
@@ -36,13 +36,13 @@ async function loadUsersMetadata (usersIds) {
   }
 }
 
-function getUserAttributeErrors (
+function getUserAttributeErrors(
   user,
   dictionary,
   dictionaries,
   mandatory = false,
   alreadyCheckedKeys = {},
-  expectedValue = undefined
+  expectedValue = undefined,
 ) {
   const {key, values = [], linksTo = []} = dictionary;
   if (alreadyCheckedKeys[key]) {
@@ -56,20 +56,20 @@ function getUserAttributeErrors (
   } else if (userValue && expectedValue !== undefined && userValue !== expectedValue) {
     errors.push({
       key,
-      error: `Attribute "${key}" has wrong value "${userValue}" (expected "${expectedValue}")`
+      error: `Attribute "${key}" has wrong value "${userValue}" (expected "${expectedValue}")`,
     });
   } else if (userValue) {
-    const dictionaryValue = values.find(v => v.value === userValue);
+    const dictionaryValue = values.find((v) => v.value === userValue);
     if (!dictionaryValue) {
       errors.push({
         key,
-        error: `Unknown value "${userValue}" for attribute "${key}"`
+        error: `Unknown value "${userValue}" for attribute "${key}"`,
       });
     } else {
       const {links = []} = dictionaryValue;
       for (let l = 0; l < links.length; l++) {
         const {key: linkKey, value: linkValue} = links[l];
-        const linkedDictionary = dictionaries.find(d => d.key === linkKey);
+        const linkedDictionary = dictionaries.find((d) => d.key === linkKey);
         if (linkedDictionary) {
           const nestedErrors = getUserAttributeErrors(
             user,
@@ -77,16 +77,13 @@ function getUserAttributeErrors (
             dictionaries,
             true,
             alreadyCheckedKeys,
-            linkValue
+            linkValue,
           );
           if (nestedErrors.length > 0) {
-            errors.push(
-              ...nestedErrors,
-              {
-                key,
-                error: `"${key}" attribute links have issues`
-              }
-            );
+            errors.push(...nestedErrors, {
+              key,
+              error: `"${key}" attribute links have issues`,
+            });
           }
         }
       }
@@ -95,23 +92,20 @@ function getUserAttributeErrors (
   if (userValue || mandatory) {
     for (let l = 0; l < linksTo.length; l++) {
       const linkKey = linksTo[l];
-      const linkedDictionary = dictionaries.find(d => d.key === linkKey);
+      const linkedDictionary = dictionaries.find((d) => d.key === linkKey);
       if (linkedDictionary) {
         const nestedErrors = getUserAttributeErrors(
           user,
           linkedDictionary,
           dictionaries,
           true,
-          alreadyCheckedKeys
+          alreadyCheckedKeys,
         );
         if (nestedErrors.length > 0) {
-          errors.push(
-            ...nestedErrors,
-            {
-              key,
-              error: `${key} attribute links has issues`
-            }
-          );
+          errors.push(...nestedErrors, {
+            key,
+            error: `${key} attribute links has issues`,
+          });
         }
       }
     }
@@ -119,8 +113,10 @@ function getUserAttributeErrors (
   return errors;
 }
 
-function checkUser (user, userData, dictionaries, fieldsToCheck) {
-  const dictionariesToCheck = dictionaries.filter(dictionary => dictionary.linksFrom.length === 0);
+function checkUser(user, userData, dictionaries, fieldsToCheck) {
+  const dictionariesToCheck = dictionaries.filter(
+    (dictionary) => dictionary.linksFrom.length === 0,
+  );
   const errors = [];
   for (let d = 0; d < dictionariesToCheck.length; d++) {
     const check = dictionariesToCheck[d];
@@ -131,36 +127,37 @@ function checkUser (user, userData, dictionaries, fieldsToCheck) {
         check,
         dictionaries,
         (fieldsToCheck || []).includes(check.key),
-        userCheckInfo
-      )
+        userCheckInfo,
+      ),
     );
   }
   if (errors.length > 0) {
     errors
-      .filter(error => error.error)
-      .forEach(error => {
-        // eslint-disable-next-line
-        console.warn(`Users integrity check: issue found for user ${user.userName}: ${error.error}`);
+      .filter((error) => error.error)
+      .forEach((error) => {
+        console.warn(
+          `Users integrity check: issue found for user ${user.userName}: ${error.error}`,
+        );
       });
   }
-  return errors.map(error => ({...error, user}));
+  return errors.map((error) => ({...error, user}));
 }
 
-function checkUsersIntegrity (users = [], systemDictionaries = [], fieldsToCheck = []) {
+function checkUsersIntegrity(users = [], systemDictionaries = [], fieldsToCheck = []) {
   return new Promise((resolve, reject) => {
     if (users && systemDictionaries && users.length && systemDictionaries.length) {
       const dictionaries = getDictionaries(systemDictionaries);
-      const usersIds = users.map(user => user.id);
+      const usersIds = users.map((user) => user.id);
       loadUsersMetadata(usersIds)
         .then((usersMetadata) => {
           const usersWithIssues = [];
           const userErrors = [];
-          users.forEach(user => {
-            const userMetadata = usersMetadata
-              .find(metadata => metadata.entity?.entityId === user.id);
+          users.forEach((user) => {
+            const userMetadata = usersMetadata.find(
+              (metadata) => metadata.entity?.entityId === user.id,
+            );
             const {data: raw = {}} = userMetadata || {};
-            const data = Object
-              .entries(raw)
+            const data = Object.entries(raw)
               .map(([key, value]) => ({[key]: value.value}))
               .reduce((r, c) => ({...r, ...c}), {});
             const errors = checkUser(user, data, dictionaries, fieldsToCheck);

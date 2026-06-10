@@ -1,19 +1,19 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {AutoComplete, Input} from 'antd';
+import {AutoComplete, Space, Input} from 'antd';
 import classNames from 'classnames';
-import styles from './launch-form-parameter-input.css';
+import styles from './launch-form-parameter-input.module.css';
 
 class MetadataAutoComplete extends React.PureComponent {
   state = {
-    filteredEntityFields: []
+    filteredEntityFields: [],
   };
 
-  componentDidMount () {
+  componentDidMount() {
     this.handleSearch();
   }
 
-  componentDidUpdate (prevProps, prevState, snapshot) {
+  componentDidUpdate(prevProps, prevState, snapshot) {
     if (prevProps.value !== this.props.value) {
       this.handleSearch();
     }
@@ -36,7 +36,7 @@ class MetadataAutoComplete extends React.PureComponent {
     const {value} = this.props;
     if (!value || !/^(this\.|project\.)$/.test(value)) {
       this.setState({
-        filteredEntityFields: []
+        filteredEntityFields: [],
       });
     } else if (/^this\./.test(value)) {
       const parsed = value.split('.').slice(1);
@@ -50,15 +50,14 @@ class MetadataAutoComplete extends React.PureComponent {
         }
         entity = this.getMetadataEntity(type);
       }
-      const filteredEntityFields =
-        ((entity ? entity.fields : undefined) || [])
-          .filter((field) => field.name.toLowerCase().indexOf(lastPart.toLowerCase()) >= 0)
-          .map((field) => ({
-            ...field,
-            value: ['this', ...parsed, field.name].join('.')
-          }));
+      const filteredEntityFields = ((entity ? entity.fields : undefined) || [])
+        .filter((field) => field.name.toLowerCase().indexOf(lastPart.toLowerCase()) >= 0)
+        .map((field) => ({
+          ...field,
+          value: ['this', ...parsed, field.name].join('.'),
+        }));
       this.setState({
-        filteredEntityFields
+        filteredEntityFields,
       });
     } else if (/^project\./.test(value)) {
       const parsed = value.split('.');
@@ -72,11 +71,11 @@ class MetadataAutoComplete extends React.PureComponent {
         return [];
       })();
       this.setState({
-        filteredEntityFields
+        filteredEntityFields,
       });
     } else {
       this.setState({
-        filteredEntityFields: []
+        filteredEntityFields: [],
       });
     }
   };
@@ -93,9 +92,9 @@ class MetadataAutoComplete extends React.PureComponent {
     if (onChange) {
       onChange(value);
     }
-  }
+  };
 
-  render () {
+  render() {
     const {
       className,
       style,
@@ -105,7 +104,7 @@ class MetadataAutoComplete extends React.PureComponent {
       addonBefore,
       size,
       disabled,
-      placeholder
+      placeholder,
     } = this.props;
     if (defaultInput) {
       const onInputChange = (e) => {
@@ -114,27 +113,28 @@ class MetadataAutoComplete extends React.PureComponent {
         }
       };
       return (
-        <Input
-          className={className}
-          style={style}
-          value={value}
-          onChange={onInputChange}
-          disabled={disabled}
-          addonBefore={addonBefore}
-          placeholder={placeholder}
-          size={size}
-        />
+        <Space.Compact>
+          <span>{addonBefore}</span>
+          <Input
+            className={className}
+            style={style}
+            value={value}
+            onChange={onInputChange}
+            disabled={disabled}
+            placeholder={placeholder}
+            size={size}
+          />
+        </Space.Compact>
       );
     }
     const {filteredEntityFields = []} = this.state;
     return (
       <Input.Group compact style={{display: 'flex', width: '100%', minWidth: 0, maxWidth: '100%'}}>
-        {
-          addonBefore &&
+        {addonBefore && (
           <span className={classNames(styles.metadataAutoComplete, 'cp-input-group-addon')}>
             {addonBefore}
           </span>
-        }
+        )}
         <AutoComplete
           className={className}
           style={{...style, flex: '1 1 0', minWidth: 0, width: 0, maxWidth: '100%'}}
@@ -146,15 +146,11 @@ class MetadataAutoComplete extends React.PureComponent {
           size={size}
           filterOption={false}
         >
-          {
-            filteredEntityFields.map((field) => (
-              <AutoComplete.Option
-                key={field.name}
-                value={field.value}>
-                {field.name}
-              </AutoComplete.Option>
-            ))
-          }
+          {filteredEntityFields.map((field) => (
+            <AutoComplete.Option key={field.name} value={field.value}>
+              {field.name}
+            </AutoComplete.Option>
+          ))}
         </AutoComplete>
       </Input.Group>
     );
@@ -174,7 +170,7 @@ MetadataAutoComplete.propTypes = {
   rootEntityId: PropTypes.string,
   size: PropTypes.oneOf(['small', 'default', 'large']),
   addonBefore: PropTypes.node,
-  defaultInput: PropTypes.bool
+  defaultInput: PropTypes.bool,
 };
 
 export default MetadataAutoComplete;

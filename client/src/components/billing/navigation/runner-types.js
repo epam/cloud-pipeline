@@ -17,5 +17,5 @@
 export default {
   billingGroup: 'billing-group',
   user: 'user',
-  group: 'group'
+  group: 'group',
 };

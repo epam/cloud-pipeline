@@ -21,18 +21,14 @@ class GetGroupedStoragesDataWithPrevious extends GetDataWithPrevious {
    * @param Model
    * @param {BaseBillingRequestOptions} options
    */
-  constructor (
-    Model,
-    options
-  ) {
+  constructor(Model, options) {
     super(Model, options, (currentPeriodData) => {
-      const storageIds = Object.entries(currentPeriodData || {})
-        .map(([key, storage]) => {
-          if (storage && storage.groupingInfo && storage.groupingInfo.id) {
-            return storage.groupingInfo.id;
-          }
-          return key;
-        });
+      const storageIds = Object.entries(currentPeriodData || {}).map(([key, storage]) => {
+        if (storage && storage.groupingInfo && storage.groupingInfo.id) {
+          return storage.groupingInfo.id;
+        }
+        return key;
+      });
       return {storageIds};
     });
   }

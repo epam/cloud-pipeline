@@ -35,7 +35,7 @@ const cellProfilerModules = [
   ...imageProcessing,
   ...measurement,
   // ...worms,
-  defineResultsInternal
+  defineResultsInternal,
 ];
 
 export {cellProfilerModules};
@@ -48,7 +48,7 @@ export default [
     findMembrane,
     findNeurites,
     findSpots,
-    defineResults
-  ].map(o => ({group: 'Main', ...o})),
-  ...cellProfilerModules
+    defineResults,
+  ].map((o) => ({group: 'Main', ...o})),
+  ...cellProfilerModules,
 ];

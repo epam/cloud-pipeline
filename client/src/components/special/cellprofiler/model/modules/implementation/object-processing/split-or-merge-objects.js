@@ -13,7 +13,6 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-/* eslint-disable max-len */
 
 const SplitOrMergeObjects = {
   name: 'SplitOrMergeObjects',
@@ -30,8 +29,8 @@ const SplitOrMergeObjects = {
     'Minimum intensity fraction|float|0.9|ALIAS intensityFraction|IF operation=="Merge" AND mergingMethod=="Distance" AND useGrayScaleImage==true',
     'Method to find object intensity|[Closest point,Centroids]|Closest point|ALIAS grayScaleImageMethod|IF operation=="Merge" AND mergingMethod=="Distance" AND useGrayScaleImage==true',
     'Output object type|[Disconnected,Convex hull]|Disconnected|ALIAS outputObjectType|IF operation=="Merge" AND mergingMethod=="Per-parent"',
-    'Select the parent object|object|ALIAS parentObject|IF operation=="Merge" AND mergingMethod=="Per-parent"'
-  ]
+    'Select the parent object|object|ALIAS parentObject|IF operation=="Merge" AND mergingMethod=="Per-parent"',
+  ],
 };
 
 export default SplitOrMergeObjects;

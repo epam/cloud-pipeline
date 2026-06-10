@@ -17,7 +17,7 @@
 import GetConfigurationSchedule from './GetConfigurationSchedule';
 
 class ConfigurationSchedules {
-  static getCache (cache, id) {
+  static getCache(cache, id) {
     if (cache.has(+id)) {
       return cache.get(+id);
     }
@@ -26,7 +26,7 @@ class ConfigurationSchedules {
     return request;
   }
 
-  static invalidateCache (cache, id) {
+  static invalidateCache(cache, id) {
     if (cache.has(+id)) {
       if (cache.get(+id).invalidateCache) {
         cache.get(+id).invalidateCache();
@@ -38,11 +38,11 @@ class ConfigurationSchedules {
 
   schedules = new Map();
 
-  getSchedule (id) {
+  getSchedule(id) {
     return ConfigurationSchedules.getCache(this.schedules, id);
   }
 
-  invalidateScheduleCache (id) {
+  invalidateScheduleCache(id) {
     ConfigurationSchedules.invalidateCache(this.schedules, id);
   }
 }

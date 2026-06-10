@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-export function clearQuotes (string) {
+export function clearQuotes(string) {
   if (!string) {
     return undefined;
   }
@@ -25,7 +25,7 @@ export function clearQuotes (string) {
   return string;
 }
 
-export function capitalizeFirstLetter (string) {
+export function capitalizeFirstLetter(string) {
   if (!string) {
     return string;
   }

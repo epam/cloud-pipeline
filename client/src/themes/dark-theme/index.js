@@ -14,8 +14,6 @@
  *  limitations under the License.
  */
 
-/* eslint-disable max-len */
-
 export default {
   identifier: 'dark-theme',
   name: 'Dark',
@@ -85,7 +83,8 @@ export default {
     '@navigation-panel-color': '@application-background-color',
     '@navigation-panel-color-impersonated': '#943813',
     '@navigation-panel-highlighted-color': 'lighten(@navigation-panel-color, 5%)',
-    '@navigation-panel-highlighted-color-impersonated': 'darken(@navigation-panel-color-impersonated, 10%)',
+    '@navigation-panel-highlighted-color-impersonated':
+      'darken(@navigation-panel-color-impersonated, 10%)',
     '@navigation-item-color': '@application-color',
     '@navigation-item-runs-color': '@color-success',
     '@tag-key-background-color': 'lighten(@card-background-color, 5%)',
@@ -131,7 +130,8 @@ export default {
     '@code-background-color': 'lighten(@card-background-color, 10%)',
     '@search-highlight-text-color': '@application-color',
     '@search-highlight-text-background-color': '@navigation-panel-color-impersonated',
-    '@search-highlight-text-inactive-background-color': 'fadeout(@navigation-panel-color-impersonated, 50%)',
+    '@search-highlight-text-inactive-background-color':
+      'fadeout(@navigation-panel-color-impersonated, 50%)',
     '@vs-color-conflict-background': '@alert-error-background',
     '@vs-color-conflict-border': '@alert-error-border',
     '@vs-color-conflict-applied-background': '@vs-color-conflict-background',
@@ -145,6 +145,6 @@ export default {
     '@application-console-color': '@application-color',
     '@application-console-color-details': '@application-color-faded',
     '@codemirror-selected-background-color': '#5c5769',
-    '@codemirror-focused-selected-background-color': '#5c5769'
-  }
+    '@codemirror-focused-selected-background-color': '#5c5769',
+  },
 };

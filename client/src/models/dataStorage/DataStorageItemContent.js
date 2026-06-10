@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 export default class DataStorageItemContent extends Remote {
-  constructor (id, path, version) {
+  constructor(id, path, version) {
     super();
     this.id = id;
     this.path = path;
@@ -25,10 +25,10 @@ export default class DataStorageItemContent extends Remote {
     this.buildUrl();
   }
 
-  buildUrl () {
+  buildUrl() {
     const query = [
       !!this.path && `path=${encodeURIComponent(this.path)}`,
-      !!this.version && `version=${this.version}`
+      !!this.version && `version=${this.version}`,
     ]
       .filter(Boolean)
       .join('&');

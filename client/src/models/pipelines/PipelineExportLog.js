@@ -20,15 +20,15 @@ import {makeObservable, override} from 'mobx';
 class PipelineExportLog extends Remote {
   static isJson = false;
 
-  constructor (runId) {
+  constructor(runId) {
     super();
     makeObservable(this, {
-      update: override
+      update: override,
     });
     this.url = `/run/${runId}/logfile`;
   }
 
-  update (value) {
+  update(value) {
     this._response = value;
     this._value = this.postprocess(value);
   }

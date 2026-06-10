@@ -15,13 +15,11 @@
  */
 
 import RemotePost from '../basic/RemotePost';
-import {SERVER, API_PATH} from '../../config';
 
 export default class IssueAttachmentUpload extends RemotePost {
-
   static url = SERVER + API_PATH + '/attachment';
 
-  constructor () {
+  constructor() {
     super();
     this.url = '/attachment';
   }

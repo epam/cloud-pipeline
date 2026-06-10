@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 export default class NotificationSettings extends Remote {
-  constructor () {
+  constructor() {
     super();
     this.url = '/notification/settings';
   }

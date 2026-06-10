@@ -17,15 +17,15 @@
 import RemotePost from '../../basic/RemotePost';
 
 export default class UpdateBillingQuota extends RemotePost {
-  constructor (id) {
+  constructor(id) {
     super();
     this.constructor.fetchOptions = {
       headers: {
-        'Content-type': 'application/json; charset=UTF-8'
+        'Content-type': 'application/json; charset=UTF-8',
       },
       mode: 'cors',
       credentials: 'include',
-      method: 'PUT'
+      method: 'PUT',
     };
     this.url = `/quotas/${id}`;
   }

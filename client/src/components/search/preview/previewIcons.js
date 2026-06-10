@@ -25,7 +25,7 @@ import {
   MessageOutlined,
   PlayCircleOutlined,
   SettingOutlined,
-  ToolOutlined
+  ToolOutlined,
 } from '@ant-design/icons';
 import {SearchItemTypes} from '../../../models/search';
 
@@ -47,5 +47,5 @@ export const PreviewIcons = {
   [SearchItemTypes.folder]: FolderOutlined,
   [SearchItemTypes.configuration]: SettingOutlined,
   [SearchItemTypes.metadataEntity]: AppstoreOutlined,
-  [SearchItemTypes.issue]: MessageOutlined
+  [SearchItemTypes.issue]: MessageOutlined,
 };

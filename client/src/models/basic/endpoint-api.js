@@ -31,19 +31,16 @@ const removeSlashes = (str) => {
   return result;
 };
 
-function getMethodURL (endpoint, method) {
+function getMethodURL(endpoint, method) {
   return [endpoint, method]
     .map(removeSlashes)
-    .filter(o => o.length)
+    .filter((o) => o.length)
     .join('/');
 }
 
 class APICallError extends Error {
-  constructor (options = {}) {
-    const {
-      title,
-      error
-    } = options;
+  constructor(options = {}) {
+    const {title, error} = options;
     super([title, error].filter(Boolean).join(': '));
   }
 }
@@ -63,7 +60,7 @@ class EndpointAPI {
    * @param {EndpointAPIOptions} options
    * @returns {Promise<boolean>}
    */
-  static check (endpoint, options = {}) {
+  static check(endpoint, options = {}) {
     try {
       const api = new this(endpoint, options);
       return api.testConnection();
@@ -71,23 +68,18 @@ class EndpointAPI {
       return Promise.resolve(false);
     }
   }
+
   endpoint;
 
   /**
    * @param {string} endpoint
    * @param {EndpointAPIOptions} options
    */
-  constructor (endpoint, options = {}) {
+  constructor(endpoint, options = {}) {
     makeObservable(this, {
-      endpoint: observable
+      endpoint: observable,
     });
-    const {
-      token,
-      fetchToken = true,
-      credentials = false,
-      name,
-      testConnectionURI = ''
-    } = options;
+    const {token, fetchToken = true, credentials = false, name, testConnectionURI = ''} = options;
     this.endpoint = endpoint;
     this.fetchToken = fetchToken;
     this.token = token ? Promise.resolve(token) : undefined;
@@ -105,8 +97,9 @@ class EndpointAPI {
       return `${url}?${query.startsWith('?') ? query.slice(1) : query}`;
     }
     if (typeof query === 'object') {
-      const parameters = Object.entries(query)
-        .filter(([, value]) => value !== undefined && value !== null);
+      const parameters = Object.entries(query).filter(
+        ([, value]) => value !== undefined && value !== null,
+      );
       if (parameters.length) {
         const queryString = parameters
           .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
@@ -115,7 +108,7 @@ class EndpointAPI {
       }
     }
     return url;
-  }
+  };
 
   /**
    * @returns {Promise<boolean>}
@@ -123,7 +116,7 @@ class EndpointAPI {
   testConnection = async () => {
     try {
       await this.apiCall({
-        uri: this.testConnectionURI
+        uri: this.testConnectionURI,
       });
       console.info(`Endpoint "${this.endpoint}" -> available`);
       return true;
@@ -163,7 +156,7 @@ class EndpointAPI {
       httpMethod = body ? 'POST' : 'GET',
       query,
       isJSON = true,
-      ignoreResponse = false
+      ignoreResponse = false,
     } = options || {};
     const url = rawURL || this.getMethodURL(uri, query);
     const errorName = this.name || uri || url;
@@ -173,26 +166,22 @@ class EndpointAPI {
     } else if (typeof body !== 'undefined') {
       bodyFormatted = body;
     }
-    const response = await fetch(
-      url,
-      {
-        method: httpMethod,
-        body: bodyFormatted,
-        mode: 'cors',
-        credentials: this.credentials,
-        headers: {
-          ...(token ? {bearer: token} : {})
-        }
-      }
-    );
+    const response = await fetch(url, {
+      method: httpMethod,
+      body: bodyFormatted,
+      mode: 'cors',
+      credentials: this.credentials,
+      headers: {
+        ...(token ? {bearer: token} : {}),
+      },
+    });
     if (ignoreResponse) {
       return undefined;
     }
     if (!response.ok) {
-      const infos = [
-        response.statusText,
-        response.status ? `(${response.status})` : false
-      ].filter(Boolean);
+      const infos = [response.statusText, response.status ? `(${response.status})` : false].filter(
+        Boolean,
+      );
       if (!infos.length) {
         infos.push('error fetching data');
       }
@@ -203,7 +192,7 @@ class EndpointAPI {
         const json = await response.json();
         if (!/^ok$/i.test(json.status)) {
           throw new APICallError({
-            error: `${json.status} ${json.message || json.error}`
+            error: `${json.status} ${json.message || json.error}`,
           });
         }
         return json.payload;
@@ -225,17 +214,11 @@ class EndpointAPI {
    * @param {APICallOptions & PollingAPICallOptions} options
    */
   pollingApiCall = async (options) => {
-    const {
-      uuid
-    } = await this.apiCall(options);
+    const {uuid} = await this.apiCall(options);
     if (!uuid) {
-      throw new APICallError({error: `task identifier is missing`});
+      throw new APICallError({error: 'task identifier is missing'});
     }
-    const {
-      pollingIntervalSeconds = 5,
-      pollingURI,
-      abortSignal
-    } = options;
+    const {pollingIntervalSeconds = 5, pollingURI, abortSignal} = options;
     if (!pollingURI) {
       throw new APICallError({error: 'Polling URI is not defined'});
     }
@@ -246,12 +229,9 @@ class EndpointAPI {
       }
       const result = await this.apiCall({
         uri: pollingURI,
-        query: {uuid}
+        query: {uuid},
       });
-      const {
-        state,
-        message
-      } = result;
+      const {state, message} = result;
       if (/^running$/i.test(state)) {
         await wait();
         return poll();

@@ -17,25 +17,25 @@
 import FilterExpression from './filterExpression';
 
 export default class OrExpression extends FilterExpression {
-  constructor (left, right, options) {
+  constructor(left, right, options) {
     super(undefined, undefined, FilterExpression.types.OR, undefined, left, right, options);
   }
 
-  get left () {
+  get left() {
     if (this.expressions && this.expressions.length > 0) {
       return this.expressions[0];
     }
     return null;
   }
 
-  get right () {
+  get right() {
     if (this.expressions && this.expressions.length > 1) {
       return this.expressions[1];
     }
     return null;
   }
 
-  toStringExpression () {
+  toStringExpression() {
     return `(${this.left ? this.left.toStringExpression() : ''} or ${this.right ? this.right.toStringExpression() : ''})`;
   }
 }

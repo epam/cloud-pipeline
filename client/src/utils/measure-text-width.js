@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-function measureTextWidth (text = '', fontSize = '13px') {
+function measureTextWidth(text = '', fontSize = '13px') {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
   ctx.font = `${fontSize} Arial`;
   let width;
   if (Array.isArray(text)) {
-    width = text.map(text => {
+    width = text.map((text) => {
       return ctx.measureText(text).width || 0;
     });
   } else {

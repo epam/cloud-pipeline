@@ -19,41 +19,39 @@ import {fetchToken} from '../../user/UserToken';
 import pipelineRunFSBrowserCache from '../../pipelines/PipelineRunFSBrowserCache';
 import multiZoneManager from '../../../utils/multizone';
 
-function fetchEndpoint (runId, defaultRegion = undefined) {
+function fetchEndpoint(runId, defaultRegion = undefined) {
   return new Promise((resolve, reject) => {
     const fsBrowserRequest = pipelineRunFSBrowserCache.getPipelineRunFSBrowser(runId);
     fsBrowserRequest
       .fetchIfNeededOrWait()
       .then(() => {
         if (fsBrowserRequest.error || !fsBrowserRequest.value) {
-          // eslint-disable-next-line
-          reject(new Error(`Error fetching FS Browser endpoint for #${runId} run: ${fsBrowserRequest.error}`));
+          reject(
+            new Error(
+              `Error fetching FS Browser endpoint for #${runId} run: ${fsBrowserRequest.error}`,
+            ),
+          );
         } else {
           const multiZoneEndpoints = fsBrowserRequest.value;
-          multiZoneManager
-            .checkRegions()
-            .then(() => {
-              let bestRegion = defaultRegion;
-              if (!bestRegion || !multiZoneEndpoints.hasOwnProperty(bestRegion)) {
-                bestRegion = multiZoneManager.getDefaultURLRegion(multiZoneEndpoints);
-              }
-              resolve({url: multiZoneEndpoints[bestRegion], configuration: multiZoneEndpoints});
-            });
+          multiZoneManager.checkRegions().then(() => {
+            let bestRegion = defaultRegion;
+            if (!bestRegion || !Object.hasOwn(multiZoneEndpoints, bestRegion)) {
+              bestRegion = multiZoneManager.getDefaultURLRegion(multiZoneEndpoints);
+            }
+            resolve({url: multiZoneEndpoints[bestRegion], configuration: multiZoneEndpoints});
+          });
         }
       })
-      .catch(e => {
+      .catch((e) => {
         reject(new Error(`Error fetching FS Browser endpoint for #${runId} run: ${e.message}`));
       });
   });
 }
 
-function fetchConfigurations (runId, defaultRegion = undefined) {
+function fetchConfigurations(runId, defaultRegion = undefined) {
   return new Promise((resolve, reject) => {
-    Promise.all([
-      fetchToken(),
-      fetchEndpoint(runId, defaultRegion)
-    ])
-      .then(payloads => {
+    Promise.all([fetchToken(), fetchEndpoint(runId, defaultRegion)])
+      .then((payloads) => {
         const [token, endpoint] = payloads;
         const {url, configuration} = endpoint || {};
         resolve({token, endpoint: url, configuration});
@@ -62,7 +60,7 @@ function fetchConfigurations (runId, defaultRegion = undefined) {
   });
 }
 
-export default function wrapStandardRequest (RequestClass) {
+export default function wrapStandardRequest(RequestClass) {
   return class extends RequestClass {
     _endpoint;
     _token;
@@ -70,11 +68,11 @@ export default function wrapStandardRequest (RequestClass) {
     fetchConfigurationPromise;
     runId;
 
-    get endpoint () {
+    get endpoint() {
       return this._endpoint;
     }
 
-    set endpoint (value) {
+    set endpoint(value) {
       if (value) {
         this._endpoint = value.endsWith('/') ? value : value.concat('/');
         this.constructor.prefix = this._endpoint;
@@ -83,22 +81,22 @@ export default function wrapStandardRequest (RequestClass) {
       }
     }
 
-    get endpointsConfiguration () {
+    get endpointsConfiguration() {
       return this._endpointsConfiguration;
     }
 
-    get token () {
+    get token() {
       return this._token;
     }
 
-    set token (value) {
+    set token(value) {
       if (value) {
         this.constructor.fetchOptions.headers = Object.assign(
           {},
           this.constructor.fetchOptions.headers || {},
           {
-            bearer: value
-          }
+            bearer: value,
+          },
         );
         this._token = value;
       } else {
@@ -106,7 +104,7 @@ export default function wrapStandardRequest (RequestClass) {
       }
     }
 
-    constructor (runId, defaultRegion = undefined) {
+    constructor(runId, defaultRegion = undefined) {
       super();
       makeObservable(this, {
         _endpoint: observable,
@@ -114,17 +112,17 @@ export default function wrapStandardRequest (RequestClass) {
         _endpointsConfiguration: observable,
         endpoint: computed,
         endpointsConfiguration: computed,
-        token: computed
+        token: computed,
       });
       this.runId = runId;
       this.defaultRegion = defaultRegion;
     }
 
-    fetchRequestOptions () {
+    fetchRequestOptions() {
       if (this.endpoint && this.token) {
         return Promise.resolve({
           endpoint: this.endpoint,
-          token: this.token
+          token: this.token,
         });
       }
       if (this.fetchConfigurationPromise) {
@@ -139,7 +137,7 @@ export default function wrapStandardRequest (RequestClass) {
               this.token = configuration.token;
               resolve({
                 endpoint: this.endpoint,
-                token: this.token
+                token: this.token,
               });
             } else {
               console.warn('Error fetching FS Browser API endpoint and user token');
@@ -147,7 +145,7 @@ export default function wrapStandardRequest (RequestClass) {
               resolve();
             }
           })
-          .catch(e => {
+          .catch((e) => {
             console.warn(e.message);
             this.fetchConfigurationPromise = undefined;
             resolve();

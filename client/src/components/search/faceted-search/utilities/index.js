@@ -21,7 +21,7 @@ export {
   DocumentColumns,
   getDefaultColumns,
   filterDisplayedColumns,
-  parseExtraColumns
+  parseExtraColumns,
 } from './document-columns';
 export {default as facetsSearch} from './facets-search';
 export {default as getFacetFilterToken} from './facet-filter-token';
@@ -34,5 +34,5 @@ export {
   getAvailableSortingFields,
   removeSortingByField,
   toggleSortingByField,
-  getSortingPayload
+  getSortingPayload,
 } from './sorting';

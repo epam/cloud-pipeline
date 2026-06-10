@@ -17,9 +17,9 @@
 import Remote from '../basic/Remote';
 
 export default class EdgeExternalUrl extends Remote {
-  constructor (regionId) {
+  constructor(regionId) {
     super();
     const region = regionId ? `?region=${regionId}` : '';
     this.url = `/cluster/edge/externalUrl${region}`;
-  };
+  }
 }

@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import {SERVER, API_PATH} from '../../config';
 import defer from '../../utils/defer';
 import {observable, action, computed, makeObservable} from 'mobx';
 import {authorization} from './Authorization';
@@ -26,8 +25,8 @@ class RemotePost {
     credentials: 'include',
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json; charset=UTF-8;'
-    }
+      'Content-Type': 'application/json; charset=UTF-8;',
+    },
   };
 
   static prefix = SERVER + API_PATH;
@@ -40,7 +39,7 @@ class RemotePost {
   url;
   _pending = false;
 
-  constructor () {
+  constructor() {
     makeObservable(this, {
       error: observable,
       networkError: observable,
@@ -53,23 +52,23 @@ class RemotePost {
       pending: computed,
       loaded: computed,
       response: computed,
-      update: action
+      update: action,
     });
   }
 
-  get pending () {
+  get pending() {
     return this._pending;
   }
 
   _loaded = false;
 
-  get loaded () {
+  get loaded() {
     return this._loaded;
   }
 
   _response = undefined;
 
-  get response () {
+  get response() {
     return this._response;
   }
 
@@ -77,13 +76,13 @@ class RemotePost {
   responseStatusText = undefined;
   responseError = false;
 
-  async fetch () {
+  async fetch() {
     await this.send({});
   }
 
   _fetchIsExecuting = false;
 
-  async send (body, abortSignal) {
+  async send(body, abortSignal) {
     if (!this._postIsExecuting) {
       this._pending = true;
       this._postIsExecuting = true;
@@ -99,14 +98,11 @@ class RemotePost {
         try {
           stringifiedBody = JSON.stringify(body);
         } catch (___) {}
-        const response = await fetch(
-          `${prefix}${this.url}`,
-          {
-            ...fetchOptions,
-            body: stringifiedBody,
-            ...(abortSignal && {signal: abortSignal})
-          }
-        );
+        const response = await fetch(`${prefix}${this.url}`, {
+          ...fetchOptions,
+          body: stringifiedBody,
+          ...(abortSignal && {signal: abortSignal}),
+        });
         maintenanceCheck(response);
         if (!this.constructor.noResponse) {
           this.responseError = !response.ok;
@@ -115,7 +111,7 @@ class RemotePost {
           if (!response.ok) {
             throw new Error(response.statusText || `HTTP Error ${response.status}`);
           }
-          const data = this.constructor.isJson ? (await response.json()) : (await response.blob());
+          const data = this.constructor.isJson ? await response.json() : await response.blob();
           this.update(data);
         } else {
           this.update({status: 'OK', payload: {}});
@@ -138,11 +134,11 @@ class RemotePost {
     }
   }
 
-  postprocess (value) {
+  postprocess(value) {
     return value.payload;
   }
 
-  update (value) {
+  update(value) {
     this._response = value;
     if (value.status && value.status === 401) {
       this.error = value.message;
@@ -151,7 +147,7 @@ class RemotePost {
       if (authorization.isAuthorized()) {
         authorization.setAuthorized(false);
         console.log('Changing authorization to: ' + authorization.isAuthorized());
-        let url = `${SERVER}/saml/logout`;
+        const url = `${SERVER}/saml/logout`;
         window.location = url;
       }
     } else if (value.status && value.status === 'OK') {
@@ -178,7 +174,7 @@ class RemotePost {
     }
   }
 
-  get value () {
+  get value() {
     return this._value;
   }
 }

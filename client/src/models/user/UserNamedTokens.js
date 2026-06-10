@@ -20,7 +20,7 @@ import Remote from '../basic/Remote';
 // "/list?userId" - endpoint available only for admins.
 // "/list" - available for non-admins, return tokens for current user.
 export default class UserNamedTokens extends Remote {
-  constructor (userId) {
+  constructor(userId) {
     super();
     let url = '/user/token/named/list';
     if (userId !== null && userId !== undefined && userId !== '') {

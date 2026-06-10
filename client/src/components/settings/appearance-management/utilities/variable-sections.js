@@ -14,14 +14,11 @@
  *  limitations under the License.
  */
 
-import {
-  Variables,
-  VariableTypes
-} from './variable-descriptions';
+import {Variables, VariableTypes} from './variable-descriptions';
 
 const Divider = {variable: {type: VariableTypes.divider}, advanced: true};
 
-function mapConfiguration (item) {
+function mapConfiguration(item) {
   if (!item) {
     return undefined;
   }
@@ -35,63 +32,63 @@ const alerts = [
   Variables.alertErrorBackground,
   {
     variable: Variables.alertErrorBorder,
-    advanced: true
+    advanced: true,
   },
   Variables.alertErrorIcon,
   Variables.alertInfoBackground,
   {
     variable: Variables.alertInfoBorder,
-    advanced: true
+    advanced: true,
   },
   Variables.alertInfoIcon,
   Variables.alertWarningBackground,
   {
     variable: Variables.alertWarningBorder,
-    advanced: true
+    advanced: true,
   },
   Variables.alertWarningIcon,
   Variables.alertSuccessBackground,
   {
     variable: Variables.alertSuccessBorder,
-    advanced: true
+    advanced: true,
   },
-  Variables.alertSuccessIcon
+  Variables.alertSuccessIcon,
 ];
 
 const buttons = [
   Variables.primaryColor,
   {
     variable: Variables.primaryTextColor,
-    advanced: true
+    advanced: true,
   },
   {
     variable: Variables.primaryHoverColor,
-    advanced: true
+    advanced: true,
   },
   {
     variable: Variables.primaryActiveColor,
-    advanced: true
+    advanced: true,
   },
   Divider,
   Variables.btnDangerColor,
   {
     variable: Variables.btnDangerBackgroundColor,
-    advanced: true
+    advanced: true,
   },
   {
     variable: Variables.btnDangerActiveColor,
-    advanced: true
+    advanced: true,
   },
   {
     variable: Variables.btnDangerActiveBackground,
-    advanced: true
+    advanced: true,
   },
   Divider,
   Variables.btnDisabledColor,
   {
     variable: Variables.btnDisabledBackgroundColor,
-    advanced: true
-  }
+    advanced: true,
+  },
 ];
 
 const input = [
@@ -101,34 +98,34 @@ const input = [
   Divider,
   {
     variable: Variables.inputPlaceholderColor,
-    advanced: true
+    advanced: true,
   },
   {
     variable: Variables.inputBackgroundDisabled,
-    advanced: true
+    advanced: true,
   },
   Divider,
   {
     variable: Variables.inputBorderHoverColor,
-    advanced: true
+    advanced: true,
   },
   {
     variable: Variables.inputShadowColor,
-    advanced: true
+    advanced: true,
   },
   Divider,
   {
     variable: Variables.inputAddon,
-    advanced: true
+    advanced: true,
   },
   {
     variable: Variables.inputSearchIconColor,
-    advanced: true
+    advanced: true,
   },
   {
     variable: Variables.inputSearchIconHoveredColor,
-    advanced: true
-  }
+    advanced: true,
+  },
 ];
 
 const main = [
@@ -136,73 +133,73 @@ const main = [
   {
     variable: Variables.backgroundImage,
     advanced: true,
-    type: VariableTypes.image
+    type: VariableTypes.image,
   },
   Divider,
   Variables.applicationColor,
   {
     variable: Variables.applicationColorAccent,
-    advanced: true
+    advanced: true,
   },
   {
     variable: Variables.applicationColorFaded,
-    advanced: true
+    advanced: true,
   },
   {
     variable: Variables.applicationColorDisabled,
-    advanced: true
+    advanced: true,
   },
   Divider,
   Variables.primaryColor,
   {
     variable: Variables.menuActiveColor,
-    advanced: true
+    advanced: true,
   },
   Divider,
   Variables.panelBackgroundColor,
   {
     variable: Variables.panelBorderColor,
-    advanced: true
+    advanced: true,
   },
   Divider,
   Variables.cardBackgroundColor,
   {
     variable: Variables.cardHeaderBackground,
-    advanced: true
+    advanced: true,
   },
   {
     variable: Variables.cardBorderColor,
-    advanced: true
+    advanced: true,
   },
   {
     variable: Variables.cardHoveredShadowColor,
-    advanced: true
+    advanced: true,
   },
   {
     variable: Variables.cardActionsActiveBackground,
-    advanced: true
+    advanced: true,
   },
   Divider,
   {
     variable: Variables.cardServiceBackgroundColor,
-    advanced: true
+    advanced: true,
   },
   {
     variable: Variables.cardServiceHeaderBackground,
-    advanced: true
+    advanced: true,
   },
   {
     variable: Variables.cardServiceBorderColor,
-    advanced: true
+    advanced: true,
   },
   {
     variable: Variables.cardServiceHoveredShadowColor,
-    advanced: true
+    advanced: true,
   },
   {
     variable: Variables.cardServiceActionsActiveBackground,
-    advanced: true
-  }
+    advanced: true,
+  },
 ];
 
 const navigation = [
@@ -217,13 +214,13 @@ const navigation = [
   {
     variable: Variables.logoImage,
     advanced: true,
-    type: VariableTypes.image
+    type: VariableTypes.image,
   },
   {
     variable: Variables.navigationBackgroundImage,
     advanced: true,
-    type: VariableTypes.image
-  }
+    type: VariableTypes.image,
+  },
 ];
 
 const colors = [
@@ -234,43 +231,43 @@ const colors = [
   Divider,
   {
     variable: Variables.colorSensitive,
-    advanced: true
+    advanced: true,
   },
   {
     variable: Variables.nfsIconColor,
-    advanced: true
+    advanced: true,
   },
   {
     variable: Variables.spinner,
-    advanced: true
+    advanced: true,
   },
   Divider,
   {
     variable: Variables.searchHighlightTextColor,
-    advanced: true
+    advanced: true,
   },
   {
     variable: Variables.searchHighlightTextBackgroundColor,
-    advanced: true
+    advanced: true,
   },
   Divider,
   {
     variable: Variables.modalMaskBackground,
-    advanced: true
+    advanced: true,
   },
   Divider,
   {
     variable: Variables.tagKeyBackgroundColor,
-    advanced: true
+    advanced: true,
   },
   {
     variable: Variables.tagValueBackgroundColor,
-    advanced: true
+    advanced: true,
   },
   {
     variable: Variables.tagKeyValueDividerColor,
-    advanced: true
-  }
+    advanced: true,
+  },
 ];
 
 const tables = [
@@ -280,55 +277,55 @@ const tables = [
   Variables.elementSelectedBackgroundColor,
   {
     variable: Variables.evenElementBackground,
-    advanced: true
+    advanced: true,
   },
   Divider,
   {
     variable: Variables.tableBorderColor,
-    advanced: true
+    advanced: true,
   },
   {
     variable: Variables.tableHeadColor,
-    advanced: true
+    advanced: true,
   },
   {
     variable: Variables.tableElementHoverColor,
-    advanced: true
+    advanced: true,
   },
   {
     variable: Variables.tableElementHoverBackgroundColor,
-    advanced: true
+    advanced: true,
   },
   {
     variable: Variables.tableElementSelectedColor,
-    advanced: true
+    advanced: true,
   },
   {
     variable: Variables.tableElementSelectedBackgroundColor,
-    advanced: true
+    advanced: true,
   },
   Divider,
   {
     variable: Variables.primaryColorSemiTransparent,
-    advanced: true
-  }
+    advanced: true,
+  },
 ];
 
 const other = [
   Variables.awsIcon,
   {
     variable: Variables.awsIconContrast,
-    advanced: true
+    advanced: true,
   },
   Variables.gcpIcon,
   {
     variable: Variables.gcpIconContrast,
-    advanced: true
+    advanced: true,
   },
   Variables.azureIcon,
   {
     variable: Variables.azureIconContrast,
-    advanced: true
+    advanced: true,
   },
   Divider,
   ...[
@@ -344,8 +341,8 @@ const other = [
     Variables.colorPinkDusty,
     Variables.colorPinkLight,
     Variables.colorBlueDimmed,
-    Variables.colorGrey
-  ].map(variable => ({variable, advanced: true}))
+    Variables.colorGrey,
+  ].map((variable) => ({variable, advanced: true})),
 ];
 
 const sections = {
@@ -354,9 +351,9 @@ const sections = {
   input: 'Forms',
   main: 'Main',
   navigation: 'Navigation panel',
-  colors: `Colors`,
+  colors: 'Colors',
   tables: 'Tables & Lists',
-  other: 'Other'
+  other: 'Other',
 };
 
 const sectionsConfiguration = {
@@ -367,7 +364,7 @@ const sectionsConfiguration = {
   [sections.navigation]: navigation.map(mapConfiguration),
   [sections.colors]: colors.map(mapConfiguration),
   [sections.tables]: tables.map(mapConfiguration),
-  [sections.other]: other.map(mapConfiguration)
+  [sections.other]: other.map(mapConfiguration),
 };
 
 const orderedSections = [
@@ -378,41 +375,38 @@ const orderedSections = [
   sections.input,
   sections.colors,
   sections.alerts,
-  sections.other
+  sections.other,
 ];
 
-function variableNameSorter (a, b) {
+function variableNameSorter(a, b) {
   const aName = a.name;
   const bName = b.name;
   return aName.localeCompare(bName);
 }
 
-const grouped = orderedSections
-  .map(section => ({
-    name: sections[section] || section,
-    variables: (sectionsConfiguration[section] || [])
-      .map(o => o.variable)
-      .filter(o => o && (!o.type || o.type === VariableTypes.color))
-      .sort(variableNameSorter)
-  }));
-const plain = grouped
-  .reduce((result, group) => ([...result, ...group.variables]), []);
+const grouped = orderedSections.map((section) => ({
+  name: sections[section] || section,
+  variables: (sectionsConfiguration[section] || [])
+    .map((o) => o.variable)
+    .filter((o) => o && (!o.type || o.type === VariableTypes.color))
+    .sort(variableNameSorter),
+}));
+const plain = grouped.reduce((result, group) => [...result, ...group.variables], []);
 
-const variablesWithoutSection = Object.values(Variables)
-  .filter(o => !plain.includes(o) && (!o.type || o.type === VariableTypes.color));
-grouped.push(
-  {
-    name: 'Other properties',
-    variables: variablesWithoutSection.sort(variableNameSorter)
-  }
+const variablesWithoutSection = Object.values(Variables).filter(
+  (o) => !plain.includes(o) && (!o.type || o.type === VariableTypes.color),
 );
+grouped.push({
+  name: 'Other properties',
+  variables: variablesWithoutSection.sort(variableNameSorter),
+});
 
-const groupedColorVariables = grouped.filter(group => group.variables.length > 0);
+const groupedColorVariables = grouped.filter((group) => group.variables.length > 0);
 
 export {
   groupedColorVariables,
   orderedSections as sections,
   sections as sectionNames,
   sectionsConfiguration,
-  VariableTypes
+  VariableTypes,
 };

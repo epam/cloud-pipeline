@@ -16,8 +16,7 @@
 
 import {
   FILE_NAME_TEMPLATE as FILE_NAME,
-  // eslint-disable-next-line
-  FILE_EXTENSION_TEMPLATE as EXTENSION
+  FILE_EXTENSION_TEMPLATE as EXTENSION,
 } from './file-sharing-extensions';
 
 /*
@@ -39,10 +38,10 @@ import {
 export default [
   {
     extension: /^(vsi|mrxs)$/i,
-    relativeFolders: [`_${FILE_NAME}_`, '.wsiparser']
+    relativeFolders: [`_${FILE_NAME}_`, '.wsiparser'],
   },
   {
     extension: 'hcs',
-    relativeFolders: [`.hcsparser/${FILE_NAME}`]
-  }
+    relativeFolders: [`.hcsparser/${FILE_NAME}`],
+  },
 ];

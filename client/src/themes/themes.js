@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import FileSaver from 'file-saver';
+import {downloadBlob} from '../utils/download-blob';
 import DarkDimmedTheme from './dark-dimmed-theme';
 import DarkTheme from './dark-theme';
 import LightTheme from './light-theme';
@@ -24,72 +24,73 @@ import PreferenceLoad from '../models/preferences/PreferenceLoad';
 import PreferencesUpdate from '../models/preferences/PreferencesUpdate';
 
 const PredefinedThemes = [LightTheme, DarkTheme, DarkDimmedTheme];
-const DefaultTheme = PredefinedThemes.find(o => o.default) || LightTheme;
+const DefaultTheme = PredefinedThemes.find((o) => o.default) || LightTheme;
 
-export function generateIdentifier (name) {
+export function generateIdentifier(name) {
   if (name) {
     return name
       .replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '')
-      .replace(/[\s;.,!@#$%^&*(){}[\]\\/]/g, '-').toLowerCase();
+      .replace(/[\s;.,!@#$%^&*(){}[\]\\/]/g, '-')
+      .toLowerCase();
   }
-  return `custom-theme`;
+  return 'custom-theme';
 }
 
-function mapCustomTheme (customTheme) {
+function mapCustomTheme(customTheme) {
   return {
     extends: customTheme.dark ? DarkTheme.identifier : LightTheme.identifier,
     configuration: {},
     identifier: generateIdentifier(customTheme.name),
     ...customTheme,
-    predefined: false
+    predefined: false,
   };
 }
 
-function correctCustomThemeIdentifier (predefinedThemes = []) {
-  return function correct (theme, index, customThemes) {
+function correctCustomThemeIdentifier(predefinedThemes = []) {
+  return function correct(theme, index, customThemes) {
     let {identifier} = theme;
-    const existed = predefinedThemes.find(o => o.identifier === identifier);
+    const existed = predefinedThemes.find((o) => o.identifier === identifier);
     if (existed) {
       identifier = `${identifier}-custom`;
     }
-    const number = customThemes.slice(0, index).filter(o => o.identifier === identifier);
+    const number = customThemes.slice(0, index).filter((o) => o.identifier === identifier);
     if (number > 0) {
       identifier = `${identifier}-${number}`;
     }
     return {
       ...theme,
-      identifier
+      identifier,
     };
   };
 }
 
-export function getThemeConfiguration (theme, themes = PredefinedThemes) {
+export function getThemeConfiguration(theme, themes = PredefinedThemes) {
   if (!theme) {
     return {};
   }
   const {
     identifier,
     extends: baseThemeIdentifier = DefaultTheme ? DefaultTheme.identifier : undefined,
-    configuration = {}
+    configuration = {},
   } = theme;
   if (baseThemeIdentifier && identifier !== baseThemeIdentifier) {
     const baseTheme = getThemeConfiguration(
-      themes.find(o => o.identifier === baseThemeIdentifier) || DefaultTheme
+      themes.find((o) => o.identifier === baseThemeIdentifier) || DefaultTheme,
     );
     const mergedConfiguration = Object.assign(
       {},
       baseTheme ? {...(baseTheme.configuration || {})} : {},
-      {...configuration || {}}
+      {...(configuration || {})},
     );
     return {
       ...theme,
       configuration: {...mergedConfiguration},
-      properties: {...configuration}
+      properties: {...configuration},
     };
   }
   return {
     ...theme,
-    properties: {...configuration}
+    properties: {...configuration},
   };
 }
 
@@ -101,7 +102,7 @@ const ThemesPreferenceName = 'ui.themes';
 const ThemesPreferenceGroup = 'User Interface';
 const ThemesPreferenceModes = {
   url: 'url',
-  payload: 'payload'
+  payload: 'payload',
 };
 
 export {
@@ -110,21 +111,23 @@ export {
   DefaultThemeIdentifier,
   ThemesPreferenceName,
   ThemesPreferenceModes,
-  parseConfiguration
+  parseConfiguration,
 };
 
-function saveThemesAsPayload (themes) {
+function saveThemesAsPayload(themes) {
   return new Promise((resolve, reject) => {
     const payload = JSON.stringify(themes || []);
     const request = new PreferencesUpdate();
     request
-      .send([{
-        name: ThemesPreferenceName,
-        preferenceGroup: ThemesPreferenceGroup,
-        type: 'OBJECT',
-        value: payload,
-        visible: true
-      }])
+      .send([
+        {
+          name: ThemesPreferenceName,
+          preferenceGroup: ThemesPreferenceGroup,
+          type: 'OBJECT',
+          value: payload,
+          visible: true,
+        },
+      ])
       .then(() => {
         if (request.error) {
           throw new Error(request.error);
@@ -135,11 +138,11 @@ function saveThemesAsPayload (themes) {
   });
 }
 
-function downloadThemesConfigurationFile (themes) {
+function downloadThemesConfigurationFile(themes) {
   const payload = JSON.stringify(themes || []);
   return new Promise((resolve, reject) => {
     try {
-      FileSaver.saveAs(new Blob([payload]), 'themes.json');
+      downloadBlob(new Blob([payload]), 'themes.json');
       resolve();
     } catch (e) {
       reject(e);
@@ -147,18 +150,20 @@ function downloadThemesConfigurationFile (themes) {
   });
 }
 
-export function setURLMode (url, options = {}) {
+export function setURLMode(url, options = {}) {
   const request = new PreferencesUpdate();
   const payload = JSON.stringify({url, options});
   return new Promise((resolve, reject) => {
     request
-      .send([{
-        name: ThemesPreferenceName,
-        preferenceGroup: ThemesPreferenceGroup,
-        type: 'OBJECT',
-        value: payload,
-        visible: true
-      }])
+      .send([
+        {
+          name: ThemesPreferenceName,
+          preferenceGroup: ThemesPreferenceGroup,
+          type: 'OBJECT',
+          value: payload,
+          visible: true,
+        },
+      ])
       .then(() => {
         if (request.error) {
           throw new Error(request.error);
@@ -169,14 +174,14 @@ export function setURLMode (url, options = {}) {
   });
 }
 
-export function saveThemes (themes, mode = ThemesPreferenceModes.url) {
+export function saveThemes(themes, mode = ThemesPreferenceModes.url) {
   if (mode === ThemesPreferenceModes.url) {
     return downloadThemesConfigurationFile(themes);
   }
   return saveThemesAsPayload(themes);
 }
 
-function fetchThemesByUrl (url, options) {
+function fetchThemesByUrl(url, options) {
   return new Promise((resolve) => {
     if (options) {
       console.log('Fetching themes by url:', url, 'using options:', options);
@@ -184,26 +189,26 @@ function fetchThemesByUrl (url, options) {
       console.log('Fetching themes by url:', url);
     }
     fetch(url, options)
-      .then(response => response.json())
+      .then((response) => response.json())
       .then((json) => {
         if (Array.isArray(json)) {
           resolve({
             themes: json,
             mode: ThemesPreferenceModes.url,
-            url
+            url,
           });
         } else {
           throw new Error('themes files content must be a valid JSON array');
         }
       })
-      .catch(e => {
+      .catch((e) => {
         console.warn(`Error fetching themes by url ${url}: ${e.message}`);
         resolve({themes: [], mode: ThemesPreferenceModes.url});
       });
   });
 }
 
-function safeParseJson (json) {
+function safeParseJson(json) {
   try {
     return {obj: json ? JSON.parse(json) : undefined};
   } catch (e) {
@@ -211,7 +216,7 @@ function safeParseJson (json) {
   }
 }
 
-function parseThemesPreference (preferenceValue) {
+function parseThemesPreference(preferenceValue) {
   if (!preferenceValue || typeof preferenceValue !== 'string') {
     return Promise.resolve({themes: [], mode: ThemesPreferenceModes.payload});
   }
@@ -227,7 +232,7 @@ function parseThemesPreference (preferenceValue) {
       if (Array.isArray(obj)) {
         return Promise.resolve({
           themes: obj,
-          mode: ThemesPreferenceModes.payload
+          mode: ThemesPreferenceModes.payload,
         });
       }
     } else if (preferenceValue) {
@@ -242,22 +247,22 @@ function parseThemesPreference (preferenceValue) {
   }
 }
 
-export function getTheme (theme, themes) {
-  const skipExtendsMerge = Number(theme.schemaVersion) === SCHEMA_VERSION &&
-    (theme.fullyResolved || theme.predefined);
+export function getTheme(theme, themes) {
+  const skipExtendsMerge =
+    Number(theme.schemaVersion) === SCHEMA_VERSION && (theme.fullyResolved || theme.predefined);
   const result = skipExtendsMerge
     ? {
-      ...theme,
-      configuration: {...(theme.configuration || {})},
-      properties: theme.properties || {...(theme.configuration || {})}
-    }
+        ...theme,
+        configuration: {...(theme.configuration || {})},
+        properties: theme.properties || {...(theme.configuration || {})},
+      }
     : getThemeConfiguration(theme, themes);
   result.getParsedConfiguration = parseConfiguration.bind(result, result.configuration);
   result.schemaVersion = SCHEMA_VERSION;
   return result;
 }
 
-export function extendPredefinedThemesWithCustom (custom = []) {
+export function extendPredefinedThemesWithCustom(custom = []) {
   const customThemesProcessed = custom
     .map(mapCustomTheme)
     .map(correctCustomThemeIdentifier(PredefinedThemes));
@@ -265,15 +270,15 @@ export function extendPredefinedThemesWithCustom (custom = []) {
   // Merge `extends` into a full v1 configuration before v2 migration so
   // derived keys (e.g. @card-border-color: @panel-border-color on dark-theme)
   // resolve against the complete palette, not the partial override object.
-  const withMergedConfiguration = allRaw.map(theme => {
+  const withMergedConfiguration = allRaw.map((theme) => {
     const {configuration} = getThemeConfiguration(theme, allRaw);
     return {...theme, configuration};
   });
   const migrated = withMergedConfiguration.map(migrateV1ToV2);
-  return migrated.map(theme => getTheme(theme, migrated));
+  return migrated.map((theme) => getTheme(theme, migrated));
 }
 
-export default function getThemes () {
+export default function getThemes() {
   return new Promise((resolve) => {
     const request = new PreferenceLoad(ThemesPreferenceName);
     request
@@ -287,15 +292,11 @@ export default function getThemes () {
       })
       .catch(() => Promise.resolve({themes: [], mode: ThemesPreferenceModes.payload}))
       .then((result = {}) => {
-        const {
-          themes: customThemes,
-          mode = ThemesPreferenceModes.payload,
-          url
-        } = result;
+        const {themes: customThemes, mode = ThemesPreferenceModes.payload, url} = result;
         resolve({
           mode,
           themes: extendPredefinedThemesWithCustom(customThemes),
-          url
+          url,
         });
       });
   });

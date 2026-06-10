@@ -19,8 +19,8 @@ import Remote from '../basic/Remote';
 export default class PipelineRunResults extends Remote {
   static defaultValue = [];
 
-  constructor (runId) {
+  constructor(runId) {
     super();
     this.url = `/run/${runId}/result`;
-  };
+  }
 }

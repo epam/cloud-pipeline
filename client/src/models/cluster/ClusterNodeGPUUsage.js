@@ -20,31 +20,24 @@ const GRANULARITY = {
   details: 'details',
   aggregations: 'aggregations',
   global: 'global',
-  all: 'all'
+  all: 'all',
 };
 
 class ClusterNodeGPUUsage extends Remote {
-  constructor (
-    nodeName,
-    from,
-    to,
-    options = {}
-  ) {
+  constructor(nodeName, from, to, options = {}) {
     super();
-    const {
-      granularity = GRANULARITY.all,
-      squashCharts = false,
-      runId
-    } = options || {};
+    const {granularity = GRANULARITY.all, squashCharts = false, runId} = options || {};
     const query = [
       `from=${from}`,
       `to=${to}`,
       `granularity=${encodeURIComponent(granularity.toUpperCase())}`,
       `squashCharts=${squashCharts}`,
-      runId ? `runId=${runId}` : false
-    ].filter(Boolean).join('&');
+      runId ? `runId=${runId}` : false,
+    ]
+      .filter(Boolean)
+      .join('&');
     this.url = `/cluster/node/${nodeName}/usage/gpus?${query}`;
-  };
+  }
 }
 
 export default ClusterNodeGPUUsage;

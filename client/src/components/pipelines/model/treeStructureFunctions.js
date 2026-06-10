@@ -42,10 +42,10 @@ export const ItemTypes = {
   fireCloud,
   fireCloudMethod,
   fireCloudMethodVersion,
-  fireCloudMethodConfiguration
+  fireCloudMethodConfiguration,
 };
 
-export function generateUrl (item) {
+export function generateUrl(item) {
   if (!item) {
     return '/library';
   }
@@ -59,27 +59,37 @@ export function generateUrl (item) {
         return `/folder/${itemId}`;
       }
       switch (item.id.toLowerCase()) {
-        case 'pipelines': return '/pipelines';
-        case 'storages': return '/storages';
+        case 'pipelines':
+          return '/pipelines';
+        case 'storages':
+          return '/storages';
         case 'root':
         default:
           return '/library';
       }
     }
-    case ItemTypes.pipeline: return `/${item.id}`;
-    case ItemTypes.version: return `/${item.parentId}/${item.name}`;
-    case ItemTypes.versionedStorage: return `/vs/${item.id}`;
-    case ItemTypes.storage: return `/storage/${item.id}`;
-    case ItemTypes.configuration: return `/configuration/${item.id}`;
-    case ItemTypes.metadata: return `/folder/${item.folderId}/metadata/${item.name}`;
-    case ItemTypes.metadataFolder: return `/folder/${item.parentId}/metadata`;
-    case ItemTypes.projectHistory: return `/folder/${item.id}/history`;
+    case ItemTypes.pipeline:
+      return `/${item.id}`;
+    case ItemTypes.version:
+      return `/${item.parentId}/${item.name}`;
+    case ItemTypes.versionedStorage:
+      return `/vs/${item.id}`;
+    case ItemTypes.storage:
+      return `/storage/${item.id}`;
+    case ItemTypes.configuration:
+      return `/configuration/${item.id}`;
+    case ItemTypes.metadata:
+      return `/folder/${item.folderId}/metadata/${item.name}`;
+    case ItemTypes.metadataFolder:
+      return `/folder/${item.parentId}/metadata`;
+    case ItemTypes.projectHistory:
+      return `/folder/${item.id}/history`;
     default:
       return '/';
   }
 }
 
-function nameSorter (pA, pB) {
+function nameSorter(pA, pB) {
   if (pA.name.toLowerCase() > pB.name.toLowerCase()) {
     return 1;
   } else if (pA.name.toLowerCase() < pB.name.toLowerCase()) {
@@ -116,10 +126,7 @@ function nameSorter (pA, pB) {
  * @param {GenerateTreeDataOptions} [options]
  * @returns {string|*[]}
  */
-export function generateTreeData (
-  libraryTree,
-  options = {}
-) {
+export function generateTreeData(libraryTree, options = {}) {
   const {
     pipelines,
     childFolders,
@@ -129,7 +136,7 @@ export function generateTreeData (
     metadata,
     id,
     objectMetadata,
-    fireCloud
+    fireCloud,
   } = libraryTree || {};
   const {
     ignoreChildren = false,
@@ -137,30 +144,30 @@ export function generateTreeData (
     expandedKeys = [],
     types = undefined,
     filter = (item, type) => true,
-    sortRoot = true
+    sortRoot = true,
   } = options;
   const children = [];
   const pipelinesSorted = (pipelines || [])
-    .filter(pipeline => !/^versioned_storage$/i.test(pipeline.pipelineType))
-    .map(f => f);
+    .filter((pipeline) => !/^versioned_storage$/i.test(pipeline.pipelineType))
+    .map((f) => f);
   if (sortRoot) {
     pipelinesSorted.sort(nameSorter);
   }
   const versionedStoragesSorted = (pipelines || [])
-    .filter(pipeline => /^versioned_storage$/i.test(pipeline.pipelineType))
-    .map(f => f);
+    .filter((pipeline) => /^versioned_storage$/i.test(pipeline.pipelineType))
+    .map((f) => f);
   if (sortRoot) {
     versionedStoragesSorted.sort(nameSorter);
   }
-  const childFoldersSorted = (childFolders || []).map(f => f);
+  const childFoldersSorted = (childFolders || []).map((f) => f);
   if (sortRoot) {
     childFoldersSorted.sort(nameSorter);
   }
-  const childStoragesSorted = (storages || []).map(f => f);
+  const childStoragesSorted = (storages || []).map((f) => f);
   if (sortRoot) {
     childStoragesSorted.sort(nameSorter);
   }
-  const configurationsSorted = (configurations || []).map(f => f);
+  const configurationsSorted = (configurations || []).map((f) => f);
   if (sortRoot) {
     configurationsSorted.sort(nameSorter);
   }
@@ -170,9 +177,9 @@ export function generateTreeData (
       key: ItemTypes.fireCloud,
       name: 'FireCloud',
       type: ItemTypes.fireCloud,
-      url () {
+      url() {
         return generateUrl(this);
-      }
+      },
     };
     if (
       fireCloud.methods &&
@@ -188,7 +195,7 @@ export function generateTreeData (
           name: method.name,
           namespace: method.namespace,
           type: ItemTypes.fireCloudMethod,
-          parent: fireCloudItem
+          parent: fireCloudItem,
         };
         if (
           method.snapshotIds &&
@@ -204,7 +211,7 @@ export function generateTreeData (
               name: snapshotId,
               type: ItemTypes.fireCloudMethodVersion,
               parent: fireCloudMethod,
-              isLeaf: true
+              isLeaf: true,
             };
             fireCloudMethod.children.push(fireCloudMethodVersion);
           }
@@ -221,10 +228,12 @@ export function generateTreeData (
       if (!filter(childFoldersSorted[i], ItemTypes.folder)) {
         continue;
       }
-      const isProject = !!(childFoldersSorted[i].objectMetadata &&
+      const isProject = !!(
+        childFoldersSorted[i].objectMetadata &&
         childFoldersSorted[i].objectMetadata.type &&
         childFoldersSorted[i].objectMetadata.type.value &&
-        childFoldersSorted[i].objectMetadata.type.value.toLowerCase() === 'project');
+        childFoldersSorted[i].objectMetadata.type.value.toLowerCase() === 'project'
+      );
       const folder = {
         ...childFoldersSorted[i],
         id: childFoldersSorted[i].id,
@@ -235,7 +244,7 @@ export function generateTreeData (
         entityClass: 'FOLDER',
         parentId: childFoldersSorted[i].parentId,
         path: parent ? `${parent.path}/${childFoldersSorted[i].name}` : childFoldersSorted[i].name,
-        parent: parent,
+        parent,
         createdDate: childFoldersSorted[i].createdDate,
         mask: childFoldersSorted[i].mask,
         locked: childFoldersSorted[i].locked,
@@ -243,26 +252,22 @@ export function generateTreeData (
         hasMetadata: childFoldersSorted[i].hasMetadata,
         issuesCount: childFoldersSorted[i].issuesCount,
         isProject,
-        url () {
+        url() {
           return generateUrl(this);
         },
-        parentUrl () {
+        parentUrl() {
           return generateUrl(this.parent);
-        }
+        },
       };
-      folder.children = ignoreChildren && (!types || types.length === 0)
-        ? undefined
-        : generateTreeData(
-          childFoldersSorted[i],
-          {
-            ...options,
-            parent: folder,
-            sortRoot: true
-          }
-        );
-      folder.isLeaf = ignoreChildren
-        ? true
-        : folder.children.length === 0;
+      folder.children =
+        ignoreChildren && (!types || types.length === 0)
+          ? undefined
+          : generateTreeData(childFoldersSorted[i], {
+              ...options,
+              parent: folder,
+              sortRoot: true,
+            });
+      folder.isLeaf = ignoreChildren ? true : folder.children.length === 0;
       folder.expanded = expandedKeys.indexOf(folder.key) >= 0 && folder.children.length > 0;
       if (
         !types ||
@@ -292,7 +297,7 @@ export function generateTreeData (
         entityClass: 'DATA_STORAGE',
         storageType: childStoragesSorted[i].type,
         parentId: childStoragesSorted[i].parentFolderId,
-        parent: parent,
+        parent,
         path: childStoragesSorted[i].path,
         createdDate: childStoragesSorted[i].createdDate,
         mask: childStoragesSorted[i].mask,
@@ -309,27 +314,22 @@ export function generateTreeData (
         mountOptions: childStoragesSorted[i].mountOptions,
         sensitive: childStoragesSorted[i].sensitive,
         sourceStorageId: childStoragesSorted[i].sourceStorageId,
-        url () {
+        url() {
           return generateUrl(this);
         },
-        parentUrl () {
+        parentUrl() {
           return generateUrl(this.parent);
-        }
+        },
       };
       storage.children = ignoreChildren
         ? undefined
-        : generateTreeData(
-          childStoragesSorted[i],
-          {
+        : generateTreeData(childStoragesSorted[i], {
             ...options,
             ignoreChildren: false,
             parent: storage,
-            sortRoot: true
-          }
-        );
-      storage.isLeaf = ignoreChildren
-        ? true
-        : storage.children.length === 0;
+            sortRoot: true,
+          });
+      storage.isLeaf = ignoreChildren ? true : storage.children.length === 0;
       storage.expanded = expandedKeys.indexOf(storage.key) >= 0 && storage.children.length > 0;
       children.push(storage);
     }
@@ -350,7 +350,7 @@ export function generateTreeData (
         type: ItemTypes.versionedStorage,
         entityId: versionedStoragesSorted[i].id,
         entityClass: 'PIPELINE',
-        parent: parent,
+        parent,
         isLeaf: true,
         description: versionedStoragesSorted[i].description,
         createdDate: versionedStoragesSorted[i].createdDate,
@@ -361,12 +361,12 @@ export function generateTreeData (
         objectMetadata: versionedStoragesSorted[i].objectMetadata,
         hasMetadata: versionedStoragesSorted[i].hasMetadata,
         issuesCount: versionedStoragesSorted[i].issuesCount,
-        url () {
+        url() {
           return generateUrl(this);
         },
-        parentUrl () {
+        parentUrl() {
           return generateUrl(this.parent);
-        }
+        },
       };
       versionedStorage.children = undefined;
       versionedStorage.expanded = false;
@@ -386,8 +386,8 @@ export function generateTreeData (
         type: ItemTypes.pipeline,
         entityId: pipelinesSorted[i].id,
         entityClass: 'PIPELINE',
-        parent: parent,
-        isLeaf: (types && types.indexOf(ItemTypes.version) === -1),
+        parent,
+        isLeaf: types && types.indexOf(ItemTypes.version) === -1,
         description: pipelinesSorted[i].description,
         createdDate: pipelinesSorted[i].createdDate,
         repository: pipelinesSorted[i].repository,
@@ -397,24 +397,22 @@ export function generateTreeData (
         objectMetadata: pipelinesSorted[i].objectMetadata,
         hasMetadata: pipelinesSorted[i].hasMetadata,
         issuesCount: pipelinesSorted[i].issuesCount,
-        url () {
+        url() {
           return generateUrl(this);
         },
-        parentUrl () {
+        parentUrl() {
           return generateUrl(this.parent);
-        }
+        },
       };
-      pipeline.children = ignoreChildren || (types && types.indexOf(ItemTypes.version) === -1)
-        ? undefined
-        : generateTreeData(
-          pipelinesSorted[i],
-          {
-            ...options,
-            parent: pipeline,
-            ignoreChildren: false,
-            sortRoot: true
-          }
-        );
+      pipeline.children =
+        ignoreChildren || (types && types.indexOf(ItemTypes.version) === -1)
+          ? undefined
+          : generateTreeData(pipelinesSorted[i], {
+              ...options,
+              parent: pipeline,
+              ignoreChildren: false,
+              sortRoot: true,
+            });
       pipeline.expanded = expandedKeys.indexOf(pipeline.key) >= 0 && pipeline.children.length > 0;
       children.push(pipeline);
     }
@@ -434,7 +432,7 @@ export function generateTreeData (
         entityId: parent && parent.id,
         entityClass: 'PIPELINE',
         children: ignoreChildren ? undefined : [],
-        parent: parent,
+        parent,
         parentId: parent && parent.id,
         isLeaf: true,
         expanded: false,
@@ -442,17 +440,20 @@ export function generateTreeData (
         draft: versions[i].draft,
         createdDate: versions[i].createdDate,
         mask: 7,
-        url () {
+        url() {
           return generateUrl(this);
         },
-        parentUrl () {
+        parentUrl() {
           return generateUrl(this.parent);
-        }
+        },
       });
     }
   }
-  if (configurations && configurations.length &&
-    (!types || types.indexOf(ItemTypes.configuration) >= 0)) {
+  if (
+    configurations &&
+    configurations.length &&
+    (!types || types.indexOf(ItemTypes.configuration) >= 0)
+  ) {
     for (let i = 0; i < configurationsSorted.length; i++) {
       if (!filter(configurationsSorted[i], ItemTypes.configuration)) {
         continue;
@@ -467,20 +468,20 @@ export function generateTreeData (
         entityId: configurationsSorted[i].id,
         entityClass: 'CONFIGURATION',
         parentId: configurationsSorted[i].parent ? configurationsSorted[i].parent.id : undefined,
-        parent: parent,
-        entries: configurationsSorted[i].entries.map(e => e),
+        parent,
+        entries: configurationsSorted[i].entries.map((e) => e),
         createdDate: configurationsSorted[i].createdDate,
         mask: configurationsSorted[i].mask,
         locked: configurationsSorted[i].locked,
         objectMetadata: configurationsSorted[i].objectMetadata,
         hasMetadata: configurationsSorted[i].hasMetadata,
         issuesCount: configurationsSorted[i].issuesCount,
-        url () {
+        url() {
           return generateUrl(this);
         },
-        parentUrl () {
+        parentUrl() {
           return generateUrl(this.parent);
-        }
+        },
       };
       configuration.children = undefined;
       configuration.isLeaf = true;
@@ -488,7 +489,9 @@ export function generateTreeData (
       children.push(configuration);
     }
   }
-  if (metadata && Object.keys(metadata).length &&
+  if (
+    metadata &&
+    Object.keys(metadata).length &&
     (!types || types.indexOf(ItemTypes.metadata) >= 0) &&
     (!filter || filter({id}, ItemTypes.metadataFolder))
   ) {
@@ -499,25 +502,23 @@ export function generateTreeData (
       name: 'Metadata',
       type: ItemTypes.metadataFolder,
       children: [],
-      parent: parent,
+      parent,
       parentId: id,
       isLeaf: false,
       locked: parent ? parent.locked : false,
-      url () {
+      url() {
         return generateUrl(this);
       },
-      parentUrl () {
+      parentUrl() {
         return generateUrl(this.parent);
-      }
+      },
     };
 
     const metadataChildren = [];
-    for (let key in metadata) {
+    for (const key in metadata) {
       if (
-        filter && (
-          !filter({id: key}, ItemTypes.metadata, {id}) ||
-          !filter({id: key}, ItemTypes.metadata)
-        )
+        filter &&
+        (!filter({id: key}, ItemTypes.metadata, {id}) || !filter({id: key}, ItemTypes.metadata))
       ) {
         continue;
       }
@@ -533,46 +534,52 @@ export function generateTreeData (
         isLeaf: true,
         amount: metadata[key],
         locked: metadataFolder ? metadataFolder.locked : false,
-        url () {
+        url() {
           return generateUrl(this);
         },
-        parentUrl () {
+        parentUrl() {
           return generateUrl(this.parent);
-        }
+        },
       });
     }
-    metadataFolder.children = ignoreChildren
-      ? undefined
-      : metadataChildren;
+    metadataFolder.children = ignoreChildren ? undefined : metadataChildren;
     metadataFolder.metadataClasses = metadataChildren;
     children.push(metadataFolder);
   }
 
-  if ((!types || types.indexOf(ItemTypes.projectHistory) >= 0) && objectMetadata &&
-    objectMetadata.type && objectMetadata.type.value &&
-    objectMetadata.type.value.toLowerCase() === 'project') {
+  if (
+    (!types || types.indexOf(ItemTypes.projectHistory) >= 0) &&
+    objectMetadata &&
+    objectMetadata.type &&
+    objectMetadata.type.value &&
+    objectMetadata.type.value.toLowerCase() === 'project'
+  ) {
     const projectHistory = {
-      id: id,
+      id,
       key: `${ItemTypes.projectHistory}_${id}`,
       name: 'History',
       type: ItemTypes.projectHistory,
-      parent: parent,
+      parent,
       parentId: id,
       isLeaf: true,
       locked: false,
-      url () {
+      url() {
         return generateUrl(this);
       },
-      parentUrl () {
+      parentUrl() {
         return generateUrl(this.parent);
-      }
+      },
     };
     children.push(projectHistory);
   }
 
   if (parent && (parent.type || '') === ItemTypes.folder) {
-    parent.isProject = !!(objectMetadata && objectMetadata.type && objectMetadata.type.value &&
-      objectMetadata.type.value.toLowerCase() === 'project');
+    parent.isProject = !!(
+      objectMetadata &&
+      objectMetadata.type &&
+      objectMetadata.type.value &&
+      objectMetadata.type.value.toLowerCase() === 'project'
+    );
   }
   for (let i = 0; i < children.length; i++) {
     children[i].searchHit = true;
@@ -584,32 +591,27 @@ export function generateTreeData (
  * @param {*[]} treeItems
  * @param {{inlineMetadata: boolean?, preferences: *}} [options]
  */
-export function formatTreeItems (treeItems = [], options = {}) {
-  const {
-    preferences,
-    inlineMetadata = preferences ? preferences.inlineMetadataEntities : false
-  } = options;
-  return (treeItems || []).reduce(
-    (result, item) => {
-      if (item.type === ItemTypes.metadataFolder && inlineMetadata) {
-        return [...result, ...(item.children || item.metadataClasses || [])];
-      }
-      return [...result, item];
-    },
-    []
-  );
+export function formatTreeItems(treeItems = [], options = {}) {
+  const {preferences, inlineMetadata = preferences ? preferences.inlineMetadataEntities : false} =
+    options;
+  return (treeItems || []).reduce((result, item) => {
+    if (item.type === ItemTypes.metadataFolder && inlineMetadata) {
+      return [...result, ...(item.children || item.metadataClasses || [])];
+    }
+    return [...result, item];
+  }, []);
 }
 
-export function getTreeItemInfoByKey (key) {
+export function getTreeItemInfoByKey(key) {
   const [type, ...idParts] = key.split('_');
   const id = idParts.length === 0 ? type : idParts.join('_');
   return {
     id,
-    type
+    type,
   };
 }
 
-export function getTreeItemByKey (key, items) {
+export function getTreeItemByKey(key, items) {
   let item;
   const info = getTreeItemInfoByKey(key);
   if (items && items.length > 0) {
@@ -630,7 +632,7 @@ export function getTreeItemByKey (key, items) {
   return item;
 }
 
-export function getExpandedKeys (items) {
+export function getExpandedKeys(items) {
   const result = [];
   if (items && items.length > 0) {
     for (let i = 0; i < items.length; i++) {
@@ -642,14 +644,14 @@ export function getExpandedKeys (items) {
   return result;
 }
 
-export function expandItem (item, expand) {
+export function expandItem(item, expand) {
   item.expanded = expand;
   if (item.parent && expand) {
     expandItem(item.parent, expand);
   }
 }
 
-export async function search (value, items, parentFound = false) {
+export async function search(value, items, parentFound = false) {
   if (!value || value === '' || !items) {
     if (items) {
       for (let i = 0; i < items.length; i++) {
@@ -670,8 +672,8 @@ export async function search (value, items, parentFound = false) {
     item.searchHit = parentFound || index >= 0;
     if (index >= 0) {
       item.searchResult = {
-        index: index,
-        length: value.length
+        index,
+        length: value.length,
       };
       if (item.children && item.children.length > 0) {
         expandItem(item, true);
@@ -683,12 +685,12 @@ export async function search (value, items, parentFound = false) {
       expandItem(item, false);
     }
     await search(value, item.children, item.searchHit);
-    item.searchHit = item.searchHit || !!(item.children || []).find(e => e.searchHit);
+    item.searchHit = item.searchHit || !!(item.children || []).find((e) => e.searchHit);
   }
 }
 
-export function expandItemsByKeys (items, expandedKeys) {
-  items.forEach(item => {
+export function expandItemsByKeys(items, expandedKeys) {
+  items.forEach((item) => {
     if (expandedKeys.includes(item.key)) {
       expandItem(item, true);
     }
@@ -698,7 +700,7 @@ export function expandItemsByKeys (items, expandedKeys) {
   });
 }
 
-export function expandFirstParentWithManyChildren (item) {
+export function expandFirstParentWithManyChildren(item) {
   item.expanded = true;
   if (item.children && item.children.length === 1 && item.children[0].type === ItemTypes.folder) {
     return expandFirstParentWithManyChildren(item.children[0]);
@@ -706,7 +708,7 @@ export function expandFirstParentWithManyChildren (item) {
   return item;
 }
 
-export function findPath (key, items, parentPath) {
+export function findPath(key, items, parentPath) {
   if (!items) {
     return null;
   }
@@ -718,22 +720,17 @@ export function findPath (key, items, parentPath) {
         ...prefix,
         {
           ...item,
-          url: () => generateUrl(item)
-        }
+          url: () => generateUrl(item),
+        },
       ];
     } else if (item.children && item.children.length > 0) {
-      const result =
-        findPath(
-          key,
-          item.children,
-          [
-            ...prefix,
-            {
-              ...item,
-              url: () => generateUrl(item)
-            }
-          ]
-        );
+      const result = findPath(key, item.children, [
+        ...prefix,
+        {
+          ...item,
+          url: () => generateUrl(item),
+        },
+      ]);
       if (result) {
         return result;
       }

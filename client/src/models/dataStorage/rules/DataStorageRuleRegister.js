@@ -17,7 +17,6 @@
 import RemotePost from '../../basic/RemotePost';
 
 export class DataStorageRuleRegister extends RemotePost {
-
   constructor() {
     super();
     this.url = '/datastorage/rule/register';

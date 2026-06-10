@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-function getAllNodes (node) {
+function getAllNodes(node) {
   const result = [];
   if (node && node.hasChildNodes()) {
     for (let c = 0; c < node.childNodes.length; c++) {
@@ -28,11 +28,11 @@ function getAllNodes (node) {
   return result;
 }
 
-function findVSLine (node) {
+function findVSLine(node) {
   if (!node) {
     return node;
   }
-  if (node && node.dataset && node.dataset.hasOwnProperty('vsLine')) {
+  if (node && node.dataset && Object.hasOwn(node.dataset, 'vsLine')) {
     return node;
   }
   if (!node.parentNode) {
@@ -41,21 +41,13 @@ function findVSLine (node) {
   return findVSLine(node.parentNode);
 }
 
-function isLastSelectionLine (vsLineNode, range) {
-  const {
-    endContainer
-  } = range;
-  return vsLineNode === endContainer ||
-    getAllNodes(vsLineNode).indexOf(endContainer) >= 0;
+function isLastSelectionLine(vsLineNode, range) {
+  const {endContainer} = range;
+  return vsLineNode === endContainer || getAllNodes(vsLineNode).indexOf(endContainer) >= 0;
 }
 
-function getVSLineSelectionText (vsLineNode, range) {
-  const {
-    startOffset = 0,
-    startContainer,
-    endOffset = 0,
-    endContainer
-  } = range;
+function getVSLineSelectionText(vsLineNode, range) {
+  const {startOffset = 0, startContainer, endOffset = 0, endContainer} = range;
   const result = [];
   const allChildren = [vsLineNode, ...getAllNodes(vsLineNode)];
   let include = allChildren.indexOf(startContainer) === -1;
@@ -97,60 +89,50 @@ function getVSLineSelectionText (vsLineNode, range) {
   return result.join(' ');
 }
 
-function getVSLineSelectionRangeInfo (vsLineNode, range) {
-  const {
-    startOffset = 0,
-    startContainer,
-    endOffset = 0,
-    endContainer
-  } = range;
+function getVSLineSelectionRangeInfo(vsLineNode, range) {
+  const {startOffset = 0, startContainer, endOffset = 0, endContainer} = range;
   const result = {};
   const children = [vsLineNode, ...getAllNodes(vsLineNode)];
   for (let c = 0; c < children.length; c++) {
     const child = children[c];
     if (child === startContainer) {
       result.start = {
-        lineKey: +(vsLineNode.dataset.vsLine),
-        offset: startOffset
+        lineKey: +vsLineNode.dataset.vsLine,
+        offset: startOffset,
       };
     }
     if (child === endContainer) {
       result.end = {
-        lineKey: +(vsLineNode.dataset.vsLine),
-        offset: endOffset
+        lineKey: +vsLineNode.dataset.vsLine,
+        offset: endOffset,
       };
     }
   }
   return result;
 }
 
-export function getBranchCodeRangeFromSelection (selection) {
+export function getBranchCodeRangeFromSelection(selection) {
   if (!selection || selection.rangeCount === 0) {
     return undefined;
   }
   const range = selection.getRangeAt(0);
-  const {
-    startContainer,
-    startOffset,
-    endContainer,
-    endOffset,
-    commonAncestorContainer
-  } = range;
-  const vsBranch = commonAncestorContainer && commonAncestorContainer.dataset
-    ? commonAncestorContainer.dataset.vsBranch
-    : undefined;
+  const {startContainer, startOffset, endContainer, endOffset, commonAncestorContainer} = range;
+  const vsBranch =
+    commonAncestorContainer && commonAncestorContainer.dataset
+      ? commonAncestorContainer.dataset.vsBranch
+      : undefined;
   if (!vsBranch || selection.isCollapsed || startContainer === endContainer) {
     const lineContainer = findVSLine(startContainer);
     if (lineContainer) {
       return {
         start: {
-          lineKey: +(lineContainer.dataset.vsLine),
-          offset: startOffset
+          lineKey: +lineContainer.dataset.vsLine,
+          offset: startOffset,
         },
         end: {
-          lineKey: +(lineContainer.dataset.vsLine),
-          offset: endOffset
-        }
+          lineKey: +lineContainer.dataset.vsLine,
+          offset: endOffset,
+        },
       };
     }
     return undefined;
@@ -159,10 +141,7 @@ export function getBranchCodeRangeFromSelection (selection) {
   if (lineContainer) {
     let result = {};
     while (lineContainer) {
-      if (
-        lineContainer.dataset &&
-        lineContainer.dataset.hasOwnProperty('vsLine')
-      ) {
+      if (lineContainer.dataset && Object.hasOwn(lineContainer.dataset, 'vsLine')) {
         result = Object.assign({}, result, getVSLineSelectionRangeInfo(lineContainer, range));
       }
       if (isLastSelectionLine(lineContainer, range)) {
@@ -175,17 +154,14 @@ export function getBranchCodeRangeFromSelection (selection) {
   return undefined;
 }
 
-export function getBranchCodeFromSelection (selection) {
+export function getBranchCodeFromSelection(selection) {
   if (!selection) {
     return '';
   }
   const range = selection.getRangeAt(0);
-  const {
-    startContainer,
-    endContainer,
-    commonAncestorContainer
-  } = range;
-  const isBranch = commonAncestorContainer &&
+  const {startContainer, endContainer, commonAncestorContainer} = range;
+  const isBranch =
+    commonAncestorContainer &&
     commonAncestorContainer.dataset &&
     commonAncestorContainer.dataset.vsBranch;
   if (!isBranch || selection.isCollapsed || startContainer === endContainer) {
@@ -197,11 +173,9 @@ export function getBranchCodeFromSelection (selection) {
     while (lineContainer) {
       if (
         lineContainer.dataset &&
-        lineContainer.dataset.hasOwnProperty('vsLine') &&
-        (
-          !lineContainer.dataset.hasOwnProperty('vsSkipLine') ||
-          lineContainer.dataset.vsSkipLine !== 'true'
-        )
+        Object.hasOwn(lineContainer.dataset, 'vsLine') &&
+        (!Object.hasOwn(lineContainer.dataset, 'vsSkipLine') ||
+          lineContainer.dataset.vsSkipLine !== 'true')
       ) {
         result.push(getVSLineSelectionText(lineContainer, range));
       }
@@ -215,31 +189,24 @@ export function getBranchCodeFromSelection (selection) {
   return selection.toString();
 }
 
-function compareSelectionsInfoPart (a, b) {
+function compareSelectionsInfoPart(a, b) {
   if (!a && !b) {
     return true;
   }
   if (!a || !b) {
     return false;
   }
-  const {
-    lineKey: aLineKey,
-    offset: aOffset
-  } = a;
-  const {
-    lineKey: bLineKey,
-    offset: bOffset
-  } = b;
+  const {lineKey: aLineKey, offset: aOffset} = a;
+  const {lineKey: bLineKey, offset: bOffset} = b;
   return aLineKey !== bLineKey && aOffset !== bOffset;
 }
 
-export function compareSelectionsInfo (a, b) {
+export function compareSelectionsInfo(a, b) {
   if (!a && !b) {
     return true;
   }
   if (!a || !b) {
     return false;
   }
-  return compareSelectionsInfoPart(a.start, b.start) &&
-    compareSelectionsInfoPart(a.end, b.end);
+  return compareSelectionsInfoPart(a.start, b.start) && compareSelectionsInfoPart(a.end, b.end);
 }

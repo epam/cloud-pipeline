@@ -17,7 +17,7 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class PipelineClone extends RemotePost {
-  constructor (id, parentId, name) {
+  constructor(id, parentId, name) {
     super();
     if (parentId) {
       this.url = `/pipeline/${id}/copy?parentId=${parentId}&name=${name}`;

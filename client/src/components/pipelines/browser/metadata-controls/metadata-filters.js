@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-function parseFilterValue (value) {
+function parseFilterValue(value) {
   try {
     const json = JSON.parse(value);
     if (Array.isArray(json)) {
@@ -26,7 +26,7 @@ function parseFilterValue (value) {
   }
 }
 
-function buildFilterValue (value) {
+function buildFilterValue(value) {
   if (!value) {
     return '';
   }
@@ -36,7 +36,7 @@ function buildFilterValue (value) {
   return JSON.stringify(value);
 }
 
-export function parse (queryParameters = {}) {
+export function parse(queryParameters = {}) {
   if (!queryParameters) {
     return {};
   }
@@ -45,15 +45,16 @@ export function parse (queryParameters = {}) {
     .filter(({values}) => values && values.length > 0);
 }
 
-export function build (filters) {
+export function build(filters) {
   if (!filters) {
     return undefined;
   }
   const parameters = (filters || [])
     .filter(({key, values}) => key && values && (!Array.isArray(values) || values.length > 0))
     .sort((a, b) => a.key.localeCompare(b.key))
-    .map(({key, values}) =>
-      `${encodeURIComponent(key)}=${encodeURIComponent(buildFilterValue(values))}`
+    .map(
+      ({key, values}) =>
+        `${encodeURIComponent(key)}=${encodeURIComponent(buildFilterValue(values))}`,
     );
   if (parameters.length) {
     return parameters.join('&');
@@ -61,6 +62,6 @@ export function build (filters) {
   return undefined;
 }
 
-export function filtersChanged (filtersA, filtersB) {
+export function filtersChanged(filtersA, filtersB) {
   return build(filtersA) !== build(filtersB);
 }

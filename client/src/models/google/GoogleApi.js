@@ -22,35 +22,35 @@ const REFRESH_TOKEN_KEY = 'refreshToken';
 
 export default class GoogleApi {
   _loaded = false;
-  get loaded () {
+  get loaded() {
     this.initialize();
     return this._loaded;
   }
 
   _error = false;
-  get error () {
+  get error() {
     return this._error;
   }
 
   _pending = false;
-  get pending () {
+  get pending() {
     this.initialize();
     return this._pending;
   }
 
   _isSignedIn = false;
-  get isSignedIn () {
+  get isSignedIn() {
     this.initialize();
     return !this.userAuthEnabled || this._isSignedIn;
   }
 
   _userAuthEnabled = false;
-  get userAuthEnabled () {
+  get userAuthEnabled() {
     this.initialize();
     return this._userAuthEnabled;
   }
 
-  constructor (preferences) {
+  constructor(preferences) {
     makeObservable(this, {
       _loaded: observable,
       _error: observable,
@@ -63,7 +63,7 @@ export default class GoogleApi {
       isSignedIn: computed,
       userAuthEnabled: computed,
       authenticatedGoogleUser: computed,
-      authenticatedGoogleUserAvatarUrl: computed
+      authenticatedGoogleUserAvatarUrl: computed,
     });
     this.gapi = window.gapi;
     this.preferences = preferences;
@@ -74,16 +74,16 @@ export default class GoogleApi {
   initialize = async (forceSignIn = false) => {
     if (!this.gapi.client) {
       if (!this._initializePromise) {
-        this._initializePromise = new Promise(async (resolve) => {
-          await defer();
+        this._initializePromise = (async () => {
           await this.preferences.fetchIfNeededOrWait();
-          const userAuthEnabledValue = this.preferences.getPreferenceValue('firecloud.enable.user.auth');
+          const userAuthEnabledValue = this.preferences.getPreferenceValue(
+            'firecloud.enable.user.auth',
+          );
           this._userAuthEnabled = `${userAuthEnabledValue}`.toLowerCase() === 'true';
           if (!this._userAuthEnabled) {
             this._pending = false;
             this._loaded = true;
             this._error = null;
-            resolve();
             return;
           }
           let scopes = [];
@@ -95,39 +95,43 @@ export default class GoogleApi {
             clientId = this.preferences.getPreferenceValue('google.client.id');
           } catch (__) {}
           this.scopes = scopes.join(' ');
-          const onLoad = () => {
-            this.gapi.client.init({
-              clientId: clientId,
-              scope: this.scopes
-            }).then(() => {
-              this.listenSignInStatusUpdate(this.updateSigninStatus);
-              this.updateSigninStatus(this.gapi.auth2.getAuthInstance().isSignedIn.get());
+          return new Promise((resolve) => {
+            const onLoad = () => {
+              this.gapi.client
+                .init({
+                  clientId,
+                  scope: this.scopes,
+                })
+                .then(() => {
+                  this.listenSignInStatusUpdate(this.updateSigninStatus);
+                  this.updateSigninStatus(this.gapi.auth2.getAuthInstance().isSignedIn.get());
+                  this._pending = false;
+                  this._loaded = true;
+                  this._error = null;
+                  if (forceSignIn) {
+                    return this.signIn();
+                  }
+                  resolve();
+                })
+                .catch((e) => {
+                  this._pending = false;
+                  this._loaded = false;
+                  this._error = e.details || e.error;
+                  console.error(this._error, e);
+                  resolve();
+                });
+            };
+            const onError = () => {
               this._pending = false;
-              this._loaded = true;
-              this._error = null;
               resolve();
-              if (forceSignIn) {
-                return this.signIn();
-              }
-            })
-              .catch((e) => {
-                this._pending = false;
-                this._loaded = false;
-                this._error = e.details || e.error;
-                console.error(this._error, e);
-                resolve();
-              });
-          };
-          const onError = () => {
-            this._pending = false;
-            resolve();
-          };
-          this._pending = true;
-          this.gapi.load('client:auth2', {
-            callback: onLoad,
-            onerror: onError
+            };
+            this._pending = true;
+            this.gapi.load('client:auth2', {
+              callback: onLoad,
+              onerror: onError,
+            });
           });
-        });
+        })();
       }
       return this._initializePromise;
     }
@@ -153,7 +157,9 @@ export default class GoogleApi {
       return;
     }
     if (!this.isSignedIn) {
-      const {code} = await this.gapi.auth2.getAuthInstance({scopes: this.scopes}).grantOfflineAccess();
+      const {code} = await this.gapi.auth2
+        .getAuthInstance({scopes: this.scopes})
+        .grantOfflineAccess();
       if (code) {
         const request = new GenerateRefreshToken(code);
         await request.fetch();
@@ -175,7 +181,7 @@ export default class GoogleApi {
     return localStorage.setItem(REFRESH_TOKEN_KEY, token);
   };
 
-  get authenticatedGoogleUser () {
+  get authenticatedGoogleUser() {
     if (!this.userAuthEnabled) {
       return null;
     }
@@ -185,7 +191,7 @@ export default class GoogleApi {
     return null;
   }
 
-  get authenticatedGoogleUserAvatarUrl () {
+  get authenticatedGoogleUserAvatarUrl() {
     if (!this.userAuthEnabled) {
       return null;
     }

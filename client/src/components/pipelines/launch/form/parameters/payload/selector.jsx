@@ -1,32 +1,23 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import styles from './parameters-payload.css';
+import styles from './parameters-payload.module.css';
 import {Button, Checkbox, Popover} from 'antd';
 import {DeleteOutlined, ExclamationCircleOutlined} from '@ant-design/icons';
 
-function payloadIsInvalid (payload) {
+function payloadIsInvalid(payload) {
   const {parameters = []} = payload;
   return parameters.some((p) => !p.valid);
 }
 
-function payloadIsEnabled (payload) {
+function payloadIsEnabled(payload) {
   const {enabled = true} = payload;
   return enabled;
 }
 
-function ParametersPayloadName (props) {
-  const {
-    className,
-    style,
-    payload,
-    onClick,
-    idx = undefined,
-    onRemove
-  } = props;
-  const {
-    id
-  } = payload;
+function ParametersPayloadName(props) {
+  const {className, style, payload, onClick, idx = undefined, onRemove} = props;
+  const {id} = payload;
   const invalid = payloadIsInvalid(payload);
   const onRemoveClick = (e) => {
     e.stopPropagation();
@@ -37,39 +28,27 @@ function ParametersPayloadName (props) {
   return (
     <div
       className={classNames(styles.parametersPayloadName, className, {
-        'cp-error': invalid
+        'cp-error': invalid,
       })}
       style={style}
       onClick={onClick}
     >
       {typeof idx === 'number' && (
-        <span
-          className={styles.parametersPayloadNamePart}
-          style={{marginRight: 5}}
-        >
+        <span className={styles.parametersPayloadNamePart} style={{marginRight: 5}}>
           #{idx + 1}
         </span>
       )}
-      <span
-        className={styles.parametersPayloadNamePart}>
-        {id}
-      </span>
-      {
-        invalid && (
-          <ExclamationCircleOutlined className={classNames('cp-error', styles.parametersPayloadInvalidIcon)} />
-        )
-      }
-      {
-        typeof onRemove === 'function' && (
-          <Button
-            size="small"
-            style={{marginLeft: 'auto'}}
-            onClick={onRemoveClick}
-          >
-            <DeleteOutlined />
-          </Button>
-        )
-      }
+      <span className={styles.parametersPayloadNamePart}>{id}</span>
+      {invalid && (
+        <ExclamationCircleOutlined
+          className={classNames('cp-error', styles.parametersPayloadInvalidIcon)}
+        />
+      )}
+      {typeof onRemove === 'function' && (
+        <Button size="small" style={{marginLeft: 'auto'}} onClick={onRemoveClick}>
+          <DeleteOutlined />
+        </Button>
+      )}
     </div>
   );
 }
@@ -80,12 +59,12 @@ ParametersPayloadName.propTypes = {
   payload: PropTypes.object,
   payloadIdx: PropTypes.number,
   onClick: PropTypes.func,
-  onRemove: PropTypes.func
+  onRemove: PropTypes.func,
 };
 
 class ParametersPayloadSelector extends React.PureComponent {
   state = {
-    opened: false
+    opened: false,
   };
 
   onOpen = () => this.setState({opened: true});
@@ -93,15 +72,8 @@ class ParametersPayloadSelector extends React.PureComponent {
   onOpenChange = (opened) => this.setState({opened});
 
   renderPayload = (payload, idx = undefined) => {
-    const {
-      onChangeActive,
-      onChange,
-      onRemovePayload,
-      payloads = []
-    } = this.props;
-    const {
-      id
-    } = payload;
+    const {onChangeActive, onChange, onRemovePayload, payloads = []} = this.props;
+    const {id} = payload;
     const enabled = payloadIsEnabled(payload);
     const onClick = () => {
       if (onChangeActive) {
@@ -120,7 +92,7 @@ class ParametersPayloadSelector extends React.PureComponent {
       if (pIdx >= 0) {
         result.splice(pIdx, 1, {
           ...payload,
-          enabled: e.target.checked
+          enabled: e.target.checked,
         });
       }
       if (onChange) {
@@ -129,11 +101,7 @@ class ParametersPayloadSelector extends React.PureComponent {
     };
     return (
       <div className={styles.parametersPayload} key={id}>
-        <Checkbox
-          checked={enabled}
-          onChange={onEnabledChange}
-          style={{marginRight: 10}}
-        />
+        <Checkbox checked={enabled} onChange={onEnabledChange} style={{marginRight: 10}} />
         <ParametersPayloadName
           style={{flex: 1}}
           payload={payload}
@@ -146,38 +114,30 @@ class ParametersPayloadSelector extends React.PureComponent {
   };
 
   renderSelectorContent = () => {
-    const {
-      payloads = [],
-      linkActions = false,
-      onReset
-    } = this.props;
+    const {payloads = [], linkActions = false, onReset} = this.props;
     const enabledPayloads = payloads.filter(payloadIsEnabled);
     const allEnabled = enabledPayloads.length === payloads.length && payloads.length > 0;
     const allDisabled = enabledPayloads.length === 0 && payloads.length > 0;
     const enableAllButton = (
-      <Button
-        size="small"
-        disabled={allEnabled}
-        onClick={this.enableAll}
-      >
+      <Button size="small" disabled={allEnabled} onClick={this.enableAll}>
         Enable all
       </Button>
     );
-    const enableAllLink = allEnabled
-      ? (<span className="cp-text-not-important">Enable all</span>)
-      : (<a onClick={this.enableAll}>Enable all</a>);
+    const enableAllLink = allEnabled ? (
+      <span className="cp-text-not-important">Enable all</span>
+    ) : (
+      <a onClick={this.enableAll}>Enable all</a>
+    );
     const disableAllButton = (
-      <Button
-        size="small"
-        disabled={allDisabled}
-        onClick={this.disableAll}
-      >
+      <Button size="small" disabled={allDisabled} onClick={this.disableAll}>
         Disable all
       </Button>
     );
-    const disableAllLink = allDisabled
-      ? (<span className="cp-text-not-important">Disable all</span>)
-      : (<a onClick={this.disableAll}>Disable all</a>);
+    const disableAllLink = allDisabled ? (
+      <span className="cp-text-not-important">Disable all</span>
+    ) : (
+      <a onClick={this.disableAll}>Disable all</a>
+    );
     const resetButton = (
       <Button
         size="small"
@@ -188,77 +148,63 @@ class ParametersPayloadSelector extends React.PureComponent {
         Reset
       </Button>
     );
-    const resetLink = payloads.length === 0
-      ? (<span className="cp-text-not-important">Reset</span>)
-      : (<a onClick={onReset}>Reset</a>);
+    const resetLink =
+      payloads.length === 0 ? (
+        <span className="cp-text-not-important">Reset</span>
+      ) : (
+        <a onClick={onReset}>Reset</a>
+      );
     return (
       <div className={styles.parametersPayloadSelectorContent}>
-        <div className={styles.parametersPayloads}>
-          {
-            payloads.map(this.renderPayload)
-          }
-        </div>
-        {
-          payloads.length > 0 && (
-            <div className={styles.actions}>
-              {
-                linkActions ? enableAllLink : enableAllButton
-              }
-              {
-                linkActions ? disableAllLink : disableAllButton
-              }
-              {
-                linkActions ? resetLink : resetButton
-              }
-            </div>
-          )
-        }
+        <div className={styles.parametersPayloads}>{payloads.map(this.renderPayload)}</div>
+        {payloads.length > 0 && (
+          <div className={styles.actions}>
+            {linkActions ? enableAllLink : enableAllButton}
+            {linkActions ? disableAllLink : disableAllButton}
+            {linkActions ? resetLink : resetButton}
+          </div>
+        )}
       </div>
     );
   };
 
   enableAll = () => {
-    const {
-      payloads = [],
-      onChange
-    } = this.props;
+    const {payloads = [], onChange} = this.props;
     if (onChange) {
-      onChange(payloads.map((p) => ({
-        ...p,
-        enabled: true
-      })));
+      onChange(
+        payloads.map((p) => ({
+          ...p,
+          enabled: true,
+        })),
+      );
     }
   };
 
   disableAll = () => {
-    const {
-      payloads = [],
-      onChange
-    } = this.props;
+    const {payloads = [], onChange} = this.props;
     if (onChange) {
-      onChange(payloads.map((p) => ({
-        ...p,
-        enabled: false
-      })));
+      onChange(
+        payloads.map((p) => ({
+          ...p,
+          enabled: false,
+        })),
+      );
     }
   };
 
-  render () {
-    const {
-      className,
-      style,
-      payloads = [],
-      active
-    } = this.props;
-    const {
-      opened
-    } = this.state;
+  render() {
+    const {className, style, payloads = [], active} = this.props;
+    const {opened} = this.state;
     const activePayload = payloads.find((p) => p.id === active);
     const enabledPayloads = payloads.filter(payloadIsEnabled);
     const hasInvalidPayloads = enabledPayloads.some(payloadIsInvalid);
     const currentlyViewing = (() => {
       if (activePayload) {
-        return <span>(<b>{activePayload.id}</b> selected)</span>;
+        return (
+          <span>
+            (<b>{activePayload.id}</b> selected)
+          </span>
+        );
       }
       return undefined;
     })();
@@ -270,7 +216,11 @@ class ParametersPayloadSelector extends React.PureComponent {
     })();
     const triggerText = (() => {
       if (currentlyViewing) {
-        return <span>{enabledPayloadsText}{' '}{currentlyViewing}</span>;
+        return (
+          <span>
+            {enabledPayloadsText} {currentlyViewing}
+          </span>
+        );
       }
       return enabledPayloadsText;
     })();
@@ -286,17 +236,13 @@ class ParametersPayloadSelector extends React.PureComponent {
           className={classNames(className, styles.parametersPayloadSelectorContainer)}
           style={style}
         >
-          <a
-            className={classNames(
-              styles.parametersPayloadTrigger,
-              'cp-text'
-            )}
-          >
-            <span style={{textDecoration: 'underline'}}>
-              {triggerText}
-            </span>
+          <a className={classNames(styles.parametersPayloadTrigger, 'cp-text')}>
+            <span style={{textDecoration: 'underline'}}>{triggerText}</span>
             {hasInvalidPayloads && (
-              <ExclamationCircleOutlined className="cp-warning" style={{marginLeft: 5, textDecoration: 'none'}} />
+              <ExclamationCircleOutlined
+                className="cp-warning"
+                style={{marginLeft: 5, textDecoration: 'none'}}
+              />
             )}
           </a>
         </div>
@@ -315,7 +261,7 @@ ParametersPayloadSelector.propTypes = {
   onChange: PropTypes.func,
   linkActions: PropTypes.bool,
   onReset: PropTypes.func,
-  onRemovePayload: PropTypes.func
+  onRemovePayload: PropTypes.func,
 };
 
 export default ParametersPayloadSelector;

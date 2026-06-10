@@ -1,9 +1,9 @@
-import moment from 'moment-timezone';
+import dayjs, {toUtcDayjs} from '../../../../../utils/dayjs';
 
-export default function localDate (date) {
+export default function localDate(date) {
   if (!date) {
     return '';
   }
-  const localTime = moment.utc(date).toDate();
-  return moment(localTime);
+  const utc = toUtcDayjs(date);
+  return utc ? dayjs(utc.toDate()) : '';
 }

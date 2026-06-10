@@ -19,10 +19,10 @@ import Remote from '../basic/Remote';
 class Pipeline extends Remote {
   url;
 
-  constructor (id) {
+  constructor(id) {
     super();
     this.url = `/pipeline/${id}/load`;
-  };
+  }
 }
 
 export default Pipeline;

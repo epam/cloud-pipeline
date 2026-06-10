@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 class HotNodePools extends Remote {
-  constructor (loadStatus = true) {
+  constructor(loadStatus = true) {
     super();
     this.url = `/cluster/pool?loadStatus=${loadStatus}`;
   }

@@ -14,37 +14,31 @@
  * limitations under the License.
  */
 
-import {observable, makeAutoObservable} from 'mobx';
-import moment from 'moment-timezone';
+import {observable, computed, action, makeObservable} from 'mobx';
+import dayjs from '../../../../utils/dayjs';
 import NodeUsage from '../../../../models/cluster/ClusterNodeUsage';
 import {alphabeticalSorter} from '../../../../utils/sorting';
 
-function makePromise (node, from, to, runId) {
-  return new Promise(async (resolve) => {
-    const fromValue = from
-      ? moment.unix(from).utc().format('YYYY-MM-DD HH:mm:ss')
-      : undefined;
-    const toValue = to
-      ? moment.unix(to).utc().format('YYYY-MM-DD HH:mm:ss')
-      : undefined;
-    const request = new NodeUsage(node, fromValue, toValue, runId);
-    await request.fetchIfNeededOrWait();
-    resolve({
-      error: request.error,
-      networkError: request.networkError,
-      value: request.value
-    });
-  });
+async function makePromise(node, from, to, runId) {
+  const fromValue = from ? dayjs.unix(from).utc().format('YYYY-MM-DD HH:mm:ss') : undefined;
+  const toValue = to ? dayjs.unix(to).utc().format('YYYY-MM-DD HH:mm:ss') : undefined;
+  const request = new NodeUsage(node, fromValue, toValue, runId);
+  await request.fetchIfNeededOrWait();
+  return {
+    error: request.error,
+    networkError: request.networkError,
+    value: request.value,
+  };
 }
 
-function sortData (a, b) {
+function sortData(a, b) {
   const {startTime: startA} = a;
   const {startTime: startB} = b;
-  return moment(startA).unix() - moment(startB).unix();
+  return dayjs(startA).unix() - dayjs(startB).unix();
 }
 
-async function loadData (node, from, to, instanceFrom, instanceTo, runId) {
-  const now = moment().unix();
+async function loadData(node, from, to, instanceFrom, instanceTo, runId) {
+  const now = dayjs().unix();
   let toCorrected = to || now;
   let fromCorrected = from;
   if (from && toCorrected - from > 0) {
@@ -65,24 +59,23 @@ async function loadData (node, from, to, instanceFrom, instanceTo, runId) {
     toCorrected = Math.min(instanceTo, toCorrected);
     fromCorrected = Math.min(instanceTo, fromCorrected);
   }
-  const {value = [], error, networkError} = await makePromise(
-    node,
-    fromCorrected,
-    toCorrected,
-    runId
-  );
+  const {
+    value = [],
+    error,
+    networkError,
+  } = await makePromise(node, fromCorrected, toCorrected, runId);
   if (error) {
     return {
       error,
       networkError,
       from,
-      to
+      to,
     };
   }
   return {
     value: value.sort(sortData),
     from,
-    to
+    to,
   };
 }
 
@@ -106,20 +99,46 @@ class ChartData {
   listeners = [];
   nodeName;
 
-  get pending () {
+  get pending() {
     return this._pending;
   }
 
-  get refreshToken () {
+  get refreshToken() {
     return this._refreshToken;
   }
 
-  set pending (value) {
+  set pending(value) {
     this._pending = value;
   }
 
-  constructor (nodeName, instanceFrom, instanceTo, runId) {
-    makeAutoObservable(this);
+  constructor(nodeName, instanceFrom, instanceTo, runId) {
+    makeObservable(this, {
+      data: observable,
+      groups: observable,
+      xPoints: observable,
+      xMin: observable,
+      xMax: observable,
+      noData: observable,
+      _pending: observable,
+      error: observable,
+      networkError: observable,
+      instanceFrom: observable,
+      instanceTo: observable,
+      from: observable,
+      to: observable,
+      rangeEndIsFixed: observable,
+      _refreshToken: observable,
+      ranges: observable,
+      listeners: observable,
+      nodeName: observable,
+      registerListener: action,
+      unRegisterListener: action,
+      loadData: action,
+      fetch: action,
+      updateRange: action,
+      processValues: action,
+      apply: action,
+    });
     this.nodeName = nodeName;
     this.instanceFrom = instanceFrom;
     this.instanceTo = instanceTo;
@@ -146,35 +165,30 @@ class ChartData {
   loadData = () => {
     this.pending = true;
     return new Promise((resolve) => {
-      loadData(
-        this.nodeName,
-        this.from,
-        this.to,
-        this.instanceFrom,
-        this.instanceTo,
-        this.runId
-      ).then(({error, networkError, from, to, value}) => {
-        this._refreshToken += 1;
-        if (from !== this.from || to !== this.to) {
-          return;
-        }
-        this.error = error;
-        this.networkError = error;
-        if (!error) {
-          this.processValues(value || []);
-        }
-        this.pending = false;
-      }).then(() => resolve());
+      loadData(this.nodeName, this.from, this.to, this.instanceFrom, this.instanceTo, this.runId)
+        .then(({error, networkError, from, to, value}) => {
+          this._refreshToken += 1;
+          if (from !== this.from || to !== this.to) {
+            return;
+          }
+          this.error = error;
+          this.networkError = error;
+          if (!error) {
+            this.processValues(value || []);
+          }
+          this.pending = false;
+        })
+        .then(() => resolve());
     });
   };
 
-  async fetch () {
+  async fetch() {
     return this.loadData();
   }
 
   updateRange = () => {
     if (!this.rangeEndIsFixed) {
-      this.instanceTo = moment().unix();
+      this.instanceTo = dayjs().unix();
     }
   };
 
@@ -184,22 +198,24 @@ class ChartData {
     }
     return Math.max(
       this.instanceFrom || -Infinity,
-      Math.min(this.instanceTo || Infinity, unixDateTime)
+      Math.min(this.instanceTo || Infinity, unixDateTime),
     );
   };
 
-  processValues (values) {
+  processValues(values) {
     this.apply(values);
     this.updateRange();
-    this.listeners.forEach(fn => fn(this));
+    this.listeners.forEach((fn) => fn(this));
   }
 
-  getConfigForData (responseData) {
-    return [{
-      field: 'y',
-      group: 'default',
-      valueFn: o => o.y
-    }];
+  getConfigForData(responseData) {
+    return [
+      {
+        field: 'y',
+        group: 'default',
+        valueFn: (o) => o.y,
+      },
+    ];
   }
 
   apply = (responseData) => {
@@ -214,32 +230,33 @@ class ChartData {
       return {
         data: observable([]),
         min: observable(Infinity),
-        max: observable(-Infinity)
+        max: observable(-Infinity),
       };
     };
     const data = config
-      .map(g => g.group)
+      .map((g) => g.group)
       .reduce((d, group) => ({[group]: makeEmptyData(), ...d}), {});
     const groups = Object.keys(data);
     groups.sort(alphabeticalSorter);
     const xPoints = [];
     for (let i = 0; i < responseData.length; i++) {
       const item = responseData[i];
-      const x = moment(item.startTime).unix();
+      const x = dayjs(item.startTime).unix();
       xPoints.push(x);
-      groups.forEach(groupName => {
+      groups.forEach((groupName) => {
         const group = data[groupName];
-        const rules = config.filter(c => c.group === groupName);
-        const values = rules.map(({field, valueFn}) => ({
-          field,
-          value: valueFn(item)
-        }))
-          .filter(v => v.value !== undefined);
-        group.min = Math.min(...values.map(v => v.value), group.min);
-        group.max = Math.max(...values.map(v => v.value), group.max);
+        const rules = config.filter((c) => c.group === groupName);
+        const values = rules
+          .map(({field, valueFn}) => ({
+            field,
+            value: valueFn(item),
+          }))
+          .filter((v) => v.value !== undefined);
+        group.min = Math.min(...values.map((v) => v.value), group.min);
+        group.max = Math.max(...values.map((v) => v.value), group.max);
         group.data.push({
-          ...(values.reduce((r, v) => ({...r, [v.field]: v.value}), {})),
-          x
+          ...values.reduce((r, v) => ({...r, [v.field]: v.value}), {}),
+          x,
         });
       });
       xMin = Math.min(xMin, x);
@@ -255,98 +272,107 @@ class ChartData {
 }
 
 class CPUUsageData extends ChartData {
-  getConfigForData (responseData) {
-    return [{
-      field: 'cpu',
-      group: 'default',
-      valueFn: o => o.cpuUsage.load
-    }, {
-      field: 'cpuMax',
-      group: 'default',
-      valueFn: o => o.cpuUsage.max
-    }];
+  getConfigForData(responseData) {
+    return [
+      {
+        field: 'cpu',
+        group: 'default',
+        valueFn: (o) => o.cpuUsage.load,
+      },
+      {
+        field: 'cpuMax',
+        group: 'default',
+        valueFn: (o) => o.cpuUsage.max,
+      },
+    ];
   }
 }
 
 class MemoryUsageData extends ChartData {
-  getConfigForData (responseData) {
-    return [{
-      field: 'memory',
-      group: 'default',
-      valueFn: o => o.memoryUsage.usage / (1024 ** 2)
-    }, {
-      field: 'percent',
-      group: 'percent',
-      valueFn: o => o.memoryUsage.usage / o.memoryUsage.capacity * 100.0
-    }, {
-      field: 'memoryMax',
-      group: 'default',
-      valueFn: o => o.memoryUsage.max
-        ? o.memoryUsage.max / (1024 ** 2)
-        : undefined
-    }, {
-      field: 'percentMax',
-      group: 'percent',
-      valueFn: o => o.memoryUsage.max
-        ? o.memoryUsage.max / o.memoryUsage.capacity * 100.0
-        : undefined
-    }, {
-      field: 'usage',
-      group: 'capacity',
-      valueFn: o => o.memoryUsage.usage
-    }, {
-      field: 'capacity',
-      group: 'capacity',
-      valueFn: o => o.memoryUsage.capacity
-    }];
+  getConfigForData(responseData) {
+    return [
+      {
+        field: 'memory',
+        group: 'default',
+        valueFn: (o) => o.memoryUsage.usage / 1024 ** 2,
+      },
+      {
+        field: 'percent',
+        group: 'percent',
+        valueFn: (o) => (o.memoryUsage.usage / o.memoryUsage.capacity) * 100.0,
+      },
+      {
+        field: 'memoryMax',
+        group: 'default',
+        valueFn: (o) => (o.memoryUsage.max ? o.memoryUsage.max / 1024 ** 2 : undefined),
+      },
+      {
+        field: 'percentMax',
+        group: 'percent',
+        valueFn: (o) =>
+          o.memoryUsage.max ? (o.memoryUsage.max / o.memoryUsage.capacity) * 100.0 : undefined,
+      },
+      {
+        field: 'usage',
+        group: 'capacity',
+        valueFn: (o) => o.memoryUsage.usage,
+      },
+      {
+        field: 'capacity',
+        group: 'capacity',
+        valueFn: (o) => o.memoryUsage.capacity,
+      },
+    ];
   }
 }
 
 class NetworkUsageData extends ChartData {
-  getConfigForData (responseData) {
+  getConfigForData(responseData) {
     let interfaces = [];
     if (responseData && responseData.length > 0) {
       const {networkUsage} = responseData[0];
       const {statsByInterface} = networkUsage || {};
       interfaces = Object.keys(statsByInterface || {});
     }
-    return interfaces.map(i => ([
-      {
-        field: 'rx',
-        group: i,
-        valueFn: o => (o.networkUsage?.statsByInterface || {})[i]?.rxBytes
-      },
-      {
-        field: 'tx',
-        group: i,
-        valueFn: o => (o.networkUsage?.statsByInterface || {})[i]?.txBytes
-      }
-    ]))
-      .reduce((r, a) => ([...r, ...a]), []);
+    return interfaces
+      .map((i) => [
+        {
+          field: 'rx',
+          group: i,
+          valueFn: (o) => (o.networkUsage?.statsByInterface || {})[i]?.rxBytes,
+        },
+        {
+          field: 'tx',
+          group: i,
+          valueFn: (o) => (o.networkUsage?.statsByInterface || {})[i]?.txBytes,
+        },
+      ])
+      .reduce((r, a) => [...r, ...a], []);
   }
 }
 
 class FileSystemUsageData extends ChartData {
-  getConfigForData (responseData) {
+  getConfigForData(responseData) {
     let devices = [];
     if (responseData && responseData.length > 0) {
       const {disksUsage} = responseData[0];
       const {statsByDevices} = disksUsage || {};
       devices = Object.keys(statsByDevices || {});
     }
-    return devices.map(d => ([
-      {
-        field: 'usage',
-        group: d,
-        valueFn: o => (o.disksUsage?.statsByDevices || {})[d]?.usableSpace
-      },
-      {
-        field: 'capacity',
-        group: d,
-        valueFn: o => (o.disksUsage?.statsByDevices || {})[d]?.capacity
-      }
-    ]))
-      .reduce((r, a) => ([...r, ...a]), []);
+    return devices
+      .map((d) => [
+        {
+          field: 'usage',
+          group: d,
+          valueFn: (o) => (o.disksUsage?.statsByDevices || {})[d]?.usableSpace,
+        },
+        {
+          field: 'capacity',
+          group: d,
+          valueFn: (o) => (o.disksUsage?.statsByDevices || {})[d]?.capacity,
+        },
+      ])
+      .reduce((r, a) => [...r, ...a], []);
   }
 }
 

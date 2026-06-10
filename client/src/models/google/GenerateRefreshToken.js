@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 export default class GenerateRefreshToken extends Remote {
-  constructor (code) {
+  constructor(code) {
     super();
     this.url = `/firecloud/auth?authorizationCode=${code}`;
   }

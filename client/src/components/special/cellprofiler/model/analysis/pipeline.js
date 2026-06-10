@@ -15,7 +15,7 @@
  */
 
 import {action, computed, observable, makeObservable} from 'mobx';
-import moment from 'moment-timezone';
+import dayjs, {toUtcDayjs} from '../../../../../utils/dayjs';
 import {AnalysisModule} from '../modules/base';
 import {AnalysisTypes} from '../common/analysis-types';
 import {DefineResultsModuleName} from '../modules/implementation/define-results';
@@ -50,7 +50,7 @@ class AnalysisPipeline {
   defineResults;
   graphicsOutput = new GraphicsOutputConfiguration();
 
-  constructor (analysis) {
+  constructor(analysis) {
     // TODO: consider makeAutoObservable
     makeObservable(this, {
       uuid: observable,
@@ -76,34 +76,30 @@ class AnalysisPipeline {
       objects: computed,
       defineResultsAreEmpty: computed,
       parametersWithErrors: computed,
-      add: action
+      add: action,
     });
     this.analysis = analysis;
-    this.createdDate = moment.utc();
-    this.modifiedDate = moment.utc();
+    this.createdDate = dayjs.utc();
+    this.modifiedDate = dayjs.utc();
     this.uuid = generateUUID();
-    this.defineResults = AnalysisModule.createModule(
-      DefineResultsModuleName,
-      {},
-      {pipeline: this}
-    );
+    this.defineResults = AnalysisModule.createModule(DefineResultsModuleName, {}, {pipeline: this});
   }
 
-  get namesAndTypes () {
+  get namesAndTypes() {
     if (!this.analysis) {
       return undefined;
     }
     return this.analysis.namesAndTypes;
   }
 
-  get channels () {
+  get channels() {
     if (!this.namesAndTypes) {
       return [];
     }
-    return this.namesAndTypes.outputs.map(output => output.name);
+    return this.namesAndTypes.outputs.map((output) => output.name);
   }
 
-  get physicalSize () {
+  get physicalSize() {
     if (!this.analysis) {
       return undefined;
     }
@@ -113,23 +109,24 @@ class AnalysisPipeline {
   /**
    * @returns {{parent: string, name: string, image:string}[]}
    */
-  get spots () {
+  get spots() {
     // Spots are objects that are used as "child" within "RelateObjects"/"FindSpots" modules
     // "RelateObjects":
-    const spots = [];// an array of the {spot, parent}
-    const relateObjectsModules = this.modules
-      .filter(cpModule => /^RelateObjects$/i.test(cpModule.name));
+    const spots = []; // an array of the {spot, parent}
+    const relateObjectsModules = this.modules.filter((cpModule) =>
+      /^RelateObjects$/i.test(cpModule.name),
+    );
     const appendSpots = (parent, child) => {
       const image = this.getSourceImageForObject(child);
       if (child && image) {
         spots.push({
-          parent: parent,
+          parent,
           name: child,
-          image
+          image,
         });
       }
     };
-    relateObjectsModules.forEach(relateObjectsModule => {
+    relateObjectsModules.forEach((relateObjectsModule) => {
       const parent = relateObjectsModule.getParameterValue('parent');
       const saveAsNew = relateObjectsModule.getBooleanParameterValue('saveAsNew');
       const child = saveAsNew
@@ -137,38 +134,38 @@ class AnalysisPipeline {
         : relateObjectsModule.getParameterValue('child');
       appendSpots(saveAsNew ? undefined : parent, child);
     });
-    const findSpotsModules = this.modules
-      .filter(cpModule => /^FindSpots$/i.test(cpModule.name));
-    findSpotsModules.forEach(findSpotsModule => {
+    const findSpotsModules = this.modules.filter((cpModule) => /^FindSpots$/i.test(cpModule.name));
+    findSpotsModules.forEach((findSpotsModule) => {
       const parent = findSpotsModule.getParameterValue('parentObject');
       const child = findSpotsModule.getParameterValue('output');
       appendSpots(parent === 'None' ? undefined : parent, child);
     });
     return spots.filter((aSpot, index, array) => {
-      return array.slice(0, index)
-        .filter(o => o.name === aSpot.name && o.parent === aSpot.parent)
-        .length === 0;
+      return (
+        array.slice(0, index).filter((o) => o.name === aSpot.name && o.parent === aSpot.parent)
+          .length === 0
+      );
     });
   }
 
-  get populations () {
+  get populations() {
     // Populations are objects that found using FindNuclei / IdentifyPrimaryObjects methods
     // and NOT used as children within the RelateObjects methods
     const populations = [];
     this.modules
-      .filter(cpModule => /^(FindNuclei|IdentifyPrimaryObjects)$/i.test(cpModule.name))
-      .forEach(cpModule => {
+      .filter((cpModule) => /^(FindNuclei|IdentifyPrimaryObjects)$/i.test(cpModule.name))
+      .forEach((cpModule) => {
         const name = cpModule.getParameterValue('name');
         const image = cpModule.getParameterValue('input');
         if (name && image) {
           populations.push({name, image});
         }
       });
-    const populationNames = new Set(populations.map(o => o.name));
+    const populationNames = new Set(populations.map((o) => o.name));
     const exclude = new Set();
     this.modules
-      .filter(cpModule => /^RelateObjects$/i.test(cpModule.name))
-      .forEach(relateObjectsModule => {
+      .filter((cpModule) => /^RelateObjects$/i.test(cpModule.name))
+      .forEach((relateObjectsModule) => {
         const saveAsNew = relateObjectsModule.getBooleanParameterValue('saveAsNew');
         const child = saveAsNew
           ? relateObjectsModule.getParameterValue('name')
@@ -177,16 +174,16 @@ class AnalysisPipeline {
           exclude.add(child);
         }
       });
-    return populations.filter(population => !exclude.has(population.name));
+    return populations.filter((population) => !exclude.has(population.name));
   }
 
-  get regionsOfInterest () {
+  get regionsOfInterest() {
     // ROI are objects found using FindCells, FindCytoplasm, IdentifySecondaryObjects,
     // IdentifyTertiaryObjects modules
     const rois = []; // an array of the {name, parent}
     this.modules
-      .filter(cpModule => /^FindCells$/i.test(cpModule.name))
-      .forEach(cpModule => {
+      .filter((cpModule) => /^FindCells$/i.test(cpModule.name))
+      .forEach((cpModule) => {
         const name = cpModule.getParameterValue('name');
         const parent = cpModule.getParameterValue('nuclei');
         if (name && parent) {
@@ -194,8 +191,8 @@ class AnalysisPipeline {
         }
       });
     this.modules
-      .filter(cpModule => /^FindCytoplasm$/i.test(cpModule.name))
-      .forEach(cpModule => {
+      .filter((cpModule) => /^FindCytoplasm$/i.test(cpModule.name))
+      .forEach((cpModule) => {
         const name = cpModule.getParameterValue('output');
         const nuclei = cpModule.getParameterValue('nuclei');
         const cells = cpModule.getParameterValue('cells');
@@ -205,8 +202,8 @@ class AnalysisPipeline {
         }
       });
     this.modules
-      .filter(cpModule => /^IdentifySecondaryObjects$/i.test(cpModule.name))
-      .forEach(cpModule => {
+      .filter((cpModule) => /^IdentifySecondaryObjects$/i.test(cpModule.name))
+      .forEach((cpModule) => {
         const name = cpModule.getParameterValue('name');
         const nuclei = cpModule.getParameterValue('inputObjects');
         if (name && nuclei) {
@@ -214,8 +211,8 @@ class AnalysisPipeline {
         }
       });
     this.modules
-      .filter(cpModule => /^IdentifyTertiaryObjects$/i.test(cpModule.name))
-      .forEach(cpModule => {
+      .filter((cpModule) => /^IdentifyTertiaryObjects$/i.test(cpModule.name))
+      .forEach((cpModule) => {
         const name = cpModule.getParameterValue('output');
         const nuclei = cpModule.getParameterValue('large');
         const cells = cpModule.getParameterValue('small');
@@ -227,57 +224,54 @@ class AnalysisPipeline {
     return rois;
   }
 
-  get objects () {
+  get objects() {
     // All objects found
     const all = this.modules
-      .map(cpModule => cpModule.outputs
-        .filter(output => output.type === AnalysisTypes.object)
-        .map(output => output.name)
+      .map((cpModule) =>
+        cpModule.outputs
+          .filter((output) => output.type === AnalysisTypes.object)
+          .map((output) => output.name),
       )
-      .reduce((r, c) => ([...r, ...c]), []);
+      .reduce((r, c) => [...r, ...c], []);
     return [...new Set(all)];
   }
 
-  get defineResultsAreEmpty () {
+  get defineResultsAreEmpty() {
     if (!this.defineResults) {
       return true;
     }
     const configuration = this.defineResults.getParameterValue('configuration');
-    return !configuration ||
-      configuration.filter(o => o.object).length === 0;
+    return !configuration || configuration.filter((o) => o.object).length === 0;
   }
 
-  get parametersWithErrors () {
+  get parametersWithErrors() {
     return this.modules
-      .reduce((acc, current) => ([
-        ...acc,
-        ...(current.parameters || [])
-      ]), [])
-      .filter(param => param.isInvalid);
+      .reduce((acc, current) => [...acc, ...(current.parameters || [])], [])
+      .filter((param) => param.isInvalid);
   }
 
   getObjectIsSpot = (object) => {
-    return this.spots.some(aSpot => aSpot.name === object);
-  }
+    return this.spots.some((aSpot) => aSpot.name === object);
+  };
 
   getObjectIsSpotWithParent = (object) => {
-    return this.spots.some(aSpot => aSpot.name === object && !!aSpot.parent);
-  }
+    return this.spots.some((aSpot) => aSpot.name === object && !!aSpot.parent);
+  };
 
   getObjectHasSpots = (object) => {
-    return this.spots.some(aSpot => aSpot.parent === object);
-  }
+    return this.spots.some((aSpot) => aSpot.parent === object);
+  };
 
   getAllObjectParents = (object) => {
     const result = [object];
     if (object) {
-      const rois = [...new Set(
-        this.regionsOfInterest
-          .filter(roi => roi.name === object)
-          .map(roi => roi.parent)
-      )];
-      result.push(...rois
-        .map(roi => this.getAllObjectParents(roi)).reduce((r, c) => ([...r, ...c]), [])
+      const rois = [
+        ...new Set(
+          this.regionsOfInterest.filter((roi) => roi.name === object).map((roi) => roi.parent),
+        ),
+      ];
+      result.push(
+        ...rois.map((roi) => this.getAllObjectParents(roi)).reduce((r, c) => [...r, ...c], []),
       );
     }
     return result.filter(Boolean);
@@ -287,11 +281,11 @@ class AnalysisPipeline {
     if (!object) {
       return undefined;
     }
-    const cpModule = this.modules
-      .find(aModule =>
-        aModule.outputs
-          .some(output => output.name === object && output.type === AnalysisTypes.object)
-      );
+    const cpModule = this.modules.find((aModule) =>
+      aModule.outputs.some(
+        (output) => output.name === object && output.type === AnalysisTypes.object,
+      ),
+    );
     if (cpModule) {
       if (
         /^RelateObjects$/i.test(cpModule.name) &&
@@ -316,7 +310,7 @@ class AnalysisPipeline {
   };
 
   exportPipeline = (json = false) => {
-    let author = this.author;
+    const author = this.author;
     if (json) {
       return {
         uuid: this.uuid,
@@ -325,8 +319,8 @@ class AnalysisPipeline {
         name: this.name,
         description: this.description,
         channels: this.channels,
-        modules: this.modules.map(module => module.exportModule(json)),
-        defineResults: this.defineResults.exportModule(json)
+        modules: this.modules.map((module) => module.exportModule(json)),
+        defineResults: this.defineResults.exportModule(json),
       };
     }
     const header = [
@@ -336,37 +330,33 @@ class AnalysisPipeline {
       this.description ? `Description:${this.description}` : false,
       author ? `Author:${author}` : false,
       this.createdDate
-        ? `Created:${moment.utc(this.createdDate).format('YYYY-MM-DD HH:mm:ss')}`
+        ? `Created:${toUtcDayjs(this.createdDate)?.format('YYYY-MM-DD HH:mm:ss')}`
         : false,
       this.modifiedDate
-        ? `Modified:${moment.utc(this.modifiedDate).format('YYYY-MM-DD HH:mm:ss')}`
+        ? `Modified:${toUtcDayjs(this.modifiedDate)?.format('YYYY-MM-DD HH:mm:ss')}`
         : false,
       this.channels.length > 0 ? `Channels:${JSON.stringify(this.channels)}` : false,
-      `Outlines:${this.graphicsOutput.exportConfigurations()}`
-    ].filter(Boolean).join('\n');
+      `Outlines:${this.graphicsOutput.exportConfigurations()}`,
+    ]
+      .filter(Boolean)
+      .join('\n');
     return [
       header,
-      ...this.modules.map(module => module.exportModule()),
-      this.defineResults.exportModule()
+      ...this.modules.map((module) => module.exportModule()),
+      this.defineResults.exportModule(),
     ].join('\n\n');
-  }
+  };
 
-  static importPipeline (content) {
+  static importPipeline(content) {
     if (!content) {
       return undefined;
     }
     try {
-      const [
-        header,
-        ...modulesContent
-      ] = content.split(/[\r]?\n[\r]?\n/);
+      const [header, ...modulesContent] = content.split(/[\r]?\n[\r]?\n/);
       const pipeline = new AnalysisPipeline();
       pipeline.isNew = false;
-      const [
-        pipelineType,
-        ...pipelineInfos
-      ] = header.split(/[\r]?\n/);
-      pipelineInfos.forEach(info => {
+      const [pipelineType, ...pipelineInfos] = header.split(/[\r]?\n/);
+      pipelineInfos.forEach((info) => {
         const [key, ...valueParts] = info.split(':');
         const value = valueParts.join(':');
         if (/^identifier$/i.test(key)) {
@@ -380,9 +370,9 @@ class AnalysisPipeline {
         } else if (/^author$/i.test(key)) {
           pipeline.author = value;
         } else if (/^created$/i.test(key)) {
-          pipeline.createdDate = moment.utc(value);
+          pipeline.createdDate = toUtcDayjs(value);
         } else if (/^modified$/i.test(key)) {
-          pipeline.modifiedDate = moment.utc(value);
+          pipeline.modifiedDate = toUtcDayjs(value);
         } else if (/^channels$/i.test(key)) {
           try {
             const channels = JSON.parse(value);
@@ -404,14 +394,12 @@ class AnalysisPipeline {
       if (pipelineType !== CLOUD_PIPELINE_CELL_PROFILER_PIPELINE_TYPE) {
         console.warn('Unsupported pipeline type:', pipelineType);
       }
-      const modules = modulesContent
-        .map(moduleContent => AnalysisModule.importModule(
-          moduleContent,
-          {pipeline, throwError: true}
-        ));
-      pipeline.modules = modules.filter(o => o.name !== DefineResultsModuleName);
-      pipeline.defineResults = modules.find(o => o.name === DefineResultsModuleName) ||
-        pipeline.defineResults;
+      const modules = modulesContent.map((moduleContent) =>
+        AnalysisModule.importModule(moduleContent, {pipeline, throwError: true}),
+      );
+      pipeline.modules = modules.filter((o) => o.name !== DefineResultsModuleName);
+      pipeline.defineResults =
+        modules.find((o) => o.name === DefineResultsModuleName) || pipeline.defineResults;
       return pipeline;
     } catch (error) {
       console.warn(`Error importing pipeline: ${error.message}`);
@@ -419,9 +407,10 @@ class AnalysisPipeline {
     return undefined;
   }
 
-  getMissingInputs = () => (this.modules || [])
-    .map((aModule) => aModule.getMissingInputs())
-    .reduce((r, c) => ([...r, ...c]), []);
+  getMissingInputs = () =>
+    (this.modules || [])
+      .map((aModule) => aModule.getMissingInputs())
+      .reduce((r, c) => [...r, ...c], []);
 
   correctInputsForModules = (correctedInputs = {}) => {
     let corrected = false;

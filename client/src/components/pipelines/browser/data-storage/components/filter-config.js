@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import moment from 'moment-timezone';
+import dayjs from '../../../../../utils/dayjs';
 
 const FILTER_FIELDS = {
   name: 'name',
@@ -22,19 +22,22 @@ const FILTER_FIELDS = {
   sizeLessThan: 'sizeLessThan',
   dateAfter: 'dateAfter',
   dateBefore: 'dateBefore',
-  dateFilterType: 'dateFilterType'
+  dateFilterType: 'dateFilterType',
 };
 
-const PREDEFINED_DATE_FILTERS = [{
-  title: 'Last week',
-  key: 'lastWeek',
-  dateAfter: (currentDate) => currentDate && moment(currentDate).subtract(7, 'days').startOf('day'),
-  dateBefore: undefined
-}, {
-  title: 'Last month',
-  key: 'lastMonth',
-  dateAfter: (currentDate) => currentDate && moment(currentDate).subtract(1, 'month').endOf('day'),
-  dateBefore: undefined
-}];
+const PREDEFINED_DATE_FILTERS = [
+  {
+    title: 'Last week',
+    key: 'lastWeek',
+    dateAfter: (currentDate) => currentDate && dayjs(currentDate).subtract(7, 'day').startOf('day'),
+    dateBefore: undefined,
+  },
+  {
+    title: 'Last month',
+    key: 'lastMonth',
+    dateAfter: (currentDate) => currentDate && dayjs(currentDate).subtract(1, 'month').endOf('day'),
+    dateBefore: undefined,
+  },
+];
 
 export {FILTER_FIELDS, PREDEFINED_DATE_FILTERS};

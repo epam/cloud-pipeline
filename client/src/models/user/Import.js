@@ -14,13 +14,11 @@
  *  limitations under the License.
  */
 
-import {API_PATH, SERVER} from '../../config';
-
-export default function importUsersUrl (createUser, createGroup, metadata) {
+export default function importUsersUrl(createUser, createGroup, metadata) {
   const query = [
     `createUser=${createUser ? 'true' : 'false'}`,
     `createGroup=${createGroup ? 'true' : 'false'}`,
-    ...(metadata || []).map(m => `createMetadata=${encodeURIComponent(m)}`)
+    ...(metadata || []).map((m) => `createMetadata=${encodeURIComponent(m)}`),
   ]
     .filter(Boolean)
     .join('&');

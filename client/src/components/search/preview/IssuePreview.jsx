@@ -1,0 +1,259 @@
+/*
+ * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import React from 'react';
+import PropTypes from 'prop-types';
+import {inject, observer} from 'mobx-react';
+import {Row, Tooltip} from 'antd';
+import {LoadingOutlined} from '@ant-design/icons';
+import classNames from 'classnames';
+import renderHighlights from './renderHighlights';
+import renderSeparator from './renderSeparator';
+import {PreviewIcons} from './previewIcons';
+import styles from './preview.module.css';
+import IssueLoad from '../../../models/issues/IssueLoad';
+import {fromNowUtc} from '../../../utils/dayjs';
+import displayDate from '../../../utils/displayDate';
+import roleModel from '../../../utils/roleModel';
+import Markdown from '../../special/markdown';
+
+@roleModel.authenticationInfo
+@inject((stores, params) => {
+  const issueInfo = new IssueLoad(params.item.id);
+  issueInfo.fetch();
+  return {
+    issueInfo,
+  };
+})
+@observer
+export default class IssuePreview extends React.Component {
+  static propTypes = {
+    item: PropTypes.shape({
+      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+      parentId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+      name: PropTypes.string,
+      description: PropTypes.string,
+    }),
+  };
+
+  get description() {
+    if (!this.issue) {
+      return null;
+    }
+
+    let description = null;
+    if (this.issue.author && this.issue.createdDate) {
+      description = (
+        <span>
+          Opened {this.renderDate(this.issue.createdDate)} by{' '}
+          <b>{this.renderAuthorName(this.issue.author)}</b>
+        </span>
+      );
+    } else if (this.issue.author) {
+      description = <span>Opened by {this.renderAuthorName(this.issue.author)}</span>;
+    } else if (this.issue.createdDate) {
+      description = <span>Opened {this.renderDate(this.issue.createdDate)}</span>;
+    }
+
+    return description || this.props.item.description;
+  }
+
+  get issue() {
+    if (this.props.issueInfo && this.props.issueInfo.loaded) {
+      return {
+        author: this.props.issueInfo.value.author,
+        createdDate: this.props.issueInfo.value.createdDate,
+        text: this.props.issueInfo.value.text,
+      };
+    }
+    return null;
+  }
+
+  get comments() {
+    if (this.props.issueInfo && this.props.issueInfo.loaded) {
+      return (this.props.issueInfo.value.comments || []).map((c) => c);
+    }
+    return [];
+  }
+
+  isMine = (author) => {
+    if (this.props.authenticatedUserInfo && this.props.authenticatedUserInfo.loaded) {
+      return this.props.authenticatedUserInfo.value.userName === author;
+    }
+    return false;
+  };
+
+  renderAuthorName = (author) => {
+    return this.isMine(author) ? 'You' : author;
+  };
+
+  renderDate = (date) => {
+    return (
+      <Tooltip overlay={displayDate(date)}>
+        <b style={{cursor: 'pointer'}}>{fromNowUtc(date)}</b>
+      </Tooltip>
+    );
+  };
+
+  renderLabels = () => {
+    if (!this.props.issueInfo) {
+      return null;
+    }
+    if (this.props.issueInfo.pending) {
+      return (
+        <Row className={styles.contentPreview} type="flex" justify="center">
+          <LoadingOutlined />
+        </Row>
+      );
+    }
+    if (this.props.issueInfo.error) {
+      return (
+        <div className={styles.contentPreview}>
+          <span className={'cp-search-preview-error'}>{this.props.folder.error}</span>
+        </div>
+      );
+    }
+    if (!this.props.issueInfo.value.labels || !this.props.issueInfo.value.labels.length) {
+      return null;
+    }
+
+    const labels = this.props.issueInfo.value.labels;
+
+    return (
+      <div className={styles.attributes}>
+        {labels.map((label, key) => (
+          <div key={key} className={styles.attribute}>
+            <div className={styles.attributeValue}>{label}</div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  commentTextPreview = (text, style = {}) => {
+    return <Markdown md={text} cloudPipelineLinks style={style} />;
+  };
+
+  renderIssue = () => {
+    if (!this.props.issueInfo) {
+      return null;
+    }
+    if (this.props.issueInfo.pending) {
+      return (
+        <Row className={styles.contentPreview} type="flex" justify="center">
+          <LoadingOutlined />
+        </Row>
+      );
+    }
+    if (this.props.issueInfo.error) {
+      return (
+        <div className={styles.contentPreview}>
+          <span className={'cp-search-preview-error'}>{this.props.folder.error}</span>
+        </div>
+      );
+    }
+    if (!this.issue) {
+      return null;
+    }
+
+    return <div className={styles.contentPreview}>{this.commentTextPreview(this.issue.text)}</div>;
+  };
+
+  renderComments = () => {
+    if (!this.props.issueInfo) {
+      return null;
+    }
+    if (this.props.issueInfo.pending) {
+      return (
+        <Row className={styles.contentPreview} type="flex" justify="center">
+          <LoadingOutlined />
+        </Row>
+      );
+    }
+    if (this.props.issueInfo.error) {
+      return (
+        <div className={styles.contentPreview}>
+          <span className={'cp-search-preview-error'}>{this.props.folder.error}</span>
+        </div>
+      );
+    }
+    if (!this.comments || !this.comments.length) {
+      return null;
+    }
+
+    return this.comments
+      .map((comment) => [
+        renderSeparator(`${comment.id}_separator`),
+        <div key={`${comment.id}_issue_comment`} className={styles.contentPreview}>
+          <table>
+            <tbody>
+              <tr className={'cp-search-comment-header'}>
+                <td>
+                  {this.renderAuthorName(comment.author)} commented{' '}
+                  {this.renderDate(comment.createdDate)}:
+                </td>
+              </tr>
+              <tr>
+                <td>{comment.text && this.commentTextPreview(comment.text)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>,
+      ])
+      .reduce((res, v) => [...res, ...v]);
+  };
+
+  render() {
+    if (!this.props.item) {
+      return null;
+    }
+
+    const ItemIcon = PreviewIcons[this.props.item.type];
+    const highlights = renderHighlights(this.props.item);
+    const labels = this.renderLabels();
+    const issue = this.renderIssue();
+    const comments = this.renderComments();
+
+    return (
+      <div className={classNames(styles.container, 'cp-search-container')}>
+        <div className={styles.header}>
+          <Row
+            className={classNames(styles.title, 'cp-search-header-title')}
+            type="flex"
+            align="middle"
+          >
+            {ItemIcon && <ItemIcon />}
+            <span>{this.props.item.name}</span>
+          </Row>
+          {this.description && (
+            <Row className={classNames(styles.description, 'cp-search-header-description')}>
+              {this.description}
+            </Row>
+          )}
+        </div>
+        <div className={classNames(styles.content, 'cp-search-content')}>
+          {highlights && renderSeparator()}
+          {highlights}
+          {labels && renderSeparator()}
+          {labels}
+          {issue && renderSeparator()}
+          {issue}
+          {comments}
+        </div>
+      </div>
+    );
+  }
+}

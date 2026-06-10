@@ -14,22 +14,28 @@
  * limitations under the License.
  */
 
-export const ORDINALS = [{
-  title: 'First',
-  cronCode: '#1'
-}, {
-  title: 'Second',
-  cronCode: '#2'
-}, {
-  title: 'Third',
-  cronCode: '#3'
-}, {
-  title: 'Fourth',
-  cronCode: '#4'
-}, {
-  title: 'Last',
-  cronCode: 'L'
-}];
+export const ORDINALS = [
+  {
+    title: 'First',
+    cronCode: '#1',
+  },
+  {
+    title: 'Second',
+    cronCode: '#2',
+  },
+  {
+    title: 'Third',
+    cronCode: '#3',
+  },
+  {
+    title: 'Fourth',
+    cronCode: '#4',
+  },
+  {
+    title: 'Last',
+    cronCode: 'L',
+  },
+];
 
 export const DAYS = [
   {title: 'Monday', key: '2'},
@@ -38,7 +44,7 @@ export const DAYS = [
   {title: 'Thursday', key: '5'},
   {title: 'Friday', key: '6'},
   {title: 'Saturday', key: '7'},
-  {title: 'Sunday', key: '1'}
+  {title: 'Sunday', key: '1'},
 ];
 
 export const MONTHS = [
@@ -53,15 +59,15 @@ export const MONTHS = [
   {title: 'September', key: '9'},
   {title: 'October', key: '10'},
   {title: 'November', key: '11'},
-  {title: 'December', key: '12'}
+  {title: 'December', key: '12'},
 ];
 
 export const COMPUTED_DAYS = {
   day: {key: 'day', title: 'Day'},
-  weekday: {key: 'weekday', title: 'Weekday'}
+  weekday: {key: 'weekday', title: 'Weekday'},
 };
 
-export function getMaximumDaysInMonth (monthKey) {
+export function getMaximumDaysInMonth(monthKey) {
   if (!monthKey || isNaN(monthKey)) {
     return null;
   }
@@ -80,16 +86,20 @@ export function getMaximumDaysInMonth (monthKey) {
   return days;
 }
 
-export function getOrdinalSuffix (number) {
+export function getOrdinalSuffix(number) {
   if (Number.isNaN(number)) {
     return '';
   }
   const n = Number(number);
   if (n > 3 && n < 21) return 'th';
   switch (n % 10) {
-    case 1: return 'st';
-    case 2: return 'nd';
-    case 3: return 'rd';
-    default: return 'th';
+    case 1:
+      return 'st';
+    case 2:
+      return 'nd';
+    case 3:
+      return 'rd';
+    default:
+      return 'th';
   }
 }

@@ -1,6 +1,6 @@
 import roleModel from '../../../utils/roleModel';
 
-export function parsePermissionsRestrictionsConfig (restrictions) {
+export function parsePermissionsRestrictionsConfig(restrictions) {
   const parseRule = (rule) => {
     const {
       role = 'ALL',
@@ -9,7 +9,7 @@ export function parsePermissionsRestrictionsConfig (restrictions) {
       readonly = readOnly,
       // eslint-disable-next-line camelcase
       only_default_storage = false,
-      onlyDefaultStorage = only_default_storage
+      onlyDefaultStorage = only_default_storage,
     } = rule;
     return role
       .split(/[,;\s]/g)
@@ -18,22 +18,14 @@ export function parsePermissionsRestrictionsConfig (restrictions) {
         role: aRole,
         disable,
         readonly,
-        onlyDefaultStorage
+        onlyDefaultStorage,
       }));
   };
   const rules = restrictions
-    .reduce((result, rule) => ([
-      ...result,
-      ...parseRule(rule)
-    ]), [])
+    .reduce((result, rule) => [...result, ...parseRule(rule)], [])
     .filter(Boolean);
   return rules.map((rule) => {
-    const {
-      role,
-      disable = '',
-      readonly,
-      onlyDefaultStorage
-    } = rule;
+    const {role, disable = '', readonly, onlyDefaultStorage} = rule;
     const masks = disable.split(/[,;\s]/g).filter((mask) => mask.length);
     const disableRead = masks.some((aMask) => /^read$/i.test(aMask));
     const disableWrite = masks.some((aMask) => /^write$/i.test(aMask));
@@ -52,7 +44,7 @@ export function parsePermissionsRestrictionsConfig (restrictions) {
         !disableWrite,
         !disableWrite,
         !disableExecute,
-        !disableExecute
+        !disableExecute,
       ),
       defaultMask: roleModel.buildPermissionsMask(
         0,
@@ -60,8 +52,8 @@ export function parsePermissionsRestrictionsConfig (restrictions) {
         0,
         disableWrite,
         0,
-        disableExecute
-      )
+        disableExecute,
+      ),
     };
   });
 }

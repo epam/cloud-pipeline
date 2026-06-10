@@ -16,27 +16,27 @@
 
 import * as HCSConstants from './constants';
 
-function parseCoordinates (key) {
+function parseCoordinates(key) {
   const e = /^([\d]+)_([\d]+)$/.exec(key);
   if (e && e.length >= 3) {
     return {
       x: Number(e[1]),
-      y: Number(e[2])
+      y: Number(e[2]),
     };
   }
   return undefined;
 }
 
-function stringFormatter (string, size = 2) {
+function stringFormatter(string, size = 2) {
   if (string) {
     const str = `${string}`;
     const append = Math.max(0, size - str.length);
-    return (new Array(append)).fill('0').join().concat(str);
+    return new Array(append).fill('0').join().concat(str);
   }
-  return (new Array(size)).fill('_').join();
+  return new Array(size).fill('_').join();
 }
 
-function getWellCoordinateString (coordinate, dimension) {
+function getWellCoordinateString(coordinate, dimension) {
   return stringFormatter(coordinate, Math.ceil(Math.log10(dimension)));
 }
 
@@ -73,7 +73,7 @@ function getWellCoordinateString (coordinate, dimension) {
  * @property {Object} [to_ome_wells_mapping]
  */
 
-function generateOffsetsPath (dataPath) {
+function generateOffsetsPath(dataPath) {
   const r = /(.+)\.ome\.tiff$/i.exec(dataPath);
   if (r && r.length > 1) {
     return `${r[1]}.offsets.json`;
@@ -81,95 +81,78 @@ function generateOffsetsPath (dataPath) {
   return undefined;
 }
 
-function buildDefaultCoordinates (images = {}) {
+function buildDefaultCoordinates(images = {}) {
   return Object.keys(images || {})
-    .map(key => ({key: images[key], parsed: parseCoordinates(key)}))
+    .map((key) => ({key: images[key], parsed: parseCoordinates(key)}))
     .filter(({parsed}) => parsed)
     .map(({key, parsed}) => ({
-      [key]: [parsed.x, parsed.y - 1]
+      [key]: [parsed.x, parsed.y - 1],
     }))
     .reduce((r, c) => ({...r, ...c}), {});
 }
 
-function buildImagesWithoutCoordinates (options = {}) {
-  const {
-    to_ome_wells_mapping: images,
-    width,
-    height
-  } = options;
-  const rawImages = Object
-    .entries(buildDefaultCoordinates(images))
-    .map(([imageId, coords]) => ({
-      id: imageId,
-      x: coords[0] - 1,
-      y: height - coords[1] - 1,
-      width: 1,
-      height: 1,
-      fieldWidth: 1,
-      fieldHeight: 1,
-      unit: 'px',
-      physicalSize: 1
-    }));
-  const minX = Math.min(...rawImages.map(o => o.x));
-  const maxX = Math.max(...rawImages.map(o => o.x + o.fieldWidth));
-  const minY = Math.min(...rawImages.map(o => o.y));
-  const maxY = Math.max(...rawImages.map(o => o.y + o.fieldHeight));
+function buildImagesWithoutCoordinates(options = {}) {
+  const {to_ome_wells_mapping: images, width, height} = options;
+  const rawImages = Object.entries(buildDefaultCoordinates(images)).map(([imageId, coords]) => ({
+    id: imageId,
+    x: coords[0] - 1,
+    y: height - coords[1] - 1,
+    width: 1,
+    height: 1,
+    fieldWidth: 1,
+    fieldHeight: 1,
+    unit: 'px',
+    physicalSize: 1,
+  }));
+  const minX = Math.min(...rawImages.map((o) => o.x));
+  const maxX = Math.max(...rawImages.map((o) => o.x + o.fieldWidth));
+  const minY = Math.min(...rawImages.map((o) => o.y));
+  const maxY = Math.max(...rawImages.map((o) => o.y + o.fieldHeight));
   const size = Math.ceil(Math.max(maxX - minX, maxY - minY));
-  const getRealX = x => x - minX;
-  const getRealY = y => y - minY;
+  const getRealX = (x) => x - minX;
+  const getRealY = (y) => y - minY;
   return {
-    images: rawImages.map(image => ({
+    images: rawImages.map((image) => ({
       ...image,
       realX: getRealX(image.x),
-      realY: getRealY(image.y)
+      realY: getRealY(image.y),
     })),
-    width: width,
-    height: height,
-    meshSize: size
+    width,
+    height,
+    meshSize: size,
   };
 }
 
-function buildImages (options = {}) {
-  const {
-    coordinates,
-    field_size: fieldSize = 1,
-    width,
-    height
-  } = options;
+function buildImages(options = {}) {
+  const {coordinates, field_size: fieldSize = 1, width, height} = options;
   if (coordinates) {
-    const convert = o => o / fieldSize;
-    const rawImages = Object
-      .entries(coordinates)
-      .map(([imageId, coords]) => ({
-        id: imageId,
-        x1: convert(coords[0]),
-        y1: convert(coords[1]),
-        x2: convert(coords[0] + fieldSize),
-        y2: convert(coords[1] + fieldSize)
-      }));
+    const convert = (o) => o / fieldSize;
+    const rawImages = Object.entries(coordinates).map(([imageId, coords]) => ({
+      id: imageId,
+      x1: convert(coords[0]),
+      y1: convert(coords[1]),
+      x2: convert(coords[0] + fieldSize),
+      y2: convert(coords[1] + fieldSize),
+    }));
     if (rawImages.length === 0) {
       return {
         images: [],
         width,
         height,
-        meshSize: Math.max(width, height)
+        meshSize: Math.max(width, height),
       };
     }
-    const minX = Math.min(...rawImages.map(o => o.x1));
-    const maxX = Math.max(...rawImages.map(o => o.x2));
-    const minY = Math.min(...rawImages.map(o => o.y1));
-    const maxY = Math.max(...rawImages.map(o => o.y2));
-    const correctedSize = Math.ceil(Math.max((maxX - minX), (maxY - minY)));
-    const translateX = x => x - minX;
-    const translateY = y => correctedSize - (y - minY);
-    const displayX = x => width
-      ? width / 2.0 + x
-      : x;
-    const displayY = y => height
-      ? height / 2.0 - y
-      : y;
+    const minX = Math.min(...rawImages.map((o) => o.x1));
+    const maxX = Math.max(...rawImages.map((o) => o.x2));
+    const minY = Math.min(...rawImages.map((o) => o.y1));
+    const maxY = Math.max(...rawImages.map((o) => o.y2));
+    const correctedSize = Math.ceil(Math.max(maxX - minX, maxY - minY));
+    const translateX = (x) => x - minX;
+    const translateY = (y) => correctedSize - (y - minY);
+    const displayX = (x) => (width ? width / 2.0 + x : x);
+    const displayY = (y) => (height ? height / 2.0 - y : y);
     return {
-      images: rawImages.map(o => {
+      images: rawImages.map((o) => {
         const realX = translateX((o.x1 + o.x2) / 2.0) - Math.abs(o.x2 - o.x1) / 2.0;
         const realY = translateY((o.y1 + o.y2) / 2.0) - Math.abs(o.y2 - o.y1) / 2.0;
         return {
@@ -183,12 +166,12 @@ function buildImages (options = {}) {
           fieldWidth: 1,
           fieldHeight: 1,
           unit: 'px',
-          physicalSize: 1
+          physicalSize: 1,
         };
       }),
       width: width || correctedSize,
       height: height || correctedSize,
-      meshSize: correctedSize
+      meshSize: correctedSize,
     };
   }
   return buildImagesWithoutCoordinates(options);
@@ -199,13 +182,8 @@ class HCSImageWell {
    * @param {WellOptions} options
    * @param {HCSImageSequence} sequence
    */
-  constructor (options = {}, sequence) {
-    const {
-      directory,
-      plateWidth = 10,
-      plateHeight = 10,
-      objectStorage
-    } = sequence || {};
+  constructor(options = {}, sequence) {
+    const {directory, plateWidth = 10, plateHeight = 10, objectStorage} = sequence || {};
     const {
       x,
       y,
@@ -213,17 +191,11 @@ class HCSImageWell {
       well_overview: wellImageId,
       tags,
       path = HCSConstants.OME_TIFF_FILE_NAME,
-      offsets_path: offsetsPath = generateOffsetsPath(
-        path
-      ),
+      offsets_path: offsetsPath = generateOffsetsPath(path),
       overview_path: overviewPath = HCSConstants.OVERVIEW_OME_TIFF_FILE_NAME,
-      overview_offsets_path: overviewOffsetsPath = generateOffsetsPath(
-        overviewPath
-      )
+      overview_offsets_path: overviewOffsetsPath = generateOffsetsPath(overviewPath),
     } = options;
-    this.omeTiffFileName = [directory, path]
-      .filter(Boolean)
-      .join(objectStorage.delimiter || '/');
+    this.omeTiffFileName = [directory, path].filter(Boolean).join(objectStorage.delimiter || '/');
     this.offsetsJsonFileName = [directory, offsetsPath]
       .filter(Boolean)
       .join(objectStorage.delimiter || '/');
@@ -252,12 +224,7 @@ class HCSImageWell {
      * @type {number|undefined}
      */
     this.radius = roundRadius ? Number(roundRadius) : undefined;
-    const {
-      images,
-      width,
-      height,
-      meshSize
-    } = buildImages(options);
+    const {images, width, height, meshSize} = buildImages(options);
     /**
      * Well width
      * @type {number}
@@ -290,7 +257,7 @@ class HCSImageWell {
     this.sequence = sequence;
   }
 
-  destroy () {
+  destroy() {
     this.images = undefined;
     this.sequence = undefined;
   }
@@ -300,16 +267,13 @@ class HCSImageWell {
       this.metadataPromise = new Promise((resolve) => {
         Promise.resolve()
           .then(() => this.sequence.hcsImageMetadataCache.getMetadata(this))
-          .then(metadataArray => {
+          .then((metadataArray) => {
             const {images = []} = this;
-            images.forEach(image => {
+            images.forEach((image) => {
               const {id} = image;
-              const metadata = metadataArray.find(o => o.ID === id);
+              const metadata = metadataArray.find((o) => o.ID === id);
               if (metadata && metadata.Name) {
-                const {
-                  field: fieldID,
-                  well: wellID
-                } = getImageInfoFromName(metadata.Name);
+                const {field: fieldID, well: wellID} = getImageInfoFromName(metadata.Name);
                 image.wellID = wellID;
                 image.fieldID = fieldID;
               }
@@ -323,7 +287,7 @@ class HCSImageWell {
                 image.depthUnit = metadata.Pixels.PhysicalSizeZUnit || '';
               }
               if (metadata && metadata.Pixels && metadata.Pixels.Channels) {
-                image.channels = metadata.Pixels.Channels.map(o => o.Name);
+                image.channels = metadata.Pixels.Channels.map((o) => o.Name);
               }
             });
             resolve();
@@ -342,21 +306,20 @@ class HCSImageWell {
    * @param {HCSImageSequence} sequence
    * @return {HCSImageWell[]}
    */
-  static parseWellsInfo (wellsFileContentsJSON, sequence) {
+  static parseWellsInfo(wellsFileContentsJSON, sequence) {
     return Object.keys(wellsFileContentsJSON || {})
-      .map(key => ({
+      .map((key) => ({
         key,
-        parsed: parseCoordinates(key)
+        parsed: parseCoordinates(key),
       }))
-      .filter(o => o.parsed)
-      .map(({key, parsed}) => new HCSImageWell(
-        {...parsed, ...wellsFileContentsJSON[key]},
-        sequence
-      ));
+      .filter((o) => o.parsed)
+      .map(
+        ({key, parsed}) => new HCSImageWell({...parsed, ...wellsFileContentsJSON[key]}, sequence),
+      );
   }
 }
 
-export function getImageInfoFromName (imageName) {
+export function getImageInfoFromName(imageName) {
   if (!imageName) {
     return {};
   }
@@ -372,7 +335,7 @@ export function getImageInfoFromName (imageName) {
   };
   return {
     well: getID('well'),
-    field: getID('field')
+    field: getID('field'),
   };
 }
 

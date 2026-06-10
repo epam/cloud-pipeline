@@ -14,21 +14,19 @@
  *  limitations under the License.
  */
 
-import {SERVER, API_PATH} from '../../config';
-
 const TIMEOUT = 10000;
 
-function timeout (ms, promise) {
+function timeout(ms, promise) {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
       reject(new Error('TIMEOUT'));
     }, ms);
     promise
-      .then(value => {
+      .then((value) => {
         clearTimeout(timer);
         resolve(value);
       })
-      .catch(reason => {
+      .catch((reason) => {
         clearTimeout(timer);
         reject(reason);
       });
@@ -54,11 +52,11 @@ function timeout (ms, promise) {
  * @param timeoutMs
  * @returns {Promise<unknown>}
  */
-export default function fetchTempCredentials (
+export default function fetchTempCredentials(
   id,
   permissions,
   storageObject = undefined,
-  timeoutMs = TIMEOUT
+  timeoutMs = TIMEOUT,
 ) {
   const prefix = SERVER + API_PATH;
   const url = `${prefix}/datastorage/tempCredentials/`;
@@ -69,29 +67,21 @@ export default function fetchTempCredentials (
     try {
       timeout(
         timeoutMs,
-        fetch(
-          url,
-          {
-            mode: 'cors',
-            credentials: 'include',
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json; charset=UTF-8;'
-            },
-            body: JSON.stringify([{id, ...itemPayload, ...permissions}])
-          }
-        )
+        fetch(url, {
+          mode: 'cors',
+          credentials: 'include',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json; charset=UTF-8;',
+          },
+          body: JSON.stringify([{id, ...itemPayload, ...permissions}]),
+        }),
       )
-        .then(response => {
+        .then((response) => {
           response
             .json()
-            .then(o => {
-              const {
-                error,
-                message,
-                payload,
-                status
-              } = o;
+            .then((o) => {
+              const {error, message, payload, status} = o;
               if (status === 401) {
                 reject(new Error('Not authorized'));
               } else if (status === 'OK') {

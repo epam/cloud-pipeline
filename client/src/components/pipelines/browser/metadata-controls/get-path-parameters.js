@@ -14,12 +14,12 @@
  *  limitations under the License.
  */
 
-function checkFolder (folder, folderId) {
+function checkFolder(folder, folderId) {
   if (folder.id === Number(folderId)) {
     return [folder.name];
   }
   if (folder.childFolders) {
-    for (let subFolder of folder.childFolders) {
+    for (const subFolder of folder.childFolders) {
       const targetFolder = checkFolder(subFolder, folderId);
       if (targetFolder) {
         if (folder.name) {
@@ -32,29 +32,33 @@ function checkFolder (folder, folderId) {
   return undefined;
 }
 
-export default function getPathParameters (pipelinesLibrary, folderId) {
+export default function getPathParameters(pipelinesLibrary, folderId) {
   return new Promise((resolve) => {
-    pipelinesLibrary.fetchIfNeededOrWait()
+    pipelinesLibrary
+      .fetchIfNeededOrWait()
       .then(() => {
         if (pipelinesLibrary.error || !pipelinesLibrary.loaded) {
           throw new Error(pipelinesLibrary.error || 'Error fetching library');
         }
         const pipelinesLibraryValue = pipelinesLibrary.value;
         if (pipelinesLibraryValue && pipelinesLibraryValue.childFolders) {
-          const folders = (checkFolder(pipelinesLibraryValue, folderId) || []);
+          const folders = checkFolder(pipelinesLibraryValue, folderId) || [];
           const path = [...folders].reverse().join('/');
           resolve(
             folders
               .map((path, index) => ({
                 key: `METADATA_FOLDER_${index + 1}`,
-                value: path
+                value: path,
               }))
-              .reduce((res, cur) => ({
-                ...res,
-                [cur.key]: {value: cur.value, type: 'string', required: false}
-              }), {
-                METADATA_FOLDER_PATH: path
-              })
+              .reduce(
+                (res, cur) => ({
+                  ...res,
+                  [cur.key]: {value: cur.value, type: 'string', required: false},
+                }),
+                {
+                  METADATA_FOLDER_PATH: path,
+                },
+              ),
           );
         } else {
           resolve({});
@@ -62,4 +66,4 @@ export default function getPathParameters (pipelinesLibrary, folderId) {
       })
       .catch(() => resolve({}));
   });
-};
+}

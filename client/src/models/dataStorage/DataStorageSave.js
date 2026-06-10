@@ -17,12 +17,14 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class DataStorageSave extends RemotePost {
-  constructor (cloud, skipPolicy = false) {
+  constructor(cloud, skipPolicy = false) {
     super();
     const query = Object.entries({
       cloud,
-      skipPolicy
-    }).map(([key, value]) => `${key}=${value}`).join('&');
+      skipPolicy,
+    })
+      .map(([key, value]) => `${key}=${value}`)
+      .join('&');
     this.url = `/datastorage/save?${query}`;
   }
 }

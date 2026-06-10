@@ -20,58 +20,55 @@ import {
   ForkOutlined,
   MessageOutlined,
   PlayCircleFilled,
-  ToolOutlined
+  ToolOutlined,
 } from '@ant-design/icons';
 import {isObservableArray} from 'mobx';
 import {SearchItemTypes} from '../../models/search';
 import displayCount from '../../utils/displayCount';
 
-const pluralString = (plural) => plural === undefined ? 's' : plural;
+const pluralString = (plural) => (plural === undefined ? 's' : plural);
 
 const countString = (key, localizationFn, count = 0, plural) =>
   !count
     ? `${localizationFn(key)}${pluralString(plural)}`
-    : (
-      count > 1
-        ? `${displayCount(count, true)} ${localizationFn(key.toLowerCase())}${pluralString(plural)}`
-        : `${count} ${localizationFn(key.toLowerCase())}`
-    );
+    : count > 1
+      ? `${displayCount(count, true)} ${localizationFn(key.toLowerCase())}${pluralString(plural)}`
+      : `${count} ${localizationFn(key.toLowerCase())}`;
 
-const titleFn = (key, pluralStr) =>
+const titleFn =
+  (key, pluralStr) =>
   (localizationFn) =>
-    (count = 0) =>
-      countString(key, localizationFn, count, pluralStr);
+  (count = 0) =>
+    countString(key, localizationFn, count, pluralStr);
 
-function test (o) {
+function test(o) {
   if (!o) {
     return false;
   }
-  const set = Array.isArray(o) || isObservableArray(o)
-    ? new Set(o)
-    : new Set([o]);
-  return !!(this.types || []).find(t => set.has(t));
+  const set = Array.isArray(o) || isObservableArray(o) ? new Set(o) : new Set([o]);
+  return !!(this.types || []).find((t) => set.has(t));
 }
 
 const SearchGroupTypes = {
   folder: {
     types: [SearchItemTypes.folder, SearchItemTypes.metadataEntity],
     icon: FolderOutlined,
-    title: titleFn('Folder')
+    title: titleFn('Folder'),
   },
   pipeline: {
     types: [SearchItemTypes.pipeline, SearchItemTypes.configuration, SearchItemTypes.pipelineCode],
     icon: ForkOutlined,
-    title: titleFn('Pipeline')
+    title: titleFn('Pipeline'),
   },
   run: {
     types: [SearchItemTypes.run],
     icon: PlayCircleFilled,
-    title: titleFn('Run')
+    title: titleFn('Run'),
   },
   tool: {
     types: [SearchItemTypes.tool, SearchItemTypes.dockerRegistry, SearchItemTypes.toolGroup],
     icon: ToolOutlined,
-    title: titleFn('Tool')
+    title: titleFn('Tool'),
   },
   storage: {
     types: [
@@ -82,19 +79,19 @@ const SearchGroupTypes = {
       SearchItemTypes.NFSFile,
       SearchItemTypes.NFSBucket,
       SearchItemTypes.gsFile,
-      SearchItemTypes.gsStorage
+      SearchItemTypes.gsStorage,
     ],
     icon: FileOutlined,
-    title: titleFn('Data', '')
+    title: titleFn('Data', ''),
   },
   issue: {
     types: [SearchItemTypes.issue],
     icon: MessageOutlined,
-    title: titleFn('Issue')
-  }
+    title: titleFn('Issue'),
+  },
 };
 
-Object.values(SearchGroupTypes).forEach(value => {
+Object.values(SearchGroupTypes).forEach((value) => {
   value.test = test.bind(value);
 });
 

@@ -16,7 +16,7 @@
 
 const TABLE_MENU_KEYS = {
   folder: 'folder',
-  file: 'file'
+  file: 'file',
 };
 
 export default TABLE_MENU_KEYS;

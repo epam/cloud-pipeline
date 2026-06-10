@@ -1,10 +1,12 @@
 import {load as loadYaml} from 'js-yaml';
 import displaySize from '../../../../../../utils/displaySize';
 import {
-  generateParameterConfigsFromJsonPayload, parameterConfigsToPayloadConfig, parametersToPayloadParams
+  generateParameterConfigsFromJsonPayload,
+  parameterConfigsToPayloadConfig,
+  parametersToPayloadParams,
 } from '../../utilities/parameter-utilities';
 
-function readFile (file) {
+function readFile(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -18,7 +20,7 @@ function readFile (file) {
 }
 
 const maxFileSizeBytes = 1024 * 1024 * 5; // 5MB
-export async function readParametersFile (file) {
+export async function readParametersFile(file) {
   if (file.size > maxFileSizeBytes) {
     throw new Error(`maximum file size is ${displaySize(maxFileSizeBytes)}`);
   }
@@ -46,9 +48,7 @@ export async function readParametersFile (file) {
   const parsed = readAsYaml() ?? readAsJson();
   if (parsed) {
     // normalization
-    return parameterConfigsToPayloadConfig(
-      generateParameterConfigsFromJsonPayload(parsed) || []
-    );
+    return parameterConfigsToPayloadConfig(generateParameterConfigsFromJsonPayload(parsed) || []);
   }
   throw new Error('unsupported content format');
 }

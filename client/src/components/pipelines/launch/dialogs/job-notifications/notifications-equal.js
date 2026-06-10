@@ -16,7 +16,7 @@
 
 import compareArrays from '../../../../../utils/compareArrays';
 
-export function notificationsEqual (a, b) {
+export function notificationsEqual(a, b) {
   if (!a && !b) {
     return true;
   }
@@ -28,23 +28,25 @@ export function notificationsEqual (a, b) {
     triggerStatuses: aTrigger,
     recipients: aRecipients,
     subject: aSubject,
-    body: aBody
+    body: aBody,
   } = a;
   const {
     type: bType,
     triggerStatuses: bTrigger,
     recipients: bRecipients,
     subject: bSubject,
-    body: bBody
+    body: bBody,
   } = b;
-  return aType === bType &&
+  return (
+    aType === bType &&
     compareArrays(aTrigger, bTrigger) &&
     compareArrays(aRecipients, bRecipients) &&
     aSubject === bSubject &&
-    aBody === bBody;
+    aBody === bBody
+  );
 }
 
-export function notificationArraysAreEqual (a, b) {
+export function notificationArraysAreEqual(a, b) {
   if (!a && !b) {
     return true;
   }
@@ -55,14 +57,14 @@ export function notificationArraysAreEqual (a, b) {
   }
   for (let i = 0; i < aArray.length; i++) {
     const aNotification = aArray[i];
-    const bNotification = bArray.find(n => notificationsEqual(n, aNotification));
+    const bNotification = bArray.find((n) => notificationsEqual(n, aNotification));
     if (!bNotification) {
       return false;
     }
   }
   for (let i = 0; i < bArray.length; i++) {
     const bNotification = bArray[i];
-    const aNotification = aArray.find(n => notificationsEqual(n, bNotification));
+    const aNotification = aArray.find((n) => notificationsEqual(n, bNotification));
     if (!aNotification) {
       return false;
     }

@@ -21,7 +21,7 @@ const findCytoplasm = {
   parameters: [
     'Nuclei objects|object|ALIAS nuclei|REQUIRED|DEFAULT_FROM FindNuclei',
     'Cells objects|object|ALIAS cells|REQUIRED|DEFAULT_FROM FindCells',
-    'Objects name|string|Cytoplasm|ALIAS output|REQUIRED'
+    'Objects name|string|Cytoplasm|ALIAS output|REQUIRED',
   ],
   subModules: [
     {
@@ -31,10 +31,10 @@ const findCytoplasm = {
         small: '{parent.nuclei}|COMPUTED',
         large: '{parent.cells}|COMPUTED',
         shrink: true,
-        output: '{parent.output}|COMPUTED'
-      }
-    }
-  ]
+        output: '{parent.output}|COMPUTED',
+      },
+    },
+  ],
 };
 
 export default findCytoplasm;

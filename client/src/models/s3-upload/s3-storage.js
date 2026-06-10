@@ -14,7 +14,15 @@
  *  limitations under the License.
  */
 
-import AWS from 'aws-sdk/index';
+import {
+  S3Client,
+  CreateMultipartUploadCommand,
+  UploadPartCommand,
+  CompleteMultipartUploadCommand,
+  AbortMultipartUploadCommand,
+  GetObjectCommand,
+} from '@aws-sdk/client-s3';
+import {getSignedUrl} from '@aws-sdk/s3-request-presigner';
 import Credentials from './credentials';
 import DataStorageTagsUpdate from '../dataStorage/tags/DataStorageTagsUpdate';
 import fetchTempCredentials from './fetch-temp-credentials';
@@ -35,45 +43,33 @@ const MAX_FILE_SIZE = S3_MAX_FILE_SIZE_TB * TB;
 const MAX_FILE_SIZE_DESCRIPTION = displaySize(MAX_FILE_SIZE, false);
 
 const FETCH_CREDENTIALS_MAX_ATTEMPTS = 12;
+const PRESIGNED_URL_EXPIRES_IN = 3600;
 
 export {MAX_FILE_SIZE_DESCRIPTION};
 
-// https://github.com/aws/aws-sdk-js/issues/1895#issuecomment-518466151
-AWS.util.update(AWS.S3.prototype, {
-  reqRegionForNetworkingError (resp, done) {
-    if (AWS.util.isBrowser() && resp.error) {
-      if (/^ExpiredToken$/i.test(resp.error.code)) {
-        // we got 'expired token' error; we don't need to stop uploading process by setting
-        // error (via "done(error)")
-        done();
-      } else if (/^CredentialsError$/i.test(resp.error.code)) {
-        const details = resp.error.originalError
-          ? ` (${resp.error.originalError.message})`
-          : '';
-        done(
-          `Could not load credentials${details}`
-        );
-      } else {
-        done(resp.error.message);
-      }
-    } else {
-      done();
-    }
-  }
-});
-// ====================================================================
 const SECOND = 1000;
 const MINUTE = 60 * SECOND;
 
-AWS.config.update({
-  httpOptions: {
-    timeout: 10 * MINUTE, // 10 minutes
-    connectTimeout: 2 * MINUTE // 2 minutes
-  }
-});
+function isExpiredTokenError(error) {
+  const code = error?.name || error?.Code || error?.code || '';
+  return /^ExpiredToken$/i.test(code);
+}
+
+function createS3Client(region, credentials) {
+  return new S3Client({
+    region,
+    credentials,
+    // Avoid aws-chunked encoding on Blob bodies (WHEN_SUPPORTED auto-adds CRC32 streaming checksum).
+    requestChecksumCalculation: async () => 'WHEN_REQUIRED',
+    requestHandler: {
+      requestTimeout: 10 * MINUTE,
+    },
+  });
+}
 
 class S3Storage {
   _s3;
+  _region;
   _storage;
   /**
    * @private {TempCredentialsStorageObject}
@@ -81,31 +77,33 @@ class S3Storage {
   _storageObject;
   _prefix;
   _credentials;
+  _signedUrlCache = new Map();
+  _pendingSignedUrls = new Map();
 
   /**
    * @param {Object} [storage]
    * @param {TempCredentialsStorageObject} [storageObject]
    */
-  constructor (storage, storageObject) {
+  constructor(storage, storageObject) {
     if (storage) {
       this.storage = storage;
     }
     this._storageObject = storageObject;
-  };
+  }
 
-  get storage () {
+  get storage() {
     return this._storage;
-  };
+  }
 
-  set storage (value) {
+  set storage(value) {
     this._storage = value;
   }
 
-  get prefix () {
+  get prefix() {
     return this._prefix || '';
   }
 
-  set prefix (value) {
+  set prefix(value) {
     if (value && value.endsWith('/')) {
       this._prefix = value;
     } else {
@@ -125,9 +123,9 @@ class S3Storage {
             this._storage.id,
             {
               read: this._storage.read === undefined ? true : this._storage.read,
-              write: this._storage.write === undefined ? true : this._storage.write
+              write: this._storage.write === undefined ? true : this._storage.write,
             },
-            this._storageObject
+            this._storageObject,
           )
             .then(resolve)
             .catch((e) => {
@@ -146,7 +144,7 @@ class S3Storage {
           payload.keyID,
           payload.accessKey,
           payload.token,
-          payload.expiration
+          payload.expiration,
         );
       } else {
         this._credentials = new Credentials(
@@ -154,20 +152,18 @@ class S3Storage {
           payload.accessKey,
           payload.token,
           payload.expiration,
-          this.updateCredentials
+          this.updateCredentials,
         );
       }
-      if (this._credentials) {
-        AWS.config.update({
-          region: payload.region || this._storage.region,
-          credentials: this._credentials
-        });
+      this._region = payload.region || this._storage.region;
+      this.clearSignedUrlCache();
+      if (this._credentials && this._region) {
+        this._s3 = createS3Client(this._region, this._credentials);
       }
     } catch (err) {
       success = false;
       return Promise.reject(new Error(err.message));
     }
-    this._s3 = new AWS.S3({signatureVersion: 'v4'});
     return success;
   };
 
@@ -178,21 +174,85 @@ class S3Storage {
     if (!this._s3 || !this._credentials || this._credentials.needsRefresh()) {
       await this.updateCredentials();
     }
-  }
+  };
 
-  getSignedUrl = (file = '') => {
-    const params = {
-      Bucket: this._storage.path,
-      Key: this.prefix + file
-    };
-    this._credentials.get();
-    if (this._credentials.needsRefresh()) {
-      return undefined;
+  sendCommand = async (command, options) => {
+    await this.refreshCredentialsIfNeeded();
+    if (!this._s3) {
+      throw new Error('s3 storage wrapper is not initialized');
     }
+    try {
+      return await this._s3.send(command, options);
+    } catch (error) {
+      if (isExpiredTokenError(error)) {
+        await this.updateCredentials();
+        return this._s3.send(command, options);
+      }
+      throw error;
+    }
+  };
+
+  clearSignedUrlCache = () => {
+    this._signedUrlCache.clear();
+    this._pendingSignedUrls.clear();
+  };
+
+  objectKey = (file = '') => this.prefix + file;
+
+  getSignedUrlAsync = async (file = '') => {
+    await this.refreshCredentialsIfNeeded();
     if (!this._s3) {
       return undefined;
     }
-    return this._s3.getSignedUrl('getObject', params);
+    const key = this.objectKey(file);
+    const cached = this._signedUrlCache.get(key);
+    if (cached) {
+      return cached;
+    }
+    const pending = this._pendingSignedUrls.get(key);
+    if (pending) {
+      return pending;
+    }
+    const promise = getSignedUrl(
+      this._s3,
+      new GetObjectCommand({
+        Bucket: this._storage.path,
+        Key: key,
+      }),
+      {expiresIn: PRESIGNED_URL_EXPIRES_IN},
+    )
+      .then((url) => {
+        this._signedUrlCache.set(key, url);
+        this._pendingSignedUrls.delete(key);
+        return url;
+      })
+      .catch((error) => {
+        this._pendingSignedUrls.delete(key);
+        throw error;
+      });
+    this._pendingSignedUrls.set(key, promise);
+    return promise;
+  };
+
+  /**
+   * Sync cache lookup for callers that cannot await (e.g. tile viewer callbacks).
+   * A blocking wait loop is not possible in the browser — the event loop must run for
+   * the async presigner to complete. On cache miss, kicks off background presigning.
+   */
+  getSignedUrl = (file = '') => {
+    this._credentials?.get();
+    if (!this._credentials || this._credentials.needsRefresh() || !this._region) {
+      return undefined;
+    }
+    const key = this.objectKey(file);
+    const cached = this._signedUrlCache.get(key);
+    if (cached) {
+      return cached;
+    }
+    if (this._s3 && !this._pendingSignedUrls.has(key)) {
+      void this.getSignedUrlAsync(file);
+    }
+    return undefined;
   };
 
   completeMultipartUploadStorageObject = async (name, parts, uploadId) => {
@@ -200,47 +260,33 @@ class S3Storage {
       Bucket: this._storage.path,
       Key: this.prefix + name,
       MultipartUpload: {
-        Parts: parts
+        Parts: parts,
       },
-      UploadId: uploadId
+      UploadId: uploadId,
     };
-    await this.refreshCredentialsIfNeeded();
-    if (!this._s3) {
-      throw new Error('s3 storage wrapper is not initialized');
-    }
-    const upload = this._s3.completeMultipartUpload(params);
-    return upload.promise();
+    return this.sendCommand(new CompleteMultipartUploadCommand(params));
   };
 
   abortMultipartUploadStorageObject = async (name, uploadId) => {
     const params = {
       Bucket: this._storage.path,
       Key: this.prefix + name,
-      UploadId: uploadId
+      UploadId: uploadId,
     };
-    await this.refreshCredentialsIfNeeded();
-    if (!this._s3) {
-      throw new Error('s3 storage wrapper is not initialized');
-    }
-    const upload = this._s3.abortMultipartUpload(params);
-    return upload.promise();
+    return this.sendCommand(new AbortMultipartUploadCommand(params));
   };
 
   createMultipartUpload = async (name, tags) => {
     const tagging = Object.entries(tags)
       .filter(([, value]) => !!value)
       .map(([key, value]) => `${key}=${encodeURIComponent(value)}`);
-    let params = {
+    const params = {
       ACL: 'bucket-owner-full-control',
       Bucket: this._storage.path,
       Key: this.prefix + name,
-      Tagging: tagging.length > 0 ? tagging.join('&') : undefined
+      Tagging: tagging.length > 0 ? tagging.join('&') : undefined,
     };
-    await this.refreshCredentialsIfNeeded();
-    if (!this._s3) {
-      throw new Error('s3 storage wrapper is not initialized');
-    }
-    return this._s3.createMultipartUpload(params).promise();
+    return this.sendCommand(new CreateMultipartUploadCommand(params));
   };
 
   multipartUploadStorageObject = async (name, body, partNumber, uploadId, uploadProgress) => {
@@ -249,15 +295,22 @@ class S3Storage {
       Bucket: this._storage.path,
       Key: this.prefix + name,
       PartNumber: partNumber,
-      UploadId: uploadId
+      UploadId: uploadId,
     };
-    await this.refreshCredentialsIfNeeded();
-    if (!this._s3) {
-      throw new Error('s3 storage wrapper is not initialized');
-    }
-    const upload = this._s3.uploadPart(params);
-    upload.on('httpUploadProgress', uploadProgress);
-    return upload;
+    const abortController = new AbortController();
+    const total = body.size ?? body.byteLength ?? 0;
+    const promise = this.sendCommand(new UploadPartCommand(params), {
+      abortSignal: abortController.signal,
+    }).then((data) => {
+      if (uploadProgress && total > 0) {
+        uploadProgress({loaded: total, total});
+      }
+      return data;
+    });
+    return {
+      abort: () => abortController.abort(),
+      promise,
+    };
   };
 
   doUpload = async (file, options, callbacks) => {
@@ -266,27 +319,23 @@ class S3Storage {
       partNumber: currentPartNumber,
       multipartParts = [],
       owner,
-      fileName = file.name
+      fileName = file.name,
     } = options;
     if (this.storage) {
       const path = [this.prefix, fileName].filter((o) => o.length).join('/');
       auditStorageAccessManager.reportWriteAccess({
         fullPath: `s3://${this.storage.path}/${path}`,
-        storageId: this.storage.id
+        storageId: this.storage.id,
       });
     }
-    const {
-      onPartError,
-      onProgress,
-      setAbort,
-      setMultipartUploadParts
-    } = callbacks;
+    const {onPartError, onProgress, setAbort, setMultipartUploadParts} = callbacks;
     await preferences.fetchIfNeededOrWait();
     const chunkCountPreference = preferences.uiUploadChunkCount;
-    const chunkSizePreference = Math.max(
-      S3_MIN_UPLOAD_CHUNK_SIZE_MB,
-      (preferences.uiUploadChunkSizeMB || S3_MIN_UPLOAD_CHUNK_SIZE_MB)
-    ) * MB;
+    const chunkSizePreference =
+      Math.max(
+        S3_MIN_UPLOAD_CHUNK_SIZE_MB,
+        preferences.uiUploadChunkSizeMB || S3_MIN_UPLOAD_CHUNK_SIZE_MB,
+      ) * MB;
     const chunkSize =
       Math.ceil(file.size / chunkSizePreference) > chunkCountPreference
         ? Math.ceil(file.size / chunkCountPreference)
@@ -298,7 +347,9 @@ class S3Storage {
       const updatePercent = () => {
         const loaded = startPosition + chunks.reduce((l, c) => l + c.loaded, 0);
         const percent = loaded / file.size;
-        onProgress && onProgress(percent);
+        if (onProgress) {
+          onProgress(percent);
+        }
       };
       for (let c = 0; c < UPLOAD_CONCURRENCY_LIMIT; c++) {
         const partNumber = c + part;
@@ -308,58 +359,57 @@ class S3Storage {
           break;
         }
         const end = Math.min((partNumber + 1) * chunkSize, file.size);
-        chunks.push(({
+        chunks.push({
           body: file.slice(start, end),
           partNumber,
           total: end - start,
-          loaded: 0
-        }));
+          loaded: 0,
+        });
       }
       const next = last ? null : part + UPLOAD_CONCURRENCY_LIMIT;
-      const promises = await Promise.all(chunks.map(async (chunk) => {
-        const uploadStorageObject = await this.multipartUploadStorageObject(
-          fileName,
-          chunk.body,
-          chunk.partNumber + 1,
-          uploadID,
-          (e) => {
-            const {loaded, total} = e;
-            if (total > 0 && loaded > 0) {
-              chunk.total = total;
-              chunk.loaded = loaded;
-            }
-            updatePercent();
-          }
-        );
-        const abort = uploadStorageObject.abort.bind(uploadStorageObject);
-        const promise = new Promise((resolve) => {
-          uploadStorageObject
-            .promise()
-            .then((data) => {
-              resolve({
-                partNumber: chunk.partNumber,
-                payload: {
-                  ETag: data.ETag,
-                  PartNumber: chunk.partNumber + 1
-                }
-              });
-            }, error => {
-              resolve({partNumber: chunk.partNumber, error: error.message});
-            });
-        });
-        return {abort, promise};
-      }));
+      const promises = await Promise.all(
+        chunks.map(async (chunk) => {
+          const {abort, promise} = await this.multipartUploadStorageObject(
+            fileName,
+            chunk.body,
+            chunk.partNumber + 1,
+            uploadID,
+            (e) => {
+              const {loaded, total} = e;
+              if (total > 0 && loaded > 0) {
+                chunk.total = total;
+                chunk.loaded = loaded;
+              }
+              updatePercent();
+            },
+          );
+          const wrappedPromise = promise.then(
+            (data) => ({
+              partNumber: chunk.partNumber,
+              payload: {
+                ETag: data.ETag,
+                PartNumber: chunk.partNumber + 1,
+              },
+            }),
+            (error) => ({partNumber: chunk.partNumber, error: error.message}),
+          );
+          return {abort, promise: wrappedPromise};
+        }),
+      );
       const abort = promises
-        .map(promise => promise.abort)
+        .map((entry) => entry.abort)
         .filter(Boolean)
         .reduce(
-          (a, c) => () => { c(); return a(); },
-          () => this.abortMultipartUploadStorageObject(fileName, uploadID)
+          (a, c) => () => {
+            c();
+            return a();
+          },
+          () => this.abortMultipartUploadStorageObject(fileName, uploadID),
         );
       return {
         abort,
         next,
-        promise: Promise.all(promises.map(p => p.promise))
+        promise: Promise.all(promises.map((p) => p.promise)),
       };
     };
     const fileTags = {CP_OWNER: owner};
@@ -368,18 +418,14 @@ class S3Storage {
         if (file.size > MAX_FILE_SIZE) {
           reject(new Error(`error: Maximum ${MAX_FILE_SIZE_DESCRIPTION} per file`));
         } else {
-          this.createMultipartUpload(fileName, fileTags)
-            .then((data) => {
-              resolve(data.UploadId);
-            }, reject);
+          this.createMultipartUpload(fileName, fileTags).then((data) => {
+            resolve(data.UploadId);
+          }, reject);
         }
       });
     };
     const updateDataStorageTags = () => {
-      const request = new DataStorageTagsUpdate(
-        this._storage.id,
-        this.prefix + fileName
-      );
+      const request = new DataStorageTagsUpdate(this._storage.id, this.prefix + fileName);
       return new Promise((resolve) => {
         request
           .send(fileTags)
@@ -387,7 +433,7 @@ class S3Storage {
             if (request.error) {
               console.warn(
                 `Error updating data storage item (${this.prefix + fileName}) tags:`,
-                request.error
+                request.error,
               );
             }
             resolve();
@@ -395,7 +441,7 @@ class S3Storage {
           .catch((e) => {
             console.warn(
               `Error updating data storage item (${this.prefix + fileName}) tags:`,
-              e.message
+              e.message,
             );
             resolve();
           });
@@ -403,38 +449,37 @@ class S3Storage {
     };
     const finishUpload = async (uploadID, parts) => {
       try {
-        await this.completeMultipartUploadStorageObject(
-          fileName,
-          parts,
-          uploadID
-        );
+        await this.completeMultipartUploadStorageObject(fileName, parts, uploadID);
         await updateDataStorageTags();
         return undefined;
       } catch (error) {
-        onPartError && onPartError(parts.length, error.message);
+        if (onPartError) {
+          onPartError(parts.length, error.message);
+        }
         return error.message;
       }
     };
     const continueUpload = async (uploadID, part = 0) => {
-      const {
-        abort,
-        next,
-        promise
-      } = await upload(uploadID, part);
-      setAbort && setAbort(abort);
+      const {abort, next, promise} = await upload(uploadID, part);
+      if (setAbort) {
+        setAbort(abort);
+      }
       const parts = await promise;
-      const errorParts = parts.filter(part => !!part.error);
+      const errorParts = parts.filter((part) => !!part.error);
       if (errorParts.length > 0) {
-        const partNumber = Math.min(...errorParts.map(p => p.partNumber));
-        const errorPart = errorParts.find(p => p.partNumber === partNumber);
-        onPartError && onPartError(partNumber, errorPart.error);
+        const partNumber = Math.min(...errorParts.map((p) => p.partNumber));
+        const errorPart = errorParts.find((p) => p.partNumber === partNumber);
+        if (onPartError) {
+          onPartError(partNumber, errorPart.error);
+        }
         return errorPart.error;
       }
-      multipartParts.push(...parts.map(part => part.payload));
-      setMultipartUploadParts && setMultipartUploadParts(uploadID, multipartParts);
+      multipartParts.push(...parts.map((part) => part.payload));
+      if (setMultipartUploadParts) {
+        setMultipartUploadParts(uploadID, multipartParts);
+      }
       if (next !== null) {
         return continueUpload(uploadID, next);
-      } else {
       }
       return finishUpload(uploadID, multipartParts);
     };
@@ -442,7 +487,9 @@ class S3Storage {
       return continueUpload(currentUploadID, currentPartNumber);
     }
     const uploadID = await startUpload();
-    setMultipartUploadParts && setMultipartUploadParts(uploadID, []);
+    if (setMultipartUploadParts) {
+      setMultipartUploadParts(uploadID, []);
+    }
     return continueUpload(uploadID);
   };
 }

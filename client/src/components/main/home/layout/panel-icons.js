@@ -24,7 +24,7 @@ import {
   NotificationOutlined,
   PlayCircleOutlined,
   RocketOutlined,
-  ToolOutlined
+  ToolOutlined,
 } from '@ant-design/icons';
 import Panels from './panels';
 
@@ -38,5 +38,5 @@ export default {
   [Panels.notifications]: NotificationOutlined,
   [Panels.recentlyCompletedRuns]: ClockCircleOutlined,
   [Panels.services]: RocketOutlined,
-  [Panels.userCosts]: AreaChartOutlined
+  [Panels.userCosts]: AreaChartOutlined,
 };

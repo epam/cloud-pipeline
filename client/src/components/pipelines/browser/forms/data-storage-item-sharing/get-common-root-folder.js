@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-function getCommonPathComponents (pathComponents1 = [], pathComponents2 = []) {
+function getCommonPathComponents(pathComponents1 = [], pathComponents2 = []) {
   const result = [];
   for (let i = 0; i < Math.min(pathComponents1.length, pathComponents2.length); i += 1) {
     if (pathComponents1[i] !== pathComponents2[i]) {
@@ -25,22 +25,16 @@ function getCommonPathComponents (pathComponents1 = [], pathComponents2 = []) {
   return result;
 }
 
-export default function getCommonRootFolder (items = [], delimiter = '/') {
-  const result = items
-    .reduce(
-      (commonPathComponents, item) => {
-        const {path, type} = item;
-        const components = (path || '')
-          .split(delimiter)
-          .slice(0, /^folder$/i.test(type) ? undefined : -1);
-        if (commonPathComponents === undefined) {
-          return components;
-        }
-        return getCommonPathComponents(commonPathComponents, components);
-      },
-      undefined
-    );
-  return result && result.length > 0
-    ? result.join(delimiter)
-    : undefined;
+export default function getCommonRootFolder(items = [], delimiter = '/') {
+  const result = items.reduce((commonPathComponents, item) => {
+    const {path, type} = item;
+    const components = (path || '')
+      .split(delimiter)
+      .slice(0, /^folder$/i.test(type) ? undefined : -1);
+    if (commonPathComponents === undefined) {
+      return components;
+    }
+    return getCommonPathComponents(commonPathComponents, components);
+  }, undefined);
+  return result && result.length > 0 ? result.join(delimiter) : undefined;
 }

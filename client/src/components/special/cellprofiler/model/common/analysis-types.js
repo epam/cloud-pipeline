@@ -26,7 +26,7 @@ const AnalysisTypes = {
   void: 'void',
   object: 'object',
   color: 'color',
-  custom: 'custom'
+  custom: 'custom',
 };
 
 export {AnalysisTypes};

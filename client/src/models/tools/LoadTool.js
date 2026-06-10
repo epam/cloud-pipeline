@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 export default class LoadTool extends Remote {
-  constructor (image, registry) {
+  constructor(image, registry) {
     super();
     if (registry) {
       this.url = `/tool/load?image=${image}&registry=${registry}`;

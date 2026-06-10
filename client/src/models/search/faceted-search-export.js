@@ -19,7 +19,7 @@ import RemotePost from '../basic/RemotePost';
 class FacetSearchExport extends RemotePost {
   static isJson = false;
 
-  constructor () {
+  constructor() {
     super();
     this.url = '/search/facet/export';
   }

@@ -17,8 +17,7 @@
 import Remote from '../basic/Remote';
 
 export default class MetadataClassLoadAll extends Remote {
-
-  constructor () {
+  constructor() {
     super();
     this.url = '/metadataClass/loadAll';
   }

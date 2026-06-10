@@ -18,7 +18,7 @@ import ConfigurationLoad from './ConfigurationLoad';
 
 class Configurations {
   /* eslint-disable */
-  static getCache (cache, id, model) {
+  static getCache(cache, id, model) {
     if (!cache.has(+id)) {
       cache.set(+id, new model(id));
     }
@@ -26,7 +26,7 @@ class Configurations {
     return cache.get(+id);
   }
 
-  static invalidateCache (cache, id) {
+  static invalidateCache(cache, id) {
     if (cache.has(+id)) {
       if (cache.get(+id).invalidateCache) {
         cache.get(+id).invalidateCache();
@@ -38,18 +38,15 @@ class Configurations {
 
   _configurationsCache = new Map();
 
-  constructor () {
+  constructor() {}
 
-  }
-
-  getConfiguration (id) {
+  getConfiguration(id) {
     return Configurations.getCache(this._configurationsCache, id, ConfigurationLoad);
   }
 
-  invalidateConfigurationCache (id) {
+  invalidateConfigurationCache(id) {
     Configurations.invalidateCache(this._configurationsCache, id);
   }
-
 }
 
 export default new Configurations();

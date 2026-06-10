@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-export default function getRelativePathToItem (item, rootPath, delimiter = '/') {
+export default function getRelativePathToItem(item, rootPath, delimiter = '/') {
   if (!item) {
     return undefined;
   }

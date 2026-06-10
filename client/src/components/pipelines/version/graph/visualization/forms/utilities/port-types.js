@@ -16,5 +16,5 @@
 
 export default {
   input: 'Input',
-  output: 'Output'
+  output: 'Output',
 };

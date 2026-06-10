@@ -21,20 +21,20 @@ export {
   stopRun,
   terminateRun,
   runIsCommittable,
-  checkCommitAllowedForTool
+  checkCommitAllowedForTool,
 } from './stopRun';
 export {
   submitsRun,
   modifyPayloadForAllowedInstanceTypes,
   run,
   RunConfirmation,
-  openReRunForm
+  openReRunForm,
 } from './run';
 export {default as runPipelineActions} from './runPipelineActions';
 export {
   SubmitButton,
   getInputPaths,
   getOutputPaths,
-  performAsyncCheck
+  performAsyncCheck,
 } from './execution-allowed-check';
 export {default as SensitiveBucketsWarning} from './sensitive-buckets-warning';

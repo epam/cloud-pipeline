@@ -20,27 +20,27 @@ import parseRunServiceUrlConfiguration from './parse-run-service-url-configurati
 import getEdgeExternalEndpoints from './get-edge-external-endpoints';
 
 class MultizoneManager extends Multizone {
-  constructor () {
+  constructor() {
     super();
     this.checkRegions();
   }
 
-  checkRegions () {
+  checkRegions() {
     if (this.checkRegionsPromise) {
       return this.checkRegionsPromise;
     }
     this.checkRegionsPromise = new Promise((resolve) => {
-      cloudRegionsInfo.fetchIfNeededOrWait()
+      cloudRegionsInfo
+        .fetchIfNeededOrWait()
         .then(() => {
           if (cloudRegionsInfo.loaded) {
-            const regionIds = (cloudRegionsInfo.value || [])
-              .map(region => region.regionId);
+            const regionIds = (cloudRegionsInfo.value || []).map((region) => region.regionId);
             return getEdgeExternalEndpoints(regionIds);
           } else {
             throw new Error(cloudRegionsInfo.error);
           }
         })
-        .then(endpoints => {
+        .then((endpoints) => {
           console.info('Edge external endpoints: ', endpoints);
           return this.check(endpoints);
         })

@@ -16,7 +16,7 @@
 
 import {defaultSorter} from '../../../../utils/sorting';
 
-export default function channelsAreEqual (channelsSet1, channelsSet2) {
+export default function channelsAreEqual(channelsSet1, channelsSet2) {
   const channels1 = Object.keys(channelsSet1 || {}).sort(defaultSorter);
   const channels2 = Object.keys(channelsSet2 || {}).sort(defaultSorter);
   if (channels1.length !== channels2.length) {
@@ -27,10 +27,7 @@ export default function channelsAreEqual (channelsSet1, channelsSet2) {
     const channelName2 = channels2[c];
     const channel1 = channelsSet1[channelName1];
     const channel2 = channelsSet2[channelName2];
-    if (
-      channelName1 !== channelName2 ||
-      channel1.length !== channel2.length
-    ) {
+    if (channelName1 !== channelName2 || channel1.length !== channel2.length) {
       return false;
     }
     for (let i = 0; i < channel1.length; i++) {

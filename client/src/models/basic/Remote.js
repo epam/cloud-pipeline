@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import {SERVER, API_PATH} from '../../config';
 import defer from '../../utils/defer';
 import {observable, action, computed, makeObservable} from 'mobx';
 import {authorization} from './Authorization';
@@ -24,8 +23,9 @@ class Remote {
   static defaultValue = {};
   static fetchOptions = {
     mode: 'cors',
-    credentials: 'include'
+    credentials: 'include',
   };
+
   static prefix = SERVER + API_PATH;
   static auto = false;
   static isJson = true;
@@ -35,7 +35,7 @@ class Remote {
   error = undefined;
   networkError = undefined;
 
-  constructor () {
+  constructor() {
     makeObservable(this, {
       failed: observable,
       error: observable,
@@ -51,7 +51,7 @@ class Remote {
       loaded: computed,
       value: computed,
       response: computed,
-      update: action
+      update: action,
     });
     if (this.constructor.auto) {
       this.fetch();
@@ -60,7 +60,7 @@ class Remote {
 
   _pending = true;
 
-  get pending () {
+  get pending() {
     const fetchIfNeeded = this._fetchIfNeeded.bind(this);
     setTimeout(fetchIfNeeded, 0);
     return this._pending;
@@ -68,7 +68,7 @@ class Remote {
 
   _loaded = false;
 
-  get loaded () {
+  get loaded() {
     const fetchIfNeeded = this._fetchIfNeeded.bind(this);
     setTimeout(fetchIfNeeded, 0);
     return this._loaded;
@@ -76,7 +76,7 @@ class Remote {
 
   _value = this.constructor.defaultValue;
 
-  get value () {
+  get value() {
     const fetchIfNeeded = this._fetchIfNeeded.bind(this);
     setTimeout(fetchIfNeeded, 0);
     return this._value;
@@ -84,7 +84,7 @@ class Remote {
 
   _response = undefined;
 
-  get response () {
+  get response() {
     const fetchIfNeeded = this._fetchIfNeeded.bind(this);
     setTimeout(fetchIfNeeded, 0);
     return this._response;
@@ -96,14 +96,14 @@ class Remote {
 
   _loadRequired = !this.constructor.auto;
 
-  async _fetchIfNeeded () {
+  async _fetchIfNeeded() {
     if (this._loadRequired) {
       this._loadRequired = false;
       await this.fetch();
     }
   }
 
-  async fetchIfNeededOrWait () {
+  async fetchIfNeededOrWait() {
     if (this._loadRequired) {
       await this._fetchIfNeeded();
     } else if (this._fetchPromise) {
@@ -111,24 +111,24 @@ class Remote {
     }
   }
 
-  invalidateCache () {
+  invalidateCache() {
     this._loadRequired = true;
   }
 
   _fetchPromise = null;
 
-  getData (response) {
-    return this.constructor.isJson ? (response.json()) : (response.blob());
+  getData(response) {
+    return this.constructor.isJson ? response.json() : response.blob();
   }
 
-  async preFetch () {
+  async preFetch() {
     // empty
   }
 
-  async fetch () {
+  async fetch() {
     this._loadRequired = false;
     if (!this._fetchPromise) {
-      this._fetchPromise = new Promise(async (resolve) => {
+      this._fetchPromise = (async () => {
         this._pending = true;
         const {prefix, fetchOptions} = this.constructor;
         try {
@@ -157,13 +157,12 @@ class Remote {
 
         this._pending = false;
         this._fetchPromise = null;
-        resolve();
-      });
+      })();
     }
     return this._fetchPromise;
   }
 
-  async silentFetch () {
+  async silentFetch() {
     const {prefix, fetchOptions} = this.constructor;
     try {
       await defer();
@@ -174,7 +173,7 @@ class Remote {
       fetchOptions.headers = headers;
       const response = await fetch(`${prefix}${this.url}`, fetchOptions);
       maintenanceCheck(response);
-      const data = this.constructor.isJson ? (await response.json()) : (await response.blob());
+      const data = this.constructor.isJson ? await response.json() : await response.blob();
       this.update(data);
     } catch (e) {
       this.failed = true;
@@ -183,11 +182,11 @@ class Remote {
     }
   }
 
-  postprocess (value) {
+  postprocess(value) {
     return value.payload;
   }
 
-  update (value) {
+  update(value) {
     this._response = value;
     if (value.status && value.status === 401) {
       this.error = value.message;

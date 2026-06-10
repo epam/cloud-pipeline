@@ -21,7 +21,7 @@ const S3_LOGS_SOURCE = 'c:\\Program Files\\CloudPipeline\\DTS\\logs';
 const EVERY_UNITS = {
   days: 'days',
   hours: 'hours',
-  minutes: 'minutes'
+  minutes: 'minutes',
 };
 
 const parseCronString = (cronString) => {
@@ -47,7 +47,7 @@ const parseCronString = (cronString) => {
   }
   return {
     every,
-    value
+    value,
   };
 };
 
@@ -57,13 +57,13 @@ const MAPPERS = {
     if (typeof value === 'string') {
       try {
         parsed = JSON.parse(value);
-        parsed = parsed.map(schedule => {
+        parsed = parsed.map((schedule) => {
           const cronInfo = parseCronString(schedule.cron) || {};
           return {
             ...schedule,
             scheduleType: cronInfo.every ? 'every' : 'custom',
             every: cronInfo.every,
-            everyValue: cronInfo.value
+            everyValue: cronInfo.value,
           };
         });
       } catch (e) {
@@ -71,7 +71,7 @@ const MAPPERS = {
       }
     }
     return parsed;
-  }
+  },
 };
 
 const UNMAPPERS = {
@@ -79,17 +79,19 @@ const UNMAPPERS = {
     let stringified = '';
     if (Array.isArray(value)) {
       try {
-        stringified = JSON.stringify(value.map((v) => ({
-          source: v.source,
-          cron: v.cron,
-          destination: v.destination
-        })));
+        stringified = JSON.stringify(
+          value.map((v) => ({
+            source: v.source,
+            cron: v.cron,
+            destination: v.destination,
+          })),
+        );
       } catch (e) {
         console.error(e);
       }
     }
     return stringified;
-  }
+  },
 };
 
 const COMPARATORS = {
@@ -99,35 +101,37 @@ const COMPARATORS = {
     }
     return initial.value.some((initialObj, index) => {
       const currentObj = preference.value[index];
-      return initialObj.source !== currentObj.source ||
+      return (
+        initialObj.source !== currentObj.source ||
         initialObj.cron !== currentObj.cron ||
-        initialObj.destination !== currentObj.destination;
+        initialObj.destination !== currentObj.destination
+      );
     });
-  }
+  },
 };
 
-function mapPreferences (preferences) {
-  return preferences.map(entry => {
+function mapPreferences(preferences) {
+  return preferences.map((entry) => {
     const mapFn = MAPPERS[entry.key.toLowerCase()];
     if (mapFn) {
       return {
         ...entry,
-        value: mapFn(entry.value)
+        value: mapFn(entry.value),
       };
     }
     return {
-      ...entry
+      ...entry,
     };
   });
 }
 
-function unMapPreferences (preferences) {
-  return preferences.map(entry => {
+function unMapPreferences(preferences) {
+  return preferences.map((entry) => {
     const unMapFn = UNMAPPERS[entry.key.toLowerCase()];
     if (unMapFn) {
       return {
         ...entry,
-        value: unMapFn(entry.value)
+        value: unMapFn(entry.value),
       };
     }
     const {modified, ...rest} = entry;
@@ -135,30 +139,28 @@ function unMapPreferences (preferences) {
   });
 }
 
-function getModifiedPreferences (initialPreferences, preferences) {
-  return preferences.filter(preference => {
+function getModifiedPreferences(initialPreferences, preferences) {
+  return preferences.filter((preference) => {
     const initial = initialPreferences.find(({key}) => key === preference.key);
     const compareFn = COMPARATORS[initial.key];
     if (compareFn) {
       return compareFn(initial, preference);
     }
-    return preference.draft ||
-      preference.markAsDeleted ||
-      initial.value !== preference.value;
+    return preference.draft || preference.markAsDeleted || initial.value !== preference.value;
   });
 }
 
-function getErrorPreferences (preferences = []) {
+function getErrorPreferences(preferences = []) {
   const errors = preferences.reduce((acc, preference, index) => {
-    const hasDuplicates = !preference.markAsDeleted && preferences
-      .find(({key, markAsDeleted}, i) => key &&
-        key === preference.key &&
-        i !== index &&
-        !markAsDeleted);
+    const hasDuplicates =
+      !preference.markAsDeleted &&
+      preferences.find(
+        ({key, markAsDeleted}, i) => key && key === preference.key && i !== index && !markAsDeleted,
+      );
     if (hasDuplicates) {
       acc.push({
         preference,
-        text: 'Key should be unique.'
+        text: 'Key should be unique.',
       });
     }
     return acc;
@@ -166,14 +168,15 @@ function getErrorPreferences (preferences = []) {
   return errors;
 }
 
-function getDtsLogsLink (dts = {}) {
+function getDtsLogsLink(dts = {}) {
   const syncRules = (dts.preferences || {})['dts.local.sync.rules'];
   if (!syncRules) {
     return null;
   }
   const preferences = MAPPERS['dts.local.sync.rules'](syncRules) || [];
-  const {destination} = preferences
-    .find(({source}) => (source || '').toLowerCase() === S3_LOGS_SOURCE.toLowerCase()) || {};
+  const {destination} =
+    preferences.find(({source}) => (source || '').toLowerCase() === S3_LOGS_SOURCE.toLowerCase()) ||
+    {};
   if (!destination) {
     return null;
   }
@@ -186,5 +189,5 @@ export {
   getModifiedPreferences,
   mapPreferences,
   unMapPreferences,
-  EVERY_UNITS
+  EVERY_UNITS,
 };

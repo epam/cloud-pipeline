@@ -16,7 +16,7 @@
 
 import {SearchItemTypes} from '../../../../../models/search';
 
-export default function getDocumentName (resultItem) {
+export default function getDocumentName(resultItem) {
   if (!resultItem) {
     return '';
   }
@@ -38,9 +38,10 @@ export default function getDocumentName (resultItem) {
     case SearchItemTypes.gsFile:
     case SearchItemTypes.azFile:
     case SearchItemTypes.s3File: {
-      const path = (resultItem.name || '');
+      const path = resultItem.name || '';
       return path.split('/').pop().split('\\').pop();
     }
-    default: return resultItem.name;
+    default:
+      return resultItem.name;
   }
 }

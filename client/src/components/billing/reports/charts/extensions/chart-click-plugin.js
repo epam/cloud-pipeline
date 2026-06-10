@@ -16,7 +16,7 @@
 
 const id = 'chart-click-plugin';
 
-function mouseOverElement (mouse, element) {
+function mouseOverElement(mouse, element) {
   if (!element) {
     return false;
   }
@@ -40,9 +40,7 @@ const plugin = {
       const {top} = scales[axis];
       const {highest} = scales[axis]._getLabelSizes();
       const {height, offset} = highest;
-      const isScale = axis.includes('x-axis')
-        ? y > height + offset + top
-        : y > top;
+      const isScale = axis.includes('x-axis') ? y > height + offset + top : y > top;
       if (isScale) {
         scaleHovered = true;
       }
@@ -73,13 +71,13 @@ const plugin = {
     const {left, top, right, bottom} = area;
     const center = {
       x: (left + right) / 2.0,
-      y: (top + bottom) / 2.0
+      y: (top + bottom) / 2.0,
     };
     const dx = x - center.x;
     const dy = y - center.y;
     let angle = Math.atan2(dy, dx);
     if (angle < -Math.PI / 2.0) {
-      angle += (2.0 * Math.PI);
+      angle += 2.0 * Math.PI;
     }
     const radius = Math.sqrt(Math.pow(dx, 2.0) + Math.pow(dy, 2.0));
     if (/^click$/i.test(type) && handler) {
@@ -104,7 +102,7 @@ const plugin = {
       return;
     }
     return true;
-  }
+  },
 };
 
 export {id, plugin};

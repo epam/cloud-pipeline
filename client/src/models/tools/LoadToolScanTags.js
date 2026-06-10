@@ -20,17 +20,17 @@ import {computed, makeObservable} from 'mobx';
 const repeatInterval = 5000;
 
 export default class LoadToolScanTags extends Remote {
-  constructor (id) {
+  constructor(id) {
     super();
     makeObservable(this, {
-      isUpdating: computed
+      isUpdating: computed,
     });
     this.url = `/tool/scan?tool=${id}`;
   }
 
   refreshData;
 
-  clearInterval () {
+  clearInterval() {
     if (this.refreshData) {
       clearInterval(this.refreshData);
       delete this.refreshData;
@@ -38,13 +38,13 @@ export default class LoadToolScanTags extends Remote {
     }
   }
 
-  startInterval () {
+  startInterval() {
     if (!this.refreshData) {
-      this.refreshData = setInterval(::this.fetch, repeatInterval);
+      this.refreshData = setInterval(() => this.fetch(), repeatInterval);
     }
   }
 
-  get isUpdating () {
+  get isUpdating() {
     return !!this.refreshData;
   }
 }

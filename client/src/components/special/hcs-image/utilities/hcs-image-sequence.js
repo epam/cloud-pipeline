@@ -41,7 +41,7 @@ class HCSImageSequence {
    * Initializes HCS Image Sequence object
    * @param {HCSImageSequenceOptions} options
    */
-  constructor (options = {}) {
+  constructor(options = {}) {
     const {
       hcs,
       storageId,
@@ -49,17 +49,12 @@ class HCSImageSequence {
       directory,
       sourceDirectory,
       objectStorage,
-      timeSeries = []
+      timeSeries = [],
     } = options;
-    const {
-      width: plateWidth = 10,
-      height: plateHeight = 10
-    } = hcs || {};
+    const {width: plateWidth = 10, height: plateHeight = 10} = hcs || {};
     this.plateWidth = plateWidth;
     this.plateHeight = plateHeight;
-    this.storageId = Number.isNaN(Number(storageId))
-      ? storageId
-      : Number(storageId);
+    this.storageId = Number.isNaN(Number(storageId)) ? storageId : Number(storageId);
     this.sequence = sequence;
     this.id = sequence;
     this.directory = directory;
@@ -73,10 +68,11 @@ class HCSImageSequence {
      */
     this.timeSeries = timeSeries.map((time, index) => ({
       id: index,
-      name: time
+      name: time,
     }));
-    this.wellsMapFileName = [directory, HCSConstants.WELLS_MAP_FILE_NAME]
-      .join(objectStorage.delimiter);
+    this.wellsMapFileName = [directory, HCSConstants.WELLS_MAP_FILE_NAME].join(
+      objectStorage.delimiter,
+    );
     this._fetch = undefined;
     this.wells = [];
     this.error = undefined;
@@ -86,69 +82,59 @@ class HCSImageSequence {
 
   reportReadAccess = () => this.hcsURLsManager.reportReadAccess();
 
-  addURLsGeneratedListener = (listener) =>
-    this.hcsURLsManager.addURLsGeneratedListener(listener);
+  addURLsGeneratedListener = (listener) => this.hcsURLsManager.addURLsGeneratedListener(listener);
 
   removeURLsGeneratedListener = (listener) =>
     this.hcsURLsManager.removeURLsGeneratedListener(listener);
 
-  destroy () {
+  destroy() {
     this.hcsURLsManager.destroy();
     this.hcsImageMetadataCache.destroy();
     this.hcsURLsManager = undefined;
     this.hcsImageMetadataCache = undefined;
-    this.wells.forEach(aWell => aWell.destroy());
+    this.wells.forEach((aWell) => aWell.destroy());
     this.wells = undefined;
     this.objectStorage = undefined;
   }
 
-  fetchWellsStructure = () => new Promise((resolve, reject) => {
-    this.generateWellsMapURL()
-      .then(() => this.objectStorage.getFileContent(this.wellsMapFileName, {json: true}))
-      .then(json => HCSImageWell.parseWellsInfo(
-        json,
-        this
-      ))
-      .then((wells = []) => {
-        this.wells = wells.slice();
-        return Promise.resolve(this.wells);
-      })
-      .then(resolve)
-      .catch(e => {
-        this.error = e.message;
-        reject(
-          new Error(`Error fetching sequence ${this.id} info: ${e.message}`)
-        );
-      });
-  });
+  fetchWellsStructure = () =>
+    new Promise((resolve, reject) => {
+      this.generateWellsMapURL()
+        .then(() => this.objectStorage.getFileContent(this.wellsMapFileName, {json: true}))
+        .then((json) => HCSImageWell.parseWellsInfo(json, this))
+        .then((wells = []) => {
+          this.wells = wells.slice();
+          return Promise.resolve(this.wells);
+        })
+        .then(resolve)
+        .catch((e) => {
+          this.error = e.message;
+          reject(new Error(`Error fetching sequence ${this.id} info: ${e.message}`));
+        });
+    });
 
-  fetch () {
+  fetch() {
     if (!this._fetch) {
       this._fetch = new Promise((resolve, reject) => {
         this.generateWellsMapURL()
           .then(() => this.objectStorage.getFileContent(this.wellsMapFileName, {json: true}))
-          .then(json => HCSImageWell.parseWellsInfo(
-            json,
-            this
-          ))
+          .then((json) => HCSImageWell.parseWellsInfo(json, this))
           .then((wells = []) => {
             this.wells = wells.slice();
             return Promise.resolve();
           })
           .then(() => this.fetchMetadata())
           .then(resolve)
-          .catch(e => {
+          .catch((e) => {
             this.error = e.message;
-            reject(
-              new Error(`Error fetching sequence ${this.id} info: ${e.message}`)
-            );
+            reject(new Error(`Error fetching sequence ${this.id} info: ${e.message}`));
           });
       });
     }
     return this._fetch;
   }
 
-  generateWellsMapURL () {
+  generateWellsMapURL() {
     const promise = this.objectStorage.generateFileUrl(this.wellsMapFileName);
     promise
       .then((url) => {

@@ -26,5 +26,5 @@ export default {
   [Panels.notifications]: 'Notifications',
   [Panels.recentlyCompletedRuns]: 'Recently completed runs',
   [Panels.services]: 'Services',
-  [Panels.userCosts]: 'My costs'
+  [Panels.userCosts]: 'My costs',
 };

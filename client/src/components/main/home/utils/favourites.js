@@ -18,20 +18,22 @@ import {inject} from 'mobx-react';
 const FAVOURITES_KEY = 'favourites';
 const DISPLAY_ONLY_FAVOURITES_KEY = 'display_only_favourites';
 
-export function favouriteStorage (WrappedComponent) {
+export function favouriteStorage(WrappedComponent) {
   return inject((stores, parameters) => {
     if (parameters.panelKey) {
       return {
-        getFavourites: parameters.getFavourites ||
-        (() => getFavouritesForPanel(parameters.panelKey)),
-        setFavourites: parameters.setFavourites ||
-        ((itemId, isFavourite) => setFavouritesForPanel(parameters.panelKey, itemId, isFavourite))
+        getFavourites:
+          parameters.getFavourites || (() => getFavouritesForPanel(parameters.panelKey)),
+        setFavourites:
+          parameters.setFavourites ||
+          ((itemId, isFavourite) =>
+            setFavouritesForPanel(parameters.panelKey, itemId, isFavourite)),
       };
     }
   })(WrappedComponent);
 }
 
-export function getDisplayOnlyFavourites () {
+export function getDisplayOnlyFavourites() {
   const value = localStorage.getItem(DISPLAY_ONLY_FAVOURITES_KEY);
   if (value) {
     return JSON.parse(value);
@@ -39,14 +41,14 @@ export function getDisplayOnlyFavourites () {
   return false;
 }
 
-export function setDisplayOnlyFavourites (value) {
+export function setDisplayOnlyFavourites(value) {
   try {
     localStorage.setItem(DISPLAY_ONLY_FAVOURITES_KEY, JSON.stringify(value));
   } catch (___) {}
 }
 
-function getFavourites () {
-  let favouritesJson = localStorage.getItem(FAVOURITES_KEY);
+function getFavourites() {
+  const favouritesJson = localStorage.getItem(FAVOURITES_KEY);
   if (favouritesJson) {
     try {
       return JSON.parse(favouritesJson);
@@ -55,13 +57,13 @@ function getFavourites () {
   return {};
 }
 
-function setFavourites (favourites) {
+function setFavourites(favourites) {
   try {
     localStorage.setItem(FAVOURITES_KEY, JSON.stringify(favourites || {}));
   } catch (___) {}
 }
 
-export function setFavouritesForPanel (panel, itemId, isFavourite) {
+export function setFavouritesForPanel(panel, itemId, isFavourite) {
   const favourites = getFavourites();
   if (!favourites[panel]) {
     favourites[panel] = [];
@@ -78,7 +80,7 @@ export function setFavouritesForPanel (panel, itemId, isFavourite) {
   }
 }
 
-export function getFavouritesForPanel (panel) {
+export function getFavouritesForPanel(panel) {
   const favourites = getFavourites();
   if (!favourites[panel]) {
     favourites[panel] = [];

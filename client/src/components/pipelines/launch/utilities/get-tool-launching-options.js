@@ -18,34 +18,31 @@ import LoadToolVersionSettings from '../../../../models/tools/LoadToolVersionSet
 import AllowedInstanceTypes from '../../../../models/utils/AllowedInstanceTypes';
 import {modifyPayloadForAllowedInstanceTypes} from '../../../runs/actions';
 
-function prepareParameters (parameters) {
+function prepareParameters(parameters) {
   const result = {};
-  for (let key in parameters) {
-    if (parameters.hasOwnProperty(key)) {
+  for (const key in parameters) {
+    if (Object.hasOwn(parameters, key)) {
       result[key] = {
         type: parameters[key].type,
         value: parameters[key].value,
         required: parameters[key].required,
-        defaultValue: parameters[key].defaultValue
+        defaultValue: parameters[key].defaultValue,
       };
     }
   }
   return result;
 }
 
-function parameterIsNotEmpty (parameter, additionalCriteria) {
-  return parameter !== null &&
+function parameterIsNotEmpty(parameter, additionalCriteria) {
+  return (
+    parameter !== null &&
     parameter !== undefined &&
     `${parameter}`.trim().length > 0 &&
-    (!additionalCriteria || additionalCriteria(parameter));
+    (!additionalCriteria || additionalCriteria(parameter))
+  );
 }
 
-function chooseDefaultValue (
-  versionValue,
-  toolValue,
-  settingsValue,
-  additionalCriteria
-) {
+function chooseDefaultValue(versionValue, toolValue, settingsValue, additionalCriteria) {
   if (parameterIsNotEmpty(versionValue, additionalCriteria)) {
     return versionValue;
   }
@@ -55,16 +52,9 @@ function chooseDefaultValue (
   return settingsValue;
 }
 
-export default function getToolLaunchingOptions (
-  stores,
-  tool,
-  toolVersion = 'latest'
-) {
+export default function getToolLaunchingOptions(stores, tool, toolVersion = 'latest') {
   return new Promise((resolve, reject) => {
-    const {
-      awsRegions,
-      preferences
-    } = stores || {};
+    const {awsRegions, preferences} = stores || {};
     if (!preferences) {
       reject(new Error('Error fetching preferences'));
       return;
@@ -103,18 +93,14 @@ export default function getToolLaunchingOptions (
           reject(new Error('Error fetching tool parameters'));
         } else {
           const options = (request.value || []).slice();
-          const extractSettings = o => {
+          const extractSettings = (o) => {
             if (!o || !o.settings || o.settings.length === 0) {
               return undefined;
             }
-            return (
-              o.settings.find(s => s.default) ||
-              o.settings[0] ||
-              {}
-            ).configuration;
+            return (o.settings.find((s) => s.default) || o.settings[0] || {}).configuration;
           };
-          const latestVersion = extractSettings(options.find(o => o.version === 'latest'));
-          const currentVersion = extractSettings(options.find(o => o.version === toolVersion));
+          const latestVersion = extractSettings(options.find((o) => o.version === 'latest'));
+          const currentVersion = extractSettings(options.find((o) => o.version === toolVersion));
 
           const versionSettingValue = (settingName) => {
             if (currentVersion) {
@@ -125,7 +111,7 @@ export default function getToolLaunchingOptions (
             }
             return null;
           };
-          const defaultRegion = (awsRegions.value || []).find(r => r.default) || {};
+          const defaultRegion = (awsRegions.value || []).find((r) => r.default) || {};
           const cloudRegionIdValue = parameterIsNotEmpty(versionSettingValue('cloudRegionId'))
             ? versionSettingValue('cloudRegionId')
             : defaultRegion.id;
@@ -135,42 +121,44 @@ export default function getToolLaunchingOptions (
           const allowedInstanceTypesRequest = new AllowedInstanceTypes({
             toolId: tool.id,
             regionId: cloudRegionIdValue,
-            spot: isSpotValue
+            spot: isSpotValue,
           });
           allowedInstanceTypesRequest
             .fetch()
             .then(() => {
-              const payload = modifyPayloadForAllowedInstanceTypes({
-                instanceType:
-                  chooseDefaultValue(
+              const payload = modifyPayloadForAllowedInstanceTypes(
+                {
+                  instanceType: chooseDefaultValue(
                     versionSettingValue('instance_size'),
                     tool.instanceType,
-                    preferences.getPreferenceValue('cluster.instance.type')
+                    preferences.getPreferenceValue('cluster.instance.type'),
                   ),
-                hddSize: +chooseDefaultValue(
-                  versionSettingValue('instance_disk'),
-                  tool.disk,
-                  preferences.getPreferenceValue('cluster.instance.hdd'),
-                  p => +p > 0
-                ),
-                timeout: +(tool.timeout || 0),
-                cmdTemplate: chooseDefaultValue(
-                  versionSettingValue('cmd_template'),
-                  tool.defaultCommand,
-                  preferences.getPreferenceValue('launch.cmd.template')
-                ),
-                dockerImage: tool.registry
-                  ? `${tool.registry}/${tool.image}${toolVersion ? `:${toolVersion}` : ''}`
-                  : `${tool.image}${toolVersion ? `:${toolVersion}` : ''}`,
-                params: parameterIsNotEmpty(versionSettingValue('parameters'))
-                  ? prepareParameters(versionSettingValue('parameters'))
-                  : {},
-                isSpot: isSpotValue,
-                nodeCount: parameterIsNotEmpty(versionSettingValue('node_count'))
-                  ? +versionSettingValue('node_count')
-                  : undefined,
-                cloudRegionId: cloudRegionIdValue
-              }, allowedInstanceTypesRequest);
+                  hddSize: +chooseDefaultValue(
+                    versionSettingValue('instance_disk'),
+                    tool.disk,
+                    preferences.getPreferenceValue('cluster.instance.hdd'),
+                    (p) => +p > 0,
+                  ),
+                  timeout: +(tool.timeout || 0),
+                  cmdTemplate: chooseDefaultValue(
+                    versionSettingValue('cmd_template'),
+                    tool.defaultCommand,
+                    preferences.getPreferenceValue('launch.cmd.template'),
+                  ),
+                  dockerImage: tool.registry
+                    ? `${tool.registry}/${tool.image}${toolVersion ? `:${toolVersion}` : ''}`
+                    : `${tool.image}${toolVersion ? `:${toolVersion}` : ''}`,
+                  params: parameterIsNotEmpty(versionSettingValue('parameters'))
+                    ? prepareParameters(versionSettingValue('parameters'))
+                    : {},
+                  isSpot: isSpotValue,
+                  nodeCount: parameterIsNotEmpty(versionSettingValue('node_count'))
+                    ? +versionSettingValue('node_count')
+                    : undefined,
+                  cloudRegionId: cloudRegionIdValue,
+                },
+                allowedInstanceTypesRequest,
+              );
               resolve(payload);
             })
             .catch(reject);

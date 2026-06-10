@@ -25,7 +25,7 @@ import {FloatParameter} from './simple-parameters';
 /**
  * @param {ModuleParameterOptions} [options]
  */
-export default function parameterInitializer (options = {}) {
+export default function parameterInitializer(options = {}) {
   switch (options.type) {
     case AnalysisTypes.object:
       return new ObjectParameter(options);

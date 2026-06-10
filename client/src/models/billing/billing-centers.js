@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 class BillingCenters extends Remote {
-  constructor () {
+  constructor() {
     super();
     this.url = '/billing/centers';
   }

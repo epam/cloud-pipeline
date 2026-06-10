@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-export function compareUserNames (a, b) {
+export function compareUserNames(a, b) {
   if (!a && !b) {
     return true;
   }
@@ -26,7 +26,7 @@ export function compareUserNames (a, b) {
   return aLowerCased === bLowerCased;
 }
 
-export function compareUserNamesWithoutDomain (a, b) {
+export function compareUserNamesWithoutDomain(a, b) {
   if (!a && !b) {
     return true;
   }

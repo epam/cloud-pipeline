@@ -1,11 +1,11 @@
-import moment from 'moment-timezone';
+import dayjs from '../../../utils/dayjs';
 import dataStorages from '../../../models/dataStorage/DataStorages';
 import whoAmI from '../../../models/user/WhoAmI';
 
 const defaultUserStoragePlaceholder = '{default_user_storage}';
 const defaultStoragePathTemplate = 'upload/{user.userName}/{date}';
 
-export async function findStorage (storage) {
+export async function findStorage(storage) {
   if (!storage) {
     return undefined;
   }
@@ -24,20 +24,16 @@ export async function findStorage (storage) {
   return undefined;
 }
 
-export async function getStoragePathGenerator (storagePath) {
+export async function getStoragePathGenerator(storagePath) {
   let template = storagePath;
   if (template === undefined || template === null) {
     template = defaultUserStoragePlaceholder;
   }
   await whoAmI.fetchIfNeededOrWait();
-  const placeholders = extractPlaceholders(template)
-    .map((placeholder) => ({
-      placeholder,
-      parser: processPlaceholderValue(
-        placeholder,
-        whoAmI.loaded ? whoAmI.value : undefined
-      )
-    }));
+  const placeholders = extractPlaceholders(template).map((placeholder) => ({
+    placeholder,
+    parser: processPlaceholderValue(placeholder, whoAmI.loaded ? whoAmI.value : undefined),
+  }));
   return () => {
     let result = storagePath;
     for (const placeholder of placeholders) {
@@ -50,7 +46,7 @@ export async function getStoragePathGenerator (storagePath) {
 
 export {defaultUserStoragePlaceholder, defaultStoragePathTemplate};
 
-async function findStorageByIdentifier (storageId) {
+async function findStorageByIdentifier(storageId) {
   await dataStorages.fetchIfNeededOrWait();
   if (dataStorages.loaded && dataStorages.value) {
     try {
@@ -62,12 +58,14 @@ async function findStorageByIdentifier (storageId) {
   return undefined;
 }
 
-async function findStorageByName (storageName) {
+async function findStorageByName(storageName) {
   await dataStorages.fetchIfNeededOrWait();
   if (dataStorages.loaded && dataStorages.value) {
     try {
-      return dataStorages.value.find((ds) => ds.name.toLowerCase() === storageName) ||
-        dataStorages.value.find((ds) => ds.pathMask.toLowerCase() === storageName);
+      return (
+        dataStorages.value.find((ds) => ds.name.toLowerCase() === storageName) ||
+        dataStorages.value.find((ds) => ds.pathMask.toLowerCase() === storageName)
+      );
     } catch {
       // noop
     }
@@ -75,12 +73,10 @@ async function findStorageByName (storageName) {
   return undefined;
 }
 
-async function findDefaultUserStorage () {
+async function findDefaultUserStorage() {
   await whoAmI.fetchIfNeededOrWait();
   if (whoAmI.loaded && whoAmI.value) {
-    const {
-      defaultStorageId
-    } = whoAmI.value;
+    const {defaultStorageId} = whoAmI.value;
     if (defaultStorageId) {
       return findStorageByIdentifier(defaultStorageId);
     }
@@ -88,7 +84,7 @@ async function findDefaultUserStorage () {
   return undefined;
 }
 
-function extractPlaceholders (input) {
+function extractPlaceholders(input) {
   const regex = /\{([^}]+)\}/g;
   const results = [];
   let match;
@@ -98,11 +94,11 @@ function extractPlaceholders (input) {
   return [...new Set(results)];
 }
 
-function processPlaceholderValue (placeholder, userInfo) {
+function processPlaceholderValue(placeholder, userInfo) {
   return () => {
     const key = placeholder.slice(1, -1);
     if (key.toLowerCase() === 'date') {
-      return moment.utc().format('YYYY-MM-DD');
+      return dayjs.utc().format('YYYY-MM-DD');
     }
     if (key.toLowerCase() === 'user' || key.toLowerCase() === 'username') {
       return (userInfo ? userInfo.userName : undefined) || '';

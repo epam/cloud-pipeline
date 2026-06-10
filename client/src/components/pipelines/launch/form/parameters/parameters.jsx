@@ -1,27 +1,27 @@
 import React, {Component} from 'react';
-import {computed, makeObservable} from 'mobx';
+import {makeObservable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import PropTypes from 'prop-types';
 import LaunchFormParameter from './parameter';
 import Divider from './divider';
-import styles from './parameters.css';
-import LoadingView from '../../../../special/LoadingView';
+import styles from './parameters.module.css';
+import LoadingView from '../../../../special/LoadingView.tsx';
 import {
   getVisibleParameters,
   hasResolvedValues,
-  toggleResolvedValues
+  toggleResolvedValues,
 } from '../utilities/parameter-utilities';
 import RootEntityTypeParameter from './parameter/root-entity-type-input';
 import {Checkbox} from 'antd';
 import classNames from 'classnames';
 
-function getParameterSection (parameter) {
+function getParameterSection(parameter) {
   const {config = {}} = parameter;
   const {section} = config;
   return section && !/^other$/i.test(section) ? section : 'Other';
 }
 
-function getSections (parameters) {
+function getSections(parameters) {
   const sections = [];
   const set = new Set();
   for (const param of parameters) {
@@ -38,54 +38,48 @@ function getSections (parameters) {
   });
 }
 
-function filterParameterBySection (parameter, section) {
+function filterParameterBySection(parameter, section) {
   const parameterSection = getParameterSection(parameter);
   return parameterSection.toLowerCase() === section.toLowerCase();
 }
 
-@inject(
-  'authenticatedUserInfo',
-  'preferences',
-  'runDefaultParameters'
-)
+@inject('authenticatedUserInfo', 'preferences', 'runDefaultParameters')
 @observer
 class Parameters extends Component {
   state = {
     useResolvedValues: false,
-    highlightedSection: undefined
+    highlightedSection: undefined,
   };
 
   sectionDivs = {};
 
-  constructor (props) {
+  constructor(props) {
     super(props);
-    makeObservable(this, {
-      userInfo: computed
-    });
+    makeObservable(this, {});
   }
 
-  componentDidMount () {
+  componentDidMount() {
     this.checkResolvedValues();
   }
 
-  componentDidUpdate (prevProps, prevState, snapshot) {
+  componentDidUpdate(prevProps, prevState, snapshot) {
     if (prevProps.parameters !== this.props.parameters) {
       this.checkResolvedValues();
     }
   }
 
-  componentWillUnmount () {
+  componentWillUnmount() {
     clearTimeout(this.highlightSectionTimeout);
   }
 
-  get userInfo () {
+  get userInfo() {
     if (!this.props.authenticatedUserInfo.loaded) {
       return undefined;
     }
     return this.props.authenticatedUserInfo.value;
   }
 
-  get optionalIsVisible () {
+  get optionalIsVisible() {
     const {showOptionalParameters = true, system} = this.props;
     if (system) {
       return true;
@@ -102,21 +96,18 @@ class Parameters extends Component {
   };
 
   onChangeUseResolvedValues = (useResolvedValues) => {
-    const {
-      parameters = [],
-      onChange
-    } = this.props;
+    const {parameters = [], onChange} = this.props;
     this.setState({useResolvedValues}, () => {
       if (onChange) {
         const result = toggleResolvedValues(parameters, useResolvedValues);
         onChange(result);
       }
     });
-  }
+  };
 
   initSectionDiv = (div, section) => {
     this.sectionDivs[section] = div;
-  }
+  };
 
   scrollToSection = (section) => {
     const div = this.sectionDivs[section];
@@ -129,14 +120,18 @@ class Parameters extends Component {
   highlightSection = (section) => {
     clearTimeout(this.highlightSectionTimeout);
     this.setState({
-      highlightedSection: section
+      highlightedSection: section,
     });
-    this.highlightSectionTimeout = setTimeout(() => this.setState({
-      highlightedSection: undefined
-    }), 1000);
-  }
+    this.highlightSectionTimeout = setTimeout(
+      () =>
+        this.setState({
+          highlightedSection: undefined,
+        }),
+      1000,
+    );
+  };
 
-  render () {
+  render() {
     const {
       className,
       style,
@@ -163,24 +158,25 @@ class Parameters extends Component {
       pipeline,
       parameterRowClassName,
       description,
-      parametersMetadata
+      parametersMetadata,
     } = this.props;
     if (!preferences.loaded || !runDefaultParameters.loaded) {
-      return (<LoadingView />);
+      return <LoadingView />;
     }
     const filtered = getVisibleParameters(
       parameters,
       system,
       rawEdit,
       this.userInfo,
-      this.optionalIsVisible
+      this.optionalIsVisible,
     );
     const sections = getSections(filtered);
-    const grouped = sections.map((section) => ({
-      section,
-      parameters: filtered
-        .filter((p) => filterParameterBySection(p, section))
-    })).filter((g) => g.parameters.length > 0);
+    const grouped = sections
+      .map((section) => ({
+        section,
+        parameters: filtered.filter((p) => filterParameterBySection(p, section)),
+      }))
+      .filter((g) => g.parameters.length > 0);
     const onParameterChanged = (parameter) => {
       const modified = parameters.slice();
       const idx = modified.findIndex((p) => p.key === parameter.key);
@@ -204,126 +200,103 @@ class Parameters extends Component {
       }
     };
     const {useResolvedValues} = this.state;
-    const longestSection = grouped
-      .reduce((acc, cur) => acc.length < cur.section.length ? cur.section : acc, '');
+    const longestSection = grouped.reduce(
+      (acc, cur) => (acc.length < cur.section.length ? cur.section : acc),
+      '',
+    );
     const showSections = !system && grouped.length > 1;
     return (
-      <div
-        className={classNames(styles.parametersContainer, className)}
-        style={style}
-      >
-        {
-          showSections && (
-            <div className={styles.parametersNavigation} ref={navigationRef}>
-              <div className={navigationClassName} style={navigationStyle}>
-                {
-                  grouped.map((group) => (
-                    <div key={group.section}>
-                      <a onClick={() => this.scrollToSection(group.section)}>
-                        {group.section}
-                      </a>
-                    </div>
-                  ))
-                }
-              </div>
-              <div style={{opacity: 0, userSelect: 'none', pointerEvents: 'none'}}>
-                <span>
-                  {longestSection}
-                </span>
+      <div className={classNames(styles.parametersContainer, className)} style={style}>
+        {showSections && (
+          <div className={styles.parametersNavigation} ref={navigationRef}>
+            <div className={navigationClassName} style={navigationStyle}>
+              {grouped.map((group) => (
+                <div key={group.section}>
+                  <a onClick={() => this.scrollToSection(group.section)}>{group.section}</a>
+                </div>
+              ))}
+            </div>
+            <div style={{opacity: 0, userSelect: 'none', pointerEvents: 'none'}}>
+              <span>{longestSection}</span>
+            </div>
+          </div>
+        )}
+        <div className={styles.parametersContent}>
+          {system && (
+            <div
+              key="system-parameters-divider-section"
+              className={styles.parametersGroupContainer}
+            >
+              <Divider>System parameters</Divider>
+            </div>
+          )}
+          {hasResolvedValues(filtered) && !system && (
+            <div key="use-resolved-values-section" className={styles.parametersGroupContainer}>
+              <div className={styles.parameterRow}>
+                <Checkbox
+                  disabled={disabled}
+                  checked={useResolvedValues}
+                  onChange={(event) => this.onChangeUseResolvedValues(event.target.checked)}
+                >
+                  Use resolved values
+                </Checkbox>
               </div>
             </div>
-          )
-        }
-        <div className={styles.parametersContent}>
-          {
-            system && (
+          )}
+          {description && (
+            <div key="parameters-description" className={styles.parametersGroupContainer}>
+              {description}
+            </div>
+          )}
+          {showRootEntityId && (
+            <div key="root-entity-type-section" className={styles.parametersGroupContainer}>
+              <RootEntityTypeParameter
+                key="root-entity-type-parameter"
+                className={styles.parameterRow}
+                disabled={disabled}
+                currentProjectId={currentProjectId}
+                currentMetadataEntity={currentMetadataEntity}
+                rootEntityId={rootEntityId}
+                onChange={onChangeRootEntityId}
+              />
+            </div>
+          )}
+          {grouped.map(({section, parameters: sectionParameters}) => {
+            return (
               <div
-                key={`system-parameters-divider-section`}
+                key={`section-${section}`}
                 className={styles.parametersGroupContainer}
+                ref={(div) => this.initSectionDiv(div, section)}
               >
-                <Divider>System parameters</Divider>
-              </div>
-            )
-          }
-          {
-            hasResolvedValues(filtered) && !system && (
-              <div key={`use-resolved-values-section`} className={styles.parametersGroupContainer}>
-                <div className={styles.parameterRow}>
-                  <Checkbox
+                {(grouped.length > 1 || !/^other$/i.test(section)) && (
+                  <Divider highlighted={this.state.highlightedSection === section}>
+                    {section}
+                  </Divider>
+                )}
+                {sectionParameters.map((p) => (
+                  <LaunchFormParameter
+                    key={p.key}
+                    className={classNames(styles.parameterRow, parameterRowClassName)}
                     disabled={disabled}
-                    checked={useResolvedValues}
-                    onChange={(event) => this.onChangeUseResolvedValues(event.target.checked)}
-                  >
-                    Use resolved values
-                  </Checkbox>
-                </div>
+                    parameter={p}
+                    onChange={onParameterChanged}
+                    onRemoveParameter={onParameterRemoved}
+                    editConfiguration={editConfiguration}
+                    rawEdit={rawEdit}
+                    currentCloudRegionId={currentCloudRegionId}
+                    currentProjectId={currentProjectId}
+                    currentProjectMetadata={currentProjectMetadata}
+                    parametersMetadata={parametersMetadata}
+                    currentMetadataEntity={currentMetadataEntity}
+                    rootEntityId={rootEntityId}
+                    metadataAutoComplete={metadataAutoComplete}
+                    detached={detached}
+                    pipeline={pipeline}
+                  />
+                ))}
               </div>
-            )
-          }
-          {
-            description && (
-              <div key={`parameters-description`} className={styles.parametersGroupContainer}>
-                {description}
-              </div>
-            )
-          }
-          {
-            showRootEntityId && (
-              <div key={`root-entity-type-section`} className={styles.parametersGroupContainer}>
-                <RootEntityTypeParameter
-                  key="root-entity-type-parameter"
-                  className={styles.parameterRow}
-                  disabled={disabled}
-                  currentProjectId={currentProjectId}
-                  currentMetadataEntity={currentMetadataEntity}
-                  rootEntityId={rootEntityId}
-                  onChange={onChangeRootEntityId}
-                />
-              </div>
-            )
-          }
-          {
-            grouped.map(({section, parameters: sectionParameters}) => {
-              return (
-                <div
-                  key={`section-${section}`}
-                  className={styles.parametersGroupContainer}
-                  ref={(div) => this.initSectionDiv(div, section)}
-                >
-                  {
-                    (grouped.length > 1 || !/^other$/i.test(section)) && (
-                      <Divider
-                        highlighted={this.state.highlightedSection === section}
-                      >
-                        {section}
-                      </Divider>
-                    )
-                  }
-                  {sectionParameters.map((p) => (
-                    <LaunchFormParameter
-                      key={p.key}
-                      className={classNames(styles.parameterRow, parameterRowClassName)}
-                      disabled={disabled}
-                      parameter={p}
-                      onChange={onParameterChanged}
-                      onRemoveParameter={onParameterRemoved}
-                      editConfiguration={editConfiguration}
-                      rawEdit={rawEdit}
-                      currentCloudRegionId={currentCloudRegionId}
-                      currentProjectId={currentProjectId}
-                      currentProjectMetadata={currentProjectMetadata}
-                      parametersMetadata={parametersMetadata}
-                      currentMetadataEntity={currentMetadataEntity}
-                      rootEntityId={rootEntityId}
-                      metadataAutoComplete={metadataAutoComplete}
-                      detached={detached}
-                      pipeline={pipeline}
-                    />
-                  ))}
-                </div>
-              );
-            })
-          }
+            );
+          })}
         </div>
       </div>
     );
@@ -354,7 +327,7 @@ Parameters.propTypes = {
   detached: PropTypes.bool,
   pipeline: PropTypes.bool,
   parameterRowClassName: PropTypes.string,
-  description: PropTypes.node
+  description: PropTypes.node,
 };
 
 export default Parameters;

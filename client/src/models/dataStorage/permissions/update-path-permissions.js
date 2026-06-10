@@ -18,20 +18,20 @@ import RemotePost from '../../basic/RemotePost';
 import {getStorageItemPermissionType} from './utilities';
 
 export default class UpdatePathPermissions extends RemotePost {
-  constructor (storageId) {
+  constructor(storageId) {
     super();
     this.constructor.fetchOptions = {
       headers: {
-        'Content-type': 'application/json; charset=UTF-8'
+        'Content-type': 'application/json; charset=UTF-8',
       },
       mode: 'cors',
       credentials: 'include',
-      method: 'PUT'
+      method: 'PUT',
     };
     this.url = `/datastorage/${storageId}/paths/permissions`;
   }
 
-  async send (body, abortSignal) {
+  async send(body, abortSignal) {
     const modifiedBody = body.map((o) => {
       const {type, ...rest} = o;
       return {...rest, type: getStorageItemPermissionType(type)};

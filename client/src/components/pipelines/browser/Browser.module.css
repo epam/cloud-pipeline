@@ -1,0 +1,550 @@
+/*
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+.table {
+  overflow-y: auto;
+}
+
+.table .row .copy-url {
+  visibility: hidden;
+  margin-left: 5px;
+  transition: transform 0.15s ease;
+  transform: scale(1);
+  cursor: pointer;
+}
+
+.table .row .copy-url:hover {
+  transform: scale(1.2);
+}
+
+.table .row:hover .copy-url {
+  visibility: visible;
+}
+
+.table > div > div,
+.children-container > div > div {
+  filter: none !important;
+}
+
+th.metadata-column-value {
+  max-width: 100px;
+}
+
+.cell {
+  background-color: initial;
+  position: relative;
+  border: 1px solid transparent;
+}
+
+.metadata-column-value {
+  overflow-x: hidden;
+  white-space: nowrap;
+  max-width: 100px;
+  border-left: 1px solid var(--cp-color-border-secondary);
+  padding-right: 5px;
+}
+
+.tree-item-name {
+  cursor: pointer;
+  min-width: 150px;
+  max-width: 200px;
+}
+
+tbody[class*="ant-table-tbody"] .tree-item-name {
+  word-break: break-word;
+}
+
+.tree-item-version {
+  white-space: nowrap;
+  min-width: max-content;
+}
+
+.tree-item-row {
+  cursor: pointer;
+}
+
+.metadata-folder-item-name {
+  cursor: pointer;
+  width: unset;
+}
+
+.tree-item-no-wrap {
+  white-space: nowrap;
+}
+
+.tree-item-name-wrap {
+  width: initial;
+  white-space: normal;
+}
+
+.tree-item-type {
+  width: 20px;
+  cursor: pointer;
+}
+
+.tree-item-selection {
+  width: 20px;
+  cursor: pointer;
+}
+
+.tree-item-region:hover {
+  cursor: pointer;
+}
+
+.tree-item-actions {
+  cursor: pointer;
+  min-width: min-content;
+}
+
+.folder-tree-item-actions {
+  cursor: pointer;
+  width: 200px;
+}
+
+.tree-item-actions > div > button,
+.tree-item-actions > div > span,
+.folder-tree-item-actions > div > button,
+.folder-tree-item-actions > div > span {
+  margin-left: 5px;
+}
+
+.current-folder-actions {
+  padding-right: 20px;
+  text-align: right;
+}
+
+.current-folder-actions > div,
+.current-folder-actions > button,
+.current-folder-actions nobr > button {
+  margin: 1px 1px 1px 10px;
+}
+
+.item-header {
+  padding-left: 10px;
+  flex: 1;
+}
+
+.item-header > i {
+  margin-right: 10px;
+}
+
+.item-header > i.editable-control {
+  margin-right: 5px;
+  margin-bottom: 3px;
+}
+
+.item-header,
+.item-header input {
+  font-size: large;
+  font-weight: 600;
+}
+
+.item-header input {
+  padding: 6px 6px 8px 4px;
+}
+
+.object-name-bold {
+  font-weight: bold;
+}
+
+.children-container {
+
+}
+
+.children-container-larger table {
+  font-size: 11pt;
+}
+
+.version-row {
+  cursor: pointer;
+}
+
+.git-repository-popover {
+  width: 300px;
+}
+
+.storage-actions button {
+  margin-left: 5px;
+}
+
+.storage-actions > * {
+  margin-bottom: 3px;
+}
+
+.item-actions {
+  text-align: right;
+}
+
+.item-actions-container {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.item-actions-container a,
+.item-actions-container button {
+  margin-left: 5px;
+}
+
+.data-storage-info-container {
+  margin: 10px;
+}
+
+.data-storage-info-edit-container {
+  text-align: right;
+}
+
+.path-components-container {
+  cursor: text;
+  margin-bottom: 10px;
+  width: 100%;
+}
+
+.path-components-container:hover {
+  transition: background-color 0.5s ease;
+  background-color: var(--cp-color-bg-striped);
+}
+
+.breadcrumb-item {
+  padding: 5px 0;
+}
+
+.row-menu {
+  border-bottom: 1px solid var(--cp-color-border-card);
+}
+
+.buttons-container {
+  text-align: right;
+}
+
+.buttons-container button {
+  margin-left: 5px;
+  margin-bottom: 5px;
+}
+
+.item-type-cell {
+  width: 20px;
+}
+
+.item-type-cell i {
+  vertical-align: middle;
+}
+
+.item-type {
+  font-size: larger;
+}
+
+.checkbox-cell-versions {
+  width: 60px;
+  vertical-align: middle;
+}
+
+.checkbox-cell {
+  width: 30px;
+}
+
+.metadata-checkbox-cell {
+  text-align: center;
+}
+
+.labels-cell span,
+.labels-cell a {
+  vertical-align: middle;
+  margin-left: 5px;
+}
+
+.name-cell {
+
+}
+
+.size-cell {
+
+}
+
+.changed-cell {
+
+}
+
+.app-cell {
+  text-align: left;
+  width: 22px;
+}
+
+.app-cell button {
+  margin-right: 5px;
+}
+
+.app-link {
+  padding: 0;
+  display: inline-block;
+}
+
+.app-link span,
+.app-link img,
+.app-link i {
+  vertical-align: middle;
+}
+
+.app-link img {
+  width: 20px;
+  height: 20px;
+}
+
+.miew-popover-container {
+  width: 30vw;
+  height: 30vh;
+}
+
+.label {
+  margin-right: 4px;
+  padding: 1px 4px;
+  border: 1px solid var(--cp-color-border);
+  border-radius: 5px;
+}
+
+.folder,
+.file {
+  cursor: pointer;
+}
+
+.folder:hover,
+.file:hover {
+  text-decoration: underline;
+}
+
+.modal-container {
+  height: 500px;
+}
+
+.generate-download-url-input {
+  white-space: pre-wrap;
+}
+
+.filter-popover-container {
+  padding: 5px;
+  border-radius: 4px;
+  min-width: 100px;
+}
+
+.filter-popover-container > div {
+  margin-top: 5px;
+}
+
+.search-control > span {
+  width: 200px;
+  margin-left: 12px;
+}
+
+tr.table-row-selected {
+  background-color: var(--cp-color-primary-muted);
+}
+
+.metadata-table {
+  border-radius: 0 0 5px 5px;
+}
+
+.metadata-table div {
+  outline: none;
+}
+
+.metadata-table-element {
+  table-layout: fixed;
+}
+
+.metadata-table-element td {
+  position: relative;
+  vertical-align: middle;
+}
+
+.metadata-column-resizer {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  user-select: none;
+  touch-action: none;
+}
+
+.metadata-column-header {
+  cursor: pointer;
+  height: 28px;
+  width: 100%;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.metadata-column-cell {
+  width: 100%;
+  height: 100%;
+  padding: 7px 5px;
+}
+
+.metadata-column-cell.selected {
+  background-color: var(--cp-color-primary-muted);
+}
+
+.metadata-additional-actions {
+  border: 1px solid color-mix(in srgb, var(--cp-color-text) 10%, transparent);
+  border-radius: 5px 5px 0 0;
+  border-bottom: none;
+  padding: 5px;
+  min-height: 37px;
+  flex-wrap: nowrap;
+}
+
+.metadata-predefined-filters {
+  border: 1px solid color-mix(in srgb, var(--cp-color-text) 10%, transparent);
+  border-bottom: none;
+  border-top: none;
+  padding: 0 5px 5px;
+  min-height: 37px;
+  flex-wrap: wrap;
+  display: flex;
+  align-items: center;
+}
+
+.metadata-predefined-filter {
+  margin-right: 5px;
+  margin-bottom: 2px;
+}
+
+.action-link:hover {
+  text-decoration: underline;
+}
+
+.readonly {
+
+}
+
+.pipeline-with-description-row {
+
+}
+
+.pipeline-with-description-row td.tree-item-type,
+.pipeline-with-description-row td.tree-item-actions,
+.pipeline-with-description-row td.folder-tree-item-actions {
+  vertical-align: top;
+}
+
+.pipeline-with-description-row > td.tree-item-type > i {
+  margin-top: 5px;
+}
+
+.metadata-item-container {
+  display: inline-block;
+  margin-bottom: 3px;
+  margin-right: 10px;
+  font-size: smaller;
+  vertical-align: top;
+}
+
+.metadata-popover .metadata-item-container {
+  box-shadow: none;
+  overflow: auto;
+  max-width: none;
+  white-space: normal;
+}
+
+.metadata-item-key {
+  padding: 0 3px;
+}
+
+.metadata-item-value {
+  padding: 0 3px;
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.metadata-item-value.wrap {
+  white-space: initial;
+}
+
+.metadata-popover .metadata-item-value {
+  overflow: auto;
+  max-width: none;
+  white-space: normal;
+}
+
+.metadata-preview-btn {
+  padding: 0 5px;
+  cursor: pointer;
+}
+
+.run-table {
+  overflow-y: auto;
+}
+
+.run-table > div > div {
+  filter: none !important;
+}
+
+.fire-cloud-method-name-column {
+  width: 25%;
+}
+
+.fire-cloud-method-row {
+  cursor: pointer;
+}
+
+.configuration-confirm-btn {
+  margin-top: 30px;
+  text-align: right;
+}
+
+.configuration-confirm-btn > button {
+  margin: 1px 1px 1px 10px;
+}
+
+.configuration-confirm-title {
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.configuration-confirm-title > i {
+  font-size: 24px;
+  font-weight: normal;
+  margin-right: 16px;
+  padding: 0 1px;
+  float: left;
+}
+
+.storage-region {
+  margin-left: 2px;
+  border-radius: 4px;
+}
+
+.data-sharing-disclaimer {
+  flex: 1;
+  overflow-y: auto;
+  margin: 10px 0;
+}
+
+.no-data {
+  margin: auto;
+  padding: 5px;
+}
+
+@media screen and (max-width: 1280px) {
+  .tree-item-name {
+    min-width: 100px;
+  }
+}

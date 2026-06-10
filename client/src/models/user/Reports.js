@@ -17,15 +17,15 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class UserReports extends RemotePost {
-  constructor () {
+  constructor() {
     super();
     this.constructor.fetchOptions = {
       headers: {
-        'Content-type': 'application/json; charset=UTF-8'
+        'Content-type': 'application/json; charset=UTF-8',
       },
       mode: 'cors',
       credentials: 'include',
-      method: 'POST'
+      method: 'POST',
     };
     this.url = '/report/users';
   }

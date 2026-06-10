@@ -19,7 +19,7 @@ import {action, computed, observable, makeObservable} from 'mobx';
 import cloudRegions from '../cloudRegions/CloudRegions';
 import {defaultSorter} from '../../utils/sorting';
 
-function providersAreEqual (setA, setB) {
+function providersAreEqual(setA, setB) {
   const a = [...new Set(setA || [])].sort(defaultSorter);
   const b = [...new Set(setB || [])].sort(defaultSorter);
   if (a.length !== b.length) {
@@ -33,10 +33,10 @@ function providersAreEqual (setA, setB) {
   return true;
 }
 
-function mergeResults (results = [], regions = [], mainRegion = undefined) {
+function mergeResults(results = [], regions = [], mainRegion = undefined) {
   const combined = results.map((r, idx) => ({
     ...r,
-    region: regions[idx]
+    region: regions[idx],
   }));
   const unauthorized = combined.find((o) => o.status === 401);
   if (unauthorized) {
@@ -49,65 +49,45 @@ function mergeResults (results = [], regions = [], mainRegion = undefined) {
   if (filtered.length === 1) {
     return filtered[0];
   }
-  const instanceKeys = [
-    'cluster.allowed.instance.types',
-    'cluster.allowed.instance.types.docker'
-  ];
-  let initial = filtered
-    .find((o) => o.region === mainRegion) || filtered[0];
+  const instanceKeys = ['cluster.allowed.instance.types', 'cluster.allowed.instance.types.docker'];
+  let initial = filtered.find((o) => o.region === mainRegion) || filtered[0];
   if (initial.status !== 'OK') {
     initial = filtered[0];
   }
-  return filtered
-    .reduce((r, current) => {
-      const {
-        payload: resultedPayload = {}
-      } = r;
-      const {
-        payload = {}
-      } = current;
-      instanceKeys.forEach((key) => {
-        if (!resultedPayload[key]) {
-          resultedPayload[key] = [];
+  return filtered.reduce((r, current) => {
+    const {payload: resultedPayload = {}} = r;
+    const {payload = {}} = current;
+    instanceKeys.forEach((key) => {
+      if (!resultedPayload[key]) {
+        resultedPayload[key] = [];
+      }
+      (payload[key] || []).forEach((instance) => {
+        const e = resultedPayload[key].find((o) => o.name === instance.name);
+        if (e) {
+          const {regionId, regionIds = []} = e;
+          e.regionIds = [...new Set([...regionIds, regionId, instance.regionId])];
+        } else {
+          resultedPayload[key].push(instance);
         }
-        (payload[key] || []).forEach((instance) => {
-          const e = resultedPayload[key].find((o) => o.name === instance.name);
-          if (e) {
-            const {
-              regionId,
-              regionIds = []
-            } = e;
-            e.regionIds = [...new Set([...regionIds, regionId, instance.regionId])];
-          } else {
-            resultedPayload[key].push(instance);
-          }
-        });
       });
-      return {
-        ...r,
-        payload: {
-          ...resultedPayload,
-          mergedRegions: filtered.map((r) => r.region)
-        }
-      };
-    }, initial);
+    });
+    return {
+      ...r,
+      payload: {
+        ...resultedPayload,
+        mergedRegions: filtered.map((r) => r.region),
+      },
+    };
+  }, initial);
 }
 
 /**
  * @param {AllowedInstanceTypesOptions} options
  * @returns {string}
  */
-function getCacheKey (options = {}) {
-  const {
-    toolId = '',
-    regionId = '',
-    spot
-  } = options;
-  return [
-    toolId,
-    regionId,
-    spot === undefined ? '' : `${!!spot}`
-  ].join('|');
+function getCacheKey(options = {}) {
+  const {toolId = '', regionId = '', spot} = options;
+  return [toolId, regionId, spot === undefined ? '' : `${!!spot}`].join('|');
 }
 
 export default class AllowedInstanceTypes extends Remote {
@@ -129,7 +109,7 @@ export default class AllowedInstanceTypes extends Remote {
   /**
    * @param {AllowedInstanceTypesOptions} [options]
    */
-  constructor (options = {}) {
+  constructor(options = {}) {
     super();
     makeObservable(this, {
       _isSpot: observable,
@@ -142,14 +122,9 @@ export default class AllowedInstanceTypes extends Remote {
       regionsMerged: computed,
       changed: computed,
       handleChanged: action,
-      fetchOnChange: action
+      fetchOnChange: action,
     });
-    const {
-      toolId,
-      regionId,
-      spot: isSpot,
-      requestAllRegionsForProviders = []
-    } = options || {};
+    const {toolId, regionId, spot: isSpot, requestAllRegionsForProviders = []} = options || {};
     this._toolId = toolId;
     this._regionId = regionId;
     this._isSpot = isSpot;
@@ -157,42 +132,44 @@ export default class AllowedInstanceTypes extends Remote {
     this.fetchOnChange();
   }
 
-  get isSpot () {
+  get isSpot() {
     return this._isSpot;
   }
 
-  get regionId () {
+  get regionId() {
     return this._regionId;
   }
 
-  get toolId () {
+  get toolId() {
     return this._toolId;
   }
 
-  get regionsMerged () {
-    return !!this.loaded &&
+  get regionsMerged() {
+    return (
+      !!this.loaded &&
       !!this.value &&
       !!this.value.mergedRegions &&
-      this.value.mergedRegions.length > 1;
+      this.value.mergedRegions.length > 1
+    );
   }
 
   /**
    * @param {AllowedInstanceTypesOptions} options
    * @returns {boolean|*}
    */
-  setParameters (options = {}) {
+  setParameters(options = {}) {
     const {
       toolId,
       regionId,
       spot: isSpot,
-      requestAllRegionsForProviders = this._requestAllRegionsForProviders.slice()
+      requestAllRegionsForProviders = this._requestAllRegionsForProviders.slice(),
     } = options || {};
     const spotChanged = isSpot !== undefined && this._isSpot !== isSpot;
     const regionChanged = regionId && regionId !== this._regionId;
     const toolChanged = toolId && toolId !== this._toolId;
     const providersChanged = !providersAreEqual(
       requestAllRegionsForProviders,
-      this._requestAllRegionsForProviders
+      this._requestAllRegionsForProviders,
     );
     this._isSpot = isSpot;
     this._regionId = regionId;
@@ -204,47 +181,49 @@ export default class AllowedInstanceTypes extends Remote {
     return spotChanged || regionChanged || toolChanged;
   }
 
-  setIsSpot (value) {
+  setIsSpot(value) {
     if (value !== undefined && value !== null && this._isSpot !== value) {
       this._isSpot = value;
       this.fetchOnChange();
     }
   }
 
-  setRegionId (value, force = false) {
+  setRegionId(value, force = false) {
     if ((value || force) && this._regionId !== value) {
       this._regionId = value;
       this.fetchOnChange();
     }
   }
 
-  setToolId (value) {
+  setToolId(value) {
     if (value && this._toolId !== value) {
       this._toolId = value;
       this.fetchOnChange();
     }
   }
 
-  get changed () {
+  get changed() {
     return this._changed;
   }
 
-  handleChanged () {
+  handleChanged() {
     this._changed = false;
   }
 
-  fetchOnChange () {
+  fetchOnChange() {
     this.initialize();
     this.invalidateCache();
     this._loadRequired = true;
-    this.fetch(true).then(() => { this._changed = true; });
+    this.fetch(true).then(() => {
+      this._changed = true;
+    });
   }
 
-  initialize () {
+  initialize() {
     this.url = this.initializeForRegion(this._regionId);
   }
 
-  initializeForRegion (region = undefined) {
+  initializeForRegion(region = undefined) {
     const params = [];
     if (this._toolId) {
       params.push(`toolId=${this._toolId}`);
@@ -262,18 +241,21 @@ export default class AllowedInstanceTypes extends Remote {
   }
 
   /* eslint-disable */
-  static getCache (cache, toolId, regionId, model) {
+  static getCache(cache, toolId, regionId, model) {
     if (!cache.has(`${+toolId}-${+regionId}`)) {
-      cache.set(`${+toolId}-${+regionId}`, new model({
-        toolId,
-        regionId
-      }));
+      cache.set(
+        `${+toolId}-${+regionId}`,
+        new model({
+          toolId,
+          regionId,
+        }),
+      );
     }
     return cache.get(`${+toolId}-${+regionId}`);
   }
 
   /* eslint-enable */
-  static invalidateCache (cache, toolId, regionId) {
+  static invalidateCache(cache, toolId, regionId) {
     if (cache.has(`${+toolId}-${+regionId}`)) {
       if (cache.get(`${+toolId}-${+regionId}`).invalidateCache) {
         cache.get(`${+toolId}-${+regionId}`).invalidateCache();
@@ -285,28 +267,28 @@ export default class AllowedInstanceTypes extends Remote {
 
   _allowedTypesCache = new Map();
   _allRequestsCache = new Map();
-  getAllowedTypes (toolId, regionId) {
+  getAllowedTypes(toolId, regionId) {
     return this.constructor.getCache(
       this._allowedTypesCache,
       toolId,
       regionId,
-      AllowedInstanceTypes
+      AllowedInstanceTypes,
     );
   }
 
-  invalidateAllowedTypes (toolId, regionId) {
+  invalidateAllowedTypes(toolId, regionId) {
     this._allRequestsCache.delete(getCacheKey({toolId, regionId}));
     this._allRequestsCache.delete(getCacheKey({toolId, regionId, spot: true}));
     this._allRequestsCache.delete(getCacheKey({toolId, regionId, spot: false}));
     this.constructor.invalidateCache(this._allowedTypesCache, toolId, regionId);
   }
 
-  async doFetchForRegion (region = undefined) {
+  async doFetchForRegion(region = undefined) {
     const url = this.initializeForRegion(region);
     const key = getCacheKey({
       toolId: this._toolId,
       regionId: region,
-      spot: this._isSpot
+      spot: this._isSpot,
     });
     if (this._allRequestsCache.has(key)) {
       return this._allRequestsCache.get(key);
@@ -327,15 +309,15 @@ export default class AllowedInstanceTypes extends Remote {
     } catch (error) {
       return {
         status: 'ERROR',
-        message: error.message
+        message: error.message,
       };
     }
   }
 
-  async fetch (force = false) {
+  async fetch(force = false) {
     this._loadRequired = false;
     if (!this._fetchPromise || force) {
-      this._fetchPromise = new Promise(async (resolve) => {
+      this._fetchPromise = (async () => {
         const isSpot = this._isSpot;
         const regionId = this._regionId;
         const toolId = this._toolId;
@@ -349,8 +331,9 @@ export default class AllowedInstanceTypes extends Remote {
           ) {
             await cloudRegions.fetchIfNeededOrWait();
             if (cloudRegions.loaded) {
-              const regionInfo = (cloudRegions.value || [])
-                .find((o) => Number(o.id) === Number(regionId));
+              const regionInfo = (cloudRegions.value || []).find(
+                (o) => Number(o.id) === Number(regionId),
+              );
               if (regionInfo && this._requestAllRegionsForProviders.includes(regionInfo.provider)) {
                 regions = (cloudRegions.value || [])
                   .filter((r) => this._requestAllRegionsForProviders.includes(r.provider))
@@ -360,11 +343,7 @@ export default class AllowedInstanceTypes extends Remote {
           }
           const results = await Promise.all(regions.map((r) => this.doFetchForRegion(r)));
           const merged = mergeResults(results, regions, regionId);
-          if (
-            isSpot === this._isSpot &&
-            regionId === this._regionId &&
-            toolId === this._toolId
-          ) {
+          if (isSpot === this._isSpot && regionId === this._regionId && toolId === this._toolId) {
             this.update(merged);
           }
         } catch (e) {
@@ -374,9 +353,8 @@ export default class AllowedInstanceTypes extends Remote {
         } finally {
           this._pending = false;
           this._fetchPromise = null;
-          resolve();
         }
-      });
+      })();
     }
     return this._fetchPromise;
   }

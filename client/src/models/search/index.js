@@ -26,12 +26,12 @@ export class Search extends RemotePost {
   scrollingParameters;
   pageSize;
 
-  constructor () {
+  constructor() {
     super();
     this.url = '/search';
   }
 
-  async send (query, scrollingParameters, pageSize, types = []) {
+  async send(query, scrollingParameters, pageSize, types = []) {
     if (query) {
       this.query = query;
       this.scrollingParameters = scrollingParameters;
@@ -42,12 +42,12 @@ export class Search extends RemotePost {
         pageSize,
         highlight: true,
         aggregate: true,
-        filterTypes: types.length === 0 ? undefined : types
+        filterTypes: types.length === 0 ? undefined : types,
       });
     }
   }
 
-  postprocess (value) {
+  postprocess(value) {
     value.payload.documents = (value.payload.documents || []).map(mapElasticDocument);
     return value.payload;
   }

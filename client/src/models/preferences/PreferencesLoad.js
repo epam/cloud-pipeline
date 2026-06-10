@@ -22,21 +22,23 @@ import {parseRunActionCriteria} from '../../components/runs/actions/actions-avai
 import {
   systemCapabilitiesParameters,
   RUN_CAPABILITIES,
-  RUN_CAPABILITIES_PARAMETERS
+  RUN_CAPABILITIES_PARAMETERS,
 } from '../../components/pipelines/launch/form/utilities/parameters';
 
 const FETCH_ID_SYMBOL = Symbol('Fetch id');
-// eslint-disable-next-line max-len
-const MAINTENANCE_MODE_DISCLAIMER = 'Platform is in a maintenance mode, operation is temporary unavailable';
+const MAINTENANCE_MODE_DISCLAIMER =
+  'Platform is in a maintenance mode, operation is temporary unavailable';
 
-const SYSTEM_CAPABILITY_PARAMETER_TO_DISPLAY = Object.entries(RUN_CAPABILITIES_PARAMETERS)
-  .reduce((acc, [name, parameter]) => ({
+const SYSTEM_CAPABILITY_PARAMETER_TO_DISPLAY = Object.entries(RUN_CAPABILITIES_PARAMETERS).reduce(
+  (acc, [name, parameter]) => ({
     ...acc,
-    [parameter]: name
-  }), {});
+    [parameter]: name,
+  }),
+  {},
+);
 
 class PreferencesLoad extends Remote {
-  constructor () {
+  constructor() {
     super();
     makeObservable(this, {
       deploymentName: computed,
@@ -121,18 +123,18 @@ class PreferencesLoad extends Remote {
       miscAIPreferences: computed,
       launchReservationParameters: computed,
       launchJWTTokenExpirationUserLimit: computed,
-      launchDockerPreflightChecks: computed
+      launchDockerPreflightChecks: computed,
     });
     this.url = '/preferences';
     this[FETCH_ID_SYMBOL] = 0;
   }
 
-  update (value) {
+  update(value) {
     this[FETCH_ID_SYMBOL] += 1;
     super.update(value);
   }
 
-  postprocess (value) {
+  postprocess(value) {
     if (value.payload) {
       const formatJson = (string, presentation = true, catchError = true) => {
         if (!string) {
@@ -147,7 +149,7 @@ class PreferencesLoad extends Remote {
         }
         return string;
       };
-      value.payload.forEach(preference => {
+      value.payload.forEach((preference) => {
         if (preference.type === 'OBJECT') {
           preference.value = formatJson(preference.value);
         }
@@ -156,35 +158,35 @@ class PreferencesLoad extends Remote {
     return value.payload;
   }
 
-  get deploymentName () {
+  get deploymentName() {
     return this.getPreferenceValue('ui.pipeline.deployment.name');
   }
 
-  get myCostsDisclaimer () {
+  get myCostsDisclaimer() {
     return this.getPreferenceValue('ui.my.costs.disclaimer');
   }
 
-  get useSpot () {
+  get useSpot() {
     return `${this.getPreferenceValue('cluster.spot')}` === 'true';
   }
 
-  get toolScanningEnabled () {
+  get toolScanningEnabled() {
     return `${this.getPreferenceValue('security.tools.scan.enabled')}` === 'true';
   }
 
-  get maximumFileSize () {
+  get maximumFileSize() {
     return +this.getPreferenceValue('misc.max.tool.icon.size.kb') || undefined;
   }
 
-  get forceToolScanningEnabled () {
+  get forceToolScanningEnabled() {
     return `${this.getPreferenceValue('security.tools.scan.all.registries')}` === 'true';
   }
 
-  get searchEnabled () {
+  get searchEnabled() {
     return !!this.getPreferenceValue('search.elastic.host');
   }
 
-  get searchExportTemplates () {
+  get searchExportTemplates() {
     const value = this.getPreferenceValue('search.export.template.mapping');
     if (value) {
       try {
@@ -196,29 +198,29 @@ class PreferencesLoad extends Remote {
     return undefined;
   }
 
-  get searchPromptTemplate () {
+  get searchPromptTemplate() {
     return this.getPreferenceValue('search.prompt.template');
   }
 
-  get billingEnabled () {
+  get billingEnabled() {
     const value = this.getPreferenceValue('billing.reports.enabled');
     return value && `${value}`.toLowerCase() === 'true';
   }
 
-  get billingAdminsEnabled () {
+  get billingAdminsEnabled() {
     const value = this.getPreferenceValue('billing.reports.enabled.admins');
     return value && `${value}`.toLowerCase() === 'true';
   }
 
-  get allowedMasterPriceTypes () {
+  get allowedMasterPriceTypes() {
     const value = this.getPreferenceValue('cluster.allowed.price.types.master') || '';
     if (!value) {
       return [true, false];
     }
-    return value.split(',').map(v => /^spot$/i.test(v));
+    return value.split(',').map((v) => /^spot$/i.test(v));
   }
 
-  get storageMountsPerGBRatio () {
+  get storageMountsPerGBRatio() {
     const value = this.getPreferenceValue('storage.mounts.per.gb.ratio');
     if (!value || Number.isNaN(value)) {
       return undefined;
@@ -226,11 +228,11 @@ class PreferencesLoad extends Remote {
     return Number(value);
   }
 
-  get nfsSensitivePolicy () {
+  get nfsSensitivePolicy() {
     return this.getPreferenceValue('storage.mounts.nfs.sensitive.policy');
   }
 
-  get facetedFiltersDictionaries () {
+  get facetedFiltersDictionaries() {
     const value = this.getPreferenceValue('faceted.filter.dictionaries');
     if (value) {
       try {
@@ -242,23 +244,23 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
-  get displayNameTag () {
+  get displayNameTag() {
     return this.getPreferenceValue('faceted.filter.display.name.tag');
   }
 
-  get storageFileDisplayNameTag () {
+  get storageFileDisplayNameTag() {
     return this.getPreferenceValue('faceted.filter.storage.display.file.name.tag');
   }
 
-  get facetedFilterDownloadFileTag () {
+  get facetedFilterDownloadFileTag() {
     return this.getPreferenceValue('faceted.filter.download.file.tag');
   }
 
-  get storageDownloadAttribute () {
+  get storageDownloadAttribute() {
     return this.getPreferenceValue('ui.storage.download.attribute');
   }
 
-  get metadataSystemKeys () {
+  get metadataSystemKeys() {
     const value = this.getPreferenceValue('misc.metadata.sensitive.keys');
     if (value) {
       try {
@@ -270,11 +272,11 @@ class PreferencesLoad extends Remote {
     return [];
   }
 
-  get storageAllowSignedUrls () {
+  get storageAllowSignedUrls() {
     return `${this.getPreferenceValue('storage.allow.signed.urls')}` !== 'false';
   }
 
-  get hiddenObjects () {
+  get hiddenObjects() {
     const value = this.getPreferenceValue('ui.hidden.objects');
     if (value) {
       try {
@@ -286,7 +288,7 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
-  get searchExtraFieldsConfiguration () {
+  get searchExtraFieldsConfiguration() {
     const value = this.getPreferenceValue('search.elastic.index.metadata.fields');
     if (value) {
       try {
@@ -298,7 +300,7 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
-  get searchColumnsOrder () {
+  get searchColumnsOrder() {
     const value = this.getPreferenceValue('ui.search.columns.order');
     if (value && typeof value === 'string') {
       const tryParseAsJSON = () => {
@@ -325,15 +327,15 @@ class PreferencesLoad extends Remote {
     return [];
   }
 
-  get versionStorageIgnoredFiles () {
+  get versionStorageIgnoredFiles() {
     const value = this.getPreferenceValue('storage.version.storage.ignored.files');
     if (!value) {
       return ['.gitkeep'];
     }
-    return (value || '').split(',').map(o => o.trim());
+    return (value || '').split(',').map((o) => o.trim());
   }
 
-  get metadataMandatoryKeys () {
+  get metadataMandatoryKeys() {
     const value = this.getPreferenceValue('misc.metadata.mandatory.keys');
     if (value) {
       try {
@@ -345,7 +347,7 @@ class PreferencesLoad extends Remote {
     return [];
   }
 
-  get groupsUIPreferences () {
+  get groupsUIPreferences() {
     const value = this.getPreferenceValue('misc.groups.ui.preferences');
     if (value) {
       try {
@@ -357,7 +359,7 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
-  get vsiPreviewMagnificationMultiplier () {
+  get vsiPreviewMagnificationMultiplier() {
     const value = this.getPreferenceValue('ui.wsi.magnification.factor');
     if (value && !Number.isNaN(Number(value))) {
       return Number(value);
@@ -365,7 +367,7 @@ class PreferencesLoad extends Remote {
     return 1;
   }
 
-  get gitlabIssueStatuses () {
+  get gitlabIssueStatuses() {
     const value = this.getPreferenceValue('git.gitlab.issue.statuses');
     if (value) {
       try {
@@ -377,7 +379,7 @@ class PreferencesLoad extends Remote {
     return [];
   }
 
-  get gitlabIssueDefaultFilters () {
+  get gitlabIssueDefaultFilters() {
     const value = this.getPreferenceValue('git.gitlab.issue.default.filter');
     if (value) {
       try {
@@ -389,7 +391,7 @@ class PreferencesLoad extends Remote {
     return undefined;
   }
 
-  get sharedStoragesSystemDirectory () {
+  get sharedStoragesSystemDirectory() {
     const value = this.getPreferenceValue('data.sharing.storage.folders.directory');
     if (value && !Number.isNaN(Number(value))) {
       return Number(value);
@@ -397,7 +399,7 @@ class PreferencesLoad extends Remote {
     return undefined;
   }
 
-  get sharedStoragesDefaultPermissions () {
+  get sharedStoragesDefaultPermissions() {
     const value = this.getPreferenceValue('data.sharing.storage.folders.default.permissions');
     if (value) {
       try {
@@ -405,19 +407,19 @@ class PreferencesLoad extends Remote {
       } catch (e) {
         console.warn(
           'Error parsing "data.sharing.storage.folders.default.permissions" preference:',
-          e
+          e,
         );
       }
     }
     return {};
   }
 
-  get launchCapabilities () {
+  get launchCapabilities() {
     const value = this.getPreferenceValue('launch.capabilities');
     if (value) {
       try {
         const capabilities = JSON.parse(value);
-        const parsePlatforms = o => {
+        const parsePlatforms = (o) => {
           if (!o) {
             return [];
           }
@@ -425,11 +427,11 @@ class PreferencesLoad extends Remote {
             return o.slice();
           }
           if (typeof o === 'string') {
-            return o.split(',').map(o => o.trim());
+            return o.split(',').map((o) => o.trim());
           }
           return [];
         };
-        const parseOSValue = o => {
+        const parseOSValue = (o) => {
           if (!o) {
             return [];
           }
@@ -437,21 +439,22 @@ class PreferencesLoad extends Remote {
             return o.slice();
           }
           if (typeof o === 'string') {
-            return o.split(',').map(o => o.trim());
+            return o.split(',').map((o) => o.trim());
           }
           return [];
         };
-        const parseOS = o => parseOSValue(o)
-          .map(mask => mask.trim())
-          .filter(mask => mask.length);
-        const parseCloudProviders = o => {
+        const parseOS = (o) =>
+          parseOSValue(o)
+            .map((mask) => mask.trim())
+            .filter((mask) => mask.length);
+        const parseCloudProviders = (o) => {
           if (o && /^all$/i.test(o.trim())) {
             return [];
           }
           return (o || '')
             .split(',')
-            .map(o => o.trim().toLowerCase())
-            .filter(o => o.length);
+            .map((o) => o.trim().toLowerCase())
+            .filter((o) => o.length);
         };
         const mapCapability = ([key, entry]) => {
           if (typeof entry === 'boolean' || entry.visible === false) {
@@ -467,29 +470,17 @@ class PreferencesLoad extends Remote {
               value: displayName,
               name: entry?.name || displayName,
               custom: false,
-              ...(entry?.description !== undefined
-                ? {description: entry.description}
-                : {}),
+              ...(entry?.description !== undefined ? {description: entry.description} : {}),
               ...(entry?.platforms !== undefined
                 ? {platforms: parsePlatforms(entry.platforms)}
                 : {}),
-              ...(entry?.cloud !== undefined
-                ? {cloud: parseCloudProviders(entry.cloud)}
-                : {}),
-              ...(entry?.os !== undefined
-                ? {os: parseOS(entry.os)}
-                : {}),
-              ...(entry?.disclaimer !== undefined
-                ? {disclaimer: entry.disclaimer}
-                : {}),
-              ...(entry?.privileged !== undefined
-                ? {privileged: entry.privileged}
-                : {})
+              ...(entry?.cloud !== undefined ? {cloud: parseCloudProviders(entry.cloud)} : {}),
+              ...(entry?.os !== undefined ? {os: parseOS(entry.os)} : {}),
+              ...(entry?.disclaimer !== undefined ? {disclaimer: entry.disclaimer} : {}),
+              ...(entry?.privileged !== undefined ? {privileged: entry.privileged} : {}),
             };
           }
-          const {
-            capabilities: childCapabilities = {}
-          } = entry;
+          const {capabilities: childCapabilities = {}} = entry;
           return {
             value: `CP_CAP_CUSTOM_${key}`,
             name: entry?.name || key,
@@ -500,27 +491,22 @@ class PreferencesLoad extends Remote {
             custom: true,
             params: entry?.params || {},
             disclaimer: entry?.disclaimer || '',
-            capabilities: Object.entries(childCapabilities)
-              .map(mapCapability),
+            capabilities: Object.entries(childCapabilities).map(mapCapability),
             multiple: Boolean(entry?.multiple),
-            privileged: entry?.privileged
+            privileged: entry?.privileged,
           };
         };
-        return Object
-          .entries(capabilities || {})
+        return Object.entries(capabilities || {})
           .map(mapCapability)
           .filter(Boolean);
       } catch (e) {
-        console.warn(
-          'Error parsing "launch.capabilities" preference:',
-          e
-        );
+        console.warn('Error parsing "launch.capabilities" preference:', e);
       }
     }
     return [];
   }
 
-  get webdavStorageAccessDurationSeconds () {
+  get webdavStorageAccessDurationSeconds() {
     const value = this.getPreferenceValue('storage.webdav.access.duration.seconds');
     if (value && !Number.isNaN(Number(value))) {
       return Number(value);
@@ -528,11 +514,11 @@ class PreferencesLoad extends Remote {
     return 86400; // 24 hours
   }
 
-  get storageSizeRequestDisclaimer () {
+  get storageSizeRequestDisclaimer() {
     return this.getPreferenceValue('ui.storage.refresh.request');
   }
 
-  get storageSortingPageSize () {
+  get storageSortingPageSize() {
     const defaultLimit = 1000;
     const value = this.getPreferenceValue('storage.listing.filter.items.limit');
     if (value && !Number.isNaN(Number(value))) {
@@ -541,25 +527,27 @@ class PreferencesLoad extends Remote {
     return defaultLimit;
   }
 
-  get systemMaintenanceMode () {
-    return `${this.getPreferenceValue('system.maintenance.mode')}` === 'true' ||
-      `${this.getPreferenceValue('system.blocking.maintenance.mode')}` === 'true';
+  get systemMaintenanceMode() {
+    return (
+      `${this.getPreferenceValue('system.maintenance.mode')}` === 'true' ||
+      `${this.getPreferenceValue('system.blocking.maintenance.mode')}` === 'true'
+    );
   }
 
-  get systemMaintenanceModeBanner () {
+  get systemMaintenanceModeBanner() {
     return this.getPreferenceValue('system.maintenance.mode.banner');
   }
 
-  get userNotificationsEnabled () {
+  get userNotificationsEnabled() {
     return `${this.getPreferenceValue('system.notifications.enable')}` === 'true';
   }
 
-  get storagePolicyBackupVisibleNonAdmins () {
+  get storagePolicyBackupVisibleNonAdmins() {
     const value = this.getPreferenceValue('storage.policy.backup.visible.non.admins');
     return value === undefined || `${value}` !== 'false';
   }
 
-  get autoscalingMultiQueuesTemplate () {
+  get autoscalingMultiQueuesTemplate() {
     const value = this.getPreferenceValue('ge.autoscaling.scale.multi.queues.template');
     if (value) {
       try {
@@ -571,7 +559,7 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
-  get hcsAnalysisConfiguration () {
+  get hcsAnalysisConfiguration() {
     const value = this.getPreferenceValue('ui.hcs.analysis.configuration');
     if (value) {
       try {
@@ -583,59 +571,53 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
-  get dataStorageItemPreviewMasks () {
+  get dataStorageItemPreviewMasks() {
     const extensions = this.getPreferenceValue('ui.storage.static.preview.mask') || '';
     return extensions
       .split(/[,;\s]/g)
-      .filter(o => o.length)
-      .map(o => o.startsWith('.') ? o.slice(1) : o)
-      .map(o => new RegExp(`\\.${o}$`, 'i'));
+      .filter((o) => o.length)
+      .map((o) => (o.startsWith('.') ? o.slice(1) : o))
+      .map((o) => new RegExp(`\\.${o}$`, 'i'));
   }
 
-  get inlineMetadataEntities () {
+  get inlineMetadataEntities() {
     const value = this.getPreferenceValue('ui.library.metadata.inline');
     return `${value}`.toLowerCase() === 'true';
   }
 
-  get dataSharingBaseApi () {
+  get dataSharingBaseApi() {
     return this.getPreferenceValue('data.sharing.base.api');
   }
 
-  get dataSharingEnabled () {
+  get dataSharingEnabled() {
     return !!this.dataSharingBaseApi;
   }
 
-  get requestFileSystemAccessTooltip () {
+  get requestFileSystemAccessTooltip() {
     const value = this.getPreferenceValue('ui.pipe.file.browser.request');
     if (value) {
       try {
         return JSON.parse(value);
       } catch (e) {
-        console.warn(
-          'Error parsing "ui.pipe.file.browser.request" preference:',
-          e
-        );
+        console.warn('Error parsing "ui.pipe.file.browser.request" preference:', e);
       }
     }
     return {};
   }
 
-  get uiVscodeExtensionInstallTemplate () {
+  get uiVscodeExtensionInstallTemplate() {
     const value = this.getPreferenceValue('ui.vscode.extension.install.template');
     if (value) {
       try {
         return JSON.parse(value);
       } catch (e) {
-        console.warn(
-          'Error parsing "ui.vscode.extension.install.template" preference:',
-          e
-        );
+        console.warn('Error parsing "ui.vscode.extension.install.template" preference:', e);
       }
     }
     return {};
   }
 
-  get launchToolSizeLimits () {
+  get launchToolSizeLimits() {
     const value = this.getPreferenceValue('launch.tool.size.limits');
     if (value) {
       try {
@@ -647,7 +629,7 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
-  get toolPredefinedKubeLabels () {
+  get toolPredefinedKubeLabels() {
     const value = this.getPreferenceValue('ui.tool.kube.labels');
     if (value) {
       try {
@@ -659,16 +641,16 @@ class PreferencesLoad extends Remote {
     return [];
   }
 
-  get toolOSWarningText () {
+  get toolOSWarningText() {
     return this.getPreferenceValue('ui.tools.os.with.warning');
   }
 
-  get allowCommitToOtherPersonalGroups () {
+  get allowCommitToOtherPersonalGroups() {
     const value = this.getPreferenceValue('commit.allow.other.personal.group');
     return (value || '').toLowerCase() !== 'false';
   }
 
-  get commitMaxLayers () {
+  get commitMaxLayers() {
     const value = this.getPreferenceValue('commit.max.layers');
     if (!value || Number.isNaN(Number(value))) {
       return undefined;
@@ -676,11 +658,11 @@ class PreferencesLoad extends Remote {
     return Number(value);
   }
 
-  get systemRunTagDateSuffix () {
+  get systemRunTagDateSuffix() {
     return this.getPreferenceValue('system.run.tag.date.suffix') || '_date';
   }
 
-  get hiddenRunCapabilities () {
+  get hiddenRunCapabilities() {
     const value = this.getPreferenceValue('launch.capabilities');
     if (value) {
       try {
@@ -689,60 +671,55 @@ class PreferencesLoad extends Remote {
           if (systemCapabilitiesParameters.includes(key)) {
             return SYSTEM_CAPABILITY_PARAMETER_TO_DISPLAY[key];
           }
-          const capabilityKey = Object
-            .keys(RUN_CAPABILITIES)
-            .find((aKey) => aKey.toLowerCase() === (key || '').toLowerCase());
+          const capabilityKey = Object.keys(RUN_CAPABILITIES).find(
+            (aKey) => aKey.toLowerCase() === (key || '').toLowerCase(),
+          );
           if (capabilityKey) {
             return RUN_CAPABILITIES[capabilityKey];
           }
           return undefined;
         };
-        return Object
-          .entries(capabilities || {})
-          .filter(([, value]) => (typeof value === 'boolean' && !value) ||
-            (typeof value === 'object' && value.visible === false)
+        return Object.entries(capabilities || {})
+          .filter(
+            ([, value]) =>
+              (typeof value === 'boolean' && !value) ||
+              (typeof value === 'object' && value.visible === false),
           )
           .map(([key]) => getCapabilityByKey(key))
           .filter(Boolean);
       } catch (e) {
-        console.warn(
-          'Error parsing "launch.capabilities" preference:',
-          e
-        );
+        console.warn('Error parsing "launch.capabilities" preference:', e);
       }
     }
     return [];
   }
 
-  getJobMaintenanceConfigurationRules (preference) {
+  getJobMaintenanceConfigurationRules(preference) {
     const value = this.getPreferenceValue(preference);
     const defaultSettings = {
       pause: true,
-      resume: true
+      resume: true,
     };
     try {
       return {
         ...defaultSettings,
-        ...JSON.parse(value)
+        ...JSON.parse(value),
       };
     } catch (e) {
-      console.warn(
-        `Error parsing "${preference}" preference:`,
-        e
-      );
+      console.warn(`Error parsing "${preference}" preference:`, e);
     }
     return defaultSettings;
   }
 
-  get toolJobMaintenanceConfiguration () {
+  get toolJobMaintenanceConfiguration() {
     return this.getJobMaintenanceConfigurationRules('ui.run.maintenance.tool.enabled');
   }
 
-  get pipelineJobMaintenanceConfiguration () {
+  get pipelineJobMaintenanceConfiguration() {
     return this.getJobMaintenanceConfigurationRules('ui.run.maintenance.pipeline.enabled');
   }
 
-  get launchDiskSizeThresholds () {
+  get launchDiskSizeThresholds() {
     const value = this.getPreferenceValue('launch.job.disk.size.thresholds');
     if (value) {
       try {
@@ -772,12 +749,15 @@ class PreferencesLoad extends Remote {
   /**
    * @returns {FacetedFilterDownloadConfiguration}
    */
-  get facetedFilterDownload () {
+  get facetedFilterDownload() {
     const processMask = (mask) => {
       if (!mask) {
         return /.+/;
       }
-      let escaped = escapeRegExp(mask, ESCAPE_CHARACTERS.filter((ch) => ch !== '*'));
+      let escaped = escapeRegExp(
+        mask,
+        ESCAPE_CHARACTERS.filter((ch) => ch !== '*'),
+      );
       escaped = escaped.replace(/[*]/g, '.+');
       if (/^[\\/]/.test(escaped)) {
         escaped = '^'.concat(escaped);
@@ -800,16 +780,13 @@ class PreferencesLoad extends Remote {
       if (typeof command === 'string') {
         return {
           default: {
-            template: command
-          }
+            template: command,
+          },
         };
       }
-      if (
-        typeof command === 'object' &&
-        typeof command.template === 'string'
-      ) {
+      if (typeof command === 'object' && typeof command.template === 'string') {
         return {
-          default: command
+          default: command,
         };
       }
       const keys = Object.keys(command);
@@ -818,7 +795,7 @@ class PreferencesLoad extends Remote {
           const value = command[key];
           if (typeof value === 'string') {
             return {
-              [key]: {template: value}
+              [key]: {template: value},
             };
           }
           return {[key]: value};
@@ -826,17 +803,12 @@ class PreferencesLoad extends Remote {
         .reduce((r, c) => ({...r, ...c}), {});
     };
     const processPreference = (preference = {}) => {
-      const {
-        allow = [],
-        deny = [],
-        command,
-        ...rest
-      } = preference || {};
+      const {allow = [], deny = [], command, ...rest} = preference || {};
       return {
         allow: processMasks(allow),
         deny: processMasks(deny),
         command: processCommandTemplate(command),
-        ...rest
+        ...rest,
       };
     };
     const value = this.getPreferenceValue('faceted.filter.download');
@@ -850,7 +822,7 @@ class PreferencesLoad extends Remote {
     return processPreference();
   }
 
-  get uiRunsCounterFilter () {
+  get uiRunsCounterFilter() {
     const value = this.getPreferenceValue('ui.runs.counter.filter');
     if (value) {
       try {
@@ -862,7 +834,7 @@ class PreferencesLoad extends Remote {
     return undefined;
   }
 
-  get uiRunsFilters () {
+  get uiRunsFilters() {
     const value = this.getPreferenceValue('ui.runs.filters');
     if (value) {
       try {
@@ -874,7 +846,7 @@ class PreferencesLoad extends Remote {
     return [];
   }
 
-  get uiRunsOwnersFilter () {
+  get uiRunsOwnersFilter() {
     const value = this.getPreferenceValue('ui.runs.owners.filter');
     if (value) {
       try {
@@ -886,12 +858,12 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
-  get uiRunsClusterDetailsShowActiveOnly () {
+  get uiRunsClusterDetailsShowActiveOnly() {
     const value = this.getPreferenceValue('ui.runs.cluster.details.show.active.only');
     return (value || '').toLowerCase() !== 'false';
   }
 
-  get uiRunsTags () {
+  get uiRunsTags() {
     const value = this.getPreferenceValue('ui.runs.tags');
     if (value) {
       try {
@@ -908,7 +880,7 @@ class PreferencesLoad extends Remote {
           } = o;
           return {
             ...rest,
-            userTag: `${userTag}`.toLowerCase() === 'true'
+            userTag: `${userTag}`.toLowerCase() === 'true',
           };
         });
       } catch (e) {
@@ -918,24 +890,21 @@ class PreferencesLoad extends Remote {
     return [];
   }
 
-  get uiRunsUserTags () {
+  get uiRunsUserTags() {
     return this.uiRunsTags.filter((tag) => tag.userTag);
   }
 
-  get uiToolsFilters () {
+  get uiToolsFilters() {
     const value = this.getPreferenceValue('ui.tools.filters');
     if (value) {
       try {
-        const {
-          groups = [],
-          ...rest
-        } = JSON.parse(value);
+        const {groups = [], ...rest} = JSON.parse(value);
         return {
           ...rest,
           groups: groups.map((aGroup) => ({
             ...aGroup,
-            name: aGroup.name || aGroup.title || aGroup.id
-          }))
+            name: aGroup.name || aGroup.title || aGroup.id,
+          })),
         };
       } catch (e) {
         console.warn('Error parsing "ui.tools.filters" preference:', e.message);
@@ -944,7 +913,7 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
-  get systemJobsPipelineId () {
+  get systemJobsPipelineId() {
     const value = this.getPreferenceValue('system.jobs.pipeline.id');
     if (value && !Number.isNaN(Number(value))) {
       return Number(value);
@@ -952,21 +921,17 @@ class PreferencesLoad extends Remote {
     return undefined;
   }
 
-  get systemJobsOutputPipelineTask () {
+  get systemJobsOutputPipelineTask() {
     return this.getPreferenceValue('system.jobs.output.pipeline.task') || 'SystemJob';
   }
 
-  get systemJobsScriptsLocation () {
+  get systemJobsScriptsLocation() {
     return this.getPreferenceValue('system.jobs.scripts.location') || 'src/system-jobs';
   }
 
-  get systemLdapUserBlockMonitorGracePeriodDays () {
+  get systemLdapUserBlockMonitorGracePeriodDays() {
     const value = this.getPreferenceValue('system.ldap.user.block.monitor.grace.period.days');
-    if (
-      value !== undefined &&
-      value !== null &&
-      !Number.isNaN(Number(value))
-    ) {
+    if (value !== undefined && value !== null && !Number.isNaN(Number(value))) {
       return Number(value);
     }
     return 7;
@@ -975,12 +940,14 @@ class PreferencesLoad extends Remote {
   /**
    * @returns {{role: string, disabledMask: number, defaultMask: number}[]}
    */
-  get uiPersonalToolsPermissionsRestrictions () {
+  get uiPersonalToolsPermissionsRestrictions() {
     const value = this.getPreferenceValue('ui.personal.tools.permissions.restrictions');
-    const defaultValue = [{
-      role: 'ALL',
-      disable: 'WRITE'
-    }];
+    const defaultValue = [
+      {
+        role: 'ALL',
+        disable: 'WRITE',
+      },
+    ];
     let restrictions = defaultValue;
     if (value && value.length) {
       try {
@@ -990,8 +957,10 @@ class PreferencesLoad extends Remote {
           throw new Error('wrong format (should be array)');
         }
       } catch (e) {
-        // eslint-disable-next-line max-len
-        console.warn('Error parsing "ui.personal.tools.permissions.restrictions" preference:', e.message);
+        console.warn(
+          'Error parsing "ui.personal.tools.permissions.restrictions" preference:',
+          e.message,
+        );
       }
     }
     return parsePermissionsRestrictionsConfig(restrictions);
@@ -1000,7 +969,7 @@ class PreferencesLoad extends Remote {
   /**
    * @returns {{role: string, disabledMask: number, defaultMask: number}[]}
    */
-  get uiStoragesPermissionsRestrictions () {
+  get uiStoragesPermissionsRestrictions() {
     const value = this.getPreferenceValue('ui.storages.permissions.restrictions');
     const defaultValue = [];
     let restrictions = defaultValue;
@@ -1012,31 +981,28 @@ class PreferencesLoad extends Remote {
           throw new Error('wrong format (should be array)');
         }
       } catch (e) {
-        // eslint-disable-next-line max-len
         console.warn('Error parsing "ui.storages.permissions.restrictions" preference:', e.message);
       }
     }
     return parsePermissionsRestrictionsConfig(restrictions);
   }
 
-  get uiPersonalToolsLaunchWarningEnabled () {
+  get uiPersonalToolsLaunchWarningEnabled() {
     const value = this.getPreferenceValue('ui.personal.tools.launch.warning.enabled');
     return value && `${value}`.toLowerCase() === 'true';
   }
 
-  get uiCWLToolGroups () {
+  get uiCWLToolGroups() {
     const value = this.getPreferenceValue('ui.cwl.tool.groups');
-    return (value || 'library')
-      .split(/[\s,;]/)
-      .filter((group) => group.length > 0);
+    return (value || 'library').split(/[\s,;]/).filter((group) => group.length > 0);
   }
 
-  get storageTagRestrictedAccess () {
+  get storageTagRestrictedAccess() {
     const value = this.getPreferenceValue('storage.tag.restricted.access');
     return value && `${value}`.toLowerCase() === 'true';
   }
 
-  get uiUploadChunkCount () {
+  get uiUploadChunkCount() {
     const value = this.getPreferenceValue('ui.upload.chunk.count');
     if (value && !Number.isNaN(Number(value)) && Number(value) > 0) {
       return Number(value);
@@ -1044,7 +1010,7 @@ class PreferencesLoad extends Remote {
     return undefined;
   }
 
-  get uiUploadChunkSizeMB () {
+  get uiUploadChunkSizeMB() {
     const value = this.getPreferenceValue('ui.upload.chunk.size.mb');
     if (value && !Number.isNaN(Number(value)) && Number(value) > 0) {
       return Number(value);
@@ -1052,16 +1018,16 @@ class PreferencesLoad extends Remote {
     return undefined;
   }
 
-  get uiContinueRunConfirmation () {
+  get uiContinueRunConfirmation() {
     return this.getPreferenceValue('ui.continue.run.confirmation');
   }
 
-  get storageManagementRestrictedAccess () {
+  get storageManagementRestrictedAccess() {
     const value = this.getPreferenceValue('storage.management.restricted.access');
     return value && `${value}`.toLowerCase() === 'true';
   }
 
-  get systemRunFilterMaxPageSize () {
+  get systemRunFilterMaxPageSize() {
     const value = this.getPreferenceValue('system.run.filter.max.page.size');
     if (value && !Number.isNaN(Number(value)) && Number(value) > 0) {
       return Number(value);
@@ -1069,22 +1035,22 @@ class PreferencesLoad extends Remote {
     return 500;
   }
 
-  get uiQuickSearchDisabled () {
+  get uiQuickSearchDisabled() {
     const value = this.getPreferenceValue('ui.quick.search.disabled');
     return value && `${value}`.toLowerCase() === 'true';
   }
 
-  get uiStandaloneNodesAllowTerminate () {
+  get uiStandaloneNodesAllowTerminate() {
     const value = this.getPreferenceValue('ui.standalone.nodes.allow.terminate');
     return !value || `${value}`.toLowerCase() !== 'false';
   }
 
-  get uiClusterMonitoringAdminsAllowRange () {
+  get uiClusterMonitoringAdminsAllowRange() {
     const value = this.getPreferenceValue('ui.cluster.monitoring.admins.allow.range');
     return value && `${value}`.toLowerCase() === 'true';
   }
 
-  get uiLaunchParameters () {
+  get uiLaunchParameters() {
     const value = this.getPreferenceValue('ui.launch.parameters');
     if (value) {
       try {
@@ -1096,7 +1062,7 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
-  get uiRunActions () {
+  get uiRunActions() {
     const value = this.getPreferenceValue('ui.run.actions');
     if (value) {
       try {
@@ -1116,7 +1082,7 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
-  get uiMlflowSettings () {
+  get uiMlflowSettings() {
     const value = this.getPreferenceValue('ui.mlflow.settings');
     if (value) {
       try {
@@ -1128,7 +1094,7 @@ class PreferencesLoad extends Remote {
     return undefined;
   }
 
-  get miscAIPreferences () {
+  get miscAIPreferences() {
     const value = this.getPreferenceValue('misc.ai.preferences');
     if (value) {
       try {
@@ -1144,7 +1110,7 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
-  get launchReservationParameters () {
+  get launchReservationParameters() {
     const value = this.getPreferenceValue('launch.reservation.parameters');
     if (value) {
       try {
@@ -1156,7 +1122,7 @@ class PreferencesLoad extends Remote {
     return undefined;
   }
 
-  get launchJWTTokenExpirationUserLimit () {
+  get launchJWTTokenExpirationUserLimit() {
     const value = this.getPreferenceValue('launch.jwt.token.expiration.user.limit');
     if (value && !Number.isNaN(Number(value)) && Number(value) > 0) {
       return Number(value);
@@ -1164,22 +1130,24 @@ class PreferencesLoad extends Remote {
     return 0;
   }
 
-  get launchDockerPreflightChecks () {
+  get launchDockerPreflightChecks() {
     const value = this.getPreferenceValue('launch.docker.preflight.checks') || 'true';
     return `${value}`.toLowerCase() !== 'false';
   }
 
-  toolScanningEnabledForRegistry (registry) {
-    return this.loaded &&
+  toolScanningEnabledForRegistry(registry) {
+    return (
+      this.loaded &&
       this.toolScanningEnabled &&
-      ((registry && registry.securityScanEnabled) || this.forceToolScanningEnabled);
+      ((registry && registry.securityScanEnabled) || this.forceToolScanningEnabled)
+    );
   }
 
   getPreferenceValue = (key) => {
     if (!this.loaded) {
       return null;
     }
-    return (this.value || []).filter(p => p.name === key).map(p => p.value)[0];
+    return (this.value || []).filter((p) => p.name === key).map((p) => p.value)[0];
   };
 
   replacePlaceholders = (string) => {

@@ -15,18 +15,16 @@
  */
 
 import RemotePost from '../basic/RemotePost';
-import {SERVER, API_PATH} from '../../config';
 
 export default class IssueAttachmentLoad extends RemotePost {
-
   static generateUrl = (id) => {
     const el = document.createElement('div');
-    let url = ((SERVER || '') + (API_PATH + `/attachment/${id}`)).replace(/\/\//g, '/');
+    const url = ((SERVER || '') + (API_PATH + `/attachment/${id}`)).replace(/\/\//g, '/');
     el.innerHTML = '<a href="' + url + '"></a>';
     return el.firstChild.href;
   };
 
-  constructor (id) {
+  constructor(id) {
     super();
     this.url = `/attachment/${id}`;
   }

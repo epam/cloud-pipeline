@@ -24,7 +24,7 @@ class ChildRuns {
   _error = undefined;
   disabled = false;
 
-  constructor (parentId) {
+  constructor(parentId) {
     makeObservable(this, {
       _pending: observable,
       _loaded: observable,
@@ -35,24 +35,24 @@ class ChildRuns {
       loaded: computed,
       childRuns: computed,
       error: computed,
-      fetch: action
+      fetch: action,
     });
     this.parentId = parentId;
   }
 
-  get pending () {
+  get pending() {
     return this._pending;
   }
 
-  get loaded () {
+  get loaded() {
     return this._loaded;
   }
 
-  get childRuns () {
+  get childRuns() {
     return this._childRuns;
   }
 
-  get error () {
+  get error() {
     return this._error;
   }
 
@@ -64,23 +64,25 @@ class ChildRuns {
       return this._fetchPromise;
     }
     this._fetchPromiseOptions = count;
-    this._fetchPromise = new Promise(async (resolve) => {
+    this._fetchPromise = (async () => {
       if (count === 0) {
         this._pending = false;
         this._error = undefined;
         this._loaded = true;
         this._childRuns = [];
-        resolve();
         return;
       }
       try {
         this._pending = true;
-        const request = new PipelineRunSingleFilter({
-          page: 1,
-          pageSize: count,
-          parentId: this.parentId,
-          userModified: true
-        }, false);
+        const request = new PipelineRunSingleFilter(
+          {
+            page: 1,
+            pageSize: count,
+            parentId: this.parentId,
+            userModified: true,
+          },
+          false,
+        );
         await request.filter();
         if (request.error) {
           throw new Error(request.error);
@@ -99,11 +101,10 @@ class ChildRuns {
         this._pending = false;
         this._fetchPromise = undefined;
         this._fetchPromiseOptions = undefined;
-        resolve();
       }
-    });
+    })();
     return this._fetchPromise;
-  }
+  };
 }
 
 export default ChildRuns;

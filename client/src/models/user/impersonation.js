@@ -16,11 +16,10 @@
 
 import {computed, observable, makeObservable} from 'mobx';
 import Remote from '../basic/Remote';
-import {SERVER} from '../../config';
 import invalidateEdgeTokens from '../../utils/invalidate-edge-tokens';
 
 class ImpersonateUser extends Remote {
-  constructor (userName) {
+  constructor(userName) {
     super();
     if (userName) {
       this.url = `/user/impersonation/start?username=${userName}`;
@@ -29,7 +28,7 @@ class ImpersonateUser extends Remote {
     }
   }
 
-  getData (response) {
+  getData(response) {
     if (response.ok) {
       return Promise.resolve({status: 'OK'});
     }
@@ -38,7 +37,7 @@ class ImpersonateUser extends Remote {
 }
 
 class GetImpersonatedUser extends Remote {
-  constructor () {
+  constructor() {
     super();
     this.url = '/user/impersonation';
   }
@@ -48,22 +47,19 @@ class Impersonation {
   impersonatedUser;
   originalUser;
 
-  constructor () {
+  constructor() {
     makeObservable(this, {
       impersonatedUser: observable,
       originalUser: observable,
       isImpersonated: computed,
-      impersonatedUserName: computed
+      impersonatedUserName: computed,
     });
     this.impersonatedInfo = new GetImpersonatedUser();
     this.impersonatedInfo
       .fetch()
       .then(() => {
         if (this.impersonatedInfo.loaded) {
-          const {
-            original,
-            impersonated
-          } = this.impersonatedInfo.value || {};
+          const {original, impersonated} = this.impersonatedInfo.value || {};
           this.impersonatedUser = impersonated;
           this.originalUser = original;
         }
@@ -71,17 +67,15 @@ class Impersonation {
       .catch(() => {});
   }
 
-  get isImpersonated () {
+  get isImpersonated() {
     return !!this.impersonatedUser;
   }
 
-  get impersonatedUserName () {
-    return this.impersonatedUser
-      ? this.impersonatedUser.userName
-      : undefined;
+  get impersonatedUserName() {
+    return this.impersonatedUser ? this.impersonatedUser.userName : undefined;
   }
 
-  impersonate (userName) {
+  impersonate(userName) {
     return new Promise((resolve) => {
       const request = new ImpersonateUser(userName);
       invalidateEdgeTokens()
@@ -101,7 +95,7 @@ class Impersonation {
     });
   }
 
-  stopImpersonation () {
+  stopImpersonation() {
     return this.impersonate();
   }
 }

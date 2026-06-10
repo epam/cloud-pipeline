@@ -21,22 +21,18 @@ class ChangeConfig {
   applied;
   background;
   color;
-  constructor (defaultConfig) {
+  constructor(defaultConfig) {
     makeObservable(this, {
       applied: observable,
       background: observable,
       color: observable,
-      update: action
+      update: action,
     });
     this.update(defaultConfig);
   }
 
-  update (colors) {
-    const {
-      applied = 'transparent',
-      background = 'transparent',
-      color = 'transparent'
-    } = colors;
+  update(colors) {
+    const {applied = 'transparent', background = 'transparent', color = 'transparent'} = colors;
     this.applied = applied;
     this.background = background;
     this.color = color;
@@ -45,45 +41,41 @@ class ChangeConfig {
 
 export default class ChangesDisplayConfig {
   background = 'transparent';
-  insertion = new ChangeConfig(
-    {
-      applied: 'rgba(9, 171, 90, 0.4)',
-      background: 'rgba(9, 171, 90, 0.4)',
-      color: '#b4e2b4'
-    }
-  );
-  deletion = new ChangeConfig(
-    {
-      applied: '#d9d9d9',
-      background: 'rgba(217, 217, 217, 0.4)',
-      color: '#9e9e9e'
-    }
-  );
-  edition = new ChangeConfig(
-    {
-      applied: 'rgba(252, 230, 162, 0.4)',
-      background: 'rgba(252, 230, 162, 0.4)',
-      color: '#f5e3aa'
-    }
-  );
-  conflict = new ChangeConfig(
-    {
-      applied: 'rgb(237, 75, 48, 0.4)',
-      background: 'rgba(237, 75, 48, 0.4)',
-      color: '#e9aeae'
-    }
-  );
+  insertion = new ChangeConfig({
+    applied: 'rgba(9, 171, 90, 0.4)',
+    background: 'rgba(9, 171, 90, 0.4)',
+    color: '#b4e2b4',
+  });
+
+  deletion = new ChangeConfig({
+    applied: '#d9d9d9',
+    background: 'rgba(217, 217, 217, 0.4)',
+    color: '#9e9e9e',
+  });
+
+  edition = new ChangeConfig({
+    applied: 'rgba(252, 230, 162, 0.4)',
+    background: 'rgba(252, 230, 162, 0.4)',
+    color: '#f5e3aa',
+  });
+
+  conflict = new ChangeConfig({
+    applied: 'rgb(237, 75, 48, 0.4)',
+    background: 'rgba(237, 75, 48, 0.4)',
+    color: '#e9aeae',
+  });
+
   /**
    * @param {CloudPipelineThemes} themes
    */
-  constructor (themes) {
+  constructor(themes) {
     makeObservable(this, {
       background: observable,
       insertion: observable,
       deletion: observable,
       edition: observable,
       conflict: observable,
-      onChangeThemes: action
+      onChangeThemes: action,
     });
     this.themes = themes;
     this.listeners = [];
@@ -93,25 +85,24 @@ export default class ChangesDisplayConfig {
     }
   }
 
-  addListener (listener) {
+  addListener(listener) {
     this.listeners.push(listener);
   }
 
-  removeListener (listener) {
-    this.listeners = this.listeners.filter(o => o !== listener);
+  removeListener(listener) {
+    this.listeners = this.listeners.filter((o) => o !== listener);
   }
 
-  onChangeThemes () {
-    const getColor = (name) => this.themes
-      ? this.themes.currentThemeConfiguration[name]
-      : undefined;
+  onChangeThemes() {
+    const getColor = (name) =>
+      this.themes ? this.themes.currentThemeConfiguration[name] : undefined;
     const redColor = getColor('--cp-color-vs-conflict-bg') || 'rgb(237, 75, 48)';
     const redBorderColor = getColor('--cp-color-vs-conflict-border') || '#e9aeae';
     this.conflict.update({
       applied: redColor,
       background: redColor,
-      color: redBorderColor
+      color: redBorderColor,
     });
-    this.listeners.forEach(fn => fn());
+    this.listeners.forEach((fn) => fn());
   }
 }

@@ -17,22 +17,21 @@
 import DataStorageItemContent from '../../../../../../models/dataStorage/DataStorageItemContent';
 import {base64toString} from '../../../../../../utils/base64';
 
-export default function getStorageItemContent (storage, path) {
+export default function getStorageItemContent(storage, path) {
   return new Promise((resolve) => {
     const request = new DataStorageItemContent(storage, path);
     request
       .fetch()
       .then(() => {
         if (request.loaded) {
-          const {
-            content
-          } = request.value;
+          const {content} = request.value;
           if (content) {
             try {
               resolve(base64toString(content));
             } catch (e) {
-              // eslint-disable-next-line
-              throw new Error(`Error reading content for path ${path} (storage #${storage}): ${e.message}`);
+              throw new Error(
+                `Error reading content for path ${path} (storage #${storage}): ${e.message}`,
+              );
             }
           } else {
             throw new Error(`Empty content for path ${path} (storage #${storage})`);

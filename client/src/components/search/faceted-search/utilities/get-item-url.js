@@ -17,7 +17,7 @@
 import {SearchItemTypes} from '../../../../models/search';
 
 // URL should starts with slash, i.e. '/storage/id', '/folder/id' etc.
-function getItemUrl (item) {
+function getItemUrl(item) {
   return new Promise((resolve) => {
     switch (item.type) {
       case SearchItemTypes.azFile:
@@ -26,7 +26,10 @@ function getItemUrl (item) {
       case SearchItemTypes.gsFile:
         if (item.parentId) {
           const path = item.id;
-          const parentFolder = path.split('/').slice(0, path.split('/').length - 1).join('/');
+          const parentFolder = path
+            .split('/')
+            .slice(0, path.split('/').length - 1)
+            .join('/');
           if (parentFolder) {
             resolve(`/storage/${item.parentId}?path=${parentFolder}`);
             return;
@@ -54,10 +57,11 @@ function getItemUrl (item) {
       case SearchItemTypes.folder:
         resolve(`/folder/${item.id}`);
         return;
-      case SearchItemTypes.configuration:
+      case SearchItemTypes.configuration: {
         const [id, ...configName] = item.id.split('-');
         resolve(`/configuration/${id}/${configName.join('-')}`);
         return;
+      }
       case SearchItemTypes.metadataEntity:
         if (item.parentId) {
           resolve(`/folder/${item.parentId}/metadata/${item.id}/redirect`);
@@ -80,7 +84,7 @@ function getItemUrl (item) {
           }
         }
         break;
-      case SearchItemTypes.pipelineCode:
+      case SearchItemTypes.pipelineCode: {
         const {parentId, pipelineVersion, path} = item;
         if (parentId && pipelineVersion && path) {
           if (/^docs\//i.test(path)) {
@@ -90,8 +94,9 @@ function getItemUrl (item) {
             if (!subPath) {
               resolve(`/${item.parentId}/${pipelineVersion}/code`);
             } else {
-              // eslint-disable-next-line
-              resolve(`/${item.parentId}/${pipelineVersion}/code?path=${encodeURIComponent(subPath)}`);
+              resolve(
+                `/${item.parentId}/${pipelineVersion}/code?path=${encodeURIComponent(subPath)}`,
+              );
             }
             return;
           }
@@ -103,6 +108,7 @@ function getItemUrl (item) {
           resolve(`/${item.parentId}`);
         }
         break;
+      }
     }
     resolve(undefined);
   });

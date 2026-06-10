@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 class Docs extends Remote {
-  constructor (id, version) {
+  constructor(id, version) {
     super();
     this.url = `/pipeline/${id}/docs?version=${version}`;
   }

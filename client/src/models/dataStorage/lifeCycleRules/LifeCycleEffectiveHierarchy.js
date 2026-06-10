@@ -19,19 +19,14 @@ import Remote from '../../basic/Remote';
 export default class LifeCycleEffectiveHierarchy extends Remote {
   url;
 
-  constructor (
-    id,
-    path,
-    pathType,
-    recursive = false
-  ) {
+  constructor(id, path, pathType, recursive = false) {
     super();
     const parts = [
       path !== undefined && `path=${encodeURIComponent(path)}`,
       pathType !== undefined && `pathType=${pathType}`,
-      recursive !== undefined && `recursive=${recursive}`
+      recursive !== undefined && `recursive=${recursive}`,
     ].filter(Boolean);
     const query = parts.length > 0 ? `?${parts.join('&')}` : '';
     this.url = `/datastorage/${id}/lifecycle/restore/effectiveHierarchy${query}`;
-  };
+  }
 }

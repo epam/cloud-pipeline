@@ -37,5 +37,5 @@ export {
   VerticalLinePlugin,
   SummaryChart,
   HighlightTicksPlugin,
-  HighlightAxisPlugin
+  HighlightAxisPlugin,
 };

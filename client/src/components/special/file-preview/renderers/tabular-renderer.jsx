@@ -4,10 +4,10 @@ import classNames from 'classnames';
 import {Alert} from 'antd';
 import Papa from 'papaparse';
 import {ObjectStorage} from '../../../../utils/object-storage';
-import LoadingView from '../../LoadingView';
+import LoadingView from '../../LoadingView.tsx';
 import CodeEditor from '../../CodeEditor';
-import HotTable from 'react-handsontable';
-import styles from './file-preview-renderers.css';
+import TabularDataTable from '../../tabular-data-table/TabularDataTable';
+import styles from './file-preview-renderers.module.css';
 
 class TabularDataRenderer extends React.PureComponent {
   static testExtension = (ext) => /^(tsv|csv)$/i.test(ext);
@@ -16,14 +16,14 @@ class TabularDataRenderer extends React.PureComponent {
     error: undefined,
     content: undefined,
     parseError: undefined,
-    plainText: undefined
+    plainText: undefined,
   };
 
-  componentDidMount () {
+  componentDidMount() {
     this.updateFromProps();
   }
 
-  componentDidUpdate (prevProps, prevState, snapshot) {
+  componentDidUpdate(prevProps, prevState, snapshot) {
     if (
       prevProps.filePath !== this.props.filePath ||
       prevProps.storage !== this.props.storage ||
@@ -33,22 +33,18 @@ class TabularDataRenderer extends React.PureComponent {
     }
   }
 
-  componentWillUnmount () {
+  componentWillUnmount() {
     this.token = {};
   }
 
   updateFromProps = () => {
-    const token = this.token = {};
+    const token = (this.token = {});
     const commit = (fn) => {
       if (this.token === token) {
         fn();
       }
     };
-    const {
-      storage,
-      filePath,
-      fileData
-    } = this.props;
+    const {storage, filePath, fileData} = this.props;
     const parseData = (data) => {
       if (!data) {
         commit(() => {
@@ -57,7 +53,7 @@ class TabularDataRenderer extends React.PureComponent {
             error: undefined,
             content: undefined,
             parseError: undefined,
-            plainText: undefined
+            plainText: undefined,
           });
         });
         return;
@@ -75,7 +71,7 @@ class TabularDataRenderer extends React.PureComponent {
             error: undefined,
             content: parseRes.data,
             parseError: undefined,
-            plainText: data
+            plainText: data,
           });
         });
       } catch (error) {
@@ -85,7 +81,7 @@ class TabularDataRenderer extends React.PureComponent {
             error: undefined,
             content: undefined,
             parseError: error.message,
-            plainText: data
+            plainText: data,
           });
         });
       }
@@ -98,7 +94,7 @@ class TabularDataRenderer extends React.PureComponent {
             error: undefined,
             content: undefined,
             parseError: undefined,
-            plainText: undefined
+            plainText: undefined,
           });
         });
         try {
@@ -113,7 +109,7 @@ class TabularDataRenderer extends React.PureComponent {
               error: error.message,
               content: undefined,
               parseError: undefined,
-              plainText: undefined
+              plainText: undefined,
             });
           });
         }
@@ -123,63 +119,40 @@ class TabularDataRenderer extends React.PureComponent {
     }
   };
 
-  render () {
-    const {
-      className,
-      style
-    } = this.props;
-    const {
-      pending,
-      error,
-      content,
-      plainText
-    } = this.state;
+  render() {
+    const {className, style} = this.props;
+    const {pending, error, content, plainText} = this.state;
     if (pending) {
       return (
-        <div
-          className={classNames(className, styles.filePreviewRenderer)}
-          style={style}
-        >
+        <div className={classNames(className, styles.filePreviewRenderer)} style={style}>
           <LoadingView />
         </div>
       );
     }
     if (error) {
       return (
-        <div
-          className={classNames(className, styles.filePreviewRenderer)}
-          style={style}
-        >
+        <div className={classNames(className, styles.filePreviewRenderer)} style={style}>
           <Alert title={error} type="error" showIcon />
         </div>
       );
     }
     if (!plainText) {
       return (
-        <div
-          className={classNames(className, styles.filePreviewRenderer)}
-          style={style}
-        >
+        <div className={classNames(className, styles.filePreviewRenderer)} style={style}>
           <span className="cp-text-not-important">No data</span>
         </div>
       );
     }
     if (content) {
       return (
-        <HotTable
-          className={
-            classNames(className, styles.filePreviewRenderer, styles.filePreviewTabularRenderer)
-          }
+        <TabularDataTable
+          className={classNames(
+            className,
+            styles.filePreviewRenderer,
+            styles.filePreviewTabularRenderer,
+          )}
           style={style}
-          root="hot"
           data={content}
-          colHeaders
-          rowHeaders
-          readOnly
-          readOnlyCellClassName={classNames('readonly-cell', 'cp-table-cell')}
-          manualColumnResize
-          manualRowResize
-          contextMenu={['copy']}
         />
       );
     }
@@ -199,7 +172,7 @@ TabularDataRenderer.propTypes = {
   style: PropTypes.object,
   storage: PropTypes.object,
   filePath: PropTypes.string,
-  fileData: PropTypes.string
+  fileData: PropTypes.string,
 };
 
 export default TabularDataRenderer;

@@ -17,11 +17,11 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class LoadVSCommits extends RemotePost {
-  constructor (id, page, pageSize) {
+  constructor(id, page, pageSize) {
     super();
     const queryParameters = [
       page >= 0 ? `page=${page || 0}` : undefined,
-      pageSize >= 0 ? `page_size=${pageSize || 0}` : undefined
+      pageSize >= 0 ? `page_size=${pageSize || 0}` : undefined,
     ]
       .filter(Boolean)
       .join('&');

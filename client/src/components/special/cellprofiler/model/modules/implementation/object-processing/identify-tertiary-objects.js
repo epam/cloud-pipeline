@@ -13,7 +13,6 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-/* eslint-disable max-len */
 
 export default {
   name: 'IdentifyTertiaryObjects',
@@ -23,6 +22,6 @@ export default {
     'Select the larger identified objects|object|ALIAS large|REQUIRED|DEFAULT_FROM IdentifySecondaryObjects',
     'Select the smaller identified objects|object|ALIAS small|REQUIRED|DEFAULT_FROM IdentifyPrimaryObjects',
     'Name the tertiary objects to be identified|string|Cytoplasm|ALIAS output|REQUIRED',
-    'Shrink smaller object prior to subtraction?|flag|false|ALIAS shrink'
-  ]
+    'Shrink smaller object prior to subtraction?|flag|false|ALIAS shrink',
+  ],
 };

@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-export {
-  LaunchMessages,
-  ScanStatuses} from './constants';
+export {LaunchMessages, ScanStatuses} from './constants';
 
 export {default as getVersionRunningInfo} from './getVersionInfo';

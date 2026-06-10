@@ -18,7 +18,7 @@ import {mapLegacyToSemantic} from '../tokens/legacy-adapter';
 
 const STYLE_ID_PREFIX = 'cp-theme-vars-';
 
-function getParsedConfiguration (theme) {
+function getParsedConfiguration(theme) {
   if (!theme) {
     return {};
   }
@@ -36,7 +36,7 @@ function getParsedConfiguration (theme) {
   return theme.configuration || {};
 }
 
-function generateCssVariables (theme) {
+function generateCssVariables(theme) {
   const {identifier} = theme || {};
   if (!identifier) {
     return undefined;
@@ -47,17 +47,15 @@ function generateCssVariables (theme) {
   if (entries.length === 0) {
     return `.${identifier} {}`;
   }
-  const declarations = entries
-    .map(([cssVar, value]) => `  ${cssVar}: ${value};`)
-    .join('\n');
+  const declarations = entries.map(([cssVar, value]) => `  ${cssVar}: ${value};`).join('\n');
   return `.${identifier} {\n${declarations}\n}`;
 }
 
-function getStyleId (identifier) {
+function getStyleId(identifier) {
   return `${STYLE_ID_PREFIX}${identifier}`;
 }
 
-function injectCss (identifier, css) {
+function injectCss(identifier, css) {
   const id = getStyleId(identifier);
   let style = document.getElementById(id);
   if (!style) {
@@ -69,7 +67,7 @@ function injectCss (identifier, css) {
   style.textContent = css;
 }
 
-function ejectCss (identifier) {
+function ejectCss(identifier) {
   const id = getStyleId(identifier);
   const style = document.getElementById(id);
   if (style && style.parentNode) {
@@ -84,7 +82,7 @@ function ejectCss (identifier) {
  * Used for custom themes and live preview overrides; predefined themes
  * rely on the bundled palette.css on body classes.
  */
-export default function injectCssVariables (theme) {
+export default function injectCssVariables(theme) {
   return new Promise((resolve) => {
     try {
       if (!theme || !theme.identifier) {
@@ -102,7 +100,7 @@ export default function injectCssVariables (theme) {
   });
 }
 
-export function ejectCssVariables (theme) {
+export function ejectCssVariables(theme) {
   try {
     if (theme && theme.identifier) {
       ejectCss(theme.identifier);

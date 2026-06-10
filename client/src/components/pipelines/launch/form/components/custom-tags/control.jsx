@@ -5,7 +5,7 @@ import CustomTagsEditor from './dialog';
 
 class CustomTagsControl extends React.PureComponent {
   state = {
-    visible: false
+    visible: false,
   };
 
   onOpen = () => this.setState({visible: true});
@@ -16,9 +16,9 @@ class CustomTagsControl extends React.PureComponent {
       onChange(newTags, tagsTouched);
     }
     this.onClose();
-  }
+  };
 
-  render () {
+  render() {
     const {
       className,
       style,
@@ -27,16 +27,13 @@ class CustomTagsControl extends React.PureComponent {
       validation = [],
       visibleTags = [],
       payload,
-      buttonText
+      buttonText,
     } = this.props;
 
     const {visible} = this.state;
 
     return (
-      <div
-        className={className}
-        style={style}
-      >
+      <div className={className} style={style}>
         <CustomTagsButton
           tags={tags}
           validation={validation}
@@ -67,7 +64,7 @@ CustomTagsControl.propTypes = {
   visibleTags: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   payload: PropTypes.object,
   onChange: PropTypes.func,
-  buttonText: PropTypes.node
+  buttonText: PropTypes.node,
 };
 
 export default CustomTagsControl;

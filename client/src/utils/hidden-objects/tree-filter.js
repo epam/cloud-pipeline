@@ -17,7 +17,7 @@
 import {ItemTypes} from '../../components/pipelines/model/treeStructureFunctions';
 import ObjectTypes from './object-types';
 
-function getItemProperties (treeItem, treeItemType, parent) {
+function getItemProperties(treeItem, treeItemType, parent) {
   switch (treeItemType) {
     case ItemTypes.folder:
       return {type: ObjectTypes.folder, id: String(treeItem?.id || '').toLowerCase()};
@@ -26,7 +26,8 @@ function getItemProperties (treeItem, treeItemType, parent) {
     case ItemTypes.version:
       return {
         type: ObjectTypes.pipelineVersion,
-        id: treeItem?.name && parent?.id ? `${parent.id}/${treeItem.name}`.toLowerCase() : undefined
+        id:
+          treeItem?.name && parent?.id ? `${parent.id}/${treeItem.name}`.toLowerCase() : undefined,
       };
     case ItemTypes.configuration:
       return {type: ObjectTypes.configuration, id: String(treeItem?.id || '').toLowerCase()};
@@ -37,7 +38,7 @@ function getItemProperties (treeItem, treeItemType, parent) {
         type: ObjectTypes.metadataClass,
         id: parent
           ? `${parent.id}/${treeItem?.id}`.toLowerCase()
-          : String(treeItem?.id || '').toLowerCase()
+          : String(treeItem?.id || '').toLowerCase(),
       };
     case ItemTypes.metadataFolder:
       return {type: ObjectTypes.metadataFolder, id: String(treeItem?.id || '').toLowerCase()};
@@ -45,12 +46,14 @@ function getItemProperties (treeItem, treeItemType, parent) {
   return undefined;
 }
 
-export default function treeFilter (hiddenObjects) {
-  return function f (filter) {
+export default function treeFilter(hiddenObjects) {
+  return function f(filter) {
     return (o, type, ...rest) => {
       const {type: oType, id: oId} = getItemProperties(o, type, ...rest) || {};
-      return (!filter || filter(o, type, ...rest)) &&
-        (!hiddenObjects || !hiddenObjects.isHidden(oType, oId));
+      return (
+        (!filter || filter(o, type, ...rest)) &&
+        (!hiddenObjects || !hiddenObjects.isHidden(oType, oId))
+      );
     };
   };
 }

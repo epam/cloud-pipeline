@@ -21,11 +21,11 @@ import {
   isScatter,
   WdlVersion,
   isConditional,
-  WdlErrors
+  WdlErrors,
 } from '../../../../../../../utils/pipeline-builder';
 import {getEntityType} from './workflow-utilities';
 
-function parseRawDockerImageValue (str) {
+function parseRawDockerImageValue(str) {
   // "docker_image:version" || ["docker_image1:version1", "docker_image2:version1"]
   let docker = str;
   const clearQuotes = (raw) => {
@@ -43,19 +43,18 @@ function parseRawDockerImageValue (str) {
   return docker;
 }
 
-function extractTaskProperties (task) {
+function extractTaskProperties(task) {
   if (task && isTask(task)) {
-    let {
-      command,
-      runtime = []
-    } = task;
+    let {command, runtime = []} = task;
     let docker;
     if (command) {
       const parts = command.split('\n');
-      if (parts[0].trim().toLowerCase().startsWith('task_script=') &&
+      if (
+        parts[0].trim().toLowerCase().startsWith('task_script=') &&
         parts.length >= 5 &&
         parts[1].trim().toLowerCase().replace(/ /g, '') === 'cat>"$task_script"<<eol' &&
-        parts[parts.length - 2].trim().toLowerCase() === 'eol') {
+        parts[parts.length - 2].trim().toLowerCase() === 'eol'
+      ) {
         const lastLineParts = parts[parts.length - 1].match(/[^\s"]+|"([^"]*)"/g);
         if (lastLineParts.length > 4) {
           docker = parseRawDockerImageValue(lastLineParts[lastLineParts.length - 5].trim());
@@ -73,19 +72,19 @@ function extractTaskProperties (task) {
       runtimeItems.push({
         property: 'docker',
         value: docker,
-        removable: false
+        removable: false,
       });
     }
     return {
       command,
       runtime: runtimeItems,
-      docker
+      docker,
     };
   }
   return task;
 }
 
-export default function extractEntityProperties (entity, wdlDocument) {
+export default function extractEntityProperties(entity, wdlDocument) {
   let name,
     type,
     alias,
@@ -122,7 +121,7 @@ export default function extractEntityProperties (entity, wdlDocument) {
   let runtimeAttributesEditable = false;
   let commandAvailable = false;
   let commandEditable = false;
-  let isPipelineTask = false;
+  const isPipelineTask = false;
   let canRemoveEntity = false;
   let canAddSubAction = false;
   if (entity) {
@@ -147,10 +146,7 @@ export default function extractEntityProperties (entity, wdlDocument) {
       if (task) {
         runtimeAttributesAvailable = true;
         runtimeAttributesEditable = task.document === wdlDocument;
-        const {
-          runtime: taskRuntime = [],
-          command: taskCommand
-        } = extractTaskProperties(task);
+        const {runtime: taskRuntime = [], command: taskCommand} = extractTaskProperties(task);
         runtime = taskRuntime.map((r) => ({
           property: r.property,
           value: r.value,
@@ -160,7 +156,7 @@ export default function extractEntityProperties (entity, wdlDocument) {
           docker: /^docker$/i.test(r.property),
           node: /^node$/i.test(r.property),
           removable: r.removable === undefined || r.removable,
-          id: r.uuid
+          id: r.uuid,
         }));
         commandAvailable = true;
         commandEditable = !isPipelineTask && task.document === wdlDocument;
@@ -168,24 +164,18 @@ export default function extractEntityProperties (entity, wdlDocument) {
         command = taskCommand;
       }
     }
-    if (
-      isWorkflow(entity) ||
-      isTask(entity) ||
-      isCall(entity) ||
-      isScatter(entity)
-    ) {
+    if (isWorkflow(entity) || isTask(entity) || isCall(entity) || isScatter(entity)) {
       const eInputs = entity.getActionInputs();
       const eDeclarations = entity.getActionDeclarations();
-      executable = isCall(entity) ? (entity.executable || entity) : entity;
-      const eOutputs = isWorkflow(executable) || isTask(executable)
-        ? executable.getActionOutputs()
-        : [];
+      executable = isCall(entity) ? entity.executable || entity : entity;
+      const eOutputs =
+        isWorkflow(executable) || isTask(executable) ? executable.getActionOutputs() : [];
       inputsEditable = !isScatter(entity) && executable.document === wdlDocument;
       declarationsEditable = !isCall(entity) && executable.document === wdlDocument;
       outputsEditable = !isScatter(entity) && executable.document === wdlDocument;
       inputsAvailable = !isScatter(entity);
-      declarationsAvailable = isScatter(entity) ||
-        (entity.supports(WdlVersion.draft3) && !isCall(entity));
+      declarationsAvailable =
+        isScatter(entity) || (entity.supports(WdlVersion.draft3) && !isCall(entity));
       outputsAvailable = isWorkflow(executable) || isTask(executable);
       if (isScatter(entity)) {
         scatterItemsAvailable = true;
@@ -193,21 +183,19 @@ export default function extractEntityProperties (entity, wdlDocument) {
         inputs = [];
       } else {
         scatterItems = [];
-        inputs = []
-          .concat(eInputs);
+        inputs = [].concat(eInputs);
       }
-      declarations = []
-        .concat(eDeclarations);
-      outputs = []
-        .concat(eOutputs);
+      declarations = [].concat(eDeclarations);
+      outputs = [].concat(eOutputs);
     }
     if (isConditional(entity)) {
       expressionAvailable = true;
       expression = entity.expression;
     }
     if (entity.document) {
-      executables = (entity.document.executables || [])
-        .filter((e) => !isWorkflow(e) || e.document !== wdlDocument);
+      executables = (entity.document.executables || []).filter(
+        (e) => !isWorkflow(e) || e.document !== wdlDocument,
+      );
     }
     nameIssues = entityIssues.filter((issue) => issue instanceof WdlErrors.UniqueNameRequiredError);
     commandIssues = entityIssues.filter((issue) => issue instanceof WdlErrors.CommandRequiredError);
@@ -250,6 +238,6 @@ export default function extractEntityProperties (entity, wdlDocument) {
     isPipelineTask,
     canRemoveEntity,
     canAddSubAction,
-    executables
+    executables,
   };
 }

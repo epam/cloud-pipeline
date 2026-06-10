@@ -12,35 +12,29 @@ const MB = 1024 * KB;
 
 const MAX_SIZE_TO_PREVIEW = 20 * MB;
 
-export async function getFilePreviewConfiguration (filePath) {
+export async function getFilePreviewConfiguration(filePath) {
   const ext = filePath.split('.').pop().toLowerCase();
   await dataStorageAvailable.fetchIfNeededOrWait();
   const info = getStorageLinkInfo({
     path: filePath,
     storages: dataStorageAvailable.value ?? [],
-    isFolder: false
+    isFolder: false,
   });
-  const {
-    storage,
-    relativePath
-  } = info ?? {};
+  const {storage, relativePath} = info ?? {};
   if (!storage) {
     throw new Error('storage not found');
   }
-  let renderer = renderers.find((renderer) =>
-    typeof renderer.testExtension === 'function' &&
-    renderer.testExtension(ext));
+  const renderer = renderers.find(
+    (renderer) => typeof renderer.testExtension === 'function' && renderer.testExtension(ext),
+  );
   if (renderer) {
     return {
       storage,
       renderer,
-      path: relativePath
+      path: relativePath,
     };
   }
-  const content = dataStorageCache.getContent(
-    storage.id,
-    relativePath
-  );
+  const content = dataStorageCache.getContent(storage.id, relativePath);
   const getSize = async () => {
     const sizeRequest = new DataStorageItemSize();
     let p = storage.pathMask;
@@ -61,33 +55,28 @@ export async function getFilePreviewConfiguration (filePath) {
   if (size > MAX_SIZE_TO_PREVIEW) {
     throw new Error(`file size too large for preview (${displaySize(size)})`);
   }
-  const {
-    mayBeBinary
-  } = content.value;
+  const {mayBeBinary} = content.value;
   if (mayBeBinary) {
     throw new Error('preview not available for binary files');
   }
   return {
     storage,
     renderer: PlainTextRenderer,
-    path: relativePath
+    path: relativePath,
   };
 }
 
-export function externalPreviewConfiguration (filePath) {
+export function externalPreviewConfiguration(filePath) {
   const info = getStorageLinkInfo({
     path: filePath,
     storages: dataStorageAvailable.value ?? [],
-    isFolder: false
+    isFolder: false,
   });
-  const {
-    storage,
-    relativePath
-  } = info ?? {};
+  const {storage, relativePath} = info ?? {};
   const ext = filePath.split('.').pop().toLowerCase();
-  let renderer = renderers.find((renderer) =>
-    typeof renderer.testExtension === 'function' &&
-    renderer.testExtension(ext));
+  const renderer = renderers.find(
+    (renderer) => typeof renderer.testExtension === 'function' && renderer.testExtension(ext),
+  );
   return renderer && renderer.getPreviewConfiguration
     ? renderer.getPreviewConfiguration({storage, relativePath})
     : undefined;

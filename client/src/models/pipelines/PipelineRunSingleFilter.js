@@ -22,43 +22,45 @@ export default class PipelineRunSingleFilter extends RemotePost {
   static auto = false;
   params;
 
-  constructor (params, fetch = true) {
+  constructor(params, fetch = true) {
     super();
     makeObservable(this, {
       _total: observable,
-      total: computed
+      total: computed,
     });
     this.params = params;
     this.url = '/run/filter';
     if (fetch) {
       this.filter();
     }
-  };
+  }
 
   _total = 0;
 
-  get total () {
+  get total() {
     return this._total;
   }
 
-  filter (params) {
+  filter(params) {
     if (params) {
       this.params = params;
     }
     return this.send(params || this.params);
   }
 
-  async send (body, abortSignal) {
+  async send(body, abortSignal) {
     const payload = {
       eagerGrouping: false,
-      ...(body || {})
+      ...(body || {}),
     };
     await super.send(payload, abortSignal);
   }
 
-  postprocess (value) {
+  postprocess(value) {
     this._total = value.payload.totalCount;
-    if (value.payload.totalCount === 0) { return []; }
+    if (value.payload.totalCount === 0) {
+      return [];
+    }
     return value.payload.elements;
   }
 }

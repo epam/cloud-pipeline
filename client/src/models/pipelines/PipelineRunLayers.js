@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 class PipelineRunLayers extends Remote {
-  constructor (runId) {
+  constructor(runId) {
     super();
     this.url = `/run/${runId}/layers`;
   }

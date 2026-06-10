@@ -19,7 +19,7 @@
 import Remote from '../basic/Remote';
 
 export default class UsersInfo extends Remote {
-  constructor () {
+  constructor() {
     super();
     this.url = '/users/info';
   }

@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-function getVec4 (aValue) {
+function getVec4(aValue) {
   let x = 1.0;
   let y = 1.0;
   let z = 1.0;
@@ -27,28 +27,18 @@ function getVec4 (aValue) {
   return [x, y, z, w];
 }
 
-export function mat4identity (value = 1.0) {
+export function mat4identity(value = 1.0) {
   const [x, y, z, w] = getVec4(value);
-  return new Float32Array([
-    x, 0, 0, 0,
-    0, y, 0, 0,
-    0, 0, z, 0,
-    0, 0, 0, w
-  ]);
+  return new Float32Array([x, 0, 0, 0, 0, y, 0, 0, 0, 0, z, 0, 0, 0, 0, w]);
 }
 
-export function mat4scale (scale) {
+export function mat4scale(scale) {
   return mat4identity(scale);
 }
 
-export function mat4translate (x, y, z) {
-  let xx = x || 0;
-  let yy = y || 0;
-  let zz = z || 0;
-  return new Float32Array([
-    1, 0, 0, 0,
-    0, 1, 0, 0,
-    0, 0, 1, 0,
-    xx, yy, zz, 1
-  ]);
+export function mat4translate(x, y, z) {
+  const xx = x || 0;
+  const yy = y || 0;
+  const zz = z || 0;
+  return new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, xx, yy, zz, 1]);
 }

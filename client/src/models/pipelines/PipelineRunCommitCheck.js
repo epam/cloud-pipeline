@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 export class PipelineRunCommitCheck extends Remote {
-  constructor (id) {
+  constructor(id) {
     super();
     this.url = `/run/${id}/commit/check`;
   }

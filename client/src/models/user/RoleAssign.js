@@ -17,7 +17,7 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class RoleAssign extends RemotePost {
-  constructor (roleId, userId) {
+  constructor(roleId, userId) {
     super();
     this.url = `/role/${roleId}/assign?userIds=${userId}`;
   }

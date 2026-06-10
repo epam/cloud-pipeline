@@ -17,11 +17,11 @@
 import RemotePost from '../basic/RemotePost';
 
 class PipelineRunTagsUpdate extends RemotePost {
-  constructor (runId, overwrite = false) {
+  constructor(runId, overwrite = false) {
     super();
     this.runId = runId;
     this.url = `/run/${runId}/tag?overwrite=${!!overwrite}`;
-  };
+  }
 }
 
 export default PipelineRunTagsUpdate;

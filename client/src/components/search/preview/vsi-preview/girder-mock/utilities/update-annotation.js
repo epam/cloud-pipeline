@@ -14,10 +14,9 @@
  *  limitations under the License.
  */
 
-import DataStorageItemUpdateContent
-  from '../../../../../../models/dataStorage/DataStorageItemUpdateContent';
+import DataStorageItemUpdateContent from '../../../../../../models/dataStorage/DataStorageItemUpdateContent';
 
-export default function updateAnnotation (storage, path, annotationId, annotation) {
+export default function updateAnnotation(storage, path, annotationId, annotation) {
   return new Promise((resolve) => {
     const url = path
       ? `${path}/annotations/${annotationId}.json`.replace(/\/\//g, '/')
@@ -31,7 +30,7 @@ export default function updateAnnotation (storage, path, annotationId, annotatio
             resolve({
               _id: `${storage}/${path || ''}/${annotationId}`,
               creatorId: +annotationId,
-              annotation: JSON.parse(annotation)
+              annotation: JSON.parse(annotation),
             });
           } else {
             throw new Error(request.error);

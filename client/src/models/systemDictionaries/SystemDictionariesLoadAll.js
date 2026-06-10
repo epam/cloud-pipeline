@@ -17,12 +17,12 @@
 import Remote from '../basic/Remote';
 
 class SystemDictionariesLoadAll extends Remote {
-  constructor () {
+  constructor() {
     super();
     this.url = '/categoricalAttribute';
   }
 
-  getDictionary (key) {
+  getDictionary(key) {
     if (this.loaded) {
       return (this.value || []).find((attribute) => attribute.key === key);
     }

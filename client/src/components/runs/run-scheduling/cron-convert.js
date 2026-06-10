@@ -1,4 +1,4 @@
-import moment from 'moment-timezone';
+import dayjs from '../../../utils/dayjs';
 import {DAYS, COMPUTED_DAYS, ORDINALS} from './forms';
 import {defaultSorter} from '../../../utils/sorting';
 
@@ -6,19 +6,19 @@ export const ruleModes = {
   daily: 'daily',
   weekly: 'weekly',
   monthly: 'monthly',
-  yearly: 'yearly'
+  yearly: 'yearly',
 };
 
 const DECODERS = {
   [ruleModes.daily]: (parts) => ({
     mode: ruleModes.daily,
-    every: parts.dayOfMonth.split('/')[1]
+    every: parts.dayOfMonth.split('/')[1],
   }),
   [ruleModes.weekly]: (parts) => ({
     mode: ruleModes.weekly,
     dayOfWeek: parts.dayOfWeek.includes(',')
       ? parts.dayOfWeek.replace('0', '7').split(',')
-      : [parts.dayOfWeek.replace('0', '7')]
+      : [parts.dayOfWeek.replace('0', '7')],
   }),
   [ruleModes.monthly]: ({dayOfMonth, dayOfWeek, month}) => {
     if (dayOfMonth === '?') {
@@ -30,7 +30,7 @@ const DECODERS = {
         ordinal: ordinal.join(''),
         day: dw,
         dayNumber: 1,
-        every: Number(month.split('/')[1])
+        every: Number(month.split('/')[1]),
       };
     } else if (dayOfMonth.includes('W') && dayOfWeek === '?') {
       // On nth weekday
@@ -41,7 +41,7 @@ const DECODERS = {
         ordinal: ordinal === 'L' ? ordinal : `#${ordinal}`,
         day: COMPUTED_DAYS.weekday.key,
         dayNumber: 1,
-        every: Number(month.split('/')[1])
+        every: Number(month.split('/')[1]),
       };
     } else if (dayOfMonth === 'L') {
       // On Last (Weekday | Day | day of week)
@@ -51,7 +51,7 @@ const DECODERS = {
         ordinal: dayOfMonth,
         day: COMPUTED_DAYS.day.key,
         dayNumber: 1,
-        every: Number(month.split('/')[1])
+        every: Number(month.split('/')[1]),
       };
     }
     return {
@@ -61,7 +61,7 @@ const DECODERS = {
       ordinal: ORDINALS[0].cronCode,
       day: DAYS[0].key,
       dayNumber: dayOfMonth,
-      every: Number(month.split('/')[1])
+      every: Number(month.split('/')[1]),
     };
   },
   [ruleModes.yearly]: ({dayOfMonth, dayOfWeek, month}) => {
@@ -74,7 +74,7 @@ const DECODERS = {
         ordinal: ordinal.join(''),
         day: dw,
         dayNumber: 1,
-        month
+        month,
       };
     } else if (dayOfMonth.includes('W') && dayOfWeek === '?') {
       // On nth weekday
@@ -85,7 +85,7 @@ const DECODERS = {
         ordinal: ordinal === 'L' ? ordinal : `#${ordinal}`,
         day: COMPUTED_DAYS.weekday.key,
         dayNumber: 1,
-        month
+        month,
       };
     } else if (dayOfMonth === 'L') {
       // On Last (Weekday | Day | day of week)
@@ -95,7 +95,7 @@ const DECODERS = {
         ordinal: dayOfMonth,
         day: COMPUTED_DAYS.day.key,
         dayNumber: 1,
-        month
+        month,
       };
     }
     return {
@@ -105,13 +105,13 @@ const DECODERS = {
       ordinal: ORDINALS[0].cronCode,
       day: DAYS[0].key,
       dayNumber: dayOfMonth,
-      month
+      month,
     };
-  }
+  },
 };
 
-export function isTimeZoneEqualCurrent (timeZone) {
-  const current = moment.tz.guess();
+export function isTimeZoneEqualCurrent(timeZone) {
+  const current = dayjs.tz.guess();
   if (!timeZone) {
     return true;
   }
@@ -119,7 +119,7 @@ export function isTimeZoneEqualCurrent (timeZone) {
 }
 
 export class CronConvert {
-  static _getCronParts (expression) {
+  static _getCronParts(expression) {
     if (!expression || expression.length === 0) {
       return null;
     }
@@ -131,7 +131,7 @@ export class CronConvert {
         hours,
         month,
         dayOfMonth,
-        dayOfWeek
+        dayOfWeek,
       };
     } else if (parts.length === 5) {
       const [minutes, hours, dayOfMonth, month, dayOfWeek] = parts;
@@ -140,13 +140,13 @@ export class CronConvert {
         hours,
         dayOfMonth,
         month,
-        dayOfWeek
+        dayOfWeek,
       };
     }
     return null;
   }
 
-  static convertToRuleScheduleObject (cronExpression) {
+  static convertToRuleScheduleObject(cronExpression) {
     const parts = CronConvert._getCronParts(cronExpression);
     let schedule = {
       mode: undefined,
@@ -159,8 +159,8 @@ export class CronConvert {
       ordinal: undefined,
       time: {
         hours: undefined,
-        minutes: undefined
-      }
+        minutes: undefined,
+      },
     };
     if (!isNaN(+parts.minutes)) {
       schedule.time.minutes = +parts.minutes;
@@ -174,10 +174,7 @@ export class CronConvert {
       (parts.dayOfWeek === '*' || parts.dayOfWeek === '?')
     ) {
       schedule = {...schedule, ...DECODERS[ruleModes.daily](parts)};
-    } else if (
-      parts.dayOfMonth === '?' &&
-      parts.dayOfWeek?.split(',').every(d => !isNaN(d))
-    ) {
+    } else if (parts.dayOfMonth === '?' && parts.dayOfWeek?.split(',').every((d) => !isNaN(d))) {
       schedule = {...schedule, ...DECODERS[ruleModes.weekly](parts)};
     } else if (parts.month.includes('/') && !isNaN(parts.month.split('/')[1])) {
       schedule = {...schedule, ...DECODERS[ruleModes.monthly](parts)};
@@ -201,21 +198,19 @@ export class CronConvert {
    * @param cronLength {Number} - Resulting cron expression string format (5, 6 or 7 parts)
    * @return {String|null} - Cron expression string
    * */
-  static convertToCronString ({
-    mode,
-    every,
-    day,
-    dayNumber,
-    dayOfWeek,
-    daySelectorMode,
-    month,
-    ordinal,
-    time: {
-      hours,
-      minutes
-    }
-  },
-  cronLength = 6
+  static convertToCronString(
+    {
+      mode,
+      every,
+      day,
+      dayNumber,
+      dayOfWeek,
+      daySelectorMode,
+      month,
+      ordinal,
+      time: {hours, minutes},
+    },
+    cronLength = 6,
   ) {
     const convertSunday = (weekday) => {
       if (+weekday === 0) {
@@ -229,7 +224,8 @@ export class CronConvert {
         cron5 = `${minutes} ${hours} */${every} * ?`;
         break;
       case ruleModes.weekly:
-        cron5 = `${minutes} ${hours} ? * ${dayOfWeek.map(convertSunday)
+        cron5 = `${minutes} ${hours} ? * ${dayOfWeek
+          .map(convertSunday)
           .sort(defaultSorter)
           .join(',')}`;
         break;

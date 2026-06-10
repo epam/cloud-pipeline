@@ -18,5 +18,5 @@ export default {
   insertion: 'insertion',
   deletion: 'deletion',
   edition: 'edition',
-  conflict: 'conflict'
+  conflict: 'conflict',
 };

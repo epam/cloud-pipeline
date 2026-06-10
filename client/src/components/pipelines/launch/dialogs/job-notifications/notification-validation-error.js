@@ -14,13 +14,11 @@
  *  limitations under the License.
  */
 
-export default function notificationValidationError (notification) {
+export default function notificationValidationError(notification) {
   if (!notification) {
     return {};
   }
-  const {
-    type
-  } = notification;
+  const {type} = notification;
   const errors = {};
   if (!type) {
     errors.type = 'Notification type is required';

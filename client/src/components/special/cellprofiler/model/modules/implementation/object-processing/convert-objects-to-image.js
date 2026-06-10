@@ -13,7 +13,6 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-/* eslint-disable max-len */
 
 export default {
   name: 'ConvertObjectsToImage',
@@ -23,6 +22,6 @@ export default {
     'Select the input objects|object|ALIAS input|REQUIRED',
     'Name the output image|ALIAS output|REQUIRED',
     'Select the color format|[Color,"Binary (black & white)",Grayscale,uint16]|Color|ALIAS format',
-    'Select the colormap|[Default]|Default|COMPUTED|HIDDEN'
-  ]
+    'Select the colormap|[Default]|Default|COMPUTED|HIDDEN',
+  ],
 };

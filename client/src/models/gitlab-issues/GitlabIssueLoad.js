@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 export default class GitlabIssueLoad extends Remote {
-  constructor (issueId) {
+  constructor(issueId) {
     super();
     this.url = `/issue/gitlab/${issueId}`;
   }

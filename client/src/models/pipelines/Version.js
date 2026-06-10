@@ -19,7 +19,7 @@ import Remote from '../basic/Remote';
 class Version extends Remote {
   static defaultValue = [];
 
-  constructor (id) {
+  constructor(id) {
     super();
     this.url = `/pipeline/${id}/versions`;
   }

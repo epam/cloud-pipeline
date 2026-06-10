@@ -1,0 +1,356 @@
+/*
+ * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import React from 'react';
+import PropTypes from 'prop-types';
+import {Button, Form, Modal, Input, Row, Col, Spin, Tabs} from 'antd';
+import PermissionsForm from '../../../roleModel/PermissionsForm';
+import roleModel from '../../../../utils/roleModel';
+
+@roleModel.authenticationInfo
+export default class EditDetachedConfigurationForm extends React.Component {
+  formRef = React.createRef();
+
+  state = {
+    activeTab: 'info',
+    deleteDialogVisible: false,
+  };
+
+  static propTypes = {
+    configuration: PropTypes.shape({
+      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+      name: PropTypes.string,
+      description: PropTypes.string,
+      mask: PropTypes.number,
+      locked: PropTypes.bool,
+    }),
+    onCancel: PropTypes.func,
+    onSubmit: PropTypes.func,
+    onDelete: PropTypes.func,
+    pending: PropTypes.bool,
+    visible: PropTypes.bool,
+  };
+
+  formItemLayout = {
+    labelCol: {
+      xs: {span: 24},
+      sm: {span: 8},
+    },
+    wrapperCol: {
+      xs: {span: 24},
+      sm: {span: 16},
+    },
+  };
+
+  handleSubmit = (e) => {
+    e.preventDefault();
+    this.formRef.current
+      .validateFields()
+      .then((values) => {
+        this.props.onSubmit(values);
+      })
+      .catch(() => {});
+  };
+
+  renderForm = () => {
+    const formItems = [];
+    const writeAllowed = this.props.configuration
+      ? roleModel.writeAllowed(this.props.configuration)
+      : true;
+    formItems.push(
+      <Form.Item
+        key="configuration name"
+        className="edit-configuration-form-name-container"
+        {...this.formItemLayout}
+        label="Configuration name"
+        name="name"
+        rules={[{required: true, message: 'Configuration name is required'}]}
+      >
+        <Input
+          disabled={this.props.pending || !writeAllowed}
+          ref={this.initializeNameInput}
+          onPressEnter={this.handleSubmit}
+        />
+      </Form.Item>,
+    );
+    formItems.push(
+      <Form.Item
+        key="configuration description"
+        className="edit-configuration-form-description-container"
+        {...this.formItemLayout}
+        label="Configuration description"
+        name="description"
+      >
+        <Input.TextArea
+          autoSize={{minRows: 2, maxRows: 6}}
+          disabled={this.props.pending || !writeAllowed}
+        />
+      </Form.Item>,
+    );
+    return formItems;
+  };
+
+  openDeleteDialog = () => {
+    this.setState({deleteDialogVisible: true});
+  };
+
+  closeDeleteDialog = () => {
+    this.setState({deleteDialogVisible: false});
+  };
+
+  onDeleteClicked = () => {
+    this.closeDeleteDialog();
+    if (this.props.onDelete) {
+      this.props.onDelete();
+    }
+  };
+
+  getDeleteModalFooter = () => {
+    return (
+      <div className="cp-modal-footer-actions cp-modal-footer-actions--split">
+        <div className="cp-modal-footer-actions-group">
+          <Button
+            id="edit-configuration-delete-dialog-cancel-button"
+            onClick={this.closeDeleteDialog}
+          >
+            Cancel
+          </Button>
+        </div>
+        <div className="cp-modal-footer-actions-group cp-modal-footer-actions-group--end">
+          {roleModel.manager.configuration(
+            <Button
+              id="edit-configuration-delete-dialog-delete-button"
+              danger
+              onClick={() => this.onDeleteClicked()}
+            >
+              Delete
+            </Button>,
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  getModalFooter = (isNewConfiguration) => {
+    if (this.props.pending) {
+      return false;
+    }
+    const deleteAllowed =
+      !!this.props.onDelete &&
+      !isNewConfiguration &&
+      roleModel.writeAllowed(this.props.configuration) &&
+      roleModel.isManager.configuration(this);
+    const saveAllowed = isNewConfiguration
+      ? roleModel.isManager.configuration(this)
+      : roleModel.writeAllowed(this.props.configuration);
+    if (deleteAllowed && saveAllowed) {
+      return (
+        <Row type="flex" justify="space-between">
+          <Button
+            disabled={this.props.pending}
+            id="edit-configuration-form-delete-button"
+            danger
+            onClick={this.openDeleteDialog}
+          >
+            DELETE
+          </Button>
+          <div>
+            <Button
+              disabled={this.props.pending}
+              id="edit-configuration-form-cancel-button"
+              onClick={this.props.onCancel}
+            >
+              CANCEL
+            </Button>
+            <Button
+              disabled={this.props.pending}
+              id={`edit-configuration-form-${isNewConfiguration ? 'create' : 'save'}-button`}
+              type="primary"
+              htmlType="submit"
+              onClick={this.handleSubmit}
+            >
+              {isNewConfiguration ? 'CREATE' : 'SAVE'}
+            </Button>
+          </div>
+        </Row>
+      );
+    } else if (deleteAllowed) {
+      return (
+        <Row type="flex" justify="space-between">
+          <Button
+            disabled={this.props.pending}
+            id="edit-configuration-form-delete-button"
+            danger
+            onClick={this.openDeleteDialog}
+          >
+            DELETE
+          </Button>
+          <Button
+            disabled={this.props.pending}
+            id="edit-configuration-form-cancel-button"
+            onClick={this.props.onCancel}
+          >
+            CANCEL
+          </Button>
+        </Row>
+      );
+    } else if (saveAllowed) {
+      return (
+        <Row type="flex" justify="end">
+          <Button
+            disabled={this.props.pending}
+            id="edit-configuration-form-cancel-button"
+            onClick={this.props.onCancel}
+          >
+            CANCEL
+          </Button>
+          <Button
+            disabled={this.props.pending}
+            id={`edit-configuration-form-${isNewConfiguration ? 'create' : 'save'}-button`}
+            type="primary"
+            htmlType="submit"
+            onClick={this.handleSubmit}
+          >
+            {isNewConfiguration ? 'CREATE' : 'SAVE'}
+          </Button>
+        </Row>
+      );
+    } else {
+      return (
+        <Row type="flex" justify="end">
+          <Button
+            disabled={this.props.pending}
+            id="edit-configuration-form-cancel-button"
+            onClick={this.props.onCancel}
+          >
+            CANCEL
+          </Button>
+        </Row>
+      );
+    }
+  };
+
+  onSectionChange = (key) => {
+    this.setState({activeTab: key});
+  };
+
+  render() {
+    const isNewConfiguration = !this.props.configuration;
+    const isReadOnly = this.props.configuration
+      ? this.props.configuration.locked || !roleModel.writeAllowed(this.props.configuration)
+      : false;
+    const modalFooter = this.getModalFooter(isNewConfiguration);
+    const onClose = () => {
+      if (this.formRef.current) {
+        this.formRef.current.resetFields();
+      }
+      this.setState({activeTab: 'info'});
+    };
+    return (
+      <Modal
+        mask={{closable: !this.props.pending}}
+        afterClose={() => onClose()}
+        closable={!this.props.pending}
+        open={this.props.visible}
+        title={
+          isNewConfiguration
+            ? this.props.pipelineTemplate
+              ? `Create configuration (${this.props.pipelineTemplate.id})`
+              : 'Create configuration'
+            : 'Edit configuration info'
+        }
+        onCancel={this.props.onCancel}
+        footer={this.state.activeTab === 'info' ? modalFooter : false}
+      >
+        <Spin spinning={this.props.pending}>
+          <Form
+            ref={this.formRef}
+            className="edit-configuration-form"
+            initialValues={{
+              name: this.props.configuration ? this.props.configuration.name : '',
+              description:
+                this.props.configuration && this.props.configuration.description
+                  ? this.props.configuration.description
+                  : '',
+            }}
+          >
+            <Tabs
+              size="small"
+              activeKey={this.state.activeTab}
+              onChange={this.onSectionChange}
+              items={[
+                {
+                  key: 'info',
+                  label: 'Info',
+                  children: this.renderForm(),
+                },
+                ...(this.props.configuration && this.props.configuration.id
+                  ? [
+                      {
+                        key: 'permissions',
+                        label: 'Permissions',
+                        children: (
+                          <PermissionsForm
+                            readonly={isReadOnly}
+                            objectIdentifier={this.props.configuration.id}
+                            objectType="configuration"
+                          />
+                        ),
+                      },
+                    ]
+                  : []),
+              ]}
+            />
+          </Form>
+        </Spin>
+        <Modal
+          onCancel={this.closeDeleteDialog}
+          open={this.state.deleteDialogVisible}
+          title="Are you sure you want to delete configuration?"
+          footer={this.getDeleteModalFooter()}
+        >
+          <p>This operation cannot be undone.</p>
+        </Modal>
+      </Modal>
+    );
+  }
+
+  initializeNameInput = (input) => {
+    if (input) {
+      this.nameInput = input;
+      this.nameInput.onfocus = function () {
+        setTimeout(() => {
+          this.selectionStart = (this.value || '').length;
+          this.selectionEnd = (this.value || '').length;
+        }, 0);
+      };
+    }
+  };
+
+  focusNameInput = () => {
+    if (this.props.visible && this.nameInput) {
+      setTimeout(() => {
+        this.nameInput.focus();
+      }, 0);
+    }
+  };
+
+  componentDidUpdate(prevProps) {
+    if (prevProps.visible !== this.props.visible) {
+      this.focusNameInput();
+    }
+  }
+}

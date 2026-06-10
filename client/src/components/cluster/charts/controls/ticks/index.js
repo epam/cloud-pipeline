@@ -25,14 +25,9 @@ export default {
   [AxisDataType.bytes]: (start, end, canvasSize) =>
     defaultTicksGenerator(start, end, canvasSize, 2, 3, formatters.memoryUsage),
   [AxisDataType.mBytes]: (start, end, canvasSize) =>
-    defaultTicksGenerator(
-      start,
-      end,
-      canvasSize,
-      2,
-      3,
-      o => formatters.memoryUsage(o * 1024 * 1024)
+    defaultTicksGenerator(start, end, canvasSize, 2, 3, (o) =>
+      formatters.memoryUsage(o * 1024 * 1024),
     ),
   [AxisDataType.percent]: percentTicksGenerator,
-  default: defaultTicksGenerator
+  default: defaultTicksGenerator,
 };

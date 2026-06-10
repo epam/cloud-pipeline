@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 class ApplicationInfo extends Remote {
-  constructor () {
+  constructor() {
     super();
     this.url = '/app/info';
   }

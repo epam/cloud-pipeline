@@ -22,7 +22,7 @@ const findMembrane = {
     'Cells objects|object|ALIAS cells|REQUIRED|DEFAULT_FROM FindCells',
     'Objects name|string|Membrane|ALIAS output|REQUIRED',
     'Outer border distance|units|0.5|REQUIRED|ALIAS outer',
-    'Inner border distance|units|0.5|REQUIRED|ALIAS inner'
+    'Inner border distance|units|0.5|REQUIRED|ALIAS inner',
   ],
   subModules: [
     {
@@ -32,8 +32,8 @@ const findMembrane = {
         input: '{parent.cells}|COMPUTED',
         output: '{this.id}_outer|COMPUTED',
         operation: 'Expand objects by a specified number of pixels',
-        size: '{parent.outer}|COMPUTED'
-      }
+        size: '{parent.outer}|COMPUTED',
+      },
     },
     {
       alias: 'shrink',
@@ -42,8 +42,8 @@ const findMembrane = {
         input: '{parent.cells}|COMPUTED',
         output: '{this.id}_inner|COMPUTED',
         operation: 'Shrink objects by a specified number of pixels',
-        size: '{parent.inner}|COMPUTED'
-      }
+        size: '{parent.inner}|COMPUTED',
+      },
     },
     {
       alias: 'result',
@@ -52,10 +52,10 @@ const findMembrane = {
         large: '{expand.output}|COMPUTED',
         small: '{shrink.output}|COMPUTED',
         output: '{parent.output}|COMPUTED',
-        shrink: false
-      }
-    }
-  ]
+        shrink: false,
+      },
+    },
+  ],
 };
 
 export default findMembrane;

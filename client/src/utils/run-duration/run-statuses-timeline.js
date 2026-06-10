@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import moment from 'moment-timezone';
+import {toUtcDayjs} from '../dayjs';
 
 /**
  * @typedef {object} RunStatusInfo
@@ -25,7 +25,7 @@ import moment from 'moment-timezone';
 /**
  * @typedef {object} RunStatusTimelineItem
  * @property {string} status
- * @property {moment.Moment} timestamp
+ * @property {import('dayjs').Dayjs} timestamp
  */
 
 /**
@@ -48,19 +48,11 @@ import moment from 'moment-timezone';
  * @param {RunTaskInfo[]} [tasks=[]]
  * @returns {RunStatusTimelineItem[]}
  */
-export default function getRunStatusesTimeline (
-  run,
-  analyseSchedulingPhase = false,
-  tasks = []
-) {
+export default function getRunStatusesTimeline(run, analyseSchedulingPhase = false, tasks = []) {
   if (!run) {
     return [];
   }
-  const {
-    startDate: runStartDate,
-    endDate: runEndDate,
-    runStatuses = []
-  } = run;
+  const {startDate: runStartDate, endDate: runEndDate, runStatuses = []} = run;
   if (!runStartDate) {
     return [];
   }
@@ -68,7 +60,7 @@ export default function getRunStatusesTimeline (
   if (tasks && tasks.filter((task) => !/^console$/i.test(task.name) && task.started).length > 0) {
     actualRunStartDate = tasks
       .filter((task) => !/^console$/i.test(task.name) && task.started)
-      .map((task) => moment.utc(task.started))
+      .map((task) => toUtcDayjs(task.started))
       .sort((a, b) => {
         if (a > b) {
           return -1;
@@ -77,12 +69,15 @@ export default function getRunStatusesTimeline (
           return 1;
         }
         return 0;
-      }).pop();
+      })
+      .pop();
   }
-  const startDate = moment.utc(runStartDate);
-  const endDate = runEndDate ? moment.utc(runEndDate) : undefined;
+  const startDate = toUtcDayjs(runStartDate);
+  const endDate = runEndDate ? toUtcDayjs(runEndDate) : undefined;
   let actualStartDate = analyseSchedulingPhase
-    ? (actualRunStartDate ? moment.utc(actualRunStartDate) : undefined)
+    ? actualRunStartDate
+      ? toUtcDayjs(actualRunStartDate)
+      : undefined
     : undefined;
   if (actualStartDate && endDate && actualStartDate > endDate) {
     // We've received the first task, and run is stopped, but
@@ -90,19 +85,18 @@ export default function getRunStatusesTimeline (
     // we should ignore the first task's date
     actualStartDate = undefined;
   }
-  const dates = (runStatuses || [])
-    .map(r => ({
-      status: r.status,
-      timestamp: moment.utc(r.timestamp)
-    }));
+  const dates = (runStatuses || []).map((r) => ({
+    status: r.status,
+    timestamp: toUtcDayjs(r.timestamp),
+  }));
   dates.push({
     status: 'SCHEDULED',
-    timestamp: startDate
+    timestamp: startDate,
   });
   if (actualStartDate) {
     dates.push({
       status: 'RUNNING',
-      timestamp: actualStartDate
+      timestamp: actualStartDate,
     });
   }
   dates.sort((dA, dB) => {
@@ -141,13 +135,10 @@ export default function getRunStatusesTimeline (
     return [...result, current];
   }, []);
   const last = reduced[reduced.length - 1];
-  if (
-    endDate &&
-    !['STOPPED', 'SUCCESS', 'FAILURE'].includes(last.status)
-  ) {
+  if (endDate && !['STOPPED', 'SUCCESS', 'FAILURE'].includes(last.status)) {
     reduced.push({
       status: 'STOPPED',
-      timestamp: endDate
+      timestamp: endDate,
     });
   }
   return reduced;

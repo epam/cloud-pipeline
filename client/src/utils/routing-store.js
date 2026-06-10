@@ -15,14 +15,14 @@ export class RouterStore {
   action = null;
   params = {};
 
-  constructor () {
+  constructor() {
     makeObservable(this, {
       location: observable,
       action: observable,
       params: observable,
       _updateLocation: action,
       updateParams: action,
-      setRouter: action
+      setRouter: action,
     });
     this._router = null;
     this.push = this.push.bind(this);
@@ -32,59 +32,53 @@ export class RouterStore {
     this.goForward = this.goForward.bind(this);
   }
 
-  _updateLocation ({action: historyAction, location}) {
+  _updateLocation({action: historyAction, location}) {
     this.location = location;
     this.action = historyAction;
   }
 
-  updateParams (params) {
+  updateParams(params) {
     this.params = params || {};
   }
 
-  setRouter (router) {
+  setRouter(router) {
     this._router = router;
     const state = router.state;
     this._updateLocation({action: state.historyAction, location: state.location});
-    const params = state.matches.reduce(
-      (acc, m) => ({...acc, ...m.params}),
-      {}
-    );
+    const params = state.matches.reduce((acc, m) => ({...acc, ...m.params}), {});
     this.updateParams(params);
     router.subscribe((state) => {
       this._updateLocation({action: state.historyAction, location: state.location});
-      const nextParams = state.matches.reduce(
-        (acc, m) => ({...acc, ...m.params}),
-        {}
-      );
+      const nextParams = state.matches.reduce((acc, m) => ({...acc, ...m.params}), {});
       this.updateParams(nextParams);
     });
   }
 
-  push (to) {
+  push(to) {
     if (this._router) {
       this._router.navigate(to);
     }
   }
 
-  replace (to) {
+  replace(to) {
     if (this._router) {
       this._router.navigate(to, {replace: true});
     }
   }
 
-  go (n) {
+  go(n) {
     if (this._router) {
       this._router.navigate(n);
     }
   }
 
-  goBack () {
+  goBack() {
     if (this._router) {
       this._router.navigate(-1);
     }
   }
 
-  goForward () {
+  goForward() {
     if (this._router) {
       this._router.navigate(1);
     }

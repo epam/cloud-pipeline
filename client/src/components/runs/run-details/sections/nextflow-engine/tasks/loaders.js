@@ -1,10 +1,10 @@
-import moment from 'moment-timezone';
+import {toUtcDayjs} from '../../../../../../utils/dayjs';
 import GetRunEngineTasksStats from '../../../../../../models/run-engines/fetch-tasks-stats';
 import {NEXTFLOW_ENGINE_TYPE} from '../../../../../../models/run-engines/engines';
 import GetRunEngineTasksFilter from '../../../../../../models/run-engines/fetch-tasks';
 
 class NextflowTasksBaseLoader {
-  constructor (runId, loader, options = {}) {
+  constructor(runId, loader, options = {}) {
     this.runId = runId;
     this.loader = loader;
     this.token = {};
@@ -15,27 +15,21 @@ class NextflowTasksBaseLoader {
     this.reload = false;
     this.interval = 5000;
     this.timeout = undefined;
-    const {
-      reload = false,
-      interval = 5000
-    } = options;
+    const {reload = false, interval = 5000} = options;
     this.reload = reload;
     this.interval = interval;
   }
 
   setOptions = (options) => {
     this.abort();
-    const {
-      reload = false,
-      interval = 5000
-    } = options;
+    const {reload = false, interval = 5000} = options;
     this.reload = reload;
     this.interval = interval;
     this._applyOptions(options);
-    (this.load)();
+    this.load();
   };
 
-  _applyOptions = (options) => {
+  _applyOptions = () => {
     // noop, to be overridden
   };
 
@@ -47,7 +41,7 @@ class NextflowTasksBaseLoader {
     this.removeListener(listener);
     this.listeners.push(listener);
     this.report();
-  }
+  };
 
   destroy = () => {
     this.listeners = [];
@@ -64,7 +58,7 @@ class NextflowTasksBaseLoader {
 
   load = async () => {
     this.abort();
-    const token = this.token = {};
+    const token = (this.token = {});
     const commit = (fn) => {
       if (token === this.token) {
         fn();
@@ -94,7 +88,7 @@ class NextflowTasksBaseLoader {
         }
       });
     }
-  }
+  };
 
   report = () => {
     const payload = this.getData();
@@ -104,34 +98,24 @@ class NextflowTasksBaseLoader {
   };
 
   getLoaderPayload = () => ({
-    runId: this.runId
+    runId: this.runId,
   });
 
   getData = () => ({
     pending: this.pending,
     error: this.error,
-    data: this.data
+    data: this.data,
   });
 }
 
-async function loadTasks (opts) {
-  const {
-    runId,
-    tasksGroup,
-    page = 0,
-    pageSize = 20,
-    filters,
-    sorting
-  } = opts;
-  const request = new GetRunEngineTasksFilter(
-    runId,
-    NEXTFLOW_ENGINE_TYPE
-  );
+async function loadTasks(opts) {
+  const {runId, tasksGroup, page = 0, pageSize = 20, filters, sorting} = opts;
+  const request = new GetRunEngineTasksFilter(runId, NEXTFLOW_ENGINE_TYPE);
   const payload = {
-    page: (page + 1),
+    page: page + 1,
     pageSize,
     sorts: sorting,
-    ...(filters || {})
+    ...(filters || {}),
   };
   if (tasksGroup) {
     payload.taskGroup = tasksGroup;
@@ -140,25 +124,17 @@ async function loadTasks (opts) {
   if (request.error) {
     throw new Error(`Error fetching Nextflow tasks: ${request.error}`);
   }
-  const {
-    elements = [],
-    totalCount = 0
-  } = request.value || {};
+  const {elements = [], totalCount = 0} = request.value || {};
   return {
     elements,
     totalCount,
-    loadedTasksGroup: tasksGroup
+    loadedTasksGroup: tasksGroup,
   };
 }
 
-async function loadProcesses (opts) {
-  const {
-    runId
-  } = opts;
-  const request = new GetRunEngineTasksStats(
-    runId,
-    NEXTFLOW_ENGINE_TYPE
-  );
+async function loadProcesses(opts) {
+  const {runId} = opts;
+  const request = new GetRunEngineTasksStats(runId, NEXTFLOW_ENGINE_TYPE);
   await request.fetch();
   if (request.error) {
     throw new Error(`Error fetching Nextflow tasks stats: ${request.error}`);
@@ -166,17 +142,13 @@ async function loadProcesses (opts) {
   const stats = [];
   let total = 0;
   for (const value of Object.values(request.value || {})) {
-    const {
-      startDateTime,
-      statusCounts,
-      taskGroup
-    } = value || {};
-    const date = moment.utc(startDateTime);
+    const {startDateTime, statusCounts, taskGroup} = value || {};
+    const date = toUtcDayjs(startDateTime);
     const processStats = {
       key: taskGroup,
       name: taskGroup,
       date: date.isValid() ? date.unix() : Infinity,
-      stats: []
+      stats: [],
     };
     for (const [status, count] of Object.entries(statusCounts || {})) {
       processStats.stats.push({status, count});
@@ -188,7 +160,7 @@ async function loadProcesses (opts) {
   return {stats, total};
 }
 
-async function generalLoader (opts) {
+async function generalLoader(opts) {
   const wrapPromise = async (promise) => {
     try {
       const result = await promise;
@@ -199,25 +171,12 @@ async function generalLoader (opts) {
   };
   const [tasksResult, processesResult] = await Promise.all([
     wrapPromise(loadTasks(opts)),
-    wrapPromise(loadProcesses(opts))
+    wrapPromise(loadProcesses(opts)),
   ]);
-  const {
-    result: tasksData = {},
-    error: tasksError
-  } = tasksResult;
-  const {
-    result: processesData = {},
-    error: processesError
-  } = processesResult;
-  const {
-    elements: tasks = [],
-    totalCount: filteredTasksCount = 0,
-    loadedTasksGroup
-  } = tasksData;
-  const {
-    stats: processes = [],
-    total: totalTasksCount = 0
-  } = processesData;
+  const {result: tasksData = {}, error: tasksError} = tasksResult;
+  const {result: processesData = {}, error: processesError} = processesResult;
+  const {elements: tasks = [], totalCount: filteredTasksCount = 0, loadedTasksGroup} = tasksData;
+  const {stats: processes = [], total: totalTasksCount = 0} = processesData;
   return {
     tasks,
     loadedTasksGroup,
@@ -225,11 +184,11 @@ async function generalLoader (opts) {
     totalTasksCount,
     filteredTasksCount,
     tasksError,
-    processesError
+    processesError,
   };
 }
 
-function parseAttributes (attributes) {
+function parseAttributes(attributes) {
   try {
     const attrs = JSON.parse(attributes);
     if (typeof attrs === 'object') {
@@ -241,13 +200,8 @@ function parseAttributes (attributes) {
   }
 }
 
-function taskMapper (task) {
-  const {
-    taskGroup,
-    taskName,
-    attributes,
-    ...rest
-  } = task;
+function taskMapper(task) {
+  const {taskGroup, taskName, attributes, ...rest} = task;
   let name = taskName;
   if (taskName && taskGroup) {
     const r = new RegExp(`^\\s*${taskGroup} \\((.+?)\\)\\s*$`, 'i');
@@ -261,12 +215,12 @@ function taskMapper (task) {
     name,
     taskGroup,
     taskName,
-    attributes: parseAttributes(attributes)
+    attributes: parseAttributes(attributes),
   };
 }
 
 class NextflowTasksLoader extends NextflowTasksBaseLoader {
-  constructor (runId, options) {
+  constructor(runId, options) {
     super(runId, generalLoader, options);
     this.tasksGroup = undefined;
     this.page = 1;
@@ -277,13 +231,7 @@ class NextflowTasksLoader extends NextflowTasksBaseLoader {
   }
 
   _applyOptions = (options) => {
-    const {
-      tasksGroup,
-      page,
-      pageSize,
-      filters,
-      sorting
-    } = options || {};
+    const {tasksGroup, page, pageSize, filters, sorting} = options || {};
     this.tasksGroup = tasksGroup;
     this.page = page;
     this.pageSize = pageSize;
@@ -297,7 +245,7 @@ class NextflowTasksLoader extends NextflowTasksBaseLoader {
     page: this.page,
     pageSize: this.pageSize,
     filters: this.filters,
-    sorting: this.sorting
+    sorting: this.sorting,
   });
 
   getData = () => {
@@ -308,7 +256,7 @@ class NextflowTasksLoader extends NextflowTasksBaseLoader {
       filteredTasksCount = 0,
       tasksError,
       processesError,
-      loadedTasksGroup
+      loadedTasksGroup,
     } = this.data || {};
     return {
       pending: this.pending,
@@ -318,11 +266,9 @@ class NextflowTasksLoader extends NextflowTasksBaseLoader {
       totalTasksCount,
       filteredTasksCount,
       error: processesError,
-      tasksError
+      tasksError,
     };
   };
 }
 
-export {
-  NextflowTasksLoader
-};
+export {NextflowTasksLoader};

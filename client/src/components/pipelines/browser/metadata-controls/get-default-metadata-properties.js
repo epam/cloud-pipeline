@@ -23,15 +23,15 @@ const ROLE = 'ROLE';
 const METADATA_KEYS = {
   columns: 'MetadataColumns',
   columnsSorting: 'MetadataColumnsSorting',
-  filters: 'MetadataFilters'
+  filters: 'MetadataFilters',
 };
 
 const ENTITY_PRIORITY = {
   [METADATA_KEYS.filters]: [FOLDER],
-  default: [FOLDER, USER, ROLE]
+  default: [FOLDER, USER, ROLE],
 };
 
-function postprocessValue (value, key) {
+function postprocessValue(value, key) {
   if (key === METADATA_KEYS.filters) {
     try {
       return JSON.parse(value);
@@ -40,26 +40,28 @@ function postprocessValue (value, key) {
     }
   }
   if (typeof value === 'string') {
-    return value.split(',')
-      .map(item => item.trim())
-      .filter(item => item.length > 0);
+    return value
+      .split(',')
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0);
   }
   return value;
 }
 
-function getDefaultMetadataProperties (folderId, userInfo) {
+function getDefaultMetadataProperties(folderId, userInfo) {
   const requestBody = [
     {
       entityClass: FOLDER,
-      entityId: folderId
-    }, {
-      entityClass: USER,
-      entityId: userInfo.id
+      entityId: folderId,
     },
-    ...userInfo.roles.map(role => ({
+    {
+      entityClass: USER,
+      entityId: userInfo.id,
+    },
+    ...userInfo.roles.map((role) => ({
       entityClass: ROLE,
-      entityId: role.id
-    }))
+      entityId: role.id,
+    })),
   ];
   const metadataRequest = new MetadataMultiLoad(requestBody);
   return new Promise((resolve) => {
@@ -71,14 +73,13 @@ function getDefaultMetadataProperties (folderId, userInfo) {
           for (const key of Object.values(METADATA_KEYS)) {
             const priority = ENTITY_PRIORITY[key] || ENTITY_PRIORITY.default;
             for (const entityClass of priority) {
-              if (metadataParameters.hasOwnProperty(key)) {
+              if (Object.hasOwn(metadataParameters, key)) {
                 break;
               }
-              const entityObject = (metadataRequest.value || [])
-                .find(item => item &&
-                  item.entity.entityClass === entityClass &&
-                  item.data && item.data[key]
-                );
+              const entityObject = (metadataRequest.value || []).find(
+                (item) =>
+                  item && item.entity.entityClass === entityClass && item.data && item.data[key],
+              );
               if (entityObject) {
                 const {value} = entityObject.data[key];
                 metadataParameters[key] = postprocessValue(value, key);

@@ -19,9 +19,9 @@ import {SemanticTokens} from './semantic-keys';
 import {mapLegacyToSemantic} from './legacy-adapter';
 import {parseColor, rgbToHSL} from '../utilities/color-utilities';
 
-const TokensWithAntdMapping = SemanticTokens.filter(token => Boolean(token.antd));
+const TokensWithAntdMapping = SemanticTokens.filter((token) => Boolean(token.antd));
 
-function isDarkPalette (palette, identifier) {
+function isDarkPalette(palette, identifier) {
   const bg = palette['--cp-color-bg-layout'] || palette['--cp-color-bg-container'];
   const hsl = bg ? rgbToHSL(parseColor(bg)) : undefined;
   if (hsl && Number.isFinite(hsl.l)) {
@@ -38,7 +38,7 @@ function isDarkPalette (palette, identifier) {
  * @param {string} [identifier] - theme identifier (used as a hint for the algorithm)
  * @returns {import('antd').ThemeConfig}
  */
-export default function buildAntdTheme (parsedConfiguration, identifier) {
+export default function buildAntdTheme(parsedConfiguration, identifier) {
   const palette = mapLegacyToSemantic(parsedConfiguration || {});
   const dark = isDarkPalette(palette, identifier);
   const token = {};
@@ -68,6 +68,6 @@ export default function buildAntdTheme (parsedConfiguration, identifier) {
     algorithm: dark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
     cssVar: {key: 'cp-ant'},
     hashed: true,
-    token
+    token,
   };
 }

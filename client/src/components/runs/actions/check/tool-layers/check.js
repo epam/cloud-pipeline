@@ -18,13 +18,13 @@ import preferences from '../../../../../models/preferences/PreferencesLoad';
 import LoadToolInfo from '../../../../../models/tools/LoadToolInfo';
 import LoadTool from '../../../../../models/tools/LoadTool';
 
-async function getToolIdentifierAndVersion (toolId) {
+async function getToolIdentifierAndVersion(toolId) {
   if (!toolId) {
     return undefined;
   }
   if (!Number.isNaN(Number(toolId))) {
     return {
-      id: Number(toolId)
+      id: Number(toolId),
     };
   }
   let registry, image, version;
@@ -45,7 +45,7 @@ async function getToolIdentifierAndVersion (toolId) {
       if (request.loaded && request.value) {
         return {
           id: Number(request.value.id),
-          version
+          version,
         };
       }
     } catch (_) {
@@ -66,7 +66,7 @@ async function getToolIdentifierAndVersion (toolId) {
  * @param {number|string} toolId
  * @returns {Promise<{ToolLayersCheckResult}>} true if tool layers check passed, false otherwise
  */
-export default async function checkToolLayers (toolId) {
+export default async function checkToolLayers(toolId) {
   await preferences.fetchIfNeededOrWait();
   const maxLayers = preferences.commitMaxLayers;
   if (!maxLayers) {
@@ -76,29 +76,21 @@ export default async function checkToolLayers (toolId) {
   if (!info) {
     return {result: true};
   }
-  const {
-    id,
-    version = 'latest'
-  } = info;
+  const {id, version = 'latest'} = info;
   const request = new LoadToolInfo(id);
   await request.fetch();
   if (request.loaded && request.value) {
-    const {
-      versions = []
-    } = request.value;
-    const versionInfo = versions
-      .find((o) => (o.version || '').toLowerCase() === version.toLowerCase());
-    const {
-      scanResult = {}
-    } = versionInfo || {};
-    const {
-      layersCount = 0
-    } = scanResult;
+    const {versions = []} = request.value;
+    const versionInfo = versions.find(
+      (o) => (o.version || '').toLowerCase() === version.toLowerCase(),
+    );
+    const {scanResult = {}} = versionInfo || {};
+    const {layersCount = 0} = scanResult;
     if (layersCount > 0) {
       return {
         result: layersCount < maxLayers,
         allowed: maxLayers,
-        current: layersCount
+        current: layersCount,
       };
     }
   }

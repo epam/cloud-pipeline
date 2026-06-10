@@ -19,5 +19,5 @@ import Panels from './panels';
 export default {
   [Panels.summary]: {w: 2, h: 2},
   [Panels.resources]: {w: 2, h: 1},
-  [Panels.runners]: {w: 2, h: 1}
+  [Panels.runners]: {w: 2, h: 1},
 };

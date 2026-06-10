@@ -1,31 +1,18 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import styles from './plugins.css';
+import styles from './plugins.module.css';
 import {Button, Select} from 'antd';
 import {DeleteOutlined} from '@ant-design/icons';
 import {getPluginTypeName, UI_PLUGIN_TYPE_LAUNCH_FORM} from '../utilities';
 import UsersRolesSelect from '../../special/users-roles-select';
 
-function ConfigurePlugin (props) {
-  const {
-    className,
-    style,
-    disabled,
-    plugin,
-    availablePlugins = [],
-    onChange,
-    onRemove
-  } = props;
+function ConfigurePlugin(props) {
+  const {className, style, disabled, plugin, availablePlugins = [], onChange, onRemove} = props;
 
-  const {
-    plugin: assignedPlugin = {},
-    sids = []
-  } = plugin || {};
-  const {
-    id: assignedPluginId,
-    type: assignedPluginType = UI_PLUGIN_TYPE_LAUNCH_FORM
-  } = assignedPlugin;
+  const {plugin: assignedPlugin = {}, sids = []} = plugin || {};
+  const {id: assignedPluginId, type: assignedPluginType = UI_PLUGIN_TYPE_LAUNCH_FORM} =
+    assignedPlugin;
 
   const reportOnChange = (pluginData) => {
     if (onChange) {
@@ -47,7 +34,7 @@ function ConfigurePlugin (props) {
     if (somePlugin) {
       reportOnChange({
         ...plugin,
-        plugin: somePlugin
+        plugin: somePlugin,
       });
     }
   };
@@ -57,7 +44,7 @@ function ConfigurePlugin (props) {
     if (somePlugin) {
       reportOnChange({
         ...plugin,
-        plugin: somePlugin
+        plugin: somePlugin,
       });
     }
   };
@@ -65,7 +52,7 @@ function ConfigurePlugin (props) {
   const onSidsChange = (newSids) => {
     reportOnChange({
       ...plugin,
-      sids: newSids
+      sids: newSids,
     });
   };
 
@@ -79,16 +66,11 @@ function ConfigurePlugin (props) {
           value={assignedPluginType}
           onChange={onTypeChange}
         >
-          {
-            availableTypes.map((pl) => (
-              <Select.Option
-                key={pl}
-                value={pl}
-              >
-                {getPluginTypeName(pl)}
-              </Select.Option>
-            ))
-          }
+          {availableTypes.map((pl) => (
+            <Select.Option key={pl} value={pl}>
+              {getPluginTypeName(pl)}
+            </Select.Option>
+          ))}
         </Select>
         <span>Plugin:</span>
         <Select
@@ -108,7 +90,8 @@ function ConfigurePlugin (props) {
           size="small"
           danger
           onClick={onRemoveConfirm}
-          style={{marginRight: 10}}>
+          style={{marginRight: 10}}
+        >
           <DeleteOutlined />
         </Button>
       </div>
@@ -133,7 +116,7 @@ ConfigurePlugin.propTypes = {
   plugin: PropTypes.object,
   onChange: PropTypes.func,
   onRemove: PropTypes.func,
-  availablePlugins: PropTypes.oneOfType([PropTypes.array, PropTypes.object])
+  availablePlugins: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
 };
 
 export default ConfigurePlugin;

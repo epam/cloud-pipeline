@@ -14,10 +14,9 @@
  *  limitations under the License.
  */
 
-import {PUBLIC_URL} from '../../config';
 import {darken, lighten, fade, fadeout, fadein} from './color-utilities';
 
-function getStaticResourcePath (url) {
+function getStaticResourcePath(url) {
   if (!url) {
     return undefined;
   }
@@ -33,7 +32,7 @@ function getStaticResourcePath (url) {
   return `${PUBLIC_URL}/${url}`;
 }
 
-function staticResource (url) {
+function staticResource(url) {
   const e = /^['"]?(.+)['"]?$/.exec(url.slice(1, -1));
   const uri = getStaticResourcePath(e[1]);
   if (!uri) {
@@ -42,14 +41,14 @@ function staticResource (url) {
   return `url('${uri}')`;
 }
 
-function generateColorFunctionRegex (functionName) {
+function generateColorFunctionRegex(functionName) {
   return new RegExp(
     `${functionName}\\(\\s*` +
-    `(#[0-9a-fA-F]{8}|#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3}|rgba?\\([\\d,.%\\s]+\\))` + // Color input
-    `\\s*,\\s*` +
-    `([\\d.%-]+)` + // Percentage or decimal number
-    `\\s*\\)`,
-    'i'
+      '(#[0-9a-fA-F]{8}|#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3}|rgba?\\([\\d,.%\\s]+\\))' + // Color input
+      '\\s*,\\s*' +
+      '([\\d.%-]+)' + // Percentage or decimal number
+      '\\s*\\)',
+    'i',
   );
 }
 
@@ -60,33 +59,33 @@ const fadeinRegex = generateColorFunctionRegex('fadein');
 const fadeoutRegex = generateColorFunctionRegex('fadeout');
 const fadeRegex = generateColorFunctionRegex('fade');
 
-export function parseFunctions (content) {
+export function parseFunctions(content) {
   const variables = [
     {
       regExp: darkenRegex,
       value: darken,
-      length: exec => exec && exec.length ? exec[0].length : 0
+      length: (exec) => (exec && exec.length ? exec[0].length : 0),
     },
     {
       regExp: lightenRegex,
       value: lighten,
-      length: exec => exec && exec.length ? exec[0].length : 0
+      length: (exec) => (exec && exec.length ? exec[0].length : 0),
     },
     {
       regExp: fadeinRegex,
       value: fadein,
-      length: exec => exec && exec.length ? exec[0].length : 0
+      length: (exec) => (exec && exec.length ? exec[0].length : 0),
     },
     {
       regExp: fadeoutRegex,
       value: fadeout,
-      length: exec => exec && exec.length ? exec[0].length : 0
+      length: (exec) => (exec && exec.length ? exec[0].length : 0),
     },
     {
       regExp: fadeRegex,
       value: fade,
-      length: exec => exec && exec.length ? exec[0].length : 0
-    }
+      length: (exec) => (exec && exec.length ? exec[0].length : 0),
+    },
   ];
   let parsed = content;
   for (const variable of variables) {
@@ -94,7 +93,7 @@ export function parseFunctions (content) {
     while (e) {
       parsed = parsed
         .slice(0, e.index)
-        .concat(variable.value(...e.slice(1).map(o => o.trim())))
+        .concat(variable.value(...e.slice(1).map((o) => o.trim())))
         .concat(parsed.slice(e.index + variable.length(e)));
       e = variable.regExp.exec(parsed);
     }
@@ -103,35 +102,32 @@ export function parseFunctions (content) {
 }
 
 export class ParseConfigurationError extends Error {
-  constructor (keys = []) {
+  constructor(keys = []) {
     super(`Error parsing configuration: variable loop detected: ${keys.join('>')}`);
     this.variables = keys;
   }
 }
 
-function parseValue (o, configuration, parsed, chain = []) {
-  const {
-    variable,
-    expression
-  } = o;
-  if (chain.length > 1 && (new Set(chain)).size < chain.length) {
+function parseValue(o, configuration, parsed, chain = []) {
+  const {variable, expression} = o;
+  if (chain.length > 1 && new Set(chain).size < chain.length) {
     throw new ParseConfigurationError(chain);
   }
-  if (variable && parsed.hasOwnProperty(variable)) {
+  if (variable && Object.hasOwn(parsed, variable)) {
     return parsed[variable];
   }
   const rules = Object.keys(configuration || {})
-    .map(key => ({
+    .map((key) => ({
       regExp: new RegExp(`(\\s*${key}\\s*)($|,|\\))`),
       value: () => parseValue({variable: key}, configuration, parsed, [...chain, key]),
-      length: exec => exec && exec.length > 0 ? exec[1].length : 0
+      length: (exec) => (exec && exec.length > 0 ? exec[1].length : 0),
     }))
     .concat([
       {
         regExp: /@static_resource\((.*)\)$/i,
-        value: exp => staticResource(parseValue({expression: exp}, configuration, parsed, chain)),
-        length: exec => exec && exec.length ? exec[0].length : 0
-      }
+        value: (exp) => staticResource(parseValue({expression: exp}, configuration, parsed, chain)),
+        length: (exec) => (exec && exec.length ? exec[0].length : 0),
+      },
     ]);
   let parsedValue = variable ? configuration[variable] : expression;
   for (const rule of rules) {
@@ -139,7 +135,7 @@ function parseValue (o, configuration, parsed, chain = []) {
     while (e) {
       parsedValue = parsedValue
         .slice(0, e.index)
-        .concat(rule.value(...e.slice(1).map(o => o.trim())))
+        .concat(rule.value(...e.slice(1).map((o) => o.trim())))
         .concat(parsedValue.slice(e.index + rule.length(e)));
       e = rule.regExp.exec(parsedValue);
     }
@@ -151,20 +147,14 @@ function parseValue (o, configuration, parsed, chain = []) {
   return parsedValue;
 }
 
-const BYPASS_VARIABLES = [
-  '@background-image'
-];
+const BYPASS_VARIABLES = ['@background-image'];
 
-export default function parseConfiguration (configuration) {
+export default function parseConfiguration(configuration) {
   const parsed = {};
   const vars = Object.keys(configuration || {});
   for (const variable of vars) {
     if (!BYPASS_VARIABLES.includes(variable)) {
-      const parsedValue = parseValue(
-        {variable},
-        configuration || {},
-        parsed
-      );
+      const parsedValue = parseValue({variable}, configuration || {}, parsed);
       parsed[variable] = parsedValue || 'inherit';
     } else {
       parsed[variable] = configuration[variable];

@@ -14,29 +14,24 @@
  *  limitations under the License.
  */
 
-import moment from 'moment-timezone';
+import dayjs, {isDayjs} from '../../../utils/dayjs';
 
 const dpr = window.devicePixelRatio || 1;
 
-export function correctPixels (pixels) {
+export function correctPixels(pixels) {
   return pixels * dpr;
 }
 
-export function percentToHexAlpha (value = 0, minAlpha = 0) {
-  const percent = value > 0
-    ? (((100 - minAlpha) / 100) * value) + minAlpha
-    : value;
+export function percentToHexAlpha(value = 0, minAlpha = 0) {
+  const percent = value > 0 ? ((100 - minAlpha) / 100) * value + minAlpha : value;
   return `0${Math.ceil((255 / 100) * Math.round(percent)).toString(16)}`.slice(-2).toUpperCase();
 }
 
-export function isNumber (number) {
+export function isNumber(number) {
   return number !== undefined && number !== null && !Number.isNaN(Number(number));
 }
 
-export function drawVisibleLabels (
-  ticks,
-  options = {}
-) {
+export function drawVisibleLabels(ticks, options = {}) {
   const {
     context,
     axis,
@@ -48,7 +43,7 @@ export function drawVisibleLabels (
     textBaselineStart = textBaseline,
     textBaselineEnd = textBaseline,
     getElementPosition = () => ({x: 0, y: 0}),
-    color = '#333333'
+    color = '#333333',
   } = options;
   if (!context || !axis) {
     return;
@@ -59,24 +54,18 @@ export function drawVisibleLabels (
   const mainTicks = ticks
     .filter((tick) => tick.main)
     .map((tick) => ({
-      ...tick
+      ...tick,
     }));
   const otherTicks = ticks
     .filter((tick) => !tick.main)
     .map((tick) => ({
-      ...tick
+      ...tick,
     }));
   const zones = [];
   const zonesConflicts = (a, b) => {
-    const {
-      s: aStart,
-      e: aEnd
-    } = a;
-    const {
-      s: bStart,
-      e: bEnd
-    } = b;
-    return (aEnd - aStart) + (bEnd - bStart) > Math.max(aEnd, bEnd) - Math.min(aStart, bStart);
+    const {s: aStart, e: aEnd} = a;
+    const {s: bStart, e: bEnd} = b;
+    return aEnd - aStart + (bEnd - bStart) > Math.max(aEnd, bEnd) - Math.min(aStart, bStart);
   };
   const conflicts = (s, e, testZones = zones) =>
     testZones.some((zone) => zonesConflicts(zone, {s, e}));
@@ -95,7 +84,7 @@ export function drawVisibleLabels (
     tick.visible = !conflicts(tickStart, tickEnd, zones);
     tick.zone = {
       s: tickStart,
-      e: tickEnd
+      e: tickEnd,
     };
     if (tick.visible) {
       zones.push(tick.zone);
@@ -103,10 +92,7 @@ export function drawVisibleLabels (
   };
   const renderTick = (tick) => {
     if (tick.visible && (tick.start || tick.end || axis.valueFitsRange(tick.value))) {
-      const {
-        x,
-        y
-      } = getElementPosition(tick);
+      const {x, y} = getElementPosition(tick);
       if (tick.start) {
         context.textAlign = textAlignStart;
         context.textBaseline = textBaselineStart;
@@ -117,11 +103,7 @@ export function drawVisibleLabels (
         context.textAlign = textAlign;
         context.textBaseline = textBaseline;
       }
-      context.fillText(
-        tick.label,
-        Math.round(x * dpr),
-        Math.round(y * dpr)
-      );
+      context.fillText(tick.label, Math.round(x * dpr), Math.round(y * dpr));
     }
   };
   mainTicks.forEach(processTick);
@@ -131,16 +113,16 @@ export function drawVisibleLabels (
   context.restore();
 }
 
-export function parseDate (date) {
+export function parseDate(date) {
   let dateValue, unix;
-  if (moment.isMoment(date)) {
+  if (isDayjs(date)) {
     dateValue = date;
     unix = dateValue.unix();
   } else if (isNumber(date)) {
     unix = Number(date);
-    dateValue = moment.unix(unix);
+    dateValue = dayjs.unix(unix);
   } else if (typeof date === 'string') {
-    dateValue = moment.utc(date).local();
+    dateValue = dayjs.utc(date).local();
     if (!dateValue.isValid()) {
       dateValue = undefined;
     } else {
@@ -150,7 +132,7 @@ export function parseDate (date) {
   if (unix !== undefined && dateValue !== undefined) {
     return {
       unix,
-      date: dateValue
+      date: dateValue,
     };
   }
   return undefined;

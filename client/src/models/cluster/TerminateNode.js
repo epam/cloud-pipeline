@@ -17,19 +17,19 @@
 import Remote from '../basic/Remote';
 
 export default class TerminateNode extends Remote {
-  constructor (name, machineType) {
+  constructor(name, machineType) {
     super();
     this.constructor.fetchOptions = {
       headers: {
-        'Content-type': 'application/json; charset=UTF-8'
+        'Content-type': 'application/json; charset=UTF-8',
       },
       mode: 'cors',
       credentials: 'include',
-      method: 'DELETE'
+      method: 'DELETE',
     };
-    const queryParameters = [
-      machineType ? `machineType=${machineType}` : undefined
-    ].filter(Boolean).join('&');
+    const queryParameters = [machineType ? `machineType=${machineType}` : undefined]
+      .filter(Boolean)
+      .join('&');
     const query = queryParameters.length > 0 ? `?${queryParameters}` : '';
     this.url = `/cluster/node/${name}${query}`;
   }

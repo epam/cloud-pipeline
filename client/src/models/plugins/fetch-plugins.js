@@ -1,8 +1,8 @@
 import Remote from '../basic/Remote';
 
 export default class FetchPlugins extends Remote {
-  constructor () {
+  constructor() {
     super();
     this.url = '/plugins';
-  };
+  }
 }

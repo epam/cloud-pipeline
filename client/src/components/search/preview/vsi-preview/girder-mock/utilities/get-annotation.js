@@ -16,19 +16,19 @@
 
 import getStorageItemContent from './get-storage-item-content';
 
-export default function getAnnotation (storage, path, id) {
+export default function getAnnotation(storage, path, id) {
   const url = path
     ? `${path}/annotations/${id}.json`.replace(/\/\//g, '/')
     : `annotations/${id}.json`;
   return new Promise((resolve) => {
     getStorageItemContent(storage, url)
-      .then(content => {
+      .then((content) => {
         try {
           const annotation = JSON.parse(content);
           resolve({
             _id: `${storage}/${path || ''}/${id}`,
             creatorId: +id,
-            annotation
+            annotation,
           });
         } catch (e) {
           throw new Error(`Error parsing annotation: ${e.message}`);

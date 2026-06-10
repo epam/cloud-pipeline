@@ -14,8 +14,6 @@
  *  limitations under the License.
  */
 
-/* eslint-disable max-len */
-
 export default {
   identifier: 'light-theme',
   name: 'Light',
@@ -89,7 +87,8 @@ export default {
     '@navigation-panel-color': '#2796dd',
     '@navigation-panel-color-impersonated': '#dd5b27',
     '@navigation-panel-highlighted-color': 'darken(@navigation-panel-color, 10%)',
-    '@navigation-panel-highlighted-color-impersonated': 'darken(@navigation-panel-color-impersonated, 10%)',
+    '@navigation-panel-highlighted-color-impersonated':
+      'darken(@navigation-panel-color-impersonated, 10%)',
     '@navigation-item-color': 'white',
     '@navigation-item-runs-color': '#0cff87',
     '@tag-key-background-color': '#efefef',
@@ -104,7 +103,7 @@ export default {
     '@azure-icon': "@static_resource('icons/providers/azure.svg')",
     '@azure-icon-contrast': "@static_resource('icons/providers/azure.svg')",
     '@local-icon': "@static_resource('icons/providers/local.svg')",
-    '@local-icon-contrast': "@static_resource('icons/providers/local-ligh.svg')",
+    '@local-icon-contrast': "@static_resource('icons/providers/local-light.svg')",
     '@eu-region-icon': "@static_resource('icons/regions/eu.svg')",
     '@us-region-icon': "@static_resource('icons/regions/us.svg')",
     '@sa-region-icon': "@static_resource('icons/regions/sa.svg')",
@@ -174,6 +173,6 @@ export default {
     '@application-tooltip-border-color': '#333333',
     '@application-tooltip-color': '#ececec',
     '@codemirror-selected-background-color': '#d9d9d9',
-    '@codemirror-focused-selected-background-color': '#d7d4f0'
-  }
+    '@codemirror-focused-selected-background-color': '#d7d4f0',
+  },
 };

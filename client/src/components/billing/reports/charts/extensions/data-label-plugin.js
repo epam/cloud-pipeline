@@ -25,7 +25,7 @@ const plugin = {
       error,
       label,
       color = 'rgba(0, 0, 0, 0.65)',
-      errorColor = 'rgba(255, 0, 0, 0.6)'
+      errorColor = 'rgba(255, 0, 0, 0.6)',
     } = configuration;
     if (!this.hasData(chart.data) || error || label) {
       const ctx = chart.chart.ctx;
@@ -45,12 +45,12 @@ const plugin = {
   hasData: function (data) {
     if (data.datasets && data.datasets.length > 0) {
       return data.datasets
-        .filter(d => !d[this.noDataIgnoreOption])
-        .some(d => d.data && d.data.length > 0);
+        .filter((d) => !d[this.noDataIgnoreOption])
+        .some((d) => d.data && d.data.length > 0);
     }
 
     return false;
-  }
+  },
 };
 
 export {id, noDataIgnoreOption, plugin};

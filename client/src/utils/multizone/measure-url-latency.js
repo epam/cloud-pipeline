@@ -16,8 +16,9 @@
 
 import {safeRandom} from '../primitives';
 
-function measureSingleUrlLatency (url, experiment = 0) {
-  const urlWithQuery = url +
+function measureSingleUrlLatency(url, experiment = 0) {
+  const urlWithQuery =
+    url +
     (/\?.+/.test(url) ? '&' : '?') +
     `___e=${experiment || 0}&___r=${Math.floor(safeRandom() * 1000000)}`;
   return new Promise((resolve) => {
@@ -26,8 +27,9 @@ function measureSingleUrlLatency (url, experiment = 0) {
     xhr.onload = () => {
       if (performance !== undefined) {
         const resources = performance.getEntriesByType('resource');
-        const resourceTiming = resources
-          .find(resource => resource.name === (new URL(urlWithQuery)).href);
+        const resourceTiming = resources.find(
+          (resource) => resource.name === new URL(urlWithQuery).href,
+        );
         if (resourceTiming) {
           const latency = resourceTiming.duration;
           xhr.abort();
@@ -52,27 +54,26 @@ function measureSingleUrlLatency (url, experiment = 0) {
   });
 }
 
-export function clearPerformanceEntries () {
+export function clearPerformanceEntries() {
   performance.clearResourceTimings();
 }
 
-export default function measureUrlLatency (url, experimentsCount = 5) {
-  return new Promise(resolve => {
+export default function measureUrlLatency(url, experimentsCount = 5) {
+  return new Promise((resolve) => {
     measureSingleUrlLatency(url, 0)
-      .then(latency => {
+      .then((latency) => {
         if (latency === Infinity || experimentsCount <= 1) {
           return Promise.resolve([latency]);
         }
         return Promise.all([
           Promise.resolve(latency),
-          ...(
-            new Array(experimentsCount - 1))
+          ...new Array(experimentsCount - 1)
             .fill(true)
-            .map((o, index) => measureSingleUrlLatency(url, index + 1))
+            .map((o, index) => measureSingleUrlLatency(url, index + 1)),
         ]);
       })
-      .then(results => {
-        const filtered = results.filter(result => result !== Infinity);
+      .then((results) => {
+        const filtered = results.filter((result) => result !== Infinity);
         if (filtered.length === 0) {
           resolve(Infinity);
         } else {

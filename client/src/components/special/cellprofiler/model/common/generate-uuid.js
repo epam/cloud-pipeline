@@ -14,12 +14,12 @@
  *  limitations under the License.
  */
 
-import moment from 'moment-timezone';
+import dayjs from '../../../../../utils/dayjs';
 
 const uuids = new Map();
 
-export default function generateUUID () {
-  const main = Number(moment.utc().format('YYYYMMDDHHmmssSSS')).toString(16);
+export default function generateUUID() {
+  const main = Number(dayjs.utc().format('YYYYMMDDHHmmssSSS')).toString(16);
   if (!uuids.has(main)) {
     uuids.set(main, 0);
     return main;

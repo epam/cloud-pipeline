@@ -17,17 +17,17 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class NGSMetadataDeleteSampleSheet extends RemotePost {
-  constructor (folderId, machineRunId, deleteFile = true) {
+  constructor(folderId, machineRunId, deleteFile = true) {
     super();
     this.constructor.fetchOptions = {
       headers: {
-        'Content-type': 'application/json; charset=UTF-8'
+        'Content-type': 'application/json; charset=UTF-8',
       },
       mode: 'cors',
       credentials: 'include',
-      method: 'DELETE'
+      method: 'DELETE',
     };
-    // eslint-disable-next-line
+
     this.url = `/preprocessing/samplesheet?folderId=${folderId}&machineRunId=${machineRunId}&deleteFile=${deleteFile}`;
   }
 }

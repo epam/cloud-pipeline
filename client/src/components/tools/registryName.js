@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 
-export default function registryName (registry) {
+export default function registryName(registry) {
   return registry.description || registry.externalUrl || registry.path;
-};
+}

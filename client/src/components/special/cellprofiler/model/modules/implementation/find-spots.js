@@ -13,22 +13,18 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-/* eslint-disable max-len */
 import {thresholding} from './common';
 
 const methods = {
   identify: 'Identify',
   watershed: 'Watershed',
   enhanceAndIdentify: 'Enhance & Identify',
-  enhanceAndWatershed: 'Enhance & Watershed'
+  enhanceAndWatershed: 'Enhance & Watershed',
 };
 
-const {
-  parameters,
-  values
-} = thresholding({
+const {parameters, values} = thresholding({
   strategy: 'Adaptive',
-  thresholdingMethod: 'Robust Background'
+  thresholdingMethod: 'Robust Background',
 });
 
 const findSpots = {
@@ -40,13 +36,15 @@ const findSpots = {
     'Parent objects|object|ALIAS parentObject|EMPTY None',
     'Select the input image|file|ALIAS input|REQUIRED',
     'Objects name|string|Spots|ALIAS output|REQUIRED',
-    `Method|[${Object.values(methods).map(o => `"${o}"`).join(',')}]|"${methods.enhanceAndWatershed}"|ALIAS mainMethod`,
+    `Method|[${Object.values(methods)
+      .map((o) => `"${o}"`)
+      .join(',')}]|"${methods.enhanceAndWatershed}"|ALIAS mainMethod`,
     'Deviations|integer|{deviations}|IF thresholdingMethod=="Robust Background"|COMPUTED',
     'Rescale input image intensity|flag|false|ALIAS rescale|ADVANCED',
     `Enhance feature by|units|2|ADVANCED|IF mainMethod=="${methods.enhanceAndIdentify}" OR mainMethod=="${methods.enhanceAndWatershed}"|ALIAS featureSize|PARAMETER Feature size`,
     `Typical diameter of objects (Min,Max)|units[0,Infinity]|[0.1, 5]|ALIAS=diameterRange|ADVANCED|IF mainMethod=="${methods.enhanceAndIdentify}" OR mainMethod==${methods.identify}|PARAMETER Typical diameter of objects, in pixel units (Min,Max)`,
     'Handling of overlapping objects|[Keep,Remove,Keep overlapping region,Remove depending on overlap]|Remove|ALIAS overlap|IF parentObject!=None',
-    ...parameters
+    ...parameters,
   ],
   subModules: (cpModule) => {
     const enhance = {
@@ -57,31 +55,31 @@ const findSpots = {
         output: '{this.id}_{parent.input}_enhanced|COMPUTED',
         operation: 'Enhance',
         feature: 'Speckles',
-        featureSize: '{parent.featureSize}|COMPUTED'
-      }
+        featureSize: '{parent.featureSize}|COMPUTED',
+      },
     };
-    const thresholdModule = input => ({
+    const thresholdModule = (input) => ({
       module: 'Threshold',
       alias: 'threshold',
       values: {
         input,
         output: '{this.id}_threshold|COMPUTED',
-        ...values
-      }
+        ...values,
+      },
     });
-    const rescaleFn = input => ({
+    const rescaleFn = (input) => ({
       alias: 'rescale',
       module: 'RescaleIntensity',
       values: {
         input,
         output: '{this.id}_rescaled|COMPUTED',
-        method: 'Stretch each image to use the full intensity range'
-      }
+        method: 'Stretch each image to use the full intensity range',
+      },
     });
     const parentObject = cpModule.getParameterValue('parentObject');
     const parentObjectIsSet = parentObject && !/^none$/i.test(parentObject);
     let objectUtilityName;
-    const identifyFn = input => {
+    const identifyFn = (input) => {
       let output = '{this.id}_identified|COMPUTED';
       if (!parentObjectIsSet) {
         output = '{parent.output}|COMPUTED';
@@ -94,11 +92,11 @@ const findSpots = {
           input,
           name: output,
           diameterRange: '{parent.diameterRange}|COMPUTED',
-          ...values
-        }
+          ...values,
+        },
       };
     };
-    const watershedFn = input => {
+    const watershedFn = (input) => {
       let output = '{this.id}_watershed|COMPUTED';
       if (!parentObjectIsSet) {
         output = '{parent.output}|COMPUTED';
@@ -112,8 +110,8 @@ const findSpots = {
           output,
           generate: 'Distance',
           footprint: 8,
-          downsample: 1
-        }
+          downsample: 1,
+        },
       };
     };
 
@@ -148,8 +146,8 @@ const findSpots = {
           result.push(watershedFn('{threshold.output}|COMPUTED'));
         }
         break;
-      default:
       case methods.watershed:
+      default:
         result.push(thresholdModule('{parent.input}|COMPUTED'));
         if (rescaleInput) {
           result.push(rescaleFn('{threshold.output}|COMPUTED'));
@@ -168,20 +166,20 @@ const findSpots = {
           output: '{parent.output}|COMPUTED',
           method: 'Objects',
           maskingObject: '{parent.parentObject}|COMPUTED',
-          overlap: '{parent.overlap}|COMPUTED'
-        }
+          overlap: '{parent.overlap}|COMPUTED',
+        },
       });
       result.push({
         alias: 'relate',
         module: 'RelateObjects',
         values: {
           parent: '{parent.parentObject}|COMPUTED',
-          child: '{parent.output}|COMPUTED'
-        }
+          child: '{parent.output}|COMPUTED',
+        },
       });
     }
     return result;
-  }
+  },
 };
 
 export default findSpots;

@@ -6,7 +6,7 @@ export class GetGroupedTools extends GetGroupedInstances {
   /**
    * @param {GetGroupedInstancesOptions} options
    */
-  constructor (options = {}) {
+  constructor(options = {}) {
     super(options);
     this.grouping = 'TOOL';
   }
@@ -16,34 +16,25 @@ export class GetGroupedToolsWithPrevious extends GetGroupedComputeDataWithPrevio
   /**
    * @param {GetGroupedInstancesOptions} options
    */
-  constructor (options = {}) {
-    const {
-      filters = {},
-      pagination
-    } = options;
-    const {
-      end,
-      endStrict,
-      previousEnd,
-      previousEndStrict,
-      ...rest
-    } = filters;
+  constructor(options = {}) {
+    const {filters = {}, pagination} = options;
+    const {end, endStrict, previousEnd, previousEndStrict, ...rest} = filters;
     const formattedFilters = {
       end: endStrict || end,
       previousEnd: previousEndStrict || previousEnd,
-      ...rest
+      ...rest,
     };
     super(
       GetGroupedTools,
       {
         filters: formattedFilters,
-        pagination
+        pagination,
       },
-      'tools'
+      'tools',
     );
   }
 
-  postprocess (value) {
+  postprocess(value) {
     const {current, previous} = super.postprocess(value);
     return join(current, previous);
   }

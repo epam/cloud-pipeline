@@ -22,13 +22,11 @@
  * @property {string} [search]
  */
 
-function parseStatuses (statusesString) {
-  return (statusesString || '')
-    .split(/[,;]/)
-    .filter((status) => status.length > 0);
+function parseStatuses(statusesString) {
+  return (statusesString || '').split(/[,;]/).filter((status) => status.length > 0);
 }
 
-function buildStatusesQuery (statuses = []) {
+function buildStatusesQuery(statuses = []) {
   return statuses.join(',');
 }
 
@@ -36,28 +34,28 @@ function buildStatusesQuery (statuses = []) {
  * @param {string|undefined} query
  * @returns {TicketsRoutingProps}
  */
-export function parseTicketsFilters (query) {
+export function parseTicketsFilters(query) {
   if (!query || !query.length) {
     return {
       page: 1,
-      default: true
+      default: true,
     };
   }
   const {
     default: defaultFilters,
     statuses,
     search,
-    page
+    page,
   } = query
     .slice(query.startsWith('?') ? 1 : 0)
     .split('&')
     .map((part) => part.split('='))
     .map(([key, value]) => ({
-      [decodeURIComponent(key)]: value ? decodeURIComponent(value) : undefined
+      [decodeURIComponent(key)]: value ? decodeURIComponent(value) : undefined,
     }))
     .reduce((r, c) => ({...r, ...c}), {});
   let statusesList = parseStatuses(statuses);
-  let searchValue = search;
+  const searchValue = search;
   let isDefault = statusesList.length === 0;
   if (isDefault && defaultFilters !== undefined) {
     isDefault = /^true$/i.test(defaultFilters);
@@ -69,7 +67,7 @@ export function parseTicketsFilters (query) {
     page: page !== undefined && !Number.isNaN(Number(page)) ? Number(page) : 1,
     default: isDefault,
     statuses: statusesList,
-    search: searchValue
+    search: searchValue,
   };
 }
 
@@ -77,16 +75,14 @@ export function parseTicketsFilters (query) {
  * @param {TicketsRoutingProps} filters
  * @returns {string|undefined}
  */
-export function buildTicketsFiltersQuery (filters) {
+export function buildTicketsFiltersQuery(filters) {
   const {
     page = 1,
     search = undefined,
     statuses = [],
-    default: defaultFilters = !statuses || !statuses.length
+    default: defaultFilters = !statuses || !statuses.length,
   } = filters || {};
-  const isDefault = statuses && statuses.length > 0
-    ? false
-    : defaultFilters;
+  const isDefault = statuses && statuses.length > 0 ? false : defaultFilters;
   if (page === 1 && isDefault) {
     return undefined;
   }
@@ -107,6 +103,6 @@ export function buildTicketsFiltersQuery (filters) {
     .join('&');
 }
 
-export function ticketsFiltersAreEqual (a, b) {
+export function ticketsFiltersAreEqual(a, b) {
   return buildTicketsFiltersQuery(a) === buildTicketsFiltersQuery(b);
 }

@@ -16,18 +16,18 @@
 
 import EdgeExternalUrl from '../../models/cluster/EdgeExternalUrl';
 
-export default function getEdgeExternalEndpoints (regionIds = []) {
+export default function getEdgeExternalEndpoints(regionIds = []) {
   return new Promise((resolve) => {
     if (regionIds && regionIds.length > 0) {
-      const requests = regionIds.map(regionId => {
-        return new Promise(resolve => {
+      const requests = regionIds.map((regionId) => {
+        return new Promise((resolve) => {
           const request = new EdgeExternalUrl(regionId);
           request
             .fetchIfNeededOrWait()
             .then(() => {
               if (request.loaded && request.value) {
                 resolve({
-                  [regionId]: `${request.value}/_ping`
+                  [regionId]: `${request.value}/_ping`,
                 });
               } else {
                 resolve({});
@@ -37,11 +37,14 @@ export default function getEdgeExternalEndpoints (regionIds = []) {
         });
       });
       Promise.all(requests)
-        .then(requests => {
-          const regions = requests.reduce((acc, cur) => ({
-            ...acc,
-            ...cur
-          }), {});
+        .then((requests) => {
+          const regions = requests.reduce(
+            (acc, cur) => ({
+              ...acc,
+              ...cur,
+            }),
+            {},
+          );
           resolve(regions);
         })
         .catch(() => {
@@ -51,4 +54,4 @@ export default function getEdgeExternalEndpoints (regionIds = []) {
       resolve({});
     }
   });
-};
+}

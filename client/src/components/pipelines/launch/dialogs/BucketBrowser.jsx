@@ -1,0 +1,1249 @@
+/*
+ * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import React from 'react';
+import {inject, observer} from 'mobx-react';
+import connect from '../../../../utils/connect';
+import {observable, makeObservable} from 'mobx';
+import PropTypes from 'prop-types';
+import {
+  Alert,
+  Button,
+  Checkbox,
+  Col,
+  Input,
+  Modal,
+  Row,
+  Table,
+  Tree,
+  message,
+  Splitter,
+} from 'antd';
+import {CaretLeftOutlined, CaretRightOutlined} from '@ant-design/icons';
+import dataStorages from '../../../../models/dataStorage/DataStorages';
+import DataStorageRequest from '../../../../models/dataStorage/DataStoragePage';
+import DTSRequest from '../../../../models/dts/DTSItemsPage';
+import pipelinesLibrary from '../../../../models/folders/FolderLoadTree';
+import LoadingView from '../../../special/LoadingView.tsx';
+import AWSRegionTag from '../../../special/AWSRegionTag';
+import displayDate from '../../../../utils/displayDate';
+import displaySize from '../../../../utils/displaySize';
+import roleModel from '../../../../utils/roleModel';
+import {
+  expandItem,
+  formatTreeItems,
+  generateTreeData,
+  getExpandedKeys,
+  getTreeItemByKey,
+  ItemTypes,
+  search,
+} from '../../model/treeStructureFunctions';
+
+import styles from './Browser.module.css';
+import HiddenObjects from '../../../../utils/hidden-objects';
+import UploadFilesArea from './upload-files-area';
+import FileUploadList from '../../../../utils/files-upload/file-upload-list';
+import UploadFilesList from './upload-files-list';
+import {getAllowedStoragesForCloudRegion} from '../../../../utils/limit-mounts/check-cloud-region-rules';
+import OldAntIconsResolver from '../../../../utils/old-ant-icons-resolver';
+
+const PAGE_SIZE = 40;
+const DTS_ITEM_TYPE = 'DTS';
+const DTS_ROOT_ITEM_TYPE = 'DTS-ROOT';
+
+const S3_BUCKET_TYPE = 'S3';
+const NFS_BUCKET_TYPE = 'NFS';
+const AZ_BUCKET_TYPE = 'AZ';
+const GS_BUCKET_TYPE = 'GS';
+const OMICS_REF_BUCKET_TYPE = 'AWS_OMICS_REF';
+const OMICS_SEQ_BUCKET_TYPE = 'AWS_OMICS_SEQ';
+
+export function getDataStorageItemFullPath(item, bucket) {
+  if (
+    bucket &&
+    (bucket.type === ItemTypes.storage ||
+      bucket.type === S3_BUCKET_TYPE ||
+      bucket.type === AZ_BUCKET_TYPE ||
+      bucket.type === GS_BUCKET_TYPE ||
+      bucket.type === NFS_BUCKET_TYPE ||
+      bucket.type === OMICS_REF_BUCKET_TYPE ||
+      bucket.type === OMICS_SEQ_BUCKET_TYPE)
+  ) {
+    const type = bucket.storageType || bucket.type;
+    const buildPath = (root) => (item && item.path ? `${root}/${item.path}` : root);
+    if (type === 'NFS') {
+      const storagePath = bucket.path.replace(':', '');
+      const mountPoint = bucket.mountPoint
+        ? bucket.mountPoint.endsWith('/')
+          ? bucket.mountPoint.slice(0, -1)
+          : bucket.mountPoint
+        : null;
+      return buildPath(mountPoint || `/cloud-data/${storagePath}`);
+    }
+    if (type === OMICS_REF_BUCKET_TYPE || type === OMICS_SEQ_BUCKET_TYPE) {
+      return buildPath(`${bucket.pathMask}`);
+    }
+    return buildPath(`${type.toLowerCase()}://${bucket.path}`);
+  } else if (bucket && bucket.type === DTS_ROOT_ITEM_TYPE) {
+    return item ? item.fullPath || '' : '';
+  }
+  return item ? item.path || '' : '';
+}
+
+@connect({
+  pipelinesLibrary,
+})
+@inject('dtsList', 'preferences', 'uiLaunchParametersConfiguration', 'awsRegions')
+@inject(() => ({
+  storages: dataStorages,
+  library: pipelinesLibrary,
+}))
+@HiddenObjects.injectTreeFilter
+@observer
+export default class BucketBrowser extends React.Component {
+  static propTypes = {
+    path: PropTypes.string,
+    visible: PropTypes.bool,
+    onSelect: PropTypes.func,
+    onCancel: PropTypes.func,
+    multiple: PropTypes.bool,
+    showOnlyFolder: PropTypes.bool,
+    selectOnlyFiles: PropTypes.bool,
+    allowBucketSelection: PropTypes.bool,
+    checkWritePermissions: PropTypes.bool,
+    bucketTypes: PropTypes.arrayOf(
+      PropTypes.oneOf([
+        AZ_BUCKET_TYPE,
+        S3_BUCKET_TYPE,
+        GS_BUCKET_TYPE,
+        NFS_BUCKET_TYPE,
+        DTS_ITEM_TYPE,
+        OMICS_REF_BUCKET_TYPE,
+        OMICS_SEQ_BUCKET_TYPE,
+      ]),
+    ),
+    uploadFilesAllowed: PropTypes.bool,
+    /**
+     * If cloud region is set, storages will be filtered by this region
+     * (also see `filterObjectStorages` / `filterNonObjectStorages` properties)
+     */
+    cloudRegionId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    /**
+     * If cloud region is set (`cloudRegionId`),
+     * object storages will be filtered by this region.
+     * Default value: true
+     */
+    filterObjectStorages: PropTypes.bool,
+    /**
+     * If cloud region is set (`cloudRegionId`),
+     * non-object storages will be filtered by this region.
+     * Default value: true
+     */
+    filterNonObjectStorages: PropTypes.bool,
+  };
+
+  storage = null;
+  rootItems = undefined;
+
+  state = {
+    bucket: null,
+    path: null,
+    selectedItems: [],
+    expandedKeys: [],
+    selectedKeys: [],
+    currentPage: 0,
+    pageMarkers: [null],
+    pagePerformed: false,
+    search: null,
+    uploadedFiles: [],
+    uploading: undefined,
+  };
+
+  tableData = [];
+
+  constructor(props) {
+    super(props);
+    makeObservable(this, {storage: observable});
+  }
+
+  get uploadFilesEnabled() {
+    const {uiLaunchParametersConfiguration, uploadFilesAllowed} = this.props;
+    return (
+      uploadFilesAllowed &&
+      uiLaunchParametersConfiguration &&
+      uiLaunchParametersConfiguration.localFiles.enabled
+    );
+  }
+
+  get awsRegions() {
+    if (this.props.awsRegions.loaded) {
+      return (this.props.awsRegions.value || []).map((r) => r);
+    }
+    return [];
+  }
+
+  get currentCloudRegion() {
+    const {cloudRegionId} = this.props;
+    return cloudRegionId
+      ? this.awsRegions.find((r) => `${r.id}` === `${cloudRegionId}`)
+      : undefined;
+  }
+
+  get storages() {
+    const {storages} = this.props;
+    return storages.loaded ? (storages.value || []).map((r) => r) : [];
+  }
+
+  get storageIsFetching() {
+    if (this.storage) {
+      return this.storage.pending;
+    }
+    return false;
+  }
+
+  getRoot = (path) => {
+    if (!path) {
+      return '';
+    }
+    const pathComponents = path.split('://');
+    let pathCorrected = path;
+    if (pathComponents.length > 1) {
+      pathCorrected = pathComponents[1];
+    }
+    return pathCorrected.split('/')[0];
+  };
+
+  getBucketByPath = (path) => {
+    if (!this.props.storages.loaded || !this.props.dtsList.loaded) {
+      return null;
+    }
+    const pathCorrected = this.getRoot(path);
+    const storages = this.props.storages.value;
+    for (let i = 0; i < storages.length; i++) {
+      const storage = storages[i];
+      const storagePath = this.getRoot(storage.path);
+      if (pathCorrected.toLowerCase() === storagePath.toLowerCase()) {
+        return storage;
+      }
+    }
+    // check if DTS
+    if (path) {
+      for (let i = 0; i < (this.props.dtsList.value || []).length; i++) {
+        const dts = this.props.dtsList.value[i];
+        for (let j = 0; j < (dts.prefixes || []).length; j++) {
+          const prefix = `${dts.prefixes[j]}/`.replace(/\/\//g, '/').toLowerCase();
+          if (path.toLowerCase().indexOf(prefix) === 0) {
+            return {
+              ...dts,
+              type: DTS_ROOT_ITEM_TYPE,
+              prefix: dts.prefixes[j],
+            };
+          }
+        }
+      }
+    }
+    return null;
+  };
+
+  labelsRenderer = (labels) => {
+    const labelsList = [];
+    for (const key in labels) {
+      if (Object.hasOwn(labels, key)) {
+        labelsList.push({
+          key,
+          value: labels[key],
+        });
+      }
+    }
+    return labelsList.map((l) => (
+      <span className={styles.label} key={l.key}>
+        {l.value}
+      </span>
+    ));
+  };
+
+  canGoToParent() {
+    if (this.storage) {
+      return this.storage.path;
+    }
+    return this.state.path;
+  }
+
+  removeProtocol(path) {
+    if (!path) {
+      return path;
+    }
+    const parts = path.split('://');
+    if (parts.length === 2) {
+      return parts[1];
+    }
+    return path;
+  }
+
+  fixPath(path) {
+    if (!path) {
+      return path;
+    }
+    if (path.endsWith('/')) {
+      path = path.substring(0, path.length - 1);
+    }
+    path = this.removeProtocol(path);
+    const parts = path.split('/');
+    path = parts.length > 1 ? '' : undefined;
+    for (let i = 1; i < parts.length; i++) {
+      if (i === 1) {
+        path += `${parts[i]}`;
+      } else {
+        path += `/${parts[i]}`;
+      }
+    }
+    return path;
+  }
+
+  parentDirectory(path) {
+    if (path) {
+      if (path.endsWith('/')) {
+        path = path.substring(0, path.length - 1);
+      }
+      const parts = path.split('/');
+      if (parts.length > 1) {
+        parts.pop();
+        return parts.join('/');
+      }
+    }
+    return undefined;
+  }
+
+  itemIsSelected = (item) => {
+    const {bucket} = this.state;
+    if (this.state.selectedItems && this.state.selectedItems.length > 0) {
+      const fullPath = getDataStorageItemFullPath(item, bucket).toLowerCase();
+      if (this.props.multiple) {
+        const filteredSelectedItems = this.state.selectedItems.filter(
+          (item) => item.name.trim().toLowerCase() === fullPath,
+        );
+        let isSelected = false;
+
+        filteredSelectedItems.forEach((selectedItem) => {
+          if (selectedItem.type) {
+            isSelected = isSelected || selectedItem.type === item.type;
+          } else {
+            const filteredData = this.tableData.filter(
+              (data) => getDataStorageItemFullPath(data, bucket).toLowerCase() === fullPath,
+            );
+            if (filteredData.length > 1) {
+              isSelected = isSelected || item.type.toLowerCase() === 'folder';
+            } else {
+              isSelected = true;
+            }
+          }
+        });
+
+        return isSelected;
+      } else {
+        return fullPath === (this.state.selectedItems[0].name || '').toLowerCase();
+      }
+    }
+    return false;
+  };
+
+  selectItem = (event, item) => {
+    event.stopPropagation();
+    const {bucket} = this.state;
+    const itemFullPath = getDataStorageItemFullPath(item, bucket);
+    if (this.props.multiple) {
+      if (this.state.selectedItems && this.state.selectedItems.length > 0) {
+        const filteredData = this.tableData.filter((data) => {
+          const dataFullPath = getDataStorageItemFullPath(data, bucket).toLowerCase();
+          return dataFullPath === itemFullPath.toLowerCase();
+        });
+        const index = this.state.selectedItems.findIndex((selectedItem) => {
+          if (selectedItem.name.trim().toLowerCase() === itemFullPath.toLowerCase()) {
+            if (selectedItem.type) {
+              return selectedItem.type === item.type;
+            } else {
+              return filteredData.length > 1 ? item.type.toLowerCase() === 'folder' : true;
+            }
+          }
+          return false;
+        });
+        const selectedItems = this.state.selectedItems;
+        if (index >= 0) {
+          selectedItems.splice(index, 1);
+        } else {
+          selectedItems.push({name: itemFullPath, type: item.type});
+        }
+        this.setState({selectedItems});
+      } else {
+        this.setState({selectedItems: [{name: itemFullPath, type: item.type}]});
+      }
+    } else {
+      if (this.itemIsSelected(item)) {
+        this.setState({selectedItems: []});
+      } else {
+        this.setState({
+          selectedItems: [
+            {
+              name: itemFullPath,
+              type: item.type,
+            },
+          ],
+        });
+      }
+    }
+  };
+
+  getStorageItemsTable = () => {
+    const columns = [
+      {
+        key: 'selection',
+        title: '',
+        className: styles.checkboxCell,
+        render: (item) => {
+          if (item.selectable) {
+            return (
+              <Checkbox
+                disabled={
+                  this.props.checkWritePermissions && item.readOnly && !this.itemIsSelected(item)
+                }
+                checked={this.itemIsSelected(item)}
+                onChange={(e) => this.selectItem(e, item)}
+              />
+            );
+          } else {
+            return <span />;
+          }
+        },
+      },
+      {
+        dataIndex: 'type',
+        key: 'type',
+        title: '',
+        className: styles.itemTypeCell,
+        render: (text, item) => (
+          <OldAntIconsResolver className={styles.itemType} type={item.type.toLowerCase()} />
+        ),
+        onCell: (item) => ({onClick: () => this.didSelectDataStorageItem(item)}),
+      },
+      {
+        dataIndex: 'name',
+        key: 'name',
+        title: 'Name',
+        className: styles.selectableCell,
+        onCell: (item) => ({onClick: () => this.didSelectDataStorageItem(item)}),
+      },
+      {
+        dataIndex: 'size',
+        key: 'size',
+        title: 'Size',
+        render: (size) => displaySize(size),
+        className: styles.selectableCell,
+        onCell: (item) => ({onClick: () => this.didSelectDataStorageItem(item)}),
+      },
+      {
+        dataIndex: 'changed',
+        key: 'changed',
+        title: 'Date changed',
+        className: styles.selectableCell,
+        render: (date) => (date ? displayDate(date) : ''),
+        onCell: (item) => ({onClick: () => this.didSelectDataStorageItem(item)}),
+      },
+      {
+        dataIndex: 'labels',
+        key: 'labels',
+        title: '',
+        className: styles.selectableCell,
+        render: this.labelsRenderer,
+        onCell: (item) => ({onClick: () => this.didSelectDataStorageItem(item)}),
+      },
+    ];
+
+    const getList = () => {
+      const items = [];
+      if (this.canGoToParent()) {
+        items.push({
+          name: '..',
+          path: this.parentDirectory(this.state.path),
+          type: 'folder',
+          selectable: false,
+        });
+      }
+      let results = [];
+      if (this.storage && this.storage.loaded) {
+        results = this.storage.value.results || [];
+      }
+      items.push(
+        ...results.map((i) => {
+          if (this.state.bucket.type === DTS_ROOT_ITEM_TYPE) {
+            const path = this.storage.path
+              ? `${this.storage.path}/${i.path}`.replace(/\/\//g, '/')
+              : i.path;
+            return {
+              ...i,
+              selectable: true,
+              fullPath: `${this.state.bucket.prefix}/${path}`.replace(/\/\//g, '/'),
+              path,
+              readOnly:
+                this.props.checkWritePermissions && !roleModel.writeAllowed({mask: i.permission}),
+            };
+          } else {
+            if (this.props.selectOnlyFiles) {
+              const selectable = i.type.toLowerCase() === 'file';
+              return {
+                ...i,
+                selectable,
+                readOnly: false,
+              };
+            }
+            return {
+              ...i,
+              selectable: true,
+              readOnly: false,
+            };
+          }
+        }),
+      );
+      return items;
+    };
+
+    this.tableData = this.storageIsFetching ? this.tableData : getList();
+
+    return {
+      columns,
+      data: this.props.showOnlyFolder
+        ? this.tableData.filter((r) => r.type.toLowerCase() === 'folder')
+        : this.tableData,
+    };
+  };
+
+  didSelectDataStorageItem = (item) => {
+    if (item.type.toLowerCase() === 'folder') {
+      this.setState({
+        path: decodeURIComponent(item.path || ''),
+        pageMarkers: [null],
+        pagePerformed: false,
+        currentPage: 0,
+      });
+    }
+  };
+
+  bucketChanged = (key) => {
+    let expandedKeys = this.state.expandedKeys;
+    let bucket;
+    if (this.rootItems) {
+      bucket = getTreeItemByKey(key, this.rootItems);
+      if (bucket) {
+        expandItem(bucket, this.rootItems);
+        expandedKeys = getExpandedKeys(this.rootItems);
+      }
+    }
+    this.setState({
+      bucket,
+      expandedKeys,
+      selectedKeys: [key],
+      path: null,
+    });
+  };
+
+  onClearSelectionClicked = () => {
+    this.setState({selectedItems: []});
+  };
+
+  onCancelClicked = () => {
+    if (this.props.onCancel) {
+      this.props.onCancel();
+      this.setState({selectedItems: []});
+    }
+  };
+
+  onSelectClicked = () => {
+    const {uploadedFiles, selectedItems} = this.state;
+    const result = selectedItems.slice().map((item) => item.name);
+    const onFinish = (uploaded = []) => {
+      if (this.props.onSelect) {
+        this.props.onSelect(result.concat(uploaded).join(', '));
+        this.setState({selectedItems: []});
+      }
+    };
+    const {uiLaunchParametersConfiguration} = this.props;
+    if (
+      uploadedFiles.length > 0 &&
+      uiLaunchParametersConfiguration &&
+      uiLaunchParametersConfiguration.localFiles &&
+      uiLaunchParametersConfiguration.localFiles.enabled &&
+      uiLaunchParametersConfiguration.localFiles.dataStorage &&
+      uiLaunchParametersConfiguration.localFiles.dataStoragePathGenerator
+    ) {
+      const session = new FileUploadList(
+        uploadedFiles,
+        uiLaunchParametersConfiguration.localFiles.dataStorage.id,
+        uiLaunchParametersConfiguration.localFiles.dataStoragePathGenerator(),
+      );
+      this.setState({uploading: session}, async () => {
+        const hide = message.loading('Uploading files...', 0);
+        try {
+          await session.upload();
+          const {done, aborted, hasErrors, files = []} = session.getState();
+          if (aborted) {
+            return;
+          }
+          if (!done || hasErrors) {
+            throw new Error('Error uploading files');
+          }
+          session.destroy();
+          this.setState(
+            {
+              uploading: undefined,
+            },
+            () => onFinish(files.map((f) => f.resolvedPath).filter(Boolean)),
+          );
+        } catch (error) {
+          message.error(error.message, 5);
+        } finally {
+          hide();
+        }
+      });
+    } else {
+      onFinish();
+    }
+  };
+
+  onSelectBucketClicked = () => {
+    const {bucket} = this.state;
+    if (this.props.onSelect && bucket && this.props.allowBucketSelection) {
+      this.props.onSelect(getDataStorageItemFullPath());
+      this.setState({selectedItems: []});
+    }
+  };
+
+  renderItemTitle(item) {
+    let icon;
+    let subTitle;
+    switch (item.type) {
+      case DTS_ITEM_TYPE:
+        icon = 'desktop';
+        break;
+      case DTS_ROOT_ITEM_TYPE:
+        icon = 'inbox';
+        break;
+      case ItemTypes.pipeline:
+        icon = 'fork';
+        break;
+      case ItemTypes.versionedStorage:
+        icon = 'fork';
+        break;
+      case ItemTypes.folder:
+        icon = 'folder';
+        break;
+      case ItemTypes.version:
+        icon = 'tag';
+        break;
+      case ItemTypes.storage:
+        if (item.storageType && item.storageType.toLowerCase() !== 'nfs') {
+          icon = 'inbox';
+        } else {
+          icon = 'hdd';
+        }
+        subTitle = <AWSRegionTag regionId={item.regionId} />;
+        break;
+    }
+    let name = item.name;
+    if (item.searchResult) {
+      name = (
+        <span>
+          <span>{item.name.substring(0, item.searchResult.index)}</span>
+          <span className={styles.searchResult}>
+            {item.name.substring(
+              item.searchResult.index,
+              item.searchResult.index + item.searchResult.length,
+            )}
+          </span>
+          <span>{item.name.substring(item.searchResult.index + item.searchResult.length)}</span>
+        </span>
+      );
+    }
+    return (
+      <span id={`pipelines-library-tree-node-${item.key}-name`} className={styles.treeItemTitle}>
+        {icon && <OldAntIconsResolver type={icon} />}
+        <span className="storage-name">{name}</span>
+        {subTitle}
+      </span>
+    );
+  }
+
+  getTreeData(items) {
+    if (!items) {
+      return [];
+    }
+    return formatTreeItems(items, {preferences: this.props.preferences}).map((item) => ({
+      key: item.key,
+      title: this.renderItemTitle(item),
+      isLeaf: item.isLeaf,
+      className: `pipelines-library-tree-node-${item.key}`,
+      ...(item.children && !item.isLeaf ? {children: this.getTreeData(item.children)} : {}),
+    }));
+  }
+
+  onExpand = (expandedKeys, {expanded, node}) => {
+    const item = getTreeItemByKey(node.key, this.rootItems);
+    if (item) {
+      expandItem(item, expanded);
+    }
+    this.setState({expandedKeys: getExpandedKeys(this.rootItems)});
+  };
+
+  onSelect = (selectedKeys, {node}) => {
+    const item = getTreeItemByKey(node.key, this.rootItems);
+    if (item.type === ItemTypes.storage || item.type === DTS_ROOT_ITEM_TYPE) {
+      if (item.type === ItemTypes.storage) {
+        this.bucketChanged(`storage_${item.id}`);
+      } else {
+        this.bucketChanged(`${DTS_ROOT_ITEM_TYPE}_${item.id}_${item.path}`);
+      }
+    } else if (item.type === ItemTypes.folder || item.type === DTS_ITEM_TYPE) {
+      expandItem(item, true);
+      this.setState({expandedKeys: getExpandedKeys(this.rootItems)});
+    }
+  };
+
+  postprocessTree(items, options = {}) {
+    const {allowed} = options || {};
+    const result = [];
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type === ItemTypes.storage) {
+        if (!allowed || allowed.some((st) => st.id === item.id)) {
+          result.push(item);
+        }
+      } else if (item.type === ItemTypes.folder && item.children && item.children.length) {
+        item.children = this.postprocessTree(item.children, options);
+        if (item.children.length) {
+          result.push(item);
+        }
+      }
+    }
+    return result;
+  }
+
+  generateTree() {
+    if (
+      this.props.library.loaded &&
+      this.props.dtsList.loaded &&
+      this.props.storages.loaded &&
+      this.props.awsRegions.loaded &&
+      !this.rootItems
+    ) {
+      const {currentCloudRegion, awsRegions = []} = this;
+      const filterStorages = currentCloudRegion !== undefined;
+      const {filterObjectStorages = true, filterNonObjectStorages = true} = this.props;
+      let objectStorages = this.storages.filter((st) => st.type !== NFS_BUCKET_TYPE);
+      if (filterStorages && filterObjectStorages) {
+        objectStorages = getAllowedStoragesForCloudRegion(
+          objectStorages,
+          currentCloudRegion,
+          awsRegions,
+        );
+      }
+      let nonObjectStorages = this.storages.filter((st) => st.type === NFS_BUCKET_TYPE);
+      if (filterStorages && filterNonObjectStorages) {
+        nonObjectStorages = getAllowedStoragesForCloudRegion(
+          nonObjectStorages,
+          currentCloudRegion,
+          awsRegions,
+        );
+      }
+      this.rootItems = [
+        ...(this.props.dtsList.value || [])
+          .filter((r) => {
+            if (!this.props.bucketTypes || this.props.bucketTypes.length === 0) {
+              return true;
+            }
+            return this.props.bucketTypes.indexOf(DTS_ITEM_TYPE) >= 0;
+          })
+          .map((dtsItem) => {
+            const parent = {
+              ...dtsItem,
+              type: DTS_ITEM_TYPE,
+              key: `${DTS_ITEM_TYPE}_${dtsItem.id}`,
+              isLeaf: false,
+              expanded: false,
+            };
+            parent.children = (dtsItem.prefixes || []).map((p) => {
+              const name = p
+                .split('/')
+                .filter((s) => !!s)
+                .slice(-1)
+                .pop();
+              return {
+                ...dtsItem,
+                type: DTS_ROOT_ITEM_TYPE,
+                key: `${DTS_ROOT_ITEM_TYPE}_${dtsItem.id}_${p}`,
+                isLeaf: true,
+                path: p,
+                prefix: p,
+                name,
+                parent,
+                expanded: false,
+              };
+            });
+            return parent;
+          }),
+        ...this.postprocessTree(
+          generateTreeData(this.props.library.value, {
+            types: [ItemTypes.storage],
+            filter: this.props.hiddenObjectsTreeFilter((item, type) => {
+              if (
+                !this.props.bucketTypes ||
+                this.props.bucketTypes.length === 0 ||
+                type !== ItemTypes.storage
+              ) {
+                return true;
+              }
+              return this.props.bucketTypes.indexOf(item.type) >= 0;
+            }),
+          }),
+          {
+            allowed: objectStorages.concat(nonObjectStorages),
+          },
+        ),
+      ];
+    }
+    return (
+      <Tree
+        className={styles.libraryTree}
+        treeData={this.getTreeData(this.rootItems)}
+        onSelect={this.onSelect}
+        onExpand={this.onExpand}
+        checkStrictly
+        expandedKeys={this.state.expandedKeys}
+        selectedKeys={this.state.selectedKeys}
+      />
+    );
+  }
+
+  onSearchChanged = async (e) => {
+    await search(e, this.rootItems);
+    const expandedKeys = getExpandedKeys(this.rootItems);
+    this.setState({expandedKeys, search: e});
+  };
+
+  onUploadedFilesChanged = (uploadedFiles = []) => {
+    this.setState({uploadedFiles});
+  };
+
+  onAbortUpload = () => {
+    const {uploading} = this.state;
+    if (uploading) {
+      uploading.abort();
+      this.setState({uploading: undefined});
+      this.onCancelClicked();
+    }
+  };
+
+  render() {
+    const {uploadFilesEnabled} = this;
+    const {uploading} = this.state;
+    if (uploading) {
+      return (
+        <Modal
+          width="80%"
+          title="Uploading files..."
+          closable={false}
+          footer={
+            <Row type="flex" justify="end">
+              <Button onClick={this.onAbortUpload}>Cancel</Button>
+            </Row>
+          }
+          visible={this.props.visible}
+        >
+          <UploadFilesList session={uploading} />
+        </Modal>
+      );
+    }
+    let content = <LoadingView />;
+    if (!this.props.storages.pending && this.props.storages.error) {
+      content = <Alert title="Error retrieving data storages" type="error" />;
+    } else if (!this.props.storages.pending) {
+      const table = this.getStorageItemsTable();
+      content = (
+        <Splitter>
+          <Splitter.Panel
+            style={{display: 'flex', flexDirection: 'column', height: '100%', overflow: 'auto'}}
+            defaultSize={200}
+            min={200}
+          >
+            <Row>
+              <Input.Search onSearch={this.onSearchChanged} />
+            </Row>
+            <div style={{flex: 1, overflow: 'auto'}}>{this.generateTree()}</div>
+          </Splitter.Panel>
+          <Splitter.Panel
+            style={{display: 'flex', flexDirection: 'column', height: '100%', overflow: 'auto'}}
+            min={200}
+          >
+            {!this.state.bucket ? (
+              <Alert type="info" title="Select data storage" />
+            ) : (
+              <>
+                <Table
+                  className={styles.table}
+                  dataSource={table.data}
+                  columns={table.columns}
+                  loading={this.storageIsFetching}
+                  rowKey="key"
+                  pagination={false}
+                  rowClassName={(item) => styles[item.type.toLowerCase()]}
+                  locale={{emptyText: 'Folder is empty'}}
+                  size="small"
+                  style={{flex: 1}}
+                />
+                <Row
+                  key="pagination"
+                  type="flex"
+                  justify="end"
+                  style={{marginTop: 10, paddingRight: 15}}
+                >
+                  <Button
+                    id="prev-page-button"
+                    onClick={this.prevPage}
+                    disabled={this.state.currentPage === 0}
+                    style={{margin: 3}}
+                    size="small"
+                  >
+                    <CaretLeftOutlined />
+                  </Button>
+                  <Button
+                    id="next-page-button"
+                    onClick={this.nextPage}
+                    disabled={this.state.pageMarkers.length <= this.state.currentPage + 1}
+                    style={{margin: 3}}
+                    size="small"
+                  >
+                    <CaretRightOutlined />
+                  </Button>
+                </Row>
+              </>
+            )}
+          </Splitter.Panel>
+        </Splitter>
+      );
+    }
+
+    let itemsSelectedCount = 0;
+    if (this.props.multiple && this.state.selectedItems) {
+      itemsSelectedCount += this.state.selectedItems.length;
+    }
+    itemsSelectedCount += this.state.uploadedFiles.length;
+    return (
+      <Modal
+        width="80%"
+        title="Select folder or file"
+        closable={false}
+        footer={
+          <Row type="flex" justify="space-between">
+            <Col>
+              <Button onClick={() => this.onClearSelectionClicked()}>Clear selection</Button>
+            </Col>
+            <Col className={styles.buttonsContainer}>
+              <Button onClick={() => this.onCancelClicked()}>Cancel</Button>
+              <Button
+                type="primary"
+                disabled={
+                  this.state.selectedItems.length === 0 && this.state.uploadedFiles.length === 0
+                }
+                onClick={() => this.onSelectClicked()}
+              >
+                OK
+                {itemsSelectedCount > 0
+                  ? itemsSelectedCount > 1
+                    ? ` (${itemsSelectedCount} items)`
+                    : ' (1 item)'
+                  : ''}
+              </Button>
+              {this.props.allowBucketSelection && (
+                <Button
+                  type="primary"
+                  disabled={!this.state.bucket || DTS_ROOT_ITEM_TYPE === this.state.bucket.type}
+                  onClick={() => this.onSelectBucketClicked()}
+                >
+                  Select bucket
+                </Button>
+              )}
+            </Col>
+          </Row>
+        }
+        open={this.props.visible}
+      >
+        <div style={{height: 450, display: 'flex'}}>
+          <div
+            style={{
+              flex: 1,
+              height: '100%',
+              overflow: 'auto',
+              display: 'flex',
+              position: 'relative',
+            }}
+          >
+            {content}
+          </div>
+          {uploadFilesEnabled && (
+            <UploadFilesArea
+              style={{width: 300, height: '100%', overflow: 'auto', marginLeft: 5}}
+              files={this.state.uploadedFiles}
+              onFilesChange={this.onUploadedFilesChanged}
+              multiple={this.props.multiple}
+            />
+          )}
+        </div>
+      </Modal>
+    );
+  }
+
+  UNSAFE_componentWillReceiveProps(nextProps) {
+    if (nextProps.path !== this.props.path) {
+      const path = nextProps.path;
+      const allowBucketSelection = nextProps.allowBucketSelection;
+      const firstItemPath = (path || '').split(',').map((p) => p.trim())[0];
+      const bucket = this.getBucketByPath(firstItemPath);
+      if (bucket) {
+        const bucketKey =
+          bucket.type === DTS_ROOT_ITEM_TYPE
+            ? `${DTS_ROOT_ITEM_TYPE}_${bucket.id}_${bucket.prefix}`
+            : `storage_${bucket.id}`;
+        let expandedKeys = this.state.expandedKeys;
+        if (this.rootItems) {
+          const item = getTreeItemByKey(bucketKey, this.rootItems);
+          if (item) {
+            expandItem(item, this.rootItems);
+            expandedKeys = getExpandedKeys(this.rootItems);
+          }
+        }
+        let pathCorrected;
+        let mask;
+        if (bucket.type === DTS_ROOT_ITEM_TYPE) {
+          const prefix = `${bucket.prefix}/`.replace(/\/\//g, '/');
+          pathCorrected = this.parentDirectory(firstItemPath.substring(prefix.length));
+        } else {
+          pathCorrected = this.parentDirectory(this.fixPath(firstItemPath));
+          mask = new RegExp(`^${bucket.pathMask}(.*)$`, 'i');
+        }
+        this.setState({
+          bucket,
+          expandedKeys,
+          selectedKeys: [bucketKey],
+          path: decodeURIComponent(pathCorrected || ''),
+          selectedItems: (path || '')
+            .split(',')
+            .map((p) => ({name: p.trim()}))
+            .filter((item) => {
+              if (bucket.type === DTS_ROOT_ITEM_TYPE || !mask || !allowBucketSelection) {
+                return true;
+              }
+              const e = mask.exec(item.name);
+              if (e && e[1]) {
+                return !['', '/'].includes(e[1]);
+              }
+              return false;
+            }),
+        });
+      }
+    }
+  }
+
+  prevPage = () => {
+    if (this.state.currentPage > 0) {
+      const currentPage = this.state.currentPage - 1;
+      const marker = this.state.pageMarkers[currentPage];
+      this.storage.fetchPage(marker);
+      this.setState({
+        currentPage,
+        pagePerformed: false,
+      });
+    }
+  };
+
+  nextPage = () => {
+    if (this.state.currentPage + 1 < this.state.pageMarkers.length) {
+      const currentPage = this.state.currentPage + 1;
+      const marker = this.state.pageMarkers[currentPage];
+      this.storage.fetchPage(marker);
+      this.setState({
+        currentPage,
+        pagePerformed: false,
+      });
+    }
+  };
+
+  performPage = () => {
+    const pageMarkers = this.state.pageMarkers;
+    if (!this.storage.error) {
+      if (this.storage.value.nextPageMarker) {
+        if (pageMarkers.length > this.state.currentPage + 1) {
+          pageMarkers[this.state.currentPage + 1] = this.storage.value.nextPageMarker;
+        } else {
+          pageMarkers.push(this.storage.value.nextPageMarker);
+        }
+      } else {
+        pageMarkers.splice(
+          this.state.currentPage + 1,
+          pageMarkers.length - this.state.currentPage - 1,
+        );
+      }
+    }
+    this.setState({
+      pagePerformed: true,
+      pageMarkers,
+    });
+  };
+
+  componentDidUpdate(prevProps) {
+    if (
+      this.props.storages.loaded &&
+      this.props.dtsList.loaded &&
+      !this.state.bucket &&
+      this.props.storages.value.length &&
+      this.props.path
+    ) {
+      let firstItemPath = (this.props.path || '').split(',').map((p) => p.trim())[0];
+      const bucket = this.getBucketByPath(firstItemPath);
+      if (bucket && bucket.type === DTS_ROOT_ITEM_TYPE && firstItemPath) {
+        const prefix = bucket.prefix.replace(/\/\//g, '/');
+        firstItemPath = firstItemPath.substring(prefix.length);
+      }
+      let expandedKeys = this.state.expandedKeys;
+      if (bucket && this.rootItems) {
+        const item = getTreeItemByKey(
+          bucket.type === DTS_ROOT_ITEM_TYPE
+            ? `${DTS_ROOT_ITEM_TYPE}_${bucket.id}_${bucket.prefix}`
+            : `storage_${bucket.id}`,
+          this.rootItems,
+        );
+        if (item) {
+          expandItem(item, this.rootItems);
+          expandedKeys = getExpandedKeys(this.rootItems);
+        }
+      }
+      let pathCorrected;
+      if (bucket && bucket.type === DTS_ROOT_ITEM_TYPE) {
+        const prefix = `${bucket.prefix}/`.replace(/\/\//g, '/');
+        pathCorrected = firstItemPath.substring(prefix.length);
+      } else {
+        pathCorrected = firstItemPath;
+      }
+      pathCorrected = this.parentDirectory(pathCorrected);
+      if (bucket) {
+        this.setState({
+          bucket,
+          expandedKeys,
+          selectedKeys: [`storage_${bucket.id}`],
+          path: decodeURIComponent(pathCorrected || ''),
+          pageMarkers: [null],
+          pagePerformed: false,
+          currentPage: 0,
+        });
+      } else if (this.state.path !== firstItemPath) {
+        this.setState({
+          selectedKeys: [],
+          path: decodeURIComponent(firstItemPath || ''),
+          pageMarkers: [null],
+          pagePerformed: false,
+          currentPage: 0,
+        });
+      }
+    } else if (
+      this.state.bucket &&
+      (this.storage === null ||
+        `${this.storage.id}` !== `${this.state.bucket.id}` ||
+        (this.storage.type === DTS_ROOT_ITEM_TYPE &&
+          `${this.storage.prefix}` !== `${this.state.bucket.prefix}`) ||
+        `${this.storage.type}` !== `${this.state.bucket.type}`)
+    ) {
+      if (this.state.bucket.type === DTS_ROOT_ITEM_TYPE) {
+        this.storage = new DTSRequest(
+          this.state.bucket.id,
+          this.state.bucket.prefix,
+          this.state.path,
+          PAGE_SIZE,
+        );
+      } else {
+        this.storage = new DataStorageRequest(
+          this.state.bucket.id,
+          this.state.path,
+          false,
+          false,
+          PAGE_SIZE,
+        );
+      }
+      this.storage.type = this.state.bucket.type;
+      this.storage.fetch();
+      this.setState({
+        pageMarkers: [null],
+        pagePerformed: false,
+        currentPage: 0,
+      });
+    } else if (this.storage && this.storage.path !== this.state.path) {
+      if (this.storage.type === DTS_ROOT_ITEM_TYPE) {
+        this.storage = new DTSRequest(
+          this.state.bucket.id,
+          this.state.bucket.prefix,
+          this.state.path,
+          PAGE_SIZE,
+        );
+      } else {
+        this.storage = new DataStorageRequest(
+          this.state.bucket.id,
+          this.state.path,
+          false,
+          false,
+          PAGE_SIZE,
+        );
+      }
+      this.storage.type = this.state.bucket.type;
+      this.storage.fetch();
+      this.setState({
+        pageMarkers: [null],
+        pagePerformed: false,
+        currentPage: 0,
+      });
+    } else if (this.storage && !this.storage.pending && !this.state.pagePerformed) {
+      this.performPage();
+    }
+
+    if (
+      this.props.cloudRegionId !== prevProps.cloudRegionId ||
+      this.props.filterObjectStorages !== prevProps.filterObjectStorages ||
+      this.props.filterNonObjectStorages !== prevProps.filterNonObjectStorages
+    ) {
+      this.rootItems = null;
+    }
+
+    if (this.props.visible && this.props.visible !== prevProps.visible) {
+      this.rootItems = null;
+      this.props.storages.fetch();
+      this.props.library.fetch();
+      this.setState({
+        search: null,
+      });
+      this.resetUploadedFilesList();
+    }
+  }
+
+  resetUploadedFilesList = () => {
+    this.setState({
+      uploadedFiles: [],
+    });
+  };
+}

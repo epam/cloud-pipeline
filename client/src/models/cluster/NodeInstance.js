@@ -19,10 +19,10 @@ import Remote from '../basic/Remote';
 class NodeInstance extends Remote {
   url;
 
-  constructor (name, type = 'KUBE') {
+  constructor(name, type = 'KUBE') {
     super();
     this.url = `/cluster/node/${name}/load?machineType=${type}`;
-  };
+  }
 }
 
 export default NodeInstance;

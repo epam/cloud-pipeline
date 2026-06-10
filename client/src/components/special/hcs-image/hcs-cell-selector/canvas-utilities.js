@@ -13,7 +13,6 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-/* eslint-disable max-len */
 const VERTEX = `attribute vec2 position;
     uniform vec4 color;
     uniform mat4 viewScale;
@@ -32,7 +31,7 @@ const FRAGMENT = `precision mediump float;
         gl_FragColor = vColor;
     }`;
 
-function makeShader (gl, src, type) {
+function makeShader(gl, src, type) {
   if (!gl) {
     return;
   }
@@ -46,7 +45,7 @@ function makeShader (gl, src, type) {
   return shader;
 }
 
-function initShaders (gl) {
+function initShaders(gl) {
   const vertexShader = makeShader(gl, VERTEX, gl.VERTEX_SHADER);
   const fragmentShader = makeShader(gl, FRAGMENT, gl.FRAGMENT_SHADER);
   const glProgram = gl.createProgram();
@@ -62,14 +61,11 @@ function initShaders (gl) {
   return glProgram;
 }
 
-export function resizeCanvas (canvas, size) {
+export function resizeCanvas(canvas, size) {
   if (!canvas || !size || !size.width || !size.height) {
     return false;
   }
-  const {
-    width: canvasWidth,
-    height: canvasHeight
-  } = size;
+  const {width: canvasWidth, height: canvasHeight} = size;
   if (
     canvas.width !== canvasWidth * window.devicePixelRatio ||
     canvas.height !== canvasHeight * window.devicePixelRatio
@@ -83,7 +79,7 @@ export function resizeCanvas (canvas, size) {
   return false;
 }
 
-export function createGLProgram (gl) {
+export function createGLProgram(gl) {
   if (!gl) {
     return;
   }
@@ -98,7 +94,7 @@ export function createGLProgram (gl) {
       modelTranslate: gl.getUniformLocation(glProgram, 'modelTranslate'),
       viewScale: gl.getUniformLocation(glProgram, 'viewScale'),
       viewTranslate: gl.getUniformLocation(glProgram, 'viewTranslate'),
-      projection: gl.getUniformLocation(glProgram, 'projection')
+      projection: gl.getUniformLocation(glProgram, 'projection'),
     };
   }
   return undefined;
@@ -109,21 +105,12 @@ export function createGLProgram (gl) {
  * @param {{borders: boolean, threshold: number, from: number?, to: number?, unitScale: number}} options
  * @returns {number[]}
  */
-export function getLinesToDraw (size, options = {}) {
-  const {
-    borders = true,
-    threshold = 10,
-    from = 0,
-    to = size,
-    unitScale = 1
-  } = options;
+export function getLinesToDraw(size, options = {}) {
+  const {borders = true, threshold = 10, from = 0, to = size, unitScale = 1} = options;
   const aStep = Math.floor(2 ** Math.max(0, Math.log2(threshold / unitScale)));
   const fromCorrected = Math.min(size, Math.max(0, Math.ceil(from)));
   const toCorrected = Math.min(size, Math.max(0, Math.ceil(to)));
-  const result = new Set(borders
-    ? [fromCorrected, toCorrected]
-    : [fromCorrected]
-  );
+  const result = new Set(borders ? [fromCorrected, toCorrected] : [fromCorrected]);
   for (let i = fromCorrected + aStep; i <= toCorrected; i += aStep) {
     result.add(i);
   }

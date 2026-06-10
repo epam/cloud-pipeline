@@ -1,0 +1,44 @@
+@reference "../../../index.css";
+
+.library-header {
+  @apply text-lg leading-8 flex items-center flex-wrap;
+}
+
+.library-header .library-header-item-icon {
+  @apply mr-1 h-8 leading-8;
+}
+
+.library-header .library-header-breadcrumb-arrow {
+  @apply text-base mx-0.5;
+}
+
+.library-header .library-header-edit-input,
+.library-header .library-header-display-name,
+.library-header .library-header-breadcrumb-item {
+  @apply text-lg p-0 m-0 leading-8 h-8;
+}
+
+.library-header .library-header-breadcrumb-item,
+.library-header .library-header-display-name {
+  padding-left: 1px;
+}
+
+.library-header .library-header-owner {
+  @apply text-xs mx-2;
+}
+
+.library-header-edit {
+  @apply inline-flex items-center;
+}
+
+.library-header-edit .library-header-edit-icon {
+  @apply text-sm ml-1 hidden;
+}
+
+.library-header-edit.editable:not(.edit-mode) .library-header-edit-icon {
+  @apply block;
+}
+
+.library-header-edit.editable:not(.edit-mode):hover {
+  @apply underline;
+}

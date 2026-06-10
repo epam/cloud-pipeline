@@ -17,16 +17,16 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class FileShareMountDelete extends RemotePost {
-  constructor (id) {
+  constructor(id) {
     super();
     this.constructor.noResponse = true;
     this.constructor.fetchOptions = {
       headers: {
-        'Content-type': 'application/json; charset=UTF-8'
+        'Content-type': 'application/json; charset=UTF-8',
       },
       mode: 'cors',
       credentials: 'include',
-      method: 'DELETE'
+      method: 'DELETE',
     };
     this.url = `/filesharemount/${id}`;
   }

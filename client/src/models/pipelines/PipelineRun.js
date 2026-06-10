@@ -19,34 +19,39 @@ import RunTasks from './RunTasks';
 import PipelineRunFilter from './PipelineRunFilter';
 import displayDate from '../../utils/displayDate';
 const repeatInterval = 5000;
-const parseLog = (text, date) => (text.split('\n')
-  .filter(String).map(s => date ? `[${date}] ${s}` : s));
+const parseLog = (text, date) =>
+  text
+    .split('\n')
+    .filter(String)
+    .map((s) => (date ? `[${date}] ${s}` : s));
 
 class Run extends Remote {
   static defaultValue = [];
   refreshData;
 
-  constructor (runId) {
+  constructor(runId) {
     super();
     this.url = `/run/${runId}`;
-  };
+  }
 
-  clearInterval () {
+  clearInterval() {
     clearInterval(this.refreshData);
     delete this.refreshData;
   }
 
-  postprocess (value) {
+  postprocess(value) {
     if (
-      (
-        value.payload.status === 'RUNNING' ||
+      (value.payload.status === 'RUNNING' ||
         value.payload.status === 'PAUSING' ||
         value.payload.status === 'RESUMING') &&
-      !this.refreshData) {
-      this.refreshData = setInterval(::this.silentFetch, repeatInterval);
-    } else if (value.payload.status !== 'RUNNING' &&
+      !this.refreshData
+    ) {
+      this.refreshData = setInterval(() => this.silentFetch(), repeatInterval);
+    } else if (
+      value.payload.status !== 'RUNNING' &&
       value.payload.status !== 'PAUSING' &&
-      value.payload.status !== 'RESUMING') {
+      value.payload.status !== 'RESUMING'
+    ) {
       this.clearInterval();
     }
     return value.payload;
@@ -56,7 +61,7 @@ class Run extends Remote {
 class Log extends Remote {
   static defaultValue = [];
 
-  constructor (runId, taskName, parameters) {
+  constructor(runId, taskName, parameters) {
     super();
     if (taskName) {
       const addParams = parameters && `&${parameters}`;
@@ -64,21 +69,21 @@ class Log extends Remote {
     } else {
       this.url = `/run/${runId}/logs`;
     }
-  };
+  }
 
   refreshData;
   onDataReceived;
 
-  init () {
+  init() {
     this.clearInterval();
   }
 
-  clearInterval () {
+  clearInterval() {
     clearInterval(this.refreshData);
     delete this.refreshData;
   }
 
-  startInterval (value) {
+  startInterval(value) {
     if (!this.refreshData) {
       this.refreshData = setInterval(async () => {
         await this.silentFetch();
@@ -89,21 +94,23 @@ class Log extends Remote {
     }
   }
 
-  postprocess (value) {
+  postprocess(value) {
     const result = [];
-    value.payload && value.payload.forEach(log => {
-      if (log.logText) {
-        const {date} = log;
-        result.push(...parseLog(log.logText, displayDate(date)));
-      }
-    });
+    if (value.payload) {
+      value.payload.forEach((log) => {
+        if (log.logText) {
+          const {date} = log;
+          result.push(...parseLog(log.logText, displayDate(date)));
+        }
+      });
+    }
     return result;
-  };
+  }
 }
 
 class PipelineRun extends Remote {
   /* eslint-disable */
-  static getCache (cache, cacheName, model, ...params) {
+  static getCache(cache, cacheName, model, ...params) {
     if (!cache.has(cacheName)) {
       cache.set(cacheName, new model(...params));
     }
@@ -114,8 +121,8 @@ class PipelineRun extends Remote {
   runFilter = (params) => new PipelineRunFilter(params);
   _logCache = new Map();
 
-  logs (runId, taskName, parameters) {
-    let cashName = `${runId}-${taskName}-${parameters}`;
+  logs(runId, taskName, parameters) {
+    const cashName = `${runId}-${taskName}-${parameters}`;
     if (!this._logCache.has(cashName)) {
       this._logCache.set(cashName, new Log(runId, taskName, parameters));
     }
@@ -124,7 +131,7 @@ class PipelineRun extends Remote {
 
   _runRunIdCache = new Map();
 
-  run (runId, params) {
+  run(runId, params) {
     const {refresh} = params || {};
     if (!this._runRunIdCache.has(`${runId}`)) {
       this._runRunIdCache.set(`${runId}`, new Run(`${runId}`));
@@ -140,7 +147,7 @@ class PipelineRun extends Remote {
 
   _runRunIdTasksCache = new Map();
 
-  runTasks (runId) {
+  runTasks(runId) {
     return this.constructor.getCache(this._runRunIdTasksCache, runId, RunTasks, runId);
   }
 }

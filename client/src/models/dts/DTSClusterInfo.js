@@ -17,10 +17,10 @@
 import Remote from '../basic/Remote';
 
 class DTSClusterInfo extends Remote {
-  constructor (dtsId) {
+  constructor(dtsId) {
     super();
     this.url = `/dts/${dtsId}/cluster`;
-  };
+  }
 }
 
 export default DTSClusterInfo;

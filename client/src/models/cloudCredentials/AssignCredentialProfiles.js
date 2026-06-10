@@ -17,13 +17,13 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class AssignCredentialProfiles extends RemotePost {
-  constructor (sid, principal, profiles, defaultProfile) {
+  constructor(sid, principal, profiles, defaultProfile) {
     super();
     const parts = [
       sid ? `sidId=${sid}` : undefined,
       principal !== undefined ? `principal=${principal}` : undefined,
-      ...(profiles || []).map(p => `profileIds=${p}`),
-      defaultProfile ? `defaultProfileId=${defaultProfile}` : undefined
+      ...(profiles || []).map((p) => `profileIds=${p}`),
+      defaultProfile ? `defaultProfileId=${defaultProfile}` : undefined,
     ]
       .filter(Boolean)
       .join('&');

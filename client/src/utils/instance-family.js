@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-function getAWSInstanceFamily (instanceType) {
+function getAWSInstanceFamily(instanceType) {
   const e = /^(\w+)\./.exec(instanceType);
   if (e && e[1]) {
     return e[1];
@@ -22,7 +22,7 @@ function getAWSInstanceFamily (instanceType) {
   return undefined;
 }
 
-function getGCPInstanceFamily (instanceType) {
+function getGCPInstanceFamily(instanceType) {
   const extractFromPattern = (pattern, extractor, ...group) => {
     const e = pattern.exec(instanceType);
     if (e && !group.some((g) => e[g] === undefined)) {
@@ -30,12 +30,14 @@ function getGCPInstanceFamily (instanceType) {
     }
     return undefined;
   };
-  return extractFromPattern(/^(\w*-?custom)-\w+-\w+$/, (e) => e[1], 1) ||
+  return (
+    extractFromPattern(/^(\w*-?custom)-\w+-\w+$/, (e) => e[1], 1) ||
     extractFromPattern(/^(gpu-\w*-?custom)-\w+-\w+(-\w+)-\w+$/, (e) => e[1].concat(e[2]), 1, 2) ||
-    extractFromPattern(/^(\w+-\w+)-?\w*(-?\w*)/, (e) => e[1].concat(e[2]), 1, 2);
+    extractFromPattern(/^(\w+-\w+)-?\w*(-?\w*)/, (e) => e[1].concat(e[2]), 1, 2)
+  );
 }
 
-function getAzureInstanceFamily (instanceType) {
+function getAzureInstanceFamily(instanceType) {
   const instanceTypeCorrected = /_/.test(instanceType)
     ? (instanceType || '').split('_').slice(1).join('')
     : instanceType;
@@ -46,7 +48,7 @@ function getAzureInstanceFamily (instanceType) {
   return undefined;
 }
 
-export function getInstanceFamilyByName (instanceName, provider) {
+export function getInstanceFamilyByName(instanceName, provider) {
   if (!instanceName || !provider) {
     return undefined;
   }
@@ -62,13 +64,11 @@ export function getInstanceFamilyByName (instanceName, provider) {
   return undefined;
 }
 
-export function getInstanceFamily (instance, provider) {
+export function getInstanceFamily(instance, provider) {
   if (!instance) {
     return undefined;
   }
-  const {
-    name
-  } = instance;
+  const {name} = instance;
   if (!name) {
     return undefined;
   }

@@ -1,0 +1,63 @@
+import React from 'react';
+import PropTypes from 'prop-types';
+import {Dropdown} from 'antd';
+import {AppstoreOutlined, CheckOutlined, DownOutlined} from '@ant-design/icons';
+import classNames from 'classnames';
+import styles from './logs-mode.module.css';
+
+class LogsModeButton extends React.Component {
+  componentDidUpdate(prevProps, prevState, snapshot) {
+    if (this.props.current !== prevProps.current) {
+      this.closeMenu();
+    }
+  }
+
+  render() {
+    const {className, style, modes = [], onChangeMode, current, bordered} = this.props;
+    if ((modes || []).length <= 1 || !onChangeMode) {
+      return null;
+    }
+    const onClick = ({key}) => {
+      if (key !== current) {
+        onChangeMode(key);
+      }
+    };
+    const menuItems = modes.map((mode) => ({
+      key: mode,
+      label: (
+        <div style={{display: 'flex', alignItems: 'center', minWidth: 120}}>
+          <span style={current === mode ? {fontWeight: 'bold', flex: 1} : {flex: 1}}>{mode}</span>
+          {current === mode && <CheckOutlined />}
+        </div>
+      ),
+    }));
+    return (
+      <div
+        className={classNames(className, styles.logsModeButton, {
+          'cp-bordered': bordered,
+        })}
+        style={style}
+      >
+        <Dropdown menu={{items: menuItems, onClick}}>
+          <a className="cp-text cp-text-not-important">
+            <AppstoreOutlined style={{marginRight: 3}} />
+            <b>{current ?? 'view'}</b>
+            <span>{' view'}</span>
+            <DownOutlined />
+          </a>
+        </Dropdown>
+      </div>
+    );
+  }
+}
+
+LogsModeButton.propTypes = {
+  className: PropTypes.string,
+  style: PropTypes.object,
+  modes: PropTypes.arrayOf(PropTypes.string),
+  onChangeMode: PropTypes.func,
+  current: PropTypes.string,
+  bordered: PropTypes.bool,
+};
+
+export default LogsModeButton;

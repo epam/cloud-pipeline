@@ -2,26 +2,26 @@ import BaseBillingRequest from './base-billing-request';
 import {costMapper} from './utils';
 
 export class GetGroupedComputeTypes extends BaseBillingRequest {
-  constructor (filters, pagination = null) {
+  constructor(filters, pagination = null) {
     super({filters, pagination});
     this.grouping = 'RUN_COMPUTE_TYPE';
   }
 
-  postprocess (value) {
+  postprocess(value) {
     const payload = super.postprocess(value);
     return this.prepareComputeTypes(payload);
   }
 
-  prepareComputeTypes (raw) {
+  prepareComputeTypes(raw) {
     const res = {};
 
     if (raw) {
-      raw.forEach(i => {
+      raw.forEach((i) => {
         const name = i.groupingInfo[this.grouping];
         if (name && name !== 'unknown') {
           res[name] = {
             ...i,
-            value: isNaN(i.cost) ? 0 : costMapper(i.cost)
+            value: isNaN(i.cost) ? 0 : costMapper(i.cost),
           };
         }
       });

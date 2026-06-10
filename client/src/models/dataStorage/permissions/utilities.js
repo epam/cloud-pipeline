@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-export function getStorageItemType (permissionStorageItemType) {
+export function getStorageItemType(permissionStorageItemType) {
   if (!permissionStorageItemType || typeof permissionStorageItemType !== 'string') {
     return 'file';
   }
   return permissionStorageItemType.toLowerCase();
 }
 
-export function getStorageItemPermissionType (storageItemType) {
+export function getStorageItemPermissionType(storageItemType) {
   if (storageItemType.toLowerCase() === 'file') {
     return 'File';
   }

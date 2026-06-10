@@ -29,33 +29,31 @@ class CurrentUserAttributes {
   loaded = false;
   request;
 
-  constructor (authenticatedUserInfo, dataStorageAvailable) {
+  constructor(authenticatedUserInfo, dataStorageAvailable) {
     makeObservable(this, {
       userInfo: observable,
       attributes: observable,
       loaded: observable,
       request: observable,
-      user: computed
+      user: computed,
     });
     this.userInfo = authenticatedUserInfo;
     this.dataStorages = dataStorageAvailable;
     if (authenticatedUserInfo) {
-      this.userInfo
-        .fetchIfNeededOrWait()
-        .then(() => {
-          this.refresh(true);
-        });
+      this.userInfo.fetchIfNeededOrWait().then(() => {
+        this.refresh(true);
+      });
     }
   }
 
-  get user () {
+  get user() {
     if (this.userInfo && this.userInfo.loaded) {
       return this.userInfo.value;
     }
     return undefined;
   }
 
-  refresh (force = false) {
+  refresh(force = false) {
     if (this.user) {
       if (!this.request) {
         this.request = new MetadataLoad(this.user.id, 'PIPELINE_USER');
@@ -64,20 +62,20 @@ class CurrentUserAttributes {
         this.refreshPromise = new Promise((resolve) => {
           this.dataStorages
             .fetchIfNeededOrWait()
-            .then(() => this.request.fetch())
+            .then(() => {
+              this.request.fetch();
+            })
             .then(() => {
               if (this.request.error) {
                 throw new Error(this.request.error);
               } else if (this.request.loaded) {
                 const [info] = this.request.value || [];
-                const {
-                  data = {}
-                } = info || {};
+                const {data = {}} = info || {};
                 this.attributes = data;
                 this.loaded = true;
               }
             })
-            .catch(e => {
+            .catch((e) => {
               console.warn(`Error fetching user attributes: ${e.message}`);
             })
             .then(() => resolve());
@@ -88,11 +86,11 @@ class CurrentUserAttributes {
     return Promise.resolve();
   }
 
-  hasAttribute (name) {
-    return (this.loaded && this.attributes && this.attributes[name]);
+  hasAttribute(name) {
+    return this.loaded && this.attributes && this.attributes[name];
   }
 
-  getAttributeValue (name, allowSensitive = true) {
+  getAttributeValue(name, allowSensitive = true) {
     if (this.hasAttribute(name)) {
       const value = this.attributes[name].value;
       if (
@@ -104,31 +102,27 @@ class CurrentUserAttributes {
         this.dataStorages.loaded
       ) {
         const dataStorages = this.dataStorages.value || [];
-        return correctLimitMountsParameterValue(
-          value || '',
-          dataStorages,
-          {allowSensitive, keepUnmappedIdentifiers: true}
-        );
+        return correctLimitMountsParameterValue(value || '', dataStorages, {
+          allowSensitive,
+          keepUnmappedIdentifiers: true,
+        });
       }
       return value;
     }
     return undefined;
   }
 
-  extendLaunchParameters (parameters, allowSensitive = true) {
+  extendLaunchParameters(parameters, allowSensitive = true) {
     if (
-      this.hasAttribute(CP_CAP_LIMIT_MOUNTS) && (
-        !parameters ||
-        !parameters[CP_CAP_LIMIT_MOUNTS] ||
-        !parameters[CP_CAP_LIMIT_MOUNTS].value
-      )
+      this.hasAttribute(CP_CAP_LIMIT_MOUNTS) &&
+      (!parameters || !parameters[CP_CAP_LIMIT_MOUNTS] || !parameters[CP_CAP_LIMIT_MOUNTS].value)
     ) {
       return {
         ...(parameters || {}),
         [CP_CAP_LIMIT_MOUNTS]: {
           type: 'string',
-          value: this.getAttributeValue(CP_CAP_LIMIT_MOUNTS, allowSensitive)
-        }
+          value: this.getAttributeValue(CP_CAP_LIMIT_MOUNTS, allowSensitive),
+        },
       };
     }
     return parameters;
@@ -137,11 +131,8 @@ class CurrentUserAttributes {
 
 const STORE_NAME = 'currentUserAttributes';
 
-function withCurrentUserAttributes (options = {}) {
-  const {
-    injectUserInfo = false,
-    observer: observe = false
-  } = options;
+function withCurrentUserAttributes(options = {}) {
+  const {injectUserInfo = false, observer: observe = false} = options;
   return (WrappedComponent) => {
     const component = observe ? observer(WrappedComponent) : WrappedComponent;
     const injectedComponent = inject(STORE_NAME)(component);
@@ -149,9 +140,6 @@ function withCurrentUserAttributes (options = {}) {
   };
 }
 
-export {
-  STORE_NAME as CURRENT_USER_ATTRIBUTES_STORE,
-  withCurrentUserAttributes
-};
+export {STORE_NAME as CURRENT_USER_ATTRIBUTES_STORE, withCurrentUserAttributes};
 
 export default CurrentUserAttributes;

@@ -15,24 +15,23 @@
  */
 
 import {message} from 'antd';
-import moment from 'moment-timezone';
+import dayjs from '../../../../utils/dayjs';
 import StopPipeline from '../../../../models/pipelines/StopPipeline';
 import ResumePipeline from '../../../../models/pipelines/ResumePipeline';
 import PausePipeline from '../../../../models/pipelines/PausePipeline';
 import TerminatePipeline from '../../../../models/pipelines/TerminatePipeline';
-import DataStorageLifeCycleRulesPostpone
-from '../../../../models/dataStorage/lifeCycleRules/DataStorageLifeCycleRulesPostpone';
+import DataStorageLifeCycleRulesPostpone from '../../../../models/dataStorage/lifeCycleRules/DataStorageLifeCycleRulesPostpone';
 import {canPauseRun, canStopRun} from '../../../runs/actions';
 import RunStatuses from '../../../special/run-status-icon/run-statuses';
 
-function parseQuotaForNavigation (quota) {
+function parseQuotaForNavigation(quota) {
   if (!quota || !quota.type) {
     return '';
   }
   const types = {
     OVERALL: 'OVERALL',
     BILLING_CENTER: 'BILLING_CENTER',
-    USER: 'USER'
+    USER: 'USER',
   };
   let user;
   let group;
@@ -53,7 +52,7 @@ function parseQuotaForNavigation (quota) {
   const parts = [
     user && `user=${encodeURIComponent(user)}`,
     group && !user && `group=${encodeURIComponent(group)}`,
-    period && `period=${encodeURIComponent(period)}`
+    period && `period=${encodeURIComponent(period)}`,
   ].filter(Boolean);
   const query = parts.length > 0 ? `?${parts.join('&')}` : '';
   return query;
@@ -63,28 +62,26 @@ const ACTIONS = {
   viewNodeMonitor: {
     key: 'View node monitor',
     actionFn: ({entity, router}) => {
-      const {
-        instance,
-        startDate,
-        endDate
-      } = entity;
+      const {instance, startDate, endDate} = entity;
       const parts = [
         startDate && `from=${encodeURIComponent(startDate)}`,
-        endDate && `to=${encodeURIComponent(endDate)}`
+        endDate && `to=${encodeURIComponent(endDate)}`,
       ].filter(Boolean);
       const query = parts.length > 0 ? `?${parts.join('&')}` : '';
-      router && router.push(`/cluster/${instance.nodeName}/monitor${query}`);
+      if (router) {
+        router.push(`/cluster/${instance.nodeName}/monitor${query}`);
+      }
     },
-    available: (entity) => entity &&
-      entity.instance &&
-      entity.instance.nodeName
+    available: (entity) => entity && entity.instance && entity.instance.nodeName,
   },
   viewRun: {
     key: 'View run',
     actionFn: ({entity, router}) => {
-      router && router.push(`/run/${entity.id}`);
+      if (router) {
+        router.push(`/run/${entity.id}`);
+      }
     },
-    available: () => true
+    available: () => true,
   },
   pauseRun: {
     key: 'Pause run',
@@ -96,9 +93,11 @@ const ACTIONS = {
         message.error(request.error);
       }
       hide();
-      callback && callback();
+      if (callback) {
+        callback();
+      }
     },
-    available: (entity, preferences) => entity && preferences && canPauseRun(entity, preferences)
+    available: (entity, preferences) => entity && preferences && canPauseRun(entity, preferences),
   },
   resumeRun: {
     key: 'Resume run',
@@ -110,9 +109,11 @@ const ACTIONS = {
         message.error(request.error);
       }
       hide();
-      callback && callback();
+      if (callback) {
+        callback();
+      }
     },
-    available: (entity) => entity && entity.status === RunStatuses.paused
+    available: (entity) => entity && entity.status === RunStatuses.paused,
   },
   stopRun: {
     key: 'Stop run',
@@ -120,16 +121,18 @@ const ACTIONS = {
       const hide = message.loading('Stopping...', -1);
       const request = new StopPipeline(entity.id);
       await request.send({
-        endDate: moment().format('YYYY-MM-DD HH:mm:ss.SSS'),
-        status: 'STOPPED'
+        endDate: dayjs().format('YYYY-MM-DD HH:mm:ss.SSS'),
+        status: 'STOPPED',
       });
       if (request.error) {
         message.error(request.error);
       }
       hide();
-      callback && callback();
+      if (callback) {
+        callback();
+      }
     },
-    available: (entity) => entity && canStopRun(entity)
+    available: (entity) => entity && canStopRun(entity),
   },
   terminateRun: {
     key: 'Terminate run',
@@ -141,18 +144,24 @@ const ACTIONS = {
         message.error(request.error);
       }
       hide();
-      callback && callback();
+      if (callback) {
+        callback();
+      }
     },
-    available: (entity) => entity && entity.status === RunStatuses.paused
+    available: (entity) => entity && entity.status === RunStatuses.paused,
   },
   openDatastorage: {
     key: 'Open datastorage',
     actionFn: ({notification = {}, router}) => {
       const details = (notification.resources || [])[0] || {};
       const {entityId} = details;
-      router && entityId && router.push(`/storage/${entityId}`);
+      if (router) {
+        if (entityId) {
+          router.push(`/storage/${entityId}`);
+        }
+      }
     },
-    available: () => true
+    available: () => true,
   },
   postponeLifecycleRule: {
     key: 'Postpone',
@@ -162,32 +171,38 @@ const ACTIONS = {
       const request = new DataStorageLifeCycleRulesPostpone({
         datastorageId: details.entityId,
         ruleId: details.storageRuleId,
-        path: details.storagePath
+        path: details.storagePath,
       });
       await request.fetch();
       if (request.error) {
         message.error(request.error);
       }
       hide();
-      callback && callback();
+      if (callback) {
+        callback();
+      }
     },
-    available: () => true
+    available: () => true,
   },
   viewBilling: {
     key: 'View billing',
     actionFn: ({entity, router}) => {
       const query = parseQuotaForNavigation(entity);
-      router && router.push(`/billing/reports${query}`);
+      if (router) {
+        router.push(`/billing/reports${query}`);
+      }
     },
-    available: () => true
+    available: () => true,
   },
   openPoolsUsage: {
     key: 'Open pools usage statistics',
     actionFn: ({router}) => {
-      router && router.push('/cluster/usage');
+      if (router) {
+        router.push('/cluster/usage');
+      }
     },
-    available: () => true
-  }
+    available: () => true,
+  },
 };
 
 const ENTITY_CLASSES = {
@@ -196,7 +211,7 @@ const ENTITY_CLASSES = {
   ISSUE: 'ISSUE',
   QUOTA: 'QUOTA',
   NODE_POOL: 'NODE_POOL',
-  USER: 'USER'
+  USER: 'USER',
 };
 
 const NOTIFICATION_TYPES = {
@@ -219,7 +234,7 @@ const NOTIFICATION_TYPES = {
   STORAGE_QUOTA_EXCEEDING: 'STORAGE_QUOTA_EXCEEDING',
   INACTIVE_USERS: 'INACTIVE_USERS',
   LDAP_BLOCKED_POSTPONED_USERS: 'LDAP_BLOCKED_POSTPONED_USERS',
-  LDAP_BLOCKED_USERS: 'LDAP_BLOCKED_USERS'
+  LDAP_BLOCKED_USERS: 'LDAP_BLOCKED_USERS',
 };
 
 export {ACTIONS, ENTITY_CLASSES, NOTIFICATION_TYPES};

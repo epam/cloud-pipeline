@@ -27,7 +27,7 @@ export default class DataStorageRules {
   _createRuleIsPending = false;
   _deleteRuleIsPending = false;
 
-  constructor (pipelineId) {
+  constructor(pipelineId) {
     makeObservable(this, {
       _createRuleLastError: observable,
       _deleteRuleLastError: observable,
@@ -36,38 +36,44 @@ export default class DataStorageRules {
       pending: computed,
       list: computed,
       createRuleLastError: computed,
-      deleteRuleLastError: computed
+      deleteRuleLastError: computed,
     });
     this.pipelineId = pipelineId;
     this.dataStorageRulesListRequest = new DataStorageRulesList(this.pipelineId);
     this.refresh();
   }
 
-  get pending () {
-    return this.dataStorageRulesListRequest.pending || this._createRuleIsPending || this._deleteRuleIsPending;
+  get pending() {
+    return (
+      this.dataStorageRulesListRequest.pending ||
+      this._createRuleIsPending ||
+      this._deleteRuleIsPending
+    );
   }
 
-  get list () {
+  get list() {
     if (this.dataStorageRulesListRequest.value && this.dataStorageRulesListRequest.value.length) {
       return this.dataStorageRulesListRequest.value;
     } else {
       return [];
     }
   }
-  async refresh () {
+
+  async refresh() {
     if (!this.dataStorageRulesListRequest.pending) {
       await this.dataStorageRulesListRequest.fetch();
     }
   }
 
-  get createRuleLastError () {
+  get createRuleLastError() {
     return this._createRuleLastError;
   }
 
-  get deleteRuleLastError () {
+  get deleteRuleLastError() {
     return this._deleteRuleLastError;
   }
-  async createRule (rule) {
+
+  async createRule(rule) {
     this._createRuleIsPending = true;
     const dataStorageRuleRegisterRequest = new DataStorageRuleRegister();
     if (rule.moveToSts === undefined) {
@@ -78,7 +84,8 @@ export default class DataStorageRules {
     this._createRuleIsPending = false;
     await this.refresh();
   }
-  async deleteRule (rule) {
+
+  async deleteRule(rule) {
     this._deleteRuleIsPending = true;
     const dataStorageRuleDeleteRequest = new DataStorageRuleDelete(rule.pipelineId, rule.fileMask);
     await dataStorageRuleDeleteRequest.fetch();

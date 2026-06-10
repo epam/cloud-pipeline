@@ -17,8 +17,8 @@
 import EdgeExternalUrl from '../../models/cluster/EdgeExternalUrl';
 import cloudRegionsInfo from '../../models/cloudRegions/CloudRegionsInfo';
 
-function getEdgeUrl (regionId) {
-  return new Promise(resolve => {
+function getEdgeUrl(regionId) {
+  return new Promise((resolve) => {
     const request = new EdgeExternalUrl(regionId);
     request
       .fetch()
@@ -33,7 +33,7 @@ function getEdgeUrl (regionId) {
   });
 }
 
-function fetchWithTimeout (url, timeoutMS = 2000) {
+function fetchWithTimeout(url, timeoutMS = 2000) {
   return new Promise((resolve, reject) => {
     const request = new XMLHttpRequest();
     request.withCredentials = true;
@@ -55,7 +55,7 @@ function fetchWithTimeout (url, timeoutMS = 2000) {
   });
 }
 
-function invalidateToken (edgeUrl) {
+async function invalidateToken(edgeUrl) {
   if (!edgeUrl) {
     return Promise.resolve();
   }
@@ -63,38 +63,30 @@ function invalidateToken (edgeUrl) {
     edgeUrl = edgeUrl.slice(0, -1);
   }
   const invalidateUrl = edgeUrl.concat('/invalidate');
-  return new Promise(async (resolve) => {
-    try {
-      await fetchWithTimeout(invalidateUrl);
-    } catch (e) {
-      console.warn(`${invalidateUrl} error: ${e.message}`);
-    } finally {
-      resolve();
+  try {
+    await fetchWithTimeout(invalidateUrl);
+  } catch (e) {
+    console.warn(`${invalidateUrl} error: ${e.message}`);
+  }
+}
+
+async function invalidateRegionEdge(regionId) {
+  try {
+    const url = await getEdgeUrl(regionId);
+    await invalidateToken(url);
+  } catch {
+    // noop
+  }
+}
+
+export default async function invalidateEdgeTokens() {
+  try {
+    await cloudRegionsInfo.fetchIfNeededOrWait();
+    if (cloudRegionsInfo.loaded) {
+      const regionIds = (cloudRegionsInfo.value || []).map((region) => region.regionId);
+      await Promise.all(regionIds.map(invalidateRegionEdge));
     }
-  });
+  } catch {
+    // noop
+  }
 }
-
-function invalidateRegionEdge (regionId) {
-  return new Promise((resolve) => {
-    getEdgeUrl(regionId)
-      .then(url => invalidateToken(url))
-      .then(() => resolve());
-  });
-}
-
-export default function invalidateEdgeTokens () {
-  return new Promise((resolve) => {
-    cloudRegionsInfo.fetchIfNeededOrWait()
-      .then(() => {
-        if (cloudRegionsInfo.loaded) {
-          const regionIds = (cloudRegionsInfo.value || [])
-            .map(region => region.regionId);
-          return Promise.all(regionIds.map(invalidateRegionEdge));
-        } else {
-          throw new Error(cloudRegionsInfo.error);
-        }
-      })
-      .catch(() => {})
-      .then(resolve);
-  });
-};

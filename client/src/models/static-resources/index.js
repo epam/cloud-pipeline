@@ -14,8 +14,6 @@
  *  limitations under the License.
  */
 
-import {API_PATH, SERVER} from '../../config';
-
 let prefix = SERVER + API_PATH;
 if (SERVER.endsWith('/') && API_PATH.startsWith('/')) {
   prefix = SERVER + API_PATH.slice(1);
@@ -24,6 +22,6 @@ if (prefix.endsWith('/')) {
   prefix = prefix.slice(0, -1);
 }
 
-export function getStaticResourceUrl (storageName, path) {
+export function getStaticResourceUrl(storageName, path) {
   return `${prefix}/static-resources/${storageName}/${path}`;
 }

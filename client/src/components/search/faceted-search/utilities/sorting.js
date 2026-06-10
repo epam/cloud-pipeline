@@ -14,23 +14,25 @@
  *  limitations under the License.
  */
 
-const DefaultSorting = [{
-  field: 'name',
-  asc: true
-}];
+const DefaultSorting = [
+  {
+    field: 'name',
+    asc: true,
+  },
+];
 
 const ExcludedSortingKeys = ['description'];
 
-function getAvailableSortingFields (columns = []) {
-  return columns.map(o => o.key);
+function getAvailableSortingFields(columns = []) {
+  return columns.map((o) => o.key);
 }
 
-function correctSorting (sorting, columns = []) {
+function correctSorting(sorting, columns = []) {
   const currentColumnNames = new Set(getAvailableSortingFields(columns));
-  return sorting.filter(o => currentColumnNames.has(o.field));
+  return sorting.filter((o) => currentColumnNames.has(o.field));
 }
 
-function toggleSortingByField (field, sorting = [], cancelable = true) {
+function toggleSortingByField(field, sorting = [], cancelable = true) {
   if (!field) {
     return;
   }
@@ -39,23 +41,23 @@ function toggleSortingByField (field, sorting = [], cancelable = true) {
     return [
       ...sorting,
       {
-        field: field,
-        asc: true
-      }
+        field,
+        asc: true,
+      },
     ];
   }
   if (cancelable && !currentField.asc) {
     return removeSortingByField(field, sorting);
   }
-  return sorting.map(o => o.field === field ? ({field, asc: !o.asc}) : o);
+  return sorting.map((o) => (o.field === field ? {field, asc: !o.asc} : o));
 }
 
-function removeSortingByField (field, sorting = []) {
-  return sorting.filter(sort => sort.field !== field);
+function removeSortingByField(field, sorting = []) {
+  return sorting.filter((sort) => sort.field !== field);
 }
 
-function getSortingPayload (sorting = []) {
-  return sorting.map(sort => ({field: sort.field, order: sort.asc ? 'ASC' : 'DESC'}));
+function getSortingPayload(sorting = []) {
+  return sorting.map((sort) => ({field: sort.field, order: sort.asc ? 'ASC' : 'DESC'}));
 }
 
 export {
@@ -65,5 +67,5 @@ export {
   DefaultSorting,
   ExcludedSortingKeys,
   removeSortingByField,
-  toggleSortingByField
+  toggleSortingByField,
 };

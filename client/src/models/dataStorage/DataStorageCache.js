@@ -19,17 +19,12 @@ import DataStorageItemContent from './DataStorageItemContent';
 import GenerateDownloadUrlRequest from './GenerateDownloadUrl';
 
 class DataStorageCache {
-  static getKey (id, path, version, ...rest) {
-    return [
-      id,
-      path,
-      version,
-      ...rest.map((o) => `${o}`)
-    ].filter(Boolean).join('-');
+  static getKey(id, path, version, ...rest) {
+    return [id, path, version, ...rest.map((o) => `${o}`)].filter(Boolean).join('-');
   }
 
   /* eslint-disable */
-  static getCache (cache, id, path, version, model, ...rest) {
+  static getCache(cache, id, path, version, model, ...rest) {
     const key = DataStorageCache.getKey(id, path, version, ...rest);
     if (!cache.has(key)) {
       cache.set(key, new model(id, path, version, ...rest));
@@ -38,7 +33,7 @@ class DataStorageCache {
   }
 
   /* eslint-enable */
-  static invalidateCache (cache, id, path, version) {
+  static invalidateCache(cache, id, path, version) {
     const key = DataStorageCache.getKey(id, path, version);
     if (cache.has(key)) {
       if (cache.get(key).invalidateCache) {
@@ -50,36 +45,36 @@ class DataStorageCache {
   }
 
   _cache = new Map();
-  getTags (id, path, version) {
+  getTags(id, path, version) {
     return DataStorageCache.getCache(this._cache, id, path, version, DataStorageTags);
   }
 
-  invalidateTags (id, path, version) {
+  invalidateTags(id, path, version) {
     DataStorageCache.invalidateCache(this._cache, id, path, version);
   }
 
   _contentCache = new Map();
-  getContent (id, path, version) {
+  getContent(id, path, version) {
     return DataStorageCache.getCache(this._contentCache, id, path, version, DataStorageItemContent);
   }
 
-  invalidateContent (id, path, version) {
+  invalidateContent(id, path, version) {
     DataStorageCache.invalidateCache(this._contentCache, id, path, version);
   }
 
   _downloadUrlCache = new Map();
-  getDownloadUrl (id, path, version = undefined, reportAccess = false) {
+  getDownloadUrl(id, path, version = undefined, reportAccess = false) {
     return DataStorageCache.getCache(
       this._downloadUrlCache,
       id,
       path,
       version,
       GenerateDownloadUrlRequest,
-      reportAccess
+      reportAccess,
     );
   }
 
-  invalidateDownloadUrl (id, path, version) {
+  invalidateDownloadUrl(id, path, version) {
     DataStorageCache.invalidateCache(this._downloadUrlCache, id, path, version);
   }
 }

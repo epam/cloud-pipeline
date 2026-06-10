@@ -13,17 +13,15 @@ export class GetGroupedObjectStorages extends GetGroupedStorages {
   /**
    * @param {BaseBillingRequestOptions} [options]
    */
-  constructor (options) {
-    const {
-      filters = {}
-    } = options;
+  constructor(options) {
+    const {filters = {}} = options;
     super({
       ...options,
       filters: {
         ...filters,
-        storageTypes: ['OBJECT_STORAGE']
+        storageTypes: ['OBJECT_STORAGE'],
       },
-      loadDetails: true
+      loadDetails: true,
     });
   }
 }
@@ -32,35 +30,22 @@ export class GetGroupedObjectStoragesWithPrevious extends GetGroupedStoragesData
   /**
    * @param {GetGroupedObjectStoragesOptions} options
    */
-  constructor (options = {}) {
-    const {
-      filters = {},
-      pagination,
-      loadCostDetails
-    } = options;
-    const {
-      end,
-      endStrict,
-      previousEnd,
-      previousEndStrict,
-      ...rest
-    } = filters;
+  constructor(options = {}) {
+    const {filters = {}, pagination, loadCostDetails} = options;
+    const {end, endStrict, previousEnd, previousEndStrict, ...rest} = filters;
     const formattedFilters = {
       end: endStrict || end,
       previousEnd: previousEndStrict || previousEnd,
-      ...rest
+      ...rest,
     };
-    super(
-      GetGroupedObjectStorages,
-      {
-        filters: formattedFilters,
-        pagination,
-        loadCostDetails
-      }
-    );
+    super(GetGroupedObjectStorages, {
+      filters: formattedFilters,
+      pagination,
+      loadCostDetails,
+    });
   }
 
-  postprocess (value) {
+  postprocess(value) {
     const {current, previous} = super.postprocess(value);
     return join(current, previous);
   }

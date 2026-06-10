@@ -13,20 +13,16 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-/* eslint-disable max-len */
 
 import {thresholding} from './common';
 
-const {
-  parameters: thresholdingParameters,
-  values: thresholdingValues
-} = thresholding({
+const {parameters: thresholdingParameters, values: thresholdingValues} = thresholding({
   strategy: 'Adaptive',
   thresholdingMethod: 'Robust Background',
   thresholdSmoothingScale: 0,
   lowerOutlierFraction: 0,
   upperOutlierFraction: 0,
-  deviations: 0
+  deviations: 0,
 });
 
 const findNeurites = {
@@ -43,14 +39,14 @@ const findNeurites = {
     'Smoothing scale|float|0.5|IF (enhanceMethod==Tubeness)|ADVANCED|ALIAS smoothingScale',
     'Feature size|units|2|IF (enhanceMethod=="Line structures")|ADVANCED|ALIAS featureSize',
     'Rescale result image|flag|true|ADVANCED|ALIAS rescaleResult',
-    ...thresholdingParameters
+    ...thresholdingParameters,
   ],
   /**
    * @param {AnalysisModule} cpModule
    * @returns {*[]}
    */
   subModules: (cpModule) => {
-    const getValue = prop => cpModule ? cpModule.getParameterValue(prop) : undefined;
+    const getValue = (prop) => (cpModule ? cpModule.getParameterValue(prop) : undefined);
     const rescaleBefore = getValue('rescaleBefore');
     const modules = [];
     let input = '{parent.input}|COMPUTED';
@@ -60,8 +56,8 @@ const findNeurites = {
         module: 'RescaleIntensity',
         values: {
           input,
-          output: '{this.id}_rescaled|COMPUTED'
-        }
+          output: '{this.id}_rescaled|COMPUTED',
+        },
       });
       input = '{prepare.output}|COMPUTED';
     }
@@ -78,8 +74,8 @@ const findNeurites = {
           method: '{parent.enhanceMethod}|COMPUTED',
           smoothingScale: '{parent.smoothingScale}|COMPUTED',
           featureSize: '{parent.featureSize}|COMPUTED',
-          rescaleResult: '{parent.rescaleResult}|COMPUTED'
-        }
+          rescaleResult: '{parent.rescaleResult}|COMPUTED',
+        },
       },
       {
         alias: 'identify',
@@ -92,8 +88,8 @@ const findNeurites = {
           ...thresholdingValues,
           fillHoles: false,
           discardObjectsTouchingBorder: true,
-          discardPrimaryObjects: false
-        }
+          discardPrimaryObjects: false,
+        },
       },
       {
         alias: 'convert',
@@ -101,8 +97,8 @@ const findNeurites = {
         values: {
           input: '{parent.output}|COMPUTED',
           output: '{this.id}_converted|COMPUTED',
-          format: 'Grayscale'
-        }
+          format: 'Grayscale',
+        },
       },
       {
         alias: 'morph',
@@ -111,19 +107,19 @@ const findNeurites = {
           input: '{convert.output}|COMPUTED',
           output: '{this.id}_morph|COMPUTED',
           operation: 'skelpe',
-          numberOfTimes: 'Once'
-        }
+          numberOfTimes: 'Once',
+        },
       },
       {
         alias: 'measureObjectSkeleton',
         module: 'MeasureObjectSkeleton',
         values: {
           seed: '{parent.soma}|COMPUTED',
-          image: '{morph.output}|COMPUTED'
-        }
-      }
+          image: '{morph.output}|COMPUTED',
+        },
+      },
     ];
-  }
+  },
 };
 
 export default findNeurites;

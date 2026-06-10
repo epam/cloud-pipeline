@@ -14,5 +14,5 @@
  * limitations under the License.
  */
 
-const defer = () => new Promise(resolve => process.nextTick(resolve));
+const defer = () => {}; // noop
 export default defer;

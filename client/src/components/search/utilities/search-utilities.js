@@ -16,24 +16,22 @@
 
 const PROMPT_PLACEHOLDER = '{user_prompt}';
 
-function resolvePromptTemplate (query, template) {
+function resolvePromptTemplate(query, template) {
   return template.replace(PROMPT_PLACEHOLDER, query);
 }
 
-export function getSearchPrompt (
+export function getSearchPrompt(
   query = '',
   template = '',
   isAdvanced = false,
-  omitWildcardWrapper = false
+  omitWildcardWrapper = false,
 ) {
   let result = query;
   const hasTemplate = template?.length > 0 && template.includes(PROMPT_PLACEHOLDER);
   if (!isAdvanced && hasTemplate) {
     result = resolvePromptTemplate(query, template);
   } else if (!isAdvanced && !hasTemplate) {
-    result = query && !omitWildcardWrapper
-      ? `*${query}*`
-      : query;
+    result = query && !omitWildcardWrapper ? `*${query}*` : query;
   } else {
     result = query || '';
   }

@@ -17,20 +17,21 @@
 import html2canvas from 'html2canvas';
 
 class ImageGenerator {
-  constructor (containerId) {
-    this.callback = () => new Promise((resolve, reject) => {
-      const container = document.getElementById(containerId);
-      if (!container) {
-        reject(new Error('Error creating export: missing image data'));
-      }
-      html2canvas(container)
-        .then(function (canvas) {
-          const ctx = canvas.getContext('2d');
-          const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          resolve(data);
-        })
-        .catch(reject);
-    });
+  constructor(containerId) {
+    this.callback = () =>
+      new Promise((resolve, reject) => {
+        const container = document.getElementById(containerId);
+        if (!container) {
+          reject(new Error('Error creating export: missing image data'));
+        }
+        html2canvas(container)
+          .then(function (canvas) {
+            const ctx = canvas.getContext('2d');
+            const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            resolve(data);
+          })
+          .catch(reject);
+      });
   }
 
   registerGenerator = (fn) => {
@@ -39,7 +40,7 @@ class ImageGenerator {
 
   generate = (...opts) => {
     return this.callback(...opts);
-  }
+  };
 }
 
 export default ImageGenerator;

@@ -19,11 +19,10 @@ import RemotePost from '../basic/RemotePost';
 class PipelineRunExport extends RemotePost {
   static isJson = false;
 
-  constructor (delimiter = ',', fieldDelimiter = '|') {
+  constructor(delimiter = ',', fieldDelimiter = '|') {
     super();
-    // eslint-disable-next-line max-len
     this.url = `/run/filter/export?delimiter=${encodeURIComponent(delimiter)}&fieldDelimiter=${encodeURIComponent(fieldDelimiter)}`;
-  };
+  }
 }
 
 export default PipelineRunExport;

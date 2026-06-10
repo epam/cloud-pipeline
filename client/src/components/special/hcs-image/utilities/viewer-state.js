@@ -18,14 +18,14 @@ import {makeObservable, observable, computed, action} from 'mobx';
 import HCSBaseState from './base-state';
 
 class DelayedSliceValue {
-  constructor (callback, property, delay = 50) {
+  constructor(callback, property, delay = 50) {
     this.delay = delay;
     this.callback = callback;
     this.property = property;
     this.handle = undefined;
   }
 
-  setValue (value) {
+  setValue(value) {
     this.value = value;
     if (this.handle === undefined) {
       this.handle = setTimeout(() => {
@@ -36,7 +36,7 @@ class DelayedSliceValue {
   }
 }
 
-function shallowCompareArrays (array1, array2) {
+function shallowCompareArrays(array1, array2) {
   if (array1 && array2 && array1.length === array2.length) {
     for (let i = 0; i < array1.length; i++) {
       if (array1[i] !== array2[i]) {
@@ -73,7 +73,7 @@ class ChannelState {
    * Creates channel state
    * @param {ChannelOptions} options
    */
-  constructor (options) {
+  constructor(options) {
     makeObservable(this, {
       index: observable,
       identifier: observable,
@@ -83,7 +83,7 @@ class ChannelState {
       contrastLimits: observable,
       color: observable,
       pixels: observable,
-      update: action
+      update: action,
     });
     this.update(options);
   }
@@ -92,7 +92,7 @@ class ChannelState {
    * Updates channel state
    * @param {ChannelOptions} options
    */
-  update (options) {
+  update(options) {
     const {
       index = 0,
       identifier = 'Channel',
@@ -101,7 +101,7 @@ class ChannelState {
       domain = [0, 1],
       contrastLimits = [0, 1],
       color = [255, 255, 255],
-      pixels
+      pixels,
     } = options;
     this.index = index;
     this.identifier = identifier;
@@ -151,12 +151,12 @@ class ViewerState extends HCSBaseState {
   videoPayload;
   listeners = [];
 
-  get allChannelsLocked () {
+  get allChannelsLocked() {
     const lockedChannels = this.lockedChannels || [];
     return !(this.channels || []).some((channel) => !lockedChannels.includes(channel.name));
   }
 
-  constructor (viewer) {
+  constructor(viewer) {
     super(viewer, 'viewerStateChanged');
     this.xSliceDelayed = new DelayedSliceValue(this.set3D.bind(this), 'xSlice');
     this.ySliceDelayed = new DelayedSliceValue(this.set3D.bind(this), 'ySlice');
@@ -216,7 +216,7 @@ class ViewerState extends HCSBaseState {
       changeZSlice: action,
       changeLensMode: action,
       changeLensChannel: action,
-      changeGlobalZPosition: action
+      changeGlobalZPosition: action,
     });
   }
 
@@ -225,16 +225,16 @@ class ViewerState extends HCSBaseState {
   };
 
   removeEventListener = (listener) => {
-    this.listeners = this.listeners.filter(aListener => aListener !== listener);
+    this.listeners = this.listeners.filter((aListener) => aListener !== listener);
   };
 
   emitOnChange = () => {
     this.listeners
-      .filter(aListener => typeof aListener === 'function')
-      .forEach(aListener => aListener(this));
+      .filter((aListener) => typeof aListener === 'function')
+      .forEach((aListener) => aListener(this));
   };
 
-  onStateChanged (viewer, newState) {
+  onStateChanged(viewer, newState) {
     const {
       loader,
       identifiers = [],
@@ -268,7 +268,7 @@ class ViewerState extends HCSBaseState {
       loader3DIndex: downsamplingMode,
       loadersInfo = [],
       renderingModeIdx: renderingMode,
-      renderingModes3D = []
+      renderingModes3D = [],
     } = newState || {};
     this.pending = pending;
     this.loader = loader;
@@ -293,18 +293,19 @@ class ViewerState extends HCSBaseState {
     this.zSliceEnabled = zSliceEnabled;
     this.selection = globalSelection;
     this.dimensions = globalDimensions;
-    this.imageZPosition = globalSelection && globalSelection.z
-      ? globalSelection.z
-      : 0;
+    this.imageZPosition = globalSelection && globalSelection.z ? globalSelection.z : 0;
     this.downsamplingMode = downsamplingMode;
-    this.downsamplingModes = loadersInfo.filter((dm) => dm.loadable).map((dm) => ({
-      id: dm.loaderIdx,
-      name: dm.loaderIdx === 0 ? 'No downsampling' : `Downsample ${dm.loaderIdx + 1}x`,
-      bytes: dm.bytesPerChannel
-    }));
+    this.downsamplingModes = loadersInfo
+      .filter((dm) => dm.loadable)
+      .map((dm) => ({
+        id: dm.loaderIdx,
+        name: dm.loaderIdx === 0 ? 'No downsampling' : `Downsample ${dm.loaderIdx + 1}x`,
+        bytes: dm.bytesPerChannel,
+      }));
     this.renderingMode = renderingMode;
     this.renderingModes = renderingModes3D;
-    this.volumetricViewerAvailable = this.downsamplingModes.length > 0 && this.renderingModes.length > 0;
+    this.volumetricViewerAvailable =
+      this.downsamplingModes.length > 0 && this.renderingModes.length > 0;
     if (metadata && metadata.Name && /field [\d]+/i.test(metadata.Name)) {
       const e = /field ([\d]+)/i.exec(metadata.Name);
       if (e && e.length) {
@@ -336,7 +337,7 @@ class ViewerState extends HCSBaseState {
         contrastLimits: contrastLimits[c],
         color: colors[c],
         pixels: pixelValues[c],
-        index: c
+        index: c,
       });
     }
     const existing = Math.min(this.channels.length, updatedChannels.length);
@@ -344,10 +345,7 @@ class ViewerState extends HCSBaseState {
       this.channels[i].update(updatedChannels[i]);
     }
     if (updatedChannels.length < this.channels.length) {
-      this.channels.splice(
-        updatedChannels.length,
-        this.channels.length - updatedChannels.length
-      );
+      this.channels.splice(updatedChannels.length, this.channels.length - updatedChannels.length);
     } else if (updatedChannels.length > this.channels.length) {
       for (let i = this.channels.length; i < updatedChannels.length; i++) {
         this.channels.push(new ChannelState(updatedChannels[i]));
@@ -414,7 +412,7 @@ class ViewerState extends HCSBaseState {
         channelName = channel.name;
       }
       this.lockedChannels = this.lockedChannels
-        .filter(c => c !== channelName)
+        .filter((c) => c !== channelName)
         .concat(locked ? [channelName] : []);
       this.viewer.setLockChannels(this.lockedChannels.slice());
     }
@@ -422,9 +420,7 @@ class ViewerState extends HCSBaseState {
 
   setChannelsLocked = (locked) => {
     if (this.viewer && typeof this.viewer.setLockChannels === 'function') {
-      this.lockedChannels = locked
-        ? (this.channels || []).map(c => c.name)
-        : [];
+      this.lockedChannels = locked ? (this.channels || []).map((c) => c.name) : [];
       this.viewer.setLockChannels(locked);
     }
   };
@@ -446,7 +442,7 @@ class ViewerState extends HCSBaseState {
         xSlice: this.xSlice.slice(),
         ySlice: this.ySlice.slice(),
         zSlice: this.zSlice.slice(),
-        ...opts
+        ...opts,
       };
       payload.xSlice = slice(payload.xSlice);
       payload.ySlice = slice(payload.ySlice);
@@ -455,7 +451,7 @@ class ViewerState extends HCSBaseState {
     } else {
       this.viewer.set3D(false);
     }
-  }
+  };
 
   change3dMode = (enabled) => {
     if (this.viewer) {

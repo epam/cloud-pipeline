@@ -1,6 +1,39 @@
-import moment from 'moment-timezone';
+import dayjs from '../../../../../utils/dayjs';
 import TimelineConfigurations from './timeline-steps';
 import {getLabelSizer} from '../text-utilities';
+
+/**
+ * @param {import('dayjs').Dayjs} date
+ * @param {string} unit
+ * @returns {number}
+ */
+function getUnitValue(date, unit) {
+  switch (unit) {
+    case 'year':
+      return date.year();
+    case 'month':
+      return date.month();
+    case 'date':
+      return date.date();
+    case 'hour':
+      return date.hour();
+    case 'minute':
+      return date.minute();
+    case 'second':
+      return date.second();
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * @param {import('dayjs').Dayjs} date
+ * @param {string} unit
+ * @returns {import('dayjs').Dayjs}
+ */
+function startOfUnit(date, unit) {
+  return date.startOf(unit === 'date' ? 'day' : unit);
+}
 
 /**
  * @typedef {Object} CoordinatesOptions
@@ -32,7 +65,7 @@ import {getLabelSizer} from '../text-utilities';
  * @param {CoordinatesStep} tick
  * @returns {number}
  */
-function getTickPriority (tick) {
+function getTickPriority(tick) {
   if (tick.start || tick.end) {
     return 2;
   }
@@ -48,62 +81,50 @@ function getTickPriority (tick) {
  * @param {CoordinatesStep} b
  * @returns {number}
  */
-function ticksSorter (a, b) {
-  return (getTickPriority(b) - getTickPriority(a)) || (a.value - b.value);
+function ticksSorter(a, b) {
+  return getTickPriority(b) - getTickPriority(a) || a.value - b.value;
 }
 
 /**
  * @param {CoordinatesOptions} options
  * @returns {CoordinatesStep[]}
  */
-function buildTimelineCoordinates (options) {
+function buildTimelineCoordinates(options) {
   const {
     axis,
     valueShift = 0,
     stepPixelSize = 40,
     minimumStepPixelSize = 5.0,
     includeStart = true,
-    includeEnd = true
+    includeEnd = true,
   } = options;
   if (!axis || !axis.initialized || axis.pixelsSize <= 0) {
     return [];
   }
   const result = [];
-  const {
-    getLabelSize,
-    releaseContext
-  } = getLabelSizer(options);
+  const {getLabelSize, releaseContext} = getLabelSizer(options);
   const expandConfig = (config) => {
-    const {
-      step,
-      variations = [],
-      unit,
-      ...rest
-    } = config;
+    const {step, variations = [], unit, ...rest} = config;
     return {
       ...rest,
       unit,
       step,
-      getNextStepDate: (currentDate, variation = 1) => moment(currentDate).add(
-        variation,
-        unit === 'date' ? 'day' : unit
-      ),
+      getNextStepDate: (currentDate, variation = 1) =>
+        dayjs(currentDate).add(variation, unit === 'date' ? 'day' : unit),
       variations: [...new Set([1, ...variations])]
         .sort((a, b) => a - b)
         .map((variation) => ({
           variation,
-          stepPxSize: axis.getPixelSizeForValueSize(step * variation)
+          stepPxSize: axis.getPixelSizeForValueSize(step * variation),
         })),
       stepPxSize: axis.getPixelSizeForValueSize(step),
-      labelSize: getLabelSize(config.maxLabel)
+      labelSize: getLabelSize(config.maxLabel),
     };
   };
-  const configs = TimelineConfigurations
-    .map(expandConfig)
-    .reverse();
+  const configs = TimelineConfigurations.map(expandConfig).reverse();
   let mainIndex = configs.findIndex(
-    (config) => config.stepPxSize > minimumStepPixelSize &&
-      config.labelSize * 1.1 <= config.stepPxSize
+    (config) =>
+      config.stepPxSize > minimumStepPixelSize && config.labelSize * 1.1 <= config.stepPxSize,
   );
   if (mainIndex === -1) {
     mainIndex = configs.length - 1;
@@ -116,10 +137,8 @@ function buildTimelineCoordinates (options) {
   }
   mainConfig.main = true;
   const significantUnitChangesPriority = ['year', 'month', 'date', 'hour', 'minute', 'second'];
-  const getUnitsToCheck = (config) => significantUnitChangesPriority.slice(
-    0,
-    significantUnitChangesPriority.indexOf(config.unit)
-  );
+  const getUnitsToCheck = (config) =>
+    significantUnitChangesPriority.slice(0, significantUnitChangesPriority.indexOf(config.unit));
 
   const significantUnitChange = (date, previousDate, units = significantUnitChangesPriority) => {
     if (!previousDate || !date) {
@@ -127,7 +146,7 @@ function buildTimelineCoordinates (options) {
     }
     for (let i = 0; i < units.length; i += 1) {
       const unit = units[i];
-      if (previousDate.get(unit) !== date.get(unit)) {
+      if (getUnitValue(previousDate, unit) !== getUnitValue(date, unit)) {
         return unit;
       }
     }
@@ -139,23 +158,14 @@ function buildTimelineCoordinates (options) {
 
   const addTick = (tickDate, tickOptions) => {
     const tickValue = tickDate.unix();
-    const {
-      config,
-      start = false,
-      end = false,
-      change
-    } = tickOptions || {};
+    const {config, start = false, end = false, change} = tickOptions || {};
     if (
       (!start && !end && tickValue - valueShift < minValue) ||
       result.find((tick) => tick.value === tickValue - valueShift)
     ) {
       return;
     }
-    const {
-      format: mainFormat,
-      smallFormat = mainFormat,
-      main = start || end
-    } = config || {};
+    const {format: mainFormat, smallFormat = mainFormat, main = start || end} = config || {};
     const format = main ? mainFormat : smallFormat;
     let label = tickDate.format(format);
     if (change && main) {
@@ -175,40 +185,37 @@ function buildTimelineCoordinates (options) {
       end,
       config,
       label,
-      size
+      size,
     });
   };
   if (includeStart) {
-    addTick(moment.unix(minValue + valueShift), {
+    addTick(dayjs.unix(minValue + valueShift), {
       config: {
         format: 'D MMM YYYY, HH:mm:ss',
-        unit: 'second'
+        unit: 'second',
       },
-      start: true
+      start: true,
     });
   }
   if (includeEnd) {
-    addTick(moment.unix(maxValue + valueShift), {
+    addTick(dayjs.unix(maxValue + valueShift), {
       config: {
         format: 'D MMM YYYY, HH:mm:ss',
-        unit: 'second'
+        unit: 'second',
       },
-      end: true
+      end: true,
     });
   }
   const iterateWithConfig = (config) => {
     if (config) {
-      const {
-        variation,
-        stepPxSize
-      } = config.variations
-        .find((aVariation) => aVariation.stepPxSize >= stepPixelSize) ||
-      config.variations[config.variations.length - 1];
+      const {variation, stepPxSize} =
+        config.variations.find((aVariation) => aVariation.stepPxSize >= stepPixelSize) ||
+        config.variations[config.variations.length - 1];
       if (stepPxSize < minimumStepPixelSize) {
         return;
       }
       let tick = config.getNearest(minValue + valueShift);
-      let tickDate = moment.unix(tick);
+      let tickDate = dayjs.unix(tick);
       let previous;
       let change;
       let iteration = 0;
@@ -219,7 +226,7 @@ function buildTimelineCoordinates (options) {
         tickDate = config.getNextStepDate(tickDate, variation);
         change = significantUnitChange(tickDate, previous, getUnitsToCheck(config));
         if (change) {
-          tickDate = tickDate.startOf(change);
+          tickDate = startOfUnit(tickDate, change);
         }
         tick = tickDate.unix();
       }
@@ -235,7 +242,7 @@ function buildTimelineCoordinates (options) {
  * @param {CoordinatesOptions} options
  * @returns {CoordinatesStep[]}
  */
-function buildDefaultCoordinates (options) {
+function buildDefaultCoordinates(options) {
   const {
     axis,
     valueShift = 0,
@@ -243,24 +250,22 @@ function buildDefaultCoordinates (options) {
     minimumStepPixelSize = 5.0,
     includeStart = true,
     includeEnd = true,
-    includeZero = true
+    includeZero = true,
   } = options;
   if (!axis || !axis.initialized || axis.pixelsSize <= 0) {
     return [];
   }
   const result = [];
-  const {
-    getLabelSize,
-    releaseContext
-  } = getLabelSizer(options);
+  const {getLabelSize, releaseContext} = getLabelSizer(options);
   const createConfig = (base) => {
     const step = 10 ** base;
     const roundBasePow = base - 2;
     const negative = roundBasePow < 0;
-    const roundBase = negative ? (10 ** Math.abs(roundBasePow)) : (10 ** roundBasePow);
-    const round = (value) => negative
-      ? (Math.round(value * roundBase) / roundBase)
-      : (Math.round(value / roundBase) * roundBase);
+    const roundBase = negative ? 10 ** Math.abs(roundBasePow) : 10 ** roundBasePow;
+    const round = (value) =>
+      negative
+        ? Math.round(value * roundBase) / roundBase
+        : Math.round(value / roundBase) * roundBase;
     return {
       step,
       base,
@@ -272,10 +277,10 @@ function buildDefaultCoordinates (options) {
         .sort((a, b) => a - b)
         .map((variation) => ({
           variation,
-          stepPxSize: axis.getPixelSizeForValueSize(step * variation)
+          stepPxSize: axis.getPixelSizeForValueSize(step * variation),
         })),
       stepPxSize: axis.getPixelSizeForValueSize(step),
-      labelSize: getLabelSize(`${step}`)
+      labelSize: getLabelSize(`${step}`),
     };
   };
   const minValue = axis.correctActualValue(axis.from);
@@ -292,22 +297,15 @@ function buildDefaultCoordinates (options) {
   base -= 1;
   const smallConfig = createConfig(base);
   const addTick = (tickValue, tickOptions) => {
-    const {
-      config,
-      start = false,
-      end = false
-    } = tickOptions || {};
+    const {config, start = false, end = false} = tickOptions || {};
     if (
       (!start && !end && tickValue - valueShift < minValue) ||
       result.find((tick) => tick.value === tickValue - valueShift)
     ) {
       return;
     }
-    const {
-      main = start || end,
-      getLabel = ((o) => `${o}`)
-    } = config || {};
-    let label = getLabel(tickValue);
+    const {main = start || end, getLabel = (o) => `${o}`} = config || {};
+    const label = getLabel(tickValue);
     const size = getLabelSize(label);
     result.push({
       value: tickValue - valueShift,
@@ -315,7 +313,7 @@ function buildDefaultCoordinates (options) {
       start,
       end,
       label,
-      size
+      size,
     });
   };
   if (includeStart) {
@@ -329,12 +327,9 @@ function buildDefaultCoordinates (options) {
   }
   const iterateWithConfig = (config) => {
     if (config) {
-      const {
-        variation,
-        stepPxSize
-      } = config.variations
-        .find((aVariation) => aVariation.stepPxSize >= stepPixelSize) ||
-      config.variations[config.variations.length - 1];
+      const {variation, stepPxSize} =
+        config.variations.find((aVariation) => aVariation.stepPxSize >= stepPixelSize) ||
+        config.variations[config.variations.length - 1];
       if (stepPxSize < minimumStepPixelSize) {
         return;
       }
@@ -357,10 +352,8 @@ function buildDefaultCoordinates (options) {
  * @param {CoordinatesOptions} options
  * @returns {CoordinatesStep[]}
  */
-function buildCoordinates (options) {
-  const {
-    isTimeline = false
-  } = options;
+function buildCoordinates(options) {
+  const {isTimeline = false} = options;
   if (isTimeline) {
     return buildTimelineCoordinates(options);
   }

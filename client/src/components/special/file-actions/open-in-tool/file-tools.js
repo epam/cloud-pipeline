@@ -22,12 +22,12 @@ import MetadataMultiLoad from '../../../../models/metadata/MetadataMultiLoad';
 const METADATA_KEY = 'open-in-files';
 const METADATA_TEMPLATE = 'open-in-files-template';
 
-function getFileTypes (metadata = {}) {
+function getFileTypes(metadata = {}) {
   const {value} = metadata;
   if (!value) {
     return [];
   }
-  return value.split(',').map(type => type.trim().toLowerCase());
+  return value.split(',').map((type) => type.trim().toLowerCase());
 }
 
 class FileTools {
@@ -36,41 +36,37 @@ class FileTools {
   tools = undefined;
   promise = undefined;
 
-  constructor () {
+  constructor() {
     makeObservable(this, {
       loaded: observable,
       error: observable,
       tools: observable,
-      fetch: action
+      fetch: action,
     });
   }
 
-  fetch () {
+  fetch() {
     if (this.promise) {
       return this.promise;
     }
     this.promise = new Promise((resolve) => {
-      const request = new MetadataSearch(
-        'TOOL',
-        METADATA_KEY,
-        ''
-      );
+      const request = new MetadataSearch('TOOL', METADATA_KEY, '');
       request
         .fetch()
         .then(() => {
           if (request.value && request.value.length > 0) {
-            const requestBody = request.value.map(v => v);
+            const requestBody = request.value.map((v) => v);
             return wrapRequest(new MetadataMultiLoad(requestBody));
           } else {
             throw new Error('File tools not found');
           }
         })
-        .then(toolRequest => {
+        .then((toolRequest) => {
           if (toolRequest.loaded) {
             this.tools = (toolRequest.value || []).map((value) => ({
               toolId: value.entity.entityId,
               openInFiles: getFileTypes(value.data[METADATA_KEY]),
-              template: (value.data[METADATA_TEMPLATE] || {}).value
+              template: (value.data[METADATA_TEMPLATE] || {}).value,
             }));
             this.loaded = true;
             this.error = undefined;
@@ -78,7 +74,7 @@ class FileTools {
             throw new Error(request.error || 'File tools not found');
           }
         })
-        .catch(e => {
+        .catch((e) => {
           this.loaded = false;
           this.tools = undefined;
           this.error = e.message;
@@ -88,7 +84,7 @@ class FileTools {
     return this.promise;
   }
 
-  clearCache () {
+  clearCache() {
     this.promise = undefined;
   }
 }

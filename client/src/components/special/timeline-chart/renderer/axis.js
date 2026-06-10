@@ -1,14 +1,10 @@
-import {
-  DEFAULT_FONT_FAMILY,
-  DEFAULT_FONT_SIZE_PT,
-  getLabelSizer
-} from './text-utilities';
+import {DEFAULT_FONT_FAMILY, DEFAULT_FONT_SIZE_PT, getLabelSizer} from './text-utilities';
 import buildCoordinates from './coordinates';
-import { parseDate } from '../../heat-map-chart/utils';
+import {parseDate} from '../../heat-map-chart/utils';
 
 const dpr = window.devicePixelRatio;
 
-function calculateRange (data, accessor) {
+function calculateRange(data, accessor) {
   let min = 0;
   let max = 1;
   const filtered = data.filter(Boolean);
@@ -19,11 +15,11 @@ function calculateRange (data, accessor) {
   }
   return {
     min: Math.min(min, max),
-    max: Math.max(min, max)
+    max: Math.max(min, max),
   };
 }
 
-function calculateRangeFromDatasets (datasets, accessor) {
+function calculateRangeFromDatasets(datasets, accessor) {
   const ranges = datasets.map((dataset) => calculateRange(dataset.data || [], accessor));
   let min = 0;
   let max = 1;
@@ -33,7 +29,7 @@ function calculateRangeFromDatasets (datasets, accessor) {
   }
   return {
     from: Math.min(min, max),
-    to: Math.max(min, max)
+    to: Math.max(min, max),
   };
 }
 
@@ -55,7 +51,7 @@ class RendererAxis {
    * @param {function(*):number} accessor
    * @param {RendererAxisOptions} [options]
    */
-  constructor (accessor, options) {
+  constructor(accessor, options) {
     if (typeof accessor !== 'function') {
       throw new Error('Axis should be initialized with accessor');
     }
@@ -69,7 +65,7 @@ class RendererAxis {
       fontFamily = DEFAULT_FONT_FAMILY,
       vertical = false,
       timeline = false,
-      offset = 0
+      offset = 0,
     } = options || {};
     this.identifier = identifier;
     this.accessor = accessor;
@@ -97,39 +93,39 @@ class RendererAxis {
     this._ticksChanged = false;
   }
 
-  get initialized () {
+  get initialized() {
     return this._initialized;
   }
 
-  get min () {
+  get min() {
     return this._min || 0;
   }
 
-  get max () {
+  get max() {
     return this._max === undefined ? 1 : this._max;
   }
 
-  get from () {
+  get from() {
     return this._from === undefined ? this.min : this._from;
   }
 
-  get to () {
+  get to() {
     return this._to === undefined ? this.max : this._to;
   }
 
-  get actualMin () {
+  get actualMin() {
     return this._actualMin === undefined ? this.min : this._actualMin;
   }
 
-  get actualMax () {
+  get actualMax() {
     return this._actualMax === undefined ? this.max : this._actualMax;
   }
 
-  get center () {
+  get center() {
     return (this.from + this.to) / 2.0;
   }
 
-  set center (value) {
+  set center(value) {
     const diff = value - this.center;
     const size = this.currentSize;
     let to = this.correctValue(this.to + diff);
@@ -144,84 +140,84 @@ class RendererAxis {
     }
   }
 
-  get currentSize () {
+  get currentSize() {
     return this.to - this.from;
   }
 
-  get size () {
+  get size() {
     return this.max - this.min;
   }
 
-  get pixelsOffset () {
+  get pixelsOffset() {
     return this._offset || 0;
   }
 
-  get pixelsSize () {
+  get pixelsSize() {
     return Math.max(this._containerSize - this.pixelsOffset, 0);
   }
 
-  get minimumRatio () {
+  get minimumRatio() {
     return this._minimumRatio;
   }
 
-  set minimumRatio (minimumRatio) {
+  set minimumRatio(minimumRatio) {
     if (this._minimumRatio !== minimumRatio) {
       this._minimumRatio = minimumRatio;
       this.zoom(this.ratio);
     }
   }
 
-  get ratio () {
+  get ratio() {
     if (this.currentSize === 0) {
       return 0;
     }
     return this.pixelsSize / this.currentSize;
   }
 
-  get minRatio () {
+  get minRatio() {
     return this.pixelsSize / this.size;
   }
 
-  get maxRatio () {
+  get maxRatio() {
     return Math.min(this.pixelsSize, this.minimumRatio || Infinity);
   }
 
-  get ticks () {
+  get ticks() {
     return this._ticks || [];
   }
 
-  get ticksChanged () {
+  get ticksChanged() {
     return this._ticksChanged;
   }
 
-  set ticksChanged (changed) {
+  set ticksChanged(changed) {
     this._ticksChanged = changed;
   }
 
-  get largestLabelSize () {
+  get largestLabelSize() {
     return this._largestLabelSize || 0;
   }
 
-  get fontSize () {
+  get fontSize() {
     return this._fontSize;
   }
 
-  get fontFamily () {
+  get fontFamily() {
     return this._fontFamily;
   }
 
-  addScaleChangedListener (listener) {
+  addScaleChangedListener(listener) {
     this.removeScaleChangedListener(listener);
     if (typeof listener === 'function') {
       this._listeners.push(listener);
     }
   }
 
-  removeScaleChangedListener (listener) {
+  removeScaleChangedListener(listener) {
     this._listeners = this._listeners.filter((aListener) => aListener !== listener);
   }
 
-  reportScaleChanged (fromZoom = false, fromDrag = false) {
+  reportScaleChanged(fromZoom = false, fromDrag = false) {
     this._listeners.forEach((listener) => {
       if (typeof listener === 'function') {
         listener(fromZoom, fromDrag);
@@ -229,16 +225,16 @@ class RendererAxis {
     });
   }
 
-  attachTextContext (textContext) {
+  attachTextContext(textContext) {
     this.detachTextContext();
     this._textContext = textContext;
   }
 
-  detachTextContext () {
+  detachTextContext() {
     this._textContext = undefined;
   }
 
-  setPixelsOffset (offset = 0, report = true) {
+  setPixelsOffset(offset = 0, report = true) {
     const newOffset = Math.max(offset, 0);
     if (newOffset !== this._offset) {
       this._offset = newOffset;
@@ -249,11 +245,11 @@ class RendererAxis {
     }
   }
 
-  correctValue (value) {
+  correctValue(value) {
     return Math.max(this.min, Math.min(this.max, value || 0));
   }
 
-  correctActualValue (value) {
+  correctActualValue(value) {
     return Math.max(this.actualMin, Math.min(this.actualMax, value || 0));
   }
 
@@ -262,17 +258,10 @@ class RendererAxis {
    * @param {{extend: boolean?, stickToZero: boolean?}|boolean} [options]
    * @returns {{from: number, to: number}}
    */
-  extendRange (range, options) {
-    let {
-      from,
-      to
-    } = range || {};
-    const {
-      extend = this.extendArea,
-      stickToZero = this.stickToZero
-    } = typeof options === 'boolean'
-      ? {extend: options}
-      : (options || {});
+  extendRange(range, options) {
+    let {from, to} = range || {};
+    const {extend = this.extendArea, stickToZero = this.stickToZero} =
+      typeof options === 'boolean' ? {extend: options} : options || {};
     if (from !== undefined && to !== undefined) {
       const tmp = from;
       from = Math.min(from, to);
@@ -303,7 +292,7 @@ class RendererAxis {
     }
     return {
       from,
-      to
+      to,
     };
   }
 
@@ -311,26 +300,17 @@ class RendererAxis {
    * @param {*[]} datasets
    * @param {{shift: number, report: boolean}} options
    */
-  update (datasets = [], options) {
+  update(datasets = [], options) {
     this.stopSetRangeAnimation();
-    const {
-      shift = 0,
-      report = true
-    } = options || {};
+    const {shift = 0, report = true} = options || {};
     this._valueShift = shift;
-    let {
-      from: actualMin,
-      to: actualMax
-    } = calculateRangeFromDatasets(datasets, this.accessor);
+    let {from: actualMin, to: actualMax} = calculateRangeFromDatasets(datasets, this.accessor);
     if (this.stickToZero) {
       actualMin = Math.min(actualMin, 0);
     }
-    const {
-      from: min,
-      to: max
-    } = this.extendRange({
+    const {from: min, to: max} = this.extendRange({
       from: actualMin,
-      to: actualMax
+      to: actualMax,
     });
     this._min = min;
     this._max = max;
@@ -348,25 +328,18 @@ class RendererAxis {
     }
   }
 
-  updateLargestLabelSize (report = true) {
+  updateLargestLabelSize(report = true) {
     if (this._textContext) {
-      const {
-        getLabelSize,
-        releaseContext
-      } = getLabelSizer({
+      const {getLabelSize, releaseContext} = getLabelSizer({
         textCanvasContext: this._textContext,
         fontSize: this._fontSize,
         fontFamily: this._fontFamily,
-        verticalAxis: !this._vertical
+        verticalAxis: !this._vertical,
       });
       if (this._timeline) {
-        this._largestLabelSize = getLabelSize(`WWWWWWWWW WWWW`) / dpr; // largest: September YYYY
+        this._largestLabelSize = getLabelSize('WWWWWWWWW WWWW') / dpr; // largest: September YYYY
       } else {
-        const range = Math.max(
-          Math.abs(this.max),
-          Math.abs(this.min),
-          0
-        );
+        const range = Math.max(Math.abs(this.max), Math.abs(this.min), 0);
         const getBase = (o) => {
           if (o === 0) {
             return 1;
@@ -377,10 +350,7 @@ class RendererAxis {
           }
           return Math.ceil(b);
         };
-        const maxDigits = Math.max(
-          getBase(range),
-          getBase(range / 10)
-        ) + 1;
+        const maxDigits = Math.max(getBase(range), getBase(range / 10)) + 1;
         let s = '0';
         for (let i = 0; i < maxDigits; i++) {
           s += '0';
@@ -396,7 +366,7 @@ class RendererAxis {
     return false;
   }
 
-  updateTicks () {
+  updateTicks() {
     this._ticks = [];
     if (this._textContext) {
       this._ticks = buildCoordinates({
@@ -408,7 +378,7 @@ class RendererAxis {
         fontFamily: this._fontFamily,
         verticalAxis: this._vertical,
         includeStart: this._timeline,
-        includeEnd: this._timeline
+        includeEnd: this._timeline,
       });
       this.ticksChanged = true;
       return true;
@@ -416,7 +386,7 @@ class RendererAxis {
     return false;
   }
 
-  resize (containerSize, report = true) {
+  resize(containerSize, report = true) {
     const newContainerSize = Math.max(containerSize || 0, 1);
     if (this._containerSize !== newContainerSize) {
       this._containerSize = newContainerSize;
@@ -429,65 +399,66 @@ class RendererAxis {
     return false;
   }
 
-  getPixelForValue (value, ratio = this.ratio) {
+  getPixelForValue(value, ratio = this.ratio) {
     if (this.reverted) {
-      return this._containerSize - (
-        this.pixelsOffset + this.getPixelSizeForValueSize(value - this.from, ratio)
+      return (
+        this._containerSize -
+        (this.pixelsOffset + this.getPixelSizeForValueSize(value - this.from, ratio))
       );
     }
     return this.pixelsOffset + this.getPixelSizeForValueSize(value - this.from, ratio);
   }
 
-  getValueForPixel (pixel, ratio = this.ratio) {
+  getValueForPixel(pixel, ratio = this.ratio) {
     if (ratio === 0) {
       return this.from;
     }
     if (this.reverted) {
-      return this.from + this.getValueSizeForPixelSize(
-        this._containerSize - pixel - this.pixelsOffset,
-        ratio
+      return (
+        this.from +
+        this.getValueSizeForPixelSize(this._containerSize - pixel - this.pixelsOffset, ratio)
       );
     }
     return this.from + this.getValueSizeForPixelSize(pixel - this.pixelsOffset, ratio);
   }
 
-  getPixelSizeForValueSize (valueSize, ratio = this.ratio) {
+  getPixelSizeForValueSize(valueSize, ratio = this.ratio) {
     return valueSize * ratio;
   }
 
-  getValueSizeForPixelSize (pixelSize, ratio = this.ratio) {
+  getValueSizeForPixelSize(pixelSize, ratio = this.ratio) {
     if (ratio === 0) {
       return 0;
     }
     return pixelSize / ratio;
   }
 
-  valueFitsRange (value) {
+  valueFitsRange(value) {
     return value >= this.from && value <= this.to;
   }
 
-  zoom (scale, anchor = this.center) {
-    const scaleCorrected = Math.max(
-      this.minRatio,
-      Math.min(this.maxRatio, scale)
-    );
+  zoom(scale, anchor = this.center) {
+    const scaleCorrected = Math.max(this.minRatio, Math.min(this.maxRatio, scale));
     if (scaleCorrected <= 0) {
       return false;
     }
     const anchorPoint = this.correctValue(anchor);
     const newFrom = this.correctValue(
-      anchorPoint - this.getPixelSizeForValueSize(anchorPoint - this.from) / scaleCorrected
+      anchorPoint - this.getPixelSizeForValueSize(anchorPoint - this.from) / scaleCorrected,
     );
     const newTo = this.correctValue(
-      anchorPoint + this.getPixelSizeForValueSize(this.to - anchorPoint) / scaleCorrected
+      anchorPoint + this.getPixelSizeForValueSize(this.to - anchorPoint) / scaleCorrected,
     );
-    return this.setRange({
-      from: newFrom,
-      to: newTo
-    }, {fromZoom: true});
+    return this.setRange(
+      {
+        from: newFrom,
+        to: newTo,
+      },
+      {fromZoom: true},
+    );
   }
 
-  zoomBy (factor = 0, anchor = this.center) {
+  zoomBy(factor = 0, anchor = this.center) {
     return this.zoom(this.ratio * (1.0 + factor), anchor);
   }
 
@@ -496,20 +467,10 @@ class RendererAxis {
    * @param {{extend: boolean?, animate: boolean?}} [options]
    * @returns {boolean}
    */
-  setRange (range, options = {}) {
-    const {
-      extend = false,
-      animate = false,
-      fromZoom = false
-    } = options || {};
-    const {
-      from: _from = this._from,
-      to: _to = this._to
-    } = range || {};
-    let {
-      from: newFrom,
-      to: newTo
-    } = this.extendRange({from: _from, to: _to}, extend);
+  setRange(range, options = {}) {
+    const {extend = false, animate = false, fromZoom = false} = options || {};
+    const {from: _from = this._from, to: _to = this._to} = range || {};
+    const {from: newFrom, to: newTo} = this.extendRange({from: _from, to: _to}, extend);
     if (newFrom !== this._from || newTo !== this._to) {
       this.stopSetRangeAnimation();
       if (animate) {
@@ -525,7 +486,7 @@ class RendererAxis {
     return false;
   }
 
-  clearRange () {
+  clearRange() {
     if (this._from !== undefined || this._to !== undefined) {
       this.stopSetRangeAnimation();
       this._from = undefined;
@@ -537,10 +498,10 @@ class RendererAxis {
     return false;
   }
 
-  startSetRangeAnimation (from, to, fromZoom) {
+  startSetRangeAnimation(from, to, fromZoom) {
     this.stopSetRangeAnimation();
-    let currentFrom = this.from;
-    let currentTo = this.to;
+    const currentFrom = this.from;
+    const currentTo = this.to;
     if (
       from === undefined ||
       to === undefined ||
@@ -563,7 +524,7 @@ class RendererAxis {
       if (tick === undefined || prev === undefined) {
         duration += step;
       } else {
-        duration += (tick - prev);
+        duration += tick - prev;
       }
       prev = tick;
       if (duration > DURATION_MS) {
@@ -585,7 +546,7 @@ class RendererAxis {
     frame();
   }
 
-  stopSetRangeAnimation () {
+  stopSetRangeAnimation() {
     cancelAnimationFrame(this.animationRAF);
   }
 }

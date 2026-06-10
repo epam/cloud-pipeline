@@ -16,13 +16,11 @@
 
 import QuotaGroups from '../../../quotas/utilities/quota-groups';
 
-export function getQuotaGroup (request) {
+export function getQuotaGroup(request) {
   if (!request || !request.filters) {
     return undefined;
   }
-  const {
-    resourceType
-  } = request.filters;
+  const {resourceType} = request.filters;
   if (/^storage$/i.test(resourceType)) {
     return QuotaGroups.storages;
   }

@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 export default class ToolsGroupListWithIssues extends Remote {
-  constructor (id) {
+  constructor(id) {
     super();
     this.url = `/toolGroup/${id}/issuesCount`;
   }

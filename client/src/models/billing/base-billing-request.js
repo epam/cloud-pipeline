@@ -13,7 +13,7 @@ export const KEYS = {
   size: 'size',
   avgSize: 'avgSize',
   oldVersionSize: 'oldVersionSize',
-  oldVersionAvgSize: 'oldVersionAvgSize'
+  oldVersionAvgSize: 'oldVersionAvgSize',
 };
 
 /**
@@ -36,7 +36,7 @@ const cache = new TimedOutCache();
  * @param {BaseBillingRequest} billingRequest
  * @returns {Promise<void>}
  */
-export async function preFetchBillingRequest (billingRequest) {
+export async function preFetchBillingRequest(billingRequest) {
   if (!billingRequest.loadBillingDataFromCache()) {
     await billingRequest.fetch();
   }
@@ -60,22 +60,19 @@ export default class BaseBillingRequest extends RemotePost {
   /**
    * @param {BaseBillingRequestOptions} [options]
    */
-  constructor (options = {}) {
+  constructor(options = {}) {
     super();
     makeObservable(this, {
-      loadBillingDataFromCache: action
+      loadBillingDataFromCache: action,
     });
     const {
       filters,
       loadDetails = false,
       pagination: paginationOptions,
-      loadCostDetails = false
+      loadCostDetails = false,
     } = options;
     let pagination;
-    if (
-      !!paginationOptions &&
-      `${paginationOptions}`.toLowerCase() === 'true'
-    ) {
+    if (!!paginationOptions && `${paginationOptions}`.toLowerCase() === 'true') {
       pagination = {};
       pagination.pageSize = 10;
       pagination.pageNum = 0;
@@ -102,22 +99,24 @@ export default class BaseBillingRequest extends RemotePost {
     this.loadCostDetails = loadCostDetails;
   }
 
-  get totalPages () {
+  get totalPages() {
     if (!this._value) {
       return 0;
     }
     const firstKey = Object.keys(this._value).shift();
-    return this._value && this._value[firstKey] && this._value[firstKey].groupingInfo &&
+    return this._value &&
+      this._value[firstKey] &&
+      this._value[firstKey].groupingInfo &&
       this._value[firstKey].groupingInfo.totalPages
-      ? +this._value[firstKey].groupingInfo.totalPages : 0;
+      ? +this._value[firstKey].groupingInfo.totalPages
+      : 0;
   }
 
-  prepareBody () {
-    const asArray = (value) => Array.isArray(value) || isObservableArray(value) ? value : [value];
-    this.body.from = this.filters && this.filters.start
-      ? this.filters.start.toISOString() : undefined;
-    this.body.to = this.filters && this.filters.end
-      ? this.filters.end.toISOString() : undefined;
+  prepareBody() {
+    const asArray = (value) => (Array.isArray(value) || isObservableArray(value) ? value : [value]);
+    this.body.from =
+      this.filters && this.filters.start ? this.filters.start.toISOString() : undefined;
+    this.body.to = this.filters && this.filters.end ? this.filters.end.toISOString() : undefined;
     this.body.filters = extendFiltersWithFilterBy({}, this.filters ? this.filters.filterBy : {});
     if (this.filters && this.filters.user) {
       this.body.filters.owner = asArray(this.filters.user);
@@ -164,23 +163,18 @@ export default class BaseBillingRequest extends RemotePost {
     }
   }
 
-  postprocess (value) {
+  postprocess(value) {
     const items = super.postprocess(value);
     const costKeys = [
       KEYS.cost,
       KEYS.oldVersionCost,
       KEYS.accumulativeCost,
-      KEYS.accumulativeOldVersionCost
+      KEYS.accumulativeOldVersionCost,
     ];
-    const sizeKeys = [
-      KEYS.size,
-      KEYS.avgSize,
-      KEYS.oldVersionSize,
-      KEYS.oldVersionAvgSize
-    ];
+    const sizeKeys = [KEYS.size, KEYS.avgSize, KEYS.oldVersionSize, KEYS.oldVersionAvgSize];
     const processTier = (tier) => {
       const result = {
-        ...tier
+        ...tier,
       };
       const processKeys = (keys, mapper) => {
         keys.forEach((aKey) => {
@@ -194,14 +188,10 @@ export default class BaseBillingRequest extends RemotePost {
       processKeys(sizeKeys, bytesToGbs);
       return result;
     };
-    const processCost = (value) => value !== undefined && !Number.isNaN(Number(value))
-      ? costMapper(Number(value))
-      : undefined;
+    const processCost = (value) =>
+      value !== undefined && !Number.isNaN(Number(value)) ? costMapper(Number(value)) : undefined;
     return (items || []).map((item) => {
-      const {
-        costDetails = {},
-        ...rest
-      } = item;
+      const {costDetails = {}, ...rest} = item;
       const {
         tiers = [],
         computeCost,
@@ -213,7 +203,7 @@ export default class BaseBillingRequest extends RemotePost {
       const processedTiers = tiers.map(processTier);
       if (processedTiers.length > 0) {
         const total = {
-          storageClass: 'TOTAL'
+          storageClass: 'TOTAL',
         };
         tiers.forEach((aTier) => {
           const processKeys = (keys) => {
@@ -236,17 +226,19 @@ export default class BaseBillingRequest extends RemotePost {
           diskCost: processCost(diskCost),
           accumulatedComputeCost: processCost(accumulatedComputeCost),
           accumulatedDiskCost: processCost(accumulatedDiskCost),
-          tiers: processedTiers
-            .reduce((result, tier) => ({
+          tiers: processedTiers.reduce(
+            (result, tier) => ({
               ...result,
-              [tier.storageClass]: tier
-            }), {})
-        }
+              [tier.storageClass]: tier,
+            }),
+            {},
+          ),
+        },
       };
     });
   }
 
-  getRequestKey () {
+  getRequestKey() {
     const {
       from = '',
       to = '',
@@ -257,7 +249,7 @@ export default class BaseBillingRequest extends RemotePost {
       interval = '',
       grouping = '',
       pageNum = '',
-      pageSize = ''
+      pageSize = '',
     } = this.body || {};
     const {
       resource_type: resourceType = [],
@@ -266,13 +258,9 @@ export default class BaseBillingRequest extends RemotePost {
       owner = [],
       groups = [],
       billing_center: billingCenter = [],
-      cloudRegionId = []
+      cloudRegionId = [],
     } = filters;
-    const {
-      aggregate = '',
-      metric = '',
-      desc = false
-    } = order;
+    const {aggregate = '', metric = '', desc = false} = order;
     const asArrayKey = (value) => {
       if (value && (Array.isArray(value) || isObservableArray(value))) {
         return value.join(',');
@@ -297,11 +285,11 @@ export default class BaseBillingRequest extends RemotePost {
       asArrayKey(cloudRegionId),
       aggregate,
       metric,
-      desc
+      desc,
     ].join('|');
   }
 
-  loadBillingDataFromCache () {
+  loadBillingDataFromCache() {
     this.prepareBody();
     const key = this.getRequestKey();
     if (cache.has(key)) {
@@ -314,7 +302,8 @@ export default class BaseBillingRequest extends RemotePost {
     }
     return false;
   }
-  async fetch () {
+
+  async fetch() {
     this.prepareBody();
     this._pending = true;
     await defer();
@@ -326,7 +315,8 @@ export default class BaseBillingRequest extends RemotePost {
       }
     }
   }
-  async fetchPage (pageNum) {
+
+  async fetchPage(pageNum) {
     if (this.paginated) {
       this.pageNum = pageNum;
       await this.fetch();

@@ -29,10 +29,10 @@
  *
  * // This will output a structured object representation of the logical expression.
  */
-export function parseCriteria (criteria = '') {
+export function parseCriteria(criteria = '') {
   criteria = criteria.trim();
 
-  function tokenize (input) {
+  function tokenize(input) {
     const tokens = [];
     const regex = /\s*(\(|\)|\bNOT\b|\bAND\b|\bOR\b|==|!=|=|!|"[^"]*"|'[^']*'|[^\s=!()]+)\s*/gi;
     let match;
@@ -42,12 +42,12 @@ export function parseCriteria (criteria = '') {
     return tokens;
   }
 
-  function parseExpression (tokens) {
-    let token = tokens.shift();
+  function parseExpression(tokens) {
+    const token = tokens.shift();
     if (!token) return null;
 
     if (token === '(') {
-      let expr = parseLogical(tokens);
+      const expr = parseLogical(tokens);
       tokens.shift(); // Remove closing ')'
       return expr;
     }
@@ -56,14 +56,14 @@ export function parseCriteria (criteria = '') {
       return {type: 'logical', operator: 'NOT', operands: [parseExpression(tokens)]};
     }
 
-    let param = token;
+    const param = token;
     if (tokens[0] === '=' || tokens[0] === '==') {
       tokens.shift();
       let value = tokens.shift();
       if (value.startsWith("'") || value.startsWith('"')) {
         value = value.slice(1, -1);
       }
-      return {type: 'expression', parameter: param, value: value};
+      return {type: 'expression', parameter: param, value};
     }
     if (tokens[0] === '!=') {
       tokens.shift();
@@ -73,21 +73,21 @@ export function parseCriteria (criteria = '') {
       }
       return {
         type: 'logical',
-        operands: [{type: 'expression', parameter: param, value: value}],
-        operator: 'NOT'
+        operands: [{type: 'expression', parameter: param, value}],
+        operator: 'NOT',
       };
     }
     return {type: 'expression', parameter: param, value: true};
   }
 
-  function parseLogical (tokens) {
+  function parseLogical(tokens) {
     let left = parseExpression(tokens);
 
     while (tokens.length > 0) {
-      let op = tokens[0].toUpperCase();
+      const op = tokens[0].toUpperCase();
       if (op !== 'AND' && op !== 'OR') break;
       tokens.shift();
-      let right = parseExpression(tokens);
+      const right = parseExpression(tokens);
       left = {type: 'logical', operator: op, operands: [left, right]};
     }
     return left;
@@ -96,16 +96,15 @@ export function parseCriteria (criteria = '') {
   return parseLogical(tokenize(criteria));
 }
 
-function getRunParameterValue (run, parameter) {
-  const {
-    pipelineRunParameters = []
-  } = run || {};
-  const p = pipelineRunParameters
-    .find((pp) => pp.name && pp.name.toLowerCase() === parameter.toLowerCase());
+function getRunParameterValue(run, parameter) {
+  const {pipelineRunParameters = []} = run || {};
+  const p = pipelineRunParameters.find(
+    (pp) => pp.name && pp.name.toLowerCase() === parameter.toLowerCase(),
+  );
   return p ? p.value : undefined;
 }
 
-function criteriaMatches (run, criteria, verbose = false) {
+function criteriaMatches(run, criteria, verbose = false) {
   if (!criteria) {
     return false;
   }
@@ -115,9 +114,7 @@ function criteriaMatches (run, criteria, verbose = false) {
   if (typeof criteria !== 'object') {
     return false;
   }
-  const {
-    type
-  } = criteria;
+  const {type} = criteria;
   if (type && typeof type === 'string') {
     switch (type.toLowerCase()) {
       case 'logical':
@@ -131,11 +128,8 @@ function criteriaMatches (run, criteria, verbose = false) {
   return false;
 }
 
-function logicalCriteriaMatches (run, logical, verbose = false) {
-  const {
-    operator,
-    operands = []
-  } = logical || {};
+function logicalCriteriaMatches(run, logical, verbose = false) {
+  const {operator, operands = []} = logical || {};
   if (!operator) {
     return false;
   }
@@ -183,11 +177,8 @@ function logicalCriteriaMatches (run, logical, verbose = false) {
   }
 }
 
-function expressionMatches (run, expression, verbose = false) {
-  const {
-    parameter,
-    value = true
-  } = expression || {};
+function expressionMatches(run, expression, verbose = false) {
+  const {parameter, value = true} = expression || {};
   if (!parameter) {
     if (verbose) {
       console.log('parameter not specified');
@@ -221,20 +212,17 @@ function expressionMatches (run, expression, verbose = false) {
   }
 }
 
-export function checkCriteria (run, parsedCriteria, options = {}) {
+export function checkCriteria(run, parsedCriteria, options = {}) {
   if (!run || !parsedCriteria) {
     return false;
   }
-  const {
-    verbose = false,
-    action: name
-  } = options || {};
+  const {verbose = false, action: name} = options || {};
   try {
     if (verbose) {
       console.groupCollapsed(
         name
           ? `run #${run.id} action "${name}" availability check`
-          : `run #${run.id} action availability check`
+          : `run #${run.id} action availability check`,
       );
     }
     const result = criteriaMatches(run, parsedCriteria, verbose);
@@ -253,7 +241,7 @@ export function checkCriteria (run, parsedCriteria, options = {}) {
   }
 }
 
-export function parseRunActionCriteria (action, criteria) {
+export function parseRunActionCriteria(action, criteria) {
   if (criteria === undefined || criteria === null) {
     return () => true;
   }

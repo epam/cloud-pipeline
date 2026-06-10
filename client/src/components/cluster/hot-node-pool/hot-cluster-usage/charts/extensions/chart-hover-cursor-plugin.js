@@ -27,7 +27,7 @@ const plugin = {
       return handler(event, true);
     }
     return handler(event, false);
-  }
+  },
 };
 
 export {id, plugin};

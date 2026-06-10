@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-export default function parseRunServiceUrl (url) {
+export default function parseRunServiceUrl(url) {
   if (!url || !url.length) {
     return [];
   }
   try {
     return JSON.parse(url);
   } catch (__) {
-    return url.split(';').map(part => ({
+    return url.split(';').map((part) => ({
       name: null,
-      url: part
+      url: part,
     }));
   }
 }

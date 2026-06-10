@@ -16,21 +16,25 @@
 
 const parseQueryParameters = (routing) => {
   return routing.location.search
-    ? routing.location.search.substring(1, routing.location.search.length)
-      .split('&').map(s => {
-        const parts = s.split('=');
-        let value = parts[1];
-        for (let i = 2; i < parts.length; i++) {
-          value += `=${parts[i]}`;
-        }
-        return {
-          key: parts[0],
-          value: value
-        };
-      }).reduce((obj, current) => {
-        obj[current.key] = current.value;
-        return obj;
-      }, {}) : {};
+    ? routing.location.search
+        .substring(1, routing.location.search.length)
+        .split('&')
+        .map((s) => {
+          const parts = s.split('=');
+          let value = parts[1];
+          for (let i = 2; i < parts.length; i++) {
+            value += `=${parts[i]}`;
+          }
+          return {
+            key: parts[0],
+            value,
+          };
+        })
+        .reduce((obj, current) => {
+          obj[current.key] = current.value;
+          return obj;
+        }, {})
+    : {};
 };
 
 export default parseQueryParameters;

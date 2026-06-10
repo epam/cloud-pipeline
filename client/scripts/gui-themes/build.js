@@ -14,4 +14,4 @@
  *  limitations under the License.
  */
 
-require('./generate-palette');
+import './generate-palette.js';

@@ -19,8 +19,8 @@ import RemotePost from '../basic/RemotePost';
 export default class RunsChartsInfo extends RemotePost {
   static defaultValue = {};
 
-  constructor () {
+  constructor() {
     super();
-    this.url = `/runs/charts`;
-  };
+    this.url = '/runs/charts';
+  }
 }

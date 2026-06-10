@@ -14,14 +14,11 @@
  * limitations under the License.
  */
 
-export {
-  ContentIssuesMetadataPanel,
-  ContentMetadataPanel
-} from './SplitPanel';
+export {ContentIssuesMetadataPanel, ContentMetadataPanel} from './SplitPanel';
 
 export {
   CONTENT_PANEL_KEY,
   METADATA_PANEL_KEY,
   ISSUES_PANEL_KEY,
-  PREVIEW_PANEL_KEY
+  PREVIEW_PANEL_KEY,
 } from './SplitPanel';

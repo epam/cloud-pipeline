@@ -16,11 +16,7 @@
 
 import {computed, observable, makeObservable} from 'mobx';
 import ObjectTypes from './object-types';
-import {
-  checkObjectsHOC,
-  checkObjectsWithParentHOC,
-  HIDDEN_OBJECTS_INJECTION
-} from './hoc';
+import {checkObjectsHOC, checkObjectsWithParentHOC, HIDDEN_OBJECTS_INJECTION} from './hoc';
 import treeFilter from './tree-filter';
 import injectTreeFilter from './inject-tree-filter';
 import * as toolsFilters from './tools-filter';
@@ -30,28 +26,28 @@ class HiddenObjects {
   preferences;
   authenticatedUserInfo;
 
-  constructor (preferences, authenticatedUserInfo) {
+  constructor(preferences, authenticatedUserInfo) {
     makeObservable(this, {
       preferences: observable,
       authenticatedUserInfo: observable,
       loaded: computed,
-      hiddenObjects: computed
+      hiddenObjects: computed,
     });
     this.preferences = preferences;
     this.authenticatedUserInfo = authenticatedUserInfo;
-    function treeFilterDetached (...opts) {
+    function treeFilterDetached(...opts) {
       return treeFilter(this)(...opts);
     }
-    function toolsFilterDetached (...opts) {
+    function toolsFilterDetached(...opts) {
       return toolsFilters.toolsFilter(this)(...opts);
     }
-    function toolGroupsFilterDetached (...opts) {
+    function toolGroupsFilterDetached(...opts) {
       return toolsFilters.toolGroupsFilter(this)(...opts);
     }
-    function toolRegistriesFilterDetached (...opts) {
+    function toolRegistriesFilterDetached(...opts) {
       return toolsFilters.toolRegistriesFilter(this)(...opts);
     }
-    function toolTreeFilterDetached (...opts) {
+    function toolTreeFilterDetached(...opts) {
       return toolsFilters.toolsTreeFilter(this)(...opts);
     }
     this.treeFilter = treeFilterDetached.bind(this);
@@ -61,62 +57,60 @@ class HiddenObjects {
     this.toolTreeFilter = toolTreeFilterDetached.bind(this);
   }
 
-  fetchIfNeededOrWait () {
+  fetchIfNeededOrWait() {
     return Promise.all([
       this.preferences.fetchIfNeededOrWait(),
-      this.authenticatedUserInfo.fetchIfNeededOrWait()
+      this.authenticatedUserInfo.fetchIfNeededOrWait(),
     ]);
   }
 
-  fetch () {
-    return Promise.all([
-      this.preferences.fetch(),
-      this.authenticatedUserInfo.fetch()
-    ]);
+  fetch() {
+    return Promise.all([this.preferences.fetch(), this.authenticatedUserInfo.fetch()]);
   }
 
-  get loaded () {
+  get loaded() {
     return this.preferences?.loaded && this.authenticatedUserInfo?.loaded;
   }
 
-  get hiddenObjects () {
+  get hiddenObjects() {
     if (this.authenticatedUserInfo.loaded && this.authenticatedUserInfo.value.admin) {
       return {};
     }
     const o = this.preferences?.hiddenObjects;
     return Object.entries(o || {})
       .map(([key, value]) => ({
-        [key]: new Set(Array.from(value).map(o => String(o).toLowerCase()))
+        [key]: new Set(Array.from(value).map((o) => String(o).toLowerCase())),
       }))
       .reduce((acc, cur) => ({...acc, ...cur}), {});
   }
 
-  isHidden (type, identifier) {
-    if (type && identifier && this.hiddenObjects[type] &&
-      this.hiddenObjects[type].has(String(identifier))) {
-    }
-    return type && identifier && this.hiddenObjects[type] &&
-      this.hiddenObjects[type].has(String(identifier));
+  isHidden(type, identifier) {
+    return (
+      type &&
+      identifier &&
+      this.hiddenObjects[type] &&
+      this.hiddenObjects[type].has(String(identifier))
+    );
   }
 
-  isStorageHidden (identifier) {
+  isStorageHidden(identifier) {
     return this.isHidden(ObjectTypes.storage, identifier);
   }
 
-  isPipelineHidden (identifier) {
+  isPipelineHidden(identifier) {
     return this.isHidden(ObjectTypes.pipeline, identifier);
   }
 
-  isFolderHidden (identifier) {
+  isFolderHidden(identifier) {
     return this.isHidden(ObjectTypes.folder, identifier);
   }
 
-  isParentHidden (object, folders = []) {
+  isParentHidden(object, folders = []) {
     if (!object) {
       return false;
     }
     const {parentId, parentFolderId} = object;
-    const parentFolder = (folders || []).find(o => +(o.id) === (parentFolderId || parentId));
+    const parentFolder = (folders || []).find((o) => +o.id === (parentFolderId || parentId));
     if (parentFolder) {
       if (this.isFolderHidden(parentFolder.id)) {
         return true;
@@ -128,13 +122,14 @@ class HiddenObjects {
 }
 
 HiddenObjects.checkPipelines = checkObjectsHOC(ObjectTypes.pipeline);
-HiddenObjects.checkPipelineVersions =
-  checkObjectsWithParentHOC(ObjectTypes.pipelineVersion, false);
+HiddenObjects.checkPipelineVersions = checkObjectsWithParentHOC(ObjectTypes.pipelineVersion, false);
 HiddenObjects.checkConfigurations = checkObjectsHOC(ObjectTypes.configuration);
 HiddenObjects.checkStorages = checkObjectsHOC(ObjectTypes.storage);
 HiddenObjects.checkFolders = checkObjectsHOC(ObjectTypes.folder);
-HiddenObjects.checkMetadataClassesWithParent =
-  checkObjectsWithParentHOC(ObjectTypes.metadataClass, true);
+HiddenObjects.checkMetadataClassesWithParent = checkObjectsWithParentHOC(
+  ObjectTypes.metadataClass,
+  true,
+);
 HiddenObjects.checkMetadataFolders = checkObjectsHOC(ObjectTypes.metadataFolder);
 HiddenObjects.checkTools = checkObjectsHOC(ObjectTypes.tool);
 HiddenObjects.checkToolGroups = checkObjectsHOC(ObjectTypes.toolGroup);

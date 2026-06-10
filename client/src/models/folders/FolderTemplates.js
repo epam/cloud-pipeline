@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 class FolderTemplates extends Remote {
-  constructor () {
+  constructor() {
     super();
     this.url = '/templates/folder/list';
   }

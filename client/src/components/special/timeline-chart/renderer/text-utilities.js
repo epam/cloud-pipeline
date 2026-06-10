@@ -1,5 +1,5 @@
-// eslint-disable-next-line max-len
-const DEFAULT_FONT_FAMILY = '-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,\'Helvetica Neue\',Arial,\'Noto Sans\',sans-serif,\'Apple Color Emoji\',\'Segoe UI Emoji\',\'Segoe UI Symbol\',\'Noto Color Emoji\'';
+const DEFAULT_FONT_FAMILY =
+  "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,'Noto Sans',sans-serif,'Apple Color Emoji','Segoe UI Emoji','Segoe UI Symbol','Noto Color Emoji'";
 const DEFAULT_FONT_SIZE_PT = 8;
 
 const dpr = window.devicePixelRatio;
@@ -16,12 +16,12 @@ const dpr = window.devicePixelRatio;
  * @param {LabelSizerOptions} options
  * @returns {{getLabelSize: (function(label:string):number), releaseContext: (function:void)}}
  */
-function getLabelSizer (options) {
+function getLabelSizer(options) {
   const {
     textCanvasContext,
     fontSize = DEFAULT_FONT_SIZE_PT,
     fontFamily = DEFAULT_FONT_FAMILY,
-    verticalAxis = false
+    verticalAxis = false,
   } = options || {};
   const getLabelSize = (label) => {
     let width, height;
@@ -30,13 +30,13 @@ function getLabelSizer (options) {
       width = measurement.width;
       height = measurement.fontBoundingBoxAscent + measurement.fontBoundingBoxDescent;
     }
-    return (verticalAxis ? height : width);
+    return verticalAxis ? height : width;
   };
   if (textCanvasContext) {
     textCanvasContext.save();
     textCanvasContext.font = `${fontSize * dpr}pt ${fontFamily}`;
   }
-  function releaseContext () {
+  function releaseContext() {
     if (textCanvasContext) {
       textCanvasContext.restore();
     }
@@ -44,8 +44,4 @@ function getLabelSizer (options) {
   return {getLabelSize, releaseContext};
 }
 
-export {
-  DEFAULT_FONT_FAMILY,
-  DEFAULT_FONT_SIZE_PT,
-  getLabelSizer
-};
+export {DEFAULT_FONT_FAMILY, DEFAULT_FONT_SIZE_PT, getLabelSizer};

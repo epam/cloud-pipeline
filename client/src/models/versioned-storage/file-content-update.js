@@ -18,13 +18,13 @@ import VSFileContent from './file-content';
 import VSRemote from './base/remote';
 
 export default class VSFileContentUpdate extends VSRemote {
-  constructor (runId, storageId, file, contents) {
+  constructor(runId, storageId, file, contents) {
     super(runId);
     this.contents = contents;
     this.url = VSFileContent.getUrl(runId, storageId, file);
   }
 
-  async doRegularFetch () {
+  async doRegularFetch() {
     const {headers = {}} = this.constructor.fetchOptions || {};
     return new Promise((resolve, reject) => {
       const request = new XMLHttpRequest();
@@ -47,10 +47,9 @@ export default class VSFileContentUpdate extends VSRemote {
         }
       };
       request.open('POST', `${this.constructor.prefix}${this.url}`);
-      Object.entries(headers)
-        .forEach(([header, value]) => {
-          request.setRequestHeader(header, value);
-        });
+      Object.entries(headers).forEach(([header, value]) => {
+        request.setRequestHeader(header, value);
+      });
       request.send(this.contents);
     });
   }

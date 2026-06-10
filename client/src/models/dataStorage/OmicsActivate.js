@@ -17,7 +17,7 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class OmicsActivate extends RemotePost {
-  constructor (id) {
+  constructor(id) {
     super();
     this.url = `/omicsstore/${id}/activate`;
   }

@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-import { RepositoryTypes } from '../../components/special/git-repository-control';
+import {RepositoryTypes} from '../../components/special/git-repository-control';
 import Remote from '../basic/Remote';
 
 export default class PipelineGitRepositories extends Remote {
-  constructor (namespaceId, repositoryType = RepositoryTypes.GitHubApp) {
+  constructor(namespaceId, repositoryType = RepositoryTypes.GitHubApp) {
     super();
     const encoded = encodeURIComponent(namespaceId);
     this.url = `/pipeline/git/${encoded}/repositories?type=${encodeURIComponent(repositoryType)}`;

@@ -15,16 +15,11 @@
  */
 
 const HcsImageViewer = window.HcsImageViewer;
-const {
-  Viewer,
-  constants = {},
-  fetchSourceInfo,
-  defaultChannelsColors
-} = HcsImageViewer || {};
+const {Viewer, constants = {}, fetchSourceInfo, defaultChannelsColors} = HcsImageViewer || {};
 
 const DEFAULT_CHANNELS_COLORS_KEY = 'HCS-default-colors';
 const DEFAULT_CHANNELS_COLORS = {
-  'DAPI': [9, 113, 255],
+  DAPI: [9, 113, 255],
   'Alexa 405': [9, 2, 196],
   'Alexa 488': [8, 202, 8],
   'Alexa 555': [180, 240, 15],
@@ -34,10 +29,10 @@ const DEFAULT_CHANNELS_COLORS = {
   'Alexa 680': [118, 10, 3],
   'Alexa 750': [0, 228, 228],
   'Alexa 790': [161, 1, 209],
-  'GFP': [54, 255, 0]
+  GFP: [54, 255, 0],
 };
 
-function readChannelsColorsFromStore () {
+function readChannelsColorsFromStore() {
   try {
     return JSON.parse(localStorage.getItem(DEFAULT_CHANNELS_COLORS_KEY)) || DEFAULT_CHANNELS_COLORS;
   } catch (_) {
@@ -45,20 +40,20 @@ function readChannelsColorsFromStore () {
   }
 }
 
-function writeChannelsColorsToStore (config, colors) {
+function writeChannelsColorsToStore(config, colors) {
   localStorage.setItem(DEFAULT_CHANNELS_COLORS_KEY, JSON.stringify(colors));
 }
 
-function initialize () {
+function initialize() {
   const colors = {
     ...DEFAULT_CHANNELS_COLORS,
-    ...(readChannelsColorsFromStore())
+    ...readChannelsColorsFromStore(),
   };
   try {
     defaultChannelsColors.update(colors);
     defaultChannelsColors.addEventListener(
       defaultChannelsColors.Events.defaultColorsUpdated,
-      writeChannelsColorsToStore
+      writeChannelsColorsToStore,
     );
   } catch (e) {
     console.warn(`[HCS] Error setting default channels colors: ${e.message}`);

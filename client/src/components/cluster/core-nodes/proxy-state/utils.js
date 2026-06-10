@@ -14,16 +14,14 @@
  * limitations under the License.
  */
 
-import moment from 'moment-timezone';
-import {
-  HISTOGRAM_TYPES
-} from '../../../../models/cluster/ClusterNetworkUsageFilter';
+import dayjs from '../../../../utils/dayjs';
+import {HISTOGRAM_TYPES} from '../../../../models/cluster/ClusterNetworkUsageFilter';
 
-export function getDatasetStyles (key, reportThemes) {
+export function getDatasetStyles(key, reportThemes) {
   const common = {
     maxBarThickness: 50,
     showFlag: false,
-    textColor: reportThemes.textColor
+    textColor: reportThemes.textColor,
   };
   return {
     backgroundColor: reportThemes.lightPrevious,
@@ -31,46 +29,46 @@ export function getDatasetStyles (key, reportThemes) {
     flagColor: reportThemes.previous,
     textColor: reportThemes.textColor,
     borderWidth: 2,
-    ...common
+    ...common,
   };
 }
 
-export function getDatasetOptions (key) {
+export function getDatasetOptions(key) {
   if (key === HISTOGRAM_TYPES.time) {
     return {
-      type: 'line'
+      type: 'line',
     };
   }
   if (key === HISTOGRAM_TYPES.resource) {
     return {
-      type: 'horizontalBar'
+      type: 'horizontalBar',
     };
   }
-};
-
-export function checkDateInRange (date, start = undefined, end = undefined) {
-  const dateToCheck = moment.utc(date).startOf('D').add(1, 'D');
-  if (start && moment.utc(start).startOf('D') > dateToCheck) {
-    return true;
-  }
-  if (end && moment.utc(end).endOf('D') < dateToCheck) {
-    return true;
-  }
-  return moment.utc().endOf('D') < dateToCheck;
 }
 
-export function formatLabel (type, value, filters = {}) {
+export function checkDateInRange(date, start = undefined, end = undefined) {
+  const dateToCheck = dayjs.utc(date).startOf('day').add(1, 'day');
+  if (start && dayjs.utc(start).startOf('day') > dateToCheck) {
+    return true;
+  }
+  if (end && dayjs.utc(end).endOf('day') < dateToCheck) {
+    return true;
+  }
+  return dayjs.utc().endOf('day') < dateToCheck;
+}
+
+export function formatLabel(type, value, filters = {}) {
   const {from, to} = filters;
   if (type === HISTOGRAM_TYPES.time) {
     let format = 'YYYY-MM-DD HH:mm:ss';
     if (from && to) {
-      const fromMoment = moment.utc(from);
-      const toMoment = moment.utc(to);
-      if (toMoment.diff(fromMoment, 'hours') < 24) {
+      const fromDayjs = dayjs.utc(from);
+      const toDayjs = dayjs.utc(to);
+      if (toDayjs.diff(fromDayjs, 'hour') < 24) {
         format = 'HH:mm:ss';
       }
     }
-    return moment.utc(value).format(format);
+    return dayjs.utc(value).format(format);
   }
   return value;
 }

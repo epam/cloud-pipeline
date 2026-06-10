@@ -1,0 +1,66 @@
+/*
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+.container {
+  padding: 5px;
+  overflow: hidden;
+}
+
+.container .badges-container {
+  padding: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.title-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.title {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.z-item {
+  margin: 2px;
+  padding: 3px;
+  cursor: pointer;
+  user-select: none;
+  text-align: center;
+}
+
+.z-item.active {
+  cursor: default;
+}
+
+.slider-container {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+  padding: 5px 0;
+}
+
+.slider-container :global(.ant-slider-mark-text) {
+  white-space: nowrap;
+}

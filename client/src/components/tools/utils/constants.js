@@ -35,7 +35,7 @@ export const ScanStatusDescriptionsFn = (latest = false, allowedToExecute = fals
     againstSecurityPolicy,
     notScanned,
     vulnerabilitiesNumberExceeds,
-    blackListed
+    blackListed,
   };
 };
 
@@ -43,15 +43,15 @@ export const LaunchMessages = (gracePeriodEnd) => {
   const extra = gracePeriodEnd
     ? `, but you can launch it during the grace period (till ${gracePeriodEnd})`
     : '';
-  let launchNotScanned = `The version shall be scanned for security vulnerabilities${extra}. Run anyway?`;
-  let vulnerabilitiesNumberExceeds = `The version has a critical number of vulnerabilities${extra}. Run anyway?`;
-  let againstSecurityPolicy = `The version doesn't meet security policy${extra}. Run anyway?`;
-  let blackListed = 'The version is on the black list.';
+  const launchNotScanned = `The version shall be scanned for security vulnerabilities${extra}. Run anyway?`;
+  const vulnerabilitiesNumberExceeds = `The version has a critical number of vulnerabilities${extra}. Run anyway?`;
+  const againstSecurityPolicy = `The version doesn't meet security policy${extra}. Run anyway?`;
+  const blackListed = 'The version is on the black list.';
   return {
     launchNotScanned,
     vulnerabilitiesNumberExceeds,
     againstSecurityPolicy,
-    blackListed
+    blackListed,
   };
 };
 
@@ -59,5 +59,5 @@ export const ScanStatuses = {
   completed: 'COMPLETED',
   pending: 'PENDING',
   failed: 'FAILED',
-  notScanned: 'NOT_SCANNED'
+  notScanned: 'NOT_SCANNED',
 };

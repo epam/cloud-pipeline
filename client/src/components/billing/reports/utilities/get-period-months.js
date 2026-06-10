@@ -14,26 +14,26 @@
  *  limitations under the License.
  */
 
-import moment from 'moment-timezone';
+import dayjs from '../../../../utils/dayjs';
 
-export default function getPeriodMonths (periodInfo) {
+export default function getPeriodMonths(periodInfo) {
   if (!periodInfo) {
     return null;
   }
   const {start, endStrict} = periodInfo;
-  const startOfMonth = moment(start).startOf('M');
-  const endOfMonth = moment(endStrict).endOf('M');
-  if (endOfMonth.diff(startOfMonth, 'M') > 0) {
-    let d = moment(start);
+  const startOfMonth = dayjs(start).startOf('month');
+  const endOfMonth = dayjs(endStrict).endOf('month');
+  if (endOfMonth.diff(startOfMonth, 'month') > 0) {
+    let d = dayjs(start);
     const periods = [];
-    while (d < endOfMonth) {
-      const start = moment(d);
-      let end = moment(d).endOf('M');
-      if (end > endStrict) {
+    while (d.valueOf() < endOfMonth.valueOf()) {
+      const periodStart = dayjs(d);
+      let end = dayjs(d).endOf('month');
+      if (end.valueOf() > endStrict.valueOf()) {
         end = endStrict;
       }
-      periods.push({start, end, endStrict: end});
-      d = d.add(1, 'M').startOf('M');
+      periods.push({start: periodStart, end, endStrict: end});
+      d = d.add(1, 'month').startOf('month');
     }
     return periods;
   }

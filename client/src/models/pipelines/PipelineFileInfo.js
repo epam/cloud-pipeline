@@ -17,12 +17,11 @@
 import Remote from '../basic/Remote';
 
 class PipelineFileInfo extends Remote {
-  constructor (id, version, path) {
+  constructor(id, version, path) {
     super();
-    const query = [
-      version && `version=${version}`,
-      `path=${encodeURIComponent(path)}`
-    ].filter(Boolean).join('&');
+    const query = [version && `version=${version}`, `path=${encodeURIComponent(path)}`]
+      .filter(Boolean)
+      .join('&');
     this.url = `/pipeline/${id}/path?${query}`;
   }
 }

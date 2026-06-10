@@ -13,7 +13,6 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-/* eslint-disable max-len */
 
 const expandOrShrinkObjects = {
   name: 'ExpandOrShrinkObjects',
@@ -24,8 +23,8 @@ const expandOrShrinkObjects = {
     'Name the output objects|string|REQUIRED|ALIAS output',
     'Select the operation|["Shrink objects to a point","Expand objects until touching","Add partial dividing lines between objects","Shrink objects by a specified number of pixels","Expand objects by a specified number of pixels","Skeletonize each object","Remove spurs"]|ALIAS operation',
     'Size by which to expand or shrink|units|PARAMETER Number of pixels by which to expand or shrink|ALIAS size|IF operation=="Shrink objects by a specified number of pixels" OR operation=="Expand objects by a specified number of pixels" OR operation=="Remove spurs"',
-    'Fill holes in objects|flag|false|ALIAS shrink|PARAMETER Fill holes in objects so that all objects shrink to a single point|IF operation=="Shrink objects to a point" OR operation=="Shrink objects by a specified number of pixels"'
-  ]
+    'Fill holes in objects|flag|false|ALIAS shrink|PARAMETER Fill holes in objects so that all objects shrink to a single point|IF operation=="Shrink objects to a point" OR operation=="Shrink objects by a specified number of pixels"',
+  ],
 };
 
 export default expandOrShrinkObjects;

@@ -20,18 +20,18 @@ import {ToolTagsCache} from './LoadToolTags';
 const HIDDEN_OBJECTS_CACHE_ID = Symbol('Hidden objects filter cache');
 
 class DockerRegistriesTree extends Remote {
-  constructor () {
+  constructor() {
     super();
     this.url = '/dockerRegistry/loadTree';
     this.toolTags = new ToolTagsCache();
   }
 
-  update (value) {
+  update(value) {
     this[HIDDEN_OBJECTS_CACHE_ID] = undefined;
     super.update(value);
   }
 
-  invalidateCache () {
+  invalidateCache() {
     super.invalidateCache();
     this.toolTags.invalidateAllToolsTags();
   }

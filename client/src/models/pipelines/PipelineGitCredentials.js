@@ -17,8 +17,8 @@
 import Remote from '../basic/Remote';
 
 export default class PipelineGitCredentials extends Remote {
-  constructor () {
+  constructor() {
     super();
     this.url = '/pipeline/git/credentials?duration=365';
-  };
+  }
 }

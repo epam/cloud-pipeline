@@ -20,26 +20,27 @@ import generateSharingList from './extend-sharing-list';
 
 const ServiceTypes = {
   objectStorage: 'OBJECT_STORAGE',
-  fileShare: 'FILE_SHARE'
+  fileShare: 'FILE_SHARE',
 };
 
-function wrapRequest (request, payload) {
+function wrapRequest(request, payload) {
   return new Promise((resolve, reject) => {
-    request.send(payload)
+    request
+      .send(payload)
       .then(() => resolve(request))
       .catch(reject);
   });
 }
 
-export default function createSharedStorage (
+export default function createSharedStorage(
   preferences,
   sharedStorage,
   sharedFolder,
-  sharedItems = []
+  sharedItems = [],
 ) {
   if (!preferences) {
     return Promise.reject(
-      new Error('Shared storages system directory not specified (no preferences)')
+      new Error('Shared storages system directory not specified (no preferences)'),
     );
   }
   if (!sharedStorage) {
@@ -59,18 +60,18 @@ export default function createSharedStorage (
             sourceStorageId: sharedStorage.id,
             linkingMasks: generateSharingList(
               sharedItems,
-              sharedStorage ? sharedStorage.delimiter : undefined
+              sharedStorage ? sharedStorage.delimiter : undefined,
             ),
             parentFolderId: preferences.sharedStoragesSystemDirectory,
             path,
             shared: true,
             serviceType,
-            regionId: serviceType === ServiceTypes.objectStorage && sharedStorage.regionId
-              ? sharedStorage.regionId
-              : undefined,
-            storagePolicy: serviceType === ServiceTypes.objectStorage
-              ? {versioningEnabled: false}
-              : undefined
+            regionId:
+              serviceType === ServiceTypes.objectStorage && sharedStorage.regionId
+                ? sharedStorage.regionId
+                : undefined,
+            storagePolicy:
+              serviceType === ServiceTypes.objectStorage ? {versioningEnabled: false} : undefined,
           };
           return wrapRequest(request, payload);
         } else {

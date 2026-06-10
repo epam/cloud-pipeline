@@ -17,14 +17,14 @@
 import VSRemote from './base/remote';
 
 export default class VSConflictDiff extends VSRemote {
-  constructor (runId, storageId, file, options = {}) {
+  constructor(runId, storageId, file, options = {}) {
     super(runId);
     const {
       raw = false,
       linesCount = undefined,
       mergeInProgress = false,
       remote = false,
-      revision
+      revision,
     } = options;
     this.runId = runId;
     this.storageId = storageId;
@@ -34,13 +34,9 @@ export default class VSConflictDiff extends VSRemote {
       linesCount !== undefined && linesCount !== null && `lines_count=${linesCount}`,
     ];
     if (mergeInProgress) {
-      query.push(
-        revision && `revision=${revision}`
-      );
+      query.push(revision && `revision=${revision}`);
     } else {
-      query.push(
-        `remote=${!!remote}`
-      );
+      query.push(`remote=${!!remote}`);
     }
     let filteredQuery = query.filter(Boolean).join('&');
     if (filteredQuery.length) {

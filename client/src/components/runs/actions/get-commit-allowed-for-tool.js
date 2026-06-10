@@ -16,33 +16,29 @@
 
 import LoadToolVersionSettings from '../../../models/tools/LoadToolVersionSettings';
 
-export default function getCommitAllowedForTool (toolId, version = 'latest') {
+export default function getCommitAllowedForTool(toolId, version = 'latest') {
   if (!toolId) {
     return Promise.resolve(false);
   }
   return new Promise((resolve) => {
     const request = new LoadToolVersionSettings(toolId, version);
-    request.fetch()
+    request
+      .fetch()
       .then(() => {
         if (request.error) {
           resolve(false);
         }
       })
       .then(() => {
-        if (
-          request.loaded &&
-          request.value &&
-          request.value[0]
-        ) {
-          const allowCommit = request.value[0].allowCommit === undefined
-            ? true
-            : request.value[0].allowCommit;
+        if (request.loaded && request.value && request.value[0]) {
+          const allowCommit =
+            request.value[0].allowCommit === undefined ? true : request.value[0].allowCommit;
           resolve(allowCommit);
         } else {
           resolve(true);
         }
       })
-      .catch(e => {
+      .catch((e) => {
         resolve(false);
       });
   });

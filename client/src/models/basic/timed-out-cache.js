@@ -17,14 +17,14 @@
 const second = 1000;
 
 class TimedOutCache extends Map {
-  constructor (timeoutSeconds = 5 * 60) {
+  constructor(timeoutSeconds = 5 * 60) {
     super();
     this.timeout = timeoutSeconds;
     this.cache = new Map();
     this.timeouts = new Map();
   }
 
-  clear () {
+  clear() {
     for (const handle of this.timeouts.values()) {
       clearTimeout(handle);
     }
@@ -32,13 +32,13 @@ class TimedOutCache extends Map {
     return super.clear();
   }
 
-  delete (key) {
+  delete(key) {
     const invalidate = this.timeouts.get(key);
     clearTimeout(invalidate);
     return super.delete(key);
   }
 
-  set (key, value) {
+  set(key, value) {
     this.delete(key);
     const clear = () => this.delete(key);
     this.timeouts.set(key, setTimeout(clear, this.timeout * second));

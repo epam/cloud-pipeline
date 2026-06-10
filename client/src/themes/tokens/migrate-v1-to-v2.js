@@ -20,11 +20,11 @@ import {SemanticTokens, SemanticTokensByCssVar} from './semantic-keys';
 
 export const SCHEMA_VERSION = 2;
 
-function isV2 (theme) {
+function isV2(theme) {
   if (!theme || !theme.configuration) return false;
   if (Number(theme.schemaVersion) === SCHEMA_VERSION) return true;
   // Heuristic: if any key starts with "--cp-" treat as v2.
-  return Object.keys(theme.configuration).some(k => k.startsWith('--cp-'));
+  return Object.keys(theme.configuration).some((k) => k.startsWith('--cp-'));
 }
 
 /**
@@ -40,12 +40,12 @@ function isV2 (theme) {
  * @param {Object} theme
  * @returns {Object} v2-shaped theme
  */
-export function migrateV1ToV2 (theme) {
+export function migrateV1ToV2(theme) {
   if (!theme || typeof theme !== 'object') return theme;
   if (isV2(theme)) {
     return {
       ...theme,
-      schemaVersion: SCHEMA_VERSION
+      schemaVersion: SCHEMA_VERSION,
     };
   }
   const legacyConfig = theme.configuration || {};
@@ -63,7 +63,7 @@ export function migrateV1ToV2 (theme) {
     configuration: semantic,
     // Configuration already includes merged `extends` chain; getTheme must
     // not run getThemeConfiguration again (would corrupt e.g. dark-dimmed).
-    fullyResolved: true
+    fullyResolved: true,
   };
 }
 
@@ -76,7 +76,7 @@ export function migrateV1ToV2 (theme) {
  * @param {Object<string, string>} v2Configuration
  * @returns {Object<string, string>}
  */
-export function projectV2ToLegacy (v2Configuration) {
+export function projectV2ToLegacy(v2Configuration) {
   if (!v2Configuration) return {};
   const legacy = {};
   for (const [cssVar, value] of Object.entries(v2Configuration)) {
@@ -94,10 +94,10 @@ export function projectV2ToLegacy (v2Configuration) {
  * @param {Object<string, string>} v2Configuration
  * @returns {Object<string, string>}
  */
-export function withLegacyAliases (v2Configuration) {
+export function withLegacyAliases(v2Configuration) {
   return {
     ...projectV2ToLegacy(v2Configuration),
-    ...v2Configuration
+    ...v2Configuration,
   };
 }
 

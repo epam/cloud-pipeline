@@ -1,61 +1,50 @@
 import React from 'react';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
-import styles from './scheme-parameter-input.css';
+import styles from './scheme-parameter-input.module.css';
 import {renderParameter} from '../renderers';
-import {checkEntryPropertyValid} from "./utilities";
+import {checkEntryPropertyValid} from './utilities';
 
-function LaunchFormSchemeParameterEntryProp (props) {
-  const {
-    className,
-    style,
-    disabled,
-    entry,
-    property,
-    onChange
-  } = props;
+function LaunchFormSchemeParameterEntryProp(props) {
+  const {className, style, disabled, entry, property, onChange} = props;
   const entryProperty = entry[property.name] || {};
-  const {
-    value
-  } = entryProperty;
+  const {value} = entryProperty;
   const valid = checkEntryPropertyValid(entry, property);
-  const param = property ? {
-    ...property,
-    config: property,
-    valid
-  } : undefined;
+  const param = property
+    ? {
+        ...property,
+        config: property,
+        valid,
+      }
+    : undefined;
   const onChangePropValue = (o) => {
     const {value: newValue} = o || {};
     const result = {
       ...entry,
       [property.name]: {
         value: newValue,
-        type: property.type
-      }
+        type: property.type,
+      },
     };
     if (onChange) {
       onChange(result);
     }
   };
-  const parameterComponent = param ? renderParameter({
-    className: classNames({'cp-error': !valid}),
-    disabled,
-    parameter: param,
-    onChange: onChangePropValue,
-    value,
-    style: {
-      width: '100%'
-    }
-  }) : undefined;
+  const parameterComponent = param
+    ? renderParameter({
+        className: classNames({'cp-error': !valid}),
+        disabled,
+        parameter: param,
+        onChange: onChangePropValue,
+        value,
+        style: {
+          width: '100%',
+        },
+      })
+    : undefined;
   if (!parameterComponent) {
     return (
-      <td
-        key={property.name}
-        className={
-          classNames(className, styles.parameterCol)
-        }
-        style={style}
-      >
+      <td key={property.name} className={classNames(className, styles.parameterCol)} style={style}>
         {'\u00A0'}
       </td>
     );
@@ -63,14 +52,12 @@ function LaunchFormSchemeParameterEntryProp (props) {
   return (
     <td
       key={property.name}
-      className={
-        classNames(
-          className,
-          'cp-divider left right',
-          styles.parameterCol,
-          styles[`parameter-type-${property.type}`]
-        )
-      }
+      className={classNames(
+        className,
+        'cp-divider left right',
+        styles.parameterCol,
+        styles[`parameter-type-${property.type}`],
+      )}
       style={style}
     >
       {parameterComponent}
@@ -90,7 +77,7 @@ LaunchFormSchemeParameterEntryProp.propTypes = {
   currentProjectMetadata: PropTypes.object,
   currentMetadataEntity: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
   rootEntityId: PropTypes.string,
-  metadataAutoComplete: PropTypes.bool
+  metadataAutoComplete: PropTypes.bool,
 };
 
 export default LaunchFormSchemeParameterEntryProp;

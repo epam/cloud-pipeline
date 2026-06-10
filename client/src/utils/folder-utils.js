@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-function findFolderRecursive (folders, pathSegments) {
+function findFolderRecursive(folders, pathSegments) {
   if (!folders || folders.length === 0 || pathSegments.length === 0) {
     return undefined;
   }
@@ -29,7 +29,7 @@ function findFolderRecursive (folders, pathSegments) {
   return findFolderRecursive(folder.childFolders, remainingSegments);
 }
 
-export function findFolderFromTree (path, pipelinesLibrary) {
+export function findFolderFromTree(path, pipelinesLibrary) {
   if (!pipelinesLibrary || !path) {
     return undefined;
   }
@@ -56,7 +56,7 @@ export function findFolderFromTree (path, pipelinesLibrary) {
  * @param {Object} pipelinesLibrary
  * @returns {number|undefined}
  */
-export function getFolderIdFromTree (pathOrId, pipelinesLibrary) {
+export function getFolderIdFromTree(pathOrId, pipelinesLibrary) {
   try {
     if (pathOrId === undefined || !pipelinesLibrary) {
       return undefined;

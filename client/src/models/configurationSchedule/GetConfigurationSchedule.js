@@ -17,12 +17,12 @@
 import Remote from '../basic/Remote';
 
 class GetConfigurationSchedule extends Remote {
-  constructor (configurationId) {
+  constructor(configurationId) {
     super();
     this.url = `/schedule/configuration/${configurationId}`;
-  };
+  }
 
-  postprocess (value) {
+  postprocess(value) {
     return (value.payload || []).map(({id, ...rest}) => ({scheduleId: id, ...rest}));
   }
 }

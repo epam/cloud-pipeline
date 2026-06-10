@@ -1,0 +1,308 @@
+/*
+ * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import React from 'react';
+import {
+  ForwardOutlined,
+  PlayCircleOutlined,
+  LinkOutlined,
+  CloseCircleOutlined,
+  ExportOutlined,
+  CodeOutlined,
+  ForkOutlined,
+  PauseCircleOutlined,
+  ExclamationCircleOutlined,
+} from '@ant-design/icons';
+import {canPauseRun, canStopRun} from '../../../../runs/actions';
+import VSActions from '../../../../versioned-storages/vs-actions';
+import MultizoneUrl from '../../../../special/multizone-url';
+import {parseRunServiceUrlConfiguration} from '../../../../../utils/multizone';
+import {MAINTENANCE_MODE_DISCLAIMER} from '../../../../../models/preferences/PreferencesLoad';
+import DataStorageLink from '../../../../special/data-storage-link';
+import roleModel from '../../../../../utils/roleModel';
+import {runSupportsContinue} from '../../../../runs/actions/continue-run';
+import {checkRunActionAvailable, runActions} from '../../../../runs/actions/actions-availability';
+
+const DTS_ENVIRONMENT = 'DTS';
+
+export default function ({multiZoneManager, vsActions, preferences}, callbacks, disabled = false) {
+  let maintenanceMode = false;
+  if (preferences && preferences.loaded) {
+    maintenanceMode = preferences.systemMaintenanceMode;
+  }
+  return function (run) {
+    const actions = [];
+    switch (run.status.toUpperCase()) {
+      case 'FAILURE':
+      case 'STOPPED':
+      case 'SUCCESS':
+        if (checkRunActionAvailable(run, runActions.rerun)) {
+          actions.push({
+            title: 'RERUN',
+            icon: PlayCircleOutlined,
+            action: callbacks ? callbacks.run : undefined,
+          });
+        }
+        if (runSupportsContinue(run) && callbacks && callbacks.continue) {
+          actions.push({
+            title: 'CONTINUE',
+            icon: ForwardOutlined,
+            action: callbacks ? callbacks.continue : undefined,
+          });
+        }
+        break;
+      case 'RUNNING': {
+        if (run.initialized && run.serviceUrl) {
+          const regionedUrls = parseRunServiceUrlConfiguration(run.serviceUrl);
+          if (regionedUrls.length === 1) {
+            const regionedUrl = regionedUrls[0];
+            const defaultUrlRegion = multiZoneManager.getDefaultURLRegion(regionedUrl.url);
+            const url = regionedUrl.url[defaultUrlRegion];
+            actions.push({
+              title: 'OPEN',
+              icon: ExportOutlined,
+              target: regionedUrl.sameTab ? '_top' : '_blank',
+              multiZoneUrl: regionedUrl.url,
+              action:
+                url && callbacks && callbacks.openUrl
+                  ? () => callbacks.openUrl(url, regionedUrl.sameTab ? '_top' : '_blank')
+                  : undefined,
+            });
+          } else {
+            const defaultUrl = regionedUrls.find((o) => o.isDefault);
+            const defaultUrlRegion = defaultUrl
+              ? multiZoneManager.getDefaultURLRegion(defaultUrl.url)
+              : undefined;
+            const overlay = (
+              <div>
+                <ul>
+                  {regionedUrls.map(({name, url, sameTab}, index) => (
+                    <li key={index} style={{margin: 4}}>
+                      <MultizoneUrl target={sameTab ? '_top' : '_blank'} configuration={url}>
+                        {name}
+                      </MultizoneUrl>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+            actions.push({
+              title: 'OPEN',
+              icon: ExportOutlined,
+              overlay,
+              action:
+                defaultUrl && defaultUrlRegion && callbacks && callbacks.openUrl
+                  ? () =>
+                      callbacks.openUrl(
+                        defaultUrl.url[defaultUrlRegion],
+                        defaultUrlRegion.sameTab ? '_top' : '_blank',
+                      )
+                  : undefined,
+            });
+          }
+        }
+        const isDtsEnvironment =
+          run.executionPreferences && run.executionPreferences.environment === DTS_ENVIRONMENT;
+        if (run.initialized && (roleModel.executeAllowed(run) || run.sshPassword) && run.podIP) {
+          if (!isDtsEnvironment) {
+            actions.push({
+              title: 'SSH',
+              icon: CodeOutlined,
+              runSSH: true,
+              runId: run.id,
+            });
+          }
+          if (!run.sensitive && vsActions && vsActions.available) {
+            actions.push({
+              title: (
+                <VSActions
+                  run={run}
+                  trigger={['click']}
+                  getPopupContainer={() => document.getElementById('root')}
+                  onDropDownVisibleChange={
+                    callbacks && callbacks.vsActionsMenu
+                      ? (v) => callbacks.vsActionsMenu(run, v)
+                      : undefined
+                  }
+                >
+                  VSC
+                </VSActions>
+              ),
+              icon: ForkOutlined,
+            });
+          }
+        }
+        if (
+          roleModel.executeAllowed(run) &&
+          roleModel.isOwner(run) &&
+          run.platform !== 'windows' &&
+          canPauseRun(run, preferences)
+        ) {
+          actions.push({
+            title: 'PAUSE',
+            icon: PauseCircleOutlined,
+            disabled: disabled || maintenanceMode,
+            overlay: maintenanceMode ? MAINTENANCE_MODE_DISCLAIMER : undefined,
+            action: callbacks ? callbacks.pause : undefined,
+          });
+        }
+        if (
+          (roleModel.executeAllowed(run) || run.sshPassword) &&
+          (roleModel.isOwner(run) || run.sshPassword) &&
+          canStopRun(run)
+        ) {
+          actions.push({
+            title: 'STOP',
+            icon: CloseCircleOutlined,
+            className: 'cp-danger',
+            action: callbacks ? callbacks.stop : undefined,
+          });
+        }
+        break;
+      }
+      case 'PAUSED':
+        if (
+          roleModel.executeAllowed(run) &&
+          roleModel.isOwner(run) &&
+          run.initialized &&
+          !(run.nodeCount > 0) &&
+          !(run.parentRunId && run.parentRunId > 0) &&
+          run.instance &&
+          run.instance.spot !== undefined &&
+          !run.instance.spot &&
+          run.platform !== 'windows' &&
+          checkRunActionAvailable(run, runActions.resume)
+        ) {
+          actions.push({
+            title: 'RESUME',
+            disabled: disabled || maintenanceMode,
+            icon: run.resumeFailureReason ? ExclamationCircleOutlined : PlayCircleOutlined,
+            action: callbacks ? callbacks.resume : undefined,
+            overlay: maintenanceMode ? (
+              MAINTENANCE_MODE_DISCLAIMER
+            ) : run.resumeFailureReason ? (
+              <div style={{maxWidth: '40vw'}}>{run.resumeFailureReason}</div>
+            ) : undefined,
+          });
+        }
+        actions.push({
+          title: 'TERMINATE',
+          icon: CloseCircleOutlined,
+          className: 'cp-danger',
+          action: callbacks ? callbacks.terminate : undefined,
+        });
+        break;
+      case 'PAUSING':
+      case 'RESUMING':
+        break;
+    }
+    if (run.pipelineRunParameters && run.pipelineRunParameters.length > 0) {
+      const renderRunParameter = (runParameter) => {
+        if (!runParameter || !runParameter.name) {
+          return null;
+        }
+        const valueSelector = () => {
+          return runParameter.resolvedValue || runParameter.value || '';
+        };
+        if (/^(input|output|common|path)$/i.test(runParameter.type)) {
+          const valueParts = valueSelector().split(/[,|]/);
+          return (
+            <tr key={runParameter.name}>
+              <td style={{verticalAlign: 'top', paddingLeft: 5}}>
+                <span>{runParameter.name}: </span>
+              </td>
+              <td>
+                <ul>
+                  {valueParts.map((value, index) => (
+                    <li key={`${value}-${index}`}>
+                      <DataStorageLink
+                        key={`link-${value}-${index}`}
+                        path={value}
+                        isFolder={/^output$/i.test(runParameter.type) ? true : undefined}
+                      >
+                        {value}
+                      </DataStorageLink>
+                    </li>
+                  ))}
+                </ul>
+              </td>
+            </tr>
+          );
+        }
+        const values = (valueSelector() || '').split(',').map((v) => v.trim());
+        if (values.length === 1) {
+          return (
+            <tr key={runParameter.name}>
+              <td style={{verticalAlign: 'top', paddingLeft: 5}}>{runParameter.name}:</td>
+              <td>{values[0]}</td>
+            </tr>
+          );
+        } else {
+          return (
+            <tr key={runParameter.name}>
+              <td style={{verticalAlign: 'top', paddingLeft: 5}}>
+                <span>{runParameter.name}:</span>
+              </td>
+              <td>
+                <ul>
+                  {values.map((value, index) => (
+                    <li key={index}>{value}</li>
+                  ))}
+                </ul>
+              </td>
+            </tr>
+          );
+        }
+      };
+      const inputParameters = run.pipelineRunParameters.filter(
+        (p) => ['input', 'common'].indexOf((p.type || '').toLowerCase()) >= 0,
+      );
+      const outputParameters = run.pipelineRunParameters.filter(
+        (p) => (p.type || '').toLowerCase() === 'output',
+      );
+      if (inputParameters.length > 0 || outputParameters.length > 0) {
+        const overlay = (
+          <table>
+            <tbody>
+              {inputParameters.length > 0 ? (
+                <tr>
+                  <td colSpan={2}>
+                    <b>Input:</b>
+                  </td>
+                </tr>
+              ) : undefined}
+              {inputParameters.map(renderRunParameter)}
+              {outputParameters.length > 0 ? (
+                <tr>
+                  <td colSpan={2}>
+                    <b>Output:</b>
+                  </td>
+                </tr>
+              ) : undefined}
+              {outputParameters.map(renderRunParameter)}
+            </tbody>
+          </table>
+        );
+        actions.push({
+          title: 'LINKS',
+          icon: LinkOutlined,
+          overlay,
+        });
+      }
+    }
+    return actions;
+  };
+}

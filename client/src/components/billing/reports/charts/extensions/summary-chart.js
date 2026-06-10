@@ -20,7 +20,7 @@ import 'chart.js/dist/Chart.css';
 const SummaryChart = {
   current: 'summary-current',
   previous: 'summary-previous',
-  quota: 'summary-quota'
+  quota: 'summary-quota',
 };
 
 Chart.defaults.summary = Chart.defaults.line;

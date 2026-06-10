@@ -16,7 +16,7 @@
 
 import DataStorageLoad from '../../../../../../models/dataStorage/DataStorageLoad';
 
-export default function getStorageInfo (storageId) {
+export default function getStorageInfo(storageId) {
   return new Promise((resolve) => {
     const request = new DataStorageLoad(storageId);
     request

@@ -19,23 +19,18 @@ import RemotePost from '../basic/RemotePost';
 export const HISTOGRAM_TYPES = {
   time: 'TIME',
   resource: 'RESOURCE',
-  run: 'RUN'
+  run: 'RUN',
 };
 
 export class ClusterNetworkUsageFilter extends RemotePost {
-  constructor (
-    histogramType = HISTOGRAM_TYPES.time,
-    from,
-    to,
-    intervals = 10
-  ) {
+  constructor(histogramType = HISTOGRAM_TYPES.time, from, to, intervals = 10) {
     super();
     const query = [
       `histogramType=${histogramType}`,
       `intervals=${intervals}`,
       `from=${from}`,
-      `to=${to}`
+      `to=${to}`,
     ].join('&');
     this.url = `/cluster/network/usage?${query}`;
-  };
+  }
 }

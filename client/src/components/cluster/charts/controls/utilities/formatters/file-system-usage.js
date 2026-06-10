@@ -15,14 +15,7 @@
  */
 import defaultFormatter from './default-formatter';
 
-const postfixes = ['bytes',
-  'KiB',
-  'MiB',
-  'GiB',
-  'TiB',
-  'PiB',
-  'EiB'
-];
+const postfixes = ['bytes', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB'];
 
 export default function (value) {
   return defaultFormatter(value, postfixes);

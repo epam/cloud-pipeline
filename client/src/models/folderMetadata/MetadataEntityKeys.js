@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 export default class MetadataEntityKeys extends Remote {
-  constructor (folderId, metadataClass) {
+  constructor(folderId, metadataClass) {
     super();
     this.url = `/metadataEntity/keys?folderId=${folderId}&metadataClass=${metadataClass}`;
   }

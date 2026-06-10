@@ -23,55 +23,39 @@ class GetDataWithPrevious extends RemotePost {
    * @param {BaseBillingRequestOptions} options
    * @param {function} [getPreviousRequestOptions]
    */
-  constructor (
-    Model,
-    options,
-    getPreviousRequestOptions
-  ) {
+  constructor(Model, options, getPreviousRequestOptions) {
     super();
-    const {
-      filters = {},
-      ...restOptions
-    } = options || {};
+    const {filters = {}, ...restOptions} = options || {};
     this.filters = filters;
-    const {
-      start,
-      end,
-      previousStart,
-      previousEnd,
-      previousShiftFn,
-      previousFilterFn,
-      ...rest
-    } = filters;
+    const {start, end, previousStart, previousEnd, previousShiftFn, previousFilterFn, ...rest} =
+      filters;
     const hasPreviousDates = previousStart && previousEnd;
     const currentFilters = {
       start,
       end,
-      ...rest
+      ...rest,
     };
     const previousFilters = {
       start: previousStart,
       end: previousEnd,
       dateMapper: previousShiftFn,
       dateFilter: previousFilterFn,
-      ...rest
+      ...rest,
     };
     this.current = new Model({filters: currentFilters, ...restOptions});
     this.fetchPrevious = async (currentPeriodFetchPromise) => {
-      if (
-        !previousFilters || !hasPreviousDates
-      ) {
+      if (!previousFilters || !hasPreviousDates) {
         return Promise.resolve();
       }
       if (typeof getPreviousRequestOptions === 'function') {
         await currentPeriodFetchPromise;
         const previousRequestFilters = {
           ...previousFilters,
-          ...getPreviousRequestOptions(this.current.value)
+          ...getPreviousRequestOptions(this.current.value),
         };
         this.previous = new Model({
           filters: previousRequestFilters,
-          ...restOptions
+          ...restOptions,
         });
       } else {
         this.previous = new Model({filters: previousFilters, ...restOptions});
@@ -80,26 +64,21 @@ class GetDataWithPrevious extends RemotePost {
     };
   }
 
-  send () {
+  send() {
     return this.fetch();
   }
 
-  async fetch () {
+  async fetch() {
     this._pending = true;
     try {
       await defer();
       const currentPeriodFetchPromise = this.current.fetch();
-      await Promise.all([
-        currentPeriodFetchPromise,
-        this.fetchPrevious(currentPeriodFetchPromise)
-      ]);
+      await Promise.all([currentPeriodFetchPromise, this.fetchPrevious(currentPeriodFetchPromise)]);
       if (this.current.error) {
         throw new Error(this.current.error);
       }
       const current = this.current.value;
-      const previous = this.previous && this.previous.loaded
-        ? this.previous.value
-        : [];
+      const previous = this.previous && this.previous.loaded ? this.previous.value : [];
       this.update({payload: {current, previous}, status: 'OK'});
     } catch (e) {
       this.failed = true;
@@ -111,7 +90,7 @@ class GetDataWithPrevious extends RemotePost {
     this._fetchIsExecuting = false;
   }
 
-  postprocess (value) {
+  postprocess(value) {
     return super.postprocess(value);
   }
 }

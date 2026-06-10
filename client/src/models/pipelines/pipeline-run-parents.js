@@ -17,10 +17,10 @@
 import Remote from '../basic/Remote';
 
 class PipelineRunParents extends Remote {
-  constructor (runId) {
+  constructor(runId) {
     super();
     this.url = `/run/parents/${runId}`;
-  };
+  }
 }
 
 export default PipelineRunParents;

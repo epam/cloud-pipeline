@@ -23,11 +23,11 @@ import {PipelineRunner} from '../../models/pipelines/PipelineRunner';
 import VersionFile from '../../models/pipelines/VersionFile';
 import {base64toString} from '../base64';
 
-function extractScriptParameters (text = '') {
+function extractScriptParameters(text = '') {
   const [parametersRow] = text
     .split('\n')
-    .map(row => row.trim())
-    .filter(row => row.startsWith('#sys_job'));
+    .map((row) => row.trim())
+    .filter((row) => row.startsWith('#sys_job'));
   if (!parametersRow) {
     return {};
   }
@@ -70,13 +70,13 @@ class SystemJobs {
    */
   jobs = [];
 
-  constructor () {
+  constructor() {
     makeObservable(this, {
       pending: observable,
       error: observable,
       loaded: observable,
       jobs: observable,
-      update: action
+      update: action,
     });
   }
 
@@ -85,11 +85,9 @@ class SystemJobs {
    * @param {string} [parameters]
    * @returns {Promise<void>}
    */
-  async launchJob (job, parameters) {
-    const {
-      systemJobsScriptsLocation: scriptsLocation,
-      systemJobsOutputPipelineTask: outputTask
-    } = preferencesLoad;
+  async launchJob(job, parameters) {
+    const {systemJobsScriptsLocation: scriptsLocation, systemJobsOutputPipelineTask: outputTask} =
+      preferencesLoad;
     const {
       instance_size: instanceType,
       instance_disk: hddSize = 15,
@@ -97,28 +95,28 @@ class SystemJobs {
       timeout = 0,
       cmd_template: cmdTemplate,
       parameters: pipelineParameters,
-      is_spot: isSpot
+      is_spot: isSpot,
     } = job.configuration || {};
     const params = Object.entries(pipelineParameters || {})
       .map(([key, parameter]) => ({
         [key]: {
           value: parameter.value,
-          type: parameter.type
-        }
+          type: parameter.type,
+        },
       }))
       .reduce((r, c) => ({...r, ...c}), {});
-    params['CP_SYSTEM_JOB'] = {
-      value: job.identifier
+    params.CP_SYSTEM_JOB = {
+      value: job.identifier,
     };
-    params['CP_SYSTEM_SCRIPTS_LOCATION'] = {
-      value: scriptsLocation
+    params.CP_SYSTEM_SCRIPTS_LOCATION = {
+      value: scriptsLocation,
     };
-    params['CP_SYSTEM_JOBS_OUTPUT_TASK'] = {
-      value: outputTask
+    params.CP_SYSTEM_JOBS_OUTPUT_TASK = {
+      value: outputTask,
     };
     if (parameters) {
-      params['CP_SYSTEM_JOB_PARAMS'] = {
-        value: parameters
+      params.CP_SYSTEM_JOB_PARAMS = {
+        value: parameters,
       };
     }
     const payload = {
@@ -132,8 +130,8 @@ class SystemJobs {
       cmdTemplate,
       params,
       tags: {
-        'CP_SYSTEM_JOB': job.identifier
-      }
+        CP_SYSTEM_JOB: job.identifier,
+      },
     };
     const request = new PipelineRunner();
     await request.send(payload);
@@ -141,14 +139,15 @@ class SystemJobs {
       throw new Error(request.error);
     }
   }
-  async update () {
+
+  async update() {
     this.pending = true;
     try {
       await preferencesLoad.fetchIfNeededOrWait();
       const {
         systemJobsPipelineId: pipelineId,
         systemJobsScriptsLocation: scriptsLocation,
-        systemJobsOutputPipelineTask: outputTask
+        systemJobsOutputPipelineTask: outputTask,
       } = preferencesLoad;
       if (!pipelineId) {
         throw new Error('System jobs not configured');
@@ -158,24 +157,13 @@ class SystemJobs {
       if (pipelineRequest.error || !pipelineRequest.loaded) {
         throw new Error(pipelineRequest.error || 'Error loading system jobs pipeline info');
       }
-      const {
-        currentVersion = {}
-      } = pipelineRequest.value;
-      const {
-        name: currentVersionName
-      } = currentVersion;
+      const {currentVersion = {}} = pipelineRequest.value;
+      const {name: currentVersionName} = currentVersion;
       if (!currentVersionName) {
         throw new Error('Error loading system jobs pipeline latest version');
       }
-      const configurations = new PipelineConfigurations(
-        pipelineId,
-        currentVersionName
-      );
-      const scripts = new PipelineFiles(
-        pipelineId,
-        currentVersionName,
-        scriptsLocation
-      );
+      const configurations = new PipelineConfigurations(pipelineId, currentVersionName);
+      const scripts = new PipelineFiles(pipelineId, currentVersionName, scriptsLocation);
       await Promise.all([scripts.fetch(), configurations.fetch()]);
       if (scripts.error || !scripts.loaded) {
         throw new Error(scripts.error || 'Error loading system jobs scripts');
@@ -183,8 +171,8 @@ class SystemJobs {
       if (configurations.error || !configurations.loaded) {
         throw new Error(configurations.error || 'Error loading system jobs configuration');
       }
-      const configuration = (configurations.value || [])
-        .find((aConfig) => aConfig.default) || configurations[0];
+      const configuration =
+        (configurations.value || []).find((aConfig) => aConfig.default) || configurations[0];
       this.jobs = (scripts.value || [])
         .filter((aFile) => /^blob$/i.test(aFile.type))
         .map((aFile) => ({
@@ -193,7 +181,7 @@ class SystemJobs {
           identifier: aFile.name,
           path: aFile.path,
           outputTask,
-          configuration: configuration ? configuration.configuration : {}
+          configuration: configuration ? configuration.configuration : {},
         }));
       this.error = undefined;
       this.loaded = true;
@@ -205,17 +193,13 @@ class SystemJobs {
     }
   }
 
-  async fetchJobParameters (job) {
+  async fetchJobParameters(job) {
     if (!job) {
       return {};
     }
     if (!job.parametersPromise) {
       job.parametersPromise = new Promise((resolve, reject) => {
-        const request = new VersionFile(
-          job.pipelineId,
-          job.path,
-          job.pipelineVersion
-        );
+        const request = new VersionFile(job.pipelineId, job.path, job.pipelineVersion);
         request
           .fetch()
           .then(() => {

@@ -40,7 +40,7 @@ import {generateTreeData, ItemTypes} from '../../pipelines/model/treeStructureFu
  * @param {string} raw
  * @returns {string}
  */
-export function prepareCloudPipelineLinks (raw) {
+export function prepareCloudPipelineLinks(raw) {
   let text = raw || '';
   const elementLinkRegex = /#\[([A-Za-z]+):([\d]+):([^W\]]+)\]/;
   let matchResult = text.match(elementLinkRegex);
@@ -62,8 +62,8 @@ export function prepareCloudPipelineLinks (raw) {
  * @param {string} target
  * @returns {string}
  */
-export function processLinks (html, target = '_blank') {
-  return (html || '').replace(/<a href/ig, `<a target="${target}" href`);
+export function processLinks(html, target = '_blank') {
+  return (html || '').replace(/<a href/gi, `<a target="${target}" href`);
 }
 
 /**
@@ -71,16 +71,12 @@ export function processLinks (html, target = '_blank') {
  * @param WrappedComponent
  * @returns {any}
  */
-export function injectCloudPipelineLinksHelpers (WrappedComponent) {
-  return inject('pipelinesLibrary', 'dockerRegistries', 'preferences')(
-    HiddenObjects.injectTreeFilter(
-      HiddenObjects.injectToolsFilters(
-        observer(
-          WrappedComponent
-        )
-      )
-    )
-  );
+export function injectCloudPipelineLinksHelpers(WrappedComponent) {
+  return inject(
+    'pipelinesLibrary',
+    'dockerRegistries',
+    'preferences',
+  )(HiddenObjects.injectTreeFilter(HiddenObjects.injectToolsFilters(observer(WrappedComponent))));
 }
 
 /**
@@ -88,16 +84,12 @@ export function injectCloudPipelineLinksHelpers (WrappedComponent) {
  * @param {CloudPipelineLinksProps} options
  * @returns {Promise<unknown[]>}
  */
-export function fetchCloudPipelineLinks (options = {}) {
-  const {
-    dockerRegistries,
-    pipelinesLibrary,
-    preferences
-  } = options;
+export function fetchCloudPipelineLinks(options = {}) {
+  const {dockerRegistries, pipelinesLibrary, preferences} = options;
   return Promise.all([
     dockerRegistries ? dockerRegistries.fetchIfNeededOrWait() : Promise.resolve(),
     pipelinesLibrary ? pipelinesLibrary.fetchIfNeededOrWait() : Promise.resolve(),
-    preferences ? preferences.fetchIfNeededOrWait() : Promise.resolve()
+    preferences ? preferences.fetchIfNeededOrWait() : Promise.resolve(),
   ]);
 }
 
@@ -106,22 +98,15 @@ export function fetchCloudPipelineLinks (options = {}) {
  * @param {CloudPipelineLinksProps} options
  * @returns {CloudPipelineLink[]}
  */
-export function getCloudPipelineLinks (options = {}) {
+export function getCloudPipelineLinks(options = {}) {
   const links = [];
-  const {
-    dockerRegistries,
-    pipelinesLibrary,
-    hiddenObjectsTreeFilter,
-    hiddenToolsTreeFilter
-  } = options;
+  const {dockerRegistries, pipelinesLibrary, hiddenObjectsTreeFilter, hiddenToolsTreeFilter} =
+    options;
   if (pipelinesLibrary && pipelinesLibrary.loaded) {
-    const items = generateTreeData(
-      pipelinesLibrary.value,
-      {
-        types: [ItemTypes.folder, ItemTypes.pipeline, ItemTypes.configuration, ItemTypes.storage],
-        filter: hiddenObjectsTreeFilter()
-      }
-    );
+    const items = generateTreeData(pipelinesLibrary.value, {
+      types: [ItemTypes.folder, ItemTypes.pipeline, ItemTypes.configuration, ItemTypes.storage],
+      filter: hiddenObjectsTreeFilter(),
+    });
     const makeFlat = (children) => {
       const result = [];
       for (let i = 0; i < (children || []).length; i++) {
@@ -133,7 +118,7 @@ export function getCloudPipelineLinks (options = {}) {
             id: child.id,
             type: child.type,
             displayName: child.name,
-            url: child.url()
+            url: child.url(),
           });
         }
       }
@@ -154,7 +139,7 @@ export function getCloudPipelineLinks (options = {}) {
             type: 'tool',
             displayName: toolName,
             id: tool.id,
-            url: `tool/${tool.id}`
+            url: `tool/${tool.id}`,
           });
         }
       }
@@ -163,22 +148,23 @@ export function getCloudPipelineLinks (options = {}) {
   return links;
 }
 
-export function getCloudPipelineUrl (relativeUri) {
+export function getCloudPipelineUrl(relativeUri) {
   return `#${relativeUri.startsWith('/') ? relativeUri : `/${relativeUri}`}`;
 }
 
-export function getCloudPipelineAbsoluteURL (relativeUri, options = {}) {
+export function getCloudPipelineAbsoluteURL(relativeUri, options = {}) {
   const {preferences} = options;
   const base = preferences.loaded
-    ? (preferences.getPreferenceValue('base.pipe.distributions.url') || '')
+    ? preferences.getPreferenceValue('base.pipe.distributions.url') || ''
     : '';
   return `${base}${getCloudPipelineUrl(relativeUri)}`;
 }
 
-export function getCloudPipelineAbsoluteURLFn (options = {}) {
+export function getCloudPipelineAbsoluteURLFn(options = {}) {
   const {preferences} = options;
-  const base = preferences && preferences.loaded
-    ? (preferences.getPreferenceValue('base.pipe.distributions.url') || '')
-    : '';
+  const base =
+    preferences && preferences.loaded
+      ? preferences.getPreferenceValue('base.pipe.distributions.url') || ''
+      : '';
   return (relativeUri) => `${base}${getCloudPipelineUrl(relativeUri)}`;
 }

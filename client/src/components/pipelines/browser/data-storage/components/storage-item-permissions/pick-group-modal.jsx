@@ -13,29 +13,30 @@ class PickGroupsModal extends React.PureComponent {
     rolesPending: false,
     rolesError: undefined,
     groups: [],
-    groupsPending: false
+    groupsPending: false,
   };
+
   _token = {};
   _rolesToken = {};
 
-  componentDidMount () {
+  componentDidMount() {
     this.updateFromProps();
   }
 
-  componentDidUpdate (prevProps, prevState, snapshot) {
+  componentDidUpdate(prevProps, prevState, snapshot) {
     if (prevProps.visible !== this.props.visible) {
       this.updateFromProps();
     }
   }
 
-  componentWillUnmount () {
+  componentWillUnmount() {
     this.invalidateToken();
     this.invalidateRolesToken();
   }
 
   updateFromProps = () => {
     this.setState({
-      selection: undefined
+      selection: undefined,
     });
     const token = this.invalidateRolesToken();
     const commitState = (state, cb) => {
@@ -47,7 +48,7 @@ class PickGroupsModal extends React.PureComponent {
       try {
         commitState({
           rolesPending: true,
-          rolesError: undefined
+          rolesError: undefined,
         });
         const roles = new Roles();
         await roles.fetch();
@@ -55,16 +56,16 @@ class PickGroupsModal extends React.PureComponent {
           throw new Error(roles.error);
         }
         commitState({
-          roles: roles.value || []
+          roles: roles.value || [],
         });
       } catch (e) {
         commitState({
           rolesError: e.message,
-          roles: []
+          roles: [],
         });
       } finally {
         commitState({
-          rolesPending: false
+          rolesPending: false,
         });
       }
     })();
@@ -82,9 +83,7 @@ class PickGroupsModal extends React.PureComponent {
 
   performGroupsSearch = () => {
     const token = this.invalidateToken();
-    const {
-      filter
-    } = this.state;
+    const {filter} = this.state;
     const commitState = (state, cb) => {
       if (token === this._token) {
         this.setState(state, cb);
@@ -94,65 +93,58 @@ class PickGroupsModal extends React.PureComponent {
       try {
         if (filter && filter.length > 2) {
           commitState({
-            groupsPending: true
+            groupsPending: true,
           });
           const groups = await GroupFind.findGroups(filter);
           commitState({
-            groups
+            groups,
           });
         } else {
           commitState({
-            groups: []
+            groups: [],
           });
         }
       } catch {
         commitState({
-          groups: []
+          groups: [],
         });
       } finally {
         commitState({
-          groupsPending: false
+          groupsPending: false,
         });
       }
     })();
   };
 
-  get roles () {
-    const {
-      exclude = []
-    } = this.props;
-    const {
-      roles = [],
-      filter
-    } = this.state;
-    const filtered = roles
-      .filter((r) => !filter ||
-        filter.length === 0 ||
-        r.name.toLowerCase().includes(filter.toLowerCase()));
+  get roles() {
+    const {exclude = []} = this.props;
+    const {roles = [], filter} = this.state;
+    const filtered = roles.filter(
+      (r) => !filter || filter.length === 0 || r.name.toLowerCase().includes(filter.toLowerCase()),
+    );
     const excludeLowered = exclude.map((e) => e.toLowerCase());
     return filtered.filter((u) => !excludeLowered.includes(u.name.toLowerCase()));
   }
 
-  get groups () {
-    const {
-      exclude = []
-    } = this.props;
-    const {
-      groups = []
-    } = this.state;
+  get groups() {
+    const {exclude = []} = this.props;
+    const {groups = []} = this.state;
     const adGroups = groups.map((g) => ({name: g}));
     const excludeLowered = exclude.map((e) => e.toLowerCase());
     return adGroups.filter((u) => !excludeLowered.includes(u.name.toLowerCase()));
   }
 
   onSearchChanged = (value) => {
-    this.setState({
-      filter: value && value.length ? value : undefined,
-      selection: undefined
-    }, this.performGroupsSearch);
+    this.setState(
+      {
+        filter: value && value.length ? value : undefined,
+        selection: undefined,
+      },
+      this.performGroupsSearch,
+    );
   };
 
-  onClearSearch = () => this.setState({filter: undefined}, this.invalidateToken)
+  onClearSearch = () => this.setState({filter: undefined}, this.invalidateToken);
 
   onGroupChanged = (value) => {
     this.invalidateToken();
@@ -160,32 +152,21 @@ class PickGroupsModal extends React.PureComponent {
       selection: value,
       filter: undefined,
       groups: [],
-      rolesPending: false
+      rolesPending: false,
     });
   };
 
   onSelectClicked = () => {
-    const {
-      onGroupPicked
-    } = this.props;
+    const {onGroupPicked} = this.props;
     const {selection} = this.state;
     if (selection && typeof onGroupPicked === 'function') {
       onGroupPicked(selection);
     }
   };
 
-  render () {
-    const {
-      className,
-      style,
-      visible,
-      onClose
-    } = this.props;
-    const {
-      selection,
-      filter = '',
-      rolesPending
-    } = this.state;
+  render() {
+    const {className, style, visible, onClose} = this.props;
+    const {selection, filter = '', rolesPending} = this.state;
     return (
       <Modal
         className={className}
@@ -193,29 +174,21 @@ class PickGroupsModal extends React.PureComponent {
         open={visible}
         title="Select group"
         onCancel={onClose}
-        footer={(
+        footer={
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'flex-end',
-              gap: 5
+              gap: 5,
             }}
           >
-            <Button
-              onClick={onClose}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="primary"
-              disabled={!selection}
-              onClick={this.onSelectClicked}
-            >
+            <Button onClick={onClose}>Cancel</Button>
+            <Button type="primary" disabled={!selection} onClick={this.onSelectClicked}>
               Select
             </Button>
           </div>
-        )}
+        }
       >
         <AutoComplete
           disabled={rolesPending}
@@ -229,35 +202,29 @@ class PickGroupsModal extends React.PureComponent {
           optionLabelProp="title"
         >
           <AutoComplete.OptGroup label="Roles">
-            {
-              this.roles.map((r) => (
+            {this.roles.map((r) => (
+              <AutoComplete.Option
+                key={r.name}
+                value={r.name}
+                title={getGroupName(r.name, !r.predefined)}
+              >
+                <GroupName group={r.name} removePrefix={!r.predefined} />
+              </AutoComplete.Option>
+            ))}
+          </AutoComplete.OptGroup>
+          {this.groups.length > 0 && (
+            <AutoComplete.OptGroup label="Groups">
+              {this.groups.map((r) => (
                 <AutoComplete.Option
                   key={r.name}
                   value={r.name}
-                  title={getGroupName(r.name, !r.predefined)}
+                  title={getGroupName(r.name, false)}
                 >
-                  <GroupName group={r.name} removePrefix={!r.predefined} />
+                  <GroupName group={r.name} />
                 </AutoComplete.Option>
-              ))
-            }
-          </AutoComplete.OptGroup>
-          {
-            this.groups.length > 0 && (
-              <AutoComplete.OptGroup label="Groups">
-                {
-                  this.groups.map((r) => (
-                    <AutoComplete.Option
-                      key={r.name}
-                      value={r.name}
-                      title={getGroupName(r.name, false)}
-                    >
-                      <GroupName group={r.name} />
-                    </AutoComplete.Option>
-                  ))
-                }
-              </AutoComplete.OptGroup>
-            )
-          }
+              ))}
+            </AutoComplete.OptGroup>
+          )}
         </AutoComplete>
       </Modal>
     );
@@ -270,7 +237,7 @@ PickGroupsModal.propTypes = {
   visible: PropTypes.bool,
   onClose: PropTypes.func,
   onGroupPicked: PropTypes.func,
-  exclude: PropTypes.oneOfType([PropTypes.array, PropTypes.object])
+  exclude: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
 };
 
 export default PickGroupsModal;

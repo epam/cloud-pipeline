@@ -19,10 +19,10 @@ import Remote from '../basic/Remote';
 class DataStorageAvailable extends Remote {
   url;
 
-  constructor () {
+  constructor() {
     super();
     this.url = '/datastorage/available';
-  };
+  }
 }
 
 export default new DataStorageAvailable();

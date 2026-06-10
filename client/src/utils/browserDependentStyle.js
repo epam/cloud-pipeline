@@ -17,39 +17,45 @@
 export default function ({ie, edge, chrome, firefox, safari, default: other}) {
   const browser = getBrowser();
   switch (browser.name) {
-    case Browsers.ie.name: return ie || other;
-    case Browsers.edge.name: return edge || other;
-    case Browsers.safari.name: return safari || other;
-    case Browsers.chrome.name: return chrome || other;
-    case Browsers.firefox.name: return firefox || other;
-    default: return other;
+    case Browsers.ie.name:
+      return ie || other;
+    case Browsers.edge.name:
+      return edge || other;
+    case Browsers.safari.name:
+      return safari || other;
+    case Browsers.chrome.name:
+      return chrome || other;
+    case Browsers.firefox.name:
+      return firefox || other;
+    default:
+      return other;
   }
 }
 
 const Browsers = {
   ie: {
     version: 11,
-    name: 'IE'
+    name: 'IE',
   },
   edge: {
     version: 17,
-    name: 'Edge'
+    name: 'Edge',
   },
   safari: {
     version: 10,
-    name: 'Safari'
+    name: 'Safari',
   },
   chrome: {
     version: 65,
-    name: 'Chrome'
+    name: 'Chrome',
   },
   firefox: {
     version: 62,
-    name: 'Firefox'
-  }
+    name: 'Firefox',
+  },
 };
 
-export function getBrowser () {
+export function getBrowser() {
   const info = getBrowserInfo();
   if ((info.name || '').toLowerCase() === 'msie') {
     info.name = 'IE';
@@ -57,7 +63,7 @@ export function getBrowser () {
   return info;
 }
 
-function getBrowserInfo () {
+function getBrowserInfo() {
   const ua = navigator.userAgent;
   let tem;
   let M = ua.match(/(opera|chrome|safari|firefox|msie|edge|trident(?=\/))\/?\s*(\d+)/i) || [];
@@ -65,33 +71,31 @@ function getBrowserInfo () {
     tem = /(edge)\/?\s*(\d+)/i.exec(ua);
     return {
       name: tem[1],
-      version: (tem[2])
+      version: tem[2],
     };
   }
   if (/trident/i.test(M[1])) {
-    tem=/\brv[ :]+(\d+)/g.exec(ua) || [];
+    tem = /\brv[ :]+(\d+)/g.exec(ua) || [];
     return {
       name: 'IE',
-      version: (tem[1]||'')
+      version: tem[1] || '',
     };
   }
-  if (M[1]==='Chrome') {
+  if (M[1] === 'Chrome') {
     tem = ua.match(/\bOPR|Edge\/(\d+)/);
     if (tem !== null) {
       return {
         name: 'Opera',
-        version: tem[1]
+        version: tem[1],
       };
     }
   }
-  M = M[2]
-    ? [M[1], M[2]]
-    : [navigator.appName, navigator.appVersion, '-?'];
+  M = M[2] ? [M[1], M[2]] : [navigator.appName, navigator.appVersion, '-?'];
   if ((tem = ua.match(/version\/(\d+)/i)) !== null) {
     M.splice(1, 1, tem[1]);
   }
   return {
     name: M[0],
-    version: M[1]
+    version: M[1],
   };
 }

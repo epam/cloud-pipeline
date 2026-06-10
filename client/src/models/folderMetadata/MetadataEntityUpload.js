@@ -17,7 +17,7 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class MetadataEntityUpload extends RemotePost {
-  static uploadUrl (folderId) {
+  static uploadUrl(folderId) {
     return `${this.prefix}/metadataEntity/upload?parentId=${folderId}`;
   }
 }

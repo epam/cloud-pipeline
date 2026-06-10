@@ -17,7 +17,7 @@
 import VSRemote from './base/remote';
 
 export default class VSDiff extends VSRemote {
-  constructor (runId, storageId, file, raw) {
+  constructor(runId, storageId, file, raw) {
     super(runId);
     this.runId = runId;
     this.storageId = storageId;

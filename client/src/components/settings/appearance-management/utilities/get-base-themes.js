@@ -14,33 +14,34 @@
  *  limitations under the License.
  */
 
-function isParentForTheme (theme, parent, themes = []) {
+function isParentForTheme(theme, parent, themes = []) {
   if (!parent || !theme) {
     return false;
   }
   const {extends: baseThemeIdentifier} = theme;
   const {identifier} = parent;
-  return identifier === baseThemeIdentifier ||
+  return (
+    identifier === baseThemeIdentifier ||
     isParentForTheme(
       theme,
-      themes.find(o => o.identifier === baseThemeIdentifier),
-      themes
-    );
+      themes.find((o) => o.identifier === baseThemeIdentifier),
+      themes,
+    )
+  );
 }
 
-function isChildForTheme (theme, child, themes = []) {
+function isChildForTheme(theme, child, themes = []) {
   return isParentForTheme(child, theme, themes);
 }
 
-export default function getBaseThemes (themes, nestedTheme) {
+export default function getBaseThemes(themes, nestedTheme) {
   if (!nestedTheme || !nestedTheme.identifier) {
-    return (themes || []);
+    return themes || [];
   }
-  return (themes || [])
-    .filter(theme => theme.identifier !== nestedTheme.identifier &&
-      (
-        isParentForTheme(nestedTheme, theme, themes) ||
-        !isChildForTheme(theme, nestedTheme, themes)
-      )
-    );
+  return (themes || []).filter(
+    (theme) =>
+      theme.identifier !== nestedTheme.identifier &&
+      (isParentForTheme(nestedTheme, theme, themes) ||
+        !isChildForTheme(theme, nestedTheme, themes)),
+  );
 }

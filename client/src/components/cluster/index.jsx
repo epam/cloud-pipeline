@@ -1,0 +1,115 @@
+/*
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import React from 'react';
+import {Outlet} from 'react-router-dom';
+import {observer} from 'mobx-react';
+import {withRouter} from '../../utils/with-router';
+import {Row, Menu} from 'antd';
+import classNames from 'classnames';
+import AdaptedLink from '../special/AdaptedLink';
+import styles from './Cluster.module.css';
+import roleModel from '../../utils/roleModel';
+import 'highlight.js/styles/github.css';
+import {isAdmin, isClusterReader} from './utilities/access-permissinos';
+
+const Tabs = [
+  {
+    key: 'default',
+    path: '/cluster',
+    title: 'All nodes',
+    available: () => true,
+  },
+  {
+    key: 'cloud-nodes',
+    path: '/cluster/cloud-nodes',
+    title: 'Cloud nodes',
+    available: isAdmin,
+  },
+  {
+    key: 'core-nodes',
+    path: '/cluster/core-nodes',
+    title: 'Core nodes',
+    available: isAdmin,
+  },
+  {
+    key: 'hot',
+    path: '/cluster/hot',
+    title: 'Hot Node Pools',
+    available: isClusterReader,
+  },
+  {
+    key: 'usage',
+    path: '/cluster/usage',
+    title: 'Pools Usage',
+    available: isClusterReader,
+  },
+];
+
+@roleModel.authenticationInfo
+@observer
+class ClusterRoot extends React.Component {
+  get currentUser() {
+    const {authenticatedUserInfo} = this.props;
+    return authenticatedUserInfo.loaded ? authenticatedUserInfo.value : undefined;
+  }
+
+  renderClusterNavigation = () => {
+    const {
+      router: {location},
+    } = this.props;
+    const tabs = Tabs.filter((tab) => tab.available(this.currentUser));
+    if (tabs.length < 2) {
+      return null;
+    }
+    const activeTab = location.pathname.split('/').filter(Boolean)[1] || 'default';
+    return (
+      <Row gutter={16} type="flex" justify="center" className={styles.rowMenu}>
+        <Menu
+          mode="horizontal"
+          selectedKeys={[activeTab]}
+          className={styles.tabsMenu}
+          items={tabs.map((tab) => ({
+            key: tab.key,
+            label: (
+              <AdaptedLink to={tab.path} location={location} ignoreCurrentPath>
+                {tab.title}
+              </AdaptedLink>
+            ),
+          }))}
+        />
+      </Row>
+    );
+  };
+
+  render() {
+    return (
+      <div
+        className={classNames(
+          styles.container,
+          'cp-panel',
+          'cp-panel-no-hover',
+          'cp-panel-borderless',
+        )}
+      >
+        {this.renderClusterNavigation()}
+        <Outlet />
+      </div>
+    );
+  }
+}
+
+export default withRouter(ClusterRoot);

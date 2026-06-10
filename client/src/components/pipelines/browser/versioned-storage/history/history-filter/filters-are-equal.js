@@ -16,7 +16,7 @@
 
 import {alphabeticalSorter} from '../../../../../../utils/sorting';
 
-export default function filtersAreEqual (a, b) {
+export default function filtersAreEqual(a, b) {
   if (!a && !b) {
     return true;
   }
@@ -27,23 +27,21 @@ export default function filtersAreEqual (a, b) {
     users: aUsers = [],
     extensions: aExtensions = [],
     dateFrom: aDateFrom,
-    dateTo: aDateTo
+    dateTo: aDateTo,
   } = a;
   const {
     users: bUsers = [],
     extensions: bExtensions = [],
     dateFrom: bDateFrom,
-    dateTo: bDateTo
+    dateTo: bDateTo,
   } = b;
-  const aUsersSorted = [...(new Set(aUsers))].sort(alphabeticalSorter);
-  const bUsersSorted = [...(new Set(bUsers))].sort(alphabeticalSorter);
+  const aUsersSorted = [...new Set(aUsers)].sort(alphabeticalSorter);
+  const bUsersSorted = [...new Set(bUsers)].sort(alphabeticalSorter);
   if (aUsersSorted.length !== bUsersSorted.length) {
     return false;
   }
-  const aExtensionsSorted = [...(new Set(aExtensions))]
-    .sort(alphabeticalSorter);
-  const bExtensionsSorted = [...(new Set(bExtensions))]
-    .sort(alphabeticalSorter);
+  const aExtensionsSorted = [...new Set(aExtensions)].sort(alphabeticalSorter);
+  const bExtensionsSorted = [...new Set(bExtensions)].sort(alphabeticalSorter);
   if (aExtensionsSorted.length !== bExtensionsSorted.length) {
     return false;
   }

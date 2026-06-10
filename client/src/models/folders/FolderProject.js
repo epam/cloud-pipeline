@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 export default class FolderProject extends Remote {
-  constructor (id, aclClass) {
+  constructor(id, aclClass) {
     super();
     this.url = `/folder/project?id=${id}&aclClass=${aclClass}`;
   }

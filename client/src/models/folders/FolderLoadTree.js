@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import {SERVER} from '../../config';
 import Remote from '../basic/Remote';
 import MetadataFolder from '../metadata/MetadataFolder';
 import defer from '../../utils/defer';
@@ -22,32 +21,29 @@ import {override, observable, makeObservable} from 'mobx';
 import {authorization} from '../basic/Authorization';
 import mapFolderChildrenMetadata from './mapFolderChildrenMetadata';
 
-function getPlainFolders (root = {}) {
+function getPlainFolders(root = {}) {
   const {childFolders = []} = root;
-  return childFolders
-    .concat(
-      childFolders
-        .map(child => getPlainFolders(child))
-        .reduce((r, c) => ([...r, ...c]), [])
-    );
+  return childFolders.concat(
+    childFolders.map((child) => getPlainFolders(child)).reduce((r, c) => [...r, ...c], []),
+  );
 }
 
 class FolderLoadTree extends Remote {
-  constructor () {
+  constructor() {
     super();
     makeObservable(this, {
       folders: observable,
-      update: override
+      update: override,
     });
     this.url = '/folder/loadTree';
   }
 
   folders = [];
 
-  async fetch () {
+  async fetch() {
     this._loadRequired = false;
     if (!this._fetchPromise) {
-      const originalPromise = new Promise(async (resolve) => {
+      const originalPromise = (async () => {
         const {prefix, fetchOptions} = this.constructor;
         try {
           await defer();
@@ -57,21 +53,23 @@ class FolderLoadTree extends Remote {
           }
           fetchOptions.headers = headers;
           const response = await fetch(`${prefix}${this.url}`, fetchOptions);
-          const data = this.constructor.isJson ? (await response.json()) : (await response.blob());
-          resolve({data, error: null});
+          const data = this.constructor.isJson ? await response.json() : await response.blob();
+          return {data, error: null};
         } catch (e) {
-          resolve({data: null, error: e.toString()});
+          return {data: null, error: e.toString()};
         }
-      });
-      const metadataPromise = new Promise(async (resolve) => {
+      })();
+      const metadataPromise = (async () => {
         const request = new MetadataFolder();
         await request.fetch();
-        resolve(request);
-      });
-      this._fetchPromise = new Promise(async (resolve) => {
+        return request;
+      })();
+      this._fetchPromise = (async () => {
         this._pending = true;
-        const [originalResult, metadataResult] =
-          await Promise.all([originalPromise, metadataPromise]);
+        const [originalResult, metadataResult] = await Promise.all([
+          originalPromise,
+          metadataPromise,
+        ]);
         if (originalResult.error) {
           this.failed = true;
           this.error = originalResult.error;
@@ -80,13 +78,12 @@ class FolderLoadTree extends Remote {
         }
         this._pending = false;
         this._fetchPromise = null;
-        resolve();
-      });
+      })();
     }
     return this._fetchPromise;
   }
 
-  update (value, metadataRequest) {
+  update(value, metadataRequest) {
     this._response = value;
     if (value.status && value.status === 401) {
       this.error = value.message;

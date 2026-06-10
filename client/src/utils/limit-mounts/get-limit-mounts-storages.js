@@ -2,21 +2,20 @@ import {getAllowedStoragesForCloudRegion} from './check-cloud-region-rules';
 
 const MatchingRules = {
   identifier: 'identifier',
-  path: 'path'
+  path: 'path',
 };
 
-function getStorageMatchingRuleForIdentifier (storage, lmIdentifier) {
-  const {
-    id,
-    path
-  } = storage;
+function getStorageMatchingRuleForIdentifier(storage, lmIdentifier) {
+  const {id, path} = storage;
   if (!Number.isNaN(Number(lmIdentifier))) {
     const match = id === Number(lmIdentifier);
-    return match ? {
-      rule: MatchingRules.identifier,
-      value: lmIdentifier,
-      storage
-    } : undefined;
+    return match
+      ? {
+          rule: MatchingRules.identifier,
+          value: lmIdentifier,
+          storage,
+        }
+      : undefined;
   }
   if (path && lmIdentifier.toLowerCase() === path.toLowerCase()) {
     return {rule: MatchingRules.path, value: lmIdentifier, storage};
@@ -29,13 +28,13 @@ function getStorageMatchingRuleForIdentifier (storage, lmIdentifier) {
  * @param {string[]} lmIdentifiers
  * @returns {{rule: string, storage: Storage, value: string}|undefined}
  */
-function getStorageMatchingRule (storage, lmIdentifiers = []) {
+function getStorageMatchingRule(storage, lmIdentifiers = []) {
   if (storage.sourceStorageId) {
     return undefined;
   }
   return lmIdentifiers
     .map((lmIdentifier) => getStorageMatchingRuleForIdentifier(storage, lmIdentifier))
-    .filter((Boolean))[0];
+    .filter(Boolean)[0];
 }
 
 /**
@@ -44,42 +43,45 @@ function getStorageMatchingRule (storage, lmIdentifiers = []) {
  * @param {string[]} identifiers
  * @returns {boolean}
  */
-export function storageMatchesIdentifiers (storage, identifiers = []) {
+export function storageMatchesIdentifiers(storage, identifiers = []) {
   if (identifiers.some((id) => /^none$/i.test(id))) {
     return false;
   }
-  return !storage.sourceStorageId &&
-    identifiers.some((id) => getStorageMatchingRuleForIdentifier(storage, id));
+  return (
+    !storage.sourceStorageId &&
+    identifiers.some((id) => getStorageMatchingRuleForIdentifier(storage, id))
+  );
 }
 
-export function storageMatchesIdentifiersString (storage, identifiersString) {
+export function storageMatchesIdentifiersString(storage, identifiersString) {
   const identifiers = (identifiersString || '').split(/[,;]/);
   return storageMatchesIdentifiers(storage, identifiers);
 }
 
-export function getStoragesForLimitMountsString (storages, limitMountsString) {
+export function getStoragesForLimitMountsString(storages, limitMountsString) {
   const identifiers = (limitMountsString || '').split(/[,;]/);
   const ids = new Set(identifiers.map((o) => o.trim().toLowerCase()));
   if (ids.has('none')) {
     return [];
   }
-  return storages.filter((s) => !s.sourceStorageId &&
-    (ids.has(s.id.toString()) || ids.has(s.path.toLowerCase())));
+  return storages.filter(
+    (s) => !s.sourceStorageId && (ids.has(s.id.toString()) || ids.has(s.path.toLowerCase())),
+  );
 }
 
-function getStorageRuleForIdentifier (lmIdentifier, storages = []) {
+function getStorageRuleForIdentifier(lmIdentifier, storages = []) {
   return storages
     .filter((storage) => !storage.sourceStorageId)
     .map((storage) => getStorageMatchingRuleForIdentifier(storage, lmIdentifier))
     .filter(Boolean)[0];
 }
 
-export function limitMountsValueIsNone (limitMountsString) {
+export function limitMountsValueIsNone(limitMountsString) {
   const ids = (limitMountsString || '').split(/[,;]/);
   return ids.some((id) => /^none$/i.test(id));
 }
 
-function getStoragesParsingRules (identifiers, storages = []) {
+function getStoragesParsingRules(identifiers, storages = []) {
   if (identifiers.some((id) => /^none$/i.test(id))) {
     return [];
   }
@@ -89,17 +91,16 @@ function getStoragesParsingRules (identifiers, storages = []) {
     .filter(Boolean);
 }
 
-export function getStoragesByIdentifiers (identifiers, storages = []) {
-  return getStoragesParsingRules(identifiers, storages)
-    .map((rule) => rule.storage);
+export function getStoragesByIdentifiers(identifiers, storages = []) {
+  return getStoragesParsingRules(identifiers, storages).map((rule) => rule.storage);
 }
 
-function getLimitMountsStoragesParsingRules (limitMountsString, storages = []) {
+function getLimitMountsStoragesParsingRules(limitMountsString, storages = []) {
   const ids = (limitMountsString || '').split(/[,;]/);
   return getStoragesParsingRules(ids, storages);
 }
 
-export function getLimitMountsUnmappedStorageIdentifiers (limitMountsString, storages = []) {
+export function getLimitMountsUnmappedStorageIdentifiers(limitMountsString, storages = []) {
   const ids = (limitMountsString || '').split(/[,;]/);
   if (ids.some((id) => /^none$/i.test(id))) {
     return [];
@@ -107,15 +108,20 @@ export function getLimitMountsUnmappedStorageIdentifiers (limitMountsString, sto
   return ids.filter((id) => !getStorageRuleForIdentifier(id, storages));
 }
 
-export function getLimitMountsStorages (limitMountsString, storages = []) {
-  return getLimitMountsStoragesParsingRules(limitMountsString, storages)
-    .map((rule) => rule.storage);
+export function getLimitMountsStorages(limitMountsString, storages = []) {
+  return getLimitMountsStoragesParsingRules(limitMountsString, storages).map(
+    (rule) => rule.storage,
+  );
 }
 
-export function getLimitMountsParameterValue (storages, originalParameterValue = undefined) {
+export function getLimitMountsParameterValue(storages, originalParameterValue = undefined) {
   const rules = getLimitMountsStoragesParsingRules(originalParameterValue || '', storages);
-  const getRuleForStorage = (storage) => rules.find((rule) => rule.storage.id === storage.id) ||
-    {storage, rule: MatchingRules.identifier, value: `${storage.id}`};
+  const getRuleForStorage = (storage) =>
+    rules.find((rule) => rule.storage.id === storage.id) || {
+      storage,
+      rule: MatchingRules.identifier,
+      value: `${storage.id}`,
+    };
   return storages.map((storage) => getRuleForStorage(storage).value).join(',');
 }
 
@@ -133,10 +139,10 @@ export function getLimitMountsParameterValue (storages, originalParameterValue =
  * @param {CorrectLimitMountsParameterValueOptions} [options]
  * @returns {string|null}
  */
-export function correctLimitMountsParameterValue (
+export function correctLimitMountsParameterValue(
   limitMountsString,
   storages = [],
-  options = undefined
+  options = undefined,
 ) {
   if (!limitMountsString || !limitMountsString.length) {
     return null;
@@ -148,7 +154,7 @@ export function correctLimitMountsParameterValue (
     allowSensitive = true,
     keepUnmappedIdentifiers = false,
     cloudRegion,
-    cloudRegions
+    cloudRegions,
   } = options || {};
   const allowedStorages = getAllowedStoragesForCloudRegion(storages, cloudRegion, cloudRegions);
   const result = getLimitMountsStoragesParsingRules(limitMountsString || '', allowedStorages)
@@ -157,7 +163,7 @@ export function correctLimitMountsParameterValue (
     .concat(
       keepUnmappedIdentifiers
         ? getLimitMountsUnmappedStorageIdentifiers(limitMountsString || '', allowedStorages)
-        : []
+        : [],
     );
   if (result.length > 0) {
     return [...new Set(result)].join(',');

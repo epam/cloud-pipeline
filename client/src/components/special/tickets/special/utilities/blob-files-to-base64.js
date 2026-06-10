@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-function arrayBufferToBase64 (buffer) {
+function arrayBufferToBase64(buffer) {
   let binary = '';
   const bytes = new Uint8Array(buffer);
   for (let i = 0; i < bytes.byteLength; i++) {
@@ -23,21 +23,23 @@ function arrayBufferToBase64 (buffer) {
   return btoa(binary);
 }
 
-export default async function blobFilesToBase64 (files = []) {
-  const promises = files.map(file => new Promise((resolve) => {
-    try {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve({[file.name]: arrayBufferToBase64(reader.result)});
-      reader.readAsArrayBuffer(file);
-    } catch {
-      resolve(null);
-    }
-  }));
+export default async function blobFilesToBase64(files = []) {
+  const promises = files.map(
+    (file) =>
+      new Promise((resolve) => {
+        try {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve({[file.name]: arrayBufferToBase64(reader.result)});
+          reader.readAsArrayBuffer(file);
+        } catch {
+          resolve(null);
+        }
+      }),
+  );
   const values = await Promise.all(promises);
   const filtered = values.filter(Boolean);
-  return Object.entries(filtered.reduce((a, c) => ({...a, ...c})))
-    .map(([fileName, content]) => ({
-      fileName,
-      content
-    }));
+  return Object.entries(filtered.reduce((a, c) => ({...a, ...c}))).map(([fileName, content]) => ({
+    fileName,
+    content,
+  }));
 }

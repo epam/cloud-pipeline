@@ -17,15 +17,15 @@
 import Remote from '../basic/Remote';
 
 export default class UserBlock extends Remote {
-  constructor (userId, block = true) {
+  constructor(userId, block = true) {
     super();
     this.constructor.fetchOptions = {
       headers: {
-        'Content-type': 'application/json; charset=UTF-8'
+        'Content-type': 'application/json; charset=UTF-8',
       },
       mode: 'cors',
       credentials: 'include',
-      method: 'PUT'
+      method: 'PUT',
     };
     this.url = `/user/${userId}/block?blockStatus=${block}`;
   }

@@ -17,7 +17,7 @@
 import Remote from '../basic/RemotePost';
 
 export default class ToolScan extends Remote {
-  constructor (tool, version, rescan=true) {
+  constructor(tool, version, rescan = true) {
     super();
     this.url = `/tool/scan?tool=${tool}&version=${version}&rescan=${rescan}`;
   }

@@ -17,21 +17,18 @@
 import Remote from '../basic/Remote';
 
 export default class VersionedStorageListWithInfo extends Remote {
-  constructor (id, options) {
+  constructor(id, options) {
     super();
-    const {
-      page = 0,
-      pageSize = 20,
-      path,
-      version
-    } = options;
+    const {page = 0, pageSize = 20, path, version} = options;
     this.id = id;
     let query = [
       `page=${page}`,
       `page_size=${pageSize}`,
       version && `version=${version}`,
-      path && `path=${encodeURIComponent(path)}`
-    ].filter(Boolean).join('&');
+      path && `path=${encodeURIComponent(path)}`,
+    ]
+      .filter(Boolean)
+      .join('&');
     if (query) {
       query = '?'.concat(query);
     }

@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 export default class DataStorageGenerateSharedLink extends Remote {
-  constructor (id) {
+  constructor(id) {
     super();
     this.url = `/datastorage/${id}/sharedLink`;
     this.storageId = id;

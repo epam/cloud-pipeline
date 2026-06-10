@@ -27,7 +27,7 @@ const DEFAULT_DELAY_MS = 500;
 
 const DEFAULT_VIDEO_TYPE = 'mp4';
 
-function getDefaultVideoCodecForType (aType) {
+function getDefaultVideoCodecForType(aType) {
   if (/^mp4$/i.test(aType)) {
     return 'libx264';
   }
@@ -74,11 +74,11 @@ class HcsVideoSource {
 
   responseToken = 0;
 
-  get hasTimePointsAndZPlanes () {
+  get hasTimePointsAndZPlanes() {
     return this.multipleZPlanes && this.multipleTimePoints;
   }
 
-  constructor () {
+  constructor() {
     makeObservable(this, {
       path: observable,
       pathMask: observable,
@@ -109,33 +109,22 @@ class HcsVideoSource {
       hasTimePointsAndZPlanes: computed,
       available: computed,
       initialized: computed,
-      videoSourceType: computed
+      videoSourceType: computed,
     });
-    (this.initialize)();
+    this.initialize();
   }
 
-  getVideoFileName (url) {
+  getVideoFileName(url) {
     if (this.path && this.generatedFilePath && this.well) {
-      const name = this.path
-        .split('/')
-        .pop()
-        .split('.')
-        .slice(0, -1)
-        .join('.')
-        .replace(/\s/, '_');
+      const name = this.path.split('/').pop().split('.').slice(0, -1).join('.').replace(/\s/, '_');
       const format = this.generatedFilePath.split('.').pop();
-      const {
-        x,
-        y
-      } = this.well;
+      const {x, y} = this.well;
       const col = x + 1;
       const row = y + 1;
       const wellCol = col < 9 ? `0${col}` : col;
       const wellRow = row < 9 ? `0${row}` : row;
       const wellInfo = `r${wellRow}c${wellCol}`;
-      const fieldInfo = this.wellView || !this.imageId
-        ? ''
-        : `f${this.imageId.split(':').pop()}`;
+      const fieldInfo = this.wellView || !this.imageId ? '' : `f${this.imageId.split(':').pop()}`;
       const zPlane = this.zPlane;
       const planeNumber = `p${zPlane + 1}`;
       const timeSeriesNumber = `ts${this.sequenceId || 1}`;
@@ -149,20 +138,22 @@ class HcsVideoSource {
     }
   }
 
-  get available () {
-    return this.imageId &&
+  get available() {
+    return (
+      this.imageId &&
       this.storageId &&
       this.pathMask &&
       this.path &&
       this.sequenceId &&
-      Object.keys(this.channels || {}).length > 0;
+      Object.keys(this.channels || {}).length > 0
+    );
   }
 
-  get initialized () {
+  get initialized() {
     return !!this.videoEndpointAPI;
   }
 
-  get videoSourceType () {
+  get videoSourceType() {
     if (/^mp4$/i.test(this.videoType)) {
       return 'video/mp4';
     }
@@ -178,21 +169,13 @@ class HcsVideoSource {
   setVideoMode = (enabled) => {
     if (enabled !== this.videoMode) {
       this.videoMode = enabled;
-      (this.generateUrl)();
+      this.generateUrl();
     }
-  }
+  };
 
   setHcsFile = (fileOptions = {}) => {
-    const {
-      path,
-      pathMask,
-      storageId
-    } = fileOptions;
-    if (
-      path !== this.path ||
-      storageId !== this.storageId ||
-      pathMask !== this.pathMask
-    ) {
+    const {path, pathMask, storageId} = fileOptions;
+    if (path !== this.path || storageId !== this.storageId || pathMask !== this.pathMask) {
       this.path = path;
       this.pathMask = pathMask;
       this.storageId = storageId;
@@ -205,7 +188,7 @@ class HcsVideoSource {
       this.delay = delay;
       this.generateUrlDelayed();
     }
-  }
+  };
 
   setSequenceTimePoints = (sequenceId, timePoint = 0, multipleTimePoints) => {
     if (
@@ -246,16 +229,16 @@ class HcsVideoSource {
       this.imageId = imageId;
       this.multipleZPlanes = multipleZCoordinates;
       this.updateVideoGenerationMode();
-      (this.generateUrl)();
+      this.generateUrl();
     }
   };
 
   setChannelsInfo = () => {
     if (this.viewerState) {
       const channels = (this.viewerState.channels || [])
-        .filter(channel => channel.visible)
-        .map(channel => ({
-          [channel.name]: [...channel.color.slice(0, 3), ...channel.contrastLimits]
+        .filter((channel) => channel.visible)
+        .map((channel) => ({
+          [channel.name]: [...channel.color.slice(0, 3), ...channel.contrastLimits],
         }))
         .reduce((r, c) => ({...r, ...c}), {});
       if (!channelsAreEqual(channels, this.channels)) {
@@ -311,7 +294,7 @@ class HcsVideoSource {
         loop = true,
         type = DEFAULT_VIDEO_TYPE,
         codec,
-        formats = {}
+        formats = {},
       } = settings;
       if (!api) {
         throw new Error('HCS video endpoint is not specified');
@@ -319,17 +302,16 @@ class HcsVideoSource {
       const browserDependentFormat = getBrowserDependentConfiguration({
         default: {
           type,
-          codec
+          codec,
         },
-        ...formats
+        ...formats,
       });
       this.videoEndpointAPI = new AnalysisApi(api);
       this.crossOrigin = crossOrigin;
       this.loop = loop;
       this.delay = delay;
       this.videoType = browserDependentFormat.type || type;
-      this.videoCodec = browserDependentFormat.codec ||
-        getDefaultVideoCodecForType(this.videoType);
+      this.videoCodec = browserDependentFormat.codec || getDefaultVideoCodecForType(this.videoType);
     } catch (e) {
       this.videoEndpointAPIError = e.message;
       this.videoEndpointAPI = undefined;
@@ -339,7 +321,7 @@ class HcsVideoSource {
   initialize = async () => {
     await this.initializeVideoEndpoint();
     await this.generateUrl();
-  }
+  };
 
   generateUrl = async () => {
     this.videoPending = true;
@@ -363,7 +345,7 @@ class HcsVideoSource {
       zPlane: this.zPlane + 1,
       wellView: this.wellView,
       delay: this.delay,
-      byTime: this.videoByZPlanes ? 0 : 1
+      byTime: this.videoByZPlanes ? 0 : 1,
     };
     const {
       imageId: currentImageId,
@@ -374,7 +356,7 @@ class HcsVideoSource {
       wellView: currentWellView,
       channels: currentChannels = {},
       delay: currentDelay,
-      byTime: currentByTime
+      byTime: currentByTime,
     } = this.currentPayload || {};
     this.currentPayload = payload;
     if (
@@ -384,8 +366,7 @@ class HcsVideoSource {
       payload.path &&
       payload.sequenceId &&
       Object.keys(payload.channels || {}).length > 0 &&
-      (
-        payload.storageId !== currentStorageId ||
+      (payload.storageId !== currentStorageId ||
         payload.imageId !== currentImageId ||
         payload.sequenceId !== currentSequenceId ||
         payload.path !== currentPath ||
@@ -393,8 +374,7 @@ class HcsVideoSource {
         !channelsAreEqual(currentChannels, payload.channels || {}) ||
         payload.wellView !== currentWellView ||
         payload.delay !== currentDelay ||
-        payload.byTime !== currentByTime
-      )
+        payload.byTime !== currentByTime)
     ) {
       let path = payload.path;
       if (path.startsWith('/')) {
@@ -413,23 +393,18 @@ class HcsVideoSource {
         format: `.${this.videoType}`,
         codec: this.videoCodec,
         pointId: payload.byTime ? payload.zPlane : payload.timePoint,
-        ...(
-          Object
-            .entries(payload.channels)
-            .map(([channelName, configuration]) => ({
-              [channelName]: configuration.join(',')
-            }))
-            .reduce((r, c) => ({...r, ...c}), {})
-        )
+        ...Object.entries(payload.channels)
+          .map(([channelName, configuration]) => ({
+            [channelName]: configuration.join(','),
+          }))
+          .reduce((r, c) => ({...r, ...c}), {}),
       };
-      const responseToken = this.responseToken = this.responseToken + 1;
+      const responseToken = (this.responseToken = this.responseToken + 1);
       try {
         const result = await this.videoEndpointAPI.generateVideo(query);
         if (this.responseToken === responseToken) {
           this.videoError = undefined;
-          const {
-            path: videoFilePath
-          } = result || {};
+          const {path: videoFilePath} = result || {};
           if (!videoFilePath) {
             throw new Error('Error generating video');
           }
@@ -442,15 +417,12 @@ class HcsVideoSource {
             throw new Error('Error generating video: unknown path format');
           }
           resultedPath = resultedPath.replace(/\/\//g, '/');
-          if (
-            !this.objectStorage ||
-            this.objectStorage.path !== storagePath
-          ) {
+          if (!this.objectStorage || this.objectStorage.path !== storagePath) {
             await dataStorageAvailable.fetchIfNeededOrWait();
             this.objectStorage = await createObjectStorageWrapper(
               dataStorageAvailable,
               storagePath,
-              {read: true, write: false}
+              {read: true, write: false},
             );
           }
           if (!this.objectStorage) {
@@ -482,11 +454,12 @@ class HcsVideoSource {
       return;
     }
     this.videoUrl = await this.objectStorage.generateFileUrl(this.generatedFilePath);
-    this.videoAccessCallback = () => auditStorageAccessManager.reportReadAccess({
-      storageId: this.objectStorage.id,
-      path: this.generatedFilePath,
-      reportStorageType: 'S3'
-    });
+    this.videoAccessCallback = () =>
+      auditStorageAccessManager.reportReadAccess({
+        storageId: this.objectStorage.id,
+        path: this.generatedFilePath,
+        reportStorageType: 'S3',
+      });
   };
 }
 

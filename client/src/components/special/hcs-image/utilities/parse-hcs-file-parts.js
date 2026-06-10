@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-export default function parseHCSFileParts (path, delimiter = '/') {
+export default function parseHCSFileParts(path, delimiter = '/') {
   if (!path) {
     return undefined;
   }
@@ -29,6 +29,6 @@ export default function parseHCSFileParts (path, delimiter = '/') {
     parent,
     fileName,
     filePath,
-    previewDir: [parent, '.hcsparser', fileName].join(delimiter)
+    previewDir: [parent, '.hcsparser', fileName].join(delimiter),
   };
 }

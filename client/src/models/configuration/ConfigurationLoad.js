@@ -17,13 +17,13 @@
 import Remote from '../basic/Remote';
 
 export default class ConfigurationLoad extends Remote {
-  constructor (id) {
+  constructor(id) {
     super();
     this.url = `/configuration/${id}`;
-  };
+  }
 
   /* eslint-disable */
-  static getCache (cache, id, model) {
+  static getCache(cache, id, model) {
     if (!cache.has(+id)) {
       cache.set(+id, new model(id));
     }
@@ -31,7 +31,7 @@ export default class ConfigurationLoad extends Remote {
     return cache.get(+id);
   }
 
-  static invalidateCache (cache, id) {
+  static invalidateCache(cache, id) {
     if (cache.has(+id)) {
       if (cache.get(+id).invalidateCache) {
         cache.get(+id).invalidateCache();

@@ -13,7 +13,6 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-/* eslint-disable max-len */
 
 export default {
   name: 'MaskObjects',
@@ -28,6 +27,6 @@ export default {
     'Invert the mask?|flag|false|ALIAS invert',
     'Handling of objects that are partially masked|[Keep,Remove,Keep overlapping region,Remove depending on overlap]|Keep overlapping region|ALIAS overlap',
     'Fraction of object that must overlap|float|0.5|IF overlap=="Remove depending on overlap"',
-    'Numbering of resulting objects|[Renumber,Retain]|Renumber'
-  ]
+    'Numbering of resulting objects|[Renumber,Retain]|Renumber',
+  ],
 };

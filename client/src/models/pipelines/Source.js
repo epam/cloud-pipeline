@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 class Source extends Remote {
-  constructor (id, version, path, recursive=false) {
+  constructor(id, version, path, recursive = false) {
     super();
     this.id = id;
     this.version = version;

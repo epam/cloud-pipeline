@@ -20,22 +20,22 @@ class GetObjectStorageLayersInfo extends BaseBillingRequest {
   /**
    * @param {BaseBillingRequestOptions} options
    */
-  constructor (options) {
+  constructor(options) {
     super({
       ...options,
       loadDetails: true,
       loadCostDetails: true,
-      pagination: undefined
+      pagination: undefined,
     });
     this.grouping = 'STORAGE_TYPE';
   }
 
-  prepareBody () {
+  prepareBody() {
     super.prepareBody();
     this.body.filters.storage_type = ['OBJECT_STORAGE'];
   }
 
-  postprocess (value) {
+  postprocess(value) {
     const payload = super.postprocess(value) || [];
     return payload.slice(0, 1);
   }

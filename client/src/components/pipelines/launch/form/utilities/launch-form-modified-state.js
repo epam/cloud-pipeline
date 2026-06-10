@@ -13,54 +13,42 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  ADVANCED,
-  EXEC_ENVIRONMENT
-} from './launch-form-sections';
+import {ADVANCED, EXEC_ENVIRONMENT} from './launch-form-sections';
 import {
   autoScaledClusterEnabled,
   hybridAutoScaledClusterEnabled,
-  getSkippedSystemParametersList,
   gridEngineEnabled,
   sparkEnabled,
   slurmEnabled,
-  kubeEnabled
+  kubeEnabled,
 } from './launch-cluster';
-import {
-  CP_CAP_AUTOSCALE_WORKERS,
-  CP_CAP_LIMIT_MOUNTS
-} from './parameters';
-import {
-  checkRunCapabilitiesModified,
-  getEnabledCapabilities,
-  isCustomCapability
-} from './run-capabilities';
+import {CP_CAP_AUTOSCALE_WORKERS, CP_CAP_LIMIT_MOUNTS} from './parameters';
+import {checkRunCapabilitiesModified, getEnabledCapabilities} from './run-capabilities';
 import {notificationArraysAreEqual} from '../../dialogs/job-notifications/notifications-equal';
+import {fsConfigsAreEqual, getFsConfigFromParameters} from './configure-fs/utilities';
+import {parametersModified} from './parameter-utilities';
 import {
-  fsConfigsAreEqual,
-  getFsConfigFromParameters
-} from './configure-fs/utilities';
-import {parametersModified} from "./parameter-utilities";
-import {readReservationParameters, reservationParametersDiffer} from "../components/reservation-parameters/utilities";
+  readReservationParameters,
+  reservationParametersDiffer,
+} from '../components/reservation-parameters/utilities';
 import * as prettyUrlGenerator from './pretty-url';
 
-function getFormNamePath (formName) {
+function getFormNamePath(formName) {
   return formName.split('.');
 }
 
-function getFormFieldValue (form, formName) {
+function getFormFieldValue(form, formName) {
   return form.getFieldValue(getFormNamePath(formName));
 }
 
-function formItemInitialized (form, formName) {
+function formItemInitialized(form, formName) {
   if (!formName) {
     return false;
   }
   const names = getFormNamePath(formName);
-  const values = form.getFieldsValue(true);
-  let current = values;
+  let current = form.getFieldsValue(true);
   for (let i = 0; i < names.length; i++) {
-    if (!current || !Object.prototype.hasOwnProperty.call(current, names[i])) {
+    if (!current || !Object.hasOwn(current, names[i])) {
       return false;
     }
     current = current[names[i]];
@@ -68,23 +56,22 @@ function formItemInitialized (form, formName) {
   return true;
 }
 
-function modified (
+function modified(
   form,
   parameters,
   formName,
   parametersName,
   defaultValue,
-  formValueAccessor = (v) => v
+  formValueAccessor = (v) => v,
 ) {
   if (!formItemInitialized(form, formName)) {
     return false;
   }
   const formValue = formValueAccessor(getFormFieldValue(form, formName));
-  return `${formValue || defaultValue}` !==
-    `${parameters[parametersName] || defaultValue}`;
+  return `${formValue || defaultValue}` !== `${parameters[parametersName] || defaultValue}`;
 }
 
-function clusterModified (parameters, state) {
+function clusterModified(parameters, state) {
   const autoScaledCluster = autoScaledClusterEnabled(parameters.parameters);
   const hybridAutoScaledCluster = hybridAutoScaledClusterEnabled(parameters.parameters);
   const gridEngineEnabledValue = gridEngineEnabled(parameters.parameters);
@@ -98,13 +85,15 @@ function clusterModified (parameters, state) {
     sparkEnabled: sparkEnabledValue,
     slurmEnabled: slurmEnabledValue,
     kubeEnabled: kubeEnabledValue,
-    launchCluster: +(parameters.node_count) > 0 || autoScaledCluster,
-    nodesCount: +(parameters.node_count),
-    maxNodesCount: parameters.parameters && parameters.parameters[CP_CAP_AUTOSCALE_WORKERS]
-      ? +(parameters.parameters[CP_CAP_AUTOSCALE_WORKERS].value)
-      : 0
+    launchCluster: +parameters.node_count > 0 || autoScaledCluster,
+    nodesCount: +parameters.node_count,
+    maxNodesCount:
+      parameters.parameters && parameters.parameters[CP_CAP_AUTOSCALE_WORKERS]
+        ? +parameters.parameters[CP_CAP_AUTOSCALE_WORKERS].value
+        : 0,
   };
-  return initial.autoScaledCluster !== state.autoScaledCluster ||
+  return (
+    initial.autoScaledCluster !== state.autoScaledCluster ||
     initial.hybridAutoScaledClusterEnabled !== state.hybridAutoScaledClusterEnabled ||
     initial.gridEngineEnabled !== state.gridEngineEnabled ||
     initial.sparkEnabled !== state.sparkEnabled ||
@@ -112,30 +101,23 @@ function clusterModified (parameters, state) {
     initial.kubeEnabled !== state.kubeEnabled ||
     initial.launchCluster !== state.launchCluster ||
     `${initial.nodesCount || 0}` !== `${state.nodesCount || 0}` ||
-    `${initial.maxNodesCount || 0}` !== `${state.maxNodesCount || 0}`;
+    `${initial.maxNodesCount || 0}` !== `${state.maxNodesCount || 0}`
+  );
 }
 
-function pipelineCheck (props, state) {
-  const {
-    pipeline,
-    version,
-    pipelineConfiguration,
-    fireCloudMethod
-  } = props;
+function pipelineCheck(props, state) {
+  const {pipeline, version, pipelineConfiguration, fireCloudMethod} = props;
   const initial = {
     pipeline: pipeline ? +pipeline.id : null,
     version,
     pipelineConfiguration,
-    fireCloudMethodName: fireCloudMethod
-      ? fireCloudMethod.name : null,
-    fireCloudMethodNamespace: fireCloudMethod
-      ? fireCloudMethod.namespace : null,
-    fireCloudMethodSnapshot: fireCloudMethod
-      ? fireCloudMethod.snapshot : null,
-    fireCloudMethodConfiguration: fireCloudMethod
-      ? fireCloudMethod.configuration : null,
+    fireCloudMethodName: fireCloudMethod ? fireCloudMethod.name : null,
+    fireCloudMethodNamespace: fireCloudMethod ? fireCloudMethod.namespace : null,
+    fireCloudMethodSnapshot: fireCloudMethod ? fireCloudMethod.snapshot : null,
+    fireCloudMethodConfiguration: fireCloudMethod ? fireCloudMethod.configuration : null,
     fireCloudMethodConfigurationSnapshot: fireCloudMethod
-      ? fireCloudMethod.configurationSnapshot : null
+      ? fireCloudMethod.configurationSnapshot
+      : null,
   };
   const current = {
     pipeline: state.pipeline ? +state.pipeline.id : null,
@@ -147,7 +129,7 @@ function pipelineCheck (props, state) {
     fireCloudMethodConfiguration: state.fireCloudMethodConfiguration,
     fireCloudMethodConfigurationSnapshot: state.fireCloudMethodConfigurationSnapshot,
     fireCloudInputsLength: Object.keys(state.fireCloudInputs).length,
-    fireCloudOutputsLength: Object.keys(state.fireCloudOutputs).length
+    fireCloudOutputsLength: Object.keys(state.fireCloudOutputs).length,
   };
   return (
     state.pipelineChanged ||
@@ -164,33 +146,30 @@ function pipelineCheck (props, state) {
   );
 }
 
-function executionEnvironmentCheck (props, state, {execEnvSelectValue}) {
-  const {
-    fireCloudMethod
-  } = props;
+function executionEnvironmentCheck(props, state, {execEnvSelectValue}) {
+  const {fireCloudMethod} = props;
   const initial = {
     isDts: !!fireCloudMethod,
-    execEnvSelectValue
+    execEnvSelectValue,
   };
-  return initial.isDts !== state.isDts ||
-    initial.execEnvSelectValue !== state.execEnvSelectValue;
+  return initial.isDts !== state.isDts || initial.execEnvSelectValue !== state.execEnvSelectValue;
 }
 
-function spotOnDemandCheck (form, {spotInitialValue}) {
+function spotOnDemandCheck(form, {spotInitialValue}) {
   if (!formItemInitialized(form, `${ADVANCED}.is_spot`)) {
     return false;
   }
   return `${getFormFieldValue(form, `${ADVANCED}.is_spot`)}` !== `${spotInitialValue}`;
 }
 
-function autoPauseCheck (form, state) {
+function autoPauseCheck(form, state) {
   if (!formItemInitialized(form, `${ADVANCED}.is_spot`)) {
     return false;
   }
   return `${getFormFieldValue(form, `${ADVANCED}.is_spot`)}` === 'false' && !state.autoPause;
 }
 
-function limitMountsCheck (form, parameters) {
+function limitMountsCheck(form, parameters) {
   if (!formItemInitialized(form, `${ADVANCED}.limitMounts`)) {
     return false;
   }
@@ -200,7 +179,7 @@ function limitMountsCheck (form, parameters) {
     }
     return undefined;
   };
-  const isNull = o => o === null || o === undefined;
+  const isNull = (o) => o === null || o === undefined;
   const initial = getDefaultValue();
   const formValue = getFormFieldValue(form, `${ADVANCED}.limitMounts`);
   if (isNull(formValue) && isNull(initial)) {
@@ -211,7 +190,7 @@ function limitMountsCheck (form, parameters) {
   }
   return formValue !== initial;
 }
-function cmdTemplateCheck (state, parameters, {cmdTemplateValue, toolDefaultCmd}) {
+function cmdTemplateCheck(state, parameters, {cmdTemplateValue, toolDefaultCmd}) {
   let code = cmdTemplateValue;
   if (state.startIdle) {
     code = 'sleep infinity';
@@ -221,98 +200,31 @@ function cmdTemplateCheck (state, parameters, {cmdTemplateValue, toolDefaultCmd}
   if (code === undefined) {
     return false;
   }
-  return code !== parameters['cmd_template'];
+  return code !== parameters.cmd_template;
 }
 
-function parametersCheck (formParameters, parameters, state, preferences) {
-  const formValue = {};
-  const prettyNames = {};
-  if (formParams && formParams.keys) {
-    for (let i = 0; i < formParams.keys.length; i++) {
-      const key = formParams.keys[i];
-      if (!formParams.params || !formParams.params.hasOwnProperty(key)) {
-        continue;
-      }
-      const parameter = formParams.params[key];
-      if (parameter && parameter.name && !isCustomCapability(parameter.name, preferences)) {
-        formValue[parameter.name] = parameter.value || '';
-        prettyNames[parameter.name] = parameter.pretty_name || '';
-      }
-    }
-  } else {
-    // 'form' value was not initialized yet -
-    // so it wasn't modified
-    return false;
-  }
-  if (formSystemParams && formSystemParams.keys) {
-    for (let i = 0; i < formSystemParams.keys.length; i++) {
-      const key = formSystemParams.keys[i];
-      if (!formSystemParams.params || !formSystemParams.params.hasOwnProperty(key)) {
-        continue;
-      }
-      const parameter = formSystemParams.params[key];
-      if (parameter && parameter.name && !isCustomCapability(parameter.name, preferences)) {
-        formValue[parameter.name] = parameter.value || '';
-        prettyNames[parameter.name] = parameter.pretty_name || '';
-      }
-    }
-  }
-  const initialData = Object.keys(parameters.parameters || {})
-    .filter(key => [
-      CP_CAP_LIMIT_MOUNTS,
-      ...getSkippedSystemParametersList({state, props: {preferences}})
-    ].indexOf(key) === -1)
-    .filter(key => !isCustomCapability(key, preferences))
-    .map(key => ({
-      key,
-      value: parameters.parameters[key].value || '',
-      prettyName: parameters.parameters[key].pretty_name || ''
-    }));
-  const initialValue = initialData.reduce((r, c) => ({...r, [c.key]: c.value}), {});
-  const initialPrettyName = initialData.reduce((r, c) => ({...r, [c.key]: c.prettyName}), {});
-  const check = (source, test) => {
-    const sourceEntries = Object.entries(source);
-    for (let i = 0; i < sourceEntries.length; i++) {
-      const [name, value] = sourceEntries[i];
-      if (!test.hasOwnProperty(name) || `${test[name]}` !== `${value}`) {
-        return true;
-      }
-    }
-    return false;
-  };
-  return Object.keys(formValue).length !== Object.keys(initialValue).length ||
-    check(formValue, initialValue) ||
-    check(initialValue, formValue) ||
-    check(initialPrettyName, prettyNames) ||
-    check(prettyNames, initialPrettyName);
-}
-
-function runCapabilitiesCheck (state, parameters, preferences) {
+function runCapabilitiesCheck(state, parameters, preferences) {
   return checkRunCapabilitiesModified(
     state.runCapabilities,
     getEnabledCapabilities(parameters.parameters),
-    preferences
+    preferences,
   );
 }
 
-function checkRootEntityModified (props, state) {
-  const {
-    configurations = [],
-    currentConfigurationName
-  } = props || {};
-  const {
-    rootEntityId
-  } = state || {};
-  const currentConfiguration =
-      configurations.find(config => config.name === currentConfigurationName);
+function checkRootEntityModified(props, state) {
+  const {configurations = [], currentConfigurationName} = props || {};
+  const {rootEntityId} = state || {};
+  const currentConfiguration = configurations.find(
+    (config) => config.name === currentConfigurationName,
+  );
   if (currentConfiguration) {
-    const convert = o => o && !Number.isNaN(Number(o)) ? Number(o) : undefined;
+    const convert = (o) => (o && !Number.isNaN(Number(o)) ? Number(o) : undefined);
     return convert(rootEntityId) !== convert(currentConfiguration.rootEntityId);
   }
   return false;
 }
 
-function notificationsCheck (parameters, form) {
+function notificationsCheck(parameters, form) {
   if (!formItemInitialized(form, `${ADVANCED}.notifications`)) {
     return false;
   }
@@ -321,28 +233,25 @@ function notificationsCheck (parameters, form) {
   return !notificationArraysAreEqual(formNotifications, propsNotifications);
 }
 
-function rawEditCheck (parameters, state) {
+function rawEditCheck(parameters, state) {
   return parameters.raw !== state.isRawEditEnabled;
 }
 
 export default function (props, state, options) {
   const {form, parameters, preferences} = props;
-  const {
-    defaultCloudRegionId,
-    formParameters = {},
-    initialParameters = {}
-  } = options;
+  const {defaultCloudRegionId, formParameters = {}, initialParameters = {}} = options;
   const {parameters: configParams = {}} = parameters || {};
   const initialFsConfig = getFsConfigFromParameters(configParams);
   const initialReservationRequestParameters = readReservationParameters(configParams);
   const reservationRequestParametersModified = reservationParametersDiffer(
     initialReservationRequestParameters,
-    state.reservationParameters
+    state.reservationParameters,
   );
   const {fsConfig} = state;
   const fsConfigModified = !fsConfigsAreEqual(fsConfig, initialFsConfig);
   // configuration name check
-  return modified(form, props, 'configuration.name', 'currentConfigurationName') ||
+  return (
+    modified(form, props, 'configuration.name', 'currentConfigurationName') ||
     // pipeline check
     pipelineCheck(props, state) ||
     // execution environment check
@@ -363,7 +272,7 @@ export default function (props, state, options) {
       parameters,
       `${EXEC_ENVIRONMENT}.cloudRegionId`,
       'cloudRegionId',
-      defaultCloudRegionId
+      defaultCloudRegionId,
     ) ||
     // cores number check
     modified(form, parameters, `${EXEC_ENVIRONMENT}.coresNumber`, 'coresNumber') ||
@@ -372,13 +281,8 @@ export default function (props, state, options) {
     // auto-pause check
     autoPauseCheck(form, state) ||
     // friendly url check
-    modified(
-      form,
-      parameters,
-      `${ADVANCED}.friendly_url`,
-      'friendly_url',
-      undefined,
-      (v) => prettyUrlGenerator.build(v)
+    modified(form, parameters, `${ADVANCED}.friendly_url`, 'friendly_url', undefined, (v) =>
+      prettyUrlGenerator.build(v),
     ) ||
     // timeout check
     modified(form, parameters, `${ADVANCED}.timeout`, 'timeout') ||
@@ -401,5 +305,6 @@ export default function (props, state, options) {
     // reservation parameters
     reservationRequestParametersModified ||
     // raw mode
-    rawEditCheck(parameters, state);
+    rawEditCheck(parameters, state)
+  );
 }

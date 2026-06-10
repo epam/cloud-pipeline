@@ -17,7 +17,7 @@
 const SIZE_PER_TICK = 100;
 
 const buildRule = (rangeFn) => ({
-  fn: range => rangeFn(range),
+  fn: (range) => rangeFn(range),
   fillRange: function (start, end, isBase = true) {
     let tick = 0;
     const result = [];
@@ -26,13 +26,13 @@ const buildRule = (rangeFn) => ({
         tick: start,
         display: `${start}%`,
         isBase,
-        isStart: true
+        isStart: true,
       });
       result.push({
         tick: end,
         display: `${end}%`,
         isBase,
-        isEnd: true
+        isEnd: true,
       });
     }
     while (tick <= start) {
@@ -41,9 +41,9 @@ const buildRule = (rangeFn) => ({
     while (tick < end) {
       if (result.filter(({tick: t}) => t === tick).length === 0) {
         result.push({
-          tick: tick,
+          tick,
           display: `${tick}%`,
-          isBase
+          isBase,
         });
       }
       tick = this.addStep(tick);
@@ -59,18 +59,18 @@ const buildRule = (rangeFn) => ({
     }
     return result;
   },
-  nextRule: undefined
+  nextRule: undefined,
 });
 
 const rules = [
   {
-    ...buildRule(o => o / 25),
-    addStep: o => o + 25
+    ...buildRule((o) => o / 25),
+    addStep: (o) => o + 25,
   },
   {
-    ...buildRule(o => o / 5),
-    addStep: o => o + 5
-  }
+    ...buildRule((o) => o / 5),
+    addStep: (o) => o + 5,
+  },
 ];
 
 for (let i = 0; i < rules.length - 1; i++) {
@@ -78,21 +78,14 @@ for (let i = 0; i < rules.length - 1; i++) {
 }
 
 export default function (start, end, canvasSize) {
-  if (
-    !canvasSize ||
-    Math.abs(canvasSize) === Infinity ||
-    isNaN(canvasSize) ||
-    start === end
-  ) {
+  if (!canvasSize || Math.abs(canvasSize) === Infinity || isNaN(canvasSize) || start === end) {
     return [];
   }
   const baseTicksCount = Math.floor(canvasSize / SIZE_PER_TICK);
-  const diffs = rules
-    .map(rule => ({
-      ...rule,
-      diff: rule.fn(end - start)
-    }));
-  const bestFit = diffs
-    .filter(d => d.diff <= baseTicksCount).pop() || diffs[0];
+  const diffs = rules.map((rule) => ({
+    ...rule,
+    diff: rule.fn(end - start),
+  }));
+  const bestFit = diffs.filter((d) => d.diff <= baseTicksCount).pop() || diffs[0];
   return bestFit.fillRange(start, end);
 }

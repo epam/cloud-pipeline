@@ -19,7 +19,7 @@ import {sectionsIntersects} from './utilities/label-positioning';
 
 const id = 'barchart-data-label';
 
-function isNotSet (v) {
+function isNotSet(v) {
   return v === undefined || v === null;
 }
 
@@ -28,69 +28,45 @@ const plugin = {
   afterDatasetsDraw: function (chart, ease, pluginOptions) {
     const {valueFormatter = costTickFormatter} = pluginOptions || {};
     const ctx = chart.chart.ctx;
-    const {
-      scales = {}
-    } = chart;
-    const datasetLabels = chart.data.datasets
-      .map((dataset, i) => {
-        const meta = chart.getDatasetMeta(i);
-        const {
-          yAxisID
-        } = meta;
-        const yAxis = scales[yAxisID];
-        const {
-          hidden = false,
-          showDataLabel: showLabel = !hidden,
-          data: items = []
-        } = dataset;
-        const showDatasetLabel = (index) => {
-          if (typeof showLabel === 'function') {
-            const allData = chart.data.datasets.map((aDataset) => ({
-              dataset: aDataset,
-              value: (aDataset.data || [])[index]
-            }));
-            return showLabel(
-              items[index],
-              allData,
-              {
-                yAxis,
-                dataset,
-                getPxValue (aValue) {
-                  return yAxis
-                    ? yAxis.getPixelForValue(aValue)
-                    : undefined;
-                },
-                getPxSize (aValue) {
-                  return yAxis
-                    ? (yAxis.bottom - yAxis.getPixelForValue(aValue))
-                    : undefined;
-                },
-                pxValue: yAxis ? yAxis.getPixelForValue(items[index]) : undefined,
-                minPxValue: yAxis ? yAxis.getPixelForValue(yAxis.min) : undefined,
-                pxSize: yAxis ? (yAxis.bottom - yAxis.getPixelForValue(items[index])) : undefined
-              }
-            );
-          }
-          return showLabel;
-        };
-        if (meta) {
-          return meta.data.map((element, index) => {
-            const show = showDatasetLabel(index);
-            if (show) {
-              return this.getInitialLabelConfig(
-                dataset,
-                element,
-                index,
-                meta,
-                chart,
-                valueFormatter
-              );
-            }
-            return undefined;
+    const {scales = {}} = chart;
+    const datasetLabels = chart.data.datasets.map((dataset, i) => {
+      const meta = chart.getDatasetMeta(i);
+      const {yAxisID} = meta;
+      const yAxis = scales[yAxisID];
+      const {hidden = false, showDataLabel: showLabel = !hidden, data: items = []} = dataset;
+      const showDatasetLabel = (index) => {
+        if (typeof showLabel === 'function') {
+          const allData = chart.data.datasets.map((aDataset) => ({
+            dataset: aDataset,
+            value: (aDataset.data || [])[index],
+          }));
+          return showLabel(items[index], allData, {
+            yAxis,
+            dataset,
+            getPxValue(aValue) {
+              return yAxis ? yAxis.getPixelForValue(aValue) : undefined;
+            },
+            getPxSize(aValue) {
+              return yAxis ? yAxis.bottom - yAxis.getPixelForValue(aValue) : undefined;
+            },
+            pxValue: yAxis ? yAxis.getPixelForValue(items[index]) : undefined,
+            minPxValue: yAxis ? yAxis.getPixelForValue(yAxis.min) : undefined,
+            pxSize: yAxis ? yAxis.bottom - yAxis.getPixelForValue(items[index]) : undefined,
           });
         }
-        return [];
-      });
+        return showLabel;
+      };
+      if (meta) {
+        return meta.data.map((element, index) => {
+          const show = showDatasetLabel(index);
+          if (show) {
+            return this.getInitialLabelConfig(dataset, element, index, meta, chart, valueFormatter);
+          }
+          return undefined;
+        });
+      }
+      return [];
+    });
     const dataLabels = [];
     for (let i = 0; i < datasetLabels.length; i++) {
       const data = datasetLabels[i];
@@ -104,8 +80,8 @@ const plugin = {
         }
       }
     }
-    dataLabels.forEach(labels => this.arrangeLabels(labels));
-    dataLabels.forEach(labels => labels.forEach(label => this.drawLabel(ctx, label)));
+    dataLabels.forEach((labels) => this.arrangeLabels(labels));
+    dataLabels.forEach((labels) => labels.forEach((label) => this.drawLabel(ctx, label)));
   },
   arrangeLabels: function (labels) {
     if (!labels || !labels.length) {
@@ -114,22 +90,23 @@ const plugin = {
     if (labels.length > 0) {
       const [any] = labels;
       const {top, bottom} = any.globalBounds;
-      const spaces = [{
-        p1: top,
-        p2: bottom
-      }];
+      const spaces = [
+        {
+          p1: top,
+          p2: bottom,
+        },
+      ];
       const addLabel = (boundaries) => {
         const {y, height} = boundaries;
-        const [intersection] = spaces
-          .filter(s => sectionsIntersects(s, {p1: y, p2: y + height}));
+        const [intersection] = spaces.filter((s) => sectionsIntersects(s, {p1: y, p2: y + height}));
         if (intersection) {
           const before = {
             p1: Math.min(intersection.p1, y),
-            p2: Math.min(intersection.p2, y)
+            p2: Math.min(intersection.p2, y),
           };
           const after = {
             p1: Math.min(intersection.p2, y + height),
-            p2: Math.max(intersection.p2, y + height)
+            p2: Math.max(intersection.p2, y + height),
           };
           const newSpaces = [before, after].filter(({p1, p2}) => p2 - p1 > 0);
           const index = spaces.indexOf(intersection);
@@ -145,31 +122,23 @@ const plugin = {
         .forEach(addLabel);
       for (let i = 0; i < labels.length; i++) {
         const config = labels[i];
-        const {
-          dataset
-        } = config;
-        const {
-          dataPoint,
-          getLabelPosition,
-          labelHeight
-        } = config.label;
-        const {
-          details = false
-        } = dataset || {};
+        const {dataset} = config;
+        const {dataPoint, getLabelPosition, labelHeight} = config.label;
+        const {details = false} = dataset || {};
         const findSpace = () => {
           const destinationY = dataPoint.y - labelHeight / 2.0;
           return spaces
-            .filter(s => (s.p2 - s.p1) >= labelHeight)
-            .map(space => {
+            .filter((s) => s.p2 - s.p1 >= labelHeight)
+            .map((space) => {
               const y = Math.max(
                 Math.min(destinationY, space.p2 - labelHeight / 2.0),
-                space.p1 + labelHeight / 2.0
+                space.p1 + labelHeight / 2.0,
               );
               return {
                 space,
                 distance: Math.abs(y - destinationY),
                 above: y < destinationY,
-                position: getLabelPosition(y)
+                position: getLabelPosition(y),
               };
             });
         };
@@ -195,7 +164,7 @@ const plugin = {
         textBold = false,
         textColor,
         flagColor,
-        showFlag = true
+        showFlag = true,
       } = dataset;
       const color = textColor || borderColor;
       const {position, text} = config;
@@ -205,39 +174,18 @@ const plugin = {
         ctx.font = `${textBold ? 'bold ' : ''}9pt sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';
-        ctx.fillText(
-          text,
-          position.x + position.width / 2.0, position.y + position.height
-        );
+        ctx.fillText(text, position.x + position.width / 2.0, position.y + position.height);
         if (flagColor && showFlag) {
           ctx.beginPath();
-          ctx.arc(
-            position.x,
-            position.y + position.height / 2.0,
-            2.5,
-            0,
-            Math.PI * 2,
-            true
-          );
+          ctx.arc(position.x, position.y + position.height / 2.0, 2.5, 0, Math.PI * 2, true);
           ctx.fillStyle = flagColor;
           ctx.fill();
         }
       }
     }
   },
-  getInitialLabelConfig: function (
-    dataset,
-    element,
-    index,
-    meta,
-    chart,
-    valueFormatter
-  ) {
-    const {
-      data,
-      textBold = false,
-      dataItemTitle = ''
-    } = dataset;
+  getInitialLabelConfig: function (dataset, element, index, meta, chart, valueFormatter) {
+    const {data, textBold = false, dataItemTitle = ''} = dataset;
     const {xAxisID, yAxisID} = meta;
     const xAxis = chart.scales[xAxisID];
     const yAxis = chart.scales[yAxisID];
@@ -246,14 +194,12 @@ const plugin = {
       return null;
     }
     const ctx = yAxis.ctx;
-    const {
-      stacked = false
-    } = yAxis.options || {};
+    const {stacked = false} = yAxis.options || {};
     const globalBounds = {
       top: yAxis.top,
       bottom: yAxis.bottom,
       left: xAxis.left,
-      right: xAxis.right
+      right: xAxis.right,
     };
     const getLabelXY = () => {
       let currentLabelY = yAxis.getPixelForValue(dataItem);
@@ -261,8 +207,9 @@ const plugin = {
         const datasetIndex = (chart.data.datasets || []).indexOf(dataset);
         const datasets = (chart.data.datasets || [])
           .filter((aDataset, index) => index < datasetIndex)
-          .filter((aDataset) => aDataset === dataset ||
-            (!!aDataset.stack && aDataset.stack === dataset.stack)
+          .filter(
+            (aDataset) =>
+              aDataset === dataset || (!!aDataset.stack && aDataset.stack === dataset.stack),
           );
         const valuesBefore = datasets
           .map((aDataset) => (aDataset.data || [])[index] || 0)
@@ -271,7 +218,7 @@ const plugin = {
       }
       return {
         x: element.getCenterPoint().x,
-        y: currentLabelY
+        y: currentLabelY,
       };
     };
     let labelText = valueFormatter(dataItem);
@@ -291,7 +238,7 @@ const plugin = {
         x: x - labelTotalWidth / 2.0,
         y: yy - labelTotalHeight / 2.0 + padding.y + margin,
         width: labelTotalWidth,
-        height: labelHeight + padding.y * 2.0
+        height: labelHeight + padding.y * 2.0,
       };
     };
     return {
@@ -301,10 +248,10 @@ const plugin = {
         dataPoint: {x, y},
         getLabelPosition,
         labelHeight: labelTotalHeight,
-        text: labelText
-      }
+        text: labelText,
+      },
     };
-  }
+  },
 };
 
 export {id, plugin};

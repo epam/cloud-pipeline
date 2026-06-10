@@ -16,35 +16,38 @@
 
 import {clearQuotes} from './string-utilities';
 import {
-  ContextTypes, isConditional, isScatter, isWorkflow
+  ContextTypes,
+  isConditional,
+  isScatter,
+  isWorkflow,
 } from '../../../../../../../utils/pipeline-builder';
 import {alphabeticalSorter} from '../../../../../../../utils/sorting';
 
-export function serializeWorkflowParameters (workflow) {
+export function serializeWorkflowParameters(workflow) {
   if (!workflow) {
     return undefined;
   }
-  const {
-    inputs = [],
-    outputs = [],
-    name
-  } = workflow;
+  const {inputs = [], outputs = [], name} = workflow;
   const mapParameterName = (parameter) => `${name}_${parameter.name}`;
-  const mapParameters = (parameters = [], fileType = 'input') => parameters.reduce((r, c) => ({
-    ...r,
-    [mapParameterName(c)]: {
-      type: /^File\??$/i.test(c.type) ? fileType : 'string',
-      value: clearQuotes(c.value),
-      required: !/.+\?$/i.test(c.type)
-    }
-  }), {});
+  const mapParameters = (parameters = [], fileType = 'input') =>
+    parameters.reduce(
+      (r, c) => ({
+        ...r,
+        [mapParameterName(c)]: {
+          type: /^File\??$/i.test(c.type) ? fileType : 'string',
+          value: clearQuotes(c.value),
+          required: !/.+\?$/i.test(c.type),
+        },
+      }),
+      {},
+    );
   return {
     ...mapParameters(inputs, 'input'),
-    ...mapParameters(outputs, 'output')
+    ...mapParameters(outputs, 'output'),
   };
 }
 
-export function workflowParametersEquals (p1, p2) {
+export function workflowParametersEquals(p1, p2) {
   const keys1 = Object.keys(p1 || {}).sort(alphabeticalSorter);
   const keys2 = Object.keys(p2 || {}).sort(alphabeticalSorter);
   if (keys1.length !== keys2.length) {
@@ -67,7 +70,7 @@ export function workflowParametersEquals (p1, p2) {
   return true;
 }
 
-export function getEntityType (entity) {
+export function getEntityType(entity) {
   if (!entity) {
     return undefined;
   }
@@ -87,7 +90,7 @@ export function getEntityType (entity) {
   }
 }
 
-export function getEntityNameOptions (entity, document) {
+export function getEntityNameOptions(entity, document) {
   if (!entity) {
     return undefined;
   }
@@ -95,28 +98,22 @@ export function getEntityNameOptions (entity, document) {
   if (document !== entity.document && entity.document && entity.document.reference) {
     return {
       type,
-      name: `${entity.document.reference}.${entity.reference}`
+      name: `${entity.document.reference}.${entity.reference}`,
     };
   }
   return {
     type: getEntityType(entity),
-    name: entity.reference
+    name: entity.reference,
   };
 }
 
-const PARENT_ACTION_TYPES = [
-  ContextTypes.workflow,
-  ContextTypes.scatter,
-  ContextTypes.conditional
-];
+const PARENT_ACTION_TYPES = [ContextTypes.workflow, ContextTypes.scatter, ContextTypes.conditional];
 
-function addAction (action, parent) {
+function addAction(action, parent) {
   if (!parent) {
     throw new Error('Parent entity not specified');
   }
-  if (!PARENT_ACTION_TYPES.includes(parent.contextType) ||
-    typeof parent.addAction !== 'function'
-  ) {
+  if (!PARENT_ACTION_TYPES.includes(parent.contextType) || typeof parent.addAction !== 'function') {
     throw new Error(`Error creating call: parent type not supported ("${parent.contextType}")`);
   }
   if (
@@ -128,33 +125,33 @@ function addAction (action, parent) {
   throw new Error(`Cannot add call to ${parent.toString()}`);
 }
 
-export function addScatter (parent) {
+export function addScatter(parent) {
   addAction(
     {
-      type: ContextTypes.scatter
+      type: ContextTypes.scatter,
     },
-    parent
+    parent,
   );
 }
 
-export function addConditional (parent) {
+export function addConditional(parent) {
   addAction(
     {
       type: ContextTypes.conditional,
-      expression: 'true'
+      expression: 'true',
     },
-    parent
+    parent,
   );
 }
 
-export function addTask (document, task) {
+export function addTask(document, task) {
   if (!document) {
     throw new Error('Cannot add task: WDL document should be provided');
   }
   return document.addTask(task);
 }
 
-export function addCall (parent, task) {
+export function addCall(parent, task) {
   if (!parent) {
     throw new Error('Cannot add call: parent entity should be provided');
   }
@@ -162,33 +159,35 @@ export function addCall (parent, task) {
     throw new Error('Cannot add call: task should be specified or WDL document should be provided');
   }
   const taskOptions = task || parent.document.addTask();
-  return addAction({
-    task: taskOptions,
-    type: ContextTypes.call
-  }, parent);
+  return addAction(
+    {
+      task: taskOptions,
+      type: ContextTypes.call,
+    },
+    parent,
+  );
 }
 
-export function removeTask (task) {
+export function removeTask(task) {
   if (task && task.document) {
     task.remove();
   }
 }
 
-export function getParameterAllowedStructs (parameter) {
+export function getParameterAllowedStructs(parameter) {
   if (parameter && parameter.executableParameter) {
     return getParameterAllowedStructs(parameter.executableParameter);
   }
   return (parameter && parameter.document ? parameter.document.globalStructs : []) || [];
 }
 
-export function generateNewRuntimePropertyName (runtime = []) {
-  let newPropertyName = `property`;
+export function generateNewRuntimePropertyName(runtime = []) {
+  const newPropertyName = 'property';
   let propertyIndex = 0;
-  const generateProperty = () => propertyIndex
-    ? `${newPropertyName}_${propertyIndex}`
-    : newPropertyName;
+  const generateProperty = () =>
+    propertyIndex ? `${newPropertyName}_${propertyIndex}` : newPropertyName;
   let result = generateProperty();
-  while (runtime.find(r => r.property === result)) {
+  while (runtime.find((r) => r.property === result)) {
     propertyIndex += 1;
     result = generateProperty();
   }

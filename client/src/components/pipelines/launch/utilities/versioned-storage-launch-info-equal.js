@@ -14,20 +14,14 @@
  *  limitations under the License.
  */
 
-export default function versionedStorageLaunchInfoEqual (info1, info2) {
+export default function versionedStorageLaunchInfoEqual(info1, info2) {
   if (!info1 && !info2) {
     return true;
   }
   if (!info1 || !info2) {
     return false;
   }
-  const {
-    toolId: toolId1,
-    version: version1
-  } = info1;
-  const {
-    toolId: toolId2,
-    version: version2
-  } = info2;
+  const {toolId: toolId1, version: version1} = info1;
+  const {toolId: toolId2, version: version2} = info2;
   return toolId1 === toolId2 && version1 === version2;
 }

@@ -20,10 +20,11 @@ import {getMachineRunMetadataClassName} from './ngs-project-machine-runs';
 const UI_NGS_PROJECT_SAMPLE_PREFERENCE = 'ngs.preprocessing.sample.metadata.class.name';
 const SAMPLE_METADATA_CLASS_NAME = 'Sample';
 
-export function getSampleMetadataClassName (preferences) {
+export function getSampleMetadataClassName(preferences) {
   if (preferences && preferences.loaded) {
-    return preferences.getPreferenceValue(UI_NGS_PROJECT_SAMPLE_PREFERENCE) ||
-      SAMPLE_METADATA_CLASS_NAME;
+    return (
+      preferences.getPreferenceValue(UI_NGS_PROJECT_SAMPLE_PREFERENCE) || SAMPLE_METADATA_CLASS_NAME
+    );
   }
   return SAMPLE_METADATA_CLASS_NAME;
 }
@@ -34,50 +35,51 @@ class NgsProjectSamples {
   folderId;
   entityFields;
 
-  constructor (options = {}, preferences) {
+  constructor(options = {}, preferences) {
     makeObservable(this, {
       preferences: observable,
       metadataClass: observable,
       folderId: observable,
       entityFields: observable,
-      isSamplesMetadataClass: computed
+      isSamplesMetadataClass: computed,
     });
     this.preferences = preferences;
-    const {
-      metadataClass,
-      folderId,
-      entityFields
-    } = options;
+    const {metadataClass, folderId, entityFields} = options;
     this.metadataClass = metadataClass;
     this.entityFields = entityFields;
     this.folderId = folderId;
   }
 
-  get isSamplesMetadataClass () {
+  get isSamplesMetadataClass() {
     const metadataClassName = getSampleMetadataClassName(this.preferences);
-    return metadataClassName &&
+    return (
+      metadataClassName &&
       this.metadataClass &&
-      metadataClassName.toLowerCase() === this.metadataClass.toLowerCase();
+      metadataClassName.toLowerCase() === this.metadataClass.toLowerCase()
+    );
   }
 
-  getMachineRunField (className) {
+  getMachineRunField(className) {
     return new Promise((resolve) => {
       if (this.entityFields && this.preferences) {
         Promise.all([
           this.entityFields.fetchIfNeededOrWait(),
-          this.preferences.fetchIfNeededOrWait()
+          this.preferences.fetchIfNeededOrWait(),
         ])
           .then(() => {
             const machineRunClassName = getMachineRunMetadataClassName(this.preferences);
             const metadataClassName = className || getSampleMetadataClassName(this.preferences);
-            const fieldInfo = (this.entityFields.value || [])
-              .find(o => o.metadataClass && o.metadataClass.name === metadataClassName);
+            const fieldInfo = (this.entityFields.value || []).find(
+              (o) => o.metadataClass && o.metadataClass.name === metadataClassName,
+            );
             const {fields = []} = fieldInfo || {};
-            const referenceField = fields.find(o => o.reference && o.type === machineRunClassName);
+            const referenceField = fields.find(
+              (o) => o.reference && o.type === machineRunClassName,
+            );
             if (referenceField) {
               resolve({
                 className: metadataClassName,
-                fieldName: referenceField.name
+                fieldName: referenceField.name,
               });
             } else {
               resolve();

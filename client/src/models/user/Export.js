@@ -17,7 +17,7 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class ExportUsers extends RemotePost {
-  constructor () {
+  constructor() {
     super();
     this.url = '/user/export';
     this.constructor.isJson = false;

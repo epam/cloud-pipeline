@@ -19,7 +19,7 @@ import {
   computed as mobxComputed,
   isObservableArray,
   observable,
-  makeObservable
+  makeObservable,
 } from 'mobx';
 import {AnalysisTypes} from '../common/analysis-types';
 import generateId from '../common/generate-id';
@@ -27,16 +27,16 @@ import {
   getComputedValue,
   getComputedValueLink,
   modifyValue,
-  reverseModifyValue
+  reverseModifyValue,
 } from '../modules/parse-module-configuration';
 
-function mapListItem (listItem) {
+function mapListItem(listItem) {
   if (typeof listItem !== 'object') {
     return {
       id: listItem,
       value: listItem,
       key: listItem,
-      title: listItem
+      title: listItem,
     };
   }
   if (typeof listItem === 'object' && listItem.title && listItem.value) {
@@ -44,7 +44,7 @@ function mapListItem (listItem) {
       id: listItem.value,
       value: listItem.value,
       key: listItem.value,
-      title: listItem.title
+      title: listItem.title,
     };
   }
   return undefined;
@@ -108,7 +108,7 @@ class ModuleParameter {
   /**
    * @param {ModuleParameterOptions} [options]
    */
-  constructor (options = {}) {
+  constructor(options = {}) {
     makeObservable(this, {
       cpModule: observable,
       _required: observable,
@@ -119,7 +119,7 @@ class ModuleParameter {
       isOutput: mobxComputed,
       values: mobxComputed,
       visible: mobxComputed,
-      required: mobxComputed
+      required: mobxComputed,
     });
     this.id = `parameter_#${generateId()}`;
     const {
@@ -136,15 +136,15 @@ class ModuleParameter {
       visibilityHandler,
       values,
       renderer,
-      valueParser = (o => o),
-      valueFormatter = (o => o),
+      valueParser = (o) => o,
+      valueFormatter = (o) => o,
       local = false,
       range,
       hidden = false,
       computed,
       emptyValue,
       showTitle = true,
-      exportParameter = true
+      exportParameter = true,
     } = options;
     this.name = name;
     this.parameterName = parameterName;
@@ -170,37 +170,36 @@ class ModuleParameter {
     this.exportParameter = exportParameter;
   }
 
-  get pipeline () {
+  get pipeline() {
     if (!this.cpModule) {
       return undefined;
     }
     return this.cpModule.pipeline;
   }
 
-  get physicalSize () {
+  get physicalSize() {
     if (!this.pipeline) {
       return undefined;
     }
     return this.pipeline.physicalSize;
   }
 
-  get analysis () {
+  get analysis() {
     if (!this.pipeline) {
       return undefined;
     }
     return this.pipeline.analysis;
   }
 
-  get channels () {
+  get channels() {
     if (!this.pipeline) {
       return [];
     }
     return this.pipeline.channels;
   }
 
-  get isOutput () {
-    return this.cpModule &&
-      !!this.cpModule.outputParameters.find(o => o === this);
+  get isOutput() {
+    return this.cpModule && !!this.cpModule.outputParameters.find((o) => o === this);
   }
 
   wrapValuesWithEmptyValue = (values = []) => {
@@ -211,29 +210,23 @@ class ModuleParameter {
     return _values.concat(values);
   };
 
-  get values () {
+  get values() {
     if (typeof this._values === 'function') {
       return this.wrapValuesWithEmptyValue(
-        (this._values(this.cpModule) || [])
-          .map(mapListItem)
-          .filter(Boolean)
+        (this._values(this.cpModule) || []).map(mapListItem).filter(Boolean),
       );
     } else if (this._values !== undefined && this._values.length) {
-      return this.wrapValuesWithEmptyValue(
-        this._values
-          .map(mapListItem)
-          .filter(Boolean)
-      );
+      return this.wrapValuesWithEmptyValue(this._values.map(mapListItem).filter(Boolean));
     }
     return this.wrapValuesWithEmptyValue([]);
   }
 
-  get visible () {
+  get visible() {
     if (this.hidden) {
       return false;
     }
     if (this.name === 'advanced' && this.cpModule) {
-      return this.cpModule.parametersConfigurations.some(config => config.advanced);
+      return this.cpModule.parametersConfigurations.some((config) => config.advanced);
     }
     if (this.advanced) {
       const advancedValue = this.cpModule ? this.cpModule.getParameterValue('advanced') : undefined;
@@ -247,11 +240,11 @@ class ModuleParameter {
     return true;
   }
 
-  get required () {
+  get required() {
     return this._required && this.visible;
   }
 
-  get defaultValue () {
+  get defaultValue() {
     if (typeof this._defaultValue === 'function') {
       return this._defaultValue(this.cpModule);
     }
@@ -273,7 +266,7 @@ class ModuleParameter {
     }
   }
 
-  createModuleParameterValue () {
+  createModuleParameterValue() {
     return new ModuleParameterValue(this);
   }
 }
@@ -288,7 +281,7 @@ class ModuleParameterValue {
   /**
    * @param {ModuleParameter} parameter
    */
-  constructor (parameter) {
+  constructor(parameter) {
     makeObservable(this, {
       parameter: observable,
       _value: observable,
@@ -298,144 +291,133 @@ class ModuleParameterValue {
       channels: mobxComputed,
       value: mobxComputed,
       isEmpty: mobxComputed,
-      reportChanged: action
+      reportChanged: action,
     });
     this.parameter = parameter;
     this.value = parameter.defaultValue;
   }
 
-  get cpModule () {
+  get cpModule() {
     if (!this.parameter) {
       return undefined;
     }
     return this.parameter.cpModule;
   }
 
-  get pipeline () {
+  get pipeline() {
     if (!this.parameter) {
       return undefined;
     }
     return this.parameter.pipeline;
   }
 
-  get analysis () {
+  get analysis() {
     if (!this.parameter) {
       return undefined;
     }
     return this.parameter.analysis;
   }
 
-  get channels () {
+  get channels() {
     if (!this.parameter) {
       return undefined;
     }
     return this.parameter.channels;
   }
 
-  get value () {
+  get value() {
     return this.getValue();
   }
 
-  set value (aValue) {
+  set value(aValue) {
     this.setValue(aValue);
   }
 
-  get isEmpty () {
+  get isEmpty() {
     const aValue = this.value;
-    return aValue === undefined ||
+    return (
+      aValue === undefined ||
       (this.parameter && this.parameter.isList && this.parameter.emptyValue === aValue) ||
       (typeof aValue === 'string' && aValue.trim() === '') ||
-      (typeof aValue === 'object' && aValue.length === 0);
+      (typeof aValue === 'object' && aValue.length === 0)
+    );
   }
 
-  get isOutput () {
+  get isOutput() {
     if (!this.parameter) {
       return true;
     }
     return this.parameter.isOutput;
   }
 
-  get isInvalid () {
+  get isInvalid() {
     if (!this.parameter) {
       return true;
     }
-    return (this.parameter.required && this.isEmpty) ||
-      (
-        this.parameter.isOutput &&
+    return (
+      (this.parameter.required && this.isEmpty) ||
+      (this.parameter.isOutput &&
         this.cpModule &&
-        this.cpModule.modulesBefore.filter((cpModule) => !cpModule.hidden)
-          .reduce((outputs, cpModule) => ([...outputs, ...cpModule.outputs]), [])
-          .filter((output) => output.name === this.value).length > 0
-      );
+        this.cpModule.modulesBefore
+          .filter((cpModule) => !cpModule.hidden)
+          .reduce((outputs, cpModule) => [...outputs, ...cpModule.outputs], [])
+          .filter((output) => output.name === this.value).length > 0)
+    );
   }
 
-  get payload () {
+  get payload() {
     return this.getPayload();
   }
 
-  getPayload (validate = false, exportLocal = false, useSystemNames = false) {
+  getPayload(validate = false, exportLocal = false, useSystemNames = false) {
     if (!this.parameter) {
       return {};
     }
-    const {
-      type,
-      isRange,
-      valueFormatter,
-      isList,
-      multiple,
-      local,
-      required
-    } = this.parameter;
+    const {type, isRange, valueFormatter, isList, multiple, local, required} = this.parameter;
     if (local && !exportLocal) {
       return {};
     }
-    const multipleFormatter = o => {
+    const multipleFormatter = (o) => {
       if (!multiple) {
         return o;
       }
       return o && (isObservableArray(o) || Array.isArray(o))
         ? o
-        : [o].filter(oo => oo !== undefined);
+        : [o].filter((oo) => oo !== undefined);
     };
-    const name = useSystemNames
-      ? this.parameter.name
-      : this.parameter.parameterName;
+    const name = useSystemNames ? this.parameter.name : this.parameter.parameterName;
     let formattedValue = valueFormatter(multipleFormatter(this.value), this.parameter.cpModule);
     if (isRange) {
       return {
-        [name]: (formattedValue || []).map(idx =>
-          Number.isNaN(Number(idx)) ? 0 : Number(idx)
-        )
+        [name]: (formattedValue || []).map((idx) => (Number.isNaN(Number(idx)) ? 0 : Number(idx))),
       };
     }
     if (isList && !formattedValue) {
       formattedValue = valueFormatter(multipleFormatter(this.parameter.emptyValue));
     }
-    const isEmpty = formattedValue === undefined ||
+    const isEmpty =
+      formattedValue === undefined ||
       (typeof formattedValue === 'string' && formattedValue.trim() === '') ||
       (typeof formattedValue === 'object' && formattedValue.length === 0);
     if (validate && this.parameter.visible && required && isEmpty) {
       const moduleName = this.parameter.cpModule
-        ? (this.parameter.cpModule.title || this.parameter.cpModule.name)
+        ? this.parameter.cpModule.title || this.parameter.cpModule.name
         : '';
       const parameterName = this.parameter.title || this.parameter.name;
       const moduleString = moduleName ? ` of the "${moduleName}" module ` : '';
-      throw new Error(
-        `"${parameterName}" parameter${moduleString}is required`
-      );
+      throw new Error(`"${parameterName}" parameter${moduleString}is required`);
     }
     switch (type) {
       case AnalysisTypes.string:
         return {
-          [name]:
-            `${formattedValue === undefined ? '' : formattedValue}`
+          [name]: `${formattedValue === undefined ? '' : formattedValue}`,
         };
       default:
         return {[name]: formattedValue};
     }
   }
 
-  getValue (...modifier) {
+  getValue(...modifier) {
     let result = this._value;
     if (this.parameter && this.parameter.computed) {
       result = getComputedValue(this.parameter.computed, this.parameter.cpModule);
@@ -448,14 +430,10 @@ class ModuleParameterValue {
     ) {
       result = this.parameter.emptyValue;
     }
-    return modifyValue(
-      result,
-      this.pipeline,
-      ...modifier
-    );
+    return modifyValue(result, this.pipeline, ...modifier);
   }
 
-  setValue (aValue, ...modifier) {
+  setValue(aValue, ...modifier) {
     let result = aValue;
     if (
       this.parameter &&
@@ -466,9 +444,10 @@ class ModuleParameterValue {
       result = this.parameter.emptyValue;
     }
     if (this.parameter && this.parameter.multiple) {
-      result = aValue && (isObservableArray(aValue) || Array.isArray(aValue))
-        ? aValue
-        : [aValue].filter(o => o !== undefined);
+      result =
+        aValue && (isObservableArray(aValue) || Array.isArray(aValue))
+          ? aValue
+          : [aValue].filter((o) => o !== undefined);
     }
     result = reverseModifyValue(result, this.pipeline, ...modifier);
     if (this.parameter && this.parameter.computed) {
@@ -481,7 +460,7 @@ class ModuleParameterValue {
     this._value = result;
   }
 
-  applyValue (value) {
+  applyValue(value) {
     if (!this.parameter) {
       return;
     }
@@ -506,12 +485,8 @@ class ModuleParameterValue {
 
   exportParameterValue = () => {
     const payload = this.getPayload(false, true, true);
-    return Object.entries(payload)
-      .map(([name, value]) => `${name}:${JSON.stringify(value)}`);
-  }
+    return Object.entries(payload).map(([name, value]) => `${name}:${JSON.stringify(value)}`);
+  };
 }
 
-export {
-  ModuleParameter,
-  ModuleParameterValue
-};
+export {ModuleParameter, ModuleParameterValue};

@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 class SystemDictionariesLoad extends Remote {
-  constructor (key) {
+  constructor(key) {
     super();
     this.url = `/categoricalAttribute/${key}`;
   }

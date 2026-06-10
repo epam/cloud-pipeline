@@ -26,7 +26,7 @@ const Layout = buildLayout({
   storage: 'panelsLayout-Billing-General',
   defaultSizes,
   panelNeighbors: [],
-  gridStyle: GridStyles
+  gridStyle: GridStyles,
 });
 
 export {GridStyles, Layout, Panels};

@@ -19,5 +19,5 @@ import Panels from './panels';
 export default [
   [Panels.runs, Panels.services, Panels.recentlyCompletedRuns],
   [Panels.activities, Panels.notifications],
-  [Panels.personalTools, Panels.data]
+  [Panels.personalTools, Panels.data],
 ];

@@ -26,7 +26,7 @@ import {alphabeticalSorter} from '../../../../utils/sorting';
 
 const DEFAULT_IMAGE_FORMAT = 'tiff';
 
-function imageIdsAreEqual (imageIdsA, imageIdsB) {
+function imageIdsAreEqual(imageIdsA, imageIdsB) {
   const a = [...new Set(imageIdsA || [])].sort(alphabeticalSorter);
   const b = [...new Set(imageIdsB || [])].sort(alphabeticalSorter);
   if (a.length !== b.length) {
@@ -40,11 +40,11 @@ function imageIdsAreEqual (imageIdsA, imageIdsB) {
   return true;
 }
 
-function zPlanesSorter (a, b) {
+function zPlanesSorter(a, b) {
   return Number(a) - Number(b);
 }
 
-function zPlanesAreEqual (zPlanesA, zPlanesB) {
+function zPlanesAreEqual(zPlanesA, zPlanesB) {
   const a = [...new Set(zPlanesA || [])].sort(zPlanesSorter);
   const b = [...new Set(zPlanesB || [])].sort(zPlanesSorter);
   if (a.length !== b.length) {
@@ -80,7 +80,7 @@ class HcsMergedImageSource {
   objectStorage;
   listeners = [];
 
-  constructor () {
+  constructor() {
     makeObservable(this, {
       path: observable,
       pathMask: observable,
@@ -104,35 +104,27 @@ class HcsMergedImageSource {
       omeTiffStorageId: computed,
       omeTiffPath: computed,
       omeTiffOffsetsPath: computed,
-      omeTiffGenerationError: computed
+      omeTiffGenerationError: computed,
     });
-    (this.initialize)();
+    this.initialize();
   }
 
-  getScreenshotFileName (url, generatedFilePath, format) {
+  getScreenshotFileName(url, generatedFilePath, format) {
     if (this.path && generatedFilePath && this.well) {
-      const name = this.path
-        .split('/')
-        .pop()
-        .split('.')
-        .slice(0, -1)
-        .join('.')
-        .replace(/\s/, '_');
+      const name = this.path.split('/').pop().split('.').slice(0, -1).join('.').replace(/\s/, '_');
       const format = generatedFilePath.split('.').pop();
-      const {
-        x,
-        y
-      } = this.well;
+      const {x, y} = this.well;
       const col = x + 1;
       const row = y + 1;
       const wellCol = col < 9 ? `0${col}` : col;
       const wellRow = row < 9 ? `0${row}` : row;
       const wellInfo = `r${wellRow}c${wellCol}`;
-      const fieldInfo = !this.imageIds || !this.imageIds.length
-        ? ''
-        : `f${this.imageIds.map((id) => id.split(':').pop()).join(',')}`;
+      const fieldInfo =
+        !this.imageIds || !this.imageIds.length
+          ? ''
+          : `f${this.imageIds.map((id) => id.split(':').pop()).join(',')}`;
       const zPlanes = this.zPlanes.slice();
-      const planeNumber = `p${zPlanes.map((z) => (z + 1)).join(',')}`;
+      const planeNumber = `p${zPlanes.map((z) => z + 1).join(',')}`;
       const timeSeriesNumber = `ts${this.sequenceId || 1}`;
       return `${name}-${wellInfo}${fieldInfo}${planeNumber}${timeSeriesNumber}.${format}`;
     }
@@ -144,44 +136,43 @@ class HcsMergedImageSource {
     }
   }
 
-  get available () {
-    return this.imageIds &&
+  get available() {
+    return (
+      this.imageIds &&
       this.imageIds.length > 0 &&
       this.storageId &&
       this.pathMask &&
       this.path &&
       this.sequenceId &&
-      Object.keys(this.channels || {}).length > 0;
+      Object.keys(this.channels || {}).length > 0
+    );
   }
 
-  get initialized () {
+  get initialized() {
     return !!this.screenshotEndpointAPI;
   }
 
-  get omeTiffAvailable () {
-    return this.omeTiff &&
-      !this.omeTiff.pending &&
-      this.omeTiff.storageId &&
-      this.omeTiff.path;
+  get omeTiffAvailable() {
+    return this.omeTiff && !this.omeTiff.pending && this.omeTiff.storageId && this.omeTiff.path;
   }
 
-  get omeTiffPending () {
+  get omeTiffPending() {
     return this.omeTiff && this.omeTiff.pending;
   }
 
-  get omeTiffStorageId () {
+  get omeTiffStorageId() {
     return this.omeTiff && this.omeTiff.storageId;
   }
 
-  get omeTiffPath () {
+  get omeTiffPath() {
     return this.omeTiff && this.omeTiff.path;
   }
 
-  get omeTiffOffsetsPath () {
+  get omeTiffOffsetsPath() {
     return this.omeTiff && this.omeTiff.offsetsPath;
   }
 
-  get omeTiffGenerationError () {
+  get omeTiffGenerationError() {
     return this.omeTiff && this.omeTiff.error;
   }
 
@@ -207,31 +198,20 @@ class HcsMergedImageSource {
   };
 
   setHcsFile = (fileOptions = {}) => {
-    const {
-      path,
-      pathMask,
-      storageId
-    } = fileOptions;
-    if (
-      path !== this.path ||
-      storageId !== this.storageId ||
-      pathMask !== this.pathMask
-    ) {
+    const {path, pathMask, storageId} = fileOptions;
+    if (path !== this.path || storageId !== this.storageId || pathMask !== this.pathMask) {
       this.path = path;
       this.pathMask = pathMask;
       this.storageId = storageId;
-      (this.generateOmeTiffIfRequired)();
+      this.generateOmeTiffIfRequired();
     }
   };
 
   setSequenceTimePoints = (sequenceId, timePoint = 0) => {
-    if (
-      sequenceId !== this.sequenceId ||
-      timePoint !== this.timePoint
-    ) {
+    if (sequenceId !== this.sequenceId || timePoint !== this.timePoint) {
       this.sequenceId = sequenceId;
       this.timePoint = timePoint;
-      (this.generateOmeTiffIfRequired)();
+      this.generateOmeTiffIfRequired();
     }
   };
 
@@ -242,25 +222,23 @@ class HcsMergedImageSource {
     if (this.mergeZPlanes !== mergeZPlanes) {
       this.mergeZPlanes = mergeZPlanes;
     }
-    (this.generateOmeTiffIfRequired)();
+    this.generateOmeTiffIfRequired();
   };
 
   setWell = (well, imageIds) => {
     this.well = well;
-    if (
-      !imageIdsAreEqual(imageIds, this.imageIds)
-    ) {
+    if (!imageIdsAreEqual(imageIds, this.imageIds)) {
       this.imageIds = (imageIds || []).slice();
-      (this.generateOmeTiffIfRequired)();
+      this.generateOmeTiffIfRequired();
     }
   };
 
   setChannelsInfo = () => {
     if (this.viewerState) {
       const channels = (this.viewerState.channels || [])
-        .filter(channel => channel.visible)
-        .map(channel => ({
-          [channel.name]: [...channel.color.slice(0, 3), ...channel.contrastLimits]
+        .filter((channel) => channel.visible)
+        .map((channel) => ({
+          [channel.name]: [...channel.color.slice(0, 3), ...channel.contrastLimits],
         }))
         .reduce((r, c) => ({...r, ...c}), {});
       if (!channelsAreEqual(channels, this.channels)) {
@@ -298,18 +276,14 @@ class HcsMergedImageSource {
     }
     try {
       const settings = await getHDScreenshotSettings(true);
-      const {
-        api,
-        format = DEFAULT_IMAGE_FORMAT,
-        pollingIntervalSeconds
-      } = settings;
+      const {api, format = DEFAULT_IMAGE_FORMAT, pollingIntervalSeconds} = settings;
       if (!api) {
         throw new Error('HCS screenshot endpoint is not specified');
       }
       this.screenshotEndpointAPI = new AnalysisApi(api);
       this.defaultFormat = format;
       this.pollingIntervalSeconds = pollingIntervalSeconds;
-      (this.generateOmeTiffIfRequired)();
+      this.generateOmeTiffIfRequired();
     } catch (e) {
       this.screenshotEndpointAPIError = e.message;
       this.screenshotEndpointAPI = undefined;
@@ -341,16 +315,17 @@ class HcsMergedImageSource {
     const payload = {
       original: omeTiff && this.imageIds && this.imageIds.length > 1 ? 0 : 1,
       channels: omeTiff ? {} : this.channels,
-      imageIds: omeTiff && this.imageIds && this.imageIds.length > 1
-        ? [this.well.wellImageId].filter(Boolean)
-        : this.imageIds || [],
+      imageIds:
+        omeTiff && this.imageIds && this.imageIds.length > 1
+          ? [this.well.wellImageId].filter(Boolean)
+          : this.imageIds || [],
       storageId: this.storageId,
       path: this.path,
       pathMask: this.pathMask,
       sequenceId: this.sequenceId,
       timePoint: this.timePoint + 1,
       zPlanes: this.mergeZPlanes ? this.zPlanes : this.zPlanes.slice(0, 1),
-      well: `${this.well.x + 1}_${this.well.y + 1}`
+      well: `${this.well.x + 1}_${this.well.y + 1}`,
     };
     let path = payload.path;
     if (path.startsWith('/')) {
@@ -362,24 +337,23 @@ class HcsMergedImageSource {
     return {
       original: payload.original,
       well: payload.well,
-      cells: payload.imageIds.map((id) => id.split(':').pop())
+      cells: payload.imageIds
+        .map((id) => id.split(':').pop())
         .sort(alphabeticalSorter)
         .join(','),
-      zPlanes: payload.zPlanes.map((z) => `${z + 1}`)
+      zPlanes: payload.zPlanes
+        .map((z) => `${z + 1}`)
         .sort(alphabeticalSorter)
         .join(','),
       timepoint: payload.timePoint,
       sequenceId: payload.sequenceId,
       path,
-      format: omeTiff ? 'ome.tiff' : (format || this.defaultFormat),
-      ...(
-        Object
-          .entries(payload.channels)
-          .map(([channelName, configuration]) => ({
-            [channelName]: configuration.join(',')
-          }))
-          .reduce((r, c) => ({...r, ...c}), {})
-      )
+      format: omeTiff ? 'ome.tiff' : format || this.defaultFormat,
+      ...Object.entries(payload.channels)
+        .map(([channelName, configuration]) => ({
+          [channelName]: configuration.join(','),
+        }))
+        .reduce((r, c) => ({...r, ...c}), {}),
     };
   };
 
@@ -408,20 +382,19 @@ class HcsMergedImageSource {
     }
     resultedPath = resultedPath.replace(/\/\//g, '/');
     await dataStorageAvailable.fetchIfNeededOrWait();
-    const objectStorage = await createObjectStorageWrapper(
-      dataStorageAvailable,
-      storagePath,
-      {read: true, write: false}
-    );
+    const objectStorage = await createObjectStorageWrapper(dataStorageAvailable, storagePath, {
+      read: true,
+      write: false,
+    });
     if (!objectStorage) {
       throw new Error(`Error generating screenshot: unknown storage "${storagePath}"`);
     }
     return {
       storageId: objectStorage ? objectStorage.id : undefined,
       objectStorage,
-      path: resultedPath
+      path: resultedPath,
     };
-  }
+  };
 
   generateOmeTiffIfRequired = async () => {
     const required = this.mergeZPlanes && this.zPlanes && this.zPlanes.length > 1;
@@ -441,7 +414,7 @@ class HcsMergedImageSource {
         zPlanes: currentZPlanes,
         timepoint: currentTimepoint,
         sequenceId: currentSequenceId,
-        path: currentPath
+        path: currentPath,
       } = this.currentPayload || {};
       if (
         currentOriginal === payload.original &&
@@ -464,32 +437,27 @@ class HcsMergedImageSource {
         error: undefined,
         storageId: undefined,
         path: undefined,
-        offsetsPath: undefined
+        offsetsPath: undefined,
       };
       const token = this.increaseOmeTiffGenerationToken();
       try {
         this.currentPayload = payload;
         this.abortSignal = {
-          aborted: false
+          aborted: false,
         };
         const result = await this.screenshotEndpointAPI.generateScreenshot(
           payload,
           this.pollingIntervalSeconds,
-          this.abortSignal
+          this.abortSignal,
         );
         if (token !== this.omeTiffGenerationToken) {
           return;
         }
-        const {
-          path: omeTiffPath
-        } = result || {};
+        const {path: omeTiffPath} = result || {};
         if (!omeTiffPath) {
           throw new Error('Error generating merged image');
         }
-        const {
-          objectStorage,
-          path: resultedPath
-        } = await this.parseGeneratedPath(omeTiffPath);
+        const {objectStorage, path: resultedPath} = await this.parseGeneratedPath(omeTiffPath);
         let folder = resultedPath || '';
         if (!folder || !folder.length) {
           throw new Error('Error generating merged image');
@@ -519,29 +487,25 @@ class HcsMergedImageSource {
     const query = this.getImageGenerationPayload(omeTiff, format);
     const result = await this.screenshotEndpointAPI.generateScreenshot(
       query,
-      this.pollingIntervalSeconds
+      this.pollingIntervalSeconds,
     );
-    const {
-      path: screenshotFilePath
-    } = result || {};
+    const {path: screenshotFilePath} = result || {};
     if (!screenshotFilePath) {
       throw new Error('Error generating video');
     }
-    const {
-      objectStorage,
-      path: resultedPath
-    } = await this.parseGeneratedPath(screenshotFilePath);
+    const {objectStorage, path: resultedPath} = await this.parseGeneratedPath(screenshotFilePath);
     this.objectStorage = objectStorage;
     const screenshotURL = await this.objectStorage.generateFileUrl(resultedPath);
-    const screenshotAccessCallback = () => auditStorageAccessManager.reportReadAccess({
-      storageId: this.objectStorage.id,
-      path: resultedPath,
-      reportStorageType: 'S3'
-    });
+    const screenshotAccessCallback = () =>
+      auditStorageAccessManager.reportReadAccess({
+        storageId: this.objectStorage.id,
+        path: resultedPath,
+        reportStorageType: 'S3',
+      });
     return {
       url: screenshotURL,
       name: this.getScreenshotFileName(screenshotURL, resultedPath, format),
-      accessCallback: screenshotAccessCallback
+      accessCallback: screenshotAccessCallback,
     };
   };
 }

@@ -17,7 +17,7 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class PipelineRunCommit extends RemotePost {
-  constructor (id) {
+  constructor(id) {
     super();
     this.url = `/run/${id}/commit?checkSize=false`;
   }

@@ -17,7 +17,7 @@
 import PipelineRunFSBrowser from './PipelineRunFSBrowser';
 
 class PipelineRunFSBrowserCache {
-  static getCacheValue (cache, id) {
+  static getCacheValue(cache, id) {
     if (!cache.has(+id)) {
       cache.set(+id, new PipelineRunFSBrowser(id));
     }

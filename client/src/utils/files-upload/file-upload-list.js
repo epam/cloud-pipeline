@@ -1,12 +1,11 @@
 import FileUpload from './file-upload';
 
 class FileUploadList {
-  constructor (files, uploadStorageId, uploadPath) {
-    this.files = files.map((file) => new FileUpload(
-      file,
-      uploadStorageId,
-      FileUpload.generateUploadPath(file, uploadPath)
-    ));
+  constructor(files, uploadStorageId, uploadPath) {
+    this.files = files.map(
+      (file) =>
+        new FileUpload(file, uploadStorageId, FileUpload.generateUploadPath(file, uploadPath)),
+    );
     this.listeners = [];
   }
 
@@ -25,7 +24,7 @@ class FileUploadList {
 
   removeEventListener = (listener) => {
     this.listeners = this.listeners.filter((l) => l !== listener);
-  }
+  };
 
   getState = () => {
     const stats = this.files.map((fileUpload) => fileUpload.getState());
@@ -33,7 +32,7 @@ class FileUploadList {
       files: stats,
       done: !stats.some((stat) => !stat.done),
       aborted: stats.some((stat) => stat.aborted),
-      hasErrors: stats.some((stat) => !!stat.error)
+      hasErrors: stats.some((stat) => !!stat.error),
     };
   };
 

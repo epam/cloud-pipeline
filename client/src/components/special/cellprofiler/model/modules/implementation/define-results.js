@@ -13,12 +13,8 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-/* eslint-disable max-len */
 
-import {
-  DefineResultsParameter,
-  defineResultsSubModules
-} from '../../parameters/define-results';
+import {DefineResultsParameter, defineResultsSubModules} from '../../parameters/define-results';
 
 const DefineResultsModuleName = 'Results';
 
@@ -29,21 +25,14 @@ const defineResults = {
   hidden: true,
   composed: true,
   parameters: [DefineResultsParameter],
-  subModules: defineResultsSubModules
+  subModules: defineResultsSubModules,
 };
 
 const defineResultsInternal = {
   name: 'DefineResults',
   group: 'System',
   hidden: true,
-  parameters: [
-    'specs|custom|ALIAS specs',
-    'grouping|custom|ALIAS grouping'
-  ]
+  parameters: ['specs|custom|ALIAS specs', 'grouping|custom|ALIAS grouping'],
 };
 
-export {
-  defineResults,
-  defineResultsInternal,
-  DefineResultsModuleName
-};
+export {defineResults, defineResultsInternal, DefineResultsModuleName};

@@ -17,7 +17,7 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class CreateRunSchedules extends RemotePost {
-  constructor (runId) {
+  constructor(runId) {
     super();
     this.url = `/schedule/run/${runId}`;
   }

@@ -22,7 +22,7 @@ class DTSItemsPage extends Remote {
   id;
   path;
 
-  constructor (id, prefix, path, pageSize, marker) {
+  constructor(id, prefix, path, pageSize, marker) {
     super();
     this.id = id;
     this.prefix = prefix;
@@ -35,9 +35,9 @@ class DTSItemsPage extends Remote {
       itemPath = this.prefix;
     }
     this.url = `/dts/list/${this.id}?path=${encodeURIComponent(itemPath)}&pageSize=${this.pageSize}${marker ? `&marker=${marker}` : ''}`;
-  };
+  }
 
-  async fetchPage (marker) {
+  async fetchPage(marker) {
     let path;
     if (this.path) {
       path = `${this.prefix}/${this.path}`.replace(/\/\//g, '/');

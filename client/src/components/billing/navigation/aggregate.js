@@ -19,12 +19,12 @@ const StorageAggregate = {
   standard: 'standard',
   deepArchive: 'deep-archive',
   glacier: 'glacier',
-  glacierIR: 'glacier-ir'
+  glacierIR: 'glacier-ir',
 };
 
 export {StorageAggregate};
 
-export function getBillingGroupingOrderAggregate (aggregate) {
+export function getBillingGroupingOrderAggregate(aggregate) {
   switch (aggregate) {
     case StorageAggregate.deepArchive:
       return 'DEEP_ARCHIVE';
@@ -39,62 +39,63 @@ export function getBillingGroupingOrderAggregate (aggregate) {
   }
 }
 
-export function getAggregateByStorageClass (storageClass) {
+export function getAggregateByStorageClass(storageClass) {
   switch ((storageClass || '').toUpperCase()) {
-    case 'DEEP_ARCHIVE': return StorageAggregate.deepArchive;
-    case 'GLACIER': return StorageAggregate.glacier;
-    case 'GLACIER_IR': return StorageAggregate.glacierIR;
-    case 'STANDARD': return StorageAggregate.standard;
+    case 'DEEP_ARCHIVE':
+      return StorageAggregate.deepArchive;
+    case 'GLACIER':
+      return StorageAggregate.glacier;
+    case 'GLACIER_IR':
+      return StorageAggregate.glacierIR;
+    case 'STANDARD':
+      return StorageAggregate.standard;
     default:
       return StorageAggregate.default;
   }
 }
 
-const DEFAULT_STORAGE_CLASS_ORDER = [
-  'STANDARD',
-  'DEEP_ARCHIVE',
-  'GLACIER',
-  'GLACIER_IR'
-];
+const DEFAULT_STORAGE_CLASS_ORDER = ['STANDARD', 'DEEP_ARCHIVE', 'GLACIER', 'GLACIER_IR'];
 
 export {DEFAULT_STORAGE_CLASS_ORDER};
 
-export function getStorageClassName (storageClass) {
+export function getStorageClassName(storageClass) {
   switch ((storageClass || '').toUpperCase()) {
-    case 'DEEP_ARCHIVE': return 'Deep Archive';
-    case 'GLACIER': return 'Glacier';
-    case 'GLACIER_IR': return 'Glacier IR';
+    case 'DEEP_ARCHIVE':
+      return 'Deep Archive';
+    case 'GLACIER':
+      return 'Glacier';
+    case 'GLACIER_IR':
+      return 'Glacier IR';
     case 'STANDARD':
     default:
       return 'Standard';
   }
 }
 
-export function getAllStorageClasses () {
-  return [
-    'DEEP_ARCHIVE',
-    'GLACIER',
-    'GLACIER_IR',
-    'STANDARD'
-  ];
+export function getAllStorageClasses() {
+  return ['DEEP_ARCHIVE', 'GLACIER', 'GLACIER_IR', 'STANDARD'];
 }
 
-export function getStorageClassByAggregate (aggregate) {
+export function getStorageClassByAggregate(aggregate) {
   return getBillingGroupingOrderAggregate(aggregate);
 }
 
-export function getStorageClassNameByAggregate (aggregate) {
+export function getStorageClassNameByAggregate(aggregate) {
   switch (aggregate) {
-    case StorageAggregate.deepArchive: return 'Deep Archive';
-    case StorageAggregate.glacier: return 'Glacier';
-    case StorageAggregate.glacierIR: return 'Glacier IR';
-    case StorageAggregate.standard: return 'Standard';
+    case StorageAggregate.deepArchive:
+      return 'Deep Archive';
+    case StorageAggregate.glacier:
+      return 'Glacier';
+    case StorageAggregate.glacierIR:
+      return 'Glacier IR';
+    case StorageAggregate.standard:
+      return 'Standard';
     default:
       return '';
   }
 }
 
-export function parseStorageAggregate (aggregate) {
+export function parseStorageAggregate(aggregate) {
   switch ((aggregate || '').toLowerCase()) {
     case StorageAggregate.standard:
       return StorageAggregate.standard;

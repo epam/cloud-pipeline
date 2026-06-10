@@ -16,32 +16,29 @@
 
 import QuotaTypes from '../../../quotas/utilities/quota-types';
 
-export function getQuotaType (request) {
+export function getQuotaType(request) {
   if (!request || !request.filters) {
     return {
-      type: QuotaTypes.overall
+      type: QuotaTypes.overall,
     };
   }
-  const {
-    billingGroup,
-    user
-  } = request.filters;
+  const {billingGroup, user} = request.filters;
   if (billingGroup && billingGroup.length === 1) {
     return {
       type: QuotaTypes.billingCenter,
-      subject: billingGroup[0]
+      subject: billingGroup[0],
     };
   }
   if (user && user.length === 1) {
     return {
       type: QuotaTypes.user,
-      subject: user[0]
+      subject: user[0],
     };
   }
   if ((user && user.length > 1) || (billingGroup && billingGroup.length > 1)) {
     return {type: undefined};
   }
   return {
-    type: QuotaTypes.overall
+    type: QuotaTypes.overall,
   };
 }

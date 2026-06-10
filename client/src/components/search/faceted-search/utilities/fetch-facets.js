@@ -17,17 +17,18 @@
 import {FacetedSearch} from '../../../../models/search';
 import getFacetFilterToken from './facet-filter-token';
 
-function fetchFacetsGroup (facetNames, filters, query, abortSignal) {
+function fetchFacetsGroup(facetNames, filters, query, abortSignal) {
   return new Promise((resolve) => {
     const payload = {
       query: query || '*',
       facets: facetNames,
       filters: {...filters},
       pageSize: 1,
-      highlight: false
+      highlight: false,
     };
     const request = new FacetedSearch();
-    request.send(payload, abortSignal)
+    request
+      .send(payload, abortSignal)
       .then(() => {
         if (request.aborted) {
           resolve({aborted: true});
@@ -44,58 +45,48 @@ function fetchFacetsGroup (facetNames, filters, query, abortSignal) {
   });
 }
 
-function removeSingleSelection (selection, name) {
+function removeSingleSelection(selection, name) {
   const result = {...(selection || {})};
-  if (result.hasOwnProperty(name)) {
+  if (Object.hasOwn(result, name)) {
     delete result[name];
   }
   return result;
 }
 
-function fetchFacets (facets, selection, query = '*', sortingOrder, abortSignal, skip = false) {
+function fetchFacets(facets, selection, query = '*', sortingOrder, abortSignal, skip = false) {
   const facetsToken = getFacetFilterToken({
     query,
     sortingOrder,
     filters: selection,
-    pageSize: 1
+    pageSize: 1,
   });
   if (skip) {
     return Promise.resolve({
       facetsToken,
-      facetsCount: {}
+      facetsCount: {},
     });
   }
   const selectedFacets = Object.keys(selection);
-  const notSelectedFacets = facets.filter(f => selectedFacets.indexOf(f) === -1);
+  const notSelectedFacets = facets.filter((f) => selectedFacets.indexOf(f) === -1);
   return new Promise((resolve) => {
     Promise.all([
-      fetchFacetsGroup(
-        notSelectedFacets,
-        selection,
-        query,
-        abortSignal
+      fetchFacetsGroup(notSelectedFacets, selection, query, abortSignal),
+      ...selectedFacets.map((f) =>
+        fetchFacetsGroup([f], removeSingleSelection(selection, f), query, abortSignal),
       ),
-      ...selectedFacets
-        .map(f => fetchFacetsGroup(
-          [f],
-          removeSingleSelection(selection, f),
-          query,
-          abortSignal
-        ))
-    ])
-      .then((payloads) => {
-        let result = {};
-        if (payloads.some(p => p.aborted)) {
-          resolve({aborted: true});
-        }
-        for (let p = 0; p < payloads.length; p++) {
-          result = {...result, ...(payloads[p])};
-        }
-        resolve({
-          facetsCount: result,
-          facetsToken
-        });
+    ]).then((payloads) => {
+      let result = {};
+      if (payloads.some((p) => p.aborted)) {
+        resolve({aborted: true});
+      }
+      for (let p = 0; p < payloads.length; p++) {
+        result = {...result, ...payloads[p]};
+      }
+      resolve({
+        facetsCount: result,
+        facetsToken,
       });
+    });
   });
 }
 

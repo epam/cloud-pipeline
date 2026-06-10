@@ -14,13 +14,10 @@
  *  limitations under the License.
  */
 
-function itemInfo (item, resolve) {
-  const {
-    storage,
-    path
-  } = item || {};
+function itemInfo(item, resolve) {
+  const {storage, path} = item || {};
   resolve({
-    folderId: `${storage}/${path}`
+    folderId: `${storage}/${path}`,
   });
 }
 
@@ -29,7 +26,7 @@ itemInfo.test = function (url) {
   if (exec && exec.length > 2) {
     return {
       storage: +exec[1],
-      path: exec[2]
+      path: exec[2],
     };
   }
   return undefined;

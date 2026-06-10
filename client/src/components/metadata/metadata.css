@@ -1,0 +1,32 @@
+@reference "../../index.css";
+
+.metadata-container {
+  min-height: 0;
+}
+
+.metadata-header td {
+  padding: 2px 5px;
+}
+
+.metadata-header button {
+  margin-right: 5px;
+  margin-top: 2px;
+}
+
+.metadata-divider {
+  height: 1px;
+  margin: 2px 0;
+}
+
+.metadata-new-key-row td {
+  padding: 2px 5px;
+}
+
+.metadata-new-key-row button {
+  margin-left: 5px;
+}
+
+.metadata-disabled-textarea {
+  flex: 1;
+  min-height: 0;
+}

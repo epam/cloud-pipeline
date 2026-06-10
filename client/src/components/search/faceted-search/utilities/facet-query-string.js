@@ -16,16 +16,12 @@
 
 import {alphabeticalSorter, defaultSorter} from '../../../../utils/sorting';
 
-function parse (queryString) {
-  const {
-    query,
-    filters: f,
-    advanced = false
-  } = queryString || {};
+function parse(queryString) {
+  const {query, filters: f, advanced = false} = queryString || {};
   const filters = (f || '')
     .split(';')
     .filter(Boolean)
-    .map(filterPart => {
+    .map((filterPart) => {
       const [name, ...valueParts] = filterPart.split(':');
       const values = valueParts.join(':').split(',').filter(Boolean);
       return {[name]: values};
@@ -34,23 +30,22 @@ function parse (queryString) {
   return {
     query,
     filters,
-    advanced
+    advanced,
   };
 }
 
-function build (query, filters, advanced = false) {
+function build(query, filters, advanced = false) {
   const filtersKeys = Object.keys(filters || {})
-    .filter(key => !!filters[key] && filters[key].length)
+    .filter((key) => !!filters[key] && filters[key].length)
     .sort(alphabeticalSorter);
   const filtersParts = filtersKeys
-    .map(key => `${key}:${(filters[key] || []).sort(defaultSorter).join(',')}`)
+    .map((key) => `${key}:${(filters[key] || []).sort(defaultSorter).join(',')}`)
     .join(';');
   const parts = [
     query ? `query=${encodeURIComponent(query)}` : false,
     filtersKeys.length > 0 ? `filters=${encodeURIComponent(filtersParts)}` : false,
-    advanced ? `advanced=true` : false
-  ]
-    .filter(Boolean);
+    advanced ? 'advanced=true' : false,
+  ].filter(Boolean);
   return parts.join('&');
 }
 

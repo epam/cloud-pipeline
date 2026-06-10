@@ -17,9 +17,9 @@
 import Remote from '../basic/Remote';
 
 class CorePods extends Remote {
-  constructor () {
+  constructor() {
     super();
-    this.url = `/cluster/pods/core`;
+    this.url = '/cluster/pods/core';
   }
 }
 

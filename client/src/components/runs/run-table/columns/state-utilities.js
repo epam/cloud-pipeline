@@ -16,38 +16,32 @@
 
 import {isObservableArray} from 'mobx';
 
-export function filterValueIsEmpty (filterValue) {
-  return filterValue === undefined ||
+export function filterValueIsEmpty(filterValue) {
+  return (
+    filterValue === undefined ||
     filterValue === null ||
     (typeof filterValue === 'string' && filterValue.trim().length === 0) ||
-    ((Array.isArray(filterValue) || isObservableArray(filterValue)) && filterValue.length === 0);
+    ((Array.isArray(filterValue) || isObservableArray(filterValue)) && filterValue.length === 0)
+  );
 }
 
-export function getFiltersState (
+export function getFiltersState(
   parameter,
   state,
-  setState = ((newState, callback = () => {}) => {})
+  setState = (newState, callback = () => {}) => {},
 ) {
-  const {
-    filtersState: currentFiltersState = {}
-  } = state || {};
+  const {filtersState: currentFiltersState = {}} = state || {};
   const filtersState = {...currentFiltersState};
-  const {
-    [parameter]: parameterState = {}
-  } = filtersState;
-  const {
-    visible = false,
-    search = undefined,
-    value
-  } = parameterState;
+  const {[parameter]: parameterState = {}} = filtersState;
+  const {visible = false, search = undefined, value} = parameterState;
   const getState = (changed) => ({
     filtersState: {
       ...filtersState,
       [parameter]: {
         ...parameterState,
-        ...(changed || {})
-      }
-    }
+        ...(changed || {}),
+      },
+    },
   });
   const onChange = (newValue) => {
     if (filterValueIsEmpty(newValue)) {
@@ -63,7 +57,7 @@ export function getFiltersState (
     value,
     filtered: !filterValueIsEmpty(value),
     onChange,
-    onSearch
+    onSearch,
   };
 }
 
@@ -73,16 +67,9 @@ export function getFiltersState (
  * @param setState
  * @returns {(function(newValue: *, callback?: function): void)}
  */
-export function onFilterGenerator (
-  parameter,
-  state,
-  setState = ((newState, callback) => {})
-) {
-  return function onFilter (newValue, callback) {
-    const {
-      filters: currentFilters = {},
-      filtersState: currentFiltersState = {}
-    } = state || {};
+export function onFilterGenerator(parameter, state, setState = (newState, callback) => {}) {
+  return function onFilter(newValue, callback) {
+    const {filters: currentFilters = {}, filtersState: currentFiltersState = {}} = state || {};
     const filters = {...currentFilters};
     const filtersState = {...currentFiltersState};
     if (filterValueIsEmpty(newValue)) {
@@ -93,7 +80,7 @@ export function onFilterGenerator (
     filtersState[parameter] = {
       search: undefined,
       value: filters[parameter],
-      visible: false
+      visible: false,
     };
     setState({filters, filtersState}, callback);
   };
@@ -121,22 +108,15 @@ export function onFilterGenerator (
  * @param {string} parameter
  * @returns {MultipleParametersResult}
  */
-export function multipleParametersFilterState (state, setState, ...parameter) {
-  const {
-    filtersState: currentFiltersState = {}
-  } = state || {};
+export function multipleParametersFilterState(state, setState, ...parameter) {
+  const {filtersState: currentFiltersState = {}} = state || {};
   const filtersState = {...currentFiltersState};
   let visible = false;
   let filtered = false;
   const parametersValues = {};
   parameter.forEach((parameterName) => {
-    const {
-      [parameterName]: parameterState = {}
-    } = filtersState;
-    const {
-      visible: parameterVisible = false,
-      value: parameterValue
-    } = parameterState;
+    const {[parameterName]: parameterState = {}} = filtersState;
+    const {visible: parameterVisible = false, value: parameterValue} = parameterState;
     visible = visible || parameterVisible;
     parametersValues[parameterName] = parameterValue;
     filtered = filtered || !filterValueIsEmpty(parameterValue);
@@ -144,24 +124,22 @@ export function multipleParametersFilterState (state, setState, ...parameter) {
   /**
    * @param {*[]} newValue
    */
-  function onChange (...newValue) {
-    const {
-      filtersState: currentFiltersState = {}
-    } = state || {};
+  function onChange(...newValue) {
+    const {filtersState: currentFiltersState = {}} = state || {};
     const filtersState = {...currentFiltersState};
     const getState = () => {
       const newFiltersState = {
-        ...filtersState
+        ...filtersState,
       };
       parameter.forEach((parameterName, idx) => {
         const parameterState = filtersState[parameterName] || {};
         newFiltersState[parameterName] = {
           ...parameterState,
-          value: filterValueIsEmpty(newValue[idx]) ? undefined : newValue[idx]
+          value: filterValueIsEmpty(newValue[idx]) ? undefined : newValue[idx],
         };
       });
       return {
-        filtersState: newFiltersState
+        filtersState: newFiltersState,
       };
     };
     setState(getState());
@@ -171,12 +149,9 @@ export function multipleParametersFilterState (state, setState, ...parameter) {
    * @param {*[]} newValue
    * @returns {Promise<unknown>}
    */
-  function onFilter (...newValue) {
+  function onFilter(...newValue) {
     return new Promise((resolve) => {
-      const {
-        filters: currentFilters = {},
-        filtersState: currentFiltersState = {}
-      } = state || {};
+      const {filters: currentFilters = {}, filtersState: currentFiltersState = {}} = state || {};
       const filters = {...currentFilters};
       const filtersState = {...currentFiltersState};
       parameter.forEach((parameterName, idx) => {
@@ -189,39 +164,33 @@ export function multipleParametersFilterState (state, setState, ...parameter) {
         filtersState[parameterName] = {
           search: undefined,
           value: filters[parameterName],
-          visible: false
+          visible: false,
         };
       });
       setState({filters, filtersState}, resolve);
     });
   }
-  function onDropdownVisibilityChanged (visible) {
-    const {
-      filters = {},
-      filtersState: currentFiltersState = {}
-    } = state || {};
+  function onDropdownVisibilityChanged(visible) {
+    const {filters = {}, filtersState: currentFiltersState = {}} = state || {};
     const filtersState = {...currentFiltersState};
     const updateDropdownVisibilityCallback = (...value) => {
       parameter.forEach((parameterName, idx) => {
         filtersState[parameterName] = {
           search: undefined,
           value: value[idx],
-          visible
+          visible,
         };
       });
       setState({filtersState});
     };
     if (!visible) {
       const value = parameter.map((parameterName, idx) => {
-        const {
-          [parameterName]: parameterState = {}
-        } = filtersState;
+        const {[parameterName]: parameterState = {}} = filtersState;
         return parameterState.value;
       });
       onFilter(...value).then(() => updateDropdownVisibilityCallback(...value));
     } else {
-      const value = parameter
-        .map((parameterName, idx) => filters[parameterName]);
+      const value = parameter.map((parameterName, idx) => filters[parameterName]);
       updateDropdownVisibilityCallback(...value);
     }
   }
@@ -231,39 +200,32 @@ export function multipleParametersFilterState (state, setState, ...parameter) {
     visible,
     filtered,
     values: parametersValues,
-    onDropdownVisibilityChanged
+    onDropdownVisibilityChanged,
   };
 }
 
-export function onFilterDropdownVisibilityChangedGenerator (
+export function onFilterDropdownVisibilityChangedGenerator(
   parameter,
   state,
-  setState = ((newState, callback = () => {}) => {})
+  setState = (newState, callback = () => {}) => {},
 ) {
-  return function onDropdownVisibilityChanged (visible) {
+  return function onDropdownVisibilityChanged(visible) {
     const onFilter = onFilterGenerator(parameter, state, setState);
-    const {
-      filters = {},
-      filtersState: currentFiltersState = {}
-    } = state || {};
+    const {filters = {}, filtersState: currentFiltersState = {}} = state || {};
     const filtersState = {...currentFiltersState};
-    const {
-      [parameter]: parameterState = {}
-    } = filtersState;
+    const {[parameter]: parameterState = {}} = filtersState;
     const updateDropdownVisibilityCallback = (value) => {
       filtersState[parameter] = {
         search: undefined,
         value,
-        visible
+        visible,
       };
       setState({
-        filtersState
+        filtersState,
       });
     };
     if (!visible) {
-      const {
-        value
-      } = parameterState;
+      const {value} = parameterState;
       onFilter(value, () => updateDropdownVisibilityCallback(value));
     } else {
       updateDropdownVisibilityCallback(filters[parameter]);

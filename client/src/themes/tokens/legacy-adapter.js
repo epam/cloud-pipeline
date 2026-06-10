@@ -28,7 +28,7 @@ import {SemanticTokens} from './semantic-keys';
  * @param {Object<string, string>} parsedConfiguration
  * @returns {Object<string, string>}
  */
-export function mapLegacyToSemantic (parsedConfiguration = {}) {
+export function mapLegacyToSemantic(parsedConfiguration = {}) {
   const result = {};
   for (const token of SemanticTokens) {
     const legacyValue = parsedConfiguration[token.legacy];
@@ -51,7 +51,7 @@ export function mapLegacyToSemantic (parsedConfiguration = {}) {
  * @param {string} [fallback]
  * @returns {string | undefined}
  */
-export function getSemanticToken (parsedConfiguration, cssVar, fallback) {
+export function getSemanticToken(parsedConfiguration, cssVar, fallback) {
   if (!parsedConfiguration) {
     return fallback;
   }

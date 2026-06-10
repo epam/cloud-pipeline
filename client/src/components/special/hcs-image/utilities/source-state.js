@@ -20,20 +20,20 @@ import HCSBaseState from './base-state';
 class SourceState extends HCSBaseState {
   pending = false;
   selectedAnnotation;
-  constructor (viewer) {
+  constructor(viewer) {
     super(viewer, 'stateChanged');
     makeObservable(this, {
       pending: observable,
       selectedAnnotation: observable,
-      onStateChanged: action
+      onStateChanged: action,
     });
   }
 
-  onStateChanged (viewer, newState) {
+  onStateChanged(viewer, newState) {
     const {
       imagePending = false,
       sourcePending: pending = false,
-      selectedAnnotation
+      selectedAnnotation,
     } = newState || {};
     this.pending = pending || imagePending;
     this.selectedAnnotation = selectedAnnotation;

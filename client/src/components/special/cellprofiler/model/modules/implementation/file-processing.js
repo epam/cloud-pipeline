@@ -13,7 +13,6 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-/* eslint-disable max-len */
 
 import {isObservableArray} from 'mobx';
 import {AnalysisTypes} from '../../common/analysis-types';
@@ -24,8 +23,8 @@ const saveImages = {
   parameters: [
     'Select the image to save|file|ALIAS imageToSave',
     'Select image name for file prefix|file|ALIAS prefix|COMPUTED|HIDDEN',
-    'Saved file format|[png,tiff]|png|COMPUTED|HIDDEN|ALIAS format'
-  ]
+    'Saved file format|[png,tiff]|png|COMPUTED|HIDDEN|ALIAS format',
+  ],
 };
 
 const exportToSpreadsheet = {
@@ -46,17 +45,13 @@ const exportToSpreadsheet = {
       parameterName: 'Data to export',
       type: AnalysisTypes.object,
       multiple: true,
-      valueParser: value => (Array.isArray(value) || isObservableArray(value))
-        ? value.slice()
-        : (value || '').split('|'),
-      valueFormatter: (value) => value && value.length > 0 ? value.join('|') : 'Do not use',
-      visibilityHandler: (cpModule) => cpModule.getBooleanParameterValue('all') === false
+      valueParser: (value) =>
+        Array.isArray(value) || isObservableArray(value) ? value.slice() : (value || '').split('|'),
+      valueFormatter: (value) => (value && value.length > 0 ? value.join('|') : 'Do not use'),
+      visibilityHandler: (cpModule) => cpModule.getBooleanParameterValue('all') === false,
     },
-    'Use the object name for the file name?|flag|true|ALIAS objectNameAsFileName'
-  ]
+    'Use the object name for the file name?|flag|true|ALIAS objectNameAsFileName',
+  ],
 };
 
-export default [
-  exportToSpreadsheet,
-  saveImages
-];
+export default [exportToSpreadsheet, saveImages];

@@ -15,26 +15,23 @@
  */
 
 import {message} from 'antd';
-import FileSaver from 'file-saver';
+import {downloadBlob} from '../../../../utils/download-blob';
 import PipelineFile from '../../../../models/pipelines/PipelineFile';
 
-export default async function downloadPipelineFile (pipelineId, version, path) {
+export default async function downloadPipelineFile(pipelineId, version, path) {
   const name = (path || '').split(/[/\\]/).pop();
   const fileName = name || 'pipeline-file';
   const hide = message.loading(`Downloading ${name || 'pipeline file'}...`, 0);
   try {
     const pipelineFile = new PipelineFile(pipelineId, version, path);
-    let res;
     await pipelineFile.fetch();
-    res = pipelineFile.response;
+    const res = pipelineFile.response;
     if (res.type?.includes('application/json') && res instanceof Blob) {
-      this.checkForBlobErrors(res)
-        .then(error => error
-          ? message.error('Error downloading file', 5)
-          : FileSaver.saveAs(res, fileName)
-        );
+      this.checkForBlobErrors(res).then((error) =>
+        error ? message.error('Error downloading file', 5) : downloadBlob(res, fileName),
+      );
     } else if (res) {
-      FileSaver.saveAs(res, fileName);
+      downloadBlob(res, fileName);
     }
   } catch (e) {
     message.error('Failed to download file', 5);

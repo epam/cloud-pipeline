@@ -17,7 +17,7 @@
 const STORAGE_OPERATIONS_METADATA_KEYS = [
   'Storage operations',
   'StorageOperations',
-  'storage_operations'
+  'storage_operations',
 ];
 
 const FALSY_STORAGE_OPERATION_VALUES = new Set([
@@ -26,29 +26,27 @@ const FALSY_STORAGE_OPERATION_VALUES = new Set([
   '"none"',
   'false',
   "'false'",
-  '"false"'
+  '"false"',
 ]);
 
-function getMetadataEntryValueString (entry) {
+function getMetadataEntryValueString(entry) {
   if (entry == null) {
     return undefined;
   }
-  const raw = typeof entry === 'object' && entry !== null && 'value' in entry
-    ? entry.value
-    : entry;
+  const raw = typeof entry === 'object' && entry !== null && 'value' in entry ? entry.value : entry;
   if (!raw) {
     return undefined;
   }
   return String(raw).trim().toLowerCase();
 }
 
-export function checkStorageOperationsEnabled (metadata = {}) {
+export function checkStorageOperationsEnabled(metadata = {}) {
   if (!metadata?.data) {
     return true;
   }
   const {data} = metadata;
   for (const key of STORAGE_OPERATIONS_METADATA_KEYS) {
-    if (!Object.prototype.hasOwnProperty.call(data, key)) {
+    if (!Object.hasOwn(data, key)) {
       continue;
     }
     const value = getMetadataEntryValueString(data[key]);

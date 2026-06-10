@@ -15,8 +15,5 @@
  */
 
 export default function (value) {
-  return value === undefined ||
-    value === null ||
-    isNaN(value) ||
-    Math.abs(value) === Infinity;
+  return value === undefined || value === null || isNaN(value) || Math.abs(value) === Infinity;
 }

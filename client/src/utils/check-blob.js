@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-export default function checkBlob (blob, errorMessage) {
+export default function checkBlob(blob, errorMessage) {
   return new Promise((resolve) => {
     const fr = new FileReader();
     fr.onload = function () {

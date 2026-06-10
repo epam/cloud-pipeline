@@ -22,36 +22,38 @@ const DOCUMENT_FILE = 'document';
 
 export const PipelineFileTypes = {
   document: DOCUMENT_FILE,
-  source: SOURCE_FILE
+  source: SOURCE_FILE,
 };
 
-export async function getPipelineFileInfo (pipelineId, pipelineVersion, pathToFile) {
+export async function getPipelineFileInfo(pipelineId, pipelineVersion, pathToFile) {
   const folder = (pathToFile || '').split('/').slice(0, -1).join('/');
   const docsRequest = new Docs(pipelineId, pipelineVersion);
   await docsRequest.fetch();
   if (docsRequest.loaded) {
-    const [file] = (docsRequest.value || [])
-      .filter(f => (f.path || '').toLowerCase() === (pathToFile.toLowerCase() || ''));
+    const [file] = (docsRequest.value || []).filter(
+      (f) => (f.path || '').toLowerCase() === (pathToFile.toLowerCase() || ''),
+    );
     if (file) {
       return {
         id: pipelineId,
         version: pipelineVersion,
         path: folder,
-        type: PipelineFileTypes.document
+        type: PipelineFileTypes.document,
       };
     }
   }
   const sourcesRequest = new Source(pipelineId, pipelineVersion, folder, true);
   await sourcesRequest.fetch();
   if (sourcesRequest.loaded) {
-    const [file] = (sourcesRequest.value || [])
-      .filter(f => f.type === 'blob' && (f.path || '').toLowerCase() === (pathToFile.toLowerCase() || ''));
+    const [file] = (sourcesRequest.value || []).filter(
+      (f) => f.type === 'blob' && (f.path || '').toLowerCase() === (pathToFile.toLowerCase() || ''),
+    );
     if (file) {
       return {
         id: pipelineId,
         version: pipelineVersion,
         path: folder,
-        type: PipelineFileTypes.source
+        type: PipelineFileTypes.source,
       };
     }
   }

@@ -346,62 +346,6 @@ div.CodeMirror span.CodeMirror-nonmatchingbracket {
   background: var(--cp-color-bg-elevated-header);
 }
 
-.handsontable {
-  color: var(--cp-color-text);
-}
-
-.handsontable th {
-  background-color: var(--cp-color-bg-elevated-header);
-}
-
-.handsontable td {
-  background-color: var(--cp-color-bg-elevated);
-}
-
-.handsontable tr th,
-.handsontable tr td,
-.handsontable tr:first-child th,
-.handsontable tr:first-child td {
-  color: var(--cp-color-text);
-}
-
-.handsontable tr th,
-.handsontable tr td,
-.handsontable tr:first-child th,
-.handsontable tr:first-child td,
-.handsontable.htRowHeaders thead tr th:nth-child(2) {
-  border-color: color-mix(in oklch, var(--cp-color-border-card), black 5%);
-}
-
-.handsontable tbody th.ht__highlight,
-.handsontable thead th.ht__highlight {
-  background-color: var(--cp-color-primary);
-  color: var(--cp-color-primary-on);
-}
-
-.handsontable td.area {
-  background-image: linear-gradient(to bottom, var(--cp-color-primary-muted) 0%, var(--cp-color-primary-muted) 100%);
-  background-color: var(--cp-color-bg-elevated);
-}
-
-.htContextMenu table.htCore,
-.htContextMenu table tbody tr td.htSeparator {
-  border-color: var(--cp-color-border-card);
-}
-
-.htContextMenu table tbody tr td.current,
-.htContextMenu table tbody tr td.zeroclipboard-is-hover {
-  background-color: var(--cp-color-interactive-selected-bg);
-}
-
-.htContextMenu table tbody tr td.htDisabled,
-.htContextMenu table tbody tr td.htDisabled:hover {
-  background-color: var(--cp-color-bg-elevated);
-  color: var(--cp-color-text-disabled);
-}
-
-.cp-pipeline-code-editor-readonly .handsontable td,
-.cp-pipeline-code-editor-readonly .handsontable td.area,
 .cp-pipeline-code-editor-readonly .CodeMirror {
   background-color: color-mix(in oklch, var(--cp-color-bg-elevated-header), white 2%);
 }

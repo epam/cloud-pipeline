@@ -15,30 +15,30 @@
  */
 
 const billingCentersData = {
-  'OMICS': {
+  OMICS: {
     previous: 21,
-    current: 78
+    current: 78,
   },
-  'MEDLABICS': {
+  MEDLABICS: {
     previous: 33,
-    current: 69
+    current: 69,
   },
-  'SUNHEALTH': {
+  SUNHEALTH: {
     previous: 85,
-    current: 62
+    current: 62,
   },
   'HUMANITY-GENX': {
     previous: 2,
-    current: 57
+    current: 57,
   },
-  'ONKOLAB': {
+  ONKOLAB: {
     previous: 32,
-    current: 14
+    current: 14,
   },
   'K-TECKMED': {
     previous: 1,
-    current: 9
-  }
+    current: 9,
+  },
 };
 
 export default billingCentersData;

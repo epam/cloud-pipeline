@@ -15,25 +15,20 @@ export class GetGroupedResources extends RemotePost {
   /**
    * @param {GetGroupedResourcesOptions} options
    */
-  constructor (options = {}) {
+  constructor(options = {}) {
     super();
-    const {
-      filters,
-      pagination
-    } = options;
+    const {filters, pagination} = options;
     this.filters = filters;
     this.pagination = pagination;
   }
-  async fetch () {
+
+  async fetch() {
     const payload = {};
 
     this._pending = true;
     this._postIsExecuting = true;
 
-    const storageTypesRequest = new GetGroupedStorageTypes(
-      this.filters,
-      this.pagination
-    );
+    const storageTypesRequest = new GetGroupedStorageTypes(this.filters, this.pagination);
     await storageTypesRequest.fetch();
 
     if (storageTypesRequest.error) {
@@ -43,12 +38,9 @@ export class GetGroupedResources extends RemotePost {
       this.error = storageTypesRequest.error;
       return;
     }
-    payload['Storage'] = storageTypesRequest.loaded ? storageTypesRequest.value : [];
+    payload.Storage = storageTypesRequest.loaded ? storageTypesRequest.value : [];
 
-    const computeTypesRequest = new GetGroupedComputeTypes(
-      this.filters,
-      this.pagination
-    );
+    const computeTypesRequest = new GetGroupedComputeTypes(this.filters, this.pagination);
     await computeTypesRequest.fetch();
 
     if (computeTypesRequest.error) {
@@ -61,13 +53,13 @@ export class GetGroupedResources extends RemotePost {
     payload['Compute instances'] = computeTypesRequest.loaded ? computeTypesRequest.value : [];
 
     payload.quotaGroups = {
-      'Storage': QuotaGroups.storages,
-      'Compute instances': QuotaGroups.computeInstances
+      Storage: QuotaGroups.storages,
+      'Compute instances': QuotaGroups.computeInstances,
     };
 
     this.update({
       status: 'OK',
-      payload
+      payload,
     });
     this._pending = false;
     this._postIsExecuting = false;
@@ -78,49 +70,34 @@ export class GetGroupedResourcesWithPrevious extends GetDataWithPrevious {
   /**
    * @param {GetGroupedResourcesOptions} options
    */
-  constructor (options = {}) {
-    const {
-      filters = {},
-      pagination
-    } = options;
-    const {
-      end,
-      endStrict,
-      previousEnd,
-      previousEndStrict,
-      ...rest
-    } = filters;
+  constructor(options = {}) {
+    const {filters = {}, pagination} = options;
+    const {end, endStrict, previousEnd, previousEndStrict, ...rest} = filters;
     const formattedFilters = {
       end: endStrict || end,
       previousEnd: previousEndStrict || previousEnd,
-      ...rest
+      ...rest,
     };
-    super(
-      GetGroupedResources,
-      {
-        filters: formattedFilters,
-        pagination
-      }
-    );
+    super(GetGroupedResources, {
+      filters: formattedFilters,
+      pagination,
+    });
   }
 
-  postprocess (value) {
+  postprocess(value) {
     const {current, previous} = super.postprocess(value);
-    const storage = join(
-      (current || {})['Storage'],
-      (previous || {})['Storage']
-    );
+    const storage = join((current || {}).Storage, (previous || {}).Storage);
     const compute = join(
       (current || {})['Compute instances'],
-      (previous || {})['Compute instances']
+      (previous || {})['Compute instances'],
     );
     return {
-      'Storage': storage,
+      Storage: storage,
       'Compute instances': compute,
       quotaGroups: {
-        'Storage': QuotaGroups.storages,
-        'Compute instances': QuotaGroups.computeInstances
-      }
+        Storage: QuotaGroups.storages,
+        'Compute instances': QuotaGroups.computeInstances,
+      },
     };
   }
 }

@@ -18,15 +18,15 @@ import Remote from '../basic/Remote';
 import {makeObservable, override} from 'mobx';
 
 class DTSList extends Remote {
-  constructor () {
+  constructor() {
     super();
     makeObservable(this, {
-      update: override
+      update: override,
     });
     this.url = '/dts';
-  };
+  }
 
-  update (value) {
+  update(value) {
     this._response = value;
     if (value.status && value.status === 401) {
       super.update(value);

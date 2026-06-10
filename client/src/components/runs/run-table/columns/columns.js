@@ -27,7 +27,7 @@ const Columns = {
   links: 'links',
   pauseResume: 'pause-resume',
   stopReRun: 'stop-rerun',
-  logs: 'logs'
+  logs: 'logs',
 };
 
 export default Columns;

@@ -19,9 +19,10 @@ import VSResolveFile from './resolve-file';
 import VSTaskStatus from './status';
 import VSResolveFileAcceptBranch from './resolve-file-accept-branch';
 
-function wrapSendRequest (request) {
+function wrapSendRequest(request) {
   return new Promise((resolve, reject) => {
-    request.send()
+    request
+      .send()
       .then(() => {
         resolve(request.value);
       })
@@ -29,7 +30,7 @@ function wrapSendRequest (request) {
   });
 }
 
-function wrapFetchStatus (runId, task) {
+function wrapFetchStatus(runId, task) {
   if (!task) {
     return Promise.resolve();
   }
@@ -37,7 +38,7 @@ function wrapFetchStatus (runId, task) {
   return vsTaskStatus.fetchUntilDone();
 }
 
-export default function resolveFileConflict (runId, storageId, file, contents) {
+export default function resolveFileConflict(runId, storageId, file, contents) {
   return new Promise((resolve, reject) => {
     let updatePromise;
     if (contents && contents.binary) {
@@ -56,7 +57,7 @@ export default function resolveFileConflict (runId, storageId, file, contents) {
         const request = new VSResolveFile(runId, storageId, file);
         return wrapSendRequest(request);
       })
-      .then(resolveResult => {
+      .then((resolveResult) => {
         const {task} = resolveResult || {};
         return wrapFetchStatus(runId, task);
       })

@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-function folderItems (item, resolve) {
+function folderItems(item, resolve) {
   // we need to call resolve after a delay due to
   // wrong lifecycle inside SlideAtlas-viewer
   setTimeout(() => resolve([]), 1000);
@@ -25,7 +25,7 @@ folderItems.test = function (url) {
   if (exec && exec.length > 2) {
     return {
       storage: +exec[1],
-      path: exec[2]
+      path: exec[2],
     };
   }
   return undefined;

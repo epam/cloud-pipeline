@@ -18,7 +18,7 @@ import Remote from '../basic/Remote';
 import {RepositoryTypes} from '../../components/special/git-repository-control';
 
 export default class PipelineGitNameSpaces extends Remote {
-  constructor (repositoryType = RepositoryTypes.GitHubApp) {
+  constructor(repositoryType = RepositoryTypes.GitHubApp) {
     super();
     this.url = `/pipeline/git/namespaces?type=${encodeURIComponent(repositoryType)}`;
   }

@@ -18,16 +18,16 @@ import Remote from '../basic/Remote';
 import defer from '../../utils/defer';
 
 class PipelineConfigurations extends Remote {
-  constructor (id, pipelineRequest) {
+  constructor(id, pipelineRequest) {
     super();
     this.pipelineRequest = pipelineRequest;
     // this.url = `/pipeline/${id}/configurations?version=${version}`;
-  };
+  }
 
-  async fetch () {
+  async fetch() {
     this._loadRequired = false;
     if (!this._fetchPromise) {
-      this._fetchPromise = new Promise(async (resolve) => {
+      this._fetchPromise = (async () => {
         this._pending = true;
         const {prefix, fetchOptions} = this.constructor;
         try {
@@ -47,7 +47,7 @@ class PipelineConfigurations extends Remote {
           }
           fetchOptions.headers = headers;
           const response = await fetch(`${prefix}${this.url}`, fetchOptions);
-          const data = this.constructor.isJson ? (await response.json()) : (await response.blob());
+          const data = this.constructor.isJson ? await response.json() : await response.blob();
           this.update(data);
         } catch (e) {
           this.failed = true;
@@ -56,8 +56,7 @@ class PipelineConfigurations extends Remote {
 
         this._pending = false;
         this._fetchPromise = null;
-        resolve();
-      });
+      })();
     }
     return this._fetchPromise;
   }

@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 export default class MetadataEntityLoadExternal extends Remote {
-  constructor (id, className, folderId) {
+  constructor(id, className, folderId) {
     super();
     this.url = `/metadataEntity/loadExternal?id=${id}&className=${className}&folderId=${folderId}`;
   }

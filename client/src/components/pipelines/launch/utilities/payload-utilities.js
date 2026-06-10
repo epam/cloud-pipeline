@@ -9,29 +9,29 @@ import preferences from '../../../../models/preferences/PreferencesLoad';
 /**
  * @param {ToolLaunchPayloadOptions} options
  */
-export function getToolLaunchPayload (options) {
-  const {
-    tool,
-    settings = [],
-    toolVersion: tv = 'latest'
-  } = options;
+export function getToolLaunchPayload(options) {
+  const {tool, settings = [], toolVersion: tv = 'latest'} = options;
   if (!tool) {
     throw new Error('Tool configuration not found');
   }
   const toolVersion = tv.toLowerCase();
-  const versionSettings = settings.find(v => (v.version || '').toLowerCase() === toolVersion);
-  const defaultVersionSettings = settings.find(v => (v.version || '').toLowerCase() === 'latest');
+  const versionSettings = settings.find((v) => (v.version || '').toLowerCase() === toolVersion);
+  const defaultVersionSettings = settings.find((v) => (v.version || '').toLowerCase() === 'latest');
   const versionSettingValue = (settingName) => {
-    if (versionSettings &&
+    if (
+      versionSettings &&
       versionSettings.settings &&
       versionSettings.settings.length &&
-      versionSettings.settings[0].configuration) {
+      versionSettings.settings[0].configuration
+    ) {
       return versionSettings.settings[0].configuration[settingName];
     }
-    if (defaultVersionSettings &&
+    if (
+      defaultVersionSettings &&
       defaultVersionSettings.settings &&
       defaultVersionSettings.settings.length &&
-      defaultVersionSettings.settings[0].configuration) {
+      defaultVersionSettings.settings[0].configuration
+    ) {
       return defaultVersionSettings.settings[0].configuration[settingName];
     }
     return null;
@@ -44,9 +44,7 @@ export function getToolLaunchPayload (options) {
   const image = `${tool.registry}/${tool.image}`;
   return {
     cmd_template: versionSettingValue('cmd_template') || tool.defaultCommand,
-    docker_image: toolVersion
-      ? `${image}:${toolVersion}`
-      : image,
+    docker_image: toolVersion ? `${image}:${toolVersion}` : image,
     friendly_url: versionSettingValue('friendly_url') || tool.friendly_url,
     instance_disk: +versionSettingValue('instance_disk') || tool.disk,
     instance_size: versionSettingValue('instance_size') || tool.instanceType,
@@ -58,7 +56,7 @@ export function getToolLaunchPayload (options) {
     cloudRegionId: parameterIsNotEmpty(versionSettingValue('cloudRegionId'))
       ? versionSettingValue('cloudRegionId')
       : undefined,
-    notifications: versionSettingValue('notifications') || []
+    notifications: versionSettingValue('notifications') || [],
   };
 }
 
@@ -71,16 +69,12 @@ export function getToolLaunchPayload (options) {
 /**
  * @param {RunLaunchPayloadOptions} options
  */
-export function getRunLaunchPayload (options) {
-  const {
-    run,
-    configuration,
-    preferences: prefs = preferences
-  } = options || {};
+export function getRunLaunchPayload(options) {
+  const {run, configuration, preferences: prefs = preferences} = options || {};
   const getPipelineParameter = (parameterName) => {
     if (configuration && configuration.parameters) {
-      for (let key in configuration.parameters) {
-        if (configuration.parameters.hasOwnProperty(key) && parameterName === key) {
+      for (const key in configuration.parameters) {
+        if (Object.hasOwn(configuration.parameters, key) && parameterName === key) {
           return configuration.parameters[key];
         }
       }
@@ -90,7 +84,7 @@ export function getRunLaunchPayload (options) {
   const parameters = {
     cmd_template: run.cmdTemplate,
     docker_image: run.dockerImage,
-    is_spot: prefs.useSpot
+    is_spot: prefs.useSpot,
   };
   if (run.instance) {
     parameters.instance_size = run.instance.nodeType;
@@ -106,16 +100,17 @@ export function getRunLaunchPayload (options) {
         const parameterInfo = getPipelineParameter(param.name);
         const type = param.type
           ? param.type
-          : (parameterInfo && parameterInfo.type ? parameterInfo.type : 'string');
-        const required = parameterInfo && parameterInfo.required
-          ? parameterInfo.required : false;
+          : parameterInfo && parameterInfo.type
+            ? parameterInfo.type
+            : 'string';
+        const required = parameterInfo && parameterInfo.required ? parameterInfo.required : false;
         parameters.parameters[param.name] = {
           ...(parameterInfo || {}),
           value: param.value,
           resolvedValue: param.resolvedValue,
           type,
           required,
-          enum: param.enum
+          enum: param.enum,
         };
       }
     }

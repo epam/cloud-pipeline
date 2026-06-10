@@ -17,12 +17,12 @@
 import Remote from '../basic/Remote';
 
 export default class RunSchedules extends Remote {
-  constructor (runId) {
+  constructor(runId) {
     super();
     this.url = `/schedule/run/${runId}`;
   }
 
-  postprocess (value) {
+  postprocess(value) {
     return (value.payload || []).map(({id, ...rest}) => ({scheduleId: id, ...rest}));
   }
 }

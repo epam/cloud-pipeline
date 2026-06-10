@@ -18,10 +18,7 @@ import LoadCloudCredentialsProfiles from './LoadCloudCredentialsProfiles';
 
 const cloudCredentialProfiles = new LoadCloudCredentialsProfiles();
 
-export {
-  cloudCredentialProfiles,
-  LoadCloudCredentialsProfiles
-};
+export {cloudCredentialProfiles, LoadCloudCredentialsProfiles};
 export {default as AssignCredentialProfiles} from './AssignCredentialProfiles';
 export {default as LoadEntityCredentialProfiles} from './LoadEntityCredentialProfiles';
 export {default as CreateCloudCredentialsProfile} from './CreateCloudCredentialsProfile';

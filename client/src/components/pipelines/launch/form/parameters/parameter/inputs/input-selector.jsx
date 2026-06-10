@@ -9,7 +9,7 @@ import LaunchFormMetadataParameterInput from './metadata-parameter-input';
 import LaunchFormSchemeParameterInput from './scheme-parameter-input/scheme-parameter-input';
 import LaunchFormMetadataEntityParameter from './metadata-entity-parameter';
 
-function DefaultInputSelector (props) {
+function DefaultInputSelector(props) {
   const {
     className,
     style,
@@ -21,21 +21,13 @@ function DefaultInputSelector (props) {
     currentProjectMetadata,
     currentMetadataEntity,
     rootEntityId,
-    metadataAutoComplete
+    metadataAutoComplete,
   } = props;
   if (!parameter || typeof parameter !== 'object') {
     return null;
   }
-  let {
-    type = 'string',
-    value,
-    config = {}
-  } = parameter;
-  const {
-    readOnly: readOnlyValue = false,
-    required = false,
-    enumeration
-  } = config;
+  let {type = 'string', value, config = {}} = parameter;
+  const {readOnly: readOnlyValue = false, required = false, enumeration} = config;
   const readOnly = rawEdit ? false : readOnlyValue;
   if (typeof type !== 'string') {
     type = 'string';
@@ -53,7 +45,7 @@ function DefaultInputSelector (props) {
     if (typeof onChange === 'function') {
       onChange({
         ...parameter,
-        value: newValue
+        value: newValue,
       });
     }
   };
@@ -192,7 +184,7 @@ DefaultInputSelector.propTypes = {
   currentProjectMetadata: PropTypes.object,
   currentMetadataEntity: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
   rootEntityId: PropTypes.string,
-  metadataAutoComplete: PropTypes.bool
+  metadataAutoComplete: PropTypes.bool,
 };
 
 export default DefaultInputSelector;

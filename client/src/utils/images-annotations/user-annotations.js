@@ -108,11 +108,11 @@ import {action, autorun, observable, makeObservable} from 'mobx';
  * @param {string} identifier
  * @returns {number}
  */
-function parseIdentifier (identifier) {
+function parseIdentifier(identifier) {
   return Number((identifier || '').split('/').pop());
 }
 
-function getNextIdentifier (annotations = []) {
+function getNextIdentifier(annotations = []) {
   const identifiers = annotations
     .map((annotation) => parseIdentifier(annotation.identifier))
     .filter((n) => !Number.isNaN(n));
@@ -124,12 +124,12 @@ function getNextIdentifier (annotations = []) {
  * @param {UserAnnotation[]} annotations
  * @returns {string}
  */
-function findNextIdentifier (userName, annotations = []) {
+function findNextIdentifier(userName, annotations = []) {
   const next = getNextIdentifier(annotations);
   return `${userName}/${next}`;
 }
 
-function generateIdentifier (userName, nextIdentifier) {
+function generateIdentifier(userName, nextIdentifier) {
   return `${userName}/${nextIdentifier}`;
 }
 
@@ -151,7 +151,7 @@ class UserAnnotations {
   /**
    * @param {UserAnnotationsOptions} options
    */
-  constructor (options) {
+  constructor(options) {
     makeObservable(this, {
       pending: observable,
       error: observable,
@@ -161,41 +161,34 @@ class UserAnnotations {
       visible: observable,
       modified: observable,
       createOrUpdateAnnotation: action,
-      removeAnnotation: action
+      removeAnnotation: action,
     });
-    const {
-      storage,
-      path,
-      autoFetch = true,
-      userName,
-      currentUser,
-      onUpdate
-    } = options;
+    const {storage, path, autoFetch = true, userName, currentUser, onUpdate} = options;
     this.path = path;
     this.storage = storage;
     this.userName = userName;
     this.currentUser = currentUser;
     this.onUpdate = onUpdate;
     if (autoFetch) {
-      (this.fetch)();
+      this.fetch();
     }
     this.dispose = autorun(() => {
       if (typeof onUpdate === 'function') {
         onUpdate({
           changed: this.annotations,
-          visible: this.visible
+          visible: this.visible,
         });
       }
     });
   }
 
-  destroy () {
+  destroy() {
     if (typeof this.dispose === 'function') {
       this.dispose();
     }
   }
 
-  async fetch (force = false) {
+  async fetch(force = false) {
     if (this._fetchPromise && !force) {
       return this._fetchPromise;
     }
@@ -204,18 +197,14 @@ class UserAnnotations {
     const commit = (data) => {
       if (token === this._token) {
         this.pending = false;
-        const {
-          error,
-          annotations = [],
-          userName = this.userName
-        } = data || {};
+        const {error, annotations = [], userName = this.userName} = data || {};
         const corrected = [];
         annotations.forEach((annotation) => {
           corrected.push({
             ...annotation,
             identifier: annotation.identifier || findNextIdentifier(userName, corrected),
             selectable: this.currentUser && userName === this.currentUser,
-            editable: this.currentUser && userName === this.currentUser
+            editable: this.currentUser && userName === this.currentUser,
           });
         });
         this.nextIdentifier = Math.max(this.nextIdentifier || 1, getNextIdentifier(corrected));
@@ -230,23 +219,21 @@ class UserAnnotations {
     this._fetchPromise = new Promise((resolve) => {
       if (!this.storage) {
         commit({
-          error: 'Unknown storage'
+          error: 'Unknown storage',
         }).then(resolve);
         return;
       }
       if (!this.path) {
         commit({
-          error: 'Annotations file path is not defined'
+          error: 'Annotations file path is not defined',
         }).then(resolve);
         return;
       }
       this.pending = true;
-      this.storage.getFileContent(this.path, {json: true})
+      this.storage
+        .getFileContent(this.path, {json: true})
         .then((data) => {
-          const {
-            elements: annotations = [],
-            name: userName
-          } = data || {};
+          const {elements: annotations = [], name: userName} = data || {};
           return commit({annotations, userName});
         })
         .catch((error) => commit({error: error.message}))
@@ -259,7 +246,7 @@ class UserAnnotations {
    * @param {string} identifier
    * @returns {UserAnnotation}
    */
-  getAnnotationByIdentifier (identifier) {
+  getAnnotationByIdentifier(identifier) {
     return this.annotations.find((annotation) => annotation.identifier === identifier);
   }
 
@@ -267,7 +254,7 @@ class UserAnnotations {
    * @param {string} identifier
    * @returns {number}
    */
-  getAnnotationIndexByIdentifier (identifier) {
+  getAnnotationIndexByIdentifier(identifier) {
     return this.annotations.findIndex((annotation) => annotation.identifier === identifier);
   }
 
@@ -276,10 +263,8 @@ class UserAnnotations {
    * @param {{save: boolean}} [options]
    * @returns {string|*}
    */
-  createOrUpdateAnnotation (annotation, options = {}) {
-    const {
-      save = false
-    } = options;
+  createOrUpdateAnnotation(annotation, options = {}) {
+    const {save = false} = options;
     if (!annotation) {
       return;
     }
@@ -293,21 +278,17 @@ class UserAnnotations {
     const annotationCorrected = {
       ...annotation,
       selectable: true,
-      editable: true
+      editable: true,
     };
     const currentIndex = this.getAnnotationIndexByIdentifier(annotationCorrected.identifier);
     if (currentIndex >= 0) {
-      this.annotations.splice(
-        currentIndex,
-        1,
-        annotationCorrected
-      );
+      this.annotations.splice(currentIndex, 1, annotationCorrected);
     } else {
       this.annotations.push(annotationCorrected);
     }
     this.modified = true;
     if (save) {
-      (this.save)();
+      this.save();
     }
     return annotationCorrected.identifier;
   }
@@ -316,20 +297,19 @@ class UserAnnotations {
    * @param {UserAnnotation} annotation
    * @param {{save: boolean}} options
    */
-  removeAnnotation (annotation, options = {}) {
-    const {
-      save = false
-    } = options;
+  removeAnnotation(annotation, options = {}) {
+    const {save = false} = options;
     if (!annotation || !annotation.identifier) {
       return;
     }
     this.annotations = this.annotations.filter((a) => a.identifier !== annotation.identifier);
     this.modified = true;
     if (save) {
-      (this.save)();
+      this.save();
     }
   }
-  async save (reFetch = true) {
+
+  async save(reFetch = true) {
     if (!this.storage) {
       throw new Error('Unknown storage');
     }
@@ -337,16 +317,12 @@ class UserAnnotations {
       throw new Error('Annotations file path is not defined');
     }
     const mapAnnotation = (annotation) => {
-      const {
-        selectable,
-        editable,
-        ...data
-      } = annotation;
+      const {selectable, editable, ...data} = annotation;
       return data;
     };
     const payload = JSON.stringify({
       name: this.userName,
-      elements: this.annotations.map(mapAnnotation)
+      elements: this.annotations.map(mapAnnotation),
     });
     this.pending = true;
     await this.storage.writeFile(this.path, payload);

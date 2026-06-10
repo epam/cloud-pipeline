@@ -3,26 +3,21 @@ import PropTypes from 'prop-types';
 import {TaskRuntimeDataDetails} from './task-runtime-data-details';
 import CodeEditor from '../../../../../../special/CodeEditor';
 import DataStorageLink from '../../../../../../special/data-storage-link';
-import styles from './runtime-data.css';
+import styles from './runtime-data.module.css';
 
-function Renderer (props) {
-  const {
-    className,
-    style,
-    data,
-    task,
-    errorComponent
-  } = props;
+function Renderer(props) {
+  const {className, style, data, task, errorComponent} = props;
   const {attributes = {}} = task || {};
   const {workdir, env = ''} = attributes || {};
-  const envs = (env || '').split(/\s/)
+  const envs = (env || '')
+    .split(/\s/)
     .map((o) => o.trim())
     .filter((o) => o.length > 0)
     .map((o) => {
       const [key, ...value] = o.split('=');
       return {
         key,
-        value: value.join('=')
+        value: value.join('='),
       };
     });
   console.log(env, envs);
@@ -31,13 +26,10 @@ function Renderer (props) {
     const isWorkdirUrl = (path) => path && /^(s3|az|gs|nfs|https?):\/\//i.test(path);
     if (!workdir) {
       return '-';
-    };
+    }
     if (isWorkdirUrl(workdir)) {
       return (
-        <DataStorageLink
-          path={workdir}
-          isFolder
-        >
+        <DataStorageLink path={workdir} isFolder>
           {workdir}
         </DataStorageLink>
       );
@@ -51,48 +43,36 @@ function Renderer (props) {
       style={{
         display: 'flex',
         flexDirection: 'column',
-        ...style
+        ...style,
       }}
     >
       <table className={styles.runtimeMetricsTable}>
         <tbody>
           <tr>
-            <th
-              className="cp-divider bottom light"
-              key="key"
-              style={{borderWidth: 5}}>
+            <th className="cp-divider bottom light" key="key" style={{borderWidth: 5}}>
               Working directory:
             </th>
-            <td
-              className="cp-divider bottom light"
-              key="value"
-              style={{borderWidth: 5}}>
+            <td className="cp-divider bottom light" key="value" style={{borderWidth: 5}}>
               {renderWorkdir()}
             </td>
           </tr>
-          {
-            envs.map((param, pIdx) => (
-              <tr
-                key={`env-${param.key}-${pIdx}`}
-              >
-                <th className="cp-divider bottom light" key="key">{param.key}:</th>
-                <td className="cp-divider bottom light" key="value">{param.value}</td>
-              </tr>
-            ))
-          }
+          {envs.map((param, pIdx) => (
+            <tr key={`env-${param.key}-${pIdx}`}>
+              <th className="cp-divider bottom light" key="key">
+                {param.key}:
+              </th>
+              <td className="cp-divider bottom light" key="value">
+                {param.value}
+              </td>
+            </tr>
+          ))}
         </tbody>
       </table>
       {errorComponent ? (
-        <div className={styles.errorComponentContainer}>
-          {errorComponent}
-        </div>
+        <div className={styles.errorComponentContainer}>{errorComponent}</div>
       ) : null}
       {!errorComponent ? (
-        <CodeEditor
-          className={styles.taskCommandCodeEditor}
-          code={data}
-          readOnly
-        />
+        <CodeEditor className={styles.taskCommandCodeEditor} code={data} readOnly />
       ) : null}
     </div>
   );
@@ -103,10 +83,10 @@ Renderer.propTypes = {
   style: PropTypes.object,
   task: PropTypes.object,
   data: PropTypes.string,
-  passErrorToContent: PropTypes.bool
+  passErrorToContent: PropTypes.bool,
 };
 
-function TaskCommand (props) {
+function TaskCommand(props) {
   return (
     <TaskRuntimeDataDetails
       {...props}
@@ -123,7 +103,7 @@ TaskCommand.propTypes = {
   style: PropTypes.object,
   task: PropTypes.object,
   errorMessage: PropTypes.string,
-  errorMessageRunning: PropTypes.string
+  errorMessageRunning: PropTypes.string,
 };
 
 export default TaskCommand;

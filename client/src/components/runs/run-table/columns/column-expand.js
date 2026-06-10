@@ -14,11 +14,11 @@
  *  limitations under the License.
  */
 
-import styles from './run-table-columns.css';
+import styles from './run-table-columns.module.css';
 
 export default {
   title: '',
   dataIndex: '',
   key: 'expandIcon',
-  className: styles.expandIconColumn
+  className: styles.expandIconColumn,
 };

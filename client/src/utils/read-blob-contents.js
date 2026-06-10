@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-export default function readBlobContents (file) {
+export default function readBlobContents(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = function (evt) {

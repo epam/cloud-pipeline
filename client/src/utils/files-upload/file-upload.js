@@ -1,5 +1,5 @@
 import {observable, makeObservable} from 'mobx';
-import moment from 'moment-timezone';
+import dayjs from '../dayjs';
 import dataStorages from '../../models/dataStorage/DataStorages';
 import DataStorageItemUpdate from '../../models/dataStorage/DataStorageItemUpdate';
 import S3Storage from '../../models/s3-upload/s3-storage';
@@ -9,13 +9,8 @@ const KB = 1024;
 const MB = 1024 * KB;
 const MAX_NFS_FILE_SIZE_MB = 500;
 
-async function uploadDefault (options) {
-  const {
-    file,
-    fileName = file.name,
-    url,
-    progressCallback
-  } = options;
+async function uploadDefault(options) {
+  const {file, fileName = file.name, url, progressCallback} = options;
   return new Promise((resolve, reject) => {
     let percent = 0;
     let indeterminate = false;
@@ -26,7 +21,7 @@ async function uploadDefault (options) {
     };
     const updatePercent = ({loaded, total}) => {
       indeterminate = false;
-      percent = Math.min(100, Math.ceil(loaded / total * 100));
+      percent = Math.min(100, Math.ceil((loaded / total) * 100));
       report();
     };
     const formData = new FormData();
@@ -72,7 +67,7 @@ class FileUpload {
     const parts = file.name.split('.');
     const ext = parts.pop();
     const name = parts.join('.');
-    const guid = moment.utc().format('YYYYMMDDHHmmssSSS');
+    const guid = dayjs.utc().format('YYYYMMDDHHmmssSSS');
     let root = uploadRoot;
     if (root.length > 0 && !root.endsWith('/')) {
       root = root.concat('/');
@@ -88,7 +83,7 @@ class FileUpload {
   cloudDataPath;
   resolvedPath;
 
-  constructor (file, uploadStorageId, uploadPath) {
+  constructor(file, uploadStorageId, uploadPath) {
     makeObservable(this, {
       error: observable,
       progress: observable,
@@ -96,7 +91,7 @@ class FileUpload {
       done: observable,
       fullStoragePath: observable,
       cloudDataPath: observable,
-      resolvedPath: observable
+      resolvedPath: observable,
     });
     this.file = file;
     this.uploadStorageId = uploadStorageId;
@@ -105,11 +100,11 @@ class FileUpload {
     this.abortController = new AbortController();
   }
 
-  get name () {
+  get name() {
     return this.file ? this.file.name : undefined;
   }
 
-  get size () {
+  get size() {
     return this.file ? this.file.size : undefined;
   }
 
@@ -125,7 +120,7 @@ class FileUpload {
 
   removeEventListener = (listener) => {
     this.listeners = this.listeners.filter((l) => l !== listener);
-  }
+  };
 
   getState = () => ({
     error: this.error,
@@ -138,7 +133,7 @@ class FileUpload {
     storageId: this.uploadStorageId,
     storagePath: this.uploadPath,
     aborted: this.abortController.signal.aborted,
-    file: this.file
+    file: this.file,
   });
 
   report = () => {
@@ -178,9 +173,10 @@ class FileUpload {
           {
             fileName,
             partNumber: 0,
-            owner: whoAmI.loaded && whoAmI.value && whoAmI.value.userName
-              ? whoAmI.value.userName
-              : undefined
+            owner:
+              whoAmI.loaded && whoAmI.value && whoAmI.value.userName
+                ? whoAmI.value.userName
+                : undefined,
           },
           {
             onProgress: (percent) => {
@@ -189,13 +185,13 @@ class FileUpload {
             },
             setAbort: (onAbort) => {
               this.abortController.signal.addEventListener('abort', onAbort);
-            }
-          }
+            },
+          },
         );
       } else {
         if (this.file.size >= MAX_NFS_FILE_SIZE_MB * MB) {
           throw new Error(
-            `file size too large (maximum ${MAX_NFS_FILE_SIZE_MB}Mb per file allowed)`
+            `file size too large (maximum ${MAX_NFS_FILE_SIZE_MB}Mb per file allowed)`,
           );
         }
         const createFolder = async (folder) => {
@@ -206,11 +202,13 @@ class FileUpload {
           }
           if (folder && folder.length > 0) {
             const request = new DataStorageItemUpdate(storage.id);
-            const payload = [{
-              path: folder,
-              type: 'Folder',
-              action: 'Create'
-            }];
+            const payload = [
+              {
+                path: folder,
+                type: 'Folder',
+                action: 'Create',
+              },
+            ];
             await request.send(payload);
           }
         };
@@ -225,7 +223,7 @@ class FileUpload {
             this.progress = Math.max(0, Math.min(100, percent * 100));
             this.indeterminate = indeterminate;
             this.report();
-          }
+          },
         });
       }
     } catch (error) {

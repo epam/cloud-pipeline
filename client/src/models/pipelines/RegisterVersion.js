@@ -19,7 +19,7 @@ import Remote from '../basic/Remote';
 class RegisterVersion extends Remote {
   static defaultValue = [];
 
-  constructor (params) {
+  constructor(params) {
     super();
     let stringifiedParams;
     try {
@@ -27,14 +27,14 @@ class RegisterVersion extends Remote {
     } catch (___) {}
     this.constructor.fetchOptions = {
       headers: {
-        'Content-type': 'application/json; charset=UTF-8'
+        'Content-type': 'application/json; charset=UTF-8',
       },
       mode: 'cors',
       credentials: 'include',
       method: 'POST',
-      body: stringifiedParams
+      body: stringifiedParams,
     };
-    this.url = `/pipeline/version/register`;
+    this.url = '/pipeline/version/register';
   }
 }
 

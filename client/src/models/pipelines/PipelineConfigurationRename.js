@@ -17,8 +17,7 @@
 import RemotePost from '../basic/RemotePost';
 
 class PipelineConfigurationRename extends RemotePost {
-
-  constructor (id, oldName, newName) {
+  constructor(id, oldName, newName) {
     super();
     this.url = `/pipeline/${id}/configurations/rename?oldName=${oldName}&newName=${newName}`;
   }

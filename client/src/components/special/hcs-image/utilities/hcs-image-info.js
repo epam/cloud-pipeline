@@ -35,7 +35,7 @@ class HCSInfo {
   /**
    * @param {HCSInfoOptions} options
    */
-  constructor (options = {}) {
+  constructor(options = {}) {
     const {
       storageId,
       objectStorage,
@@ -44,7 +44,7 @@ class HCSInfo {
       width,
       height,
       timeSeriesDetails = {},
-      viewSettings = {}
+      viewSettings = {},
     } = options;
     const sequences = Object.keys(timeSeriesDetails);
     if (sequences.length === 0) {
@@ -54,9 +54,7 @@ class HCSInfo {
      * Storage identifier
      * @type {number|string}
      */
-    this.storageId = Number.isNaN(Number(storageId))
-      ? storageId
-      : Number(storageId);
+    this.storageId = Number.isNaN(Number(storageId)) ? storageId : Number(storageId);
     /**
      * Object storage wrapper
      * @type {ObjectStorage}
@@ -89,33 +87,36 @@ class HCSInfo {
     this.viewSettings = {
       video: `${viewSettings.video}` !== 'false',
       analysis: `${viewSettings.analysis}` !== 'false',
-      plate: `${viewSettings['plate_layout']}` !== 'false',
-      well: `${viewSettings['well_layout']}` !== 'false',
-      timeseries: `${viewSettings['timeseries_layout']}` !== 'false',
-      originalImage: `${viewSettings['original_image']}` !== 'false',
-      zPlanesSliderMode: `${viewSettings['z_planes_slider_mode']}` === 'true',
-      volumetricRendering: `${viewSettings['3d_rendering']}` === 'true'
+      plate: `${viewSettings.plate_layout}` !== 'false',
+      well: `${viewSettings.well_layout}` !== 'false',
+      timeseries: `${viewSettings.timeseries_layout}` !== 'false',
+      originalImage: `${viewSettings.original_image}` !== 'false',
+      zPlanesSliderMode: `${viewSettings.z_planes_slider_mode}` === 'true',
+      volumetricRendering: `${viewSettings['3d_rendering']}` === 'true',
     };
     /**
      * Sequences info
      * @type {HCSImageSequence[]}
      */
-    this.sequences = sequences
-      .map(sequence => new HCSImageSequence({
-        hcs: this,
-        storageId,
-        objectStorage,
-        sequence,
-        sourceDirectory,
-        directory: (directory || '')
-          .split(objectStorage ? objectStorage.delimiter : '/')
-          .concat(sequence)
-          .filter(o => o.length)
-          .join(objectStorage ? objectStorage.delimiter : '/'),
-        timeSeries: timeSeriesDetails[sequence] || []
-      }));
-    this.sequences
-      .forEach(aSequence => aSequence.addURLsGeneratedListener(this.sequenceURLsRegenerated));
+    this.sequences = sequences.map(
+      (sequence) =>
+        new HCSImageSequence({
+          hcs: this,
+          storageId,
+          objectStorage,
+          sequence,
+          sourceDirectory,
+          directory: (directory || '')
+            .split(objectStorage ? objectStorage.delimiter : '/')
+            .concat(sequence)
+            .filter((o) => o.length)
+            .join(objectStorage ? objectStorage.delimiter : '/'),
+          timeSeries: timeSeriesDetails[sequence] || [],
+        }),
+    );
+    this.sequences.forEach((aSequence) =>
+      aSequence.addURLsGeneratedListener(this.sequenceURLsRegenerated),
+    );
     this.listeners = [];
   }
 
@@ -125,18 +126,18 @@ class HCSInfo {
   };
 
   removeURLsRegeneratedListener = (listener) => {
-    this.listeners = this.listeners.filter(aListener => aListener !== listener);
+    this.listeners = this.listeners.filter((aListener) => aListener !== listener);
   };
 
   sequenceURLsRegenerated = (sequence) => {
     this.listeners
-      .filter(aListener => typeof aListener === 'function')
-      .forEach(aListener => aListener(sequence, this));
+      .filter((aListener) => typeof aListener === 'function')
+      .forEach((aListener) => aListener(sequence, this));
   };
 
-  destroy () {
+  destroy() {
     this.listeners = undefined;
-    this.sequences.forEach(aSequence => aSequence.destroy());
+    this.sequences.forEach((aSequence) => aSequence.destroy());
     this.sequences = undefined;
     this.objectStorage = undefined;
   }
@@ -152,55 +153,37 @@ class HCSInfo {
    *
    * @param {HCSFileInfo} options
    */
-  static fetch (options = {}) {
-    const {
-      storageInfo,
-      storageId,
-      path
-    } = options;
+  static async fetch(options = {}) {
+    const {storageInfo, storageId, path} = options;
     if ((!storageId && !storageInfo) || !path) {
-      return Promise.reject(new Error('`storageId` and `path` must be specified for HCS image'));
+      throw new Error('`storageId` and `path` must be specified for HCS image');
     }
-    return new Promise(async (resolve, reject) => {
-      try {
-        const objectStorage = await createObjectStorageWrapper(
-          storages,
-          storageId || storageInfo,
-          {write: false, read: true}
-        );
-        const hcsPathInfo = parseHCSFileParts(
-          path,
-          objectStorage.delimiter
-        );
-        if (!hcsPathInfo) {
-          throw new Error('Not a .hcs file');
-        }
-        const json = await objectStorage.getFileContent(path, {json: true});
-        const {
-          previewDir: previewDirectory
-        } = hcsPathInfo;
-        const {
-          sourceDir: sourceDirectory,
-          plate_height: height,
-          plate_width: width,
-          time_series_details: timeSeriesDetails = {},
-          view_settings: viewSettings = {}
-        } = json;
-        resolve(
-          new HCSInfo({
-            storageId,
-            directory: previewDirectory,
-            sourceDirectory,
-            width,
-            height,
-            objectStorage,
-            timeSeriesDetails,
-            viewSettings
-          })
-        );
-      } catch (e) {
-        reject(e);
-      }
+    const objectStorage = await createObjectStorageWrapper(storages, storageId || storageInfo, {
+      write: false,
+      read: true,
+    });
+    const hcsPathInfo = parseHCSFileParts(path, objectStorage.delimiter);
+    if (!hcsPathInfo) {
+      throw new Error('Not a .hcs file');
+    }
+    const json = await objectStorage.getFileContent(path, {json: true});
+    const {previewDir: previewDirectory} = hcsPathInfo;
+    const {
+      sourceDir: sourceDirectory,
+      plate_height: height,
+      plate_width: width,
+      time_series_details: timeSeriesDetails = {},
+      view_settings: viewSettings = {},
+    } = json;
+    return new HCSInfo({
+      storageId,
+      directory: previewDirectory,
+      sourceDirectory,
+      width,
+      height,
+      objectStorage,
+      timeSeriesDetails,
+      viewSettings,
     });
   }
 }

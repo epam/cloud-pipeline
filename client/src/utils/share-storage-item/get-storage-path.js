@@ -14,13 +14,11 @@
  *  limitations under the License.
  */
 
-export default function getStoragePath (sharedStorage, sharedFolder) {
+export default function getStoragePath(sharedStorage, sharedFolder) {
   if (!sharedStorage) {
     return undefined;
   }
-  const {
-    path
-  } = sharedStorage;
+  const {path} = sharedStorage;
   if (!path) {
     return undefined;
   }

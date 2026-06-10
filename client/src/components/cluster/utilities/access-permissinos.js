@@ -1,13 +1,13 @@
 const ROLE_CLUSTER_READER = 'ROLE_CLUSTER_READER';
 
-export function isAdmin (user) {
+export function isAdmin(user) {
   if (user) {
     return user.admin;
   }
   return false;
 }
 
-export function isClusterReader (user) {
+export function isClusterReader(user) {
   if (isAdmin(user)) {
     return true;
   }

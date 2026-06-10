@@ -17,7 +17,7 @@
 import VSRemotePost from './base/remote-post';
 
 export default class VSFetch extends VSRemotePost {
-  constructor (runId, storageId) {
+  constructor(runId, storageId) {
     super(runId);
     this.url = `vs/${storageId}/fetch`;
   }

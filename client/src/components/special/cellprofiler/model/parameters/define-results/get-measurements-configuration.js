@@ -17,7 +17,7 @@
 import {getObjectProperties, ObjectProperty, ObjectPropertyName} from './object-properties';
 import {AllStats} from './property-functions';
 
-function expandProperties (properties, pipeline, object) {
+function expandProperties(properties, pipeline, object) {
   if (!pipeline || !object) {
     return [];
   }
@@ -25,12 +25,15 @@ function expandProperties (properties, pipeline, object) {
   const spotWithParent = spot && pipeline.getObjectIsSpotWithParent(object);
   const hasChild = pipeline.getObjectHasSpots(object);
   return (properties || [])
-    .map(aProp => aProp.name === ObjectProperty.all
-      ? getObjectProperties({hasChild, spotWithParent, spot})
-        .map(o => ({name: o, stats: AllStats}))
-      : [aProp]
+    .map((aProp) =>
+      aProp.name === ObjectProperty.all
+        ? getObjectProperties({hasChild, spotWithParent, spot}).map((o) => ({
+            name: o,
+            stats: AllStats,
+          }))
+        : [aProp],
     )
-    .reduce((r, c) => ([...r, ...c]));
+    .reduce((r, c) => [...r, ...c]);
 }
 
 /**
@@ -65,52 +68,45 @@ function expandProperties (properties, pipeline, object) {
  * @param pipeline
  * @returns {(ConfigurationProperty | ConfigurationFormula)[]}
  */
-function getConfigurationProperties (configuration, pipeline) {
+function getConfigurationProperties(configuration, pipeline) {
   if (!pipeline || !configuration) {
     return [];
   }
   const spots = pipeline.spots.slice();
   if (configuration.isFormula) {
-    const {
-      name,
-      expression = [],
-      variables = {}
-    } = configuration;
-    const variableConfigurations = Object
-      .entries(variables || {})
-      .map(([variableName, variableValue]) => {
+    const {name, expression = [], variables = {}} = configuration;
+    const variableConfigurations = Object.entries(variables || {}).map(
+      ([variableName, variableValue]) => {
         const {object, property, function: stat} = variableValue;
         return {
           object,
           image: pipeline.getSourceImageForObject(object),
-          spots: spots.filter(aSpot => aSpot.parent === object),
-          parents: spots.filter(aSpot => aSpot.name === object)
-            .map(aSpot => aSpot.parent),
+          spots: spots.filter((aSpot) => aSpot.parent === object),
+          parents: spots.filter((aSpot) => aSpot.name === object).map((aSpot) => aSpot.parent),
           property,
           stats: stat ? [stat] : AllStats,
-          variable: variableName
+          variable: variableName,
         };
-      });
-    return [{
-      isFormula: true,
-      name,
-      variables: variableConfigurations,
-      expression
-    }];
+      },
+    );
+    return [
+      {
+        isFormula: true,
+        name,
+        variables: variableConfigurations,
+        expression,
+      },
+    ];
   }
-  const {
+  const {object, properties: props = []} = configuration;
+  return expandProperties(props, pipeline, object).map((property) => ({
     object,
-    properties: props = []
-  } = configuration;
-  return expandProperties(props, pipeline, object)
-    .map(property => ({
-      object,
-      image: pipeline.getSourceImageForObject(object),
-      spots: spots.filter(aSpot => aSpot.parent === object),
-      parents: spots.filter(aSpot => aSpot.name === object).map(aSpot => aSpot.parent),
-      property: property.name,
-      stats: property.stats && property.stats.length ? property.stats : AllStats
-    }));
+    image: pipeline.getSourceImageForObject(object),
+    spots: spots.filter((aSpot) => aSpot.parent === object),
+    parents: spots.filter((aSpot) => aSpot.name === object).map((aSpot) => aSpot.parent),
+    property: property.name,
+    stats: property.stats && property.stats.length ? property.stats : AllStats,
+  }));
 }
 
 /**
@@ -118,13 +114,13 @@ function getConfigurationProperties (configuration, pipeline) {
  * @param {*[]} configurations
  * @returns {{image: string, objects: string[]}[]}
  */
-export function getMeasureObjectIntensityTargets (pipeline, configurations) {
+export function getMeasureObjectIntensityTargets(pipeline, configurations) {
   if (!pipeline) {
     return [];
   }
   const intensitiesConfiguration = configurations
     .slice()
-    .map(aConfiguration => {
+    .map((aConfiguration) => {
       return getConfigurationProperties(aConfiguration, pipeline)
         .reduce((result, current) => {
           if (current.isFormula) {
@@ -143,33 +139,36 @@ export function getMeasureObjectIntensityTargets (pipeline, configurations) {
               return [{object: aProperty.object, image: aProperty.image}];
             case ObjectProperty.relativeSpotsIntensity:
               return aProperty.spots
-                .map(childSpot => [
+                .map((childSpot) => [
                   {object: aProperty.object, image: childSpot.image},
-                  {object: childSpot.name, image: childSpot.image}
+                  {object: childSpot.name, image: childSpot.image},
                 ])
-                .reduce((r, c) => ([...r, ...c]), []);
+                .reduce((r, c) => [...r, ...c], []);
             case ObjectProperty.spotToRegionIntensity:
             case ObjectProperty.regionIntensity:
               return aProperty.parents
-                .map(parent => [
+                .map((parent) => [
                   {object: parent, image: aProperty.image},
-                  {object: aProperty.object, image: aProperty.image}
+                  {object: aProperty.object, image: aProperty.image},
                 ])
-                .reduce((r, c) => ([...r, ...c]), []);
+                .reduce((r, c) => [...r, ...c], []);
             default:
               return [];
           }
-        }).reduce((r, c) => ([...r, ...c]), []);
+        })
+        .reduce((r, c) => [...r, ...c], []);
     })
-    .reduce((r, c) => ([...r, ...c]), []);
-  const uniqueImages = [...(new Set(intensitiesConfiguration.map(config => config.image)))];
-  return uniqueImages.map(image => ({
+    .reduce((r, c) => [...r, ...c], []);
+  const uniqueImages = [...new Set(intensitiesConfiguration.map((config) => config.image))];
+  return uniqueImages.map((image) => ({
     image,
-    objects: [...new Set(
-      intensitiesConfiguration
-        .filter(config => config.image === image)
-        .map(config => config.object)
-    )]
+    objects: [
+      ...new Set(
+        intensitiesConfiguration
+          .filter((config) => config.image === image)
+          .map((config) => config.object),
+      ),
+    ],
   }));
 }
 
@@ -178,7 +177,7 @@ export function getMeasureObjectIntensityTargets (pipeline, configurations) {
  * @param {{object: string}[]} configurations
  * @returns {string[]}
  */
-export function getMeasureObjectSizeTargets (pipeline, configurations) {
+export function getMeasureObjectSizeTargets(pipeline, configurations) {
   if (!pipeline) {
     return [];
   }
@@ -187,7 +186,7 @@ export function getMeasureObjectSizeTargets (pipeline, configurations) {
    */
   const sizesConfiguration = configurations
     .slice()
-    .map(aConfiguration => {
+    .map((aConfiguration) => {
       return getConfigurationProperties(aConfiguration, pipeline)
         .reduce((result, current) => {
           if (current.isFormula) {
@@ -201,17 +200,18 @@ export function getMeasureObjectSizeTargets (pipeline, configurations) {
               return [aProperty.object];
             case ObjectProperty.totalSpotArea:
             case ObjectProperty.numberOfSpotsPerAreaOf:
-              return [aProperty.object, ...aProperty.spots.map(childSpot => childSpot.name)];
+              return [aProperty.object, ...aProperty.spots.map((childSpot) => childSpot.name)];
             case ObjectProperty.spotToRegionIntensity:
             case ObjectProperty.regionIntensity:
               return [aProperty.object, ...aProperty.parents];
             default:
               return [];
           }
-        }).reduce((r, c) => ([...r, ...c]), []);
+        })
+        .reduce((r, c) => [...r, ...c], []);
     })
-    .reduce((r, c) => ([...r, ...c]), []);
-  return [...(new Set(sizesConfiguration))];
+    .reduce((r, c) => [...r, ...c], []);
+  return [...new Set(sizesConfiguration)];
 }
 
 /**
@@ -227,14 +227,16 @@ export function getMeasureObjectSizeTargets (pipeline, configurations) {
  * @param {ConfigurationProperty|ConfigurationFormula} aProperty
  * @returns {SpecItem[]}
  */
-function processConfigurationProperty (aProperty) {
+function processConfigurationProperty(aProperty) {
   switch (aProperty.property) {
     case ObjectProperty.numberOfObjects:
-      return [{
-        primary: aProperty.object,
-        operation: aProperty.property,
-        stat_functions: []
-      }];
+      return [
+        {
+          primary: aProperty.object,
+          operation: aProperty.property,
+          stat_functions: [],
+        },
+      ];
     case ObjectProperty.meanSpotIntensity:
     case ObjectProperty.spotBackgroundIntensity:
     case ObjectProperty.correctedSpotIntensity:
@@ -242,43 +244,46 @@ function processConfigurationProperty (aProperty) {
     case ObjectProperty.relativeSpotIntensity:
     case ObjectProperty.spotContrast:
     case ObjectProperty.area:
-      return [{
-        primary: aProperty.object,
-        operation: aProperty.property,
-        stat_functions: aProperty.stats || AllStats
-      }];
+      return [
+        {
+          primary: aProperty.object,
+          operation: aProperty.property,
+          stat_functions: aProperty.stats || AllStats,
+        },
+      ];
     case ObjectProperty.relativeSpotsIntensity:
     case ObjectProperty.totalSpotArea:
     case ObjectProperty.numberOfSpots:
     case ObjectProperty.numberOfSpotsPerAreaOf:
-      return aProperty.spots.map(childSpot => ({
+      return aProperty.spots.map((childSpot) => ({
         primary: aProperty.object,
         secondary: childSpot.name,
         operation: aProperty.property,
-        stat_functions: aProperty.stats || AllStats
+        stat_functions: aProperty.stats || AllStats,
       }));
     case ObjectProperty.regionIntensity:
-      return aProperty.parents.map(primary => ({
-        primary: primary,
+      return aProperty.parents.map((primary) => ({
+        primary,
         secondary: aProperty.object,
         operation: aProperty.property,
         stat_functions: aProperty.stats || AllStats,
-        column_operation_name:
-          `${aProperty.object} - ${primary} ${ObjectPropertyName[aProperty.property]}`
+        column_operation_name: `${aProperty.object} - ${primary} ${ObjectPropertyName[aProperty.property]}`,
       }));
     case ObjectProperty.spotToRegionIntensity:
-      return aProperty.parents.map(primary => ({
-        primary: primary,
+      return aProperty.parents.map((primary) => ({
+        primary,
         secondary: aProperty.object,
         operation: aProperty.property,
-        stat_functions: aProperty.stats || AllStats
+        stat_functions: aProperty.stats || AllStats,
       }));
     default:
-      return [{
-        primary: aProperty.object,
-        operation: aProperty.property,
-        stat_functions: aProperty.stats || AllStats
-      }];
+      return [
+        {
+          primary: aProperty.object,
+          operation: aProperty.property,
+          stat_functions: aProperty.stats || AllStats,
+        },
+      ];
   }
 }
 
@@ -287,29 +292,31 @@ function processConfigurationProperty (aProperty) {
  * @param {*[]} configurations
  * @returns {*[]}
  */
-export function getSpecs (pipeline, configurations) {
+export function getSpecs(pipeline, configurations) {
   if (!pipeline) {
     return [];
   }
   return configurations
     .slice()
-    .map(aConfiguration => {
+    .map((aConfiguration) => {
       return getConfigurationProperties(aConfiguration, pipeline)
         .map((aProperty) => {
           if (aProperty.isFormula) {
-            return [{
-              properties: aProperty.variables
-                .map(aVariable => ({
+            return [
+              {
+                properties: aProperty.variables.map((aVariable) => ({
                   ...(processConfigurationProperty(aVariable) || [])[0],
-                  column_operation_name: aVariable.variable
+                  column_operation_name: aVariable.variable,
                 })),
-              expression: aProperty.expression,
-              formula: true,
-              column_operation_name: aProperty.name
-            }];
+                expression: aProperty.expression,
+                formula: true,
+                column_operation_name: aProperty.name,
+              },
+            ];
           }
           return processConfigurationProperty(aProperty);
-        }).reduce((r, c) => ([...r, ...c]), []);
+        })
+        .reduce((r, c) => [...r, ...c], []);
     })
-    .reduce((r, c) => ([...r, ...c]), []);
+    .reduce((r, c) => [...r, ...c], []);
 }

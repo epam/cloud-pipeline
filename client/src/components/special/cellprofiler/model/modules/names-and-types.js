@@ -31,7 +31,7 @@ class NamesAndTypes extends AnalysisModule {
   /**
    * @param {HCSSourceFileOptions[]} sources
    */
-  constructor (sources) {
+  constructor(sources) {
     super(undefined);
     makeObservable(this, {
       sourceFiles: observable,
@@ -44,74 +44,71 @@ class NamesAndTypes extends AnalysisModule {
       zCoordinates: computed,
       wellFields: computed,
       commonFields: computed,
-      outputs: override
+      outputs: override,
     });
     this.title = 'Input';
     this.changeFiles(sources);
   }
 
-  get available () {
+  get available() {
     return this.sourceFiles.length > 0 && HCSSourceFile.check(...this.sourceFiles);
   }
 
-  get sourceDirectory () {
-    return [...(new Set(this.sourceFiles.map(aFile => aFile.sourceDirectory)))].pop();
+  get sourceDirectory() {
+    return [...new Set(this.sourceFiles.map((aFile) => aFile.sourceDirectory))].pop();
   }
 
-  get multipleFields () {
-    return this.wells.length > 1 ||
+  get multipleFields() {
+    return (
+      this.wells.length > 1 ||
       this.timePoints.length > 1 ||
       (!this.mergeZPlanes && this.zCoordinates.length > 1) ||
-      this.wellFields.some(({fields = []}) => fields.length > 1);
+      this.wellFields.some(({fields = []}) => fields.length > 1)
+    );
   }
 
-  get wells () {
-    return [...new Set(
-      this.sourceFiles
-        .map(aFile => [
-          aFile.sourceDirectory,
-          aFile.x,
-          aFile.y
-        ].join('|'))
-    )]
-      .map(o => o.split('|'))
+  get wells() {
+    return [
+      ...new Set(
+        this.sourceFiles.map((aFile) => [aFile.sourceDirectory, aFile.x, aFile.y].join('|')),
+      ),
+    ]
+      .map((o) => o.split('|'))
       .map(([sourceDirectory, x, y]) => ({
         uuid: sourceDirectory,
         x: Number(x),
-        y: Number(y)
+        y: Number(y),
       }));
   }
 
-  get timePoints () {
-    return [...new Set(this.sourceFiles.map(aFile => aFile.t))];
+  get timePoints() {
+    return [...new Set(this.sourceFiles.map((aFile) => aFile.t))];
   }
 
-  get zCoordinates () {
-    return [...new Set(this.sourceFiles.map(aFile => aFile.z))];
+  get zCoordinates() {
+    return [...new Set(this.sourceFiles.map((aFile) => aFile.z))];
   }
 
-  get wellFields () {
-    return this.wells.map(aWell => {
-      const fields = [...new Set(this.sourceFiles
-        .filter(aFile =>
-          aFile.sourceDirectory === aWell.uuid &&
-          aFile.x === aWell.x &&
-          aFile.y === aWell.y
-        )
-        .map(aFile => aFile.fieldID)
-      )];
-      return ({well: aWell, fields});
+  get wellFields() {
+    return this.wells.map((aWell) => {
+      const fields = [
+        ...new Set(
+          this.sourceFiles
+            .filter(
+              (aFile) =>
+                aFile.sourceDirectory === aWell.uuid && aFile.x === aWell.x && aFile.y === aWell.y,
+            )
+            .map((aFile) => aFile.fieldID),
+        ),
+      ];
+      return {well: aWell, fields};
     });
   }
 
-  get commonFields () {
-    const all = new Set(
-      this.wellFields
-        .map(o => o.fields)
-        .reduce((r, c) => ([...r, ...c]), [])
-    );
+  get commonFields() {
+    const all = new Set(this.wellFields.map((o) => o.fields).reduce((r, c) => [...r, ...c], []));
     this.wellFields.forEach(({fields = []}) => {
-      [...all].forEach(field => {
+      [...all].forEach((field) => {
         if (!fields.includes(field)) {
           all.delete(field);
         }
@@ -120,16 +117,16 @@ class NamesAndTypes extends AnalysisModule {
     return [...all];
   }
 
-  get outputs () {
+  get outputs() {
     if (this.sourceFiles && HCSSourceFile.check(...this.sourceFiles)) {
-      let channels = [...new Set(this.sourceFiles.map(a => a.channel))];
+      let channels = [...new Set(this.sourceFiles.map((a) => a.channel))];
       if (!channels || !channels.length) {
         channels = ['input'];
       }
-      return channels.map(name => ({
+      return channels.map((name) => ({
         type: AnalysisTypes.file,
         name,
-        cpModule: this
+        cpModule: this,
       }));
     }
     return [];
@@ -139,7 +136,7 @@ class NamesAndTypes extends AnalysisModule {
    * @param {HCSSourceFileOptions[]} sourceFilesOptions
    * @returns {boolean} true if changed
    */
-  changeFiles (sourceFilesOptions = []) {
+  changeFiles(sourceFilesOptions = []) {
     if (sourceFileOptionsSetsEqual(this.sourceFiles, sourceFilesOptions)) {
       return false;
     }

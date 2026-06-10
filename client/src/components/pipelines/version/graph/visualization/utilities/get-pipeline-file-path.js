@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-export default function getPipelineFilePath (filePath, currentPath = '') {
+export default function getPipelineFilePath(filePath, currentPath = '') {
   let codePath = currentPath || '';
   if (codePath.startsWith('/')) {
     codePath = codePath.slice(1);

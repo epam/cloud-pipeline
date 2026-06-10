@@ -19,18 +19,18 @@ import wrapStandardRequest from './vs-base-request-wrapper';
 
 class VSRemote extends wrapStandardRequest(Remote) {
   static fetchOptions = {
-    mode: 'cors'
+    mode: 'cors',
   };
 
-  async doRegularFetch () {
+  async doRegularFetch() {
     return super.fetch();
   }
 
-  async fetch () {
+  async fetch() {
     return this.fetchRequestOptions().then(() => this.doRegularFetch());
   }
 
-  async silentFetch () {
+  async silentFetch() {
     return this.fetchRequestOptions().then(() => super.silentFetch());
   }
 }

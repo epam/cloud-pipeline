@@ -2,16 +2,10 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {Checkbox} from 'antd';
-import styles from './launch-form-parameter-input.css';
+import styles from './launch-form-parameter-input.module.css';
 
-function LaunchFormBoolParameterInput (props) {
-  const {
-    className,
-    style,
-    value,
-    onChange,
-    disabled
-  } = props;
+function LaunchFormBoolParameterInput(props) {
+  const {className, style, value, onChange, disabled} = props;
   const checked = value ? String(value).toLowerCase() === 'true' : false;
   const onCheckboxValueChange = (e) => {
     if (typeof onChange === 'function') {
@@ -20,7 +14,11 @@ function LaunchFormBoolParameterInput (props) {
   };
   return (
     <Checkbox
-      className={classNames(className, styles.launchParameterInput, styles.launchParameterBoolInput)}
+      className={classNames(
+        className,
+        styles.launchParameterInput,
+        styles.launchParameterBoolInput,
+      )}
       style={style}
       checked={checked}
       onChange={onCheckboxValueChange}
@@ -43,7 +41,7 @@ LaunchFormBoolParameterInput.propTypes = {
   currentProjectMetadata: PropTypes.object,
   currentMetadataEntity: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
   rootEntityId: PropTypes.string,
-  metadataAutoComplete: PropTypes.bool
+  metadataAutoComplete: PropTypes.bool,
 };
 
 export default LaunchFormBoolParameterInput;

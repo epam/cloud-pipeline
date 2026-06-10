@@ -18,26 +18,26 @@ import ObjectTypes from './object-types';
 import {FETCH_ID_SYMBOL} from '../../models/preferences/PreferencesLoad';
 import {HIDDEN_OBJECTS_CACHE_ID} from '../../models/tools/DockerRegistriesTree';
 
-function toolEntityFilter (hiddenObjects, type) {
-  return function filter (entity) {
+function toolEntityFilter(hiddenObjects, type) {
+  return function filter(entity) {
     return !hiddenObjects || !hiddenObjects.isHidden(type, entity?.id);
   };
 }
 
-export function toolsFilter (hiddenObjects) {
+export function toolsFilter(hiddenObjects) {
   return toolEntityFilter(hiddenObjects, ObjectTypes.tool);
 }
 
-export function toolGroupsFilter (hiddenObjects) {
+export function toolGroupsFilter(hiddenObjects) {
   return toolEntityFilter(hiddenObjects, ObjectTypes.toolGroup);
 }
 
-export function toolRegistriesFilter (hiddenObjects) {
+export function toolRegistriesFilter(hiddenObjects) {
   return toolEntityFilter(hiddenObjects, ObjectTypes.toolRegistry);
 }
 
-export function toolsTreeFilter (hiddenObjects) {
-  return function filter (tree) {
+export function toolsTreeFilter(hiddenObjects) {
+  return function filter(tree) {
     if (
       tree &&
       tree[HIDDEN_OBJECTS_CACHE_ID] &&
@@ -45,34 +45,29 @@ export function toolsTreeFilter (hiddenObjects) {
     ) {
       return tree[HIDDEN_OBJECTS_CACHE_ID].cache;
     }
-    const {
-      registries: unprocessedRegistries = [],
-      ...rest
-    } = tree || {};
+    const {registries: unprocessedRegistries = [], ...rest} = tree || {};
     const registries = unprocessedRegistries
       .filter(toolRegistriesFilter(hiddenObjects))
-      .map(registry => {
+      .map((registry) => {
         const {groups: unprocessedGroups = [], ...groupsRest} = registry || {};
         return {
           ...groupsRest,
-          groups: unprocessedGroups
-            .filter(toolGroupsFilter(hiddenObjects))
-            .map(group => {
-              const {tools: unprocessedTools = [], ...toolsRest} = group || {};
-              return {
-                ...toolsRest,
-                tools: unprocessedTools.filter(toolsFilter(hiddenObjects))
-              };
-            })
+          groups: unprocessedGroups.filter(toolGroupsFilter(hiddenObjects)).map((group) => {
+            const {tools: unprocessedTools = [], ...toolsRest} = group || {};
+            return {
+              ...toolsRest,
+              tools: unprocessedTools.filter(toolsFilter(hiddenObjects)),
+            };
+          }),
         };
       });
     const result = {
       ...rest,
-      registries
+      registries,
     };
     tree[HIDDEN_OBJECTS_CACHE_ID] = {
       id: hiddenObjects.preferences[FETCH_ID_SYMBOL],
-      cache: result
+      cache: result,
     };
     return result;
   };

@@ -17,10 +17,10 @@
 import Remote from '../basic/Remote';
 
 class ClusterNetworkUsageFilters extends Remote {
-  constructor () {
+  constructor() {
     super();
-    this.url = `/cluster/network/usage`;
-  };
+    this.url = '/cluster/network/usage';
+  }
 }
 
 export default ClusterNetworkUsageFilters;

@@ -20,21 +20,21 @@ import Remote from '../basic/Remote';
 // "?jti=&userId=" - endpoint available only for admins.
 // "?jti=" - available for non-admins too.
 export default class UserNamedTokenRevoke extends Remote {
-  constructor (jti, userId) {
+  constructor(jti, userId) {
     super();
     this.constructor.fetchOptions = {
       headers: {
-        'Content-type': 'application/json; charset=UTF-8'
+        'Content-type': 'application/json; charset=UTF-8',
       },
       mode: 'cors',
       credentials: 'include',
-      method: 'DELETE'
+      method: 'DELETE',
     };
     const queryParameters = [
       `jti=${encodeURIComponent(jti)}`,
       userId !== null && userId !== undefined && userId !== ''
         ? `userId=${encodeURIComponent(userId)}`
-        : undefined
+        : undefined,
     ].filter(Boolean);
     this.url = `/user/token/revoke?${queryParameters.join('&')}`;
   }

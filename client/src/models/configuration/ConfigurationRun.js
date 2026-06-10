@@ -17,7 +17,7 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class ConfigurationRun extends RemotePost {
-  constructor (expansionExpression) {
+  constructor(expansionExpression) {
     super();
     if (expansionExpression) {
       this.url = `/runConfiguration?expansionExpression=${expansionExpression}`;

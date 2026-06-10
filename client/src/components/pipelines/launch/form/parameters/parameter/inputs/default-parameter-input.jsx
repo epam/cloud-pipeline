@@ -1,10 +1,10 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import styles from './launch-form-parameter-input.css';
+import styles from './launch-form-parameter-input.module.css';
 import MetadataAutoComplete from './metadata-auto-complete';
 
-function LaunchFormStringParameterInput (props) {
+function LaunchFormStringParameterInput(props) {
   const {
     className,
     style,
@@ -15,7 +15,7 @@ function LaunchFormStringParameterInput (props) {
     currentMetadataEntity,
     currentProjectMetadata,
     rootEntityId,
-    metadataAutoComplete
+    metadataAutoComplete,
   } = props;
   return (
     <MetadataAutoComplete
@@ -45,7 +45,7 @@ LaunchFormStringParameterInput.propTypes = {
   currentProjectMetadata: PropTypes.object,
   currentMetadataEntity: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
   rootEntityId: PropTypes.string,
-  metadataAutoComplete: PropTypes.bool
+  metadataAutoComplete: PropTypes.bool,
 };
 
 export default LaunchFormStringParameterInput;

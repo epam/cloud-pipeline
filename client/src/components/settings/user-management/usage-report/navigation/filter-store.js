@@ -19,19 +19,19 @@ import {Period} from '../../../../special/periods';
 import RunnerType from './runner-types';
 import reportsRouting from './reports-routing';
 
-export function runnersEqual (a, b) {
-  const arrayA = (a || []);
-  const arrayB = (b || []);
+export function runnersEqual(a, b) {
+  const arrayA = a || [];
+  const arrayB = b || [];
   if (arrayA.length !== arrayB.length) {
     return false;
   }
   for (let i = 0; i < arrayA.length; i++) {
     const testA = arrayA[i];
-    if (!arrayB.find(o => o.type === testA.type && o.id === testA.id)) {
+    if (!arrayB.find((o) => o.type === testA.type && o.id === testA.id)) {
       return false;
     }
     const testB = arrayB[i];
-    if (!arrayA.find(o => o.type === testB.type && o.id === testB.id)) {
+    if (!arrayA.find((o) => o.type === testB.type && o.id === testB.id)) {
       return false;
     }
   }
@@ -45,11 +45,11 @@ class Filter {
   range;
   runner;
 
-  constructor () {
+  constructor() {
     makeObservable(this, {
       period: observable,
       range: observable,
-      runner: observable
+      runner: observable,
     });
   }
 
@@ -57,12 +57,12 @@ class Filter {
     this.router = router;
     const q = new URLSearchParams((location || {}).search || '');
     const period = q.get('period') ?? Period.day;
-    const users  = q.get('users');
-    const range  = q.get('range');
+    const users = q.get('users');
+    const range = q.get('range');
     this.runner = (users || '')
       .split(Filter.RUNNER_SEPARATOR)
-      .filter(o => !!o && o.length)
-      .map(o => o.split(':'))
+      .filter((o) => !!o && o.length)
+      .map((o) => o.split(':'))
       .map(([type, id]) => ({type: RunnerType.parse(type), id}));
     this.period = period;
     this.range = range;
@@ -81,9 +81,9 @@ class Filter {
     }
     const params = [
       (runner || []).length > 0 &&
-      `users=${runner.map(o => `${o.type}:${o.id}`).join(Filter.RUNNER_SEPARATOR)}`,
+        `users=${runner.map((o) => `${o.type}:${o.id}`).join(Filter.RUNNER_SEPARATOR)}`,
       period && `period=${period}`,
-      range && `range=${range}`
+      range && `range=${range}`,
     ].filter(Boolean);
     let query = '';
     if (params.length) {
@@ -94,7 +94,7 @@ class Filter {
     }
   };
 
-  buildNavigationFn = (property) => e => this.navigate({[property]: e});
+  buildNavigationFn = (property) => (e) => this.navigate({[property]: e});
 
   periodNavigation = (period, range) => this.navigate({period, range}, true);
 }

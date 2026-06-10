@@ -13,7 +13,6 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-/* eslint-disable max-len */
 
 export default {
   name: 'ResizeObjects',
@@ -26,6 +25,6 @@ export default {
     'Factor|float|0.25|IF method==Factor|ALIAS factor',
     'Width|integer|100|IF method==Dimensions',
     'Height|integer|100|IF method==Dimensions',
-    'Select the image with the desired dimensions|file|IF method=="Match image"|ALIAS desiredDimensionsImage'
-  ]
+    'Select the image with the desired dimensions|file|IF method=="Match image"|ALIAS desiredDimensionsImage',
+  ],
 };

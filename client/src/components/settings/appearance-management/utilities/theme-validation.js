@@ -14,17 +14,17 @@
  *  limitations under the License.
  */
 
-export function validateName (name, themes = []) {
+export function validateName(name, themes = []) {
   if (!name) {
     return 'Name is required';
   }
-  if (themes.find(o => o.name === name)) {
+  if (themes.find((o) => o.name === name)) {
     return 'This name is already in use';
   }
   return undefined;
 }
 
-export default function validate (theme, themes = []) {
+export default function validate(theme, themes = []) {
   if (!theme) {
     return true;
   }

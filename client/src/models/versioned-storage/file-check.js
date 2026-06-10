@@ -17,8 +17,8 @@
 import Remote from '../basic/Remote';
 
 export default class VSFileCheck extends Remote {
-  constructor (storageId, path) {
+  constructor(storageId, path) {
     super();
     this.url = `/pipeline/${storageId}/path?path=${encodeURIComponent(path)}`;
   }
-};
+}

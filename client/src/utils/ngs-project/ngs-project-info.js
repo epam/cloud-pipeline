@@ -15,12 +15,8 @@
  */
 
 import {observable, computed, makeObservable} from 'mobx';
-import {
-  getMachineRunMetadataClassName
-} from './ngs-project-machine-runs';
-import {
-  getSampleMetadataClassName
-} from './ngs-project-samples';
+import {getMachineRunMetadataClassName} from './ngs-project-machine-runs';
+import {getSampleMetadataClassName} from './ngs-project-samples';
 
 const UI_PROJECT_INDICATOR_PREFERENCE = 'ui.project.indicator';
 const UI_NGS_PROJECT_INDICATOR_PREFERENCE = 'ui.ngs.project.indicator';
@@ -28,19 +24,21 @@ const UI_NGS_PROJECT_INDICATOR_PREFERENCE = 'ui.ngs.project.indicator';
 const DEFAULT_PROJECT_INDICATORS = [{key: 'type', value: 'project'}];
 const DEFAULT_NGS_PROJECT_INDICATORS = [
   DEFAULT_PROJECT_INDICATORS,
-  {key: 'project-type', value: 'ngs-project'}
+  {key: 'project-type', value: 'ngs-project'},
 ];
 
-function buildMetadataCheckFunction (key, value) {
-  return function check (metadata) {
-    return metadata &&
+function buildMetadataCheckFunction(key, value) {
+  return function check(metadata) {
+    return (
+      metadata &&
       metadata[key] &&
       metadata[key].value &&
-      (value || '').toLowerCase() === (metadata[key].value || '').toLowerCase();
+      (value || '').toLowerCase() === (metadata[key].value || '').toLowerCase()
+    );
   };
 }
 
-function buildMetadataCondition (string) {
+function buildMetadataCondition(string) {
   if (string) {
     const e = /^[\s]*(.*)[\s]*=[\s]*(.*)[\s]*$/.exec(string);
     if (e && e.length >= 3) {
@@ -54,18 +52,18 @@ function buildMetadataCondition (string) {
   return () => false;
 }
 
-function buildMetadataConditions (string, defaultConditions = []) {
+function buildMetadataConditions(string, defaultConditions = []) {
   const conditions = string
     ? string
-      .split(',')
-      .map(o => o.trim())
-      .filter(Boolean)
-      .filter(o => o.length)
-      .map(buildMetadataCondition)
+        .split(',')
+        .map((o) => o.trim())
+        .filter(Boolean)
+        .filter((o) => o.length)
+        .map(buildMetadataCondition)
     : defaultConditions
-      .filter(o => o.key && o.type)
-      .map(o => buildMetadataCheckFunction(o.key, o.type));
-  return o => !conditions.some(condition => !condition(o));
+        .filter((o) => o.key && o.type)
+        .map((o) => buildMetadataCheckFunction(o.key, o.type));
+  return (o) => !conditions.some((condition) => !condition(o));
 }
 
 class NgsProjectInfo {
@@ -73,86 +71,72 @@ class NgsProjectInfo {
   ngsProjectFolder;
   folderId;
 
-  constructor (options = {}, preferences, folders) {
+  constructor(options = {}, preferences, folders) {
     makeObservable(this, {
       preferences: observable,
       ngsProjectFolder: observable,
       folderId: observable,
       isNGSProject: computed,
       machineRunClassName: computed,
-      sampleClassName: computed
+      sampleClassName: computed,
     });
     this.preferences = preferences;
-    const {
-      folder,
-      folderId
-    } = options;
+    const {folder, folderId} = options;
     this.folderId = folderId;
     if (folder || (folders && folderId)) {
       this.ngsProjectFolder = folder || folders.load(folderId);
     }
   }
 
-  get pending () {
+  get pending() {
     return this.ngsProjectFolder && this.ngsProjectFolder.pending;
   }
 
-  get loaded () {
+  get loaded() {
     return this.ngsProjectFolder && this.ngsProjectFolder.loaded;
   }
 
-  get error () {
+  get error() {
     return this.ngsProjectFolder && this.ngsProjectFolder.error;
   }
 
-  get isNGSProject () {
-    if (
-      this.preferences &&
-      this.preferences.loaded &&
-      this.ngsProjectFolder &&
-      this.loaded
-    ) {
-      const uiProjectIndicator = this.preferences
-        .getPreferenceValue(UI_PROJECT_INDICATOR_PREFERENCE);
-      const uiNGSProjectIndicator = this.preferences
-        .getPreferenceValue(UI_NGS_PROJECT_INDICATOR_PREFERENCE);
+  get isNGSProject() {
+    if (this.preferences && this.preferences.loaded && this.ngsProjectFolder && this.loaded) {
+      const uiProjectIndicator = this.preferences.getPreferenceValue(
+        UI_PROJECT_INDICATOR_PREFERENCE,
+      );
+      const uiNGSProjectIndicator = this.preferences.getPreferenceValue(
+        UI_NGS_PROJECT_INDICATOR_PREFERENCE,
+      );
       const folderIsProject = buildMetadataConditions(
         uiProjectIndicator,
-        DEFAULT_PROJECT_INDICATORS
+        DEFAULT_PROJECT_INDICATORS,
       );
       const projectIsNGSProject = buildMetadataConditions(
         uiNGSProjectIndicator,
-        DEFAULT_NGS_PROJECT_INDICATORS
+        DEFAULT_NGS_PROJECT_INDICATORS,
       );
-      const {
-        objectMetadata
-      } = this.ngsProjectFolder.value;
+      const {objectMetadata} = this.ngsProjectFolder.value;
       return folderIsProject(objectMetadata) && projectIsNGSProject(objectMetadata);
     }
     return false;
   }
 
-  get machineRunClassName () {
-    if (
-      this.preferences &&
-      this.preferences.loaded
-    ) {
+  get machineRunClassName() {
+    if (this.preferences && this.preferences.loaded) {
       return getMachineRunMetadataClassName(this.preferences);
     }
     return undefined;
   }
 
-  get sampleClassName () {
-    if (
-      this.preferences &&
-      this.preferences.loaded
-    ) {
+  get sampleClassName() {
+    if (this.preferences && this.preferences.loaded) {
       return getSampleMetadataClassName(this.preferences);
     }
     return undefined;
   }
 
-  async fetchPreferences () {
+  async fetchPreferences() {
     if (this.preferences) {
       try {
         await this.preferences.fetchIfNeededOrWait();
@@ -160,36 +144,34 @@ class NgsProjectInfo {
     }
   }
 
-  isMachineRunClassName (className) {
+  isMachineRunClassName(className) {
     const machineRunClassName = this.machineRunClassName;
-    return className &&
+    return (
+      className &&
       machineRunClassName &&
-      className.toLowerCase() === machineRunClassName.toLowerCase();
+      className.toLowerCase() === machineRunClassName.toLowerCase()
+    );
   }
 
-  isSampleClassName (className) {
+  isSampleClassName(className) {
     const sampleClassName = this.sampleClassName;
-    return className &&
-      sampleClassName &&
-      className.toLowerCase() === sampleClassName.toLowerCase();
+    return (
+      className && sampleClassName && className.toLowerCase() === sampleClassName.toLowerCase()
+    );
   }
 
-  getMachineRunLink (entityFieldsRequest) {
+  getMachineRunLink(entityFieldsRequest) {
     const {entityFields, metadataClasses} = this.props;
     if (entityFields.loaded && metadataClasses.loaded) {
-      const mappedEntityFields = (entityFields.value || [])
-        .map(e => e);
-      const ignoreClasses = new Set(mappedEntityFields.map(f => f.metadataClass.id));
+      const mappedEntityFields = (entityFields.value || []).map((e) => e);
+      const ignoreClasses = new Set(mappedEntityFields.map((f) => f.metadataClass.id));
       const otherClasses = (metadataClasses.value || [])
         .filter(({id}) => !ignoreClasses.has(id))
-        .map(metadataClass => ({
+        .map((metadataClass) => ({
           fields: [],
-          metadataClass: {...metadataClass, outOfProject: true}
+          metadataClass: {...metadataClass, outOfProject: true},
         }));
-      return [
-        ...mappedEntityFields,
-        ...otherClasses
-      ];
+      return [...mappedEntityFields, ...otherClasses];
     }
     return [];
   }

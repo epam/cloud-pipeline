@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 export default class MyIssues extends Remote {
-  constructor () {
+  constructor() {
     super();
     this.url = '/issues/my?page=1&pageSize=50';
   }

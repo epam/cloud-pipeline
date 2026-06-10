@@ -17,7 +17,7 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class GrantPermission extends RemotePost {
-  constructor () {
+  constructor() {
     super();
     this.url = '/grant';
   }

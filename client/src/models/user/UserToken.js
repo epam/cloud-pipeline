@@ -18,14 +18,10 @@ import Remote from '../basic/Remote';
 
 // "namedEndpoint" allows to specify token name and list tokens for user
 class UserToken extends Remote {
-  constructor (expiration, name, namedEndpoint = false) {
+  constructor(expiration, name, namedEndpoint = false) {
     super();
-    const trimmedName = typeof name === 'string'
-      ? name.trim()
-      : name;
-    const query = [
-      `expiration=${encodeURIComponent(expiration)}`
-    ];
+    const trimmedName = typeof name === 'string' ? name.trim() : name;
+    const query = [`expiration=${encodeURIComponent(expiration)}`];
     const endpoint = namedEndpoint ? '/user/token/named' : '/user/token';
     if (namedEndpoint && typeof trimmedName === 'string' && trimmedName.length > 0) {
       query.push(`tokenName=${encodeURIComponent(trimmedName)}`);
@@ -39,7 +35,7 @@ const TOKEN_EXPIRATION_SECONDS = 60 * 60 * 24;
 
 let tokenCache;
 
-export function fetchToken () {
+export function fetchToken() {
   return new Promise((resolve, reject) => {
     if (tokenCache) {
       resolve(tokenCache);
@@ -55,7 +51,7 @@ export function fetchToken () {
             reject(new Error(`Error fetching user token: ${tokenRequest.value.message}`));
           }
         })
-        .catch(e => {
+        .catch((e) => {
           reject(new Error(`Error fetching user token: ${e.message}`));
         });
     }

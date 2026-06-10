@@ -20,10 +20,10 @@ import {computed, makeObservable} from 'mobx';
 const repeatInterval = 5000;
 
 export default class LoadToolAttributes extends Remote {
-  constructor (id, version) {
+  constructor(id, version) {
     super();
     makeObservable(this, {
-      isUpdating: computed
+      isUpdating: computed,
     });
     if (version) {
       this.url = `/tool/${id}/attributes?version=${version}`;
@@ -34,7 +34,7 @@ export default class LoadToolAttributes extends Remote {
 
   refreshData;
 
-  clearInterval () {
+  clearInterval() {
     if (this.refreshData) {
       clearInterval(this.refreshData);
       delete this.refreshData;
@@ -42,13 +42,13 @@ export default class LoadToolAttributes extends Remote {
     }
   }
 
-  startInterval () {
+  startInterval() {
     if (!this.refreshData) {
-      this.refreshData = setInterval(::this.fetch, repeatInterval);
+      this.refreshData = setInterval(() => this.fetch(), repeatInterval);
     }
   }
 
-  get isUpdating () {
+  get isUpdating() {
     return !!this.refreshData;
   }
 }

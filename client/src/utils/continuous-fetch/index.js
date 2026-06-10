@@ -14,27 +14,27 @@
  *  limitations under the License.
  */
 
-import moment from 'moment-timezone';
+import dayjs from '../dayjs';
 import attachDocumentVisibilityHandlers from './document-visibility-handler';
 import {safeRandom} from '../primitives';
 
 const SECOND = 1000;
 const DEFAULT_INTERVAL = 5 * SECOND;
-const MAX_INTERVAL_FN = defaultInterval => defaultInterval * 12;
+const MAX_INTERVAL_FN = (defaultInterval) => defaultInterval * 12;
 const INCREASE_FACTOR = 1.5;
-const NOISE = range => safeRandom() * range;
+const NOISE = (range) => safeRandom() * range;
 const NOOP = () => {};
 
-function log (...messages) {
-  const time = moment().format('HH:mm:ss.SSS');
+function log(...messages) {
+  const time = dayjs().format('HH:mm:ss.SSS');
   console.log(`[${time}]`, ...messages);
 }
 
-function formatInterval (ms) {
+function formatInterval(ms) {
   return `${Math.round(ms * 10) / 10000} sec`;
 }
 
-function makePromise (fn) {
+function makePromise(fn) {
   if (!fn) {
     return Promise.resolve();
   }
@@ -51,7 +51,7 @@ function makePromise (fn) {
 
 const currentRequests = new Map();
 
-function unregister (identifier, callStop = true) {
+function unregister(identifier, callStop = true) {
   if (!identifier) {
     return;
   }
@@ -69,7 +69,7 @@ function unregister (identifier, callStop = true) {
   }
 }
 
-function register (identifier, stop) {
+function register(identifier, stop) {
   if (!identifier) {
     return;
   }
@@ -77,7 +77,7 @@ function register (identifier, stop) {
   currentRequests.set(identifier, stop);
 }
 
-function wrapRequestFetch (request) {
+function wrapRequestFetch(request) {
   return new Promise((resolve, reject) => {
     request
       .fetch()
@@ -110,21 +110,19 @@ function wrapRequestFetch (request) {
  * @param {ContinuousFetchOptions} options
  * @returns {{resume: function, stop: function, reset: function, pause: function, fetch: function, setContinuous: function}}
  */
-export default function continuousFetch (options = {}) {
+export default function continuousFetch(options = {}) {
   const {
     intervalMS = DEFAULT_INTERVAL,
     maxIntervalMS = MAX_INTERVAL_FN(intervalMS),
     request,
-    call = request
-      ? () => wrapRequestFetch(request)
-      : undefined,
+    call = request ? () => wrapRequestFetch(request) : undefined,
     fetchImmediate = true,
     onError = NOOP,
     beforeInvoke = NOOP,
     afterInvoke = NOOP,
     verbose = false,
     identifier,
-    continuous: continuousOptions = true
+    continuous: continuousOptions = true,
   } = options;
   let continuous = continuousOptions;
   if (!call) {
@@ -133,7 +131,7 @@ export default function continuousFetch (options = {}) {
       reset: NOOP,
       pause: NOOP,
       resume: NOOP,
-      fetch: NOOP
+      fetch: NOOP,
     };
   }
   const verboseName = identifier || 'request';
@@ -147,7 +145,6 @@ export default function continuousFetch (options = {}) {
   };
   const handleError = (error) => {
     if (verbose) {
-      // eslint-disable-next-line
       log(`Continuous request "${verboseName}": error "${error.message}"`);
     }
     onError(error);
@@ -161,15 +158,13 @@ export default function continuousFetch (options = {}) {
     interval = Math.ceil(
       Math.max(
         intervalMS,
-        Math.min(
-          maxIntervalMS,
-          interval * INCREASE_FACTOR + NOISE(intervalMS / 2.0)
-        )
-      )
+        Math.min(maxIntervalMS, interval * INCREASE_FACTOR + NOISE(intervalMS / 2.0)),
+      ),
     );
     if (verbose) {
-      // eslint-disable-next-line
-      log(`Continuous request "${verboseName}": increasing interval to ${formatInterval(interval)}`);
+      log(
+        `Continuous request "${verboseName}": increasing interval to ${formatInterval(interval)}`,
+      );
     }
   };
   const scheduleNext = (fn) => {
@@ -178,8 +173,9 @@ export default function continuousFetch (options = {}) {
       return;
     }
     if (verbose) {
-      // eslint-disable-next-line
-      log(`Continuous request "${verboseName}": scheduling next request after ${formatInterval(interval)}`);
+      log(
+        `Continuous request "${verboseName}": scheduling next request after ${formatInterval(interval)}`,
+      );
     }
     cancelToken = setTimeout(() => fn(), interval);
   };
@@ -189,17 +185,15 @@ export default function continuousFetch (options = {}) {
       return;
     }
     if (verbose) {
-      // eslint-disable-next-line
       log(`Continuous request "${verboseName}": fetching...`);
     }
     beforeInvoke();
     const callResult = makePromise(call);
     callResult
       .catch(handleError)
-      .then(result => {
+      .then((result) => {
         afterInvoke();
         if (verbose) {
-          // eslint-disable-next-line
           log(`Continuous request "${verboseName}": fetching done`);
         }
         if (result && result.failed) {
@@ -217,7 +211,6 @@ export default function continuousFetch (options = {}) {
   }
   const pause = () => {
     if (verbose) {
-      // eslint-disable-next-line
       log(`Continuous request "${verboseName}": paused`);
     }
     resetInterval();
@@ -225,7 +218,6 @@ export default function continuousFetch (options = {}) {
   };
   const resume = () => {
     if (verbose) {
-      // eslint-disable-next-line
       log(`Continuous request "${verboseName}": resumed`);
     }
     clearCurrentToken();
@@ -233,7 +225,6 @@ export default function continuousFetch (options = {}) {
   };
   const reset = () => {
     if (verbose) {
-      // eslint-disable-next-line
       log(`Continuous request "${verboseName}": reset`);
     }
     scheduleNext(doSingleFetch);
@@ -244,7 +235,6 @@ export default function continuousFetch (options = {}) {
     clearCurrentToken();
     stopRequested = true;
     if (verbose) {
-      // eslint-disable-next-line
       log(`Continuous request "${verboseName}": stopped`);
     }
     unregister(identifier, false);
@@ -267,6 +257,6 @@ export default function continuousFetch (options = {}) {
     pause,
     resume,
     fetch: () => doSingleFetch(true),
-    setContinuous
+    setContinuous,
   };
 }

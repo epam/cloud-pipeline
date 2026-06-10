@@ -22,63 +22,48 @@ import RunCount, {ALL_STATUSES} from '../../../../models/pipelines/RunCount';
 import continuousFetch from '../../../../utils/continuous-fetch';
 import {checkCommitAllowedForTool} from '../../actions';
 
-async function getShowActiveWorkersOnly (run, preferences) {
-  const {
-    pipelineRunParameters = [],
-    status
-  } = run || {};
+async function getShowActiveWorkersOnly(run, preferences) {
+  const {pipelineRunParameters = [], status} = run || {};
   if (/^(stopped|failure|success)$/i.test(status)) {
     return false;
   }
-  const showActiveWorkersOnlyParameter = (pipelineRunParameters || [])
-    .find(parameter => parameter.name === 'CP_SHOW_ACTIVE_WORKERS_ONLY');
+  const showActiveWorkersOnlyParameter = (pipelineRunParameters || []).find(
+    (parameter) => parameter.name === 'CP_SHOW_ACTIVE_WORKERS_ONLY',
+  );
   if (preferences && !showActiveWorkersOnlyParameter) {
     await preferences.fetchIfNeededOrWait();
     return preferences.uiRunsClusterDetailsShowActiveOnly;
   }
   if (showActiveWorkersOnlyParameter) {
-    return /^true$/i.test(
-      showActiveWorkersOnlyParameter.value || ''
-    );
+    return /^true$/i.test(showActiveWorkersOnlyParameter.value || '');
   }
   return true;
 }
 
-export default async function fetchRunInfo (
-  runIdentifier,
-  dataCallback,
-  options
-) {
-  const {
-    maxNestedRunsToDisplay = 10,
-    preferences,
-    dockerRegistries
-  } = options || {};
+export default async function fetchRunInfo(runIdentifier, dataCallback, options) {
+  const {maxNestedRunsToDisplay = 10, preferences, dockerRegistries} = options || {};
   let stopped = false;
   const runInfo = new PipelineRunInfo(runIdentifier);
   const runTasks = new RunTasks(runIdentifier);
   const totalNestedRuns = new RunCount({
     parentId: Number(runIdentifier),
     statuses: ALL_STATUSES,
-    onlyMasterJobs: false
+    onlyMasterJobs: false,
   });
-  await Promise.all([
-    runInfo.fetch(),
-    runTasks.fetch(),
-    totalNestedRuns.fetch(),
-    dockerRegistries ? dockerRegistries.fetchIfNeededOrWait() : false
-  ].filter(Boolean));
+  await Promise.all(
+    [
+      runInfo.fetch(),
+      runTasks.fetch(),
+      totalNestedRuns.fetch(),
+      dockerRegistries ? dockerRegistries.fetchIfNeededOrWait() : false,
+    ].filter(Boolean),
+  );
   let hasNestedRuns = totalNestedRuns.runsCount > 0;
   if (runInfo.error || !runInfo.loaded) {
     throw new Error(runInfo.error || 'Error fetching run info');
   }
   const showActiveWorkersOnly = await getShowActiveWorkersOnly(runInfo.value, preferences);
-  const {
-    status = 'RUNNING',
-    dockerImage,
-    pipelineId,
-    version
-  } = runInfo.value;
+  const {status = 'RUNNING', dockerImage, pipelineId, version} = runInfo.value;
   const commitAllowed = await checkCommitAllowedForTool(dockerImage, dockerRegistries);
   if (typeof dataCallback === 'function') {
     dataCallback({
@@ -89,7 +74,7 @@ export default async function fetchRunInfo (
       commitAllowed,
       hasNestedRuns,
       totalNestedRuns: 0,
-      nestedRunsPending: true
+      nestedRunsPending: true,
     });
   }
   const nestedRuns = new PipelineRunSingleFilter(
@@ -98,11 +83,9 @@ export default async function fetchRunInfo (
       pageSize: maxNestedRunsToDisplay,
       eagerGrouping: false,
       parentId: runIdentifier,
-      statuses: showActiveWorkersOnly
-        ? ['RUNNING']
-        : []
+      statuses: showActiveWorkersOnly ? ['RUNNING'] : [],
     },
-    false
+    false,
   );
   await nestedRuns.filter();
   let pipelineLanguage;
@@ -113,12 +96,14 @@ export default async function fetchRunInfo (
   const isAutoUpdate = () => /^(running|pausing|resuming)$/i.test(currentStatus);
   const call = async () => {
     if (isAutoUpdate() && !stopped) {
-      await Promise.all([
-        runInfo.fetch(),
-        nestedRuns.filter(),
-        runTasks.fetch(),
-        pipelineLanguage ? pipelineLanguage.fetchIfNeededOrWait() : false
-      ].filter(Boolean));
+      await Promise.all(
+        [
+          runInfo.fetch(),
+          nestedRuns.filter(),
+          runTasks.fetch(),
+          pipelineLanguage ? pipelineLanguage.fetchIfNeededOrWait() : false,
+        ].filter(Boolean),
+      );
       if (runInfo.networkError) {
         throw new Error(runInfo.networkError);
       }
@@ -126,9 +111,7 @@ export default async function fetchRunInfo (
   };
   const commit = () => {
     const run = runInfo.value || {};
-    const {
-      status: nextStatus
-    } = run;
+    const {status: nextStatus} = run;
     currentStatus = nextStatus;
     const error = runInfo.error;
     hasNestedRuns = hasNestedRuns || (nestedRuns.total || 0) > 0;
@@ -142,7 +125,7 @@ export default async function fetchRunInfo (
       showActiveWorkersOnly,
       runTasks: runTasks.value || [],
       language: pipelineLanguage && pipelineLanguage.loaded ? pipelineLanguage.value : undefined,
-      commitAllowed
+      commitAllowed,
     };
     if (typeof dataCallback === 'function' && !stopped) {
       dataCallback(data);
@@ -153,19 +136,19 @@ export default async function fetchRunInfo (
   let stop = () => {
     stopped = true;
   };
-  const reFetch = async () => new Promise((resolve) => {
-    runInfo.fetch()
-      .catch(() => {})
-      .then(() => commit())
-      .then(() => resolve());
-  });
+  const reFetch = async () =>
+    new Promise((resolve) => {
+      runInfo
+        .fetch()
+        .catch(() => {})
+        .then(() => commit())
+        .then(() => resolve());
+    });
   if (isAutoUpdate()) {
-    const {
-      stop: stopAutoUpdate
-    } = continuousFetch({
+    const {stop: stopAutoUpdate} = continuousFetch({
       call,
       afterInvoke: commit,
-      fetchImmediate: false
+      fetchImmediate: false,
     });
     stop = () => {
       stopped = true;
@@ -175,6 +158,6 @@ export default async function fetchRunInfo (
   return {
     stop,
     fetch: reFetch,
-    data: result
+    data: result,
   };
 }

@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-export default function compareSubObjects (subObjectsA, subObjectsB) {
+export default function compareSubObjects(subObjectsA, subObjectsB) {
   if (!subObjectsA && !subObjectsB) {
     return true;
   }
@@ -26,7 +26,7 @@ export default function compareSubObjects (subObjectsA, subObjectsB) {
   if (setA.size !== setB.size) {
     return false;
   }
-  for (let a of setA) {
+  for (const a of setA) {
     if (!setB.has(a)) {
       return false;
     }

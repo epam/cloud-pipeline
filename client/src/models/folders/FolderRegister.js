@@ -17,7 +17,7 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class FolderRegister extends RemotePost {
-  constructor (template) {
+  constructor(template) {
     super();
     if (template) {
       this.url = `/folder/register?templateName=${template}`;

@@ -19,14 +19,14 @@ import Remote from '../../basic/Remote';
 export class DataStorageRulesList extends Remote {
   url;
 
-  constructor (id, mask) {
+  constructor(id, mask) {
     super();
     if (!id) {
-      this.url = `/datastorage/rule/load`;
+      this.url = '/datastorage/rule/load';
     } else if (!mask) {
       this.url = `/datastorage/rule/load?pipelineId=${id}`;
     } else {
       this.url = `/datastorage/rule/load?pipelineId=${id}&mask=${encodeURIComponent(mask)}`;
     }
-  };
+  }
 }

@@ -19,5 +19,5 @@ export default {
   details: 'details',
   instances: 'instances',
   pipelines: 'pipelines',
-  tools: 'tools'
+  tools: 'tools',
 };

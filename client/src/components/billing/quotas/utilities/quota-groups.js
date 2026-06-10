@@ -17,19 +17,19 @@
 const groups = {
   global: 'GLOBAL',
   computeInstances: 'COMPUTE_INSTANCE',
-  storages: 'STORAGE'
+  storages: 'STORAGE',
 };
 
 const quotaGroupNames = {
   [groups.global]: 'Global quota',
   [groups.computeInstances]: 'Compute instances quota',
-  [groups.storages]: 'Storages quota'
+  [groups.storages]: 'Storages quota',
 };
 
 const quotaGroupSpendingNames = {
   [groups.global]: 'Global',
   [groups.computeInstances]: 'Compute',
-  [groups.storages]: 'Storages'
+  [groups.storages]: 'Storages',
 };
 
 export {quotaGroupNames, quotaGroupSpendingNames};

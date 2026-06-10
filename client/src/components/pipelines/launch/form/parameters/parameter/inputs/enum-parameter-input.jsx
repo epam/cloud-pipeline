@@ -2,21 +2,21 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {Select} from 'antd';
-import styles from './launch-form-parameter-input.css';
+import styles from './launch-form-parameter-input.module.css';
 
-function mapEnumerationItem (eItem) {
+function mapEnumerationItem(eItem) {
   if (typeof eItem === 'string') {
     return {
       key: eItem,
       value: eItem,
-      visible: () => true
+      visible: () => true,
     };
   }
   if (typeof eItem === 'number') {
     return {
       key: `${eItem}`,
       value: `${eItem}`,
-      visible: () => true
+      visible: () => true,
     };
   }
   if (typeof eItem === 'object') {
@@ -24,41 +24,30 @@ function mapEnumerationItem (eItem) {
     return {
       key: value,
       value,
-      visible: () => visible
+      visible: () => visible,
     };
   }
   return undefined;
 }
 
-function unMapValue (value, parameter) {
+function unMapValue(value, parameter) {
   if (parameter?.config?.multiple && Array.isArray(value)) {
     return value.join(',');
   }
   return value;
 }
 
-function mapValue (value = '', parameter) {
+function mapValue(value = '', parameter) {
   if (parameter?.config?.multiple) {
     return (value || '').split(',').filter(Boolean);
   }
   return String(value);
 }
 
-function LaunchFormEnumParameterInput (props) {
-  const {
-    className,
-    style,
-    value: valueProps,
-    parameter,
-    onChange,
-    disabled
-  } = props;
-  const {
-    config = {}
-  } = parameter || {};
-  const {
-    enumeration: enumerationProps = []
-  } = config;
+function LaunchFormEnumParameterInput(props) {
+  const {className, style, value: valueProps, parameter, onChange, disabled} = props;
+  const {config = {}} = parameter || {};
+  const {enumeration: enumerationProps = []} = config;
   const enumeration = (enumerationProps || []).map(mapEnumerationItem);
   const value = mapValue(valueProps, parameter);
   const onInputChange = (e) => {
@@ -96,7 +85,7 @@ LaunchFormEnumParameterInput.propTypes = {
   currentProjectMetadata: PropTypes.object,
   currentMetadataEntity: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
   rootEntityId: PropTypes.string,
-  metadataAutoComplete: PropTypes.bool
+  metadataAutoComplete: PropTypes.bool,
 };
 
 export default LaunchFormEnumParameterInput;

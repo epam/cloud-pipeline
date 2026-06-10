@@ -18,17 +18,17 @@ import FetchBillingCenters from './billing-centers';
 import GetBillingData from './get-billing-data';
 import {
   GetGroupedBillingCenters,
-  GetGroupedBillingCentersWithPrevious
+  GetGroupedBillingCentersWithPrevious,
 } from './get-grouped-billing-centers';
 import {GetGroupedResources, GetGroupedResourcesWithPrevious} from './get-grouped-resources';
 import {GetGroupedStorages, GetGroupedStoragesWithPrevious} from './get-grouped-storages';
 import {
   GetGroupedFileStorages,
-  GetGroupedFileStoragesWithPrevious
+  GetGroupedFileStoragesWithPrevious,
 } from './get-grouped-file-storages';
 import {
   GetGroupedObjectStorages,
-  GetGroupedObjectStoragesWithPrevious
+  GetGroupedObjectStoragesWithPrevious,
 } from './get-grouped-object-storages';
 import {GetGroupedInstances, GetGroupedInstancesWithPrevious} from './get-grouped-instances';
 import {GetGroupedPipelines, GetGroupedPipelinesWithPrevious} from './get-grouped-pipelines-data';
@@ -61,5 +61,5 @@ export {
   GetObjectStorageLayersInfo,
   GetInstanceCostsDetailsInfo,
   preFetchBillingRequest,
-  LAYERS_KEYS
+  LAYERS_KEYS,
 };

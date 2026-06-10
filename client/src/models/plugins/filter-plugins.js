@@ -13,13 +13,9 @@ export default class FilterPlugins extends Remote {
   /**
    * @param {FetchPluginsOptions} options
    */
-  constructor (options) {
+  constructor(options) {
     super();
-    const {
-      toolId,
-      pipelineId,
-      version
-    } = options;
+    const {toolId, pipelineId, version} = options;
     const q = [];
     if (toolId !== undefined) {
       q.push(`toolId=${encodeURIComponent(toolId)}`);
@@ -35,5 +31,5 @@ export default class FilterPlugins extends Remote {
     } else {
       this.url = '/plugins/assign';
     }
-  };
+  }
 }

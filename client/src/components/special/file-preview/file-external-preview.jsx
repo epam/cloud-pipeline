@@ -11,39 +11,36 @@ import {externalPreviewConfiguration} from './utils';
 @observer
 class FileExternalPreview extends React.Component {
   state = {
-    info: undefined
+    info: undefined,
   };
 
-  get previewConfiguration () {
+  get previewConfiguration() {
     const {filePath} = this.props;
     return externalPreviewConfiguration(filePath) || {};
   }
 
-  componentDidMount () {
+  componentDidMount() {
     this.updateFileInfo();
   }
 
-  componentDidUpdate (prevProps) {
+  componentDidUpdate(prevProps) {
     if (prevProps.filePath !== this.props.filePath) {
       this.updateFileInfo();
     }
   }
 
-  componentWillUnmount () {
+  componentWillUnmount() {
     this.token = {};
   }
 
   updateFileInfo = () => {
-    const token = this.token = {};
+    const token = (this.token = {});
     const commit = (fn) => {
       if (token === this.token) {
         fn();
       }
     };
-    const {
-      dataStorageAvailable,
-      filePath
-    } = this.props;
+    const {dataStorageAvailable, filePath} = this.props;
     (async () => {
       try {
         await dataStorageAvailable.fetchIfNeededOrWait();
@@ -51,28 +48,27 @@ class FileExternalPreview extends React.Component {
         const info = getStorageLinkInfo({
           storages,
           path: filePath,
-          isFolder: false
+          isFolder: false,
         });
-        commit(() => this.setState({
-          info
-        }));
+        commit(() =>
+          this.setState({
+            info,
+          }),
+        );
       } catch {
         // noop
       }
     })();
   };
 
-  onClick = (event) => {
+  handleClick = (event) => {
     if (event) {
       event.stopPropagation();
       event.preventDefault();
     }
     const {info} = this.state;
     const {url, internalUrl} = this.previewConfiguration;
-    const {
-      storage,
-      relativePath
-    } = info ?? {};
+    const {storage, relativePath} = info ?? {};
     if (url && internalUrl) {
       window.open(`/#/${url}`, '_blank');
       return;
@@ -82,7 +78,7 @@ class FileExternalPreview extends React.Component {
     }
   };
 
-  render () {
+  render() {
     const {
       className,
       style,
@@ -92,51 +88,36 @@ class FileExternalPreview extends React.Component {
       preferences,
       size,
       primary = false,
-      checkPreviewAvailability = true
+      checkPreviewAvailability = true,
     } = this.props;
-    const {
-      info
-    } = this.state;
-    const {
-      relativePath,
-      storage
-    } = info || {};
+    const {info} = this.state;
+    const {relativePath, storage} = info || {};
     const {alwaysAvailable} = this.previewConfiguration;
     if (!relativePath || !storage) {
       return null;
     }
-    const externalPreviewAvailable = preferences.dataStorageItemPreviewMasks
-      .some(mask => mask.test(relativePath));
-    if (
-      !alwaysAvailable &&
-      checkPreviewAvailability &&
-      !externalPreviewAvailable
-    ) {
+    const externalPreviewAvailable = preferences.dataStorageItemPreviewMasks.some((mask) =>
+      mask.test(relativePath),
+    );
+    if (!alwaysAvailable && checkPreviewAvailability && !externalPreviewAvailable) {
       return null;
     }
     if (/^link$/i.test(mode)) {
       if (disabled) {
         return (
-          <span
-            className={classNames(className, 'cp-text-not-important')}
-            style={style}
-          >
+          <span className={classNames(className, 'cp-text-not-important')} style={style}>
             {children}
           </span>
         );
       }
-      return (
-        <a onClick={this.onClick}>
-          {children}
-        </a>
-      );
+      return <a onClick={this.handleClick}>{children}</a>;
     }
     return (
       <Button
         className={className}
         style={style}
         size={size}
-        onClick={this.onClick}
+        onClick={this.handleClick}
         type={primary ? 'primary' : undefined}
         disabled={disabled}
       >
@@ -155,7 +136,7 @@ FileExternalPreview.propTypes = {
   mode: PropTypes.oneOf(['link', 'button']),
   checkPreviewAvailability: PropTypes.bool,
   size: PropTypes.oneOf(['small', 'medium', 'large']), // only for 'button' mode
-  primary: PropTypes.bool // only for 'button' mode
+  primary: PropTypes.bool, // only for 'button' mode
 };
 
 export {FileExternalPreview};

@@ -21,17 +21,17 @@ const defaultValues = {
   [RepositoryTypes.GitHub]: {src: 'src/', docs: 'docs/'},
   [RepositoryTypes.GitHubApp]: {src: 'src/', docs: 'docs/'},
   [RepositoryTypes.BitBucket]: {src: '/', docs: ''},
-  [RepositoryTypes.ButBucketCloud]: {src: '/', docs: ''}
+  [RepositoryTypes.ButBucketCloud]: {src: '/', docs: ''},
 };
 
-function getPipelineDefaultPaths (preferences) {
+function getPipelineDefaultPaths(preferences) {
   const result = {};
   [
     RepositoryTypes.GitHub,
     RepositoryTypes.GitHubApp,
     RepositoryTypes.GitLab,
     RepositoryTypes.BitBucket,
-    RepositoryTypes.ButBucketCloud
+    RepositoryTypes.ButBucketCloud,
   ].forEach((aType) => {
     const srcPreference = `${aType.toLowerCase()}.default.src.directory`;
     const docsPreference = `${aType.toLowerCase()}.default.doc.directory`;
@@ -42,7 +42,4 @@ function getPipelineDefaultPaths (preferences) {
   return result;
 }
 
-export {
-  defaultValues,
-  getPipelineDefaultPaths
-};
+export {defaultValues, getPipelineDefaultPaths};

@@ -15,5 +15,5 @@ export const runActions = {
   commit: actionCommit,
   monitor: actionMonitor,
   exportLogs: actionExportLogs,
-  browse: actionBrowse
+  browse: actionBrowse,
 };

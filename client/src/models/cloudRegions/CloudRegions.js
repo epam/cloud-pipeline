@@ -17,14 +17,14 @@
 import Remote from '../basic/Remote';
 
 class CloudRegions extends Remote {
-  constructor () {
+  constructor() {
     super();
     this.url = '/cloud/region';
-  };
+  }
 
   getRegionName = (id) => {
     if (this.loaded && id) {
-      const [region] = (this.value || []).filter(r => r.id === id);
+      const [region] = (this.value || []).filter((r) => r.id === id);
       if (region) {
         return region.name;
       }
@@ -34,14 +34,14 @@ class CloudRegions extends Remote {
 
   getRegion = (id) => {
     if (this.loaded && id) {
-      return (this.value || []).filter(r => r.id === id)[0];
+      return (this.value || []).filter((r) => r.id === id)[0];
     }
     return null;
   };
 
   getRegionByUID = (id) => {
     if (this.loaded && id) {
-      return (this.value || []).filter(r => r.regionId === id)[0];
+      return (this.value || []).filter((r) => r.regionId === id)[0];
     }
     return null;
   };

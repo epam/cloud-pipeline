@@ -3,8 +3,8 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {Alert} from 'antd';
 import {ObjectStorage} from '../../../../utils/object-storage';
-import LoadingView from '../../LoadingView';
-import styles from './file-preview-renderers.css';
+import LoadingView from '../../LoadingView.tsx';
+import styles from './file-preview-renderers.module.css';
 import CodeEditor from '../../CodeEditor';
 import Markdown from '../../markdown';
 
@@ -12,14 +12,14 @@ class PlainTextRenderer extends React.PureComponent {
   state = {
     preview: undefined,
     error: undefined,
-    content: undefined
+    content: undefined,
   };
 
-  componentDidMount () {
+  componentDidMount() {
     this.updateFromProps();
   }
 
-  componentDidUpdate (prevProps, prevState, snapshot) {
+  componentDidUpdate(prevProps, prevState, snapshot) {
     if (
       prevProps.filePath !== this.props.filePath ||
       prevProps.storage !== this.props.storage ||
@@ -29,29 +29,25 @@ class PlainTextRenderer extends React.PureComponent {
     }
   }
 
-  componentWillUnmount () {
+  componentWillUnmount() {
     this.token = {};
   }
 
   updateFromProps = () => {
-    const token = this.token = {};
+    const token = (this.token = {});
     const commit = (fn) => {
       if (this.token === token) {
         fn();
       }
     };
-    const {
-      storage,
-      filePath,
-      fileData
-    } = this.props;
+    const {storage, filePath, fileData} = this.props;
     if (storage && filePath && !fileData) {
       (async () => {
         commit(() => {
           this.setState({
             pending: true,
             error: undefined,
-            content: undefined
+            content: undefined,
           });
         });
         try {
@@ -62,7 +58,7 @@ class PlainTextRenderer extends React.PureComponent {
             this.setState({
               pending: false,
               error: undefined,
-              content
+              content,
             });
           });
         } catch (error) {
@@ -70,7 +66,7 @@ class PlainTextRenderer extends React.PureComponent {
             this.setState({
               pending: false,
               error: error.message,
-              content: undefined
+              content: undefined,
             });
           });
         }
@@ -79,48 +75,31 @@ class PlainTextRenderer extends React.PureComponent {
       this.setState({
         pending: false,
         error: undefined,
-        content: fileData
+        content: fileData,
       });
     }
   };
 
-  render () {
-    const {
-      className,
-      style,
-      filePath
-    } = this.props;
-    const {
-      pending,
-      error,
-      content
-    } = this.state;
+  render() {
+    const {className, style, filePath} = this.props;
+    const {pending, error, content} = this.state;
     if (pending) {
       return (
-        <div
-          className={classNames(className, styles.filePreviewRenderer)}
-          style={style}
-        >
+        <div className={classNames(className, styles.filePreviewRenderer)} style={style}>
           <LoadingView />
         </div>
       );
     }
     if (error) {
       return (
-        <div
-          className={classNames(className, styles.filePreviewRenderer)}
-          style={style}
-        >
+        <div className={classNames(className, styles.filePreviewRenderer)} style={style}>
           <Alert title={error} type="error" showIcon />
         </div>
       );
     }
     if (!content) {
       return (
-        <div
-          className={classNames(className, styles.filePreviewRenderer)}
-          style={style}
-        >
+        <div className={classNames(className, styles.filePreviewRenderer)} style={style}>
           <span className="cp-text-not-important">No data</span>
         </div>
       );
@@ -151,7 +130,7 @@ PlainTextRenderer.propTypes = {
   style: PropTypes.object,
   storage: PropTypes.object,
   filePath: PropTypes.string,
-  fileData: PropTypes.string
+  fileData: PropTypes.string,
 };
 
 export default PlainTextRenderer;

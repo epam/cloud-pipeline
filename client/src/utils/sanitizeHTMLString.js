@@ -14,17 +14,16 @@
  * limitations under the License.
  */
 
-function stringToHTML (string) {
+function stringToHTML(string) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(string, 'text/html');
   return doc;
 }
 
-function isDangerousAttribute (name, value = '') {
+function isDangerousAttribute(name, value = '') {
   const normalizedValue = value.toLowerCase();
   if (['src', 'href', 'xlink:href'].includes(name)) {
-    return normalizedValue.includes('javascript:') ||
-    normalizedValue.includes('data:text/html');
+    return normalizedValue.includes('javascript:') || normalizedValue.includes('data:text/html');
   }
 
   if (name.startsWith('on')) {
@@ -33,8 +32,8 @@ function isDangerousAttribute (name, value = '') {
   return false;
 }
 
-function removeTags (html, tags = []) {
-  tags.forEach(tag => {
+function removeTags(html, tags = []) {
+  tags.forEach((tag) => {
     const matchedTags = html.querySelectorAll(tag);
     for (const tag of matchedTags) {
       tag.remove();
@@ -43,15 +42,12 @@ function removeTags (html, tags = []) {
   return html;
 }
 
-function removeAttributes (html, attributesToRemove) {
+function removeAttributes(html, attributesToRemove) {
   const nodes = html.children;
   for (const node of nodes) {
     const attributes = node.attributes;
     for (const {name, value} of attributes) {
-      if (
-        isDangerousAttribute(name, value) ||
-        attributesToRemove.includes(name)
-      ) {
+      if (isDangerousAttribute(name, value) || attributesToRemove.includes(name)) {
         node.removeAttribute(name);
       }
     }
@@ -68,12 +64,9 @@ function removeAttributes (html, attributesToRemove) {
  * @param {object} options - options object.
  * @returns {string} - return sanitized html string.
  */
-function sanitizeHTMLString (string, options = {}) {
+function sanitizeHTMLString(string, options = {}) {
   try {
-    const {
-      tagsToRemove = ['script'],
-      attributesToRemove = []
-    } = options;
+    const {tagsToRemove = ['script'], attributesToRemove = []} = options;
     const html = stringToHTML(string);
     removeTags(html, tagsToRemove);
     removeAttributes(html, attributesToRemove);

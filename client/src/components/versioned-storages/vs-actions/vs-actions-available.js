@@ -18,24 +18,25 @@ import {computed, observable, makeObservable} from 'mobx';
 import {inject} from 'mobx-react';
 
 class VsActionsAvailable {
-  constructor (pipelines) {
+  constructor(pipelines) {
     makeObservable(this, {
-      available: computed
+      available: computed,
     });
     this.pipelines = observable(pipelines);
     pipelines.fetchIfNeededOrWait();
   }
 
-  get available () {
+  get available() {
     if (this.pipelines.loaded) {
-      return !!(this.pipelines.value || [])
-        .find(pipeline => /^VERSIONED_STORAGE$/i.test(pipeline.pipelineType));
+      return !!(this.pipelines.value || []).find((pipeline) =>
+        /^VERSIONED_STORAGE$/i.test(pipeline.pipelineType),
+      );
     }
     return false;
   }
 }
 
-function vsAvailabilityCheck (...opts) {
+function vsAvailabilityCheck(...opts) {
   return inject('vsActions')(...opts);
 }
 

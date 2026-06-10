@@ -17,12 +17,12 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class DataStorageItemUpdate extends RemotePost {
-  constructor (id) {
+  constructor(id) {
     super();
     this.url = `/datastorage/${id}/list`;
   }
 
-  static uploadUrl (id, path) {
+  static uploadUrl(id, path) {
     if (path) {
       return `${this.prefix}/datastorage/${id}/list/upload?path=${encodeURIComponent(path)}`;
     } else {

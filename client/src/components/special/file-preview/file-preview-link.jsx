@@ -4,27 +4,23 @@ import {FilePreviewModal} from './file-preview-modal';
 
 class FilePreviewLink extends React.PureComponent {
   state = {
-    visible: false
+    visible: false,
   };
 
-  componentDidUpdate (prevProps, prevState, snapshot) {
+  componentDidUpdate(prevProps, prevState, snapshot) {
     if (prevProps.filePath !== this.props.filePath) {
       this.onClose();
     }
     if (prevState.visible !== this.state.visible) {
-      const {
-        onPreviewVisibilityChanged
-      } = this.props;
+      const {onPreviewVisibilityChanged} = this.props;
       if (onPreviewVisibilityChanged) {
         onPreviewVisibilityChanged(this.state.visible);
       }
     }
   }
 
-  onLinkClick = (event) => {
-    const {
-      preventDefault = true
-    } = this.props;
+  handleClick = (event) => {
+    const {preventDefault = true} = this.props;
     if (event && preventDefault) {
       event.stopPropagation();
       event.preventDefault();
@@ -34,26 +30,17 @@ class FilePreviewLink extends React.PureComponent {
 
   onOpen = () => {
     this.setState({visible: true});
-  }
+  };
 
   onClose = () => {
     this.setState({visible: false});
-  }
+  };
 
-  render () {
-    const {
-      className,
-      style,
-      filePath,
-      title,
-      header,
-      footer
-    } = this.props;
-    const {
-      visible
-    } = this.state;
+  render() {
+    const {className, style, filePath, title, header, footer} = this.props;
+    const {visible} = this.state;
     return (
-      <a className={className} style={style} onClick={this.onLinkClick}>
+      <a className={className} style={style} onClick={this.handleClick}>
         {filePath}
         <FilePreviewModal
           filePath={filePath}
@@ -77,7 +64,7 @@ FilePreviewLink.propTypes = {
   header: PropTypes.node,
   footer: PropTypes.node,
   preventDefault: PropTypes.bool,
-  onPreviewVisibilityChanged: PropTypes.func
+  onPreviewVisibilityChanged: PropTypes.func,
 };
 
 export {FilePreviewLink};

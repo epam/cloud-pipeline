@@ -17,26 +17,25 @@
 import FilterExpression from './filterExpression';
 
 export default class AndExpression extends FilterExpression {
-  constructor (left, right, options) {
+  constructor(left, right, options) {
     super(undefined, undefined, FilterExpression.types.AND, undefined, left, right, options);
   }
 
-  get left () {
+  get left() {
     if (this.expressions && this.expressions.length > 0) {
       return this.expressions[0];
     }
     return null;
   }
 
-  get right () {
+  get right() {
     if (this.expressions && this.expressions.length > 1) {
       return this.expressions[1];
     }
     return null;
   }
 
-  toStringExpression () {
+  toStringExpression() {
     return `(${this.left ? this.left.toStringExpression() : ''} and ${this.right ? this.right.toStringExpression() : ''})`;
   }
-
 }

@@ -17,8 +17,8 @@
 import RemotePost from '../basic/RemotePost';
 
 export class ClusterNodeResources extends RemotePost {
-  constructor () {
+  constructor() {
     super();
-    this.url = `/cluster/node/resources`;
-  };
+    this.url = '/cluster/node/resources';
+  }
 }

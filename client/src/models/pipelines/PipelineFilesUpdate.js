@@ -17,8 +17,7 @@
 import RemotePost from '../basic/RemotePost';
 
 class PipelineFilesUpdate extends RemotePost {
-
-  constructor (id) {
+  constructor(id) {
     super();
     this.url = `/pipeline/${id}/files`;
   }

@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-export default function maintenanceCheck (response) {
+export default function maintenanceCheck(response) {
   if (response && /^maintenance$/i.test(response.headers.get('cloud-pipeline-mode'))) {
     window.location.reload();
   }

@@ -17,7 +17,7 @@
 import IssueAttachmentLoad from '../../../../models/issues/IssueAttachmentLoad';
 import IssueAttachmentDelete from '../../../../models/issues/IssueAttachmentDelete';
 
-export async function processUnusedAttachments (text, attachments) {
+export async function processUnusedAttachments(text, attachments) {
   text = text || '';
   const realAttachments = [];
   for (let i = 0; i < (attachments || []).length; i++) {
@@ -30,5 +30,5 @@ export async function processUnusedAttachments (text, attachments) {
       realAttachments.push(attachment.id);
     }
   }
-  return realAttachments.map(id => ({id}));
+  return realAttachments.map((id) => ({id}));
 }

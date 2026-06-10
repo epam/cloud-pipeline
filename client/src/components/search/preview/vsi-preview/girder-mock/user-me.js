@@ -16,14 +16,14 @@
 
 import whoAmI from '../../../../../models/user/WhoAmI';
 
-function userMe (match, resolve) {
+function userMe(match, resolve) {
   whoAmI
     .fetchIfNeededOrWait()
     .then(() => {
       if (whoAmI.loaded) {
         return Promise.resolve({
           _id: whoAmI.value.id,
-          login: whoAmI.value.userName
+          login: whoAmI.value.userName,
         });
       } else {
         throw new Error(whoAmI.error);
@@ -33,6 +33,6 @@ function userMe (match, resolve) {
     .then(resolve);
 }
 
-userMe.test = url => /^user\/me$/i.test(url);
+userMe.test = (url) => /^user\/me$/i.test(url);
 
 export default userMe;

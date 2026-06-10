@@ -17,7 +17,7 @@
 import RemotePost from '../basic/RemotePost';
 
 class SystemLogsFilter extends RemotePost {
-  constructor () {
+  constructor() {
     super();
     this.url = '/log/filter';
   }

@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import styles from './file-preview.css';
+import styles from './file-preview.module.css';
 import {Alert} from 'antd';
 import {LoadingOutlined} from '@ant-design/icons';
 import {getFilePreviewConfiguration} from './utils';
@@ -10,39 +10,37 @@ class FilePreview extends React.Component {
   state = {
     preview: undefined,
     error: undefined,
-    pending: true
+    pending: true,
   };
 
-  componentDidMount () {
+  componentDidMount() {
     this.updateFromProps();
   }
 
-  componentDidUpdate (prevProps, prevState, snapshot) {
+  componentDidUpdate(prevProps, prevState, snapshot) {
     if (prevProps.filePath !== this.props.filePath) {
       this.updateFromProps();
     }
   }
 
-  componentWillUnmount () {
+  componentWillUnmount() {
     this.token = {};
   }
 
   updateFromProps = () => {
-    const token = this.token = {};
+    const token = (this.token = {});
     const commit = (fn) => {
       if (this.token === token) {
         fn();
       }
     };
-    const {
-      filePath
-    } = this.props;
+    const {filePath} = this.props;
     (async () => {
       commit(() => {
         this.setState({
           pending: true,
           error: undefined,
-          preview: undefined
+          preview: undefined,
         });
       });
       try {
@@ -51,7 +49,7 @@ class FilePreview extends React.Component {
           this.setState({
             pending: false,
             error: undefined,
-            preview
+            preview,
           });
         });
       } catch (error) {
@@ -59,7 +57,7 @@ class FilePreview extends React.Component {
           this.setState({
             pending: false,
             error: error.message,
-            preview: undefined
+            preview: undefined,
           });
         });
       }
@@ -67,11 +65,7 @@ class FilePreview extends React.Component {
   };
 
   renderContent = () => {
-    const {
-      pending,
-      error,
-      preview
-    } = this.state;
+    const {pending, error, preview} = this.state;
     if (!preview && pending) {
       return (
         <div className={styles.centered}>
@@ -79,7 +73,7 @@ class FilePreview extends React.Component {
             className="cp-text-not-important"
             style={{
               display: 'inline-flex',
-              alignItems: 'center'
+              alignItems: 'center',
             }}
           >
             <LoadingOutlined style={{marginRight: 5}} />
@@ -96,12 +90,7 @@ class FilePreview extends React.Component {
         </div>
       );
     }
-    const {
-      renderer: Renderer,
-      data,
-      storage,
-      path
-    } = preview;
+    const {renderer: Renderer, data, storage, path} = preview;
     if (!Renderer) {
       return (
         <div className={styles.centered}>
@@ -133,35 +122,13 @@ class FilePreview extends React.Component {
     );
   };
 
-  render () {
-    const {
-      className,
-      style,
-      header,
-      footer
-    } = this.props;
+  render() {
+    const {className, style, header, footer} = this.props;
     return (
-      <div
-        className={classNames(styles.filePreview, className)}
-        style={style}
-      >
-        {
-          header && (
-            <div className={styles.filePreviewHeader}>
-              {header}
-            </div>
-          )
-        }
-        <div className={styles.filePreviewContent}>
-          {this.renderContent()}
-        </div>
-        {
-          footer && (
-            <div className={styles.filePreviewFooter}>
-              {footer}
-            </div>
-          )
-        }
+      <div className={classNames(styles.filePreview, className)} style={style}>
+        {header && <div className={styles.filePreviewHeader}>{header}</div>}
+        <div className={styles.filePreviewContent}>{this.renderContent()}</div>
+        {footer && <div className={styles.filePreviewFooter}>{footer}</div>}
       </div>
     );
   }
@@ -172,7 +139,7 @@ FilePreview.propTypes = {
   style: PropTypes.object,
   filePath: PropTypes.string,
   header: PropTypes.node,
-  footer: PropTypes.node
+  footer: PropTypes.node,
 };
 
 export {FilePreview};

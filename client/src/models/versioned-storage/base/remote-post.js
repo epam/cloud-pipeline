@@ -22,11 +22,11 @@ class VSRemotePost extends wrapStandardRequest(RemotePost) {
     mode: 'cors',
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json; charset=UTF-8;'
-    }
+      'Content-Type': 'application/json; charset=UTF-8;',
+    },
   };
 
-  async send (body) {
+  async send(body) {
     return this.fetchRequestOptions().then(() => super.send(body));
   }
 }

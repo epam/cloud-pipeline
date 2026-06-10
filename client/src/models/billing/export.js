@@ -14,8 +14,6 @@
  *  limitations under the License.
  */
 
-import {API_PATH, SERVER} from '../../config';
-
-export default function exportBillingURL () {
+export default function exportBillingURL() {
   return `${SERVER + API_PATH}/billing/export`;
 }

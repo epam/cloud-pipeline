@@ -17,7 +17,7 @@
 import VSRemotePost from './base/remote-post';
 
 export default class VSResolveFile extends VSRemotePost {
-  constructor (runId, storageId, file) {
+  constructor(runId, storageId, file) {
     super(runId);
     this.constructor.isJson = false;
     this.runId = runId;

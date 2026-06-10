@@ -1,0 +1,41 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.toolbar {
+  margin-bottom: 4px;
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+}
+
+.container :global(.rdg) {
+  --rdg-color: var(--cp-color-text);
+  --rdg-background-color: var(--cp-color-bg-elevated);
+  --rdg-header-background-color: var(--cp-color-bg-elevated-header);
+  --rdg-row-hover-background-color: var(--cp-color-interactive-selected-bg);
+  --rdg-row-selected-background-color: var(--cp-color-primary-muted);
+  --rdg-border-color: color-mix(in oklch, var(--cp-color-border-card), black 5%);
+  --rdg-selection-color: var(--cp-color-primary);
+  block-size: 100%;
+  color-scheme: light dark;
+}
+
+.readonly :global(.rdg-cell) {
+  background-color: color-mix(in oklch, var(--cp-color-bg-elevated-header), white 2%);
+}
+
+:global(.cp-pipeline-code-editor-readonly) .readonly :global(.rdg-cell) {
+  background-color: color-mix(in oklch, var(--cp-color-bg-elevated-header), white 2%);
+}
+
+.container :global(.rdg-cell.cp-tabular-row-header) {
+  background-color: var(--cp-color-bg-elevated-header);
+  color: var(--cp-color-text);
+}

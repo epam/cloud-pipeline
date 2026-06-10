@@ -21,10 +21,10 @@ export const primitiveTypes = {
   boolean: 'Boolean',
   float: 'Float',
   object: 'Object',
-  scatterItem: 'ScatterItem'
+  scatterItem: 'ScatterItem',
 };
 
-export function testType (type, test) {
+export function testType(type, test) {
   const regExp = new RegExp(`^${type}[?+]?$`);
   return regExp.test(test);
 }

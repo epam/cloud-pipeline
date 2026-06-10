@@ -19,34 +19,34 @@ import {gcpSpotInstanceType} from '../../models/utils/gcp-spot-instance-type';
 const getConfig = () => ({
   aws: {
     true: 'Spot',
-    false: 'On-demand'
+    false: 'On-demand',
   },
   azure: {
     true: 'Low priority',
-    false: 'On-demand'
+    false: 'On-demand',
   },
   gcp: {
     true: gcpSpotInstanceType.spotName,
-    false: 'On-demand'
+    false: 'On-demand',
   },
   default: {
     true: 'Spot',
-    false: 'On-demand'
-  }
+    false: 'On-demand',
+  },
 });
 
-export function getSpotTypeName (spot, cloudProvider) {
+export function getSpotTypeName(spot, cloudProvider) {
   const spotTypeNames = getConfig();
-  if (spotTypeNames.hasOwnProperty((cloudProvider || '').toLowerCase())) {
+  if (Object.hasOwn(spotTypeNames, (cloudProvider || '').toLowerCase())) {
     return spotTypeNames[(cloudProvider || '').toLowerCase()][spot];
   }
   return spotTypeNames.default[spot];
 }
 
-export function getRunSpotTypeName ({instance}) {
+export function getRunSpotTypeName({instance}) {
   if (instance) {
     return getSpotTypeName(instance.spot, instance.cloudProvider);
   }
   const spotTypeNames = getConfig();
-  return spotTypeNames.default[false];
+  return spotTypeNames.default.false;
 }

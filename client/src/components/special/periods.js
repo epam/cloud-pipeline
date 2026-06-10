@@ -14,24 +14,31 @@
  * limitations under the License.
  */
 
-import moment from 'moment-timezone';
+import dayjs, {ensureDayjs} from '../../utils/dayjs';
 
 const Period = {
   month: 'month',
   quarter: 'quarter',
   year: 'year',
   custom: 'custom',
-  day: 'day'
+  day: 'day',
 };
 
-function getTickFormat (start, end) {
+const UNIT_GETTERS = {
+  Y: 'year',
+  M: 'month',
+  D: 'date',
+  Q: 'quarter',
+};
+
+function getTickFormat(start, end) {
   if (!start || !end) {
     return '1M';
   }
   return end.diff(start, 'month') >= 1 ? '1M' : '1d';
 }
 
-function buildRangeString ({start, end}, period) {
+function buildRangeString({start, end}, period) {
   switch (period) {
     case Period.custom:
       if (!start || !end) {
@@ -56,7 +63,7 @@ function buildRangeString ({start, end}, period) {
   }
 }
 
-function getRangeDescription ({start, end}, period) {
+function getRangeDescription({start, end}, period) {
   switch (period) {
     case Period.custom:
       if (!start || !end) {
@@ -83,8 +90,8 @@ function getRangeDescription ({start, end}, period) {
         return undefined;
       }
       if (start && end) {
-        const startOfMonthDate = moment(start).startOf('M').date();
-        const endOfMonthDate = moment(end).endOf('M').date();
+        const startOfMonthDate = dayjs(start).startOf('month').date();
+        const endOfMonthDate = dayjs(end).endOf('month').date();
         if (startOfMonthDate !== start.date() || endOfMonthDate !== end.date()) {
           if (start.date() === end.date()) {
             return start.format('D MMMM YYYY');
@@ -96,83 +103,85 @@ function getRangeDescription ({start, end}, period) {
   }
 }
 
-function parseRangeString (string, period) {
+function parseRangeString(string, period) {
   if (!string) {
     return {
-      isCurrent: true
+      isCurrent: true,
     };
   }
   const [startStr, endStr] = string.split('|');
   let start, end, isCurrent;
+  const now = dayjs.utc();
   const checkCurrent = (date, ...units) => {
-    const checkUnit = (unit) => date.get(unit) === moment.utc().get(unit);
+    const checkUnit = (unit) => date[UNIT_GETTERS[unit]]() === now[UNIT_GETTERS[unit]]();
     return units.map(checkUnit).reduce((r, c) => r && c, true);
   };
   switch (period) {
     case Period.custom:
-      start = moment.utc(startStr, 'YYYY-MM-DD').startOf('D');
+      start = dayjs.utc(startStr, 'YYYY-MM-DD').startOf('day');
       isCurrent = false;
       if (endStr) {
-        end = moment.utc(endStr, 'YYYY-MM-DD').endOf('D');
+        end = dayjs.utc(endStr, 'YYYY-MM-DD').endOf('day');
       } else {
-        end = moment(start).endOf('D');
+        end = dayjs(start).endOf('day');
       }
       break;
     case Period.year:
-      start = moment.utc(startStr, 'YYYY').startOf('Y');
-      end = moment(start).endOf('Y');
+      start = dayjs.utc(startStr, 'YYYY').startOf('year');
+      end = dayjs(start).endOf('year');
       isCurrent = checkCurrent(start, 'Y');
       break;
     case Period.quarter:
-      start = moment.utc(startStr, 'YYYY-MM').startOf('Q');
-      end = moment(start).endOf('Q');
+      start = dayjs.utc(startStr, 'YYYY-MM').startOf('quarter');
+      end = dayjs(start).endOf('quarter');
       isCurrent = checkCurrent(start, 'Y', 'Q');
       break;
     case Period.month:
-      start = moment.utc(startStr, 'YYYY-MM').startOf('M');
-      end = moment(start).endOf('M');
+      start = dayjs.utc(startStr, 'YYYY-MM').startOf('month');
+      end = dayjs(start).endOf('month');
       isCurrent = checkCurrent(start, 'Y', 'M');
       break;
     case Period.day:
-      start = moment(startStr, 'YYYY-MM-DD').startOf('D');
-      end = moment(start).endOf('D');
+      start = dayjs(startStr, 'YYYY-MM-DD').startOf('day');
+      end = dayjs(start).endOf('day');
       isCurrent = checkCurrent(start, 'Y', 'M', 'D');
       break;
   }
   return {
     start,
     end,
-    isCurrent
+    isCurrent,
   };
 }
 
-function buildRangeByDate (date, period) {
-  if (!date || period === Period.custom) {
+function buildRangeByDate(date, period) {
+  const normalized = ensureDayjs(date);
+  if (!normalized || period === Period.custom) {
     return {
       start: undefined,
-      end: undefined
+      end: undefined,
     };
   }
   let unit;
   switch (period) {
     case Period.quarter:
-      unit = 'Q';
+      unit = 'quarter';
       break;
     case Period.year:
-      unit = 'Y';
+      unit = 'year';
       break;
     case Period.month:
-      unit = 'M';
+      unit = 'month';
       break;
     default:
-      unit = 'D';
+      unit = 'day';
       break;
   }
-  const start = moment(date).startOf(unit);
-  const end = moment(date).endOf(unit);
+  const start = normalized.startOf(unit);
+  const end = normalized.endOf(unit);
   return {
     start,
-    end
+    end,
   };
 }
 
@@ -180,17 +189,17 @@ const Range = {
   parse: parseRangeString,
   build: buildRangeString,
   buildRangeByDate,
-  getRangeDescription
+  getRangeDescription,
 };
 
-function getCurrentDate () {
-  return moment.utc().add(-1, 'd');
+function getCurrentDate() {
+  return dayjs.utc().subtract(1, 'day');
 }
 
-function getPeriod (period, range) {
+function getPeriod(period, range) {
   const dateNow = getCurrentDate();
   let {start, end, isCurrent} = Range.parse(range, period);
-  let before = start ? moment(start).add(-1, 'd') : moment(dateNow).add(-1, 'd');
+  let before;
   const rangeIsSelected = !!start && !!end;
   let tickFormat;
   let previousStart;
@@ -201,103 +210,104 @@ function getPeriod (period, range) {
   let previousFilterFn;
 
   switch ((period || '').toLowerCase()) {
-    case Period.month:
+    case Period.month: {
       if (!rangeIsSelected) {
-        start = moment(dateNow).startOf('month');
-        end = moment(dateNow).endOf('month');
+        start = dayjs(dateNow).startOf('month');
+        end = dayjs(dateNow).endOf('month');
       }
-      before = start ? moment(start).add(-1, 'M') : moment(dateNow).add(-1, 'M');
+      before = start ? dayjs(start).add(-1, 'month') : dayjs(dateNow).add(-1, 'month');
       tickFormat = '1d';
-      previousStart = moment(start).add(-1, 'M');
-      previousEnd = moment(previousStart).endOf('M');
-      endStrict = moment(end);
-      previousEndStrict = moment(previousEnd);
+      previousStart = dayjs(start).add(-1, 'month');
+      previousEnd = dayjs(previousStart).endOf('month');
+      endStrict = dayjs(end);
+      previousEndStrict = dayjs(previousEnd);
       if (isCurrent) {
-        if (dateNow < endStrict) {
-          endStrict = moment(dateNow);
+        if (dateNow.valueOf() < endStrict.valueOf()) {
+          endStrict = dayjs(dateNow);
         }
-        const temp = moment(endStrict).add(-1, 'M');
-        if (temp < previousEndStrict) {
+        const temp = dayjs(endStrict).add(-1, 'month');
+        if (temp.valueOf() < previousEndStrict.valueOf()) {
           previousEndStrict = temp;
         }
       }
-      endStrict = endStrict.endOf('D');
-      previousEndStrict = previousEndStrict.endOf('D');
+      endStrict = endStrict.endOf('day');
+      previousEndStrict = previousEndStrict.endOf('day');
       const daysInMonth = start.daysInMonth();
-      previousShiftFn = (momentDate) => moment(momentDate).add(1, 'M');
-      previousFilterFn = (momentDate) => momentDate.get('D') <= daysInMonth;
+      previousShiftFn = (mappedDate) => dayjs(mappedDate).add(1, 'month');
+      previousFilterFn = (mappedDate) => mappedDate.date() <= daysInMonth;
       break;
+    }
     case Period.quarter:
       if (!rangeIsSelected) {
-        start = moment(dateNow).startOf('Q');
-        end = moment(start).endOf('Q');
+        start = dayjs(dateNow).startOf('quarter');
+        end = dayjs(start).endOf('quarter');
       }
-      before = start ? moment(start).add(-1, 'Q') : moment(dateNow).add(-1, 'Q');
+      before = start ? dayjs(start).add(-1, 'quarter') : dayjs(dateNow).add(-1, 'quarter');
       tickFormat = '1M';
-      previousStart = moment(start).add(-1, 'y');
-      previousEnd = moment(end).add(-1, 'y');
-      endStrict = moment(end);
-      previousEndStrict = moment(previousEnd);
+      previousStart = dayjs(start).add(-1, 'year');
+      previousEnd = dayjs(end).add(-1, 'year');
+      endStrict = dayjs(end);
+      previousEndStrict = dayjs(previousEnd);
       if (isCurrent) {
-        if (dateNow < endStrict) {
-          endStrict = moment(dateNow);
+        if (dateNow.valueOf() < endStrict.valueOf()) {
+          endStrict = dayjs(dateNow);
         }
-        const temp = moment(endStrict).add(-1, 'y');
-        if (temp < previousEndStrict) {
+        const temp = dayjs(endStrict).add(-1, 'year');
+        if (temp.valueOf() < previousEndStrict.valueOf()) {
           previousEndStrict = temp;
         }
       }
-      endStrict = endStrict.endOf('D');
-      previousEndStrict = previousEndStrict.endOf('D');
-      previousShiftFn = (momentDate) => moment(momentDate).add(1, 'y');
+      endStrict = endStrict.endOf('day');
+      previousEndStrict = previousEndStrict.endOf('day');
+      previousShiftFn = (mappedDate) => dayjs(mappedDate).add(1, 'year');
       break;
     case Period.year:
       if (!rangeIsSelected) {
-        start = moment(dateNow).startOf('Y');
-        end = moment(dateNow).endOf('Y');
+        start = dayjs(dateNow).startOf('year');
+        end = dayjs(dateNow).endOf('year');
       }
-      before = start ? moment(start).add(-1, 'Y') : moment(dateNow).add(-1, 'Y');
+      before = start ? dayjs(start).add(-1, 'year') : dayjs(dateNow).add(-1, 'year');
       tickFormat = '1M';
-      previousStart = moment(start).add(-1, 'y');
-      previousEnd = moment(end).add(-1, 'y');
-      endStrict = moment(end);
-      previousEndStrict = moment(previousEnd);
+      previousStart = dayjs(start).add(-1, 'year');
+      previousEnd = dayjs(end).add(-1, 'year');
+      endStrict = dayjs(end);
+      previousEndStrict = dayjs(previousEnd);
       if (isCurrent) {
-        if (dateNow < endStrict) {
-          endStrict = moment(dateNow);
+        if (dateNow.valueOf() < endStrict.valueOf()) {
+          endStrict = dayjs(dateNow);
         }
-        const temp = moment(endStrict).add(-1, 'y');
-        if (temp < previousEndStrict) {
+        const temp = dayjs(endStrict).add(-1, 'year');
+        if (temp.valueOf() < previousEndStrict.valueOf()) {
           previousEndStrict = temp;
         }
       }
-      previousShiftFn = (momentDate) => moment(momentDate).add(1, 'y');
+      previousShiftFn = (mappedDate) => dayjs(mappedDate).add(1, 'year');
       break;
     case Period.day:
       if (!rangeIsSelected) {
-        start = moment().startOf('D');
-        end = moment().endOf('D');
+        start = dayjs().startOf('day');
+        end = dayjs().endOf('day');
       }
-      before = start ? moment(start).add(-1, 'D') : moment().add(-1, 'D');
+      before = start ? dayjs(start).add(-1, 'day') : dayjs().add(-1, 'day');
       tickFormat = getTickFormat(start, end);
-      previousStart = moment(start).add(-1, 'd');
-      previousEnd = moment(end).add(-1, 'd');
-      endStrict = moment(end);
-      previousEndStrict = moment(previousEnd);
+      previousStart = dayjs(start).add(-1, 'day');
+      previousEnd = dayjs(end).add(-1, 'day');
+      endStrict = dayjs(end);
+      previousEndStrict = dayjs(previousEnd);
       if (isCurrent) {
-        if (moment() < endStrict) {
-          endStrict = moment();
+        if (dayjs().valueOf() < endStrict.valueOf()) {
+          endStrict = dayjs();
         }
-        const temp = moment(endStrict).add(-1, 'd');
-        if (temp < previousEndStrict) {
+        const temp = dayjs(endStrict).add(-1, 'day');
+        if (temp.valueOf() < previousEndStrict.valueOf()) {
           previousEndStrict = temp;
         }
       }
-      previousShiftFn = (momentDate) => moment(momentDate).add(1, 'd');
+      previousShiftFn = (mappedDate) => dayjs(mappedDate).add(1, 'day');
       break;
     default:
       tickFormat = getTickFormat(start, end);
-      endStrict = moment(end);
+      endStrict = dayjs(end);
       before = undefined;
       break;
   }
@@ -313,14 +323,8 @@ function getPeriod (period, range) {
     previousShiftFn,
     previousFilterFn,
     current: Range.build({start}, period),
-    before: Range.build({start: before}, period)
+    before: Range.build({start: before}, period),
   };
 }
 
-export {
-  Period,
-  getPeriod,
-  Range,
-  getTickFormat,
-  getCurrentDate
-};
+export {Period, getPeriod, Range, getTickFormat, getCurrentDate};

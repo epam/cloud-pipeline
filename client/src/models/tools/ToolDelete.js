@@ -17,33 +17,34 @@
 import Remote from '../basic/Remote';
 
 export default class ToolDelete extends Remote {
-
-  constructor (image, registry, version) {
+  constructor(image, registry, version) {
     super();
     this.constructor.fetchOptions = {
       headers: {
-        'Content-type': 'application/json; charset=UTF-8'
+        'Content-type': 'application/json; charset=UTF-8',
       },
       mode: 'cors',
       credentials: 'include',
-      method: 'DELETE'
+      method: 'DELETE',
     };
-    const queryParameters = [{
-      key: 'image',
-      value: image
-    }];
+    const queryParameters = [
+      {
+        key: 'image',
+        value: image,
+      },
+    ];
     if (registry) {
       queryParameters.push({
         key: 'registry',
-        value: registry
+        value: registry,
       });
     }
     if (version) {
       queryParameters.push({
         key: 'version',
-        value: version
+        value: version,
       });
     }
-    this.url = `/tool/delete?${queryParameters.map(p => `${p.key}=${p.value}`).join('&')}`;
+    this.url = `/tool/delete?${queryParameters.map((p) => `${p.key}=${p.value}`).join('&')}`;
   }
 }

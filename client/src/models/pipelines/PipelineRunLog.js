@@ -17,23 +17,22 @@
 import Remote from '../basic/Remote';
 
 class PipelineRunLog extends Remote {
-  constructor (runId, taskName, options = {}) {
+  constructor(runId, taskName, options = {}) {
     super();
     if (taskName) {
-      const {
-        parameters,
-        instance
-      } = options;
+      const {parameters, instance} = options;
       const query = [
         `taskName=${taskName}`,
         parameters ? `parameters=${encodeURIComponent(parameters)}` : false,
-        instance ? `instance=${encodeURIComponent(instance)}` : false
-      ].filter(Boolean).join('&');
+        instance ? `instance=${encodeURIComponent(instance)}` : false,
+      ]
+        .filter(Boolean)
+        .join('&');
       this.url = `/run/${runId}/task?${query}`;
     } else {
       this.url = `/run/${runId}/logs`;
     }
-  };
+  }
 }
 
 export default PipelineRunLog;

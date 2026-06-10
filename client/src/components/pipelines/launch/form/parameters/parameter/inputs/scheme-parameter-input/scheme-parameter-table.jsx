@@ -2,28 +2,25 @@ import React from 'react';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import {message, Button, Alert} from 'antd';
-import styles from './scheme-parameter-input.css';
-import {
-  checkSchemeParameterValid,
-  createNewEntry
-} from './utilities';
+import styles from './scheme-parameter-input.module.css';
+import {checkSchemeParameterValid, createNewEntry} from './utilities';
 import LaunchFormSchemeParameterEntry from './scheme-parameter-entry';
 import {
   buildSchemeParameterValue,
-  parseSchemeParameterValue
+  parseSchemeParameterValue,
 } from '../../../../utilities/parameter-utilities';
 
 class LaunchFormSchemeParameterTable extends React.Component {
   state = {
     value: undefined,
-    error: undefined
+    error: undefined,
   };
 
-  componentDidMount () {
+  componentDidMount() {
     this.updateFromProps();
   }
 
-  componentDidUpdate (prevProps) {
+  componentDidUpdate(prevProps) {
     if (prevProps.value !== this.props.value) {
       this.updateFromProps();
     }
@@ -39,35 +36,21 @@ class LaunchFormSchemeParameterTable extends React.Component {
     }
   };
 
-  get isRequired () {
-    const {
-      parameter
-    } = this.props;
-    const {
-      config = {}
-    } = parameter || {};
-    const {
-      required = false
-    } = config || {};
+  get isRequired() {
+    const {parameter} = this.props;
+    const {config = {}} = parameter || {};
+    const {required = false} = config || {};
     return required;
   }
 
-  get properties () {
-    const {
-      parameter
-    } = this.props;
-    const {
-      config = {}
-    } = parameter || {};
-    const {
-      scheme
-    } = config || {};
+  get properties() {
+    const {parameter} = this.props;
+    const {config = {}} = parameter || {};
+    const {scheme} = config || {};
     if (!scheme) {
       return null;
     }
-    const {
-      properties = []
-    } = scheme;
+    const {properties = []} = scheme;
     return properties || [];
   }
 
@@ -82,9 +65,7 @@ class LaunchFormSchemeParameterTable extends React.Component {
   onSave = () => {
     const {value = []} = this.state;
     const {onChange, parameter} = this.props;
-    const {
-      config = {}
-    } = parameter || {};
+    const {config = {}} = parameter || {};
     const {scheme} = config || {};
     try {
       const schemeParameterValue = buildSchemeParameterValue(value, scheme);
@@ -118,7 +99,7 @@ class LaunchFormSchemeParameterTable extends React.Component {
     this.setState({value: newValue});
   };
 
-  render () {
+  render() {
     const {
       className,
       style,
@@ -128,11 +109,9 @@ class LaunchFormSchemeParameterTable extends React.Component {
       currentProjectMetadata,
       currentMetadataEntity,
       rootEntityId,
-      metadataAutoComplete
+      metadataAutoComplete,
     } = this.props;
-    const {
-      value = []
-    } = this.state;
+    const {value = []} = this.state;
     const {properties, isRequired} = this;
     if (!properties || properties.length === 0) {
       return null;
@@ -144,101 +123,77 @@ class LaunchFormSchemeParameterTable extends React.Component {
     const emptyListError = isRequired && value.length === 0;
     const valid = checkSchemeParameterValid(value, properties) && !emptyListError;
     return (
-      <div
-        className={classNames(className, styles.schemeParameterTableContainer)}
-        style={style}
-      >
-        {
-          parameter && parameter.config && parameter.config.description ? (
-            <div className={styles.schemeParameterTableDescription}>
-              {parameter.config.description}
-            </div>
-          ) : false
-        }
+      <div className={classNames(className, styles.schemeParameterTableContainer)} style={style}>
+        {parameter && parameter.config && parameter.config.description ? (
+          <div className={styles.schemeParameterTableDescription}>
+            {parameter.config.description}
+          </div>
+        ) : (
+          false
+        )}
         <div className={styles.schemeParameterTableScroller}>
           <table className={classNames(styles.schemeParameterTable, 'cp-bordered')}>
             <thead>
               <tr>
-                {
-                  properties.map((prop) => (
-                    <th
-                      key={prop.name}
-                      className={
-                        classNames(
-                          'cp-divider left right bottom',
-                          styles.parameterCol,
-                          styles[`parameter-type-${prop.type}`]
-                        )
-                      }
-                    >
-                      <div>{getPropName(prop)}</div>
-                      {
-                        prop.description && (
-                          <div
-                            className="cp-text-not-important"
-                            style={{
-                              wordBreak: 'break-word',
-                              fontWeight: 'normal',
-                              fontSize: 'smaller'
-                            }}
-                          >
-                            {prop.description}
-                          </div>
-                        )
-                      }
-                    </th>
-                  ))
-                }
-                <td
-                  className={classNames(styles.entryAction, 'cp-divider left right bottom')}
-                >
+                {properties.map((prop) => (
+                  <th
+                    key={prop.name}
+                    className={classNames(
+                      'cp-divider left right bottom',
+                      styles.parameterCol,
+                      styles[`parameter-type-${prop.type}`],
+                    )}
+                  >
+                    <div>{getPropName(prop)}</div>
+                    {prop.description && (
+                      <div
+                        className="cp-text-not-important"
+                        style={{
+                          wordBreak: 'break-word',
+                          fontWeight: 'normal',
+                          fontSize: 'smaller',
+                        }}
+                      >
+                        {prop.description}
+                      </div>
+                    )}
+                  </th>
+                ))}
+                <td className={classNames(styles.entryAction, 'cp-divider left right bottom')}>
                   {'\u00A0'}
                 </td>
               </tr>
             </thead>
             <tbody>
-              {
-                (value || []).map((entry, entryId) => (
-                  <LaunchFormSchemeParameterEntry
-                    key={`entry-${entryId}`}
-                    entry={entry}
-                    parameter={parameter}
-                    properties={properties}
-                    disabled={disabled}
-                    onChange={this.onChangeEntry(entryId)}
-                    onRemove={this.onRemoveEntry(entryId)}
-                    currentProjectId={currentProjectId}
-                    currentProjectMetadata={currentProjectMetadata}
-                    currentMetadataEntity={currentMetadataEntity}
-                    rootEntityId={rootEntityId}
-                    metadataAutoComplete={metadataAutoComplete}
-                  />
-                ))
-              }
+              {(value || []).map((entry, entryId) => (
+                <LaunchFormSchemeParameterEntry
+                  key={`entry-${entryId}`}
+                  entry={entry}
+                  parameter={parameter}
+                  properties={properties}
+                  disabled={disabled}
+                  onChange={this.onChangeEntry(entryId)}
+                  onRemove={this.onRemoveEntry(entryId)}
+                  currentProjectId={currentProjectId}
+                  currentProjectMetadata={currentProjectMetadata}
+                  currentMetadataEntity={currentMetadataEntity}
+                  rootEntityId={rootEntityId}
+                  metadataAutoComplete={metadataAutoComplete}
+                />
+              ))}
             </tbody>
           </table>
         </div>
-        {
-          emptyListError && (
-            <div className={styles.schemeParameterTableWarning}>
-              <Alert
-                title={(
-                  <div>
-                    At least 1 object is required
-                  </div>
-                )}
-                type="warning" showIcon
-              />
-            </div>
-          )
-        }
+        {emptyListError && (
+          <div className={styles.schemeParameterTableWarning}>
+            <Alert title={<div>At least 1 object is required</div>} type="warning" showIcon />
+          </div>
+        )}
         <div className={styles.schemeParameterTableActions}>
           <Button onClick={this.onAddEntry} disabled={disabled}>
             ADD OBJECT
           </Button>
-          <div
-            style={{marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 5}}
-          >
+          <div style={{marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 5}}>
             <Button onClick={this.onCancel} disabled={disabled}>
               CANCEL
             </Button>
@@ -265,7 +220,7 @@ LaunchFormSchemeParameterTable.propTypes = {
   currentProjectMetadata: PropTypes.object,
   currentMetadataEntity: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
   rootEntityId: PropTypes.string,
-  metadataAutoComplete: PropTypes.bool
+  metadataAutoComplete: PropTypes.bool,
 };
 
 export default LaunchFormSchemeParameterTable;

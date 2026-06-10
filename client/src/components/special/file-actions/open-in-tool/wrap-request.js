@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-export default function wrapRequest (request, method = 'fetch') {
+export default function wrapRequest(request, method = 'fetch') {
   return new Promise((resolve, reject) => {
     if (typeof request[method] === 'function') {
       request[method]()

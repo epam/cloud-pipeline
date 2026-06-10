@@ -17,7 +17,7 @@
 import RemotePost from '../basic/RemotePost';
 
 class HotNodePoolUpdate extends RemotePost {
-  constructor () {
+  constructor() {
     super();
     this.url = '/cluster/pool';
   }

@@ -17,7 +17,7 @@
 import RemotePost from '../../basic/RemotePost';
 
 export default class DataStorageLifeCycleRulesCreate extends RemotePost {
-  constructor (storageId) {
+  constructor(storageId) {
     super();
     this.url = `/datastorage/${storageId}/lifecycle/rule`;
   }

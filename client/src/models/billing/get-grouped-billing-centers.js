@@ -2,7 +2,7 @@ import BaseBillingRequest from './base-billing-request';
 import {costMapper, minutesToHours, bytesToGbs} from './utils';
 import GetDataWithPrevious from './get-data-with-previous';
 import join from './join-periods';
-import moment from 'moment-timezone';
+import dayjs from '../../utils/dayjs';
 
 /**
  * @typedef {Object} GetGroupedBillingCentersOptions
@@ -14,21 +14,15 @@ export class GetGroupedBillingCenters extends BaseBillingRequest {
   /**
    * @param {GetGroupedBillingCentersOptions} options
    */
-  constructor (options = {}) {
-    const {
-      filters = {},
-      pagination
-    } = options;
+  constructor(options = {}) {
+    const {filters = {}, pagination} = options;
     const {resourceType, fetchLastDay, ...rest} = filters;
     super({filters: rest, loadDetails: true, pagination});
     this.resourceType = resourceType;
     this.fetchLastDay = fetchLastDay;
     if (
       this.filters &&
-      (
-        this.filters.billingGroup?.length === 1 ||
-        this.filters.adGroup?.length === 1
-      )
+      (this.filters.billingGroup?.length === 1 || this.filters.adGroup?.length === 1)
     ) {
       this.grouping = 'USER';
     } else {
@@ -36,29 +30,26 @@ export class GetGroupedBillingCenters extends BaseBillingRequest {
     }
   }
 
-  prepareBody () {
+  prepareBody() {
     super.prepareBody();
     if (this.fetchLastDay && this.filters && this.filters.endStrict) {
-      this.body.from = moment(this.filters.endStrict).startOf('d');
-      this.body.to = moment(this.filters.endStrict).endOf('d');
+      this.body.from = dayjs(this.filters.endStrict).startOf('day');
+      this.body.to = dayjs(this.filters.endStrict).endOf('day');
     }
     if (this.resourceType) {
       this.body.filters.resource_type = [this.resourceType];
     }
   }
 
-  postprocess (value) {
+  postprocess(value) {
     const payload = super.postprocess(value);
     return this.prepareBillingCentersData(payload);
   }
 
-  prepareBillingCentersData (raw) {
+  prepareBillingCentersData(raw) {
     const res = {};
-    (raw && raw.length ? raw : []).forEach(i => {
-      if (
-        this.filters &&
-        (this.filters.billingGroup || this.filters.adGroup)
-      ) {
+    (raw && raw.length ? raw : []).forEach((i) => {
+      if (this.filters && (this.filters.billingGroup || this.filters.adGroup)) {
         const name = i.groupingInfo[this.grouping];
         if (name && name !== 'unknown') {
           res[name] = {
@@ -68,7 +59,7 @@ export class GetGroupedBillingCenters extends BaseBillingRequest {
             runsDuration: minutesToHours(i.groupingInfo.usage_runs),
             storageUsage: bytesToGbs(i.groupingInfo.usage_storages),
             runsCount: i.groupingInfo.runs,
-            spendings: isNaN(i.cost) ? 0 : costMapper(i.cost)
+            spendings: isNaN(i.cost) ? 0 : costMapper(i.cost),
           };
         }
       } else {
@@ -76,7 +67,7 @@ export class GetGroupedBillingCenters extends BaseBillingRequest {
         if (name && name !== 'unknown') {
           res[name] = {
             ...i,
-            value: isNaN(i.cost) ? 0 : costMapper(i.cost)
+            value: isNaN(i.cost) ? 0 : costMapper(i.cost),
           };
         }
       }
@@ -89,30 +80,18 @@ export class GetGroupedBillingCentersWithPrevious extends GetDataWithPrevious {
   /**
    * @param {GetGroupedBillingCentersOptions} options
    */
-  constructor (options = {}) {
-    const {
-      filters = {},
-      pagination
-    } = options;
-    const {
-      end,
-      endStrict,
-      previousEnd,
-      previousEndStrict,
-      ...rest
-    } = filters;
+  constructor(options = {}) {
+    const {filters = {}, pagination} = options;
+    const {end, endStrict, previousEnd, previousEndStrict, ...rest} = filters;
     const formattedFilters = {
       end: endStrict || end,
       previousEnd: previousEndStrict || previousEnd,
-      ...rest
+      ...rest,
     };
-    super(
-      GetGroupedBillingCenters,
-      {filters: formattedFilters, pagination}
-    );
+    super(GetGroupedBillingCenters, {filters: formattedFilters, pagination});
   }
 
-  postprocess (value) {
+  postprocess(value) {
     const {current, previous} = super.postprocess(value);
     return join(current, previous);
   }

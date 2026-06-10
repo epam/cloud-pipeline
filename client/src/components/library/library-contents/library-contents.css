@@ -1,0 +1,43 @@
+@reference "../../../index.css";
+
+.library-contents {
+  @apply text-sm flex flex-col overflow-auto min-h-0;
+}
+
+.library-contents-item {
+  @apply whitespace-nowrap hover:bg-table-hover flex items-start p-1.5;
+}
+
+.library-contents-item.interactive {
+  @apply cursor-pointer;
+}
+
+.library-contents-item.active {
+  @apply bg-table-selected;
+}
+
+.library-contents-item .library-contents-item-info {
+  @apply flex-1 overflow-auto flex flex-col leading-6;
+}
+
+.library-contents-item .library-contents-item-info .library-contents-item-title {
+  @apply w-full leading-6 truncate;
+}
+
+.library-contents-item .library-contents-item-info .library-contents-item-details {
+  @apply text-xs w-full wrap-break-word;
+}
+
+.library-contents-item .library-contents-item-actions {
+  @apply leading-6 shrink-0 inline-flex items-center gap-2;
+}
+
+.library-contents-item .library-contents-item-name {
+  @apply truncate mr-1;
+
+  flex: 0 1 auto;
+}
+
+.library-contents-item.interactive:hover .library-contents-item-name {
+  @apply underline;
+}

@@ -15,14 +15,9 @@
  */
 
 import MetadataSearchEntry from '../../../models/metadata/MetadataSearchEntry';
-import {
-  checkStorageDownloadEnabledAttributeValue
-} from '../../../models/dataStorage/data-storage-listing';
+import {checkStorageDownloadEnabledAttributeValue} from '../../../models/dataStorage/data-storage-listing';
 
-export default async function getNotDownloadableStorages (
-  authenticatedUserInfo,
-  preferences
-) {
+export default async function getNotDownloadableStorages(authenticatedUserInfo, preferences) {
   if (!preferences || !authenticatedUserInfo) {
     return [];
   }
@@ -36,7 +31,7 @@ export default async function getNotDownloadableStorages (
   }
   const userGroups = new Set([
     ...(authenticatedUserInfo.value.groups || []).map((group) => group.toLowerCase()),
-    ...(authenticatedUserInfo.value.roles || []).map((role) => role.name.toLowerCase())
+    ...(authenticatedUserInfo.value.roles || []).map((role) => role.name.toLowerCase()),
   ]);
   await preferences.fetchIfNeededOrWait();
   try {
@@ -47,15 +42,14 @@ export default async function getNotDownloadableStorages (
       if (request.loaded) {
         return (request.value || [])
           .filter((metadata) => {
-            return metadata &&
+            return (
+              metadata &&
               metadata.data &&
               metadata.entity &&
               metadata.data[attribute] &&
               metadata.data[attribute].value &&
-              !checkStorageDownloadEnabledAttributeValue(
-                metadata.data[attribute].value,
-                userGroups
-              );
+              !checkStorageDownloadEnabledAttributeValue(metadata.data[attribute].value, userGroups)
+            );
           })
           .map((metadata) => Number(metadata.entity.entityId));
       } else {

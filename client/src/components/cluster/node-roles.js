@@ -3,7 +3,7 @@ export const nodeRoles = {
   run: 1 << 1,
   cloudPipelineRole: 1 << 2,
   pipelineInfo: 1 << 3,
-  nodePoolRole: 1 << 4
+  nodePoolRole: 1 << 4,
 };
 
 export default nodeRoles;
@@ -12,18 +12,18 @@ export const PIPELINE_INFO_LABEL = 'pipeline-info';
 const pipelineInfoLabelRegExp = new RegExp(`^${PIPELINE_INFO_LABEL}$`, 'i');
 
 // Checking if `test` contains `role`
-export function testRole (test, role) {
+export function testRole(test, role) {
   return (test & role) === role;
 }
 
 // Checking if `test` has any role
-export function roleIsDefined (test) {
+export function roleIsDefined(test) {
   return test !== 0;
 }
 
-export function parseLabel (label, value, config = {}) {
+export function parseLabel(label, value, config = {}) {
   let role = 0;
-  let displayName = label;
+  const displayName = label;
   let displayValue = value;
   if ((displayValue || '').toLowerCase() === 'true') {
     displayValue = label;
@@ -42,17 +42,10 @@ export function parseLabel (label, value, config = {}) {
     (value || '').toLowerCase() === 'master'
   ) {
     role = nodeRoles.master;
-  } else if (
-    /^CLOUD-PIPELINE\/ROLE$/i.test(label)
-  ) {
+  } else if (/^CLOUD-PIPELINE\/ROLE$/i.test(label)) {
     if (
-      [
-        'edge',
-        'heapster',
-        'elasticsearch',
-        'master',
-        'dns'
-      ].indexOf((value || '').toLowerCase()) >= 0
+      ['edge', 'heapster', 'elasticsearch', 'master', 'dns'].indexOf((value || '').toLowerCase()) >=
+      0
     ) {
       role = nodeRoles.master;
     } else {
@@ -66,7 +59,7 @@ export function parseLabel (label, value, config = {}) {
     }
   } else if (/^pool_id$/i.test(label)) {
     role = nodeRoles.nodePoolRole;
-    const pool = pools.find(p => `${p.id}` === `${value}`);
+    const pool = pools.find((p) => `${p.id}` === `${value}`);
     if (pool) {
       displayValue = pool.name;
     } else {
@@ -77,10 +70,10 @@ export function parseLabel (label, value, config = {}) {
 }
 
 // Extracting node's roles
-export function getRoles (labels) {
+export function getRoles(labels) {
   let roles = 0;
-  for (let key in labels) {
-    if (labels.hasOwnProperty(key)) {
+  for (const key in labels) {
+    if (Object.hasOwn(labels, key)) {
       roles = roles || parseLabel(key, labels[key]).role;
     }
   }

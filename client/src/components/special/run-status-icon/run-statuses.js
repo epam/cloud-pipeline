@@ -27,10 +27,10 @@ const Statuses = {
   stopped: 'STOPPED',
   success: 'SUCCESS',
 
-  unknown: 'unknown'
+  unknown: 'unknown',
 };
 export const AllStatusValues = Object.values(Statuses);
-export function correctStatusValue (status) {
+export function correctStatusValue(status) {
   if (status && typeof status === 'string') {
     const index = AllStatusValues.indexOf((status || '').toUpperCase());
     if (index >= 0) {
@@ -39,43 +39,45 @@ export function correctStatusValue (status) {
   }
   return Statuses.unknown;
 }
-export function isRunStatusNodePending (run) {
-  return run &&
+export function isRunStatusNodePending(run) {
+  return (
+    run &&
     typeof run === 'object' &&
     run.tags &&
-    run.tags['NODE_PENDING'] &&
+    run.tags.NODE_PENDING &&
     run.status &&
-    /^running$/i.test(run.status);
+    /^running$/i.test(run.status)
+  );
 }
-export function getRunStatus (run) {
+export function getRunStatus(run) {
   if (run) {
     const nodePending = isRunStatusNodePending(run);
     if (nodePending) {
       return Statuses.nodePending;
     }
-    let status = run.status || Statuses.unknown;
-    if (status.toUpperCase() === Statuses.running &&
+    const status = run.status || Statuses.unknown;
+    if (
+      status.toUpperCase() === Statuses.running &&
       run.instance &&
       (run.instance.nodeIP || run.instance.nodeName) &&
-      (!run.podIP && !run.initialized)) {
+      !run.podIP &&
+      !run.initialized
+    ) {
       return Statuses.pulling;
-    } else if (status.toUpperCase() === Statuses.running &&
-      (
-        !run.instance ||
-        !run.instance.nodeIP ||
-        !run.instance.nodeName
-      ) && !run.initialized) {
+    } else if (
+      status.toUpperCase() === Statuses.running &&
+      (!run.instance || !run.instance.nodeIP || !run.instance.nodeName) &&
+      !run.initialized
+    ) {
       return run.queued ? Statuses.queued : Statuses.scheduled;
     }
     return run.status || Statuses.unknown;
   }
   return Statuses.unknown;
 }
-export function getStatus (props) {
+export function getStatus(props) {
   if (props) {
-    return props.status
-      ? correctStatusValue(props.status)
-      : getRunStatus(props.run);
+    return props.status ? correctStatusValue(props.status) : getRunStatus(props.run);
   }
   return Statuses.unknown;
 }

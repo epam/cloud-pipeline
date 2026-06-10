@@ -16,38 +16,25 @@
 
 import DataStoragePage from '../../../../../../models/dataStorage/DataStoragePage';
 
-export default function getStorageContents (storage, path) {
-  function getPage (marker) {
+export default function getStorageContents(storage, path) {
+  function getPage(marker) {
     return new Promise((resolve) => {
-      const request = new DataStoragePage(
-        storage,
-        path,
-        false,
-        false,
-        2,
-        marker
-      );
+      const request = new DataStoragePage(storage, path, false, false, 2, marker);
       request
         .fetchPage(marker)
         .then(() => {
           if (request.loaded) {
-            const {
-              results = [],
-              nextPageMarker
-            } = request.value;
+            const {results = [], nextPageMarker} = request.value;
             if (nextPageMarker) {
-              return Promise.all([
-                Promise.resolve(results),
-                getPage(nextPageMarker)
-              ]);
+              return Promise.all([Promise.resolve(results), getPage(nextPageMarker)]);
             }
             return Promise.resolve([results]);
           } else {
             throw new Error(request.error);
           }
         })
-        .then(pages => {
-          resolve((pages || []).reduce((result, page) => ([...result, ...page]), []));
+        .then((pages) => {
+          resolve((pages || []).reduce((result, page) => [...result, ...page], []));
         })
         .catch(() => resolve([]));
     });

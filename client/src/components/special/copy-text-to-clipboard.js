@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-function copyTextToClipboard (text = '') {
+function copyTextToClipboard(text = '') {
   return new Promise((resolve, reject) => {
     // ckeck window.clipboardData for IE11 support
     if (window.clipboardData && window.clipboardData.setData) {
@@ -29,6 +29,6 @@ function copyTextToClipboard (text = '') {
       reject(new Error('Copy to clipboard failed'));
     }
   });
-};
+}
 
 export default copyTextToClipboard;

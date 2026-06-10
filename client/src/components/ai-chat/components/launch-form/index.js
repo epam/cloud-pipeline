@@ -20,10 +20,4 @@ import ParameterGroup from './parameter-group/parameter-group';
 import Environment from './environment/environment';
 import LaunchFormInfo from './launch-form-info/launch-form-info';
 
-export {
-  TitleSection,
-  InputField,
-  ParameterGroup,
-  Environment,
-  LaunchFormInfo
-};
+export {TitleSection, InputField, ParameterGroup, Environment, LaunchFormInfo};

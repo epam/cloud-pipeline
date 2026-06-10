@@ -17,17 +17,12 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class DataStorageFilter extends RemotePost {
-  constructor (
-    id,
-    path,
-    showVersion = false,
-    showArchives = false
-  ) {
+  constructor(id, path, showVersion = false, showArchives = false) {
     super();
     const query = [
       !!path && `path=${encodeURIComponent(path)}`,
       `showVersion=${!!showVersion}`,
-      `showArchived=${!!showArchives}`
+      `showArchived=${!!showArchives}`,
     ]
       .filter(Boolean)
       .join('&');

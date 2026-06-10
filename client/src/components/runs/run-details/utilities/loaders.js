@@ -1,10 +1,8 @@
 import preferences from '../../../../models/preferences/PreferencesLoad';
-import {
-  applyCustomCapabilitiesParameters
-} from '../../../pipelines/launch/form/utilities/run-capabilities';
+import {applyCustomCapabilitiesParameters} from '../../../pipelines/launch/form/utilities/run-capabilities';
 import PipelineRunCmd from '../../../../models/pipelines/PipelineRunCmd';
 
-export async function fetchRunCliCommands (run, payload = undefined) {
+export async function fetchRunCliCommands(run, payload = undefined) {
   let runPayload = payload;
   if (!runPayload) {
     runPayload = await fetchRunPayload(run);
@@ -16,22 +14,22 @@ export async function fetchRunCliCommands (run, payload = undefined) {
     quite: false,
     yes: true,
     showParams: false,
-    sync: false
+    sync: false,
   };
   await Promise.all([
     requestLinux.send({...requestCommonPayload, runStartCmdExecutionEnvironment: 'LINUX'}),
-    requestWindows.send({...requestCommonPayload, runStartCmdExecutionEnvironment: 'WINDOWS'})
+    requestWindows.send({...requestCommonPayload, runStartCmdExecutionEnvironment: 'WINDOWS'}),
   ]);
   if (requestWindows.error || requestLinux.error) {
     throw new Error(requestWindows.error || requestLinux.error);
   }
   return {
     linux: requestLinux.value || '',
-    windows: requestWindows.value || ''
+    windows: requestWindows.value || '',
   };
 }
 
-export async function fetchRunPayload (run) {
+export async function fetchRunPayload(run) {
   await preferences.fetchIfNeededOrWait();
   if (run && preferences.loaded) {
     const payload = {
@@ -49,7 +47,7 @@ export async function fetchRunPayload (run) {
       prettyUrl: run.prettyUrl,
       nonPause: run.nonPause,
       configurationName: run.configName,
-      executionEnvironment: undefined
+      executionEnvironment: undefined,
     };
     if (run.instance) {
       payload.instanceType = run.instance.nodeType;
@@ -67,7 +65,7 @@ export async function fetchRunPayload (run) {
           payload.params[param.name] = {
             value: param.value,
             type: param.type,
-            enum: param.enum
+            enum: param.enum,
           };
         }
       }

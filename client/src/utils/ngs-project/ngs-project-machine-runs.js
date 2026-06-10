@@ -21,18 +21,22 @@ const MACHINE_RUN_METADATA_CLASS_NAME = 'MachineRun';
 const UI_NGS_PROJECT_SAMPLE_SHEET_COLUMN_PREFERENCE = 'ngs.preprocessing.samplesheet.link.column';
 const SAMPLE_SHEET_COLUMN_NAME = 'SampleSheet';
 
-export function getMachineRunMetadataClassName (preferences) {
+export function getMachineRunMetadataClassName(preferences) {
   if (preferences && preferences.loaded) {
-    return preferences.getPreferenceValue(UI_NGS_PROJECT_MACHINE_RUN_PREFERENCE) ||
-      MACHINE_RUN_METADATA_CLASS_NAME;
+    return (
+      preferences.getPreferenceValue(UI_NGS_PROJECT_MACHINE_RUN_PREFERENCE) ||
+      MACHINE_RUN_METADATA_CLASS_NAME
+    );
   }
   return MACHINE_RUN_METADATA_CLASS_NAME;
 }
 
-export function getSampleSheetColumnName (preferences) {
+export function getSampleSheetColumnName(preferences) {
   if (preferences && preferences.loaded) {
-    return preferences.getPreferenceValue(UI_NGS_PROJECT_SAMPLE_SHEET_COLUMN_PREFERENCE) ||
-      SAMPLE_SHEET_COLUMN_NAME;
+    return (
+      preferences.getPreferenceValue(UI_NGS_PROJECT_SAMPLE_SHEET_COLUMN_PREFERENCE) ||
+      SAMPLE_SHEET_COLUMN_NAME
+    );
   }
   return SAMPLE_SHEET_COLUMN_NAME;
 }
@@ -41,29 +45,28 @@ class NgsProjectMachineRuns {
   preferences;
   metadataClass;
 
-  constructor (options = {}, preferences) {
+  constructor(options = {}, preferences) {
     makeObservable(this, {
       preferences: observable,
       metadataClass: observable,
-      isMachineRunsMetadataClass: computed
+      isMachineRunsMetadataClass: computed,
     });
     this.preferences = preferences;
-    const {
-      metadataClass
-    } = options;
+    const {metadataClass} = options;
     this.metadataClass = metadataClass;
   }
 
-  get isMachineRunsMetadataClass () {
+  get isMachineRunsMetadataClass() {
     const metadataClassName = getMachineRunMetadataClassName(this.preferences);
-    return metadataClassName &&
+    return (
+      metadataClassName &&
       this.metadataClass &&
-      metadataClassName.toLowerCase() === this.metadataClass.toLowerCase();
+      metadataClassName.toLowerCase() === this.metadataClass.toLowerCase()
+    );
   }
 
-  isSampleSheetValue (column) {
-    return this.isMachineRunsMetadataClass &&
-      getSampleSheetColumnName(this.preferences) === column;
+  isSampleSheetValue(column) {
+    return this.isMachineRunsMetadataClass && getSampleSheetColumnName(this.preferences) === column;
   }
 }
 

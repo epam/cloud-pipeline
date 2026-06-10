@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-export default function mapFolderChildrenMetadata (
+export default function mapFolderChildrenMetadata(
   requestResult,
-  {childFolders, pipelines, storages, configurations}) {
+  {childFolders, pipelines, storages, configurations},
+) {
   const clearInfo = (item) => {
     item.hasMetadata = false;
     item.issuesCount = 0;
@@ -27,27 +28,31 @@ export default function mapFolderChildrenMetadata (
   (storages || []).forEach(clearInfo);
   (configurations || []).forEach(clearInfo);
   if (requestResult.loaded && (requestResult.value || []).length > 0) {
-    (requestResult.value || []).filter(info => info.entity).forEach(info => {
-      let item;
-      switch (info.entity.entityClass) {
-        case 'FOLDER': [item] = (childFolders || [])
-          .filter(folder => folder.id === info.entity.entityId);
-          break;
-        case 'PIPELINE': [item] = (pipelines || [])
-          .filter(pipeline => pipeline.id === info.entity.entityId);
-          break;
-        case 'DATA_STORAGE': [item] = (storages || [])
-          .filter(storage => storage.id === info.entity.entityId);
-          break;
-        case 'CONFIGURATION': [item] = (configurations || [])
-          .filter(configuration => configuration.id === info.entity.entityId);
-          break;
-      }
-      if (item) {
-        item.issuesCount = info.issuesCount;
-        item.hasMetadata = !!info.data;
-        item.objectMetadata = info.data;
-      }
-    });
+    (requestResult.value || [])
+      .filter((info) => info.entity)
+      .forEach((info) => {
+        let item;
+        switch (info.entity.entityClass) {
+          case 'FOLDER':
+            [item] = (childFolders || []).filter((folder) => folder.id === info.entity.entityId);
+            break;
+          case 'PIPELINE':
+            [item] = (pipelines || []).filter((pipeline) => pipeline.id === info.entity.entityId);
+            break;
+          case 'DATA_STORAGE':
+            [item] = (storages || []).filter((storage) => storage.id === info.entity.entityId);
+            break;
+          case 'CONFIGURATION':
+            [item] = (configurations || []).filter(
+              (configuration) => configuration.id === info.entity.entityId,
+            );
+            break;
+        }
+        if (item) {
+          item.issuesCount = info.issuesCount;
+          item.hasMetadata = !!info.data;
+          item.objectMetadata = info.data;
+        }
+      });
   }
 }

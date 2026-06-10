@@ -5,9 +5,9 @@ import {
   getStoragePathsDescription,
   saveStorageItemPermissions,
   storageItemPermissionsSetsEqual,
-  storagePathsAreEqual
+  storagePathsAreEqual,
 } from './utilities';
-import styles from './storage-item-permissions.css';
+import styles from './storage-item-permissions.module.css';
 import StorageItemPermissionsList from './storage-item-permissions-list';
 import {Alert, Button, Modal} from 'antd';
 
@@ -18,28 +18,25 @@ class StorageItemPermissions extends React.PureComponent {
     modified: false,
     pending: false,
     pendingSave: false,
-    error: undefined
+    error: undefined,
   };
+
   _token = {};
 
-  componentDidMount () {
+  componentDidMount() {
     if (!this.props.modal || this.props.visible) {
       this.updateFromProps();
     }
   }
 
-  componentDidUpdate (prevProps, prevState, snapshot) {
-    const storageItemsChanged = (
+  componentDidUpdate(prevProps, prevState, snapshot) {
+    const storageItemsChanged =
       prevProps.storageId !== this.props.storageId ||
-      !storagePathsAreEqual(prevProps.storagePaths, this.props.storagePaths)
-    );
+      !storagePathsAreEqual(prevProps.storagePaths, this.props.storagePaths);
     if (
       this.props.modal &&
       this.props.visible &&
-      (
-        prevProps.visible !== this.props.visible ||
-        storageItemsChanged
-      )
+      (prevProps.visible !== this.props.visible || storageItemsChanged)
     ) {
       this.updateFromProps();
     } else if (!this.props.modal && storageItemsChanged) {
@@ -47,7 +44,7 @@ class StorageItemPermissions extends React.PureComponent {
     }
   }
 
-  componentWillUnmount () {
+  componentWillUnmount() {
     this.invalidateFetchToken();
   }
 
@@ -83,10 +80,11 @@ class StorageItemPermissions extends React.PureComponent {
     })();
   };
 
-  onRevert = () => this.setState({
-    permissions: this.state.initial.slice(),
-    modified: false
-  });
+  onRevert = () =>
+    this.setState({
+      permissions: this.state.initial.slice(),
+      modified: false,
+    });
 
   onClose = () => {
     const {modal, onClose} = this.props;
@@ -129,12 +127,13 @@ class StorageItemPermissions extends React.PureComponent {
     })();
   };
 
-  onPermissionsChange = (permissions) => this.setState({
-    permissions,
-    modified: !storageItemPermissionsSetsEqual(this.state.initial, permissions)
-  });
+  onPermissionsChange = (permissions) =>
+    this.setState({
+      permissions,
+      modified: !storageItemPermissionsSetsEqual(this.state.initial, permissions),
+    });
 
-  render () {
+  render() {
     const {
       className,
       style,
@@ -142,24 +141,15 @@ class StorageItemPermissions extends React.PureComponent {
       storagePaths = [],
       modal,
       visible,
-      buttonsSize
+      buttonsSize,
     } = this.props;
-    const {
-      pending,
-      pendingSave,
-      error,
-      permissions,
-      modified
-    } = this.state;
-    const errorComponent = error && !pending ? (
-      <Alert title={error} showIcon type="error" />
-    ) : undefined;
+    const {pending, pendingSave, error, permissions, modified} = this.state;
+    const errorComponent =
+      error && !pending ? <Alert title={error} showIcon type="error" /> : undefined;
 
     const titleComponent = (
       <span>
-        <b style={{marginRight: 5}}>
-          {getStoragePathsDescription(storagePaths, true)}
-        </b>
+        <b style={{marginRight: 5}}>{getStoragePathsDescription(storagePaths, true)}</b>
         <span>permissions</span>
       </span>
     );
@@ -171,13 +161,9 @@ class StorageItemPermissions extends React.PureComponent {
           open={visible}
           title={titleComponent}
           onCancel={this.onClose}
-          footer={(
+          footer={
             <div className={styles.storageItemPermissionsActions}>
-              <Button
-                size={buttonsSize}
-                onClick={this.onClose}
-                style={{marginLeft: 'auto'}}
-              >
+              <Button size={buttonsSize} onClick={this.onClose} style={{marginLeft: 'auto'}}>
                 Cancel
               </Button>
               <Button
@@ -199,7 +185,7 @@ class StorageItemPermissions extends React.PureComponent {
                 Save
               </Button>
             </div>
-          )}
+          }
         >
           {errorComponent}
           <StorageItemPermissionsList
@@ -214,9 +200,7 @@ class StorageItemPermissions extends React.PureComponent {
     }
     return (
       <div className={className} style={style}>
-        <div>
-          {titleComponent}
-        </div>
+        <div>{titleComponent}</div>
         {errorComponent}
         <StorageItemPermissionsList
           storageId={storageId}
@@ -258,7 +242,7 @@ StorageItemPermissions.propTypes = {
   modal: PropTypes.bool,
   visible: PropTypes.bool,
   onClose: PropTypes.func,
-  buttonsSize: PropTypes.oneOf(['small', 'medium', 'large'])
+  buttonsSize: PropTypes.oneOf(['small', 'medium', 'large']),
 };
 
 export default StorageItemPermissions;

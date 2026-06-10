@@ -18,7 +18,7 @@ import preferences from '../../models/preferences/PreferencesLoad';
 import authenticatedUserInfo from '../../models/user/WhoAmI';
 import {
   ContextualPreferenceSearch,
-  names as ContextualPreferences
+  names as ContextualPreferences,
 } from '../../models/utils/ContextualPreference';
 
 /**
@@ -31,20 +31,18 @@ import {
  * @param {number} storageId
  * @returns {Promise<undefined|boolean>}
  */
-async function safelyCheckRestrictedAccessForStorage (storageId) {
+async function safelyCheckRestrictedAccessForStorage(storageId) {
   try {
     const request = new ContextualPreferenceSearch();
     await request.send({
       preferences: [ContextualPreferences.storageManagementRestrictedAccess],
       resource: {
         level: 'STORAGE',
-        resourceId: storageId
-      }
+        resourceId: storageId,
+      },
     });
     if (request.loaded && request.value) {
-      const {
-        value
-      } = request.value;
+      const {value} = request.value;
       return `${value}`.toLowerCase() === 'true';
     }
   } catch (error) {
@@ -54,11 +52,11 @@ async function safelyCheckRestrictedAccessForStorage (storageId) {
 }
 
 class DataStorageRestrictedAccess {
-  constructor () {
+  constructor() {
     this.storagePreferenceCheckPromises = new Map();
   }
 
-  clear () {
+  clear() {
     this.storagePreferenceCheckPromises.clear();
   }
 
@@ -68,9 +66,7 @@ class DataStorageRestrictedAccess {
         authenticatedUserInfo
           .fetchIfNeededOrWait()
           .then(() => {
-            const {
-              admin
-            } = authenticatedUserInfo.value || {};
+            const {admin} = authenticatedUserInfo.value || {};
             resolve(admin ? false : undefined);
           })
           .catch(() => resolve(undefined));
@@ -99,10 +95,7 @@ class DataStorageRestrictedAccess {
     if (checks.length === 0) {
       return Promise.resolve(undefined);
     }
-    const [
-      highPriorityCheck,
-      ...lowPriorityChecks
-    ] = checks;
+    const [highPriorityCheck, ...lowPriorityChecks] = checks;
     if (typeof highPriorityCheck !== 'function') {
       return this.performPrioritizedChecks(...lowPriorityChecks);
     }
@@ -120,17 +113,17 @@ class DataStorageRestrictedAccess {
     return this.performPrioritizedChecks(
       this.userAdminCheck,
       () => this.storagePreferenceCheck(storageId),
-      this.globalPreferenceCheck
+      this.globalPreferenceCheck,
     );
-  }
+  };
 }
 
 const checker = new DataStorageRestrictedAccess();
 
-export function clearCache () {
+export function clearCache() {
   checker.clear();
 }
 
-export default function dataStorageRestrictedAccessCheck (storageId) {
+export default function dataStorageRestrictedAccessCheck(storageId) {
   return checker.check(storageId);
 }

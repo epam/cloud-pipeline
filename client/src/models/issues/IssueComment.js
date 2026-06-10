@@ -17,7 +17,7 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class IssueComment extends RemotePost {
-  constructor (issueId) {
+  constructor(issueId) {
     super();
     this.url = `/issues/${issueId}/comments`;
   }

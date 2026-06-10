@@ -21,10 +21,10 @@
  * @param preferBranch
  * @returns {*}
  */
-export default function findModification (line, changes, preferBranch) {
-  const filtered = changes.filter(change => change.items.indexOf(line) >= 0);
+export default function findModification(line, changes, preferBranch) {
+  const filtered = changes.filter((change) => change.items.indexOf(line) >= 0);
   if (preferBranch) {
-    const prefer = filtered.find(b => b.branch === preferBranch);
+    const prefer = filtered.find((b) => b.branch === preferBranch);
     if (prefer) {
       return prefer;
     }

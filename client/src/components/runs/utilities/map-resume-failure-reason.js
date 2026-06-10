@@ -15,24 +15,17 @@
  */
 
 import {Statuses} from '../../special/run-status-icon';
-import moment from 'moment-timezone';
+import {toUtcDayjs} from '../../../utils/dayjs';
 
-export function getResumeFailureReason (run) {
+export function getResumeFailureReason(run) {
   if (!run) {
     return undefined;
   }
-  const {
-    runStatuses = [],
-    status
-  } = run;
-  if (
-    runStatuses &&
-    runStatuses.length > 0 &&
-    status === Statuses.paused
-  ) {
+  const {runStatuses = [], status} = run;
+  if (runStatuses && runStatuses.length > 0 && status === Statuses.paused) {
     const sortedStatuses = runStatuses
       .slice()
-      .sort((a, b) => moment.utc(a.timestamp).diff(moment.utc(b.timestamp)));
+      .sort((a, b) => toUtcDayjs(a.timestamp).diff(toUtcDayjs(b.timestamp)));
     const lastStatus = sortedStatuses[sortedStatuses.length - 1];
     if (lastStatus && lastStatus.status === Statuses.paused && lastStatus.reason) {
       return lastStatus.reason;

@@ -17,7 +17,7 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class FolderClone extends RemotePost {
-  constructor (id, parentId, name) {
+  constructor(id, parentId, name) {
     super();
     if (parentId) {
       this.url = `/folder/${id}/clone?parentId=${parentId}&name=${name}`;

@@ -18,27 +18,23 @@ import Remote from '../../basic/Remote';
 import {getStorageItemPermissionType, getStorageItemType} from './utilities';
 
 export default class FetchPathPermissions extends Remote {
-  constructor (storageId, storagePath, type = 'file') {
+  constructor(storageId, storagePath, type = 'file') {
     super();
     let path = storagePath;
     if (!path || path === '') {
       path = '/';
     }
     const typeCorrected = getStorageItemPermissionType(type);
-    // eslint-disable-next-line max-len
     this.url = `/datastorage/${storageId}/paths/permissions/sids?path=${encodeURIComponent(path)}&type=${typeCorrected}`;
   }
 
-  postprocess (value) {
+  postprocess(value) {
     const results = value.payload || [];
     return results.map((o) => {
-      const {
-        type,
-        ...rest
-      } = o;
+      const {type, ...rest} = o;
       return {
         ...rest,
-        type: getStorageItemType(type)
+        type: getStorageItemType(type),
       };
     });
   }

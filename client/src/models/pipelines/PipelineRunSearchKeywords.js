@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 class PipelineRunSearchKeywords extends Remote {
-  constructor () {
+  constructor() {
     super();
     this.url = '/run/search/keywords';
   }

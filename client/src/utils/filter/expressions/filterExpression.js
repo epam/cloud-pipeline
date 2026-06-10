@@ -24,9 +24,10 @@ export default class FilterExpression {
   static types = {
     LOGICAL: 'LOGICAL',
     AND: 'AND',
-    OR: 'OR'
+    OR: 'OR',
   };
-  constructor (field, value, type, operand, leftExpression, rightExpression, options) {
+
+  constructor(field, value, type, operand, leftExpression, rightExpression, options) {
     this.field = field;
     this.value = value;
     this.filterExpressionType = type;
@@ -40,11 +41,11 @@ export default class FilterExpression {
     }
   }
 
-  toStringExpression () {
+  toStringExpression() {
     return '';
   }
 
-  findElementAtPosition (position) {
+  findElementAtPosition(position) {
     if (this.expressions) {
       for (let i = 0; i < this.expressions.length; i++) {
         const result = this.expressions[i].findElementAtPosition(position);
@@ -55,11 +56,14 @@ export default class FilterExpression {
     }
     if (this.options) {
       const check = (field, includeLast = false) => {
-        return this.options[field] && this.options[field].first_column !== undefined &&
+        return (
+          this.options[field] &&
+          this.options[field].first_column !== undefined &&
           this.options[field].last_column !== undefined &&
           this.options[field].first_column <= position &&
           ((this.options[field].last_column > position && !includeLast) ||
-          (this.options[field].last_column >= position && includeLast));
+            (this.options[field].last_column >= position && includeLast))
+        );
       };
       if (check('property')) {
         return {
@@ -67,7 +71,7 @@ export default class FilterExpression {
           isProperty: true,
           expression: this,
           starts: this.options.property.first_column,
-          ends: this.options.property.last_column
+          ends: this.options.property.last_column,
         };
       } else if (check('operand')) {
         return {
@@ -75,7 +79,7 @@ export default class FilterExpression {
           isOperand: true,
           expression: this,
           starts: this.options.operand.first_column,
-          ends: this.options.operand.last_column
+          ends: this.options.operand.last_column,
         };
       } else if (check('value')) {
         return {
@@ -83,7 +87,7 @@ export default class FilterExpression {
           isValue: true,
           expression: this,
           starts: this.options.value.first_column,
-          ends: this.options.value.last_column
+          ends: this.options.value.last_column,
         };
       } else if (check('total', true) && this.options.operand) {
         return {
@@ -91,7 +95,7 @@ export default class FilterExpression {
           isValue: true,
           expression: this,
           starts: this.options.operand.last_column + 1,
-          ends: this.options.total.last_column
+          ends: this.options.total.last_column,
         };
       }
     }

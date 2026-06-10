@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-function getComputedValue (props, value) {
+function getComputedValue(props, value) {
   if (typeof value === 'function') {
     return String(value(props) || '').toLowerCase();
   }
@@ -24,18 +24,18 @@ function getComputedValue (props, value) {
   return String(value || '').toLowerCase();
 }
 
-export default function mapObjectConfiguration (props) {
-  return function map (o) {
+export default function mapObjectConfiguration(props) {
+  return function map(o) {
     const {identifier, parent} = o;
     if (parent) {
       return {
         ...o,
-        identifier: `${getComputedValue(props, parent)}/${getComputedValue(props, identifier)}`
+        identifier: `${getComputedValue(props, parent)}/${getComputedValue(props, identifier)}`,
       };
     }
     return {
       ...o,
-      identifier: getComputedValue(props, identifier)
+      identifier: getComputedValue(props, identifier),
     };
   };
 }

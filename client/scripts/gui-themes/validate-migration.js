@@ -16,8 +16,6 @@
 
 /* eslint-disable max-len */
 
-'use strict';
-
 /**
  * Smoke-tests the v1->v2 theme migration against a few representative
  * fixtures. Mirrors the logic of `src/themes/tokens/migrate-v1-to-v2.js`
@@ -27,13 +25,16 @@
  * Run via: node scripts/gui-themes/validate-migration.js
  */
 
-const fs = require('fs');
-const path = require('path');
-const vm = require('vm');
+import fs from 'node:fs';
+import path from 'node:path';
+import vm from 'node:vm';
+import {fileURLToPath} from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const semanticKeysPath = path.resolve(__dirname, '../../src/themes/tokens/semantic-keys.js');
 
-function loadEsmFile (filePath) {
+function loadEsmFile(filePath) {
   const source = fs.readFileSync(filePath, 'utf8');
   const exportedNames = [];
   let cjs = source.replace(/^\s*import[\s\S]+?;\s*$/gm, '');
@@ -44,7 +45,7 @@ function loadEsmFile (filePath) {
   });
   cjs = cjs.replace(/^\s*export\s*\{[\s\S]*?\}\s*;?\s*$/gm, '');
   if (exportedNames.length) {
-    cjs += '\n' + exportedNames.map(n => `module.exports.${n} = ${n};`).join('\n');
+    cjs += '\n' + exportedNames.map((n) => `module.exports.${n} = ${n};`).join('\n');
   }
   const sandbox = {module: {exports: {}}, console};
   sandbox.exports = sandbox.module.exports;
@@ -71,9 +72,9 @@ const namedColors = {
   yellow: {r: 255, g: 255, b: 0, a: 1.0},
   pink: {r: 255, g: 0, b: 255, a: 1.0},
   cyan: {r: 0, g: 255, b: 255, a: 1.0},
-  transparent: {r: 0, g: 0, b: 0, a: 0.0}
+  transparent: {r: 0, g: 0, b: 0, a: 0.0},
 };
-function parseColor (c) {
+function parseColor(c) {
   if (typeof c !== 'string') return undefined;
   const v = c.trim().toLowerCase();
   if (namedColors[v]) return namedColors[v];
@@ -82,50 +83,66 @@ function parseColor (c) {
     const ok = /^[0-9a-f]{3}$|^[0-9a-f]{6}$|^[0-9a-f]{8}$/i.test(h);
     if (!ok) return undefined;
     if (h.length === 3) {
-      return {r: parseInt(h[0] + h[0], 16), g: parseInt(h[1] + h[1], 16), b: parseInt(h[2] + h[2], 16), a: 1.0};
+      return {
+        r: parseInt(h[0] + h[0], 16),
+        g: parseInt(h[1] + h[1], 16),
+        b: parseInt(h[2] + h[2], 16),
+        a: 1.0,
+      };
     }
     return {
       r: parseInt(h.slice(0, 2), 16),
       g: parseInt(h.slice(2, 4), 16),
       b: parseInt(h.slice(4, 6), 16),
-      a: h.length === 8 ? parseInt(h.slice(6, 8), 16) / 255 : 1.0
+      a: h.length === 8 ? parseInt(h.slice(6, 8), 16) / 255 : 1.0,
     };
   }
   if (v.startsWith('rgb')) {
-    const parts = v.replace(/rgba?\(/, '').replace(/\)/, '').split(',').map(s => Number(s.trim()));
+    const parts = v
+      .replace(/rgba?\(/, '')
+      .replace(/\)/, '')
+      .split(',')
+      .map((s) => Number(s.trim()));
     if (parts.length < 3) return undefined;
     return {r: parts[0], g: parts[1], b: parts[2], a: parts.length === 4 ? parts[3] : 1.0};
   }
   return undefined;
 }
-function buildColor (ch) {
+function buildColor(ch) {
   if (!ch) return undefined;
-  const r = Math.round(ch.r); const g = Math.round(ch.g); const b = Math.round(ch.b);
+  const r = Math.round(ch.r);
+  const g = Math.round(ch.g);
+  const b = Math.round(ch.b);
   const a = ch.a === undefined ? 1.0 : ch.a;
   return a === 1.0 ? `rgb(${r}, ${g}, ${b})` : `rgba(${r}, ${g}, ${b}, ${a})`;
 }
-function parseAmount (a) {
+function parseAmount(a) {
   if (/^[\d.]+%$/.test(a)) return Number(a.slice(0, -1)) / 100;
   return Number(a);
 }
-function fade (c, a) {
-  const x = parseColor(c); if (!x) return 'inherit';
+function fade(c, a) {
+  const x = parseColor(c);
+  if (!x) return 'inherit';
   return buildColor({...x, a: parseAmount(a)}) || 'inherit';
 }
-function fadeout (c, a) {
-  const x = parseColor(c); if (!x) return 'inherit';
+function fadeout(c, a) {
+  const x = parseColor(c);
+  if (!x) return 'inherit';
   return buildColor({...x, a: Math.max(0, x.a - parseAmount(a))}) || 'inherit';
 }
 
 const NAMES = Object.keys(namedColors).join('|');
-function fnRegex (n) {
-  return new RegExp(`${n}\\(\\s*(#[0-9a-fA-F]{3,8}|rgba?\\([\\d,.%\\s]+\\)|${NAMES})\\s*,\\s*([\\d.%-]+)\\s*\\)`, 'i');
+function fnRegex(n) {
+  return new RegExp(
+    `${n}\\(\\s*(#[0-9a-fA-F]{3,8}|rgba?\\([\\d,.%\\s]+\\)|${NAMES})\\s*,\\s*([\\d.%-]+)\\s*\\)`,
+    'i',
+  );
 }
 const FN_TABLE = [
   {re: fnRegex('fadeout'), fn: fadeout},
-  {re: fnRegex('fade'), fn: fade}
+  {re: fnRegex('fade'), fn: fade},
 ];
-function parseFunctions (s) {
+function parseFunctions(s) {
   let r = String(s);
   for (const {re, fn} of FN_TABLE) {
     let m = re.exec(r);
@@ -138,7 +155,7 @@ function parseFunctions (s) {
   return r;
 }
 
-function parseValue (key, configuration, parsed, chain) {
+function parseValue(key, configuration, parsed, chain) {
   if (parsed[key] !== undefined) return parsed[key];
   let value = configuration[key];
   if (typeof value !== 'string') {
@@ -160,7 +177,7 @@ function parseValue (key, configuration, parsed, chain) {
   return value;
 }
 
-function parseConfiguration (config) {
+function parseConfiguration(config) {
   const parsed = {};
   for (const key of Object.keys(config || {})) {
     parseValue(key, config, parsed, [key]);
@@ -168,10 +185,10 @@ function parseConfiguration (config) {
   return parsed;
 }
 
-function migrateV1ToV2 (theme) {
+function migrateV1ToV2(theme) {
   if (!theme) return theme;
   if (theme.schemaVersion === 2) return theme;
-  if (theme.configuration && Object.keys(theme.configuration).some(k => k.startsWith('--cp-'))) {
+  if (theme.configuration && Object.keys(theme.configuration).some((k) => k.startsWith('--cp-'))) {
     return {...theme, schemaVersion: 2};
   }
   const parsed = parseConfiguration(theme.configuration || {});
@@ -194,17 +211,17 @@ const FIXTURES = [
         '@primary-color': '#ff8800',
         '@primary-hover-color': 'lighten(@primary-color, 10%)',
         '@card-background-color': '#fff',
-        '@code-background-color': 'fade(@card-background-color, 90%)'
-      }
+        '@code-background-color': 'fade(@card-background-color, 90%)',
+      },
     },
     expect: {
       schemaVersion: 2,
       includes: {
         '--cp-color-primary': '#ff8800',
-        '--cp-color-bg-elevated': '#fff'
+        '--cp-color-bg-elevated': '#fff',
       },
-      excludes: ['@primary-color']
-    }
+      excludes: ['@primary-color'],
+    },
   },
   {
     name: 'v1 dark variant with fadeout',
@@ -213,16 +230,16 @@ const FIXTURES = [
       extends: 'dark-theme',
       configuration: {
         '@application-color': 'rgb(220, 220, 220)',
-        '@application-color-faded': 'fadeout(@application-color, 40%)'
-      }
+        '@application-color-faded': 'fadeout(@application-color, 40%)',
+      },
     },
     expect: {
       schemaVersion: 2,
       includes: {
         '--cp-color-text': 'rgb(220, 220, 220)',
-        '--cp-color-text-secondary': 'rgba(220, 220, 220, 0.6)'
-      }
-    }
+        '--cp-color-text-secondary': 'rgba(220, 220, 220, 0.6)',
+      },
+    },
   },
   {
     name: 'already v2',
@@ -230,16 +247,16 @@ const FIXTURES = [
       identifier: 'modern',
       schemaVersion: 2,
       configuration: {
-        '--cp-color-primary': '#ff0066'
-      }
+        '--cp-color-primary': '#ff0066',
+      },
     },
     expect: {
       schemaVersion: 2,
       includes: {
-        '--cp-color-primary': '#ff0066'
-      }
-    }
-  }
+        '--cp-color-primary': '#ff0066',
+      },
+    },
+  },
 ];
 
 let failures = 0;

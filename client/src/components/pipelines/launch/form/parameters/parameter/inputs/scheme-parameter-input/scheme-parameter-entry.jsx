@@ -1,12 +1,12 @@
 import React from 'react';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
-import styles from './scheme-parameter-input.css';
+import styles from './scheme-parameter-input.module.css';
 import {Button} from 'antd';
 import {DeleteOutlined} from '@ant-design/icons';
 import LaunchFormSchemeParameterEntryProp from './scheme-parameter-entry-prop';
 
-function LaunchFormSchemeParameterEntry (props) {
+function LaunchFormSchemeParameterEntry(props) {
   const {
     className,
     style,
@@ -20,32 +20,27 @@ function LaunchFormSchemeParameterEntry (props) {
     currentProjectMetadata,
     currentMetadataEntity,
     rootEntityId,
-    metadataAutoComplete
+    metadataAutoComplete,
   } = props;
   if (properties.length === 0) {
     return null;
   }
   return (
-    <tr
-      className={classNames(className)}
-      style={style}
-    >
-      {
-        properties.map((prop) => (
-          <LaunchFormSchemeParameterEntryProp
-            key={prop.name}
-            property={prop}
-            parameter={parameter}
-            onChange={onChange}
-            entry={entry}
-            currentProjectId={currentProjectId}
-            currentProjectMetadata={currentProjectMetadata}
-            currentMetadataEntity={currentMetadataEntity}
-            rootEntityId={rootEntityId}
-            metadataAutoComplete={metadataAutoComplete}
-          />
-        ))
-      }
+    <tr className={classNames(className)} style={style}>
+      {properties.map((prop) => (
+        <LaunchFormSchemeParameterEntryProp
+          key={prop.name}
+          property={prop}
+          parameter={parameter}
+          onChange={onChange}
+          entry={entry}
+          currentProjectId={currentProjectId}
+          currentProjectMetadata={currentProjectMetadata}
+          currentMetadataEntity={currentMetadataEntity}
+          rootEntityId={rootEntityId}
+          metadataAutoComplete={metadataAutoComplete}
+        />
+      ))}
       <td className={styles.entryAction}>
         <Button disabled={disabled} onClick={onRemove} danger size="small">
           <DeleteOutlined />
@@ -68,7 +63,7 @@ LaunchFormSchemeParameterEntry.propTypes = {
   currentProjectMetadata: PropTypes.object,
   currentMetadataEntity: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
   rootEntityId: PropTypes.string,
-  metadataAutoComplete: PropTypes.bool
+  metadataAutoComplete: PropTypes.bool,
 };
 
 export default LaunchFormSchemeParameterEntry;

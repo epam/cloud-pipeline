@@ -1,20 +1,15 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import styles from './reservation-parameters.css';
-import {
-  InputNumber,
-  Modal,
-  Select,
-  Slider
-} from 'antd';
+import styles from './reservation-parameters.module.css';
+import {InputNumber, Modal, Select, Slider} from 'antd';
 import {
   CheckCircleFilled,
   CloseCircleFilled,
   DownOutlined,
   ExclamationCircleFilled,
   LoadingOutlined,
-  RightOutlined
+  RightOutlined,
 } from '@ant-design/icons';
 import {
   getReservationParametersConfig,
@@ -24,10 +19,11 @@ import {
   getInstanceResourcesRestrictions,
   parseRAMRequest,
   transformBytesToK8sRAMRequest,
-  getInstanceResources, getInstanceResourcesAvailability
+  getInstanceResources,
+  getInstanceResourcesAvailability,
 } from './utilities';
 import {Link} from 'react-router';
-import UserName from '../../../../../special/UserName';
+import UserName from '../../../../../shared/user-name';
 
 class ReservationParameters extends React.PureComponent {
   state = {
@@ -38,66 +34,38 @@ class ReservationParameters extends React.PureComponent {
     resourcesError: undefined,
     instanceType: undefined,
     resourcesDetailsVisible: false,
-    expandedResourceNodes: {}
+    expandedResourceNodes: {},
   };
 
-  componentDidMount () {
+  componentDidMount() {
     this.updateConfig();
     this.updateFromProps();
   }
 
-  componentDidUpdate (prevProps, prevState, snapshot) {
-    const {
-      parameters: prev = {},
-      instanceType: prevInstanceType = {}
-    } = prevProps;
-    const {
-      parameters: curr = {},
-      instanceType: currInstanceType = {}
-    } = this.props;
-    const {
-      gpu: prevGpu,
-      cpu: prevCpu,
-      ram: prevRam
-    } = prev;
-    const {
-      gpu: currGpu,
-      cpu: currCpu,
-      ram: currRam
-    } = curr;
-    if (
-      prevGpu !== currGpu ||
-      prevCpu !== currCpu ||
-      prevRam !== currRam
-    ) {
+  componentDidUpdate(prevProps, prevState, snapshot) {
+    const {parameters: prev = {}, instanceType: prevInstanceType = {}} = prevProps;
+    const {parameters: curr = {}, instanceType: currInstanceType = {}} = this.props;
+    const {gpu: prevGpu, cpu: prevCpu, ram: prevRam} = prev;
+    const {gpu: currGpu, cpu: currCpu, ram: currRam} = curr;
+    if (prevGpu !== currGpu || prevCpu !== currCpu || prevRam !== currRam) {
       this.updateFromProps();
     }
-    const {
-      name: prevInstanceTypeName
-    } = prevInstanceType;
-    const {
-      name: currInstanceTypeName
-    } = currInstanceType;
-    if (
-      prevInstanceTypeName !== currInstanceTypeName
-    ) {
+    const {name: prevInstanceTypeName} = prevInstanceType;
+    const {name: currInstanceTypeName} = currInstanceType;
+    if (prevInstanceTypeName !== currInstanceTypeName) {
       this.updateConfig();
     }
   }
 
-  componentWillUnmount () {
+  componentWillUnmount() {
     this.token = undefined;
     this.refreshResourcesToken = undefined;
   }
 
   updateConfig = () => {
-    const {
-      instanceType: instanceTypeObj = {}
-    } = this.props;
-    const {
-      name: instanceType
-    } = instanceTypeObj;
-    const token = this.token = {};
+    const {instanceType: instanceTypeObj = {}} = this.props;
+    const {name: instanceType} = instanceTypeObj;
+    const token = (this.token = {});
     this.refreshResourcesToken = {};
     (async () => {
       try {
@@ -108,39 +76,40 @@ class ReservationParameters extends React.PureComponent {
           resourcesPending: true,
           resourcesError: undefined,
           resourcesDetailsVisible: false,
-          expandedResourceNodes: {}
+          expandedResourceNodes: {},
         });
         const config = await getReservationParametersConfig(instanceType);
         if (this.token === token) {
-          const {
-            parameters = {}
-          } = this.state;
+          const {parameters = {}} = this.state;
           const {
             cpu: pCpu = 1,
             ram: pRam = 1,
-            gpu: pGpu = 1
+            gpu: pGpu = 1,
           } = correctReservationParameters(parameters, {
             config,
-            instanceType
+            instanceType,
           });
-          this.setState({
-            config,
-            instanceType: {
-              name: instanceType,
-              ...getInstanceResourcesRestrictions({
-                config,
-                instanceType: instanceTypeObj
-              })
+          this.setState(
+            {
+              config,
+              instanceType: {
+                name: instanceType,
+                ...getInstanceResourcesRestrictions({
+                  config,
+                  instanceType: instanceTypeObj,
+                }),
+              },
+              parameters: {
+                cpu: pCpu,
+                gpu: pGpu,
+                ram: pRam,
+              },
             },
-            parameters: {
-              cpu: pCpu,
-              gpu: pGpu,
-              ram: pRam
-            }
-          }, () => {
-            this.refreshResources();
-            this.reportChange();
-          });
+            () => {
+              this.refreshResources();
+              this.reportChange();
+            },
+          );
         }
       } catch (e) {
         console.error('error reading reservation parameters configuration', e);
@@ -149,10 +118,8 @@ class ReservationParameters extends React.PureComponent {
   };
 
   refreshResources = () => {
-    const token = this.refreshResourcesToken = {};
-    const {
-      config
-    } = this.state;
+    const token = (this.refreshResourcesToken = {});
+    const {config} = this.state;
     if (config) {
       (async () => {
         const commit = (st) => {
@@ -164,20 +131,20 @@ class ReservationParameters extends React.PureComponent {
           resourcesPending: true,
           resourcesError: undefined,
           resourcesDetailsVisible: false,
-          expandedResourceNodes: {}
+          expandedResourceNodes: {},
         });
         try {
           const resources = await getInstanceResources(config);
           commit({
             resources,
             resourcesPending: false,
-            resourcesError: undefined
+            resourcesError: undefined,
           });
         } catch (error) {
           commit({
             resources: [],
             resourcesPending: false,
-            resourcesError: `Error fetching available resources: ${error.message}`
+            resourcesError: `Error fetching available resources: ${error.message}`,
           });
         }
       })();
@@ -187,85 +154,73 @@ class ReservationParameters extends React.PureComponent {
         resourcesPending: false,
         resourcesError: undefined,
         resourcesDetailsVisible: false,
-        expandedResourceNodes: {}
+        expandedResourceNodes: {},
       });
     }
   };
 
   updateFromProps = () => {
-    const {
-      parameters = {}
-    } = this.props;
-    const {
-      gpu = 1,
-      cpu = 1,
-      ram = 1
-    } = parameters;
+    const {parameters = {}} = this.props;
+    const {gpu = 1, cpu = 1, ram = 1} = parameters;
     this.setState({
       parameters: {
         gpu,
         cpu,
-        ram
-      }
+        ram,
+      },
     });
   };
 
   reportChange = () => {
-    const {
-      onChange
-    } = this.props;
-    const {
-      parameters = {}
-    } = this.state;
+    const {onChange} = this.props;
+    const {parameters = {}} = this.state;
     if (onChange) {
       onChange(parameters);
     }
   };
 
   renderRequestsSelector = (key, options = {}) => {
-    const {
-      config,
-      instanceType,
-      parameters = {}
-    } = this.state;
+    const {config, instanceType, parameters = {}} = this.state;
     if (!config || !instanceType) {
       return null;
     }
     const {
       enabledKey = `${key}_requests_enabled`,
       step = 1,
-      formatter = o => String(o),
+      formatter = (o) => String(o),
       title = `${key.toUpperCase()} request`,
       slider: sliderRaw = false,
-      inputValueConverter = o => o,
-      inputValueFormatter = o => o
+      inputValueConverter = (o) => o,
+      inputValueFormatter = (o) => o,
     } = options || {};
-    const {
-      [enabledKey]: enabled = false
-    } = config;
-    const {
-      [key]: value = 1
-    } = parameters;
+    const {[enabledKey]: enabled = false} = config;
+    const {[key]: value = 1} = parameters;
     const onChange = (val) => {
       const n = Number(val);
       if (!Number.isNaN(n)) {
-        this.setState({
-          parameters: {
-            ...parameters,
-            [key]: n
-          }
-        }, this.reportChange);
+        this.setState(
+          {
+            parameters: {
+              ...parameters,
+              [key]: n,
+            },
+          },
+          this.reportChange,
+        );
       }
     };
     const onChangeInput = (val) => {
       const n = Number(val);
       if (!Number.isNaN(n) && !/[.,]$/.test(val)) {
-        this.setState({
-          parameters: {
-            ...parameters,
-            [key]: inputValueFormatter(n)
-          }
-        }, this.reportChange);
+        this.setState(
+          {
+            parameters: {
+              ...parameters,
+              [key]: inputValueFormatter(n),
+            },
+          },
+          this.reportChange,
+        );
       }
     };
     const {[key]: range} = instanceType;
@@ -297,7 +252,7 @@ class ReservationParameters extends React.PureComponent {
               className={styles.reservationParameterInput}
               style={{
                 display: 'inline-flex',
-                alignItems: 'center'
+                alignItems: 'center',
               }}
             >
               <Slider
@@ -326,21 +281,17 @@ class ReservationParameters extends React.PureComponent {
             value={String(value)}
             onChange={onChange}
           >
-            {
-              values.map((value) => (
-                <Select.Option key={`${key}-${value}`} value={String(value)}>
-                  {value > 0 ? formatter(value) : 'Not set'}
-                </Select.Option>
-              ))
-            }
+            {values.map((value) => (
+              <Select.Option key={`${key}-${value}`} value={String(value)}>
+                {value > 0 ? formatter(value) : 'Not set'}
+              </Select.Option>
+            ))}
           </Select>
         );
       })();
       return (
         <div key={key} className={styles.reservationParameterRow}>
-          <span className={styles.reservationParameterLabel}>
-            {title}:
-          </span>
+          <span className={styles.reservationParameterLabel}>{title}:</span>
           {component}
         </div>
       );
@@ -348,52 +299,37 @@ class ReservationParameters extends React.PureComponent {
     return null;
   };
 
-  renderCpuRequests = () => this.renderRequestsSelector(
-    'cpu',
-    {
-      reserved: 1
-    }
-  );
+  renderCpuRequests = () =>
+    this.renderRequestsSelector('cpu', {
+      reserved: 1,
+    });
 
   renderRamRequests = () => {
-    const {
-      config,
-      instanceType
-    } = this.state;
+    const {config, instanceType} = this.state;
     if (!config || !instanceType) {
       return null;
     }
     const {
       ram_requests_unit: ramRequestsUnit = DEFAULT_RAM_REQUESTS_UNIT,
-      ram_requests_step: ramRequestsStep = DEFAULT_RAM_REQUESTS_STEP
+      ram_requests_step: ramRequestsStep = DEFAULT_RAM_REQUESTS_STEP,
     } = config;
     const step = parseRAMRequest(ramRequestsStep, ramRequestsUnit);
     const decimal = !ramRequestsUnit.includes('i');
-    return this.renderRequestsSelector(
-      'ram',
-      {
-        slider: true,
-        title: `RAM request (${ramRequestsUnit})`,
-        reserved: 1,
-        step,
-        inputValueConverter: o => transformBytesToK8sRAMRequest(
-          o,
-          {unit: ramRequestsUnit}
-        ),
-        inputValueFormatter: o => parseRAMRequest(o, ramRequestsUnit),
-        formatter: o => transformBytesToK8sRAMRequest(
-          o,
-          {appendBytesLetter: true, decimal}
-        )
-      });
-  }
+    return this.renderRequestsSelector('ram', {
+      slider: true,
+      title: `RAM request (${ramRequestsUnit})`,
+      reserved: 1,
+      step,
+      inputValueConverter: (o) => transformBytesToK8sRAMRequest(o, {unit: ramRequestsUnit}),
+      inputValueFormatter: (o) => parseRAMRequest(o, ramRequestsUnit),
+      formatter: (o) => transformBytesToK8sRAMRequest(o, {appendBytesLetter: true, decimal}),
+    });
+  };
 
-  renderGpuRequests = () => this.renderRequestsSelector(
-    'gpu',
-    {
-      reserved: 0
-    }
-  );
+  renderGpuRequests = () =>
+    this.renderRequestsSelector('gpu', {
+      reserved: 0,
+    });
 
   /**
    * @param {object} usage
@@ -405,7 +341,7 @@ class ReservationParameters extends React.PureComponent {
       ramRequestsEnabled,
       gpuRequestsEnabled,
       ramRequestsUnit,
-      showAvailable = true
+      showAvailable = true,
     } = opts;
     const {used = {}, available = {}, total = {}} = usage || {};
     const cells = [];
@@ -413,14 +349,12 @@ class ReservationParameters extends React.PureComponent {
       cells.push(
         <td key="cpu">
           <span>{used.cpu ?? 0}</span>
-          {
-            showAvailable && total.cpu ? (
-              <span className="cp-text-not-important">
-                {' out of '}
-                {total.cpu}
-              </span>
-            ) : null
-          }
+          {showAvailable && total.cpu ? (
+            <span className="cp-text-not-important">
+              {' out of '}
+              {total.cpu}
+            </span>
+          ) : null}
           {showAvailable && (
             <span className="cp-text-not-important">
               {' ('}
@@ -428,54 +362,50 @@ class ReservationParameters extends React.PureComponent {
               {' available)'}
             </span>
           )}
-        </td>
+        </td>,
       );
     }
     if (ramRequestsEnabled) {
       cells.push(
         <td key="ram">
           <span>
-            {transformBytesToK8sRAMRequest(
-              used.memory ?? 0,
-              {unit: ramRequestsUnit, appendSuffix: true}
-            )}
+            {transformBytesToK8sRAMRequest(used.memory ?? 0, {
+              unit: ramRequestsUnit,
+              appendSuffix: true,
+            })}
           </span>
-          {
-            showAvailable && total.memory ? (
-              <span className="cp-text-not-important">
-                {' out of '}
-                {transformBytesToK8sRAMRequest(
-                  total.memory ?? 0,
-                  {unit: ramRequestsUnit, appendSuffix: true}
-                )}
-              </span>
-            ) : null
-          }
+          {showAvailable && total.memory ? (
+            <span className="cp-text-not-important">
+              {' out of '}
+              {transformBytesToK8sRAMRequest(total.memory ?? 0, {
+                unit: ramRequestsUnit,
+                appendSuffix: true,
+              })}
+            </span>
+          ) : null}
           {showAvailable && (
             <span className="cp-text-not-important">
               {' ('}
-              {transformBytesToK8sRAMRequest(
-                available.memory ?? 0,
-                {unit: ramRequestsUnit, appendSuffix: true}
-              )}
+              {transformBytesToK8sRAMRequest(available.memory ?? 0, {
+                unit: ramRequestsUnit,
+                appendSuffix: true,
+              })}
               {' available)'}
             </span>
           )}
-        </td>
+        </td>,
       );
     }
     if (gpuRequestsEnabled) {
       cells.push(
         <td key="gpu">
           <span>{used.gpu ?? 0}</span>
-          {
-            showAvailable && total.gpu ? (
-              <span className="cp-text-not-important">
-                {' out of '}
-                {total.gpu}
-              </span>
-            ) : null
-          }
+          {showAvailable && total.gpu ? (
+            <span className="cp-text-not-important">
+              {' out of '}
+              {total.gpu}
+            </span>
+          ) : null}
           {showAvailable && (
             <span className="cp-text-not-important">
               {' ('}
@@ -483,7 +413,7 @@ class ReservationParameters extends React.PureComponent {
               {' available)'}
             </span>
           )}
-        </td>
+        </td>,
       );
     }
     return cells;
@@ -496,15 +426,18 @@ class ReservationParameters extends React.PureComponent {
       parameters,
       resourcesPending,
       resourcesError,
-      resourcesDetailsVisible
+      resourcesDetailsVisible,
     } = this.state;
     const openResourcesDetails = () => this.setState({resourcesDetailsVisible: true});
-    const closeResourcesDetails = () => this.setState({
-      resourcesDetailsVisible: false,
-      expandedResourceNodes: {}
-    });
+    const closeResourcesDetails = () =>
+      this.setState({
+        resourcesDetailsVisible: false,
+        expandedResourceNodes: {},
+      });
     const error = resourcesError
-      ? (resourcesError.endsWith('.') ? resourcesError : `${resourcesError}.`)
+      ? resourcesError.endsWith('.')
+        ? resourcesError
+        : `${resourcesError}.`
       : undefined;
     if (!config) {
       return null;
@@ -513,40 +446,27 @@ class ReservationParameters extends React.PureComponent {
       return (
         <div className="cp-text-not-important" style={{marginBottom: 10}}>
           <LoadingOutlined />
-          <span
-            style={{marginLeft: 5}}
-          >
-            Fetching available resources...
-          </span>
+          <span style={{marginLeft: 5}}>Fetching available resources...</span>
         </div>
       );
     }
     const renderAlert = (content, type) => (
       <div style={{marginBottom: 10}}>
-        <div className={classNames({
-          'cp-error': type === 'error',
-          'cp-warning': type === 'warning'
-        })}>
-          {
-            type === 'error' && (
-              <CloseCircleFilled style={{marginRight: 5}} className="cp-error" />
-            )
-          }
-          {
-            type === 'warning' && (
-              <ExclamationCircleFilled style={{marginRight: 5}} className="cp-warning" />
-            )
-          }
-          {
-            type === 'success' && (
-              <CheckCircleFilled style={{marginRight: 5}} className="cp-success" />
-            )
-          }
+        <div
+          className={classNames({
+            'cp-error': type === 'error',
+            'cp-warning': type === 'warning',
+          })}
+        >
+          {type === 'error' && <CloseCircleFilled style={{marginRight: 5}} className="cp-error" />}
+          {type === 'warning' && (
+            <ExclamationCircleFilled style={{marginRight: 5}} className="cp-warning" />
+          )}
+          {type === 'success' && (
+            <CheckCircleFilled style={{marginRight: 5}} className="cp-success" />
+          )}
           {content}
-          <a
-            onClick={() => this.refreshResources()}
-            style={{marginLeft: 5}}
-          >
+          <a onClick={() => this.refreshResources()} style={{marginLeft: 5}}>
             Refresh
           </a>
         </div>
@@ -555,28 +475,27 @@ class ReservationParameters extends React.PureComponent {
     if (error) {
       return renderAlert(error, 'error');
     }
-    const {
-      nodes = [],
-      best
-    } = getInstanceResourcesAvailability(resources, parameters, config);
+    const {nodes = [], best} = getInstanceResourcesAvailability(resources, parameters, config);
     const {
       cpu_requests_enabled: cpuRequestsEnabled = false,
       gpu_requests_enabled: gpuRequestsEnabled = false,
       ram_requests_enabled: ramRequestsEnabled = false,
-      ram_requests_unit: ramRequestsUnit = DEFAULT_RAM_REQUESTS_UNIT
+      ram_requests_unit: ramRequestsUnit = DEFAULT_RAM_REQUESTS_UNIT,
     } = config || {};
     const fit = nodes.length > 0 ? nodes[0].best : undefined;
     const onSelectNode = (node) => {
-      this.setState({
-        parameters: node.best
-      }, () => {
-        closeResourcesDetails();
-        this.reportChange();
-      });
+      this.setState(
+        {
+          parameters: node.best,
+        },
+        () => {
+          closeResourcesDetails();
+          this.reportChange();
+        },
+      );
     };
-    const resourcesTypesCount = (cpuRequestsEnabled ? 1 : 0) +
-      (gpuRequestsEnabled ? 1 : 0) +
-      (ramRequestsEnabled ? 1 : 0);
+    const resourcesTypesCount =
+      (cpuRequestsEnabled ? 1 : 0) + (gpuRequestsEnabled ? 1 : 0) + (ramRequestsEnabled ? 1 : 0);
     const renderInfo = (content) => {
       if (nodes.length > 0) {
         return (
@@ -599,26 +518,20 @@ class ReservationParameters extends React.PureComponent {
                 <thead>
                   <tr>
                     <th rowSpan={2}>Node</th>
-                    <th
-                      colSpan={resourcesTypesCount}
-                    >
-                      Used resources
-                    </th>
+                    <th colSpan={resourcesTypesCount}>Used resources</th>
                     <td>{'\u00A0'}</td>
                   </tr>
                   <tr>
-                    {cpuRequestsEnabled && (<th style={{padding: 0}}>CPU</th>)}
-                    {ramRequestsEnabled && (<th style={{padding: 0}}>RAM</th>)}
-                    {gpuRequestsEnabled && (<th style={{padding: 0}}>GPU</th>)}
+                    {cpuRequestsEnabled && <th style={{padding: 0}}>CPU</th>}
+                    {ramRequestsEnabled && <th style={{padding: 0}}>RAM</th>}
+                    {gpuRequestsEnabled && <th style={{padding: 0}}>GPU</th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {
-                    nodes.map((nd, index) => {
+                  {nodes
+                    .map((nd, index) => {
                       const nodeKey = `${nd.nodeName}-${index}`;
-                      const {
-                        expandedResourceNodes = {}
-                      } = this.state;
+                      const {expandedResourceNodes = {}} = this.state;
                       const expanded = !!expandedResourceNodes[nodeKey];
                       const details = nd.details && Array.isArray(nd.details) ? nd.details : [];
                       const hasDetails = details.length > 0;
@@ -627,8 +540,8 @@ class ReservationParameters extends React.PureComponent {
                         this.setState((prev) => ({
                           expandedResourceNodes: {
                             ...prev.expandedResourceNodes,
-                            [nodeKey]: !prev.expandedResourceNodes[nodeKey]
-                          }
+                            [nodeKey]: !prev.expandedResourceNodes[nodeKey],
+                          },
                         }));
                       };
                       const resourceOpts = {
@@ -636,11 +549,11 @@ class ReservationParameters extends React.PureComponent {
                         ramRequestsEnabled,
                         gpuRequestsEnabled,
                         ramRequestsUnit,
-                        showAvailable: true
+                        showAvailable: true,
                       };
                       const detailResourceOpts = {
                         ...resourceOpts,
-                        showAvailable: false
+                        showAvailable: false,
                       };
                       return [
                         <tr key={nodeKey}>
@@ -648,7 +561,7 @@ class ReservationParameters extends React.PureComponent {
                             <div
                               style={{
                                 display: 'flex',
-                                alignItems: 'center'
+                                alignItems: 'center',
                               }}
                             >
                               <span
@@ -656,7 +569,7 @@ class ReservationParameters extends React.PureComponent {
                                   display: 'inline-block',
                                   width: 22,
                                   flexShrink: 0,
-                                  textAlign: 'center'
+                                  textAlign: 'center',
                                 }}
                               >
                                 {hasDetails ? (
@@ -677,57 +590,48 @@ class ReservationParameters extends React.PureComponent {
                                   </a>
                                 ) : null}
                               </span>
-                              {
-                                nd.fits
-                                  ? <CheckCircleFilled className="cp-success" />
-                                  : <ExclamationCircleFilled className="cp-warning" />
-                              }
+                              {nd.fits ? (
+                                <CheckCircleFilled className="cp-success" />
+                              ) : (
+                                <ExclamationCircleFilled className="cp-warning" />
+                              )}
                               <span style={{marginLeft: 5}}>{nd.nodeName}</span>
                             </div>
                           </td>
-                          {this.renderNodeResourcesUsageCells(
-                            nd,
-                            resourceOpts
-                          )}
+                          {this.renderNodeResourcesUsageCells(nd, resourceOpts)}
                           <td>
-                            <a onClick={() => onSelectNode(nd)}>
-                              Assign
-                            </a>
+                            <a onClick={() => onSelectNode(nd)}>Assign</a>
                           </td>
                         </tr>,
                         ...(expanded && hasDetails
                           ? details.map((detail, dIndex) => (
-                            <tr
-                              key={`${nodeKey}-detail-${dIndex}`}
-                              className={styles.nodeResourcesDetailRow}
-                            >
-                              <td
-                                style={{textAlign: 'left'}}
-                                className={styles.nodeResourcesDetailCell}
+                              <tr
+                                key={`${nodeKey}-detail-${dIndex}`}
+                                className={styles.nodeResourcesDetailRow}
                               >
-                                <Link
-                                  className={
-                                    classNames(
-                                      styles.nodeRunDetails
-                                    )
-                                  }
-                                  to={`/run/${detail.runId}`}
+                                <td
+                                  style={{textAlign: 'left'}}
+                                  className={styles.nodeResourcesDetailCell}
                                 >
-                                  Run {detail.runId}
-                                </Link>
-                                <UserName userName={detail.owner} style={{marginLeft: 5}} />
-                              </td>
-                              {this.renderNodeResourcesUsageCells(
-                                {used: detail.allocated || {}},
-                                detailResourceOpts
-                              )}
-                              <td>{'\u00A0'}</td>
-                            </tr>
-                          ))
-                          : [])
+                                  <Link
+                                    className={classNames(styles.nodeRunDetails)}
+                                    to={`/run/${detail.runId}`}
+                                  >
+                                    Run {detail.runId}
+                                  </Link>
+                                  <UserName userName={detail.owner} style={{marginLeft: 5}} />
+                                </td>
+                                {this.renderNodeResourcesUsageCells(
+                                  {used: detail.allocated || {}},
+                                  detailResourceOpts,
+                                )}
+                                <td>{'\u00A0'}</td>
+                              </tr>
+                            ))
+                          : []),
                       ];
-                    }).reduce((acc, cur) => acc.concat(cur), [])
-                  }
+                    })
+                    .reduce((acc, cur) => acc.concat(cur), [])}
                 </tbody>
               </table>
             </Modal>
@@ -738,45 +642,31 @@ class ReservationParameters extends React.PureComponent {
     };
     if (best) {
       return renderAlert(
-        renderInfo(
-          <span>
-            There are enough resources to run the job.
-          </span>
-        ),
-        'success'
+        renderInfo(<span>There are enough resources to run the job.</span>),
+        'success',
       );
     }
     if (fit) {
       return renderAlert(
-        renderInfo(
-          <span>
-            There are not enough resources to run the job. It will be queued.
-          </span>
-        ),
-        'warning'
+        renderInfo(<span>There are not enough resources to run the job. It will be queued.</span>),
+        'warning',
       );
     }
     return null;
   };
 
-  render () {
-    const {
-      className,
-      style
-    } = this.props;
+  render() {
+    const {className, style} = this.props;
     const reqs = [
       this.renderCpuRequests(),
       this.renderRamRequests(),
-      this.renderGpuRequests()
+      this.renderGpuRequests(),
     ].filter(Boolean);
     if (reqs.length === 0) {
       return null;
     }
     return (
-      <div
-        className={classNames(className, styles.reservationParameters)}
-        style={style}
-      >
+      <div className={classNames(className, styles.reservationParameters)} style={style}>
         {reqs}
         {this.renderResourcesAvailability()}
       </div>
@@ -789,7 +679,7 @@ ReservationParameters.propTypes = {
   style: PropTypes.object,
   instanceType: PropTypes.object,
   parameters: PropTypes.object,
-  onChange: PropTypes.func
+  onChange: PropTypes.func,
 };
 
 export default ReservationParameters;

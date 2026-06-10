@@ -14,81 +14,76 @@
  * limitations under the License.
  */
 
-export function bytesToGiB (bytes) {
-  return bytes && !Number.isNaN(Number(bytes)) ? Number(bytes) / (2 ** 30) : 0;
+export function bytesToGiB(bytes) {
+  return bytes && !Number.isNaN(Number(bytes)) ? Number(bytes) / 2 ** 30 : 0;
 }
 
 export const HARDWARE_MAPPING = {
   gpu: {
     title: 'GPU',
-    key: 'activeGPUCount'
+    key: 'activeGPUCount',
   },
   gpuPending: {
     title: 'GPU pending',
     key: 'pendingGPUCount',
-    type: 'pending'
+    type: 'pending',
   },
   gpuLimit: {
     title: 'Total GPU',
     key: 'totalGPUCount',
-    type: 'total'
+    type: 'total',
   },
   cpu: {
     title: 'CPU',
-    key: 'activeCPUCount'
+    key: 'activeCPUCount',
   },
   cpuPending: {
     title: 'CPU pending',
     key: 'pendingCPUCount',
-    type: 'pending'
+    type: 'pending',
   },
   cpuLimit: {
     title: 'Total CPU',
     key: 'totalCPUCount',
-    type: 'total'
+    type: 'total',
   },
   ram: {
     title: 'RAM',
     key: 'activeMemoryCount',
-    valueFormatter: bytesToGiB
+    valueFormatter: bytesToGiB,
   },
   ramPending: {
     title: 'RAM pending',
     key: 'pendingMemoryCount',
     type: 'pending',
-    valueFormatter: bytesToGiB
+    valueFormatter: bytesToGiB,
   },
   ramLimit: {
     title: 'Total RAM',
     key: 'totalMemoryCount',
     type: 'total',
-    valueFormatter: bytesToGiB
+    valueFormatter: bytesToGiB,
   },
   runs: {
     title: 'Jobs',
-    key: 'activeRunsCount'
+    key: 'activeRunsCount',
   },
   runsPending: {
     title: 'Pending jobs',
     key: 'pendingRunsCount',
-    type: 'pending'
-  }
+    type: 'pending',
+  },
 };
 
-export function extractHardwareData (
-  data,
-  mappings = [],
-  colors,
-  lineColor
-) {
+export function extractHardwareData(data, mappings = [], colors, lineColor) {
   if (!data) {
     return {
       datasets: [],
       entries: [],
-      labels: []
+      labels: [],
     };
   }
-  const records = data.records.filter(record => !!record.measureTime);
+  const records = data.records.filter((record) => !!record.measureTime);
   const extractData = (record, key, type, valueFormatter) => {
     if (!record.measureTime || (!record.displayTick && type !== 'total')) {
       return undefined;
@@ -99,32 +94,29 @@ export function extractHardwareData (
     }
     return valueFormatter ? valueFormatter(value) : value;
   };
-  const labels = records.map(o => ({
+  const labels = records.map((o) => ({
     label: o.measureTime,
     display: o.displayTick,
-    tooltip: o.tooltip
+    tooltip: o.tooltip,
   }));
   const datasets = mappings.map(({key, title, type = 'active', valueFormatter}, index) => ({
     label: title,
-    data: records.map(record => extractData(record, key, type, valueFormatter)),
+    data: records.map((record) => extractData(record, key, type, valueFormatter)),
     backgroundColor: colors[type],
-    borderColor: type === 'pending'
-      ? lineColor
-      : colors[type],
+    borderColor: type === 'pending' ? lineColor : colors[type],
     fill: false,
     borderWidth: type === 'total' ? 3 : 1,
     type: type === 'total' ? 'line' : 'bar',
     pointRadius: 0,
     order: type === 'total' ? 1 : 2,
     barPercentage: 1.5,
-    _group: type === 'total' ? 1 : 0
+    _group: type === 'total' ? 1 : 0,
   }));
   let max = 1;
   for (let i = 0; i < labels.length; i++) {
     for (const gr of [0, 1]) {
       const subSet = datasets.filter((ds) => ds._group === gr);
-      const v = subSet
-        .reduce((acc, d) => acc + (d.data || [])[i] || 0, 0);
+      const v = subSet.reduce((acc, d) => acc + (d.data || [])[i] || 0, 0);
       if (v > max) {
         max = v;
       }
@@ -133,6 +125,6 @@ export function extractHardwareData (
   return {
     datasets,
     labels,
-    max
+    max,
   };
 }

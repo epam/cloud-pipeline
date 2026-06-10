@@ -14,190 +14,127 @@
  *  limitations under the License.
  */
 
-import React from 'react';
-import ReactDOMServer from 'react-dom/server';
-import Remarkable from 'remarkable';
-import highlightJs from 'highlight.js';
-import {ForkOutlined, HddOutlined, InboxOutlined, SettingOutlined, ToolOutlined} from '@ant-design/icons';
-import {ItemTypes} from '../../pipelines/model/treeStructureFunctions';
+import {visit, SKIP} from 'unist-util-visit';
+import {unified} from 'unified';
+import remarkParse from 'remark-parse';
+import remarkGfm from 'remark-gfm';
+import remarkRehype from 'remark-rehype';
+import rehypeRaw from 'rehype-raw';
+import rehypeHighlight from 'rehype-highlight';
+import rehypeStringify from 'rehype-stringify';
 import {
   fetchCloudPipelineLinks,
   getCloudPipelineLinks,
   getCloudPipelineAbsoluteURLFn,
-  getCloudPipelineUrl,
   prepareCloudPipelineLinks,
-  processLinks
+  processLinks,
 } from './utilities';
 import 'highlight.js/styles/github.css';
 
-/**
- * @typedef {Object} MarkdownRendererOptions
- * @property {function: boolean} [renderPipelineLinks=()=>true]
- * @property {function: boolean} [renderPipelineLinkIcon=()=>false]
- * @property {function(): CloudPipelineLink[]} [links]
- * @property {function} [getLink]
- */
+const elementLinkRegex = /@\[([A-Za-z]+):(\d+):([^\]]+)]/;
+const userNameRegex = /@\S+/;
 
 /**
- * Builds markdown renderer
- * @param {MarkdownRendererOptions} [options]
- * @returns {Remarkable}
+ * Remark plugin: parses @[Type:id:Name] and @username inline syntax into custom mdast nodes.
+ * Custom nodes use data.hName / data.hProperties so remark-rehype converts them automatically.
  */
-export default function getMarkdownRenderer (options = {}) {
-  const {
-    getLink = getCloudPipelineUrl,
-    links = () => [],
-    renderPipelineLinkIcon = () => false,
-    renderPipelineLinks = () => true
-  } = options;
-  const renderer = new Remarkable('full', {
-    html: true,
-    xhtmlOut: true,
-    breaks: false,
-    langPrefix: 'language-',
-    linkify: true,
-    linkTarget: '',
-    typographer: true,
-    highlight: function (str, lang) {
-      lang = lang || 'bash';
-      if (lang && highlightJs.getLanguage(lang)) {
-        try {
-          return highlightJs.highlight(lang, str).value;
-        } catch (__) {}
-      }
-      try {
-        return highlightJs.highlightAuto(str).value;
-      } catch (__) {}
-      return '';
-    }
-  });
-  renderer.use((o) => {
-    o.renderer.rules['user-name-tag-open'] = () => '<span style="font-weight: bold;">';
-    o.renderer.rules['user-name-tag-close'] = () => '</span>';
-    o.renderer.rules['element-link'] = (tokens, index) => {
-      const token = tokens[index] || {};
-      const {linkType, elementName, identifier} = token;
-      let icon;
-      if (renderPipelineLinkIcon()) {
-        switch (linkType) {
-          case ItemTypes.pipeline:
-            icon = <ForkOutlined />;
-            break;
-          case ItemTypes.versionedStorage:
-            icon = <InboxOutlined className="cp-versioned-storage" />;
-            break;
-          case ItemTypes.configuration:
-            icon = <SettingOutlined />;
-            break;
-          case ItemTypes.storage:
-            icon = <HddOutlined />;
-            break;
-          case 'tool':
-            icon = <ToolOutlined />;
-            break;
+export function remarkPipelineLinks() {
+  return (tree) => {
+    visit(tree, 'text', (node, index, parent) => {
+      if (!parent || index === null) return;
+      const {value} = node;
+      const pattern = new RegExp(`${elementLinkRegex.source}|${userNameRegex.source}`, 'g');
+      const parts = [];
+      let lastIndex = 0;
+      let match;
+      while ((match = pattern.exec(value)) !== null) {
+        if (match.index > lastIndex) {
+          parts.push({type: 'text', value: value.slice(lastIndex, match.index)});
         }
-      }
-      const realLink = (links() || [])
-        .find(link => `${link.id}` === `${identifier}` && link.type === linkType);
-      if (realLink) {
-        return ReactDOMServer.renderToStaticMarkup(
-          <a
-            href={getLink(realLink.url)}
-            className="cp-issue-markdown-link"
-          >
-            {icon} {elementName}
-          </a>
-        );
-      } else {
-        return ReactDOMServer.renderToStaticMarkup(
-          <span
-            className="cp-issue-markdown-link"
-          >
-            {elementName}
-          </span>
-        );
-      }
-    };
-    const elementLinkRegex = /@\[([A-Za-z]+):(\d+):([^\]]+)]/; // @[elementType:111:element Name with Spaces 123]
-    const userNameRegex = /@\S+/; // @user.name@with_or_without.domain
-    o.inline.ruler.push('pipeline-rules', (state, check) => {
-      if (!renderPipelineLinks()) {
-        return false;
-      }
-      const start = state.pos;
-      const marker = state.src[start];
-      if (marker !== '@' || state.level >= state.options.maxNesting) {
-        return false;
-      }
-      const test = state.src.substring(state.pos, state.posMax);
-      let matchResult = test.match(elementLinkRegex);
-      if (matchResult && matchResult.index === 0 && matchResult.length === 4 && !check) {
-        const end = state.pos + matchResult[0].length;
-        const type = matchResult[1];
-        const identifier = matchResult[2];
-        const name = matchResult[3];
-        state.push({
-          type: 'element-link',
-          level: state.level + 1,
-          linkType: type,
-          identifier: identifier,
-          elementName: name
-        });
-        state.pos = end;
-        return true;
-      } else {
-        matchResult = test.match(userNameRegex);
-        if (matchResult && matchResult.index === 0 && matchResult.length > 0 && !check) {
-          const end = state.pos + matchResult[0].length;
-          const name = matchResult[0].substring(1);
-          state.push({
-            type: 'user-name-tag-open',
-            level: state.level + 1
+        const full = match[0];
+        if (full.startsWith('@[')) {
+          parts.push({
+            type: 'pipelineLink',
+            data: {
+              hName: 'pipeline-link',
+              hProperties: {
+                'data-link-type': match[1],
+                'data-id': match[2],
+                'data-name': match[3],
+              },
+            },
+            children: [],
           });
-          state.push({
-            type: 'text',
-            content: name,
-            level: state.level + 1
+        } else {
+          parts.push({
+            type: 'userNameTag',
+            data: {hName: 'strong'},
+            children: [{type: 'text', value: full.slice(1)}],
           });
-          state.push({
-            type: 'user-name-tag-close',
-            level: state.level + 1
-          });
-          state.pos = end;
-          return true;
         }
+        lastIndex = match.index + full.length;
       }
-      return false;
+      if (lastIndex < value.length) {
+        parts.push({type: 'text', value: value.slice(lastIndex)});
+      }
+      if (parts.length > 1 || (parts.length === 1 && parts[0].type !== 'text')) {
+        parent.children.splice(index, 1, ...parts);
+        return [SKIP, index + parts.length];
+      }
     });
-  });
-  return renderer;
+  };
 }
 
 /**
- * Returns html content for md source
- * @param {string} md
- * @param {MarkdownRendererOptions & CloudPipelineLinksProps & {target: string}} options
- * @returns {Promise<unknown>}
+ * Rehype plugin: resolves <pipeline-link> elements to <a> or <span> using the provided links array.
+ * Used in renderHtml (string output path) only — the React component uses a components prop instead.
+ * @param {{links: Array, getLink: function}} options
  */
-export function renderHtml (md, options = {}) {
+export function rehypePipelineLinks({links = [], getLink = (url) => url} = {}) {
+  return (tree) => {
+    visit(tree, 'element', (node, index, parent) => {
+      if (node.tagName !== 'pipeline-link') return;
+      const {dataLinkType, dataId, dataName} = node.properties ?? {};
+      const realLink = links.find((l) => `${l.id}` === `${dataId}` && l.type === dataLinkType);
+      const replacement = {
+        type: 'element',
+        tagName: realLink ? 'a' : 'span',
+        properties: realLink
+          ? {href: getLink(realLink.url), className: ['cp-issue-markdown-link']}
+          : {className: ['cp-issue-markdown-link']},
+        children: [{type: 'text', value: dataName ?? ''}],
+      };
+      parent.children.splice(index, 1, replacement);
+      return [SKIP, index + 1];
+    });
+  };
+}
+
+/**
+ * Returns an HTML string for the given markdown source.
+ * Async: fetches pipeline link data from stores before rendering.
+ * @param {string} md
+ * @param {import('./utilities').MarkdownRendererOptions & import('./utilities').CloudPipelineLinksProps & {target?: string, renderPipelineLinks?: function}} options
+ * @returns {Promise<string|undefined>}
+ */
+export function renderHtml(md, options = {}) {
   return new Promise((resolve) => {
     fetchCloudPipelineLinks(options)
       .then(() => getCloudPipelineLinks(options))
-      .then(links => {
-        const renderer = getMarkdownRenderer({
-          ...options,
-          links: () => links,
-          getLink: getCloudPipelineAbsoluteURLFn(options)
-        });
-        const {
-          renderPipelineLinks = () => true,
-          target
-        } = options;
-        let html = renderer.render(
-          renderPipelineLinks()
-            ? prepareCloudPipelineLinks(md)
-            : md
-        );
+      .then((links) => {
+        const {renderPipelineLinks = () => true, target} = options;
+        const getLink = getCloudPipelineAbsoluteURLFn(options);
+        const source = renderPipelineLinks() ? prepareCloudPipelineLinks(md) : md;
+        const processor = unified()
+          .use(remarkParse)
+          .use(remarkGfm)
+          .use(remarkPipelineLinks)
+          .use(remarkRehype, {allowDangerousHtml: true})
+          .use(rehypeRaw)
+          .use(rehypePipelineLinks, {links, getLink})
+          .use(rehypeHighlight)
+          .use(rehypeStringify);
+        let html = String(processor.processSync(source));
         if (target) {
           html = processLinks(html, target);
         }

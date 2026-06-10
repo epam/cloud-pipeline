@@ -17,7 +17,7 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class GrantOwner extends RemotePost {
-  constructor (id, aclClass, userName) {
+  constructor(id, aclClass, userName) {
     super();
     this.url = `/grant/owner?id=${id}&aclClass=${aclClass.toUpperCase()}&userName=${userName}`;
   }

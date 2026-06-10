@@ -32,5 +32,5 @@ export default {
   metadataEntity: 'METADATA_ENTITY',
   folder: 'FOLDER',
   configuration: 'CONFIGURATION',
-  pipelineCode: 'PIPELINE_CODE'
+  pipelineCode: 'PIPELINE_CODE',
 };

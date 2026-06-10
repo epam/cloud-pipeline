@@ -14,27 +14,27 @@
  *  limitations under the License.
  */
 
-function getConfigurations (obj, paths = []) {
+function getConfigurations(obj, paths = []) {
   if (!obj) {
     return [];
   }
   const keys = Object.keys(obj);
   const children = [];
-  function match (test) {
+  function match(test) {
     return this._r.test(test);
   }
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i];
     if (
-      obj.hasOwnProperty(key) &&
+      Object.hasOwn(obj, key) &&
       typeof obj[key] === 'object' &&
-      obj[key].hasOwnProperty('path')
+      Object.hasOwn(obj[key], 'path')
     ) {
       obj[key].name = [...paths, key].join('.');
       obj[key]._r = new RegExp(`^${obj[key].path}/?$`, 'i');
       obj[key].match = match.bind(obj[key]);
       children.push(obj[key]);
-      children.push(...(getConfigurations(obj[key], [...paths, key])));
+      children.push(...getConfigurations(obj[key], [...paths, key]));
     }
   }
   return children;
@@ -43,64 +43,60 @@ function getConfigurations (obj, paths = []) {
 const reportsRouting = {
   general: {
     path: '/billing/reports',
-    title: 'General Report'
+    title: 'General Report',
   },
   storages: {
     path: '/billing/reports/storage',
     title: 'Storage Report',
     file: {
       path: '/billing/reports/storage/file',
-      title: 'File Storage Report'
+      title: 'File Storage Report',
     },
     object: {
       path: '/billing/reports/storage/object',
-      title: 'Object Storage Report'
-    }
+      title: 'Object Storage Report',
+    },
   },
   instances: {
     path: '/billing/reports/instance',
     title: 'Instances Report',
     cpu: {
       path: '/billing/reports/instance/cpu',
-      title: 'CPU Instances Report'
+      title: 'CPU Instances Report',
     },
     gpu: {
       path: '/billing/reports/instance/gpu',
-      title: 'GPU Instances Report'
-    }
+      title: 'GPU Instances Report',
+    },
   },
   quotas: {
     path: '/billing/quotas',
     title: 'Quotas',
     compute: {
       path: '/billing/quotas/compute',
-      title: 'Compute instances'
+      title: 'Compute instances',
     },
     storage: {
       path: '/billing/quotas/storage',
-      title: 'Storages'
-    }
+      title: 'Storages',
+    },
   },
   configurations: [],
   parse: function ({pathname}) {
-    const match = this.configurations.find(c => c.match(pathname));
+    const match = this.configurations.find((c) => c.match(pathname));
     return match?.name;
   },
   getPath: function (name) {
-    const match = this.configurations.find(c => c.name === name);
+    const match = this.configurations.find((c) => c.name === name);
     return match?.path || this.general.path;
   },
   getTitle: function (name) {
-    const match = this.configurations.find(c => c.name === name);
+    const match = this.configurations.find((c) => c.name === name);
     return match?.title || this.general.title;
   },
   isStorage: function (report) {
     const path = this.getPath(report);
-    return [
-      this.storages.path,
-      this.storages.file.path,
-      this.storages.object.path
-    ].includes(path);
+    return [this.storages.path, this.storages.file.path, this.storages.object.path].includes(path);
   },
   isObjectStorage: function (report) {
     const path = this.getPath(report);
@@ -108,20 +104,12 @@ const reportsRouting = {
   },
   isInstances: function (report) {
     const path = this.getPath(report);
-    return [
-      this.instances.path,
-      this.instances.cpu.path,
-      this.instances.gpu.path
-    ].includes(path);
+    return [this.instances.path, this.instances.cpu.path, this.instances.gpu.path].includes(path);
   },
   isQuota: function (report) {
     const path = this.getPath(report);
-    return [
-      this.quotas.path,
-      this.quotas.compute.path,
-      this.quotas.storage.path
-    ].includes(path);
-  }
+    return [this.quotas.path, this.quotas.compute.path, this.quotas.storage.path].includes(path);
+  },
 };
 
 reportsRouting.configurations = getConfigurations(reportsRouting);

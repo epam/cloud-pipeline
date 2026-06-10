@@ -16,7 +16,7 @@
 
 import DataStorageItemDelete from '../../../../../../models/dataStorage/DataStorageItemDelete';
 
-export default function deleteAnnotation (storage, path, annotationId) {
+export default function deleteAnnotation(storage, path, annotationId) {
   return new Promise((resolve) => {
     const url = path
       ? `${path}/annotations/${annotationId}.json`.replace(/\/\//g, '/')
@@ -24,10 +24,12 @@ export default function deleteAnnotation (storage, path, annotationId) {
     const request = new DataStorageItemDelete(storage);
     try {
       request
-        .send([{
-          path: url,
-          type: 'File'
-        }])
+        .send([
+          {
+            path: url,
+            type: 'File',
+          },
+        ])
         .then(() => {
           if (request.loaded) {
             resolve();

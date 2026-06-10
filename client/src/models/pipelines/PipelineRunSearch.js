@@ -17,7 +17,7 @@
 import RemotePost from '../basic/RemotePost';
 
 class PipelineRunSearch extends RemotePost {
-  constructor () {
+  constructor() {
     super();
     this.url = '/run/search';
   }

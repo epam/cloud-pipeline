@@ -16,9 +16,5 @@
 
 export {getAffectiveQuotaPeriods} from './get-affective-quota-period';
 export {getQuotaGroup} from './get-quota-group';
-export {
-  getQuotaSummary,
-  getQuotaSummaries,
-  getQuotaSummariesExceeded
-} from './get-quota-summary';
+export {getQuotaSummary, getQuotaSummaries, getQuotaSummariesExceeded} from './get-quota-summary';
 export {getQuotaType} from './get-quota-type';

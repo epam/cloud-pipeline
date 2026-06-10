@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 export default class GrantGet extends Remote {
-  constructor (id, type) {
+  constructor(id, type) {
     super();
     this.url = `/grant?id=${id}&aclClass=${(type || '').toUpperCase()}`;
   }

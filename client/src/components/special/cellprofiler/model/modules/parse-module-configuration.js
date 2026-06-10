@@ -14,19 +14,17 @@
  *  limitations under the License.
  */
 
-/* eslint-disable max-len */
-
 import {AnalysisTypes} from '../common/analysis-types';
 import {isObservableArray} from 'mobx';
 
 const brackets = ['[]', '()', '{}', '""'];
 const splitCharacters = [',|'];
-const openBrackets = brackets.map(b => b[0]);
-const closeBrackets = brackets.map(b => b[1]);
+const openBrackets = brackets.map((b) => b[0]);
+const closeBrackets = brackets.map((b) => b[1]);
 const regExpParts = [...openBrackets, ...closeBrackets, ...splitCharacters];
-const regExp = new RegExp(`([${regExpParts.map(rPart => '\\' + rPart).join('')}])`);
+const regExp = new RegExp(`([${regExpParts.map((rPart) => '\\' + rPart).join('')}])`);
 
-function breakLine (input, splitRegExp = regExp) {
+function breakLine(input, splitRegExp = regExp) {
   let temp = (input || '').slice().replace(/[\n\r]/g, '');
   let e = splitRegExp.exec(temp);
   const rawParts = [];
@@ -37,14 +35,11 @@ function breakLine (input, splitRegExp = regExp) {
     e = splitRegExp.exec(temp);
   }
   rawParts.push(temp);
-  const filtered = rawParts.filter(part => part.length);
+  const filtered = rawParts.filter((part) => part.length);
   let idx = 0;
 
-  function processBrackets (sentence) {
-    const {
-      open: currentBracket,
-      parts = []
-    } = sentence || {};
+  function processBrackets(sentence) {
+    const {open: currentBracket, parts = []} = sentence || {};
     const openBracketIndex = openBrackets.indexOf(currentBracket);
     const respectiveClose = openBracketIndex >= 0 ? closeBrackets[openBracketIndex] : undefined;
     while (idx < filtered.length) {
@@ -64,7 +59,7 @@ function breakLine (input, splitRegExp = regExp) {
   return parts;
 }
 
-function splitPartsBy (parts, separator) {
+function splitPartsBy(parts, separator) {
   let current = [];
   const processed = [current];
   for (let i = 0; i < parts.length; i++) {
@@ -79,15 +74,15 @@ function splitPartsBy (parts, separator) {
   return processed;
 }
 
-export function splitStringWithBrackets (string, delimiter = '|') {
+export function splitStringWithBrackets(string, delimiter = '|') {
   try {
-    return splitPartsBy(breakLine(string), delimiter).map(part => joinParts(part));
+    return splitPartsBy(breakLine(string), delimiter).map((part) => joinParts(part));
   } catch (_) {
     return [];
   }
 }
 
-function joinParts (parts, ignoreQuotes = false) {
+function joinParts(parts, ignoreQuotes = false) {
   if (!parts || !parts.length) {
     return '';
   }
@@ -105,17 +100,13 @@ function joinParts (parts, ignoreQuotes = false) {
     } else if (typeof part === 'object' && Array.isArray(part)) {
       result.push(joinParts(part));
     } else if (typeof part === 'object' && part.parts && Array.isArray(part.parts)) {
-      result.push(
-        processQuotes(part.open),
-        joinParts(part.parts),
-        processQuotes(part.close)
-      );
+      result.push(processQuotes(part.open), joinParts(part.parts), processQuotes(part.close));
     }
   }
   return result.join('');
 }
 
-function startsWithCriteria (searchString) {
+function startsWithCriteria(searchString) {
   if (!searchString) {
     return () => false;
   }
@@ -133,11 +124,11 @@ function startsWithCriteria (searchString) {
   };
 }
 
-function isCondition (part) {
+function isCondition(part) {
   return part && startsWithCriteria(/IF\s+/i)(part);
 }
 
-function extractCondition (parts = []) {
+function extractCondition(parts = []) {
   if (!parts || !parts.length || !isCondition(parts)) {
     return [];
   }
@@ -149,7 +140,7 @@ function extractCondition (parts = []) {
   return parts.slice();
 }
 
-function splitByCondition (parts = []) {
+function splitByCondition(parts = []) {
   if (!parts) {
     return {value: [], condition: []};
   }
@@ -157,24 +148,24 @@ function splitByCondition (parts = []) {
     return {value: parts.slice(), condition: []};
   }
   if (typeof parts === 'object' && Array.isArray(parts)) {
-    let separatorIndex = parts.findIndex(o => o === '|');
+    let separatorIndex = parts.findIndex((o) => o === '|');
     if (separatorIndex === -1) {
       separatorIndex = parts.length;
     }
     if (separatorIndex + 1 < parts.length && isCondition(parts[separatorIndex + 1])) {
       return {
         value: parts.slice(0, separatorIndex),
-        condition: extractCondition(parts.slice(separatorIndex + 1))
+        condition: extractCondition(parts.slice(separatorIndex + 1)),
       };
     }
     return {
       value: parts.slice(),
-      condition: []
+      condition: [],
     };
   }
 }
 
-function parseValue (value) {
+function parseValue(value) {
   if (value === undefined || value === null) {
     return undefined;
   }
@@ -187,7 +178,7 @@ function parseValue (value) {
   return `${value}`;
 }
 
-function processQuotes (parts) {
+function processQuotes(parts) {
   const result = [];
   for (let i = 0; i < parts.length; i += 1) {
     const part = parts[i];
@@ -196,7 +187,7 @@ function processQuotes (parts) {
     } else if (typeof part === 'object' && !!part.open) {
       result.push({
         ...part,
-        parts: processQuotes(part.parts || [])
+        parts: processQuotes(part.parts || []),
       });
     } else if (typeof part === 'string') {
       result.push(part);
@@ -205,12 +196,12 @@ function processQuotes (parts) {
   return result;
 }
 
-function processCondition (conditionParts) {
+function processCondition(conditionParts) {
   const conditionString = joinParts(conditionParts);
   const parsed = processQuotes(
-    breakLine(conditionString, /(\(|\)|[\s]+and[\s]+|[\s]+or[\s]+|===|!==|==|!=|>=|<=|>|<|")/i)
+    breakLine(conditionString, /(\(|\)|[\s]+and[\s]+|[\s]+or[\s]+|===|!==|==|!=|>=|<=|>|<|")/i),
   );
-  function generateCondition (parts) {
+  function generateCondition(parts) {
     if (typeof parts === 'object' && parts.open === '(') {
       return generateCondition(parts.parts || []);
     }
@@ -227,7 +218,14 @@ function processCondition (conditionParts) {
         const operator = parts[idx + 1];
         const value = parseValue(parts[idx + 2]);
         if (!/(===|!==|==|!=|=|<=|>|<)/i.test(operator) || value === undefined) {
-          console.log('ERROR', operator, value, {operand, operator, value: parts[idx + 2]}, idx, parts);
+          console.log(
+            'ERROR',
+            operator,
+            value,
+            {operand, operator, value: parts[idx + 2]},
+            idx,
+            parts,
+          );
           break;
         }
         criterias.push((cpModule) => {
@@ -290,17 +288,14 @@ function processCondition (conditionParts) {
   return generateCondition(parsed);
 }
 
-function processArrayElement (arrayElementParts = []) {
+function processArrayElement(arrayElementParts = []) {
   if (!arrayElementParts) {
     return undefined;
   }
   if (typeof arrayElementParts === 'string') {
     return {value: arrayElementParts.trim()};
   }
-  if (
-    typeof arrayElementParts === 'object' &&
-    arrayElementParts.open === '"'
-  ) {
+  if (typeof arrayElementParts === 'object' && arrayElementParts.open === '"') {
     return {value: joinParts(arrayElementParts.parts || []).trim()};
   }
   if (
@@ -315,30 +310,27 @@ function processArrayElement (arrayElementParts = []) {
     Array.isArray(arrayElementParts) &&
     arrayElementParts.length > 1
   ) {
-    const {
-      value: valueParts,
-      condition: conditionParts
-    } = splitByCondition(arrayElementParts);
+    const {value: valueParts, condition: conditionParts} = splitByCondition(arrayElementParts);
     const element = processArrayElement(valueParts);
-    const condition = conditionParts && conditionParts.length
-      ? processCondition(conditionParts)
-      : undefined;
+    const condition =
+      conditionParts && conditionParts.length ? processCondition(conditionParts) : undefined;
     return {...element, condition};
   }
   return undefined;
 }
 
-function processArrayElements (arrayElements = []) {
+function processArrayElements(arrayElements = []) {
   const elements = arrayElements.map(processArrayElement).filter(Boolean);
-  if (elements.some(element => typeof element.condition === 'function')) {
-    return (cpModule) => elements
-      .filter(element => typeof element.condition !== 'function' || element.condition(cpModule))
-      .map(element => element.value);
+  if (elements.some((element) => typeof element.condition === 'function')) {
+    return (cpModule) =>
+      elements
+        .filter((element) => typeof element.condition !== 'function' || element.condition(cpModule))
+        .map((element) => element.value);
   }
-  return elements.map(element => element.value);
+  return elements.map((element) => element.value);
 }
 
-function getParameterType (typeParts) {
+function getParameterType(typeParts) {
   if (!typeParts) {
     return {type: AnalysisTypes.string};
   }
@@ -389,13 +381,13 @@ function getParameterType (typeParts) {
         AnalysisTypes.integer,
         AnalysisTypes.float,
         AnalysisTypes.units,
-        AnalysisTypes.units2
+        AnalysisTypes.units2,
       ].includes(typeDefinition.type)
     ) {
-      const [
-        startStr = '-Infinity',
-        endStr = 'Infinity'
-      ] = splitPartsBy(additionalPart.parts || [], ',');
+      const [startStr = '-Infinity', endStr = 'Infinity'] = splitPartsBy(
+        additionalPart.parts || [],
+        ',',
+      );
       const start = Number(startStr);
       const end = Number(endStr);
       return {
@@ -403,8 +395,8 @@ function getParameterType (typeParts) {
         isRange: additionalPart.open === '[',
         range: {
           min: Number.isNaN(start) ? -Infinity : start,
-          max: Number.isNaN(end) ? Infinity : end
-        }
+          max: Number.isNaN(end) ? Infinity : end,
+        },
       };
     }
     return typeDefinition;
@@ -412,13 +404,8 @@ function getParameterType (typeParts) {
   return {type: AnalysisTypes.string};
 }
 
-function parseDefaultValue (defaultValueParts, typeInfo) {
-  const {
-    type,
-    values = [],
-    isRange = false,
-    isList = false
-  } = typeInfo || {};
+function parseDefaultValue(defaultValueParts, typeInfo) {
+  const {type, values = [], isRange = false, isList = false} = typeInfo || {};
   if (defaultValueParts) {
     const joined = joinParts(defaultValueParts);
     const e = /^\[(.*),(.*)\]$/.exec(joined);
@@ -440,15 +427,15 @@ function parseDefaultValue (defaultValueParts, typeInfo) {
   return undefined;
 }
 
-function processParameter (input) {
+function processParameter(input) {
   if (typeof input === 'object') {
     return [input];
   }
   const parts = breakLine(input);
   let splitParts = splitPartsBy(parts, '|');
-  function extractByCriteria (criteria) {
+  function extractByCriteria(criteria) {
     const extracted = splitParts.find(criteria);
-    splitParts = splitParts.filter(part => !criteria(part));
+    splitParts = splitParts.filter((part) => !criteria(part));
     return extracted;
   }
   const advanced = !!extractByCriteria(startsWithCriteria('ADVANCED'));
@@ -457,19 +444,13 @@ function processParameter (input) {
   const local = !!extractByCriteria(startsWithCriteria('LOCAL'));
   const computed = !!extractByCriteria(startsWithCriteria('COMPUTED'));
   const hidden = !!extractByCriteria(startsWithCriteria('HIDDEN'));
-  const criteria = processCondition(
-    extractCondition(
-      extractByCriteria(
-        startsWithCriteria('IF')
-      )
-    )
-  );
-  function getPredefinedOption (name) {
+  const criteria = processCondition(extractCondition(extractByCriteria(startsWithCriteria('IF'))));
+  function getPredefinedOption(name) {
     const aPart = joinParts(
       extractByCriteria(startsWithCriteria(new RegExp(`^${name}\\s*(\\s|=)\\s*`))),
-      true
+      true,
     );
-    const exec = (new RegExp(`^${name}\\s*(\\s|=)\\s*(.+)$`)).exec(aPart);
+    const exec = new RegExp(`^${name}\\s*(\\s|=)\\s*(.+)$`).exec(aPart);
     if (exec && exec[2]) {
       return exec[2];
     }
@@ -482,11 +463,8 @@ function processParameter (input) {
   const [namePart, typeParts, defaultValueParts] = splitParts;
   const name = joinParts(namePart);
   alias = alias || name;
-  const parameterName = (
-    parameterNameParts
-      ? joinParts(parameterNameParts, true)
-      : undefined
-  ) || name;
+  const parameterName =
+    (parameterNameParts ? joinParts(parameterNameParts, true) : undefined) || name;
   const type = getParameterType(typeParts);
   const defaultValueParsed = parseDefaultValue(defaultValueParts, type);
   let defaultValue = defaultValueParsed;
@@ -499,14 +477,10 @@ function processParameter (input) {
      * @param {AnalysisModule} cpModule
      * @returns {string}
      */
-    defaultValue = cpModule => {
+    defaultValue = (cpModule) => {
       if (cpModule) {
-        const moduleNames = defaultFromModule
-          .split(/,;\s/)
-          .map(o => o.trim());
-        const before = cpModule.modulesBefore
-          .filter(o => moduleNames.includes(o.name))
-          .pop();
+        const moduleNames = defaultFromModule.split(/,;\s/).map((o) => o.trim());
+        const before = cpModule.modulesBefore.filter((o) => moduleNames.includes(o.name)).pop();
         if (before && before.outputs && before.outputs.length > 0) {
           return before.outputs[0].name;
         }
@@ -527,50 +501,37 @@ function processParameter (input) {
     value: defaultValue,
     ...type,
     multiple,
-    emptyValue: empty
+    emptyValue: empty,
   };
-  if (
-    type.type === AnalysisTypes.units ||
-    type.type === AnalysisTypes.units2
-  ) {
+  if (type.type === AnalysisTypes.units || type.type === AnalysisTypes.units2) {
     const unitsAlias = `${alias}Units`;
     const pixelsParameter = {
       ...parameter,
       local: false,
       type: AnalysisTypes.float,
       hidden: true,
-      computed: type.type === AnalysisTypes.units
-        ? `{${unitsAlias}:pixels}`
-        : `{${unitsAlias}:pixels2}`,
-      exportParameter: false
+      computed:
+        type.type === AnalysisTypes.units ? `{${unitsAlias}:pixels}` : `{${unitsAlias}:pixels2}`,
+      exportParameter: false,
     };
     parameter.local = true;
     parameter.parameterName = unitsAlias;
     parameter.name = unitsAlias;
     parameter.exportParameter = true;
-    return [
-      pixelsParameter,
-      parameter
-    ];
+    return [pixelsParameter, parameter];
   }
   return [parameter];
 }
 
-function processOutput (output) {
+function processOutput(output) {
   const parts = breakLine(output);
   let splitParts = splitPartsBy(parts, '|');
-  function extractByCriteria (criteria) {
+  function extractByCriteria(criteria) {
     const extracted = splitParts.find(criteria);
-    splitParts = splitParts.filter(part => !criteria(part));
+    splitParts = splitParts.filter((part) => !criteria(part));
     return extracted;
   }
-  const criteria = processCondition(
-    extractCondition(
-      extractByCriteria(
-        startsWithCriteria('IF')
-      )
-    )
-  );
+  const criteria = processCondition(extractCondition(extractByCriteria(startsWithCriteria('IF'))));
   const [namePart, typeParts] = splitParts;
   const name = joinParts(namePart);
   const typeRaw = joinParts(typeParts);
@@ -589,15 +550,15 @@ function processOutput (output) {
   return {
     name,
     type,
-    criteria
+    criteria,
   };
 }
 
-function processOutputs (outputs = []) {
+function processOutputs(outputs = []) {
   return outputs.map(processOutput).filter(Boolean);
 }
 
-export function getComputedValue (computed, cpModule) {
+export function getComputedValue(computed, cpModule) {
   if (typeof computed === 'function') {
     return computed(cpModule);
   }
@@ -618,12 +579,15 @@ export function getComputedValue (computed, cpModule) {
   }
   let result = computed;
   for (let r = 0; r < replacements.length; r += 1) {
-    result = result.replace(new RegExp(replacements[r].placeholder, 'g'), replacements[r].value || '');
+    result = result.replace(
+      new RegExp(replacements[r].placeholder, 'g'),
+      replacements[r].value || '',
+    );
   }
   return result;
 }
 
-export function getComputedValueLink (computed, cpModule) {
+export function getComputedValueLink(computed, cpModule) {
   if (typeof computed === 'function') {
     return undefined;
   }
@@ -631,23 +595,23 @@ export function getComputedValueLink (computed, cpModule) {
     return undefined;
   }
   const groupsRegExp = /^({([^}]+)})$/g;
-  let e = groupsRegExp.exec(computed);
+  const e = groupsRegExp.exec(computed);
   if (e && e.length >= 3) {
     const [aName, ...modifier] = e[2].split(':');
     const parameterValue = cpModule.getParameterValueObject(aName);
     if (parameterValue) {
       return {
         parameterValue,
-        modifiers: modifier
+        modifiers: modifier,
       };
     }
   }
   return undefined;
 }
 
-function modification (o, singleModifier, pipeline) {
+function modification(o, singleModifier, pipeline) {
   if (o && (Array.isArray(o) || isObservableArray(o))) {
-    return o.map(item => modification(item, singleModifier, pipeline));
+    return o.map((item) => modification(item, singleModifier, pipeline));
   }
   switch (singleModifier.toLowerCase()) {
     case 'pixels':
@@ -677,37 +641,25 @@ function modification (o, singleModifier, pipeline) {
   }
 }
 
-export function modifyValue (o, pipeline, ...modifier) {
-  return modifier
-    .reduce((result, singleModifier) => modification(
-      result,
-      singleModifier,
-      pipeline
-    ), o);
+export function modifyValue(o, pipeline, ...modifier) {
+  return modifier.reduce(
+    (result, singleModifier) => modification(result, singleModifier, pipeline),
+    o,
+  );
 }
 
-function reverseModification (o, singleModifier, pipeline) {
+function reverseModification(o, singleModifier, pipeline) {
   if (o && (Array.isArray(o) || isObservableArray(o))) {
-    return o.map(item => reverseModification(item, singleModifier, pipeline));
+    return o.map((item) => reverseModification(item, singleModifier, pipeline));
   }
   switch (singleModifier.toLowerCase()) {
     case 'pixels':
-      if (
-        o !== undefined &&
-        o !== '' && !Number.isNaN(o) &&
-        pipeline &&
-        pipeline.physicalSize
-      ) {
+      if (o !== undefined && o !== '' && !Number.isNaN(o) && pipeline && pipeline.physicalSize) {
         return pipeline.physicalSize.getPhysicalSize(Number(o));
       }
       return o;
     case 'pixels2':
-      if (
-        o !== undefined &&
-        o !== '' && !Number.isNaN(o) &&
-        pipeline &&
-        pipeline.physicalSize
-      ) {
+      if (o !== undefined && o !== '' && !Number.isNaN(o) && pipeline && pipeline.physicalSize) {
         return pipeline.physicalSize.getSquarePhysicalSize(Number(o));
       }
       return o;
@@ -716,25 +668,18 @@ function reverseModification (o, singleModifier, pipeline) {
   }
 }
 
-export function reverseModifyValue (o, pipeline, ...modifier) {
-  return modifier
-    .reduce((result, singleModifier) => reverseModification(
-      result,
-      singleModifier,
-      pipeline
-    ), o);
+export function reverseModifyValue(o, pipeline, ...modifier) {
+  return modifier.reduce(
+    (result, singleModifier) => reverseModification(result, singleModifier, pipeline),
+    o,
+  );
 }
 
-export default function parseModuleConfiguration (cpModule) {
-  const {
-    parameters = [],
-    output,
-    outputs = [output].filter(Boolean),
-    ...rest
-  } = cpModule || {};
+export default function parseModuleConfiguration(cpModule) {
+  const {parameters = [], output, outputs = [output].filter(Boolean), ...rest} = cpModule || {};
   return {
     ...rest,
     outputs: processOutputs(outputs),
-    parameters: parameters.map(processParameter).reduce((r, c) => ([...r, ...c]), [])
+    parameters: parameters.map(processParameter).reduce((r, c) => [...r, ...c], []),
   };
 }

@@ -195,7 +195,7 @@ body.light-theme {
   --cp-asset-azure-icon: url('/icons/providers/azure.svg');
   --cp-asset-azure-icon-contrast: url('/icons/providers/azure.svg');
   --cp-asset-local-icon: url('/icons/providers/local.svg');
-  --cp-asset-local-icon-contrast: url('/icons/providers/local-ligh.svg');
+  --cp-asset-local-icon-contrast: url('/icons/providers/local-light.svg');
 
   /* region-icon */
   --cp-asset-eu-region-icon: url('/icons/regions/eu.svg');

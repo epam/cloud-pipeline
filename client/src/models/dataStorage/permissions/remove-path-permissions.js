@@ -23,7 +23,7 @@ import UpdatePathPermissions from './update-path-permissions';
  */
 
 export default class RemovePathPermissions extends UpdatePathPermissions {
-  async send (body, abortSignal) {
+  async send(body, abortSignal) {
     const modifiedBody = body.map((o) => {
       const {path, type} = o;
       return {path, type};

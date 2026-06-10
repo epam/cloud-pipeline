@@ -18,14 +18,15 @@ const KeyMappers = {
   value: 'previous',
   usage: 'previousUsage',
   runsCount: 'previousRunsCount',
-  costDetails: 'previousCostDetails'
+  costDetails: 'previousCostDetails',
 };
 
-export default function join (current = {}, previous = {}, keyMappers = KeyMappers) {
+export default function join(current = {}, previous = {}, keyMappers = KeyMappers) {
   const currentKeys = Object.keys(current || {});
   const previousKeys = Object.keys(previous || {});
-  const keys = [...currentKeys, ...previousKeys]
-    .filter((key, index, array) => array.indexOf(key) === index);
+  const keys = [...currentKeys, ...previousKeys].filter(
+    (key, index, array) => array.indexOf(key) === index,
+  );
   const result = {};
   const prevKeys = Object.keys(keyMappers);
   for (let i = 0; i < keys.length; i++) {
@@ -35,7 +36,7 @@ export default function join (current = {}, previous = {}, keyMappers = KeyMappe
     const prevObj = {};
     for (let j = 0; j < prevKeys.length; j++) {
       const prevKey = prevKeys[j];
-      if (p && p.hasOwnProperty(prevKey)) {
+      if (p && Object.hasOwn(p, prevKey)) {
         prevObj[keyMappers[prevKey]] = p[prevKey];
         delete p[prevKey];
       }
@@ -45,7 +46,7 @@ export default function join (current = {}, previous = {}, keyMappers = KeyMappe
       value: 0,
       ...c,
       ...prevObj,
-      costDetails: c.costDetails
+      costDetails: c.costDetails,
     };
   }
   return result;

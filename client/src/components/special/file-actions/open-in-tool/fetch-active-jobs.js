@@ -18,10 +18,10 @@ import PipelineRunFilter from '../../../../models/pipelines/PipelineRunSingleFil
 import PipelineRunServices from '../../../../models/pipelines/PipelineRunServices';
 import wrapRequest from './wrap-request';
 
-function runsRequest (request, method, mapper = (o => o)) {
+function runsRequest(request, method, mapper = (o) => o) {
   return new Promise((resolve) => {
     wrapRequest(request, method)
-      .then(request => {
+      .then((request) => {
         if (request.loaded) {
           resolve((request.value || []).map(mapper));
         } else {
@@ -32,35 +32,37 @@ function runsRequest (request, method, mapper = (o => o)) {
   });
 }
 
-export default function fetchActiveJobs () {
+export default function fetchActiveJobs() {
   return new Promise((resolve) => {
     Promise.all([
       runsRequest(
-        new PipelineRunServices({
-          page: 1,
-          pageSize: 100,
-          userModified: false,
-          statuses: ['RUNNING']
-        }, false),
+        new PipelineRunServices(
+          {
+            page: 1,
+            pageSize: 100,
+            userModified: false,
+            statuses: ['RUNNING'],
+          },
+          false,
+        ),
         'filter',
-        o => ({...o, isService: true})
+        (o) => ({...o, isService: true}),
       ),
       runsRequest(
-        new PipelineRunFilter({
-          page: 1,
-          pageSize: 100,
-          userModified: false,
-          statuses: ['RUNNING']
-        }, false),
-        'filter'
-      )
+        new PipelineRunFilter(
+          {
+            page: 1,
+            pageSize: 100,
+            userModified: false,
+            statuses: ['RUNNING'],
+          },
+          false,
+        ),
+        'filter',
+      ),
     ])
-      .then(payloads => {
-        resolve(
-          payloads
-            .reduce((r, c) => ([...r, ...c]), [])
-            .sort((a, b) => a.id - b.id)
-        );
+      .then((payloads) => {
+        resolve(payloads.reduce((r, c) => [...r, ...c], []).sort((a, b) => a.id - b.id));
       })
       .catch(() => resolve([]));
   });

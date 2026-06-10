@@ -17,8 +17,7 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class DataStorageItemRestore extends RemotePost {
-
-  constructor (id, path, version) {
+  constructor(id, path, version) {
     super();
     this.id = id;
     this.path = path;
@@ -26,10 +25,10 @@ export default class DataStorageItemRestore extends RemotePost {
     this.buildUrl();
   }
 
-  buildUrl () {
+  buildUrl() {
     const query = [
       !!this.path && `path=${encodeURIComponent(this.path)}`,
-      !!this.version && `version=${this.version}`
+      !!this.version && `version=${this.version}`,
     ]
       .filter(Boolean)
       .join('&');

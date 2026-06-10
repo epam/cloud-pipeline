@@ -1,7 +1,7 @@
 import RemotePost from '../basic/RemotePost';
 
 class GetRunTaskRuntimeData extends RemotePost {
-  constructor (runId) {
+  constructor(runId) {
     super();
     this.url = `/run/${runId}/runtime/data?type=NF_TASK`;
   }

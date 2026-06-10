@@ -21,7 +21,7 @@ const Statuses = {
   resuming: 'RESUMING',
   success: 'SUCCESS',
   failure: 'FAILURE',
-  stopped: 'STOPPED'
+  stopped: 'STOPPED',
 };
 
 const AllStatuses = [
@@ -31,18 +31,25 @@ const AllStatuses = [
   Statuses.resuming,
   Statuses.success,
   Statuses.failure,
-  Statuses.stopped
+  Statuses.stopped,
 ];
 
-export function getStatusName (status) {
+export function getStatusName(status) {
   switch (status) {
-    case Statuses.running: return 'Running';
-    case Statuses.pausing: return 'Pausing';
-    case Statuses.paused: return 'Paused';
-    case Statuses.resuming: return 'Resuming';
-    case Statuses.success: return 'Success';
-    case Statuses.failure: return 'Failure';
-    case Statuses.stopped: return 'Stopped';
+    case Statuses.running:
+      return 'Running';
+    case Statuses.pausing:
+      return 'Pausing';
+    case Statuses.paused:
+      return 'Paused';
+    case Statuses.resuming:
+      return 'Resuming';
+    case Statuses.success:
+      return 'Success';
+    case Statuses.failure:
+      return 'Failure';
+    case Statuses.stopped:
+      return 'Stopped';
     default:
       return 'Unknown';
   }

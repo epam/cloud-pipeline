@@ -14,18 +14,18 @@
  *  limitations under the License.
  */
 
-import moment from 'moment-timezone';
+import dayjs from '../../../../../utils/dayjs';
 import QuotaPeriods from '../../../quotas/utilities/quota-periods';
 import {Period} from '../../../../special/periods';
 
-export function getAffectiveQuotaPeriods (request) {
+export function getAffectiveQuotaPeriods(request) {
   if (!request || !request.filters) {
     return [];
   }
   const {start, name} = request.filters;
   const periods = [];
-  const now = moment.utc();
-  const compareByUnit = unit => moment(start).startOf(unit).isSame(moment(now).startOf(unit));
+  const now = dayjs.utc();
+  const compareByUnit = (unit) => dayjs(start).startOf(unit).isSame(dayjs(now).startOf(unit));
   if (compareByUnit('year')) {
     periods.push(QuotaPeriods.year);
   }

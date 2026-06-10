@@ -17,7 +17,7 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class GroupBlock extends RemotePost {
-  constructor (groupName, block = true) {
+  constructor(groupName, block = true) {
     super();
     this.url = `/group/${groupName}/block?blockStatus=${block}`;
   }

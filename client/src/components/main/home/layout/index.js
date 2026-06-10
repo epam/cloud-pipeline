@@ -30,7 +30,7 @@ const PANELS_LAYOUT_STORAGE_KEY = 'panelsLayout';
 try {
   const layout = JSON.parse(localStorage.getItem(PANELS_LAYOUT_STORAGE_KEY));
   let modified = false;
-  layout.forEach(panel => {
+  layout.forEach((panel) => {
     const identifier = mapPanelIdentifier(panel.i);
     modified = modified || identifier !== panel.i;
     panel.i = identifier;
@@ -40,23 +40,23 @@ try {
   }
 } catch (_) {}
 
-const userLayout = (...opts) => inject('uiNavigation')(
-  AsyncLayout.inject(
-    ({uiNavigation}) => new Promise((resolve) => {
-      uiNavigation
-        .fetchDashboard()
-        .then(dashboard => {
-          resolve({
-            defaultState: dashboard || defaultState,
-            storage: PANELS_LAYOUT_STORAGE_KEY,
-            defaultSizes,
-            panelNeighbors: neighbors,
-            gridStyle
+const userLayout = (...opts) =>
+  inject('uiNavigation')(
+    AsyncLayout.inject(
+      ({uiNavigation}) =>
+        new Promise((resolve) => {
+          uiNavigation.fetchDashboard().then((dashboard) => {
+            resolve({
+              defaultState: dashboard || defaultState,
+              storage: PANELS_LAYOUT_STORAGE_KEY,
+              defaultSizes,
+              panelNeighbors: neighbors,
+              gridStyle,
+            });
           });
-        });
-    })
-  )(...opts)
-);
+        }),
+    )(...opts),
+  );
 
 export {
   AsyncLayout,
@@ -65,5 +65,5 @@ export {
   Panels,
   PanelIcons,
   PanelInfos,
-  PanelTitles
+  PanelTitles,
 };

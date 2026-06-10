@@ -17,7 +17,7 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class ToolSymlink extends RemotePost {
-  constructor () {
+  constructor() {
     super();
     this.url = '/tool/symlink';
   }

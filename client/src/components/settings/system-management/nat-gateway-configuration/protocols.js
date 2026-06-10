@@ -16,12 +16,12 @@
 
 const protocols = {
   TCP: 'TCP',
-  UDP: 'UDP'
+  UDP: 'UDP',
 };
 
 const protocolNames = {
   [protocols.TCP]: 'TCP',
-  [protocols.UDP]: 'UDP'
+  [protocols.UDP]: 'UDP',
 };
 
 export {protocols, protocolNames};

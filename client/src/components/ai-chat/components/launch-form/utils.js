@@ -16,21 +16,19 @@
 
 export const LAUNCH_MODES = {
   pipeline: 'pipeline',
-  tool: 'tool'
+  tool: 'tool',
 };
 
-export function getToolConfiguration (configurationName = '', toolVersion) {
+export function getToolConfiguration(configurationName = '', toolVersion) {
   if (!toolVersion) {
     return undefined;
   }
-  const currentConfiguration = toolVersion.settings
-    .find(({name}) => name === configurationName);
-  const defaultConfiguration = toolVersion.settings
-    .find(({name}) => name === 'default');
+  const currentConfiguration = toolVersion.settings.find(({name}) => name === configurationName);
+  const defaultConfiguration = toolVersion.settings.find(({name}) => name === 'default');
   return currentConfiguration || defaultConfiguration;
 }
 
-export function getLaunchMode (data = {}) {
+export function getLaunchMode(data = {}) {
   if (!!data.pipelineId || !!data.pipelineName) {
     return LAUNCH_MODES.pipeline;
   }

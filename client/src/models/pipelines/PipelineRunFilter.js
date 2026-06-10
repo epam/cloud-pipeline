@@ -24,15 +24,16 @@ class PipelineRunFilter extends Remote {
   static auto = false;
   static getPayload = (params) => ({
     eagerGrouping: false,
-    ...(params || {})
+    ...(params || {}),
   });
+
   refreshInterval;
 
-  constructor (params) {
+  constructor(params) {
     super();
     makeObservable(this, {
       _total: observable,
-      total: computed
+      total: computed,
     });
     let stringifiedParams;
     try {
@@ -40,24 +41,24 @@ class PipelineRunFilter extends Remote {
     } catch (___) {}
     this.constructor.fetchOptions = {
       headers: {
-        'Content-type': 'application/json; charset=UTF-8'
+        'Content-type': 'application/json; charset=UTF-8',
       },
       mode: 'cors',
       credentials: 'include',
       method: 'POST',
-      body: stringifiedParams
+      body: stringifiedParams,
     };
     this.params = params;
     this.url = '/run/filter';
-  };
+  }
 
-  startRefreshInterval () {
+  startRefreshInterval() {
     if (!this.refreshInterval) {
       this.refreshInterval = setInterval(() => this.fetch(), REFRESH_INTERVAL);
     }
   }
 
-  clearRefreshInterval () {
+  clearRefreshInterval() {
     if (this.refreshInterval) {
       clearInterval(this.refreshInterval);
       delete this.refreshInterval;
@@ -66,11 +67,11 @@ class PipelineRunFilter extends Remote {
 
   _total = 0;
 
-  get total () {
+  get total() {
     return this._total;
   }
 
-  filter (params) {
+  filter(params) {
     this.params = params;
     try {
       this.constructor.fetchOptions.body = JSON.stringify(PipelineRunFilter.getPayload(params));
@@ -78,9 +79,11 @@ class PipelineRunFilter extends Remote {
     return this.fetch();
   }
 
-  postprocess (value) {
+  postprocess(value) {
     this._total = value.payload.totalCount;
-    if (value.payload.totalCount === 0) { return []; }
+    if (value.payload.totalCount === 0) {
+      return [];
+    }
     return value.payload.elements;
   }
 }

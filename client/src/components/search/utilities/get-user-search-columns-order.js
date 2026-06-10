@@ -16,7 +16,7 @@
 
 import {isObservableArray} from 'mobx';
 
-function getUserSearchColumnsOrder (preferences, authenticatedUserInfo) {
+function getUserSearchColumnsOrder(preferences, authenticatedUserInfo) {
   if (!preferences || !preferences.loaded) {
     return [];
   }
@@ -30,21 +30,12 @@ function getUserSearchColumnsOrder (preferences, authenticatedUserInfo) {
   if (!authenticatedUserInfo || !authenticatedUserInfo.loaded) {
     return [];
   }
-  const {
-    roles = [],
-    groups: adGroups = []
-  } = authenticatedUserInfo.value || {};
-  const groups = [...new Set([
-    ...roles.map((role) => role.name),
-    ...adGroups
-  ])];
-  const {
-    default: all = [],
-    '*': fallback = all
-  } = order;
+  const {roles = [], groups: adGroups = []} = authenticatedUserInfo.value || {};
+  const groups = [...new Set([...roles.map((role) => role.name), ...adGroups])];
+  const {default: all = [], '*': fallback = all} = order;
   for (let i = 0; i < groups.length; i++) {
     const group = groups[i];
-    if (Object.prototype.hasOwnProperty.call(order, group)) {
+    if (Object.hasOwn(order, group)) {
       return order[group];
     }
   }

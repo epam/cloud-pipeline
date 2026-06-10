@@ -17,7 +17,7 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class PreferencesUpdate extends RemotePost {
-  constructor () {
+  constructor() {
     super();
     this.url = '/preferences';
   }

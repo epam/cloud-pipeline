@@ -15,18 +15,15 @@
  */
 
 export default class VSConflictError extends Error {
-  static isConflictError (payload) {
+  static isConflictError(payload) {
     return payload && payload.conflicts && payload.conflicts.length > 0;
   }
 
-  constructor (payload) {
-    const {
-      message,
-      conflicts = []
-    } = payload || {};
+  constructor(payload) {
+    const {message, conflicts = []} = payload || {};
     super(
       message ||
-      `Error performing operation: ${conflicts.length} conflict${conflicts.length > 1 ? 's' : ''}`
+        `Error performing operation: ${conflicts.length} conflict${conflicts.length > 1 ? 's' : ''}`,
     );
     this.conflicts = (conflicts || []).slice();
   }

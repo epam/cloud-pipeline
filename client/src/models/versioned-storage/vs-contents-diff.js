@@ -17,12 +17,10 @@
 import Remote from '../basic/Remote';
 
 export default class VsContentsDiff extends Remote {
-  constructor (id, commit, path) {
+  constructor(id, commit, path) {
     super();
     this.id = id;
-    let query = [
-      path && `path=${encodeURIComponent(path)}`
-    ].filter(Boolean).join('&');
+    let query = [path && `path=${encodeURIComponent(path)}`].filter(Boolean).join('&');
     if (query) {
       query = '?'.concat(query);
     }

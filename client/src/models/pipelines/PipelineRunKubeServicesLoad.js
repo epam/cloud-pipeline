@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 class PipelineRunKubeServicesLoad extends Remote {
-  constructor (id) {
+  constructor(id) {
     super();
     this.url = `/run/${id}/kube/services`;
   }

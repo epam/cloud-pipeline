@@ -17,13 +17,12 @@
 import MetadataLoad from './MetadataLoad';
 
 export default class MetadataCache {
-
-  static getKey (id, type) {
+  static getKey(id, type) {
     return `${type}/${id}`;
   }
 
   /* eslint-disable */
-  static getCache (cache, id, type, model) {
+  static getCache(cache, id, type, model) {
     const key = MetadataCache.getKey(id, type);
     if (!cache.has(key)) {
       cache.set(key, new model(id, type));
@@ -32,7 +31,7 @@ export default class MetadataCache {
   }
 
   /* eslint-enable */
-  static invalidateCache (cache, id, type) {
+  static invalidateCache(cache, id, type) {
     const key = MetadataCache.getKey(id, type);
     if (cache.has(key)) {
       if (cache.get(key).invalidateCache) {
@@ -44,11 +43,11 @@ export default class MetadataCache {
   }
 
   _metadataCache = new Map();
-  getMetadata (id, type) {
+  getMetadata(id, type) {
     return MetadataCache.getCache(this._metadataCache, id, type, MetadataLoad);
   }
 
-  invalidateMetadata (id, type) {
+  invalidateMetadata(id, type) {
     MetadataCache.invalidateCache(this._metadataCache, id, type);
   }
 }

@@ -22,55 +22,54 @@ const getElementsAtXQuadrant = (chart, event) => {
     return null;
   }
   const isLeftHalfClick = elementsAtX[0]._view.x - event.x < 0;
-  const datasetsInfo = elementsAtX.map(dataset => ({
+  const datasetsInfo = elementsAtX.map((dataset) => ({
     nextIndex: isLeftHalfClick ? dataset._index + 1 : dataset._index,
     prevIndex: isLeftHalfClick ? dataset._index : dataset._index - 1,
-    datasetIndex: dataset._datasetIndex
+    datasetIndex: dataset._datasetIndex,
   }));
-  const elementsAtXQuadrant = datasetsInfo
-    .reduce((acc, info) => {
+  const elementsAtXQuadrant = datasetsInfo.reduce(
+    (acc, info) => {
       const datasetElements = chart.getDatasetMeta(info.datasetIndex).data;
-      const prevElements = datasetElements
-        .filter(meta => meta._index === info.prevIndex);
-      const nextElements = datasetElements
-        .filter(meta => meta._index === info.nextIndex);
+      const prevElements = datasetElements.filter((meta) => meta._index === info.prevIndex);
+      const nextElements = datasetElements.filter((meta) => meta._index === info.nextIndex);
       acc.prev = [...acc.prev, ...prevElements];
       acc.next = [...acc.next, ...nextElements];
       return acc;
-    }, {
+    },
+    {
       prev: [],
-      next: []
-    });
+      next: [],
+    },
+  );
   return elementsAtXQuadrant;
 };
 
 const getInterpolatedCoordsAtX = (elements, event) => {
-  const ids = [...new Set([...elements.prev, ...elements.next]
-    .map(el => el._datasetIndex)
-  )];
-  return ids.map(id => {
-    const prevPoint = elements.prev
-      .find(element => element._datasetIndex === id);
-    const nextPoint = elements.next
-      .find(element => element._datasetIndex === id);
-    if (!prevPoint || !nextPoint) {
-      return null;
-    }
-    const prevX = prevPoint._model.x;
-    const prevY = prevPoint._model.y;
-    const nextX = nextPoint._model.x;
-    const nextY = nextPoint._model.y;
-    const interpolatedY = prevY === nextY
-      ? nextY
-      : ((event.x - prevX) / (nextX - prevX) + (prevY / (nextY - prevY))) * (nextY - prevY);
-    return {
-      dataIndex: id,
-      prev: prevPoint,
-      next: nextPoint,
-      lineY: interpolatedY,
-      distanceY: Math.abs(event.y - interpolatedY)
-    };
-  }).filter(Boolean);
+  const ids = [...new Set([...elements.prev, ...elements.next].map((el) => el._datasetIndex))];
+  return ids
+    .map((id) => {
+      const prevPoint = elements.prev.find((element) => element._datasetIndex === id);
+      const nextPoint = elements.next.find((element) => element._datasetIndex === id);
+      if (!prevPoint || !nextPoint) {
+        return null;
+      }
+      const prevX = prevPoint._model.x;
+      const prevY = prevPoint._model.y;
+      const nextX = nextPoint._model.x;
+      const nextY = nextPoint._model.y;
+      const interpolatedY =
+        prevY === nextY
+          ? nextY
+          : ((event.x - prevX) / (nextX - prevX) + prevY / (nextY - prevY)) * (nextY - prevY);
+      return {
+        dataIndex: id,
+        prev: prevPoint,
+        next: nextPoint,
+        lineY: interpolatedY,
+        distanceY: Math.abs(event.y - interpolatedY),
+      };
+    })
+    .filter(Boolean);
 };
 
 const chartEventIntersections = (chart, event) => {
@@ -84,7 +83,7 @@ const chartEventIntersections = (chart, event) => {
   const coords = getInterpolatedCoordsAtX(XQuadrantElements, event);
   if (coords && coords.length) {
     return (getInterpolatedCoordsAtX(XQuadrantElements, event) || [])
-      .filter(coords => coords.distanceY < INTERSECTION_DISTANCE)
+      .filter((coords) => coords.distanceY < INTERSECTION_DISTANCE)
       .sort((coordA, coordB) => coordA.distanceY - coordB.distanceY);
   }
   return [];

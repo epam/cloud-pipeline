@@ -5,7 +5,7 @@
  * @param {*} b - Second value to compare.
  * @returns {number} Sorting order.
  */
-export function alphabeticalSorter (a, b) {
+export function alphabeticalSorter(a, b) {
   if (typeof a !== 'string' && typeof b !== 'string') return 0;
   if (typeof a !== 'string') return 1;
   if (typeof b !== 'string') return -1;
@@ -19,7 +19,7 @@ export function alphabeticalSorter (a, b) {
  * @param {*} b - Second value to compare.
  * @returns {number} Sorting order.
  */
-export function alphabeticalSorterDesc (a, b) {
+export function alphabeticalSorterDesc(a, b) {
   if (typeof a !== 'string' && typeof b !== 'string') return 0;
   if (typeof a !== 'string') return 1;
   if (typeof b !== 'string') return -1;
@@ -33,7 +33,7 @@ export function alphabeticalSorterDesc (a, b) {
  * @param {*} b - Second value to compare.
  * @returns {number} Sorting order.
  */
-export function numericalSorter (a, b) {
+export function numericalSorter(a, b) {
   if (typeof a !== 'number' && typeof b !== 'number') return 0;
   if (typeof a !== 'number') return 1;
   if (typeof b !== 'number') return -1;
@@ -47,7 +47,7 @@ export function numericalSorter (a, b) {
  * @param {*} b - Second value to compare.
  * @returns {number} Sorting order.
  */
-export function numericalSorterDesc (a, b) {
+export function numericalSorterDesc(a, b) {
   if (typeof a !== 'number' && typeof b !== 'number') return 0;
   if (typeof a !== 'number') return 1;
   if (typeof b !== 'number') return -1;
@@ -61,11 +61,11 @@ export function numericalSorterDesc (a, b) {
  * @param {*} b - Second value to compare.
  * @returns {number} Sorting order.
  */
-export function booleanSorter (a, b) {
+export function booleanSorter(a, b) {
   if (typeof a !== 'boolean' && typeof b !== 'boolean') return 0;
   if (typeof a !== 'boolean') return 1;
   if (typeof b !== 'boolean') return -1;
-  return (a === b) ? 0 : a ? 1 : -1;
+  return a === b ? 0 : a ? 1 : -1;
 }
 
 /**
@@ -75,11 +75,11 @@ export function booleanSorter (a, b) {
  * @param {*} b - Second value to compare.
  * @returns {number} Sorting order.
  */
-export function booleanSorterDesc (a, b) {
+export function booleanSorterDesc(a, b) {
   if (typeof a !== 'boolean' && typeof b !== 'boolean') return 0;
   if (typeof a !== 'boolean') return 1;
   if (typeof b !== 'boolean') return -1;
-  return (a === b) ? 0 : a ? -1 : 1;
+  return a === b ? 0 : a ? -1 : 1;
 }
 
 const typeOrder = {string: 1, number: 2, boolean: 3};
@@ -95,14 +95,14 @@ const typeOrder = {string: 1, number: 2, boolean: 3};
  * @param {*} b - Second value to compare.
  * @returns {number} Sorting order.
  */
-export function defaultSorter (a, b) {
+export function defaultSorter(a, b) {
   const typeA = typeof a;
   const typeB = typeof b;
 
   if (typeA === typeB) {
     if (typeA === 'string') return a.localeCompare(b);
     if (typeA === 'number') return a - b;
-    if (typeA === 'boolean') return (a === b) ? 0 : a ? 1 : -1;
+    if (typeA === 'boolean') return a === b ? 0 : a ? 1 : -1;
   }
 
   if (typeA in typeOrder && typeB in typeOrder) {
@@ -131,14 +131,14 @@ export function defaultSorter (a, b) {
  * @param {*} b - Second value to compare.
  * @returns {number} Sorting order.
  */
-export function defaultSorterDesc (a, b) {
+export function defaultSorterDesc(a, b) {
   const typeA = typeof a;
   const typeB = typeof b;
 
   if (typeA === typeB) {
     if (typeA === 'string') return b.localeCompare(a);
     if (typeA === 'number') return b - a;
-    if (typeA === 'boolean') return (a === b) ? 0 : a ? -1 : 1;
+    if (typeA === 'boolean') return a === b ? 0 : a ? -1 : 1;
   }
 
   if (typeA in typeOrder && typeB in typeOrder) {

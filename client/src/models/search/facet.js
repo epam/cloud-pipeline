@@ -18,12 +18,12 @@ import RemotePost from '../basic/RemotePost';
 import mapElasticDocument from './map-elastic-document';
 
 class FacetSearch extends RemotePost {
-  constructor () {
+  constructor() {
     super();
     this.url = '/search/facet';
   }
 
-  postprocess (value) {
+  postprocess(value) {
     if (value && value.payload && value.payload.documents) {
       value.payload.documents = (value.payload.documents || []).map(mapElasticDocument);
     }

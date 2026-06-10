@@ -16,8 +16,8 @@
 
 import LoadToolVersionSettings from '../../../../../models/tools/LoadToolVersionSettings';
 
-function getToolVersionParameters (versions, version) {
-  const versionInfo = versions.find(v => v.version === version);
+function getToolVersionParameters(versions, version) {
+  const versionInfo = versions.find((v) => v.version === version);
   if (!versionInfo && !/^latest$/i.test(version)) {
     return getToolVersionParameters(versions, 'latest');
   }
@@ -27,50 +27,36 @@ function getToolVersionParameters (versions, version) {
   if (!versionInfo) {
     return {};
   }
-  const {
-    settings = []
-  } = versionInfo;
+  const {settings = []} = versionInfo;
   const [defaultSettings] = settings;
-  const {
-    configuration = {}
-  } = defaultSettings || [];
+  const {configuration = {}} = defaultSettings || [];
   return configuration.parameters;
 }
 
-export default function fetchToolDefaultParameters (dockerImage, dockerRegistries) {
+export default function fetchToolDefaultParameters(dockerImage, dockerRegistries) {
   if (!dockerImage || !dockerRegistries) {
     return Promise.resolve({});
   }
   return new Promise((resolve) => {
-    const [
-      registryPath,
-      groupName,
-      imageAndVersion
-    ] = dockerImage.split('/');
+    const [registryPath, groupName, imageAndVersion] = dockerImage.split('/');
     const [image, version] = (imageAndVersion || '').split(':');
     let toolInfoRequest;
     dockerRegistries
       .fetchIfNeededOrWait()
       .then(() => {
         if (dockerRegistries.loaded) {
-          const {
-            registries = []
-          } = dockerRegistries.value || {};
-          const registry = registries.find(o => o.path === registryPath);
+          const {registries = []} = dockerRegistries.value || {};
+          const registry = registries.find((o) => o.path === registryPath);
           if (!registry) {
             throw new Error(`Registry ${registryPath} not found`);
           }
-          const {
-            groups = []
-          } = registry;
-          const group = groups.find(g => g.name === groupName);
+          const {groups = []} = registry;
+          const group = groups.find((g) => g.name === groupName);
           if (!group) {
             throw new Error(`Group ${groupName} not found`);
           }
-          const {
-            tools = []
-          } = group;
-          const tool = tools.find(o => o.image === `${groupName}/${image}`);
+          const {tools = []} = group;
+          const tool = tools.find((o) => o.image === `${groupName}/${image}`);
           if (!tool) {
             throw new Error(`Tool ${groupName}/${image} not found`);
           }
@@ -82,17 +68,16 @@ export default function fetchToolDefaultParameters (dockerImage, dockerRegistrie
       })
       .then(() => {
         if (toolInfoRequest && toolInfoRequest.loaded) {
-          return Promise.resolve(getToolVersionParameters(
-            toolInfoRequest.value || [],
-            version || 'latest'
-          ));
+          return Promise.resolve(
+            getToolVersionParameters(toolInfoRequest.value || [], version || 'latest'),
+          );
         }
         throw new Error(
-          `Error fetching tool info: ${toolInfoRequest ? toolInfoRequest.error : 'unknown'}`
+          `Error fetching tool info: ${toolInfoRequest ? toolInfoRequest.error : 'unknown'}`,
         );
       })
       .then(resolve)
-      .catch(e => {
+      .catch((e) => {
         console.warn(e.message);
         resolve({});
       });

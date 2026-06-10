@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 class InstanceTypeInfo extends Remote {
-  constructor (instanceType) {
+  constructor(instanceType) {
     super();
     this.url = `/cluster/instance?instanceType=${instanceType}`;
   }

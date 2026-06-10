@@ -13,7 +13,6 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-/* eslint-disable max-len */
 
 const closing = {
   name: 'Closing',
@@ -24,8 +23,8 @@ const closing = {
     'Name the output image|ALIAS name',
     'Shape|[Ball,Cube,Diamond,Disk,Octahedron,Square,Star]|Disk|LOCAL|ALIAS shape',
     'Size|integer|1|LOCAL|ALIAS size',
-    'Structuring element|string|{shape},{size}|COMPUTED|HIDDEN'
-  ]
+    'Structuring element|string|{shape},{size}|COMPUTED|HIDDEN',
+  ],
 };
 
 const dilateImage = {
@@ -37,8 +36,8 @@ const dilateImage = {
     'Name the output image|ALIAS name',
     'Shape|[Ball,Cube,Diamond,Disk,Octahedron,Square,Star]|Disk|LOCAL|ALIAS shape',
     'Size|integer|1|LOCAL|ALIAS size',
-    'Structuring element|string|{shape},{size}|COMPUTED|HIDDEN'
-  ]
+    'Structuring element|string|{shape},{size}|COMPUTED|HIDDEN',
+  ],
 };
 
 const erodeImage = {
@@ -50,8 +49,8 @@ const erodeImage = {
     'Name the output image|ALIAS name',
     'Shape|[Ball,Cube,Diamond,Disk,Octahedron,Square,Star]|Disk|LOCAL|ALIAS shape',
     'Size|units|1|LOCAL|ALIAS size',
-    'Structuring element|string|{shape},{size}|COMPUTED|HIDDEN'
-  ]
+    'Structuring element|string|{shape},{size}|COMPUTED|HIDDEN',
+  ],
 };
 
 const dilateObjects = {
@@ -63,8 +62,8 @@ const dilateObjects = {
     'Name the output object|ALIAS name',
     'Shape|[Ball,Cube,Diamond,Disk,Octahedron,Square,Star]|Disk|LOCAL|ALIAS shape',
     'Size|integer|1|LOCAL|ALIAS size',
-    'Structuring element|string|{shape},{size}|COMPUTED|HIDDEN'
-  ]
+    'Structuring element|string|{shape},{size}|COMPUTED|HIDDEN',
+  ],
 };
 
 const erodeObjects = {
@@ -78,8 +77,8 @@ const erodeObjects = {
     'Size|integer|1|LOCAL|ALIAS size',
     'Prevent object removal|boolean|true',
     'Relabel resulting objects|boolean|false',
-    'Structuring element|string|{shape},{size}|COMPUTED|HIDDEN'
-  ]
+    'Structuring element|string|{shape},{size}|COMPUTED|HIDDEN',
+  ],
 };
 
 const fillObjects = {
@@ -90,8 +89,8 @@ const fillObjects = {
     'Select the input object|object',
     'Name the output object|ALIAS name',
     'Minimum hole size|float|64.0',
-    'Planewise fill|boolean|false'
-  ]
+    'Planewise fill|boolean|false',
+  ],
 };
 
 const gaussianFilter = {
@@ -101,29 +100,22 @@ const gaussianFilter = {
   parameters: [
     'Select the input image|file',
     'Name the output image|ALIAS name',
-    'Sigma|integer|1'
-  ]
+    'Sigma|integer|1',
+  ],
 };
 
 const matchTemplate = {
   name: 'MatchTemplate',
   group: 'Advanced',
   output: 'name|file',
-  parameters: [
-    'Image|file',
-    'Template|file',
-    'Output|ALIAS name'
-  ]
+  parameters: ['Image|file', 'Template|file', 'Output|ALIAS name'],
 };
 
 const medialAxis = {
   name: 'MedialAxis',
   group: 'Advanced',
   output: 'name|file',
-  parameters: [
-    'Select the input image|file',
-    'Name the output image|ALIAS name'
-  ]
+  parameters: ['Select the input image|file', 'Name the output image|ALIAS name'],
 };
 
 const medianFilter = {
@@ -133,18 +125,15 @@ const medianFilter = {
   parameters: [
     'Select the input image|ALIAS input|file',
     'Name the output image|string|MedianFilter|ALIAS output',
-    'Window|integer|3|ALIAS value'
-  ]
+    'Window|integer|3|ALIAS value',
+  ],
 };
 
 const morphologicalSkeleton = {
   name: 'MorphologicalSkeleton',
   group: 'Advanced',
   output: 'name|file',
-  parameters: [
-    'Select the input image|file',
-    'Name the output image|ALIAS name'
-  ]
+  parameters: ['Select the input image|file', 'Name the output image|ALIAS name'],
 };
 
 const opening = {
@@ -156,8 +145,8 @@ const opening = {
     'Name the output image|ALIAS name',
     'Shape|[Ball,Cube,Diamond,Disk,Octahedron,Square,Star]|Disk|LOCAL|ALIAS shape',
     'Size|integer|1|LOCAL|ALIAS size',
-    'Structuring element|string|{shape},{size}|COMPUTED|HIDDEN'
-  ]
+    'Structuring element|string|{shape},{size}|COMPUTED|HIDDEN',
+  ],
 };
 
 const reduceNoise = {
@@ -169,8 +158,8 @@ const reduceNoise = {
     'Name the output image|ALIAS name',
     'Size|integer|7',
     'Distance|integer|11',
-    'Cut-off distance|float|0.1'
-  ]
+    'Cut-off distance|float|0.1',
+  ],
 };
 
 const removeHoles = {
@@ -180,18 +169,15 @@ const removeHoles = {
   parameters: [
     'Select the input image|file|ALIAS input',
     'Name the output image|string|RemoveHoles|ALIAS output',
-    'Size of holes to fill|float|1.0|ALIAS value'
-  ]
+    'Size of holes to fill|float|1.0|ALIAS value',
+  ],
 };
 
 const shrinkToObjectCenters = {
   name: 'ShrinkToObjectCenters',
   group: 'Advanced',
   output: 'name|object',
-  parameters: [
-    'Select the input object|object',
-    'Name the output object|ALIAS name'
-  ]
+  parameters: ['Select the input object|object', 'Name the output object|ALIAS name'],
 };
 
 const watershed = {
@@ -217,8 +203,8 @@ const watershed = {
     'Maximum number of seeds|integer|-1|ADVANCED',
     'Shape|[Ball,Cube,Diamond,Disk,Octahedron,Square,Star]|Disk|ADVANCED|LOCAL|ALIAS shape',
     'Size|integer|1|ADVANCED|LOCAL|ALIAS size',
-    'Structuring element for seed dilation|string|{shape},{size}|COMPUTED|HIDDEN'
-  ]
+    'Structuring element for seed dilation|string|{shape},{size}|COMPUTED|HIDDEN',
+  ],
 };
 
 export default [
@@ -237,5 +223,5 @@ export default [
   reduceNoise,
   removeHoles,
   shrinkToObjectCenters,
-  watershed
+  watershed,
 ];

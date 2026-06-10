@@ -18,7 +18,7 @@ import Remote from '../../basic/Remote';
 import buildUrl from './url-builder';
 
 export default class DataStorageTags extends Remote {
-  constructor (id, path, version) {
+  constructor(id, path, version) {
     super();
     this.url = buildUrl(id, path, version);
   }

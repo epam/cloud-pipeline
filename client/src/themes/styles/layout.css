@@ -770,15 +770,15 @@ h6 {
   color: var(--cp-color-red);
 }
 
-.ReactTable.-striped .rt-tr.-even {
+.cp-library-metadata-table.-striped tbody tr:nth-child(even) {
   background-color: var(--cp-color-bg-elevated);
 }
 
-.ReactTable.-striped .rt-tr.-odd {
+.cp-library-metadata-table.-striped tbody tr:nth-child(odd) {
   background-color: var(--cp-color-bg-striped);
 }
 
-.ReactTable.-highlight .rt-tbody .rt-tr:not(.-padRow):hover {
+.cp-library-metadata-table.-highlight tbody tr:hover {
   background-color: var(--cp-color-interactive-selected-bg);
   color: var(--cp-color-interactive-selected-text);
 }

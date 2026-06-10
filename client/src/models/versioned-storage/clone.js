@@ -17,7 +17,7 @@
 import VSRemotePost from './base/remote-post';
 
 export default class VSClone extends VSRemotePost {
-  constructor (runId, storageId, storageVersion) {
+  constructor(runId, storageId, storageVersion) {
     super(runId);
     this.url = `vs/${storageId}/clone${storageVersion ? `?revision=${storageVersion}` : ''}`;
   }

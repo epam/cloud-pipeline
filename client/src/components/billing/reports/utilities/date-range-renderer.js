@@ -14,46 +14,46 @@
  * limitations under the License.
  */
 
-import moment from 'moment-timezone';
+import {ensureDayjs} from '../../../../utils/dayjs';
 
-function isRangeStart (date, range, formatter) {
-  return moment(date).startOf(range).format(formatter) === date.format(formatter);
+function isRangeStart(date, range, formatter) {
+  const normalized = ensureDayjs(date);
+  return normalized.startOf(range).format(formatter) === normalized.format(formatter);
 }
 
-function isRangeEnd (date, range, formatter) {
-  return moment(date).endOf(range).format(formatter) === date.format(formatter);
+function isRangeEnd(date, range, formatter) {
+  const normalized = ensureDayjs(date);
+  return normalized.endOf(range).format(formatter) === normalized.format(formatter);
 }
 
-function isFullRange (start, end, unit, formatter) {
+function isFullRange(start, end, unit, formatter) {
   return isRangeStart(start, unit, formatter) && isRangeEnd(end, unit, formatter);
 }
 
-const isMonthStart = (date) => isRangeStart(date, 'M', 'D.MM');
-const isMonthEnd = (date) => isRangeEnd(date, 'M', 'D.MM');
+const isMonthStart = (date) => isRangeStart(date, 'month', 'D.MM');
+const isMonthEnd = (date) => isRangeEnd(date, 'month', 'D.MM');
 const isFullMonth = (start, end) => isMonthStart(start) && isMonthEnd(end);
 
 const rules = [
   {
-    value: date => date.format('DD.MM.YYYY'),
-    render: (start) => start.format('DD MMM YYYY')
+    value: (date) => date.format('DD.MM.YYYY'),
+    render: (start) => start.format('DD MMM YYYY'),
   },
   {
-    value: date => date.format('MM.YYYY'),
+    value: (date) => date.format('MM.YYYY'),
     render: (start, end) => {
       if (isFullMonth(start, end)) {
         return start.format('MMMM YYYY');
       }
       return `${start.format('MMMM YYYY')}, ${start.format('DD')} - ${end.format('DD')}`;
-    }
+    },
   },
   {
-    value: date => date.format('YYYY'),
+    value: (date) => date.format('YYYY'),
     render: (start, end, year) => {
-      const dateFormat = isMonthStart(start) && isMonthEnd(end)
-        ? 'MMMM'
-        : 'DD MMMM';
+      const dateFormat = isMonthStart(start) && isMonthEnd(end) ? 'MMMM' : 'DD MMMM';
       return `${start.format(dateFormat)} - ${end.format(dateFormat)}, ${year}`;
-    }
+    },
   },
   {
     value: () => undefined,
@@ -61,22 +61,21 @@ const rules = [
       const startStringFormat = isMonthStart(start) ? 'MMM YYYY' : 'DD MMM YYYY';
       const endStringFormat = isMonthEnd(end) ? 'MMM YYYY' : 'DD MMM YYYY';
       return `${start.format(startStringFormat)} - ${end.format(endStringFormat)}`;
-    }
-  }
+    },
+  },
 ];
 
-export default function dateRangeRenderer (start, end) {
+export default function dateRangeRenderer(start, end) {
   if (!start || !end) {
     return undefined;
   }
-  const [firstMatch] = rules.map(
-    (rule) => ({
+  const [firstMatch] = rules
+    .map((rule) => ({
       startValue: rule.value(start),
       endValue: rule.value(end),
-      render: () => rule.render(start, end, rule.value(start))
-    })
-  )
-    .filter(rule => rule.startValue === rule.endValue);
+      render: () => rule.render(start, end, rule.value(start)),
+    }))
+    .filter((rule) => rule.startValue === rule.endValue);
   if (!firstMatch) {
     return undefined;
   }

@@ -19,7 +19,7 @@ import FolderLoadWithMetadata from './FolderLoadWithMetadata';
 
 class Folders {
   /* eslint-disable */
-  static getCache (cache, id, model) {
+  static getCache(cache, id, model) {
     if (!cache.has(id)) {
       cache.set(id, new model(id));
     }
@@ -28,7 +28,7 @@ class Folders {
   }
 
   /* eslint-enable */
-  static invalidateCache (cache, id) {
+  static invalidateCache(cache, id) {
     if (cache.has(id)) {
       if (cache.get(id).invalidateCache) {
         cache.get(id).invalidateCache();
@@ -41,17 +41,17 @@ class Folders {
   _foldersCache = new Map();
   _folders = new Map();
 
-  load (id) {
+  load(id) {
     return this.constructor.getCache(this._foldersCache, `${id}`, FolderLoadWithMetadata);
   }
 
-  invalidateFolder (id) {
+  invalidateFolder(id) {
     this.constructor.invalidateCache(this._foldersCache, `${id}`);
     this.constructor.invalidateCache(this._folders, `${id}`);
     FolderLoadWithMetadata.metadataCache.invalidateMetadata(id, 'FOLDER');
   }
 
-  loadWithoutMetadata (id) {
+  loadWithoutMetadata(id) {
     return this.constructor.getCache(this._folders, `${id}`, FolderLoad);
   }
 }

@@ -13,12 +13,14 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-/* eslint-disable max-len */
 
 export default {
   name: 'IdentifySecondaryObjects',
   group: 'Object Processing',
-  outputs: ['name|object', 'newName|object|IF (discardPrimaryObjects==true AND discardObjectsTouchingBorder==true)'],
+  outputs: [
+    'name|object',
+    'newName|object|IF (discardPrimaryObjects==true AND discardObjectsTouchingBorder==true)',
+  ],
   sourceImageParameter: 'input',
   parameters: [
     'Select the input image|file|ALIAS input|REQUIRED',
@@ -28,7 +30,7 @@ export default {
 
     // Thresholding
     'Threshold strategy|[Global,Adaptive]|ADVANCED|ALIAS strategy|IF method!=="Distance - N"',
-    `Thresholding method|[Minimum Cross-Entropy,Otsu,Robust Background,Savuola|IF strategy==Adaptive,Measurement|IF strategy!=Adaptive,Manual|IF strategy!=Adaptive]|Minimum Cross-Entropy|ALIAS thresholdingMethod|ADVANCED|IF method!=="Distance - N"`,
+    'Thresholding method|[Minimum Cross-Entropy,Otsu,Robust Background,Savuola|IF strategy==Adaptive,Measurement|IF strategy!=Adaptive,Manual|IF strategy!=Adaptive]|Minimum Cross-Entropy|ALIAS thresholdingMethod|ADVANCED|IF method!=="Distance - N"',
 
     // Thresholding > Otsu
     'Two-class or three-class thresholding?|[Two classes, Three classes]|Two classes|IF thresholdingMethod==Otsu|ADVANCED|ALIAS otsuMethodType|IF method!=="Distance - N"|ALIAS otsuMethodType',
@@ -59,12 +61,21 @@ export default {
             inputName = outputs[0].name;
           }
         }
-        return ['FileName', 'Frame', 'Height', 'MD5Digest', 'PathName', 'Scaling', 'Series', 'URL', 'Width']
-          .map(method => ({title: method, value: `${method}_${inputName}`}));
+        return [
+          'FileName',
+          'Frame',
+          'Height',
+          'MD5Digest',
+          'PathName',
+          'Scaling',
+          'Series',
+          'URL',
+          'Width',
+        ].map((method) => ({title: method, value: `${method}_${inputName}`}));
       },
       visibilityHandler: (cpModule) =>
         cpModule.getParameterValue('thresholdingMethod') === 'Measurement' &&
-        cpModule.getParameterValue('method') !== 'Distance - N'
+        cpModule.getParameterValue('method') !== 'Distance - N',
     },
 
     // Thresholding > Manual
@@ -83,6 +94,6 @@ export default {
     'Fill holes in identified objects?|flag|true|ALIAS fillHoles',
     'Discard secondary objects touching the border of the image?|flag|false|ALIAS discardObjectsTouchingBorder',
     'Discard the associated primary objects?|flag|false|IF discardObjectsTouchingBorder==true|ALIAS discardPrimaryObjects',
-    'Name the new primary objects|IF (discardPrimaryObjects==true AND discardObjectsTouchingBorder==true)|ALIAS newName'
-  ]
+    'Name the new primary objects|IF (discardPrimaryObjects==true AND discardObjectsTouchingBorder==true)|ALIAS newName',
+  ],
 };

@@ -17,10 +17,10 @@
 import Remote from '../basic/Remote';
 
 class CloudRegionsInfo extends Remote {
-  constructor () {
+  constructor() {
     super();
     this.url = '/cloud/region/info';
-  };
+  }
 }
 
 export default new CloudRegionsInfo();

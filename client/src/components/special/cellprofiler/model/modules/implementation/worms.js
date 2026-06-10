@@ -13,7 +13,6 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-/* eslint-disable max-len */
 
 const identifyDeadWorms = {
   name: 'IdentifyDeadWorms',
@@ -27,8 +26,8 @@ const identifyDeadWorms = {
     'Number of angles|integer|32',
     'Automatically calculate distance parameters?|boolean|true|ALIAS calculate',
     'Spatial distance|float|5.0|IF calculate==false',
-    'Angular distance|float|300.0|IF calculate==false'
-  ]
+    'Angular distance|float|300.0|IF calculate==false',
+  ],
 };
 
 const straightenWorms = {
@@ -47,8 +46,8 @@ const straightenWorms = {
     'Number of longitudinal stripes|integer|3',
     'Align worms?|[Do not align,Top brightest,Bottom brightest,Flip manually]|Do not align',
     'Select an input image to straighten|file|ALIAS input',
-    'Name the output straightened image|ALIAS fileName|IF input!==""'
-  ]
+    'Name the output straightened image|ALIAS fileName|IF input!==""',
+  ],
 };
 
 const untangleWorms = {
@@ -59,7 +58,7 @@ const untangleWorms = {
     'overlapping|object|IF (overlap==Both OR overlap=="With overlap")',
     'overlappedImage|file|IF (retain==true AND (overlap==Both OR overlap=="With overlap"))',
     'nonOverlapping|object|IF (overlap==Both OR overlap=="Without overlap")',
-    'nonOverlappedImage|file|IF (retainNonOverlapping==true AND (overlap==Both OR overlap=="Without overlap"))'
+    'nonOverlappedImage|file|IF (retainNonOverlapping==true AND (overlap==Both OR overlap=="Without overlap"))',
   ],
   parameters: [
     'Train or untangle worms?|[Untangle,Train]|Untangle',
@@ -78,12 +77,8 @@ const untangleWorms = {
     // 'Training set file name|string|TrainingSet.xml',
     'Use training set weights?|boolean|true|ALIAS useWeights',
     'Overlap weight|float|5.0|IF useWeights==false',
-    'Leftover weight|float|10.0|IF useWeights==false'
-  ]
+    'Leftover weight|float|10.0|IF useWeights==false',
+  ],
 };
 
-export default [
-  identifyDeadWorms,
-  straightenWorms,
-  untangleWorms
-];
+export default [identifyDeadWorms, straightenWorms, untangleWorms];

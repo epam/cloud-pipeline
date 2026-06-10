@@ -33,17 +33,13 @@ import roleModel from '../roleModel';
  * @param {string} sharedFolder
  * @returns {Promise<undefined|SharedStorageInfo>}
  */
-export default function getSharedFolderInfo (
-  preferences,
-  sharedStorage,
-  sharedFolder
-) {
+export default function getSharedFolderInfo(preferences, sharedStorage, sharedFolder) {
   return new Promise((resolve, reject) => {
     let sharedStorageId;
     let sharedStoragePermissions;
     let mask = 0;
     findSharedStorage(preferences, sharedStorage, sharedFolder)
-      .then(storage => {
+      .then((storage) => {
         const {id: storageId, mask: storageMask = 0} = storage || {};
         mask = storageMask;
         if (storageId) {
@@ -52,17 +48,18 @@ export default function getSharedFolderInfo (
         }
         return Promise.resolve();
       })
-      .then(permissions => {
+      .then((permissions) => {
         sharedStoragePermissions = permissions;
         return getSharedLink(sharedStorageId);
       })
-      .then(url => sharedStorageId
-        ? resolve({
-          url,
-          permissions: sharedStoragePermissions,
-          permissionsModificationAllowed: roleModel.isOwner({mask})
-        })
-        : resolve(undefined)
+      .then((url) =>
+        sharedStorageId
+          ? resolve({
+              url,
+              permissions: sharedStoragePermissions,
+              permissionsModificationAllowed: roleModel.isOwner({mask}),
+            })
+          : resolve(undefined),
       )
       .catch(reject);
   });

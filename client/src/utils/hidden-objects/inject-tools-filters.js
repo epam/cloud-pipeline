@@ -18,15 +18,13 @@ import {inject} from 'mobx-react';
 import {HIDDEN_OBJECTS_INJECTION} from './hoc';
 import * as filters from './tools-filter';
 
-export default function injectToolsFilters (WrappedComponent) {
+export default function injectToolsFilters(WrappedComponent) {
   return inject(HIDDEN_OBJECTS_INJECTION)(
     inject(({hiddenObjects}) => ({
       hiddenToolsFilter: filters.toolsFilter(hiddenObjects),
       hiddenToolGroupsFilter: filters.toolGroupsFilter(hiddenObjects),
       hiddenToolRegistriesFilter: filters.toolRegistriesFilter(hiddenObjects),
-      hiddenToolsTreeFilter: filters.toolsTreeFilter(hiddenObjects)
-    }))(
-      WrappedComponent
-    )
+      hiddenToolsTreeFilter: filters.toolsTreeFilter(hiddenObjects),
+    }))(WrappedComponent),
   );
 }

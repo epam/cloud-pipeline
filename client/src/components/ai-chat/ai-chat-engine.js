@@ -5,11 +5,9 @@ import {io} from 'socket.io-client';
 /**
  * @returns {Promise<{base: string, socketIOUrl: URL}>}
  */
-async function _initializeAiChatAPI () {
+async function _initializeAiChatAPI() {
   await preferences.fetchIfNeededOrWait();
-  const {
-    api
-  } = preferences.miscAIPreferences || {};
+  const {api} = preferences.miscAIPreferences || {};
   if (!api) {
     throw new Error('Chatbot API is not specified');
   }
@@ -20,14 +18,12 @@ async function _initializeAiChatAPI () {
   const socketIOUrl = new URL('socket.io', base);
   return {
     base,
-    socketIOUrl
+    socketIOUrl,
   };
 }
 
-async function _aiApiFetch (uri, options) {
-  const {
-    base
-  } = await _initializeAiChatAPI();
+async function _aiApiFetch(uri, options) {
+  const {base} = await _initializeAiChatAPI();
   if (uri.startsWith('/')) {
     uri = uri.slice(1);
   }
@@ -36,50 +32,40 @@ async function _aiApiFetch (uri, options) {
     throw new Error(
       response.statusText
         ? `error fetching "${uri}": ${response.statusText}`
-        : `error fetching "${uri}": ${response.status}`
+        : `error fetching "${uri}": ${response.status}`,
     );
   }
   const data = await response.json();
-  const {
-    status = 'OK',
-    message,
-    payload
-  } = data || {};
+  const {status = 'OK', message, payload} = data || {};
   if (!/^OK$/i.test(status)) {
     throw new Error(message || `error fetching "${uri}"`);
   }
   return payload;
 }
 
-async function _aiApiGet (uri) {
+async function _aiApiGet(uri) {
   const fetchOptions = {
     mode: 'cors',
     credentials: 'include',
     method: 'GET',
     headers: {
-      'Content-Type': 'application/json; charset=UTF-8;'
-    }
+      'Content-Type': 'application/json; charset=UTF-8;',
+    },
   };
-  return _aiApiFetch(
-    uri,
-    fetchOptions
-  );
+  return _aiApiFetch(uri, fetchOptions);
 }
 
-async function _aiApiPost (uri, body) {
+async function _aiApiPost(uri, body) {
   const fetchOptions = {
     mode: 'cors',
     credentials: 'include',
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json; charset=UTF-8;'
+      'Content-Type': 'application/json; charset=UTF-8;',
     },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
   };
-  return _aiApiFetch(
-    uri,
-    fetchOptions
-  );
+  return _aiApiFetch(uri, fetchOptions);
 }
 
 class AiChatEngine {
@@ -102,45 +88,44 @@ class AiChatEngine {
 
   _messageToken = {};
 
-  constructor (options = undefined) {
+  constructor(options = undefined) {
     makeAutoObservable(this);
-    const {
-      chatId
-    } = options || {};
-    (this.changeChat)(chatId);
+    const {chatId} = options || {};
+    this.changeChat(chatId);
   }
 
-  get pending () {
+  get pending() {
     return this._pending || this._messagePending || this._socketPending;
   }
 
-  get initialized () {
+  get initialized() {
     return this._initialized;
   }
 
-  get error () {
+  get error() {
     return this._error;
   }
 
-  get socketError () {
+  get socketError() {
     return this._socketError;
   }
 
-  get messageError () {
+  get messageError() {
     return this._messageError;
   }
 
-  get messages () {
+  get messages() {
     return this._messages;
   }
 
-  destroy () {
+  destroy() {
     this.stopListeningMessage();
     this._initializeToken = {};
     this._initializePromise = undefined;
     this._messageToken = {};
   }
-  async changeChat (chatId) {
+
+  async changeChat(chatId) {
     if (this._chatId === chatId) {
       return;
     }
@@ -158,8 +143,9 @@ class AiChatEngine {
     this._messageError = undefined;
     await this.initialize();
   }
-  async sendMessage (message) {
-    const token = this._messageToken = {};
+
+  async sendMessage(message) {
+    const token = (this._messageToken = {});
     this._messageError = undefined;
     this._messagePending = true;
     const applyChanges = (fn) => {
@@ -178,10 +164,7 @@ class AiChatEngine {
       if (invalidated()) {
         return;
       }
-      await _aiApiPost(
-        `chat/${this._chat.identifier}/message`,
-        message
-      );
+      await _aiApiPost(`chat/${this._chat.identifier}/message`, message);
       if (invalidated()) {
         return;
       }
@@ -196,13 +179,15 @@ class AiChatEngine {
       });
     }
   }
-  async reload () {
+
+  async reload() {
     await this.initialize(true);
   }
-  async initialize (force = false) {
+
+  async initialize(force = false) {
     if (!this._initializePromise || force) {
       this._initializePromise = (async () => {
-        const token = this._initializeToken = {};
+        const token = (this._initializeToken = {});
         const applyChanges = (fn) => {
           if (token === this._initializeToken) {
             fn();
@@ -227,19 +212,17 @@ class AiChatEngine {
           if (!chat) {
             throw new Error('Error initializing chat');
           }
-          const messages = await _aiApiGet(
-            `chat/${chat.identifier}/messages`
-          );
+          const messages = await _aiApiGet(`chat/${chat.identifier}/messages`);
           return applyChanges(() => {
             this._chat = chat;
             this._chatId = chat.identifier;
             this._messages = (messages || []).map((message) => observable(message));
             this._error = undefined;
             this._initialized = true;
-            const assistantMessages = (messages || [])
-              .filter((message) => (message.role || '').toLowerCase() === 'assistant');
-            const pendingAssistantMessages = assistantMessages
-              .filter((message) => message.pending);
+            const assistantMessages = (messages || []).filter(
+              (message) => (message.role || '').toLowerCase() === 'assistant',
+            );
+            const pendingAssistantMessages = assistantMessages.filter((message) => message.pending);
             listenMessage = pendingAssistantMessages.pop();
           });
         } catch (error) {
@@ -259,7 +242,8 @@ class AiChatEngine {
     }
     return this._initializePromise;
   }
-  async reloadMessages () {
+
+  async reloadMessages() {
     try {
       await this.initialize();
       this.stopListeningMessage();
@@ -267,15 +251,13 @@ class AiChatEngine {
         throw new Error('Chatbot not initialized');
       }
       this._pending = true;
-      const messages = await _aiApiGet(
-        `chat/${this._chatId}/messages`
-      );
+      const messages = await _aiApiGet(`chat/${this._chatId}/messages`);
       this._messages = (messages || []).map((message) => observable(message));
       this._error = undefined;
-      const assistantMessages = (messages || [])
-        .filter((message) => (message.role || '').toLowerCase() === 'assistant');
-      const pendingAssistantMessages = assistantMessages
-        .filter((message) => message.pending);
+      const assistantMessages = (messages || []).filter(
+        (message) => (message.role || '').toLowerCase() === 'assistant',
+      );
+      const pendingAssistantMessages = assistantMessages.filter((message) => message.pending);
       const listenMessage = pendingAssistantMessages.pop();
       if (this._initialized && listenMessage) {
         await this.startListeningMessage(listenMessage);
@@ -286,12 +268,13 @@ class AiChatEngine {
       this._pending = false;
     }
   }
-  async startListeningMessage (message) {
+
+  async startListeningMessage(message) {
     if (!message) {
       return;
     }
     this.stopListeningMessage();
-    const token = this._socketToken = {};
+    const token = (this._socketToken = {});
     const applyChanges = (fn) => {
       if (token === this._socketToken) {
         fn();
@@ -301,11 +284,12 @@ class AiChatEngine {
     };
     let socket;
     try {
-      const messageId = typeof message === 'string'
-        ? message
-        : typeof message === 'object'
-          ? message.identifier
-          : undefined;
+      const messageId =
+        typeof message === 'string'
+          ? message
+          : typeof message === 'object'
+            ? message.identifier
+            : undefined;
       if (!messageId) {
         throw new Error(`Unsupported message type "${typeof message}"`);
       }
@@ -314,10 +298,7 @@ class AiChatEngine {
         throw new Error(`Message ${messageId} not found`);
       }
       const messageIdShort = messageInstance.identifier.slice(0, 8);
-      console.log(
-        `[AI Chat engine] starting listening message ${messageIdShort}`,
-        messageInstance
-      );
+      console.log(`[AI Chat engine] starting listening message ${messageIdShort}`, messageInstance);
       this._socketPending = true;
       this._socketError = undefined;
       let finished = false;
@@ -326,22 +307,23 @@ class AiChatEngine {
         withCredentials: true,
         secure: true,
         path: socketIOUrl.pathname,
-        transports: ['websocket']
+        transports: ['websocket'],
       });
-      const waitUntilConnect = () => new Promise((resolve, reject) => {
-        const errorGenerator = (socketError) => () => {
-          finished = true;
-          reject(new Error(socketError));
-        };
-        socket.on('connect', resolve);
-        const onConnectError = errorGenerator('socket connect error');
-        const onDisconnect = errorGenerator('socket disconnected');
-        socket.on('connect_error', onConnectError);
-        socket.on('disconnect', onDisconnect);
-      });
-      console.log(`[AI Chat engine] connecting to socket...`);
+      const waitUntilConnect = () =>
+        new Promise((resolve, reject) => {
+          const errorGenerator = (socketError) => () => {
+            finished = true;
+            reject(new Error(socketError));
+          };
+          socket.on('connect', resolve);
+          const onConnectError = errorGenerator('socket connect error');
+          const onDisconnect = errorGenerator('socket disconnected');
+          socket.on('connect_error', onConnectError);
+          socket.on('disconnect', onDisconnect);
+        });
+      console.log('[AI Chat engine] connecting to socket...');
       await waitUntilConnect();
-      console.log(`[AI Chat engine] connected to socket`);
+      console.log('[AI Chat engine] connected to socket');
       applyChanges(() => {
         this._socket = socket;
 
@@ -352,7 +334,7 @@ class AiChatEngine {
           finished = true;
           applyChanges(() => {
             console.log(
-              `[AI Chat engine] finishing listening message ${messageIdShort} updates...`
+              `[AI Chat engine] finishing listening message ${messageIdShort} updates...`,
             );
             this.stopListeningMessage();
             this.reloadMessages();
@@ -362,28 +344,20 @@ class AiChatEngine {
         const onError = (error = '') => {
           applyChanges(() => {
             console.log(
-              `[AI Chat engine] error listening message ${messageIdShort} updates: ${error}`
+              `[AI Chat engine] error listening message ${messageIdShort} updates: ${error}`,
             );
             this._socketError = error;
           });
         };
         const onUpdateMessage = (data) => {
-          const {
-            parts = [],
-            status,
-            pending
-          } = data;
+          const {parts = [], status, pending} = data;
           messageInstance.parts = parts;
           messageInstance.status = status;
           messageInstance.pending = pending;
         };
         const onUpdateMessagePart = (part) => {
-          const {
-            parts = []
-          } = messageInstance;
-          const {
-            identifier
-          } = part;
+          const {parts = []} = messageInstance;
+          const {identifier} = part;
           const partIndex = parts.findIndex((o) => o.identifier === identifier);
           if (partIndex >= 0) {
             const newParts = parts.slice();
@@ -398,8 +372,8 @@ class AiChatEngine {
         socket.on('disconnect', onDone);
         console.log(`[AI Chat engine] starting listening message ${messageIdShort} updates...`);
         socket.emit('assistant', {
-          'chat_id': messageInstance.chat_id,
-          'message_id': messageInstance.identifier
+          chat_id: messageInstance.chat_id,
+          message_id: messageInstance.identifier,
         });
       });
     } catch (error) {
@@ -409,7 +383,7 @@ class AiChatEngine {
     } finally {
       this._socketPending = false;
     }
-  };
+  }
 
   stopListeningMessage = () => {
     this._socketToken = {};

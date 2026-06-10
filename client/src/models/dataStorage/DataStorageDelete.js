@@ -17,16 +17,15 @@
 import Remote from '../basic/Remote';
 
 export default class DataStorageDelete extends Remote {
-
-  constructor (id, cloud = true) {
+  constructor(id, cloud = true) {
     super();
     this.constructor.fetchOptions = {
       headers: {
-        'Content-type': 'application/json; charset=UTF-8'
+        'Content-type': 'application/json; charset=UTF-8',
       },
       mode: 'cors',
       credentials: 'include',
-      method: 'DELETE'
+      method: 'DELETE',
     };
     this.url = `/datastorage/${id}/delete?cloud=${cloud}`;
   }

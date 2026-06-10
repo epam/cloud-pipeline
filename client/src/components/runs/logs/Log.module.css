@@ -1,0 +1,248 @@
+/*
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+.log-card {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.container {
+  text-align: center;
+  width: 100%;
+  height: 100vh;
+}
+
+.action-buttons-container > div,
+.action-buttons-container > a {
+  padding-left: 12px;
+}
+
+.run-title i {
+  margin-right: 10px;
+}
+
+.run-title > span {
+  vertical-align: middle;
+}
+
+.number {
+  color: var(--cp-color-text-secondary);
+  padding-left: 5px !important;
+  padding-right: 0 !important;
+}
+
+.logs-table-container {
+  /*
+  height: 100% is not working under Safari, so we should explicitly set position
+   */
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow-x: hidden;
+}
+
+.logs-table {
+  outline: none;
+  overflow-x: hidden;
+}
+
+.log-row {
+  padding-left: 8px;
+}
+
+.log-row:hover {
+  background-color: var(--cp-color-bg-layout-dark);
+}
+
+.log-row-height-calculator {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  visibility: hidden;
+  padding-left: 8px;
+}
+
+.row-detail-last {
+  margin-bottom: 5px;
+}
+
+.log-content {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+
+.log-content .logs {
+  height: 100%;
+  overflow: auto;
+}
+
+.task-list,
+.task-list-timings {
+  overflow: unset;
+  font-family: Proggy, Courier, monospace;
+  flex: 1;
+}
+
+.task-list li,
+.task-list li a {
+  height: 30px !important;
+  line-height: 30px;
+}
+
+.task-list-timings li,
+.task-list-timings li a {
+  height: 70px !important;
+  line-height: 12px;
+}
+
+.task-parameter-name {
+  padding-left: 5px;
+  vertical-align: top;
+  font-weight: bold;
+}
+
+.node-parameter-name {
+  font-weight: bolder;
+}
+
+.task-parameter-value,
+.node-parameter-value {
+  margin-left: 5px;
+}
+
+.pipeline-link,
+.pipeline-link:hover {
+  color: inherit;
+  text-decoration: underline;
+  vertical-align: middle;
+}
+
+.deleted-pipeline {
+  font-weight: normal;
+  vertical-align: middle;
+}
+
+.graph-container-full-height {
+  position: relative;
+  height: 100%;
+}
+
+.graph-container {
+  background-color: var(--cp-color-bg-elevated);
+  border: 0 solid var(--cp-color-border-card);
+  width: 100%;
+  position: relative;
+  height: 550px;
+}
+
+.graph-sider {
+  background-color: var(--cp-color-bg-elevated);
+  vertical-align: bottom;
+}
+
+.full-height-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: auto;
+}
+
+.run-details-table th {
+  text-align: left;
+}
+
+.instance-header-item {
+  margin-right: 2px;
+  padding: 2px;
+  border-radius: 3px;
+}
+
+.nested-runs {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.nested-runs,
+.nested-runs-header {
+  vertical-align: top;
+}
+
+.run-schedule,
+.run-schedule-header {
+  vertical-align: top;
+}
+
+.nested-run {
+  margin-right: 5px;
+  display: inline-block;
+  text-decoration: none;
+  padding: 0 2px;
+}
+
+.all-nested-runs {
+  margin-right: 5px;
+  display: inline-block;
+  padding: 0 2px;
+}
+
+.nested-run > div,
+.nested-run > i,
+.nested-run > span,
+.nested-run > b {
+  margin-right: 2px;
+}
+
+.nested-run > span.details {
+  margin-right: 0;
+}
+
+.nested-run > span.details::after {
+  content: ', ';
+}
+
+.nested-run > span.details:last-child::after {
+  content: none;
+}
+
+.nested-run:hover .run-id {
+  text-decoration: underline;
+}
+
+.tasks-navigation-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.timing-btn {
+  position: absolute;
+  top: 4px;
+  right: 25px;
+  z-index: 2;
+}

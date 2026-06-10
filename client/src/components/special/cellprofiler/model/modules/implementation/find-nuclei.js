@@ -13,19 +13,16 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-/* eslint-disable max-len */
+
 import {thresholding} from './common';
 import {
   filterObjectsBySizeParameters,
-  wrapLastModuleWithFilterObjectsModule
+  wrapLastModuleWithFilterObjectsModule,
 } from './object-processing/filter-objects';
 
-const {
-  parameters: thresholdingParameters,
-  values: thresholdingValues
-} = thresholding({
+const {parameters: thresholdingParameters, values: thresholdingValues} = thresholding({
   strategy: 'Adaptive',
-  thresholdingMethod: 'Minimum Cross-Entropy'
+  thresholdingMethod: 'Minimum Cross-Entropy',
 });
 
 const findNuclei = {
@@ -37,7 +34,7 @@ const findNuclei = {
     'Downsample|flag|false|ADVANCED|ALIAS downsample',
     'Downsample factor, %|float(0, 100)|50|ADVANCED|IF downsample==true|ALIAS downsampleFactor',
     'Fill holes of size|units|10|ADVANCED|ALIAS holeSize|PARAMETER Remove holes of size, px',
-    ...thresholdingParameters
+    ...thresholdingParameters,
   ],
   output: 'name|object',
   sourceImageParameter: 'input',
@@ -49,8 +46,8 @@ const findNuclei = {
       values: {
         input: '{parent.input}|COMPUTED',
         output: '{this.id}_{parent.input}_rescaled|COMPUTED',
-        method: 'Stretch each image to use the full intensity range'
-      }
+        method: 'Stretch each image to use the full intensity range',
+      },
     },
     {
       alias: 'resize',
@@ -68,12 +65,12 @@ const findNuclei = {
               return 1.0;
             }
             if (!Number.isNaN(downsampleFactor) && downsampleFactor > 0) {
-              return 1.0 - (downsampleFactor / 100.0);
+              return 1.0 - downsampleFactor / 100.0;
             }
           }
           return 0.5;
-        }
-      }
+        },
+      },
     },
     {
       alias: 'median',
@@ -81,8 +78,8 @@ const findNuclei = {
       values: {
         input: '{resize.output}|COMPUTED',
         output: '{this.id}_{resize.output}_median|COMPUTED',
-        value: 3
-      }
+        value: 3,
+      },
     },
     {
       alias: 'threshold',
@@ -90,8 +87,8 @@ const findNuclei = {
       values: {
         input: '{median.output}|COMPUTED',
         output: '{this.id}_{median.output}_threshold|COMPUTED',
-        ...thresholdingValues
-      }
+        ...thresholdingValues,
+      },
     },
     {
       alias: 'removeHoles',
@@ -99,8 +96,8 @@ const findNuclei = {
       values: {
         input: '{threshold.output}|COMPUTED',
         output: '{this.id}_{threshold.output}_remove_holes|COMPUTED',
-        value: '{parent.holeSize}|COMPUTED'
-      }
+        value: '{parent.holeSize}|COMPUTED',
+      },
     },
     {
       alias: 'watershed',
@@ -109,31 +106,28 @@ const findNuclei = {
         input: '{removeHoles.output}|COMPUTED',
         output: '{this.id}_watershed|COMPUTED',
         footprint: 10,
-        downsample: 2
-      }
+        downsample: 2,
+      },
     },
-    ...wrapLastModuleWithFilterObjectsModule(
-      cpModule,
-      {
-        alias: 'resizeObjects',
-        module: 'ResizeObjects',
-        values: {
-          input: '{watershed.output}|COMPUTED',
-          output: '{parent.name}|COMPUTED',
-          factor: (module, modules) => {
-            const resize = modules.resize;
-            if (resize) {
-              const value = Number(resize.getParameterValue('factor'));
-              if (!Number.isNaN(value) && value > 0) {
-                return 1.0 / value;
-              }
+    ...wrapLastModuleWithFilterObjectsModule(cpModule, {
+      alias: 'resizeObjects',
+      module: 'ResizeObjects',
+      values: {
+        input: '{watershed.output}|COMPUTED',
+        output: '{parent.name}|COMPUTED',
+        factor: (module, modules) => {
+          const resize = modules.resize;
+          if (resize) {
+            const value = Number(resize.getParameterValue('factor'));
+            if (!Number.isNaN(value) && value > 0) {
+              return 1.0 / value;
             }
-            return 1;
           }
-        }
-      }
-    )
-  ]
+          return 1;
+        },
+      },
+    }),
+  ],
 };
 
 export default findNuclei;

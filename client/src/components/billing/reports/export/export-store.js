@@ -15,34 +15,34 @@
  */
 
 import {message} from 'antd';
-import FileSaver from 'file-saver';
+import {downloadBlob} from '../../../../utils/download-blob';
 
 class ExportStore {
-  constructor () {
+  constructor() {
     this.listeners = [];
     this.imageListeners = [];
   }
 
-  attach (listener) {
+  attach(listener) {
     if (this.listeners.indexOf(listener) === -1) {
       this.listeners.push(listener);
     }
   }
 
-  attachImage (listener) {
+  attachImage(listener) {
     if (this.imageListeners.indexOf(listener) === -1) {
       this.imageListeners.push(listener);
     }
   }
 
-  detach (listener) {
+  detach(listener) {
     const index = this.listeners.indexOf(listener);
     if (index >= 0) {
       this.listeners.splice(index, 1);
     }
   }
 
-  detachImage (listener) {
+  detachImage(listener) {
     const index = this.imageListeners.indexOf(listener);
     if (index >= 0) {
       this.imageListeners.splice(index, 1);
@@ -51,14 +51,14 @@ class ExportStore {
 
   doCsvExport = (title, ...options) => {
     const hide = message.loading('Exporting...', 0);
-    const promises = this.listeners.map(listener => listener.getExportData(...options));
+    const promises = this.listeners.map((listener) => listener.getExportData(...options));
     Promise.all(promises)
       .then((sheets) => {
         hide();
         sheets.forEach((sheet, index) => {
           const extra = sheets.length > 1 ? ` (${index + 1} of ${sheets.length})` : '';
           const name = `${title}${extra}.csv`;
-          FileSaver.saveAs(sheet, name);
+          downloadBlob(sheet, name);
         });
       })
       .catch((error) => {
@@ -75,7 +75,7 @@ class ExportStore {
         const {order: bOrder} = b.props;
         return aOrder - bOrder;
       });
-      const promises = listeners.map(listener => listener.getExportData(...options));
+      const promises = listeners.map((listener) => listener.getExportData(...options));
       Promise.all(promises)
         .then((canvases) => {
           const filtered = canvases.filter(Boolean);
@@ -89,21 +89,17 @@ class ExportStore {
           context.fillStyle = 'white';
           context.fillRect(0, 0, width, height);
           context.fillStyle = 'rgb(89, 89, 89)';
-          context.font = `bold 12pt sans-serif`;
+          context.font = 'bold 12pt sans-serif';
           context.textAlign = 'center';
           context.textBaseline = 'middle';
-          context.fillText(
-            title,
-            width / 2.0,
-            titleHeight / 2.0
-          );
+          context.fillText(title, width / 2.0, titleHeight / 2.0);
           let y = titleHeight;
           filtered.forEach((canvasData) => {
             context.putImageData(canvasData, 0, y);
             y += canvasData.height;
           });
           canvasElement.toBlob((blob) => {
-            FileSaver.saveAs(blob, `${title}.png`);
+            downloadBlob(blob, `${title}.png`);
             hide();
           });
         })

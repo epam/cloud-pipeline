@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-export default function compareArrays (arr1, arr2, elementComparer) {
+export default function compareArrays(arr1, arr2, elementComparer) {
   const arrayIsEmpty = (array) => {
     return !array || !array.length;
   };

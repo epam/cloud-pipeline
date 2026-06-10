@@ -17,7 +17,7 @@
 import RemotePost from '../basic/RemotePost';
 
 export default class DataStorageItemSize extends RemotePost {
-  constructor () {
+  constructor() {
     super();
     this.url = '/datastorage/path/size';
   }

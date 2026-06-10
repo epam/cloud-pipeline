@@ -17,12 +17,12 @@
 import Chart from 'chart.js';
 import 'chart.js/dist/Chart.css';
 
-function getQuotaBarGroups (chart, dataIndex) {
+function getQuotaBarGroups(chart, dataIndex) {
   const datasets = chart?.config?.data?.datasets || [];
   const quotaBarDatasets = datasets
-    .filter(dataset => dataset.type === 'quota-bar')
-    .filter(dataset => dataIndex === undefined || dataset.data[dataIndex]);
-  return [...new Set(quotaBarDatasets.map(dataset => dataset.group))];
+    .filter((dataset) => dataset.type === 'quota-bar')
+    .filter((dataset) => dataIndex === undefined || dataset.data[dataIndex]);
+  return [...new Set(quotaBarDatasets.map((dataset) => dataset.group))];
 }
 
 Chart.defaults['quota-bar'] = Chart.defaults.line;
@@ -45,13 +45,13 @@ Chart.controllers['quota-bar'] = Chart.controllers.line.extend({
         textColor,
         showDataLabels,
         group,
-        quota
+        quota,
       } = dataset;
       const bars = this.chart.config.data.datasets
         .map((d, i) => this.chart.getDatasetMeta(i))
-        .filter(d => d.index !== index && d.type === 'bar');
+        .filter((d) => d.index !== index && d.type === 'bar');
       const [values] = this.chart.config.data.datasets
-        .filter(dataset => dataset.type === 'quota-bar')
+        .filter((dataset) => dataset.type === 'quota-bar')
         .map((dataset) => dataset.data);
       if (bars.length) {
         for (let i = 0; i < dataItems.length; i++) {
@@ -65,30 +65,25 @@ Chart.controllers['quota-bar'] = Chart.controllers.line.extend({
           if (borderWidth !== undefined) {
             lineWidth = borderWidth;
           }
-          const left = Math.min(
-            ...bars
-              .filter(b => b.data && b.data.length > i)
-              .map(b => b.data[i]._view.x - b.data[i]._view.width / 2.0)
-          ) + 2;
-          const right = Math.max(
-            ...bars
-              .filter(b => b.data && b.data.length > i)
-              .map(b => b.data[i]._view.x + b.data[i]._view.width / 2.0)
-          ) - 2;
+          const left =
+            Math.min(
+              ...bars
+                .filter((b) => b.data && b.data.length > i)
+                .map((b) => b.data[i]._view.x - b.data[i]._view.width / 2.0),
+            ) + 2;
+          const right =
+            Math.max(
+              ...bars
+                .filter((b) => b.data && b.data.length > i)
+                .map((b) => b.data[i]._view.x + b.data[i]._view.width / 2.0),
+            ) - 2;
           const barSize = Math.abs(right - left);
-          const groupSize = quotaBarGroupsCount
-            ? barSize / quotaBarGroupsCount
-            : 0;
-          const groupOffset = 0;// Math.min(3, Math.round(groupSize / 6));
+          const groupSize = quotaBarGroupsCount ? barSize / quotaBarGroupsCount : 0;
+          const groupOffset = 0; // Math.min(3, Math.round(groupSize / 6));
           const groupIndex = Math.max(0, quotaBarGroups.indexOf(group));
           const baseLine = yAxisScale.getPixelForValue(0) - lineWidth / 2.0;
-          const y = Math.min(
-            yAxisScale.getPixelForValue(dataItem) + lineWidth / 2.0,
-            baseLine
-          );
-          const labelViewY = y < 20
-            ? y + 15
-            : y - 5;
+          const y = Math.min(yAxisScale.getPixelForValue(dataItem) + lineWidth / 2.0, baseLine);
+          const labelViewY = y < 20 ? y + 15 : y - 5;
           ctx.save();
           ctx.beginPath();
           if (borderColor) {
@@ -129,7 +124,7 @@ Chart.controllers['quota-bar'] = Chart.controllers.line.extend({
         }
       }
     }
-  }
+  },
 });
 
 Chart.defaults.global.datasets['quota-bar'] = {showLine: false};

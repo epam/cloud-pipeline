@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-function getTotalDimensions (layout) {
+function getTotalDimensions(layout) {
   let maxWidth = 0;
   let maxHeight = 0;
   let minX = Infinity;
@@ -39,11 +39,11 @@ function getTotalDimensions (layout) {
     x: minX,
     y: minY,
     width: Math.max(2, maxWidth - minX),
-    height: Math.max(2, maxHeight - minY)
+    height: Math.max(2, maxHeight - minY),
   };
 }
 
-function rebuildLayout (layout, gridStyles, rebuildHeights = true, composing = false, move = true) {
+function rebuildLayout(layout, gridStyles, rebuildHeights = true, composing = false, move = true) {
   const moveItem = (item, index, array) => {
     const buildBreakPoints = () => {
       const breakPointsX = [];
@@ -67,16 +67,22 @@ function rebuildLayout (layout, gridStyles, rebuildHeights = true, composing = f
       breakPointsY.sort((a, b) => a - b);
       return {
         breakPointsX,
-        breakPointsY
+        breakPointsY,
       };
     };
     const zoneIsEmpty = (x1, y1, x2, y2) => {
       for (let i = 0; i < array.length; i++) {
         const layoutItem = array[i];
-        if (layoutItem.x <= x1 && layoutItem.x + layoutItem.w >= x1 &&
-          layoutItem.x <= x2 && layoutItem.x + layoutItem.w >= x2 &&
-          layoutItem.y <= y1 && layoutItem.y + layoutItem.h >= y1 &&
-          layoutItem.y <= y2 && layoutItem.y + layoutItem.h >= y2) {
+        if (
+          layoutItem.x <= x1 &&
+          layoutItem.x + layoutItem.w >= x1 &&
+          layoutItem.x <= x2 &&
+          layoutItem.x + layoutItem.w >= x2 &&
+          layoutItem.y <= y1 &&
+          layoutItem.y + layoutItem.h >= y1 &&
+          layoutItem.y <= y2 &&
+          layoutItem.y + layoutItem.h >= y2
+        ) {
           return false;
         }
       }
@@ -151,6 +157,7 @@ function rebuildLayout (layout, gridStyles, rebuildHeights = true, composing = f
   };
   if (move) {
     while (moveAll()) {
+      // noop
     }
   }
   if (rebuildHeights) {
@@ -160,26 +167,26 @@ function rebuildLayout (layout, gridStyles, rebuildHeights = true, composing = f
     }
     const widthItem = gridStyles.gridCols / dimensions.width;
     const heightItem = gridStyles.gridRows / dimensions.height;
-    return layout.map(item => ({
+    return layout.map((item) => ({
       i: item.i,
       x: Math.floor((item.x - dimensions.x) * widthItem),
       y: Math.floor((item.y - dimensions.y) * heightItem),
       w: Math.floor(item.w * widthItem),
-      h: Math.floor(item.h * heightItem)
+      h: Math.floor(item.h * heightItem),
     }));
   } else {
-    return (layout || []).map(item => ({
+    return (layout || []).map((item) => ({
       i: item.i,
       x: item.x,
       y: item.y,
       w: item.w,
-      h: item.h
+      h: item.h,
     }));
   }
 }
 
-function attachZone (oldLayout, key, zone, size) {
-  if (oldLayout.filter(item => item.i === key).length > 0) {
+function attachZone(oldLayout, key, zone, size) {
+  if (oldLayout.filter((item) => item.i === key).length > 0) {
     return;
   }
   oldLayout.push({
@@ -187,29 +194,27 @@ function attachZone (oldLayout, key, zone, size) {
     x: zone.x,
     y: zone.y,
     w: size.w,
-    h: size.h
+    h: size.h,
   });
 }
 
-function detachZone (oldLayout, key) {
-  const [item] = oldLayout.filter(item => item.i === key);
+function detachZone(oldLayout, key) {
+  const [item] = oldLayout.filter((item) => item.i === key);
   if (item) {
     oldLayout.splice(oldLayout.indexOf(item), 1);
   }
   return oldLayout;
 }
 
-export default function buildLayout (
-  {
-    defaultState = [],
-    storage = 'grid-layout',
-    defaultSizes = {},
-    panelNeighbors = [],
-    gridStyle
-  }
-) {
-  function findAvailablePlaces (oldLayout, key, box) {
-    if (oldLayout.filter(item => item.i === key).length > 0) {
+export default function buildLayout({
+  defaultState = [],
+  storage = 'grid-layout',
+  defaultSizes = {},
+  panelNeighbors = [],
+  gridStyle,
+}) {
+  function findAvailablePlaces(oldLayout, key, box) {
+    if (oldLayout.filter((item) => item.i === key).length > 0) {
       return;
     }
     const createZone = ({x, y, w, h}) => {
@@ -220,7 +225,7 @@ export default function buildLayout (
         y2: y + h,
         w,
         h,
-        size: w * h
+        size: w * h,
       };
     };
     const xSorter = (zoneA, zoneB) => {
@@ -274,12 +279,18 @@ export default function buildLayout (
     }
     breakpointsX.sort((a, b) => a - b);
     breakpointsY.sort((a, b) => a - b);
-    let zones = [];
+    const zones = [];
     const layoutItemOverZone = (layoutItem, zone) => {
-      return layoutItem.x <= zone.x && layoutItem.x + layoutItem.w >= zone.x &&
-        layoutItem.x <= zone.x + zone.w && layoutItem.x + layoutItem.w >= zone.x + zone.w &&
-        layoutItem.y <= zone.y && layoutItem.y + layoutItem.h >= zone.y &&
-        layoutItem.y <= zone.y + zone.h && layoutItem.y + layoutItem.h >= zone.y + zone.h;
+      return (
+        layoutItem.x <= zone.x &&
+        layoutItem.x + layoutItem.w >= zone.x &&
+        layoutItem.x <= zone.x + zone.w &&
+        layoutItem.x + layoutItem.w >= zone.x + zone.w &&
+        layoutItem.y <= zone.y &&
+        layoutItem.y + layoutItem.h >= zone.y &&
+        layoutItem.y <= zone.y + zone.h &&
+        layoutItem.y + layoutItem.h >= zone.y + zone.h
+      );
     };
     for (let i = 0; i < breakpointsX.length - 1; i++) {
       for (let j = 0; j < breakpointsY.length - 1; j++) {
@@ -287,7 +298,7 @@ export default function buildLayout (
           x: breakpointsX[i],
           y: breakpointsY[j],
           w: breakpointsX[i + 1] - breakpointsX[i],
-          h: breakpointsY[j + 1] - breakpointsY[j]
+          h: breakpointsY[j + 1] - breakpointsY[j],
         });
         zone.empty = true;
         for (let z = 0; z < oldLayout.length; z++) {
@@ -316,7 +327,7 @@ export default function buildLayout (
         const startZone = originalZones[i];
         let nextZone = startZone;
         while (nextZone.y2 - startZone.y < size.h) {
-          let next = findZoneWithWidthAt(nextZone.x, nextZone.y2, nextZone.w);
+          const next = findZoneWithWidthAt(nextZone.x, nextZone.y2, nextZone.w);
           if (next) {
             nextZone = next;
           } else {
@@ -324,12 +335,14 @@ export default function buildLayout (
           }
         }
         if (nextZone.y2 - startZone.y >= size.h) {
-          firstStepZones.push(createZone({
-            x: startZone.x,
-            y: startZone.y,
-            w: startZone.w,
-            h: nextZone.y2 - startZone.y
-          }));
+          firstStepZones.push(
+            createZone({
+              x: startZone.x,
+              y: startZone.y,
+              w: startZone.w,
+              h: nextZone.y2 - startZone.y,
+            }),
+          );
         }
       }
       const findZoneWithHeightAt = (x, y, h) => {
@@ -344,7 +357,7 @@ export default function buildLayout (
         const startZone = firstStepZones[i];
         let nextZone = startZone;
         while (nextZone.x2 - startZone.x < size.w) {
-          let next = findZoneWithHeightAt(nextZone.x2, nextZone.y, nextZone.h);
+          const next = findZoneWithHeightAt(nextZone.x2, nextZone.y, nextZone.h);
           if (next) {
             nextZone = next;
           } else {
@@ -352,12 +365,14 @@ export default function buildLayout (
           }
         }
         if (nextZone.x2 - startZone.x >= size.w) {
-          result.push(createZone({
-            x: startZone.x,
-            y: startZone.y,
-            w: nextZone.x2 - startZone.x,
-            h: startZone.h
-          }));
+          result.push(
+            createZone({
+              x: startZone.x,
+              y: startZone.y,
+              w: nextZone.x2 - startZone.x,
+              h: startZone.h,
+            }),
+          );
         }
       }
       return result;
@@ -368,12 +383,12 @@ export default function buildLayout (
       return ySorter(zoneA, zoneB) || xSorter(zoneA, zoneB) || sizeSorter(zoneA, zoneB);
     });
     return availableZones.filter((zone, index, array) => {
-      const [originalZone] = array.filter(z => z.x === zone.x && z.y === zone.y);
+      const [originalZone] = array.filter((z) => z.x === zone.x && z.y === zone.y);
       return array.indexOf(originalZone) === index;
     });
   }
-  function getLayoutWeight (layout) {
-    let {height} = getTotalDimensions(layout);
+  function getLayoutWeight(layout) {
+    const {height} = getTotalDimensions(layout);
     const weight = (items) => {
       const xx = [];
       const yy = [];
@@ -389,14 +404,14 @@ export default function buildLayout (
       const y2 = Math.max(...yy);
       let square = (x2 - x1) * (y2 - y1);
       for (let i = 0; i < items.length; i++) {
-        square -= (items[i].w * items[i].h);
+        square -= items[i].w * items[i].h;
       }
       return square;
     };
     let neighborWeight = 0.0;
     for (let i = 0; i < panelNeighbors.length; i++) {
       const neighbors = panelNeighbors[i];
-      const items = layout.filter(item => neighbors.indexOf(item.i) >= 0);
+      const items = layout.filter((item) => neighbors.indexOf(item.i) >= 0);
       if (items.length < neighbors.length) {
         continue;
       }
@@ -404,7 +419,7 @@ export default function buildLayout (
     }
     return height + neighborWeight;
   }
-  function extendLayout (currentLayout, keys) {
+  function extendLayout(currentLayout, keys) {
     keys.sort((keyA, keyB) => {
       const sizeA = defaultSizes[keyA] || {w: 1, h: 1};
       const sizeB = defaultSizes[keyB] || {w: 1, h: 1};
@@ -412,13 +427,13 @@ export default function buildLayout (
       const squareB = sizeB.w * sizeB.h;
       return squareB - squareA;
     });
-    let layout = [...currentLayout];
+    const layout = [...currentLayout];
     let minLayout;
     let minLayoutWeight = Infinity;
     let maxWidth = gridStyle.maxLayoutColumns;
     let maxHeight = Infinity;
-    for (let key in defaultSizes) {
-      if (defaultSizes.hasOwnProperty(key)) {
+    for (const key in defaultSizes) {
+      if (Object.hasOwn(defaultSizes, key)) {
         const size = defaultSizes[key];
         if (size.w > maxWidth) {
           maxWidth = size.w;
@@ -430,7 +445,7 @@ export default function buildLayout (
     }
     const recursiveComposer = () => {
       const layoutWeight = getLayoutWeight(layout);
-      if (keys.filter(key => layout.filter(i => i.i === key).length === 0).length === 0) {
+      if (keys.filter((key) => layout.filter((i) => i.i === key).length === 0).length === 0) {
         if (!minLayout || minLayoutWeight > layoutWeight) {
           minLayout = [];
           minLayoutWeight = layoutWeight;
@@ -440,7 +455,7 @@ export default function buildLayout (
               x: layout[i].x,
               y: layout[i].y,
               w: layout[i].w,
-              h: layout[i].h
+              h: layout[i].h,
             });
           }
         }
@@ -450,19 +465,20 @@ export default function buildLayout (
       }
       const composeForKey = (key) => {
         const size = defaultSizes[key] || {w: 1, h: 1};
-        const availableZones = findAvailablePlaces(layout, key, {w: maxWidth, h: maxHeight}) ||
-          [{
+        const availableZones = findAvailablePlaces(layout, key, {w: maxWidth, h: maxHeight}) || [
+          {
             x: 0,
             y: 0,
-            ...size
-          }];
+            ...size,
+          },
+        ];
         for (let j = 0; j < availableZones.length; j++) {
           attachZone(layout, key, availableZones[j], size);
           recursiveComposer();
           detachZone(layout, key);
         }
       };
-      const key = keys.filter(key => layout.filter(item => item.i === key).length === 0)[0];
+      const key = keys.filter((key) => layout.filter((item) => item.i === key).length === 0)[0];
       composeForKey(key);
     };
     recursiveComposer();
@@ -473,21 +489,27 @@ export default function buildLayout (
     }
   }
   return {
-    restoreDefaultLayout () {
+    restoreDefaultLayout() {
       this.setPanelsLayout(defaultState, false, false);
     },
-    setPanelsLayout (layout, rebuildHeights = true) {
+    setPanelsLayout(layout, rebuildHeights = true) {
       if (layout) {
         try {
           localStorage.setItem(
             storage,
-            JSON.stringify(rebuildLayout(layout.map(o => o), gridStyle, rebuildHeights))
+            JSON.stringify(
+              rebuildLayout(
+                layout.map((o) => o),
+                gridStyle,
+                rebuildHeights,
+              ),
+            ),
           );
         } catch (___) {}
       }
       return layout;
     },
-    getPanelsLayout (rebuildIfNull = true, staticPanels = []) {
+    getPanelsLayout(rebuildIfNull = true, staticPanels = []) {
       const info = localStorage.getItem(storage);
       let infoCount = 0;
       if (info) {
@@ -502,7 +524,7 @@ export default function buildLayout (
         try {
           const layout = JSON.parse(info);
           if (Array.isArray(layout)) {
-            return layout.map(layoutItem => {
+            return layout.map((layoutItem) => {
               const isStaticPanel = staticPanels.indexOf(layoutItem.i) >= 0;
               return {...layoutItem, isResizable: !isStaticPanel};
             });
@@ -511,7 +533,7 @@ export default function buildLayout (
       }
       return [];
     },
-    addPanels (panels) {
+    addPanels(panels) {
       let currentLayout = this.getPanelsLayout(false);
       if (currentLayout.length > 1) {
         let minWidthDimension = Infinity;
@@ -525,12 +547,12 @@ export default function buildLayout (
             minHeightDimension = layoutItem.h;
           }
         }
-        currentLayout = currentLayout.map(item => ({
+        currentLayout = currentLayout.map((item) => ({
           i: item.i,
           x: item.x / minWidthDimension,
           y: item.y / minHeightDimension,
           w: item.w / minWidthDimension,
-          h: item.h / minHeightDimension
+          h: item.h / minHeightDimension,
         }));
       } else if (currentLayout.length === 1) {
         const size = defaultSizes[currentLayout[0].i] || {w: 1, h: 1};
@@ -541,13 +563,13 @@ export default function buildLayout (
       }
       this.setPanelsLayout(extendLayout(currentLayout, panels), false, false);
     },
-    removePanel (panel) {
+    removePanel(panel) {
       const panels = this.getPanelsLayout();
-      const [item] = panels.filter(p => p.i === panel);
+      const [item] = panels.filter((p) => p.i === panel);
       if (item) {
         panels.splice(panels.indexOf(item), 1);
         this.setPanelsLayout(panels, false);
       }
-    }
+    },
   };
 }

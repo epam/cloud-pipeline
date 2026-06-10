@@ -35,7 +35,7 @@ const panels = {
   recentlyCompletedRuns: 'completed',
   runs: 'active',
   services: 'services',
-  userCosts: 'userCosts'
+  userCosts: 'userCosts',
 };
 
 const keysMapper = {
@@ -48,10 +48,10 @@ const keysMapper = {
   [RECENTLY_COMPLETED_RUNS_KEY]: panels.recentlyCompletedRuns,
   [ACTIVE_RUNS_KEY]: panels.runs,
   [SERVICES_KEY]: panels.services,
-  [USER_COSTS_KEY]: panels.userCosts
+  [USER_COSTS_KEY]: panels.userCosts,
 };
 
-export function mapPanelIdentifier (identifier) {
+export function mapPanelIdentifier(identifier) {
   return keysMapper[identifier] || identifier;
 }
 

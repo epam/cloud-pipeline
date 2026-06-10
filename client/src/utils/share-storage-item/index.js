@@ -43,29 +43,24 @@ export {getSharedFolderInfo as getSharedStorageItemInfo};
  * permissions with a new one
  * @returns {Promise<string>}
  */
-export function shareStorageItem (
+export function shareStorageItem(
   preferences,
   sharedStorage,
   sharedFolder,
   sharedItems = [],
-  permissionsOptions = {}
+  permissionsOptions = {},
 ) {
-  const {
-    mask = 1,
-    permissions = [],
-    replace = true,
-    createNewStorage = false
-  } = permissionsOptions;
+  const {mask = 1, permissions = [], replace = true, createNewStorage = false} = permissionsOptions;
   return new Promise((resolve, reject) => {
     findSharedStorage(preferences, sharedStorage, sharedFolder, createNewStorage)
-      .then(storage => {
+      .then((storage) => {
         const {id: storageId} = storage || {};
         if (storageId) {
           return Promise.resolve(storageId);
         }
         return createSharedStorage(preferences, sharedStorage, sharedFolder, sharedItems);
       })
-      .then(storageId => {
+      .then((storageId) => {
         if (storageId) {
           return grantSharedStoragePermissions(storageId, mask, permissions, replace);
         } else {

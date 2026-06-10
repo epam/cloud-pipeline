@@ -22,7 +22,7 @@ const FETCH_CREDENTIALS_MAX_ATTEMPTS = 12;
 
 export const ItemType = {
   FILE: 'File',
-  FOLDER: 'Folder'
+  FOLDER: 'Folder',
 };
 
 class OmicsStorage {
@@ -33,37 +33,35 @@ class OmicsStorage {
   readSetId;
   sequenceStoreId;
 
-  get omics () {
+  get omics() {
     return this._omics;
   }
 
-  constructor (config) {
+  constructor(config) {
     this.regionName = config.region;
     this._storage = config.storage;
     this.readSetId = config.readSetId;
     this.sequenceStoreId = config.sequenceStoreId;
   }
 
-  async createClient () {
+  async createClient() {
     await this.setCredentials();
     if (this._credentials) {
       return this.setOmicsClient();
     }
   }
 
-  async getCredentials () {
+  async getCredentials() {
     try {
       const updateCredentialsAttempt = (attempt = 0, error = undefined) => {
         if (attempt >= FETCH_CREDENTIALS_MAX_ATTEMPTS) {
           return Promise.reject(error || new Error('credentials API is not available'));
         }
         return new Promise((resolve, reject) => {
-          fetchTempCredentials(
-            this._storage.id,
-            {
-              read: this._storage.read === undefined ? true : this._storage.read,
-              write: this._storage.write === undefined ? true : this._storage.write
-            })
+          fetchTempCredentials(this._storage.id, {
+            read: this._storage.read === undefined ? true : this._storage.read,
+            write: this._storage.write === undefined ? true : this._storage.write,
+          })
             .then(resolve)
             .catch((e) => {
               updateCredentialsAttempt(attempt + 1, e)
@@ -82,10 +80,10 @@ class OmicsStorage {
     }
   }
 
-  async setCredentials () {
+  async setCredentials() {
     const credentials = await this.getCredentials()
-      .then(cred => cred)
-      .catch(err => {
+      .then((cred) => cred)
+      .catch((err) => {
         this.downloadError = err.message;
         return undefined;
       });
@@ -96,7 +94,7 @@ class OmicsStorage {
         credentials.token,
         credentials.expiration,
         credentials.region,
-        this.getCredentials
+        this.getCredentials,
       );
     } else if (this._credentials.needsRefresh) {
       this._credentials.update(
@@ -104,24 +102,24 @@ class OmicsStorage {
         credentials.accessKey,
         credentials.token,
         credentials.expiration,
-        credentials.region
+        credentials.region,
       );
     }
   }
 
-  setOmicsClient () {
+  setOmicsClient() {
     if (this._credentials && this.regionName) {
       this._omics = new OmicsClient({
         omics: '2022-11-28',
         region: this.regionName,
-        credentials: this._credentials
+        credentials: this._credentials,
       });
       return true;
     }
     return false;
   }
 
-  async getFilesMetadata (files) {
+  async getFilesMetadata(files) {
     if (!this.omics || !this.readSetId || !this.sequenceStoreId) return;
     try {
       const filesInfo = await this.getReadSetMetadata();
@@ -134,13 +132,13 @@ class OmicsStorage {
             for (const fileSource of filesSources) {
               metadata.push({
                 path: file.path,
-                itemPath: file.type === ItemType.FILE ? file.path : `${file.path}/${fileSource}`
+                itemPath: file.type === ItemType.FILE ? file.path : `${file.path}/${fileSource}`,
               });
             }
           } else if (filesSources.includes(source)) {
             metadata.push({
               path: file.path,
-              itemPath: file.type === ItemType.FILE ? file.path : `${file.path}/${source}`
+              itemPath: file.type === ItemType.FILE ? file.path : `${file.path}/${source}`,
             });
           }
         }
@@ -152,11 +150,11 @@ class OmicsStorage {
     }
   }
 
-  async getReadSetMetadata () {
+  async getReadSetMetadata() {
     try {
       const input = {
         id: this.readSetId,
-        sequenceStoreId: this.sequenceStoreId
+        sequenceStoreId: this.sequenceStoreId,
       };
       const command = new GetReadSetMetadataCommand(input);
       const response = await this._omics.send(command);

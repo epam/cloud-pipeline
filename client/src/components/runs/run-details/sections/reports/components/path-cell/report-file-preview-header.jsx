@@ -3,41 +3,28 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {DownloadOutlined, ExportOutlined} from '@ant-design/icons';
 import {FileExternalPreview} from '../../../../../../special/file-preview';
-import DataStorageFileDownloadButton
-from '../../../../../../special/data-storage-file-download-button';
-import styles from './path-cell.css';
+import DataStorageFileDownloadButton from '../../../../../../special/data-storage-file-download-button';
+import styles from './path-cell.module.css';
 
-export const ReportFilePreviewHeader = (
-  {
-    className,
-    style,
-    filePath,
-    rule
-  }
-) => {
+export const ReportFilePreviewHeader = ({className, style, filePath, rule}) => {
   const infos = [];
   if (rule && rule.name) {
-    infos.push((
+    infos.push(
       <tr key="rule-name">
         <th className={styles.keyCell}>Name:</th>
         <td className={styles.valueCell}>{rule.name}</td>
-      </tr>
-    ));
+      </tr>,
+    );
   }
-  infos.push((
+  infos.push(
     <tr key="file-path">
       <th className={styles.keyCell}>Path:</th>
       <td className={styles.valueCell}>{filePath}</td>
-    </tr>
-  ));
+    </tr>,
+  );
   return (
-    <div
-      className={classNames(className, styles.reportFilePreviewHeader)}
-      style={style}
-    >
-      <table
-        className={styles.reportFilePreviewHeaderTable}
-      >
+    <div className={classNames(className, styles.reportFilePreviewHeader)} style={style}>
+      <table className={styles.reportFilePreviewHeaderTable}>
         <tbody>{infos}</tbody>
       </table>
       <div className={styles.reportFilePreviewHeaderActions}>
@@ -70,5 +57,5 @@ ReportFilePreviewHeader.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
   filePath: PropTypes.string,
-  rule: PropTypes.object
+  rule: PropTypes.object,
 };

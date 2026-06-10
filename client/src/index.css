@@ -1,3 +1,60 @@
+@import "tailwindcss";
+
+/*
+ * Theme-aware Tailwind colors backed by runtime --cp-* CSS variables
+ * (see src/themes/tokens/semantic-keys.js). Values inherit from body.{theme-id}.
+ *
+ * Use @theme inline so utilities reference --cp-* directly. Plain @theme would
+ * resolve var(--cp-*) on :root (always light in palette.css) and freeze the color.
+ */
+@theme inline {
+  /* surfaces */
+  --color-app-layout: var(--cp-color-bg-layout);
+  --color-app-dark: var(--cp-color-bg-layout-dark);
+  --color-container: var(--cp-color-bg-container);
+  --color-elevated: var(--cp-color-bg-elevated);
+  --color-elevated-header: var(--cp-color-bg-elevated-header);
+  --color-elevated-opaque: var(--cp-color-bg-elevated-opaque);
+  --color-input: var(--cp-color-bg-input);
+  --color-input-disabled: var(--cp-color-bg-input-disabled);
+  --color-striped: var(--cp-color-bg-striped);
+  --color-overlay: var(--cp-color-bg-overlay);
+  --color-code: var(--cp-color-bg-code);
+  --color-service-card: var(--cp-color-bg-service-card);
+  --color-card-border: var(--cp-color-border-card);
+
+  /* navigation */
+  --color-nav: var(--cp-color-nav-bg);
+  --color-nav-active: var(--cp-color-nav-bg-active);
+  --color-nav-impersonated: var(--cp-color-nav-bg-impersonated);
+  --color-nav-impersonated-active: var(--cp-color-nav-bg-impersonated-active);
+
+  /* interactive / tables */
+  --color-interactive-hover: var(--cp-color-interactive-hover-bg);
+  --color-interactive-selected: var(--cp-color-interactive-selected-bg);
+  --color-table-hover: var(--cp-color-table-hover-bg);
+  --color-table-selected: var(--cp-color-table-selected-bg);
+
+  /* alerts */
+  --color-alert-success: var(--cp-color-alert-success-bg);
+  --color-alert-warning: var(--cp-color-alert-warning-bg);
+  --color-alert-error: var(--cp-color-alert-error-bg);
+  --color-alert-info: var(--cp-color-alert-info-bg);
+
+  /* cards, console, tags */
+  --color-service-card-header: var(--cp-color-service-card-header-bg);
+  --color-console: var(--cp-color-console-bg);
+  --color-tooltip: var(--cp-color-tooltip-bg);
+  --color-tag-key: var(--cp-color-tag-key-bg);
+  --color-tag-value: var(--cp-color-tag-value-bg);
+  --color-tag-divider: var(--cp-color-tag-divider);
+  --color-search-highlight: var(--cp-color-search-highlight-bg);
+  --color-search-highlight-inactive: var(--cp-color-search-highlight-bg-inactive);
+
+  /* other */
+  --color-text-faded: var(--cp-color-text-secondary);
+}
+
 /*
  * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
@@ -18,5 +75,10 @@ body {
   font-family: sans-serif;
   font-size: 12px;
   line-height: 18px;
+
+  @apply bg-app-layout;
 }
 
+.text-faded {
+  color: var(--cp-color-text-secondary);
+}

@@ -17,16 +17,15 @@
 import Remote from '../basic/Remote';
 
 export default class MetadataEntityDeleteFromProject extends Remote {
-
-  constructor (projectId, entityClass) {
+  constructor(projectId, entityClass) {
     super();
     this.constructor.fetchOptions = {
       headers: {
-        'Content-type': 'application/json; charset=UTF-8'
+        'Content-type': 'application/json; charset=UTF-8',
       },
       mode: 'cors',
       credentials: 'include',
-      method: 'DELETE'
+      method: 'DELETE',
     };
     if (entityClass) {
       this.url = `/metadataEntity/deleteFromProject?projectId=${projectId}&entityClass=${entityClass}`;

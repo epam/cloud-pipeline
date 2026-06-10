@@ -19,8 +19,4 @@ const remote = 'REMOTE';
 const merged = 'MERGED';
 
 export default [head, remote, merged];
-export {
-  head as HeadBranch,
-  remote as RemoteBranch,
-  merged as Merged
-};
+export {head as HeadBranch, remote as RemoteBranch, merged as Merged};

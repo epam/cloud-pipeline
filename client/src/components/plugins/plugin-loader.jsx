@@ -1,9 +1,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {loadPlugin, UI_PLUGIN_TYPE_LAUNCH_FORM} from './utilities';
-import {API_PATH, SERVER} from '../../config';
 import BucketBrowser from '../pipelines/launch/dialogs/BucketBrowser';
-import LoadingView from '../special/LoadingView';
+import LoadingView from '../special/LoadingView.tsx';
 import {Alert} from 'antd';
 
 class PluginLoader extends React.PureComponent {
@@ -12,43 +11,36 @@ class PluginLoader extends React.PureComponent {
     plugin: undefined,
     error: undefined,
     pending: false,
-    selectStorageItemsRequest: undefined
+    selectStorageItemsRequest: undefined,
   };
+
   _pluginLoadToken = {};
   _pluginContainer = undefined;
 
-  componentDidMount () {
+  componentDidMount() {
     this.attachPlugin();
   }
-  componentDidUpdate (prevProps, prevState, snapshot) {
-    const {
-      plugin: currentPlugin = {},
-      pluginOptions: currentPluginOptions
-    } = this.props;
-    const {
-      plugin: prevPlugin = {},
-      pluginOptions: prevPluginOptions
-    } = prevProps;
-    const {
-      path: currentPluginUri
-    } = currentPlugin;
-    const {
-      path: prevPluginUri
-    } = prevPlugin;
+
+  componentDidUpdate(prevProps, prevState, snapshot) {
+    const {plugin: currentPlugin = {}, pluginOptions: currentPluginOptions} = this.props;
+    const {plugin: prevPlugin = {}, pluginOptions: prevPluginOptions} = prevProps;
+    const {path: currentPluginUri} = currentPlugin;
+    const {path: prevPluginUri} = prevPlugin;
     if (currentPluginUri !== prevPluginUri) {
       this.attachPlugin();
     } else if (currentPluginOptions !== prevPluginOptions) {
       this.renderPlugin();
     }
   }
-  componentWillUnmount () {
+
+  componentWillUnmount() {
     this.detachPlugin();
     this._pluginContainer = undefined;
   }
 
-  attachPlugin () {
+  attachPlugin() {
     this.detachPlugin();
-    const token = this._pluginLoadToken = {};
+    const token = (this._pluginLoadToken = {});
     const commitState = (state, cb) => {
       if (token === this._pluginLoadToken) {
         this.setState(state, cb);
@@ -72,7 +64,8 @@ class PluginLoader extends React.PureComponent {
       commitState({pending: false, error: undefined, render: undefined});
     }
   }
-  detachPlugin () {
+
+  detachPlugin() {
     this._pluginLoadToken = {};
     const {plugin} = this.state;
     if (plugin) {
@@ -89,14 +82,18 @@ class PluginLoader extends React.PureComponent {
       onlyFolders = false,
       allowUpload = false,
       checkWritePermissions = false,
-      multiple = true
+      multiple = true,
     } = opts ?? {};
     return new Promise((resolve, reject) => {
       const onSelect = (path) => {
         if (path) {
-          const items = path && path.length > 0
-            ? path.split(',').map((o) => o.trim()).filter((o) => o.length > 0)
-            : [];
+          const items =
+            path && path.length > 0
+              ? path
+                  .split(',')
+                  .map((o) => o.trim())
+                  .filter((o) => o.length > 0)
+              : [];
           resolve(items);
           this.setState({selectStorageItemsRequest: undefined});
         }
@@ -115,8 +112,8 @@ class PluginLoader extends React.PureComponent {
           allowUpload,
           checkWritePermissions,
           onSelect,
-          onCancel
-        }
+          onCancel,
+        },
       });
     });
   };
@@ -154,55 +151,40 @@ class PluginLoader extends React.PureComponent {
             url: SERVER + API_PATH,
             selectStorageItems: this.selectStorageItems,
             launch: this.launch,
-            onLaunched: this.onLaunched
+            onLaunched: this.onLaunched,
           },
-          options: pluginOptions
+          options: pluginOptions,
         });
         this.setState({plugin});
       }
     }
   };
 
-  render () {
-    const {
-      selectStorageItemsRequest,
-      render,
-      pending,
-      error
-    } = this.state;
-    const {
-      plugin
-    } = this.props;
-    const loadingView = plugin && plugin.name
-      ? (
+  render() {
+    const {selectStorageItemsRequest, render, pending, error} = this.state;
+    const {plugin} = this.props;
+    const loadingView =
+      plugin && plugin.name ? (
         <LoadingView>
-          <div
-            className="cp-text-not-important"
-            style={{whiteSpace: 'pre', fontSize: 'larger'}}
-          >
-            <span>Loading <b>{plugin.name}</b> plugin...</span>
+          <div className="cp-text-not-important" style={{whiteSpace: 'pre', fontSize: 'larger'}}>
+            <span>
+              Loading <b>{plugin.name}</b> plugin...
+            </span>
           </div>
         </LoadingView>
-      )
-      : <LoadingView />;
+      ) : (
+        <LoadingView />
+      );
     return (
       <div style={{width: '100%', height: '100%', overflow: 'auto'}}>
-        {
-          render && (
-            <div
-              ref={this.initializeContainer}
-              style={{width: '100%', height: '100%', overflow: 'auto'}}
-            />
-          )
-        }
-        {
-          !render && pending && loadingView
-        }
-        {
-          !render && !pending && error && (
-            <Alert title={error} type="error" />
-          )
-        }
+        {render && (
+          <div
+            ref={this.initializeContainer}
+            style={{width: '100%', height: '100%', overflow: 'auto'}}
+          />
+        )}
+        {!render && pending && loadingView}
+        {!render && !pending && error && <Alert title={error} type="error" />}
         <BucketBrowser
           multiple={selectStorageItemsRequest?.multiple}
           onSelect={selectStorageItemsRequest ? selectStorageItemsRequest.onSelect : () => {}}
@@ -227,7 +209,7 @@ PluginLoader.propTypes = {
   type: PropTypes.string,
   pluginOptions: PropTypes.object,
   onLaunch: PropTypes.func,
-  onLaunched: PropTypes.func
+  onLaunched: PropTypes.func,
 };
 
 export default PluginLoader;

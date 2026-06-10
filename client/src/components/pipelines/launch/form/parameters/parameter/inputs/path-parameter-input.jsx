@@ -1,17 +1,21 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import styles from './launch-form-parameter-input.css';
+import styles from './launch-form-parameter-input.module.css';
 import {DownloadOutlined, FolderOutlined, SelectOutlined, UploadOutlined} from '@ant-design/icons';
 import BucketBrowser from '../../../../dialogs/BucketBrowser';
 import MetadataAutoComplete from './metadata-auto-complete';
 
-function getIcon (pathType) {
+function getIcon(pathType) {
   switch (pathType) {
-    case 'input': return DownloadOutlined;
-    case 'output': return UploadOutlined;
-    case 'common': return SelectOutlined;
-    default: return FolderOutlined;
+    case 'input':
+      return DownloadOutlined;
+    case 'output':
+      return UploadOutlined;
+    case 'common':
+      return SelectOutlined;
+    default:
+      return FolderOutlined;
   }
 }
 
@@ -22,7 +26,7 @@ const omicsBucketTypes = [...defaultBucketTypes, 'AWS_OMICS_SEQ', 'AWS_OMICS_REF
  * @param pathType
  * @returns {string[]}
  */
-function getBucketTypes (pathType) {
+function getBucketTypes(pathType) {
   if (!pathType || typeof pathType !== 'string') {
     return defaultBucketTypes;
   }
@@ -37,13 +41,13 @@ function getBucketTypes (pathType) {
 
 class LaunchFormPathParameterInput extends React.PureComponent {
   state = {
-    bucketBrowserOpened: false
+    bucketBrowserOpened: false,
   };
 
   openBucketBrowser = () => this.setState({bucketBrowserOpened: true});
   closeBucketBrowser = () => this.setState({bucketBrowserOpened: false});
 
-  render () {
+  render() {
     const {
       className,
       style,
@@ -56,11 +60,9 @@ class LaunchFormPathParameterInput extends React.PureComponent {
       currentMetadataEntity,
       currentProjectMetadata,
       rootEntityId,
-      metadataAutoComplete
+      metadataAutoComplete,
     } = this.props;
-    let {
-      type: pathType = 'path'
-    } = parameter;
+    let {type: pathType = 'path'} = parameter;
     if (typeof pathType !== 'string' || !['path', 'common', 'input', 'output'].includes(pathType)) {
       pathType = 'path';
     }
@@ -76,28 +78,21 @@ class LaunchFormPathParameterInput extends React.PureComponent {
         this.openBucketBrowser();
       }
     };
-    const {
-      bucketBrowserOpened
-    } = this.state;
+    const {bucketBrowserOpened} = this.state;
     const isOutputType = pathType.toLowerCase() === 'output';
     const isPathType = pathType.toLowerCase() === 'path';
     return (
-      <div
-        className={classNames(className, styles.launchParameterInput)}
-        style={style}
-      >
+      <div className={classNames(className, styles.launchParameterInput)} style={style}>
         <MetadataAutoComplete
           style={{width: '100%'}}
           value={value ? String(value) : ''}
           onChange={onPathChange}
           disabled={disabled}
-          addonBefore={(
-            <div
-              className={styles.launchParameterPathInputAddon}
-              onClick={onAddonClick}>
+          addonBefore={
+            <div className={styles.launchParameterPathInputAddon} onClick={onAddonClick}>
               <IconComponent />
             </div>
-          )}
+          }
           placeholder="Path"
           currentProjectId={currentProjectId}
           currentMetadataEntity={currentMetadataEntity}
@@ -138,7 +133,7 @@ LaunchFormPathParameterInput.propTypes = {
   currentProjectMetadata: PropTypes.object,
   currentMetadataEntity: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
   rootEntityId: PropTypes.string,
-  metadataAutoComplete: PropTypes.bool
+  metadataAutoComplete: PropTypes.bool,
 };
 
 export default LaunchFormPathParameterInput;

@@ -17,7 +17,7 @@
 import Remote from '../basic/Remote';
 
 class GraphData extends Remote {
-  constructor (id, version, autoFetch = false) {
+  constructor(id, version, autoFetch = false) {
     super();
     this.url = `/pipeline/${id}/graph?version=${version}`;
     if (autoFetch) {

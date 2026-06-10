@@ -23,11 +23,11 @@ export default class MetadataLoad extends Remote {
     credentials: 'include',
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json; charset=UTF-8;'
-    }
+      'Content-Type': 'application/json; charset=UTF-8;',
+    },
   };
 
-  constructor (entityId, entityClass) {
+  constructor(entityId, entityClass) {
     super();
     this.url = '/metadata/load';
     this.entityId = entityId;
@@ -35,7 +35,7 @@ export default class MetadataLoad extends Remote {
   }
 
   _fetchIsExecuting = false;
-  async fetch () {
+  async fetch() {
     if (!this._postIsExecuting) {
       this._pending = true;
       this._postIsExecuting = true;
@@ -52,17 +52,15 @@ export default class MetadataLoad extends Remote {
           stringifiedBody = JSON.stringify([
             {
               entityId: this.entityId,
-              entityClass: this.entityClass
-            }
+              entityClass: this.entityClass,
+            },
           ]);
         } catch (___) {}
-        const response = await fetch(
-          `${prefix}${this.url}`,
-          {...fetchOptions,
-            body: stringifiedBody
-          }
-        );
-        const data = this.constructor.isJson ? (await response.json()) : (await response.blob());
+        const response = await fetch(`${prefix}${this.url}`, {
+          ...fetchOptions,
+          body: stringifiedBody,
+        });
+        const data = this.constructor.isJson ? await response.json() : await response.blob();
         this.update(data);
       } catch (e) {
         this.failed = true;

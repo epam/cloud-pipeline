@@ -37,17 +37,17 @@ class EditToolFormParametersVM {
    */
   props = {};
 
-  constructor () {
+  constructor() {
     makeAutoObservable(this, {
-      props: observable.ref
+      props: observable.ref,
     });
   }
 
-  setProps (props) {
+  setProps(props) {
     this.props = props || {};
   }
 
-  get skippedSystemParameters () {
+  get skippedSystemParameters() {
     const skipped = this.props.skippedSystemParameters;
     if (skipped && skipped.length) {
       return skipped;
@@ -55,16 +55,16 @@ class EditToolFormParametersVM {
     return [];
   }
 
-  get authenticatedUserRolesNames () {
+  get authenticatedUserRolesNames() {
     const info = this.props.authenticatedUserInfo;
     if (!info || !info.loaded) {
       return [];
     }
     const {roles = []} = info.value || {};
-    return roles.map(r => r.name);
+    return roles.map((r) => r.name);
   }
 
-  get isAdmin () {
+  get isAdmin() {
     const info = this.props.authenticatedUserInfo;
     if (!info || !info.loaded) {
       return false;
@@ -73,15 +73,15 @@ class EditToolFormParametersVM {
     return admin;
   }
 
-  get sectionName () {
+  get sectionName() {
     return this.props.isSystemParameters ? 'systemParameters' : 'parameters';
   }
 
-  get isValid () {
-    return this.validation.filter(v => !!v.error || !!v.errorValue).length === 0;
+  get isValid() {
+    return this.validation.filter((v) => !!v.error || !!v.errorValue).length === 0;
   }
 
-  get modified () {
+  get modified() {
     const propsValue = (this.props.value || []).filter(this.filterPropsParameter);
     const currentValue = this.parameters || [];
     if (propsValue.length !== currentValue.length) {
@@ -102,34 +102,30 @@ class EditToolFormParametersVM {
 
   filterPropsParameter = (parameter) => {
     const {testSkipParameter} = this.props;
-    return testSkipParameter
-      ? !testSkipParameter(parameter.name)
-      : true;
+    return testSkipParameter ? !testSkipParameter(parameter.name) : true;
   };
 
   isSystemParameter = (parameter) => {
     const runDefaults = this.props.runDefaultParameters;
     if (runDefaults && runDefaults.loaded && parameter && parameter.name) {
-      return (runDefaults.value || [])
-        .filter(p => p.name.toUpperCase() === (parameter.name || '').toUpperCase())
-        .length > 0;
+      return (
+        (runDefaults.value || []).filter(
+          (p) => p.name.toUpperCase() === (parameter.name || '').toUpperCase(),
+        ).length > 0
+      );
     }
     return false;
   };
 
   isSystemParameterRestrictedByRole = (parameter) => {
-    if (
-      parameter &&
-      this.isSystemParameter(parameter) &&
-      !this.isAdmin
-    ) {
+    if (parameter && this.isSystemParameter(parameter) && !this.isAdmin) {
       const runDefaults = this.props.runDefaultParameters;
-      const [systemParam] = (runDefaults && runDefaults.value ? runDefaults.value : [])
-        .filter(p => p.name.toUpperCase() === (parameter.name || '').toUpperCase());
+      const [systemParam] = (runDefaults && runDefaults.value ? runDefaults.value : []).filter(
+        (p) => p.name.toUpperCase() === (parameter.name || '').toUpperCase(),
+      );
       if (systemParam && systemParam.roles && systemParam.roles.length > 0) {
-        return !(
-          systemParam.roles
-            .some(roleName => this.authenticatedUserRolesNames.includes(roleName))
+        return !systemParam.roles.some((roleName) =>
+          this.authenticatedUserRolesNames.includes(roleName),
         );
       }
     }
@@ -142,10 +138,7 @@ class EditToolFormParametersVM {
    * supplied by the parent.
    */
   shouldRenderParameter = (parameter) => {
-    const {
-      isSystemParameters,
-      getSystemParameterDisabledState
-    } = this.props;
+    const {isSystemParameters, getSystemParameterDisabledState} = this.props;
     if (
       isSystemParameters &&
       getSystemParameterDisabledState &&
@@ -168,23 +161,18 @@ class EditToolFormParametersVM {
         this.isSystemParameterRestrictedByRole({name: list[i].name || ''})
       ) {
         validation[i].error = 'This parameter is not allowed for use';
-      } else if (
-        !isSystemParameters &&
-        this.isSystemParameter({name: list[i].name || ''})
-      ) {
+      } else if (!isSystemParameters && this.isSystemParameter({name: list[i].name || ''})) {
         validation[i].error = 'Parameter name is reserved';
       } else if (
         list
-          .map(p => (p.name || '').toLowerCase())
-          .filter(n => n === (list[i].name || '').toLowerCase()).length > 1
+          .map((p) => (p.name || '').toLowerCase())
+          .filter((n) => n === (list[i].name || '').toLowerCase()).length > 1
       ) {
         validation[i].error = 'Parameter name should be unique';
       } else if (
         isSystemParameters &&
-        (
-          ((list[i].type || '').toLowerCase() === 'boolean' && list[i].value === undefined) ||
-          ((list[i].type || '').toLowerCase() !== 'boolean' && !list[i].value)
-        )
+        (((list[i].type || '').toLowerCase() === 'boolean' && list[i].value === undefined) ||
+          ((list[i].type || '').toLowerCase() !== 'boolean' && !list[i].value))
       ) {
         validation[i].errorValue = 'Parameter value is required';
       }
@@ -198,7 +186,7 @@ class EditToolFormParametersVM {
       name: p.name,
       value: p.value,
       type: p.type,
-      initial: true
+      initial: true,
     });
     runInAction(() => {
       this.parameters = (this.props.value || [])
@@ -215,10 +203,10 @@ class EditToolFormParametersVM {
 
   addParameter = (parameter) => {
     runInAction(() => {
-      const id = Math.max(0, ...this.parameters.map(o => o.id)) + 1;
+      const id = Math.max(0, ...this.parameters.map((o) => o.id)) + 1;
       this.parameters.push({
         ...parameter,
-        id
+        id,
       });
       this.validation = this.validate(this.parameters);
     });
@@ -287,14 +275,15 @@ class EditToolFormParametersVM {
   addSystemParameters = (parameters) => {
     runInAction(() => {
       const next = this.parameters.slice();
-      let id = Math.max(0, ...next.map(o => o.id)) + 1;
-      (parameters || []).forEach(param => {
+      let id = Math.max(0, ...next.map((o) => o.id)) + 1;
+      (parameters || []).forEach((param) => {
         next.push({
-          id: id++,
+          id,
           name: param.name,
           type: param.type,
-          value: param.defaultValue
+          value: param.defaultValue,
         });
+        id += 1;
       });
       this.parameters = next;
       this.systemParameterBrowserVisible = false;

@@ -17,12 +17,13 @@
 import LoadToolInfo from '../../../models/tools/LoadToolInfo';
 import LoadToolVersionSettings from '../../../models/tools/LoadToolVersionSettings';
 
-function getTool (dockerImage, dockerRegistries) {
+function getTool(dockerImage, dockerRegistries) {
   if (!dockerImage) {
     return Promise.resolve(null);
   } else {
     return new Promise((resolve) => {
-      dockerRegistries.fetchIfNeededOrWait()
+      dockerRegistries
+        .fetchIfNeededOrWait()
         .then(() => {
           const {registries = []} = dockerRegistries.value;
           for (let r = 0; r < registries.length; r++) {
@@ -43,33 +44,33 @@ function getTool (dockerImage, dockerRegistries) {
         .catch(() => resolve(null));
     });
   }
-};
+}
 
-async function getToolVersion (tool, version) {
+async function getToolVersion(tool, version) {
   const toolInfo = new LoadToolInfo(tool.id);
   await toolInfo.fetch();
   const {versions = []} = toolInfo?.value || {};
-  return versions.find(v => v.version === version);
+  return versions.find((v) => v.version === version);
 }
 
-async function getToolVersionSettings (tool, version) {
+async function getToolVersionSettings(tool, version) {
   const toolSettings = new LoadToolVersionSettings(tool.id);
   await toolSettings.fetch();
-  return (toolSettings.value || []).find(v => v.version === version);
-};
+  return (toolSettings.value || []).find((v) => v.version === version);
+}
 
-function getToolSizeErrors (versionSettings, preferences) {
+function getToolSizeErrors(versionSettings, preferences) {
   if (versionSettings) {
     const {size} = versionSettings;
     const {soft = 0, hard = 0} = preferences.launchToolSizeLimits || {};
     return {
       soft: soft ? size > soft : false,
-      hard: hard ? size > hard : false
+      hard: hard ? size > hard : false,
     };
   }
 }
 
-function getToolAllowedWarning (currentVersion, preferences) {
+function getToolAllowedWarning(currentVersion, preferences) {
   if (!currentVersion?.scanResult?.toolOSVersion) {
     return;
   }
@@ -77,13 +78,13 @@ function getToolAllowedWarning (currentVersion, preferences) {
     let result = string;
     const {distribution, version} = currentVersion.scanResult.toolOSVersion;
     if (/{os}/i.test(result)) {
-      result = result.replace(/{os}/ig, `${distribution} ${version}`);
+      result = result.replace(/{os}/gi, `${distribution} ${version}`);
     }
     if (/{distribution}/i.test(result)) {
-      result = result.replace(/{distribution}/ig, `${distribution}`);
+      result = result.replace(/{distribution}/gi, `${distribution}`);
     }
     if (/{version}/i.test(result)) {
-      result = result.replace(/{version}/ig, `${version}`);
+      result = result.replace(/{version}/gi, `${version}`);
     }
     return result;
   };
@@ -93,17 +94,13 @@ function getToolAllowedWarning (currentVersion, preferences) {
     : undefined;
 }
 
-export default async function checkToolVersionErrors (
-  docker = '',
-  preferences,
-  dockerRegistries
-) {
+export default async function checkToolVersionErrors(docker = '', preferences, dockerRegistries) {
   let warnings = {
     size: {
       soft: undefined,
-      hard: undefined
+      hard: undefined,
     },
-    allowedWarning: undefined
+    allowedWarning: undefined,
   };
   if (!docker) {
     return warnings;
@@ -115,13 +112,10 @@ export default async function checkToolVersionErrors (
   if (!tool) {
     return warnings;
   }
-  await Promise.all([
-    preferences?.fetchIfNeededOrWait(),
-    dockerRegistries?.fetchIfNeededOrWait()
-  ]);
+  await Promise.all([preferences?.fetchIfNeededOrWait(), dockerRegistries?.fetchIfNeededOrWait()]);
   const [currentVersion, versionSettings] = await Promise.all([
     getToolVersion(tool, version),
-    getToolVersionSettings(tool, version)
+    getToolVersionSettings(tool, version),
   ]);
   const allowedWarning = getToolAllowedWarning(currentVersion, preferences);
   const size = getToolSizeErrors(versionSettings, preferences);
@@ -129,8 +123,8 @@ export default async function checkToolVersionErrors (
     warnings = {
       ...warnings,
       ...(size ? {size} : {}),
-      ...(allowedWarning ? {allowedWarning} : {})
+      ...(allowedWarning ? {allowedWarning} : {}),
     };
   }
   return warnings;
-};
+}

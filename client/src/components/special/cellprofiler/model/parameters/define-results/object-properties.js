@@ -29,7 +29,7 @@ const ObjectProperty = {
   uncorrectedSpotIntensity: 'Uncorrected Peak Intensity',
   spotContrast: 'Contrast',
   regionIntensity: 'Region Intensity',
-  spotToRegionIntensity: 'To Region Intensity'
+  spotToRegionIntensity: 'To Region Intensity',
 };
 
 const ObjectPropertyName = {
@@ -47,53 +47,45 @@ const ObjectPropertyName = {
   [ObjectProperty.uncorrectedSpotIntensity]: 'Uncorrected Spot Peak Intensity',
   [ObjectProperty.spotContrast]: 'Spot Contrast',
   [ObjectProperty.regionIntensity]: 'Region Intensity',
-  [ObjectProperty.spotToRegionIntensity]: 'Spot To Region Intensity'
+  [ObjectProperty.spotToRegionIntensity]: 'Spot To Region Intensity',
 };
 
 /**
  * @param {{spot: boolean?, spotWithParent: boolean?, hasChild: boolean?}} objectOptions
  */
-function getObjectProperties (objectOptions = {}) {
-  const {
-    spot = false,
-    spotWithParent = false,
-    hasChild = false
-  } = objectOptions;
-  const props = [
-    ObjectProperty.numberOfObjects
-  ];
+function getObjectProperties(objectOptions = {}) {
+  const {spot = false, spotWithParent = false, hasChild = false} = objectOptions;
+  const props = [ObjectProperty.numberOfObjects];
   if (!spot && !hasChild) {
-    props.push(...[
-      ObjectProperty.area
-    ]);
+    props.push(...[ObjectProperty.area]);
   }
   if (!spot && hasChild) {
-    props.push(...[
-      ObjectProperty.area,
-      ObjectProperty.totalSpotArea,
-      ObjectProperty.relativeSpotsIntensity,
-      ObjectProperty.numberOfSpots,
-      ObjectProperty.numberOfSpotsPerAreaOf
-    ]);
+    props.push(
+      ...[
+        ObjectProperty.area,
+        ObjectProperty.totalSpotArea,
+        ObjectProperty.relativeSpotsIntensity,
+        ObjectProperty.numberOfSpots,
+        ObjectProperty.numberOfSpotsPerAreaOf,
+      ],
+    );
   }
   if (spot) {
-    props.push(...[
-      ObjectProperty.area,
-      ObjectProperty.meanSpotIntensity,
-      ObjectProperty.spotBackgroundIntensity,
-      ObjectProperty.correctedSpotIntensity,
-      ObjectProperty.relativeSpotIntensity,
-      ObjectProperty.uncorrectedSpotIntensity,
-      ObjectProperty.spotContrast,
-      spotWithParent ? ObjectProperty.regionIntensity : false,
-      spotWithParent ? ObjectProperty.spotToRegionIntensity : false
-    ].filter(Boolean));
+    props.push(
+      ...[
+        ObjectProperty.area,
+        ObjectProperty.meanSpotIntensity,
+        ObjectProperty.spotBackgroundIntensity,
+        ObjectProperty.correctedSpotIntensity,
+        ObjectProperty.relativeSpotIntensity,
+        ObjectProperty.uncorrectedSpotIntensity,
+        ObjectProperty.spotContrast,
+        spotWithParent ? ObjectProperty.regionIntensity : false,
+        spotWithParent ? ObjectProperty.spotToRegionIntensity : false,
+      ].filter(Boolean),
+    );
   }
   return [...new Set(props)];
 }
 
-export {
-  ObjectProperty,
-  ObjectPropertyName,
-  getObjectProperties
-};
+export {ObjectProperty, ObjectPropertyName, getObjectProperties};

@@ -10,12 +10,8 @@ import cloudRegions from '../../models/cloudRegions/CloudRegions';
  * @param {CheckMountRulesOptions} options
  * @returns {Promise<void>}
  */
-export async function checkMountRules (
-  options
-) {
-  const {
-    cloudRegionId
-  } = options;
+export async function checkMountRules(options) {
+  const {cloudRegionId} = options;
   try {
     await cloudRegions.fetchIfNeededOrWait();
     const region = cloudRegions.getRegion(Number(cloudRegionId));
@@ -46,7 +42,7 @@ const ruleAll = 'ALL';
  * @param {Object} nfsMountsMap
  * @returns {StorageRegion|undefined}
  */
-function getStorageRegion (storage, regionsMap, nfsMountsMap) {
+function getStorageRegion(storage, regionsMap, nfsMountsMap) {
   const {type, regionId, fileShareMountId} = storage;
   const region = (() => {
     if (/^nfs$/i.test(type)) {
@@ -54,14 +50,16 @@ function getStorageRegion (storage, regionsMap, nfsMountsMap) {
     }
     return regionsMap[regionId];
   })();
-  return region ? {
-    regionId: region.regionId,
-    provider: region.provider,
-    mountRule: /^nfs$/i.test(type) ? region.mountFileStorageRule : region.mountStorageRule
-  } : undefined;
+  return region
+    ? {
+        regionId: region.regionId,
+        provider: region.provider,
+        mountRule: /^nfs$/i.test(type) ? region.mountFileStorageRule : region.mountStorageRule,
+      }
+    : undefined;
 }
 
-function getCacheKey (storages, region, regions) {
+function getCacheKey(storages, region, regions) {
   if (!region) {
     return undefined;
   }
@@ -81,32 +79,37 @@ function getCacheKey (storages, region, regions) {
 
 const cached = new Set();
 
-export function getAllowedStoragesForCloudRegion (storages, region, regions) {
+export function getAllowedStoragesForCloudRegion(storages, region, regions) {
   if (!region) {
     return storages;
   }
   const key = getCacheKey(storages, region, regions);
   const verbose = !cached.has(key);
   cached.add(key);
-  const {
-    provider: currentProvider = '',
-    regionId: currentRegionId = ''
-  } = region;
+  const {provider: currentProvider = '', regionId: currentRegionId = ''} = region;
   const ensuredStorages = storages || [];
   const ensuredRegions = regions || [];
   if (verbose) {
-    console.groupCollapsed(`get allowed storages for cloud region ${currentRegionId} (${currentProvider})`);
+    console.groupCollapsed(
+      `get allowed storages for cloud region ${currentRegionId} (${currentProvider})`,
+    );
   }
   let filtered = [];
   try {
-    const regionsMap = ensuredRegions.reduce((acc, r) => ({
-      ...acc,
-      [r.id]: r
-    }), {});
-    const nfsMounts = ensuredRegions.reduce((acc, r) => ({
-      ...acc,
-      ...(r.fileShareMounts || []).reduce((a, m) => ({...a, [m.id]: r}), {})
-    }), {});
+    const regionsMap = ensuredRegions.reduce(
+      (acc, r) => ({
+        ...acc,
+        [r.id]: r,
+      }),
+      {},
+    );
+    const nfsMounts = ensuredRegions.reduce(
+      (acc, r) => ({
+        ...acc,
+        ...(r.fileShareMounts || []).reduce((a, m) => ({...a, [m.id]: r}), {}),
+      }),
+      {},
+    );
     if (verbose) {
       console.log('region', currentProvider, currentRegionId);
       console.log('regions', regionsMap);
@@ -117,7 +120,7 @@ export function getAllowedStoragesForCloudRegion (storages, region, regions) {
       const {
         mountRule = ruleAll,
         regionId = '',
-        provider = ''
+        provider = '',
       } = getStorageRegion(storage, regionsMap, nfsMounts) || {};
       const allowed = (() => {
         switch (mountRule) {
@@ -126,15 +129,20 @@ export function getAllowedStoragesForCloudRegion (storages, region, regions) {
           case ruleSameCloud:
             return provider.toLowerCase() === currentProvider.toLowerCase();
           case ruleSameRegion:
-            return provider.toLowerCase() === currentProvider.toLowerCase() &&
-              regionId.toLowerCase() === currentRegionId.toLowerCase();
+            return (
+              provider.toLowerCase() === currentProvider.toLowerCase() &&
+              regionId.toLowerCase() === currentRegionId.toLowerCase()
+            );
           case ruleNone:
           default:
             return false;
         }
       })();
       if (!allowed && verbose) {
-        console.log(storage.pathMask, `not allowed. storage region ${regionId} (${provider}), rule ${mountRule}`);
+        console.log(
+          storage.pathMask,
+          `not allowed. storage region ${regionId} (${provider}), rule ${mountRule}`,
+        );
       }
       return allowed;
     });
@@ -144,7 +152,10 @@ export function getAllowedStoragesForCloudRegion (storages, region, regions) {
       console.log('not allowed count', ensuredStorages.length - filtered.length);
     }
   } catch (error) {
-    console.error(`error filtering allowed storages for cloud region ${currentRegionId} (${currentProvider}):`, error);
+    console.error(
+      `error filtering allowed storages for cloud region ${currentRegionId} (${currentProvider}):`,
+      error,
+    );
   } finally {
     if (verbose) {
       console.groupEnd();

@@ -18,7 +18,7 @@ import RemotePost from '../basic/RemotePost';
 
 // Upload template export result to bucket (template.save_to)
 class FacetSearchExportTemplatesSave extends RemotePost {
-  constructor (templateId) {
+  constructor(templateId) {
     super();
     this.url = `/search/facet/export/templates/save?templateId=${templateId}`;
   }

@@ -21,12 +21,13 @@ import {
   getModulesPresentation,
   getSpecification,
   CELLPROFILER_API_BATCH_SPEC_INPUTS,
-  CELLPROFILER_API_BATCH_SPEC_MODULES
+  CELLPROFILER_API_BATCH_SPEC_MODULES,
 } from './batch';
 import {getBatchAnalysisSimilarCheckSettings} from './job-utilities';
 
-const isArray = o => o && (Array.isArray(o) || isObservableArray(o));
-const isNumber = o => o !== undefined &&
+const isArray = (o) => o && (Array.isArray(o) || isObservableArray(o));
+const isNumber = (o) =>
+  o !== undefined &&
   o !== null &&
   (typeof o === 'string' || typeof o === 'number') &&
   !Number.isNaN(Number(o));
@@ -34,7 +35,7 @@ const isNumber = o => o !== undefined &&
 const MAXIMUM_DIFFERENT_PARAMETERS = 5;
 const MAX_SIMILAR_JOBS_TO_FIND = 5;
 
-function compareParameters (a, b) {
+function compareParameters(a, b) {
   if (!a && !b) {
     return true;
   }
@@ -79,19 +80,12 @@ function compareParameters (a, b) {
   return a === b;
 }
 
-async function compareSpecifications (original, jobToCompare, options) {
-  const {
-    maxDifferentParameters = MAXIMUM_DIFFERENT_PARAMETERS,
-    mode = 'total'
-  } = options;
+async function compareSpecifications(original, jobToCompare, options) {
+  const {maxDifferentParameters = MAXIMUM_DIFFERENT_PARAMETERS, mode = 'total'} = options;
   try {
     const specToCompare = await getSpecification(jobToCompare);
-    const {
-      modules: originalModules = []
-    } = original;
-    const {
-      modules: modulesToCompare = []
-    } = specToCompare;
+    const {modules: originalModules = []} = original;
+    const {modules: modulesToCompare = []} = specToCompare;
     if (originalModules.length !== modulesToCompare.length) {
       return {score: 0};
     }
@@ -100,14 +94,9 @@ async function compareSpecifications (original, jobToCompare, options) {
     for (let i = 0; i < originalModules.length; i++) {
       const originalModule = originalModules[i];
       const moduleToCompare = modulesToCompare[i];
-      const {
-        moduleName: originalModuleName,
-        parameters: originalParameters = {}
-      } = originalModule;
-      const {
-        moduleName: moduleNameToCompare,
-        parameters: parametersToCompare = {}
-      } = moduleToCompare;
+      const {moduleName: originalModuleName, parameters: originalParameters = {}} = originalModule;
+      const {moduleName: moduleNameToCompare, parameters: parametersToCompare = {}} =
+        moduleToCompare;
       if (originalModuleName !== moduleNameToCompare) {
         return {score: 0};
       }
@@ -118,7 +107,7 @@ async function compareSpecifications (original, jobToCompare, options) {
       }
       for (let p = 0; p < originalParameterNames.length; p++) {
         const parameterName = originalParameterNames[p];
-        if (!Object.prototype.hasOwnProperty.call(parametersToCompare, parameterName)) {
+        if (!Object.hasOwn(parametersToCompare, parameterName)) {
           return {score: 0};
         }
         const originalParameter = originalParameters[parameterName];
@@ -129,7 +118,7 @@ async function compareSpecifications (original, jobToCompare, options) {
             module: originalModuleName,
             parameter: parameterName,
             current: originalParameter,
-            similar: parameterToCompare
+            similar: parameterToCompare,
           });
         }
       }
@@ -138,22 +127,24 @@ async function compareSpecifications (original, jobToCompare, options) {
       return {score: 1};
     }
     if (perModule) {
-      const modulesIndexes = [...new Set(differentParameters.map(o => o.moduleIndex))];
-      const perModuleGrouping = modulesIndexes.map(idx => ({
-        moduleIndex: idx,
-        parameters: differentParameters.filter(o => o.moduleIndex === idx)
-      })).filter(o => o.parameters.length > 0);
-      if (perModuleGrouping.some(o => o.parameters.length > maxDifferentParameters)) {
+      const modulesIndexes = [...new Set(differentParameters.map((o) => o.moduleIndex))];
+      const perModuleGrouping = modulesIndexes
+        .map((idx) => ({
+          moduleIndex: idx,
+          parameters: differentParameters.filter((o) => o.moduleIndex === idx),
+        }))
+        .filter((o) => o.parameters.length > 0);
+      if (perModuleGrouping.some((o) => o.parameters.length > maxDifferentParameters)) {
         return {score: 0};
       }
-      const totalScore = perModuleGrouping
-        .reduce(
+      const totalScore =
+        perModuleGrouping.reduce(
           (result, grouping) => result + grouping.parameters.length / maxDifferentParameters,
-          0
+          0,
         ) / originalModules.length;
       return {
         score: 1.0 - totalScore,
-        differentParameters
+        differentParameters,
       };
     }
     if (differentParameters.length > maxDifferentParameters) {
@@ -161,44 +152,46 @@ async function compareSpecifications (original, jobToCompare, options) {
     }
     return {
       score: 1.0 - differentParameters.length / maxDifferentParameters,
-      differentParameters
+      differentParameters,
     };
   } catch (_) {
     return {score: 0};
   }
 }
 
-async function findSimilarSpecifications (originalSpecification, jobs = []) {
+async function findSimilarSpecifications(originalSpecification, jobs = []) {
   if (jobs.length === 0) {
     return [];
   }
   console.log('Searching similar analysis jobs for specification:', originalSpecification);
   console.log(
-    // eslint-disable-next-line max-len
     'Jobs to test (have the same input image, modules set and wells/fields/time points/planes selection):',
-    jobs
+    jobs,
   );
   const settings = await getBatchAnalysisSimilarCheckSettings();
   const testResults = await Promise.all(
-    jobs.map(aJob => compareSpecifications(originalSpecification, aJob, settings))
+    jobs.map((aJob) => compareSpecifications(originalSpecification, aJob, settings)),
   );
-  const info = jobs.map((aJob, index) => ({
-    job: aJob,
-    ...testResults[index]
-  }))
-    .filter(test => test.score > 0)
+  const info = jobs
+    .map((aJob, index) => ({
+      job: aJob,
+      ...testResults[index],
+    }))
+    .filter((test) => test.score > 0)
     .slice(0, MAX_SIMILAR_JOBS_TO_FIND);
   info.sort((a, b) => b.score - a.score);
   if (info.length > 0) {
     console.log(`${info.length} similar jobs found:`);
-    info.forEach(infoItem => {
+    info.forEach((infoItem) => {
       const job = infoItem.job;
       const name = `#${job.id}${job.alias ? ' ('.concat(job.alias).concat(')') : ''}`;
-      // eslint-disable-next-line max-len
-      console.log(`* ${name}; internal score: ${Math.round(infoItem.score * 100)}%; different parameters:`);
-      (infoItem.differentParameters || []).forEach(parameter => {
-        // eslint-disable-next-line max-len
-        console.log(`\t${parameter.module}."${parameter.parameter}": ${parameter.similar} -> ${parameter.current}`);
+      console.log(
+        `* ${name}; internal score: ${Math.round(infoItem.score * 100)}%; different parameters:`,
+      );
+      (infoItem.differentParameters || []).forEach((parameter) => {
+        console.log(
+          `\t${parameter.module}."${parameter.parameter}": ${parameter.similar} -> ${parameter.current}`,
+        );
       });
     });
   } else {
@@ -207,29 +200,24 @@ async function findSimilarSpecifications (originalSpecification, jobs = []) {
   return info;
 }
 
-export async function findSimilarAnalysis (specification) {
-  const {
-    inputs,
-    modules,
-    path
-  } = specification;
+export async function findSimilarAnalysis(specification) {
+  const {inputs, modules, path} = specification;
   const inputsPresentation = getInputFilesPresentation(inputs);
   const modulesPresentation = getModulesPresentation(modules);
   const {jobs = []} = await getBatchJobs({
     source: path ? path.split('/').pop() : undefined,
     pageSize: 50,
-    statuses: ['SUCCESS']
+    statuses: ['SUCCESS'],
   });
-  const parameterMatches = (run, parameterName, parameterValue) => run.job &&
-    (run.job.pipelineRunParameters || []).some(parameter => parameter.name === parameterName &&
-      `${parameter.value}` === `${parameterValue}`
+  const parameterMatches = (run, parameterName, parameterValue) =>
+    run.job &&
+    (run.job.pipelineRunParameters || []).some(
+      (parameter) =>
+        parameter.name === parameterName && `${parameter.value}` === `${parameterValue}`,
     );
-  const jobMatches = job =>
+  const jobMatches = (job) =>
     parameterMatches(job, CELLPROFILER_API_BATCH_SPEC_INPUTS, inputsPresentation) &&
     parameterMatches(job, CELLPROFILER_API_BATCH_SPEC_MODULES, modulesPresentation);
   const filtered = jobs.filter(jobMatches);
-  return findSimilarSpecifications(
-    specification,
-    filtered
-  );
+  return findSimilarSpecifications(specification, filtered);
 }

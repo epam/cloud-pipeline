@@ -24,7 +24,7 @@ const colors = [
   '#9254de',
   '#c41d7f',
   '#595959',
-  '#ff4d4f'
+  '#ff4d4f',
 ];
 
 const backgroundColor = '#ffffff';
@@ -33,12 +33,12 @@ const lineColor = textColor;
 
 const FADE_AMOUNT = 0.15;
 
-export function getColor (index, colorsConfiguration = colors) {
+export function getColor(index, colorsConfiguration = colors) {
   const indexCorrected = Math.max(0, index) % colorsConfiguration.length;
   return colorsConfiguration[indexCorrected];
 }
 
-export function getFadedColor (color) {
+export function getFadedColor(color) {
   return fade(color, FADE_AMOUNT);
 }
 

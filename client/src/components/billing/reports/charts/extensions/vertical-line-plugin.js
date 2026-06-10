@@ -20,23 +20,18 @@ const plugin = {
   id,
   beforeDatasetsDraw: function (chart, ease, pluginOptions) {
     if (pluginOptions) {
-      const {
-        color = 'rgb(83, 157, 210)',
-        dash = 4,
-        width = 1,
-        index,
-        time
-      } = pluginOptions;
-      const horizontalScales = Object.values(chart.scales)
-        .filter(s => ['left', 'right'].indexOf(s.position) >= 0);
+      const {color = 'rgb(83, 157, 210)', dash = 4, width = 1, index, time} = pluginOptions;
+      const horizontalScales = Object.values(chart.scales).filter(
+        (s) => ['left', 'right'].indexOf(s.position) >= 0,
+      );
       let top, bottom;
       if (horizontalScales.length > 0) {
-        top = Math.min(...horizontalScales.map(s => s.top));
-        bottom = Math.max(...horizontalScales.map(s => s.bottom));
+        top = Math.min(...horizontalScales.map((s) => s.top));
+        bottom = Math.max(...horizontalScales.map((s) => s.bottom));
       }
       let x;
       if (time) {
-        const [timeScale] = Object.values(chart.scales).filter(s => s.type === 'time');
+        const [timeScale] = Object.values(chart.scales).filter((s) => s.type === 'time');
         if (timeScale) {
           x = timeScale.getPixelForOffset(time);
         }
@@ -44,7 +39,7 @@ const plugin = {
       if (!x && !isNaN(index) && chart.data.datasets.length) {
         const meta = chart.getDatasetMeta(0);
         const {data, xAxisID} = meta;
-        if (chart.scales.hasOwnProperty(xAxisID)) {
+        if (Object.hasOwn(chart.scales, xAxisID)) {
           x = chart.scales[xAxisID].getPixelForTick(index);
         } else {
           x = data[pluginOptions.index]._model.x;
@@ -63,7 +58,7 @@ const plugin = {
         context.restore();
       }
     }
-  }
+  },
 };
 
 export {id, plugin};

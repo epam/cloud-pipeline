@@ -20,5 +20,5 @@ export default {
   mBytes: 'megabytes',
   percent: 'percent',
   date: 'date',
-  networkUsage: 'network-usage'
+  networkUsage: 'network-usage',
 };

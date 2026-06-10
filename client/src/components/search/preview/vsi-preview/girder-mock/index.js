@@ -21,21 +21,14 @@ import folderItems from './folder-items';
 import annotation from './annotation';
 import annotations from './annotations';
 
-const handlers = [
-  userMe,
-  itemInfo,
-  folderInfo,
-  folderItems,
-  annotation,
-  annotations
-];
+const handlers = [userMe, itemInfo, folderInfo, folderItems, annotation, annotations];
 
 window.girder = {
   rest: {
-    restRequest (opts) {
+    restRequest(opts) {
       const {url, method, data} = opts;
       return {
-        done (cb1) {
+        done(cb1) {
           const cb = (...opts) => {
             cb1(...opts);
           };
@@ -47,8 +40,8 @@ window.girder = {
             }
           }
           console.warn('unhandled request!', opts);
-        }
+        },
       };
-    }
-  }
+    },
+  },
 };

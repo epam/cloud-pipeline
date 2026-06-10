@@ -16,14 +16,10 @@
 
 import {isObservableArray} from 'mobx';
 
-export function getFilterByPayload (filterBy) {
-  const {
-    resourceType,
-    storageType,
-    computeType
-  } = filterBy || {};
+export function getFilterByPayload(filterBy) {
+  const {resourceType, storageType, computeType} = filterBy || {};
   const payload = {};
-  const asArray = (value) => Array.isArray(value) || isObservableArray(value) ? value : [value];
+  const asArray = (value) => (Array.isArray(value) || isObservableArray(value) ? value : [value]);
   if (resourceType) {
     payload.resource_type = asArray(resourceType);
   }
@@ -36,9 +32,9 @@ export function getFilterByPayload (filterBy) {
   return payload;
 }
 
-export default function extendFiltersWithFilterBy (filters, filterBy) {
+export default function extendFiltersWithFilterBy(filters, filterBy) {
   return {
     ...(filters || {}),
-    ...getFilterByPayload(filterBy)
+    ...getFilterByPayload(filterBy),
   };
 }

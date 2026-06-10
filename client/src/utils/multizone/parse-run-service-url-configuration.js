@@ -16,25 +16,23 @@
 
 import parseRunServiceUrl from '../parseRunServiceUrl';
 
-export default function parseRunServiceUrlConfiguration (serviceUrl) {
+export default function parseRunServiceUrlConfiguration(serviceUrl) {
   const result = [];
-  Object.entries(serviceUrl || {})
-    .map(([region, urls]) => {
-      parseRunServiceUrl(urls)
-        .forEach(urlConfiguration => {
-          const urlName = urlConfiguration.name;
-          let url = result.find(r => r.name === urlName);
-          if (!url) {
-            url = {
-              name: urlName,
-              isDefault: /^true$/i.test(`${urlConfiguration.isDefault}`),
-              sameTab: /^true$/i.test(`${urlConfiguration.sameTab}`),
-              url: {}
-            };
-            result.push(url);
-          }
-          url.url[region] = urlConfiguration.url;
-        });
+  Object.entries(serviceUrl || {}).forEach(([region, urls]) => {
+    parseRunServiceUrl(urls).forEach((urlConfiguration) => {
+      const urlName = urlConfiguration.name;
+      let url = result.find((r) => r.name === urlName);
+      if (!url) {
+        url = {
+          name: urlName,
+          isDefault: /^true$/i.test(`${urlConfiguration.isDefault}`),
+          sameTab: /^true$/i.test(`${urlConfiguration.sameTab}`),
+          url: {},
+        };
+        result.push(url);
+      }
+      url.url[region] = urlConfiguration.url;
     });
+  });
   return result;
 }

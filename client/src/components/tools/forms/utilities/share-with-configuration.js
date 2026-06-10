@@ -14,59 +14,48 @@
  * limitations under the License.
  */
 
-function normalizeSid (sid, isPrincipal) {
+function normalizeSid(sid, isPrincipal) {
   if (!sid || !sid.name) {
     return null;
   }
   return {
     name: sid.name,
     isPrincipal,
-    accessType: sid.accessType
+    accessType: sid.accessType,
   };
 }
 
-export function configurationShareToSids (configuration = {}) {
-  /* eslint-disable camelcase */
+export function configurationShareToSids(configuration = {}) {
   const users = (configuration.share_with_users || [])
     .map((sid) => normalizeSid(sid, true))
     .filter(Boolean);
   const roles = (configuration.share_with_roles || [])
     .map((sid) => normalizeSid(sid, false))
     .filter(Boolean);
-  /* eslint-enable camelcase */
+
   return [...users, ...roles];
 }
 
-function toConfigurationSid (sid) {
+function toConfigurationSid(sid) {
   return {
     name: sid.name,
     isPrincipal: sid.isPrincipal,
-    accessType: sid.accessType
+    accessType: sid.accessType,
   };
 }
 
-export function sidsToConfigurationShare (sids = []) {
-  /* eslint-disable camelcase */
+export function sidsToConfigurationShare(sids = []) {
   return {
-    users: sids
-      .filter((sid) => sid.isPrincipal)
-      .map(toConfigurationSid),
-    roles: sids
-      .filter((sid) => !sid.isPrincipal)
-      .map(toConfigurationSid)
+    users: sids.filter((sid) => sid.isPrincipal).map(toConfigurationSid),
+    roles: sids.filter((sid) => !sid.isPrincipal).map(toConfigurationSid),
   };
-  /* eslint-enable camelcase */
 }
 
-function sidKey (sid) {
-  return [
-    (sid.name || '').toLowerCase(),
-    !!sid.isPrincipal,
-    sid.accessType || ''
-  ].join('|');
+function sidKey(sid) {
+  return [(sid.name || '').toLowerCase(), !!sid.isPrincipal, sid.accessType || ''].join('|');
 }
 
-export function shareSidsEqual (a = [], b = []) {
+export function shareSidsEqual(a = [], b = []) {
   if (a.length !== b.length) {
     return false;
   }

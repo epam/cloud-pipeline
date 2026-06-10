@@ -19,22 +19,22 @@ import {Period as ReportPeriod} from '../../../special/periods';
 const periods = {
   month: 'MONTH',
   quarter: 'QUARTER',
-  year: 'YEAR'
+  year: 'YEAR',
 };
 
 const periodNames = {
   [periods.month]: 'Month',
   [periods.quarter]: 'Quarter',
-  [periods.year]: 'Year'
+  [periods.year]: 'Year',
 };
 
 const periodNamesAdjective = {
   [periods.month]: 'Monthly',
   [periods.quarter]: 'Quarterly',
-  [periods.year]: 'Annual'
+  [periods.year]: 'Annual',
 };
 
-export function getQuotaPeriodForReportPeriod (reportPeriod) {
+export function getQuotaPeriodForReportPeriod(reportPeriod) {
   switch (reportPeriod) {
     case ReportPeriod.quarter:
       return periods.quarter;

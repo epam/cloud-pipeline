@@ -13,14 +13,12 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-import {SERVER, API_PATH} from '../../../../../config';
 
-function generateAttachmentURL (secret) {
-  // eslint-disable-next-line
+function generateAttachmentURL(secret) {
   return `${SERVER + API_PATH}/issue/gitlab/attachment?secret=${secret}`;
 }
 
-export default function parseAttachment (attachment) {
+export default function parseAttachment(attachment) {
   if (
     !attachment ||
     typeof attachment.fileName !== 'string' ||
@@ -34,6 +32,6 @@ export default function parseAttachment (attachment) {
 
   return {
     name,
-    link
+    link,
   };
 }

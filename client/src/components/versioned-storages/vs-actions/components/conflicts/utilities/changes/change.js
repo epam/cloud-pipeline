@@ -24,7 +24,7 @@ const modificationStates = new Set([
   LineStates.inserted,
   LineStates.removed,
   LineStates.conflictStart,
-  LineStates.conflictEnd
+  LineStates.conflictEnd,
 ]);
 
 /**
@@ -37,9 +37,10 @@ export default class Change {
    * @param branch {string}
    * @returns {boolean}
    */
-  static lineIndicatesChange (line, branch) {
+  static lineIndicatesChange(line, branch) {
     return modificationStates.has(line.state[branch]);
   }
+
   /**
    * @type {ConflictedFile}
    */
@@ -87,12 +88,11 @@ export default class Change {
    * Change's status
    * @type {string}
    */
-  get status () {
+  get status() {
     if (this._parentChanges.length > 0) {
-      const applied = this._parentChanges
-        .filter(c =>
-          c.status === ChangeStatuses.prepared ||
-          c.status === ChangeStatuses.building
+      const applied =
+        this._parentChanges.filter(
+          (c) => c.status === ChangeStatuses.prepared || c.status === ChangeStatuses.building,
         ).length === 0;
       return applied ? ChangeStatuses.applied : ChangeStatuses.prepared;
     }
@@ -103,7 +103,7 @@ export default class Change {
    * Updates change status
    * @param value
    */
-  set status (value) {
+  set status(value) {
     if (this._parentChanges.length === 0) {
       this._status = value;
     }
@@ -113,7 +113,7 @@ export default class Change {
    * Affected lines
    * @type {ConflictedFileLine[]}
    */
-  get items () {
+  get items() {
     if (!this.conflictedFile || !this.start || !this.end) {
       return [];
     }
@@ -121,22 +121,22 @@ export default class Change {
       this.branch,
       new Set([LineStates.omit]),
       this.start,
-      this.end
+      this.end,
     );
   }
 
-  get resolved () {
+  get resolved() {
     return this.status === ChangeStatuses.applied || this.status === ChangeStatuses.discarded;
   }
 
-  constructor (conflictedFile, line, branch) {
+  constructor(conflictedFile, line, branch) {
     makeObservable(this, {
       conflict: observable,
       _parentChanges: observable,
       _childChange: observable,
       _status: observable,
       status: computed,
-      resolved: computed
+      resolved: computed,
     });
     this.conflictedFile = conflictedFile;
     this.start = line;
@@ -163,18 +163,12 @@ export default class Change {
    * @param branch {string}
    * @returns {ConflictedFileLine}
    */
-  first (branch) {
+  first(branch) {
     switch (this.type) {
       case ModificationType.edition:
-        return this.items
-          .find(i =>
-            i.state[branch] === LineStates.inserted
-          );
+        return this.items.find((i) => i.state[branch] === LineStates.inserted);
       case ModificationType.conflict:
-        return this.items
-          .find(i =>
-            i.state[branch] !== LineStates.conflictStart
-          );
+        return this.items.find((i) => i.state[branch] !== LineStates.conflictStart);
       default:
         return this.start;
     }
@@ -185,7 +179,7 @@ export default class Change {
    * @param branch {string}
    * @returns {number}
    */
-  lineIndex (branch) {
+  lineIndex(branch) {
     const lineIndex = this.start.lineNumber[branch];
     const lastLineIndex = this.conflictedFile.getLast(branch).lineNumber[branch];
     switch (this.type) {
@@ -202,7 +196,7 @@ export default class Change {
    * Returns unique identifier
    * @returns {string}
    */
-  key () {
+  key() {
     return `${this.start.key}-${this.end.key}`;
   }
 
@@ -211,7 +205,7 @@ export default class Change {
    * If that line indicates the end of the change, `Change.status` will be updated
    * @param line {ConflictedFileLine}
    */
-  appendLine (line) {
+  appendLine(line) {
     const state = line.state[this.branch];
     const currentState = this.end.state[this.branch];
     if (this.conflict && state === LineStates.conflictEnd) {
@@ -228,10 +222,7 @@ export default class Change {
       // current change is NOT the conflict and appending line is of the
       // same state as already appended are, so we're appending this line
       this.end = line;
-    } else if (
-      currentState === LineStates.removed &&
-      state === LineStates.inserted
-    ) {
+    } else if (currentState === LineStates.removed && state === LineStates.inserted) {
       // current change is NOT the conflict and appending line has "INSERTED" state,
       // but already appending lines have "DELETED" one;
       // that means that we're facing such git changes:
@@ -258,7 +249,7 @@ export default class Change {
    * @param callback {function} callback to be called after applying the change
    * @return {function(): void} function that reverts changes
    */
-  apply (callback) {
+  apply(callback) {
     const rollbackActions = [];
     // we're checking:
     // if (this.conflict) - we need to prepare conflict for resolving;
@@ -279,9 +270,8 @@ export default class Change {
     ) {
       // We need to determine, it it is the first procession (applying, not discarding)
       // of the conflict.
-      const firstProcessionOfConflict = !(
-        this._childChange._parentChanges
-          .find(c => c.status === ChangeStatuses.applied)
+      const firstProcessionOfConflict = !this._childChange._parentChanges.find(
+        (c) => c.status === ChangeStatuses.applied,
       );
       // If it is so (other branch is discarded or not applied yet),
       // we need to "copy" current branch to "merged";
@@ -315,7 +305,7 @@ export default class Change {
         curr.previous[Merged] = prev;
       }
     }
-    items.forEach(item => {
+    items.forEach((item) => {
       const previousState = item.state[Merged];
       const previousText = item.text[Merged];
       item.state[Merged] = item.state[this.branch];
@@ -331,10 +321,12 @@ export default class Change {
       this.conflictedFile.preProcessLines(Merged);
       this.conflictedFile.notify();
     });
-    callback && callback();
+    if (callback) {
+      callback();
+    }
     // Returning function that reverts changes
     return () => {
-      rollbackActions.forEach(action => action());
+      rollbackActions.forEach((action) => action());
     };
   }
 
@@ -343,9 +335,11 @@ export default class Change {
    * @param callback {function} callback to be called after discarding the change
    * @return {function(): void} function that reverts changes
    */
-  discard (callback) {
+  discard(callback) {
     this.status = ChangeStatuses.discarded;
-    callback && callback();
+    if (callback) {
+      callback();
+    }
     return () => {
       this.status = ChangeStatuses.prepared;
     };
@@ -357,7 +351,7 @@ export default class Change {
    * has the same start and end lines) and current change is from MERGED branch
    * @param parentChange {Change} parent change candidate
    */
-  tryAppendParentChange (parentChange) {
+  tryAppendParentChange(parentChange) {
     if (
       this.branch === Merged &&
       parentChange.branch !== Merged &&

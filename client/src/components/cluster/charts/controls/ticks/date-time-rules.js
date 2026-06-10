@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-import moment from 'moment-timezone';
+import dayjs, {calendarDate} from '../../../../../utils/dayjs';
 
 const buildRule = (fnName) => ({
-  fn: duration => typeof duration[fnName] === 'function'
-    ? duration[fnName]()
-    : (typeof fnName === 'function' ? fnName(duration) : 0),
+  fn: (duration) =>
+    typeof duration[fnName] === 'function'
+      ? duration[fnName]()
+      : typeof fnName === 'function'
+        ? fnName(duration)
+        : 0,
   fillRange: function (start, end, isBase = true) {
     let date = this.getAnchor(start);
     if (!date.isValid()) {
@@ -31,13 +34,13 @@ const buildRule = (fnName) => ({
         tick: start.unix(),
         display: this.getFullDescription(start),
         isBase,
-        isStart: true
+        isStart: true,
       });
       result.push({
         tick: end.unix(),
         display: this.getFullDescription(end),
         isBase,
-        isEnd: true
+        isEnd: true,
       });
     }
     while (date <= start) {
@@ -48,7 +51,7 @@ const buildRule = (fnName) => ({
         result.push({
           tick: date.unix(),
           display: this.getDescription(date, !isBase),
-          isBase
+          isBase,
         });
       }
       date = this.addStep(date);
@@ -65,128 +68,102 @@ const buildRule = (fnName) => ({
     return result;
   },
   nextRule: undefined,
-  getDescription: date => date.format()
+  getDescription: (date) => date.format(),
 });
 
 const rules = [
   {
     ...buildRule('asYears'),
-    getAnchor: date => moment([date.get('year'), 0, 1, 0, 0, 0]),
-    addStep: date => date.add(1, 'y'),
-    getFullDescription: date => date.format('YYYY'),
-    getDescription: date => date.format('YYYY')
+    getAnchor: (date) => calendarDate([date.year(), 0, 1, 0, 0, 0]),
+    addStep: (date) => date.add(1, 'year'),
+    getFullDescription: (date) => date.format('YYYY'),
+    getDescription: (date) => date.format('YYYY'),
   },
   {
-    ...buildRule('asQuarters'),
-    getAnchor: date => moment([date.get('year'), 0, 1, 0, 0, 0]),
-    addStep: date => date.add(1, 'Q'),
-    getFullDescription: date => date.format('MMM YYYY'),
-    getDescription: date => date.format('MMM')
+    ...buildRule((duration) => duration.asMonths() / 3),
+    getAnchor: (date) => calendarDate([date.year(), 0, 1, 0, 0, 0]),
+    addStep: (date) => date.add(1, 'quarter'),
+    getFullDescription: (date) => date.format('MMM YYYY'),
+    getDescription: (date) => date.format('MMM'),
   },
   {
     ...buildRule('asMonths'),
-    getAnchor: date => moment([date.get('year'), 0, 1, 0, 0, 0]),
-    addStep: date => date.add(1, 'M'),
-    getFullDescription: date => date.format('MMM YYYY'),
-    getDescription: date => date.format('MMM')
+    getAnchor: (date) => calendarDate([date.year(), 0, 1, 0, 0, 0]),
+    addStep: (date) => date.add(1, 'month'),
+    getFullDescription: (date) => date.format('MMM YYYY'),
+    getDescription: (date) => date.format('MMM'),
   },
   {
     ...buildRule('asWeeks'),
-    getAnchor: date => moment([date.get('year'), date.get('month'), 1, 0, 0, 0]),
-    addStep: date => {
-      if (date.get('date') >= 28) {
-        return moment([date.get('year'), date.get('month'), 1, 0, 0, 0]).add(1, 'M');
+    getAnchor: (date) => calendarDate([date.year(), date.month(), 1, 0, 0, 0]),
+    addStep: (date) => {
+      if (date.date() >= 28) {
+        return calendarDate([date.year(), date.month(), 1, 0, 0, 0]).add(1, 'month');
       }
-      return date.add(7, 'd');
+      return date.add(7, 'day');
     },
-    getFullDescription: date => date.format('D MMM, YYYY'),
-    getDescription: date => date.format('D MMM')
+    getFullDescription: (date) => date.format('D MMM, YYYY'),
+    getDescription: (date) => date.format('D MMM'),
   },
   {
     ...buildRule('asDays'),
-    getAnchor: date => moment([date.get('year'), date.get('month'), 1, 0, 0, 0]),
-    addStep: date => date.add(1, 'd'),
-    getFullDescription: date => date.format('D MMM YYYY'),
+    getAnchor: (date) => calendarDate([date.year(), date.month(), 1, 0, 0, 0]),
+    addStep: (date) => date.add(1, 'day'),
+    getFullDescription: (date) => date.format('D MMM YYYY'),
     getDescription: (date, intermediate) => {
       if (intermediate) {
         return date.format('D');
       }
-      if (date.get('M') === 0) {
+      if (date.month() === 0) {
         return date.format('MMM YYYY');
       }
       return date.format('D MMM');
-    }
+    },
   },
   {
     ...buildRule((duration) => duration.asHours() / 4),
-    getAnchor: date => moment([date.get('year'), date.get('month'), date.get('date'), 0, 0, 0]),
-    addStep: date => date.add(6, 'h'),
-    getFullDescription: date => date.format('D MMM YYYY, HH:mm'),
-    getDescription: date => date.format('HH:mm')
+    getAnchor: (date) => calendarDate([date.year(), date.month(), date.date(), 0, 0, 0]),
+    addStep: (date) => date.add(6, 'hour'),
+    getFullDescription: (date) => date.format('D MMM YYYY, HH:mm'),
+    getDescription: (date) => date.format('HH:mm'),
   },
   {
     ...buildRule('asHours'),
-    getAnchor: date => moment([date.get('year'), date.get('month'), date.get('date'), 0, 0, 0]),
-    addStep: date => date.add(1, 'h'),
-    getFullDescription: date => date.format('D MMM YYYY, HH:mm'),
-    getDescription: date => date.format('HH:mm')
+    getAnchor: (date) => calendarDate([date.year(), date.month(), date.date(), 0, 0, 0]),
+    addStep: (date) => date.add(1, 'hour'),
+    getFullDescription: (date) => date.format('D MMM YYYY, HH:mm'),
+    getDescription: (date) => date.format('HH:mm'),
   },
   {
-    ...buildRule(duration => duration.asMinutes() / 12),
-    getAnchor: date => moment([
-      date.get('year'),
-      date.get('month'),
-      date.get('date'),
-      date.get('hour'),
-      0,
-      0
-    ]),
-    addStep: date => date.add(5, 'm'),
-    getFullDescription: date => date.format('D MMM YYYY, HH:mm'),
-    getDescription: date => date.format('HH:mm')
+    ...buildRule((duration) => duration.asMinutes() / 12),
+    getAnchor: (date) => calendarDate([date.year(), date.month(), date.date(), date.hour(), 0, 0]),
+    addStep: (date) => date.add(5, 'minute'),
+    getFullDescription: (date) => date.format('D MMM YYYY, HH:mm'),
+    getDescription: (date) => date.format('HH:mm'),
   },
   {
     ...buildRule('asMinutes'),
-    getAnchor: date => moment([
-      date.get('year'),
-      date.get('month'),
-      date.get('date'),
-      date.get('hour'),
-      0,
-      0
-    ]),
-    addStep: date => date.add(1, 'm'),
-    getFullDescription: date => date.format('D MMM YYYY, HH:mm'),
-    getDescription: date => date.format('HH:mm')
+    getAnchor: (date) => calendarDate([date.year(), date.month(), date.date(), date.hour(), 0, 0]),
+    addStep: (date) => date.add(1, 'minute'),
+    getFullDescription: (date) => date.format('D MMM YYYY, HH:mm'),
+    getDescription: (date) => date.format('HH:mm'),
   },
   {
-    ...buildRule(duration => duration.asSeconds() / 6),
-    getAnchor: date => moment([
-      date.get('year'),
-      date.get('month'),
-      date.get('date'),
-      date.get('hour'),
-      date.get('minute'),
-      0
-    ]),
-    addStep: date => date.add(10, 's'),
-    getFullDescription: date => date.format('D MMM YYYY, HH:mm'),
-    getDescription: date => date.format('HH:mm:ss')
+    ...buildRule((duration) => duration.asSeconds() / 6),
+    getAnchor: (date) =>
+      calendarDate([date.year(), date.month(), date.date(), date.hour(), date.minute(), 0]),
+    addStep: (date) => date.add(10, 'second'),
+    getFullDescription: (date) => date.format('D MMM YYYY, HH:mm'),
+    getDescription: (date) => date.format('HH:mm:ss'),
   },
   {
     ...buildRule('asSeconds'),
-    getAnchor: date => moment([
-      date.get('year'),
-      date.get('month'),
-      date.get('date'),
-      date.get('hour'),
-      date.get('minute'),
-      0
-    ]),
-    addStep: date => date.add(1, 's'),
-    getFullDescription: date => date.format('D MMM YYYY, HH:mm'),
-    getDescription: date => date.format('HH:mm:ss')
-  }
+    getAnchor: (date) =>
+      calendarDate([date.year(), date.month(), date.date(), date.hour(), date.minute(), 0]),
+    addStep: (date) => date.add(1, 'second'),
+    getFullDescription: (date) => date.format('D MMM YYYY, HH:mm'),
+    getDescription: (date) => date.format('HH:mm:ss'),
+  },
 ];
 
 for (let i = 0; i < rules.length - 1; i++) {

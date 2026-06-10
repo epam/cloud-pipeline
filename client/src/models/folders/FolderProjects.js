@@ -18,8 +18,7 @@ import Remote from '../basic/Remote';
 import FolderProject from './FolderProject';
 
 class FolderProjects extends Remote {
-  /* eslint-disable */
-  static getCache (cache, id, type) {
+  static getCache(cache, id, type) {
     const key = `${id}-${type}`;
     if (!cache.has(key)) {
       cache.set(key, new FolderProject(id, type));
@@ -27,8 +26,7 @@ class FolderProjects extends Remote {
     return cache.get(key);
   }
 
-  /* eslint-enable */
-  static invalidateCache (cache, id, type) {
+  static invalidateCache(cache, id, type) {
     const key = `${id}-${type}`;
     if (cache.has(key)) {
       if (cache.get(key).invalidateCache) {
@@ -38,17 +36,18 @@ class FolderProjects extends Remote {
       }
     }
   }
-  constructor () {
+
+  constructor() {
     super();
     this.url = '/folder/projects';
     this.projects = new Map();
   }
 
-  getProjectFor (id, type) {
+  getProjectFor(id, type) {
     return this.constructor.getCache(this.projects, id, type);
   }
 
-  invalidateProjectFor (id, type) {
+  invalidateProjectFor(id, type) {
     this.constructor.invalidateCache(this.projects, id, type);
   }
 }

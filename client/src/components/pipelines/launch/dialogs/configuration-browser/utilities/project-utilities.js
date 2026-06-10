@@ -16,7 +16,7 @@
 
 import MetadataEntityFields from '../../../../../../models/folderMetadata/MetadataEntityFields';
 
-export async function getProjectEntityTypes (projectId) {
+export async function getProjectEntityTypes(projectId) {
   const request = new MetadataEntityFields(projectId);
   await request.fetch();
   if (request.error) {
@@ -24,14 +24,11 @@ export async function getProjectEntityTypes (projectId) {
   }
   return (request.value || []).map(({fields, metadataClass}) => ({
     ...metadataClass,
-    fields
+    fields,
   }));
 }
 
-export async function getProjectEntityTypeByName (projectId, name) {
+export async function getProjectEntityTypeByName(projectId, name) {
   const classes = await getProjectEntityTypes(projectId);
-  return classes.find(o => name &&
-    o.name &&
-    o.name.toLowerCase() === name.toLowerCase()
-  );
+  return classes.find((o) => name && o.name && o.name.toLowerCase() === name.toLowerCase());
 }

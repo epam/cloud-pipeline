@@ -22,7 +22,7 @@ registerRenderer('input', LaunchFormPathParameterInput);
 registerRenderer('output', LaunchFormPathParameterInput);
 registerRenderer('metadata_entity', LaunchFormMetadataEntityParameter);
 
-function LaunchFormParameterInput (props) {
+function LaunchFormParameterInput(props) {
   return renderParameter(props);
 }
 
@@ -38,7 +38,7 @@ LaunchFormParameterInput.propTypes = {
   currentProjectMetadata: PropTypes.object,
   currentMetadataEntity: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
   rootEntityId: PropTypes.string,
-  metadataAutoComplete: PropTypes.bool
+  metadataAutoComplete: PropTypes.bool,
 };
 
 export default LaunchFormParameterInput;

@@ -20,5 +20,5 @@ export default {
   csvCostCenters: 'csv-cost-centers',
   csvUsers: 'csv-users',
   rawCsv: 'csv-raw',
-  divider: 'divider'
+  divider: 'divider',
 };

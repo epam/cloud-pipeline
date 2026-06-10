@@ -1,4 +1,4 @@
-function base64ToArrayBuffer (base64) {
+function base64ToArrayBuffer(base64) {
   const binaryString = atob(base64);
   const bytes = new Uint8Array(binaryString.length);
   for (let i = 0; i < binaryString.length; i++) {
@@ -7,7 +7,7 @@ function base64ToArrayBuffer (base64) {
   return bytes.buffer;
 }
 
-function arrayBufferToBase64 (buffer) {
+function arrayBufferToBase64(buffer) {
   let binaryString = '';
   for (let i = 0; i < buffer.length; i++) {
     binaryString += String.fromCharCode(buffer[i]);
@@ -18,12 +18,12 @@ function arrayBufferToBase64 (buffer) {
 const textDecoder = new TextDecoder();
 const textEncoder = new TextEncoder();
 
-export function base64toString (base64string) {
+export function base64toString(base64string) {
   const buffer = base64ToArrayBuffer(base64string);
   return textDecoder.decode(buffer);
 }
 
-export function stringToBase64 (originalString) {
+export function stringToBase64(originalString) {
   const buffer = textEncoder.encode(originalString);
   return arrayBufferToBase64(buffer);
 }

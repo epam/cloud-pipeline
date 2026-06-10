@@ -18,7 +18,7 @@ import valueUnSet from './value-unset';
 const SIZE_PER_TICK = 50;
 
 const buildRule = (rangeFn) => ({
-  fn: range => rangeFn(range),
+  fn: (range) => rangeFn(range),
   display: function (o, full) {
     if (this.base >= 0) {
       return Math.floor(o);
@@ -38,13 +38,13 @@ const buildRule = (rangeFn) => ({
         tick: start,
         display: this.display(start, true),
         isBase,
-        isStart: true
+        isStart: true,
       });
       result.push({
         tick: end,
         display: this.display(end, true),
         isBase,
-        isEnd: true
+        isEnd: true,
       });
     }
     while (tick <= start) {
@@ -53,9 +53,9 @@ const buildRule = (rangeFn) => ({
     while (tick < end) {
       if (result.filter(({tick: t}) => t === tick).length === 0) {
         result.push({
-          tick: tick,
+          tick,
           display: this.display(tick),
-          isBase
+          isBase,
         });
       }
       tick = this.addStep(tick);
@@ -71,7 +71,7 @@ const buildRule = (rangeFn) => ({
     }
     return result;
   },
-  nextRule: undefined
+  nextRule: undefined,
 });
 
 const generateRules = (base, range, levels) => {
@@ -80,12 +80,12 @@ const generateRules = (base, range, levels) => {
   const rules = [];
   for (let i = maxPower; i >= maxPower - Math.max(2, levels); i--) {
     for (let j = 0; j < iterationsPerPower; j++) {
-      const step = base ** i / (2 ** j);
+      const step = base ** i / 2 ** j;
       rules.push({
-        ...buildRule(o => o / step),
-        addStep: o => o + step,
+        ...buildRule((o) => o / step),
+        addStep: (o) => o + step,
         base: Math.floor(Math.log10(step)),
-        initialBase: base
+        initialBase: base,
       });
     }
   }
@@ -110,13 +110,11 @@ export default function (start, end, canvasSize, base = 10, levels = 2, display)
   if (rules.length === 0) {
     return [];
   }
-  const diffs = rules
-    .map(rule => ({
-      ...rule,
-      diff: rule.fn(end - start),
-      display: display || rule.display
-    }));
-  const bestFit = diffs
-    .filter(d => d.diff <= baseTicksCount).pop() || diffs[0];
+  const diffs = rules.map((rule) => ({
+    ...rule,
+    diff: rule.fn(end - start),
+    display: display || rule.display,
+  }));
+  const bestFit = diffs.filter((d) => d.diff <= baseTicksCount).pop() || diffs[0];
   return bestFit.fillRange(start, end, levels);
 }

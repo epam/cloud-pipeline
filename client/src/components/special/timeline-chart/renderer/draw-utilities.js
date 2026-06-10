@@ -2,10 +2,7 @@ import {drawLine} from './utilities';
 
 const dpr = window.devicePixelRatio;
 
-export function drawVisibleLabels (
-  ticks,
-  options = {}
-) {
+export function drawVisibleLabels(ticks, options = {}) {
   const {
     context,
     axis,
@@ -17,7 +14,7 @@ export function drawVisibleLabels (
     textBaselineStart = textBaseline,
     textBaselineEnd = textBaseline,
     getElementPosition = () => ({x: 0, y: 0}),
-    color = '#333333'
+    color = '#333333',
   } = options;
   if (!context || !axis) {
     return;
@@ -28,24 +25,18 @@ export function drawVisibleLabels (
   const mainTicks = ticks
     .filter((tick) => tick.main)
     .map((tick) => ({
-      ...tick
+      ...tick,
     }));
   const otherTicks = ticks
     .filter((tick) => !tick.main)
     .map((tick) => ({
-      ...tick
+      ...tick,
     }));
   const zones = [];
   const zonesConflicts = (a, b) => {
-    const {
-      s: aStart,
-      e: aEnd
-    } = a;
-    const {
-      s: bStart,
-      e: bEnd
-    } = b;
-    return (aEnd - aStart) + (bEnd - bStart) > Math.max(aEnd, bEnd) - Math.min(aStart, bStart);
+    const {s: aStart, e: aEnd} = a;
+    const {s: bStart, e: bEnd} = b;
+    return aEnd - aStart + (bEnd - bStart) > Math.max(aEnd, bEnd) - Math.min(aStart, bStart);
   };
   const conflicts = (s, e, testZones = zones) =>
     testZones.some((zone) => zonesConflicts(zone, {s, e}));
@@ -64,7 +55,7 @@ export function drawVisibleLabels (
     tick.visible = !conflicts(tickStart, tickEnd, zones);
     tick.zone = {
       s: tickStart,
-      e: tickEnd
+      e: tickEnd,
     };
     if (tick.visible) {
       zones.push(tick.zone);
@@ -72,10 +63,7 @@ export function drawVisibleLabels (
   };
   const renderTick = (tick) => {
     if (tick.visible && (tick.start || tick.end || axis.valueFitsRange(tick.value))) {
-      const {
-        x,
-        y
-      } = getElementPosition(tick);
+      const {x, y} = getElementPosition(tick);
       if (tick.start) {
         context.textAlign = textAlignStart;
         context.textBaseline = textBaselineStart;
@@ -86,11 +74,7 @@ export function drawVisibleLabels (
         context.textAlign = textAlign;
         context.textBaseline = textBaseline;
       }
-      context.fillText(
-        tick.label,
-        Math.round(x * dpr),
-        Math.round(y * dpr)
-      );
+      context.fillText(tick.label, Math.round(x * dpr), Math.round(y * dpr));
     }
   };
   mainTicks.forEach(processTick);
@@ -100,29 +84,23 @@ export function drawVisibleLabels (
   context.restore();
 }
 
-function line (from, to, options) {
-  const {
-    color = '#000000',
-    width = 1,
-    units = false,
-    program,
-    buffer
-  } = options || {};
+function line(from, to, options) {
+  const {color = '#000000', width = 1, units = false, program, buffer} = options || {};
   drawLine(
     program,
     buffer,
     {
       x: (from.x || 0) * (units ? 1 : dpr),
-      y: (from.y || 0) * (units ? 1 : dpr)
+      y: (from.y || 0) * (units ? 1 : dpr),
     },
     {
       x: (to.x || 0) * (units ? 1 : dpr),
-      y: (to.y || 0) * (units ? 1 : dpr)
+      y: (to.y || 0) * (units ? 1 : dpr),
     },
     {
       color,
-      width
-    }
+      width,
+    },
   );
 }
 
@@ -134,54 +112,42 @@ function line (from, to, options) {
  * @property {number} [width]
  */
 
-export function buildLineHelpers (program, buffer) {
+export function buildLineHelpers(program, buffer) {
   /**
    * @param {LineOptions & {y: number, x1: number, x2: number}} options
    */
-  function horizontalLine (options) {
-    const {
-      x1 = 0,
-      x2 = 0,
-      y = 0,
-      width = 1,
-      units = false
-    } = options || {};
-    const round = (o) => units ? o : Math.round(o);
+  function horizontalLine(options) {
+    const {x1 = 0, x2 = 0, y = 0, width = 1, units = false} = options || {};
+    const round = (o) => (units ? o : Math.round(o));
     line(
       {x: round(x1), y: round(y) - width / 2.0},
       {x: round(x2), y: round(y) - width / 2.0},
       {
         ...(options || {}),
         program,
-        buffer
-      }
+        buffer,
+      },
     );
   }
 
   /**
    * @param {LineOptions & {x: number, y1: number, y2: number}} options
    */
-  function verticalLine (options) {
-    const {
-      y1 = 0,
-      y2 = 0,
-      x = 0,
-      width = 1,
-      units = false
-    } = options || {};
-    const round = (o) => units ? o : Math.round(o);
+  function verticalLine(options) {
+    const {y1 = 0, y2 = 0, x = 0, width = 1, units = false} = options || {};
+    const round = (o) => (units ? o : Math.round(o));
     line(
       {x: round(x) - width / 2.0, y: round(y1)},
       {x: round(x) - width / 2.0, y: round(y2)},
       {
         ...(options || {}),
         program,
-        buffer
-      }
+        buffer,
+      },
     );
   }
   return {
     horizontalLine,
-    verticalLine
+    verticalLine,
   };
 }

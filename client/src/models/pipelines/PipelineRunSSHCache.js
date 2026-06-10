@@ -17,7 +17,7 @@
 import PipelineRunSSH from './PipelineRunSSH';
 
 class PipelineRunSSHCache {
-  static getCacheValue (cache, id) {
+  static getCacheValue(cache, id) {
     if (!cache.has(+id)) {
       cache.set(+id, new PipelineRunSSH(id));
     }

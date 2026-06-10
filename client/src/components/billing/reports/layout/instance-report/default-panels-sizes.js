@@ -21,5 +21,5 @@ export default {
   [Panels.details]: {w: 2, h: 1},
   [Panels.instances]: {w: 4, h: 1},
   [Panels.pipelines]: {w: 4, h: 1},
-  [Panels.tools]: {w: 4, h: 1}
+  [Panels.tools]: {w: 4, h: 1},
 };
