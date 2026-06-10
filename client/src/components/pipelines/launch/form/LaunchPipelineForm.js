@@ -284,8 +284,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     }),
     onInitialized: PropTypes.func,
     onModified: PropTypes.func,
-    onLaunchProfileDelete: PropTypes.func,
-    launchProfileSaveDisabled: PropTypes.bool,
     continueRun: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     launchProfile: PropTypes.oneOfType([PropTypes.bool, PropTypes.shape({
       onSave: PropTypes.func,
