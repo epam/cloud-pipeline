@@ -359,8 +359,12 @@ def cli():
                    'If --login is not specified this option will have no effect.',
               is_flag=True,
               default=False)
+@click.option('-ca', '--ca-bundle',
+              help='Path to a CA certificate bundle file used to verify S3 SSL connections '
+                   '(e.g. required when a ZScaler proxy intercepts TLS traffic)',
+              default=None)
 def configure(login, auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain,
-              proxy_ntlm_pass, codec, config_store, no_launch_browser):
+              proxy_ntlm_pass, codec, config_store, no_launch_browser, ca_bundle):
     """Configures CLI parameters
     """
     if auth_token and login:
@@ -394,7 +398,8 @@ def configure(login, auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_us
                  proxy_ntlm_domain,
                  proxy_ntlm_pass,
                  codec,
-                 config_store)
+                 config_store,
+                 ca_bundle)
 
 
 def echo_title(title, line=True):
