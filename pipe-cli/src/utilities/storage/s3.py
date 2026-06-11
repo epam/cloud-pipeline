@@ -59,10 +59,11 @@ class StorageItemManager(object):
         self.region_name = region_name
         self.endpoint = endpoint
         _boto_config = S3BucketOperations.get_boto_config(cross_region=cross_region)
+        _ca_bundle = Config.instance(raise_config_not_found_exception=False).ca_bundle
         self.s3 = session.resource('s3', config=_boto_config,
                                    region_name=self.region_name,
                                    endpoint_url=endpoint,
-                                   verify=False if endpoint else None)
+                                   verify=False if endpoint else _ca_bundle)
         self.s3.meta.client._endpoint.http_session = BotocoreHTTPSession(
             max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
         if bucket:
@@ -82,10 +83,11 @@ class StorageItemManager(object):
 
     def _get_client(self):
         _boto_config = S3BucketOperations.get_boto_config()
+        _ca_bundle = Config.instance(raise_config_not_found_exception=False).ca_bundle
         client = self.session.client('s3', config=_boto_config,
                                      region_name=self.region_name,
                                      endpoint_url=self.endpoint,
-                                     verify=False if self.endpoint else None)
+                                     verify=False if self.endpoint else _ca_bundle)
         client._endpoint.http_session.adapters['https://'] = BotocoreHTTPSession(
             max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
         debug_log_proxies(_boto_config)
@@ -329,11 +331,12 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
 
     def build_source_client(self, source_region, source_endpoint):
         _boto_config = S3BucketOperations.get_boto_config(cross_region=self.cross_region)
+        _ca_bundle = Config.instance(raise_config_not_found_exception=False).ca_bundle
         source_s3 = self.session.resource('s3',
                                           config=_boto_config,
                                           region_name=source_region,
                                           endpoint_url=source_endpoint,
-                                          verify=False if source_endpoint else None)
+                                          verify=False if source_endpoint else _ca_bundle)
         source_s3.meta.client._endpoint.http_session = BotocoreHTTPSession(
             max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
         debug_log_proxies(_boto_config)
@@ -916,8 +919,9 @@ class S3BucketOperations(object):
     @classmethod
     def _get_client(cls, session, region_name=None, endpoint=None):
         _boto_config = S3BucketOperations.get_boto_config()
+        _ca_bundle = Config.instance(raise_config_not_found_exception=False).ca_bundle
         client = session.client('s3', config=_boto_config, region_name=region_name,
-                                endpoint_url=endpoint, verify=False if endpoint else None)
+                                endpoint_url=endpoint, verify=False if endpoint else _ca_bundle)
         client._endpoint.http_session.adapters['https://'] = BotocoreHTTPSession(
             max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
         debug_log_proxies(_boto_config)

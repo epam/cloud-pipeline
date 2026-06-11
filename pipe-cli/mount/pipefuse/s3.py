@@ -122,7 +122,7 @@ class S3MultipartUpload(MultipartUpload):
 
 class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
 
-    def __init__(self, bucket, bucket_object, pipe, chunk_size):
+    def __init__(self, bucket, bucket_object, pipe, chunk_size, ca_bundle=None):
         """
         AWS S3 storage low level file system client operations.
 
@@ -130,12 +130,14 @@ class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
         :param bucket_object: AWS S3 bucket object.
         :param pipe: Cloud Pipeline API client.
         :param chunk_size: Multipart upload chunk size.
+        :param ca_bundle: Optional path to a CA certificate bundle for SSL verification.
         """
         super(S3StorageLowLevelClient, self).__init__()
         self._delimiter = '/'
         self._is_read_only = False
         self.bucket = bucket
         self.bucket_object = bucket_object
+        self._ca_bundle = ca_bundle
         self._s3 = self._generate_s3_client(pipe)
         self._chunk_size = chunk_size
         self._min_chunk = 1
@@ -147,7 +149,8 @@ class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
         session = self._generate_aws_session(pipe, self.bucket_object)
         custom_endpoint = self.bucket_object.endpoint
         return session.client('s3', config=Config(), region_name=self.bucket_object.region_name,
-                              endpoint_url=custom_endpoint, verify=False if custom_endpoint else None)
+                              endpoint_url=custom_endpoint,
+                              verify=False if custom_endpoint else self._ca_bundle)
 
     def _generate_aws_session(self, pipe, bucket_object):
         def refresh():

@@ -76,6 +76,7 @@ from pipefuse.storageclassfilter import StorageClassFilterFileSystemClient
 from src.common.audit import LoggingAuditConsumer, ChunkingAuditConsumer, \
     SetAuditContainer, AuditDaemon, DelayingAuditContainer, StoragePathAuditConsumer, \
     CloudPipelineAuditConsumer, DataAccessEvent, DataAccessType
+from src.config import Config as PipeConfig
 
 _allowed_logging_level_names = ['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET']
 _allowed_logging_levels = future.utils.lfilter(lambda name: isinstance(name, str), _allowed_logging_level_names)
@@ -145,7 +146,10 @@ def start(mountpoint, webdav, bucket,
                 permissions_manager = PermissionsManager(pipe, bucket_object)
                 daemons.append(StoragePathPermissionsRefresherDaemon(permissions_manager,
                                                                      delay=path_permissions_refreshing_delay))
-            client = S3StorageLowLevelClient(bucket_name, bucket_object, pipe=pipe, chunk_size=chunk_size)
+            _pipe_config = PipeConfig.instance(raise_config_not_found_exception=False)
+            _ca_bundle = _pipe_config.ca_bundle if _pipe_config else None
+            client = S3StorageLowLevelClient(bucket_name, bucket_object, pipe=pipe, chunk_size=chunk_size,
+                                             ca_bundle=_ca_bundle)
             if not show_archived:
                 client = ArchivedFilesFilterFileSystemClient(client, pipe=pipe, bucket=client.bucket_object)
             client = ArchivedAttributesFileSystemClient(client, pipe=pipe, bucket=client.bucket_object)
