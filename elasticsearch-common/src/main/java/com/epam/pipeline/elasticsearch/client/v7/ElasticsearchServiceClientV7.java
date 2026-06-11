@@ -49,12 +49,14 @@ import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.MsearchResponse;
 import org.opensearch.client.opensearch.core.ScrollRequest;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
-import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.CreateIndexResponse;
 import org.opensearch.client.opensearch.indices.GetIndexResponse;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.Nullable;
+import jakarta.json.stream.JsonParser;
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
@@ -124,13 +126,28 @@ public class ElasticsearchServiceClientV7 implements ElasticsearchServiceClient 
                 log.debug("Index with name {} already exists", indexName);
                 return;
             }
-            final CreateIndexRequest request = CreateIndexRequest._DESERIALIZER
-                    .deserialize(
-                            mapper.jsonProvider().createParser(new StringReader(source)),
-                            mapper
-                    ).toBuilder()
-                    .index(indexName).build();
-            final CreateIndexResponse response = client.indices().create(request);
+            final ObjectMapper objectMapper = mapper.objectMapper();
+            final JsonNode json = objectMapper.readTree(source);
+            final CreateIndexResponse response = client.indices().create(request -> {
+                request.index(indexName);
+                if (json.has("mappings")) {
+                    request.mappings(m -> {
+                        final JsonParser parser = mapper.jsonProvider()
+                                .createParser(new StringReader(json.get("mappings").toString()));
+                        return org.opensearch.client.opensearch._types.mapping.TypeMapping._DESERIALIZER
+                                .deserialize(parser, mapper).toBuilder();
+                    });
+                }
+                if (json.has("settings")) {
+                    request.settings(s -> {
+                        final JsonParser parser = mapper.jsonProvider()
+                                .createParser(new StringReader(json.get("settings").toString()));
+                        return org.opensearch.client.opensearch.indices.IndexSettings._DESERIALIZER
+                                .deserialize(parser, mapper).toBuilder();
+                    });
+                }
+                return request;
+            });
             if (!response.acknowledged()) {
                 throw new IllegalStateException("Create Elasticsearch index: " + response);
             }
@@ -139,6 +156,7 @@ public class ElasticsearchServiceClientV7 implements ElasticsearchServiceClient 
         }
         log.debug("Elasticsearch index with name {} was created.", indexName);
     }
+
 
     @Override
     public BulkResponseV7 sendRequests(final @Nullable String indexName,

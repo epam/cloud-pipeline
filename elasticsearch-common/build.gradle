@@ -51,6 +51,7 @@ tasks.withType(ShadowJar).configureEach {
     mergeServiceFiles()
     exclude('org/apache/logging/log4j/**')
     exclude('org/slf4j/**')
+    exclude('com/fasterxml/**')
 }
 
 // Replacement for legacy 'maven' plugin
