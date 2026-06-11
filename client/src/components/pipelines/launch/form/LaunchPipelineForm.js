@@ -3810,6 +3810,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         if (
           !this.props.isDetachedConfiguration &&
           !this.props.editConfigurationMode &&
+          !this.props.launchProfile &&
           currentUserAttributes.hasAttribute(CP_CAP_LIMIT_MOUNTS)
         ) {
           return currentUserAttributes.getAttributeValue(
@@ -5555,7 +5556,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         .then((userRunCapabilities = []) => {
           let {runCapabilities} = this.state;
           if (
-            !this.props.editConfigurationMode
+            !this.props.editConfigurationMode &&
+            !this.props.launchProfile
           ) {
             runCapabilities = correctRequiredCapabilities(
               [...new Set([...(runCapabilities || []), ...userRunCapabilities])],
