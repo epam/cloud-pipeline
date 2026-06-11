@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.docker;
 
+import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.dao.docker.DockerRegistryDao;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.configuration.ConfigurationEntry;
@@ -26,6 +27,7 @@ import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.manager.cloud.CloudFacade;
+import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,8 +42,15 @@ import java.util.List;
 import static com.epam.pipeline.assertions.tool.ToolAssertions.assertRegistryGroups;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.*;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 public class DockerRegistryManagerUnitTest {
     private static final String GPU_INSTANCE = "gpu.support";
@@ -52,6 +61,9 @@ public class DockerRegistryManagerUnitTest {
 
     @Mock
     private DockerRegistryDao dockerRegistryDaoMock;
+
+    @Mock
+    private MetadataManager metadataManagerMock;
 
     @Mock
     private ToolVersionManager toolVersionManagerMock;
@@ -135,5 +147,45 @@ public class DockerRegistryManagerUnitTest {
                 .settings(Collections.singletonList(configurationEntry))
                 .toolId(toolId)
                 .build();
+    }
+
+    @Test
+    public void loadByNameOrIdShouldLoadByIdWhenIdentifierIsNumeric() {
+        final DockerRegistry expected = getDockerRegistry();
+        doReturn(expected).when(dockerRegistryDaoMock).loadDockerRegistry(ID);
+        doReturn(false).when(metadataManagerMock).hasMetadata(any(EntityVO.class));
+
+        final DockerRegistry result = dockerRegistryManager.loadByNameOrId(String.valueOf(ID));
+
+        assertEquals(expected, result);
+        verify(dockerRegistryDaoMock).loadDockerRegistry(ID);
+        verify(dockerRegistryDaoMock, never()).loadDockerRegistry(anyString());
+    }
+
+    @Test
+    public void loadByNameOrIdShouldLoadByPathWhenIdentifierIsNotNumeric() {
+        final DockerRegistry expected = getDockerRegistry();
+        doReturn(expected).when(dockerRegistryDaoMock).loadDockerRegistry(TEST_STRING);
+        doReturn(false).when(metadataManagerMock).hasMetadata(any(EntityVO.class));
+
+        final DockerRegistry result = dockerRegistryManager.loadByNameOrId(TEST_STRING);
+
+        assertEquals(expected, result);
+        verify(dockerRegistryDaoMock).loadDockerRegistry(TEST_STRING);
+        verify(dockerRegistryDaoMock, never()).loadDockerRegistry(anyLong());
+    }
+
+    @Test
+    public void loadByNameOrIdShouldReturnNullWhenNotFoundById() {
+        doReturn(null).when(dockerRegistryDaoMock).loadDockerRegistry(ID);
+
+        assertNull(dockerRegistryManager.loadByNameOrId(String.valueOf(ID)));
+    }
+
+    @Test
+    public void loadByNameOrIdShouldReturnNullWhenNotFoundByPath() {
+        doReturn(null).when(dockerRegistryDaoMock).loadDockerRegistry(TEST_STRING);
+
+        assertNull(dockerRegistryManager.loadByNameOrId(TEST_STRING));
     }
 }

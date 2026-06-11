@@ -17,15 +17,22 @@
 import React from 'react';
 import {observer} from 'mobx-react';
 import {computed} from 'mobx';
+import {Modal} from 'antd';
 import SubSettings from '../sub-settings';
 import ProfileSettings from './profile';
 import AppearanceSettings, {MANAGEMENT_SECTION} from './appearance';
+import LaunchProfilesSettings from './launch-profiles';
 import roleModel from '../../../utils/roleModel';
 import UserInfoSummary from '../forms/EditUserRolesDialog/UserInfoSummary';
 
 @roleModel.authenticationInfo
 @observer
 export default class UserProfile extends React.Component {
+  state = {
+    launchProfilesModified: false,
+    changesCanBeSkipped: false
+  };
+
   @computed
   get user () {
     if (
@@ -36,6 +43,55 @@ export default class UserProfile extends React.Component {
     }
     return undefined;
   }
+
+  componentDidMount () {
+    const {route, router} = this.props;
+    if (route && router) {
+      router.setRouteLeaveHook(route, this.checkModifiedBeforeLeave);
+    }
+  }
+
+  componentWillUnmount () {
+    this.resetChangesStateTimeout && clearTimeout(this.resetChangesStateTimeout);
+  }
+
+  checkModifiedBeforeLeave = (nextLocation) => {
+    const {router} = this.props;
+    const {changesCanBeSkipped, launchProfilesModified} = this.state;
+    const resetChangesCanBeSkipped = () => {
+      this.resetChangesStateTimeout = setTimeout(
+        () => this.setState && this.setState({changesCanBeSkipped: false}),
+        0
+      );
+    };
+    const makeTransition = () => {
+      this.setState({changesCanBeSkipped: true}, () => {
+        router.push(nextLocation);
+        resetChangesCanBeSkipped();
+      });
+    };
+    if (launchProfilesModified && !changesCanBeSkipped) {
+      this.confirmChanges()
+        .then(confirmed => confirmed ? makeTransition() : undefined);
+      return false;
+    }
+  };
+
+  confirmChanges = () => new Promise((resolve) => {
+    Modal.confirm({
+      title: 'Changes will not be saved. Continue?',
+      onOk () { resolve(true); },
+      onCancel () { resolve(false); },
+      okText: 'Yes',
+      cancelText: 'No'
+    });
+  });
+
+  canNavigateSections = () => {
+    const {launchProfilesModified} = this.state;
+    if (!launchProfilesModified) return Promise.resolve(true);
+    return this.confirmChanges();
+  };
 
   getSections = () => {
     const sections = [];
@@ -52,6 +108,15 @@ export default class UserProfile extends React.Component {
         <AppearanceSettings
           router={router}
           management={MANAGEMENT_SECTION.toLowerCase() === (sub || '').toLowerCase()}
+        />
+      )
+    });
+    sections.push({
+      key: 'launch-profiles',
+      title: 'LAUNCH PROFILES',
+      render: () => (
+        <LaunchProfilesSettings
+          onModified={(modified) => this.setState({launchProfilesModified: modified})}
         />
       )
     });
@@ -74,6 +139,7 @@ export default class UserProfile extends React.Component {
         sections={this.getSections()}
         router={router}
         root="profile"
+        canNavigate={this.canNavigateSections}
       />
     );
   }
