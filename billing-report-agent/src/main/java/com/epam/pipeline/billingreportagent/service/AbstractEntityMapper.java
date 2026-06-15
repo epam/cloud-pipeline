@@ -22,6 +22,8 @@ import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.entity.user.PipelineUser;
 
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
@@ -50,5 +52,9 @@ public abstract class AbstractEntityMapper<T> {
 
     protected String asString(final Date date) {
         return Optional.ofNullable(date).map(SIMPLE_DATE_FORMAT::format).orElse(null);
+    }
+
+    protected String asString(final LocalDate date) {
+        return Optional.ofNullable(date).map(LocalDate::toString).orElse(null);
     }
 }
