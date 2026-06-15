@@ -17,8 +17,9 @@
 package com.epam.pipeline.entity.contextual;
 
 import com.epam.pipeline.entity.preference.PreferenceType;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Date;
-import lombok.AllArgsConstructor;
 import lombok.Value;
 import lombok.experimental.Wither;
 
@@ -31,13 +32,25 @@ import lombok.experimental.Wither;
  */
 @Value
 @Wither
-@AllArgsConstructor
 public class ContextualPreference {
     private final String name;
     private final String value;
     private final PreferenceType type;
     private final Date createdDate;
     private final ContextualPreferenceExternalResource resource;
+
+    @JsonCreator
+    public ContextualPreference(@JsonProperty("name") final String name,
+                                @JsonProperty("value") final String value,
+                                @JsonProperty("type") final PreferenceType type,
+                                @JsonProperty("createdDate") final Date createdDate,
+                                @JsonProperty("resource") final ContextualPreferenceExternalResource resource) {
+        this.name = name;
+        this.value = value;
+        this.type = type;
+        this.createdDate = createdDate;
+        this.resource = resource;
+    }
 
     public ContextualPreference(final String name, final String value, final PreferenceType type,
                                 final ContextualPreferenceExternalResource resource) {

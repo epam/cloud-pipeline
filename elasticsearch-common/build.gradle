@@ -19,12 +19,14 @@ repositories {
 }
 
 dependencies {
-    // Elasticsearch
-    implementation group: "org.apache.lucene", name: "lucene-core", version: "7.7.0"
+    // Elasticsearch V6
     implementation group: "org.elasticsearch.client", name: "elasticsearch-rest-client", version: elasticsearchVersion
     implementation group: "org.elasticsearch.client", name: "elasticsearch-rest-high-level-client", version: elasticsearchVersion
     implementation group: "org.elasticsearch", name: "elasticsearch", version: elasticsearchVersion
-    implementation project(path: ':shaded:opensearch', configuration: 'shadow')
+
+    // OpenSearch Java client (V7 path)
+    implementation 'org.opensearch.client:opensearch-java:3.9.0'
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jaksonVersion"
 
     // Logging
     implementation group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: log4jVersion
@@ -47,12 +49,9 @@ dependencies {
 
 tasks.withType(ShadowJar).configureEach {
     mergeServiceFiles()
-    relocate('org.apache.lucene', 'shaded.org.apache.lucene7')
-    relocate('lombok', 'shaded.lombok')
-    // fix for log4j version mismatch
     exclude('org/apache/logging/log4j/**')
-    // fix for warning - SLF4J: Class path contains multiple SLF4J bindings.
     exclude('org/slf4j/**')
+    exclude('com/fasterxml/**')
 }
 
 // Replacement for legacy 'maven' plugin

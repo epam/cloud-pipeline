@@ -73,7 +73,7 @@ public class RunBillingMapper extends AbstractEntityMapper<PipelineRunBillingInf
 
         final Map<String, Object> jsonMap = new HashMap<>();
         jsonMap.put(DOC_TYPE_FIELD, SearchDocumentType.PIPELINE_RUN.name());
-        jsonMap.put("created_date", billingInfo.getDate()); // Document creation date: 2022-07-22
+        jsonMap.put("created_date", asString(billingInfo.getDate())); // Document creation date: 2022-07-22
         jsonMap.put("resource_type", billingInfo.getResourceType()); // Document resource type: COMPUTE / STORAGE
         jsonMap.put("cloudRegionId", region.map(AbstractCloudRegion::getId).orElse(null));
         jsonMap.put("cloud_region_name", region.map(AbstractCloudRegion::getName).orElse(null));
