@@ -88,8 +88,9 @@ chmod +x ./NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run
 ./NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run -s
 
 # Fabric Manager for A100, H100, H200 and friends
-dnf config-manager --add-repo https://developer.download.nvidia.com/compute/cuda/repos/amzn2023/x86_64/cuda-amzn2023.repo
-dnf install nvidia-fabric-manager -y
-dnf install nvidia-persistenced -н
+dnf install nvidia-release -y
+DRV_BRANCH="$(modinfo nvidia | grep "^version:" | tr -s ' ' | cut -d ' ' -f 2)"
+dnf install nvidia-fabricmanager-${DRV_BRANCH} -y
+dnf install nvidia-persistenced -y
 systemctl enable nvidia-fabricmanager
 systemctl enable nvidia-persistenced
