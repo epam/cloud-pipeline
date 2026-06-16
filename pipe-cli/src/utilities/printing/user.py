@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 from abc import ABCMeta, abstractmethod
 
 import click
 from prettytable import prettytable
+
+from src.utilities.printing.utils import to_json
 
 
 class UserInstancesPrintService:
@@ -34,7 +35,7 @@ class UserInstancesPrintService:
 
     @abstractmethod
     def print_single_limits(self, username, active_runs_count, source, value):
-        """Report aa single active instance limits applied to the user.
+        """Report a single active instance limits applied to the user.
 
         :param username: the name of the logged user.
         :param active_runs_count: number of runs in RUNNING or RESUMING state.
@@ -100,10 +101,6 @@ class JsonUserInstancesPrintService(UserInstancesPrintService):
     """
 
     @staticmethod
-    def _to_json(obj):
-        return json.dumps(obj, default=str, indent=2, ensure_ascii=False)
-
-    @staticmethod
     def _to_dict(username, runs_count, limits):
         return {
             'userName': username,
@@ -112,21 +109,21 @@ class JsonUserInstancesPrintService(UserInstancesPrintService):
         }
 
     def print_no_limits(self, username, active_runs_count):
-        click.echo(self._to_json(self._to_dict(
+        click.echo(to_json(self._to_dict(
             username=username,
             runs_count=active_runs_count,
             limits=[]
         )))
 
     def print_single_limits(self, username, active_runs_count, source, value):
-        click.echo(self._to_json(self._to_dict(
+        click.echo(to_json(self._to_dict(
             username=username,
             runs_count=active_runs_count,
             limits=[{'source': source, 'value': value}]
         )))
 
     def print_limits(self, username, active_runs_count, limits_dict):
-        click.echo(self._to_json(self._to_dict(
+        click.echo(to_json(self._to_dict(
             username=username,
             runs_count=active_runs_count,
             limits=[{'source': s, 'value': v} for s, v in limits_dict.items()]

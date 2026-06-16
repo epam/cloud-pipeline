@@ -19,6 +19,7 @@ import click
 from prettytable import prettytable
 
 from src.utilities.datastorage_du_operation import DuOutput
+from src.utilities.printing.utils import to_json
 
 
 class StorageDuPrintService(object):
@@ -192,10 +193,6 @@ class JsonStorageDuPrintService(StorageDuPrintService):
     def __init__(self):
         self._buffer = []
 
-    @staticmethod
-    def _to_json(obj):
-        return json.dumps(obj, default=str, indent=2, ensure_ascii=False)
-
     def add_item(self, du_command, item):
         self._buffer.append(self._build_entry(du_command, item))
 
@@ -204,7 +201,7 @@ class JsonStorageDuPrintService(StorageDuPrintService):
             self._buffer.append(self._build_entry(du_command, item))
 
     def flush(self):
-        click.echo(self._to_json(self._buffer))
+        click.echo(to_json(self._buffer))
 
     def error(self, message):
         click.echo(json.dumps({'error': message}), err=True)

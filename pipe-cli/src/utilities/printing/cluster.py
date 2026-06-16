@@ -14,13 +14,13 @@
 
 """Cluster printing services for different output formats."""
 
-import json
 from abc import ABCMeta, abstractmethod
 
 import click
 from prettytable import prettytable
 
 from src.utilities import state_utilities
+from src.utilities.printing.utils import to_json
 
 
 class ClusterPrintService:
@@ -241,21 +241,9 @@ class PrettyTableClusterPrintService(ClusterPrintService):
 class JsonClusterPrintService(ClusterPrintService):
     """JSON implementation for cluster node printing."""
 
-    @staticmethod
-    def _to_json(obj):
-        """Convert object to formatted JSON string.
-        
-        Args:
-            obj: Object to convert to JSON
-            
-        Returns:
-            Formatted JSON string
-        """
-        return json.dumps(obj, default=str, indent=2, ensure_ascii=False)
-
     def empty_nodes(self):
         """Print empty JSON array when no nodes are available."""
-        click.echo(self._to_json([]))
+        click.echo(to_json([]))
 
     def print_nodes_list(self, nodes):
         """Print list of all cluster nodes in JSON format.
@@ -278,7 +266,7 @@ class JsonClusterPrintService(ClusterPrintService):
             }
             nodes_data.append(node_dict)
 
-        click.echo(self._to_json(nodes_data))
+        click.echo(to_json(nodes_data))
 
     def print_node_details(self, node):
         """Print detailed information about a specific node in JSON format.
@@ -304,7 +292,7 @@ class JsonClusterPrintService(ClusterPrintService):
             ] if node.pods else []
         }
 
-        click.echo(self._to_json(node_dict))
+        click.echo(to_json(node_dict))
 
 
 def create_cluster_print_service(output_format):
