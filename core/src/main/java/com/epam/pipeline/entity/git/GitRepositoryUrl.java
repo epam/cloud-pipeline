@@ -28,6 +28,9 @@ public final class GitRepositoryUrl {
     private static final String PROTOCOL_PATTERN = "https?";
     // Username could be either placeholder ${GIT_USER} or a real username
     private static final String USERNAME_PATTERN = "\\$\\{GIT_USER}|[-._A-Za-z0-9]++";
+    // For Bitbucket Cloud provider emails shall be supported via URLs. The email shall be encoded: user%40example.com.
+    private static final String BITBUCKET_CLOUD_USERNAME_PATTERN =
+            "\\$\\{GIT_USER}|(?:[-._A-Za-z0-9]|%[0-9A-Fa-f]{2})++";
     // Password could be either placeholder ${GIT_TOKEN} or a real password
     private static final String PASS_PATTERN = "\\$\\{GIT_TOKEN}|[-_A-Za-z0-9]++";
     private static final String HOST_PATTERN = "[-._A-Za-z0-9]++(?::[0-9]++)?";
@@ -45,6 +48,20 @@ public final class GitRepositoryUrl {
             + "(?:/(?<namespace>" + PATH_PART_PATTERN + "))?"     // Optional namespace
             + "(?:/(?<project>" + PATH_PART_PATTERN + ")\\.git)?$" // Optional repository that ends with .git suffix
     );
+
+    private static final Pattern BITBUCKET_CLOUD_REPOSITORY_URL_PATTERN = Pattern.compile(
+            "^(?<protocol>" + PROTOCOL_PATTERN + "://)"      // Any url supposed to start with protocol
+                    + "(?:"                                     // Open optional non-capturing group for authentication
+                    + "(?<username>" + BITBUCKET_CLOUD_USERNAME_PATTERN + ")"
+                    + "(?::"
+                    + "(?<password>" + PASS_PATTERN + "))?" // Optional password
+                    + "@"                                       // that group should end with @ symbol
+                    + ")?"                                      // Close optional non-capturing group for authentication
+                    + "(?<host>" + HOST_PATTERN + ")"           // Host with optional port
+                    + "(?:/(?<namespace>" + PATH_PART_PATTERN + "))?"     // Optional namespace
+                    + "(?:/(?<project>" + PATH_PART_PATTERN + ")\\.git)?$" // Optional repository that ends with .git suffix
+    );
+
     private static final Pattern BITBUCKET_REPOSITORY_URL_PATTERN = Pattern.compile(
             "^(?<protocol>" + PROTOCOL_PATTERN + "://)"      // Any url supposed to start with protocol
                     + "(?:"                                     // Open optional non-capturing group for authentication
@@ -97,6 +114,11 @@ public final class GitRepositoryUrl {
 
     public static GitRepositoryUrl from(final String url) {
         final Matcher matcher = GIT_REPOSITORY_URL_PATTERN.matcher(url);
+        return parseUrl(matcher);
+    }
+
+    public static GitRepositoryUrl fromBitbucketCloud(final String url) {
+        final Matcher matcher = BITBUCKET_CLOUD_REPOSITORY_URL_PATTERN.matcher(url);
         return parseUrl(matcher);
     }
 

@@ -45,12 +45,16 @@ import com.epam.pipeline.mapper.git.BitbucketCloudMapper;
 import com.epam.pipeline.utils.GitUtils;
 import joptsimple.internal.Strings;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -60,8 +64,8 @@ import java.util.stream.Collectors;
 
 import static com.epam.pipeline.manager.git.PipelineRepositoryService.NOT_SUPPORTED_PATTERN;
 import static com.epam.pipeline.utils.AuthorizationUtils.buildBasicAuth;
-import static com.epam.pipeline.utils.AuthorizationUtils.buildBearerTokenAuth;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BitbucketCloudService implements GitClientService {
@@ -69,10 +73,10 @@ public class BitbucketCloudService implements GitClientService {
     private static final String REPOSITORY_NAME = "repository name";
     private static final String PROJECT_NAME = "project name";
     private static final String USER_NAME = "user name";
-    private static final String X_TOKEN_AUTH = "x-token-auth";
     private static final String BITBUCKET_CLOUD_FOLDER_MARKER = "commit_directory";
     private static final String BITBUCKET_CLOUD_FILE_MARKER = "commit_file";
     private static final String PAGE_PARAMETER = "page=";
+    private static final String AT_SIGN_ENCODED = "%40";
     private static final int MAX_DEPTH = 20;
 
     private final BitbucketCloudMapper mapper;
@@ -205,11 +209,11 @@ public class BitbucketCloudService implements GitClientService {
     @Override
     public GitCredentials getCloneCredentials(final Pipeline pipeline, final boolean useEnvVars,
                                               final boolean issueToken, final Long duration) {
-        final GitRepositoryUrl repositoryUrl = GitRepositoryUrl.from(pipeline.getRepository());
+        final GitRepositoryUrl repositoryUrl = GitRepositoryUrl.fromBitbucketCloud(pipeline.getRepository());
         final String token = pipeline.getRepositoryToken();
-        final AuthType authType = preferenceManager.getPreference(SystemPreferences.BITBUCKET_CLOUD_AUTH_TYPE);
-        final String username = AuthType.TOKEN.equals(authType) ? X_TOKEN_AUTH :
-                repositoryUrl.getUsername().orElseThrow(() -> buildUrlParseError(USER_NAME));
+        final String username = repositoryUrl.getUsername()
+                .flatMap(this::trimUsername)
+                .orElse(preferenceManager.getPreference(SystemPreferences.BITBUCKET_CLOUD_STATIC_USERNAME));
         final String host = repositoryUrl.getHost();
         return GitCredentials.builder()
                 .url(GitRepositoryUrl.asString(repositoryUrl.getProtocol(), username, token, host,
@@ -351,7 +355,7 @@ public class BitbucketCloudService implements GitClientService {
     }
 
     private BitbucketCloudClient buildClient(final String repositoryPath, final String token) {
-        final GitRepositoryUrl repositoryUrl = GitRepositoryUrl.from(repositoryPath);
+        final GitRepositoryUrl repositoryUrl = GitRepositoryUrl.fromBitbucketCloud(repositoryPath);
         final String projectName = repositoryUrl.getNamespace().orElseThrow(() -> buildUrlParseError(PROJECT_NAME));
         final String repositoryName = repositoryUrl.getProject().orElseThrow(() -> buildUrlParseError(REPOSITORY_NAME));
         final String protocol = repositoryUrl.getProtocol();
@@ -361,9 +365,12 @@ public class BitbucketCloudService implements GitClientService {
         Assert.isTrue(StringUtils.isNotBlank(token), messageHelper
                 .getMessage(MessageConstants.ERROR_REPOSITORY_TOKEN_NOT_FOUND, getType()));
         final AuthType authType = preferenceManager.getPreference(SystemPreferences.BITBUCKET_CLOUD_AUTH_TYPE);
-        final String credentials = AuthType.TOKEN.equals(authType) ?
-                buildBearerTokenAuth(token) :
-                buildBasicAuth(repositoryUrl.getUsername().orElseThrow(() -> buildUrlParseError(USER_NAME)), token);
+        if (AuthType.TOKEN.equals(authType)) {
+            throw new UnsupportedOperationException("App Password authentication is not supported.");
+        }
+        final String credentials = buildBasicAuth(repositoryUrl.getUsername()
+                .flatMap(this::decodeUsername)
+                .orElseThrow(() -> buildUrlParseError(USER_NAME)), token);
 
         final String apiVersion = preferenceManager.getPreference(SystemPreferences.BITBUCKET_CLOUD_API_VERSION);
 
@@ -399,5 +406,22 @@ public class BitbucketCloudService implements GitClientService {
 
     private boolean fileExists(final BitbucketCloudClient client, final String path, final Pipeline pipeline) {
         return client.searchFile(pipeline.getBranch(), path).getValues().size() > 0;
+    }
+
+    private Optional<String> decodeUsername(final String username) {
+        try {
+            return Optional.ofNullable(URLDecoder.decode(username, String.valueOf(StandardCharsets.UTF_8)));
+        } catch (UnsupportedEncodingException e) {
+            log.error(e.getMessage(), e);
+            return Optional.empty();
+        }
+    }
+
+    private Optional<String> trimUsername(final String username) {
+        if (StringUtils.isEmpty(username)) {
+            return Optional.empty();
+        }
+        final int index = username.indexOf(AT_SIGN_ENCODED);
+        return Optional.of(index < 0 ? username : username.substring(0, index));
     }
 }
