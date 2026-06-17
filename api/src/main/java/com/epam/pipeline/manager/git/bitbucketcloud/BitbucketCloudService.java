@@ -366,7 +366,8 @@ public class BitbucketCloudService implements GitClientService {
                 .getMessage(MessageConstants.ERROR_REPOSITORY_TOKEN_NOT_FOUND, getType()));
         final AuthType authType = preferenceManager.getPreference(SystemPreferences.BITBUCKET_CLOUD_AUTH_TYPE);
         if (AuthType.TOKEN.equals(authType)) {
-            throw new UnsupportedOperationException("App Password authentication is not supported.");
+            throw new UnsupportedOperationException(
+                    "Bearer token authentication is not supported for API Tokens flow.");
         }
         final String credentials = buildBasicAuth(repositoryUrl.getUsername()
                 .flatMap(this::decodeUsername)
@@ -421,7 +422,7 @@ public class BitbucketCloudService implements GitClientService {
         if (StringUtils.isEmpty(username)) {
             return Optional.empty();
         }
-        final int index = username.indexOf(AT_SIGN_ENCODED);
+        final int index = username.toUpperCase().indexOf(AT_SIGN_ENCODED);
         return Optional.of(index < 0 ? username : username.substring(0, index));
     }
 }
