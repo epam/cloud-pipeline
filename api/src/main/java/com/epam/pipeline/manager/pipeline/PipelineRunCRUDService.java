@@ -106,6 +106,11 @@ public class PipelineRunCRUDService {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
+    public void updateRunInitialized(final Long runId) {
+        pipelineRunDao.updateRunInitialized(runId);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
     public void deleteRunsByIdIn(final List<Long> ids) {
         pipelineRunDao.deleteRunByIdIn(ids, false);
     }
