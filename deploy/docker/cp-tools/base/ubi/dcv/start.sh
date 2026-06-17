@@ -18,7 +18,20 @@ DCV_INSTALL_TASK="NiceDCVInitialization"
 export CP_DCV_DESKTOP_PORT=8099
 export CP_DCV_WEB_PORT=8100
 
-if grep -m1 'vendor_id' /proc/cpuinfo | grep -q 'GenuineIntel' && \
+_mesa_fix_owner_allowed=1
+if [ -n "${CP_CAP_DCV_MESA_FIX_USERS:-}" ]; then
+    _mesa_fix_owner_allowed=0
+    IFS=',' read -ra _mesa_fix_users_list <<< "$CP_CAP_DCV_MESA_FIX_USERS"
+    for _mesa_fix_user in "${_mesa_fix_users_list[@]}"; do
+        if [ "$_mesa_fix_user" == "$OWNER" ]; then
+            _mesa_fix_owner_allowed=1
+            break
+        fi
+    done
+fi
+
+if [ $_mesa_fix_owner_allowed -eq 1 ] && \
+   grep -m1 'vendor_id' /proc/cpuinfo | grep -q 'GenuineIntel' && \
    grep -m1 'flags' /proc/cpuinfo | grep -q 'avx512' && \
    ! grep -m1 'flags' /proc/cpuinfo | grep -q 'arch_capabilities'; then
       cat > /etc/profile.d/mesa-fix.sh << 'EOF'
