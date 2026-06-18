@@ -13,14 +13,14 @@
 # limitations under the License.
 import os
 import sys
+from itertools import islice
 
 import click
-
-from prettytable import prettytable
 
 from src.api.entity import Entity
 from src.api.pipeline_run import PipelineRun
 from src.api.user import User
+from src.utilities.printing.user import create_user_instances_print_service
 
 
 class UserOperationsManager:
@@ -41,31 +41,20 @@ class UserOperationsManager:
         for event in events:
             click.echo("[%s] %s" % (event.get('status', ''), event.get('message', '')))
 
-    def get_instance_limits(self, verbose=False):
+    def get_instance_limits(self, verbose=False, output_format=None):
+        print_service = create_user_instances_print_service(output_format)
         username = self.user['userName']
         active_runs_count = PipelineRun.count_user_runs(target_statuses=['RUNNING', 'RESUMING'], owner=username)
-        click.echo('Active runs detected for a user: [{}: {}]'.format(username, active_runs_count))
         active_limits = User.load_launch_limits(verbose)
         if len(active_limits) == 0:
-            click.echo('No restrictions on runs launching configured')
+            print_service.print_no_limits(username, active_runs_count)
             return
+        sorted_limits = dict(sorted(active_limits.items(), key=lambda x: x[1]))
         if not verbose:
-            limit_entry = active_limits.items()[0]
-            source = limit_entry[0]
-            limit = limit_entry[1]
-            click.echo('The following restriction applied on runs launching: [{}: {}]'.format(source, limit))
-        else:
-            self.print_limits_table(active_limits)
-
-    def print_limits_table(self, limits_dict):
-        click.echo('The following restrictions applied on runs launching:\n')
-        limit_details_table = prettytable.PrettyTable()
-        limit_details_table.field_names = ['Source', 'Value']
-        limit_details_table.sortby = 'Value'
-        limit_details_table.align = 'l'
-        for source, value in limits_dict.items():
-            limit_details_table.add_row([source, value])
-        click.echo(limit_details_table)
+            source, value = next(iter(sorted_limits.items()))
+            print_service.print_single_limits(username, active_runs_count, source, value)
+            return
+        print_service.print_limits(username, active_runs_count, sorted_limits)
 
     def is_admin(self):
         return 'ROLE_ADMIN' in self.get_all_user_roles()

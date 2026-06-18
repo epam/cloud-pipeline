@@ -22,6 +22,7 @@ from future.utils import iteritems
 from prettytable import prettytable
 
 from src.model.data_storage_wrapper_type import WrapperType
+from src.utilities.printing.utils import to_json
 
 STORAGE_DETAILS_SEPARATOR = ', '
 
@@ -189,10 +190,6 @@ class JsonStoragePrintService(StoragePrintService):
         self.__buffer = []
         self.__item = {}
 
-    @staticmethod
-    def _to_json(obj):
-        return json.dumps(obj, default=str, indent=2, ensure_ascii=False)
-
     def disable_header(self):
         # no-op
         pass
@@ -207,7 +204,7 @@ class JsonStoragePrintService(StoragePrintService):
 
     def flush(self):
         if self.__buffer:
-            click.echo(self._to_json(self.__buffer))
+            click.echo(to_json(self.__buffer))
 
     def error(self, message, err=False, buf=False):
         click.echo(json.dumps({'error': message}), err=err)
@@ -268,7 +265,7 @@ class JsonStoragePrintService(StoragePrintService):
         self.__buffer.append({'name': item.path})
 
     def empty_items(self):
-        click.echo(self._to_json([]))
+        click.echo(to_json([]))
 
 
 class StorageObjectTagPrintService(object):
@@ -296,16 +293,12 @@ class PrettyTableStorageObjectTagPrintService(StorageObjectTagPrintService):
 
 class JsonStorageObjectTagPrintService(StorageObjectTagPrintService):
 
-    @staticmethod
-    def _to_json(obj):
-        return json.dumps(obj, indent=2, default=str, ensure_ascii=False)
-
     def print_tags(self, path, tags):
         if not tags:
-            click.echo(self._to_json([]))
+            click.echo(to_json([]))
             return
         result = [{'tagName': key, 'value': value} for key, value in iteritems(tags)]
-        click.echo(self._to_json(result))
+        click.echo(to_json(result))
 
 
 def create_storage_object_tag_print_service(output_format):

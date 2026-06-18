@@ -23,6 +23,8 @@ from abc import ABCMeta, abstractmethod
 import click
 from prettytable import prettytable
 
+from src.utilities.printing.utils import to_json
+
 
 def _build_name_by_type(entity, entity_type):
     """Build display name based on entity type."""
@@ -128,11 +130,6 @@ class PrettyTableAclPrintService(AclPrintService):
 class JsonAclPrintService(AclPrintService):
     """ACL print service using JSON format with camelCase fields."""
 
-    @staticmethod
-    def _to_json(obj):
-        """Convert object to JSON string with proper formatting."""
-        return json.dumps(obj, indent=2, default=str, ensure_ascii=False)
-
     def print_acl(self, permissions_list, owner):
         """Print ACL permissions in JSON format."""
         acl_dict = {
@@ -149,7 +146,7 @@ class JsonAclPrintService(AclPrintService):
             }
             acl_dict['permissions'].append(perm_dict)
         
-        click.echo(self._to_json(acl_dict))
+        click.echo(to_json(acl_dict))
 
     def print_sid_objects(self, sid_name, available_entities):
         """Print accessible objects in JSON format."""
@@ -168,7 +165,7 @@ class JsonAclPrintService(AclPrintService):
                 }
                 objects_list.append(obj_dict)
         
-        click.echo(self._to_json(objects_list))
+        click.echo(to_json(objects_list))
 
     def error(self, message, err=True):
         click.echo(json.dumps({'error': message}), err=err)

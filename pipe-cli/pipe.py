@@ -2059,12 +2059,14 @@ def import_users(file_path, create_user, create_group, create_metadata):
 
 @users.command(name='instances')
 @click.option('-v', '--verbose', required=False, is_flag=True, default=False, help='Show all active limits in a table')
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help=OUTPUT_FORMAT_OPTION_DESCRIPTION)
 @common_options
-def list_instance_limits(verbose):
+def list_instance_limits(verbose, output_format):
     """
     Shows information on user's instance limits
     """
-    UserOperationsManager().get_instance_limits(verbose)
+    UserOperationsManager().get_instance_limits(verbose, output_format)
 
 
 @cli.group()

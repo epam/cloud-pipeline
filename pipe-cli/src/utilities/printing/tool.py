@@ -22,6 +22,7 @@ from abc import ABCMeta, abstractmethod
 import click
 from prettytable import prettytable
 
+from src.utilities.printing.utils import to_json
 
 MB = 1024 * 1024
 
@@ -250,11 +251,6 @@ class PrettyTableToolPrintService(ToolPrintService):
 class JsonToolPrintService(ToolPrintService):
     """Print service using JSON format for structured output."""
 
-    @staticmethod
-    def _to_json(obj):
-        """Convert object to JSON string."""
-        return json.dumps(obj, default=str, indent=2, ensure_ascii=False)
-
     def print_registry(self, registry_model, groups):
         """Print registry information with its groups."""
         registry_data = {
@@ -272,7 +268,7 @@ class JsonToolPrintService(ToolPrintService):
                 'description': group_model.description
             })
 
-        click.echo(self._to_json(registry_data))
+        click.echo(to_json(registry_data))
 
     def print_group(self, group_model, tools, group_name):
         """Print tool group information with its tools."""
@@ -294,7 +290,7 @@ class JsonToolPrintService(ToolPrintService):
                 'description': tool_model.short_description
             })
 
-        click.echo(self._to_json(group_data))
+        click.echo(to_json(group_data))
 
     def print_tool(self, tool_model, group, tags):
         """Print detailed tool information."""
@@ -310,7 +306,7 @@ class JsonToolPrintService(ToolPrintService):
             'versions': tags if tags else []
         }
 
-        click.echo(self._to_json(tool_data))
+        click.echo(to_json(tool_data))
 
     def print_version(self, tool_model, group, registry_path, version, tool_settings, scan_results):
         """Print detailed tool version information."""
@@ -383,7 +379,7 @@ class JsonToolPrintService(ToolPrintService):
                         for d in scan_result.dependencies
                     ]
 
-        click.echo(self._to_json(version_data))
+        click.echo(to_json(version_data))
 
     def print_error(self, message):
         """Print error message in JSON format."""
