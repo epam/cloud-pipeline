@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 from abc import ABCMeta, abstractmethod
 
 import click
 from prettytable import prettytable
+
+from src.utilities.printing.utils import to_json
 
 """
 Pipeline printing utilities for different output formats.
@@ -177,11 +178,6 @@ class PrettyTablePipelinePrintService(PipelinePrintService):
 class JsonPipelinePrintService(PipelinePrintService):
     """Pipeline print service using JSON format with camelCase fields."""
 
-    @staticmethod
-    def _to_json(obj):
-        """Convert object to JSON string with proper formatting."""
-        return json.dumps(obj, indent=2, default=str, ensure_ascii=False)
-
     def print_pipelines_list(self, pipelines):
         """Print a list of pipelines in JSON format."""
         pipelines_json = []
@@ -194,7 +190,7 @@ class JsonPipelinePrintService(PipelinePrintService):
                 'sourceRepo': pipeline_model.repository
             }
             pipelines_json.append(pipeline_dict)
-        click.echo(self._to_json(pipelines_json))
+        click.echo(to_json(pipelines_json))
 
     def print_pipeline_details(self, pipeline_model, include_parameters=False,
                                include_versions=False, include_storage_rules=False,
@@ -256,11 +252,11 @@ class JsonPipelinePrintService(PipelinePrintService):
                 }
                 pipeline_dict['permissions'].append(perm_dict)
 
-        click.echo(self._to_json(pipeline_dict))
+        click.echo(to_json(pipeline_dict))
 
     def print_empty_pipelines(self):
         """Print empty array when no pipelines are available."""
-        click.echo(self._to_json([]))
+        click.echo(to_json([]))
 
 
 def create_pipeline_print_service(output_format):

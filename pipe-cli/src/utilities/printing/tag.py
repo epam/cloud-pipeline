@@ -19,6 +19,8 @@ import click
 import prettytable
 from future.utils import iteritems
 
+from src.utilities.printing.utils import to_json
+
 
 class TagPrintService(object):
     __metaclass__ = ABCMeta
@@ -52,17 +54,13 @@ class PrettyTableTagPrintService(TagPrintService):
 
 class JsonTagPrintService(TagPrintService):
 
-    @staticmethod
-    def _to_json(obj):
-        return json.dumps(obj, indent=2, default=str, ensure_ascii=False)
-
     def print_tags(self, entity_class, entity_id, data):
         if not data:
-            click.echo(self._to_json([]))
+            click.echo(to_json([]))
             return
         tags = [{'tagName': key, 'value': entry.get('value'), 'type': entry.get('type')}
                 for key, entry in iteritems(data)]
-        click.echo(self._to_json(tags))
+        click.echo(to_json(tags))
 
     def error(self, message, err=True):
         click.echo(json.dumps({'error': message}), err=err)

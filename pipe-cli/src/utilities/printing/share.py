@@ -18,6 +18,8 @@ import click
 from abc import abstractmethod, ABCMeta
 from prettytable import prettytable
 
+from src.utilities.printing.utils import to_json
+
 
 class SharePrintService(object):
     """Formats and prints the sharing state of a pipeline run."""
@@ -76,17 +78,13 @@ class JsonSharePrintService(SharePrintService):
         {"error": "<message>"}
     """
 
-    @staticmethod
-    def _to_json(obj):
-        return json.dumps(obj, default=str, indent=2, ensure_ascii=False)
-
     def not_shared(self):
-        click.echo(self._to_json([]))
+        click.echo(to_json([]))
 
     def print_sids(self, run_sids):
         result = [{'name': sid.name, 'isPrincipal': sid.is_principal, 'accessType': sid.access_type}
                   for sid in run_sids]
-        click.echo(self._to_json(result))
+        click.echo(to_json(result))
 
     def error(self, message):
         click.echo(json.dumps({'error': message}), err=True)
