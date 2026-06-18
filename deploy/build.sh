@@ -130,9 +130,9 @@ if [ "$CLOUD_IMAGES_MANIFEST_FILE" == "rebuild" ]; then
         cat ${CLOUD_IMAGES_MANIFEST_FILE}.az >> $CLOUD_IMAGES_MANIFEST_FILE
         rm -f ${CLOUD_IMAGES_MANIFEST_FILE}.az
     fi
-elif [ -z "$CLOUD_IMAGES_MANIFEST_FILE" ] || [[ "$CLOUD_IMAGES_MANIFEST_FILE" == "http"*"://"* ]]; then
+elif [[ "$CLOUD_IMAGES_MANIFEST_FILE" == "http"*"://"* ]]; then
     echo "Cloud images manifest is specified explicitely ($CLOUD_IMAGES_MANIFEST_FILE) via the remote URI, downloading to $CLOUD_IMAGES_MANIFEST_FILE. Cloud image WILL NOT be rebuilt"
-    CLOUD_IMAGES_MANIFEST_URI=${CLOUD_IMAGES_MANIFEST_FILE:-"https://s3.amazonaws.com/cloud-pipeline-oss-builds/manifests/cloud-images-manifest.txt"}
+    CLOUD_IMAGES_MANIFEST_URI=${CLOUD_IMAGES_MANIFEST_FILE}
     CLOUD_IMAGES_MANIFEST_FILE="$BUILD_DIR/cloud-images-manifest.txt"
     if check_installed "wget"; then
         wget "$CLOUD_IMAGES_MANIFEST_URI" -O $CLOUD_IMAGES_MANIFEST_FILE
@@ -142,6 +142,9 @@ elif [ -z "$CLOUD_IMAGES_MANIFEST_FILE" ] || [[ "$CLOUD_IMAGES_MANIFEST_FILE" ==
         echo "ERROR: wget and curl are not installed, please install one of them to use the remote images manifest"
         exit 1
     fi
+elif [[ -z "$CLOUD_IMAGES_MANIFEST_FILE" ]]; then
+    CLOUD_IMAGES_MANIFEST_FILE="$BUILD_SCRIPT_PATH/contents/install/cloud-images/cloud-images-manifest.txt"
+    echo "Cloud images manifest is not specified explicitely, default will be used ($CLOUD_IMAGES_MANIFEST_FILE)."
 else
     echo "Cloud images manifest is specified explicitely ($CLOUD_IMAGES_MANIFEST_FILE). Cloud image WILL NOT be rebuilt"
 fi

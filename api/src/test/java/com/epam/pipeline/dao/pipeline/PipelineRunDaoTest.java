@@ -924,10 +924,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         final PipelineRun run = createTestPipelineRun();
         validateLoadRunBooleanFieldValue(false, run, PipelineRun::getInitialized);
 
-        createLog(run, TaskStatus.RUNNING, initTaskName);
-        validateLoadRunBooleanFieldValue(false, run, PipelineRun::getInitialized);
-
-        createLog(run, TaskStatus.SUCCESS, initTaskName);
+        pipelineRunDao.updateRunInitialized(run.getId());
         validateLoadRunBooleanFieldValue(true, run, PipelineRun::getInitialized);
     }
 

@@ -86,9 +86,14 @@ public class RunLogManagerTest extends AbstractManagerTest {
     @InjectMocks
     private RunLogManager logManager;
 
-    @BeforeEach    public void setup() {
+    private static final String INIT_TASK_NAME = "InitializeEnvironment";
+
+    @BeforeEach
+    public void setup() {
         MockitoAnnotations.initMocks(this);
         ReflectionTestUtils.setField(logManager, "consoleLogTask", CONSOLE_LOG_TASK);
+        ReflectionTestUtils.setField(logManager, "initTaskName", INIT_TASK_NAME);
+        ReflectionTestUtils.setField(logManager, "self", logManager);
         when(messageHelper.getMessage(any(String.class))).thenReturn("test message");
         when(messageHelper.getMessage(any(String.class), any())).thenReturn("test message");
         when(preferenceManager.findPreference(SystemPreferences.SYSTEM_LIMIT_LOG_LINES))
@@ -518,6 +523,58 @@ public class RunLogManagerTest extends AbstractManagerTest {
             task.setStatus(status);
         }
         return task;
+    }
+
+    @Test
+    public void saveLogShouldMarkRunInitializedOnInitTaskSuccess() {
+        final PipelineRun run = buildRun(RUN_ID, TaskStatus.RUNNING);
+        run.setInitialized(false);
+        when(runCRUDServiceMock.loadRunById(RUN_ID)).thenReturn(run);
+        when(runLogDao.loadTaskStatus(eq(RUN_ID), eq(INIT_TASK_NAME))).thenReturn(null);
+
+        final RunLog log = buildRunLog(RUN_ID, INIT_TASK_NAME, TaskStatus.SUCCESS, "done");
+        logManager.saveLog(log);
+
+        verify(runCRUDServiceMock).updateRunInitialized(RUN_ID);
+    }
+
+    @Test
+    public void saveLogShouldNotMarkInitializedWhenRunAlreadyInitialized() {
+        final PipelineRun run = buildRun(RUN_ID, TaskStatus.RUNNING);
+        run.setInitialized(true);
+        when(runCRUDServiceMock.loadRunById(RUN_ID)).thenReturn(run);
+        when(runLogDao.loadTaskStatus(eq(RUN_ID), eq(INIT_TASK_NAME))).thenReturn(null);
+
+        final RunLog log = buildRunLog(RUN_ID, INIT_TASK_NAME, TaskStatus.SUCCESS, "done");
+        logManager.saveLog(log);
+
+        verify(runCRUDServiceMock, never()).updateRunInitialized(anyLong());
+    }
+
+    @Test
+    public void saveLogShouldNotMarkInitializedForNonSuccessStatus() {
+        final PipelineRun run = buildRun(RUN_ID, TaskStatus.RUNNING);
+        run.setInitialized(false);
+        when(runCRUDServiceMock.loadRunById(RUN_ID)).thenReturn(run);
+        when(runLogDao.loadTaskStatus(eq(RUN_ID), eq(INIT_TASK_NAME))).thenReturn(null);
+
+        final RunLog log = buildRunLog(RUN_ID, INIT_TASK_NAME, TaskStatus.RUNNING, "running");
+        logManager.saveLog(log);
+
+        verify(runCRUDServiceMock, never()).updateRunInitialized(anyLong());
+    }
+
+    @Test
+    public void saveLogShouldNotMarkInitializedForOtherTask() {
+        final PipelineRun run = buildRun(RUN_ID, TaskStatus.RUNNING);
+        run.setInitialized(false);
+        when(runCRUDServiceMock.loadRunById(RUN_ID)).thenReturn(run);
+        when(runLogDao.loadTaskStatus(eq(RUN_ID), eq(TASK_NAME))).thenReturn(null);
+
+        final RunLog log = buildRunLog(RUN_ID, TASK_NAME, TaskStatus.SUCCESS, "done");
+        logManager.saveLog(log);
+
+        verify(runCRUDServiceMock, never()).updateRunInitialized(anyLong());
     }
 
     private static PipelineRun buildRun(final Long runId, final TaskStatus status) {

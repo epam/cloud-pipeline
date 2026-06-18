@@ -97,13 +97,8 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
     @Autowired
     private RunServiceUrlDao serviceUrlDao;
 
-    @Value("${run.pipeline.init.task.name?:InitializeEnvironment}")
-    private String initTaskName;
-
     @Value("${run.pipeline.nodeup.task.name?:InitializeNode}")
     private String nodeUpTaskName;
-
-    private TaskStatus initTaskStatus = TaskStatus.SUCCESS;
 
     private String pipelineRunSequence;
     private String createPipelineRunQuery;
@@ -155,6 +150,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
     private String loadRunsByOwnerAndEndDateBeforeAndStatusInQuery;
     private String deleteRunsByIdInQuery;
     private String checkIfRunExistsQuery;
+    private String updateRunInitializedQuery;
 
     // We put Propagation.REQUIRED here because this method can be called from non-transaction context
     // (see PipelineRunManager, it performs internal call for launchPipeline)
@@ -1033,8 +1029,6 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
     }
 
     private void addTaskStatusParams(MapSqlParameterSource params) {
-        params.addValue(PipelineRunParameters.TASK_NAME.name(), initTaskName);
-        params.addValue(PipelineRunParameters.TASK_STATUS.name(), initTaskStatus.ordinal());
         params.addValue(PipelineRunParameters.NODEUP_TASK.name(), nodeUpTaskName);
     }
 
@@ -1070,6 +1064,13 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         final MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue(PipelineRunParameters.RUN_ID.name(), runId);
         return getNamedParameterJdbcTemplate().queryForObject(checkIfRunExistsQuery, params, Integer.class) > 0;
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void updateRunInitialized(final Long runId) {
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(PipelineRunParameters.RUN_ID.name(), runId);
+        getNamedParameterJdbcTemplate().update(updateRunInitializedQuery, params);
     }
 
     public MapSqlParameterSource[] getParamsForBatchUpdate(final Collection<PipelineRun> runs) {
@@ -1137,9 +1138,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         NODE_COUNT,
         START_DATE_FROM,
         END_DATE_TO,
-        INITIALIZATION_FINISHED,
-        TASK_NAME,
-        TASK_STATUS,
+        INITIALIZED,
         ENTITIES_IDS,
         IS_SPOT,
         CONFIGURATION_ID,
@@ -1288,7 +1287,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
 
         static PipelineRun parseExtendedPipelineRun(final ResultSet rs) throws SQLException {
             PipelineRun run = parsePipelineRun(rs);
-            run.setInitialized(rs.getBoolean(INITIALIZATION_FINISHED.name()));
+            run.setInitialized(rs.getBoolean(INITIALIZED.name()));
             if (run.getInstance() == null || StringUtils.isBlank(run.getInstance().getNodeName())) {
                 run.setQueued(rs.getBoolean(QUEUED.name()));
             }
@@ -1756,5 +1755,10 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
 
     public void setCheckIfRunExistsQuery(final String checkIfRunExistsQuery) {
         this.checkIfRunExistsQuery = checkIfRunExistsQuery;
+    }
+
+    @Required
+    public void setUpdateRunInitializedQuery(final String updateRunInitializedQuery) {
+        this.updateRunInitializedQuery = updateRunInitializedQuery;
     }
 }

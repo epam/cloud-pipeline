@@ -37,6 +37,7 @@ import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.exception.search.SearchException;
+import org.apache.commons.lang3.BooleanUtils;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -87,6 +88,9 @@ public class RunLogManager implements InitializingBean {
     @Value("${runs.console.log.task:Console}")
     private String consoleLogTask;
 
+    @Value("${run.pipeline.init.task.name:InitializeEnvironment}")
+    private String initTaskName;
+
     public String getConsoleLogTask() {
         return consoleLogTask;
     }
@@ -128,6 +132,11 @@ public class RunLogManager implements InitializingBean {
         runLog.setStatus(statusToSave);
 
         runLogDao.createRunLog(runLog);
+        if (initTaskName.equals(runLog.getTaskName())
+                && statusToSave == TaskStatus.SUCCESS
+                && !BooleanUtils.isTrue(run.getInitialized())) {
+            runCRUDService.updateRunInitialized(runLog.getRunId());
+        }
         return runLog;
     }
 
