@@ -62,7 +62,7 @@ public class StaticResourcesController extends AbstractRestController {
             throws IOException {
         try {
             final DataStorageStreamingContent content = resourcesService.getContent(
-                    request.getPathInfo().replaceFirst(STATIC_RESOURCES, ""));
+                    request.getServletPath().replaceFirst(STATIC_RESOURCES, "/"));
             final String fileName = FilenameUtils.getName(content.getName());
             final MediaType mediaType = getMediaType(fileName);
             final StaticResourceSettings settings = getStaticResourceSettings(fileName);
