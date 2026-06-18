@@ -30,7 +30,7 @@ public final class GitRepositoryUrl {
     private static final String USERNAME_PATTERN = "\\$\\{GIT_USER}|[-._A-Za-z0-9]++";
     // For Bitbucket Cloud provider emails shall be supported via URLs. The email shall be encoded: user%40example.com.
     private static final String BITBUCKET_CLOUD_USERNAME_PATTERN =
-            "\\$\\{GIT_USER}|(?:[-._A-Za-z0-9]|%[0-9A-Fa-f]{2})++";
+            "\\$\\{GIT_USER}|[-._A-Za-z0-9]++(?:%40[-._A-Za-z0-9.]++)?";
     // Password could be either placeholder ${GIT_TOKEN} or a real password
     private static final String PASS_PATTERN = "\\$\\{GIT_TOKEN}|[-_A-Za-z0-9]++";
     private static final String HOST_PATTERN = "[-._A-Za-z0-9]++(?::[0-9]++)?";
