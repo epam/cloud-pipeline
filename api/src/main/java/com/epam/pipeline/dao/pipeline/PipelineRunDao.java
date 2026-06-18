@@ -1757,7 +1757,6 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         this.checkIfRunExistsQuery = checkIfRunExistsQuery;
     }
 
-    @Required
     public void setUpdateRunInitializedQuery(final String updateRunInitializedQuery) {
         this.updateRunInitializedQuery = updateRunInitializedQuery;
     }
