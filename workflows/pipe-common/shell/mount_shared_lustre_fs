@@ -57,45 +57,151 @@ if [ "$REQUEST_TYPE" == "POST" ] ; then
     fi
 fi
 
-_MOUNT_STORAGE_JSON=$(curl -k -s --fail -X $REQUEST_TYPE --header "Authorization: Bearer $API_TOKEN" $API/lustre/${REQUEST_FOLDER_FOR_ID}${_REQUEST_PARAMS})
-_STORAGE_PATH=$(echo "$_MOUNT_STORAGE_JSON" | jq -r '.payload.mountPath')
-_MOUNT_OPTIONS=$(echo "$_MOUNT_STORAGE_JSON" | jq -r '.payload.mountOptions')
-_STORAGE_STATUS=$(echo "$_MOUNT_STORAGE_JSON" | jq -r '.payload.status')
 _MOUNT_PROTOCOL="lustre"
 
-if [ -z "$_STORAGE_PATH" ] || [ "$_STORAGE_PATH" == "null" ] || [ "$_STORAGE_STATUS" == "FAILED" ] ; then
-    pipe_log_fail "Failed to get Lustre for shared file system" "$FS_SETUP_TASK"
-    exit 1
-fi
-
-pipe_log_info "Lustre $_STORAGE_PATH will be used as shared FS" "$FS_SETUP_TASK"
-
-if [ "$_MOUNT_OPTIONS" == "null" ]; then
-    _OPTIONS_STR=""
+if [ "$REQUEST_TYPE" == "POST" ]; then
+    _LUSTRE_CREATE_RETRIES="${CP_CAP_LUSTRE_CREATE_RETRIES:-3}"
+    _LUSTRE_CREATE_RETRY_SLEEP="${CP_CAP_LUSTRE_CREATE_RETRY_SLEEP:-60}"
 else
-    _OPTIONS_STR=" -o $_MOUNT_OPTIONS"
+    _LUSTRE_CREATE_RETRIES="1"
 fi
 
-if [ "$_STORAGE_STATUS" != "AVAILABLE" ]; then
-  # Wait for 20 minutes by default
-  _NUM_REPS="${CP_CAP_LUSTRE_WAIT_ATTEMPTS:-240}"
+_LUSTRE_DELETE_WAIT_ATTEMPTS="${CP_CAP_LUSTRE_DELETE_WAIT_ATTEMPTS:-60}"
 
-  for i in $(seq 1 "$_NUM_REPS") ; do
-    _STORAGE_STATUS_JSON=$(curl -k -s --fail -X GET --header "Authorization: Bearer $API_TOKEN" $API/lustre/$REQUEST_FOLDER_FOR_ID)
-    _STORAGE_STATUS=$(echo "$_STORAGE_STATUS_JSON" | jq -r '.payload.status')
-    _STORAGE_PATH=$(echo "$_STORAGE_STATUS_JSON" | jq -r '.payload.mountPath')
-    if [ "$_STORAGE_STATUS" == "AVAILABLE" ]; then
-        pipe_log_info "Lustre $_STORAGE_PATH is ready for mount" "$FS_SETUP_TASK"
-        break
-    fi
-    if [ "$_STORAGE_STATUS" == "FAILED" ]; then
-        pipe_log_fail "An error occured while creating Lustre filesystem, most likely Cloud provider is out of capacity at the moment" "$FS_SETUP_TASK"
+function _wait_for_lustre_deletion() {
+    pipe_log_info "Waiting for Lustre filesystem deletion to complete..." "$FS_SETUP_TASK"
+    for _del_wait in $(seq 1 "$_LUSTRE_DELETE_WAIT_ATTEMPTS"); do
+        _DEL_CHECK_JSON=$(curl -k -s -X GET --header "Authorization: Bearer $API_TOKEN" "$API/lustre/$REQUEST_FOLDER_FOR_ID" 2>/dev/null)
+        _DEL_CHECK_STATUS=$(echo "$_DEL_CHECK_JSON" | jq -r '.payload.status' 2>/dev/null)
+        if [ -z "$_DEL_CHECK_STATUS" ] || [ "$_DEL_CHECK_STATUS" == "null" ]; then
+            pipe_log_info "Lustre filesystem has been fully removed" "$FS_SETUP_TASK"
+            return 0
+        fi
+        if [ "$_DEL_CHECK_STATUS" != "DELETING" ]; then
+            pipe_log_warn "Unexpected Lustre filesystem status after deletion: $_DEL_CHECK_STATUS" "$FS_SETUP_TASK"
+            return 1
+        fi
+        sleep 5
+    done
+    pipe_log_warn "Lustre filesystem still in DELETING state after $((${_LUSTRE_DELETE_WAIT_ATTEMPTS} * 5))s" "$FS_SETUP_TASK"
+    return 1
+}
+
+function _delete_failed_lustre_fs() {
+    pipe_log_warn "Lustre filesystem has FAILED status (attempt ${_create_attempt}/${_LUSTRE_CREATE_RETRIES})" "$FS_SETUP_TASK"
+    if [ "$_create_attempt" -ge "$_LUSTRE_CREATE_RETRIES" ]; then
+        pipe_log_fail "All attempts to create Lustre filesystem have been exhausted" "$FS_SETUP_TASK"
         exit 1
     fi
-    sleep 5
-  done
-fi
+    pipe_log_info "Deleting failed Lustre filesystem before retry..." "$FS_SETUP_TASK"
+    _DELETE_RESPONSE=$(curl -k -s -X DELETE --header "Authorization: Bearer $API_TOKEN" "$API/lustre/$REQUEST_FOLDER_FOR_ID")
+    _DELETE_STATUS=$(echo "$_DELETE_RESPONSE" | jq -r '.status')
+    if [ "$_DELETE_STATUS" != "OK" ]; then
+        _DELETE_MESSAGE=$(echo "$_DELETE_RESPONSE" | jq -r '.message')
+        pipe_log_fail "Failed to delete Lustre filesystem (${_DELETE_MESSAGE}), cannot retry creation" "$FS_SETUP_TASK"
+        exit 1
+    fi
+    if ! _wait_for_lustre_deletion; then
+        pipe_log_fail "Lustre filesystem was not fully deleted, cannot retry creation" "$FS_SETUP_TASK"
+        exit 1
+    fi
+    pipe_log_info "Will retry Lustre filesystem creation in ${_LUSTRE_CREATE_RETRY_SLEEP}s" "$FS_SETUP_TASK"
+    sleep "$_LUSTRE_CREATE_RETRY_SLEEP"
+}
 
+for _create_attempt in $(seq 1 "$_LUSTRE_CREATE_RETRIES"); do
+    _MOUNT_STORAGE_JSON=$(curl -k -s --fail -X $REQUEST_TYPE --header "Authorization: Bearer $API_TOKEN" $API/lustre/${REQUEST_FOLDER_FOR_ID}${_REQUEST_PARAMS})
+    _STORAGE_PATH=$(echo "$_MOUNT_STORAGE_JSON" | jq -r '.payload.mountPath')
+    _MOUNT_OPTIONS=$(echo "$_MOUNT_STORAGE_JSON" | jq -r '.payload.mountOptions')
+    _STORAGE_STATUS=$(echo "$_MOUNT_STORAGE_JSON" | jq -r '.payload.status')
+
+    if [ -z "$_STORAGE_PATH" ] || [ "$_STORAGE_PATH" == "null" ]; then
+        pipe_log_fail "Failed to get Lustre for shared file system" "$FS_SETUP_TASK"
+        exit 1
+    fi
+
+    if [ "$_STORAGE_STATUS" == "FAILED" ]; then
+        if [ "$REQUEST_TYPE" != "POST" ]; then
+            pipe_log_fail "Failed to get Lustre for shared file system" "$FS_SETUP_TASK"
+            exit 1
+        fi
+        _delete_failed_lustre_fs
+        continue
+    fi
+
+    if [ "$_STORAGE_STATUS" == "DELETING" ]; then
+        if [ "$REQUEST_TYPE" != "POST" ]; then
+            pipe_log_fail "Lustre filesystem is in DELETING state" "$FS_SETUP_TASK"
+            exit 1
+        fi
+        pipe_log_warn "Lustre filesystem is still DELETING from a previous attempt (attempt ${_create_attempt}/${_LUSTRE_CREATE_RETRIES})" "$FS_SETUP_TASK"
+        if [ "$_create_attempt" -ge "$_LUSTRE_CREATE_RETRIES" ]; then
+            pipe_log_fail "All attempts to create Lustre filesystem have been exhausted" "$FS_SETUP_TASK"
+            exit 1
+        fi
+        if ! _wait_for_lustre_deletion; then
+            pipe_log_fail "Lustre filesystem was not fully deleted, cannot retry creation" "$FS_SETUP_TASK"
+            exit 1
+        fi
+        pipe_log_info "Will retry Lustre filesystem creation in ${_LUSTRE_CREATE_RETRY_SLEEP}s" "$FS_SETUP_TASK"
+        sleep "$_LUSTRE_CREATE_RETRY_SLEEP"
+        continue
+    fi
+
+    pipe_log_info "Lustre $_STORAGE_PATH will be used as shared FS" "$FS_SETUP_TASK"
+
+    if [ "$_MOUNT_OPTIONS" == "null" ]; then
+        _OPTIONS_STR=""
+    else
+        _OPTIONS_STR=" -o $_MOUNT_OPTIONS"
+    fi
+
+    if [ "$_STORAGE_STATUS" != "AVAILABLE" ]; then
+        _NUM_REPS="${CP_CAP_LUSTRE_WAIT_ATTEMPTS:-240}"
+        for i in $(seq 1 "$_NUM_REPS") ; do
+            _STORAGE_STATUS_JSON=$(curl -k -s --fail -X GET --header "Authorization: Bearer $API_TOKEN" $API/lustre/$REQUEST_FOLDER_FOR_ID)
+            _STORAGE_STATUS=$(echo "$_STORAGE_STATUS_JSON" | jq -r '.payload.status')
+            _STORAGE_PATH=$(echo "$_STORAGE_STATUS_JSON" | jq -r '.payload.mountPath')
+            if [ "$_STORAGE_STATUS" == "AVAILABLE" ]; then
+                pipe_log_info "Lustre $_STORAGE_PATH is ready for mount" "$FS_SETUP_TASK"
+                break
+            fi
+            if [ "$_STORAGE_STATUS" == "FAILED" ]; then
+                if [ "$REQUEST_TYPE" != "POST" ]; then
+                    pipe_log_fail "An error occurred while creating Lustre filesystem, most likely Cloud provider is out of capacity at the moment" "$FS_SETUP_TASK"
+                    exit 1
+                fi
+                _delete_failed_lustre_fs
+                continue 2
+            fi
+            if [ "$_STORAGE_STATUS" == "DELETING" ]; then
+                if [ "$REQUEST_TYPE" != "POST" ]; then
+                    pipe_log_fail "Lustre filesystem transitioned to DELETING state unexpectedly" "$FS_SETUP_TASK"
+                    exit 1
+                fi
+                pipe_log_warn "Lustre filesystem transitioned to DELETING state during polling (attempt ${_create_attempt}/${_LUSTRE_CREATE_RETRIES})" "$FS_SETUP_TASK"
+                if [ "$_create_attempt" -ge "$_LUSTRE_CREATE_RETRIES" ]; then
+                    pipe_log_fail "All attempts to create Lustre filesystem have been exhausted" "$FS_SETUP_TASK"
+                    exit 1
+                fi
+                if ! _wait_for_lustre_deletion; then
+                    pipe_log_fail "Lustre filesystem was not fully deleted, cannot retry creation" "$FS_SETUP_TASK"
+                    exit 1
+                fi
+                pipe_log_info "Will retry Lustre filesystem creation in ${_LUSTRE_CREATE_RETRY_SLEEP}s" "$FS_SETUP_TASK"
+                sleep "$_LUSTRE_CREATE_RETRY_SLEEP"
+                continue 2
+            fi
+            sleep 5
+        done
+        if [ "$_STORAGE_STATUS" != "AVAILABLE" ]; then
+            pipe_log_fail "Lustre filesystem did not become AVAILABLE within the expected time (status: $_STORAGE_STATUS)" "$FS_SETUP_TASK"
+            exit 1
+        fi
+    fi
+
+    break
+done
 
 mkdir -p "${MOUNT_DIR}" && rm -rf "${MOUNT_DIR}/*" && mount -t ${_MOUNT_PROTOCOL} "${_STORAGE_PATH}" "${MOUNT_DIR}" ${_OPTIONS_STR}
 exit $?
