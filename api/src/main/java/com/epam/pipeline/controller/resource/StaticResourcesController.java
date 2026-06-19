@@ -61,8 +61,7 @@ public class StaticResourcesController extends AbstractRestController {
     public void getStaticFile(final HttpServletRequest request, final HttpServletResponse response)
             throws IOException {
         try {
-            final DataStorageStreamingContent content = resourcesService.getContent(
-                    request.getServletPath().replaceFirst(STATIC_RESOURCES, "/"));
+            final DataStorageStreamingContent content = resourcesService.getContent(extractStaticResourcePath(request));
             final String fileName = FilenameUtils.getName(content.getName());
             final MediaType mediaType = getMediaType(fileName);
             final StaticResourceSettings settings = getStaticResourceSettings(fileName);
@@ -118,5 +117,14 @@ public class StaticResourcesController extends AbstractRestController {
                     return MediaType.parseMediaType(mimeType);
                 })
                 .orElse(MediaType.APPLICATION_OCTET_STREAM);
+    }
+
+    protected String extractStaticResourcePath(final HttpServletRequest request) {
+        final String requestPath = request.getRequestURI();
+        final int staticResourcesIndex = requestPath.indexOf(STATIC_RESOURCES);
+        if (staticResourcesIndex < 0) {
+            throw new InvalidPathException("Invalid static resource path: " + requestPath);
+        }
+        return requestPath.substring(staticResourcesIndex + STATIC_RESOURCES.length());
     }
 }
