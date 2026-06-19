@@ -1173,3 +1173,14 @@ Upload metadata
 Show attributes/Hide attributes
 Bulk operation panel
 Overview
+CP_CreateAndConfigurePipeline
+To see it, click the Run button in the upper-right corner to launch the configuration.
+Edit or add any parameters you want on the Launch page and click the Launch button in the upper-right corner:
+CP_CreateAndConfigurePipeline
+Confirm the launch in the appeared pop-up.
+In the ACTIVE RUNS tab press the just-launched pipeline name.
+CP_CreateAndConfigurePipeline
+Wait until the SSH hyperlink will appear in the upper-right corner, click it:
+CP_CreateAndConfigurePipeline
+On the opened tab specify the command docker version and then press "Enter" key:
+CP_CreateAndConfigurePipeline
