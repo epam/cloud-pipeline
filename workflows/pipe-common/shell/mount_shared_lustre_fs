@@ -88,6 +88,10 @@ if [ "$_STORAGE_STATUS" != "AVAILABLE" ]; then
         pipe_log_info "Lustre $_STORAGE_PATH is ready for mount" "$FS_SETUP_TASK"
         break
     fi
+    if [ "$_STORAGE_STATUS" == "FAILED" ]; then
+        pipe_log_fail "An error occured while creating Lustre filesystem, most likely Cloud provider is out of capacity at the moment" "$FS_SETUP_TASK"
+        exit 1
+    fi
     sleep 5
   done
 fi
