@@ -123,10 +123,12 @@ public class PluginController extends AbstractRestController {
             @PathVariable Long id,
             final HttpServletRequest request,
             final HttpServletResponse response) throws IOException {
-        if (StringUtils.isEmpty(request.getPathInfo())) {
+        final String contentPrefix = String.format("/plugins/%s/content", id);
+        final int prefixIndex = request.getRequestURI().indexOf(contentPrefix);
+        if (prefixIndex < 0) {
             throw new IllegalArgumentException("File path is required");
         }
-        final String path = request.getPathInfo().replaceFirst(String.format("/plugins/%s/content", id), "");
+        final String path = request.getRequestURI().substring(prefixIndex + contentPrefix.length());
         final byte[] bytes = pluginService.getPluginFileContent(id, path);
         final String fileName = FilenameUtils.getName(path);
         final MediaType mediaType = defineMediaTypeByFileExtension(fileName);

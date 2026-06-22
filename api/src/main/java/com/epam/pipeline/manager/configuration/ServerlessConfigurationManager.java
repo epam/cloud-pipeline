@@ -290,8 +290,9 @@ public class ServerlessConfigurationManager {
     }
 
     private String getApplicationPath(final HttpServletRequest request) {
-        final Pattern pattern = Pattern.compile("/serverless/.*?/.*?/([^']*)");
-        final Matcher matcher = pattern.matcher(request.getPathInfo());
+        final String fullPath = request.getRequestURI();
+        final Pattern pattern = Pattern.compile(".*/serverless/.*?/.*?/([^']*)");
+        final Matcher matcher = pattern.matcher(fullPath);
         return matcher.matches() ? matcher.group(1) : "";
     }
 
