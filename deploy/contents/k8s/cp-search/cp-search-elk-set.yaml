@@ -22,7 +22,7 @@ spec:
         - name: cp-search-elk
           securityContext:
             privileged: true
-          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:search-elk-${CP_SEARCH_ELK_VERSION}
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:search-elk-${CP_SEARCH_ELK_CLUSTER_VERSION}
           imagePullPolicy: IfNotPresent
           command: [ "bash" ]
           args: [ "-c", "/init.sh" ]
