@@ -116,13 +116,18 @@ for _create_attempt in $(seq 1 "$_LUSTRE_CREATE_RETRIES"); do
     _STORAGE_STATUS=$(echo "$_MOUNT_STORAGE_JSON" | jq -r '.payload.status')
 
     if [ -z "$_STORAGE_PATH" ] || [ "$_STORAGE_PATH" == "null" ]; then
-        pipe_log_fail "Failed to get Lustre for shared file system" "$FS_SETUP_TASK"
-        exit 1
+        if [ "$REQUEST_TYPE" != "POST" ] || [ "$_create_attempt" -ge "$_LUSTRE_CREATE_RETRIES" ]; then
+            pipe_log_fail "Failed to get Lustre filesystem info: empty or invalid API response" "$FS_SETUP_TASK"
+            exit 1
+        fi
+        pipe_log_warn "Failed to get Lustre filesystem info (attempt ${_create_attempt}/${_LUSTRE_CREATE_RETRIES}), retrying in ${_LUSTRE_CREATE_RETRY_SLEEP}s..." "$FS_SETUP_TASK"
+        sleep "$_LUSTRE_CREATE_RETRY_SLEEP"
+        continue
     fi
 
     if [ "$_STORAGE_STATUS" == "FAILED" ]; then
         if [ "$REQUEST_TYPE" != "POST" ]; then
-            pipe_log_fail "Failed to get Lustre for shared file system" "$FS_SETUP_TASK"
+            pipe_log_fail "Failed to get Lustre filesystem info: filesystem is in FAILED state" "$FS_SETUP_TASK"
             exit 1
         fi
         _delete_failed_lustre_fs
