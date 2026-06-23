@@ -61,9 +61,9 @@ class TestS3TaggingRolModel(object):
         path = 'cp://{}/{}'.format(self.bucket, self.test_file)
         try:
             stderr = set_storage_tags(path, [self.tag1], token=self.user_token, expected_status=1)[1]
-            assert_error_message_is_present(stderr, 'Access is denied')
+            assert_access_denied_error(stderr)
             stderr = delete_storage_tags(path, [self.tag1[0]], token=self.user_token, expected_status=1)[1]
-            assert_error_message_is_present(stderr, 'Access is denied')
+            assert_access_denied_error(stderr)
         except AssertionError as e:
             raise AssertionError(ERROR_MESSAGE + test_case, e.message)
         except BaseException as e:
