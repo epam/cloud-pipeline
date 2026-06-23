@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,30 +12,36 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM consol/centos-xfce-vnc
-ENV REFRESHED_AT 2020-08-10
+FROM accetto/debian-vnc-xfce-chromium-g3:12
 
 # Switch to root user to install additional software
 USER 0
 
 # Install common
-RUN yum install -y wget \
-                   java-1.8.0-openjdk-devel \
+RUN echo "deb http://deb.debian.org/debian/ sid main" >> /etc/apt/sources.list
+RUN apt-get update
+RUN apt-get install -y wget \
+                   openjdk-8-jdk \
                    gcc \
-                   python \
-                   python-devel
+                   python3 \
+                   python3-dev
 
 RUN rm -f ~/.config/bg_sakuli.png
 
 # Install Chrome
-RUN wget -N https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/e2e/google-chrome-stable-63.0.3239.132-1.x86_64.rpm -P ~/ && \
-    yum install -y ~/google-chrome-stable-63.0.3239.132-1.x86_64.rpm && \
-    rm -f ~/google-chrome-stable-63.0.3239.132-1.x86_64.rpm
+RUN wget https://storage.googleapis.com/chrome-for-testing-public/120.0.6099.109/linux64/chrome-linux64.zip && \
+    apt-get install -y unzip && \
+    unzip chrome-linux64.zip && \
+    rm chrome-linux64.zip && \
+    mv chrome-linux64 /opt/chrome/ && \
+    ln -s /opt/chrome/chrome /usr/local/bin/
 
-# Install ChromeDriver. Version: 2.36
-# ChromeDriver is taken from here: https://chromedriver.storage.googleapis.com/2.36/chromedriver_linux64.zip
-RUN wget -N https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/e2e/chromedriver -P ~/ && \
-    mv -f ~/chromedriver /usr/local/bin/chromedriver && \
+# Install ChromeDriver. Version: 126
+RUN wget https://storage.googleapis.com/chrome-for-testing-public/120.0.6099.109/linux64/chromedriver-linux64.zip && \
+    unzip -j chromedriver-linux64.zip && \
+    rm LICENSE.chromedriver && \
+    rm chromedriver-linux64.zip && \
+    mv -f chromedriver /usr/local/bin/chromedriver && \
     chown root:root /usr/local/bin/chromedriver && \
     chmod 0755 /usr/local/bin/chromedriver
 

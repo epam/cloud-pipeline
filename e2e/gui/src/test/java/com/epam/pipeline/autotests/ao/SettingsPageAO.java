@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,8 @@ package com.epam.pipeline.autotests.ao;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.ao.settings.CliAO;
 import com.epam.pipeline.autotests.mixins.Authorization;
-import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
@@ -42,6 +39,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.Utils.*;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.openqa.selenium.By.tagName;
 import static org.testng.Assert.assertTrue;
@@ -57,14 +55,14 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
     }
 
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
-            entry(CLI_TAB, $(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'CLI')]"))),
-            entry(SYSTEM_EVENTS_TAB, $(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'System events')]"))),
-            entry(USER_MANAGEMENT_TAB, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'User management')]"))),
-            entry(PREFERENCES_TAB, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'Preferences')]"))),
-            entry(SYSTEM_LOGS_TAB, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'System Management')]"))),
-            entry(EMAIL_NOTIFICATIONS_TAB, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'Email notifications')]"))),
-            entry(CLOUD_REGIONS_TAB, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'Cloud regions')]"))),
-            entry(MY_PROFILE, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'My Profile')]"))),
+            entry(CLI_TAB, $(byXpath(".//*[contains(@class, 'ant-menu-item') and contains(., 'CLI')]"))),
+            entry(SYSTEM_EVENTS_TAB, $(byXpath(".//*[contains(@class, 'ant-menu-item') and contains(., 'System events')]"))),
+            entry(USER_MANAGEMENT_TAB, context().find(byXpath(".//*[contains(@class, 'ant-menu-item') and contains(., 'User management')]"))),
+            entry(PREFERENCES_TAB, context().find(byXpath(".//*[contains(@class, 'ant-menu-item') and contains(., 'Preferences')]"))),
+            entry(SYSTEM_LOGS_TAB, context().find(byXpath(".//*[contains(@class, 'ant-menu-item') and contains(., 'System Management')]"))),
+            entry(EMAIL_NOTIFICATIONS_TAB, context().find(byXpath(".//*[contains(@class, 'ant-menu-item') and contains(., 'Email notifications')]"))),
+            entry(CLOUD_REGIONS_TAB, context().find(byXpath(".//*[contains(@class, 'ant-menu-item') and contains(., 'Cloud regions')]"))),
+            entry(MY_PROFILE, context().find(byXpath(".//*[contains(@class, 'ant-menu-item') and contains(., 'My Profile')]"))),
             entry(OK, context().find(byId("settings-form-ok-button")))
     );
 
@@ -139,7 +137,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         }
 
         public SystemEventsAO ensureTableHasText(String text) {
-            ensure(TABLE, matchesText(text));
+            ensure(TABLE, matchText(text));
             return this;
         }
 
@@ -147,12 +145,12 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             if (getAllEntries() != null) {
                 return this;
             }
-            ensure(TABLE, matchesText("No data"));
+            ensure(TABLE, matchText("No data"));
             return this;
         }
 
         public SystemEventsAO ensureTableHasNoText(String text) {
-            ensure(TABLE, not(matchesText(text)));
+            ensure(TABLE, not(matchText(text)));
             return this;
         }
 
@@ -221,13 +219,13 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
         public class CreateNotificationPopup extends PopupAO<CreateNotificationPopup, SystemEventsAO> implements AccessObject<CreateNotificationPopup>{
             public final Map<Primitive, SelenideElement> elements = initialiseElements(
-                    entry(TITLE, context().find(By.className("edit-notification-form-title-container")).find(byXpath("//label[contains(@title, 'Title')]"))),
+                    entry(TITLE, context().find(By.className("edit-notification-form-title-container")).find(byXpath(".//label[contains(@title, 'Title')]"))),
                     entry(TITLE_FIELD, context().find(By.className("edit-notification-form-title-container")).find(By.className("ant-input-lg"))),
-                    entry(BODY, context().find(By.className("edit-notification-form-body-container")).find(byXpath("//label[contains(@title, 'Body')]"))),
+                    entry(BODY, context().find(By.className("edit-notification-form-body-container")).find(byXpath(".//label[contains(@title, 'Body')]"))),
                     entry(BODY_FIELD, context().find(By.className("edit-notification-form-body-container")).find(byId("body"))),
-                    entry(SEVERITY, context().find(By.className("edit-notification-form-severity-container")).find(byXpath("//label[contains(@title, 'Severity')]"))),
+                    entry(SEVERITY, context().find(By.className("edit-notification-form-severity-container")).find(byXpath(".//label[contains(@title, 'Severity')]"))),
                     entry(SEVERITY_COMBOBOX, context().find(By.className("edit-notification-form-severity-container")).find(By.className("ant-select-selection-selected-value"))),
-                    entry(STATE, context().find(By.className("edit-notification-form-state-container")).find(byXpath("//label[contains(@title, 'State')]"))),
+                    entry(STATE, context().find(By.className("edit-notification-form-state-container")).find(byXpath(".//label[contains(@title, 'State')]"))),
                     entry(STATE_CHECKBOX, context().find(By.className("edit-notification-form-state-container")).find(byClassName("ant-checkbox"))),
                     entry(ACTIVE_LABEL, context().find(By.className("edit-notification-form-state-container")).find(byXpath(".//*[text() = 'Active']"))),
                     entry(CANCEL, context().find(byId("edit-notification-form-cancel-button"))),
@@ -264,9 +262,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             }
 
             public CreateNotificationPopup setActive() {
-                if(!impersonateMode()) {
-                    click(STATE_CHECKBOX);
-                }
+                click(STATE_CHECKBOX);
                 return this;
             }
 
@@ -315,13 +311,13 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         public class EditNotificationPopup extends CreateNotificationPopup {
 
             public final Map<Primitive, SelenideElement> elements = initialiseElements(
-                    entry(TITLE, context().find(By.className("edit-notification-form-title-container")).find(byXpath("//label[contains(@title, 'Title')]"))),
+                    entry(TITLE, context().find(By.className("edit-notification-form-title-container")).find(byXpath(".//label[contains(@title, 'Title')]"))),
                     entry(TITLE_FIELD, context().find(By.className("edit-notification-form-title-container")).find(By.className("ant-input-lg"))),
-                    entry(BODY, context().find(By.className("edit-notification-form-body-container")).find(byXpath("//label[contains(@title, 'Body')]"))),
+                    entry(BODY, context().find(By.className("edit-notification-form-body-container")).find(byXpath(".//label[contains(@title, 'Body')]"))),
                     entry(BODY_FIELD, context().find(By.className("edit-notification-form-body-container")).find(byId("body"))),
-                    entry(SEVERITY, context().find(By.className("edit-notification-form-severity-container")).find(byXpath("//label[contains(@title, 'Severity')]"))),
+                    entry(SEVERITY, context().find(By.className("edit-notification-form-severity-container")).find(byXpath(".//label[contains(@title, 'Severity')]"))),
                     entry(SEVERITY_COMBOBOX, context().find(By.className("edit-notification-form-severity-container")).find(By.className("ant-select-selection-selected-value"))),
-                    entry(STATE, context().find(By.className("edit-notification-form-state-container")).find(byXpath("//label[contains(@title, 'State')]"))),
+                    entry(STATE, context().find(By.className("edit-notification-form-state-container")).find(byXpath(".//label[contains(@title, 'State')]"))),
                     entry(STATE_CHECKBOX, context().find(By.className("edit-notification-form-state-container")).find(byClassName("ant-checkbox"))),
                     entry(ACTIVE_LABEL, context().find(By.className("edit-notification-form-state-container")).find(byXpath(".//*[text() = 'Active']"))),
                     entry(CANCEL, context().find(byId("edit-notification-form-cancel-button"))),
@@ -403,7 +399,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             }
 
             public SystemEventsEntry ensureBodyHasText(String bodyText) {
-                $(byXpath(format("//td[contains(., '%s')]/following::tr", title))).shouldHave(text(bodyText));
+                $(byXpath(format(".//td[contains(., '%s')]/following::tr", title))).shouldHave(text(bodyText));
                 return this;
             }
 
@@ -515,7 +511,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             sleep(1, SECONDS);
             final List<String> list = $$(byClassName("CodeMirror-line")).texts();
             final String[] prefValue = new String[2];
-            prefValue[0] = (list.size() <= 1 ) ? String.join("", list) : String.join("\n", list);
+            prefValue[0] = (list.size() <= 1 ) ? String.join("", list)
+                    : String.join("\n", list).replaceAll("\\u00a0", "");
             prefValue[1] = String.valueOf(!context().find(byClassName("preference-group__preference-row"))
                     .$(byClassName("anticon")).has(cssClass("anticon-eye-o")));
             return prefValue;
@@ -578,7 +575,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 public List<WebElement> findElements(final SearchContext context) {
                     return $$(byClassName("preference-group__preference-row"))
                             .stream()
-                            .filter(element -> exactText(variable).apply(element))
+                            .filter(element -> element.has(exactText(variable)))
                             .map(e -> e.find(".ant-input-sm"))
                             .collect(toList());
                 }
@@ -591,7 +588,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 public List<WebElement> findElements(final SearchContext context) {
                     return $$(byClassName("preference-group__preference-row"))
                             .stream()
-                            .filter(element -> exactText(preference).apply(element))
+                            .filter(element -> element.has(exactText(preference)))
                             .map(e -> e.find(byCssSelector("i")))
                             .collect(toList());
                 }
@@ -604,7 +601,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 public List<WebElement> findElements(final SearchContext context) {
                     return $$(byClassName("preference-group__preference-row"))
                             .stream()
-                            .filter(element -> text(variable).apply(element))
+                            .filter(element -> element.has(text(variable)))
                             .map(e -> e.find(".ant-checkbox-wrapper"))
                             .collect(toList());
                 }
@@ -631,7 +628,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             sleep(1, SECONDS);
             final String[] strings = $$(byClassName("CodeMirror-line")).texts().toArray(new String[0]);
             try {
-                JsonNode instance = new ObjectMapper().readTree(String.join("", strings)).get("regions");
+                JsonNode instance = new ObjectMapper().readTree(String.join("", strings)
+                        .replaceAll("\\u00a0", "")).get("regions");
                 for (JsonNode node1 : instance) {
                     if (node1.get("name").asText().equals(region)) {
                         for (JsonNode node : node1.get("amis")) {
@@ -656,7 +654,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         */
             actions().moveToElement(get(SAVE)).perform();
             get(SAVE).pressEnter();
-            get(SAVE).waitUntil(disabled, DEFAULT_TIMEOUT);
+            get(SAVE).shouldBe(disabled);
             return this;
         }
 

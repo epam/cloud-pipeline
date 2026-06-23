@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import static com.codeborne.selenide.Selectors.byCssSelector;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selectors.byXpath;
+import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.Combiners.confine;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
@@ -403,7 +404,7 @@ public interface PipelineSelectors {
      * Returns qualifier in global scope.
      */
     static By ignoreScope(final By target) {
-        return Combiners.confine(target, byXpath("//ancestor-or-self::body"), "in global scope " + target);
+        return Combiners.confine(target, byXpath(".//ancestor-or-self::body"), "in global scope " + target);
     }
 
     /**
@@ -457,7 +458,7 @@ public interface PipelineSelectors {
                 @Override
                 public List<WebElement> findElements(final SearchContext context) {
                     return context.findElements(qualifier).stream()
-                                  .filter(criteria)
+                                  .filter(el -> $(el).has(criteria))
                                   .collect(toList());
                 }
 

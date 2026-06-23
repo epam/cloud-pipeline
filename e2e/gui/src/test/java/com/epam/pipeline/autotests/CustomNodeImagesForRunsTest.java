@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -123,9 +123,12 @@ public class CustomNodeImagesForRunsTest extends AbstractSeveralPipelineRunningT
         library()
                 .clickOnDraftVersion(pipeline1)
                 .runPipeline()
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
+                .doNotMountStoragesSelect(true)
                 .launch(this)
                 .showLog(getLastRunId());
         assertEquals(clusterMenu()
+                .sortByDecrease(DATE)
                 .waitForTheNode(getLastRunId())
                 .getNodeName(getLastRunId()), nodeName);
     }

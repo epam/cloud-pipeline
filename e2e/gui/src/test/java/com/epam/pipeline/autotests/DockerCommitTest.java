@@ -21,8 +21,10 @@ import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import static java.lang.String.format;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.function.Consumer;
@@ -154,7 +156,7 @@ public class DockerCommitTest
                 .ssh(shell -> shell
                         .waitUntilTextAppears(getLastRunId())
                         .execute("cd /")
-                        .execute(String.format("echo '%s' > %s", testFileContent, testFileName))
+                        .execute(format("echo '%s' > %s", testFileContent, testFileName))
                         .close()
                 );
 
@@ -165,8 +167,11 @@ public class DockerCommitTest
                                         commit.setRegistry(registry)
                                                 .setGroup(group)
                                                 .ensure(IMAGE_NAME, value(exactToolName(tool)))
+                                                .sleep(1, SECONDS)
+                                                .setVersion("latest")
                                                 .ok()
-                                                .also(confirmCommittingToExistingTool(registryIp, tool))
+                                                .also(confirmCommittingToExistingTool(registryIp,
+                                                        format("%s:%s", tool, "latest")))
                                 )
                                 .assertCommittingFinishedSuccessfully()
                 )
@@ -215,10 +220,12 @@ public class DockerCommitTest
                                 .setGroup(group)
                                 .sleep(3, SECONDS)
                                 .setName(nameWithoutGroup(tool))
+                                .sleep(1, SECONDS)
+                                .setVersion("latest")
                                 .sleep(5, SECONDS)
                                 .click(stopPipeline())
                                 .ok()
-                                .also(confirmCommittingToExistingTool(registryIp, tool))
+                                .also(confirmCommittingToExistingTool(registryIp, format("%s:%s", tool, "latest")))
                 )
                 .assertCommittingFinishedSuccessfully()
                 .shouldHaveStatus(STOPPED);
@@ -238,10 +245,12 @@ public class DockerCommitTest
                                 .setGroup(group)
                                 .sleep(3, SECONDS)
                                 .setName(nameWithoutGroup(tool))
+                                .sleep(1, SECONDS)
+                                .setVersion("latest")
                                 .sleep(5, SECONDS)
                                 .click(deleteRuntimeFiles())
                                 .ok()
-                                .also(confirmCommittingToExistingTool(registryIp, tool))
+                                .also(confirmCommittingToExistingTool(registryIp, format("%s:%s", tool, "latest")))
                 )
                 .assertCommittingFinishedSuccessfully();
     }
@@ -282,7 +291,7 @@ public class DockerCommitTest
                                         .ssh(shell -> shell
                                                 .waitUntilTextAppears(getLastRunId())
                                                 .execute(commandCD)
-                                                .execute(String.format(command, suffix, testFileName))))
+                                                .execute(format(command, suffix, testFileName))))
                                 .waitForCommitButton()
                                 .commit(commit ->
                                         commit.setRegistry(registry)
@@ -375,7 +384,7 @@ public class DockerCommitTest
                 )
                 .showLog(getLastRunId())
                 .instanceParameters(parameters ->
-                        parameters.ensure(IMAGE, text(String.format(dockerFormat, registryIp, group,
+                        parameters.ensure(IMAGE, text(format(dockerFormat, registryIp, group,
                                 nameWithoutGroup(tool), customTag)))
                 );
 

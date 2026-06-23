@@ -12,14 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
-
 from abc import abstractmethod, ABCMeta
 import click
 from prettytable import prettytable
 
 from src.model.pipeline_run_model import PriceType
 from src.utilities import state_utilities
+from src.utilities.printing.utils import to_json
 
 
 def _to_int_value(value):
@@ -241,13 +240,9 @@ class JsonPrintService(PrintService):
     def __init__(self):
         self.__buffer = {}
 
-    @staticmethod
-    def _to_json(obj):
-        return json.dumps(obj, default=str, indent=2, ensure_ascii=False)
-
     def flush(self):
         if self.__buffer:
-            click.echo(self._to_json(self.__buffer))
+            click.echo(to_json(self.__buffer))
 
     def launch_run_id(self, run_id):
         self.__buffer['runId'] = _to_int_value(run_id)
@@ -266,7 +261,7 @@ class JsonPrintService(PrintService):
             if parameter.value is not None:
                 run_param['value'] = parameter.value
             run_params.append(run_param)
-        click.echo(self._to_json(run_params))
+        click.echo(to_json(run_params))
 
     def error(self, message, err=False, buf=False):
         if buf:
@@ -274,7 +269,7 @@ class JsonPrintService(PrintService):
                 self.__buffer['error'] = [message]
             else:
                 self.__buffer['error'].append(message)
-        click.echo(self._to_json({'error': message}), err=err)
+        click.echo(to_json({'error': message}), err=err)
 
     def empty_runs(self, run_filter=None):
         payload = {
@@ -284,7 +279,7 @@ class JsonPrintService(PrintService):
         if run_filter is not None:
             payload['page'] = run_filter.page
             payload['pageSize'] = run_filter.page_size
-        click.echo(self._to_json(payload))
+        click.echo(to_json(payload))
 
     def runs(self, run_filter):
         runs = []
@@ -305,7 +300,7 @@ class JsonPrintService(PrintService):
             'truncated': run_filter.total_count > run_filter.page_size,
             'runs': runs,
         }
-        click.echo(self._to_json(payload))
+        click.echo(to_json(payload))
 
     def _node_instance_dict(self, run_model):
         node = {}

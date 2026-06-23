@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.LogAO;
-import com.epam.pipeline.autotests.ao.PipelineRunFormAO;
 import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.ao.ShellAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
@@ -392,8 +391,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
             library()
                     .configurationWithin(configuration, configuration -> {
                         configuration
-                                .expandTabs(advancedTab);
-                        new PipelineRunFormAO()
+                                .expandTabs(advancedTab)
                                 .validateDisabledParameter(CP_FSBROWSER_ENABLED);
                     });
         } finally {

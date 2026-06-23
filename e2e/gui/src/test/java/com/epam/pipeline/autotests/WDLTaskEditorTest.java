@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import static com.codeborne.selenide.Condition.disabled;
-import static com.codeborne.selenide.Condition.disappears;
+import static com.codeborne.selenide.Condition.disappear;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selenide.open;
@@ -198,7 +198,7 @@ public class WDLTaskEditorTest
                 .parent()
                 .saveAndCommitWithMessage("commit message")
                 .sleep(1, SECONDS)
-                .ensure(modalWithTitle("Commit"), disappears);
+                .ensure(modalWithTitle("Commit"), disappear);
     }
 
     private Supplier<PipelineGraphTabAO.TaskAdditionPopupAO> taskAdditionPopupOf(final String pipelineName) {

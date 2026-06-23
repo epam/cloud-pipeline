@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package com.epam.pipeline.autotests;
 
 import com.codeborne.selenide.Configuration;
-import com.codeborne.selenide.WebDriverRunner;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
@@ -41,6 +40,8 @@ import static com.epam.pipeline.autotests.utils.Privilege.EXECUTE;
 import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
 import static com.epam.pipeline.autotests.utils.PrivilegeValue.ALLOW;
+import static com.epam.pipeline.autotests.utils.Utils.BROWSER_SIZE;
+import static com.epam.pipeline.autotests.utils.Utils.CHROME_BROWSER;
 import static java.lang.System.currentTimeMillis;
 import static java.lang.System.getProperty;
 import static java.lang.System.out;
@@ -106,8 +107,8 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
     @BeforeMethod(alwaysRun = true)
     public void setUp() {
         Configuration.timeout = C.DEFAULT_TIMEOUT;
-        Configuration.browser = WebDriverRunner.CHROME;
-        Configuration.startMaximized = true;
+        Configuration.browser = CHROME_BROWSER;
+        Configuration.browserSize = BROWSER_SIZE;
         setProperty("webdriver.chrome.driver", "/usr/local/bin/chromedriver");
 
         open(C.ROOT_ADDRESS);

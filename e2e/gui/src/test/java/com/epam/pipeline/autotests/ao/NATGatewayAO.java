@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package com.epam.pipeline.autotests.ao;
 
-import static com.codeborne.selenide.Condition.not;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
@@ -28,6 +27,8 @@ import org.openqa.selenium.WebElement;
 import java.util.List;
 import java.util.Map;
 
+import static com.codeborne.selenide.CollectionCondition.size;
+import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Condition.disappear;
 import static com.codeborne.selenide.Condition.enabled;
@@ -39,6 +40,7 @@ import static com.codeborne.selenide.Selectors.byAttribute;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.WebDriverRunner.driver;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_PORT;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_ROUTE;
@@ -88,8 +90,9 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
                         .findAll(byClassName("ant-table-row"))
                         .filter(not(cssClass("at-gateway-configuration__divider-row")))
                         .stream()
-                        .filter(element -> text(ipAddress).apply(element.findAll(".external-column").get(2))
-                                && text(port).apply(element.findAll(".external-column").get(3)))
+                        .filter(element -> element.findAll(".external-column")
+                                .get(2).has(text(ipAddress))
+                                && element.findAll(".external-column").get(3).has(text(port)))
                         .filter(el -> !el.find(By.className("ant-table-row-expand-icon")).exists() ||
                                 el.find(By.className("ant-table-row-spaced")).exists())
                         .collect(toList());
@@ -105,8 +108,10 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
                         .findAll(byClassName("ant-table-row"))
                         .filter(not(cssClass("at-gateway-configuration__divider-row")))
                         .stream()
-                        .filter(element -> text(serverName).apply(element.findAll(".external-column").get(1))
-                                && text(port).apply(element.findAll(".external-column").get(3)))
+                        .filter(element -> text(serverName).apply(driver(),
+                                element.findAll(".external-column").get(1))
+                                && text(port).apply(driver(),
+                                element.findAll(".external-column").get(3)))
                         .filter(el -> !el.find(By.className("ant-table-row-expand-icon")).exists() ||
                                 el.find(By.className("ant-table-row-spaced")).exists())
                         .collect(toList());
@@ -120,9 +125,9 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
             public List<WebElement> findElements(final SearchContext context) {
                 return context()
                         .findAll(byClassName("ant-table-row")).stream()
-                        .filter(not(cssClass("at-gateway-configuration__divider-row")))
-                        .filter(element -> text(serverName).apply(element.findAll(".external-column").get(1))
-                                && text(port).apply(element.findAll(".external-column").get(3)))
+                        .filter(element -> element.has(not(cssClass("at-gateway-configuration__divider-row"))))
+                        .filter(element -> element.findAll(".external-column").get(1).has(text(serverName))
+                                && element.findAll(".external-column").get(3).has(text(port)))
                         .filter(el -> el.find(By.className("ant-table-row-expand-icon")).exists() &&
                                 !el.find(By.className("ant-table-row-spaced")).exists())
                         .collect(toList());
@@ -185,7 +190,7 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
                 : $(route(ipAddress, port));
         final ElementsCollection internalConfigElements = routeRecord
                 .findAll(".internal-column")
-                .shouldHaveSize(3);
+                .shouldHave(size(3));
         internalConfigElements.get(0).shouldHave(text(
                 format("%s-%s", C.NAT_PROXY_SERVICE_PREFIX, serverName.replaceAll("\\.", "-"))));
         internalConfigElements.get(1).shouldHave(matchText(IPV4_PATTERN));
@@ -204,7 +209,7 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
                 .shouldHave(cssClass("anticon-exclamation-circle-o"), cssClass("cp-error"));
         final ElementsCollection internalConfigElements = routeRecord
                 .findAll(".internal-column")
-                .shouldHaveSize(3);
+                .shouldHave(size(3));
         internalConfigElements.get(1).shouldHave(text(StringUtils.EMPTY));
         return this;
     }
@@ -281,7 +286,7 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
     }
 
     public NATGatewayAO waitForRouteData() {
-        $(byClassName("ub-settings__content")).waitUntil(visible, C.DEFAULT_TIMEOUT);
+        $(byClassName("ub-settings__content")).shouldBe(visible);
         get(ADD_ROUTE).shouldBe(enabled);
         return this;
     }

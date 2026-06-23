@@ -206,14 +206,7 @@
 				        r.project_id,
 				        r.parameters_json,
 				        r.logs_storage_path,
-                        CASE
-                            WHEN EXISTS (
-                                SELECT 1 FROM pipeline.pipeline_run_log init_tasks
-				                WHERE init_tasks.run_id = :RUN_ID AND init_tasks.task_name = :TASK_NAME
-				                    AND init_tasks.status = :TASK_STATUS)
-				            THEN TRUE
-				            ELSE FALSE
-				        END AS initialization_finished,
+                        r.initialized,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log nodeup_tasks
@@ -699,7 +692,7 @@
                       r.tags,
                       r.sensitive,
                       r.kube_service_enabled,
-                      TRUE as initialization_finished,
+                      TRUE as initialized,
                       FALSE as queued,
                       r.pipeline_name,
                       r.cluster_price,
@@ -774,7 +767,7 @@
                       r.tags,
                       r.sensitive,
                       r.kube_service_enabled,
-                      TRUE as initialization_finished,
+                      TRUE as initialized,
                       FALSE as queued,
                       r.pipeline_name,
                       r.cluster_price,
@@ -1306,14 +1299,7 @@
                         r.project_id,
                         r.parameters_json,
                         r.logs_storage_path,
-                        CASE
-                            WHEN EXISTS (
-                                SELECT 1 FROM pipeline.pipeline_run_log init_tasks
-				                WHERE init_tasks.run_id = r.run_id AND init_tasks.task_name = :TASK_NAME
-				                    AND init_tasks.status = :TASK_STATUS)
-				            THEN TRUE
-				            ELSE FALSE
-				        END AS initialization_finished,
+                        r.initialized,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log nodeup_tasks
@@ -1403,14 +1389,7 @@
                         runs.project_id,
                         runs.parameters_json,
                         runs.logs_storage_path,
-                        CASE
-                            WHEN EXISTS (
-                                SELECT 1 FROM pipeline.pipeline_run_log init_tasks
-				                WHERE init_tasks.run_id = runs.run_id AND init_tasks.task_name = :TASK_NAME
-				                    AND init_tasks.status = :TASK_STATUS)
-				            THEN TRUE
-				            ELSE FALSE
-				        END AS initialization_finished,
+                        runs.initialized,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log nodeup_tasks
@@ -1621,14 +1600,7 @@
                         runs.project_id,
                         runs.parameters_json,
                         runs.logs_storage_path,
-                        CASE
-                            WHEN EXISTS (
-                                SELECT 1 FROM pipeline.pipeline_run_log init_tasks
-				                WHERE init_tasks.run_id = runs.run_id AND init_tasks.task_name = :TASK_NAME
-				                    AND init_tasks.status = :TASK_STATUS)
-				            THEN TRUE
-				            ELSE FALSE
-				        END AS initialization_finished,
+                        runs.initialized,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log nodeup_tasks
@@ -1715,14 +1687,7 @@
                             FROM pipeline.pipeline_run cr
                             WHERE cr.parent_id = r.run_id AND cr.status = 2
                         ) AS active_child_runs_count,
-                        CASE
-                            WHEN EXISTS (
-                                SELECT 1 FROM pipeline.pipeline_run_log init_tasks
-				                WHERE init_tasks.run_id = r.run_id AND init_tasks.task_name = :TASK_NAME
-				                    AND init_tasks.status = :TASK_STATUS)
-				            THEN TRUE
-				            ELSE FALSE
-				        END AS initialization_finished,
+                        r.initialized,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log nodeup_tasks
@@ -2624,6 +2589,13 @@
             <value>
                 <![CDATA[
                     SELECT count(*) FROM pipeline.pipeline_run WHERE run_id = :RUN_ID
+                ]]>
+            </value>
+        </property>
+        <property name="updateRunInitializedQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.pipeline_run SET initialized = TRUE WHERE run_id = :RUN_ID
                 ]]>
             </value>
         </property>

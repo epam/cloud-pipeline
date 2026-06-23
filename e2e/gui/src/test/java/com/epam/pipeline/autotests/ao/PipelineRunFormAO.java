@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import com.epam.pipeline.autotests.utils.Utils;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
+
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchWindowException;
 
@@ -37,9 +38,11 @@ import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
 import static com.codeborne.selenide.Selenide.*;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.visible;
 import static java.lang.String.format;
+import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.cssSelector;
@@ -57,9 +60,12 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             entry(PIPELINE, context().find(byId("launch-form-pipeline-name"))),
             entry(VERSION, context().find(byId("launch-pipeline-form-header"))
                     .find(byText("Version:")).parent().find(byClassName("ant-select-selection"))),
-            entry(TOOL_VERSION, context().find(byClassName("launch-pipeline-form__layout-header")).find(byId("launch-form-pipeline-version"))),
-            entry(ESTIMATED_PRICE, $(byClassName("launch-pipeline-form__layout-header")).find(byText("Estimated price per hour:"))),
-            entry(INFORMATION_ICON, $(byClassName("launch-pipeline-form__layout-header")).find(byClassName("launch-pipeline-form__hint"))),
+            entry(TOOL_VERSION, context().find(byClassName("launch-pipeline-form__layout-header"))
+                    .find(byId("launch-form-pipeline-version"))),
+            entry(ESTIMATED_PRICE, $(byClassName("launch-pipeline-form__layout-header"))
+                    .find(byText("Estimated price per hour:"))),
+            entry(INFORMATION_ICON, $(byClassName("launch-pipeline-form__layout-header"))
+                    .find(byClassName("launch-pipeline-form__hint"))),
             entry(PRICE_TABLE, $(byClassName("ant-popover-placement-bottom"))),
             entry(DISK, context().find(byId("exec.disk"))),
             entry(TIMEOUT, context().find(byId("advanced.timeout"))),
@@ -72,7 +78,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             entry(PARAMETERS_PANEL, context().find(byId("launch-pipeline-parameters-panel"))),
             entry(PRICE_TYPE, context().find(byText("Price type")).closest(".launch-pipeline-form__form-item-row")
                     .find(byClassName("ant-select"))),
-            entry(INSTANCE_TYPE, context().find(byXpath("//*[contains(text(), 'Node type')]")).closest(".ant-row")
+            entry(INSTANCE_TYPE, context().find(byXpath(".//*[contains(text(), 'Node type')]")).closest(".ant-row")
                     .find(by("role", "combobox"))),
             entry(AUTO_PAUSE, context().find(byText("Auto pause:")).closest(".ant-row-flex")
                     .find(cssSelector(".ant-checkbox-wrapper"))),
@@ -80,10 +86,10 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             entry(DEFAULT_COMMAND, context().find(byText("Cmd template")).parent().parent().find(byClassName("CodeMirror-line"))),
             entry(SAVE, $(byId("save-pipeline-configuration-button"))),
             entry(ADD_SYSTEM_PARAMETER, $(byId("add-system-parameter-button"))),
-            entry(RUN_CAPABILITIES, context().find(byXpath("//*[contains(text(), 'Run capabilities')]"))
+            entry(RUN_CAPABILITIES, context().find(byXpath(".//*[contains(text(), 'Run capabilities')]"))
                     .closest(".ant-row").find(className("cp-run-capabilities-input"))),
             entry(LIMIT_MOUNTS, context().find(byClassName("limit-mounts-input__limit-mounts-input"))),
-            entry(FRIENDLY_URL, context().find(byId("advanced.prettyUrl"))),
+            entry(FRIENDLY_URL, context().find(byId("advanced.friendly_url"))),
             entry(DO_NOT_MOUNT_STORAGES, $(byXpath(".//span[.='Do not mount storages']/preceding-sibling::span"))),
             entry(LAUNCH_COMMANDS, context().find(byId("launch-command-button"))),
             entry(CONFIGURE_DNS, context().find(byTitle("Internal DNS name")).parent()
@@ -266,7 +272,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     public PipelineRunFormAO waitUntilLaunchButtonAppear() {
-        $(button("Launch")).waitUntil(enabled, C.DEFAULT_TIMEOUT * 2);
+        $(button("Launch")).shouldBe(enabled, ofMillis(DEFAULT_TIMEOUT * 2));
         return this;
     }
 
@@ -418,10 +424,12 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return this;
     }
 
-    public PipelineRunFormAO validateDisabledParameter(final String parameter) {
-        ensure(byValue(parameter), cssClass("ant-input-disabled"));
-        $(byValue(parameter)).closest(".ant-row-flex").find(byId("remove-parameter-button"))
-                .shouldHave(Condition.not(visible));
+    public PipelineRunFormAO validateDisabledParameter(final String parameterName) {
+        final RunParameterAO parameter = new RunParameterAO(this,
+                parameterByName(parameterName).index());
+        final SelenideElement valueElement = parameter.get(PARAMETER_VALUE);
+        ensure(valueElement, cssClass("ant-input-disabled"));
+        ensure(parameter.get(Primitive.REMOVE_PARAMETER), not(visible));
         return this;
     }
 
@@ -562,7 +570,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     public static class SystemParameterPopupAO<PARENT_AO>  extends PopupAO<SystemParameterPopupAO<PARENT_AO>, PARENT_AO> {
 
         private final Map<Primitive, SelenideElement> elements = initialiseElements(
-                entry(PARAMETER_NAME, context().$(byXpath("//*[@placeholder='Parameter']"))),
+                entry(PARAMETER_NAME, context().$(byXpath(".//*[@placeholder='Parameter']"))),
                 entry(ADD, context().find(byId("system-parameters-browser-ok-button"))),
                 entry(CANCEL, context().find(byId("system-parameters-browser-cancel-button")))
         );
@@ -616,7 +624,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
                         .find(byClassName("ant-select-selection--single"))),
                 entry(WORKING_NODES, context().find(byXpath("(.//*[@class = 'ant-input-number-input'])[1]"))),
                 entry(DEFAULT_CHILD_NODES, context().find(byXpath("(.//*[@class = 'ant-input-number-input'])[last()]"))),
-                entry(RESET, context().$(byXpath("//*[contains(text(), 'Reset')]"))),
+                entry(RESET, context().$(byXpath(".//*[contains(text(), 'Reset')]"))),
                 entry(FILE_SYSTEM_TYPE, context().$(byText("Type:"))
                         .parent().$(byClassName("ant-select-selection--single"))),
                 entry(DEPLOYMENT_TYPE, context().$(byText("Deployment type:"))
