@@ -166,11 +166,17 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
     this.props.form.validateFieldsAndScroll((err, values) => {
       if (!err) {
         const payload = {...values};
-        if (Object.prototype.hasOwnProperty.call(payload, 'githubRepository')) {
+        if (
+          Object.prototype.hasOwnProperty.call(payload, 'githubRepository') &&
+          payload['githubRepository']
+        ) {
           payload.repository = payload.githubRepository;
           delete payload.githubRepository;
         }
-        if (Object.prototype.hasOwnProperty.call(payload, 'githubBranch')) {
+        if (
+          Object.prototype.hasOwnProperty.call(payload, 'githubBranch') &&
+          payload['githubBranch']
+        ) {
           payload.branch = payload.githubBranch;
           delete payload.githubBranch;
         }
