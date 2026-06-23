@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.codeborne.selenide.CollectionCondition.size;
 import static com.codeborne.selenide.CollectionCondition.texts;
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
@@ -134,7 +135,7 @@ public class StorageRulesTabAO extends AbstractPipelineTabAO<StorageRulesTabAO> 
     }
 
     public StorageRulesTabAO rulesCountShouldBe(int size) {
-        $(byClassName("ant-table-tbody")).findAll("tr").shouldHaveSize(size);
+        $(byClassName("ant-table-tbody")).findAll("tr").shouldHave(size(size));
         return this;
     }
 

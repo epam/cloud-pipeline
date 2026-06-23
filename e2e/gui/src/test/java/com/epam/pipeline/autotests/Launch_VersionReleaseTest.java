@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,10 @@ import com.epam.pipeline.autotests.ao.PipelineCodeTabAO;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import org.testng.annotations.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class Launch_VersionReleaseTest extends AbstractAutoRemovingPipelineRunningTest {
 
@@ -47,8 +47,7 @@ public class Launch_VersionReleaseTest extends AbstractAutoRemovingPipelineRunni
         new PipelineCodeTabAO(getPipelineName())
                 .clearAndFillPipelineFile("config.json", JSON_CONTENT)
                 .sleep(3, SECONDS)
-                .runPipeline()
-                .validateException("Failed to load pipeline configuration from file: " + JSON_CONTENT);
+                .runPipelineWithException("Failed to load pipeline configuration from file: " + JSON_CONTENT);
     }
 
     @Test(dependsOnMethods = {"exceptionShouldBeHandledWhenInvalidJson"})

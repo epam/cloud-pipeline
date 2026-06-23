@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
+import com.codeborne.selenide.Driver;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
@@ -26,6 +27,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
+import static com.codeborne.selenide.CollectionCondition.size;
 import static com.codeborne.selenide.Condition.empty;
 import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Condition.text;
@@ -73,7 +75,7 @@ public class PipelineHistoryTabAO extends AbstractPipelineTabAO<PipelineHistoryT
     }
 
     public PipelineHistoryTabAO recordsCountShouldBe(int size) {
-        rows().shouldHaveSize(size);
+        rows().shouldHave(size(size));
         return this;
     }
 
@@ -115,7 +117,7 @@ public class PipelineHistoryTabAO extends AbstractPipelineTabAO<PipelineHistoryT
     private Condition inTime(int maxElapsedTime) {
         return new Condition("shorter that given period of time") {
             @Override
-            public boolean apply(WebElement element) {
+            public boolean apply(Driver driver, WebElement element) {
                 Utils.assertTimePassed(element.getText(), maxElapsedTime);
                 return true;
             }
@@ -125,7 +127,7 @@ public class PipelineHistoryTabAO extends AbstractPipelineTabAO<PipelineHistoryT
     private Condition inFormat() {
         return new Condition("not in 'yyyy-MM-dd HH:mm:ss' format") {
             @Override
-            public boolean apply(WebElement element) {
+            public boolean apply(Driver driver, WebElement element) {
                 final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Utils.DATE_TIME_PATTERN);
                 final LocalDateTime dateTime = LocalDateTime.parse(element.getText(), formatter);
                 assertEquals(element.getText(), dateTime.format(formatter));

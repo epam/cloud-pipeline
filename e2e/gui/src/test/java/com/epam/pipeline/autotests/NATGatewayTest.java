@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import com.epam.pipeline.autotests.ao.SystemManagementAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
-import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import com.epam.pipeline.autotests.utils.TestCase;
 import org.apache.commons.lang3.StringUtils;
 import org.testng.annotations.AfterClass;
@@ -39,7 +38,6 @@ import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selenide.open;
-import static com.codeborne.selenide.Selenide.refresh;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_PORT;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_ROUTE;
@@ -55,7 +53,9 @@ import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.ao.Primitive.SERVER_NAME;
 import static com.epam.pipeline.autotests.ao.Primitive.SPECIFY_IP;
 import static com.epam.pipeline.autotests.ao.Primitive.SYSTEM_LOGS_TAB;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
+import static com.epam.pipeline.autotests.utils.Utils.refresh;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MINUTES;

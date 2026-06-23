@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -137,6 +137,7 @@ public enum Primitive {
     PARAMETER_NAME,
     PARAMETER_PATH,
     PARAMETER_VALUE,
+    PARAMETER_ENABLED,
     REMOVE_PARAMETER,
     BUCKET_PANEL,
     FILES_PANEL,
@@ -333,5 +334,6 @@ public enum Primitive {
     TOOL_VERSION,
     PROFILE,
     ADD_ROLE,
-    ADD_SCHEDULE
+    ADD_SCHEDULE,
+    CALL
 }

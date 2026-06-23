@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package com.epam.pipeline.autotests.utils;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
-import com.codeborne.selenide.WebDriverRunner;
 import com.epam.pipeline.autotests.RunPipelineTest;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import org.openqa.selenium.By;
@@ -59,6 +58,7 @@ import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
+import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -72,6 +72,10 @@ public class Utils {
     public static final String ON_DEMAND = "On-demand";
     public static final String SPOT = "Spot";
     public static final String LATEST_VERSION = "latest";
+    public static final String PASTE_KEY = "v";
+    public static final String COPY_KEY = "a";
+    public static final String CHROME_BROWSER = "chrome";
+    public static final String BROWSER_SIZE = "1920x1080";
 
     public static void assertTimePassed(String dateAndTimeString, int maxSeconds) {
         LocalDateTime runDateTime = validateDateTimeString(dateAndTimeString);
@@ -114,7 +118,7 @@ public class Utils {
 
     public static void clickAndSendKeysWithSlashes(WebElement element, String text) {
         actions().moveToElement(element).click().perform();
-        sendKeysWithSlashes(text);
+        sendKeysWithSlashes(text.replace("\u200b", ""));
     }
 
     public static void clearTextField(final SelenideElement field) {
@@ -127,27 +131,32 @@ public class Utils {
 
     public static void selectAllAndClearTextField(final SelenideElement field) {
         sleep(500, MILLISECONDS);
-        String selectAll = Keys.chord(Keys.CONTROL, "a");
-        actions().moveToElement(field).click()
-                .sendKeys(selectAll)
-                .sendKeys(Keys.DELETE)
-                .perform();
+        field.click();
+        sendKeysWithControl(COPY_KEY);
+        actions().sendKeys(Keys.DELETE).perform();
     }
 
         public static void sendKeysWithSlashes(final String text) {
             final StringSelection stringSelection = new StringSelection(text);
             Toolkit.getDefaultToolkit().getSystemClipboard()
                     .setContents(stringSelection, null);
-            actions().sendKeys(Keys.chord(Keys.CONTROL, "v"))
-                    .perform();
+            sendKeysWithControl(PASTE_KEY);
     }
 
     public static void pasteText(final SelenideElement field, final String text) {
         final StringSelection stringSelection = new StringSelection(text);
         Toolkit.getDefaultToolkit().getSystemClipboard()
                 .setContents(stringSelection, null);
-        actions().moveToElement(field).click()
-                .sendKeys(Keys.chord(Keys.CONTROL, "v"))
+        field.click();
+        sendKeysWithControl(PASTE_KEY);
+    }
+
+    public static void sendKeysWithControl(CharSequence ch) {
+        new Actions(getWebDriver())
+                .keyDown(Keys.CONTROL)
+                .sendKeys(ch)
+                .keyUp(Keys.CONTROL)
+                .build()
                 .perform();
     }
 
@@ -166,6 +175,10 @@ public class Utils {
             }
             charNumber++;
         }
+    }
+
+    public static void refresh() {
+        getWebDriver().navigate().refresh();
     }
 
     public static String getPipelineRunId(final String pipelineName) {
@@ -322,7 +335,7 @@ public class Utils {
                                                    String repeatingString,
                                                    int totalNumberOfChars) {
 
-        byte[] content = repeatString("abc1", totalNumberOfChars / repeatingString.length()).getBytes();
+        byte[] content = repeatString(repeatingString, totalNumberOfChars / repeatingString.length()).getBytes();
         Path path = Paths.get(C.DOWNLOAD_FOLDER).resolve(name);
         try {
             Files.write(path, content);
@@ -415,11 +428,11 @@ public class Utils {
     }
 
     public static String getCurrentURL() {
-        return WebDriverRunner.getWebDriver().getCurrentUrl();
+        return getWebDriver().getCurrentUrl();
     }
 
     public static void resetClick() {
-        Selenide.actions().moveByOffset(-50, -50).click().perform();
+        Selenide.actions().moveByOffset(50, 50).click().perform();
     }
 
     public static String readFile(final String filePath) {

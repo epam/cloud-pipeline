@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,7 @@ import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
-import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import com.epam.pipeline.autotests.utils.TestCase;
-import static java.lang.String.format;
-import static java.util.concurrent.TimeUnit.MINUTES;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
@@ -37,7 +34,7 @@ import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selenide.$;
-import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
+import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.LogAO.configurationParameter;
 import static com.epam.pipeline.autotests.ao.LogAO.containsMessages;
 import static com.epam.pipeline.autotests.ao.LogAO.log;
@@ -49,7 +46,12 @@ import static com.epam.pipeline.autotests.ao.Primitive.PRICE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.START_IDLE;
 import static com.epam.pipeline.autotests.ao.Primitive.STATUS;
 import static com.epam.pipeline.autotests.ao.Primitive.TYPE;
+import static com.epam.pipeline.autotests.utils.C.COMPLETION_TIMEOUT;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
+import static java.lang.String.format;
+import static java.time.Duration.ofMillis;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest implements Authorization {
@@ -96,7 +98,9 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
 
     @BeforeMethod
     public void refreshPage() {
-        getWebDriver().navigate().refresh();
+        open(C.ROOT_ADDRESS);
+        logout();
+        loginAs(admin);
     }
 
     @Test
@@ -108,6 +112,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .firstVersion()
                 .runPipeline()
                 .setDefaultLaunchOptions()
+                .doNotMountStoragesSelect(true)
                 .enableClusterLaunch()
                 .clusterSettingsForm(clusterSettingForm)
                 .setWorkingNodesCount("2")
@@ -136,6 +141,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .firstVersion()
                 .runPipeline()
                 .setDefaultLaunchOptions()
+                .doNotMountStoragesSelect(true)
                 .enableClusterLaunch()
                 .clusterSettingsForm(autoScaledSettingForm)
                 .setWorkingNodesCount("1")
@@ -145,7 +151,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .shouldContainRun(getPipelineName(), getRunId());
         $(byClassName("run-" + getRunId()))
                 .find(byClassName("ant-table-row-expand-icon"))
-                .waitUntil(appears, C.COMPLETION_TIMEOUT);
+                .shouldBe(appears, ofMillis(COMPLETION_TIMEOUT));
         navigationMenu()
                 .runs()
                 .activeRuns()
@@ -196,13 +202,14 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
     @Test
     @TestCase({"EPMCMBIBPC-2628"})
     public void autoScaledClusterWithDefaultChildNodesValidationTest() {
-        String childRunID1 = library()
+        LogAO logAO = library()
                 .createPipeline(Template.SHELL, getPipelineName())
                 .clickOnPipeline(getPipelineName())
                 .firstVersion()
                 .runPipeline()
                 .setDefaultLaunchOptions()
                 .setPriceType(onDemandPrice)
+                .doNotMountStoragesSelect(true)
                 .setCommand("qsub -b y -e /common/workdir/err -o /common/workdir/out -t 1:20 sleep 5m && sleep infinity")
                 .enableClusterLaunch()
                 .clusterSettingsForm(autoScaledSettingForm)
@@ -212,6 +219,9 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .launch(this)
                 .shouldContainRun(getPipelineName(), getRunId())
                 .showLog(getRunId())
+                .waitForTask(gridEngineAutoscalingTask)
+                .waitForSshLink();
+        String childRunID1 = logAO
                 .waitForNestedRunsLink()
                 .getNestedRunID(1);
 
@@ -221,7 +231,6 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .shouldContainRunsWithParentRun(1, getRunId())
                 .shouldContainRun(getPipelineName(), childRunID1)
                 .showLog(getRunId())
-                .waitForTask(gridEngineAutoscalingTask)
                 .getNestedRunID(2);
 
         runsMenu()
@@ -260,6 +269,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .firstVersion()
                 .runPipeline()
                 .setDefaultLaunchOptions()
+                .doNotMountStoragesSelect(true)
                 .enableClusterLaunch()
                 .clusterSettingsForm(clusterSettingForm)
                 .clusterEnableCheckboxSelect("Enable GridEngine")
@@ -310,6 +320,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .runPipeline()
                 .setDefaultLaunchOptions()
                 .setPriceType(onDemandPrice)
+                .doNotMountStoragesSelect(true)
                 .enableClusterLaunch()
                 .clusterSettingsForm(clusterSettingForm)
                 .clusterEnableCheckboxSelect("Enable Slurm")
@@ -353,6 +364,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                         ToolTab::runWithCustomSettings)
                 .selectValue(INSTANCE_TYPE, testingNode)
                 .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
+                .doNotMountStoragesSelect(true)
                 .enableClusterLaunch()
                 .clusterSettingsForm(clusterSettingForm)
                 .clusterEnableCheckboxSelect("Enable Apache Spark")
@@ -366,6 +378,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .showLog(getRunId())
                 .expandTab(PARAMETERS)
                 .ensure(configurationParameter("CP_CAP_SPARK", "true"), exist)
+                .waitForSshLink()
                 .waitForEndpointLink()
                 .clickTaskWithName("SparkMasterSetup")
                 .ensure(log(), containsMessages("Spark master is started"))
@@ -390,6 +403,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .firstVersion()
                 .runPipeline()
                 .setDefaultLaunchOptions()
+                .doNotMountStoragesSelect(true)
                 .enableClusterLaunch()
                 .clusterSettingsForm(autoScaledSettingForm)
                 .enableHybridClusterSelect()
@@ -402,6 +416,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .launch(this)
                 .shouldContainRun(getPipelineName(), getRunId())
                 .showLog(getRunId())
+                .waitForSshLink()
                 .waitForNestedRunsLink()
                 .clickOnNestedRunLink()
                 .instanceParameters(instance ->
@@ -455,6 +470,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .runs()
                 .activeRuns()
                 .showLog(getRunId())
+                .waitForSshLink()
                 .waitForNestedRunsLink()
                 .getNestedRunID(1);
         new LogAO()
@@ -465,12 +481,14 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
     @Test
     @TestCase({"EPMCMBIBPC-3153"})
     public void hybridAutoScaledCluster() {
+        String[] runID = new String[2];
         String cpu = library()
                 .createPipeline(Template.SHELL, getPipelineName())
                 .clickOnPipeline(getPipelineName())
                 .firstVersion()
                 .runPipeline()
                 .setDefaultLaunchOptions()
+                .doNotMountStoragesSelect(true)
                 .getCPU();
         onLaunchPage()
                 .enableClusterLaunch()
@@ -480,18 +498,18 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .setCommand(format("qsub -b y -pe local %s sleep 15m && sleep infinity", Integer.parseInt(cpu) + 1))
                 .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
                 .launch(this)
-                .shouldContainRun(getPipelineName(), getRunId())
-                .showLog(getRunId())
+                .shouldContainRun(runID[1] = getPipelineName(), runID[0] = getRunId())
+                .showLog(runID[0])
                 .expandTab(PARAMETERS)
                 .ensure(configurationParameter("CP_CAP_AUTOSCALE", "true"), exist)
                 .ensure(configurationParameter("CP_CAP_AUTOSCALE_WORKERS", "1"), exist)
                 .ensure(configurationParameter("CP_CAP_AUTOSCALE_HYBRID", "true"), exist)
                 .waitForSshLink()
                 .ssh(shell -> shell
-                        .waitUntilTextAppears(getPipelineName(), getRunId())
+                        .waitUntilTextAppears(runID[1], runID[0])
                         .execute("qhost")
                         .assertOutputContains("HOSTNAME", "global", format("%s-%s lx-amd64",
-                                getPipelineName().toLowerCase(), getRunId()))
+                                runID[1].toLowerCase(), runID[0]))
                         .sleep(20, SECONDS)
                         .execute("qstat")
                         .assertPageContains(sleepCommand, " 1 ")
@@ -501,12 +519,13 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
         String nestedRunID = navigationMenu()
                                 .runs()
                                 .activeRuns()
-                                .showLog(getRunId())
+                                .showLog(runID[0])
+                                .waitForSshLink()
                                 .waitForNestedRunsLink()
                                 .getNestedRunID(1);
         runsMenu()
                 .activeRuns()
-                .showLog(getRunId())
+                .showLog(runID[0])
                 .clickOnNestedRunLink()
                 .instanceParameters(instance ->
                         instance.ensure(TYPE, text(C.DEFAULT_INSTANCE.substring(0, C.DEFAULT_INSTANCE.indexOf("."))))
@@ -514,11 +533,10 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 )
                 .waitForSshLink()
                 .ssh(shell -> shell
-                        .waitUntilTextAppears(getPipelineName(), getRunId())
+                        .waitUntilTextAppears(runID[1], runID[0])
                         .execute("qhost")
                         .assertOutputContains("HOSTNAME", "global", format("%s-%s lx-amd64",
-                                getPipelineName().toLowerCase(), getRunId()), format("pipeline-%s",
-                                nestedRunID))
+                                runID[1].toLowerCase(), runID[0]), format("pipeline-%s", nestedRunID))
                         .sleep(20, SECONDS)
                         .execute("qstat")
                         .assertPageContains(sleepCommand, " r ")
@@ -536,6 +554,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .firstVersion()
                 .runPipeline()
                 .setDefaultLaunchOptions()
+                .doNotMountStoragesSelect(true)
                 .enableClusterLaunch()
                 .clusterSettingsForm(autoScaledSettingForm)
                 .enableHybridClusterSelect()
@@ -574,6 +593,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .firstVersion()
                 .runPipeline()
                 .setDefaultLaunchOptions()
+                .doNotMountStoragesSelect(true)
                 .enableClusterLaunch()
                 .clusterSettingsForm(autoScaledSettingForm)
                 .setWorkingNodesCount("1")
@@ -586,6 +606,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .showLog(getRunId())
                 .instanceParameters(instance ->
                         instance.ensure(PRICE_TYPE, text(onDemandPrice)))
+                .waitForSshLink()
                 .waitForNestedRunsLink()
                 .clickOnNestedRunLink()
                 .instanceParameters(instance ->
@@ -601,6 +622,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .firstVersion()
                 .runPipeline()
                 .setDefaultLaunchOptions()
+                .doNotMountStoragesSelect(true)
                 .enableClusterLaunch()
                 .clusterSettingsForm(autoScaledSettingForm)
                 .setWorkingNodesCount("1")
@@ -613,6 +635,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .showLog(getRunId())
                 .instanceParameters(instance ->
                         instance.ensure(PRICE_TYPE, text(spotPrice)))
+                .waitForSshLink()
                 .waitForNestedRunsLink()
                 .clickOnNestedRunLink()
                 .instanceParameters(instance ->
@@ -628,6 +651,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .firstVersion()
                 .runPipeline()
                 .setDefaultLaunchOptions()
+                .doNotMountStoragesSelect(true)
                 .enableClusterLaunch()
                 .clusterSettingsForm(autoScaledSettingForm)
                 .setWorkingNodesCount("1")
@@ -640,6 +664,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .showLog(getRunId())
                 .instanceParameters(instance ->
                         instance.ensure(PRICE_TYPE, text(spotPrice)))
+                .waitForSshLink()
                 .waitForNestedRunsLink()
                 .clickOnNestedRunLink()
                 .instanceParameters(instance ->

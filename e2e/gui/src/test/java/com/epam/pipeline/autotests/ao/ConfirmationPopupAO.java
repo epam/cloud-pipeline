@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
+
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -50,7 +51,7 @@ public class ConfirmationPopupAO<PARENT_AO> extends PopupAO<ConfirmationPopupAO<
 
     @Override
     public SelenideElement context() {
-        return $$(byXpath("//*[contains(@role, 'dialog')]//*[contains(@class, 'ant-confirm')]")).findBy(visible);
+        return $$(byXpath(".//*[contains(@role, 'dialog')]//*[contains(@class, 'ant-confirm')]")).findBy(visible);
     }
 
     @Override
@@ -99,6 +100,7 @@ public class ConfirmationPopupAO<PARENT_AO> extends PopupAO<ConfirmationPopupAO<
 
     public ConfirmationPopupAO<PARENT_AO> ensureLaunchTitleIs(String expectedTitle) throws RuntimeException {
         String actualTitle = join(" ", element.find(className("cp-run-name-title"))
+                .shouldBe(visible)
                 .findAll(byXpath("./span")).texts());
         assertEquals(actualTitle, expectedTitle,
                 format("Expected title is '%s', but actual is '%s'", expectedTitle, actualTitle));
