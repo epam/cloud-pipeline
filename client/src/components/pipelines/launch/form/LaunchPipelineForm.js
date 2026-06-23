@@ -5382,8 +5382,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       detached !== prevDetached ||
       prevPipeline !== pipeline
     ) {
-      this.reset();
-      this.prepare();
+      this.reset(true);
       this.updateFromProps();
       this.updateCustomValidators();
     }
