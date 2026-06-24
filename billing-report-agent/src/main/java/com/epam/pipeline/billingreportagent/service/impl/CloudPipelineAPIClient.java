@@ -48,9 +48,11 @@ public class CloudPipelineAPIClient {
     private final RetryingCloudPipelineApiExecutor retryingApiExecutor;
 
     public CloudPipelineAPIClient(@Value("${cloud.pipeline.host}") String cloudPipelineHostUrl,
-                                  @Value("${cloud.pipeline.token}") String cloudPipelineToken) {
+                                  @Value("${cloud.pipeline.token}") String cloudPipelineToken,
+                                  @Value("${cloud.pipeline.connect.timeout:120}") int connectTimeout,
+                                  @Value("${cloud.pipeline.read.timeout:180}") int readTimeout) {
         this.cloudPipelineAPI =
-                new CloudPipelineApiBuilder(0, 0, cloudPipelineHostUrl, cloudPipelineToken)
+                new CloudPipelineApiBuilder(connectTimeout, readTimeout, cloudPipelineHostUrl, cloudPipelineToken)
                         .buildClient();
         this.retryingApiExecutor = new RetryingCloudPipelineApiExecutor();
     }

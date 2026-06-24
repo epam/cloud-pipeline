@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,8 +40,12 @@ import java.lang.reflect.Method;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.closeWebDriver;
 import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
+import static com.epam.pipeline.autotests.utils.Utils.BROWSER_SIZE;
+import static com.epam.pipeline.autotests.utils.Utils.CHROME_BROWSER;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public abstract class AbstractBfxPipelineTest implements ITest {
@@ -50,16 +54,29 @@ public abstract class AbstractBfxPipelineTest implements ITest {
 
     @BeforeClass
     public void setUp() {
-        Configuration.timeout = C.DEFAULT_TIMEOUT;
-        Configuration.browser = WebDriverRunner.CHROME;
-        Configuration.startMaximized = true;
-        System.setProperty("webdriver.chrome.driver", "/usr/local/bin/chromedriver");
-
+        setUpConfiguration();
         login(C.ROOT_ADDRESS);
 
         //reset mouse
         $(byId("navigation-button-logo")).shouldBe(visible).click();
         sleep(3, SECONDS);
+    }
+
+    public void setUpConfiguration() {
+        Configuration.browser = CHROME_BROWSER;
+        Configuration.browserSize = BROWSER_SIZE;
+        Configuration.timeout = DEFAULT_TIMEOUT;
+        System.setProperty("webdriver.chrome.driver", "/usr/local/bin/chromedriver");
+        ChromeOptions options = new ChromeOptions();
+        options.setBinary("/usr/local/bin/chrome");
+
+        options.addArguments("--no-sandbox");
+        options.addArguments("--disable-dev-shm-usage");
+        options.addArguments("--disable-gpu");
+        options.addArguments("--ignore-certificate-errors");
+
+        WebDriver driver = new ChromeDriver(options);
+        WebDriverRunner.setWebDriver(driver);
     }
 
     @BeforeMethod(alwaysRun = true)
@@ -75,7 +92,8 @@ public abstract class AbstractBfxPipelineTest implements ITest {
     }
 
     public void restartBrowser(final String address) {
-        Selenide.close();
+        closeWebDriver();
+        setUpConfiguration();
         login(address);
     }
 
@@ -143,6 +161,7 @@ public abstract class AbstractBfxPipelineTest implements ITest {
                 Selenide.open(address);
                 Cookie cookie = new Cookie("HttpAuthorization", C.PASSWORD);
                 WebDriverRunner.getWebDriver().manage().addCookie(cookie);
+
             }
         }
         Selenide.open(address);

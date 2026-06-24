@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,6 +65,7 @@ import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
 import static java.lang.String.format;
+import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.openqa.selenium.By.className;
@@ -78,6 +79,7 @@ import com.epam.pipeline.autotests.utils.Utils;
 import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -100,7 +102,9 @@ public class UserManagementAO extends SettingsPageAO {
     }
 
     public UsersTabAO switchToUsers() {
-        click(USERS_TAB);
+        if (get(USERS_TAB).exists()) {
+            click(USERS_TAB);
+        }
         return new UsersTabAO(parentAO);
     }
 
@@ -136,6 +140,7 @@ public class UserManagementAO extends SettingsPageAO {
 
         public UserEntry searchForUserEntry(String login) {
             sleep(1, SECONDS);
+            $(byTitle(NEXT_PAGE)).shouldBe(exist, ofMillis(DEFAULT_TIMEOUT));
             while (!getUser(login.toUpperCase()).isDisplayed()
                     && $(byTitle(NEXT_PAGE)).has(not(cssClass("ant-pagination-disabled")))) {
                 click(byTitle(NEXT_PAGE));
@@ -179,9 +184,11 @@ public class UserManagementAO extends SettingsPageAO {
         public UsersTabAO searchUser(String name) {
             sleep(1, SECONDS);
             clear(SEARCH);
-            return clickSearch()
-                    .setSearchName(name)
-                    .pressEnter();
+            clickSearch();
+            get(Primitive.SEARCH)
+                    .getWrappedElement()
+                    .sendKeys(name, Keys.ENTER);
+            return this;
         }
 
         public UsersTabAO exportUsers() {
@@ -256,7 +263,7 @@ public class UserManagementAO extends SettingsPageAO {
         }
 
         public UsersTabAO deleteUserIfExist(String name) {
-            if (!clickSearch().setSearchName(name).pressEnter().userTabIsEmpty()) {
+            if (!searchUser(name).userTabIsEmpty()) {
                 SelenideElement entry = getUser(name.toUpperCase()).shouldBe(visible);
                 new UserEntry(this, name.toUpperCase(), entry)
                         .edit()
@@ -350,7 +357,7 @@ public class UserManagementAO extends SettingsPageAO {
                         entry(UNBLOCK, context().$(button("UNBLOCK"))),
                         entry(DELETE, context().$(byId("delete-user-button"))),
                         entry(PRICE_TYPE, context().find(byXpath(
-                                format("//div/b[text()='%s']/following::div/input", "Allowed price types")))),
+                                format(".//div/b[text()='%s']/following::div/input", "Allowed price types")))),
                         entry(CONFIGURE, context().$(byXpath(".//span[.='Can run as this user:']/following-sibling::a"))),
                         entry(IMPERSONATE, context().$(button("IMPERSONATE"))),
                         entry(DO_NOT_MOUNT_STORAGES, $(byXpath(".//span[.='Do not mount storages']/preceding-sibling::span"))),
@@ -375,7 +382,7 @@ public class UserManagementAO extends SettingsPageAO {
                         click(CANCEL);
                     }
                     $(className("edit-user-roles-dialog__modal-container"))
-                            .waitUntil(not(visible), DEFAULT_TIMEOUT);
+                            .shouldBe(not(visible));
                     return parentAO;
                 }
 
@@ -404,7 +411,7 @@ public class UserManagementAO extends SettingsPageAO {
                 }
 
                 public EditUserPopup addRoleOrGroupIfNonExist(final String value) {
-                    $(By.className("role-ROLE_USER")).waitUntil(exist, DEFAULT_TIMEOUT);
+                    $(By.className("role-ROLE_USER")).shouldBe(exist);
                     String className = value.startsWith("ROLE_") ? format("role-%s", value)
                             : format("role-ROLE_%s", value);
                     if ($(By.className(className)).exists()) {
@@ -423,7 +430,7 @@ public class UserManagementAO extends SettingsPageAO {
                 }
 
                 public EditUserPopup deleteRoleOrGroupIfExist(final String value) {
-                    $(byClassName("edit-user-roles-dialog__table")).waitUntil(exist, DEFAULT_TIMEOUT);
+                    $(byClassName("edit-user-roles-dialog__table")).shouldBe(exist);
                     if(!$$(byClassName("role-name-column")).findBy(text(value)).exists()) {
                         return this;
                     }
@@ -431,12 +438,12 @@ public class UserManagementAO extends SettingsPageAO {
                 }
 
                 public boolean isUserHasRoleOrGroup(final String value) {
-                    $(By.className("role-ROLE_USER")).waitUntil(exist, DEFAULT_TIMEOUT);
+                    $(By.className("role-ROLE_USER")).shouldBe(exist);
                     return  $(By.className(format("role-%s", value))).exists();
                 }
 
                 public EditUserPopup isListOfRolesBlocked() {
-                    $(byClassName("edit-user-roles-dialog__table")).waitUntil(exist, DEFAULT_TIMEOUT);
+                    $(byClassName("edit-user-roles-dialog__table")).shouldBe(exist);
                     $(byClassName("edit-user-roles-dialog__table"))
                             .$$(xpath(".//tr"))
                             .stream()
@@ -453,6 +460,7 @@ public class UserManagementAO extends SettingsPageAO {
                 }
 
                 public EditUserPopup unblockUser(final String user) {
+                    get(UNBLOCK).should(exist);
                     click(UNBLOCK);
                     new ConfirmationPopupAO(this)
                             .ensureTitleIs(format("Are you sure you want to unblock user %s?", user))
@@ -475,7 +483,7 @@ public class UserManagementAO extends SettingsPageAO {
 
                 public EditUserPopup isAllowedLaunchOptionsDisable(final String option) {
                     $(byText("Allowed price types")).shouldBe(visible, enabled);
-                    final By optionField = byXpath(format("//div/b[text()='%s']/following::div/input", option));
+                    final By optionField = byXpath(format(".//div/b[text()='%s']/following::div/input", option));
                     ensure(optionField, disabled);
                     return this;
                 }
@@ -526,6 +534,7 @@ public class UserManagementAO extends SettingsPageAO {
 
                 public NavigationHomeAO impersonate() {
                     click(IMPERSONATE);
+                    context().$(byId("navigation-container")).shouldBe(visible);
                     return new NavigationHomeAO();
                 }
 
@@ -654,6 +663,7 @@ public class UserManagementAO extends SettingsPageAO {
                     .closest(".ant-table-row-level-0")
                     .find(byClassName("ant-btn-sm"))
                     .click();
+            $(byText("Allowed price types")).shouldBe(visible);
             return new EditGroupPopup(this);
         }
 
@@ -664,6 +674,7 @@ public class UserManagementAO extends SettingsPageAO {
                     .filterBy(visible)
                     .first()
                     .click();
+            $(byText("Allowed price types")).shouldBe(visible);
             return new EditGroupPopup(this);
         }
 
@@ -717,7 +728,7 @@ public class UserManagementAO extends SettingsPageAO {
                     entry(OK, context().find(By.id("close-edit-user-form"))),
                     entry(CANCEL, context().$(button("CANCEL"))),
                     entry(PRICE_TYPE, context().find(byXpath(
-                            format("//div/b[text()='%s']/following::div/input", "Allowed price types")))),
+                            format(".//div/b[text()='%s']/following::div/input", "Allowed price types")))),
                     entry(PERMISSIONS, $(byText("PERMISSIONS"))),
                     entry(PROFILE, context().$x(".//div[@role='tab']", 0))
             );
@@ -725,6 +736,7 @@ public class UserManagementAO extends SettingsPageAO {
             public EditGroupPopup(final GroupsTabAO parentAO) {
                 super(parentAO);
                 this.parentAO = parentAO;
+
             }
 
             @Override
@@ -783,7 +795,7 @@ public class UserManagementAO extends SettingsPageAO {
             }
 
             public EditGroupPopup isListOfUsersBlocked() {
-                $(byClassName("user-management__table")).waitUntil(exist, DEFAULT_TIMEOUT);
+                $(byClassName("user-management__table")).shouldBe(exist);
                 $(byClassName("user-management__table"))
                         .$$(xpath(".//tr"))
                         .stream()
@@ -792,13 +804,13 @@ public class UserManagementAO extends SettingsPageAO {
             }
 
             public EditGroupPopup checkUserExistsInGroup(final String userName) {
-                $(byClassName("user-management__table")).waitUntil(exist, DEFAULT_TIMEOUT);
+                $(byClassName("user-management__table")).shouldBe(exist);
                 return ensure($(className("user-management__table")).$(byText(userName)), exist);
             }
 
             public EditGroupPopup isAllowedLaunchOptionsDisable(final String option) {
                 $(byText("Allowed price types")).shouldBe(visible, enabled);
-                final By optionField = byXpath(format("//div/b[text()='%s']/following::div/input", option));
+                final By optionField = byXpath(format(".//div/b[text()='%s']/following::div/input", option));
                 ensure(optionField, disabled);
                 return this;
             }
@@ -880,7 +892,7 @@ public class UserManagementAO extends SettingsPageAO {
             public final Map<Primitive, SelenideElement> elements = initialiseElements(
                     entry(OK, context().find(By.id("close-edit-user-form"))),
                     entry(PRICE_TYPE, context().find(byXpath(
-                            format("//div/b[text()='%s']/following::div/input", "Allowed price types"))))
+                            format(".//div/b[text()='%s']/following::div/input", "Allowed price types"))))
             );
 
             public EditRolePopup(final RolesTabAO parentAO) {
@@ -903,7 +915,7 @@ public class UserManagementAO extends SettingsPageAO {
 
     public void addAllowedLaunchOptions(final String option, final String mask) {
         $(byText("Allowed price types")).shouldBe(visible, enabled);
-        final By optionField = byXpath(format("//div/b[text()='%s']/following::div/input", option));
+        final By optionField = byXpath(format(".//div/b[text()='%s']/following::div/input", option));
         if (StringUtils.isBlank(mask)) {
             clearByKey(optionField);
             return;

@@ -343,8 +343,10 @@ public class LaunchLimitMountsTest
                     .minNodeTypeRAM();
             final String minNodeType = new PipelineRunFormAO().getNodeType(minRAM);
             addStor = createStoragesIfNeeded(countObjectStorages, minRAM);
-            checkOOMwarningMessage("1", true, countObjectStorages, minNodeType);
-            checkOOMwarningMessage("100", false, countObjectStorages, minNodeType);
+            checkOOMwarningMessage("1", true,
+                    countObjectStorages+addStor.size(), minNodeType);
+            checkOOMwarningMessage("100", false,
+                    countObjectStorages+addStor.size(), minNodeType);
         } finally {
             if(countObjectStorages < minRAM) {
                 logoutIfNeeded();

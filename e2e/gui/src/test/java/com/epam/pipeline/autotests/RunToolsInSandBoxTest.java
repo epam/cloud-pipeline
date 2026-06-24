@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,11 @@ package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.PipelineRunFormAO;
-import static com.epam.pipeline.autotests.ao.Primitive.START_IDLE;
 import com.epam.pipeline.autotests.ao.ToolDescription;
 import com.epam.pipeline.autotests.ao.ToolPageAO;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
-import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import com.epam.pipeline.autotests.utils.TestCase;
 import java.util.function.Function;
 
@@ -41,7 +39,8 @@ import static com.epam.pipeline.autotests.ao.LogAO.configurationParameter;
 import static com.epam.pipeline.autotests.ao.Primitive.DEFAULT_COMMAND;
 import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
 import static com.epam.pipeline.autotests.ao.Primitive.PORT;
-import static com.epam.pipeline.autotests.ao.Primitive.RUN_CAPABILITIES;
+import static com.epam.pipeline.autotests.ao.Primitive.START_IDLE;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -109,6 +108,7 @@ public class RunToolsInSandBoxTest
         tools()
                 .perform(registry, group, tool, runTool())
                 .setDefaultLaunchOptions()
+                .doNotMountStoragesSelect(true)
                 .launchTool(this, nameWithoutGroup(tool))
                 .assertLatestPipelineHasName(format("%s:%s", nameWithoutGroup(tool), "latest"));
     }
@@ -183,6 +183,7 @@ public class RunToolsInSandBoxTest
     public void validateNodeReusage() {
         tools().perform(registry, group, tool, runTool())
                 .setDefaultLaunchOptions()
+                .doNotMountStoragesSelect(true)
                 .launchTool(this, nameWithoutGroup(tool));
 
         String otherNodeName = clusterMenu()
@@ -199,6 +200,7 @@ public class RunToolsInSandBoxTest
 
         tools().perform(registry, group, tool, runTool())
                 .setLaunchOptions(disk, type, String.valueOf(timeout))
+                .doNotMountStoragesSelect(true)
                 .launchTool(this, nameWithoutGroup(tool))
                 .showLog(getLastRunId())
                 .waitForCompletion()

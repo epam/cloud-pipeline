@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.epam.pipeline.autotests.ao;
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.Utils;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,7 @@ import java.util.function.Consumer;
 import org.openqa.selenium.By;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
+
 import static com.codeborne.selenide.Condition.appear;
 import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Condition.enabled;
@@ -45,15 +47,16 @@ import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.visible;
-import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static java.util.stream.Collectors.toList;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.tagName;
 import static java.lang.Integer.parseInt;
 import static java.lang.String.format;
+import static java.time.Duration.ofMillis;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.stream.Collectors.toList;
 
 public class ToolSettings extends ToolTab<ToolSettings> {
 
@@ -66,6 +69,7 @@ public class ToolSettings extends ToolTab<ToolSettings> {
                 entry(DESCRIPTION, context().find(byText("Description")).find(byId("description"))),
                 entry(LABELS, context().find(button("+ New Label"))),
                 entry(PORT, context().find(byText("Port:")).closest(".ant-row-flex-top")),
+                entry(ENDPOINT, context().find(byText("Name:")).closest(".ant-row-flex-top")),
                 entry(NEW_ENDPOINT, context().find(button("Add endpoint"))),
                 entry(LABEL_INPUT_FIELD, context().find(withText("Labels")).closest(".ant-row")
                         .find(tagName("input"))),
@@ -87,16 +91,17 @@ public class ToolSettings extends ToolTab<ToolSettings> {
                         .parent().find(By.xpath("following-sibling::div//span"))),
                 entry(ADD_SYSTEM_PARAMETER, context().find(button("Add system parameters"))),
                 entry(ADD_PARAMETER, context().find(byId("add-parameter-dropdown-button"))),
-                entry(RUN_CAPABILITIES, context().find(byXpath("//*[contains(text(), 'Run capabilities')]"))
-                        .closest(".ant-row").find(className("ant-form-item-control ")))
+                entry(RUN_CAPABILITIES, context().find(byXpath(".//*[contains(text(), 'Run capabilities')]"))
+                        .closest(".ant-row").find(className("ant-form-item-control"))),
+                entry(CONFIGURE, context().find(className("ant-dropdown-trigger")))
         );
     }
 
     @Override
     public ToolSettings open() {
         click(SETTINGS);
-        get(SETTINGS).waitUntil(have(cssClass("ant-menu-item-selected")), DEFAULT_TIMEOUT);
-        get(EXEC_ENVIRONMENT).waitUntil(exist, DEFAULT_TIMEOUT);
+        get(SETTINGS).shouldBe(have(cssClass("ant-menu-item-selected")), ofMillis(DEFAULT_TIMEOUT));
+        get(EXEC_ENVIRONMENT).shouldBe(exist);
         return click(EXEC_ENVIRONMENT);
     }
 
@@ -107,12 +112,57 @@ public class ToolSettings extends ToolTab<ToolSettings> {
         return this;
     }
 
+    public ToolSettings changeEndpointPort(final String port) {
+        get(PORT).find(byClassName("ant-input")).should(appear).setValue(port);
+        return this;
+    }
+
+    public ToolSettings changeEndpointName(final String name) {
+        $(byText("Name:")).parent()
+                .$(className("ant-input"))
+                .should(appear)
+                .setValue(name);
+        return this;
+    }
+
+    public ToolSettings addEndpoint(String endpointName, String port) {
+        click(NEW_ENDPOINT);
+        int endpointNum = $(className("ant-form-item-control"))
+                .$$(withText("Port:")).size();
+        SelenideElement endpoint = $(className("ant-form-item-control"))
+                .$$(withText("Port:")).get(endpointNum-1);
+        endpoint.closest(".ant-row-flex-top")
+                .find(byClassName("ant-input")).should(appear).setValue(port);
+        endpoint.closest(".ant-row-flex-top")
+                .find(byText("Name:")).parent()
+                .$(className("ant-input"))
+                .should(appear).setValue(endpointName);
+        return this;
+    }
+
     /**
      * Use {@link AccessObject#performWhile(Primitive, Condition, Consumer)} for such operations.
      */
-    @Deprecated
     public ToolSettings removeEndpoint(final String endpoint) {
-        get(PORT).find(byValue(endpoint)).closest("tr").find(button(endpoint)).shouldBe(visible).click();
+        $(className("ant-form-item-control")).find(byValue(endpoint))
+                .closest(".ant-row-flex-top").find(button("Delete")).shouldBe(visible).click();
+        return this;
+    }
+
+    public ToolSettings configureEndpoint(final String configuration) {
+        click(CONFIGURE);
+        $(visible(byClassName("ant-dropdown-menu-root"))).find(withText(configuration))
+                .shouldBe(visible).click();
+        return this;
+    }
+
+    public ToolSettings untickConfigureEndpoint(final String configuration) {
+        click(CONFIGURE);
+        SelenideElement option = $(visible(byClassName("ant-dropdown-menu-root"))).find(withText(configuration))
+                .shouldBe(visible);
+        if(option.parent().$x("./i[@class='anticon anticon-check']").exists()) {
+            option.click();
+        }
         return this;
     }
 
@@ -357,5 +407,4 @@ public class ToolSettings extends ToolTab<ToolSettings> {
             return elements;
         }
     }
-
 }

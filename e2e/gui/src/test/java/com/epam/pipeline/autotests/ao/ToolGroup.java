@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
+
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 
@@ -32,7 +33,7 @@ import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.className;
 
@@ -75,7 +76,7 @@ public class ToolGroup implements AccessObject<ToolGroup> {
     public ToolGroup searchToolByName(final String toolName) {
         StringSelection stringSelection = new StringSelection(toolName);
         Toolkit.getDefaultToolkit().getSystemClipboard()
-                .setContents(stringSelection, null);
+               .setContents(stringSelection, null);
         SelenideElement element = get(SEARCH);
         element.click();
         element.clear();
@@ -136,7 +137,7 @@ public class ToolGroup implements AccessObject<ToolGroup> {
     }
 
     private SelenideElement waitUntilBodyAppears() {
-        return $(byClassName("ant-card-body")).waitUntil(visible, MILLISECONDS.convert(10, SECONDS));
+        return $(byClassName("ant-card-body")).shouldBe(visible, ofMillis(10000));
     }
 
     @Override

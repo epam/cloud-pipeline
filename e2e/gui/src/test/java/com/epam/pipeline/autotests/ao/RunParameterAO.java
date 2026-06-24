@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import com.codeborne.selenide.SelenideElement;
 
 import java.util.Map;
 
+import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
@@ -41,7 +42,8 @@ public class RunParameterAO
                 entry(PARAMETER_NAME, parameter.$(byClassName("arameter-name-input__parameter-name-input"))),
                 entry(PARAMETER_VALUE, parameter.$(byClassName("ant-form-item-control")).$x(".//input")),
                 entry(PARAMETER_PATH, parameter.$(byClassName("aunch-form-parameter-input__launch-parameter-path-input-addon"))),
-                entry(REMOVE_PARAMETER, parameter.$(byClassName("dynamic-delete-button")))
+                entry(REMOVE_PARAMETER, parameter.$(byClassName("dynamic-delete-button"))),
+                entry(PARAMETER_ENABLED, parameter.find(byClassName("ant-checkbox")))
         );
     }
 
@@ -59,6 +61,14 @@ public class RunParameterAO
     public PathAdditionDialogAO openPathAdditionDialog() {
         click(PARAMETER_PATH);
         return new PathAdditionDialogAO(this);
+    }
+
+    public RunParameterAO setEnableParameter(boolean isEnabled) {
+        if((!isEnabled && get(PARAMETER_ENABLED).has(cssClass("ant-checkbox-checked"))) ||
+                    (isEnabled && !get(PARAMETER_ENABLED).has(cssClass("ant-checkbox-checked")))) {
+            click(PARAMETER_ENABLED);
+        }
+        return this;
     }
 
     public PipelineRunFormAO close() {
