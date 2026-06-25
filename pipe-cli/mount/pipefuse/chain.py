@@ -15,8 +15,7 @@
 from abc import ABCMeta
 
 
-class ChainingService:
-    __metaclass__ = ABCMeta
+class ChainingService(metaclass=ABCMeta):
 
     def parameters(self):
         return {}

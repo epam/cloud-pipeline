@@ -14,7 +14,6 @@
 
 import json
 
-from future.utils import iteritems
 from src.api.base import API
 from src.model.metadata_model import MetadataModel
 
@@ -62,7 +61,7 @@ class Metadata(API):
         metadata_mapping = dict()
         for metadata_entry in metadata_list:
             metadata_data_dict = {}
-            for key, data in iteritems(metadata_entry.data):
+            for key, data in metadata_entry.data.items():
                 if 'value' in data:
                     value = data['value']
                     if not value.startswith('{'):

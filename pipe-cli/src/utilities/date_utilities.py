@@ -56,7 +56,11 @@ def to_local(date):
 def to_uts(date):
     if not date:
         return None
-    date_with_time_zone = Config.instance().timezone().localize(date, is_dst=None)
+    tz = Config.instance().timezone()
+    if hasattr(tz, 'localize'):
+        date_with_time_zone = tz.localize(date, is_dst=None)
+    else:
+        date_with_time_zone = date.replace(tzinfo=tz)
     return date_with_time_zone.astimezone(pytz.utc)
 
 

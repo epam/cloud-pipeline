@@ -20,33 +20,28 @@ from datetime import datetime, timedelta
 
 from requests import RequestException
 from requests.adapters import HTTPAdapter
-from s3transfer import TransferConfig, MultipartUploader, OSUtils, MultipartDownloader
 from urllib3.connection import VerifiedHTTPSConnection
 
 from src.model.datastorage_usage_model import StorageUsage
 from src.utilities.audit import DataAccessEvent, DataAccessType
 from src.utilities.encoding_utilities import to_string
 
-try:
-    import http.client as http_client  # Python 3
-    from http import HTTPStatus  # Python 3
-    OK = HTTPStatus.OK
-except ImportError:
-    import httplib as http_client  # Python 2
-    from httplib import OK  # Python 2
+import http.client as http_client
+from http import HTTPStatus
+OK = HTTPStatus.OK
 
 from src.utilities.storage.storage_usage import StorageUsageAccumulator
 
-try:
-    from urllib.parse import urlparse  # Python 3
-except ImportError:
-    from urlparse import urlparse  # Python 2
+from urllib.parse import urlparse
+
+import base64
+import hashlib
+from dataclasses import dataclass
+from io import BytesIO
 
 import click
-from google.auth import _helpers
 from google.auth.transport.requests import AuthorizedSession
 from google.cloud.storage import Client, Blob
-from google.cloud.storage.blob import _get_encryption_headers
 from google.oauth2.credentials import Credentials
 from google import resumable_media
 from google.resumable_media import DataCorruption
@@ -63,6 +58,72 @@ from src.utilities.storage.common import AbstractRestoreManager, AbstractListing
 
 
 
+@dataclass
+class GcsTransferConfig:
+    multipart_threshold: int = 8 * 1024 * 1024
+    multipart_chunksize: int = 8 * 1024 * 1024
+    max_io_queue: int = 100
+    max_concurrency: int = 1
+
+
+def _get_encryption_headers(key):
+    """Build customer-supplied encryption headers for GCS."""
+    if key is None:
+        return {}
+    key_bytes = key if isinstance(key, bytes) else key.encode('utf-8')
+    key_hash = hashlib.sha256(key_bytes).digest()
+    return {
+        'X-Goog-Encryption-Algorithm': 'AES256',
+        'X-Goog-Encryption-Key': base64.b64encode(key_bytes).decode('utf-8'),
+        'X-Goog-Encryption-Key-Sha256': base64.b64encode(key_hash).decode('utf-8'),
+    }
+
+
+def _multipart_upload(upload_client, filename, bucket, key, config):
+    """Replaces s3transfer.MultipartUploader — sequential chunk upload."""
+    upload_client.create_multipart_upload(Bucket=bucket, Key=key)
+    part_number = 1
+    try:
+        with open(filename, 'rb') as f:
+            while True:
+                chunk = f.read(config.multipart_chunksize)
+                if not chunk:
+                    break
+                upload_client.upload_part(Bucket=bucket, Key=key, UploadId=key,
+                                          PartNumber=part_number, Body=BytesIO(chunk))
+                part_number += 1
+        parts = [{'PartNumber': i, 'ETag': ''} for i in range(1, part_number)]
+        upload_client.complete_multipart_upload(Bucket=bucket, Key=key, UploadId=key,
+                                                MultipartUpload={'Parts': parts})
+    except Exception:
+        upload_client.abort_multipart_upload(Bucket=bucket, Key=key)
+        raise
+
+
+def _multipart_download(download_client, bucket, key, filename, object_size, config, callback=None):
+    """Replaces s3transfer.MultipartDownloader — sequential range download."""
+    with open(filename, 'wb') as f:
+        offset = 0
+        while offset < object_size:
+            end = min(offset + config.multipart_chunksize - 1, object_size - 1)
+            response = download_client.get_object(Bucket=bucket, Key=key,
+                                                  Range='bytes=%d-%d' % (offset, end))
+            body = response['Body']
+            if hasattr(body, 'read'):
+                while True:
+                    chunk = body.read()
+                    if not chunk:
+                        break
+                    f.write(chunk)
+                    if callback:
+                        callback(len(chunk))
+            else:
+                f.write(body)
+                if callback:
+                    callback(len(body))
+            offset = end + 1
+
+
 KB = 1024
 MB = KB * KB
 CP_CLI_DOWNLOAD_BUFFERING_SIZE = 'CP_CLI_DOWNLOAD_BUFFERING_SIZE'
@@ -72,8 +133,7 @@ CP_CLI_GCP_MULTIPART_CHUNKSIZE = 'CP_CLI_GCP_MULTIPART_CHUNKSIZE'
 CP_CLI_GCP_MAX_CONCURRENCY = 'CP_CLI_GCP_MAX_CONCURRENCY'
 
 
-class S3TransferUploadClient:
-    __metaclass__ = ABCMeta
+class S3TransferUploadClient(metaclass=ABCMeta):
 
     @abstractmethod
     def create_multipart_upload(self, Bucket, Key, *args, **kwargs):
@@ -92,8 +152,7 @@ class S3TransferUploadClient:
         pass
 
 
-class S3TransferDownloadClient:
-    __metaclass__ = ABCMeta
+class S3TransferDownloadClient(metaclass=ABCMeta):
 
     @abstractmethod
     def get_object(self, Bucket, Key, Range, *args, **kwargs):
@@ -345,8 +404,8 @@ class _UploadProgressMixin(Blob):
         bytes_uploaded = 0
         while not upload.finished:
             response = upload.transmit_next_chunk(transport)
-            chunk_bytes_uploaded = upload._bytes_uploaded - bytes_uploaded
-            bytes_uploaded = upload._bytes_uploaded
+            chunk_bytes_uploaded = upload.bytes_uploaded - bytes_uploaded
+            bytes_uploaded = upload.bytes_uploaded
             if self._progress_callback:
                 self._progress_callback(chunk_bytes_uploaded)
 
@@ -717,11 +776,8 @@ class GsDownloadManager(GsManager, AbstractTransferManager):
             blob = self.custom_blob(bucket, source_key, None, size)
             download_client = GsRangeDownloadClient(source_wrapper.bucket.path, to_string(destination_key), self.client,
                                                     blob_object=blob)
-            downloader = MultipartDownloader(client=download_client, config=transfer_config, osutil=OSUtils())
-            downloader.download_file(bucket=source_wrapper.bucket.path, key=source_key,
-                                     filename=to_string(destination_key),
-                                     object_size=size, extra_args={},
-                                     callback=progress_callback)
+            _multipart_download(download_client, source_wrapper.bucket.path, source_key,
+                                to_string(destination_key), size, transfer_config, callback=progress_callback)
         else:
             bucket = self.client.bucket(source_wrapper.bucket.path)
             if StorageOperations.file_is_empty(size):
@@ -734,8 +790,8 @@ class GsDownloadManager(GsManager, AbstractTransferManager):
             blob.delete()
 
     def _get_transfer_config(self, io_threads=None):
-        transfer_config = TransferConfig(multipart_threshold=200 * MB,
-                                         multipart_chunksize=200 * MB)
+        transfer_config = GcsTransferConfig(multipart_threshold=200 * MB,
+                                            multipart_chunksize=200 * MB)
         if os.getenv(CP_CLI_GCP_MULTIPART_THRESHOLD):
             transfer_config.multipart_threshold = int(os.getenv(CP_CLI_GCP_MULTIPART_THRESHOLD))
         if os.getenv(CP_CLI_GCP_MULTIPART_CHUNKSIZE):
@@ -839,9 +895,8 @@ class GsUploadManager(GsManager, AbstractTransferManager):
             upload_client = GsCompositeUploadClient(destination_wrapper.bucket.path, destination_key,
                                                     StorageOperations.generate_tags(tags, source_key),
                                                     self.client, progress_callback)
-            uploader = MultipartUploader(client=upload_client, config=transfer_config, osutil=OSUtils())
-            uploader.upload_file(filename=to_string(source_key), bucket=destination_wrapper.bucket.path, key=destination_key,
-                                 callback=None, extra_args={})
+            _multipart_upload(upload_client, to_string(source_key), destination_wrapper.bucket.path,
+                              destination_key, transfer_config)
         else:
             bucket = self.client.bucket(destination_wrapper.bucket.path)
             blob = self.custom_blob(bucket, destination_key, progress_callback, size)
@@ -854,8 +909,8 @@ class GsUploadManager(GsManager, AbstractTransferManager):
         multipart_threshold, multipart_chunksize = self._get_adjusted_parameters(size,
                                                                                  multipart_threshold=150 * MB,
                                                                                  max_parts=32)
-        transfer_config = TransferConfig(multipart_threshold=multipart_threshold,
-                                         multipart_chunksize=multipart_chunksize)
+        transfer_config = GcsTransferConfig(multipart_threshold=multipart_threshold,
+                                            multipart_chunksize=multipart_chunksize)
         if os.getenv(CP_CLI_GCP_MULTIPART_THRESHOLD):
             transfer_config.multipart_threshold = int(os.getenv(CP_CLI_GCP_MULTIPART_THRESHOLD))
         if os.getenv(CP_CLI_GCP_MULTIPART_CHUNKSIZE):
@@ -947,7 +1002,7 @@ class _RefreshingCredentials(Credentials):
         self.temporary_credentials = self._refresh()
 
     def apply(self, headers, token=None):
-        headers['authorization'] = 'Bearer {}'.format(_helpers.from_bytes(self.temporary_credentials.session_token))
+        headers['authorization'] = 'Bearer {}'.format(self.temporary_credentials.session_token)
 
 
 class VerifiedHTTPSConnectionWithHeaders(VerifiedHTTPSConnection):

@@ -16,10 +16,7 @@ import os
 
 from src.utilities.storage.common import AbstractTransferManager, StorageOperations
 
-try:
-    from urllib.request import urlopen  # Python 3
-except ImportError:
-    from urllib2 import urlopen  # Python 2
+from urllib.request import urlopen
 
 import click
 

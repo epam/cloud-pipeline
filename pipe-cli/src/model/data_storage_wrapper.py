@@ -17,12 +17,8 @@ import os
 from abc import abstractmethod, ABCMeta
 from ftplib import FTP, error_temp
 
-from future.standard_library import install_aliases
-
 from ..utilities.encoding_utilities import to_unicode, to_string
 from ..utilities.storage_path_permissions_manager import DefaultStoragePathPermissionsManager
-
-install_aliases()
 
 from urllib.parse import urlparse
 
@@ -41,10 +37,7 @@ import shutil
 from bs4 import BeautifulSoup, SoupStrainer
 import posixpath
 
-try:
-    from urllib.request import urlopen  # Python 3
-except ImportError:
-    from urllib2 import urlopen  # Python 2
+from urllib.request import urlopen
 
 FILE = 'File'
 FOLDER = 'Folder'
@@ -56,8 +49,7 @@ class AllowedSymlinkValues(object):
     FILTER = 'filter'
 
 
-class LocationWrapper(object):
-    __metaclass__ = ABCMeta
+class LocationWrapper(metaclass=ABCMeta):
 
     @abstractmethod
     def get_type(self):
@@ -250,10 +242,10 @@ class DataStorageWrapper(object):
         return []
 
     def get_folders_list(self):
-        return map(lambda i: (i[1], i[2]), [item for item in self.items if item[0] == FOLDER])
+        return list(map(lambda i: (i[1], i[2]), [item for item in self.items if item[0] == FOLDER]))
 
     def get_files_list(self):
-        return map(lambda i: (i[1], i[2]), [item for item in self.items if item[0] == FILE])
+        return list(map(lambda i: (i[1], i[2]), [item for item in self.items if item[0] == FILE]))
 
     def create_folder(self, relative_path):
         pass
@@ -282,8 +274,7 @@ class DataStorageWrapper(object):
         return self.path_permissions_manager
 
 
-class CloudDataStorageWrapper(DataStorageWrapper):
-    __metaclass__ = ABCMeta
+class CloudDataStorageWrapper(DataStorageWrapper, metaclass=ABCMeta):
 
     def __init__(self, bucket, path):
         super(CloudDataStorageWrapper, self).__init__(path)

@@ -5,7 +5,6 @@ import time
 from datetime import datetime
 
 from dateutil.tz import tzlocal
-from google.auth import _helpers
 from google.auth.transport.requests import AuthorizedSession
 from google.cloud.storage import Bucket, Blob, Client
 from google.cloud.exceptions import GoogleCloudError
@@ -99,7 +98,7 @@ class _RefreshingCredentials(Credentials):
         self.temporary_credentials = self._refresh()
 
     def apply(self, headers, token=None):
-        headers['authorization'] = 'Bearer {}'.format(_helpers.from_bytes(self.temporary_credentials.session_token))
+        headers['authorization'] = 'Bearer {}'.format(self.temporary_credentials.session_token)
 
 
 def retryable(func):
@@ -227,7 +226,7 @@ class GoogleStorageLowLevelFileSystemClient(StorageLowLevelFileSystemClient):
         self._chunk_size = chunk_size
         self._max_size = 5 * TB
         self._min_chunk = 1
-        self._max_chunk = self._max_size / self._chunk_size
+        self._max_chunk = self._max_size // self._chunk_size
         self._min_part_size = 5 * MB
         self._max_part_size = 500 * MB
         self._max_composite_parts = 32

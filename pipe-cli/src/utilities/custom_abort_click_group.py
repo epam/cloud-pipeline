@@ -21,7 +21,7 @@ class CustomAbortHandlingGroup(click.Group):
                                                    'and it will continue running in the background.'
 
     def __init__(self, name=None, commands=None, uninterruptible_cmd_list=None, **attrs):
-        click.Group.__init__(self, name, commands, **attrs)
+        click.Group.__init__(self, name, commands=commands, **attrs)
         if uninterruptible_cmd_list is None:
             self.not_standalone_cmd_list = []
         else:

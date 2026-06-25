@@ -9,3 +9,4 @@ api/src/main/resources/static/
 docs/site
 dist
 vscode-cloud-pipeline/.env
+.claude/settings.local.json

@@ -13,9 +13,6 @@
 # limitations under the License.
 
 from dateutil.parser import parse
-from future.standard_library import install_aliases
-install_aliases()
-
 from urllib.parse import urlparse, urlencode
 
 import json

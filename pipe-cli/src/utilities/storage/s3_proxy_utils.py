@@ -14,18 +14,18 @@
 
 import socket
 
-from botocore.vendored.requests.adapters import HTTPAdapter
-from botocore.vendored.requests.packages.urllib3 import ProxyManager
-from botocore.vendored.requests.packages.urllib3.connection import VerifiedHTTPSConnection
-from botocore.vendored.requests.packages.urllib3.poolmanager import pool_classes_by_scheme, SSL_KEYWORDS
+from requests.adapters import HTTPAdapter
+from urllib3 import ProxyManager
+from urllib3.connection import VerifiedHTTPSConnection
+from urllib3.poolmanager import pool_classes_by_scheme
 
-try:
-    import http.client as http_client  # Python 3
-    from http import HTTPStatus  # Python 3
-    OK = HTTPStatus.OK
-except ImportError:
-    import httplib as http_client  # Python 2
-    from httplib import OK  # Python 2
+_SSL_KEYWORDS = ('key_file', 'cert_file', 'cert_reqs', 'ca_certs',
+                 'ssl_version', 'ssl_minimum_version', 'ssl_maximum_version',
+                 'ca_cert_dir', 'ssl_context', 'key_password')
+
+import http.client as http_client
+from http import HTTPStatus
+OK = HTTPStatus.OK
 
 
 class VerifiedHTTPSConnectionWithHeaders(VerifiedHTTPSConnection):
@@ -83,7 +83,7 @@ class AwsProxyManager(ProxyManager):
         kwargs = self.connection_pool_kw
         if scheme == 'http':
             kwargs = self.connection_pool_kw.copy()
-            for kw in SSL_KEYWORDS:
+            for kw in _SSL_KEYWORDS:
                 kwargs.pop(kw, None)
 
         return pool_cls(host, port, **kwargs)

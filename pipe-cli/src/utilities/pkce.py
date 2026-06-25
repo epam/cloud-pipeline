@@ -21,11 +21,8 @@ import sys
 def generate_code_verifier(length=127):
     if not 43 < length < 128:
         raise ValueError('Invalid code verifier length.')
-    if sys.version_info[0] >= 3:
-        import secrets
-        code_verifier = secrets.token_urlsafe(96)[:length]
-    else:
-        code_verifier = base64.urlsafe_b64encode(os.urandom(96))[:length]
+    import secrets
+    code_verifier = secrets.token_urlsafe(96)[:length]
     return code_verifier
 
 

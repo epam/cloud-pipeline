@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import subprocess
-from future.utils import iteritems
 
 class Umount(object):
 
@@ -27,7 +26,7 @@ class Umount(object):
                 return
             cmd_logs[cmd] = log
         error_message = 'All attempts to umount %s failed.' % mountpoint
-        for cmd, log in iteritems(cmd_logs):
+        for cmd, log in cmd_logs.items():
             if log:
                 error_message += '\n%s: %s' % (cmd, log)
         raise RuntimeError(error_message)
@@ -39,6 +38,6 @@ class Umount(object):
             umount_proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             stdout, stderr = umount_proc.communicate()
             exit_code = umount_proc.wait()
-            return exit_code, stderr
+            return exit_code, stderr.decode('utf-8', errors='replace') if stderr else stderr
         except BaseException as e:
             return -1, str(e)

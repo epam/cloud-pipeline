@@ -24,8 +24,7 @@ from pipefuse.mpu import UnmanageableMultipartUploadException
 _ANY_ERROR = Exception
 
 
-class StorageLowLevelFileSystemClient(FileSystemClient):
-    __metaclass__ = ABCMeta
+class StorageLowLevelFileSystemClient(FileSystemClient, metaclass=ABCMeta):
 
     def exists(self, path):
         pass

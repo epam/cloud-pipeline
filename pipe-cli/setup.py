@@ -25,6 +25,7 @@ with open('mount/requirements.txt') as mount_requirements_file:
 setup(
     name='PipelineCLI',
     version=__version__,
+    python_requires='>=3.8',
     py_modules=['pipe'],
     packages=find_packages(),
     data_files=[('requirements', ['requirements.txt', 'mount/requirements.txt'])],

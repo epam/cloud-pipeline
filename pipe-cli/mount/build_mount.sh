@@ -15,43 +15,23 @@
 # limitations under the License.
 
 _BUILD_SCRIPT_NAME=/tmp/build_mnt_pytinstaller_linux_$(date +%s).sh
-_BUILD_DOCKER_IMAGE="python:2.7-stretch"
+_BUILD_DOCKER_IMAGE="lifescience/cloud-pipeline:pipe-cli-rocky8-py312"
 
 cat >$_BUILD_SCRIPT_NAME <<EOL
-
-apt update && apt install -y fuse
-
-###
-# Setup Pyinstaller
-###
-
-mkdir -p $PYINSTALLER_PATH
-cd $PYINSTALLER_PATH
-git clone --single-branch --branch resolve_tmpdir https://github.com/mzueva/pyinstaller.git
-cd pyinstaller/bootloader/
-python2 ./waf all
 
 ###
 # Setup common dependencies
 ###
-python2 -m pip install -r ${PIPE_MOUNT_SOURCES_DIR}/requirements.txt
+pip install -r ${PIPE_MOUNT_SOURCES_DIR}/requirements.txt
 
 ###
 # Build pipe
 ###
 cd $PIPE_MOUNT_SOURCES_DIR && \
-python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
-                                --hidden-import=UserList \
-                                --hidden-import=UserString \
-                                --hidden-import=commands \
-                                --hidden-import=ConfigParser \
-                                --hidden-import=UserDict \
+pyinstaller \
                                 --hidden-import=itertools \
                                 --hidden-import=collections \
-                                --hidden-import=future.backports.misc \
-                                --hidden-import=commands \
                                 --hidden-import=base64 \
-                                --hidden-import=__builtin__ \
                                 --hidden-import=math \
                                 --hidden-import=reprlib \
                                 --hidden-import=functools \
@@ -60,7 +40,6 @@ python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
                                 --additional-hooks-dir="${PIPE_MOUNT_SOURCES_DIR}/hooks" \
                                 -y \
                                 --clean \
-                                --runtime-tmpdir $PIPE_CLI_RUNTIME_TMP_DIR \
                                 --distpath $PIPE_CLI_LINUX_DIST_DIR/dist \
                                 ${PIPE_MOUNT_SOURCES_DIR}/pipe-fuse.py \
                                 --onefile
@@ -73,8 +52,6 @@ docker run -i --rm \
            -v $_BUILD_SCRIPT_NAME:$_BUILD_SCRIPT_NAME \
            --env PIPE_MOUNT_SOURCES_DIR=$PIPE_MOUNT_SOURCES_DIR \
            --env PIPE_CLI_LINUX_DIST_DIR=$PIPE_CLI_LINUX_DIST_DIR \
-           --env PIPE_CLI_RUNTIME_TMP_DIR="'"$PIPE_CLI_RUNTIME_TMP_DIR"'" \
-           --env PYINSTALLER_PATH=$PYINSTALLER_PATH \
            $_BUILD_DOCKER_IMAGE \
            bash $_BUILD_SCRIPT_NAME
 

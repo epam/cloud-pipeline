@@ -16,6 +16,8 @@ import logging
 import os
 import traceback
 
+logging.captureWarnings(True)
+
 import click
 import functools
 import sys
@@ -103,10 +105,7 @@ def enable_debug_logging(ctx, param, value):
     if not value:
         return
     # Enable body/headers logging from httplib requests
-    try:
-        from http.client import HTTPConnection  # py3
-    except ImportError:
-        from httplib import HTTPConnection      # py2
+    from http.client import HTTPConnection
     HTTPConnection.debuglevel = 5
     log_level = logging.DEBUG
     log_format = os.getenv('CP_LOGGING_FORMAT') or ctx.params.get('log_format') or DEFAULT_LOGGING_FORMAT
@@ -162,10 +161,7 @@ def stacktracing(func, ctx, *args, **kwargs):
     except click.Abort:
         raise
     except Exception as runtime_error:
-        if sys.version_info >= (3, 0):
-            click.echo(u'Error: {}'.format(str(runtime_error)), err=True)
-        else:
-            click.echo(u'Error: {}'.format(unicode(runtime_error)), err=True)
+        click.echo(u'Error: {}'.format(str(runtime_error)), err=True)
         if trace:
             traceback.print_exc()
         sys.exit(1)
@@ -335,18 +331,6 @@ def cli():
               prompt='Proxy address',
               help='URL of a proxy for all calls',
               default='')
-@click.option('-nt', '--proxy-ntlm',
-              help='Use NTLM authentication for the server, specified by the "--proxy"',
-              is_flag=True)
-@click.option('-nu', '--proxy-ntlm-user',
-              help='Username for the NTLM authentication against the server, specified by the "--proxy"',
-              default=None)
-@click.option('-nd', '--proxy-ntlm-domain',
-              help='Domain name of the user, specified by the "--proxy-ntlm-user"',
-              default=None)
-@click.option('-np', '--proxy-ntlm-pass',
-              help='Password of the user, specified by the "--proxy-ntlm-user"',
-              default=None)
 @click.option('-c', '--codec',
               help='Encoding that shall be used',
               default=None)
@@ -363,8 +347,7 @@ def cli():
               help='Path to a CA certificate bundle file used to verify S3 SSL connections '
                    '(e.g. required when a ZScaler proxy intercepts TLS traffic)',
               default=None)
-def configure(login, auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain,
-              proxy_ntlm_pass, codec, config_store, no_launch_browser, ca_bundle):
+def configure(login, auth_token, api, timezone, proxy, codec, config_store, no_launch_browser, ca_bundle):
     """Configures CLI parameters
     """
     if auth_token and login:
@@ -373,33 +356,11 @@ def configure(login, auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_us
     if not auth_token and not login:
         auth_token = click.prompt('Authentication token', default=None)
 
-    if proxy_ntlm and not proxy_ntlm_user:
-        proxy_ntlm_user = click.prompt('Username for the proxy NTLM authentication', type=str)
-    if proxy_ntlm and not proxy_ntlm_domain:
-        proxy_ntlm_domain = click.prompt('Domain of the {} user'.format(proxy_ntlm_user), type=str)
-    if proxy_ntlm and not proxy_ntlm_pass:
-        proxy_ntlm_pass = click.prompt('Password of the {} user'.format(proxy_ntlm_user), type=str, hide_input=True)
-
     if not auth_token and login:
-        proxies = Config.build_proxies(proxy,
-                                       proxy_ntlm,
-                                       proxy_ntlm_user,
-                                       proxy_ntlm_domain,
-                                       proxy_ntlm_pass,
-                                       api)
+        proxies = Config.build_proxies(proxy, api)
         auth_token = TokenlessAccessManager(api, proxies).fetch_token(no_launch_browser)
 
-    Config.store(auth_token,
-                 api,
-                 timezone,
-                 proxy,
-                 proxy_ntlm,
-                 proxy_ntlm_user,
-                 proxy_ntlm_domain,
-                 proxy_ntlm_pass,
-                 codec,
-                 config_store,
-                 ca_bundle)
+    Config.store(auth_token, api, timezone, proxy, codec, config_store, ca_bundle)
 
 
 def echo_title(title, line=True):

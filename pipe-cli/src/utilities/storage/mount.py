@@ -33,8 +33,7 @@ from src.config import Config, is_frozen
 MS_IN_SEC = 1000
 
 
-class AbstractMount(object):
-    __metaclass__ = ABCMeta
+class AbstractMount(metaclass=ABCMeta):
 
     def get_mount_webdav_cmd(self, config, mountpoint, options, custom_options, web_dav_url, mode, threading=False,
                              log_level=None, show_archive=False):

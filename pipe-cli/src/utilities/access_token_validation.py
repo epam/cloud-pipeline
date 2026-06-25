@@ -26,7 +26,7 @@ def check_token(token, timezone, print_info=False):
         click.echo(click.style('No access token is provided', fg='red'), err=True)
         return
     try:
-        payload = jwt.decode(token, verify=False)
+        payload = jwt.decode(token, algorithms=["RS256", "HS256"], options={"verify_signature": False})
         subject = None
         issued_at = None
         not_before = None
@@ -45,7 +45,7 @@ def check_token(token, timezone, print_info=False):
         now = datetime.utcnow()
 
         def print_date_time(naive_time):
-            return pytz.utc.localize(naive_time, is_dst=None).astimezone(tz).strftime('%Y-%m-%d %H:%M')
+            return naive_time.replace(tzinfo=pytz.utc).astimezone(tz).strftime('%Y-%m-%d %H:%M')
 
         if print_info:
             click.echo('Access token info:')
