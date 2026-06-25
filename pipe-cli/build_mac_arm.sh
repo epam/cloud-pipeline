@@ -17,27 +17,27 @@
 ###
 # Setup Pyinstaller
 ###
-python -m pip install "pyinstaller==6.5.0"
+arch -arm64 python -m pip install "pyinstaller==6.5.0"
 
 ###
 # Setup common dependencies
 ###
-python -m pip install macholib==1.16.2
+arch -arm64 python -m pip install macholib==1.16.2
 
 
 export LDFLAGS="-L$(brew --prefix openssl@1.1)/lib"
 export CFLAGS="-I$(brew --prefix openssl@1.1)/include"
 export PKG_CONFIG_PATH="$(brew --prefix openssl@1.1)/lib/pkgconfig"
 export TMP_MOUNT_BIN=$(pwd)/tmp/mount/dist
-python -m pip install -r ${PIPE_CLI_SOURCES_DIR}/requirements.txt
+arch -arm64 python -m pip install -r ${PIPE_CLI_SOURCES_DIR}/requirements.txt
 
 
 ###
 # Build pipe fuse
 ###
-python -m pip install -r ${PIPE_MOUNT_SOURCES_DIR}/requirements.txt
+arch -arm64 python -m pip install -r ${PIPE_MOUNT_SOURCES_DIR}/requirements.txt
 cd $PIPE_MOUNT_SOURCES_DIR && \
-pyinstaller \
+arch -arm64 pyinstaller \
                                 --target-arch arm64 \
                                 --paths "$PIPE_CLI_SOURCES_DIR" \
                                 --paths "$PIPE_MOUNT_SOURCES_DIR" \
@@ -90,7 +90,7 @@ function build_pipe {
     local pipe_commit_hash=$(git log --pretty=tformat:"%H" -n1 .)
     echo "__component_version__='$pipe_commit_hash'" >> $version_file
 
-    pyinstaller \
+    arch -arm64 pyinstaller \
                                     --target-arch arm64 \
                                     --paths "$PIPE_CLI_SOURCES_DIR" \
                                     --collect-submodules src \
