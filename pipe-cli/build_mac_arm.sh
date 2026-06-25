@@ -38,6 +38,7 @@ python -m pip install -r ${PIPE_CLI_SOURCES_DIR}/requirements.txt
 python -m pip install -r ${PIPE_MOUNT_SOURCES_DIR}/requirements.txt
 cd $PIPE_MOUNT_SOURCES_DIR && \
 pyinstaller \
+                                --target-arch arm64 \
                                 --paths "$PIPE_CLI_SOURCES_DIR" \
                                 --paths "$PIPE_MOUNT_SOURCES_DIR" \
                                 --collect-submodules pipefuse \
@@ -90,6 +91,7 @@ function build_pipe {
     echo "__component_version__='$pipe_commit_hash'" >> $version_file
 
     pyinstaller \
+                                    --target-arch arm64 \
                                     --paths "$PIPE_CLI_SOURCES_DIR" \
                                     --collect-submodules src \
                                     --collect-submodules google.auth \
