@@ -145,7 +145,8 @@ function install_nm_extras {
   else
     wget -q "${GLOBAL_DISTRIBUTION_URL}tools/chrome/google-chrome-${CP_NM_EXTRA_INSTALL_CHROME_VERSION}.deb" -O /opt/google-chrome.deb && \
     apt-get install --no-upgrade -y /opt/google-chrome.deb && \
-    rm -f /opt/google-chrome.deb
+    rm -f /opt/google-chrome.deb && \
+    rm -f /etc/apt/sources.list.d/google-chrome.list 
   fi
   if [[ $? -ne 0 ]]; then
     return 1
