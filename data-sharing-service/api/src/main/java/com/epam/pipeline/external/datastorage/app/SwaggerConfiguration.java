@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,58 +16,21 @@
 
 package com.epam.pipeline.external.datastorage.app;
 
-import javax.servlet.ServletContext;
-
-import org.springframework.beans.factory.annotation.Autowired;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.info.Info;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import springfox.documentation.builders.PathSelectors;
-import springfox.documentation.builders.RequestHandlerSelectors;
-import springfox.documentation.service.ApiInfo;
-import springfox.documentation.service.Contact;
-import springfox.documentation.spi.DocumentationType;
-import springfox.documentation.spring.web.paths.RelativePathProvider;
-import springfox.documentation.spring.web.plugins.Docket;
-import springfox.documentation.swagger2.annotations.EnableSwagger2;
+import org.springframework.security.web.firewall.HttpFirewall;
+import org.springframework.security.web.firewall.StrictHttpFirewall;
 
 @Configuration
-@EnableSwagger2
+@OpenAPIDefinition(info = @Info(title = "Data Share Service - REST API"))
 public class SwaggerConfiguration {
-    @Autowired
-    private ServletContext servletContext;
-
     @Bean
-    public Docket api() {
-        return new Docket(DocumentationType.SWAGGER_2)
-            .select()
-            .apis(RequestHandlerSelectors.basePackage("com.epam.pipeline.external.datastorage.controller"))
-            .paths(PathSelectors.any())
-            .build()
-            .apiInfo(apiInfo())
-            .pathProvider(new RelativePathProvider(servletContext) {
-                @Override
-                protected String applicationPath() {
-                    return servletContext.getContextPath() + "/restapi";
-                }
-                @Override
-                protected String getDocumentationPath() {
-                    return "/";
-                }})
-            .useDefaultResponseMessages(false);
-
-
-    }
-
-    private ApiInfo apiInfo() {
-        return new ApiInfo(
-            "Template REST API",
-            "Some custom description of API.",
-            "API TOS",
-            "Terms of service",
-            new Contact("dev", "url", "email"),
-            "License of API",
-            "API license URL",
-            java.util.Collections.emptyList());
+    HttpFirewall httpFirewall() {
+        StrictHttpFirewall firewall = new StrictHttpFirewall();
+        firewall.setAllowUrlEncodedDoubleSlash(true);
+        return firewall;
     }
 }
