@@ -74,7 +74,7 @@ public interface UsageMonitoringManager {
         // Also, calculation results such as avg and max aggregations will be fair,
         // because elk "count" period of time in statistics only if it has real data
         final Duration interval = Duration.between(from, to).multipliedBy(10);
-        List<MonitoringStats> statsForNode = getStatsForNode(nodeName, from, to, interval, runId);
+        List<MonitoringStats> statsForNode = getStatsForNode(nodeName, from, to, interval, null);
         if (statsForNode.size() != 1) {
             LOGGER.warn("Expected stats for node with one element, got: {}, won't save run performance metrics!",
                     statsForNode.size());
