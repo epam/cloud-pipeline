@@ -421,8 +421,16 @@ class RunCapabilities extends React.Component {
         reservationConfig
       }
     );
-    const filtered = (values || [])
+    let filtered = (values || [])
       .filter(v => capabilities.find(o => o.value === v));
+    const dcv = RUN_CAPABILITIES.dcv;
+    const noMachine = RUN_CAPABILITIES.noMachine;
+    if (filtered.includes(dcv) && filtered.includes(noMachine)) {
+      console.warn(
+        'cannot enable both NICE DCV and NoMachine - switching off NICE DCV capability'
+      );
+      filtered = filtered.filter((o) => o !== dcv);
+    }
     onChange && onChange(filtered);
   };
 
@@ -489,6 +497,21 @@ class RunCapabilities extends React.Component {
     if (isSelected) {
       // add capability
       newSelection.push(value);
+      // check - DinD and NoMachine could not be selected together
+      const niceDcbIndex = newSelection.indexOf(RUN_CAPABILITIES.dcv);
+      const noMachineIndex = newSelection.indexOf(RUN_CAPABILITIES.noMachine);
+      let capabilityToRemove = -1;
+      if (value === RUN_CAPABILITIES.dcv && noMachineIndex >= 0) {
+        capabilityToRemove = noMachineIndex;
+      } else if (value === RUN_CAPABILITIES.noMachine && niceDcbIndex >= 0) {
+        capabilityToRemove = niceDcbIndex;
+      }
+      if (capabilityToRemove >= 0) {
+        console.warn(
+          'cannot enable both NICE DCV and NoMachine - switching off',
+          `${newSelection[capabilityToRemove]} capability`);
+        newSelection.splice(capabilityToRemove, 1);
+      }
     }
     // If it is "parent" / "child", we need to handle special cases:
     // a) if we select parent capability (isRequired & isSelected)
@@ -894,7 +917,35 @@ export function applyCapabilities (parameters, capabilities = [], preferences, p
         : (CAPABILITIES_DEPENDENCIES[capability.value] || []);
       dependencies.forEach(dependency => enable(dependency));
     });
-  return correctParametersForRequiredCapabilities(parameters, preferences);
+  return normalizeCapabilities(correctParametersForRequiredCapabilities(parameters, preferences));
+}
+
+export function normalizeCapabilities (parameters) {
+  if (!parameters) {
+    parameters = {};
+  }
+  const disable = (parameter) => {
+    parameters[parameter] = {
+      type: 'boolean',
+      value: false
+    };
+  };
+  const isEnabled = (parameter) => parameters[parameter] && parameters[parameter].value === true;
+  if (
+    isEnabled(RUN_CAPABILITIES_PARAMETERS[RUN_CAPABILITIES.dcv]) &&
+    isEnabled(RUN_CAPABILITIES_PARAMETERS[RUN_CAPABILITIES.noMachine])
+  ) {
+    console.warn('cannot enable both NICE DCV and NoMachine - switching off NICE DCV capability');
+    disable(RUN_CAPABILITIES_PARAMETERS[RUN_CAPABILITIES.dcv]);
+  }
+  const disableParameterIfNotEnabled = (param) => {
+    if (!isEnabled(param)) {
+      disable(param); // explicitly set to false so that it is not overridden by tool defaults
+    }
+  };
+  disableParameterIfNotEnabled(RUN_CAPABILITIES_PARAMETERS[RUN_CAPABILITIES.dcv]);
+  disableParameterIfNotEnabled(RUN_CAPABILITIES_PARAMETERS[RUN_CAPABILITIES.noMachine]);
+  return parameters;
 }
 
 export function updateCapabilities (
@@ -981,7 +1032,7 @@ export function applyCustomCapabilitiesParameters (parameters, preferences) {
       }
     }
   }
-  return result;
+  return normalizeCapabilities(result);
 }
 
 export function hasPlatformSpecificCapabilities (platform, preferences) {
