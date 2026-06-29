@@ -14,6 +14,7 @@ type StorageEditModalNewProps = {
   omicsStore?: boolean;
   addExistingStorageFlag?: boolean;
   policySupported?: boolean;
+  parentFolderId?: number;
 };
 
 type StorageEditModalExistingProps = {
@@ -42,6 +43,7 @@ function StorageEditModal({
   omicsStore,
   addExistingStorageFlag,
   policySupported,
+  parentFolderId,
   storageId,
 }: StorageEditModalProps) {
   const isNew = storageId === undefined;
@@ -72,6 +74,8 @@ function StorageEditModal({
     omicsStore: isNew ? omicsStore : undefined,
     policySupported: resolvedPolicySupported,
     storageOperationsEnabled,
+    parentFolderId: isNew ? parentFolderId : undefined,
+    addExistingStorageFlag: isNew ? addExistingStorageFlag : undefined,
     onDone,
     onClose,
   });
@@ -170,21 +174,29 @@ function StorageEditModal({
         ? createFooter
         : editFooter;
 
+  const tabContentStyle = {
+    maxHeight: 'calc(100vh - 340px)',
+    overflowY: 'auto' as const,
+    paddingRight: 4,
+  };
+
   const tabItems = [
     {
       key: 'info',
       label: 'Info',
       children: (
-        <Form form={form} initialValues={ctrl.initialValues} key={dataStorage?.id ?? 'new'}>
-          <InfoTab
-            ctrl={ctrl}
-            isNew={isNew}
-            policySupported={resolvedPolicySupported}
-            addExistingStorageFlag={addExistingStorageFlag}
-            visible={open}
-            pending={submitPending}
-          />
-        </Form>
+        <div style={tabContentStyle}>
+          <Form form={form} initialValues={ctrl.initialValues} key={dataStorage?.id ?? 'new'}>
+            <InfoTab
+              ctrl={ctrl}
+              isNew={isNew}
+              policySupported={resolvedPolicySupported}
+              addExistingStorageFlag={addExistingStorageFlag}
+              visible={open}
+              pending={submitPending}
+            />
+          </Form>
+        </div>
       ),
     },
     ...(dataStorage?.id
@@ -193,14 +205,16 @@ function StorageEditModal({
             key: 'permissions',
             label: 'Permissions',
             children: (
-              <PermissionsForm
-                readonly={isReadOnly}
-                objectIdentifier={dataStorage.id}
-                objectType="DATA_STORAGE"
-                defaultMask={defaultMask}
-                enabledMask={enabledMask}
-                readOnlyRoles={readOnlyRoles}
-              />
+              <div style={tabContentStyle}>
+                <PermissionsForm
+                  readonly={isReadOnly}
+                  objectIdentifier={dataStorage.id}
+                  objectType="DATA_STORAGE"
+                  defaultMask={defaultMask}
+                  enabledMask={enabledMask}
+                  readOnlyRoles={readOnlyRoles}
+                />
+              </div>
             ),
           },
         ]
@@ -211,7 +225,9 @@ function StorageEditModal({
             key: 'transitionRules',
             label: 'Transition rules',
             children: (
-              <TransitionRules storageId={dataStorage.id} readOnly={transitionRulesReadOnly} />
+              <div style={tabContentStyle}>
+                <TransitionRules storageId={dataStorage.id} readOnly={transitionRulesReadOnly} />
+              </div>
             ),
           },
         ]
@@ -237,7 +253,7 @@ function StorageEditModal({
   return (
     <Modal
       className={className}
-      mask={{closable: !pending}}
+      maskClosable={false}
       afterClose={handleAfterClose}
       closable={!pending}
       open={open && storageLoaded}
@@ -247,6 +263,7 @@ function StorageEditModal({
       width={600}
       footer={modalFooter}
     >
+
       <Spin spinning={pending}>
         <Tabs size="small" activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
       </Spin>

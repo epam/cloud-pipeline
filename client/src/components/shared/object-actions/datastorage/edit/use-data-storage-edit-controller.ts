@@ -1,8 +1,8 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import type {FormInstance} from 'antd';
 import {Form, message} from 'antd';
-import {useQuery} from '@tanstack/react-query';
-import {cloudRegionsQueryOptions} from '../../../../../queries';
+import {useQuery, useQueryClient} from '@tanstack/react-query';
+import {cloudRegionsQueryOptions, dataStorageKeys} from '../../../../../queries';
 import {useAuthenticatedUser} from '../../../../../stores/users/hooks.ts';
 import {
   useBooleanPreferenceValue,
@@ -31,6 +31,8 @@ export type DataStorageEditControllerOptions = {
   omicsStore?: boolean;
   policySupported?: boolean;
   storageOperationsEnabled?: boolean;
+  parentFolderId?: number;
+  addExistingStorageFlag?: boolean;
   onDone?: () => void;
   onClose?: (e?: React.MouseEvent | React.KeyboardEvent) => void;
 };
@@ -104,6 +106,8 @@ export function useDataStorageEditController(
     omicsStore: omicsStoreProp,
     policySupported,
     storageOperationsEnabled = true,
+    parentFolderId,
+    addExistingStorageFlag = false,
     onDone,
     onClose,
   } = options;
@@ -119,7 +123,7 @@ export function useDataStorageEditController(
   // --- shared state ---
   const [activeTab, setActiveTab] = useState('info');
   const [mountDisabled, setMountDisabled] = useState(false);
-  const [versioningEnabled, setVersioningEnabled] = useState(false);
+  const [versioningEnabled, setVersioningEnabled] = useState(true);
   const [pathPermissionsEnabled, setPathPermissionsEnabled] = useState(false);
   const [sharingEnabled, setSharingEnabled] = useState(false);
   const [sensitive, setSensitive] = useState(false);
@@ -130,6 +134,7 @@ export function useDataStorageEditController(
   const [submitPending, setSubmitPending] = useState(false);
   const [restrictedAccess, setRestrictedAccess] = useState(true);
   const [restrictedAccessCheckInProgress, setRestrictedAccessCheckInProgress] = useState(false);
+  const queryClient = useQueryClient();
 
   // --- stores ---
   const {data: awsRegions = []} = useQuery(cloudRegionsQueryOptions());
@@ -359,24 +364,32 @@ export function useDataStorageEditController(
             ? (omicsType as StorageServiceType)
             : SERVICE_TYPES.objectStorage;
 
+        const {backupDuration: backupDurationValue, ...restValues} = values;
+
+        const storagePolicy =
+          !isNfsMount && !omicsStore && policySupported
+            ? {
+                versioningEnabled,
+                ...(versioningEnabled && backupDurationValue !== undefined
+                  ? {backupDuration: backupDurationValue}
+                  : {}),
+              }
+            : undefined;
+
         const payload = {
-          ...values,
+          ...restValues,
           serviceType,
           mountDisabled,
-          versioningEnabled: !isNfsMount && !omicsStore && !!policySupported && versioningEnabled,
-          backupDuration:
-            !isNfsMount && !omicsStore && policySupported && versioningEnabled
-              ? values.backupDuration
-              : undefined,
+          storagePolicy,
           pathPermissionsEnabled:
             !isNfsMount &&
             !omicsStore &&
             currentRegionSupportsStoragePermissions &&
             pathPermissionsEnabled,
           sensitive: !isNfsMount ? sensitive : undefined,
-          skipPolicy: !isNfsMount && !omicsStore ? skipPolicy : undefined,
           shared: !isNfsMount && sharingEnabled,
           regionId: values.regionId ? Number(values.regionId) : undefined,
+          ...(isNew && parentFolderId !== undefined ? {parentFolderId} : {}),
         };
 
         const pathValue = values.path as Record<string, unknown> | undefined;
@@ -388,10 +401,21 @@ export function useDataStorageEditController(
           payload.fileShareMountId = pathValue.fileShareMountId as number;
         }
 
+        // Alias defaults to the storage path when left empty (matches legacy behavior)
+        if (!payload.name && payload.path) {
+          payload.name = payload.path;
+        }
+
         if (isNew) {
-          await saveDataStorage(payload);
+          await saveDataStorage(payload, {
+            cloud: !addExistingStorageFlag,
+            skipPolicy: !isNfsMount && !omicsStore ? skipPolicy : false,
+          });
         } else {
           await updateDataStorage({...payload, id: dataStorage?.id});
+          if (dataStorage?.id) {
+            await queryClient.invalidateQueries({queryKey: dataStorageKeys.detail(dataStorage.id)});
+          }
         }
         onDone?.();
         onClose?.(e);
@@ -421,10 +445,13 @@ export function useDataStorageEditController(
       skipPolicy,
       sharingEnabled,
       isNew,
+      parentFolderId,
+      addExistingStorageFlag,
       dataStorage?.id,
       onDone,
       onClose,
       form,
+      queryClient,
     ],
   );
 

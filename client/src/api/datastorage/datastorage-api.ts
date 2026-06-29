@@ -136,8 +136,15 @@ export async function generateDataStorageDownloadUrls(
   });
 }
 
-export async function saveDataStorage(storage: DataStorageVO): Promise<DataStorage> {
-  return cloudPipelineApi.jsonPost<DataStorage>({uri: 'datastorage/save', body: storage});
+export async function saveDataStorage(
+  storage: DataStorageVO,
+  {cloud = true, skipPolicy = false}: {cloud?: boolean; skipPolicy?: boolean} = {},
+): Promise<DataStorage> {
+  return cloudPipelineApi.jsonPost<DataStorage>({
+    uri: 'datastorage/save',
+    body: storage,
+    query: {cloud, skipPolicy},
+  });
 }
 
 export async function updateDataStorage(storage: DataStorageVO): Promise<DataStorage> {

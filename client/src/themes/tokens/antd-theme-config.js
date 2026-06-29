@@ -69,5 +69,8 @@ export default function buildAntdTheme(parsedConfiguration, identifier) {
     cssVar: {key: 'cp-ant'},
     hashed: true,
     token,
+    components: {
+      Form: {itemMarginBottom: 12},
+    },
   };
 }

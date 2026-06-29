@@ -56,7 +56,6 @@ function InfoTab({
   } = ctrl;
 
   const disabled = !!(pending || isReadOnly);
-
   return (
     <>
       {!omicsStore && (
@@ -179,7 +178,7 @@ function InfoTab({
           <Row>
             <Col xs={24} sm={6} />
             <Col xs={24} sm={18}>
-              <Form.Item>
+              <Form.Item style={{marginBottom: 12}}>
                 <Checkbox
                   disabled={pending || isReadOnly || skipPolicy}
                   onChange={(e) => setVersioningEnabled(e.target.checked)}

@@ -77,6 +77,7 @@ class VersionedStorageDialog extends React.Component {
         onCancel={onCancel}
         onOk={this.handleSubmit}
         title="Create versioned storage"
+        maskClosable={false}
         footer={modalFooter}
         afterClose={() => this.formRef.current && this.formRef.current.resetFields()}
       >

@@ -21,26 +21,62 @@ import {
   libraryTreeKeys,
   pipelinesKeys,
   queryClient,
+  storagesKeys,
 } from '../../../../queries';
 import roleModel from '../../../../utils/roleModel.jsx';
 import localization from '../../../../utils/localization.jsx';
 import {extractFileShareMountList} from '../../../pipelines/browser/forms/data-storage-path-input/index.tsx';
 import {RepositoryTypes} from '../../../special/git-repository-control/index.jsx';
 import EditPipelineForm from '../../../pipelines/version/forms/EditPipelineForm.jsx';
+import EditFolderForm from '../../../pipelines/browser/forms/EditFolderForm.jsx';
+import VersionedStorageDialog from '../../../pipelines/browser/forms/VersionedStorageDialog.jsx';
 import {LegacyMobXStoresProvider} from '../../../../pages/_shared/legacy-mobx-stores-provider.tsx';
+import {StorageEditModal} from '../../../shared/object-actions/datastorage/edit/storage-edit-modal.tsx';
 import CreatePipeline from '../../../../models/pipelines/CreatePipeline.js';
 import CheckPipelineRepository from '../../../../models/pipelines/CheckPipelineRepository.js';
+import PipelineFolderUpdate from '../../../../models/pipelines/PipelineFolderUpdate.js';
+import FolderRegister from '../../../../models/folders/FolderRegister.js';
+import {loadPipeline} from '../../../../api/pipeline/pipeline-api.ts';
 import {CREATE_ACTION_KEYS} from './folder-action-keys.ts';
-import {
-  mockOpenAddFolderDialog,
-  mockOpenCreateConfigurationDialog,
-  mockOpenCreateStorageDialog,
-  mockOpenCreateVersionedStorageDialog,
-} from './folder-action-mocks.ts';
+import EditDetachedConfigurationForm from '../../../pipelines/configuration/forms/EditDetachedConfigurationForm.jsx';
+import ConfigurationUpdate from '../../../../models/configuration/ConfigurationUpdate.js';
 import {useFolderManagerRoles} from './folder-action-roles.ts';
 import type {FolderActionMenuItem, FolderActionMenuItems} from './folder-action-types.ts';
 import {asAntdMenuItems} from './folder-action-types.ts';
 import {useFolderActionTemplates} from './use-folder-action-templates.ts';
+
+function splitFolderPaths(foldersStructure: string): string[] {
+  const uniquePaths = [...new Set(foldersStructure.split('\n').map((path) => path.trim()))];
+  return uniquePaths.filter(
+    (filteredPath) =>
+      !uniquePaths.some((path) => filteredPath !== path && path.startsWith(filteredPath)),
+  );
+}
+
+async function bulkCreateVSFolders(
+  foldersStructure: string,
+  pipelineId: number,
+  initialCommitId: string,
+): Promise<void> {
+  const paths = splitFolderPaths(foldersStructure);
+  if (paths.length === 0) return;
+  const hide = message.loading('Creating initial folders structure...', 0);
+  let lastCommitId = initialCommitId;
+  for (const path of paths) {
+    const request = new PipelineFolderUpdate(pipelineId);
+    await request.send({lastCommitId, path, comment: `Creating folder ${path}`});
+    if (request.error) {
+      message.error(request.error, 5);
+      break;
+    }
+    if (request.value?.id) {
+      lastCommitId = request.value.id;
+    } else {
+      break;
+    }
+  }
+  hide();
+}
 
 type CreateActionProps = CommonProps & {
   folderId: number;
@@ -71,6 +107,151 @@ function CreateAction(props: CreateActionProps) {
   const [createPipelineDialogVisible, setCreatePipelineDialogVisible] = useState(false);
   const [pipelineTemplate, setPipelineTemplate] = useState<TemplateDescription | null>(null);
   const [pipelineOperationInProgress, setPipelineOperationInProgress] = useState(false);
+
+  const [createStorageVisible, setCreateStorageVisible] = useState(false);
+  const [createStorageNfs, setCreateStorageNfs] = useState(false);
+  const [createStorageOmics, setCreateStorageOmics] = useState(false);
+  const [createStorageAddExisting, setCreateStorageAddExisting] = useState(false);
+
+  const [createVersionedStorageVisible, setCreateVersionedStorageVisible] = useState(false);
+  const [versionedStoragePending, setVersionedStoragePending] = useState(false);
+  const createVersionedStorageRequest = useRef(new CreatePipeline());
+
+  const [createFolderVisible, setCreateFolderVisible] = useState(false);
+  const [folderTemplate, setFolderTemplate] = useState<TemplateDescription | null>(null);
+  const [folderOperationInProgress, setFolderOperationInProgress] = useState(false);
+
+  const [createConfigurationVisible, setCreateConfigurationVisible] = useState(false);
+  const [configurationPending, setConfigurationPending] = useState(false);
+
+  const createVersionedStorage = useCallback(
+    async (opts: Record<string, unknown> = {}) => {
+      const {name, description, foldersStructure} = opts as {
+        name?: string;
+        description?: string;
+        foldersStructure?: string;
+      };
+      const hide = message.loading(`Creating versioned storage ${name}...`, 0);
+      await createVersionedStorageRequest.current.send({
+        name,
+        description,
+        parentFolderId: folderId,
+        pipelineType: 'VERSIONED_STORAGE',
+      });
+      hide();
+      if (createVersionedStorageRequest.current.error) {
+        message.error(createVersionedStorageRequest.current.error, 5);
+        return;
+      }
+      if (foldersStructure?.length) {
+        const pipeline = await loadPipeline(createVersionedStorageRequest.current.value.id);
+        if (pipeline.currentVersion?.commitId) {
+          await bulkCreateVSFolders(foldersStructure, pipeline.id, pipeline.currentVersion.commitId);
+        }
+      }
+      setCreateVersionedStorageVisible(false);
+      await Promise.all([
+        queryClient.invalidateQueries({queryKey: pipelinesKeys.all}),
+        queryClient.invalidateQueries({queryKey: folderKeys.detail(folderId)}),
+        queryClient.invalidateQueries({queryKey: libraryTreeKeys.all}),
+      ]);
+      onObjectCreated?.();
+    },
+    [folderId, onObjectCreated],
+  );
+
+  const handleSubmitCreateVersionedStorage = useCallback(
+    (opts: Record<string, unknown>) => {
+      setVersionedStoragePending(true);
+      createVersionedStorage(opts).finally(() => setVersionedStoragePending(false));
+    },
+    [createVersionedStorage],
+  );
+
+  const createFolder = useCallback(
+    async ({name}: {name: string}) => {
+      const request = new FolderRegister(folderTemplate?.id);
+      const hide = message.loading(
+        folderTemplate ? `Creating ${folderTemplate.id.toLowerCase()} folder...` : 'Creating folder...',
+        0,
+      );
+      await request.send({parentId: folderId, name});
+      hide();
+      if (request.error) {
+        message.error(request.error, 5);
+        return;
+      }
+      setCreateFolderVisible(false);
+      setFolderTemplate(null);
+      await Promise.all([
+        queryClient.invalidateQueries({queryKey: folderKeys.detail(folderId)}),
+        queryClient.invalidateQueries({queryKey: libraryTreeKeys.all}),
+      ]);
+      onObjectCreated?.();
+    },
+    [folderId, folderTemplate, onObjectCreated],
+  );
+
+  const handleSubmitCreateFolder = useCallback(
+    (values: {name: string}) => {
+      setFolderOperationInProgress(true);
+      createFolder(values).finally(() => setFolderOperationInProgress(false));
+    },
+    [createFolder],
+  );
+
+  const createConfiguration = useCallback(
+    async ({name, description}: {name: string; description?: string}) => {
+      const hide = message.loading(`Creating configuration '${name}'...`, 0);
+      const request = new ConfigurationUpdate();
+      await request.send({
+        name,
+        description,
+        parentId: folderId,
+        entries: [{name: 'default', default: true, configuration: {cmd_template: 'sleep infinity'}}],
+      });
+      hide();
+      if (request.error) {
+        message.error(request.error, 5);
+        return;
+      }
+      setCreateConfigurationVisible(false);
+      await Promise.all([
+        queryClient.invalidateQueries({queryKey: folderKeys.detail(folderId)}),
+        queryClient.invalidateQueries({queryKey: libraryTreeKeys.all}),
+      ]);
+      onObjectCreated?.();
+    },
+    [folderId, onObjectCreated],
+  );
+
+  const handleSubmitCreateConfiguration = useCallback(
+    (values: {name: string; description?: string}) => {
+      setConfigurationPending(true);
+      createConfiguration(values).finally(() => setConfigurationPending(false));
+    },
+    [createConfiguration],
+  );
+
+  const openCreateStorageDialog = useCallback(
+    (isNfs: boolean, isOmics: boolean, addExisting: boolean) => {
+      setCreateStorageNfs(isNfs);
+      setCreateStorageOmics(isOmics);
+      setCreateStorageAddExisting(addExisting);
+      setCreateStorageVisible(true);
+    },
+    [],
+  );
+
+  const onStorageCreated = useCallback(async () => {
+    setCreateStorageVisible(false);
+    await Promise.all([
+      queryClient.invalidateQueries({queryKey: storagesKeys.all}),
+      queryClient.invalidateQueries({queryKey: folderKeys.detail(folderId)}),
+      queryClient.invalidateQueries({queryKey: libraryTreeKeys.all}),
+    ]);
+    onObjectCreated?.();
+  }, [folderId, onObjectCreated]);
 
   const createPipelineRequest = useRef(new CreatePipeline());
   const checkRequest = useRef(new CheckPipelineRepository());
@@ -208,37 +389,32 @@ function CreateAction(props: CreateActionProps) {
           break;
         }
         case CREATE_ACTION_KEYS.storage: {
-          const createNfs = identifier === CREATE_ACTION_KEYS.nfsStorage;
-          const createOmics = identifier === CREATE_ACTION_KEYS.omicsStore;
-          const createNew = createNfs
-            ? true
-            : createOmics
-              ? true
-              : identifier
-                ? identifier === 'new'
-                : true;
-          mockOpenCreateStorageDialog(folderId, createNew, createNfs, createOmics);
+          const isNfs = identifier === CREATE_ACTION_KEYS.nfsStorage;
+          const isOmics = identifier === CREATE_ACTION_KEYS.omicsStore;
+          const addExisting = identifier === 'existing';
+          openCreateStorageDialog(isNfs, isOmics, addExisting);
           break;
         }
         case CREATE_ACTION_KEYS.versionedStorage:
-          mockOpenCreateVersionedStorageDialog(folderId);
+          setCreateVersionedStorageVisible(true);
           break;
         case CREATE_ACTION_KEYS.folder: {
           const template = identifier
-            ? folderTemplates.find((item) => item.id === identifier)
+            ? folderTemplates.find((item) => item.id === identifier) ?? null
             : null;
-          mockOpenAddFolderDialog(folderId, template);
+          setFolderTemplate(template);
+          setCreateFolderVisible(true);
           break;
         }
         case CREATE_ACTION_KEYS.configuration:
-          mockOpenCreateConfigurationDialog(folderId);
+          setCreateConfigurationVisible(true);
           break;
         default:
           break;
       }
       onObjectCreated?.();
     },
-    [folderId, folderTemplates, onObjectCreated, openCreatePipelineDialog, pipelineTemplates],
+    [folderId, folderTemplates, onObjectCreated, openCreatePipelineDialog, openCreateStorageDialog, pipelineTemplates],
   );
 
   const menuItems = useMemo(() => {
@@ -472,7 +648,40 @@ function CreateAction(props: CreateActionProps) {
           pipelineTemplate={pipelineTemplate}
           pending={pipelineOperationInProgress}
         />
+        <StorageEditModal
+          open={createStorageVisible}
+          onClose={() => setCreateStorageVisible(false)}
+          onDone={onStorageCreated}
+          isNfsMount={createStorageNfs}
+          omicsStore={createStorageOmics}
+          addExistingStorageFlag={createStorageAddExisting}
+          policySupported={!createStorageNfs}
+          parentFolderId={folderId}
+        />
+        <VersionedStorageDialog
+          visible={createVersionedStorageVisible}
+          onCancel={() => setCreateVersionedStorageVisible(false)}
+          onSubmit={handleSubmitCreateVersionedStorage}
+          pending={versionedStoragePending}
+          folderStructureArea
+        />
+        <EditFolderForm
+          visible={createFolderVisible}
+          title={folderTemplate ? `Create ${folderTemplate.id.toLowerCase()} folder` : 'Create folder'}
+          pending={folderOperationInProgress}
+          onSubmit={handleSubmitCreateFolder}
+          onCancel={() => {
+            setCreateFolderVisible(false);
+            setFolderTemplate(null);
+          }}
+        />
       </LegacyMobXStoresProvider>
+      <EditDetachedConfigurationForm
+        visible={createConfigurationVisible}
+        pending={configurationPending}
+        onSubmit={handleSubmitCreateConfiguration}
+        onCancel={() => setCreateConfigurationVisible(false)}
+      />
     </>
   );
 }

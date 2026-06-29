@@ -108,6 +108,9 @@ export function useDataStoragePathInput({
   const storageObjectPrefix = useStringPreferenceValue('storage.object.prefix');
 
   const nameInputRef = useRef<HTMLInputElement | null>(null);
+  // Set when visible becomes true but the input hasn't mounted yet (preference still loading).
+  // Cleared after initializeNameInput consumes it or when modal closes.
+  const focusPendingRef = useRef(false);
 
   useEffect(() => {
     setState((currentState) => {
@@ -120,6 +123,7 @@ export function useDataStoragePathInput({
 
   useEffect(() => {
     if (!visible) {
+      focusPendingRef.current = false;
       setState((prev) => ({...prev, fileShareMountId: null}));
       return;
     }
@@ -127,6 +131,9 @@ export function useDataStoragePathInput({
       const timer = window.setTimeout(() => nameInputRef.current?.focus(), 0);
       return () => window.clearTimeout(timer);
     }
+    // Input not yet mounted (e.g. preference still loading); mark focus as pending
+    // so initializeNameInput can apply it once the input element appears.
+    focusPendingRef.current = true;
   }, [visible]);
 
   const emitChange = useCallback(
@@ -179,16 +186,25 @@ export function useDataStoragePathInput({
       }
       nameInputRef.current = input;
       input.onfocus = function (this: HTMLInputElement) {
+        const el = this;
         window.setTimeout(() => {
-          this.selectionStart = (this.value || '').length;
-          this.selectionEnd = (this.value || '').length;
+          // Guard: only reposition cursor if this input is still the active element.
+          // Without this check, setting selectionStart/End on an unfocused input
+          // can cause some browsers to re-focus it, creating a focus-steal loop.
+          if (document.activeElement === el) {
+            el.selectionStart = (el.value || '').length;
+            el.selectionEnd = (el.value || '').length;
+          }
         }, 0);
       };
-      if (visible) {
+      // Apply focus only if the modal became visible before this input mounted
+      // (e.g. preference was still loading when visible turned true).
+      if (focusPendingRef.current) {
+        focusPendingRef.current = false;
         window.setTimeout(() => input.focus(), 0);
       }
     },
-    [visible],
+    [],
   );
 
   return {

@@ -74,6 +74,7 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
     onSubmit: PropTypes.func,
     onDelete: PropTypes.func,
     pending: PropTypes.bool,
+    loading: PropTypes.bool,
     visible: PropTypes.bool,
     pipelineTemplate: PropTypes.object,
   };
@@ -594,26 +595,29 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
     };
     return (
       <Modal
-        mask={{closable: !this.props.pending}}
+        maskClosable={false}
         afterClose={() => onClose()}
-        closable={!this.props.pending}
+        closable={!this.props.pending && !this.props.loading}
         open={this.props.visible}
         title={
-          isNewPipeline
-            ? this.props.pipelineTemplate
-              ? `Create ${this.localizedString(objectName)} (${this.props.pipelineTemplate.id})`
-              : `Create ${this.localizedString(objectName)}`
-            : `Edit ${this.localizedString(objectName)} info`
+          this.props.loading
+            ? 'Loading...'
+            : isNewPipeline
+              ? this.props.pipelineTemplate
+                ? `Create ${this.localizedString(objectName)} (${this.props.pipelineTemplate.id})`
+                : `Create ${this.localizedString(objectName)}`
+              : `Edit ${this.localizedString(objectName)} info`
         }
         onCancel={this.props.onCancel}
-        footer={this.state.activeTab === 'info' ? modalFooter : false}
+        footer={this.props.loading || this.state.activeTab !== 'info' ? false : modalFooter}
       >
-        <Spin spinning={this.props.pending}>
+        <Spin spinning={this.props.loading || this.props.pending}>
           <Form
             ref={this.formRef}
             className="edit-pipeline-form"
             initialValues={this.getFormInitialValues()}
             key={this.props.pipeline ? this.props.pipeline.id : 'new'}
+            style={this.props.loading ? {visibility: 'hidden', height: 60} : undefined}
           >
             <Tabs
               size="small"

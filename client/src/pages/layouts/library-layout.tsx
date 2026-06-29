@@ -12,8 +12,9 @@ import {LibraryHeader} from '../../components/library/library-header/library-hea
 import {LibraryActions} from '../../components/library/library-actions/library-actions.tsx';
 import {useLibraryActionsStore} from '../../components/library/library-actions/library-actions-store.ts';
 import {getMetadataEntityRefFromLibraryItemId} from '../../components/library/model/tree.ts';
+import {LegacyMobXStoresProvider} from '../_shared/legacy-mobx-stores-provider.tsx';
 
-function LibraryLayout() {
+function LibraryLayoutInner() {
   const [activeItemId, onActiveItemIdChange] = useRoutedLibraryItem();
   const activeItemMetadataEntityRef = useMemo(
     () => getMetadataEntityRefFromLibraryItemId(activeItemId),
@@ -110,6 +111,14 @@ function LibraryLayout() {
         </section>
       </Splitter.Panel>
     </Splitter>
+  );
+}
+
+function LibraryLayout() {
+  return (
+    <LegacyMobXStoresProvider>
+      <LibraryLayoutInner />
+    </LegacyMobXStoresProvider>
   );
 }
 

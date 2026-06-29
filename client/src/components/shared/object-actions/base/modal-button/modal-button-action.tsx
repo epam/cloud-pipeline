@@ -54,6 +54,7 @@ export function createActionButtonForModal<Props extends ActionModalBaseProps>(
       (event: MouseEvent) => {
         event.stopPropagation();
         event.preventDefault();
+        event.nativeEvent.stopImmediatePropagation();
         onOpenChange(true);
       },
       [onOpenChange],

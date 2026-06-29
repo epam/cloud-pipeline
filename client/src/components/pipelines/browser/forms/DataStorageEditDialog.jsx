@@ -779,7 +779,6 @@ export class DataStorageEditDialog extends React.Component {
           )}
       </Form>
     );
-
     return (
       <Modal
         mask={{closable: !this.props.pending && !this.state.restrictedAccessCheckInProgress}}
