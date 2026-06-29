@@ -1,7 +1,8 @@
-import {useCallback, useMemo, useState} from 'react';
+import {useCallback, useMemo, useRef, useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
-import {Button, Dropdown, Row} from 'antd';
+import {Button, Dropdown, Modal, Row} from 'antd';
 import type {MenuProps} from 'antd';
+import {message} from 'antd';
 import {
   DownOutlined,
   FolderOutlined,
@@ -12,14 +13,27 @@ import {
 } from '@ant-design/icons';
 
 import type {CommonProps} from '../../../../@types/common.ts';
-import {cloudRegionsQueryOptions, folderQueryOptions} from '../../../../queries';
+import type {TemplateDescription} from '../../../../@types/app.ts';
+import {
+  cloudRegionsQueryOptions,
+  folderKeys,
+  folderQueryOptions,
+  libraryTreeKeys,
+  pipelinesKeys,
+  queryClient,
+} from '../../../../queries';
 import roleModel from '../../../../utils/roleModel.jsx';
+import localization from '../../../../utils/localization.jsx';
 import {extractFileShareMountList} from '../../../pipelines/browser/forms/data-storage-path-input/index.tsx';
+import {RepositoryTypes} from '../../../special/git-repository-control/index.jsx';
+import EditPipelineForm from '../../../pipelines/version/forms/EditPipelineForm.jsx';
+import {LegacyMobXStoresProvider} from '../../../../pages/_shared/legacy-mobx-stores-provider.tsx';
+import CreatePipeline from '../../../../models/pipelines/CreatePipeline.js';
+import CheckPipelineRepository from '../../../../models/pipelines/CheckPipelineRepository.js';
 import {CREATE_ACTION_KEYS} from './folder-action-keys.ts';
 import {
   mockOpenAddFolderDialog,
   mockOpenCreateConfigurationDialog,
-  mockOpenCreatePipelineDialog,
   mockOpenCreateStorageDialog,
   mockOpenCreateVersionedStorageDialog,
 } from './folder-action-mocks.ts';
@@ -53,6 +67,113 @@ function CreateAction(props: CreateActionProps) {
   const [open, setOpen] = useState(false);
   const {data: folder} = useQuery(folderQueryOptions(folderId));
   const roles = useFolderManagerRoles();
+
+  const [createPipelineDialogVisible, setCreatePipelineDialogVisible] = useState(false);
+  const [pipelineTemplate, setPipelineTemplate] = useState<TemplateDescription | null>(null);
+  const [pipelineOperationInProgress, setPipelineOperationInProgress] = useState(false);
+
+  const createPipelineRequest = useRef(new CreatePipeline());
+  const checkRequest = useRef(new CheckPipelineRepository());
+
+  const openCreatePipelineDialog = useCallback((template: TemplateDescription | null) => {
+    setPipelineTemplate(template ?? null);
+    setCreatePipelineDialogVisible(true);
+  }, []);
+
+  const closeCreatePipelineDialog = useCallback(() => {
+    setCreatePipelineDialogVisible(false);
+    setPipelineTemplate(null);
+  }, []);
+
+  const createPipeline = useCallback(
+    async (opts: Record<string, unknown> = {}) => {
+      const {
+        name,
+        description,
+        repository,
+        repositoryType,
+        branch,
+        token,
+        configurationPath,
+        visibility,
+        codePath,
+        docsPath,
+      } = opts;
+      const localizedPipeline = localization.localization.localizedString('pipeline');
+      const hide = message.loading(`Creating ${localizedPipeline} ${name}...`, 0);
+      await createPipelineRequest.current.send({
+        name,
+        description,
+        parentFolderId: folderId,
+        templateId: pipelineTemplate?.id,
+        repository,
+        repositoryType,
+        repositoryToken: token,
+        branch,
+        configurationPath,
+        visibility,
+        codePath,
+        docsPath,
+      });
+      hide();
+      if (createPipelineRequest.current.error) {
+        message.error(createPipelineRequest.current.error, 5);
+      } else {
+        closeCreatePipelineDialog();
+        await queryClient.invalidateQueries({queryKey: pipelinesKeys.all});
+        await queryClient.invalidateQueries({queryKey: folderKeys.detail(folderId)});
+        await queryClient.invalidateQueries({queryKey: libraryTreeKeys.all});
+        onObjectCreated?.();
+      }
+    },
+    [folderId, pipelineTemplate, closeCreatePipelineDialog, onObjectCreated],
+  );
+
+  const checkRepositoryExistenceAndCreate = useCallback(
+    async (pipelineOpts: Record<string, unknown>) => {
+      const {repository, repositoryType, branch, token} = pipelineOpts as {
+        repository?: string;
+        repositoryType?: string;
+        branch?: string;
+        token?: string;
+      };
+      if ((token && token.length) || (repository && repository.length)) {
+        const hide = message.loading('Checking repository existence...', -1);
+        await checkRequest.current.send({repository, type: repositoryType, branch, token});
+        hide();
+        if (checkRequest.current.error) {
+          return message.error(checkRequest.current.error);
+        }
+        if (!checkRequest.current.value.repositoryExists) {
+          if (repositoryType === RepositoryTypes.GitLab) {
+            return Modal.confirm({
+              title: 'Repository does not exist. Create?',
+              style: {wordWrap: 'break-word'},
+              content: null,
+              okText: 'OK',
+              cancelText: 'Cancel',
+              onOk: async () => {
+                await createPipeline(pipelineOpts);
+              },
+            });
+          }
+          return message.error(`Repository ${repository} does not exist.`);
+        }
+      }
+      return createPipeline(pipelineOpts);
+    },
+    [createPipeline],
+  );
+
+  const handleSubmitCreatePipeline = useCallback(
+    (opts: Record<string, unknown>) => {
+      setPipelineOperationInProgress(true);
+      checkRepositoryExistenceAndCreate(opts).finally(() => {
+        setPipelineOperationInProgress(false);
+      });
+    },
+    [checkRepositoryExistenceAndCreate],
+  );
   const {
     pipelineTemplates,
     folderTemplates,
@@ -83,7 +204,7 @@ function CreateAction(props: CreateActionProps) {
             identifier && identifier !== 'default'
               ? pipelineTemplates.find((item) => item.id === identifier)
               : null;
-          mockOpenCreatePipelineDialog(folderId, template);
+          openCreatePipelineDialog(template ?? null);
           break;
         }
         case CREATE_ACTION_KEYS.storage: {
@@ -117,7 +238,7 @@ function CreateAction(props: CreateActionProps) {
       }
       onObjectCreated?.();
     },
-    [folderId, folderTemplates, onObjectCreated, pipelineTemplates],
+    [folderId, folderTemplates, onObjectCreated, openCreatePipelineDialog, pipelineTemplates],
   );
 
   const menuItems = useMemo(() => {
@@ -323,25 +444,36 @@ function CreateAction(props: CreateActionProps) {
   }
 
   return (
-    <Dropdown
-      trigger={['click']}
-      open={open}
-      onOpenChange={setOpen}
-      placement="bottomRight"
-      menu={{
-        items: asAntdMenuItems(menuItems),
-        onClick: onCreateActionSelect,
-        mode: 'vertical',
-        subMenuOpenDelay: 0.2,
-        subMenuCloseDelay: 0.2,
-      }}
-    >
-      <Button type="primary" size="small" id="create-button">
-        <PlusOutlined />
-        <span>Create</span>
-        <DownOutlined />
-      </Button>
-    </Dropdown>
+    <>
+      <Dropdown
+        trigger={['click']}
+        open={open}
+        onOpenChange={setOpen}
+        placement="bottomRight"
+        menu={{
+          items: asAntdMenuItems(menuItems),
+          onClick: onCreateActionSelect,
+          mode: 'vertical',
+          subMenuOpenDelay: 0.2,
+          subMenuCloseDelay: 0.2,
+        }}
+      >
+        <Button type="primary" size="small" id="create-button">
+          <PlusOutlined />
+          <span>Create</span>
+          <DownOutlined />
+        </Button>
+      </Dropdown>
+      <LegacyMobXStoresProvider>
+        <EditPipelineForm
+          onSubmit={handleSubmitCreatePipeline}
+          onCancel={closeCreatePipelineDialog}
+          visible={createPipelineDialogVisible}
+          pipelineTemplate={pipelineTemplate}
+          pending={pipelineOperationInProgress}
+        />
+      </LegacyMobXStoresProvider>
+    </>
   );
 }
 

@@ -15,6 +15,7 @@ import {Pipeline, PipelineType} from '../../../../../@types/library.ts';
 import {PipelineVO} from '../../../../../@types/pipeline.ts';
 import {RepositoryTypes} from '../../../../special/git-repository-control';
 import roleModel from '../../../../../utils/roleModel';
+import {useFolderManagerRoles} from '../../../../library/library-actions/folder-actions/folder-action-roles.ts';
 import {preventDefaultAndStopPropagation} from '../../../../../utilities/callbacks.ts';
 import DeletePipelineModal from '../remove/delete-pipeline-modal.tsx';
 import {PipelineInfoTab} from './pipeline-info-tab.tsx';
@@ -85,6 +86,7 @@ function PipelineEditModal(props: PipelineEditModalProps) {
   } = resolvePipelineEditProps(props);
 
   const queryClient = useQueryClient();
+  const {isPipelineManager, isPipelineAdmin, isVersionedStorageManager} = useFolderManagerRoles();
   useInvalidateDetailQueryOnOpen(open, pipelineKeys.detail, pipelineId);
   const {
     data: pipeline,
@@ -246,8 +248,8 @@ function PipelineEditModal(props: PipelineEditModalProps) {
   );
 
   const isManager = isVersionedStorage
-    ? roleModel.isManager.versionedStorage({props: {}})
-    : roleModel.isManager.pipeline({props: {}}) || roleModel.isManager.pipelineAdmin({props: {}});
+    ? isVersionedStorageManager
+    : isPipelineManager || isPipelineAdmin;
 
   const canWrite = isNew ? isManager : roleModel.writeAllowed(pipeline);
   const canDelete = !isNew && !!pipeline && roleModel.writeAllowed(pipeline) && isManager;
