@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Cloud Pipeline — Cluster Utilization</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<style>
+/* ── Reset & base ──────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:        #0f1117;
+  --surface:   #1a1e2b;
+  --surface2:  #222738;
+  --border:    #2d3352;
+  --txt:       #d0d8f0;
+  --txt-muted: #6b7db3;
+  --accent:    #4e79c7;
+  --cyan:      #36bfbf;
+  --green:     #54c77a;
+  --orange:    #f0913a;
+  --red:       #e05555;
+  --radius:    8px;
+  --font:      -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+html, body { height: 100%; background: var(--bg); color: var(--txt); font-family: var(--font); font-size: 14px; }
+
+/* ── Layout ─────────────────────────────────────────────────────────────── */
+.page { display: flex; flex-direction: column; min-height: 100vh; padding: 0 20px 32px; max-width: 1400px; margin: 0 auto; }
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 18px 0 14px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 18px;
+}
+.logo { width: 32px; height: 32px; }
+header h1 { font-size: 18px; font-weight: 600; color: var(--txt); letter-spacing: .3px; }
+.spacer { flex: 1; }
+.status-dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--txt-muted); margin-right: 6px;
+  transition: background .4s;
+}
+.status-dot.ok   { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.status-dot.err  { background: var(--red);   box-shadow: 0 0 6px var(--red); }
+#status-text { font-size: 12px; color: var(--txt-muted); }
+
+/* ── Controls ───────────────────────────────────────────────────────────── */
+.controls {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+  margin-bottom: 20px;
+}
+.presets { display: flex; gap: 4px; }
+.btn {
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--txt-muted); padding: 5px 12px; border-radius: 4px;
+  font-size: 12px; cursor: pointer; transition: all .15s;
+}
+.btn:hover  { border-color: var(--accent); color: var(--txt); }
+.btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-icon { padding: 5px 8px; }
+
+.divider { width: 1px; height: 24px; background: var(--border); }
+
+.date-range { display: flex; align-items: center; gap: 6px; }
+.date-range label { font-size: 11px; color: var(--txt-muted); white-space: nowrap; }
+input[type="datetime-local"] {
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--txt); padding: 4px 8px; border-radius: 4px;
+  font-size: 12px; font-family: var(--font);
+  color-scheme: dark;
+}
+input[type="datetime-local"]:focus { outline: none; border-color: var(--accent); }
+
+.btn-apply {
+  background: var(--accent); border: 1px solid var(--accent);
+  color: #fff; padding: 5px 14px; border-radius: 4px;
+  font-size: 12px; cursor: pointer; transition: opacity .15s;
+}
+.btn-apply:hover { opacity: .85; }
+
+/* ── Summary cards ──────────────────────────────────────────────────────── */
+.cards {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px; margin-bottom: 20px;
+}
+.card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 14px 18px; position: relative; overflow: hidden;
+}
+.card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+}
+.card.cpu::before   { background: var(--accent); }
+.card.mem::before   { background: var(--cyan); }
+.card.gpu::before   { background: var(--orange); }
+.card.nodes::before { background: var(--green); }
+.card-label { font-size: 11px; color: var(--txt-muted); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 6px; }
+.card-value { font-size: 26px; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+.card-sub   { font-size: 11px; color: var(--txt-muted); }
+.card-bar-wrap { margin-top: 8px; height: 3px; background: var(--surface2); border-radius: 2px; }
+.card-bar { height: 100%; border-radius: 2px; transition: width .5s ease; width: 0; }
+.card.cpu .card-bar   { background: var(--accent); }
+.card.mem .card-bar   { background: var(--cyan); }
+.card.gpu .card-bar   { background: var(--orange); }
+
+/* ── Charts ──────────────────────────────────────────────────────────────── */
+.charts { display: flex; flex-direction: column; gap: 16px; }
+.chart-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px 20px;
+}
+.chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.chart-title { font-size: 14px; font-weight: 600; }
+.legend { display: flex; gap: 16px; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--txt-muted); }
+.legend-line { width: 20px; height: 2px; border-radius: 1px; }
+.legend-line.dashed { background: repeating-linear-gradient(90deg, var(--c) 0 5px, transparent 5px 9px); }
+.chart-wrap { position: relative; height: 220px; }
+
+/* ── Empty / error state ─────────────────────────────────────────────────── */
+.empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  height: 180px; color: var(--txt-muted); gap: 8px; font-size: 13px;
+}
+.empty svg { opacity: .35; }
+
+/* ── Footer ──────────────────────────────────────────────────────────────── */
+footer { padding-top: 24px; font-size: 11px; color: var(--txt-muted); text-align: center; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ── Header ── -->
+  <header>
+    <svg class="logo" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="32" height="32" rx="6" fill="#1a1e2b"/>
+      <path d="M16 6L26 11.5V20.5L16 26L6 20.5V11.5L16 6Z" stroke="#4e79c7" stroke-width="1.8" fill="none"/>
+      <circle cx="16" cy="16" r="3.5" fill="#4e79c7"/>
+    </svg>
+    <h1>Cloud Pipeline &mdash; Cluster Utilization</h1>
+    <div class="spacer"></div>
+    <span class="status-dot" id="sdot"></span>
+    <span id="status-text">loading…</span>
+  </header>
+
+  <!-- ── Controls ── -->
+  <div class="controls">
+    <div class="presets" id="presets">
+      <button class="btn" data-h="1"   onclick="setPreset(this)">1h</button>
+      <button class="btn" data-h="6"   onclick="setPreset(this)">6h</button>
+      <button class="btn active" data-h="24" onclick="setPreset(this)">24h</button>
+      <button class="btn" data-h="72"  onclick="setPreset(this)">3d</button>
+      <button class="btn" data-h="168" onclick="setPreset(this)">7d</button>
+    </div>
+    <div class="divider"></div>
+    <div class="date-range">
+      <label>From</label>
+      <input type="datetime-local" id="from-dt" />
+      <label>To</label>
+      <input type="datetime-local" id="to-dt" />
+      <button class="btn-apply" onclick="applyCustom()">Apply</button>
+    </div>
+    <div class="divider"></div>
+    <button class="btn btn-icon" title="Refresh" onclick="refresh()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+        <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+      </svg>
+    </button>
+    <span id="last-updated" style="font-size:11px;color:var(--txt-muted);margin-left:4px;"></span>
+  </div>
+
+  <!-- ── Summary cards ── -->
+  <div class="cards">
+    <div class="card nodes">
+      <div class="card-label">Worker Nodes</div>
+      <div class="card-value" id="c-nodes">—</div>
+      <div class="card-sub" id="c-nodes-sub">active</div>
+    </div>
+    <div class="card cpu">
+      <div class="card-label">CPU Used</div>
+      <div class="card-value" id="c-cpu">—</div>
+      <div class="card-sub" id="c-cpu-sub">of — cores</div>
+      <div class="card-bar-wrap"><div class="card-bar" id="b-cpu"></div></div>
+    </div>
+    <div class="card mem">
+      <div class="card-label">Memory Used</div>
+      <div class="card-value" id="c-mem">—</div>
+      <div class="card-sub" id="c-mem-sub">of — GiB</div>
+      <div class="card-bar-wrap"><div class="card-bar" id="b-mem"></div></div>
+    </div>
+    <div class="card gpu">
+      <div class="card-label">GPU Active</div>
+      <div class="card-value" id="c-gpu">—</div>
+      <div class="card-sub" id="c-gpu-sub">of — GPUs</div>
+      <div class="card-bar-wrap"><div class="card-bar" id="b-gpu"></div></div>
+    </div>
+  </div>
+
+  <!-- ── Charts ── -->
+  <div class="charts">
+
+    <!-- CPU -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">CPU Cores</span>
+        <div class="legend">
+          <div class="legend-item">
+            <div class="legend-line dashed" style="--c:#6b7db3; background:none;
+              background-image: repeating-linear-gradient(90deg,#6b7db3 0 5px,transparent 5px 9px);"></div>
+            Capacity
+          </div>
+          <div class="legend-item">
+            <div class="legend-line" style="background:#4e79c7;"></div>
+            Allocatable
+          </div>
+          <div class="legend-item">
+            <div class="legend-line" style="background:#54c77a;"></div>
+            Used
+          </div>
+        </div>
+      </div>
+      <div class="chart-wrap"><canvas id="chart-cpu"></canvas></div>
+    </div>
+
+    <!-- Memory -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">Memory (GiB)</span>
+        <div class="legend">
+          <div class="legend-item">
+            <div class="legend-line dashed" style="--c:#6b7db3; background:none;
+              background-image: repeating-linear-gradient(90deg,#6b7db3 0 5px,transparent 5px 9px);"></div>
+            Capacity
+          </div>
+          <div class="legend-item">
+            <div class="legend-line" style="background:#36bfbf;"></div>
+            Allocatable
+          </div>
+          <div class="legend-item">
+            <div class="legend-line" style="background:#54c77a;"></div>
+            Used
+          </div>
+        </div>
+      </div>
+      <div class="chart-wrap"><canvas id="chart-mem"></canvas></div>
+    </div>
+
+    <!-- GPU -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">GPU Count</span>
+        <div class="legend">
+          <div class="legend-item">
+            <div class="legend-line dashed" style="--c:#6b7db3; background:none;
+              background-image: repeating-linear-gradient(90deg,#6b7db3 0 5px,transparent 5px 9px);"></div>
+            Capacity
+          </div>
+          <div class="legend-item">
+            <div class="legend-line" style="background:#f0913a;"></div>
+            Active
+          </div>
+        </div>
+      </div>
+      <div class="chart-wrap"><canvas id="chart-gpu"></canvas></div>
+    </div>
+
+  </div>
+
+  <footer>Cloud Pipeline Cluster Dashboard &bull; data refreshes every <span id="footer-interval">—</span> min</footer>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+const GiB = 1024 ** 3;
+let currentFrom = null;
+let currentTo   = null;
+let charts = {};
+
+// ── Chart factory ──────────────────────────────────────────────────────────
+function makeChart(id, yLabel, datasets) {
+  const ctx = document.getElementById(id).getContext('2d');
+  return new Chart(ctx, {
+    type: 'line',
+    data: { datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1e2b',
+          borderColor: '#2d3352',
+          borderWidth: 1,
+          titleColor: '#d0d8f0',
+          bodyColor: '#9aabcf',
+          padding: 10,
+          callbacks: {
+            label(ctx) {
+              const v = ctx.parsed.y;
+              if (v === null || v === undefined) return `${ctx.dataset.label}: N/A`;
+              return `${ctx.dataset.label}: ${v.toFixed(1)} ${yLabel}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: 'time',
+          time: { tooltipFormat: 'yyyy-MM-dd HH:mm' },
+          grid: { color: '#1e2535' },
+          ticks: { color: '#6b7db3', maxTicksLimit: 10, font: { size: 11 } },
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: '#1e2535' },
+          ticks: {
+            color: '#6b7db3', font: { size: 11 },
+            callback: v => `${parseFloat(v.toFixed(1))} ${yLabel}`
+          },
+          title: { display: false }
+        }
+      }
+    }
+  });
+}
+
+// ── Dataset helpers ────────────────────────────────────────────────────────
+function ds(label, color, dashed, data) {
+  return {
+    label,
+    data,
+    borderColor: color,
+    backgroundColor: 'transparent',
+    borderWidth: dashed ? 1.5 : 2,
+    borderDash: dashed ? [5, 4] : [],
+    pointRadius: 2,
+    pointHoverRadius: 5,
+    pointBackgroundColor: color,
+    tension: 0.3,
+    spanGaps: false,
+  };
+}
+
+function dsArea(label, color, data) {
+  return {
+    ...ds(label, color, false, data),
+    backgroundColor: color + '18',
+    fill: true,
+  };
+}
+
+// ── Initialize charts ──────────────────────────────────────────────────────
+function initCharts() {
+  charts.cpu = makeChart('chart-cpu', 'cores', [
+    ds('Capacity',    '#6b7db3', true,  []),
+    ds('Allocatable', '#4e79c7', false, []),
+    dsArea('Used',    '#54c77a', []),
+  ]);
+  charts.mem = makeChart('chart-mem', 'GiB', [
+    ds('Capacity',    '#6b7db3', true,  []),
+    ds('Allocatable', '#36bfbf', false, []),
+    dsArea('Used',    '#54c77a', []),
+  ]);
+  charts.gpu = makeChart('chart-gpu', '', [
+    ds('Capacity', '#6b7db3', true,  []),
+    dsArea('Active', '#f0913a', []),
+  ]);
+}
+
+// ── Load and render data ───────────────────────────────────────────────────
+async function loadData(from, to) {
+  setStatus('loading');
+  const params = new URLSearchParams({
+    from: from.toISOString(),
+    to:   to.toISOString(),
+  });
+  let rows;
+  try {
+    const resp = await fetch(`/api/metrics?${params}`);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    rows = await resp.json();
+  } catch (e) {
+    setStatus('error', `Failed to load data: ${e.message}`);
+    return;
+  }
+
+  if (!rows || rows.length === 0) {
+    setStatus('ok', 'No data in this range');
+    clearCharts();
+    return;
+  }
+
+  const toPt = (r, field) => ({
+    x: r.ts * 1000,
+    y: r[field] !== null && r[field] !== undefined ? r[field] : null,
+  });
+
+  // CPU
+  charts.cpu.data.datasets[0].data = rows.map(r => toPt(r, 'cpu_capacity'));
+  charts.cpu.data.datasets[1].data = rows.map(r => toPt(r, 'cpu_allocatable'));
+  charts.cpu.data.datasets[2].data = rows.map(r => toPt(r, 'cpu_used'));
+  charts.cpu.update('none');
+
+  // Memory → GiB
+  charts.mem.data.datasets[0].data = rows.map(r => ({ x: r.ts*1000, y: r.mem_capacity   != null ? r.mem_capacity   / GiB : null }));
+  charts.mem.data.datasets[1].data = rows.map(r => ({ x: r.ts*1000, y: r.mem_allocatable != null ? r.mem_allocatable / GiB : null }));
+  charts.mem.data.datasets[2].data = rows.map(r => ({ x: r.ts*1000, y: r.mem_used        != null ? r.mem_used        / GiB : null }));
+  charts.mem.update('none');
+
+  // GPU
+  charts.gpu.data.datasets[0].data = rows.map(r => toPt(r, 'gpu_capacity'));
+  charts.gpu.data.datasets[1].data = rows.map(r => toPt(r, 'gpu_used'));
+  charts.gpu.update('none');
+
+  // Summary cards — use latest row
+  updateCards(rows[rows.length - 1]);
+
+  const now = new Date();
+  document.getElementById('last-updated').textContent =
+    `Updated ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+  setStatus('ok', `${rows.length} data point${rows.length !== 1 ? 's' : ''}`);
+}
+
+function clearCharts() {
+  for (const c of Object.values(charts)) {
+    c.data.datasets.forEach(d => d.data = []);
+    c.update('none');
+  }
+}
+
+// ── Summary cards ──────────────────────────────────────────────────────────
+function updateCards(row) {
+  // Nodes
+  set('c-nodes', row.node_count ?? '—');
+  set('c-nodes-sub', row.node_count === 1 ? 'worker node' : 'worker nodes');
+
+  // CPU
+  const cpuUsed = row.cpu_used;
+  const cpuCap  = row.cpu_capacity || 0;
+  if (cpuUsed != null) {
+    set('c-cpu', cpuUsed.toFixed(1));
+    setBar('b-cpu', cpuCap ? (cpuUsed / cpuCap) * 100 : 0);
+  } else { set('c-cpu', '—'); setBar('b-cpu', 0); }
+  set('c-cpu-sub', `of ${cpuCap.toFixed(0)} cores`);
+
+  // Memory
+  const memUsed = row.mem_used;
+  const memCap  = row.mem_capacity || 0;
+  if (memUsed != null) {
+    set('c-mem', (memUsed / GiB).toFixed(0) + ' GiB');
+    setBar('b-mem', memCap ? (memUsed / memCap) * 100 : 0);
+  } else { set('c-mem', '—'); setBar('b-mem', 0); }
+  set('c-mem-sub', `of ${(memCap / GiB).toFixed(0)} GiB`);
+
+  // GPU
+  const gpuUsed = row.gpu_used;
+  const gpuCap  = row.gpu_capacity || 0;
+  if (gpuCap === 0) {
+    set('c-gpu', 'N/A');
+    set('c-gpu-sub', 'no GPUs in cluster');
+    setBar('b-gpu', 0);
+  } else {
+    set('c-gpu', gpuUsed != null ? gpuUsed.toFixed(1) : '—');
+    set('c-gpu-sub', `of ${gpuCap} GPUs`);
+    setBar('b-gpu', gpuUsed != null && gpuCap ? (gpuUsed / gpuCap) * 100 : 0);
+  }
+}
+
+function set(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+function setBar(id, pct) {
+  const el = document.getElementById(id);
+  if (el) el.style.width = Math.min(100, Math.max(0, pct)).toFixed(1) + '%';
+}
+
+function setStatus(state, msg) {
+  const dot  = document.getElementById('sdot');
+  const text = document.getElementById('status-text');
+  dot.className = 'status-dot ' + (state === 'ok' ? 'ok' : state === 'error' ? 'err' : '');
+  text.textContent = msg || (state === 'loading' ? 'loading…' : state === 'ok' ? 'live' : 'error');
+}
+
+// ── Time range controls ────────────────────────────────────────────────────
+function setPreset(btn) {
+  document.querySelectorAll('#presets .btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const hours = parseInt(btn.dataset.h, 10);
+  const now  = new Date();
+  const from = new Date(now.getTime() - hours * 3600_000);
+  currentFrom = from;
+  currentTo   = now;
+  syncDateInputs(from, now);
+  loadData(from, now);
+}
+
+function applyCustom() {
+  const fv = document.getElementById('from-dt').value;
+  const tv = document.getElementById('to-dt').value;
+  if (!fv || !tv) { alert('Please select both From and To dates.'); return; }
+  const from = new Date(fv);
+  const to   = new Date(tv);
+  if (from >= to) { alert('"From" must be before "To".'); return; }
+  const maxMs = 7 * 24 * 3600_000;
+  if (to - from > maxMs) { alert('Range cannot exceed 7 days.'); return; }
+  document.querySelectorAll('#presets .btn').forEach(b => b.classList.remove('active'));
+  currentFrom = from; currentTo = to;
+  loadData(from, to);
+}
+
+function refresh() {
+  if (currentFrom && currentTo) {
+    // Keep same relative window if a preset was used
+    const activeBtn = document.querySelector('#presets .btn.active');
+    if (activeBtn) { setPreset(activeBtn); return; }
+    loadData(currentFrom, currentTo);
+  }
+}
+
+function syncDateInputs(from, to) {
+  const fmt = d => {
+    const pad = n => n.toString().padStart(2,'0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+  document.getElementById('from-dt').value = fmt(from);
+  document.getElementById('to-dt').value   = fmt(to);
+}
+
+// ── Bootstrap ──────────────────────────────────────────────────────────────
+async function bootstrap() {
+  // Fetch health to display collection interval
+  try {
+    const h = await (await fetch('/api/health')).json();
+    document.getElementById('footer-interval').textContent =
+      h.collect_interval_minutes || '?';
+    if (!h.api_configured) {
+      setStatus('error', 'API not configured (set CP_API_URL + CP_API_TOKEN)');
+    }
+  } catch (_) { /* non-fatal */ }
+
+  initCharts();
+
+  // Default: last 24 hours
+  const defaultBtn = document.querySelector('#presets .btn.active');
+  if (defaultBtn) setPreset(defaultBtn);
+}
+
+bootstrap();
+</script>
+</body>
+</html>
