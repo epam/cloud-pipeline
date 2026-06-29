@@ -167,6 +167,8 @@ footer { padding-top: 24px; font-size: 11px; color: var(--txt-muted); text-align
 }
 .run-badge.active { background: #1e3558; color: var(--accent); }
 .run-badge.idle   { background: var(--surface); color: var(--txt-muted); }
+.run-badge-link { text-decoration: none; cursor: pointer; }
+.run-badge-link:hover { text-decoration: underline; }
 .run-name { font-size: 12px; font-weight: 600; color: var(--txt); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; }
 
 .run-meta { font-size: 11px; color: var(--txt-muted); margin-bottom: 8px; }
@@ -370,6 +372,7 @@ let currentFrom = null;
 let currentTo   = null;
 let charts = {};
 let _lastClickTs = null;
+let _uiUrl       = '';
 let _panelData   = null;
 let _sortKey     = 'all';
 let _sortDir     = 'asc';
@@ -669,11 +672,15 @@ function runCardHtml(n) {
   const hasRun = n.run_id != null;
   const pcts   = utilPcts(n);
 
+  const runUrl = (_uiUrl && n.run_id) ? `${_uiUrl}/#/run/${n.run_id}` : null;
+  const runBadge = hasRun
+    ? (runUrl
+        ? `<a class="run-badge active run-badge-link" href="${runUrl}" target="_blank" rel="noopener">Run #${n.run_id}</a>`
+        : `<span class="run-badge active">Run #${n.run_id}</span>`)
+    : `<span class="run-badge idle">Available</span>`;
   const headerHtml = hasRun
-    ? `<span class="run-badge active">Run #${n.run_id}</span>
-       <span class="run-name" title="${esc(n.run_name || '')}">${esc(n.run_name || 'unnamed')}</span>`
-    : `<span class="run-badge idle">Available</span>
-       <span class="run-name">${esc(n.node_name)}</span>`;
+    ? `${runBadge}<span class="run-name" title="${esc(n.run_name || '')}">${esc(n.run_name || 'unnamed')}</span>`
+    : `${runBadge}<span class="run-name">${esc(n.node_name)}</span>`;
 
   const metaHtml = [
     hasRun && n.run_owner ? `<span>${esc(n.run_owner)}</span>` : '',
@@ -769,6 +776,7 @@ async function bootstrap() {
     const h = await (await fetch('/api/health')).json();
     document.getElementById('footer-interval').textContent = h.collect_interval_minutes || '?';
     if (!h.api_configured) setStatus('error', 'API not configured (set CP_API_URL + CP_API_TOKEN)');
+    _uiUrl = h.ui_url || '';
   } catch (_) {}
 
   initCharts();

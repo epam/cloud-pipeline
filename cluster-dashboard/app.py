@@ -30,6 +30,7 @@ PORT                     HTTP port (default: 5000)
 import logging
 import os
 from datetime import datetime, timedelta, timezone
+from urllib.parse import urlparse
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, abort, jsonify, request, send_from_directory
@@ -47,6 +48,10 @@ COLLECT_INTERVAL_MINUTES = int(os.environ.get("COLLECT_INTERVAL_MINUTES", "60"))
 _APP_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH  = os.environ.get("DB_PATH", os.path.join(_APP_DIR, "data", "metrics.db"))
 PORT     = int(os.environ.get("PORT", "5000"))
+
+_parsed = urlparse(CP_API_URL) if CP_API_URL else None
+_derived_ui_url = f"{_parsed.scheme}://{_parsed.netloc}" if _parsed else ""
+CP_UI_URL = os.environ.get("CP_UI_URL", _derived_ui_url)
 
 _MAX_RANGE_DAYS = 7
 
@@ -144,6 +149,7 @@ def api_health():
         "status": "ok",
         "collect_interval_minutes": COLLECT_INTERVAL_MINUTES,
         "api_configured": bool(CP_API_URL and CP_API_TOKEN),
+        "ui_url": CP_UI_URL,
     })
 
 
