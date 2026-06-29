@@ -2,7 +2,6 @@ import {Pipeline} from '../../../../@types/library.ts';
 import {LibraryInlineActionsProps} from './types.ts';
 import {IssuesButton} from './shared.tsx';
 import {Button, message} from 'antd';
-import {EditOutlined} from '@ant-design/icons';
 import {useCallback} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {routeingPaths} from '../../../../routing/paths.ts';
@@ -14,8 +13,6 @@ function PipelineInlineActions(props: LibraryInlineActionsProps & {pipeline: Pip
   const {item, onIssuesClick, pipeline} = props;
   const navigate = useNavigate();
   const canLaunchPipeline = pipeline.pipelineType !== 'VERSIONED_STORAGE';
-  const canEditPipeline = pipeline.pipelineType !== 'VERSIONED_STORAGE';
-  const canEditVersionedStorage = pipeline.pipelineType === 'VERSIONED_STORAGE';
   const onLaunchPipeline = useCallback(async () => {
     if (pipeline && navigate) {
       const hide = message.loading(
@@ -50,12 +47,7 @@ function PipelineInlineActions(props: LibraryInlineActionsProps & {pipeline: Pip
           Run
         </Button>
       )}
-      {canEditPipeline && <PipelineEditButton pipelineId={pipeline.id} size="small" />}
-      {canEditVersionedStorage && (
-        <Button size="small">
-          <EditOutlined />
-        </Button>
-      )}
+      <PipelineEditButton pipelineId={pipeline.id} size="small" />
     </>
   );
 }

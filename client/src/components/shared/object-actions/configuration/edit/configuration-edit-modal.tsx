@@ -43,6 +43,7 @@ export type ConfigurationEditModalProps = ActionModalBaseProps &
   ConfigurationEditProps & {
     pipelineTemplateId?: string;
     onDone?: () => void;
+    onRemove?: (event: MouseEvent | KeyboardEvent, unregistered: boolean) => void;
   };
 
 function isExistingProps(
@@ -58,6 +59,7 @@ function ConfigurationEditModal({
   open = false,
   onClose,
   onDone,
+  onRemove,
 }: ConfigurationEditModalProps) {
   const isNew = !isExistingProps({configurationId});
 
@@ -181,7 +183,7 @@ function ConfigurationEditModal({
               disabled={pending}
               id="edit-configuration-form-delete-button"
               configuration={configuration}
-              onRemove={onClose}
+              onRemove={onRemove ?? onClose}
             >
               DELETE
             </ConfigurationRemoveButton>
