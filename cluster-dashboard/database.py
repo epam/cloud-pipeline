@@ -32,6 +32,26 @@ CREATE TABLE IF NOT EXISTS snapshots (
     gpu_used       REAL
 );
 CREATE INDEX IF NOT EXISTS idx_ts ON snapshots(ts);
+
+CREATE TABLE IF NOT EXISTS run_snapshots (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    snapshot_ts     INTEGER NOT NULL,
+    node_name       TEXT    NOT NULL,
+    run_id          INTEGER,
+    run_name        TEXT,
+    run_owner       TEXT,
+    instance_type   TEXT,
+    cpu_capacity    REAL    DEFAULT 0,
+    cpu_allocatable REAL    DEFAULT 0,
+    cpu_used        REAL,
+    mem_capacity    INTEGER DEFAULT 0,
+    mem_allocatable INTEGER DEFAULT 0,
+    mem_used        INTEGER,
+    gpu_capacity    INTEGER DEFAULT 0,
+    gpu_allocatable INTEGER DEFAULT 0,
+    gpu_used        REAL
+);
+CREATE INDEX IF NOT EXISTS idx_run_snap_ts ON run_snapshots(snapshot_ts);
 """
 
 _RETENTION_DAYS = 7
@@ -62,9 +82,57 @@ def insert_snapshot(db_path: str, snap: dict) -> None:
         conn.commit()
 
 
+def insert_run_snapshots(db_path: str, snapshot_ts: int, nodes: list) -> None:
+    with sqlite3.connect(db_path) as conn:
+        conn.executemany(
+            """INSERT INTO run_snapshots
+               (snapshot_ts, node_name, run_id, run_name, run_owner, instance_type,
+                cpu_capacity, cpu_allocatable, cpu_used,
+                mem_capacity, mem_allocatable, mem_used,
+                gpu_capacity, gpu_allocatable, gpu_used)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            [
+                (
+                    snapshot_ts,
+                    n["node_name"], n.get("run_id"), n.get("run_name"), n.get("run_owner"),
+                    n.get("instance_type"),
+                    n["cpu_capacity"], n["cpu_allocatable"], n.get("cpu_used"),
+                    n["mem_capacity"], n["mem_allocatable"], n.get("mem_used"),
+                    n["gpu_capacity"], n["gpu_allocatable"], n.get("gpu_used"),
+                )
+                for n in nodes
+            ],
+        )
+        conn.commit()
+
+
+def query_runs_for_ts(db_path: str, ts: int) -> dict:
+    """Return run_snapshots for the snapshot whose ts is closest to `ts`."""
+    with sqlite3.connect(db_path) as conn:
+        conn.row_factory = sqlite3.Row
+        snap = conn.execute(
+            "SELECT ts FROM snapshots ORDER BY ABS(ts - ?) LIMIT 1", (ts,)
+        ).fetchone()
+        if not snap:
+            return {}
+        actual_ts = snap["ts"]
+        rows = conn.execute(
+            """SELECT node_name, run_id, run_name, run_owner, instance_type,
+                      cpu_capacity, cpu_allocatable, cpu_used,
+                      mem_capacity, mem_allocatable, mem_used,
+                      gpu_capacity, gpu_allocatable, gpu_used
+               FROM run_snapshots
+               WHERE snapshot_ts = ?
+               ORDER BY CASE WHEN run_id IS NULL THEN 1 ELSE 0 END, node_name""",
+            (actual_ts,),
+        ).fetchall()
+    return {"snapshot_ts": actual_ts, "nodes": [dict(r) for r in rows]}
+
+
 def purge_old(db_path: str) -> None:
     cutoff = int(datetime.now(timezone.utc).timestamp()) - _RETENTION_DAYS * 86400
     with sqlite3.connect(db_path) as conn:
+        conn.execute("DELETE FROM run_snapshots WHERE snapshot_ts < ?", (cutoff,))
         conn.execute("DELETE FROM snapshots WHERE ts < ?", (cutoff,))
         conn.commit()
 

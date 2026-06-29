@@ -76,8 +76,9 @@ def _run_collection() -> None:
         log.warning("CP_API_URL or CP_API_TOKEN not set — skipping collection")
         return
     try:
-        snap = collect_snapshot(CP_API_URL, CP_API_TOKEN)
+        snap, nodes = collect_snapshot(CP_API_URL, CP_API_TOKEN)
         db.insert_snapshot(DB_PATH, snap)
+        db.insert_run_snapshots(DB_PATH, snap["ts"], nodes)
         db.purge_old(DB_PATH)
     except Exception:
         log.exception("Snapshot collection failed")
@@ -122,6 +123,19 @@ def api_metrics():
 def api_status():
     latest = db.get_latest(DB_PATH)
     return jsonify(latest or {})
+
+
+@app.route("/api/runs")
+def api_runs():
+    ts_str = request.args.get("ts")
+    if not ts_str:
+        abort(400, "Missing 'ts' parameter")
+    try:
+        ts = int(float(ts_str))
+    except ValueError:
+        abort(400, "Invalid 'ts' — expected Unix seconds")
+    result = db.query_runs_for_ts(DB_PATH, ts)
+    return jsonify(result)
 
 
 @app.route("/api/health")

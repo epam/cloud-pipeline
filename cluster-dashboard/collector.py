@@ -145,10 +145,50 @@ def _get_node_gpu_active(client: CPClient, name: str, from_s: str, to_s: str):
 
 
 # ---------------------------------------------------------------------------
+# Instance type helpers
+# ---------------------------------------------------------------------------
+
+_INSTANCE_TYPE_LABELS = (
+    "node.kubernetes.io/instance-type",
+    "beta.kubernetes.io/instance-type",
+)
+
+
+def _instance_type(node: dict) -> str:
+    """Extract instance type from pipelineRun.instance.nodeType or K8s labels."""
+    run = node.get("pipelineRun") or {}
+    instance = run.get("instance") or {}
+    node_type = instance.get("nodeType") if isinstance(instance, dict) else None
+    if node_type:
+        return node_type
+    labels = node.get("labels") or {}
+    for label in _INSTANCE_TYPE_LABELS:
+        if label in labels:
+            return labels[label]
+    return ""
+
+
+def _run_info(node: dict) -> tuple:
+    """Returns (run_id, run_name, run_owner) from pipelineRun, or (None, None, None)."""
+    run = node.get("pipelineRun")
+    if not run:
+        return None, None, None
+    run_id = run.get("id")
+    name = run.get("pipelineName") or _docker_image_name(run.get("dockerImage", ""))
+    owner = run.get("owner")
+    return run_id, name, owner
+
+
+def _docker_image_name(image: str) -> str:
+    parts = image.split("/") if image else []
+    return parts[-1] if parts else ""
+
+
+# ---------------------------------------------------------------------------
 # Main collection function
 # ---------------------------------------------------------------------------
 
-def collect_snapshot(api_url: str, token: str) -> dict:
+def collect_snapshot(api_url: str, token: str):
     """
     Collect a cluster-wide utilization snapshot via the Cloud Pipeline REST API.
 
@@ -156,36 +196,43 @@ def collect_snapshot(api_url: str, token: str) -> dict:
     CPU/memory/GPU utilization values come from the per-node usage endpoints backed
     by Elasticsearch/Heapster — they are None when monitoring is unavailable.
 
-    Returns a dict ready for database.insert_snapshot().
+    Returns (snapshot_dict, node_list):
+      - snapshot_dict  — aggregate cluster-wide metrics, ready for insert_snapshot()
+      - node_list      — per-node details list, ready for insert_run_snapshots()
     """
     client = CPClient(api_url, token)
 
     nodes = client.get("cluster/node/loadAll") or []
     workers = [n for n in nodes if not _is_master(n)]
 
-    cpu_cap = cpu_alloc = 0.0
-    mem_cap = mem_alloc = 0
-    gpu_cap = gpu_alloc = 0
-
-    for node in workers:
-        cap   = node.get("capacity")    or {}
-        alloc = node.get("allocatable") or {}
-        cpu_cap   += parse_cpu(cap.get("cpu",    0))
-        cpu_alloc += parse_cpu(alloc.get("cpu",  0))
-        mem_cap   += parse_memory(cap.get("memory",   0))
-        mem_alloc += parse_memory(alloc.get("memory", 0))
-        gpu_cap   += int(cap.get("nvidia.com/gpu")   or 0)
-        gpu_alloc += int(alloc.get("nvidia.com/gpu") or 0)
-
     now = datetime.now(timezone.utc)
     from_s, to_s = _dt_range_strings(now)
 
+    cpu_cap = cpu_alloc = 0.0
+    mem_cap = mem_alloc = 0
+    gpu_cap = gpu_alloc = 0
     cpu_used_total = mem_used_total = 0.0
     gpu_used_total = 0.0
     usage_ok = gpu_usage_ok = 0
 
+    node_list = []
+
     for node in workers:
-        name = node.get("name", "")
+        name  = node.get("name", "")
+        cap   = node.get("capacity")    or {}
+        alloc = node.get("allocatable") or {}
+
+        n_cpu_cap   = parse_cpu(cap.get("cpu",    0))
+        n_cpu_alloc = parse_cpu(alloc.get("cpu",  0))
+        n_mem_cap   = parse_memory(cap.get("memory",   0))
+        n_mem_alloc = parse_memory(alloc.get("memory", 0))
+        n_gpu_cap   = int(cap.get("nvidia.com/gpu")   or 0)
+        n_gpu_alloc = int(alloc.get("nvidia.com/gpu") or 0)
+
+        cpu_cap   += n_cpu_cap;   cpu_alloc += n_cpu_alloc
+        mem_cap   += n_mem_cap;   mem_alloc += n_mem_alloc
+        gpu_cap   += n_gpu_cap;   gpu_alloc += n_gpu_alloc
+
         cpu_u, mem_u = _get_node_cpu_mem(client, name, from_s, to_s)
         if cpu_u is not None:
             cpu_used_total += cpu_u
@@ -193,12 +240,30 @@ def collect_snapshot(api_url: str, token: str) -> dict:
         if mem_u is not None:
             mem_used_total += mem_u
 
-        node_gpus = int((node.get("capacity") or {}).get("nvidia.com/gpu") or 0)
-        if node_gpus > 0:
-            g = _get_node_gpu_active(client, name, from_s, to_s)
-            if g is not None:
-                gpu_used_total += g
+        gpu_u = None
+        if n_gpu_cap > 0:
+            gpu_u = _get_node_gpu_active(client, name, from_s, to_s)
+            if gpu_u is not None:
+                gpu_used_total += gpu_u
                 gpu_usage_ok += 1
+
+        run_id, run_name, run_owner = _run_info(node)
+        node_list.append({
+            "node_name":      name,
+            "run_id":         run_id,
+            "run_name":       run_name,
+            "run_owner":      run_owner,
+            "instance_type":  _instance_type(node),
+            "cpu_capacity":   n_cpu_cap,
+            "cpu_allocatable": n_cpu_alloc,
+            "cpu_used":       cpu_u,
+            "mem_capacity":   n_mem_cap,
+            "mem_allocatable": n_mem_alloc,
+            "mem_used":       int(mem_u) if mem_u is not None else None,
+            "gpu_capacity":   n_gpu_cap,
+            "gpu_allocatable": n_gpu_alloc,
+            "gpu_used":       gpu_u,
+        })
 
     log.info(
         "Collected snapshot: %d workers, cpu_cap=%.1f, mem_cap=%.0f GiB, "
@@ -206,16 +271,17 @@ def collect_snapshot(api_url: str, token: str) -> dict:
         len(workers), cpu_cap, mem_cap / (1024 ** 3), gpu_cap, usage_ok,
     )
 
-    return {
-        "ts":             int(now.timestamp()),
-        "node_count":     len(workers),
-        "cpu_capacity":   cpu_cap,
+    snapshot = {
+        "ts":              int(now.timestamp()),
+        "node_count":      len(workers),
+        "cpu_capacity":    cpu_cap,
         "cpu_allocatable": cpu_alloc,
-        "cpu_used":       cpu_used_total if usage_ok > 0 else None,
-        "mem_capacity":   mem_cap,
+        "cpu_used":        cpu_used_total if usage_ok > 0 else None,
+        "mem_capacity":    mem_cap,
         "mem_allocatable": mem_alloc,
-        "mem_used":       int(mem_used_total) if usage_ok > 0 else None,
-        "gpu_capacity":   gpu_cap,
+        "mem_used":        int(mem_used_total) if usage_ok > 0 else None,
+        "gpu_capacity":    gpu_cap,
         "gpu_allocatable": gpu_alloc,
-        "gpu_used":       gpu_used_total if gpu_usage_ok > 0 else None,
+        "gpu_used":        gpu_used_total if gpu_usage_ok > 0 else None,
     }
+    return snapshot, node_list
