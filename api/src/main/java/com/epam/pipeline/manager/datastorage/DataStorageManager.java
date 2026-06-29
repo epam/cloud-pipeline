@@ -412,7 +412,8 @@ public class DataStorageManager implements SecuredEntityManager {
         Assert.isTrue(!StringUtils.isEmpty(dataStorageVO.getName()),
                 messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, "name"));
 
-        if (dataStorageVO.getServiceType() == StorageServiceType.FILE_SHARE) {
+        if (dataStorageVO.getServiceType() == StorageServiceType.FILE_SHARE
+                || dataStorageVO.getType() == DataStorageType.NFS) {
             Assert.notNull(dataStorageVO.getFileShareMountId(),
                     messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY,
                            "fileShareMountId"));

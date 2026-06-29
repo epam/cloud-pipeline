@@ -178,7 +178,7 @@ class DataStorage(API):
 
     @classmethod
     def save(cls, name, path, description, sts_duration, lts_duration, versioning, backup_duration, type,
-             parent_folder_id, on_cloud, region_id=None):
+             parent_folder_id, on_cloud, region_id=None, file_share_mount_id=None):
         api = cls.instance()
         body = json.dumps({
             'name': name if name else None,
@@ -187,7 +187,8 @@ class DataStorage(API):
             'type': type if type else None,
             'parentFolderId': parent_folder_id if parent_folder_id else None,
             'storagePolicy': __create_policy__(sts_duration, lts_duration, versioning, backup_duration),
-            'regionId': region_id
+            'regionId': region_id,
+            'fileShareMountId': file_share_mount_id
         })
         response_data = api.call('datastorage/save?cloud={}'.format(on_cloud), data=body, http_method='POST',
                                  error_message='Failed to create new datastorage')
