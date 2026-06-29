@@ -110,8 +110,53 @@ export async function loadMetadataEntityKeys(id: number): Promise<string[]> {
   return cloudPipelineApi.jsonGet<string[]>({uri: 'metadataEntity/keys', query: {id}});
 }
 
+export type EntityClassKey = {
+  name: string;
+  predefined?: boolean;
+};
+
+export async function loadEntityClassKeys(
+  folderId: number,
+  metadataClass: string,
+): Promise<EntityClassKey[]> {
+  const result = await cloudPipelineApi.jsonGet<EntityClassKey[]>({
+    uri: 'metadataEntity/keys',
+    query: {folderId, metadataClass},
+  });
+  return result ?? [];
+}
+
 export async function loadMetadataEntityFields(
   className: string,
 ): Promise<Record<string, unknown>> {
   return cloudPipelineApi.jsonGet({uri: 'metadataEntity/fields', query: {className}});
+}
+
+export type EntityTypeField = {
+  name: string;
+  type: string;
+  [key: string]: unknown;
+};
+
+export type EntityTypeInfo = {
+  metadataClass: MetadataClass & {outOfProject?: boolean};
+  fields: EntityTypeField[];
+};
+
+export async function loadEntityTypesByFolder(folderId: number): Promise<EntityTypeInfo[]> {
+  const result = await cloudPipelineApi.jsonGet<EntityTypeInfo[]>({
+    uri: 'metadataEntity/fields',
+    query: {folderId},
+  });
+  return result ?? [];
+}
+
+export async function deleteMetadataEntitiesFromProject(
+  projectId: number,
+  entityClass?: string,
+): Promise<void> {
+  await cloudPipelineApi.jsonDelete({
+    uri: 'metadataEntity/deleteFromProject',
+    query: entityClass !== undefined ? {projectId, entityClass} : {projectId},
+  });
 }

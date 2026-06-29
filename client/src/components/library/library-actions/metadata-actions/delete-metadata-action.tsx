@@ -3,26 +3,27 @@ import {Button, message, Modal} from 'antd';
 import {DeleteOutlined} from '@ant-design/icons';
 
 import type {CommonProps} from '../../../../@types/common.ts';
-import {useMetadataActions} from '../metadata-actions/hooks.ts';
+import {useMetadataActions} from './hooks.ts';
 
 type DeleteMetadataActionProps = CommonProps & {
   folderId?: number | string;
+  metadataClass?: string;
 };
 
 function DeleteMetadataAction(props: DeleteMetadataActionProps) {
-  const {folderId} = props;
+  const {folderId, metadataClass} = props;
   const numericFolderId = folderId !== undefined ? Number(folderId) : undefined;
 
-  const {deleteAllMetadata} = useMetadataActions(numericFolderId);
+  const {deleteClass} = useMetadataActions(numericFolderId, metadataClass);
 
   const handleClick = useCallback(() => {
-    if (numericFolderId === undefined) return;
+    if (!metadataClass || numericFolderId === undefined) return;
     Modal.confirm({
-      title: 'Delete metadata?',
+      title: `Delete class '${metadataClass}'?`,
       onOk: async () => {
-        const hide = message.loading('Removing metadata...', 0);
+        const hide = message.loading(`Removing class '${metadataClass}'...`, 0);
         try {
-          await deleteAllMetadata();
+          await deleteClass();
         } catch (error) {
           message.error(String(error), 5);
         } finally {
@@ -30,12 +31,12 @@ function DeleteMetadataAction(props: DeleteMetadataActionProps) {
         }
       },
     });
-  }, [numericFolderId, deleteAllMetadata]);
+  }, [metadataClass, numericFolderId, deleteClass]);
 
   return (
-    <Button id="delete-metadata-button" size="small" danger onClick={handleClick}>
+    <Button danger size="small" onClick={handleClick}>
       <DeleteOutlined />
-      Delete metadata
+      Delete class
     </Button>
   );
 }

@@ -3,22 +3,25 @@ import {Button, message} from 'antd';
 import {PlusOutlined} from '@ant-design/icons';
 
 import type {CommonProps} from '../../../../@types/common.ts';
-import {useMetadataActions} from '../metadata-actions/hooks.ts';
+import {useMetadataActions} from './hooks.ts';
 import AddInstanceForm from '../../../pipelines/browser/forms/AddInstanceForm.jsx';
 
 type AddInstanceActionProps = CommonProps & {
   folderId?: number | string;
-  disabled?: boolean;
+  metadataClass?: string;
 };
 
 function AddInstanceAction(props: AddInstanceActionProps) {
-  const {folderId, disabled = false} = props;
+  const {folderId, metadataClass} = props;
   const numericFolderId = folderId !== undefined ? Number(folderId) : undefined;
 
   const [visible, setVisible] = useState(false);
   const [pending, setPending] = useState(false);
 
-  const {entityTypes, currentMetadataClassId, addInstance} = useMetadataActions(numericFolderId);
+  const {entityTypes, currentMetadataClassId, addInstance} = useMetadataActions(
+    numericFolderId,
+    metadataClass,
+  );
 
   const handleCreate = useCallback(
     async (values: Record<string, unknown>) => {
@@ -37,12 +40,7 @@ function AddInstanceAction(props: AddInstanceActionProps) {
 
   return (
     <>
-      <Button
-        id="add-metadata-button"
-        size="small"
-        disabled={disabled}
-        onClick={() => setVisible(true)}
-      >
+      <Button size="small" onClick={() => setVisible(true)}>
         <PlusOutlined />
         Add instance
       </Button>

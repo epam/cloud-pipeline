@@ -3,7 +3,7 @@ import {Button} from 'antd';
 import {UploadOutlined} from '@ant-design/icons';
 
 import type {CommonProps} from '../../../../@types/common.ts';
-import {useMetadataActions} from '../metadata-actions/hooks.ts';
+import {useMetadataActions} from './hooks.ts';
 import MetadataEntityUpload from '../../../../models/folderMetadata/MetadataEntityUpload';
 import UploadButton from '../../../special/UploadButton.jsx';
 
@@ -21,11 +21,7 @@ function UploadMetadataAction(props: UploadMetadataActionProps) {
 
   return (
     <>
-      <Button
-        id="upload-metadata-folder-button"
-        size="small"
-        onClick={() => uploadButtonRef.current?.triggerClick()}
-      >
+      <Button size="small" onClick={() => uploadButtonRef.current?.triggerClick()}>
         <UploadOutlined />
         Upload metadata
       </Button>
