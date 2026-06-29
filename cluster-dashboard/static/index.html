@@ -33,7 +33,7 @@ html, body { height: 100%; background: var(--bg); color: var(--txt); font-family
   padding: 0 20px 32px; max-width: 1400px; margin: 0 auto;
   transition: margin-right .22s ease;
 }
-.page.panel-open { margin-right: var(--panel-w); }
+.page.panel-open { margin-right: var(--panel-w); }   /* overridden by JS inline style */
 
 /* ── Header ─────────────────────────────────────────────────────────────── */
 header {
@@ -112,14 +112,22 @@ footer { padding-top: 24px; font-size: 11px; color: var(--txt-muted); text-align
 
 /* ── Side panel ─────────────────────────────────────────────────────────── */
 .side-panel {
-  position: fixed; top: 0; right: calc(-1 * var(--panel-w) - 10px);
+  position: fixed; top: 0; right: 0;
   width: var(--panel-w); height: 100vh;
   background: var(--surface); border-left: 1px solid var(--border);
   box-shadow: -6px 0 28px rgba(0,0,0,.55);
-  transition: right .22s ease; z-index: 200;
+  transform: translateX(calc(100% + 50px));
+  transition: transform .22s ease; z-index: 200;
   display: flex; flex-direction: column;
 }
-.side-panel.open { right: 0; }
+.side-panel.open { transform: translateX(0); }
+
+.sp-resize-handle {
+  position: absolute; top: 0; left: 0; bottom: 0; width: 5px;
+  cursor: col-resize; z-index: 1;
+  background: transparent; transition: background .15s;
+}
+.sp-resize-handle:hover, .sp-resize-handle.dragging { background: var(--accent); }
 
 .sp-header {
   display: flex; align-items: flex-start; justify-content: space-between;
@@ -220,6 +228,52 @@ footer { padding-top: 24px; font-size: 11px; color: var(--txt-muted); text-align
 .util-pct.pct-med  { color: var(--orange); }
 .util-pct.pct-high { color: var(--red); }
 .util-pct.pct-na   { color: var(--txt-muted); }
+
+/* ── Run card — clickable active runs ────────────────────────────────────── */
+.run-card.run-clickable { cursor: pointer; transition: border-color .15s; }
+.run-card.run-clickable:hover { border-left-color: var(--cyan); }
+
+/* ── Run detail view ─────────────────────────────────────────────────────── */
+.detail-nav {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.detail-back {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; color: var(--txt-muted); cursor: pointer;
+  padding: 2px 0; transition: color .15s;
+}
+.detail-back:hover { color: var(--txt); }
+.spinning svg { animation: spin .7s linear infinite; }
+.detail-run-header { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap; }
+.detail-section { margin-top: 14px; }
+.detail-section-title {
+  font-size: 10px; font-weight: 700; color: var(--txt-muted);
+  text-transform: uppercase; letter-spacing: .5px;
+  margin-bottom: 7px; padding-bottom: 4px; border-bottom: 1px solid var(--border);
+}
+.detail-na { font-size: 11px; color: var(--txt-muted); font-style: italic; padding: 4px 0; }
+.proc-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.proc-table th {
+  text-align: left; font-size: 10px; font-weight: 600; color: var(--txt-muted);
+  padding: 0 6px 4px 0; border-bottom: 1px solid var(--border); white-space: nowrap;
+}
+.proc-table th.sortable { cursor: pointer; user-select: none; }
+.proc-table th.sortable:hover { color: var(--txt); }
+.proc-table th.sort-active { color: var(--accent); }
+.proc-table td { padding: 3px 6px 3px 0; vertical-align: top; }
+.proc-table tbody tr:hover td { background: rgba(255,255,255,.03); }
+.proc-user { color: var(--txt-muted); max-width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.proc-pid  { color: var(--txt-muted); font-family: monospace; }
+.proc-num  { color: var(--accent); text-align: right; padding-right: 10px !important; }
+.proc-cmd  { font-family: monospace; font-size: 10px; word-break: break-all; color: var(--txt); }
+.activity-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 5px 0; font-size: 12px; border-bottom: 1px solid rgba(45,51,82,.4);
+}
+.activity-label       { color: var(--txt-muted); }
+.activity-value       { color: var(--txt); font-size: 11px; }
+.activity-placeholder { color: var(--txt-muted); font-style: italic; font-size: 11px; }
 </style>
 </head>
 <body>
@@ -346,6 +400,7 @@ footer { padding-top: 24px; font-size: 11px; color: var(--txt-muted); text-align
 
 <!-- ── Side panel ── -->
 <div id="side-panel" class="side-panel">
+  <div class="sp-resize-handle" id="sp-resize"></div>
   <div class="sp-header">
     <div>
       <div id="sp-ts" class="sp-ts">—</div>
@@ -376,6 +431,12 @@ let _uiUrl       = '';
 let _panelData   = null;
 let _sortKey     = 'all';
 let _sortDir     = 'asc';
+let _panelView       = 'list';   // 'list' | 'detail'
+let _detailNode      = null;
+let _detailProcesses = null;
+let _procSortCol     = 'cpu';
+let _procSortDir     = 'desc';
+let _panelWidth      = 400;
 
 // ── Chart factory ──────────────────────────────────────────────────────────
 function makeChart(id, yLabel, datasets) {
@@ -702,7 +763,7 @@ function runCardHtml(n) {
   ) : '';
 
   return `
-    <div class="run-card ${hasRun ? '' : 'idle'}">
+    <div class="run-card ${hasRun ? 'run-clickable' : 'idle'}" ${hasRun ? `data-run-id="${n.run_id}" onclick="handleRunCardClick(event,this)"` : ''}>
       <div class="run-card-header">${headerHtml}</div>
       ${metaHtml ? `<div class="run-meta">${metaHtml}</div>` : ''}
       <div class="metric-rows">${cpuRow}${memRow}${gpuRow}</div>
@@ -751,23 +812,216 @@ function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// ── Run detail view ───────────────────────────────────────────────────────
+function handleRunCardClick(event, card) {
+  if (event.target.closest('.run-badge-link')) return;
+  const runId = parseInt(card.dataset.runId);
+  const node  = (_panelData && _panelData.nodes || []).find(n => n.run_id === runId);
+  if (!node) return;
+  _panelView  = 'detail';
+  _detailNode = node;
+  document.getElementById('sp-body').innerHTML =
+    '<div class="sp-loading"><div class="spinner"></div>Loading run details…</div>';
+  fetchRunDetails(runId);
+}
+
+async function fetchRunDetails(runId) {
+  try {
+    const resp = await fetch(`/api/run/${runId}/details`);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    renderRunDetails(await resp.json());
+  } catch (e) {
+    document.getElementById('sp-body').innerHTML =
+      `<p class="sp-hint" style="color:var(--red)">Failed to load: ${esc(e.message)}</p>`;
+  }
+}
+
+async function refreshRunDetails() {
+  if (!_detailNode) return;
+  const btn = document.getElementById('detail-refresh-btn');
+  if (btn) btn.classList.add('spinning');
+  try {
+    const resp = await fetch(`/api/run/${_detailNode.run_id}/details`);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const details = await resp.json();
+    const act = document.getElementById('detail-activity');
+    if (act) act.innerHTML = _renderActivity(details);
+    const wrap = document.getElementById('proc-table-wrap');
+    if (wrap) wrap.innerHTML = _initProcesses(details.processes);
+  } catch (e) {
+    const act = document.getElementById('detail-activity');
+    if (act) act.innerHTML = `<p class="detail-na" style="color:var(--red)">Refresh failed: ${esc(e.message)}</p>`;
+  } finally {
+    if (btn) btn.classList.remove('spinning');
+  }
+}
+
+function renderRunDetails(details) {
+  const node   = _detailNode;
+  const runUrl = (_uiUrl && node.run_id) ? `${_uiUrl}/#/run/${node.run_id}` : null;
+  const badge  = runUrl
+    ? `<a class="run-badge active run-badge-link" href="${runUrl}" target="_blank" rel="noopener">Run #${node.run_id}</a>`
+    : `<span class="run-badge active">Run #${node.run_id}</span>`;
+  const meta = [
+    node.run_owner    ? esc(node.run_owner) : null,
+    node.instance_type ? `<span class="instance-chip">${esc(node.instance_type)}</span>` : null,
+  ].filter(Boolean).join(' ');
+
+  document.getElementById('sp-body').innerHTML = `
+    <div class="detail-nav">
+      <div class="detail-back" onclick="backToList()">&#8592; Back</div>
+      <button class="btn btn-icon" id="detail-refresh-btn" title="Refresh" onclick="refreshRunDetails()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+          <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+        </svg>
+      </button>
+    </div>
+    <div class="detail-run-header">${badge}
+      <span class="run-name">${esc(node.run_name || 'unnamed')}</span></div>
+    ${meta ? `<div class="run-meta">${meta}</div>` : ''}
+    <div class="detail-section">
+      <div class="detail-section-title">Activity</div>
+      <div id="detail-activity">${_renderActivity(details)}</div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">Processes</div>
+      <div id="proc-table-wrap">${_initProcesses(details.processes)}</div>
+    </div>`;
+}
+
+function _initProcesses(procs) {
+  _detailProcesses = procs;
+  _procSortCol = 'cpu';
+  _procSortDir = 'desc';
+  if (procs == null) return '<p class="detail-na">Unavailable — pipe CLI not reachable on this server</p>';
+  if (!procs.length) return '<p class="detail-na">No processes found</p>';
+  return _renderProcessTable();
+}
+
+function _renderProcessTable() {
+  const procs = _detailProcesses;
+  if (!procs || !procs.length) return '';
+  const numCols = new Set(['pid', 'cpu', 'mem']);
+  const sorted = [...procs].sort((a, b) => {
+    const va = a[_procSortCol] ?? '', vb = b[_procSortCol] ?? '';
+    const cmp = numCols.has(_procSortCol) ? parseFloat(va) - parseFloat(vb) : String(va).localeCompare(String(vb));
+    return _procSortDir === 'asc' ? cmp : -cmp;
+  });
+  const th = (key, label) => {
+    const active = key === _procSortCol;
+    const arrow  = active ? (_procSortDir === 'asc' ? ' ▲' : ' ▼') : '';
+    return `<th class="sortable${active ? ' sort-active' : ''}" onclick="setProcSort('${key}')">${label}${arrow}</th>`;
+  };
+  const rows = sorted.map(p => `<tr>
+    <td class="proc-user">${esc(p.user)}</td>
+    <td class="proc-pid">${esc(p.pid)}</td>
+    <td class="proc-num">${esc(p.cpu)}%</td>
+    <td class="proc-num">${esc(p.mem)}%</td>
+    <td class="proc-cmd">${esc(p.command)}</td>
+  </tr>`).join('');
+  return `<table class="proc-table">
+    <thead><tr>${th('user','User')}${th('pid','PID')}${th('cpu','CPU%')}${th('mem','MEM%')}${th('command','Command')}</tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+function setProcSort(col) {
+  if (_procSortCol === col) {
+    _procSortDir = _procSortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    _procSortCol = col;
+    _procSortDir = (col === 'cpu' || col === 'mem' || col === 'pid') ? 'desc' : 'asc';
+  }
+  const wrap = document.getElementById('proc-table-wrap');
+  if (wrap) wrap.innerHTML = _renderProcessTable();
+}
+
+function _renderActivity(details) {
+  const p2 = n => n.toString().padStart(2, '0');
+  const fmt = ts => {
+    if (!ts) return null;
+    const d = new Date(ts);
+    if (isNaN(d.getTime())) return String(ts);
+    return `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}`;
+  };
+  const rows = [
+    ['Last paused',          fmt(details.last_paused)],
+    ['Last resumed',         fmt(details.last_resumed)],
+    ['Last SSH access',      null],
+    ['Last endpoint access', null],
+  ];
+  return rows.map(([label, val]) => `
+    <div class="activity-row">
+      <span class="activity-label">${label}</span>
+      <span class="${val ? 'activity-value' : 'activity-placeholder'}">${val || '—'}</span>
+    </div>`).join('');
+}
+
+function backToList() {
+  _panelView       = 'list';
+  _detailNode      = null;
+  _detailProcesses = null;
+  if (_panelData && _panelData.nodes) {
+    document.getElementById('sp-body').innerHTML =
+      sortNodes(_panelData.nodes, _sortKey, _sortDir).map(n => runCardHtml(n)).join('');
+  }
+}
+
 // ── Side panel — open / close ─────────────────────────────────────────────
 function openPanel() {
-  document.getElementById('side-panel').classList.add('open');
-  document.getElementById('page').classList.add('panel-open');
+  const panel = document.getElementById('side-panel');
+  const page  = document.getElementById('page');
+  panel.style.width    = _panelWidth + 'px';
+  panel.classList.add('open');
+  page.style.marginRight = _panelWidth + 'px';
 }
 function closePanel() {
   _lastClickTs = null;
   _panelData   = null;
   _sortKey     = 'all';
   _sortDir     = 'asc';
+  _panelView       = 'list';
+  _detailNode      = null;
+  _detailProcesses = null;
   document.querySelectorAll('.sort-btn').forEach(btn => {
     const k = btn.dataset.sort;
     btn.classList.toggle('active', k === 'all');
     btn.textContent = _SORT_LABELS[k] + (k === 'all' ? ' ▲' : '');
   });
   document.getElementById('side-panel').classList.remove('open');
-  document.getElementById('page').classList.remove('panel-open');
+  document.getElementById('page').style.marginRight = '';
+}
+
+// ── Panel resize ───────────────────────────────────────────────────────────
+function initPanelResize() {
+  const handle = document.getElementById('sp-resize');
+  const panel  = document.getElementById('side-panel');
+  const page   = document.getElementById('page');
+
+  handle.addEventListener('mousedown', e => {
+    e.preventDefault();
+    handle.classList.add('dragging');
+    const startX     = e.clientX;
+    const startWidth = _panelWidth;
+
+    const onMove = e => {
+      panel.style.transition = 'none';
+      page.style.transition  = 'none';
+      _panelWidth = Math.max(280, Math.min(900, startWidth + startX - e.clientX));
+      panel.style.width = _panelWidth + 'px';
+      if (panel.classList.contains('open')) page.style.marginRight = _panelWidth + 'px';
+    };
+    const onUp = () => {
+      handle.classList.remove('dragging');
+      panel.style.transition = '';
+      page.style.transition  = '';
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup',   onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup',   onUp);
+  });
 }
 
 // ── Bootstrap ──────────────────────────────────────────────────────────────
@@ -779,6 +1033,7 @@ async function bootstrap() {
     _uiUrl = h.ui_url || '';
   } catch (_) {}
 
+  initPanelResize();
   initCharts();
   attachClick(charts.cpu);
   attachClick(charts.mem);

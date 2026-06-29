@@ -29,6 +29,7 @@ PORT                     HTTP port (default: 5000)
 
 import logging
 import os
+import subprocess
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlparse
 
@@ -36,7 +37,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, abort, jsonify, request, send_from_directory
 
 import database as db
-from collector import collect_snapshot
+from collector import CPClient, collect_snapshot
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -151,6 +152,83 @@ def api_health():
         "api_configured": bool(CP_API_URL and CP_API_TOKEN),
         "ui_url": CP_UI_URL,
     })
+
+
+@app.route("/api/run/<int:run_id>/details")
+def api_run_details(run_id):
+    result = {
+        "run_id":               run_id,
+        "processes":            None,
+        "last_paused":          None,
+        "last_resumed":         None,
+        "last_ssh_access":      None,
+        "last_endpoint_access": None,
+    }
+    if CP_API_URL and CP_API_TOKEN:
+        try:
+            run = CPClient(CP_API_URL, CP_API_TOKEN).get(f"run/{run_id}")
+            if run:
+                result.update(_extract_run_activity(run))
+        except Exception:
+            log.exception("Failed to fetch run details for run %d", run_id)
+    result["processes"] = _get_run_processes(run_id)
+    return jsonify(result)
+
+
+def _extract_run_activity(run: dict) -> dict:
+    statuses = sorted(
+        run.get("runStatuses") or [],
+        key=lambda s: s.get("timestamp") or "",
+    )
+    last_paused = last_resumed = None
+    prev_paused = False
+    for s in statuses:
+        st = (s.get("status") or "").upper()
+        ts = s.get("timestamp")
+        if st == "PAUSED":
+            last_paused = ts
+            prev_paused = True
+        elif st == "RUNNING":
+            if prev_paused:
+                last_resumed = ts
+            prev_paused = False
+        else:
+            prev_paused = False
+    return {"last_paused": last_paused, "last_resumed": last_resumed}
+
+
+def _get_run_processes(run_id: int):
+    try:
+        r = subprocess.run(
+            ["pipe", "ssh", str(run_id),
+             "ps --no-headers -eo user,pid,pcpu,pmem,comm --sort=-%cpu"],
+            capture_output=True, text=True, timeout=20,
+        )
+        if r.returncode == 0 and r.stdout.strip():
+            return _parse_ps_output(r.stdout)
+        log.debug("pipe ssh exited %d for run %d: %s", r.returncode, run_id, r.stderr[:200])
+    except FileNotFoundError:
+        log.debug("pipe CLI not found — process list unavailable")
+    except subprocess.TimeoutExpired:
+        log.warning("pipe ssh timed out for run %d", run_id)
+    except Exception as exc:
+        log.debug("pipe ssh failed for run %d: %s", run_id, exc)
+    return None
+
+
+def _parse_ps_output(text: str) -> list:
+    rows = []
+    for line in text.strip().splitlines():
+        parts = line.split(None, 4)
+        if len(parts) >= 4:
+            rows.append({
+                "user":    parts[0],
+                "pid":     parts[1],
+                "cpu":     parts[2],
+                "mem":     parts[3],
+                "command": parts[4] if len(parts) > 4 else "",
+            })
+    return rows
 
 
 # ---------------------------------------------------------------------------
