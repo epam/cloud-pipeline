@@ -22,6 +22,8 @@ import com.epam.pipeline.dao.docker.DockerRegistryDao;
 import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.FileShareMount;
+import com.epam.pipeline.entity.datastorage.MountType;
 import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
@@ -114,6 +116,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
     public static final long SECS_IN_HOUR = 3600L;
     public static final long SECS_IN_MIN = 60L;
 
+    private Long testFileShareMountId;
 
     @Mock
     private DockerRegistry dockerRegistry;
@@ -133,6 +136,9 @@ public class DataStorageManagerTest extends AbstractSpringTest {
 
     @MockBean
     private CloudRegionManager regionManager;
+
+    @Autowired
+    private FileShareMountManager fileShareMountManager;
 
     @Autowired
     private PreferenceManager preferenceManager;
@@ -166,7 +172,10 @@ public class DataStorageManagerTest extends AbstractSpringTest {
                 .map(p -> Paths.get(p).toString()).collect(Collectors.joining(","))
         );
         preferenceManager.update(Collections.singletonList(systemIndependentBlackList));
-        cloudRegionDao.create(ObjectCreatorUtils.getDefaultAwsRegion());
+        final AwsRegion region = (AwsRegion) cloudRegionDao.create(ObjectCreatorUtils.getDefaultAwsRegion());
+        final FileShareMount fileShareMount = initFileShareMount(region.getId());
+        fileShareMountManager.save(fileShareMount);
+        testFileShareMountId = fileShareMount.getId();
     }
 
     @Test
@@ -375,6 +384,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.NFS,
                 PATH + "/", STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
         );
+        storageVO.setFileShareMountId(testFileShareMountId);
         AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
 
         AbstractDataStorage loaded = storageManager.loadByNameOrId(saved.getPath());
@@ -524,6 +534,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.NFS,
                                                                             PATH, WITHOUT_PARENT_ID, TEST_MOUNT_POINT,
                                                                             TEST_MOUNT_OPTIONS);
+        storageVO.setFileShareMountId(testFileShareMountId);
         AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
         AbstractDataStorage loaded = storageManager.load(saved.getId());
         compareDataStorage(saved, loaded);
@@ -535,6 +546,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         final DataStorageVO storageVO =
             ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.NFS, PATH, WITHOUT_PARENT_ID,
                                                       TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS);
+        storageVO.setFileShareMountId(testFileShareMountId);
         final AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
         assertNfsMountStatus(saved, NFSStorageMountStatus.ACTIVE);
         assertNfsMountStatus(storageManager.load(saved.getId()), NFSStorageMountStatus.ACTIVE);
@@ -563,6 +575,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.NFS,
                 PATH, WITHOUT_PARENT_ID, FORBIDDEN_MOUNT_POINT,
                 TEST_MOUNT_OPTIONS);
+        storageVO.setFileShareMountId(testFileShareMountId);
         storageManager.create(storageVO, false, false, false);
     }
 
@@ -572,6 +585,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.NFS,
                                                                             PATH, WITHOUT_PARENT_ID, "/",
                                                                             TEST_MOUNT_OPTIONS);
+        storageVO.setFileShareMountId(testFileShareMountId);
         storageManager.create(storageVO, false, false, false);
     }
 
@@ -586,6 +600,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.NFS,
                 PATH, WITHOUT_PARENT_ID, FORBIDDEN_MOUNT_POINT_2,
                 TEST_MOUNT_OPTIONS);
+        storageVO.setFileShareMountId(testFileShareMountId);
         storageManager.create(storageVO, false, false, false);
     }
 
@@ -600,6 +615,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.NFS,
                 PATH, WITHOUT_PARENT_ID, FORBIDDEN_MOUNT_POINT_3,
                 TEST_MOUNT_OPTIONS);
+        storageVO.setFileShareMountId(testFileShareMountId);
         storageManager.create(storageVO, false, false, false);
     }
 
@@ -635,6 +651,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.NFS,
                 PATH, WITHOUT_PARENT_ID, TEST_MOUNT_POINT,
                 TEST_MOUNT_OPTIONS);
+        storageVO.setFileShareMountId(testFileShareMountId);
         AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
         storageVO.setId(saved.getId());
         storageVO.setMountPoint(FORBIDDEN_MOUNT_POINT);
@@ -727,5 +744,13 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         Assert.assertEquals(DataStorageType.NFS, storage.getType());
         final NFSDataStorage nfsDataStorage = (NFSDataStorage) storage;
         Assert.assertEquals(status, nfsDataStorage.getMountStatus());
+    }
+
+    private FileShareMount initFileShareMount(final Long regionId) {
+        final FileShareMount fileShareMount = new FileShareMount();
+        fileShareMount.setRegionId(regionId);
+        fileShareMount.setMountType(MountType.NFS);
+        fileShareMount.setMountRoot(PATH);
+        return fileShareMount;
     }
 }
