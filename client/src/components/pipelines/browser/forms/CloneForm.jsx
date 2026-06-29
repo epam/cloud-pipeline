@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {Button, Form, Input, Modal, Row, Spin} from 'antd';
+import {Form, Input, Spin} from 'antd';
 import {inject, observer} from 'mobx-react';
 import connect from '../../../../utils/connect';
 import roleModel from '../../../../utils/roleModel';
@@ -38,11 +38,12 @@ import HiddenObjects from '../../../../utils/hidden-objects';
 export default class CloneForm extends React.Component {
   formRef = React.createRef();
   static propTypes = {
-    onCancel: PropTypes.func,
     onSubmit: PropTypes.func,
     pending: PropTypes.bool,
     visible: PropTypes.bool,
     parentId: PropTypes.number,
+    onFolderChange: PropTypes.func,
+    formRef: PropTypes.object,
   };
 
   state = {
@@ -53,111 +54,65 @@ export default class CloneForm extends React.Component {
   formItemLayout = {
     labelCol: {
       xs: {span: 24},
-      sm: {span: 2},
+      sm: {span: 4},
     },
     wrapperCol: {
       xs: {span: 24},
-      sm: {span: 22},
+      sm: {span: 20},
     },
   };
 
   onSelectFolder = (folder) => {
     if (folder.key === `${ItemTypes.folder}_root`) {
-      this.setState({
-        value: null,
-      });
+      this.setState({value: null});
+      this.props.onFolderChange?.(null);
     } else {
       const tree = generateTreeData(this.props.pipelinesLibrary.value, {
         types: [ItemTypes.folder],
         filter: this.props.hiddenObjectsTreeFilter(),
       });
       const foundFolder = getTreeItemByKey(folder.key, tree);
-      this.setState({
-        value: foundFolder || folder,
-      });
+      this.setState({value: foundFolder || folder});
+      this.props.onFolderChange?.(foundFolder || folder);
     }
   };
 
-  handleSubmit = (e) => {
-    e.preventDefault();
-    this.formRef.current
-      .validateFields()
-      .then((values) => {
-        if (this.props.onSubmit) {
-          return this.props.onSubmit(this.state.value ? this.state.value.id : null, values.name);
-        }
-      })
-      .catch(() => {});
+  handleFinish = (values) => {
+    if (this.props.onSubmit) {
+      this.props.onSubmit(this.state.value ? this.state.value.id : null, values.name);
+    }
   };
 
   render() {
-    const modalFooter = this.props.pending ? (
-      false
-    ) : (
-      <Row>
-        <Button id="folder-clone-form-cancel-button" onClick={this.props.onCancel}>
-          Cancel
-        </Button>
-        <Button
-          id="folder-clone-form-ok-button"
-          disabled={
-            this.state.value
-              ? !roleModel.writeAllowed(this.state.value)
-              : !roleModel.writeAllowed(this.props.pipelinesLibrary.value)
-          }
-          type="primary"
-          onClick={this.handleSubmit}
-        >
-          Clone{this.state.value ? ` into '${this.state.value.name}'` : ' into Library'}
-        </Button>
-      </Row>
-    );
-
-    const onClose = () => {
-      this.setState({
-        value: null,
-        loaded: false,
-      });
-    };
     return (
-      <Modal
-        mask={{closable: !this.props.pending}}
-        afterClose={onClose}
-        closable={!this.props.pending}
-        open={this.props.visible}
-        title="Select destination folder"
-        width="50%"
-        onCancel={this.props.onCancel}
-        footer={modalFooter}
+      <Form
+        ref={this.formRef}
+        scrollToFirstError={{behavior: 'smooth', block: 'end', focus: true}}
+        onFinish={this.handleFinish}
       >
-        <Form
-          ref={this.formRef}
-          scrollToFirstError={{behavior: 'smooth', block: 'end', focus: true}}
-        >
-          <Spin spinning={this.props.pending}>
-            <div
-              style={{height: '50vh', display: 'flex', flexDirection: 'column', overflow: 'auto'}}
-            >
-              <Folder
-                id={this.state.value ? this.state.value.id : null}
-                onSelectItem={this.onSelectFolder}
-                listingMode
-                readOnly
-                supportedTypes={[ItemTypes.folder]}
-              />
-            </div>
-          </Spin>
-          <Form.Item
-            style={{padding: '5px'}}
-            {...this.formItemLayout}
-            label="Name"
-            name="name"
-            rules={[{required: true, message: 'Name is required'}]}
+        <Spin spinning={this.props.pending}>
+          <div
+            style={{height: '50vh', display: 'flex', flexDirection: 'column', overflow: 'auto'}}
           >
-            <Input />
-          </Form.Item>
-        </Form>
-      </Modal>
+            <Folder
+              id={this.state.value ? this.state.value.id : null}
+              onSelectItem={this.onSelectFolder}
+              listingMode
+              readOnly
+              supportedTypes={[ItemTypes.folder]}
+            />
+          </div>
+        </Spin>
+        <Form.Item
+          style={{padding: '5px'}}
+          {...this.formItemLayout}
+          label="Name"
+          name="name"
+          rules={[{required: true, message: 'Name is required'}]}
+        >
+          <Input />
+        </Form.Item>
+      </Form>
     );
   }
 
@@ -168,13 +123,11 @@ export default class CloneForm extends React.Component {
         filter: this.props.hiddenObjectsTreeFilter(),
       });
       const folder = getTreeItemByKey(`${ItemTypes.folder}_${props.parentId}`, tree);
-      this.setState({
-        value: folder,
-      });
+      this.setState({value: folder});
+      this.props.onFolderChange?.(folder || null);
     } else {
-      this.setState({
-        value: null,
-      });
+      this.setState({value: null});
+      this.props.onFolderChange?.(null);
     }
   };
 
@@ -186,16 +139,22 @@ export default class CloneForm extends React.Component {
 
   componentDidMount() {
     this.updateState(this.props);
+    if (this.props.formRef) {
+      this.props.formRef.current = this.formRef.current;
+    }
   }
 
-  componentDidUpdate() {
+  componentDidUpdate(prevProps) {
+    if (this.props.formRef && this.props.formRef !== prevProps.formRef) {
+      this.props.formRef.current = this.formRef.current;
+    }
+    if (prevProps.visible && !this.props.visible) {
+      this.setState({value: null, loaded: false});
+      this.formRef.current?.resetFields();
+      this.props.onFolderChange?.(null);
+    }
     if (this.props.pipelinesLibrary.loaded && this.props.parentId && !this.state.loaded) {
-      this.setState(
-        {
-          loaded: true,
-        },
-        () => this.updateState(this.props),
-      );
+      this.setState({loaded: true}, () => this.updateState(this.props));
     }
   }
 }

@@ -3,6 +3,7 @@ import {useLocation, useNavigate} from 'react-router-dom';
 import {useQuery} from '@tanstack/react-query';
 import {Button, Dropdown, message} from 'antd';
 import {CopyOutlined, EditOutlined, SettingOutlined} from '@ant-design/icons';
+import {PipelineCloneModal} from '../../../shared/object-actions/pipeline/clone/pipeline-clone-modal.tsx';
 
 import type {CommonProps} from '../../../../@types/common.ts';
 import {
@@ -30,6 +31,7 @@ function SettingsAction(props: SettingsActionProps) {
   const {pipelineId, isOwner = false, readOnly = false} = props;
   const [open, setOpen] = useState(false);
   const [editDialogVisible, setEditDialogVisible] = useState(false);
+  const [cloneDialogVisible, setCloneDialogVisible] = useState(false);
   const [operationInProgress, setOperationInProgress] = useState(false);
 
   const numericId = pipelineId !== undefined ? Number(pipelineId) : undefined;
@@ -154,13 +156,13 @@ function SettingsAction(props: SettingsActionProps) {
           openEditDialog();
           break;
         case 'clone':
-          message.info(`[mock] Clone pipeline ${pipelineId}`);
+          setCloneDialogVisible(true);
           break;
         default:
           break;
       }
     },
-    [pipelineId, openEditDialog],
+    [openEditDialog],
   );
 
   if (readOnly) {
@@ -192,10 +194,6 @@ function SettingsAction(props: SettingsActionProps) {
       : []),
   ];
 
-  if (items.length === 0) {
-    return null;
-  }
-
   return (
     <>
       <Dropdown
@@ -209,6 +207,13 @@ function SettingsAction(props: SettingsActionProps) {
           <SettingOutlined />
         </Button>
       </Dropdown>
+      {isOwner && numericId !== undefined && (
+        <PipelineCloneModal
+          open={cloneDialogVisible}
+          onClose={() => setCloneDialogVisible(false)}
+          pipelineId={numericId}
+        />
+      )}
       <LegacyMobXStoresProvider>
         <EditPipelineForm
           onSubmit={handleSubmitEdit}

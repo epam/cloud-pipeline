@@ -61,7 +61,7 @@ import {generateTreeData, ItemTypes} from '../model/treeStructureFunctions';
 import RegisterVersionFormDialog from './forms/RegisterVersionFormDialog';
 import UserName from '../../shared/user-name';
 import HiddenObjects from '../../../utils/hidden-objects';
-import CloneForm from './forms/CloneForm';
+import CloneFormWithModal from './forms/CloneFormWithModal';
 import styles from './Browser.module.css';
 import Markdown from '../../special/markdown';
 
@@ -895,7 +895,7 @@ class Pipeline extends localization.LocalizedReactComponent {
             />
           )}
         </ContentIssuesMetadataPanel>
-        <CloneForm
+        <CloneFormWithModal
           parentId={this.props.pipeline.value.parentFolderId}
           visible={this.state.clonePipelineVisible}
           pending={this.state.operationInProgress}

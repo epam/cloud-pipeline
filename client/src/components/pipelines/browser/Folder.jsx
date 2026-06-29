@@ -70,7 +70,7 @@ import EditPipelineForm from '../version/forms/EditPipelineForm';
 import {DataStorageEditDialog, ServiceTypes} from './forms/DataStorageEditDialog';
 import VersionedStorageDialog from './forms/VersionedStorageDialog';
 import {extractFileShareMountList} from './forms/DataStoragePathInput';
-import CloneForm from './forms/CloneForm';
+import CloneFormWithModal from './forms/CloneFormWithModal';
 import EditDetachedConfigurationForm from '../configuration/forms/EditDetachedConfigurationForm';
 import dataStorages from '../../../models/dataStorage/DataStorages';
 import {FolderLock, FolderUnLock} from '../../../models/folders/FolderLock';
@@ -133,11 +133,13 @@ function splitFolderPaths(foldersStructure) {
 })
 @roleModel.authenticationInfo
 @HiddenObjects.injectTreeFilter
-@HiddenObjects.checkFolders((props) => (props?.params ? props.params.id : props.id))
+@HiddenObjects.checkFolders((props) =>
+  props?.params && props.id === undefined ? props.params.id : props.id,
+)
 @inject('awsRegions', 'preferences')
 @inject(({awsRegions, pipelines, dataStorages, folders}, params) => {
   let componentParameters = params;
-  if (params.params) {
+  if (params.params && params.id === undefined) {
     componentParameters = params.params;
   }
   return {
@@ -2296,7 +2298,7 @@ class Folder extends localization.LocalizedReactComponent {
           onCancel={this.closeCreateConfigurationDialog}
           visible={this.state.createConfigurationDialog}
         />
-        <CloneForm
+        <CloneFormWithModal
           parentId={this.props.folder.value.parentId}
           visible={this.state.cloneFolderDialogVisible}
           pending={this.state.operationInProgress}

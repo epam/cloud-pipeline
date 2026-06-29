@@ -20,7 +20,7 @@ export type ActionButtonProps<Props extends object> = CommonProps &
 export type ActionModalBaseProps = CommonProps & {
   disabled?: boolean;
   open: boolean;
-  onClose?: (event: MouseEvent | KeyboardEvent) => void;
+  onClose?: (event?: MouseEvent | KeyboardEvent) => void;
 };
 
 export function createActionButtonForModal<Props extends ActionModalBaseProps>(
