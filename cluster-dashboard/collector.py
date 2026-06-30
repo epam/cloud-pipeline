@@ -116,9 +116,14 @@ def _get_node_cpu_mem(client: CPClient, name: str, from_s: str, to_s: str):
         mem_obj = last.get("memoryUsage") or {}
         spec = last.get("containerSpec") or {}
 
-        load = cpu_obj.get("load")   # fraction 0..1 relative to node capacity
+        load  = cpu_obj.get("load")
         cores = spec.get("numberOfCores") or 0
-        cpu_used = (load * cores) if (load is not None and cores) else None
+        # CAdvisor returns load in absolute cores (delta_cpu_ns/period_ns);
+        # older ES/Heapster backends return a 0..1 fraction that must be scaled.
+        if load is not None and cores:
+            cpu_used = load if load > 1.0 else load * cores
+        else:
+            cpu_used = None
         mem_used = mem_obj.get("usage") or None
         return cpu_used, mem_used
     except Exception as exc:
@@ -131,7 +136,7 @@ def _get_node_gpu_active(client: CPClient, name: str, from_s: str, to_s: str):
     try:
         stats = client.get(
             f"cluster/node/{name}/usage/gpus",
-            **{"from": from_s, "to": to_s, "granularity": "global"},
+            **{"from": from_s, "to": to_s, "granularity": "GLOBAL"},
         )
         if not stats:
             return None
