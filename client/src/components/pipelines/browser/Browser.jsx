@@ -353,7 +353,8 @@ class Folder extends localization.LocalizedReactComponent {
     const isStorages = /^storages$/i.test(browserLocation);
     return (
       <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
-        <Row type="flex" justify="space-between" align="middle" style={{minHeight: 41}}>
+        {/* Legacy header */}
+        {/* <Row type="flex" justify="space-between" align="middle" style={{minHeight: 41}}>
           <Col className={styles.itemHeader}>
             {isStorages ? (
               <HddOutlined className={styles.editableControl} style={{marginRight: 5}} />
@@ -362,7 +363,7 @@ class Folder extends localization.LocalizedReactComponent {
             )}
             <span>{isStorages ? 'All storages' : `All ${this.localizedString('pipeline')}s`}</span>
           </Col>
-        </Row>
+        </Row> */}
         <Row type="flex" align="middle" style={{margin: '5px 0px'}}>
           <Input
             value={this.state.filter}
