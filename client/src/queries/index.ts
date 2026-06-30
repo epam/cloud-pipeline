@@ -11,6 +11,7 @@ export * from './system-dictionaries/hooks.ts';
 export * from './pipelines/pipelines.ts';
 export * from './pipelines/pipeline.ts';
 export * from './pipelines/pipeline-version.ts';
+export * from './pipelines/pipeline-configurations.ts';
 export * from './pipelines/hooks.ts';
 export * from './configuration/configuration.ts';
 export * from './configuration/configuration-schedule.ts';

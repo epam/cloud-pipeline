@@ -1,29 +1,19 @@
-import {Button, message} from 'antd';
-import {BranchesOutlined} from '@ant-design/icons';
+import {useQuery} from '@tanstack/react-query';
 
 import type {CommonProps} from '../../../../@types/common.ts';
+import {pipelineQueryOptions} from '../../../../queries';
+import {GitRepositoryPopover} from '../shared/git-repository-popover.tsx';
 
 type GitRepositoryActionProps = CommonProps & {
   pipelineId?: number | string;
   version?: string;
-  https?: string;
-  ssh?: string;
 };
 
-function GitRepositoryAction(props: GitRepositoryActionProps) {
-  const {pipelineId, version, https, ssh} = props;
+function GitRepositoryAction({pipelineId}: GitRepositoryActionProps) {
+  const numericId = pipelineId !== undefined ? Number(pipelineId) : undefined;
+  const {data: pipeline} = useQuery(pipelineQueryOptions(numericId));
 
-  const onClick = () => {
-    message.info(
-      `[mock] Git repository for pipeline ${pipelineId} (${version}): ${https ?? ssh ?? 'no repository'}`,
-    );
-  };
-
-  return (
-    <Button size="small" id="git-repository-button" onClick={onClick}>
-      <BranchesOutlined />
-    </Button>
-  );
+  return <GitRepositoryPopover https={pipeline?.repository} ssh={pipeline?.repositorySsh} />;
 }
 
 export {GitRepositoryAction};

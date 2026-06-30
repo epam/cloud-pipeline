@@ -1750,7 +1750,7 @@ class Tool extends localization.LocalizedReactComponent {
       );
       this.setState({launchPending: undefined});
       if (runResolved) {
-        SessionStorageWrapper.navigateToActiveRuns(this.props.router);
+        this.props.router.push(`/run/${runResolved.id}`);
       }
     });
   };

@@ -723,6 +723,9 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
             ? RepositoryTypes.GitHub
             : RepositoryTypes.GitHubApp;
         this.setState({githubType});
+        if (this.formRef.current) {
+          this.formRef.current.setFieldsValue(this.getFormInitialValues());
+        }
       }
     }
   }

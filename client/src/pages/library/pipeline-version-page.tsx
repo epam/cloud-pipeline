@@ -16,13 +16,7 @@ function PipelineVersionPage() {
     <>
       <LegacyComponentBridge component={PipelineDetails} />
       {renderActions(
-        <RunAction
-          key="run"
-          pipelineId={id}
-          version={version}
-          configurations={['default', 'high-mem']}
-          executable
-        />,
+        <RunAction key="run" pipelineId={id} version={version} />,
       )}
       {renderActionsAfterMenu(
         <PipelineVersionSettingsAction key="settings" pipelineId={id} version={version} />,

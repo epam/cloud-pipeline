@@ -208,7 +208,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
       }
       this.setState({pending: false});
       if (runResolved) {
-        SessionStorageWrapper.navigateToActiveRuns(this.props.router);
+        this.props.router.push(`/run/${runResolved.id}`);
       }
     });
   };

@@ -6,6 +6,7 @@ import {CopyOutlined, EditOutlined, SettingOutlined} from '@ant-design/icons';
 import {PipelineCloneModal} from '../../../shared/object-actions/pipeline/clone/pipeline-clone-modal.tsx';
 
 import type {CommonProps} from '../../../../@types/common.ts';
+import type {Folder, LibraryRootFolder, Pipeline} from '../../../../@types/library.ts';
 import {
   folderKeys,
   libraryTreeKeys,
@@ -14,12 +15,29 @@ import {
   pipelinesKeys,
   queryClient,
 } from '../../../../queries';
+import {updatePipeline} from '../../../../api';
 import localization from '../../../../utils/localization.jsx';
 import EditPipelineForm from '../../../pipelines/version/forms/EditPipelineForm.jsx';
 import {LegacyMobXStoresProvider} from '../../../../pages/_shared/legacy-mobx-stores-provider.tsx';
-import UpdatePipeline from '../../../../models/pipelines/UpdatePipeline.js';
+import {legacyMobXStores} from '../../../../mobx-stores/legacy-stores.js';
 import UpdatePipelineToken from '../../../../models/pipelines/UpdatePipelineToken.js';
 import DeletePipeline from '../../../../models/pipelines/DeletePipeline.js';
+
+function updatePipelineInLibraryTree(
+  folder: LibraryRootFolder | Folder,
+  id: number,
+  updated: Pipeline,
+): LibraryRootFolder | Folder {
+  const pipelines = folder.pipelines?.map((p) => (p.id === id ? {...p, ...updated} : p));
+  const childFolders = folder.childFolders?.map(
+    (f) => updatePipelineInLibraryTree(f, id, updated) as Folder,
+  );
+  return {
+    ...folder,
+    ...(pipelines !== undefined ? {pipelines} : {}),
+    ...(childFolders !== undefined ? {childFolders} : {}),
+  };
+}
 
 type SettingsActionProps = CommonProps & {
   pipelineId?: number | string;
@@ -39,7 +57,6 @@ function SettingsAction(props: SettingsActionProps) {
   const navigate = useNavigate();
   const {pathname} = useLocation();
 
-  const updateRequest = useRef(new UpdatePipeline());
   const updateTokenRequest = useRef(new UpdatePipelineToken());
 
   const openEditDialog = useCallback(() => {
@@ -75,20 +92,22 @@ function SettingsAction(props: SettingsActionProps) {
         : 'pipeline';
       const localizedName = localization.localization.localizedString(objectName);
       const hide = message.loading(`Updating ${localizedName} ${name}...`, 0);
-      await updateRequest.current.send({
-        id: pipeline.id,
-        name,
-        description,
-        parentFolderId: pipeline.parentFolderId,
-        branch,
-        configurationPath,
-        visibility,
-        codePath,
-        docsPath,
-      });
-      if (updateRequest.current.error) {
+      let updatedPipeline: Pipeline;
+      try {
+        updatedPipeline = await updatePipeline({
+          id: pipeline.id,
+          name: name as string,
+          description: description as string | undefined,
+          parentFolderId: pipeline.parentFolderId,
+          branch: branch as string | undefined,
+          configurationPath: configurationPath as string | undefined,
+          visibility: visibility as Pipeline['visibility'],
+          codePath: codePath as string | undefined,
+          docsPath: docsPath as string | undefined,
+        });
+      } catch (error) {
         hide();
-        message.error(updateRequest.current.error, 5);
+        message.error(error instanceof Error ? error.message : 'Error updating pipeline', 5);
         return;
       }
       if (token !== undefined) {
@@ -102,10 +121,21 @@ function SettingsAction(props: SettingsActionProps) {
       } else {
         hide();
       }
+      queryClient.setQueryData(pipelineKeys.detail(pipeline.id), updatedPipeline);
+      queryClient.setQueryData(
+        libraryTreeKeys.all,
+        (old: LibraryRootFolder | undefined) =>
+          old
+            ? (updatePipelineInLibraryTree(old, pipeline.id, updatedPipeline) as LibraryRootFolder)
+            : old,
+      );
+      void invalidateAfterEdit();
+      if (numericId !== undefined) {
+        void legacyMobXStores.pipelines.getPipeline(numericId).fetch();
+      }
       closeEditDialog();
-      await invalidateAfterEdit();
     },
-    [pipeline, closeEditDialog, invalidateAfterEdit],
+    [pipeline, numericId, closeEditDialog, invalidateAfterEdit],
   );
 
   const deletePipeline = useCallback(
