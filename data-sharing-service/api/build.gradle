@@ -15,22 +15,25 @@
  */
 
 plugins {
-    id 'io.spring.dependency-management' version '1.1.4'
-    id 'org.springframework.boot' version '2.7.18'
+    id 'pmd'
     id 'java'
     id 'checkstyle'
-    id 'pmd'
+    id 'org.springframework.boot' version '3.3.13'
+    id 'io.spring.dependency-management' version '1.1.7'
 }
 
-ext { springBootVersion = '2.7.18' }
+
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 }
 
 repositories {
     mavenCentral()
+    maven {
+        url "https://build.shibboleth.net/nexus/content/repositories/releases/"
+    }
 }
 
 bootJar {
@@ -44,14 +47,16 @@ dependencies {
 
     implementation project(":cloud-pipeline-common:model")
 
-    implementation "org.springframework.boot:spring-boot-starter:$springBootVersion"
-    implementation "org.springframework.boot:spring-boot-starter-web:$springBootVersion"
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
 
-    implementation "org.springframework.boot:spring-boot-starter-security:$springBootVersion"
-    implementation group: 'org.springframework.security.extensions', name: 'spring-security-saml2-core', version: '1.0.2.RELEASE'
-    implementation 'com.auth0:java-jwt:3.1.0'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.security:spring-security-saml2-service-provider:6.3.10'
+    implementation('com.auth0:java-jwt:3.1.0') {
+        exclude group: 'org.bouncycastle', module: 'bcprov-jdk15on'
+    }
 
-    implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.36'
+    implementation 'org.slf4j:slf4j-api:1.7.36'
     implementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
     implementation "org.apache.logging.log4j:log4j-api:$log4jVersion"
     implementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
@@ -66,20 +71,17 @@ dependencies {
     testImplementation 'org.projectlombok:lombok:1.18.34'
     testAnnotationProcessor 'org.projectlombok:lombok:1.18.34'
 
-    implementation 'io.springfox:springfox-swagger2:2.9.2'
-    implementation 'io.springfox:springfox-swagger-ui:2.9.2'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
 
-    implementation 'commons-io:commons-io:2.4'
-    implementation 'org.apache.commons:commons-lang3:3.0'
+    implementation 'commons-io:commons-io:2.16.1'
+    implementation 'org.apache.commons:commons-lang3:3.17.0'
     implementation 'org.apache.commons:commons-collections4:4.4'
+    implementation 'org.apache.commons:commons-fileupload2-jakarta:2.0.0-M1'
+    implementation 'org.apache.commons:commons-fileupload2-jakarta-servlet6:2.0.0-M4'
 
     implementation 'com.squareup.retrofit2:retrofit:2.3.0'
     implementation 'com.squareup.retrofit2:converter-jackson:2.3.0'
     implementation 'com.squareup.okhttp3:okhttp:3.9.1'
-
-    testImplementation "org.springframework.boot:spring-boot-starter-test:$springBootVersion"
-    testImplementation 'junit:junit:4.12'
-    testImplementation 'org.springframework.security:spring-security-test'
 }
 
 build.mustRunAfter ':data-sharing-service:client:buildUI'

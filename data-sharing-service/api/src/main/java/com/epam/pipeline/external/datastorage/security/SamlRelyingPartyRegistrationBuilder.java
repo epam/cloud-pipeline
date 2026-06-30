@@ -1,0 +1,124 @@
+/*
+ * Copyright 2026 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.epam.pipeline.external.datastorage.security;
+
+import org.opensaml.xmlsec.signature.support.SignatureConstants;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
+import org.springframework.core.io.FileSystemResourceLoader;
+import org.springframework.security.saml2.core.Saml2X509Credential;
+import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistration;
+import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistrations;
+import org.springframework.security.saml2.provider.service.registration.Saml2MessageBinding;
+import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableEntryException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+
+@Component
+public class SamlRelyingPartyRegistrationBuilder {
+
+    private final String federationMetadataFile;
+    private final String registrationId;
+    private final String endpointId;
+    private final String acsEndpoint;
+    private final String signingKey;
+    private final String keyAlias;
+    private final String keyStore;
+    private final String keyStorePassword;
+    private final String authnRequestBinding;
+
+    public SamlRelyingPartyRegistrationBuilder(
+            @Value("${server.ssl.metadata}") final String federationMetadataFile,
+            @Value("${saml.sso.registration-id:SSO}") final String registrationId,
+            @Value("${server.ssl.endpoint.id}") final String endpointId,
+            @Value("${saml.sso.acs.endpoint:/saml/SSO}") final String acsEndpoint,
+            @Value("${saml.sign.key}") final String signingKey,
+            @Value("${server.ssl.keyAlias}") final String keyAlias,
+            @Value("${server.ssl.key-store}") final String keyStore,
+            @Value("${server.ssl.key-store-password}") final String keyStorePassword,
+            @Value("${saml.authn.request.binding}") final String authnRequestBinding) {
+        this.federationMetadataFile = federationMetadataFile;
+        this.registrationId = registrationId;
+        this.endpointId = endpointId;
+        this.acsEndpoint = acsEndpoint;
+        this.signingKey = signingKey;
+        this.keyAlias = keyAlias;
+        this.keyStore = keyStore;
+        this.keyStorePassword = keyStorePassword;
+        this.authnRequestBinding = authnRequestBinding;
+    }
+
+    public RelyingPartyRegistration build() {
+        return RelyingPartyRegistrations.fromMetadataLocation(prepareFederationMetadataPath())
+                .assertingPartyDetails(party -> party
+                        .singleSignOnServiceBinding(Saml2MessageBinding.from(authnRequestBinding))
+                        .signingAlgorithms(sign -> sign.add(SignatureConstants.ALGO_ID_SIGNATURE_RSA)))
+                .registrationId(registrationId)
+                .entityId(endpointId)
+                .assertionConsumerServiceLocation(buildAcsUrl())
+                .assertionConsumerServiceBinding(Saml2MessageBinding.POST)
+                .signingX509Credentials(c -> {
+                    c.add(getSigningCredential(signingKey));
+                    if (!signingKey.equals(keyAlias)) {
+                        c.add(getSigningCredential(keyAlias));
+                    }
+                })
+                .authnRequestsSigned(true)
+                .build();
+    }
+
+    private Saml2X509Credential getSigningCredential(final String alias) {
+        try {
+            final var loader = new FileSystemResourceLoader();
+            final var storeFile = loader.getResource(keyStore);
+            final var ks = KeyStore.getInstance("JKS");
+            ks.load(storeFile.getInputStream(), keyStorePassword.toCharArray());
+
+            final var certificate = (X509Certificate) ks.getCertificate(alias);
+            final var privateKeyEntry = (KeyStore.PrivateKeyEntry) ks.getEntry(
+                    alias, new KeyStore.PasswordProtection(keyStorePassword.toCharArray()));
+            final var privateKey = privateKeyEntry.getPrivateKey();
+
+            return new Saml2X509Credential(privateKey, certificate,
+                    Saml2X509Credential.Saml2X509CredentialType.SIGNING);
+        } catch (IOException | KeyStoreException | CertificateException |
+                 NoSuchAlgorithmException | UnrecoverableEntryException e) {
+            throw new IllegalStateException("Failed to load SAML signing credential: " + alias, e);
+        }
+    }
+
+    private String buildAcsUrl() {
+        final String base = endpointId.endsWith("/")
+                ? endpointId.substring(0, endpointId.length() - 1) : endpointId;
+        final String path = acsEndpoint.startsWith("/") ? acsEndpoint : "/" + acsEndpoint;
+        return base + path;
+    }
+
+    private String prepareFederationMetadataPath() {
+        if (federationMetadataFile.startsWith("classpath:") || federationMetadataFile.startsWith("file:")
+                || federationMetadataFile.startsWith("http:") || federationMetadataFile.startsWith("https:")) {
+            return federationMetadataFile;
+        }
+        return "file:" + federationMetadataFile;
+    }
+}
