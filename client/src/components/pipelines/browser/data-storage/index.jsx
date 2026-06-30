@@ -3217,7 +3217,10 @@ class DataStorage extends React.Component {
   }
 
   componentDidMount() {
-    const {openPreview, path} = this.props;
+    const {openPreview, path, onExposeRefresh} = this.props;
+    if (onExposeRefresh) {
+      onExposeRefresh(this.refreshList.bind(this));
+    }
     if (openPreview) {
       const file = {
         path: `${path ? `${path}/` : ''}${openPreview}`,

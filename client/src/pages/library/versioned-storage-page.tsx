@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useRef, useState} from 'react';
 import {useParams} from 'react-router-dom';
 
 import VersionedStorage from '../../components/pipelines/browser/versioned-storage';
@@ -17,20 +17,37 @@ function VersionedStoragePage() {
   const {actionsStore} = useLibraryLayoutOutletContext();
   const {renderActions, renderActionsAfterMenu} = actionsStore;
   const [historyPanelOpen, setHistoryPanelOpen] = useState(false);
+  const historyActionsRef = useRef<{open: () => void; close: () => void} | null>(null);
+  const runActionRef = useRef<(() => void) | null>(null);
 
   useLibraryMenuActions(() => [], []);
 
   return (
     <>
-      <LegacyComponentBridge component={VersionedStorage} componentProps={{id}} />
+      <LegacyComponentBridge
+        component={VersionedStorage}
+        componentProps={{
+          id,
+          onExposeHistoryActions: (actions: {open: () => void; close: () => void}) => {
+            historyActionsRef.current = actions;
+          },
+          onHistoryPanelChange: setHistoryPanelOpen,
+          onExposeRunAction: (fn: () => void) => {
+            runActionRef.current = fn;
+          },
+        }}
+      />
       {renderActions(
-        <RunAction key="run" storageId={id} executable />,
+        <RunAction key="run" storageId={id} onRun={() => runActionRef.current?.()} />,
         <GenerateReportAction key="generate-report" storageId={id} />,
         <HistoryAction
           key="history"
-          storageId={id}
           historyPanelOpen={historyPanelOpen}
-          onToggle={setHistoryPanelOpen}
+          onToggle={(open) => {
+            setHistoryPanelOpen(open);
+            if (open) historyActionsRef.current?.open();
+            else historyActionsRef.current?.close();
+          }}
         />,
       )}
       {renderActionsAfterMenu(<SettingsAction key="settings" storageId={id} />)}

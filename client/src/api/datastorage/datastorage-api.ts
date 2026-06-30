@@ -136,6 +136,10 @@ export async function generateDataStorageDownloadUrls(
   });
 }
 
+export async function generateDataStorageSharedLink(id: number): Promise<string> {
+  return cloudPipelineApi.jsonGet<string>({uri: `datastorage/${id}/sharedLink`});
+}
+
 export async function saveDataStorage(
   storage: DataStorageVO,
   {cloud = true, skipPolicy = false}: {cloud?: boolean; skipPolicy?: boolean} = {},

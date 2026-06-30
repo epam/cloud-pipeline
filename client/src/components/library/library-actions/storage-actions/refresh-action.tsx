@@ -1,4 +1,4 @@
-import {Button, message} from 'antd';
+import {Button} from 'antd';
 import {ReloadOutlined} from '@ant-design/icons';
 
 import type {CommonProps} from '../../../../@types/common.ts';
@@ -10,17 +10,14 @@ type RefreshActionProps = CommonProps & {
 };
 
 function RefreshAction(props: RefreshActionProps) {
-  const {storageId, pending = false, onRefresh} = props;
+  const {pending = false, onRefresh} = props;
 
   return (
     <Button
       id="refresh-storage-button"
       size="small"
       disabled={pending}
-      onClick={() => {
-        message.info(`[mock] Refresh storage ${storageId}`);
-        onRefresh?.();
-      }}
+      onClick={() => onRefresh?.()}
     >
       <ReloadOutlined />
       Refresh

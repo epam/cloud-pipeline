@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useRef, useState} from 'react';
 import {useParams} from 'react-router-dom';
 
 import StorageBrowser from '../../components/pipelines/browser/data-storage';
@@ -16,6 +16,8 @@ function StoragePage() {
   const {id} = useParams<{id: string}>();
   const {actionsStore} = useLibraryLayoutOutletContext();
   const {renderActions, renderActionsAfterMenu} = actionsStore;
+
+  const refreshFnRef = useRef<((keepPage?: boolean) => void) | null>(null);
 
   const [showJobs, setShowJobs] = useState(false);
   const [showArchives, setShowArchives] = useState(false);
@@ -51,14 +53,17 @@ function StoragePage() {
 
   return (
     <>
-      <LegacyComponentBridge component={StorageBrowser} componentProps={{id}} />
+      <LegacyComponentBridge
+        component={StorageBrowser}
+        componentProps={{id, onExposeRefresh: (fn: (keepPage?: boolean) => void) => { refreshFnRef.current = fn; }}}
+      />
       {renderActions(
         <GenerateUrlAction key="generate-url" storageId={id} />,
         <SharedLinkAction key="shared-link" storageId={id} />,
       )}
       {renderActionsAfterMenu(
         <SettingsAction key="settings" storageId={id} />,
-        <RefreshAction key="refresh" storageId={id} />,
+        <RefreshAction key="refresh" storageId={id} onRefresh={() => refreshFnRef.current?.(true)} />,
       )}
     </>
   );

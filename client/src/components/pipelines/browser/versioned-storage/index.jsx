@@ -152,6 +152,13 @@ class VersionedStorage extends localization.LocalizedReactComponent {
   }
 
   componentDidMount() {
+    const {onExposeHistoryActions, onExposeRunAction} = this.props;
+    if (onExposeHistoryActions) {
+      onExposeHistoryActions({open: this.openHistoryPanel, close: this.closeHistoryPanel});
+    }
+    if (onExposeRunAction) {
+      onExposeRunAction(this.openLaunchVSForm);
+    }
     this.pathWasChanged();
   }
 
@@ -302,11 +309,15 @@ class VersionedStorage extends localization.LocalizedReactComponent {
   };
 
   openHistoryPanel = () => {
-    this.setState({showHistoryPanel: true});
+    this.setState({showHistoryPanel: true}, () => {
+      this.props.onHistoryPanelChange?.(true);
+    });
   };
 
   closeHistoryPanel = () => {
-    this.setState({showHistoryPanel: false, selectedFile: undefined});
+    this.setState({showHistoryPanel: false, selectedFile: undefined}, () => {
+      this.props.onHistoryPanelChange?.(false);
+    });
   };
 
   runVersionedStorage = () => {
