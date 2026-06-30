@@ -274,6 +274,8 @@ footer { padding-top: 24px; font-size: 11px; color: var(--txt-muted); text-align
 .activity-label       { color: var(--txt-muted); }
 .activity-value       { color: var(--txt); font-size: 11px; }
 .activity-placeholder { color: var(--txt-muted); font-style: italic; font-size: 11px; }
+.gpu-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 130px; }
+.gpu-mem  { color: var(--cyan); text-align: right; padding-right: 10px !important; font-family: monospace; }
 </style>
 </head>
 <body>
@@ -857,6 +859,7 @@ async function refreshRunDetails() {
 }
 
 function renderRunDetails(details) {
+  document.querySelector('.sp-sort-bar').style.display = 'none';
   const node   = _detailNode;
   const runUrl = (_uiUrl && node.run_id) ? `${_uiUrl}/#/run/${node.run_id}` : null;
   const badge  = runUrl
@@ -884,6 +887,11 @@ function renderRunDetails(details) {
       <div class="detail-section-title">Activity</div>
       <div id="detail-activity">${_renderActivity(details)}</div>
     </div>
+    ${node.gpu_capacity > 0 ? `
+    <div class="detail-section">
+      <div class="detail-section-title">GPU Usage</div>
+      <div id="gpu-section-wrap">${_renderGpuSection(details.gpus)}</div>
+    </div>` : ''}
     <div class="detail-section">
       <div class="detail-section-title">Processes</div>
       <div id="proc-table-wrap">${_initProcesses(details.processes)}</div>
@@ -897,6 +905,25 @@ function _initProcesses(procs) {
   if (procs == null) return '<p class="detail-na">Unavailable — pipe CLI not reachable on this server</p>';
   if (!procs.length) return '<p class="detail-na">No processes found</p>';
   return _renderProcessTable();
+}
+
+function _renderGpuSection(gpus) {
+  if (gpus == null) return '<p class="detail-na">Unavailable — nvidia-smi not reachable on this run</p>';
+  if (!gpus.length)  return '<p class="detail-na">No GPUs found</p>';
+  const rows = gpus.map(g => `<tr>
+    <td class="proc-pid">${esc(g.id)}</td>
+    <td class="gpu-name">${esc(g.name)}</td>
+    <td class="proc-num">${esc(g.gpu_util)}%</td>
+    <td class="gpu-mem">${esc(g.mem_used)} / ${esc(g.mem_total)} MiB</td>
+  </tr>`).join('');
+  return `<table class="proc-table">
+    <thead><tr>
+      <th>ID</th><th>Model</th>
+      <th style="text-align:right;padding-right:10px">Usage%</th>
+      <th style="text-align:right">Memory (MiB)</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
 }
 
 function _renderProcessTable() {
@@ -962,6 +989,7 @@ function backToList() {
   _panelView       = 'list';
   _detailNode      = null;
   _detailProcesses = null;
+  document.querySelector('.sp-sort-bar').style.display = '';
   if (_panelData && _panelData.nodes) {
     document.getElementById('sp-body').innerHTML =
       sortNodes(_panelData.nodes, _sortKey, _sortDir).map(n => runCardHtml(n)).join('');

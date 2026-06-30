@@ -159,6 +159,7 @@ def api_run_details(run_id):
     result = {
         "run_id":               run_id,
         "processes":            None,
+        "gpus":                 None,
         "last_paused":          None,
         "last_resumed":         None,
         "last_ssh_access":      None,
@@ -172,6 +173,7 @@ def api_run_details(run_id):
         except Exception:
             log.exception("Failed to fetch run details for run %d", run_id)
     result["processes"] = _get_run_processes(run_id)
+    result["gpus"]      = _get_run_gpus(run_id)
     return jsonify(result)
 
 
@@ -227,6 +229,41 @@ def _parse_ps_output(text: str) -> list:
                 "cpu":     parts[2],
                 "mem":     parts[3],
                 "command": parts[4] if len(parts) > 4 else "",
+            })
+    return rows
+
+
+def _get_run_gpus(run_id: int):
+    try:
+        r = subprocess.run(
+            ["pipe", "ssh", str(run_id),
+             "nvidia-smi --query-gpu=index,name,utilization.gpu,memory.used,memory.total"
+             " --format=csv,noheader,nounits"],
+            capture_output=True, text=True, timeout=20,
+        )
+        if r.returncode == 0 and r.stdout.strip():
+            return _parse_nvidia_smi_output(r.stdout)
+        log.debug("nvidia-smi exited %d for run %d: %s", r.returncode, run_id, r.stderr[:200])
+    except FileNotFoundError:
+        log.debug("pipe CLI not found — GPU list unavailable")
+    except subprocess.TimeoutExpired:
+        log.warning("pipe ssh (nvidia-smi) timed out for run %d", run_id)
+    except Exception as exc:
+        log.debug("pipe ssh (nvidia-smi) failed for run %d: %s", run_id, exc)
+    return None
+
+
+def _parse_nvidia_smi_output(text: str) -> list:
+    rows = []
+    for line in text.strip().splitlines():
+        parts = [p.strip() for p in line.split(",")]
+        if len(parts) >= 5:
+            rows.append({
+                "id":        parts[0],
+                "name":      parts[1],
+                "gpu_util":  parts[2],
+                "mem_used":  parts[3],
+                "mem_total": parts[4],
             })
     return rows
 
