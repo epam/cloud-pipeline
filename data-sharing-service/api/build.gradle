@@ -40,6 +40,10 @@ bootJar {
     archiveFileName = "data-sharing-service.jar"
 }
 
+jar {
+    enabled = false
+}
+
 dependencies {
     configurations {
         all*.exclude module: 'spring-boot-starter-logging'
