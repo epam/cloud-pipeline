@@ -25,6 +25,7 @@ COLLECT_INTERVAL_MINUTES Collection period in minutes (default: 60)
 DB_PATH                  Path to the SQLite database file
                          (default: <app-dir>/data/metrics.db)
 PORT                     HTTP port (default: 5000)
+URL_PREFIX               URL path prefix, e.g. /cluster_dashboard (default: "")
 """
 
 import logging
@@ -34,7 +35,7 @@ from datetime import datetime, timedelta, timezone
 from urllib.parse import urlparse
 
 from apscheduler.schedulers.background import BackgroundScheduler
-from flask import Flask, abort, jsonify, request, send_from_directory
+from flask import Blueprint, Flask, abort, jsonify, request, send_from_directory
 
 import database as db
 from collector import CPClient, collect_snapshot
@@ -46,6 +47,7 @@ from collector import CPClient, collect_snapshot
 CP_API_URL  = os.environ.get("CP_API_URL", "").rstrip("/")
 CP_API_TOKEN = os.environ.get("CP_API_TOKEN", "")
 COLLECT_INTERVAL_MINUTES = int(os.environ.get("COLLECT_INTERVAL_MINUTES", "60"))
+URL_PREFIX   = os.environ.get("URL_PREFIX", "").rstrip("/")
 _APP_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH  = os.environ.get("DB_PATH", os.path.join(_APP_DIR, "data", "metrics.db"))
 PORT     = int(os.environ.get("PORT", "5000"))
@@ -71,6 +73,7 @@ log = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 app = Flask(__name__, static_folder="static")
+bp  = Blueprint("dashboard", __name__)
 
 
 # ---------------------------------------------------------------------------
@@ -94,12 +97,12 @@ def _run_collection() -> None:
 # Routes
 # ---------------------------------------------------------------------------
 
-@app.route("/")
+@bp.route("/")
 def dashboard():
     return send_from_directory("static", "index.html")
 
 
-@app.route("/api/metrics")
+@bp.route("/api/metrics")
 def api_metrics():
     now = datetime.now(timezone.utc)
     from_str = request.args.get("from")
@@ -125,13 +128,13 @@ def api_metrics():
     return jsonify(rows)
 
 
-@app.route("/api/status")
+@bp.route("/api/status")
 def api_status():
     latest = db.get_latest(DB_PATH)
     return jsonify(latest or {})
 
 
-@app.route("/api/runs")
+@bp.route("/api/runs")
 def api_runs():
     ts_str = request.args.get("ts")
     if not ts_str:
@@ -144,7 +147,7 @@ def api_runs():
     return jsonify(result)
 
 
-@app.route("/api/health")
+@bp.route("/api/health")
 def api_health():
     return jsonify({
         "status": "ok",
@@ -154,7 +157,7 @@ def api_health():
     })
 
 
-@app.route("/api/run/<int:run_id>/details")
+@bp.route("/api/run/<int:run_id>/details")
 def api_run_details(run_id):
     result = {
         "run_id":               run_id,
@@ -278,6 +281,12 @@ def _parse_nvidia_smi_output(text: str) -> list:
 
 # ---------------------------------------------------------------------------
 # Entry point
+# ---------------------------------------------------------------------------
+# Blueprint registration
+# ---------------------------------------------------------------------------
+
+app.register_blueprint(bp, url_prefix=URL_PREFIX or None)
+
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":

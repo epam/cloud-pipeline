@@ -516,7 +516,7 @@ async function loadData(from, to) {
   const params = new URLSearchParams({ from: from.toISOString(), to: to.toISOString() });
   let rows;
   try {
-    const resp = await fetch(`/api/metrics?${params}`);
+    const resp = await fetch(`api/metrics?${params}`);
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     rows = await resp.json();
   } catch (e) {
@@ -641,7 +641,7 @@ function attachClick(chart) {
 async function fetchRuns(ts) {
   showPanelLoading();
   try {
-    const resp = await fetch(`/api/runs?ts=${ts}`);
+    const resp = await fetch(`api/runs?ts=${ts}`);
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const data = await resp.json();
     renderPanel(data);
@@ -829,7 +829,7 @@ function handleRunCardClick(event, card) {
 
 async function fetchRunDetails(runId) {
   try {
-    const resp = await fetch(`/api/run/${runId}/details`);
+    const resp = await fetch(`api/run/${runId}/details`);
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     renderRunDetails(await resp.json());
   } catch (e) {
@@ -843,7 +843,7 @@ async function refreshRunDetails() {
   const btn = document.getElementById('detail-refresh-btn');
   if (btn) btn.classList.add('spinning');
   try {
-    const resp = await fetch(`/api/run/${_detailNode.run_id}/details`);
+    const resp = await fetch(`api/run/${_detailNode.run_id}/details`);
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const details = await resp.json();
     const act = document.getElementById('detail-activity');
@@ -1055,7 +1055,7 @@ function initPanelResize() {
 // ── Bootstrap ──────────────────────────────────────────────────────────────
 async function bootstrap() {
   try {
-    const h = await (await fetch('/api/health')).json();
+    const h = await (await fetch('api/health')).json();
     document.getElementById('footer-interval').textContent = h.collect_interval_minutes || '?';
     if (!h.api_configured) setStatus('error', 'API not configured (set CP_API_URL + CP_API_TOKEN)');
     _uiUrl = h.ui_url || '';
