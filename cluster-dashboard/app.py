@@ -202,12 +202,11 @@ def _extract_run_activity(run: dict) -> dict:
 def _get_run_processes(run_id: int):
     try:
         r = subprocess.run(
-            ["pipe", "ssh", str(run_id),
-             "ps --no-headers -eo user,pid,pcpu,pmem,comm --sort=-%cpu"],
-            capture_output=True, text=True, timeout=20,
+            ["pipe", "ssh", str(run_id), "top -bn2 -d 1"],
+            capture_output=True, text=True, timeout=25,
         )
         if r.returncode == 0 and r.stdout.strip():
-            return _parse_ps_output(r.stdout)
+            return _parse_top_output(r.stdout)
         log.debug("pipe ssh exited %d for run %d: %s", r.returncode, run_id, r.stderr[:200])
     except FileNotFoundError:
         log.debug("pipe CLI not found — process list unavailable")
@@ -218,18 +217,27 @@ def _get_run_processes(run_id: int):
     return None
 
 
-def _parse_ps_output(text: str) -> list:
+def _parse_top_output(text: str) -> list:
+    lines = text.splitlines()
+    # Find the last PID/USER header — second iteration gives 1-second delta %CPU
+    header_idx = None
+    for i, line in enumerate(lines):
+        if "PID" in line and "USER" in line and "%CPU" in line:
+            header_idx = i
+    if header_idx is None:
+        return []
     rows = []
-    for line in text.strip().splitlines():
-        parts = line.split(None, 4)
-        if len(parts) >= 4:
+    for line in lines[header_idx + 1:]:
+        parts = line.split(None, 11)
+        if len(parts) >= 10 and parts[0].isdigit():
             rows.append({
-                "user":    parts[0],
-                "pid":     parts[1],
-                "cpu":     parts[2],
-                "mem":     parts[3],
-                "command": parts[4] if len(parts) > 4 else "",
+                "user":    parts[1],
+                "pid":     parts[0],
+                "cpu":     parts[8],
+                "mem":     parts[9],
+                "command": parts[11] if len(parts) > 11 else "",
             })
+    rows.sort(key=lambda r: float(r["cpu"]) if r["cpu"].replace(".", "", 1).isdigit() else 0, reverse=True)
     return rows
 
 
