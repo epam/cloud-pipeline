@@ -99,8 +99,8 @@ class CPClient:
 # ---------------------------------------------------------------------------
 
 def _dt_range_strings(now: datetime):
-    from_str = (now - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%S")
-    to_str = now.strftime("%Y-%m-%dT%H:%M:%S")
+    from_str = (now - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%S.0")
+    to_str = now.strftime("%Y-%m-%dT%H:%M:%S.0")
     return from_str, to_str
 
 

@@ -63,7 +63,7 @@ _MAX_RANGE_DAYS = 7
 # ---------------------------------------------------------------------------
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format="%(asctime)s %(levelname)-8s %(name)s — %(message)s",
 )
 log = logging.getLogger(__name__)
