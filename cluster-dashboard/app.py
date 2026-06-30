@@ -157,6 +157,15 @@ def api_health():
     })
 
 
+@bp.route("/api/run/<int:run_id>/history")
+def api_run_history(run_id):
+    now = datetime.now(timezone.utc)
+    from_ts = int((now - timedelta(hours=24)).timestamp())
+    to_ts   = int(now.timestamp())
+    rows = db.query_run_history(DB_PATH, run_id, from_ts, to_ts)
+    return jsonify(rows)
+
+
 @bp.route("/api/run/<int:run_id>/details")
 def api_run_details(run_id):
     result = {

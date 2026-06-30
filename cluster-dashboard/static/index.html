@@ -276,6 +276,13 @@ footer { padding-top: 24px; font-size: 11px; color: var(--txt-muted); text-align
 .activity-placeholder { color: var(--txt-muted); font-style: italic; font-size: 11px; }
 .gpu-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 130px; }
 .gpu-mem  { color: var(--cyan); text-align: right; padding-right: 10px !important; font-family: monospace; }
+.run-history-chart { position: relative; height: 130px; margin-top: 4px; }
+.run-history-legend { display: flex; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
+.run-history-legend span { font-size: 10px; color: var(--txt-muted); display: flex; align-items: center; gap: 4px; }
+.run-history-legend span::before { content: ''; display: inline-block; width: 12px; height: 2px; border-radius: 1px; }
+.rhl-cpu::before  { background: var(--green); }
+.rhl-mem::before  { background: var(--cyan); }
+.rhl-gpu::before  { background: var(--orange); }
 </style>
 </head>
 <body>
@@ -283,12 +290,7 @@ footer { padding-top: 24px; font-size: 11px; color: var(--txt-muted); text-align
 
   <!-- ── Header ── -->
   <header>
-    <svg class="logo" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="32" height="32" rx="6" fill="#1a1e2b"/>
-      <path d="M16 6L26 11.5V20.5L16 26L6 20.5V11.5L16 6Z" stroke="#4e79c7" stroke-width="1.8" fill="none"/>
-      <circle cx="16" cy="16" r="3.5" fill="#4e79c7"/>
-    </svg>
-    <h1>Cloud Pipeline &mdash; Cluster Utilization</h1>
+    <h1>Cluster Utilization</h1>
     <div class="spacer"></div>
     <span class="status-dot" id="sdot"></span>
     <span id="status-text">loading…</span>
@@ -436,6 +438,7 @@ let _sortDir     = 'asc';
 let _panelView       = 'list';   // 'list' | 'detail'
 let _detailNode      = null;
 let _detailProcesses = null;
+let _runChart        = null;
 let _procSortCol     = 'cpu';
 let _procSortDir     = 'desc';
 let _panelWidth      = 400;
@@ -858,6 +861,62 @@ async function refreshRunDetails() {
   }
 }
 
+async function fetchRunHistory(runId) {
+  try {
+    const rows = await (await fetch(`api/run/${runId}/history`)).json();
+    _renderRunChart(rows);
+  } catch (e) {
+    const el = document.getElementById('run-history-wrap');
+    if (el) el.innerHTML = `<p class="detail-na">History unavailable: ${esc(e.message)}</p>`;
+  }
+}
+
+function _renderRunChart(rows) {
+  const wrap = document.getElementById('run-history-wrap');
+  if (!wrap) return;
+  if (!rows || !rows.length) {
+    wrap.innerHTML = '<p class="detail-na">No history data</p>';
+    return;
+  }
+  const hasGpu = _detailNode && _detailNode.gpu_capacity > 0;
+  wrap.innerHTML = `<div class="run-history-chart"><canvas id="run-chart-canvas"></canvas></div>
+    <div class="run-history-legend">
+      <span class="rhl-cpu">CPU%</span>
+      <span class="rhl-mem">Mem%</span>
+      ${hasGpu ? '<span class="rhl-gpu">GPU%</span>' : ''}
+    </div>`;
+
+  const pct = (used, cap) => (used != null && cap) ? parseFloat((used / cap * 100).toFixed(1)) : null;
+  const pts = (field, cap) => rows.map(r => ({ x: r.snapshot_ts * 1000, y: pct(r[field], r[cap]) }));
+
+  if (_runChart) { _runChart.destroy(); _runChart = null; }
+  _runChart = new Chart(document.getElementById('run-chart-canvas').getContext('2d'), {
+    type: 'line',
+    data: { datasets: [
+      { label: 'CPU%',  data: pts('cpu_used', 'cpu_capacity'), borderColor: '#54c77a', backgroundColor: '#54c77a18', fill: true,  borderWidth: 1.5, pointRadius: 1, tension: 0.3, spanGaps: false },
+      { label: 'Mem%',  data: pts('mem_used', 'mem_capacity'), borderColor: '#36bfbf', backgroundColor: 'transparent',             borderWidth: 1.5, pointRadius: 1, tension: 0.3, spanGaps: false },
+      ...(hasGpu ? [{ label: 'GPU%', data: pts('gpu_used', 'gpu_capacity'), borderColor: '#f0913a', backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 1, tension: 0.3, spanGaps: false }] : []),
+    ]},
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1e2b', borderColor: '#2d3352', borderWidth: 1,
+          titleColor: '#d0d8f0', bodyColor: '#9aabcf', padding: 8,
+          callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(1) + '%' : 'N/A'}` }
+        }
+      },
+      scales: {
+        x: { type: 'time', time: { tooltipFormat: 'yyyy-MM-dd HH:mm' }, grid: { color: '#1e2535' }, ticks: { color: '#6b7db3', maxTicksLimit: 6, font: { size: 10 } } },
+        y: { min: 0, max: 100, grid: { color: '#1e2535' }, ticks: { color: '#6b7db3', font: { size: 10 }, callback: v => v + '%', maxTicksLimit: 5 } }
+      }
+    }
+  });
+}
+
 function renderRunDetails(details) {
   document.querySelector('.sp-sort-bar').style.display = 'none';
   const node   = _detailNode;
@@ -884,6 +943,10 @@ function renderRunDetails(details) {
       <span class="run-name">${esc(node.run_name || 'unnamed')}</span></div>
     ${meta ? `<div class="run-meta">${meta}</div>` : ''}
     <div class="detail-section">
+      <div class="detail-section-title">Last 24 h</div>
+      <div id="run-history-wrap"><p class="detail-na">Loading…</p></div>
+    </div>
+    <div class="detail-section">
       <div class="detail-section-title">Activity</div>
       <div id="detail-activity">${_renderActivity(details)}</div>
     </div>
@@ -896,6 +959,7 @@ function renderRunDetails(details) {
       <div class="detail-section-title">Processes</div>
       <div id="proc-table-wrap">${_initProcesses(details.processes)}</div>
     </div>`;
+  fetchRunHistory(node.run_id);
 }
 
 function _initProcesses(procs) {
@@ -986,6 +1050,7 @@ function _renderActivity(details) {
 }
 
 function backToList() {
+  if (_runChart) { _runChart.destroy(); _runChart = null; }
   _panelView       = 'list';
   _detailNode      = null;
   _detailProcesses = null;

@@ -129,6 +129,22 @@ def query_runs_for_ts(db_path: str, ts: int) -> dict:
     return {"snapshot_ts": actual_ts, "nodes": [dict(r) for r in rows]}
 
 
+def query_run_history(db_path: str, run_id: int, from_ts: int, to_ts: int) -> list:
+    with sqlite3.connect(db_path) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            """SELECT snapshot_ts,
+                      cpu_capacity, cpu_used,
+                      mem_capacity, mem_used,
+                      gpu_capacity, gpu_used
+               FROM run_snapshots
+               WHERE run_id = ? AND snapshot_ts >= ? AND snapshot_ts <= ?
+               ORDER BY snapshot_ts ASC""",
+            (run_id, from_ts, to_ts),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
 def purge_old(db_path: str) -> None:
     cutoff = int(datetime.now(timezone.utc).timestamp()) - _RETENTION_DAYS * 86400
     with sqlite3.connect(db_path) as conn:
