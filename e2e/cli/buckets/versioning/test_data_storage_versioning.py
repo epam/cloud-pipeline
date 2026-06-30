@@ -220,7 +220,7 @@ class TestDataStorageVersioning(object):
                 # TODO: probably, we shall not hard-delete deletion marker after restore
                 # f('{}/{}'.format(self.test_folder_1, self.test_file_1), 10, added=True)
             ]
-            compare_listing(actual_output, expected_output, 2, sort=False)
+            compare_listing(actual_output, expected_output, 1, sort=False)
         except BaseException as e:
             pytest.fail(ERROR_MESSAGE + "TC-PIPE-STORAGE-119-120:" + "\n" + e.message)
 
