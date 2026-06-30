@@ -441,7 +441,8 @@ class PipelineDetails extends localization.LocalizedReactComponent {
     const activeTab = this.activeTabPath;
     return (
       <div className={styles.fullHeightContainer}>
-        <Row type="flex" justify="space-between" align="middle" style={{minHeight: 41}}>
+        {/* Legacy header */}
+        {/* <Row type="flex" justify="space-between" align="middle" style={{minHeight: 41}}>
           <Col className={browserStyles.itemHeader}>
             <Breadcrumbs
               id={parseInt(this.props.pipelineId)}
@@ -475,7 +476,7 @@ class PipelineDetails extends localization.LocalizedReactComponent {
               repositoryType={this.repositoryType}
             />
           </Col>
-        </Row>
+        </Row> */}
         <Row>{description}</Row>
         <Row
           gutter={16}

@@ -840,6 +840,7 @@ class Pipeline extends localization.LocalizedReactComponent {
 
     return (
       <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
+        {/* Legacy header
         <div>
           <Row type="flex" justify="space-between" align="middle" style={{minHeight: 41}}>
             <Col className={styles.itemHeader}>
@@ -874,6 +875,7 @@ class Pipeline extends localization.LocalizedReactComponent {
           </Row>
           <Row type="flex">{this.props.pipeline.value.description}</Row>
         </div>
+        */}
         <ContentIssuesMetadataPanel style={{flex: 1, overflow: 'auto'}} onPanelClose={onPanelClose}>
           {versionsContent}
           {this.state.showIssuesPanel && (

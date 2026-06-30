@@ -2503,6 +2503,7 @@ class Metadata extends React.Component {
   render() {
     return (
       <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
+        {/* Legacy header
         <Row
           type="flex"
           justify="end"
@@ -2569,6 +2570,7 @@ class Metadata extends React.Component {
             }}
           />
         </Row>
+        */}
         {this.renderContent()}
         <AddInstanceForm
           folderId={this.props.folderId}

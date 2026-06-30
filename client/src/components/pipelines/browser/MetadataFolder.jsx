@@ -427,7 +427,8 @@ class MetadataFolder extends React.Component {
     const {addInstanceFormVisible, operationInProgress} = this.state;
     return (
       <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
-        <Row type="flex" justify="space-between" align="middle" style={{minHeight: 41}}>
+        {/* Legacy header */}
+        {/* <Row type="flex" justify="space-between" align="middle" style={{minHeight: 41}}>
           <Col className={styles.itemHeader}>
             <Breadcrumbs
               id={parseInt(folderId)}
@@ -441,7 +442,7 @@ class MetadataFolder extends React.Component {
             />
           </Col>
           <Col className={styles.currentFolderActions}>{this.renderActions()}</Col>
-        </Row>
+        </Row> */}
         {this.renderContent()}
         <AddInstanceForm
           folderId={folderId}

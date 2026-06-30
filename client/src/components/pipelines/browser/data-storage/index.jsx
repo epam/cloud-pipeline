@@ -2820,7 +2820,8 @@ class DataStorage extends React.Component {
           height: 'calc(100vh - 25px)',
         }}
       >
-        <Row type="flex" justify="space-between" align="middle">
+        {/* Legacy header */}
+        {/* <Row type="flex" justify="space-between" align="middle">
           <Col className={styles.itemHeader}>
             <Breadcrumbs
               style={{height: '31px'}}
@@ -2880,7 +2881,7 @@ class DataStorage extends React.Component {
               </Button>
             </Row>
           </Col>
-        </Row>
+        </Row> */}
         <ContentMetadataPanel
           style={{flex: 1, overflow: 'auto'}}
           onPanelClose={this.onPanelClose}

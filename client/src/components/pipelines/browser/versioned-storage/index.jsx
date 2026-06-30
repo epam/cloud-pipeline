@@ -898,15 +898,6 @@ class VersionedStorage extends localization.LocalizedReactComponent {
 
     return (
       <div className={styles.vsContainer} style={{height: 'calc(100vh - 30px)'}}>
-        <VersionedStorageHeader
-          pipeline={pipeline}
-          pipelineId={pipelineId}
-          readOnly={readOnly}
-          onRenameStorage={this.renameVersionedStorage}
-          actions={this.actions}
-          historyPanelOpen={showHistoryPanel}
-          controlsEnabled={this.lastCommitId && pipeline.loaded && !pipeline.pending}
-        />
         {error && <Alert title={error} type="error" />}
         {showHistoryPanel ? (
           <Splitter style={{flex: 1, overflow: 'auto', width: 'inherited', height: 'auto'}}>

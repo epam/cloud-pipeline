@@ -1104,6 +1104,7 @@ class DetachedConfiguration extends localization.LocalizedReactComponent {
       : undefined;
     return (
       <div className={styles.fullHeightContainer}>
+        {/* Legacy header
         <Row
           type="flex"
           justify="space-between"
@@ -1132,6 +1133,7 @@ class DetachedConfiguration extends localization.LocalizedReactComponent {
             </Button>
           </Col>
         </Row>
+        */}
         <Row style={{position: 'relative', display: 'flex', flexDirection: 'column', flex: 1}}>
           {this.renderTabs()}
           <Row
