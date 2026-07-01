@@ -62,6 +62,19 @@ class Metadata:
 
         print(self.api.save_metadata_entity(updated_entity)['externalId'])
 
+def parse_file_fields(file_path):
+    with open(file_path, 'r') as f:
+        data = json.load(f)
+    fields = {}
+    for key, val in data.items():
+        if isinstance(val, list):
+            fields[key] = (json.dumps(val), 'array')
+        elif isinstance(val, dict) and 'value' in val and 'type' in val:
+            fields[key] = (val['value'], val['type'])
+        else:
+            fields[key] = (val if isinstance(val, str) else json.dumps(val), 'string')
+    return fields
+
 def main():
     parser = argparse.ArgumentParser()
     # Base options
@@ -97,6 +110,12 @@ def main():
                                 help='All environment variables starting with this prefix will be added as fields',
                                 required=False,
                                 type=str)
+
+    # 'update-from-file' command
+    update_file_parser = subparsers.add_parser('update-from-file')
+    update_file_parser.add_argument('file',
+                                    help='Path to a JSON file with fields to update',
+                                    type=str)
 
     # Parse commandline
     args, unknown_args = parser.parse_known_args()
@@ -139,6 +158,8 @@ def main():
             sys.exit(1)
         metadata.update_dataset(fields=unknown_args_dict,
                                 env_prefix=args.metadata_from_env_prefix)
+    elif args.command == 'update-from-file':
+        metadata.update_dataset(fields=parse_file_fields(args.file))
 
 if __name__ == '__main__':
     main()
