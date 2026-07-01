@@ -50,7 +50,7 @@ FilePreviewModal.propTypes = {
   title: PropTypes.node,
   visible: PropTypes.bool,
   onCancel: PropTypes.func,
-  maskClosable: PropTypes.bool,
+  mask: PropTypes.object,
   footer: PropTypes.node,
   header: PropTypes.node,
 };

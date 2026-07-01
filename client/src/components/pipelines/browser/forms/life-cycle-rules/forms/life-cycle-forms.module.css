@@ -16,9 +16,7 @@
 
 .form-item {
   margin-bottom: 5px;
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
+  width: 100%;
 }
 
 .notifications-form .code-editor {

@@ -595,7 +595,7 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
     };
     return (
       <Modal
-        maskClosable={false}
+        mask={{closable: false}}
         afterClose={() => onClose()}
         closable={!this.props.pending && !this.props.loading}
         open={this.props.visible}

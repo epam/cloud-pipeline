@@ -97,16 +97,8 @@ class TransitionsForm extends React.Component {
     this.setState({userDefinedDateTypes: dateTypes}, () => {
       if (form) {
         form.setFields([
-          {
-            name: ['transitions', index, 'transitionAfterDays'],
-            value: undefined,
-            errors: undefined,
-          },
-          {
-            name: ['transitions', index, 'transitionDate'],
-            value: undefined,
-            errors: undefined,
-          },
+          {name: ['transitions', index, 'transitionAfterDays'], value: undefined, errors: []},
+          {name: ['transitions', index, 'transitionDate'], value: undefined, errors: []},
         ]);
       }
     });
@@ -178,13 +170,10 @@ class TransitionsForm extends React.Component {
                       },
                     ]}
                   >
-                    <Select className={styles.destinationSelect}>
-                      {Object.entries(DESTINATIONS).map(([key, description]) => (
-                        <Select.Option value={key} key={key}>
-                          {description}
-                        </Select.Option>
-                      ))}
-                    </Select>
+                    <Select
+                      className={styles.destinationSelect}
+                      options={Object.entries(DESTINATIONS).map(([value, label]) => ({value, label}))}
+                    />
                   </Form.Item>
                 </div>
                 <div className={styles.transitionDateBlock}>

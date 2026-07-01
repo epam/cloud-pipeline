@@ -194,7 +194,7 @@ function RemoveObjectModal<Object extends RemovableObject>(
       open={open}
       onCancel={onCloseWrapper}
       title={typeof title === 'function' ? (anObject ? title(anObject) : null) : title}
-      maskClosable={false}
+      mask={{closable: false}}
       footer={
         <div className="flex items-center">
           <div

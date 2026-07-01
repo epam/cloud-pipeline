@@ -107,7 +107,7 @@ class NotificationForm extends React.Component {
 
   get notifyUsers() {
     const {form} = this.props;
-    return form && form.getFieldValue('notification.notifyUsers');
+    return form && form.getFieldValue(['notification', 'notifyUsers']);
   }
 
   fetchEmailSettings = () => {
@@ -129,7 +129,11 @@ class NotificationForm extends React.Component {
       const {form} = this.props;
       if (form) {
         form
-          .validateFields(['notification.recipients', 'notification.body', 'notification.subject'])
+          .validateFields([
+            ['notification', 'recipients'],
+            ['notification', 'body'],
+            ['notification', 'subject'],
+          ])
           .catch(() => {});
       }
     });
@@ -154,7 +158,7 @@ class NotificationForm extends React.Component {
     }
     return (
       <div>
-        <Row type="flex" justify="start" style={{marginBottom: 5}}>
+        <Row justify="start" style={{marginBottom: 5}}>
           <Col offset={3}>
             <Space.Compact size="small">
               <Button
@@ -181,7 +185,7 @@ class NotificationForm extends React.Component {
             {...fullWidthLayout}
             className={styles.formItem}
             label="Subject"
-            style={{display: previewMode ? 'none' : 'inherit'}}
+            hidden={previewMode}
             name={['notification', 'subject']}
             rules={[
               {
@@ -197,7 +201,6 @@ class NotificationForm extends React.Component {
               display: previewMode ? 'flex' : 'none',
               marginBottom: 5,
             }}
-            type="flex"
             align="middle"
           >
             <Col
@@ -227,7 +230,7 @@ class NotificationForm extends React.Component {
             {...fullWidthLayout}
             className={styles.formItem}
             label="Notification"
-            style={{display: previewMode ? 'none' : 'inherit'}}
+            hidden={previewMode}
             name={['notification', 'body']}
             valuePropName="code"
             rules={[
@@ -325,7 +328,7 @@ class NotificationForm extends React.Component {
             </Checkbox>
           </Form.Item>
         </Row>
-        <Row type="flex" justify="space-between">
+        <Row justify="space-between">
           <Col style={{width: '50%'}}>
             <Form.Item
               {...columnLayout}

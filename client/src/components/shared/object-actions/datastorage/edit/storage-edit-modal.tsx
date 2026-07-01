@@ -253,7 +253,7 @@ function StorageEditModal({
   return (
     <Modal
       className={className}
-      maskClosable={false}
+      mask={{closable: false}}
       afterClose={handleAfterClose}
       closable={!pending}
       open={open && storageLoaded}

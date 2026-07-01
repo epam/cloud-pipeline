@@ -46,7 +46,7 @@ class FilePreviewLink extends React.PureComponent {
           filePath={filePath}
           visible={visible}
           onCancel={this.onClose}
-          maskClosable
+          mask={{closable: true}}
           title={title}
           header={header}
           footer={footer}

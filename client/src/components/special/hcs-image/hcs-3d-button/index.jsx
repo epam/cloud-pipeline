@@ -270,7 +270,7 @@ export default class HCS3DButton extends React.Component {
             },
           }}
           classNames={{root: styles.modalOverlay}}
-          maskClosable={false}
+          mask={{closable: false}}
         >
           <Button
             size={size}

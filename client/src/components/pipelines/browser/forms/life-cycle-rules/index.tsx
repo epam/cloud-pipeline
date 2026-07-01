@@ -1,0 +1,224 @@
+/*
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import React, {useCallback, useState} from 'react';
+import {Button, Modal, Spin, Tooltip, message} from 'antd';
+import {BookOutlined, DeleteOutlined, EditOutlined, PlusOutlined} from '@ant-design/icons';
+import DataStorageLifeCycleRulesUpdate from '../../../../../models/dataStorage/lifeCycleRules/DataStorageLifeCycleRulesUpdate';
+import DataStorageLifeCycleRulesCreate from '../../../../../models/dataStorage/lifeCycleRules/DataStorageLifeCycleRulesCreate';
+import DataStorageLifeCycleRulesDelete from '../../../../../models/dataStorage/lifeCycleRules/DataStorageLifeCycleRulesDelete';
+import {LifeCycleEditModal, DESTINATIONS, LifeCycleHistoryModal} from './modals';
+import {useLifeCycleRules} from './hooks';
+import type {Rule} from './types';
+import styles from './life-cycle-rules.module.css';
+
+interface LifeCycleRulesProps {
+  storageId?: string | number;
+  readOnly?: boolean;
+}
+
+export default function LifeCycleRules({storageId, readOnly}: LifeCycleRulesProps) {
+  const {rules, pending: fetchPending, fetch: fetchLifeCycleRules} = useLifeCycleRules(storageId);
+  const [editRule, setEditRule] = useState<Rule | null>(null);
+  const [showHistory, setShowHistory] = useState<Rule | null>(null);
+  const [mutationPending, setMutationPending] = useState(false);
+
+  const pending = fetchPending || mutationPending;
+
+  const updateRule = useCallback(
+    async (payload: Rule, ruleId: string | number) => {
+      const request = new DataStorageLifeCycleRulesUpdate(storageId);
+      payload.id = ruleId;
+      payload.datastorageId = storageId;
+      setMutationPending(true);
+      await request.send(payload);
+      if (request.error) {
+        message.error(request.error, 5);
+      } else {
+        await fetchLifeCycleRules();
+        setEditRule(null);
+      }
+      setMutationPending(false);
+    },
+    [storageId, fetchLifeCycleRules],
+  );
+
+  const createRule = useCallback(
+    async (payload: Rule) => {
+      const request = new DataStorageLifeCycleRulesCreate(storageId);
+      payload.datastorageId = storageId;
+      setMutationPending(true);
+      await request.send(payload);
+      if (request.error) {
+        message.error(request.error, 5);
+      } else {
+        await fetchLifeCycleRules();
+        setEditRule(null);
+      }
+      setMutationPending(false);
+    },
+    [storageId, fetchLifeCycleRules],
+  );
+
+  const deleteRule = useCallback(
+    (ruleId: string | number) => {
+      Modal.confirm({
+        title: 'Are you sure you want to delete transition rule?',
+        style: {wordWrap: 'break-word'},
+        onOk: async () => {
+          const request = new DataStorageLifeCycleRulesDelete(storageId, ruleId);
+          setMutationPending(true);
+          await request.send();
+          if (request.error) {
+            message.error(request.error, 5);
+          } else {
+            await fetchLifeCycleRules();
+            setEditRule(null);
+          }
+          setMutationPending(false);
+        },
+      });
+    },
+    [storageId, fetchLifeCycleRules],
+  );
+
+  const onOkEditRule = useCallback(
+    (payload: Rule, ruleId?: string | number) => {
+      if (payload && ruleId) {
+        return updateRule(payload, ruleId);
+      }
+      return createRule(payload);
+    },
+    [updateRule, createRule],
+  );
+
+  const renderRule = useCallback(
+    (rule: Rule) => {
+      const controls = [
+        !readOnly && (
+          <Button
+            className={styles.controlBtn}
+            onClick={() => setEditRule(rule)}
+            size="small"
+            key="edit"
+          >
+            <EditOutlined />
+          </Button>
+        ),
+        <Button
+          className={styles.controlBtn}
+          onClick={() => setShowHistory(rule)}
+          size="small"
+          key="history"
+        >
+          <BookOutlined />
+        </Button>,
+        !readOnly && (
+          <Button
+            className={styles.controlBtn}
+            danger
+            onClick={() => deleteRule(rule.id!)}
+            size="small"
+            key="delete"
+          >
+            <DeleteOutlined />
+          </Button>
+        ),
+      ].filter(Boolean);
+
+      const destination = (rule.transitions ?? [])[0]
+        ? DESTINATIONS[(rule.transitions ?? [])[0].storageClass as keyof typeof DESTINATIONS]
+        : '';
+
+      const renderTitle = () => (
+        <div style={{display: 'flex', flexDirection: 'column'}}>
+          {(rule.transitions ?? []).slice(1).map((transition, index) => (
+            <span key={`${transition.storageClass}${index}`}>
+              {DESTINATIONS[transition.storageClass as keyof typeof DESTINATIONS]}
+            </span>
+          ))}
+        </div>
+      );
+
+      return (
+        <tr className="cp-even-odd-element" key={rule.id}>
+          <td>{rule.pathGlob}</td>
+          <td>{rule.objectGlob}</td>
+          <td>
+            <span className={destination === DESTINATIONS.DELETION ? 'cp-error' : ''}>
+              {destination}
+            </span>
+            {(rule.transitions ?? []).length > 1 ? (
+              <Tooltip title={renderTitle()}>
+                <span className="cp-primary" style={{marginLeft: 5, cursor: 'pointer'}}>
+                  <PlusOutlined />
+                  {`${(rule.transitions ?? []).length - 1} more`}
+                </span>
+              </Tooltip>
+            ) : null}
+          </td>
+          <td style={{padding: '0 5px', textAlign: 'right'}}>{controls}</td>
+        </tr>
+      );
+    },
+    [readOnly, deleteRule],
+  );
+
+  return (
+    <Spin spinning={pending}>
+      <div className={styles.container}>
+        <Button
+          className={styles.createBtn}
+          onClick={() => setEditRule({})}
+          size="small"
+          disabled={readOnly}
+        >
+          <PlusOutlined />
+          Create
+        </Button>
+        {rules.length > 0 ? (
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Root</th>
+                <th>Glob</th>
+                <th>Transition</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>{rules.map(rule => renderRule(rule))}</tbody>
+          </table>
+        ) : null}
+        {editRule ? (
+          <LifeCycleEditModal
+            visible={Boolean(editRule)}
+            onOk={onOkEditRule}
+            onCancel={() => setEditRule(null)}
+            rule={editRule}
+            createNewRule={Object.keys(editRule).length === 0}
+            pending={pending}
+          />
+        ) : null}
+        <LifeCycleHistoryModal
+          visible={Boolean(showHistory)}
+          rule={showHistory ?? undefined}
+          storageId={storageId}
+          onOk={() => setShowHistory(null)}
+        />
+      </div>
+    </Spin>
+  );
+}

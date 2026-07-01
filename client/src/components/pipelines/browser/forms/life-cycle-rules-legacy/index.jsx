@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed, makeObservable} from 'mobx';
+import {makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
 import {Button, Modal, Tooltip, Spin, message} from 'antd';
 import {BookOutlined, DeleteOutlined, EditOutlined, PlusOutlined} from '@ant-design/icons';
@@ -40,9 +40,7 @@ class LifeCycleRules extends React.Component {
 
   constructor(props) {
     super(props);
-    makeObservable(this, {
-      rules: computed,
-    });
+    makeObservable(this, {});
   }
 
   componentDidMount() {
