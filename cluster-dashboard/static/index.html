@@ -439,6 +439,9 @@ let _sortDir     = 'asc';
 let _panelView       = 'list';   // 'list' | 'detail'
 let _detailNode      = null;
 let _detailProcesses = null;
+let _detailRefreshTimer = null;
+let _detailTickTimer    = null;
+let _detailLastUpdated  = null;
 let _runChart        = null;
 let _procSortCol     = 'cpu';
 let _procSortDir     = 'desc';
@@ -867,14 +870,50 @@ async function refreshRunDetails() {
     const details = await resp.json();
     const act = document.getElementById('detail-activity');
     if (act) act.innerHTML = _renderActivity(details);
-    const wrap = document.getElementById('proc-table-wrap');
-    if (wrap) wrap.innerHTML = _initProcesses(details.processes);
+    const gpuWrap = document.getElementById('gpu-section-wrap');
+    if (gpuWrap) gpuWrap.innerHTML = _renderGpuSection(details.gpus);
+    const procWrap = document.getElementById('proc-table-wrap');
+    if (procWrap) procWrap.innerHTML = _initProcesses(details.processes);
+    _detailLastUpdated = Date.now();
+    _tickDetailLabel();
   } catch (e) {
     const act = document.getElementById('detail-activity');
     if (act) act.innerHTML = `<p class="detail-na" style="color:var(--red)">Refresh failed: ${esc(e.message)}</p>`;
   } finally {
     if (btn) btn.classList.remove('spinning');
   }
+}
+
+function _stopDetailTimers() {
+  clearInterval(_detailRefreshTimer); _detailRefreshTimer = null;
+  clearInterval(_detailTickTimer);    _detailTickTimer    = null;
+  _detailLastUpdated = null;
+}
+
+function _startDetailTimers() {
+  _stopDetailTimers();
+  _detailLastUpdated = Date.now();
+  _detailRefreshTimer = setInterval(async () => {
+    if (_panelView !== 'detail' || !_detailNode) return;
+    try {
+      const resp = await fetch(`api/run/${_detailNode.run_id}/details`);
+      if (!resp.ok) return;
+      const details = await resp.json();
+      const gpuWrap = document.getElementById('gpu-section-wrap');
+      if (gpuWrap) gpuWrap.innerHTML = _renderGpuSection(details.gpus);
+      const procWrap = document.getElementById('proc-table-wrap');
+      if (procWrap) procWrap.innerHTML = _initProcesses(details.processes);
+      _detailLastUpdated = Date.now();
+    } catch (_) {}
+  }, 5000);
+  _detailTickTimer = setInterval(_tickDetailLabel, 1000);
+}
+
+function _tickDetailLabel() {
+  const el = document.getElementById('detail-last-updated');
+  if (!el || !_detailLastUpdated) return;
+  const sec = Math.round((Date.now() - _detailLastUpdated) / 1000);
+  el.textContent = sec < 5 ? 'just now' : `${sec}s ago`;
 }
 
 async function fetchRunHistory(runId) {
@@ -948,6 +987,7 @@ function renderRunDetails(details) {
   document.getElementById('sp-body').innerHTML = `
     <div class="detail-nav">
       <div class="detail-back" onclick="backToList()">&#8592; Back</div>
+      <span id="detail-last-updated" style="font-size:10px;color:var(--txt-muted);margin-left:auto;margin-right:6px;"></span>
       <button class="btn btn-icon" id="detail-refresh-btn" title="Refresh" onclick="refreshRunDetails()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
@@ -976,6 +1016,7 @@ function renderRunDetails(details) {
       <div id="proc-table-wrap">${_initProcesses(details.processes)}</div>
     </div>`;
   fetchRunHistory(node.run_id);
+  _startDetailTimers();
 }
 
 function _initProcesses(procs) {
@@ -1066,6 +1107,7 @@ function _renderActivity(details) {
 }
 
 function backToList() {
+  _stopDetailTimers();
   if (_runChart) { _runChart.destroy(); _runChart = null; }
   _panelView       = 'list';
   _detailNode      = null;
