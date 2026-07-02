@@ -583,14 +583,16 @@ function updateCards(row) {
   set('c-nodes', row.node_count ?? '—');
   set('c-nodes-sub', row.node_count === 1 ? 'worker node' : 'worker nodes');
 
+  const pctStr = (used, cap) => (used != null && cap) ? ` · ${(used / cap * 100).toFixed(1)}%` : '';
+
   const cpuUsed = row.cpu_used, cpuCap = row.cpu_capacity || 0;
   set('c-cpu', cpuUsed != null ? cpuUsed.toFixed(1) : '—');
-  set('c-cpu-sub', `of ${cpuCap.toFixed(0)} cores`);
+  set('c-cpu-sub', `of ${cpuCap.toFixed(0)} cores${pctStr(cpuUsed, cpuCap)}`);
   setBar('b-cpu', cpuUsed != null && cpuCap ? (cpuUsed / cpuCap) * 100 : 0);
 
   const memUsed = row.mem_used, memCap = row.mem_capacity || 0;
   set('c-mem', memUsed != null ? (memUsed / GiB).toFixed(0) + ' GiB' : '—');
-  set('c-mem-sub', `of ${(memCap / GiB).toFixed(0)} GiB`);
+  set('c-mem-sub', `of ${(memCap / GiB).toFixed(0)} GiB${pctStr(memUsed, memCap)}`);
   setBar('b-mem', memUsed != null && memCap ? (memUsed / memCap) * 100 : 0);
 
   const gpuUsed = row.gpu_used, gpuCap = row.gpu_capacity || 0;
@@ -598,7 +600,7 @@ function updateCards(row) {
     set('c-gpu', 'N/A'); set('c-gpu-sub', 'no GPUs in cluster'); setBar('b-gpu', 0);
   } else {
     set('c-gpu', gpuUsed != null ? gpuUsed.toFixed(1) : '—');
-    set('c-gpu-sub', `of ${gpuCap} GPUs`);
+    set('c-gpu-sub', `of ${gpuCap} GPUs${pctStr(gpuUsed, gpuCap)}`);
     setBar('b-gpu', gpuUsed != null && gpuCap ? (gpuUsed / gpuCap) * 100 : 0);
   }
 }
