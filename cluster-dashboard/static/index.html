@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Cloud Pipeline — Cluster Utilization</title>
+<title>Cluster Utilization</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 <style>
@@ -94,9 +94,6 @@ input[type="datetime-local"]:focus { outline: none; border-color: var(--accent);
 .card-value { font-size: 26px; font-weight: 700; line-height: 1; margin-bottom: 4px; }
 .card-sub   { font-size: 11px; color: var(--txt-muted); }
 .card-pct   { font-size: 28px; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
-.card.cpu .card-pct { color: var(--accent); }
-.card.mem .card-pct { color: var(--cyan); }
-.card.gpu .card-pct { color: var(--orange); }
 .card-bar-wrap { margin-top: 8px; height: 3px; background: var(--surface2); border-radius: 2px; }
 .card-bar { height: 100%; border-radius: 2px; transition: width .5s ease; width: 0; }
 .card.cpu .card-bar { background: var(--accent); }
@@ -420,7 +417,7 @@ footer { padding-top: 24px; font-size: 11px; color: var(--txt-muted); text-align
 
   </div>
 
-  <footer>Cloud Pipeline Cluster Dashboard &bull; data refreshes every <span id="footer-interval">—</span> min &bull; hover a point to see run details</footer>
+  <footer>Cluster Dashboard &bull; data refreshes every <span id="footer-interval">—</span> min &bull; hover a point to see run details</footer>
 </div>
 
 <!-- ── Side panel ── -->
