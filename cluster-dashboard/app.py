@@ -160,7 +160,7 @@ def api_debug_node_gpu(node_name):
     try:
         raw = client.get(
             f"cluster/node/{node_name}/usage/gpus",
-            **{"from": from_s, "to": to_s, "granularity": "GLOBAL", "squashCharts": "false"},
+            **{"from": from_s, "to": to_s, "granularity": "ALL", "squashCharts": "false"},
         )
         return jsonify({"node": node_name, "from": from_s, "to": to_s, "response": raw})
     except Exception as exc:

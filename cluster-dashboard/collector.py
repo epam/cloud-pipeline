@@ -140,7 +140,7 @@ def _get_node_gpu_active(client: CPClient, name: str, from_s: str, to_s: str):
     try:
         stats = client.get(
             f"cluster/node/{name}/usage/gpus",
-            **{"from": from_s, "to": to_s, "granularity": "GLOBAL", "squashCharts": "false"},
+            **{"from": from_s, "to": to_s, "granularity": "ALL", "squashCharts": "false"},
         )
         if not stats:
             return None
