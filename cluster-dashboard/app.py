@@ -148,6 +148,48 @@ def api_runs():
     return jsonify(result)
 
 
+@bp.route("/api/debug/node/<node_name>/gpu")
+def api_debug_node_gpu(node_name):
+    """Return the raw GPU usage API response for a single node (troubleshooting)."""
+    if not CP_API_URL or not CP_API_TOKEN:
+        abort(503, "CP_API_URL / CP_API_TOKEN not configured")
+    from collector import CPClient, _dt_range_strings
+    now = datetime.now(timezone.utc)
+    from_s, to_s = _dt_range_strings(now)
+    client = CPClient(CP_API_URL, CP_API_TOKEN)
+    try:
+        raw = client.get(
+            f"cluster/node/{node_name}/usage/gpus",
+            **{"from": from_s, "to": to_s, "granularity": "GLOBAL", "squashCharts": "false"},
+        )
+        return jsonify({"node": node_name, "from": from_s, "to": to_s, "response": raw})
+    except Exception as exc:
+        return jsonify({"node": node_name, "error": str(exc)}), 502
+
+
+@bp.route("/api/debug/nodes")
+def api_debug_nodes():
+    """Return worker nodes with instance type and resolved GPU capacity (troubleshooting)."""
+    if not CP_API_URL or not CP_API_TOKEN:
+        abort(503, "CP_API_URL / CP_API_TOKEN not configured")
+    from collector import CPClient, _is_master, _instance_type, _load_instance_gpu_map
+    client = CPClient(CP_API_URL, CP_API_TOKEN)
+    try:
+        nodes = client.get("cluster/node/loadAll") or []
+        workers = [n for n in nodes if not _is_master(n)]
+        gpu_map = _load_instance_gpu_map(client)
+        return jsonify([
+            {
+                "name":          n.get("name"),
+                "instance_type": _instance_type(n),
+                "gpu_capacity":  gpu_map.get(_instance_type(n), 0),
+            }
+            for n in workers
+        ])
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 502
+
+
 @bp.route("/api/health")
 def api_health():
     return jsonify({

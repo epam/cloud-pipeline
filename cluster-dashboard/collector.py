@@ -132,12 +132,10 @@ def _get_node_cpu_mem(client: CPClient, name: str, from_s: str, to_s: str):
         return None, None
 
 
-def _get_node_gpu_stats(client: CPClient, name: str, from_s: str, to_s: str):
+def _get_node_gpu_active(client: CPClient, name: str, from_s: str, to_s: str):
     """
-    Returns (gpu_capacity, gpu_active_count) or (0, None) on failure.
-
-    gpu_capacity  — number of GPUs on the node, derived from gpuDetails keys in charts.
-    gpu_active_count — activeGpus.average (%) scaled to an absolute count.
+    Returns the number of active GPUs (utilization > 0) or None on failure.
+    Counts GPU indices from the most recent chart entry that has gpuDetails.
     """
     try:
         stats = client.get(
@@ -145,24 +143,36 @@ def _get_node_gpu_stats(client: CPClient, name: str, from_s: str, to_s: str):
             **{"from": from_s, "to": to_s, "granularity": "GLOBAL", "squashCharts": "false"},
         )
         if not stats:
-            return 0, None
-        # Use the most recent chart entry that has gpuDetails
-        details = {}
+            return None
         for chart in reversed(stats.get("charts") or []):
-            if chart.get("gpuDetails"):
-                details = chart["gpuDetails"]
-                break
-        gpu_cap = len(details)
-        if not gpu_cap:
-            return 0, None
-        gpu_active = sum(
-            1 for gpu in details.values()
-            if (gpu.get("gpuUtilization") or {}).get("average", 0) > 0
-        )
-        return gpu_cap, float(gpu_active)
+            details = chart.get("gpuDetails")
+            if details:
+                return float(sum(
+                    1 for gpu in details.values()
+                    if (gpu.get("gpuUtilization") or {}).get("average", 0) > 0
+                ))
+        return None
     except Exception as exc:
-        log.debug("GPU stats unavailable for node %s: %s", name, exc)
-        return 0, None
+        log.debug("GPU usage unavailable for node %s: %s", name, exc)
+        return None
+
+
+# ---------------------------------------------------------------------------
+# Instance type → GPU count map
+# ---------------------------------------------------------------------------
+
+def _load_instance_gpu_map(client: CPClient) -> dict:
+    """
+    Fetch cluster/instance/allowed and return {instance_name: gpu_count}.
+    Falls back to empty dict on error so collection can continue without GPU capacity.
+    """
+    try:
+        payload = client.get("cluster/instance/allowed") or {}
+        instances = payload.get("cluster.allowed.instance.types") or []
+        return {inst["name"]: int(inst.get("gpu") or 0) for inst in instances if inst.get("name")}
+    except Exception as exc:
+        log.warning("Could not load instance GPU map: %s", exc)
+        return {}
 
 
 # ---------------------------------------------------------------------------
@@ -209,7 +219,8 @@ def _docker_image_name(image: str) -> str:
 # Main collection function
 # ---------------------------------------------------------------------------
 
-def _collect_node(client: CPClient, node: dict, from_s: str, to_s: str) -> dict:
+def _collect_node(client: CPClient, node: dict, from_s: str, to_s: str,
+                  instance_gpu_map: dict) -> dict:
     """Collect all metrics for a single worker node. Called from a thread pool."""
     name  = node.get("name", "")
     cap   = node.get("capacity")    or {}
@@ -220,8 +231,11 @@ def _collect_node(client: CPClient, node: dict, from_s: str, to_s: str) -> dict:
     n_mem_cap   = parse_memory(cap.get("memory",   0))
     n_mem_alloc = parse_memory(alloc.get("memory", 0))
 
-    cpu_u, mem_u       = _get_node_cpu_mem(client, name, from_s, to_s)
-    n_gpu_cap, gpu_u   = _get_node_gpu_stats(client, name, from_s, to_s)
+    itype = _instance_type(node)
+    n_gpu_cap = instance_gpu_map.get(itype, 0)
+
+    cpu_u, mem_u = _get_node_cpu_mem(client, name, from_s, to_s)
+    gpu_u = _get_node_gpu_active(client, name, from_s, to_s) if n_gpu_cap > 0 else None
     run_id, run_name, run_owner = _run_info(node)
 
     return {
@@ -229,7 +243,7 @@ def _collect_node(client: CPClient, node: dict, from_s: str, to_s: str) -> dict:
         "run_id":          run_id,
         "run_name":        run_name,
         "run_owner":       run_owner,
-        "instance_type":   _instance_type(node),
+        "instance_type":   itype,
         "cpu_capacity":    n_cpu_cap,
         "cpu_allocatable": n_cpu_alloc,
         "cpu_used":        cpu_u,
@@ -262,9 +276,12 @@ def collect_snapshot(api_url: str, token: str, max_workers: int = 8):
     now = datetime.now(timezone.utc)
     from_s, to_s = _dt_range_strings(now)
 
+    instance_gpu_map = _load_instance_gpu_map(client)
+    log.info("Loaded GPU map for %d instance types", len(instance_gpu_map))
+
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
         futures = {
-            pool.submit(_collect_node, client, node, from_s, to_s): node
+            pool.submit(_collect_node, client, node, from_s, to_s, instance_gpu_map): node
             for node in workers
         }
         node_list = []
