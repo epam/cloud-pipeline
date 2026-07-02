@@ -874,6 +874,7 @@ async function refreshRunDetails() {
     if (gpuWrap) gpuWrap.innerHTML = _renderGpuSection(details.gpus);
     const procWrap = document.getElementById('proc-table-wrap');
     if (procWrap) procWrap.innerHTML = _initProcesses(details.processes);
+    fetchRunHistory(_detailNode.run_id);
     _detailLastUpdated = Date.now();
     _tickDetailLabel();
   } catch (e) {
@@ -1128,6 +1129,7 @@ function openPanel() {
   page.style.marginRight = _panelWidth + 'px';
 }
 function closePanel() {
+  _stopDetailTimers();
   _lastClickTs = null;
   _panelData   = null;
   _sortKey     = 'all';
