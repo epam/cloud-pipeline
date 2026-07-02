@@ -148,6 +148,14 @@ def api_runs():
     return jsonify(result)
 
 
+@bp.route("/api/debug/collect", methods=["POST"])
+def api_debug_collect():
+    """Trigger an immediate collection snapshot (troubleshooting)."""
+    import threading
+    threading.Thread(target=_run_collection, daemon=True).start()
+    return jsonify({"status": "collection started"})
+
+
 @bp.route("/api/debug/node/<node_name>/gpu")
 def api_debug_node_gpu(node_name):
     """Return the raw GPU usage API response for a single node (troubleshooting)."""

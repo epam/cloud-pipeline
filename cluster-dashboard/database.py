@@ -168,7 +168,7 @@ def query_metrics(db_path: str, from_ts: int, to_ts: int) -> list:
             """SELECT ts, node_count,
                       cpu_capacity, cpu_allocatable, cpu_used,
                       mem_capacity, mem_allocatable, mem_used,
-                      gpu_capacity, gpu_allocatable, gpu_used
+                      gpu_capacity, gpu_allocatable, gpu_used, gpu_breakdown
                FROM snapshots
                WHERE ts >= ? AND ts <= ?
                ORDER BY ts ASC""",
