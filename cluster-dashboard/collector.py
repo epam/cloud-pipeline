@@ -131,22 +131,35 @@ def _get_node_cpu_mem(client: CPClient, name: str, from_s: str, to_s: str):
         return None, None
 
 
-def _get_node_gpu_active(client: CPClient, name: str, from_s: str, to_s: str):
-    """Returns mean number of active GPUs or None on failure."""
+def _get_node_gpu_stats(client: CPClient, name: str, from_s: str, to_s: str):
+    """
+    Returns (gpu_capacity, gpu_active_count) or (0, None) on failure.
+
+    gpu_capacity  — number of GPUs on the node, derived from gpuDetails keys in charts.
+    gpu_active_count — activeGpus.average (%) scaled to an absolute count.
+    """
     try:
         stats = client.get(
             f"cluster/node/{name}/usage/gpus",
-            **{"from": from_s, "to": to_s, "granularity": "GLOBAL"},
+            **{"from": from_s, "to": to_s, "granularity": "GLOBAL", "squashCharts": "false"},
         )
         if not stats:
-            return None
-        last = stats[-1] if isinstance(stats, list) else stats
-        gpu_obj = (last.get("gpuUsage") or {})
+            return 0, None
+        # Derive capacity from gpuDetails keys in any chart entry
+        gpu_cap = 0
+        for chart in (stats.get("charts") or []):
+            details = chart.get("gpuDetails") or {}
+            if details:
+                gpu_cap = max(gpu_cap, len(details))
+        # Active count from global summary
+        gpu_obj = (stats.get("global") or {}).get("gpuUsage") or {}
         active = gpu_obj.get("activeGpus") or {}
-        return active.get("mean")
+        pct = active.get("average")
+        gpu_active = pct / 100.0 * gpu_cap if (pct is not None and gpu_cap > 0) else None
+        return gpu_cap, gpu_active
     except Exception as exc:
-        log.debug("GPU usage unavailable for node %s: %s", name, exc)
-        return None
+        log.debug("GPU stats unavailable for node %s: %s", name, exc)
+        return 0, None
 
 
 # ---------------------------------------------------------------------------
@@ -215,7 +228,7 @@ def collect_snapshot(api_url: str, token: str):
 
     cpu_cap = cpu_alloc = 0.0
     mem_cap = mem_alloc = 0
-    gpu_cap = gpu_alloc = 0
+    gpu_cap = 0
     cpu_used_total = mem_used_total = 0.0
     gpu_used_total = 0.0
     usage_ok = gpu_usage_ok = 0
@@ -231,12 +244,8 @@ def collect_snapshot(api_url: str, token: str):
         n_cpu_alloc = parse_cpu(alloc.get("cpu",  0))
         n_mem_cap   = parse_memory(cap.get("memory",   0))
         n_mem_alloc = parse_memory(alloc.get("memory", 0))
-        n_gpu_cap   = int(cap.get("nvidia.com/gpu")   or 0)
-        n_gpu_alloc = int(alloc.get("nvidia.com/gpu") or 0)
-
         cpu_cap   += n_cpu_cap;   cpu_alloc += n_cpu_alloc
         mem_cap   += n_mem_cap;   mem_alloc += n_mem_alloc
-        gpu_cap   += n_gpu_cap;   gpu_alloc += n_gpu_alloc
 
         cpu_u, mem_u = _get_node_cpu_mem(client, name, from_s, to_s)
         if cpu_u is not None:
@@ -245,12 +254,11 @@ def collect_snapshot(api_url: str, token: str):
         if mem_u is not None:
             mem_used_total += mem_u
 
-        gpu_u = None
-        if n_gpu_cap > 0:
-            gpu_u = _get_node_gpu_active(client, name, from_s, to_s)
-            if gpu_u is not None:
-                gpu_used_total += gpu_u
-                gpu_usage_ok += 1
+        n_gpu_cap, gpu_u = _get_node_gpu_stats(client, name, from_s, to_s)
+        gpu_cap += n_gpu_cap
+        if gpu_u is not None:
+            gpu_used_total += gpu_u
+            gpu_usage_ok += 1
 
         run_id, run_name, run_owner = _run_info(node)
         node_list.append({
@@ -266,7 +274,7 @@ def collect_snapshot(api_url: str, token: str):
             "mem_allocatable": n_mem_alloc,
             "mem_used":       int(mem_u) if mem_u is not None else None,
             "gpu_capacity":   n_gpu_cap,
-            "gpu_allocatable": n_gpu_alloc,
+            "gpu_allocatable": 0,
             "gpu_used":       gpu_u,
         })
 
@@ -286,7 +294,7 @@ def collect_snapshot(api_url: str, token: str):
         "mem_allocatable": mem_alloc,
         "mem_used":        int(mem_used_total) if usage_ok > 0 else None,
         "gpu_capacity":    gpu_cap,
-        "gpu_allocatable": gpu_alloc,
+        "gpu_allocatable": 0,
         "gpu_used":        gpu_used_total if gpu_usage_ok > 0 else None,
     }
     return snapshot, node_list
