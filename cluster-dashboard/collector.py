@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
 
 import requests
@@ -208,7 +209,40 @@ def _docker_image_name(image: str) -> str:
 # Main collection function
 # ---------------------------------------------------------------------------
 
-def collect_snapshot(api_url: str, token: str):
+def _collect_node(client: CPClient, node: dict, from_s: str, to_s: str) -> dict:
+    """Collect all metrics for a single worker node. Called from a thread pool."""
+    name  = node.get("name", "")
+    cap   = node.get("capacity")    or {}
+    alloc = node.get("allocatable") or {}
+
+    n_cpu_cap   = parse_cpu(cap.get("cpu",   0))
+    n_cpu_alloc = parse_cpu(alloc.get("cpu", 0))
+    n_mem_cap   = parse_memory(cap.get("memory",   0))
+    n_mem_alloc = parse_memory(alloc.get("memory", 0))
+
+    cpu_u, mem_u       = _get_node_cpu_mem(client, name, from_s, to_s)
+    n_gpu_cap, gpu_u   = _get_node_gpu_stats(client, name, from_s, to_s)
+    run_id, run_name, run_owner = _run_info(node)
+
+    return {
+        "node_name":       name,
+        "run_id":          run_id,
+        "run_name":        run_name,
+        "run_owner":       run_owner,
+        "instance_type":   _instance_type(node),
+        "cpu_capacity":    n_cpu_cap,
+        "cpu_allocatable": n_cpu_alloc,
+        "cpu_used":        cpu_u,
+        "mem_capacity":    n_mem_cap,
+        "mem_allocatable": n_mem_alloc,
+        "mem_used":        int(mem_u) if mem_u is not None else None,
+        "gpu_capacity":    n_gpu_cap,
+        "gpu_allocatable": 0,
+        "gpu_used":        gpu_u,
+    }
+
+
+def collect_snapshot(api_url: str, token: str, max_workers: int = 8):
     """
     Collect a cluster-wide utilization snapshot via the Cloud Pipeline REST API.
 
@@ -228,6 +262,18 @@ def collect_snapshot(api_url: str, token: str):
     now = datetime.now(timezone.utc)
     from_s, to_s = _dt_range_strings(now)
 
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        futures = {
+            pool.submit(_collect_node, client, node, from_s, to_s): node
+            for node in workers
+        }
+        node_list = []
+        for future in as_completed(futures):
+            try:
+                node_list.append(future.result())
+            except Exception:
+                log.exception("Node collection failed for %s", futures[future].get("name"))
+
     cpu_cap = cpu_alloc = 0.0
     mem_cap = mem_alloc = 0
     gpu_cap = 0
@@ -235,50 +281,18 @@ def collect_snapshot(api_url: str, token: str):
     gpu_used_total = 0.0
     usage_ok = gpu_usage_ok = 0
 
-    node_list = []
-
-    for node in workers:
-        name  = node.get("name", "")
-        cap   = node.get("capacity")    or {}
-        alloc = node.get("allocatable") or {}
-
-        n_cpu_cap   = parse_cpu(cap.get("cpu",    0))
-        n_cpu_alloc = parse_cpu(alloc.get("cpu",  0))
-        n_mem_cap   = parse_memory(cap.get("memory",   0))
-        n_mem_alloc = parse_memory(alloc.get("memory", 0))
-        cpu_cap   += n_cpu_cap;   cpu_alloc += n_cpu_alloc
-        mem_cap   += n_mem_cap;   mem_alloc += n_mem_alloc
-
-        cpu_u, mem_u = _get_node_cpu_mem(client, name, from_s, to_s)
-        if cpu_u is not None:
-            cpu_used_total += cpu_u
+    for r in node_list:
+        cpu_cap   += r["cpu_capacity"];    cpu_alloc += r["cpu_allocatable"]
+        mem_cap   += r["mem_capacity"];    mem_alloc += r["mem_allocatable"]
+        gpu_cap   += r["gpu_capacity"]
+        if r["cpu_used"] is not None:
+            cpu_used_total += r["cpu_used"]
             usage_ok += 1
-        if mem_u is not None:
-            mem_used_total += mem_u
-
-        n_gpu_cap, gpu_u = _get_node_gpu_stats(client, name, from_s, to_s)
-        gpu_cap += n_gpu_cap
-        if gpu_u is not None:
-            gpu_used_total += gpu_u
+        if r["mem_used"] is not None:
+            mem_used_total += r["mem_used"]
+        if r["gpu_used"] is not None:
+            gpu_used_total += r["gpu_used"]
             gpu_usage_ok += 1
-
-        run_id, run_name, run_owner = _run_info(node)
-        node_list.append({
-            "node_name":      name,
-            "run_id":         run_id,
-            "run_name":       run_name,
-            "run_owner":      run_owner,
-            "instance_type":  _instance_type(node),
-            "cpu_capacity":   n_cpu_cap,
-            "cpu_allocatable": n_cpu_alloc,
-            "cpu_used":       cpu_u,
-            "mem_capacity":   n_mem_cap,
-            "mem_allocatable": n_mem_alloc,
-            "mem_used":       int(mem_u) if mem_u is not None else None,
-            "gpu_capacity":   n_gpu_cap,
-            "gpu_allocatable": 0,
-            "gpu_used":       gpu_u,
-        })
 
     log.info(
         "Collected snapshot: %d workers, cpu_cap=%.1f, mem_cap=%.0f GiB, "

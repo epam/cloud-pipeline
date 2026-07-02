@@ -47,6 +47,7 @@ from collector import CPClient, collect_snapshot
 CP_API_URL  = os.environ.get("CP_API_URL", "").rstrip("/")
 CP_API_TOKEN = os.environ.get("CP_API_TOKEN", "")
 COLLECT_INTERVAL_MINUTES = int(os.environ.get("COLLECT_INTERVAL_MINUTES", "60"))
+COLLECT_THREADS = int(os.environ.get("COLLECT_THREADS", "8"))
 URL_PREFIX   = os.environ.get("URL_PREFIX", "").rstrip("/")
 _APP_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH  = os.environ.get("DB_PATH", os.path.join(_APP_DIR, "data", "metrics.db"))
@@ -85,7 +86,7 @@ def _run_collection() -> None:
         log.warning("CP_API_URL or CP_API_TOKEN not set — skipping collection")
         return
     try:
-        snap, nodes = collect_snapshot(CP_API_URL, CP_API_TOKEN)
+        snap, nodes = collect_snapshot(CP_API_URL, CP_API_TOKEN, max_workers=COLLECT_THREADS)
         db.insert_snapshot(DB_PATH, snap)
         db.insert_run_snapshots(DB_PATH, snap["ts"], nodes)
         db.purge_old(DB_PATH)
