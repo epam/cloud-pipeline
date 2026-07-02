@@ -2054,41 +2054,48 @@ class Logs extends localization.LocalizedReactComponent {
           </a>
         );
         Parameters = (
-          <Collapse bordered={false}>
-            <Collapse.Panel header="Parameters">
-              <Row type="flex" justify="end" style={{position: 'absolute', right: 0}}>
-                {switchResolvedValuesButton}
-              </Row>
-              <table>
-                <tbody>
-                  {types.map((type, index) => {
-                    const parameters = filteredRunParameters.filter(
-                      (p) => getParameterType(p) === type,
-                    );
-                    if (parameters.length === 0) {
-                      return [];
-                    }
-                    const rows = [];
-                    rows.push(
-                      <tr key={`type_${index}`}>
-                        <td
-                          colSpan={2}
-                          style={{
-                            fontWeight: 'bold',
-                            paddingTop: index === 0 ? 0 : 10,
-                          }}
-                        >
-                          {type ? type.toUpperCase() : 'GENERAL'}
-                        </td>
-                      </tr>,
-                    );
-                    rows.push(...parameters.map((p, i) => this.renderRunParameter(p, i, type)));
-                    return rows;
-                  })}
-                </tbody>
-              </table>
-            </Collapse.Panel>
-          </Collapse>
+          <Collapse
+            bordered={false}
+            items={[{
+              key: 'parameters',
+              label: 'Parameters',
+              children: (
+                <>
+                  <Row type="flex" justify="end" style={{position: 'absolute', right: 0}}>
+                    {switchResolvedValuesButton}
+                  </Row>
+                  <table>
+                    <tbody>
+                      {types.map((type, index) => {
+                        const parameters = filteredRunParameters.filter(
+                          (p) => getParameterType(p) === type,
+                        );
+                        if (parameters.length === 0) {
+                          return [];
+                        }
+                        const rows = [];
+                        rows.push(
+                          <tr key={`type_${index}`}>
+                            <td
+                              colSpan={2}
+                              style={{
+                                fontWeight: 'bold',
+                                paddingTop: index === 0 ? 0 : 10,
+                              }}
+                            >
+                              {type ? type.toUpperCase() : 'GENERAL'}
+                            </td>
+                          </tr>,
+                        );
+                        rows.push(...parameters.map((p, i) => this.renderRunParameter(p, i, type)));
+                        return rows;
+                      })}
+                    </tbody>
+                  </table>
+                </>
+              ),
+            }]}
+          />
         );
       }
 
@@ -2097,11 +2104,12 @@ class Logs extends localization.LocalizedReactComponent {
           bordered={false}
           onChange={this.onChangeCollapsedPanels}
           activeKey={this.state.openedPanels}
-        >
-          <Collapse.Panel key="instance" header={this.renderInstanceHeader(instance, run)}>
-            <ul>{this.renderInstanceDetails(instance, run)}</ul>
-          </Collapse.Panel>
-        </Collapse>
+          items={[{
+            key: 'instance',
+            label: this.renderInstanceHeader(instance, run),
+            children: <ul>{this.renderInstanceDetails(instance, run)}</ul>,
+          }]}
+        />
       );
       switch (status.toLowerCase()) {
         case 'paused':

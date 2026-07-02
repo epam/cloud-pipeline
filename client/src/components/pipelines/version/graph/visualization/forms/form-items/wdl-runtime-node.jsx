@@ -90,7 +90,6 @@ class WdlRuntimeNode extends React.Component {
         onChange={onChange}
         dataSource={options}
         placeholder="Compute node type or binding"
-        optionLabelProp="value"
       />
     );
   }

@@ -19,7 +19,7 @@
   flex-wrap: nowrap;
   flex-grow: 1;
   gap: 10px;
-  justify-content: center;
+  align-items: center;
 }
 
 .runs-card {
@@ -34,7 +34,8 @@
 
 .tabs-menu {
   text-transform: uppercase;
-  margin: 0 auto;
+  flex: 1;
+  min-width: 0;
 }
 
 .tabs-menu > li > a:focus {

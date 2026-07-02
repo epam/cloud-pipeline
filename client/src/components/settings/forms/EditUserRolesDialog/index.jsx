@@ -16,7 +16,6 @@
 
 import React from 'react';
 import {observer, inject} from 'mobx-react';
-import {computed, makeObservable} from 'mobx';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {Modal, Row, Button, message, Table, Select, Splitter, Tabs} from 'antd';
@@ -103,12 +102,6 @@ export default class EditUserRolesDialog extends React.Component {
 
   constructor(props) {
     super(props);
-    makeObservable(this, {
-      isAdmin: computed,
-      dataStorages: computed,
-      cloudCredentialProfiles: computed,
-      restrictedMetadataKeys: computed,
-    });
   }
 
   componentDidMount() {

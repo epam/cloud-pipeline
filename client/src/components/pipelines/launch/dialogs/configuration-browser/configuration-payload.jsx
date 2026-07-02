@@ -853,36 +853,55 @@ class ConfigurationPayload extends React.Component {
             flex: 1,
             overflow: 'auto',
           }}
-        >
-          <Collapse.Panel key="exec" header="Execution environment">
-            {this.renderPipeline()}
-            {this.renderDockerImage()}
-            {this.renderInstanceType()}
-            {this.renderDisk()}
-            {this.renderCloudRegion()}
-            {this.renderCapabilities()}
-          </Collapse.Panel>
-          <Collapse.Panel key="advanced" header="Advanced">
-            {this.renderPriceType()}
-            {this.renderNotifications()}
-            {this.renderTimeout()}
-            {this.renderLimitMounts()}
-            {this.renderCmdTemplate()}
-            <Parameters
-              disabled={disabled}
-              mode={Parameters.Modes.system}
-              editable={!this.pipelineSpecified}
-            />
-          </Collapse.Panel>
-          <Collapse.Panel key="parameters" header="Parameters">
-            {this.renderRootEntity()}
-            <Parameters
-              disabled={disabled}
-              mode={Parameters.Modes.nonSystem}
-              editable={!this.pipelineSpecified}
-            />
-          </Collapse.Panel>
-        </Collapse>
+          items={[
+            {
+              key: 'exec',
+              label: 'Execution environment',
+              children: (
+                <>
+                  {this.renderPipeline()}
+                  {this.renderDockerImage()}
+                  {this.renderInstanceType()}
+                  {this.renderDisk()}
+                  {this.renderCloudRegion()}
+                  {this.renderCapabilities()}
+                </>
+              ),
+            },
+            {
+              key: 'advanced',
+              label: 'Advanced',
+              children: (
+                <>
+                  {this.renderPriceType()}
+                  {this.renderNotifications()}
+                  {this.renderTimeout()}
+                  {this.renderLimitMounts()}
+                  {this.renderCmdTemplate()}
+                  <Parameters
+                    disabled={disabled}
+                    mode={Parameters.Modes.system}
+                    editable={!this.pipelineSpecified}
+                  />
+                </>
+              ),
+            },
+            {
+              key: 'parameters',
+              label: 'Parameters',
+              children: (
+                <>
+                  {this.renderRootEntity()}
+                  <Parameters
+                    disabled={disabled}
+                    mode={Parameters.Modes.nonSystem}
+                    editable={!this.pipelineSpecified}
+                  />
+                </>
+              ),
+            },
+          ]}
+        />
       </Parameters.Provider>
     );
   }

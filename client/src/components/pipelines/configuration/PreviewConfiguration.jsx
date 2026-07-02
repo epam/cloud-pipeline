@@ -372,50 +372,49 @@ export default class PreviewConfiguration extends Component {
         bordered={false}
         onChange={(tabs) => this.setState({openedPanels: tabs})}
         activeKey={this.state.openedPanels}
-      >
-        <Collapse.Panel
-          id="configuration-preview-exec-environment-panel"
-          key={EXEC_ENVIRONMENT}
-          className={styles.section}
-          header={this.getPanelHeader(EXEC_ENVIRONMENT)}
-        >
-          <table key="body" className={styles.sectionTableBody}>
-            <tbody>{this.renderExecEnvironmentSection()}</tbody>
-          </table>
-        </Collapse.Panel>
-        <Collapse.Panel
-          id="configuration-preview-advanced-panel"
-          key={ADVANCED}
-          className={styles.section}
-          header={this.getPanelHeader(ADVANCED)}
-        >
-          <table key="body" className={styles.sectionTableBody}>
-            <tbody>{this.renderAdvancedSection()}</tbody>
-          </table>
-        </Collapse.Panel>
-        {systemParameters.length && (
-          <Collapse.Panel
-            id="configuration-preview-system-parameters-panel"
-            key={SYSTEM_PARAMETERS}
-            className={styles.section}
-            header={this.getPanelHeader(SYSTEM_PARAMETERS)}
-          >
-            <table key="body" className={styles.sectionTableBody}>
-              <tbody>{systemParameters}</tbody>
-            </table>
-          </Collapse.Panel>
-        )}
-        <Collapse.Panel
-          id="configuration-preview-parameters-panel"
-          key={PARAMETERS}
-          className={styles.section}
-          header={this.getPanelHeader(PARAMETERS)}
-        >
-          <table key="body" className={styles.sectionTableBody}>
-            <tbody>{[...this.renderRootEntity(), ...this.renderParameters(false)]}</tbody>
-          </table>
-        </Collapse.Panel>
-      </Collapse>
+        items={[
+          {
+            key: EXEC_ENVIRONMENT,
+            className: styles.section,
+            label: this.getPanelHeader(EXEC_ENVIRONMENT),
+            children: (
+              <table key="body" className={styles.sectionTableBody}>
+                <tbody>{this.renderExecEnvironmentSection()}</tbody>
+              </table>
+            ),
+          },
+          {
+            key: ADVANCED,
+            className: styles.section,
+            label: this.getPanelHeader(ADVANCED),
+            children: (
+              <table key="body" className={styles.sectionTableBody}>
+                <tbody>{this.renderAdvancedSection()}</tbody>
+              </table>
+            ),
+          },
+          systemParameters.length && {
+            key: SYSTEM_PARAMETERS,
+            className: styles.section,
+            label: this.getPanelHeader(SYSTEM_PARAMETERS),
+            children: (
+              <table key="body" className={styles.sectionTableBody}>
+                <tbody>{systemParameters}</tbody>
+              </table>
+            ),
+          },
+          {
+            key: PARAMETERS,
+            className: styles.section,
+            label: this.getPanelHeader(PARAMETERS),
+            children: (
+              <table key="body" className={styles.sectionTableBody}>
+                <tbody>{[...this.renderRootEntity(), ...this.renderParameters(false)]}</tbody>
+              </table>
+            ),
+          },
+        ].filter(Boolean)}
+      />
     );
   };
 

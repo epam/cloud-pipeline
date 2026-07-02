@@ -101,20 +101,18 @@ function PathParameterInput({
 }) {
   const IconComponent = PATH_PARAMETER_ICONS[parameter.type] || FolderOutlined;
   return (
-    <Input
-      id={`${sectionName}.params.param_${parameter.id}.value`}
-      disabled={disabled}
-      className={classNames({'cp-error': isError})}
-      style={{width: '100%', marginLeft: 5, top: 0}}
-      value={parameter.value}
-      onChange={onChange}
-      addonBefore={
-        <div style={{cursor: 'pointer'}} onClick={onOpenBucketBrowser}>
-          <IconComponent />
-        </div>
-      }
-      placeholder="Path"
-    />
+    <Space.Compact style={{width: '100%', marginLeft: 5}}>
+      <Button disabled={disabled} onClick={onOpenBucketBrowser} icon={<IconComponent />} />
+      <Input
+        id={`${sectionName}.params.param_${parameter.id}.value`}
+        disabled={disabled}
+        className={classNames({'cp-error': isError})}
+        style={{top: 0}}
+        value={parameter.value}
+        onChange={onChange}
+        placeholder="Path"
+      />
+    </Space.Compact>
   );
 }
 

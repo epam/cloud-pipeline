@@ -5157,146 +5157,151 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               });
             }}
             activeKey={this.state.openedPanels}
-          >
-            <Collapse.Panel
-              id="launch-pipeline-exec-environment-panel"
-              key={EXEC_ENVIRONMENT}
-              forceRender
-              className={classNames(styles.section, {
-                [styles.hidden]: !this.executionEnvironmentSectionVisible,
-              })}
-              header={this.getPanelHeader(EXEC_ENVIRONMENT)}
-            >
-              <Row type="flex" justify="space-between">
-                <div className={styles.settingsContainer} style={{padding: 5}}>
-                  <div className={styles.settingsContent}>
-                    {this.renderFormItemRow(this.renderPipelineSelection, hints.pipelineHint)}
-                    {this.renderFormItemRow(this.renderExecutionEnvironmentSelection)}
-                    {this.renderFormItemRow(this.renderDockerImageFormItem, hints.dockerImageHint)}
-                    {this.renderFormItemRow(
-                      this.renderInstanceTypeSelection,
-                      hints.instanceTypeHint,
-                    )}
-                    {this.renderReservationParametersSelector()}
-                    {this.renderFormItemRow(this.renderDiskFormItem, hints.diskHint)}
-                    {!this.isWindowsPlatform &&
-                      !this.state.fireCloudMethodName &&
-                      !this.state.isDts && (
-                        <Row
-                          type="flex"
-                          className={styles.formItemContainer}
-                          style={{flexWrap: 'wrap', marginRight: '5px'}}
-                        >
-                          <Col offset={6} span={17}>
-                            <AllowedInstancesCountWarning
-                              payload={{
-                                nodeCount: this.state.nodesCount,
-                                maxNodeCount: this.state.maxNodesCount,
-                              }}
-                              style={{width: '100%'}}
-                            />
-                          </Col>
-                          {configureClusterEnabled ? (
-                            <a
-                              onClick={this.openConfigureClusterDialog}
-                              className="cp-text underline"
-                              style={{marginLeft: 'auto', marginRight: '30px'}}
+            items={[
+              {
+                key: EXEC_ENVIRONMENT,
+                forceRender: true,
+                className: classNames(styles.section, {
+                  [styles.hidden]: !this.executionEnvironmentSectionVisible,
+                }),
+                label: this.getPanelHeader(EXEC_ENVIRONMENT),
+                children: (
+                  <Row type="flex" justify="space-between">
+                    <div className={styles.settingsContainer} style={{padding: 5}}>
+                      <div className={styles.settingsContent}>
+                        {this.renderFormItemRow(this.renderPipelineSelection, hints.pipelineHint)}
+                        {this.renderFormItemRow(this.renderExecutionEnvironmentSelection)}
+                        {this.renderFormItemRow(this.renderDockerImageFormItem, hints.dockerImageHint)}
+                        {this.renderFormItemRow(
+                          this.renderInstanceTypeSelection,
+                          hints.instanceTypeHint,
+                        )}
+                        {this.renderReservationParametersSelector()}
+                        {this.renderFormItemRow(this.renderDiskFormItem, hints.diskHint)}
+                        {!this.isWindowsPlatform &&
+                          !this.state.fireCloudMethodName &&
+                          !this.state.isDts && (
+                            <Row
+                              type="flex"
+                              className={styles.formItemContainer}
+                              style={{flexWrap: 'wrap', marginRight: '5px'}}
                             >
-                              <SettingOutlined />
-                              {ConfigureClusterDialog.getConfigureClusterButtonDescription(this)}
-                            </a>
-                          ) : null}
+                              <Col offset={6} span={17}>
+                                <AllowedInstancesCountWarning
+                                  payload={{
+                                    nodeCount: this.state.nodesCount,
+                                    maxNodeCount: this.state.maxNodesCount,
+                                  }}
+                                  style={{width: '100%'}}
+                                />
+                              </Col>
+                              {configureClusterEnabled ? (
+                                <a
+                                  onClick={this.openConfigureClusterDialog}
+                                  className="cp-text underline"
+                                  style={{marginLeft: 'auto', marginRight: '30px'}}
+                                >
+                                  <SettingOutlined />
+                                  {ConfigureClusterDialog.getConfigureClusterButtonDescription(this)}
+                                </a>
+                              ) : null}
+                            </Row>
+                          )}
+                        <ConfigureClusterDialog
+                          instanceName={this.getSectionFieldValue(EXEC_ENVIRONMENT)('type')}
+                          launchCluster={this.state.launchCluster}
+                          cloudRegionProvider={this.currentCloudRegionProvider}
+                          autoScaledPriceType={this.state.autoScaledPriceType}
+                          fsConfig={this.state.fsConfig}
+                          autoScaledCluster={this.state.autoScaledCluster}
+                          hybridAutoScaledClusterEnabled={this.state.hybridAutoScaledClusterEnabled}
+                          gpuScalingConfiguration={this.state.gpuScalingConfiguration}
+                          childNodeInstanceConfiguration={this.state.childNodeInstanceConfiguration}
+                          gridEngineEnabled={this.state.gridEngineEnabled}
+                          sparkEnabled={this.state.sparkEnabled}
+                          slurmEnabled={this.state.slurmEnabled}
+                          kubeEnabled={this.state.kubeEnabled}
+                          nodesCount={this.state.nodesCount}
+                          maxNodesCount={this.state.maxNodesCount || 1}
+                          onClose={this.closeConfigureClusterDialog}
+                          onChange={this.onChangeClusterConfiguration}
+                          visible={this.state.configureClusterDialogVisible}
+                          disabled={this.props.readOnly && !this.props.canExecute}
+                          instanceTypes={this.instanceTypes}
+                          displayConfig={configureClusterDisplayConfig}
+                        />
+                        {this.renderFormItemRow(
+                          this.renderAWSRegionSelection,
+                          this.regionDisabledByToolSettings
+                            ? hints.awsRegionRestrictedByToolSettingsHint
+                            : hints.awsRegionHint,
+                        )}
+                        {this.renderFormItemRow(this.renderRescheduleRunControl)}
+                        {this.renderFormItemRow(this.renderCoresFormItem)}
+                        {this.renderFormItemRow(
+                          this.renderAdditionalRunCapabilities,
+                          hints.runCapabilitiesHint,
+                        )}
+                      </div>
+                    </div>
+                    <div className={styles.settingsContainer} style={{padding: 5}}>
+                      <div className={styles.settingsContent}>
+                        <Row type="flex" style={{alignItems: 'center'}}>
+                          {this.renderExecutionEnvironmentSummary()}
                         </Row>
-                      )}
-                    <ConfigureClusterDialog
-                      instanceName={this.getSectionFieldValue(EXEC_ENVIRONMENT)('type')}
-                      launchCluster={this.state.launchCluster}
-                      cloudRegionProvider={this.currentCloudRegionProvider}
-                      autoScaledPriceType={this.state.autoScaledPriceType}
-                      fsConfig={this.state.fsConfig}
-                      autoScaledCluster={this.state.autoScaledCluster}
-                      hybridAutoScaledClusterEnabled={this.state.hybridAutoScaledClusterEnabled}
-                      gpuScalingConfiguration={this.state.gpuScalingConfiguration}
-                      childNodeInstanceConfiguration={this.state.childNodeInstanceConfiguration}
-                      gridEngineEnabled={this.state.gridEngineEnabled}
-                      sparkEnabled={this.state.sparkEnabled}
-                      slurmEnabled={this.state.slurmEnabled}
-                      kubeEnabled={this.state.kubeEnabled}
-                      nodesCount={this.state.nodesCount}
-                      maxNodesCount={this.state.maxNodesCount || 1}
-                      onClose={this.closeConfigureClusterDialog}
-                      onChange={this.onChangeClusterConfiguration}
-                      visible={this.state.configureClusterDialogVisible}
-                      disabled={this.props.readOnly && !this.props.canExecute}
-                      instanceTypes={this.instanceTypes}
-                      displayConfig={configureClusterDisplayConfig}
-                    />
-                    {this.renderFormItemRow(
-                      this.renderAWSRegionSelection,
-                      this.regionDisabledByToolSettings
-                        ? hints.awsRegionRestrictedByToolSettingsHint
-                        : hints.awsRegionHint,
-                    )}
-                    {this.renderFormItemRow(this.renderRescheduleRunControl)}
-                    {this.renderFormItemRow(this.renderCoresFormItem)}
-                    {this.renderFormItemRow(
-                      this.renderAdditionalRunCapabilities,
-                      hints.runCapabilitiesHint,
-                    )}
-                  </div>
-                </div>
-                <div className={styles.settingsContainer} style={{padding: 5}}>
-                  <div className={styles.settingsContent}>
-                    <Row type="flex" style={{alignItems: 'center'}}>
-                      {this.renderExecutionEnvironmentSummary()}
-                    </Row>
-                  </div>
-                </div>
-              </Row>
-            </Collapse.Panel>
-            <Collapse.Panel
-              id="launch-pipeline-advanced-panel"
-              key={ADVANCED}
-              forceRender
-              className={classNames(styles.section, {
-                [styles.hidden]: !this.advancedSectionVisible,
-              })}
-              header={this.getPanelHeader(ADVANCED)}
-            >
-              {this.renderCustomTagsConfigurationItem()}
-              {this.renderScheduleControl()}
-              {this.renderPriceTypeSelection()}
-              {this.renderDisableAutoPauseFormItem()}
-              {this.renderPrettyUrlFormItem()}
-              {this.renderHostedAppConfigurationItem()}
-              {this.renderJobNotificationsItem()}
-              {this.renderTimeoutFormItem()}
-              {this.renderCustomUIItem()}
-              {this.renderEndpointNameFormItem()}
-              {this.renderStopAfterFormItem()}
-              {this.renderLimitMountsFormItem()}
-              {this.renderCmdTemplateFormItem()}
-              {this.renderParameters(true)}
-            </Collapse.Panel>
-            <Collapse.Panel
-              id="launch-pipeline-parameters-panel"
-              key={PARAMETERS}
-              className={classNames(styles.section, {
-                [styles.hidden]: !this.parametersSectionVisible,
-              })}
-              header={this.getPanelHeader(PARAMETERS)}
-            >
-              {this.renderParameters(false)}
-              {this.isFireCloudSelected && this.renderFireCloudConfigConnectionsList()}
-            </Collapse.Panel>
-            {!this.state.detached && !this.props.editConfigurationMode && (
-              <LaunchCommand
-                payload={this.launchCommandPayload}
-                visible={this.state.showLaunchCommands}
-                onClose={this.hideLaunchCommands}
-              />
-            )}
-          </Collapse>
+                      </div>
+                    </div>
+                  </Row>
+                ),
+              },
+              {
+                key: ADVANCED,
+                forceRender: true,
+                className: classNames(styles.section, {
+                  [styles.hidden]: !this.advancedSectionVisible,
+                }),
+                label: this.getPanelHeader(ADVANCED),
+                children: (
+                  <>
+                    {this.renderCustomTagsConfigurationItem()}
+                    {this.renderScheduleControl()}
+                    {this.renderPriceTypeSelection()}
+                    {this.renderDisableAutoPauseFormItem()}
+                    {this.renderPrettyUrlFormItem()}
+                    {this.renderHostedAppConfigurationItem()}
+                    {this.renderJobNotificationsItem()}
+                    {this.renderTimeoutFormItem()}
+                    {this.renderCustomUIItem()}
+                    {this.renderEndpointNameFormItem()}
+                    {this.renderStopAfterFormItem()}
+                    {this.renderLimitMountsFormItem()}
+                    {this.renderCmdTemplateFormItem()}
+                    {this.renderParameters(true)}
+                  </>
+                ),
+              },
+              {
+                key: PARAMETERS,
+                className: classNames(styles.section, {
+                  [styles.hidden]: !this.parametersSectionVisible,
+                }),
+                label: this.getPanelHeader(PARAMETERS),
+                children: (
+                  <>
+                    {this.renderParameters(false)}
+                    {this.isFireCloudSelected && this.renderFireCloudConfigConnectionsList()}
+                  </>
+                ),
+              },
+            ]}
+          />
+          {!this.state.detached && !this.props.editConfigurationMode && (
+            <LaunchCommand
+              payload={this.launchCommandPayload}
+              visible={this.state.showLaunchCommands}
+              onClose={this.hideLaunchCommands}
+            />
+          )}
         </div>
         <PipelineBrowser
           multiple={false}

@@ -143,13 +143,12 @@ class HcsSequenceSelector extends React.Component {
         className="cp-collapse-small"
         onChange={this.onTogglePanel}
         activeKey={expandedKeys}
-      >
-        {sequences.map((sequence) => (
-          <Collapse.Panel header={this.renderCollapseHeader(sequence)} key={sequence.sequence}>
-            {this.renderSequence(sequence)}
-          </Collapse.Panel>
-        ))}
-      </Collapse>
+        items={sequences.map((sequence) => ({
+          key: sequence.sequence,
+          label: this.renderCollapseHeader(sequence),
+          children: this.renderSequence(sequence),
+        }))}
+      />
     );
   };
 

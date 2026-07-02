@@ -40,40 +40,44 @@ function SampleSheetPreview({className, content, expandDataSection, size = 'defa
           header ? header.name : undefined,
           expandDataSection && dataSectionName ? dataSectionName : undefined,
         ].filter(Boolean)}
-      >
-        {header && (
-          <Collapse.Panel key={header.name} header={header.name}>
-            <SectionData>
-              {(header.data || []).map((dataRow, index) => (
-                <SectionData.Row key={`${header.name}-data-row-${index}`} data={dataRow} />
-              ))}
-            </SectionData>
-          </Collapse.Panel>
-        )}
-        {sections.map((section) => (
-          <Collapse.Panel key={section.name} header={section.name}>
-            <SectionData>
-              {(section.data || []).map((dataRow, index) => (
-                <SectionData.Row key={`${section.name}-data-row-${index}`} data={dataRow} />
-              ))}
-            </SectionData>
-          </Collapse.Panel>
-        ))}
-        {samples.length > 0 && (
-          <Collapse.Panel
-            key={dataSectionName}
-            header={`${dataSectionName} (${samples.length})`}
-            className="cp-collapse-body-no-padding"
-          >
-            <SamplesTable>
-              <SamplesTable.Header>{titles}</SamplesTable.Header>
-              {samples.map((sample, index) => (
-                <SamplesTable.Sample key={`sample-${index}`}>{sample}</SamplesTable.Sample>
-              ))}
-            </SamplesTable>
-          </Collapse.Panel>
-        )}
-      </Collapse>
+        items={[
+          header && {
+            key: header.name,
+            label: header.name,
+            children: (
+              <SectionData>
+                {(header.data || []).map((dataRow, index) => (
+                  <SectionData.Row key={`${header.name}-data-row-${index}`} data={dataRow} />
+                ))}
+              </SectionData>
+            ),
+          },
+          ...sections.map((section) => ({
+            key: section.name,
+            label: section.name,
+            children: (
+              <SectionData>
+                {(section.data || []).map((dataRow, index) => (
+                  <SectionData.Row key={`${section.name}-data-row-${index}`} data={dataRow} />
+                ))}
+              </SectionData>
+            ),
+          })),
+          samples.length > 0 && {
+            key: dataSectionName,
+            label: `${dataSectionName} (${samples.length})`,
+            className: 'cp-collapse-body-no-padding',
+            children: (
+              <SamplesTable>
+                <SamplesTable.Header>{titles}</SamplesTable.Header>
+                {samples.map((sample, index) => (
+                  <SamplesTable.Sample key={`sample-${index}`}>{sample}</SamplesTable.Sample>
+                ))}
+              </SamplesTable>
+            ),
+          },
+        ].filter(Boolean)}
+      />
       {samples.length === 0 && (
         <div className={classNames(styles.noSamplesWarning, 'cp-text-not-important')}>
           <i>No samples</i>

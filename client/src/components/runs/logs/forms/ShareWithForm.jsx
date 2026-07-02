@@ -518,19 +518,14 @@ export default class ShareWithForm extends React.Component {
           >
             <AutoComplete
               value={this.state.userSearchString}
-              optionLabelProp="text"
               style={{width: '100%'}}
               onChange={this.onUserFindInputChanged}
               placeholder="Enter the account name"
-            >
-              {(this.findUserDataSource() || []).map((user) => {
-                return (
-                  <AutoComplete.Option key={user.userName} text={user.userName}>
-                    {this.renderUserName(user)}
-                  </AutoComplete.Option>
-                );
-              })}
-            </AutoComplete>
+              options={(this.findUserDataSource() || []).map((user) => ({
+                value: user.userName,
+                label: this.renderUserName(user),
+              }))}
+            />
           </Modal>
           <Modal
             title="Select group"
@@ -541,7 +536,7 @@ export default class ShareWithForm extends React.Component {
             <AutoComplete
               value={this.state.groupSearchString}
               style={{width: '100%'}}
-              dataSource={this.findGroupDataSource()}
+              options={this.findGroupDataSource().map((g) => ({value: g}))}
               onChange={this.onGroupFindInputChanged}
               placeholder="Enter the group name"
             />

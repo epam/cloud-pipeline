@@ -78,7 +78,7 @@ for (let i = 0; i < rules.length - 1; i++) {
 }
 
 export default function (start, end, canvasSize) {
-  if (!canvasSize || Math.abs(canvasSize) === Infinity || isNaN(canvasSize) || start === end) {
+  if (!canvasSize || Math.abs(canvasSize) === Infinity || isNaN(canvasSize) || !isFinite(start) || !isFinite(end) || start === end) {
     return [];
   }
   const baseTicksCount = Math.floor(canvasSize / SIZE_PER_TICK);

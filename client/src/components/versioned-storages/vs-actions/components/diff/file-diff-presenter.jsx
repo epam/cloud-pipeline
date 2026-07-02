@@ -155,11 +155,12 @@ class FileDiffPresenter extends React.PureComponent {
           })}
           activeKey={opened ? ['presentation'] : []}
           onChange={this.onOpenedChange}
-        >
-          <Collapse.Panel header={this.renderDescription()} key="presentation">
-            {this.renderPresentation()}
-          </Collapse.Panel>
-        </Collapse>
+          items={[{
+            key: 'presentation',
+            label: this.renderDescription(),
+            children: this.renderPresentation(),
+          }]}
+        />
       </div>
     );
   }

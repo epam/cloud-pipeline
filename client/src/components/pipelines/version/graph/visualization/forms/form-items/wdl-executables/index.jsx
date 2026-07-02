@@ -206,13 +206,12 @@ class WdlExecutables extends React.Component {
           onChange={this.onExpandedKeysChanged}
           className="wdl-properties-collapse"
           bordered={false}
-        >
-          {executables.map((executable) => (
-            <Collapse.Panel key={executable.uuid} header={this.renderExecutableHeader(executable)}>
-              {this.renderExecutable(executable)}
-            </Collapse.Panel>
-          ))}
-        </Collapse>
+          items={executables.map((executable) => ({
+            key: executable.uuid,
+            label: this.renderExecutableHeader(executable),
+            children: this.renderExecutable(executable),
+          }))}
+        />
       </div>
     );
   }

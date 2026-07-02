@@ -35,7 +35,6 @@ import {
   InfoCircleFilled,
   LockOutlined,
 } from '@ant-design/icons';
-import {computed, makeObservable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import updateUserMetadata from './update-user-metadata';
 import addValueToSystemDictionary from './add-value-to-system-dictionary';
@@ -73,9 +72,6 @@ class UserIntegrityCheck extends React.Component {
 
   constructor(props) {
     super(props);
-    makeObservable(this, {
-      dictionaries: computed,
-    });
   }
 
   get filteredUsers() {

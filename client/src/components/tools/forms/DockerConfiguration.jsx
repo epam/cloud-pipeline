@@ -167,24 +167,17 @@ export default class DockerConfiguration extends React.Component {
             activeKey={this.state.activeTroubleShootingKeys}
             style={{width: '100%'}}
             bordered={false}
-          >
-            {troubleShootingScenarios.map((scenario, index) => {
-              return (
-                <Collapse.Panel
-                  className={styles.troubleshootingPanel}
-                  id={`scenario_${index}`}
-                  key={`scenario_${index}`}
-                  header={
-                    <span className={classNames(styles.troubleshootingPanelHeader, 'cp-primary')}>
-                      {scenario.header}
-                    </span>
-                  }
-                >
-                  {scenario.body}
-                </Collapse.Panel>
-              );
-            })}
-          </Collapse>
+            items={troubleShootingScenarios.map((scenario, index) => ({
+              key: `scenario_${index}`,
+              className: styles.troubleshootingPanel,
+              label: (
+                <span className={classNames(styles.troubleshootingPanelHeader, 'cp-primary')}>
+                  {scenario.header}
+                </span>
+              ),
+              children: scenario.body,
+            }))}
+          />
         </Row>,
       ];
     }

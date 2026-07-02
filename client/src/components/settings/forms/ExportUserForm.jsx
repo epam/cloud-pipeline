@@ -118,24 +118,35 @@ export default function ExportUserForm({
 
   if (metadataKeys.length > 0) {
     modalContent = (
-      <Collapse defaultActiveKey={['fields']}>
-        <Collapse.Panel key="fields" header="Fields">
-          <Checkbox.Group
-            className={styles.inputContainer}
-            options={Keys}
-            value={values}
-            onChange={(checkedValues) => onChange(checkedValues, selectedMetadataKeys)}
-          />
-        </Collapse.Panel>
-        <Collapse.Panel key="attributes" header="Metadata">
-          <Checkbox.Group
-            className={styles.inputContainer}
-            options={metadataKeys}
-            value={selectedMetadataKeys}
-            onChange={(checkedValues) => onChange(values, checkedValues)}
-          />
-        </Collapse.Panel>
-      </Collapse>
+      <Collapse
+        defaultActiveKey={['fields']}
+        items={[
+          {
+            key: 'fields',
+            label: 'Fields',
+            children: (
+              <Checkbox.Group
+                className={styles.inputContainer}
+                options={Keys}
+                value={values}
+                onChange={(checkedValues) => onChange(checkedValues, selectedMetadataKeys)}
+              />
+            ),
+          },
+          {
+            key: 'attributes',
+            label: 'Metadata',
+            children: (
+              <Checkbox.Group
+                className={styles.inputContainer}
+                options={metadataKeys}
+                value={selectedMetadataKeys}
+                onChange={(checkedValues) => onChange(values, checkedValues)}
+              />
+            ),
+          },
+        ]}
+      />
     );
   } else {
     modalContent = (

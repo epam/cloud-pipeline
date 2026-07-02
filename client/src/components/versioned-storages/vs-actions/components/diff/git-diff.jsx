@@ -235,9 +235,9 @@ class GitDiff extends React.Component {
               })}
               activeKey={opened ? [IGNORED] : []}
               onChange={this.onOpenedChange}
-            >
-              <Collapse.Panel
-                header={
+              items={[{
+                key: IGNORED,
+                label: (
                   <div
                     className={classNames(styles.fileDiffHeader, {
                       [styles.fileDiffHeaderSelectable]: selectable,
@@ -245,16 +245,16 @@ class GitDiff extends React.Component {
                   >
                     Ignored files
                   </div>
-                }
-                key={IGNORED}
-              >
-                <ul className={styles.ignoredList}>
-                  {this.groupedFiles.ignored.map((file) => (
-                    <li key={file}>{file}</li>
-                  ))}
-                </ul>
-              </Collapse.Panel>
-            </Collapse>
+                ),
+                children: (
+                  <ul className={styles.ignoredList}>
+                    {this.groupedFiles.ignored.map((file) => (
+                      <li key={file}>{file}</li>
+                    ))}
+                  </ul>
+                ),
+              }]}
+            />
           </div>
         )}
       </div>

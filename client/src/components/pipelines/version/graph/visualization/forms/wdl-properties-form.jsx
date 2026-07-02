@@ -359,11 +359,15 @@ class WdlPropertiesForm extends React.Component {
   renderIssuesBlock = () => {
     const {issues = []} = this.state;
     return (
-      <Collapse bordered={false} className="wdl-properties-collapse">
-        <Collapse.Panel key="issues" header={<span>Issues {issues.length}</span>}>
-          <WdlIssues issues={issues} alert fullDescription />
-        </Collapse.Panel>
-      </Collapse>
+      <Collapse
+        bordered={false}
+        className="wdl-properties-collapse"
+        items={[{
+          key: 'issues',
+          label: <span>Issues {issues.length}</span>,
+          children: <WdlIssues issues={issues} alert fullDescription />,
+        }]}
+      />
     );
   };
 
@@ -541,47 +545,48 @@ class WdlPropertiesForm extends React.Component {
       }
     };
     const header = parameters.length === 0 ? title : `${title} (${parameters.length})`;
-    return (
-      <Collapse.Panel
-        key={key}
-        header={
-          <div className={classNames(styles.headerRow)}>
-            <span>{header}</span>
-            {editable && !disabled && (
-              <Button size="small" style={{marginLeft: 'auto'}} onClick={onAddClick}>
-                ADD
-              </Button>
-            )}
-          </div>
-        }
-        className="cp-collapse-body-no-padding"
-      >
-        {parameters.map((parameter, idx, arr) => (
-          <WdlParameter
-            key={parameter.uuid}
-            className={classNames(
-              'cp-even-odd-element',
-              {
-                'cp-divider': idx !== arr.length - 1,
-                bottom: idx !== arr.length - 1,
-              },
-              styles.parameter,
-            )}
-            parameter={parameter}
-            disabled={disabled}
-            editable={editable}
-            wdlDocument={wdlDocument}
-          />
-        ))}
-        {editable && !disabled && (
-          <div className={styles.propertiesRow}>
-            <a onClick={onAddClick}>
-              <PlusOutlined /> {addTitle.toLowerCase()}
-            </a>
-          </div>
-        )}
-      </Collapse.Panel>
-    );
+    return {
+      key,
+      className: 'cp-collapse-body-no-padding',
+      label: (
+        <div className={classNames(styles.headerRow)}>
+          <span>{header}</span>
+          {editable && !disabled && (
+            <Button size="small" style={{marginLeft: 'auto'}} onClick={onAddClick}>
+              ADD
+            </Button>
+          )}
+        </div>
+      ),
+      children: (
+        <>
+          {parameters.map((parameter, idx, arr) => (
+            <WdlParameter
+              key={parameter.uuid}
+              className={classNames(
+                'cp-even-odd-element',
+                {
+                  'cp-divider': idx !== arr.length - 1,
+                  bottom: idx !== arr.length - 1,
+                },
+                styles.parameter,
+              )}
+              parameter={parameter}
+              disabled={disabled}
+              editable={editable}
+              wdlDocument={wdlDocument}
+            />
+          ))}
+          {editable && !disabled && (
+            <div className={styles.propertiesRow}>
+              <a onClick={onAddClick}>
+                <PlusOutlined /> {addTitle.toLowerCase()}
+              </a>
+            </div>
+          )}
+        </>
+      ),
+    };
   };
 
   renderParameters = () => {
@@ -610,44 +615,45 @@ class WdlPropertiesForm extends React.Component {
         activeKey={expandedKeys}
         onChange={this.setExpandedKeys}
         className="wdl-properties-collapse"
-      >
-        {this.renderParametersBlock({
-          available: scatterItemsAvailable,
-          parameters: scatterItems,
-          editable: false,
-          title: 'Scatter item',
-          key: 'scatter',
-        })}
-        {this.renderParametersBlock({
-          available: inputsAvailable,
-          parameters: inputs,
-          editable: inputsEditable,
-          title: 'Inputs',
-          addTitle: 'add input',
-          contextType: ContextTypes.input,
-          key: 'inputs',
-        })}
-        {this.renderParametersBlock({
-          available: declarationsAvailable,
-          parameters: declarations,
-          editable: declarationsEditable,
-          title: 'Declarations',
-          addTitle: 'add declaration',
-          contextType: ContextTypes.declaration,
-          key: 'declarations',
-        })}
-        {this.renderParametersBlock({
-          available: outputsAvailable,
-          parameters: outputs,
-          editable: outputsEditable,
-          title: 'Outputs',
-          addTitle: 'Add output',
-          contextType: ContextTypes.output,
-          key: 'outputs',
-          owner: executable,
-        })}
-        {this.renderRuntimeAttributes()}
-      </Collapse>
+        items={[
+          this.renderParametersBlock({
+            available: scatterItemsAvailable,
+            parameters: scatterItems,
+            editable: false,
+            title: 'Scatter item',
+            key: 'scatter',
+          }),
+          this.renderParametersBlock({
+            available: inputsAvailable,
+            parameters: inputs,
+            editable: inputsEditable,
+            title: 'Inputs',
+            addTitle: 'add input',
+            contextType: ContextTypes.input,
+            key: 'inputs',
+          }),
+          this.renderParametersBlock({
+            available: declarationsAvailable,
+            parameters: declarations,
+            editable: declarationsEditable,
+            title: 'Declarations',
+            addTitle: 'add declaration',
+            contextType: ContextTypes.declaration,
+            key: 'declarations',
+          }),
+          this.renderParametersBlock({
+            available: outputsAvailable,
+            parameters: outputs,
+            editable: outputsEditable,
+            title: 'Outputs',
+            addTitle: 'Add output',
+            contextType: ContextTypes.output,
+            key: 'outputs',
+            owner: executable,
+          }),
+          this.renderRuntimeAttributes(),
+        ].filter(Boolean)}
+      />
     );
   };
 
@@ -761,52 +767,53 @@ class WdlPropertiesForm extends React.Component {
         }
         return idA.localeCompare(idB);
       };
-      return (
-        <Collapse.Panel
-          key="runtime"
-          className="cp-collapse-body-no-padding"
-          header={<div className={styles.headerRow}>{header}</div>}
-        >
-          {runtime
-            .slice()
-            .sort(sortRuntime)
-            .map((r) => (
-              <div key={r.id || r.property}>
-                <div className={styles.propertiesRow}>
-                  {renderNameInput(r)}
-                  {renderValueInput(r)}
-                  {(r.removable === undefined || r.removable) &&
-                    !disabled &&
-                    runtimeAttributesEditable && (
-                      <div className={styles.deleteButton} onClick={() => onRemoveClick(r)}>
-                        <DeleteOutlined className={'cp-danger'} />
-                      </div>
-                    )}
+      return {
+        key: 'runtime',
+        className: 'cp-collapse-body-no-padding',
+        label: <div className={styles.headerRow}>{header}</div>,
+        children: (
+          <>
+            {runtime
+              .slice()
+              .sort(sortRuntime)
+              .map((r) => (
+                <div key={r.id || r.property}>
+                  <div className={styles.propertiesRow}>
+                    {renderNameInput(r)}
+                    {renderValueInput(r)}
+                    {(r.removable === undefined || r.removable) &&
+                      !disabled &&
+                      runtimeAttributesEditable && (
+                        <div className={styles.deleteButton} onClick={() => onRemoveClick(r)}>
+                          <DeleteOutlined className={'cp-danger'} />
+                        </div>
+                      )}
+                  </div>
+                  <WdlIssues issues={r.issues || []} />
                 </div>
-                <WdlIssues issues={r.issues || []} />
+              ))}
+            {!hasDocker && !disabled && runtimeAttributesEditable && (
+              <div className={styles.propertiesRow}>
+                <a onClick={() => addRuntime('docker')}>
+                  <PlusOutlined /> add docker configuration
+                </a>
               </div>
-            ))}
-          {!hasDocker && !disabled && runtimeAttributesEditable && (
+            )}
+            {!hasNode && !disabled && runtimeAttributesEditable && (
+              <div className={styles.propertiesRow}>
+                <a onClick={() => addRuntime('node')}>
+                  <PlusOutlined /> add compute node configuration
+                </a>
+              </div>
+            )}
             <div className={styles.propertiesRow}>
-              <a onClick={() => addRuntime('docker')}>
-                <PlusOutlined /> add docker configuration
+              <a onClick={addNewRuntime}>
+                <PlusOutlined /> add runtime configuration
               </a>
             </div>
-          )}
-          {!hasNode && !disabled && runtimeAttributesEditable && (
-            <div className={styles.propertiesRow}>
-              <a onClick={() => addRuntime('node')}>
-                <PlusOutlined /> add compute node configuration
-              </a>
-            </div>
-          )}
-          <div className={styles.propertiesRow}>
-            <a onClick={addNewRuntime}>
-              <PlusOutlined /> add runtime configuration
-            </a>
-          </div>
-        </Collapse.Panel>
-      );
+          </>
+        ),
+      };
     }
     return null;
   };

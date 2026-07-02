@@ -28,7 +28,7 @@ function shScriptToHtml(script) {
   if (!script) {
     return '';
   }
-  let command = hljs.highlight('bash', script).value;
+  let command = hljs.highlight(script, {language: 'bash'}).value;
   const r = /\[URL\](.+)\[\/URL\]/gi;
   let e = r.exec(command);
   while (e) {

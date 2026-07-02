@@ -79,11 +79,15 @@ class WdlDocumentProperties extends React.Component {
         <div className={styles.row}>
           Version: <b>{wdlDocument.version}</b>
         </div>
-        <Collapse bordered={false} className="wdl-properties-collapse">
-          <Collapse.Panel key="issues" header={<div>Document issues ({issues.length})</div>}>
-            <WdlIssues issues={issues} fullDescription alert />
-          </Collapse.Panel>
-        </Collapse>
+        <Collapse
+          bordered={false}
+          className="wdl-properties-collapse"
+          items={[{
+            key: 'issues',
+            label: <div>Document issues ({issues.length})</div>,
+            children: <WdlIssues issues={issues} fullDescription alert />,
+          }]}
+        />
       </div>
     );
   }

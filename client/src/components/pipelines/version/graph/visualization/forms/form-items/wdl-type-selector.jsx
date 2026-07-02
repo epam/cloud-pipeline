@@ -65,7 +65,7 @@ function getSuggestions(typeString, structs = []) {
 
 function WdlTypeSelector({className, style, disabled, value, onChange, structs}) {
   const options = getSuggestions(value, structs).map((o) => (
-    <AutoComplete.Option key={o.value} vlaue={o.value}>
+    <AutoComplete.Option key={o.value} value={o.value}>
       {o.name}
     </AutoComplete.Option>
   ));
@@ -75,7 +75,6 @@ function WdlTypeSelector({className, style, disabled, value, onChange, structs})
       value={value}
       onSearch={onChange}
       onChange={onChange}
-      optionLabelProp="value"
       className={className}
       style={style}
       disabled={disabled}

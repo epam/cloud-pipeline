@@ -15,7 +15,6 @@
  */
 
 import React from 'react';
-import {computed, makeObservable} from 'mobx';
 import {observer, inject} from 'mobx-react';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
@@ -106,12 +105,6 @@ class EditRoleDialog extends React.Component {
 
   constructor(props) {
     super(props);
-    makeObservable(this, {
-      isAdmin: computed,
-      restrictedMetadataKeys: computed,
-      dataStorages: computed,
-      cloudCredentialProfiles: computed,
-    });
   }
 
   componentDidMount() {

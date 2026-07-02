@@ -251,6 +251,9 @@ class Timeline extends React.Component {
     const {chartArea, height} = plot;
     const x = this.getCanvasCoordinate(tick.tick);
     const y = height - chartArea.bottom + 6 + fontSize;
+    if (!isFinite(x) || !isFinite(y)) {
+      return null;
+    }
     let ref;
     if (tick.isStart) {
       ref = this.updateTickBox('startTick');

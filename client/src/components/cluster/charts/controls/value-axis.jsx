@@ -53,7 +53,7 @@ class ValueAxis extends React.Component {
 
   get dataRange() {
     const {from, to} = this.state;
-    if (from === undefined || to === undefined) {
+    if (!isFinite(from) || !isFinite(to)) {
       return 0;
     }
     return to - from;
@@ -85,7 +85,7 @@ class ValueAxis extends React.Component {
 
   get ticks() {
     const {from, to} = this.state;
-    if (from === undefined || to === undefined) {
+    if (!isFinite(from) || !isFinite(to)) {
       return [];
     }
     if (this.tickGenerator) {
@@ -226,6 +226,9 @@ class ValueAxis extends React.Component {
     const {chartArea, width} = plot;
     const y = this.getCanvasCoordinate(tick.tick) + fontSize / 2.0 - 2;
     const x = isLeft ? chartArea.left - fontSize : width - chartArea.right + fontSize;
+    if (!isFinite(x) || !isFinite(y)) {
+      return null;
+    }
     const anchor = isLeft ? 'end' : 'start';
     let ref;
     if (tick.isStart) {

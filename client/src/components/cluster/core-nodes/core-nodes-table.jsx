@@ -378,7 +378,7 @@ class CoreNodesTable extends localization.LocalizedReactComponent {
         title: 'Name',
         sorter: alphabeticNameSorter,
         className: styles.clusterNodeRowName,
-        onCell: (record) => ({onClick: () => this.onNodeInstanceSelect(record)}),
+        onCell: (record) => ({onClick: () => onNodeInstanceSelect(record)}),
       },
       {
         dataIndex: 'pipelineRun',
@@ -386,7 +386,7 @@ class CoreNodesTable extends localization.LocalizedReactComponent {
         title: this.localizedString('Pipeline'),
         render: (pipelineRun) => this.renderPipelineName(pipelineRun),
         className: styles.clusterNodeRowPipeline,
-        onCell: (record) => ({onClick: () => this.onNodeInstanceSelect(record)}),
+        onCell: (record) => ({onClick: () => onNodeInstanceSelect(record)}),
       },
       {
         dataIndex: 'labels',
@@ -396,7 +396,7 @@ class CoreNodesTable extends localization.LocalizedReactComponent {
         ...this.getInputFilter('runId', 'Run Id'),
         sorter: runSorter,
         className: styles.clusterNodeRowLabels,
-        onCell: (record) => ({onClick: () => this.onNodeInstanceSelect(record)}),
+        onCell: (record) => ({onClick: () => onNodeInstanceSelect(record)}),
       },
       {
         dataIndex: 'addresses',
@@ -405,7 +405,7 @@ class CoreNodesTable extends localization.LocalizedReactComponent {
         ...this.getInputFilter('address', 'IP'),
         className: styles.clusterNodeRowAddresses,
         render: (addresses) => addressesCellContent(addresses),
-        onCell: (record) => ({onClick: () => this.onNodeInstanceSelect(record)}),
+        onCell: (record) => ({onClick: () => onNodeInstanceSelect(record)}),
       },
       {
         dataIndex: 'created',
@@ -414,7 +414,7 @@ class CoreNodesTable extends localization.LocalizedReactComponent {
         sorter: dateSorter,
         className: styles.clusterNodeRowCreated,
         render: (date) => createdCellContent(date),
-        onCell: (record) => ({onClick: () => this.onNodeInstanceSelect(record)}),
+        onCell: (record) => ({onClick: () => onNodeInstanceSelect(record)}),
       },
     ];
     const dataSource = [];

@@ -253,7 +253,6 @@ class Chart extends React.PureComponent {
         options: chartOptions,
       });
     }
-    this.chart.resize();
   };
 
   initializeCanvas = (canvas) => {

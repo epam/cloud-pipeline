@@ -167,22 +167,20 @@ class DockerRegistryGroupsList extends React.Component {
           bordered={false}
           onChange={this.onChangeExpandedState}
           activeKey={allGroupsExpanded ? ['groups'] : []}
-        >
-          <Collapse.Panel
-            className={styles.collapseContainer}
-            header={
+          items={[{
+            key: 'groups',
+            className: styles.collapseContainer,
+            label: (
               <div>
                 <span>All groups</span>
                 {this.selectedLibraryGroup ? (
                   <Tag style={{marginLeft: 5}}>{this.getGroupName(this.selectedLibraryGroup)}</Tag>
                 ) : null}
               </div>
-            }
-            key="groups"
-          >
-            {this.renderGroupsSelector()}
-          </Collapse.Panel>
-        </Collapse>
+            ),
+            children: this.renderGroupsSelector(),
+          }]}
+        />
       </div>
     );
   }

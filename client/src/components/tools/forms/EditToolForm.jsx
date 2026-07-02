@@ -725,11 +725,11 @@ export default class EditToolForm extends React.Component {
         if (this.toolFormSystemParameters?.reset) {
           this.toolFormSystemParameters.reset(this.defaultSystemProperties);
         }
-        this.formRef.current.resetFields();
+        this.formRef.current?.resetFields();
         this.setState(state);
       })();
     } else {
-      this.formRef.current.resetFields();
+      this.formRef.current?.resetFields();
       this.setState(state);
     }
   }
@@ -2028,14 +2028,16 @@ export default class EditToolForm extends React.Component {
     } else {
       const onOpenPanel = (panels) => this.setState({openedPanels: panels});
       return (
-        <Collapse bordered={false} activeKey={this.state.openedPanels} onChange={onOpenPanel}>
-          <Collapse.Panel
-            key={Panels.executionDefaults}
-            header={<span>EXECUTION ENVIRONMENT</span>}
-          >
-            {renderExecutionEnvironmentSection()}
-          </Collapse.Panel>
-        </Collapse>
+        <Collapse
+          bordered={false}
+          activeKey={this.state.openedPanels}
+          onChange={onOpenPanel}
+          items={[{
+            key: Panels.executionDefaults,
+            label: <span>EXECUTION ENVIRONMENT</span>,
+            children: renderExecutionEnvironmentSection(),
+          }]}
+        />
       );
     }
   };

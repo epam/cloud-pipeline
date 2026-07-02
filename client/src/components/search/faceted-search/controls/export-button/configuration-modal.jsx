@@ -219,22 +219,23 @@ class ExportConfigurationModal extends React.Component {
             Select all
           </Button>
         </div>
-        <Collapse activeKey={expanded} onChange={this.onChangeExpandedKeys} bordered>
-          <Collapse.Panel
-            key="main"
-            header={this.renderCollapseHeader('Main columns', GROUPS.main)}
-          >
-            {this.renderColumnsList(this.groupedColumns.main)}
-          </Collapse.Panel>
-          {this.groupedColumns.other.length > 0 && (
-            <Collapse.Panel
-              key="other"
-              header={this.renderCollapseHeader('Other columns', GROUPS.other)}
-            >
-              {this.renderColumnsList(this.groupedColumns.other)}
-            </Collapse.Panel>
-          )}
-        </Collapse>
+        <Collapse
+          activeKey={expanded}
+          onChange={this.onChangeExpandedKeys}
+          bordered
+          items={[
+            {
+              key: 'main',
+              label: this.renderCollapseHeader('Main columns', GROUPS.main),
+              children: this.renderColumnsList(this.groupedColumns.main),
+            },
+            this.groupedColumns.other.length > 0 && {
+              key: 'other',
+              label: this.renderCollapseHeader('Other columns', GROUPS.other),
+              children: this.renderColumnsList(this.groupedColumns.other),
+            },
+          ].filter(Boolean)}
+        />
       </Modal>
     );
   }

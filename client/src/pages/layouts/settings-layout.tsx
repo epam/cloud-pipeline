@@ -43,7 +43,7 @@ function SettingsLayout() {
           }))}
         />
       </div>
-      <section className="min-h-0 flex-1 overflow-auto">
+      <section className="min-h-0 flex-1 overflow-hidden flex flex-col">
         <Outlet />
       </section>
     </div>

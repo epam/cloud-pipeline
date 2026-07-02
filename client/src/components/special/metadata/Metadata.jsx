@@ -1012,17 +1012,12 @@ export default class Metadata extends localization.LocalizedReactComponent {
               showSearch
               style={{width: '100%'}}
               filterOption={(input, option) =>
-                option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                option.value.toLowerCase().indexOf(input.toLowerCase()) >= 0
               }
+              options={(dictionary.values || []).map((v) => ({value: v.value}))}
               value={metadataItem.value}
               onChange={this.saveDictionaryMetadata({index: metadataItem.index})}
-            >
-              {(dictionary.values || []).map((v) => (
-                <Select.Option key={v.value} value={v.value}>
-                  {v.value}
-                </Select.Option>
-              ))}
-            </Select>
+            />
           </td>
         </tr>
       );
@@ -1290,18 +1285,13 @@ export default class Metadata extends localization.LocalizedReactComponent {
             showSearch
             style={{width: '100%'}}
             filterOption={(input, option) =>
-              option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+              option.value.toLowerCase().indexOf(input.toLowerCase()) >= 0
             }
+            options={(dictionary.values || []).map((v) => ({value: v.value}))}
             value={this.state.addKey.value}
             onChange={onDictionaryChange}
             disabled={readOnly}
-          >
-            {(dictionary.values || []).map((v) => (
-              <Select.Option key={v.value} value={v.value}>
-                {v.value}
-              </Select.Option>
-            ))}
-          </Select>
+          />
         );
       } else {
         valueItem = (
@@ -1335,16 +1325,11 @@ export default class Metadata extends localization.LocalizedReactComponent {
               onChange={(value) => onChange('key')({target: {value}})}
               size="small"
               style={{width: '100%'}}
+              options={availableDictionaries.map((dict) => ({value: dict}))}
               filterOption={(input, option) =>
-                option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                option.value.toLowerCase().indexOf(input.toLowerCase()) >= 0
               }
-            >
-              {availableDictionaries.map((dict) => (
-                <AutoComplete.Option key={dict} value={dict}>
-                  {dict}
-                </AutoComplete.Option>
-              ))}
-            </AutoComplete>
+            />
           </td>
         </tr>,
         <tr className={styles.newKeyRow} key="new value row">
