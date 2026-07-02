@@ -430,6 +430,7 @@ const GiB = 1024 ** 3;
 let currentFrom = null;
 let currentTo   = null;
 let charts = {};
+let _gpuRows  = [];
 let _lastClickTs = null;
 let _uiUrl       = '';
 let _panelData   = null;
@@ -511,6 +512,13 @@ function initCharts() {
     ds('Capacity', '#6b7db3', true,  []),
     dsArea('Active', '#f0913a', []),
   ]);
+  charts.gpu.options.plugins.tooltip.callbacks.afterBody = function(ctxArr) {
+    const bd = _gpuRows[ctxArr[0]?.dataIndex]?.gpu_breakdown;
+    if (!bd || !Object.keys(bd).length) return [];
+    const lines = [''];
+    for (const [type, count] of Object.entries(bd)) lines.push(`  ${type}: ${count}`);
+    return lines;
+  };
 }
 
 // ── Load and render chart data ─────────────────────────────────────────────
@@ -546,6 +554,7 @@ async function loadData(from, to) {
 
   charts.gpu.data.datasets[0].data = rows.map(r => toPt(r, 'gpu_capacity'));
   charts.gpu.data.datasets[1].data = rows.map(r => toPt(r, 'gpu_used'));
+  _gpuRows = rows;
   charts.gpu.update('none');
 
   updateCards(rows[rows.length - 1]);

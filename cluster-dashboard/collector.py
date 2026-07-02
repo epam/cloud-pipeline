@@ -169,7 +169,15 @@ def _load_instance_gpu_map(client: CPClient) -> dict:
     try:
         payload = client.get("cluster/instance/allowed") or {}
         instances = payload.get("cluster.allowed.instance.types") or []
-        return {inst["name"]: int(inst.get("gpu") or 0) for inst in instances if inst.get("name")}
+        result = {}
+        for inst in instances:
+            if inst.get("name"):
+                gpu_device = inst.get("gpuDevice") or {}
+                result[inst["name"]] = {
+                    "count": int(inst.get("gpu") or 0),
+                    "type":  gpu_device.get("name") or None,
+                }
+        return result
     except Exception as exc:
         log.warning("Could not load instance GPU map: %s", exc)
         return {}
@@ -232,7 +240,7 @@ def _collect_node(client: CPClient, node: dict, from_s: str, to_s: str,
     n_mem_alloc = parse_memory(alloc.get("memory", 0))
 
     itype = _instance_type(node)
-    n_gpu_cap = instance_gpu_map.get(itype, 0)
+    n_gpu_cap = (instance_gpu_map.get(itype) or {}).get("count", 0)
 
     cpu_u, mem_u = _get_node_cpu_mem(client, name, from_s, to_s)
     gpu_u = _get_node_gpu_active(client, name, from_s, to_s) if n_gpu_cap > 0 else None
@@ -298,6 +306,7 @@ def collect_snapshot(api_url: str, token: str, max_workers: int = 8):
     gpu_used_total = 0.0
     usage_ok = gpu_usage_ok = 0
 
+    gpu_breakdown = {}
     for r in node_list:
         cpu_cap   += r["cpu_capacity"];    cpu_alloc += r["cpu_allocatable"]
         mem_cap   += r["mem_capacity"];    mem_alloc += r["mem_allocatable"]
@@ -310,6 +319,10 @@ def collect_snapshot(api_url: str, token: str, max_workers: int = 8):
         if r["gpu_used"] is not None:
             gpu_used_total += r["gpu_used"]
             gpu_usage_ok += 1
+        if r["gpu_capacity"] > 0:
+            info = instance_gpu_map.get(r["instance_type"]) or {}
+            gpu_type = info.get("type") or "Unknown"
+            gpu_breakdown[gpu_type] = gpu_breakdown.get(gpu_type, 0) + r["gpu_capacity"]
 
     log.info(
         "Collected snapshot: %d workers, cpu_cap=%.1f, mem_cap=%.0f GiB, "
@@ -329,5 +342,6 @@ def collect_snapshot(api_url: str, token: str, max_workers: int = 8):
         "gpu_capacity":    gpu_cap,
         "gpu_allocatable": 0,
         "gpu_used":        gpu_used_total if gpu_usage_ok > 0 else None,
+        "gpu_breakdown":   gpu_breakdown or None,
     }
     return snapshot, node_list
