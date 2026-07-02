@@ -513,10 +513,17 @@ function initCharts() {
     dsArea('Active', '#f0913a', []),
   ]);
   charts.gpu.options.plugins.tooltip.callbacks.afterBody = function(ctxArr) {
-    const bd = _gpuRows[ctxArr[0]?.dataIndex]?.gpu_breakdown;
-    if (!bd || !Object.keys(bd).length) return [];
-    const lines = [''];
-    for (const [type, count] of Object.entries(bd)) lines.push(`  ${type}: ${count}`);
+    const row = _gpuRows[ctxArr[0]?.dataIndex];
+    if (!row) return [];
+    const lines = [];
+    function addBreakdown(label, bd) {
+      if (!bd || !Object.keys(bd).length) return;
+      lines.push('', label);
+      for (const [type, count] of Object.entries(bd))
+        lines.push(`  ${type}: ${Math.round(count)}`);
+    }
+    addBreakdown('Capacity:', row.gpu_breakdown);
+    addBreakdown('Active:', row.gpu_active_breakdown);
     return lines;
   };
 }

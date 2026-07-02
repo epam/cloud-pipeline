@@ -31,7 +31,8 @@ CREATE TABLE IF NOT EXISTS snapshots (
     gpu_capacity   INTEGER DEFAULT 0,
     gpu_allocatable INTEGER DEFAULT 0,
     gpu_used       REAL,
-    gpu_breakdown  TEXT
+    gpu_breakdown        TEXT,
+    gpu_active_breakdown TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_ts ON snapshots(ts);
 
@@ -63,10 +64,11 @@ def init_db(db_path: str) -> None:
     with sqlite3.connect(db_path) as conn:
         conn.executescript(_SCHEMA)
         # migrate existing databases
-        try:
-            conn.execute("ALTER TABLE snapshots ADD COLUMN gpu_breakdown TEXT")
-        except sqlite3.OperationalError:
-            pass
+        for col, typedef in [("gpu_breakdown", "TEXT"), ("gpu_active_breakdown", "TEXT")]:
+            try:
+                conn.execute(f"ALTER TABLE snapshots ADD COLUMN {col} {typedef}")
+            except sqlite3.OperationalError:
+                pass
         conn.commit()
 
 
@@ -77,14 +79,16 @@ def insert_snapshot(db_path: str, snap: dict) -> None:
                (ts, node_count,
                 cpu_capacity, cpu_allocatable, cpu_used,
                 mem_capacity, mem_allocatable, mem_used,
-                gpu_capacity, gpu_allocatable, gpu_used, gpu_breakdown)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+                gpu_capacity, gpu_allocatable, gpu_used,
+                gpu_breakdown, gpu_active_breakdown)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
                 snap["ts"], snap["node_count"],
                 snap["cpu_capacity"], snap["cpu_allocatable"], snap.get("cpu_used"),
                 snap["mem_capacity"], snap["mem_allocatable"], snap.get("mem_used"),
                 snap["gpu_capacity"], snap["gpu_allocatable"], snap.get("gpu_used"),
                 json.dumps(snap["gpu_breakdown"]) if snap.get("gpu_breakdown") else None,
+                json.dumps(snap["gpu_active_breakdown"]) if snap.get("gpu_active_breakdown") else None,
             ),
         )
         conn.commit()
@@ -168,7 +172,8 @@ def query_metrics(db_path: str, from_ts: int, to_ts: int) -> list:
             """SELECT ts, node_count,
                       cpu_capacity, cpu_allocatable, cpu_used,
                       mem_capacity, mem_allocatable, mem_used,
-                      gpu_capacity, gpu_allocatable, gpu_used, gpu_breakdown
+                      gpu_capacity, gpu_allocatable, gpu_used,
+                      gpu_breakdown, gpu_active_breakdown
                FROM snapshots
                WHERE ts >= ? AND ts <= ?
                ORDER BY ts ASC""",
@@ -176,8 +181,9 @@ def query_metrics(db_path: str, from_ts: int, to_ts: int) -> list:
         ).fetchall()
     result = [dict(r) for r in rows]
     for row in result:
-        if row.get("gpu_breakdown"):
-            row["gpu_breakdown"] = json.loads(row["gpu_breakdown"])
+        for col in ("gpu_breakdown", "gpu_active_breakdown"):
+            if row.get(col):
+                row[col] = json.loads(row[col])
     return result
 
 
@@ -190,6 +196,7 @@ def get_latest(db_path: str) -> Optional[dict]:
     if not row:
         return None
     result = dict(row)
-    if result.get("gpu_breakdown"):
-        result["gpu_breakdown"] = json.loads(result["gpu_breakdown"])
+    for col in ("gpu_breakdown", "gpu_active_breakdown"):
+        if result.get(col):
+            result[col] = json.loads(result[col])
     return result
