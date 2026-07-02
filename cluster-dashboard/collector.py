@@ -145,18 +145,20 @@ def _get_node_gpu_stats(client: CPClient, name: str, from_s: str, to_s: str):
         )
         if not stats:
             return 0, None
-        # Derive capacity from gpuDetails keys in any chart entry
-        gpu_cap = 0
-        for chart in (stats.get("charts") or []):
-            details = chart.get("gpuDetails") or {}
-            if details:
-                gpu_cap = max(gpu_cap, len(details))
-        # Active count from global summary
-        gpu_obj = (stats.get("global") or {}).get("gpuUsage") or {}
-        active = gpu_obj.get("activeGpus") or {}
-        pct = active.get("average")
-        gpu_active = pct / 100.0 * gpu_cap if (pct is not None and gpu_cap > 0) else None
-        return gpu_cap, gpu_active
+        # Use the most recent chart entry that has gpuDetails
+        details = {}
+        for chart in reversed(stats.get("charts") or []):
+            if chart.get("gpuDetails"):
+                details = chart["gpuDetails"]
+                break
+        gpu_cap = len(details)
+        if not gpu_cap:
+            return 0, None
+        gpu_active = sum(
+            1 for gpu in details.values()
+            if (gpu.get("gpuUtilization") or {}).get("average", 0) > 0
+        )
+        return gpu_cap, float(gpu_active)
     except Exception as exc:
         log.debug("GPU stats unavailable for node %s: %s", name, exc)
         return 0, None
