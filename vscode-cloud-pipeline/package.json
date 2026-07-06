@@ -101,6 +101,10 @@
       {
         "command": "cloudPipeline.syncMcpCursorConfig",
         "title": "Cloud Pipeline: Sync remote MCP to ~/.cursor/mcp.json"
+      },
+      {
+        "command": "cloudPipeline.showVersion",
+        "title": "Cloud Pipeline: Show Version"
       }
     ],
     "menus": {

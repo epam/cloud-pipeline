@@ -10,10 +10,6 @@ export interface PipeFileConfig {
   access_key?: string;
   tz?: string;
   proxy?: string;
-  proxy_ntlm?: boolean;
-  proxy_ntlm_user?: string;
-  proxy_ntlm_domain?: string;
-  proxy_ntlm_pass?: string;
   codec?: string | null;
 }
 
@@ -78,10 +74,6 @@ export function writePipeConfigMerged(patch: Partial<PipeFileConfig>): void {
   const next: PipeFileConfig = {
     tz: existing.tz ?? 'local',
     proxy: existing.proxy ?? '',
-    proxy_ntlm: existing.proxy_ntlm ?? false,
-    proxy_ntlm_user: existing.proxy_ntlm_user,
-    proxy_ntlm_domain: existing.proxy_ntlm_domain,
-    proxy_ntlm_pass: existing.proxy_ntlm_pass,
     codec: existing.codec,
     ...existing,
     ...patch,

@@ -4,10 +4,12 @@ import * as path from 'path';
 import { URL } from 'url';
 import * as vscode from 'vscode';
 
-const MCP_JSON = path.join(os.homedir(), '.cursor', 'mcp.json');
+const CURSOR_MCP_JSON = path.join(os.homedir(), '.cursor', 'mcp.json');
+const CLAUDE_JSON = path.join(os.homedir(), '.claude.json');
 
 export interface McpJsonRoot {
   mcpServers?: Record<string, Record<string, unknown>>;
+  [key: string]: unknown;
 }
 
 function mcpStreamableHttpUrl(serverUrl: string): string {
@@ -44,12 +46,12 @@ export function effectiveMcpServerUrl(apiUrl: string): string | undefined {
   return deriveMcpServerUrlFromApi(apiUrl);
 }
 
-function readMcpJson(): McpJsonRoot {
+function readJsonFile(filePath: string): McpJsonRoot {
   try {
-    if (!fs.existsSync(MCP_JSON)) {
+    if (!fs.existsSync(filePath)) {
       return {};
     }
-    const raw = fs.readFileSync(MCP_JSON, 'utf8');
+    const raw = fs.readFileSync(filePath, 'utf8');
     const data = JSON.parse(raw) as unknown;
     if (data && typeof data === 'object' && !Array.isArray(data)) {
       return data as McpJsonRoot;
@@ -60,51 +62,69 @@ function readMcpJson(): McpJsonRoot {
   return {};
 }
 
-function writeMcpJson(root: McpJsonRoot): void {
-  const dir = path.dirname(MCP_JSON);
+function writeJsonFile(filePath: string, root: McpJsonRoot): void {
+  const dir = path.dirname(filePath);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
   }
-  const fd = fs.openSync(MCP_JSON, 'w', 0o600);
+  const fd = fs.openSync(filePath, 'w', 0o600);
   try {
     fs.writeFileSync(fd, `${JSON.stringify(root, null, 2)}\n`, { mode: 0o600 });
   } finally {
     fs.closeSync(fd);
   }
   try {
-    fs.chmodSync(MCP_JSON, 0o600);
+    fs.chmodSync(filePath, 0o600);
   } catch {
     /* ignore */
   }
 }
 
+function buildStdioEntry(proxyScript: string, mcpEndpoint: string, apiBase: string, bearerToken: string): Record<string, unknown> {
+  return {
+    command: process.execPath,
+    args: [proxyScript],
+    env: {
+      CP_MCP_URL: mcpEndpoint,
+      CP_API_BASE: apiBase,
+      CP_TOKEN: bearerToken,
+    },
+  };
+}
+
 /**
- * Merge ~/.cursor/mcp.json so Cursor sends JWT and API base to the remote MCP server on each request.
+ * Merge ~/.cursor/mcp.json and ~/.claude.json with a stdio proxy entry
+ * that forwards MCP traffic to the remote HTTP server.
  */
 export function writeRemoteCloudPipelineMcpEntry(params: {
+  extensionPath: string;
   serverUrl: string;
   apiBase: string;
   bearerToken: string;
   serverId: string;
 }): void {
-  const url = mcpStreamableHttpUrl(params.serverUrl);
+  const mcpEndpoint = mcpStreamableHttpUrl(params.serverUrl);
   const apiBase = params.apiBase.trim().replace(/\/$/, '');
-  const root = readMcpJson();
-  const servers = { ...(root.mcpServers ?? {}) };
-  servers[params.serverId] = {
-    url,
-    headers: {
-      Authorization: `Bearer ${params.bearerToken}`,
-      'X-Cloud-Pipeline-Api-Base': apiBase,
-    },
-  };
-  writeMcpJson({ ...root, mcpServers: servers });
+  const proxyScript = path.join(params.extensionPath, 'out', 'mcpStdioProxy.js');
+  const entry = buildStdioEntry(proxyScript, mcpEndpoint, apiBase, params.bearerToken);
+
+  // Cursor: ~/.cursor/mcp.json
+  const cursorRoot = readJsonFile(CURSOR_MCP_JSON);
+  const cursorServers = { ...(cursorRoot.mcpServers ?? {}) };
+  cursorServers[params.serverId] = entry;
+  writeJsonFile(CURSOR_MCP_JSON, { ...cursorRoot, mcpServers: cursorServers });
+
+  // Claude Code: ~/.claude.json (user-scoped mcpServers)
+  const claudeRoot = readJsonFile(CLAUDE_JSON);
+  const claudeServers = { ...(claudeRoot.mcpServers ?? {}) };
+  claudeServers[params.serverId] = entry;
+  writeJsonFile(CLAUDE_JSON, { ...claudeRoot, mcpServers: claudeServers });
 }
 
-export function syncMcpFromWorkspaceSettings(auth: {
-  apiUrl: string;
-  accessKey: string;
-}): boolean {
+export function syncMcpFromWorkspaceSettings(
+  auth: { apiUrl: string; accessKey: string },
+  extensionPath: string
+): boolean {
   const serverUrl = effectiveMcpServerUrl(auth.apiUrl);
   if (!serverUrl) {
     return false;
@@ -112,6 +132,7 @@ export function syncMcpFromWorkspaceSettings(auth: {
   const cfg = vscode.workspace.getConfiguration('cloudPipeline');
   const serverId = (cfg.get<string>('mcp.serverId') ?? 'cloud-pipeline').trim() || 'cloud-pipeline';
   writeRemoteCloudPipelineMcpEntry({
+    extensionPath,
     serverUrl,
     apiBase: auth.apiUrl,
     bearerToken: auth.accessKey,

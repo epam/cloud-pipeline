@@ -151,6 +151,27 @@ export interface CloudRegionPayload {
   default?: boolean;
 }
 
+export interface WhoamiPayload {
+  id: number;
+  userName?: string;
+}
+
+export interface AppInfoPayload {
+  version?: string;
+  prettyName?: string;
+  components?: Record<string, string>;
+}
+
+export interface MetadataAttributeValue {
+  value: string;
+  type: string;
+}
+
+export interface MetadataEntityPayload {
+  entity: { entityId: number; entityClass: string };
+  data: Record<string, MetadataAttributeValue>;
+}
+
 export interface RunDetailPayload {
   id: number;
   status: string;
@@ -310,6 +331,33 @@ export class CloudPipelineApi {
     }
   }
 
+  async whoami(): Promise<WhoamiPayload | undefined> {
+    try {
+      return await this.callJson<WhoamiPayload>('GET', 'whoami');
+    } catch (e) {
+      if (e instanceof ApiAuthError) {
+        throw e;
+      }
+      return undefined;
+    }
+  }
+
+  async loadUserMetadata(entityId: number): Promise<MetadataEntityPayload | undefined> {
+    try {
+      const result = await this.callJson<MetadataEntityPayload[]>(
+        'POST',
+        'metadata/load',
+        [{ entityId, entityClass: 'PIPELINE_USER' }]
+      );
+      return Array.isArray(result) ? result[0] : undefined;
+    } catch (e) {
+      if (e instanceof ApiAuthError) {
+        throw e;
+      }
+      return undefined;
+    }
+  }
+
   loadDockerRegistryTree(): Promise<DockerRegistryTreePayload> {
     return this.callJson<DockerRegistryTreePayload>('GET', 'dockerRegistry/loadTree');
   }
@@ -361,6 +409,10 @@ export class CloudPipelineApi {
     }
     const q = parts.length ? `?${parts.join('&')}` : '';
     return this.callJson<AllowedInstanceAndPriceTypesPayload>('GET', `cluster/instance/allowed${q}`);
+  }
+
+  getAppInfo(): Promise<AppInfoPayload> {
+    return this.callJson<AppInfoPayload>('GET', 'app/info');
   }
 
   launchRun(payload: Record<string, unknown>): Promise<PipelineRunStarted> {

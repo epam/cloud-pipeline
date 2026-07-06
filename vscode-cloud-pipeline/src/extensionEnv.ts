@@ -46,6 +46,11 @@ export function getBrandName(): string {
   return get('CLOUD_PIPELINE_BRAND_NAME') ?? DEFAULT_BRAND;
 }
 
+/** When set, the extension checks for updates every 10 minutes and prompts to install. */
+export function getVsixUpdateUrl(): string | undefined {
+  return get('CLOUD_PIPELINE_VSIX_UPDATE_URL');
+}
+
 /** Tree view tab title; override or `${brand} Runs`. */
 export function getTreeViewTitle(): string {
   const override = get('CLOUD_PIPELINE_TREE_VIEW_TITLE');
