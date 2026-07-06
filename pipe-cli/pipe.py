@@ -1657,7 +1657,7 @@ def ssh(ctx, run_id, retries, region):
 
         pipe ssh pipeline-12345 echo $HOSTNAME
 
-        pipe ssh 12345 echo \$HOSTNAME
+        pipe ssh 12345 echo $HOSTNAME
     """
     ssh_exit_code = run_ssh(run_id, ' '.join(ctx.args), retries=retries, region=region)
     sys.exit(ssh_exit_code)
