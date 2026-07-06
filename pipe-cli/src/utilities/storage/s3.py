@@ -317,8 +317,10 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
             tags += ('CP_OWNER={}'.format(StorageOperations.get_user()),)
         tags = StorageOperations.extract_tags(tags)
         TransferManager.ALLOWED_COPY_ARGS.append('Tagging')
+        TransferManager.ALLOWED_COPY_ARGS.append('TaggingDirective')
         extra_args = {
             'Tagging': self._convert_tags_to_url_string(tags),
+            'TaggingDirective': 'REPLACE',
             'ACL': 'bucket-owner-full-control'
         }
         self.events.put_all([DataAccessEvent(path, DataAccessType.READ, storage=source_wrapper.bucket),

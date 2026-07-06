@@ -353,9 +353,11 @@ class DataStorage(API):
     @classmethod
     def batch_load_object_tags(cls, identifier, requests):
         api = cls.instance()
-        return api.retryable_call('POST', 'datastorage/{}/tags/batch/load'.format(identifier),
-                                  data={'requests': requests}) \
-               or []
+        try:
+            return api.retryable_call('POST', 'datastorage/{}/tags/batch/load'.format(identifier),
+                                      data={'requests': requests}) or []
+        except Exception:
+            return []
 
     @classmethod
     def batch_delete_all_object_tags(cls, identifier, requests):
