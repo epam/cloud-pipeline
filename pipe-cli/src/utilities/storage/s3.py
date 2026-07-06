@@ -42,7 +42,7 @@ from src.utilities.debug_utils import debug_log_proxies
 from src.utilities.patterns import PatternMatcher
 from src.utilities.progress_bar import ProgressPercentage
 from src.utilities.storage.common import StorageOperations, AbstractListingManager, AbstractDeleteManager, \
-    AbstractRestoreManager, AbstractTransferManager
+    AbstractRestoreManager, AbstractTransferManager, UploadResult, TransferResult
 from src.config import Config
 
 import requests
@@ -232,6 +232,8 @@ class UploadManager(StorageItemManager, AbstractTransferManager):
                                 ExtraArgs=extra_args)
         if clean:
             source_wrapper.delete_item(source_key)
+        return UploadResult(source_key=source_key, destination_key=destination_key, destination_version=None,
+                            tags=tags)
 
 
 class UploadStreamManager(StorageItemManager, AbstractTransferManager):
@@ -271,6 +273,8 @@ class UploadStreamManager(StorageItemManager, AbstractTransferManager):
                                    Callback=progress_callback,
                                    Config=transfer_config,
                                    ExtraArgs=extra_args)
+        return UploadResult(source_key=source_key, destination_key=destination_key, destination_version=None,
+                            tags=tags)
 
 
 class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager):
@@ -327,6 +331,8 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
         if clean:
             self.events.put(DataAccessEvent(path, DataAccessType.DELETE, storage=source_wrapper.bucket))
             source_wrapper.delete_item(path)
+        return TransferResult(source_key=path, destination_key=destination_key, destination_version=None,
+                              tags=tags)
 
     def build_source_client(self, source_region, source_endpoint):
         _boto_config = S3BucketOperations.get_boto_config(cross_region=self.cross_region)
