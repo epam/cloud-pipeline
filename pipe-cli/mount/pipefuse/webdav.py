@@ -29,6 +29,7 @@ from pipefuse import fuseutils
 from pipefuse.chain import ChainingService
 from pipefuse.fsclient import File, FileSystemClient, \
     ForbiddenOperationException, NotFoundOperationException, InvalidOperationException
+from pipefuse.fuseutils import MB
 
 from urllib.parse import urlparse, quote, unquote
 
@@ -191,6 +192,10 @@ class WebDavClient(_WebDavBaseClient, FileSystemClient):
         headers = {'Content-Range': 'bytes %d-%d/*' % (offset, end)}
         self._send('PUT', remote_path, (200, 201, 204), data=str(data), headers=headers)
 
+    def _download(self, buf, response):
+        for chunk in response.iter_content(chunk_size=1 * MB):
+            buf.write(chunk)
+
     def ls(self, remote_path='.', depth=1):
         headers = {'Depth': str(depth)}
         response = self._send('PROPFIND', remote_path, (207, 301), headers=headers, allow_redirects=True)
@@ -201,6 +206,27 @@ class WebDavClient(_WebDavBaseClient, FileSystemClient):
 
         tree = xml.fromstring(response.content)
         return [self.elem2file(elem, remote_path) for elem in tree.findall('{DAV:}response')]
+
+    def exists(self, path):
+        try:
+            self._send('HEAD', path, (200, 204, 207), allow_redirects=True)
+            return True
+        except _OperationFailed as e:
+            if e.actual_code == 404:
+                return False
+            raise
+
+    def upload(self, buf, path):
+        self._send('PUT', path, (200, 201, 204), data=bytes(buf))
+
+    def delete(self, path):
+        self._send('DELETE', path, (200, 204))
+
+    def mkdir(self, path):
+        self._send('MKCOL', path, (200, 201, 204))
+
+    def rmdir(self, path):
+        self.delete(path)
 
     def mv(self, old_path, new_path):
         headers = {'Destination': self._get_url(new_path),

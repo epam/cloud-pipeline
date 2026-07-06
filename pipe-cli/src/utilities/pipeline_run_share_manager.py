@@ -57,7 +57,7 @@ class PipelineRunShareManager(object):
         self._add_sids(users, existing_users, run_id, ssh, True)
         self._add_sids(groups, existing_groups, run_id, ssh, False)
 
-        result = PipelineRun.update_run_sids(run_id, existing_users.values() + existing_groups.values())
+        result = PipelineRun.update_run_sids(run_id, list(existing_users.values()) + list(existing_groups.values()))
         if not result:
             click.echo("Failed to share run '%s'" % str(run_id), err=True)
             sys.exit(1)
