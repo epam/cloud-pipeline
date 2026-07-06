@@ -990,11 +990,17 @@ class DataStorageOperations(object):
                         'key': key,
                         'value': value
                     })
-        DataStorage.batch_insert_object_tags(destination_wrapper.bucket.identifier, tag_objects)
+        try:
+            DataStorage.batch_insert_object_tags(destination_wrapper.bucket.identifier, tag_objects)
+        except Exception as e:
+            logging.warning('Failed to persist object tags: %s', e)
         if clean and not source_wrapper.is_local() and not source_wrapper.bucket.policy.versioning_enabled:
-            DataStorage.batch_delete_all_object_tags(source_wrapper.bucket.identifier,
-                                                     [{'path': transfer_result.source_key}
-                                                      for transfer_result in transfer_results])
+            try:
+                DataStorage.batch_delete_all_object_tags(source_wrapper.bucket.identifier,
+                                                         [{'path': transfer_result.source_key}
+                                                          for transfer_result in transfer_results])
+            except Exception as e:
+                logging.warning('Failed to delete source object tags: %s', e)
         return []
 
     @staticmethod
