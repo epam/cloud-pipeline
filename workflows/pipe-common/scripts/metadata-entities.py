@@ -45,10 +45,10 @@ class Metadata:
             updated_entity['data'] = entity['data'].copy()
 
         if fields != None:
-            for field_item in fields:
+            for field_item, (value, field_type) in fields.items():
                 updated_entity['data'][field_item] = {
-                    'type': 'string',
-                    'value': fields[field_item]
+                    'type': field_type,
+                    'value': value
                 }
         if env_prefix != None:
             for name, value in os.environ.items():
@@ -56,11 +56,24 @@ class Metadata:
                     continue
                 field_item = name.replace(env_prefix, '')
                 updated_entity['data'][field_item] = {
-                    'type': 'string',
+                    'type': os.environ.get(name + '_PARAM_TYPE', 'string'),
                     'value': value
                 }
 
         print(self.api.save_metadata_entity(updated_entity)['externalId'])
+
+def parse_file_fields(file_path):
+    with open(file_path, 'r') as f:
+        data = json.load(f)
+    fields = {}
+    for key, val in data.items():
+        if isinstance(val, list):
+            fields[key] = (json.dumps(val), 'array')
+        elif isinstance(val, dict) and 'value' in val and 'type' in val:
+            fields[key] = (val['value'], val['type'])
+        else:
+            fields[key] = (val if isinstance(val, str) else json.dumps(val), 'string')
+    return fields
 
 def main():
     parser = argparse.ArgumentParser()
@@ -98,10 +111,36 @@ def main():
                                 required=False,
                                 type=str)
 
+    # 'update-from-file' command
+    update_file_parser = subparsers.add_parser('update-from-file')
+    update_file_parser.add_argument('file',
+                                    help='Path to a JSON file with fields to update',
+                                    type=str)
+
     # Parse commandline
     args, unknown_args = parser.parse_known_args()
-    # For the "update" command - it's list of fields to set
-    unknown_args_dict = dict(zip(unknown_args[:-1:2],unknown_args[1::2]))
+    # For the "update" command - parse "field value [--type type] ..." triples
+    unknown_args_dict = {}
+    i = 0
+    while i < len(unknown_args):
+        if unknown_args[i].startswith('--'):
+            print('[ERROR] Unexpected option "%s" before field name' % unknown_args[i])
+            sys.exit(1)
+        if i + 1 >= len(unknown_args):
+            print('[ERROR] Missing value for field "%s"' % unknown_args[i])
+            sys.exit(1)
+        key = unknown_args[i]
+        value = unknown_args[i + 1]
+        i += 2
+        if i < len(unknown_args) and unknown_args[i] == '--type':
+            if i + 1 >= len(unknown_args):
+                print('[ERROR] Missing argument for --type')
+                sys.exit(1)
+            field_type = unknown_args[i + 1]
+            i += 2
+        else:
+            field_type = 'string'
+        unknown_args_dict[key] = (value, field_type)
 
     metadata = Metadata(args.folder_id,
                         args.class_id,
@@ -117,8 +156,10 @@ def main():
         if len(unknown_args_dict) == 0:
             print('[ERROR] No fields are specified for update')
             sys.exit(1)
-        metadata.update_dataset(fields=unknown_args_dict, 
+        metadata.update_dataset(fields=unknown_args_dict,
                                 env_prefix=args.metadata_from_env_prefix)
+    elif args.command == 'update-from-file':
+        metadata.update_dataset(fields=parse_file_fields(args.file))
 
 if __name__ == '__main__':
     main()
