@@ -114,17 +114,27 @@ set -e
 mkdir -p "$(dirname ${qRemotePrivate})"
 ssh-keygen -t rsa -f ${qRemotePrivate} -N "" -q
 for authorized_user in ${users.map((u) => `"${shellEscapeDoubleQuoted(u)}"`).join(' ')}; do
+  (
+    set -e
+    _cp_local_keys="/var/run/cp_auth_keys/$authorized_user/authorized_keys"
+    touch "$_cp_local_keys"
+    chmod 600 "$_cp_local_keys"
+    cat ${qRemotePublic} >> "$_cp_local_keys"
+  ) || true
   user_home_path="$(getent passwd "$authorized_user" | cut -d: -f6)"
   user_openssh_path="$user_home_path/.ssh"
   user_authorized_keys_path="$user_openssh_path/authorized_keys"
-  mkdir -p "$user_openssh_path"
-  touch "$user_authorized_keys_path"
-  if [ "$(id -u)" -eq 0 ]; then
-    chown -R "$authorized_user:$authorized_user" "$user_openssh_path"
-  fi
-  chmod 700 "$user_openssh_path"
-  chmod 600 "$user_authorized_keys_path"
-  cat ${qRemotePublic} >> "$user_authorized_keys_path"
+  (
+    set -e
+    mkdir -p "$user_openssh_path"
+    touch "$user_authorized_keys_path"
+    if [ "$(id -u)" -eq 0 ]; then
+      chown -R "$authorized_user:$authorized_user" "$user_openssh_path"
+    fi
+    chmod 700 "$user_openssh_path"
+    chmod 600 "$user_authorized_keys_path"
+    cat ${qRemotePublic} >> "$user_authorized_keys_path"
+  ) || true
 done
 `.trim();
 
