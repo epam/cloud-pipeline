@@ -345,6 +345,25 @@ class DataStorage(API):
             raise RuntimeError("Failed to update tags for object {}.".format(path))
 
     @classmethod
+    def batch_insert_object_tags(cls, identifier, requests):
+        api = cls.instance()
+        api.retryable_call('PUT', 'datastorage/{}/tags/batch/insert'.format(identifier),
+                           data={'requests': requests})
+
+    @classmethod
+    def batch_load_object_tags(cls, identifier, requests):
+        api = cls.instance()
+        return api.retryable_call('POST', 'datastorage/{}/tags/batch/load'.format(identifier),
+                                  data={'requests': requests}) \
+               or []
+
+    @classmethod
+    def batch_delete_all_object_tags(cls, identifier, requests):
+        api = cls.instance()
+        api.retryable_call('DELETE', 'datastorage/{}/tags/batch/deleteAll'.format(identifier),
+                           data={'requests': requests})
+
+    @classmethod
     def get_storage_usage(cls, name, path=None):
         api = cls.instance()
         endpoint = 'datastorage/path/usage?id={}'.format(name)
