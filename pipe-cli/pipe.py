@@ -1655,7 +1655,7 @@ def ssh(ctx, run_id, retries, region):
 
     II. Execute a single command via SSH for some run (12345):
 
-        pipe ssh pipeline-12345 echo \$HOSTNAME
+        pipe ssh pipeline-12345 echo $HOSTNAME
 
         pipe ssh 12345 echo \$HOSTNAME
     """
