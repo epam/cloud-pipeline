@@ -29,6 +29,7 @@ from pipefuse import fuseutils
 from pipefuse.chain import ChainingService
 from pipefuse.fsclient import File, FileSystemClient, \
     ForbiddenOperationException, NotFoundOperationException, InvalidOperationException
+from pipefuse.fuseutils import MB
 
 from urllib.parse import urlparse, quote, unquote
 
@@ -190,6 +191,10 @@ class WebDavClient(_WebDavBaseClient, FileSystemClient):
             end = offset
         headers = {'Content-Range': 'bytes %d-%d/*' % (offset, end)}
         self._send('PUT', remote_path, (200, 201, 204), data=str(data), headers=headers)
+
+    def _download(self, buf, response):
+        for chunk in response.iter_content(chunk_size=1 * MB):
+            buf.write(chunk)
 
     def ls(self, remote_path='.', depth=1):
         headers = {'Depth': str(depth)}
