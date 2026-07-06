@@ -202,6 +202,27 @@ class WebDavClient(_WebDavBaseClient, FileSystemClient):
         tree = xml.fromstring(response.content)
         return [self.elem2file(elem, remote_path) for elem in tree.findall('{DAV:}response')]
 
+    def exists(self, path):
+        try:
+            self._send('HEAD', path, (200, 204, 207), allow_redirects=True)
+            return True
+        except _OperationFailed as e:
+            if e.actual_code == 404:
+                return False
+            raise
+
+    def upload(self, buf, path):
+        self._send('PUT', path, (200, 201, 204), data=bytes(buf))
+
+    def delete(self, path):
+        self._send('DELETE', path, (200, 204))
+
+    def mkdir(self, path):
+        self._send('MKCOL', path, (200, 201, 204))
+
+    def rmdir(self, path):
+        self.delete(path)
+
     def mv(self, old_path, new_path):
         headers = {'Destination': self._get_url(new_path),
                    'Overwrite': 'T'}
