@@ -88,7 +88,7 @@ class Synchronization(object):
             logging.info('Fetching storages...')
             self.__storages__ = []
             # Inverted index: lowercase username -> (original username, [(storage, mask)])
-            # Built once during storage loading — O(S) — replaces the O(U x S) per-user scan.
+            # Built once during storage loading - O(S) - replaces the O(U x S) per-user scan.
             user_index = {}
             share_mounts = self.list_share_mounts()
             for storage in self.list_storages(filter_mask=filter_mask):

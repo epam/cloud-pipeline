@@ -23,6 +23,35 @@ export interface RunInstancePayload {
   nodeIP?: string;
   nodeId?: string;
   nodeName?: string;
+  nodeDisk?: number;
+  spot?: boolean;
+  cloudRegionId?: number;
+  /** e.g. AWS, GCP, AZURE — serialized enum name from API. */
+  cloudProvider?: string;
+}
+
+/** Mirrors `com.epam.pipeline.entity.cluster.GpuDevice` JSON. */
+export interface GpuDevicePayload {
+  name?: string;
+  manufacturer?: string;
+  cores?: number;
+}
+
+/** Mirrors `com.epam.pipeline.entity.cluster.InstanceType` JSON (`GET cluster/instance/loadAll`). */
+export interface InstanceTypePayload {
+  sku?: string;
+  name?: string;
+  termType?: string;
+  operatingSystem?: string;
+  /** Jackson may emit `vcpu` or `vCPU` depending on version. */
+  vcpu?: number;
+  vCPU?: number;
+  memory?: number;
+  memoryUnit?: string;
+  instanceFamily?: string;
+  gpu?: number;
+  gpuDevice?: GpuDevicePayload | null;
+  regionId?: number;
 }
 
 export interface RunFilterElement {
@@ -122,6 +151,27 @@ export interface CloudRegionPayload {
   default?: boolean;
 }
 
+export interface WhoamiPayload {
+  id: number;
+  userName?: string;
+}
+
+export interface AppInfoPayload {
+  version?: string;
+  prettyName?: string;
+  components?: Record<string, string>;
+}
+
+export interface MetadataAttributeValue {
+  value: string;
+  type: string;
+}
+
+export interface MetadataEntityPayload {
+  entity: { entityId: number; entityClass: string };
+  data: Record<string, MetadataAttributeValue>;
+}
+
 export interface RunDetailPayload {
   id: number;
   status: string;
@@ -133,6 +183,11 @@ export interface RunDetailPayload {
   pipelineName?: string;
   dockerImage?: string;
   version?: string;
+  commitStatus?: string;
+  initialized?: boolean;
+  nodeCount?: number;
+  parentRunId?: number;
+  instance?: RunInstancePayload;
   pipelineRunParameters?: Array<{ name: string; value?: string | number }>;
   tasks?: TaskPayload[];
 }
@@ -213,11 +268,12 @@ export class CloudPipelineApi {
     return data.payload;
   }
 
+  /** Active runs: same statuses as web UI / pipe-cli active list. */
   listRunningRunsForOwner(owner: string, pageSize = 100): Promise<RunFilterPayload> {
     return this.callJson<RunFilterPayload>('POST', 'run/filter', {
       page: 1,
       pageSize,
-      statuses: ['RUNNING'],
+      statuses: ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING'],
       owners: [owner],
     });
   }
@@ -275,6 +331,33 @@ export class CloudPipelineApi {
     }
   }
 
+  async whoami(): Promise<WhoamiPayload | undefined> {
+    try {
+      return await this.callJson<WhoamiPayload>('GET', 'whoami');
+    } catch (e) {
+      if (e instanceof ApiAuthError) {
+        throw e;
+      }
+      return undefined;
+    }
+  }
+
+  async loadUserMetadata(entityId: number): Promise<MetadataEntityPayload | undefined> {
+    try {
+      const result = await this.callJson<MetadataEntityPayload[]>(
+        'POST',
+        'metadata/load',
+        [{ entityId, entityClass: 'PIPELINE_USER' }]
+      );
+      return Array.isArray(result) ? result[0] : undefined;
+    } catch (e) {
+      if (e instanceof ApiAuthError) {
+        throw e;
+      }
+      return undefined;
+    }
+  }
+
   loadDockerRegistryTree(): Promise<DockerRegistryTreePayload> {
     return this.callJson<DockerRegistryTreePayload>('GET', 'dockerRegistry/loadTree');
   }
@@ -290,6 +373,23 @@ export class CloudPipelineApi {
 
   loadCloudRegions(): Promise<CloudRegionPayload[]> {
     return this.callJson<CloudRegionPayload[]>('GET', 'cloud/region');
+  }
+
+  /**
+   * All allowed instance types for a region / price model (`GET cluster/instance/loadAll`).
+   * Pass `spot` explicitly so the list matches the run (omitting uses server default preference).
+   */
+  loadAllInstanceTypes(params: {
+    regionId?: number;
+    spot: boolean;
+    toolInstances: boolean;
+  }): Promise<InstanceTypePayload[]> {
+    const parts: string[] = [`spot=${params.spot ? 'true' : 'false'}`];
+    parts.push(`toolInstances=${params.toolInstances ? 'true' : 'false'}`);
+    if (params.regionId !== undefined) {
+      parts.push(`regionId=${params.regionId}`);
+    }
+    return this.callJson<InstanceTypePayload[]>('GET', `cluster/instance/loadAll?${parts.join('&')}`);
   }
 
   getAllowedInstanceAndPriceTypes(params: {
@@ -311,6 +411,10 @@ export class CloudPipelineApi {
     return this.callJson<AllowedInstanceAndPriceTypesPayload>('GET', `cluster/instance/allowed${q}`);
   }
 
+  getAppInfo(): Promise<AppInfoPayload> {
+    return this.callJson<AppInfoPayload>('GET', 'app/info');
+  }
+
   launchRun(payload: Record<string, unknown>): Promise<PipelineRunStarted> {
     return this.callJson<PipelineRunStarted>('POST', 'run', payload);
   }
@@ -318,5 +422,20 @@ export class CloudPipelineApi {
   /** Same as web UI Stop / pipe-cli `stop_pipeline`: `POST run/{id}/status` with STOPPED. */
   stopRun(runId: number): Promise<RunDetailPayload> {
     return this.callJson<RunDetailPayload>('POST', `run/${runId}/status`, { status: 'STOPPED' });
+  }
+
+  /** `POST run/{id}/pause` (optional `checkSize`, default true on server). */
+  pauseRun(runId: number, checkSize = true): Promise<RunDetailPayload> {
+    const q = checkSize ? '' : '?checkSize=false';
+    return this.callJson<RunDetailPayload>('POST', `run/${runId}/pause${q}`, {});
+  }
+
+  resumeRun(runId: number): Promise<RunDetailPayload> {
+    return this.callJson<RunDetailPayload>('POST', `run/${runId}/resume`, {});
+  }
+
+  /** Terminates a PAUSED run (drops instance); web UI "Terminate" for paused runs. */
+  terminateRun(runId: number): Promise<RunDetailPayload> {
+    return this.callJson<RunDetailPayload>('POST', `run/${runId}/terminate`, {});
   }
 }

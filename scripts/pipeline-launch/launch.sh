@@ -1778,6 +1778,34 @@ then
     sed -i '/PermitRootLogin/d' /etc/ssh/sshd_config
     echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
 
+    # Pre-create a local (non-NFS) authorized_keys store so that AuthorizedKeysCommand
+    # can serve keys even when the home directory is NFS-mounted with UID squashing or
+    # group-write bits that sshd's StrictModes would otherwise reject.
+    _CP_AUTH_KEYS_DIR="/var/run/cp_auth_keys"
+    mkdir -p "$_CP_AUTH_KEYS_DIR"
+    chmod 755 "$_CP_AUTH_KEYS_DIR"
+    if [ -n "$OWNER" ]; then
+        mkdir -p "$_CP_AUTH_KEYS_DIR/$OWNER"
+        chown "$OWNER" "$_CP_AUTH_KEYS_DIR/$OWNER"
+        chmod 700 "$_CP_AUTH_KEYS_DIR/$OWNER"
+        touch "$_CP_AUTH_KEYS_DIR/$OWNER/authorized_keys"
+        chown "$OWNER" "$_CP_AUTH_KEYS_DIR/$OWNER/authorized_keys"
+        chmod 600 "$_CP_AUTH_KEYS_DIR/$OWNER/authorized_keys"
+    fi
+    cat > /etc/ssh/fetch_auth_keys.sh << 'CP_FETCH_KEYS_EOF'
+#!/bin/bash
+user="${1//[^a-zA-Z0-9._-]/}"
+[ -n "$user" ] || exit 1
+cat "/var/run/cp_auth_keys/$user/authorized_keys" 2>/dev/null
+home="$(getent passwd "$user" | cut -d: -f6 2>/dev/null)"
+[ -n "$home" ] && cat "$home/.ssh/authorized_keys" 2>/dev/null
+CP_FETCH_KEYS_EOF
+    chmod 755 /etc/ssh/fetch_auth_keys.sh
+    sed -i '/AuthorizedKeysCommand\b/d' /etc/ssh/sshd_config
+    sed -i '/AuthorizedKeysCommandUser/d' /etc/ssh/sshd_config
+    echo "AuthorizedKeysCommand /etc/ssh/fetch_auth_keys.sh %u" >> /etc/ssh/sshd_config
+    echo "AuthorizedKeysCommandUser root" >> /etc/ssh/sshd_config
+
     # Allow clients to be idle for 1 hour (30 sec * 120 times)
     CP_CAP_SSH_CLIENT_ALIVE_INTERVAL=${CP_CAP_SSH_CLIENT_ALIVE_INTERVAL:-30}
     sed -i '/ClientAliveInterval/d' /etc/ssh/sshd_config

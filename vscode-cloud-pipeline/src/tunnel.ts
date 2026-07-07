@@ -1,5 +1,13 @@
 import * as net from 'net';
 
+/** Thrown when the EDGE proxy rejects a CONNECT request with HTTP 401 or 407. */
+export class TunnelProxyAuthError extends Error {
+  constructor(public readonly statusCode: number, message: string) {
+    super(message);
+    this.name = 'TunnelProxyAuthError';
+  }
+}
+
 export interface TunnelTarget {
   /** When direct, connect TCP to this host:port */
   directHost?: string;
@@ -10,10 +18,20 @@ export interface TunnelTarget {
   /** CONNECT target host:port (pod IP and remote port) */
   remoteHost: string;
   remotePort: number;
-  /** Basic auth user for Proxy-Authorization */
+  /** Basic auth user for Proxy-Authorization (static fallback) */
   proxyAuthUser: string;
-  /** Basic auth password (access key) */
+  /** Basic auth password / access key (static fallback) */
   proxyAuthPassword: string;
+  /**
+   * If provided, called on each incoming connection to obtain current credentials.
+   * Returning null falls back to proxyAuthUser / proxyAuthPassword.
+   * Use this to supply a freshly-read JWT so long-lived tunnels survive token rotation.
+   */
+  getProxyAuth?: () => { user: string; password: string } | null;
+  /** Called when the EDGE proxy rejects the CONNECT request with HTTP 401 or 407. */
+  onProxyAuthError?: (err: TunnelProxyAuthError) => void;
+  /** Called when the net.Server encounters an error after it starts listening. */
+  onServerError?: (err: Error) => void;
 }
 
 function base64Basic(user: string, pass: string): string {
@@ -50,8 +68,14 @@ export function httpProxyTunnelConnect(
       if (buf.includes('\r\n\r\n')) {
         clearTimeout(timer);
         sock.off('data', onData);
-        const lower = buf.toLowerCase();
-        if (!lower.includes('200 connection established')) {
+        const statusMatch = buf.match(/HTTP\/1\.\d\s+(\d+)/);
+        const statusCode = statusMatch ? parseInt(statusMatch[1], 10) : 0;
+        if (statusCode === 401 || statusCode === 407) {
+          sock.destroy();
+          reject(new TunnelProxyAuthError(statusCode, `CONNECT auth failed (${statusCode}): ${buf.slice(0, 300)}`));
+          return;
+        }
+        if (!buf.toLowerCase().includes('200 connection established')) {
           sock.destroy();
           reject(new Error(`CONNECT failed: ${buf.slice(0, 300)}`));
           return;
@@ -97,23 +121,35 @@ function pipeSockets(a: net.Socket, b: net.Socket): void {
 
 export interface TunnelServerHandle {
   readonly localPort: number;
+  /** Whether the underlying net.Server is currently accepting connections. */
+  readonly listening: boolean;
   close(): Promise<void>;
 }
 
 /**
- * Listens on 127.0.0.1:0; each incoming connection opens a tunnel to remotePort on remoteHost.
+ * Listens on 127.0.0.1:<bindPort> (default 0 = OS-assigned port).
+ * Each incoming connection opens a fresh tunnel to remoteHost:remotePort.
+ * Pass a specific bindPort to rebind to the same port after a restart.
  */
-export async function startLocalTunnelServer(target: TunnelTarget): Promise<TunnelServerHandle> {
+export async function startLocalTunnelServer(target: TunnelTarget, bindPort = 0): Promise<TunnelServerHandle> {
   const server = net.createServer();
   await new Promise<void>((resolve, reject) => {
-    server.listen(0, '127.0.0.1', () => resolve());
-    server.on('error', reject);
+    server.listen(bindPort, '127.0.0.1', () => resolve());
+    server.once('error', reject);
   });
   const addr = server.address() as net.AddressInfo;
   const localPort = addr.port;
 
+  // Persistent error handler after listen succeeds; prevents unhandled-error crashes.
+  server.on('error', (err) => {
+    target.onServerError?.(err);
+  });
+
   server.on('connection', (clientSocket) => {
     (async () => {
+      // Prefer fresh credentials from the caller; fall back to the static values captured at tunnel creation.
+      const creds = target.getProxyAuth?.() ?? { user: target.proxyAuthUser, password: target.proxyAuthPassword };
+
       let remoteSocket: net.Socket;
       if (target.directHost && target.directPort !== undefined) {
         remoteSocket = await directConnect(target.directHost, target.directPort, 30000);
@@ -123,15 +159,18 @@ export async function startLocalTunnelServer(target: TunnelTarget): Promise<Tunn
           target.proxyPort,
           target.remoteHost,
           target.remotePort,
-          target.proxyAuthUser,
-          target.proxyAuthPassword
+          creds.user,
+          creds.password
         );
       } else {
         clientSocket.destroy();
         return;
       }
       pipeSockets(clientSocket, remoteSocket);
-    })().catch(() => {
+    })().catch((err) => {
+      if (err instanceof TunnelProxyAuthError) {
+        target.onProxyAuthError?.(err);
+      }
       try {
         clientSocket.destroy();
       } catch {
@@ -142,6 +181,9 @@ export async function startLocalTunnelServer(target: TunnelTarget): Promise<Tunn
 
   return {
     localPort,
+    get listening() {
+      return server.listening;
+    },
     close: () =>
       new Promise<void>((resolve) => {
         const s = server as NodeJS.EventEmitter & { closeAllConnections?: () => void };
