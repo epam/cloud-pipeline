@@ -53,7 +53,7 @@ async function getFileSize (path) {
     throw new Error(`Error fetching file size: ${sizeRequest.error}`);
   }
   const result = (sizeRequest.value || [])[0];
-  if (!result || result.size === undefined) {
+  if (!result || result.size < 0) {
     throw new Error(`File not found: ${path}`);
   }
   return result.size;
@@ -258,7 +258,7 @@ async function fileExists (path) {
     await request.send([path]);
     if (request.error) return false;
     const result = (request.value || [])[0];
-    return !!(result && result.size !== undefined);
+    return !!(result && result.size >= 0);
   } catch {
     return false;
   }
