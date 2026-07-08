@@ -63,7 +63,7 @@ jobs:
     env:
       DOCKERS_VERSION: ${{ needs.prebuild.outputs.version }}
     strategy:
-      fail-fast: false
+      fail-fast: true
       max-parallel: 20
       matrix:
         include:
@@ -325,9 +325,9 @@ jobs:
       - name: Log in to registry
         uses: docker/login-action@v4
         with:
-          registry: ${{ secrets.DOCKER_DIST_SRV }}
-          username: ${{ secrets.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: ${{ secrets.CP_DOCKER_DIST_SRV }}
+          username: ${{ secrets.CP_DOCKER_USER }}
+          password: ${{ secrets.CP_DOCKER_PASSWORD }}
 
       - name: Pre-build
         if: ${{ matrix.pre_build_commands != '' }}
@@ -346,9 +346,9 @@ jobs:
           context: ${{ env.DOCKERS_SOURCES_PATH }}/${{ matrix.context }}
           file: ${{ matrix.dockerfile && format('{0}/{1}', env.DOCKERS_SOURCES_PATH, matrix.dockerfile) || '' }}
           push: true
-          tags: ${{ secrets.DOCKER_DIST_SRV }}:${{ steps.tag.outputs.value }}
-          cache-from: type=registry,ref=${{ secrets.DOCKER_DIST_SRV }}:${{ steps.tag.outputs.value }}-cache
-          cache-to: type=registry,ref=${{ secrets.DOCKER_DIST_SRV }}:${{ steps.tag.outputs.value }}-cache,mode=max
+          tags: ${{ secrets.CP_DOCKER_DIST_SRV }}:${{ steps.tag.outputs.value }}
+          cache-from: type=registry,ref=${{ secrets.CP_DOCKER_DIST_SRV }}:${{ steps.tag.outputs.value }}-cache
+          cache-to: type=registry,ref=${{ secrets.CP_DOCKER_DIST_SRV }}:${{ steps.tag.outputs.value }}-cache,mode=max
           build-args: |
             ${{ matrix.needs_dist_url && format('CP_API_DIST_URL={0}', github.event.inputs.cp_api_dist_url) || '' }}
             ${{ matrix.base_image && format('BASE_IMAGE={0}', matrix.base_image) || '' }}
@@ -369,7 +369,7 @@ jobs:
     env:
       CP_VERSION_SHORT: ${{ needs.prebuild.outputs.version }}
       CP_VERSION_FULL: ${{ needs.prebuild.outputs.version_full }}
-      CP_DIST_REPO_NAME: ${{ secrets.DOCKER_DIST_SRV }}
+      CP_DIST_REPO_NAME: ${{ secrets.CP_DOCKER_DIST_SRV }}
       BUILD_DIR: /tmp/cp-deploy-build
 
     steps:
