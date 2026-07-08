@@ -417,10 +417,6 @@ export function useDataStorageEditController(
             skipPolicy: !isNfsMount && !omicsStore ? skipPolicy : false,
           });
         } else {
-          // UPDATE — matches develop branch editStorage:
-          // 1. datastorage/update with a minimal payload (no serviceType/regionId/shared/storagePolicy)
-          // 2. datastorage/policy only when policySupported && !NFS/Omics &&
-          //    (backupDuration set OR versioning disabled)
           const storageId = dataStorage?.id;
           const resolvedParentFolderId = dataStorage?.parentFolderId;
 

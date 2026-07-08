@@ -1,5 +1,8 @@
 import {Pipeline, RunVisibilityPolicy} from '../../../../../@types/library.ts';
-import {RepositoryTypes} from '../../../../special/git-repository-control';
+import {
+  RepositoryTypes,
+  normalizeRepositoryType,
+} from '../../../../special/git-repository-control';
 
 export type PipelineFormValues = {
   name: string;
@@ -29,7 +32,7 @@ export function getInitialValues(pipeline: Pipeline | undefined): PipelineFormVa
     name: pipeline?.name ?? '',
     description: pipeline?.description ?? '',
     visibility: pipeline?.visibility ?? 'INHERIT',
-    repositoryType: pipeline?.repositoryType ?? RepositoryTypes.GitLab,
+    repositoryType: normalizeRepositoryType(pipeline?.repositoryType ?? RepositoryTypes.GitLab),
     repository: pipeline?.repository ?? '',
     branch: pipeline?.branch ?? undefined,
     token: pipeline?.repositoryToken ?? '',

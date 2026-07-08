@@ -1,4 +1,5 @@
 import {Button, Checkbox, Form, FormInstance, Input, Select, Spin} from 'antd';
+import {EnabledPath} from './enabled-path.tsx';
 import {useCallback, useEffect, useState, MouseEvent, KeyboardEvent} from 'react';
 import {
   RepositoryTypes,
@@ -387,10 +388,16 @@ function RepositorySection(props: RepositorySectionProps) {
         <Input disabled={pending || readOnly} />
       </Form.Item>
       <Form.Item {...formItemLayout} style={hideStyle} label="Code path" name="codePath">
-        <Input disabled={pending || readOnly} />
+        <EnabledPath
+          disabled={pending || readOnly}
+          defaultPathValue={pipeline?.codePath || 'src'}
+        />
       </Form.Item>
       <Form.Item {...formItemLayout} style={hideStyle} label="Docs path" name="docsPath">
-        <Input disabled={pending || readOnly} />
+        <EnabledPath
+          disabled={pending || readOnly}
+          defaultPathValue={pipeline?.docsPath || 'docs'}
+        />
       </Form.Item>
     </>
   );
