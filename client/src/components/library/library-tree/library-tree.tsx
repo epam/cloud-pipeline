@@ -202,6 +202,7 @@ function LibraryTree(
         itemsToken={tree}
         itemHeight={28}
         activeItemId={activeItemId}
+        search={search}
       />
     </div>
   );

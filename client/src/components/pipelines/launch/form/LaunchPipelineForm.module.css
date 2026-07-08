@@ -307,8 +307,8 @@
 .layout :global(.ant-form),
 .layout :global(.ant-collapse),
 .layout :global(.ant-collapse-item),
-.layout :global(.ant-collapse-content),
-.layout :global(.ant-collapse-content-box) {
+.layout :global(.ant-collapse-panel),
+.layout :global(.ant-collapse-body) {
   min-width: 0;
   max-width: 100%;
 }

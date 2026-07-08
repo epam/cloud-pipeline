@@ -7,6 +7,7 @@ import {CaretRightOutlined} from '@ant-design/icons';
 import {LoadingMessage} from '../../shared/loading-message/loading-message.tsx';
 import {LibraryItemIcon} from '../library-item-icon.tsx';
 import {LibraryItemLink} from '../library-item-link.tsx';
+import highlightTextFuzzy from '../../special/highlightTextFuzzy';
 import './library-tree.css';
 
 export type LibraryTreeItemPresentationProps = {
@@ -14,6 +15,7 @@ export type LibraryTreeItemPresentationProps = {
   onClick?: (item: LibraryItem) => void;
   onExpand?: (item: LibraryItem, expanded: boolean) => void;
   offsetSize?: number | string;
+  search?: string;
 };
 
 function LibraryTreeItemPresentation(
@@ -30,6 +32,7 @@ function LibraryTreeItemPresentation(
     onExpand: onItemExpand,
     offsetSize = '1.5em',
     activeItemId,
+    search,
   } = props;
   const onClick = useCallback(
     (event: MouseEvent) => {
@@ -87,7 +90,7 @@ function LibraryTreeItemPresentation(
           })}
           loading={item.pending}
         >
-          {item.name}
+          {highlightTextFuzzy(item.name, search)}
         </LoadingMessage>
         {item.details && (
           <span className="library-tree-item-details text-faded">{item.details}</span>

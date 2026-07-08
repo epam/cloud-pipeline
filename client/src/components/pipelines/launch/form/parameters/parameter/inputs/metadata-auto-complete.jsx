@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {AutoComplete, Space, Input} from 'antd';
+import {AutoComplete, Input, Space} from 'antd';
 import classNames from 'classnames';
 import styles from './launch-form-parameter-input.module.css';
 
@@ -113,11 +113,14 @@ class MetadataAutoComplete extends React.PureComponent {
         }
       };
       return (
-        <Space.Compact>
-          <span>{addonBefore}</span>
+        <Space.Compact block className={className} style={style}>
+          {addonBefore && (
+            <Space.Addon className="cp-input-group-addon" style={{padding: 0}}>
+              {addonBefore}
+            </Space.Addon>
+          )}
           <Input
-            className={className}
-            style={style}
+            style={{flex: '1 1 0', minWidth: 0, width: 0, maxWidth: '100%'}}
             value={value}
             onChange={onInputChange}
             disabled={disabled}

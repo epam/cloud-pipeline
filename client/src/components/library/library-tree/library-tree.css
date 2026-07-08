@@ -48,3 +48,8 @@
 .library-tree-item:not(.library-item-type-metadata-class) .library-tree-item-details {
   @apply ml-auto;
 }
+
+.library-tree-item .cp-search-highlight-text {
+  color: var(--cp-color-primary);
+  font-weight: 600;
+}

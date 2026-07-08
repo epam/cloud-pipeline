@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Input} from 'antd';
+import {Input, Space} from 'antd';
 import {AppstoreOutlined} from '@ant-design/icons';
 import MetadataBrowser from './../dialogs/MetadataBrowser';
 import styles from './launch-form-addon-input.module.css';
@@ -113,11 +113,11 @@ export default class MetadataParameterInput extends React.Component {
         className={classNames(className, styles.launchFormAddonInput)}
         style={{width: '100%', minWidth: 0, maxWidth: '100%', ...style}}
       >
-        <Input.Group
-          compact
-          style={{display: 'flex', width: '100%', minWidth: 0, maxWidth: '100%'}}
-        >
-          <span className={classNames(styles.launchFormAddonInputAddon, 'cp-input-group-addon')}>
+        <Space.Compact block style={{width: '100%', minWidth: 0, maxWidth: '100%'}}>
+          <Space.Addon
+            className="cp-input-group-addon"
+            style={{padding: 0}}
+          >
             <div
               className={classNames(styles.launchFormAddonInputAddonButton, {
                 [styles.disabled]: disabled,
@@ -126,7 +126,7 @@ export default class MetadataParameterInput extends React.Component {
             >
               <AppstoreOutlined />
             </div>
-          </span>
+          </Space.Addon>
           <Input
             disabled={disabled}
             style={{flex: '1 1 0', minWidth: 0, width: 0, maxWidth: '100%'}}
@@ -135,7 +135,7 @@ export default class MetadataParameterInput extends React.Component {
             placeholder="Select metadata"
             readOnly
           />
-        </Input.Group>
+        </Space.Compact>
         <MetadataBrowser
           readOnly
           onCancel={this.closeMetadataBrowser}
