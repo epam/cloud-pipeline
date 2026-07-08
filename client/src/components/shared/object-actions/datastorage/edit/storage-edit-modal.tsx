@@ -252,6 +252,7 @@ function StorageEditModal({
 
   return (
     <Modal
+      destroyOnHidden
       className={className}
       mask={{closable: false}}
       afterClose={handleAfterClose}

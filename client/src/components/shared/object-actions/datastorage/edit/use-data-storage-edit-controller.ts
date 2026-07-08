@@ -2,7 +2,12 @@ import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import type {FormInstance} from 'antd';
 import {Form, message} from 'antd';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
-import {cloudRegionsQueryOptions, dataStorageKeys} from '../../../../../queries';
+import {
+  cloudRegionsQueryOptions,
+  dataStorageKeys,
+  folderKeys,
+  libraryTreeKeys,
+} from '../../../../../queries';
 import {useAuthenticatedUser} from '../../../../../stores/users/hooks.ts';
 import {
   useBooleanPreferenceValue,
@@ -13,6 +18,7 @@ import type {DataStorage} from '../../../../../@types/library.ts';
 import {
   saveDataStorage,
   updateDataStorage,
+  updateDataStoragePolicy,
 } from '../../../../../api/datastorage/datastorage-api.ts';
 import {
   extractFileShareMountList,
@@ -365,58 +371,118 @@ export function useDataStorageEditController(
             : SERVICE_TYPES.objectStorage;
 
         const {backupDuration: backupDurationValue, ...restValues} = values;
-
-        const storagePolicy =
-          !isNfsMount && !omicsStore && policySupported
-            ? {
-                versioningEnabled,
-                ...(versioningEnabled && backupDurationValue !== undefined
-                  ? {backupDuration: backupDurationValue}
-                  : {}),
-              }
-            : undefined;
-
-        const payload = {
-          ...restValues,
-          serviceType,
-          mountDisabled,
-          storagePolicy,
-          pathPermissionsEnabled:
-            !isNfsMount &&
-            !omicsStore &&
-            currentRegionSupportsStoragePermissions &&
-            pathPermissionsEnabled,
-          sensitive: !isNfsMount ? sensitive : undefined,
-          shared: !isNfsMount && sharingEnabled,
-          regionId: values.regionId ? Number(values.regionId) : undefined,
-          ...(isNew && parentFolderId !== undefined ? {parentFolderId} : {}),
-        };
-
         const pathValue = values.path as Record<string, unknown> | undefined;
-        if (!omicsStore && pathValue) {
-          payload.path = pathValue.path as string;
-        }
-        if (isNfsMount && pathValue) {
-          payload.regionId = pathValue.regionId as number;
-          payload.fileShareMountId = pathValue.fileShareMountId as number;
-        }
-
-        // Alias defaults to the storage path when left empty (matches legacy behavior)
-        if (!payload.name && payload.path) {
-          payload.name = payload.path;
-        }
 
         if (isNew) {
+          // CREATE — storagePolicy and all fields go in one request to datastorage/save
+          const storagePolicy =
+            !isNfsMount && !omicsStore && policySupported
+              ? {
+                  versioningEnabled,
+                  ...(versioningEnabled && backupDurationValue !== undefined
+                    ? {backupDuration: backupDurationValue}
+                    : {}),
+                }
+              : undefined;
+
+          const payload = {
+            ...restValues,
+            serviceType,
+            mountDisabled,
+            storagePolicy,
+            pathPermissionsEnabled:
+              !isNfsMount &&
+              !omicsStore &&
+              currentRegionSupportsStoragePermissions &&
+              pathPermissionsEnabled,
+            sensitive: !isNfsMount ? sensitive : undefined,
+            shared: !isNfsMount && sharingEnabled,
+            regionId: values.regionId ? Number(values.regionId) : undefined,
+            ...(parentFolderId !== undefined ? {parentFolderId} : {}),
+          };
+
+          if (!omicsStore && pathValue) {
+            payload.path = pathValue.path as string;
+          }
+          if (isNfsMount && pathValue) {
+            payload.regionId = pathValue.regionId as number;
+            payload.fileShareMountId = pathValue.fileShareMountId as number;
+          }
+          if (!payload.name && payload.path) {
+            payload.name = payload.path;
+          }
+
           await saveDataStorage(payload, {
             cloud: !addExistingStorageFlag,
             skipPolicy: !isNfsMount && !omicsStore ? skipPolicy : false,
           });
         } else {
-          await updateDataStorage({...payload, id: dataStorage?.id});
-          if (dataStorage?.id) {
-            await queryClient.invalidateQueries({queryKey: dataStorageKeys.detail(dataStorage.id)});
+          // UPDATE — matches develop branch editStorage:
+          // 1. datastorage/update with a minimal payload (no serviceType/regionId/shared/storagePolicy)
+          // 2. datastorage/policy only when policySupported && !NFS/Omics &&
+          //    (backupDuration set OR versioning disabled)
+          const storageId = dataStorage?.id;
+          const resolvedParentFolderId = dataStorage?.parentFolderId;
+
+          let resolvedPath = restValues.path as string | undefined;
+          if (!omicsStore && pathValue) {
+            resolvedPath = pathValue.path as string;
           }
+
+          const updatePayload = {
+            id: storageId,
+            ...(resolvedParentFolderId !== undefined ? {parentFolderId: resolvedParentFolderId} : {}),
+            name: restValues.name as string | undefined,
+            description: restValues.description as string | undefined,
+            path: resolvedPath,
+            mountDisabled,
+            sensitive: !isNfsMount ? sensitive : undefined,
+            pathPermissionsEnabled:
+              !isNfsMount &&
+              !omicsStore &&
+              currentRegionSupportsStoragePermissions &&
+              pathPermissionsEnabled,
+            ...(!mountDisabled
+              ? {
+                  toolsToMount: restValues.toolsToMount ?? [],
+                  ...(restValues.mountPoint ? {mountPoint: restValues.mountPoint as string} : {}),
+                  ...(restValues.mountOptions
+                    ? {mountOptions: restValues.mountOptions as string}
+                    : {}),
+                }
+              : {}),
+          };
+
+          if (!updatePayload.name && updatePayload.path) {
+            updatePayload.name = updatePayload.path;
+          }
+
+          await updateDataStorage(updatePayload);
+
+          if (
+            policySupported &&
+            !isNfsMount &&
+            !omicsStore &&
+            storageId !== undefined &&
+            (backupDurationValue !== undefined || !versioningEnabled)
+          ) {
+            await updateDataStoragePolicy(storageId, {
+              backupDuration: backupDurationValue,
+              versioningEnabled,
+            });
+          }
+
+          if (storageId !== undefined) {
+            queryClient.removeQueries({queryKey: dataStorageKeys.detail(storageId)});
+          }
+          await Promise.all([
+            queryClient.invalidateQueries({queryKey: libraryTreeKeys.all}),
+            resolvedParentFolderId !== undefined
+              ? queryClient.invalidateQueries({queryKey: folderKeys.detail(resolvedParentFolderId)})
+              : Promise.resolve(),
+          ]);
         }
+
         onDone?.();
         onClose?.(e);
       } catch (error) {
@@ -448,6 +514,7 @@ export function useDataStorageEditController(
       parentFolderId,
       addExistingStorageFlag,
       dataStorage?.id,
+      dataStorage?.parentFolderId,
       onDone,
       onClose,
       form,
