@@ -211,9 +211,13 @@ public class BitbucketCloudService implements GitClientService {
                                               final boolean issueToken, final Long duration) {
         final GitRepositoryUrl repositoryUrl = GitRepositoryUrl.fromBitbucketCloud(pipeline.getRepository());
         final String token = pipeline.getRepositoryToken();
-        final String username = repositoryUrl.getUsername()
-                .flatMap(this::trimUsername)
-                .orElse(preferenceManager.getPreference(SystemPreferences.BITBUCKET_CLOUD_STATIC_USERNAME));
+        final String staticUsername = preferenceManager
+                .getPreference(SystemPreferences.BITBUCKET_CLOUD_STATIC_USERNAME);
+        final String username = StringUtils.isBlank(staticUsername)
+                ? repositoryUrl.getUsername()
+                  .flatMap(this::trimUsername)
+                  .orElseThrow(() -> buildUrlParseError(USER_NAME))
+                : staticUsername;
         final String host = repositoryUrl.getHost();
         return GitCredentials.builder()
                 .url(GitRepositoryUrl.asString(repositoryUrl.getProtocol(), username, token, host,
