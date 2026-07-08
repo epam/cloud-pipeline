@@ -18,6 +18,7 @@ import DataStorageAvailable from '../../../../../models/dataStorage/DataStorageA
 import DataStorageItemContent from '../../../../../models/dataStorage/DataStorageItemContent';
 import DataStorageItemSize from '../../../../../models/dataStorage/DataStorageItemSize';
 import MetadataEntityFilter from '../../../../../models/folderMetadata/MetadataEntityFilter';
+import DataStoragePage from '../../../../../models/dataStorage/DataStoragePage';
 import {base64toString} from '../../../../../utils/base64';
 import {getStorageLinkInfo} from '../../../../special/data-storage-link/utilities.js';
 
@@ -254,11 +255,27 @@ function invalidateFileContentCache () {
  */
 async function fileExists (path) {
   try {
-    const request = new DataStorageItemSize();
-    await request.send([path]);
-    if (request.error) return false;
-    const result = (request.value || [])[0];
-    return !!(result && result.size >= 0);
+    await DataStorageAvailable.fetchIfNeededOrWait();
+    const info = getStorageLinkInfo({
+      storages: DataStorageAvailable.value,
+      path,
+      isFolder: false,
+      showShared: true
+    });
+    if (!info?.storageId) {
+      return false;
+    }
+    const relativePath = info.relativePath ?? '';
+    const request = new DataStoragePage(info.storageId, relativePath, false, false, 1);
+    await request.fetchPage(undefined);
+    if (request.error) {
+      return false;
+    }
+    console.log('req', request.value);
+    return (request.value?.results ?? []).some(
+      (item) => item.type === 'File' &&
+        (item.path ?? '').toLowerCase() === relativePath.toLowerCase()
+    );
   } catch {
     return false;
   }
