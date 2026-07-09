@@ -16,23 +16,24 @@
 
 package com.epam.pipeline.dts.transfer.model;
 
+import jakarta.persistence.SequenceGenerator;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.With;
-import javax.persistence.AttributeOverride;
-import javax.persistence.AttributeOverrides;
-import javax.persistence.Column;
-import javax.persistence.ElementCollection;
-import javax.persistence.Embedded;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.validation.constraints.NotNull;
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.AttributeOverrides;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -45,7 +46,8 @@ import java.util.List;
 public class TransferTask {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "transfer_task_generator")
+    @SequenceGenerator(name = "transfer_task_generator", sequenceName = "s_transfer_task", allocationSize = 1)
     private Long id;
     @Enumerated(EnumType.ORDINAL)
     private TaskStatus status;
@@ -71,6 +73,7 @@ public class TransferTask {
 
     @ElementCollection
     private List<String> included;
+    @Column(name = "user_name")
     private String user;
 
     private boolean deleteSource;

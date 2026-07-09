@@ -20,17 +20,12 @@ import com.epam.pipeline.cmd.CmdExecutor;
 import com.epam.pipeline.cmd.ImpersonatingCmdExecutor;
 import com.epam.pipeline.cmd.PlainCmdExecutor;
 import com.epam.pipeline.config.JsonMapper;
-import com.epam.pipeline.dts.listing.configuration.ListingRestConfiguration;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.FilterType;
-import org.springframework.stereotype.Controller;
 
 @SpringBootConfiguration
-@ComponentScan(excludeFilters = {
-    @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = ListingRestConfiguration.class),
-    @ComponentScan.Filter(type = FilterType.ANNOTATION, value = Controller.class)})
+@ComponentScan
 public class ListingConfiguration {
 
     @Bean
