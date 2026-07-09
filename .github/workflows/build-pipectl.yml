@@ -3,16 +3,18 @@ name: Build and Push Docker Images (matrix)
 on:
   workflow_dispatch:
     inputs:
-      cp_api_dist_url:
+      cp_dist_url:
         description: 'URL to cloud-pipeline distribution tarball'
         required: true
-      sources_path:
-        description: 'Path to docker sources directory'
-        required: false
-        default: 'deploy/docker'
+  workflow_call:
+    inputs:
+      cp_dist_url:
+        description: 'URL to cloud-pipeline distribution tarball'
+        required: true
+        type: string
 
 env:
-  DOCKERS_SOURCES_PATH: ${{ github.event.inputs.sources_path }}
+  DOCKERS_SOURCES_PATH: deploy/docker
 
 ##############################################################
 # Jobs:
@@ -42,12 +44,12 @@ jobs:
       - name: Parse version from dist URL
         id: parse
         run: |
-          FILENAME="${{ github.event.inputs.cp_api_dist_url }}"
+          FILENAME="${{ inputs.cp_dist_url }}"
           FILENAME="${FILENAME##*/}"
           IFS='.' read -ra V <<< "$FILENAME"
           VERSION="${V[1]}.${V[2]}"
           if [[ -z "${V[1]}" || -z "${V[2]}" ]]; then
-            echo "Failed to parse version from URL: ${{ github.event.inputs.cp_api_dist_url }}"
+            echo "Failed to parse version from URL: ${{ inputs.cp_dist_url }}"
             exit 1
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
@@ -350,7 +352,7 @@ jobs:
           cache-from: type=registry,ref=${{ secrets.CP_DOCKER_DIST_SRV }}:${{ steps.tag.outputs.value }}-cache
           cache-to: type=registry,ref=${{ secrets.CP_DOCKER_DIST_SRV }}:${{ steps.tag.outputs.value }}-cache,mode=max
           build-args: |
-            ${{ matrix.needs_dist_url && format('CP_API_DIST_URL={0}', github.event.inputs.cp_api_dist_url) || '' }}
+            ${{ matrix.needs_dist_url && format('CP_API_DIST_URL={0}', inputs.cp_dist_url) || '' }}
             ${{ matrix.base_image && format('BASE_IMAGE={0}', matrix.base_image) || '' }}
 
       - name: Post-build
