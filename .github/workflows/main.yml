@@ -105,4 +105,5 @@ jobs:
     uses: ./.github/workflows/build-pipectl.yml
     with:
       cp_dist_url: "https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/builds/${{ github.ref_name }}/${{ needs.Build_All.outputs.cp_dist_filename }}"
+    secrets: inherit
       
