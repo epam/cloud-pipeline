@@ -361,7 +361,7 @@ jobs:
   ##############################################################
   # Generate dockers-manifest, assemble and package pipectl
   # Runs after all matrix builds succeed.
-  # Binary is uploaded as a GitHub Actions artifact.
+  # Binary is uploaded to s3://cloud-pipeline-oss-builds/builds/<branch>/
   ##############################################################
   build-pipectl:
     needs: [prebuild, build]
@@ -431,6 +431,13 @@ jobs:
 
           echo "${CP_VERSION_SHORT}" > "${CONTENTS_DIR}/version.txt"
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6.2.2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+
       - name: Build pipectl binary
         run: |
           DIST_FILE="pipectl.${CP_VERSION_FULL}"
@@ -438,9 +445,7 @@ jobs:
           bash deploy/pipectl/build-pipectl.sh --base64 "${BUILD_DIR}/contents/"
           echo "DIST_FILE=${DIST_FILE}" >> "$GITHUB_ENV"
 
-      - name: Upload pipectl artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: pipectl-${{ env.CP_VERSION_FULL }}
-          path: ${{ env.BUILD_DIR }}/pipectl.${{ env.CP_VERSION_FULL }}
-          retention-days: 3
+      - name: Upload pipectl to S3
+        run: |
+          aws s3 cp --no-progress "${BUILD_DIR}/${DIST_FILE}" \
+            "s3://cloud-pipeline-oss-builds/builds/${GITHUB_REF_NAME}/${DIST_FILE}"
