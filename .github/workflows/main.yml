@@ -67,6 +67,8 @@ jobs:
     needs:
     - CLI_MacOS_Arm
     - Publish_Docs
+    outputs:
+      cp_dist_url: ${{ steps.dist_url.outputs.url }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-java@v2
@@ -90,3 +92,16 @@ jobs:
       - run: sudo -E bash deploy/github_actions/gha_pack_dist.sh
         env:
           CP_DOCKER_DIST_SRV: ${{ secrets.CP_DOCKER_DIST_SRV }}
+
+      - name: Output dist URL
+        id: dist_url
+        run: |
+          DIST_FILE=$(ls build/install/dist/cloud-pipeline*.tgz | head -1 | xargs basename)
+          echo "url=https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/builds/${GITHUB_REF_NAME}/${DIST_FILE}" >> "$GITHUB_OUTPUT"
+
+  Build_Pipectl:
+    needs: Build_All
+    uses: ./.github/workflows/build-pipectl.yml
+    with:
+      cp_dist_url: ${{ needs.Build_All.outputs.cp_dist_url }}
+      
