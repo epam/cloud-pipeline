@@ -17,8 +17,8 @@
 plugins {
     id 'java'
     id 'jacoco'
-    id 'org.springframework.boot' version '2.7.18'
-    id 'io.spring.dependency-management' version '1.1.4'
+    id 'org.springframework.boot' version '3.3.13'
+    id 'io.spring.dependency-management' version '1.1.7'
     id 'de.undercouch.download' version '5.5.0'
 }
 
@@ -28,8 +28,8 @@ repositories {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 }
 
 import de.undercouch.gradle.tasks.download.Download
@@ -37,31 +37,31 @@ import de.undercouch.gradle.tasks.download.Download
 dependencies {
     configurations {
         all*.exclude module: 'spring-boot-starter-logging'
+        all*.exclude group: 'commons-logging', module: 'commons-logging'
+        all*.exclude group: 'com.fasterxml.jackson.module', module: 'jackson-module-jaxb-annotations'
     }
 
     implementation project(':cloud-pipeline-common:model')
+
     implementation 'org.projectlombok:lombok:1.18.34'
     annotationProcessor 'org.projectlombok:lombok:1.18.34'
 
-    implementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
-    implementation "org.apache.logging.log4j:log4j-api:$log4jVersion"
-    implementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
-    implementation "org.apache.logging.log4j:log4j-jcl:$log4jVersion"
+    //Spring
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-tomcat'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-log4j2'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
 
-    implementation "org.springframework.boot:spring-boot-starter:$springBootVersion"
-    implementation "org.springframework.boot:spring-boot-starter-web:$springBootVersion"
-    implementation "org.springframework.boot:spring-boot-starter-tomcat:$springBootVersion"
-    implementation "org.springframework.boot:spring-boot-starter-data-jpa:$springBootVersion"
-    implementation "org.springframework.boot:spring-boot-starter-security:$springBootVersion"
-
-    //OpenApi
-    implementation 'org.springdoc:springdoc-openapi-ui:1.8.0'
-
-    implementation 'com.h2database:h2:1.4.197'
+    // DB
+    implementation 'com.h2database:h2:2.3.232'
     implementation 'com.mchange:c3p0:0.9.5.2'
 
-    implementation "org.mapstruct:mapstruct-jdk8:$mapstructVersion"
-    implementation "org.mapstruct:mapstruct-processor:$mapstructVersion"
+    // Mapstruct
+    implementation group: "org.mapstruct", name: "mapstruct", version: mapstructVersion
+    annotationProcessor group: "org.mapstruct", name: "mapstruct-processor", version: mapstructVersion
 
     implementation 'com.auth0:java-jwt:3.3.0'
 
@@ -79,20 +79,18 @@ dependencies {
     implementation "com.squareup.retrofit2:retrofit:$retrofitVersion"
     implementation "com.squareup.retrofit2:converter-jackson:$retrofitVersion"
 
-    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.9.6'
-    annotationProcessor 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.9.6'
+    // XML parsing
+    implementation 'jakarta.xml.bind:jakarta.xml.bind-api:4.0.0'
+    implementation 'jakarta.validation:jakarta.validation-api:3.1.1'
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.16.0'
     implementation 'com.fasterxml.woodstox:woodstox-core:5.1.0'
-    annotationProcessor 'com.fasterxml.woodstox:woodstox-core:5.1.0'
-    implementation 'javax.xml.bind:jaxb-api:2.3.1'
-    implementation 'javax.validation:validation-api:2.0.1.Final'
 
-    testImplementation "org.springframework.boot:spring-boot-starter-test:$springBootVersion"
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'com.github.marschall:memoryfilesystem:1.2.1'
     testImplementation 'org.projectlombok:lombok:1.18.34'
-    testAnnotationProcessor 'org.projectlombok:lombok:1.18.34'
     testImplementation "org.hamcrest:hamcrest-all:$hamcrestVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito:mockito-junit-jupiter:$mockitoVersion"
+
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.34'
 }
 
 bootJar {
@@ -101,6 +99,10 @@ bootJar {
         attributes(
                 "Implementation-Version": "$version")
     }
+}
+
+jar {
+    enabled = false
 }
 
 test {

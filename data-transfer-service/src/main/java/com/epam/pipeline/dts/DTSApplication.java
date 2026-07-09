@@ -16,30 +16,11 @@
 
 package com.epam.pipeline.dts;
 
-import com.epam.pipeline.dts.configuration.CommonConfiguration;
-import com.epam.pipeline.dts.configuration.DataSourceConfiguration;
-import com.epam.pipeline.dts.configuration.RestConfiguration;
-import com.epam.pipeline.dts.listing.ListingConfiguration;
-import com.epam.pipeline.dts.security.JWTSecurityConfiguration;
-import com.epam.pipeline.dts.submission.SubmissionConfiguration;
-import com.epam.pipeline.dts.sync.SyncConfiguration;
-import com.epam.pipeline.dts.transfer.TransferConfiguration;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.thymeleaf.ThymeleafAutoConfiguration;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Import;
 
 @SpringBootApplication(exclude = {ThymeleafAutoConfiguration.class})
-@Import({DataSourceConfiguration.class,
-    RestConfiguration.class,
-    CommonConfiguration.class,
-    JWTSecurityConfiguration.class,
-    ListingConfiguration.class,
-    TransferConfiguration.class,
-    SubmissionConfiguration.class,
-    SyncConfiguration.class})
-@ComponentScan(basePackages = "com.epam.pipeline.dts.configuration")
 @SuppressWarnings("checkstyle:HideUtilityClassConstructor")
 public class DTSApplication {
 
