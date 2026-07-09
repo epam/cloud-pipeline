@@ -384,7 +384,7 @@ jobs:
           python3 - <<'EOF'
           import yaml, os, shutil
 
-          workflow_file = ".github/workflows/build-dockers-matrix.yml"
+          workflow_file = ".github/workflows/build-pipectl.yml"
           with open(workflow_file) as f:
               wf = yaml.safe_load(f)
 
