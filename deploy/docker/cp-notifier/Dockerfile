@@ -34,6 +34,7 @@ ADD liveness.sh /liveness.sh
 RUN chmod +x /liveness.sh
 
 ENV CP_NOTIFIER_HOME="/opt/notifier"
+RUN mkdir -p $CP_NOTIFIER_HOME
 ADD config $CP_NOTIFIER_HOME/config
 
 # API distribution
@@ -42,7 +43,6 @@ ARG CP_API_DIST_URL=""
 RUN cd /tmp && \
     wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
     tar -zxf cloud-pipeline.tgz && \
-    mkdir -p $CP_NOTIFIER_HOME && \
     mv bin/notifier.jar $CP_NOTIFIER_HOME/ && \
     rm -rf /tmp/*
 

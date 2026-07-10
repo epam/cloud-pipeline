@@ -26,7 +26,8 @@ RUN yum install -y \
                 java-1.8.0-openjdk \
                 unzip
 
-ENV CP_BILLING_HOME="/opt/billing"                
+ENV CP_BILLING_HOME="/opt/billing"
+RUN mkdir -p $CP_BILLING_HOME
 ADD config $CP_BILLING_HOME/config
 
 ADD init /init
@@ -37,7 +38,6 @@ ARG CP_API_DIST_URL=""
 RUN cd /tmp && \
     wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
     tar -zxf cloud-pipeline.tgz && \
-    mkdir -p $CP_BILLING_HOME && \
     mv bin/billing-report-agent.jar $CP_BILLING_HOME/ && \
     rm -rf /tmp/*
 

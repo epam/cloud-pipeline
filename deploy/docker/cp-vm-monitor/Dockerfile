@@ -30,6 +30,7 @@ RUN yum install -y \
 ENV CP_VM_MONITOR_HOME="/opt/vm-monitor" \
     CP_VM_MONITOR_TEMPLATES_LOCATION="${CP_VM_MONITOR_HOME}/templates"
 
+RUN mkdir -p $CP_VM_MONITOR_HOME
 ADD config $CP_VM_MONITOR_HOME/config
 
 ADD init /init
@@ -39,7 +40,6 @@ ARG CP_API_DIST_URL=""
 RUN cd /tmp && \
     wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
     tar -zxf cloud-pipeline.tgz && \
-    mkdir -p $CP_VM_MONITOR_HOME && \
     mv bin/vm-monitor.jar $CP_VM_MONITOR_HOME/ && \
     mv bin/vm-monitor-templates ${CP_VM_MONITOR_TEMPLATES_LOCATION} && \
     rm -rf /tmp/*

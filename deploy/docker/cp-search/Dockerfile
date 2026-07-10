@@ -44,6 +44,7 @@ RUN cd /tmp && \
     rm -rf lustre-client*
 
 ENV CP_SEARCH_HOME="/opt/search"
+RUN mkdir -p $CP_SEARCH_HOME
 ENV CP_SEARCH_MAPPINGS_LOCATION="$CP_SEARCH_HOME/search-mappings"
 ADD config $CP_SEARCH_HOME/config
 
@@ -57,7 +58,6 @@ ARG CP_API_DIST_URL=""
 RUN cd /tmp && \
     wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
     tar -zxf cloud-pipeline.tgz && \
-    mkdir -p $CP_SEARCH_HOME && \
     mv bin/elasticsearch-agent.jar $CP_SEARCH_HOME/ && \
     mv bin/search-mappings $CP_SEARCH_MAPPINGS_LOCATION && \
     rm -rf /tmp/*
