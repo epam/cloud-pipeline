@@ -1,0 +1,454 @@
+name: Build pipectl and docker images
+
+on:
+  workflow_dispatch:
+    inputs:
+      cp_dist_url:
+        description: 'URL to cloud-pipeline distribution tarball'
+        required: true
+  workflow_call:
+    inputs:
+      cp_dist_url:
+        description: 'URL to cloud-pipeline distribution tarball'
+        required: true
+        type: string
+
+env:
+  DOCKERS_SOURCES_PATH: deploy/docker
+
+##############################################################
+# Jobs:
+#   prebuild      – parses version from dist URL
+#   build         – all services via matrix (parallel)
+#   build-pipectl – generates dockers-manifest, assembles and
+#                   packages the pipectl binary, uploads as
+#                   a GitHub Actions artifact
+#
+# build-push-action with push: true sends directly to the
+# registry without loading to the local daemon, so no
+# docker rmi cleanup is needed.
+##############################################################
+
+jobs:
+
+  ##############################################################
+  # Parse version from dist URL filename:
+  # cloud-pipeline.{major}.{minor}.{patch}.{build}.{commit}.tgz
+  ##############################################################
+  prebuild:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.parse.outputs.version }}
+      version_full: ${{ steps.parse.outputs.version_full }}
+    steps:
+      - name: Parse version from dist URL
+        id: parse
+        run: |
+          FILENAME="${{ inputs.cp_dist_url }}"
+          FILENAME="${FILENAME##*/}"
+          IFS='.' read -ra V <<< "$FILENAME"
+          VERSION="${V[1]}.${V[2]}"
+          if [[ -z "${V[1]}" || -z "${V[2]}" ]]; then
+            echo "Failed to parse version from URL: ${{ inputs.cp_dist_url }}"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "version_full=${V[1]}.${V[2]}.${V[3]}.${V[4]}.${V[5]}" >> "$GITHUB_OUTPUT"
+
+  ##############################################################
+  # Build docker images
+  ##############################################################
+  build:
+    name: build docker (${{ matrix.service }})
+    needs: prebuild
+    runs-on: ubuntu-latest
+    env:
+      DOCKERS_VERSION: ${{ needs.prebuild.outputs.version }}
+    strategy:
+      fail-fast: true
+      max-parallel: 20
+      matrix:
+        include:
+
+          - service: cp-api-srv
+            context: cp-api-srv
+            needs_dist_url: true
+            tag: api-srv-$DOCKERS_VERSION
+
+          - service: cp-idp
+            context: cp-idp
+            tag: idp-$DOCKERS_VERSION
+
+          - service: cp-edge
+            context: cp-edge
+            tag: edge-$DOCKERS_VERSION
+
+          - service: cp-docker-comp
+            context: cp-docker-comp
+            needs_dist_url: true
+            tag: docker-comp-$DOCKERS_VERSION
+
+          - service: cp-clair
+            context: cp-clair
+            tag: clair-$DOCKERS_VERSION
+
+          - service: cp-clair-v4
+            context: cp-clair-v4
+            tag: clair-v4-$DOCKERS_VERSION
+
+          - service: cp-docker-registry-default
+            context: cp-docker-registry/v2.7.0+aws_imds2
+            tag: registry-$DOCKERS_VERSION-default
+
+          - service: cp-docker-registry-2.7.0-aws-imds2
+            context: cp-docker-registry/v2.7.0+aws_imds2
+            tag: registry-$DOCKERS_VERSION-2.7.0-aws-imds2
+
+          - service: cp-docker-registry-2.7.1
+            context: cp-docker-registry/v2.7.1
+            tag: registry-$DOCKERS_VERSION-2.7.1
+
+          - service: cp-docker-registry-3.0.0
+            context: cp-docker-registry/v3.0.0
+            tag: registry-$DOCKERS_VERSION-3.0.0
+
+          - service: cp-git-9
+            context: cp-git
+            dockerfile: cp-git/Dockerfile.9.4
+            tag: git-9-$DOCKERS_VERSION
+
+          - service: cp-git-15
+            context: cp-git
+            dockerfile: cp-git/Dockerfile.15.5
+            base_image: gitlab/gitlab-ce:15.5.4-ce.0
+            tag: git-15-$DOCKERS_VERSION
+
+          - service: cp-git-17
+            context: cp-git
+            dockerfile: cp-git/Dockerfile.17.4
+            base_image: gitlab/gitlab-ce:17.4.1-ce.0
+            tag: git-17-$DOCKERS_VERSION
+
+          - service: cp-notifier
+            context: cp-notifier
+            needs_dist_url: true
+            tag: notifier-$DOCKERS_VERSION
+
+          - service: cp-search
+            context: cp-search
+            needs_dist_url: true
+            tag: search-$DOCKERS_VERSION
+
+          - service: cp-search-elk
+            context: cp-search-elk
+            tag: search-elk-$DOCKERS_VERSION
+
+          - service: cp-search-elk-curator
+            context: cp-search-elk-curator
+            tag: search-elk-curator-$DOCKERS_VERSION
+
+          - service: cp-heapster-elk
+            context: cp-heapster-elk
+            tag: heapster-elk-$DOCKERS_VERSION
+
+          - service: cp-node-logger
+            context: cp-node-logger
+            tag: node-logger-$DOCKERS_VERSION
+
+          - service: cp-node-reporter
+            context: cp-node-reporter
+            needs_dist_url: true
+            tag: node-reporter-$DOCKERS_VERSION
+
+          - service: cp-bkp-worker
+            context: cp-bkp-worker
+            tag: cp-bkp-worker-$DOCKERS_VERSION
+
+          - service: cp-vm-monitor
+            context: cp-vm-monitor
+            needs_dist_url: true
+            tag: vm-monitor-$DOCKERS_VERSION
+
+          - service: cp-share-srv
+            context: cp-share-srv
+            needs_dist_url: true
+            tag: share-srv-$DOCKERS_VERSION
+
+          - service: cp-billing-srv
+            context: cp-billing-srv
+            needs_dist_url: true
+            tag: billing-srv-$DOCKERS_VERSION
+
+          - service: cp-gitlab-reader
+            context: cp-gitlab-reader
+            needs_dist_url: true
+            tag: gitlab-reader-$DOCKERS_VERSION
+
+          - service: cp-tinyproxy
+            context: cp-tinyproxy
+            tag: tinyproxy-$DOCKERS_VERSION
+
+          - service: cp-leader-elector
+            context: cp-leader-elector
+            tag: leader-elector-$DOCKERS_VERSION
+
+          - service: cp-run-policy-manager
+            context: cp-run-policy-manager
+            tag: run-policy-manager-$DOCKERS_VERSION
+
+          - service: cp-dns-hosts-sync
+            context: cp-dns-hosts-sync
+            tag: dns-hosts-sync-$DOCKERS_VERSION
+
+          - service: cp-monitoring-srv
+            context: cp-monitoring-srv
+            needs_dist_url: true
+            tag: monitoring-service-$DOCKERS_VERSION
+
+          - service: cp-deployment-autoscaler
+            context: cp-deployment-autoscaler
+            needs_dist_url: true
+            tag: deployment-autoscaler-$DOCKERS_VERSION
+
+          - service: cp-storage-lifecycle-service
+            context: cp-storage-lifecycle-service
+            needs_dist_url: true
+            tag: storage-lifecycle-service-$DOCKERS_VERSION
+
+          - service: cp-mlflow-server
+            context: cp-mlflow-server
+            tag: mlflow-server-$DOCKERS_VERSION
+
+          - service: cp-run-cleanup-job
+            context: cp-run-cleanup-job
+            needs_dist_url: true
+            tag: cp-run-cleanup-job-$DOCKERS_VERSION
+
+          - service: cp-tools-base-centos-vanilla
+            context: cp-tools/base/centos/vanilla
+            tag: tools-base-centos-7-$DOCKERS_VERSION
+            manifest_pretty_names: "library/centos:7|library/centos:latest"
+            manifest_spec_path: cp-tools/base/centos/vanilla
+
+          - service: cp-tools-base-centos-vanilla-optimized
+            context: cp-tools/base/centos/vanilla
+            dockerfile: cp-tools/base/centos/vanilla/Dockerfile.optimized
+            needs_dist_url: true
+            tag: tools-base-centos-7-optimized-$DOCKERS_VERSION
+            manifest_pretty_names: "library/centos:7-optimized"
+            manifest_spec_path: cp-tools/base/centos/vanilla
+
+          - service: cp-tools-base-centos-cuda-11
+            context: cp-tools/base/centos/cuda
+            base_image: nvidia/cuda:11.3.1-cudnn8-runtime-centos7
+            tag: tools-base-centos-7-cuda11-$DOCKERS_VERSION
+            manifest_pretty_names: "library/centos-cuda:7-cuda11"
+            manifest_spec_path: cp-tools/base/centos/cuda
+
+          - service: cp-tools-base-centos-cuda
+            context: cp-tools/base/centos/cuda
+            base_image: nvidia/cuda:11.3.1-cudnn8-runtime-centos7
+            tag: tools-base-centos-7-cuda-$DOCKERS_VERSION
+            manifest_pretty_names: "library/centos-cuda:latest"
+            manifest_spec_path: cp-tools/base/centos/cuda
+
+          - service: cp-tools-base-ubuntu-vanilla-16.04
+            context: cp-tools/base/ubuntu/vanilla
+            base_image: library/ubuntu:16.04
+            tag: tools-base-ubuntu-16.04-$DOCKERS_VERSION
+            manifest_pretty_names: "library/ubuntu:16.04"
+            manifest_spec_path: cp-tools/base/ubuntu/vanilla
+
+          - service: cp-tools-base-ubuntu-vanilla-18.04
+            context: cp-tools/base/ubuntu/vanilla
+            base_image: library/ubuntu:18.04
+            tag: tools-base-ubuntu-18.04-$DOCKERS_VERSION
+            manifest_pretty_names: "library/ubuntu:18.04|library/ubuntu:latest"
+            manifest_spec_path: cp-tools/base/ubuntu/vanilla
+
+          - service: cp-tools-base-ubuntu-cuda-11
+            context: cp-tools/base/ubuntu/cuda
+            base_image: nvidia/cuda:11.3.1-cudnn8-runtime-ubuntu18.04
+            tag: tools-base-ubuntu-18.04-cuda11-$DOCKERS_VERSION
+            manifest_pretty_names: "library/ubuntu-cuda:18.04-cuda11"
+            manifest_spec_path: cp-tools/base/ubuntu/cuda
+
+          - service: cp-tools-base-ubuntu-cuda
+            context: cp-tools/base/ubuntu/cuda
+            base_image: nvidia/cuda:11.3.1-cudnn8-runtime-ubuntu18.04
+            tag: tools-base-ubuntu-18.04-cuda-$DOCKERS_VERSION
+            manifest_pretty_names: "library/ubuntu-cuda:latest"
+            manifest_spec_path: cp-tools/base/ubuntu/cuda
+
+          - service: cp-tools-base-rockylinux-vanilla
+            context: cp-tools/base/rockylinux/vanilla
+            tag: tools-base-rockylinux-8-$DOCKERS_VERSION
+            manifest_pretty_names: "library/rockylinux:8|library/rockylinux:latest"
+            manifest_spec_path: cp-tools/base/rockylinux/vanilla
+
+          - service: cp-tools-base-cromwell
+            context: cp-tools/base/cromwell
+            tag: tools-base-cromwell-$DOCKERS_VERSION
+            manifest_pretty_names: "library/cromwell:latest"
+            manifest_spec_path: cp-tools/base/cromwell
+
+          - service: cp-tools-base-nextflow
+            context: cp-tools/base/nextflow
+            base_image: library/rockylinux:8.7
+            tag: tools-base-nextflow-$DOCKERS_VERSION
+            manifest_pretty_names: "library/nextflow:latest"
+            manifest_spec_path: cp-tools/base/nextflow
+
+          - service: cp-tools-mlops-cp-mlflow
+            context: cp-tools/mlops/cp-mlflow
+            tag: tools-mlops-mlflow-$DOCKERS_VERSION
+            manifest_pretty_names: "library/mlflow:latest"
+            manifest_spec_path: cp-tools/mlops/cp-mlflow
+
+          - service: cp-tools-system-system-job
+            context: cp-tools/system/system-job
+            tag: tools-system-system-job-$DOCKERS_VERSION
+            manifest_pretty_names: "system/system-job-launcher:latest"
+            manifest_spec_path: cp-tools/system/system-job
+
+          - service: cp-dav
+            context: cp-dav
+            tag: dav-$DOCKERS_VERSION
+            pre_build_commands: cp -r scripts/nfs-roles-management $DOCKERS_SOURCES_PATH/cp-dav/
+            post_build_commands: rm -rf $DOCKERS_SOURCES_PATH/cp-dav/nfs-roles-management
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ secrets.CP_DOCKER_DIST_SRV }}
+          username: ${{ secrets.CP_DOCKER_USER }}
+          password: ${{ secrets.CP_DOCKER_PASSWORD }}
+
+      - name: Pre-build
+        if: ${{ matrix.pre_build_commands != '' }}
+        run: ${{ matrix.pre_build_commands }}
+
+      - name: Compute tag
+        id: tag
+        run: |
+          TAG_SUFFIX=$(eval echo "${{ matrix.tag }}")
+          echo "value=${{ secrets.CP_DOCKER_DIST_SRV }}${{ secrets.CP_DOCKER_USER }}/cloud-pipeline:${TAG_SUFFIX}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push ${{ matrix.service }}
+        uses: docker/build-push-action@v7
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: "false"
+        with:
+          context: ${{ env.DOCKERS_SOURCES_PATH }}/${{ matrix.context }}
+          file: ${{ matrix.dockerfile && format('{0}/{1}', env.DOCKERS_SOURCES_PATH, matrix.dockerfile) || '' }}
+          push: true
+          tags: ${{ steps.tag.outputs.value }}
+          cache-from: type=registry,ref=${{ steps.tag.outputs.value }}-cache
+          cache-to: type=registry,ref=${{ steps.tag.outputs.value }}-cache,mode=max
+          build-args: |
+            ${{ matrix.needs_dist_url && format('CP_API_DIST_URL={0}', inputs.cp_dist_url) || '' }}
+            ${{ matrix.base_image && format('BASE_IMAGE={0}', matrix.base_image) || '' }}
+
+      - name: Post-build
+        if: ${{ always() && matrix.post_build_commands != '' }}
+        run: ${{ matrix.post_build_commands }}
+
+
+  ##############################################################
+  # Generate dockers-manifest, assemble and package pipectl
+  # Runs after all matrix builds succeed.
+  # Binary is uploaded to s3://cloud-pipeline-oss-builds/builds/<branch>/
+  ##############################################################
+  build-pipectl:
+    needs: [prebuild, build]
+    runs-on: ubuntu-latest
+    env:
+      CP_VERSION_SHORT: ${{ needs.prebuild.outputs.version }}
+      CP_VERSION_FULL: ${{ needs.prebuild.outputs.version_full }}
+      CP_DIST_REPO_NAME: "${{ secrets.CP_DOCKER_DIST_SRV }}${{ secrets.CP_DOCKER_USER }}/cloud-pipeline"
+      BUILD_DIR: /tmp/cp-deploy-build
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Generate dockers manifest
+        run: |
+          python3 - <<'EOF'
+          import yaml, os, shutil
+
+          workflow_file = ".github/workflows/build-pipectl.yml"
+          with open(workflow_file) as f:
+              wf = yaml.safe_load(f)
+
+          matrix   = wf["jobs"]["build"]["strategy"]["matrix"]["include"]
+          tools    = [e for e in matrix if e.get("manifest_pretty_names")]
+
+          repo     = os.environ["CP_DIST_REPO_NAME"].rstrip("/")
+          version  = os.environ["CP_VERSION_SHORT"]
+          sources  = os.environ["DOCKERS_SOURCES_PATH"]
+          mdir     = os.environ["BUILD_DIR"] + "/dockers-manifest"
+
+          os.makedirs(mdir, exist_ok=True)
+          with open(f"{mdir}/manifest.txt", "w") as mf:
+              for tool in tools:
+                  tag        = tool["tag"].replace("$DOCKERS_VERSION", version)
+                  full_tag   = f"{repo}:{tag}"
+                  spec_path  = tool["manifest_spec_path"]
+                  for pretty in tool["manifest_pretty_names"].split("|"):
+                      mf.write(f"{full_tag},{pretty}\n")
+                      pdir = f"{mdir}/{pretty}"
+                      os.makedirs(pdir, exist_ok=True)
+                      for fname in ("icon.png", "README.md", "spec.json"):
+                          src = f"{sources}/{spec_path}/{fname}"
+                          if os.path.exists(src):
+                              shutil.copy(src, f"{pdir}/{fname}")
+          EOF
+
+      - name: Assemble pipectl contents
+        run: |
+          CONTENTS_DIR="${BUILD_DIR}/contents"
+          OTHER_PKGS="${CONTENTS_DIR}/other-packages"
+
+          # Static install scripts, k8s configs, preferences, etc.
+          cp -r deploy/contents/. "${CONTENTS_DIR}/"
+
+          # Dockers manifest built in the previous step
+          cp -r "${BUILD_DIR}/dockers-manifest" "${CONTENTS_DIR}/"
+
+          cp deploy/contents/install/cloud-images/cloud-images-manifest.txt "${CONTENTS_DIR}/"
+
+          # Additional workflow packages (mirrors -p flags in Jenkins build-pipectl.sh)
+          mkdir -p "${OTHER_PKGS}"
+          cp -r workflows/pipe-templates/__SYSTEM/data_loader "${OTHER_PKGS}/"
+          cp -r workflows/pipe-templates/__SYSTEM/system_jobs "${OTHER_PKGS}/"
+          cp -r e2e/prerequisites                             "${OTHER_PKGS}/"
+          cp -r workflows/pipe-demo                           "${OTHER_PKGS}/"
+
+          echo "${CP_VERSION_SHORT}" > "${CONTENTS_DIR}/version.txt"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6.2.2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+
+      - name: Build pipectl binary
+        run: |
+          DIST_FILE="pipectl.${CP_VERSION_FULL}"
+          export DEPLOY_BUILD_OUTPUT_PATH="${BUILD_DIR}/${DIST_FILE}"
+          bash deploy/pipectl/build-pipectl.sh --base64 "${BUILD_DIR}/contents/"
+          echo "DIST_FILE=${DIST_FILE}" >> "$GITHUB_ENV"
+
+      - name: Upload pipectl to S3
+        run: |
+          aws s3 cp --no-progress "${BUILD_DIR}/${DIST_FILE}" \
+            "s3://cloud-pipeline-oss-builds/builds/${GITHUB_REF_NAME}/${DIST_FILE}"
