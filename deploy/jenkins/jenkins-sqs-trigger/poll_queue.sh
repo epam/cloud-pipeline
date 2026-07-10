@@ -38,9 +38,9 @@ do
     echo "DISTRIBUTION_PREFIX: $DISTRIBUTION_PREFIX"
     echo "DISTRIBUTION_URL: $DISTRIBUTION_URL"
 
-    curl --silent --fail -X POST "http://${JENKINS_USER}:${JENKINS_PASS}@${JENKINS_HOST}:${JENKINS_PORT}/job/${JENKINS_JOB_NAME}/buildWithParameters?token=${JENKINS_JOB_TOKEN}&PIPECTL_DIST_URL_PATH=$DISTRIBUTION_URL"
+    curl --silent --fail -X POST "http://${JENKINS_USER}:${JENKINS_PASS}@${JENKINS_HOST}:${JENKINS_PORT}/job/${JENKINS_JOB_NAME}/buildWithParameters?token=${JENKINS_JOB_TOKEN}&PIPECTL_DIST_URL=$DISTRIBUTION_URL"
     if [ $? -eq 0 ]; then
-        echo "Jenkins job $JENKINS_JOB_NAME started with PIPECTL_DIST_URL_PATH=$DISTRIBUTION_URL"
+        echo "Jenkins job $JENKINS_JOB_NAME started with PIPECTL_DIST_URL=$DISTRIBUTION_URL"
         $AWSCLI_BIN sqs delete-message  --queue-url "$SQS_QUEUE" \
                                 --receipt-handle "$RECEIPT_HANDLE"
     fi
