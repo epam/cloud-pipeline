@@ -1,4 +1,4 @@
-name: Build pipectl and docker images
+name: Build-Pipectl-And-Dockers
 
 on:
   workflow_dispatch:
@@ -12,6 +12,8 @@ on:
         description: 'URL to cloud-pipeline distribution tarball'
         required: true
         type: string
+
+concurrency: ${{ github.workflow }}
 
 env:
   DOCKERS_SOURCES_PATH: deploy/docker
