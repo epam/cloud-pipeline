@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,22 +14,21 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.filter;
+package com.epam.pipeline.entity.quota;
 
-import lombok.Getter;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
-import java.util.List;
-
-@Getter
-@Setter
+@Data
+@Builder
 @NoArgsConstructor
-public class FilterExpression {
+@AllArgsConstructor
+public class ComputeQuotaAction {
 
-    private String field;
-    private String value;
-    private String operand;
-    private String filterExpressionType;
-    private List<FilterExpression> expressions;
+    private ComputeQuotaActionType type;
+    private int value;
+    private String message;
+    private boolean perIncident;
 }
