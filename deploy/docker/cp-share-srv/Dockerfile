@@ -32,11 +32,16 @@ RUN yum install -y \
                 unzip \
                 openssl
 
+ENV CP_SHARE_HOME="/opt/share-srv"
+ADD config $CP_SHARE_HOME/config
+ADD init /init
+ADD update-trust /update-trust
+
+RUN chmod +x /init* && \
+    chmod +x /update-trust
 
 # SHARE distribution
 ARG CP_API_DIST_URL=""
-ENV CP_SHARE_HOME="/opt/share-srv"
-
 RUN cd /tmp && \
      wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
      tar -zxf cloud-pipeline.tgz && \
@@ -44,13 +49,6 @@ RUN cd /tmp && \
      mv bin/data-sharing-service.jar $CP_SHARE_HOME/ && \
      rm -f cloud-pipeline.tgz && \
      rm -rf bin
-
-ADD config $CP_SHARE_HOME/config
-ADD init /init
-ADD update-trust /update-trust
-
-RUN chmod +x /init* && \
-    chmod +x /update-trust
 
 WORKDIR /opt/share-srv
 

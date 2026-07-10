@@ -100,33 +100,7 @@ RUN pip install -I google-api-core==1.32.0 \
                    google-auth-httplib2==0.1.0 \
                    googleapis-common-protos==1.52.0
 
-# API distribution
-ARG CP_API_DIST_URL=""
 ENV CP_API_HOME="/opt/api"
-ARG REQUIRED_JARS_REGEX="pipeline|jwt-generator|data-transfer-service"
-
-RUN cd /tmp && \
-    wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
-    tar -zxf cloud-pipeline.tgz && \
-    rm -rf bin/pipe-templates/__SYSTEM && \
-    mkdir -p $CP_API_HOME && \
-    ls -dp bin/* \
-        | grep '\.jar$' \
-        | grep -v -E "/($REQUIRED_JARS_REGEX)\.jar$" \
-        | xargs rm -f && \
-    mv bin/* $CP_API_HOME/ && \
-    rm -f cloud-pipeline.tgz && \
-    rm -rf bin
-ADD config $CP_API_HOME/config
-
-# Install pipe-common package
-RUN mkdir -p /tmp/pipe-temp && \
-    cp /opt/api/pipeline.jar /tmp/pipe-temp/ && \
-    cd /tmp/pipe-temp/ && \
-    unzip -qq pipeline.jar && \
-    pip install -I /tmp/pipe-temp/BOOT-INF/classes/static/pipe-common.tar.gz && \
-    cd / && \
-    rm -rf /tmp/pipe-temp
 
 # Install projects templates
 ADD folder-templates /opt/api/folder-templates
@@ -156,6 +130,33 @@ RUN cd /tmp \
     && mv /opt/filebeat-7.10.0-linux-x86_64 /opt/filebeat-oss
 
 COPY filebeat/opensearch/filebeat-template.yml /opt/filebeat-oss/
+
+# API distribution
+ARG CP_API_DIST_URL=""
+ARG REQUIRED_JARS_REGEX="pipeline|jwt-generator|data-transfer-service"
+
+RUN cd /tmp && \
+    wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
+    tar -zxf cloud-pipeline.tgz && \
+    rm -rf bin/pipe-templates/__SYSTEM && \
+    mkdir -p $CP_API_HOME && \
+    ls -dp bin/* \
+        | grep '\.jar$' \
+        | grep -v -E "/($REQUIRED_JARS_REGEX)\.jar$" \
+        | xargs rm -f && \
+    mv bin/* $CP_API_HOME/ && \
+    rm -f cloud-pipeline.tgz && \
+    rm -rf bin
+ADD config $CP_API_HOME/config
+
+# Install pipe-common package
+RUN mkdir -p /tmp/pipe-temp && \
+    cp /opt/api/pipeline.jar /tmp/pipe-temp/ && \
+    cd /tmp/pipe-temp/ && \
+    unzip -qq pipeline.jar && \
+    pip install -I /tmp/pipe-temp/BOOT-INF/classes/static/pipe-common.tar.gz && \
+    cd / && \
+    rm -rf /tmp/pipe-temp
 
 WORKDIR /opt/api
 
