@@ -20,6 +20,8 @@ import com.epam.pipeline.autotests.utils.Utils;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Consumer;
+
+import static java.lang.String.format;
 import org.openqa.selenium.By;
 
 import static com.codeborne.selenide.ClickOptions.usingJavaScript;
@@ -76,9 +78,14 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
         return this;
     }
 
+    public PipelineGraphTabAO openEntry(String name) {
+        $(By.xpath(format("//*[@class = 'dl-executables__header-title']/*[text() = '%s']", name)))
+                .click();
+        return this;
+    }
+
     public TaskAdditionPopupAO openAddTaskDialog() {
-        $(byClassName("rc-menu-submenu-vertical")).hover();
-        $(By.xpath(".//b[.='new task']")).click();
+        $(byText("create new call")).click();
         return new TaskAdditionPopupAO(this);
     }
 
@@ -377,7 +384,7 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
         }
 
         private SelenideElement column(SelenideElement context, int num) {
-            return row(context).find(cssSelector(String.format("td:nth-child(%d)", num)));
+            return row(context).find(cssSelector(format("td:nth-child(%d)", num)));
         }
 
         private SelenideElement row(SelenideElement context) {
