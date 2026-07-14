@@ -34,6 +34,7 @@ import com.epam.pipeline.acl.pipeline.issue.GitlabIssueApiService;
 import com.epam.pipeline.acl.plugin.PluginAssignmentService;
 import com.epam.pipeline.acl.plugin.PluginService;
 import com.epam.pipeline.acl.preprocessing.NgsPreprocessingApiService;
+import com.epam.pipeline.acl.compute.quota.ComputeQuotaRuleApiService;
 import com.epam.pipeline.acl.quota.QuotaApiService;
 import com.epam.pipeline.acl.report.ReportApiService;
 import com.epam.pipeline.acl.resource.StaticResourceApiService;
@@ -274,6 +275,9 @@ public class ControllerTestBeans {
 
     @MockBean
     protected QuotaApiService quotaApiService;
+
+    @MockBean
+    protected ComputeQuotaRuleApiService computeQuotaRuleApiService;
 
     @MockBean
     protected ReportApiService reportApiService;

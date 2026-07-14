@@ -933,6 +933,12 @@ public final class MessageConstants {
     public static final String DEBUG_ARCHIVE_RUN_LOADING_STATUSES = "debug.archive.run.loading.statuses";
     public static final String DEBUG_ARCHIVE_RUN_LOADED_STATUSES = "debug.archive.run.loaded.statuses";
 
+    // Compute quota rules
+    public static final String ERROR_COMPUTE_QUOTA_RULE_NOT_FOUND = "error.compute.quota.rule.not.found";
+    public static final String ERROR_COMPUTE_QUOTA_RULE_NAME_EMPTY = "error.compute.quota.rule.name.empty";
+    public static final String ERROR_COMPUTE_QUOTA_RULE_FILTER_EMPTY = "error.compute.quota.rule.filter.empty";
+    public static final String ERROR_COMPUTE_QUOTA_RULE_ACTION_EMPTY = "error.compute.quota.rule.action.empty";
+
     private MessageConstants() {
         // no-op
     }
