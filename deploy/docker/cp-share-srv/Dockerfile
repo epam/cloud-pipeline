@@ -35,18 +35,8 @@ RUN yum install -y \
 RUN curl -L -o /etc/yum.repos.d/corretto.repo https://yum.corretto.aws/corretto.repo && \
     yum install -y java-21-amazon-corretto-devel
 
-# SHARE distribution
-ARG CP_API_DIST_URL=""
 ENV CP_SHARE_HOME="/opt/share-srv"
-
-RUN cd /tmp && \
-     wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
-     tar -zxf cloud-pipeline.tgz && \
-     mkdir -p $CP_SHARE_HOME && \
-     mv bin/data-sharing-service.jar $CP_SHARE_HOME/ && \
-     rm -f cloud-pipeline.tgz && \
-     rm -rf bin
-
+RUN mkdir -p $CP_SHARE_HOME
 ADD config $CP_SHARE_HOME/config
 ADD init /init
 ADD update-trust /update-trust
@@ -54,6 +44,15 @@ ADD update-trust /update-trust
 RUN chmod +x /init* && \
     chmod +x /update-trust
 
-WORKDIR /opt/share-srv
+# SHARE distribution
+ARG CP_API_DIST_URL=""
+RUN cd /tmp && \
+     wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
+     tar -zxf cloud-pipeline.tgz && \
+     mv bin/data-sharing-service.jar $CP_SHARE_HOME/ && \
+     rm -f cloud-pipeline.tgz && \
+     rm -rf bin
+
+WORKDIR $CP_SHARE_HOME
 
 CMD ["/init"]
