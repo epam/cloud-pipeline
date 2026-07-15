@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.quota;
+package com.epam.pipeline.utils.condition;
 
-import com.epam.pipeline.entity.filter.FilterExpressionType;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -28,17 +27,17 @@ import java.util.List;
  *
  * <p>The tree is evaluated recursively:
  * <ul>
- *   <li>{@link FilterExpressionType#LOGICAL} — leaf node carrying a single
+ *   <li>{@link ConditionType#LOGICAL} — leaf node carrying a single
  *       {@code field}/{@code operand}/{@code value} predicate. Optionally gated by
  *       {@link #duration} for fields that support it (currently {@code run.tag}).</li>
- *   <li>{@link FilterExpressionType#AND} — all child expressions must be {@code true}.</li>
- *   <li>{@link FilterExpressionType#OR} — at least one child expression must be {@code true}.</li>
+ *   <li>{@link ConditionType#AND} — all child expressions must be {@code true}.</li>
+ *   <li>{@link ConditionType#OR} — at least one child expression must be {@code true}.</li>
  * </ul>
  */
 @Getter
 @Setter
 @NoArgsConstructor
-public class QuotaFilterExpression {
+public class ConditionExpression {
 
     /** Field name referenced in the predicate (e.g. {@code run.tag}, {@code run.spot}). */
     private String field;
@@ -50,10 +49,10 @@ public class QuotaFilterExpression {
     private String operand;
 
     /** Structural role of this node in the expression tree. */
-    private FilterExpressionType filterExpressionType;
+    private ConditionType type;
 
     /** Child nodes; non-null and non-empty only for {@code AND} and {@code OR} nodes. */
-    private List<QuotaFilterExpression> expressions;
+    private List<ConditionExpression> expressions;
 
     /**
      * Minimum hours the condition must have been continuously true before the rule fires.

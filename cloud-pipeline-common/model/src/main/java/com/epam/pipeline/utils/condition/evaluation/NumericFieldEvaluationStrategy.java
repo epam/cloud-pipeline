@@ -14,29 +14,29 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.monitor.monitoring.quota;
+package com.epam.pipeline.utils.condition.evaluation;
 
-import com.epam.pipeline.entity.quota.ConditionOperator;
-import com.epam.pipeline.entity.quota.FieldType;
-import com.epam.pipeline.entity.quota.RunField;
 
-import java.util.EnumSet;
-import java.util.Set;
+import com.epam.pipeline.utils.condition.ConditionOperator;
+import com.epam.pipeline.utils.condition.FieldType;
+import com.epam.pipeline.utils.condition.field.SubjectEntityField;
 
 /**
  * Evaluates {@link FieldType#NUMERIC} leaf nodes using standard double-precision arithmetic.
  * Supports all six comparison operators: {@code =}, {@code !=}, {@code >}, {@code >=},
  * {@code <}, {@code <=}.
+ *
+ * @param <T> the subject type being evaluated
  */
-class NumericLeafEvaluationStrategy extends StandardLeafEvaluationStrategy {
+public class NumericFieldEvaluationStrategy<T> extends AbstractLeafEvaluationStrategy<T> {
 
-    NumericLeafEvaluationStrategy(final RunField field) {
+    public NumericFieldEvaluationStrategy(final SubjectEntityField<T> field) {
         super(field);
     }
 
     @Override
-    protected boolean doEvaluate(final ConditionOperator op, final String runValue, final String expressionValue) {
-        final double a = Double.parseDouble(runValue);
+    protected boolean doEvaluate(final ConditionOperator op, final String subjectValue, final String expressionValue) {
+        final double a = Double.parseDouble(subjectValue);
         final double e = Double.parseDouble(expressionValue);
         switch (op) {
             case EQUALS:            return a == e;

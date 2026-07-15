@@ -28,6 +28,7 @@ import com.epam.pipeline.entity.cluster.PodInstance;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.preference.Preference;
+import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.vo.FilterNodesVO;
 import com.epam.pipeline.vo.cluster.pool.NodePoolUsage;
@@ -94,6 +95,10 @@ public class CloudPipelineAPIClient {
 
     public List<Preference> getAllPreferences() {
         return ListUtils.emptyIfNull(executor.execute(cloudPipelineAPI.loadAllPreference()));
+    }
+
+    public PipelineUser loadUserByName(final String username) {
+        return executor.execute(cloudPipelineAPI.loadUserByName(username));
     }
 
     public List<NodePool> loadAllNodePools() {

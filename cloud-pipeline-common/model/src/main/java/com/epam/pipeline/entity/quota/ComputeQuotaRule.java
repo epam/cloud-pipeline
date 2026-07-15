@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity.quota;
 
+import com.epam.pipeline.utils.condition.ConditionExpression;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -31,8 +32,8 @@ public class ComputeQuotaRule {
     private String name;
     private String description;
     private ComputeQuotaStrategyType strategyType;
-    private QuotaFilterExpression filterExpression;
+    private ConditionExpression statement;
     /** Optional: runs matching this expression are excluded even if they match filterExpression. */
-    private QuotaFilterExpression excludeExpression;
+    private ConditionExpression filter;
     private ComputeQuotaAction action;
 }

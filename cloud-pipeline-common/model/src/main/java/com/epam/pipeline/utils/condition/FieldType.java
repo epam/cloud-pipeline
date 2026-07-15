@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.quota;
+package com.epam.pipeline.utils.condition;
+
+import com.epam.pipeline.utils.condition.field.PipelineRunField;
 
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
 
 /**
- * Declares the value type of a {@link RunField} and the set of {@link ConditionOperator}s
+ * Declares the value type of a {@link PipelineRunField} and the set of {@link ConditionOperator}s
  * that are valid for it.
  *
  * <p>Evaluation logic (how to compare two values) lives in the dedicated
@@ -33,7 +35,7 @@ import java.util.Set;
  *   <li>{@link #BOOLEAN} — {@code true}/{@code false}; supports equality operators only.</li>
  *   <li>{@link #ENUM}    — named constant (e.g. run status); case-insensitive equality operators.</li>
  *   <li>{@link #TAGS}    — set of run tag keys; key-containment check, optional duration gate.</li>
- *   <li>{@link #GROUPS}  — set of user group/role names; group-membership check.</li>
+ *   <li>{@link #USER_AUTHORITIES}  — set of user group/role names; group-membership check.</li>
  * </ul>
  */
 public enum FieldType {
@@ -52,7 +54,7 @@ public enum FieldType {
 
     /**
      * Set of run tag keys. {@code =} matches when the tag key is present; {@code !=} when absent.
-     * When {@link com.epam.pipeline.entity.quota.QuotaFilterExpression#getDuration()} is set on the
+     * When {@link ConditionExpression#getDuration()} is set on the
      * leaf node a companion {@code <tagName>_date} tag is used to verify how long the tag has
      * been continuously present.
      */
@@ -62,7 +64,14 @@ public enum FieldType {
      * Set of group and role names the run owner belongs to, resolved at monitoring time.
      * {@code =} matches when the owner is a member; {@code !=} when not.
      */
-    GROUPS(EnumSet.of(ConditionOperator.EQUALS, ConditionOperator.NOT_EQUALS));
+    USER_AUTHORITIES(EnumSet.of(ConditionOperator.EQUALS, ConditionOperator.NOT_EQUALS)),
+
+    /**
+     * Key-value map (e.g. run parameters, environment variables).
+     * Expression value is {@code <name>} (key-presence check) or {@code <name>=<valuePattern>}
+     * (key present with value matching a wildcard pattern). Supports {@code =} and {@code !=}.
+     */
+    KEY_VALUE(EnumSet.of(ConditionOperator.EQUALS, ConditionOperator.NOT_EQUALS));
 
     private final Set<ConditionOperator> supportedOperators;
 

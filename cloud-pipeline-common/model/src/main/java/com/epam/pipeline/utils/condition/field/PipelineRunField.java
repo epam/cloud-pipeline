@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.quota;
+package com.epam.pipeline.utils.condition.field;
 
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.utils.condition.ConditionExpression;
+import com.epam.pipeline.utils.condition.FieldType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import lombok.Getter;
 
 import java.util.Arrays;
@@ -28,13 +31,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
-import static com.epam.pipeline.entity.quota.FieldType.BOOLEAN;
-import static com.epam.pipeline.entity.quota.FieldType.ENUM;
-import static com.epam.pipeline.entity.quota.FieldType.GROUPS;
-import static com.epam.pipeline.entity.quota.FieldType.NUMERIC;
-import static com.epam.pipeline.entity.quota.FieldType.STRING;
-import static com.epam.pipeline.entity.quota.FieldType.TAGS;
+import static com.epam.pipeline.utils.condition.FieldType.BOOLEAN;
+import static com.epam.pipeline.utils.condition.FieldType.ENUM;
+import static com.epam.pipeline.utils.condition.FieldType.KEY_VALUE;
+import static com.epam.pipeline.utils.condition.FieldType.NUMERIC;
+import static com.epam.pipeline.utils.condition.FieldType.STRING;
+import static com.epam.pipeline.utils.condition.FieldType.TAGS;
 
 /**
  * Filterable fields available in compute quota rule expressions.
@@ -43,11 +47,11 @@ import static com.epam.pipeline.entity.quota.FieldType.TAGS;
  * which needs user-group data loaded from the Cloud Pipeline API) are intentionally
  * absent here and handled by the evaluator in the monitoring service directly.
  */
-public enum RunField {
+public enum PipelineRunField implements SubjectEntityField<PipelineRun> {
 
     /** Numeric run identifier. Expression names: {@code run.id}, {@code id}. */
     RUN_ID(NUMERIC,
-            run -> str(run.getId()),
+        run -> str(run.getId()),
             false,
             "run.id", "id"),
 
@@ -56,7 +60,7 @@ public enum RunField {
      * Comparison is case-insensitive. Expression names: {@code run.status}, {@code status}.
      */
     STATUS(ENUM,
-            run -> run.getStatus() != null ? run.getStatus().name() : null,
+        run -> run.getStatus() != null ? run.getStatus().name() : null,
             false,
             "run.status", "status"),
 
@@ -65,13 +69,13 @@ public enum RunField {
      * Expression name: {@code node.type}.
      */
     INSTANCE_TYPE(STRING,
-            run -> instance(run) != null ? instance(run).getNodeType() : null,
+        run -> instance(run) != null ? instance(run).getNodeType() : null,
             false,
             "node.type"),
 
     /** Root disk size of the node in GB. Expression name: {@code node.disk}. */
     NODE_DISK(NUMERIC,
-            run -> instance(run) != null ? str(instance(run).getNodeDisk()) : null,
+        run -> instance(run) != null ? str(instance(run).getNodeDisk()) : null,
             false,
             "node.disk"),
 
@@ -83,7 +87,7 @@ public enum RunField {
 
     /** Numeric identifier of the pipeline the run belongs to. Expression name: {@code pipeline.id}. */
     PIPELINE_ID(NUMERIC,
-            run -> str(run.getPipelineId()),
+        run -> str(run.getPipelineId()),
             false,
             "pipeline.id"),
 
@@ -107,7 +111,7 @@ public enum RunField {
      * Accepts {@code true} or {@code false}. Expression names: {@code run.spot}, {@code spot}.
      */
     SPOT(BOOLEAN,
-            run -> instance(run) != null ? str(instance(run).getSpot()) : null,
+        run -> instance(run) != null ? str(instance(run).getSpot()) : null,
             false,
             "run.spot", "spot"),
 
@@ -116,7 +120,7 @@ public enum RunField {
      * Expression names: {@code run.region_id}, {@code region_id}.
      */
     REGION_ID(NUMERIC,
-            run -> instance(run) != null ? str(instance(run).getCloudRegionId()) : null,
+        run -> instance(run) != null ? str(instance(run).getCloudRegionId()) : null,
             false,
             "run.region_id", "region_id"),
 
@@ -125,7 +129,7 @@ public enum RunField {
      * {@code run.tag = IDLE} is true when the run carries a tag whose key equals {@code IDLE}
      * (comparison is case-insensitive).
      * <p>
-     * Supports duration: when {@link QuotaFilterExpression#getDuration()} is set on the leaf node,
+     * Supports duration: when {@link ConditionExpression#getDuration()} is set on the leaf node,
      * the companion tag {@code <tagName>_date} (e.g. {@code IDLE_date}) is read to determine
      * how long the tag has been continuously present, and the leaf only matches if that elapsed
      * time meets or exceeds the required duration in hours.
@@ -133,7 +137,7 @@ public enum RunField {
      * Expression names: {@code run.tag}, {@code tag}.
      */
     TAG(TAGS,
-            run -> run.getTags() != null ? String.join(",", run.getTags().keySet()) : "",
+        run -> run.getTags() != null ? String.join(",", run.getTags().keySet()) : "",
             true,
             "run.tag", "tag"),
 
@@ -142,10 +146,34 @@ public enum RunField {
      * Evaluated by the monitoring service using cached user-group data.
      * Expression names: {@code run.owner.group}, {@code owner.group}.
      */
-    OWNER_GROUP(GROUPS,
-            AbstractSecuredEntity::getOwner,
+    OWNER_AUTHORITIES(FieldType.USER_AUTHORITIES,
+            PipelineRun::getOwner,
             false,
-            "run.owner.group", "owner.group");
+            "run.owner.authorities", "owner.authorities"),
+
+    /**
+     * Matches against the run's pipeline parameters.
+     * Expression value is {@code <name>} (parameter present) or {@code <name>=<valuePattern>}
+     * (parameter present with value matching a wildcard pattern).
+     * Comparison is case-insensitive. Expression names: {@code run.parameter}, {@code parameter}.
+     */
+    PARAMETER(KEY_VALUE,
+            null,
+            PipelineRunField::parametersToMap,
+            false,
+            "run.parameter", "parameter"),
+
+    /**
+     * Matches against the run's environment variables.
+     * Expression value is {@code <name>} (variable present) or {@code <name>=<valuePattern>}
+     * (variable present with value matching a wildcard pattern).
+     * Comparison is case-insensitive. Expression names: {@code run.env_var}, {@code env_var}.
+     */
+    ENV_VAR(KEY_VALUE,
+            null,
+            PipelineRunField::envVarsToMap,
+            false,
+            "run.env_var", "env_var");
 
     /** Value type that governs which operators are valid and how comparisons are performed. */
     @Getter
@@ -154,30 +182,65 @@ public enum RunField {
     /** Extracts the field's string representation from a run for comparison against the rule value. */
     private final Function<PipelineRun, String> extractor;
 
+    /** Extracts the key-value map from a run; non-null only for {@link FieldType#KEY_VALUE} fields. */
+    private final Function<PipelineRun, Map<String, String>> mapExtractor;
+
     /**
      * Whether this field supports the duration gate on a filter expression leaf.
-     * When {@code true}, a non-null {@link QuotaFilterExpression#getDuration()} triggers a check against
+     * When {@code true}, a non-null {@link ConditionExpression#getDuration()} triggers a check against
      * the companion {@code <tagName>_date} tag instead of a plain boolean match.
      * Currently only {@link #TAG} returns {@code true}.
      */
     @Getter
     private final boolean supportsDuration;
 
-    /** One or more names by which this field can be referenced in a rule expression (e.g. {@code run.id}, {@code id}). */
+    /** Expression names that reference this field in a rule expression, e.g. {@code run.id}, {@code id}. */
     private final String[] displayNames;
 
-    RunField(final FieldType type,
-             final Function<PipelineRun, String> extractor,
-             final boolean supportsDuration,
-             final String... displayNames) {
+    PipelineRunField(final FieldType type,
+                     final Function<PipelineRun, String> extractor,
+                     final boolean supportsDuration,
+                     final String... displayNames) {
+        this(type, extractor, null, supportsDuration, displayNames);
+    }
+
+    PipelineRunField(final FieldType type,
+                     final Function<PipelineRun, String> extractor,
+                     final Function<PipelineRun, Map<String, String>> mapExtractor,
+                     final boolean supportsDuration,
+                     final String... displayNames) {
         this.type = type;
         this.extractor = extractor;
+        this.mapExtractor = mapExtractor;
         this.supportsDuration = supportsDuration;
         this.displayNames = displayNames;
     }
 
     public String extract(final PipelineRun run) {
-        return extractor.apply(run);
+        return extractor != null ? extractor.apply(run) : null;
+    }
+
+    @Override
+    public Map<String, String> extractMap(final PipelineRun run) {
+        return mapExtractor != null ? mapExtractor.apply(run) : Collections.emptyMap();
+    }
+
+    private static Map<String, String> parametersToMap(final PipelineRun run) {
+        final List<PipelineRunParameter> params = run.getPipelineRunParameters();
+        if (params == null) {
+            return Collections.emptyMap();
+        }
+        return params.stream()
+                .filter(p -> p.getName() != null)
+                .collect(Collectors.toMap(
+                        PipelineRunParameter::getName,
+                    p -> p.getValue() != null ? p.getValue() : "",
+                    (a, b) -> a));
+    }
+
+    private static Map<String, String> envVarsToMap(final PipelineRun run) {
+        final Map<String, String> envVars = run.getEnvVars();
+        return envVars != null ? envVars : Collections.emptyMap();
     }
 
     /** All expression names that resolve to this field. */
@@ -185,11 +248,11 @@ public enum RunField {
         return Arrays.asList(displayNames);
     }
 
-    private static final Map<String, RunField> BY_DISPLAY_NAME;
+    private static final Map<String, PipelineRunField> BY_DISPLAY_NAME;
 
     static {
-        final Map<String, RunField> map = new HashMap<>();
-        for (final RunField f : values()) {
+        final Map<String, PipelineRunField> map = new HashMap<>();
+        for (final PipelineRunField f : values()) {
             for (final String name : f.displayNames) {
                 map.put(name, f);
             }
@@ -202,7 +265,7 @@ public enum RunField {
      * Returns Optional rather than throwing so callers can check for monitoring-service
      * specific fields (like owner.group) before deciding how to proceed.
      */
-    public static Optional<RunField> findByDisplayName(final String name) {
+    public static Optional<PipelineRunField> findByDisplayName(final String name) {
         return Optional.ofNullable(BY_DISPLAY_NAME.get(name));
     }
 

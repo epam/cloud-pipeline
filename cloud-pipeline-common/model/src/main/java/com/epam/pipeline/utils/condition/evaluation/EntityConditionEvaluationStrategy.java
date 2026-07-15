@@ -14,30 +14,33 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.monitor.monitoring.quota;
+package com.epam.pipeline.utils.condition.evaluation;
 
-import com.epam.pipeline.entity.pipeline.PipelineRun;
-import com.epam.pipeline.entity.quota.QuotaFilterExpression;
+
+import com.epam.pipeline.utils.condition.ConditionExpression;
 
 import java.time.LocalDateTime;
 
 /**
- * Strategy for evaluating a single LOGICAL {@link QuotaFilterExpression} leaf node against a run.
+ * Strategy for evaluating a single LOGICAL {@link ConditionExpression} leaf node against a
+ * subject of type {@code T}.
  *
- * Each implementation encapsulates the field-specific extraction, operator validation,
+ * <p>Each implementation encapsulates the field-specific extraction, operator validation,
  * and (where applicable) temporal duration check. The evaluator builds a registry of
  * strategies at startup — adding support for a new field requires only a new implementation
  * and a registration entry, with no changes to the evaluator itself.
+ *
+ * @param <T> the subject type being evaluated (e.g. {@code PipelineRun})
  */
 @FunctionalInterface
-interface LeafEvaluationStrategy {
+public interface EntityConditionEvaluationStrategy<T> {
 
     /**
-     * @param node the LOGICAL leaf node to evaluate
-     * @param run  the run being tested
-     * @param now  reference instant used for duration calculations
-     * @return {@code true} when the run satisfies the leaf condition
+     * @param node    the LOGICAL leaf node to evaluate
+     * @param subject the domain object being tested
+     * @param now     reference instant used for duration calculations
+     * @return {@code true} when the subject satisfies the leaf condition
      * @throws IllegalArgumentException when the field or operator is invalid
      */
-    boolean evaluate(QuotaFilterExpression node, PipelineRun run, LocalDateTime now);
+    boolean evaluate(ConditionExpression node, T subject, LocalDateTime now);
 }

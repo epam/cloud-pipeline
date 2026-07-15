@@ -16,6 +16,17 @@
 
 package com.epam.pipeline.entity.quota;
 
+import com.epam.pipeline.entity.pipeline.PipelineRun;
+import lombok.Getter;
+
+@Getter
 public enum ComputeQuotaStrategyType {
-    RUN_STATE
+    RUN_STATE(PipelineRun.class);
+
+    private final Class<PipelineRun> entityClass;
+
+    ComputeQuotaStrategyType(Class<PipelineRun> entityClass) {
+        this.entityClass = entityClass;
+    }
+
 }
