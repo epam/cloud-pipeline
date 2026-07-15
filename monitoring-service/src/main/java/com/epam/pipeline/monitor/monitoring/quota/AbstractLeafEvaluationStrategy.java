@@ -16,21 +16,20 @@
 
 package com.epam.pipeline.monitor.monitoring.quota;
 
-import com.epam.pipeline.entity.pipeline.PipelineRun;
-import com.epam.pipeline.entity.quota.QuotaFilterExpression;
+import com.epam.pipeline.entity.quota.ConditionExpression;
 import com.epam.pipeline.entity.quota.ConditionOperator;
-import com.epam.pipeline.entity.quota.RunField;
+import com.epam.pipeline.entity.quota.SubjectEntityField;
 
 import java.time.LocalDateTime;
 
 /**
- * Abstract base for all {@link RunField}-based {@link LeafEvaluationStrategy} implementations.
+ * Abstract base for all {@link SubjectEntityField}-based {@link LeafEvaluationStrategy} implementations.
  *
- * <p>Handles the common plumbing for every leaf node backed by a {@link RunField}:
+ * <p>Handles the common plumbing for every leaf node backed by a {@link SubjectEntityField}:
  * <ol>
  *   <li>Parses the operator symbol.</li>
- *   <li>Validates it against the operator set declared by the field's {@link RunField#getType()}.</li>
- *   <li>Extracts the field value from the run.</li>
+ *   <li>Validates it against the operator set declared by the field's {@link SubjectEntityField#getType()}.</li>
+ *   <li>Extracts the field value from the subject.</li>
  *   <li>Short-circuits to {@code false} when the extracted value is {@code null}.</li>
  *   <li>Delegates the actual comparison to {@link #doEvaluate}.</li>
  * </ol>
@@ -38,32 +37,34 @@ import java.time.LocalDateTime;
  * <p>Subclasses provide only the type-specific comparison logic in {@link #doEvaluate}.
  * Subclasses that need additional runtime context (e.g. duration gate) may override
  * {@link #evaluate} and call {@code super.evaluate} for the boolean part.
+ *
+ * @param <T> the subject type being evaluated
  */
-abstract class StandardLeafEvaluationStrategy implements LeafEvaluationStrategy {
+abstract class AbstractLeafEvaluationStrategy<T> implements LeafEvaluationStrategy<T> {
 
-    protected final RunField field;
+    protected final SubjectEntityField<T> field;
 
-    StandardLeafEvaluationStrategy(final RunField field) {
+    AbstractLeafEvaluationStrategy(final SubjectEntityField<T> field) {
         this.field = field;
     }
 
     @Override
-    public boolean evaluate(final QuotaFilterExpression node, final PipelineRun run, final LocalDateTime now) {
-        final ConditionOperator op = ConditionOperator.fromSymbol(node.getOperand());
+    public boolean evaluate(final ConditionExpression condition, final T subject, final LocalDateTime now) {
+        final ConditionOperator op = ConditionOperator.fromSymbol(condition.getOperand());
         if (!field.getType().supports(op)) {
             throw new IllegalArgumentException(
-                    "Operator '" + op.getSymbol() + "' not supported for field '" + node.getField() + "'");
+                    "Operator '" + op.getSymbol() + "' not supported for field '" + condition.getField() + "'");
         }
-        final String runValue = field.extract(run);
-        if (runValue == null) {
+        final String subjectValue = field.extract(subject);
+        if (subjectValue == null) {
             return false;
         }
-        return doEvaluate(op, runValue, node.getValue());
+        return doEvaluate(op, subjectValue, condition.getValue());
     }
 
     /**
      * Performs the type-specific comparison. Called only after the operator has been
-     * validated and {@code runValue} has been confirmed non-null.
+     * validated and {@code subjectValue} has been confirmed non-null.
      */
-    protected abstract boolean doEvaluate(ConditionOperator op, String runValue, String expressionValue);
+    protected abstract boolean doEvaluate(ConditionOperator op, String subjectValue, String expressionValue);
 }

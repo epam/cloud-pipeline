@@ -18,24 +18,23 @@ package com.epam.pipeline.monitor.monitoring.quota;
 
 import com.epam.pipeline.entity.quota.ConditionOperator;
 import com.epam.pipeline.entity.quota.FieldType;
-import com.epam.pipeline.entity.quota.RunField;
-
-import java.util.EnumSet;
-import java.util.Set;
+import com.epam.pipeline.entity.quota.SubjectEntityField;
 
 /**
  * Evaluates {@link FieldType#ENUM} leaf nodes using case-insensitive name equality
  * (e.g. {@code run.status = RUNNING} matches regardless of capitalisation).
  * Supports {@code =} and {@code !=}.
+ *
+ * @param <T> the subject type being evaluated
  */
-class EnumLeafEvaluationStrategy extends StandardLeafEvaluationStrategy {
+class EnumLeafEvaluationStrategy<T> extends AbstractLeafEvaluationStrategy<T> {
 
-    EnumLeafEvaluationStrategy(final RunField field) {
+    EnumLeafEvaluationStrategy(final SubjectEntityField<T> field) {
         super(field);
     }
 
     @Override
-    protected boolean doEvaluate(final ConditionOperator op, final String runValue, final String expressionValue) {
-        return (op == ConditionOperator.EQUALS) == runValue.equalsIgnoreCase(expressionValue);
+    protected boolean doEvaluate(final ConditionOperator op, final String subjectValue, final String expressionValue) {
+        return (op == ConditionOperator.EQUALS) == subjectValue.equalsIgnoreCase(expressionValue);
     }
 }

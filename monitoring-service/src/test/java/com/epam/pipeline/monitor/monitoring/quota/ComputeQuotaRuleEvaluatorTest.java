@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.monitor.monitoring.quota;
 
-import com.epam.pipeline.entity.filter.FilterExpressionType;
+import com.epam.pipeline.entity.quota.ConditionType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
@@ -24,7 +24,7 @@ import com.epam.pipeline.entity.quota.ComputeQuotaAction;
 import com.epam.pipeline.entity.quota.ComputeQuotaActionType;
 import com.epam.pipeline.entity.quota.ComputeQuotaRule;
 import com.epam.pipeline.entity.quota.ComputeQuotaStrategyType;
-import com.epam.pipeline.entity.quota.QuotaFilterExpression;
+import com.epam.pipeline.entity.quota.ConditionExpression;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
@@ -88,8 +88,15 @@ class ComputeQuotaRuleEvaluatorTest {
     private static final String STATUS_RUNNING_LOWER = "running";
     private static final String SPOT_TRUE            = "true";
 
+    private static final int DURATION_48H     = 48;
+    private static final int DURATION_72H     = 72;
+    private static final int HOURS_50_ELAPSED = 50;
+    private static final int HOURS_80_ELAPSED = 80;
+    private static final int ACTION_VALUE     = 100;
+
     private final UserGroupHolder userGroupHolder = mock(UserGroupHolder.class);
-    private final ComputeQuotaRuleEvaluator evaluator = new ComputeQuotaRuleEvaluator(userGroupHolder);
+    private final ComputeQuotaRuleEvaluator<PipelineRun> evaluator =
+            ComputeQuotaRuleEvaluator.forPipelineRun(userGroupHolder);
 
     // ARRAY
 
@@ -325,7 +332,7 @@ class ComputeQuotaRuleEvaluatorTest {
         final PipelineRun run = mock(PipelineRun.class);
         when(run.getTags()).thenReturn(Collections.singletonMap(TAG_IDLE, SPOT_TRUE));
         when(run.getInstance()).thenReturn(instance(NODE_TYPE_M5_XLARGE, false, REGION_1));
-        assertTrue(evaluator.matches(rule(or(
+        assertTrue(evaluator.matches(rule(orExpr(
                 logical(FIELD_RUN_TAG, EQ, TAG_IDLE),
                 logical(FIELD_RUN_SPOT, EQ, SPOT_TRUE)
         )), run));
@@ -336,7 +343,7 @@ class ComputeQuotaRuleEvaluatorTest {
         final PipelineRun run = mock(PipelineRun.class);
         when(run.getTags()).thenReturn(Collections.emptyMap());
         when(run.getInstance()).thenReturn(instance(NODE_TYPE_M5_XLARGE, false, REGION_1));
-        assertFalse(evaluator.matches(rule(or(
+        assertFalse(evaluator.matches(rule(orExpr(
                 logical(FIELD_RUN_TAG, EQ, TAG_IDLE),
                 logical(FIELD_RUN_SPOT, EQ, SPOT_TRUE)
         )), run));
@@ -364,7 +371,7 @@ class ComputeQuotaRuleEvaluatorTest {
         final PipelineRun run = runWithInstance(instance(NODE_TYPE_C5_XLARGE, true, REGION_1));
         final ComputeQuotaRule rule = rule(
                 logical(FIELD_RUN_SPOT, EQ, SPOT_TRUE),
-                or(logical(FIELD_NODE_TYPE, EQ, PATTERN_M5_WILDCARD),
+                orExpr(logical(FIELD_NODE_TYPE, EQ, PATTERN_M5_WILDCARD),
                         logical(FIELD_NODE_TYPE, EQ, PATTERN_C5_WILDCARD))
         );
         assertFalse(evaluator.matches(rule, run));
@@ -397,7 +404,7 @@ class ComputeQuotaRuleEvaluatorTest {
     }
 
     @Test
-    void shouldNotMatchRunWhenQuotaFilterExpressionFailsRegardlessOfExclude() {
+    void shouldNotMatchRunWhenConditionExpressionFailsRegardlessOfExclude() {
         final PipelineRun run = runWithInstance(instance(NODE_TYPE_M5_XLARGE, false, REGION_2));
         assertFalse(evaluator.matches(rule(
                 logical(FIELD_RUN_SPOT, EQ, SPOT_TRUE),
@@ -466,7 +473,7 @@ class ComputeQuotaRuleEvaluatorTest {
     @Test
     void shouldMatchRunWhenOwnerBelongsToAnyGroupViaOrTree() {
         when(userGroupHolder.getGroupsForUser(OWNER_USER1)).thenReturn(Collections.singleton(GROUP_TEAM_B));
-        assertTrue(evaluator.matches(rule(or(
+        assertTrue(evaluator.matches(rule(orExpr(
                 logical(FIELD_OWNER_GROUP, EQ, GROUP_TEAM_A),
                 logical(FIELD_OWNER_GROUP, EQ, GROUP_TEAM_B)
         )), runWithOwner(OWNER_USER1)));
@@ -475,7 +482,7 @@ class ComputeQuotaRuleEvaluatorTest {
     @Test
     void shouldNotMatchRunWhenOwnerBelongsToNeitherGroupInOrTree() {
         when(userGroupHolder.getGroupsForUser(OWNER_USER1)).thenReturn(Collections.emptySet());
-        assertFalse(evaluator.matches(rule(or(
+        assertFalse(evaluator.matches(rule(orExpr(
                 logical(FIELD_OWNER_GROUP, EQ, GROUP_TEAM_A),
                 logical(FIELD_OWNER_GROUP, EQ, GROUP_TEAM_B)
         )), runWithOwner(OWNER_USER1)));
@@ -495,9 +502,9 @@ class ComputeQuotaRuleEvaluatorTest {
     @Test
     void shouldMatchRunWhenTagPresentAndDurationExceeded() {
         final LocalDateTime now = LocalDateTime.of(2026, 7, 13, 12, 0, 0);
-        final LocalDateTime tagApplied = now.minusHours(50);
+        final LocalDateTime tagApplied = now.minusHours(HOURS_50_ELAPSED);
         final PipelineRun run = runWithTagAndDate(TAG_IDLE, tagApplied);
-        assertTrue(evaluator.matches(rule(logicalWithDuration(FIELD_RUN_TAG, EQ, TAG_IDLE, 48)), run, now));
+        assertTrue(evaluator.matches(rule(logicalWithDuration(FIELD_RUN_TAG, EQ, TAG_IDLE, DURATION_48H)), run, now));
     }
 
     @Test
@@ -505,7 +512,7 @@ class ComputeQuotaRuleEvaluatorTest {
         final LocalDateTime now = LocalDateTime.of(2026, 7, 13, 12, 0, 0);
         final LocalDateTime tagApplied = now.minusHours(24);
         final PipelineRun run = runWithTagAndDate(TAG_IDLE, tagApplied);
-        assertFalse(evaluator.matches(rule(logicalWithDuration(FIELD_RUN_TAG, EQ, TAG_IDLE, 48)), run, now));
+        assertFalse(evaluator.matches(rule(logicalWithDuration(FIELD_RUN_TAG, EQ, TAG_IDLE, DURATION_48H)), run, now));
     }
 
     @Test
@@ -513,32 +520,32 @@ class ComputeQuotaRuleEvaluatorTest {
         final LocalDateTime now = LocalDateTime.of(2026, 7, 13, 12, 0, 0);
         final LocalDateTime tagApplied = now.minusHours(48);
         final PipelineRun run = runWithTagAndDate(TAG_IDLE, tagApplied);
-        assertTrue(evaluator.matches(rule(logicalWithDuration(FIELD_RUN_TAG, EQ, TAG_IDLE, 48)), run, now));
+        assertTrue(evaluator.matches(rule(logicalWithDuration(FIELD_RUN_TAG, EQ, TAG_IDLE, DURATION_48H)), run, now));
     }
 
     @Test
     void shouldNotMatchRunWhenTagAbsentAndDurationSet() {
         final LocalDateTime now = LocalDateTime.of(2026, 7, 13, 12, 0, 0);
-        final PipelineRun run = runWithTags(Collections.singletonMap(TAG_LONG_RUNNING, "true"));
-        assertFalse(evaluator.matches(rule(logicalWithDuration(FIELD_RUN_TAG, EQ, TAG_IDLE, 48)), run, now));
+        final PipelineRun run = runWithTags(Collections.singletonMap(TAG_LONG_RUNNING, SPOT_TRUE));
+        assertFalse(evaluator.matches(rule(logicalWithDuration(FIELD_RUN_TAG, EQ, TAG_IDLE, DURATION_48H)), run, now));
     }
 
     @Test
     void shouldNotMatchRunWhenTagPresentButDateTagAbsent() {
         final LocalDateTime now = LocalDateTime.of(2026, 7, 13, 12, 0, 0);
         // IDLE tag present but no IDLE_date companion tag
-        final PipelineRun run = runWithTags(Collections.singletonMap(TAG_IDLE, "true"));
-        assertFalse(evaluator.matches(rule(logicalWithDuration(FIELD_RUN_TAG, EQ, TAG_IDLE, 48)), run, now));
+        final PipelineRun run = runWithTags(Collections.singletonMap(TAG_IDLE, SPOT_TRUE));
+        assertFalse(evaluator.matches(rule(logicalWithDuration(FIELD_RUN_TAG, EQ, TAG_IDLE, DURATION_48H)), run, now));
     }
 
     @Test
     void shouldNotMatchRunWhenDateTagValueIsUnparseable() {
         final LocalDateTime now = LocalDateTime.of(2026, 7, 13, 12, 0, 0);
         final Map<String, String> tags = new HashMap<>();
-        tags.put(TAG_IDLE, "true");
+        tags.put(TAG_IDLE, SPOT_TRUE);
         tags.put(TAG_IDLE + TagLeafEvaluationStrategy.DATE_SUFFIX, "not-a-date");
         final PipelineRun run = runWithTags(tags);
-        assertFalse(evaluator.matches(rule(logicalWithDuration(FIELD_RUN_TAG, EQ, TAG_IDLE, 48)), run, now));
+        assertFalse(evaluator.matches(rule(logicalWithDuration(FIELD_RUN_TAG, EQ, TAG_IDLE, DURATION_48H)), run, now));
     }
 
     @Test
@@ -553,7 +560,7 @@ class ComputeQuotaRuleEvaluatorTest {
         // run.spot = true with duration set: boolean check passes, duration gate is skipped for non-TAG fields
         final LocalDateTime now = LocalDateTime.of(2026, 7, 13, 12, 0, 0);
         final PipelineRun run = runWithInstance(instance(NODE_TYPE_M5_XLARGE, true, REGION_1));
-        final QuotaFilterExpression leaf = logicalWithDuration(FIELD_RUN_SPOT, EQ, SPOT_TRUE, 48);
+        final ConditionExpression leaf = logicalWithDuration(FIELD_RUN_SPOT, EQ, SPOT_TRUE, DURATION_48H);
         assertTrue(evaluator.matches(rule(leaf), run, now));
     }
 
@@ -561,16 +568,16 @@ class ComputeQuotaRuleEvaluatorTest {
     void shouldMatchMultipleTagsWithDurationViaAndExpression() {
         final LocalDateTime now = LocalDateTime.of(2026, 7, 13, 12, 0, 0);
         final Map<String, String> tags = new HashMap<>();
-        tags.put(TAG_IDLE, "true");
+        tags.put(TAG_IDLE, SPOT_TRUE);
         tags.put(TAG_IDLE + TagLeafEvaluationStrategy.DATE_SUFFIX,
-                formatDate(now.minusHours(50)));
-        tags.put(TAG_LONG_RUNNING, "true");
+                formatDate(now.minusHours(HOURS_50_ELAPSED)));
+        tags.put(TAG_LONG_RUNNING, SPOT_TRUE);
         tags.put(TAG_LONG_RUNNING + TagLeafEvaluationStrategy.DATE_SUFFIX,
-                formatDate(now.minusHours(80)));
+                formatDate(now.minusHours(HOURS_80_ELAPSED)));
         final PipelineRun run = runWithTags(tags);
         assertTrue(evaluator.matches(rule(and(
-                logicalWithDuration(FIELD_RUN_TAG, EQ, TAG_IDLE, 48),
-                logicalWithDuration(FIELD_RUN_TAG, EQ, TAG_LONG_RUNNING, 72)
+                logicalWithDuration(FIELD_RUN_TAG, EQ, TAG_IDLE, DURATION_48H),
+                logicalWithDuration(FIELD_RUN_TAG, EQ, TAG_LONG_RUNNING, DURATION_72H)
         )), run, now));
     }
 
@@ -578,56 +585,56 @@ class ComputeQuotaRuleEvaluatorTest {
     void shouldNotMatchAndExpressionWhenOnlyOneTagMeetsDuration() {
         final LocalDateTime now = LocalDateTime.of(2026, 7, 13, 12, 0, 0);
         final Map<String, String> tags = new HashMap<>();
-        tags.put(TAG_IDLE, "true");
+        tags.put(TAG_IDLE, SPOT_TRUE);
         tags.put(TAG_IDLE + TagLeafEvaluationStrategy.DATE_SUFFIX,
-                formatDate(now.minusHours(50)));
-        tags.put(TAG_LONG_RUNNING, "true");
+                formatDate(now.minusHours(HOURS_50_ELAPSED)));
+        tags.put(TAG_LONG_RUNNING, SPOT_TRUE);
         tags.put(TAG_LONG_RUNNING + TagLeafEvaluationStrategy.DATE_SUFFIX,
                 formatDate(now.minusHours(10)));
         final PipelineRun run = runWithTags(tags);
         assertFalse(evaluator.matches(rule(and(
-                logicalWithDuration(FIELD_RUN_TAG, EQ, TAG_IDLE, 48),
-                logicalWithDuration(FIELD_RUN_TAG, EQ, TAG_LONG_RUNNING, 72)
+                logicalWithDuration(FIELD_RUN_TAG, EQ, TAG_IDLE, DURATION_48H),
+                logicalWithDuration(FIELD_RUN_TAG, EQ, TAG_LONG_RUNNING, DURATION_72H)
         )), run, now));
     }
 
-    private static QuotaFilterExpression logical(final String field, final String operand, final String value) {
-        final QuotaFilterExpression expr = new QuotaFilterExpression();
-        expr.setFilterExpressionType(FilterExpressionType.LOGICAL);
+    private static ConditionExpression logical(final String field, final String operand, final String value) {
+        final ConditionExpression expr = new ConditionExpression();
+        expr.setType(ConditionType.LOGICAL);
         expr.setField(field);
         expr.setOperand(operand);
         expr.setValue(value);
         return expr;
     }
 
-    private static QuotaFilterExpression and(final QuotaFilterExpression... children) {
-        final QuotaFilterExpression expr = new QuotaFilterExpression();
-        expr.setFilterExpressionType(FilterExpressionType.AND);
+    private static ConditionExpression and(final ConditionExpression... children) {
+        final ConditionExpression expr = new ConditionExpression();
+        expr.setType(ConditionType.AND);
         expr.setExpressions(Arrays.asList(children));
         return expr;
     }
 
-    private static QuotaFilterExpression or(final QuotaFilterExpression... children) {
-        final QuotaFilterExpression expr = new QuotaFilterExpression();
-        expr.setFilterExpressionType(FilterExpressionType.OR);
+    private static ConditionExpression orExpr(final ConditionExpression... children) {
+        final ConditionExpression expr = new ConditionExpression();
+        expr.setType(ConditionType.OR);
         expr.setExpressions(Arrays.asList(children));
         return expr;
     }
 
-    private static ComputeQuotaRule rule(final QuotaFilterExpression filter) {
+    private static ComputeQuotaRule rule(final ConditionExpression filter) {
         return rule(filter, null);
     }
 
-    private static ComputeQuotaRule rule(final QuotaFilterExpression filter, final QuotaFilterExpression exclude) {
+    private static ComputeQuotaRule rule(final ConditionExpression filter, final ConditionExpression exclude) {
         return ComputeQuotaRule.builder()
                 .id(1L)
                 .name("test-rule")
                 .strategyType(ComputeQuotaStrategyType.RUN_STATE)
-                .filterExpression(filter)
-                .excludeExpression(exclude)
+                .statement(filter)
+                .filter(exclude)
                 .action(ComputeQuotaAction.builder()
                         .type(ComputeQuotaActionType.DEDUCTION)
-                        .value(100)
+                        .value(ACTION_VALUE)
                         .build())
                 .build();
     }
@@ -666,16 +673,16 @@ class ComputeQuotaRuleEvaluatorTest {
         return i;
     }
 
-    private static QuotaFilterExpression logicalWithDuration(final String field, final String operand,
+    private static ConditionExpression logicalWithDuration(final String field, final String operand,
                                                         final String value, final int duration) {
-        final QuotaFilterExpression expr = logical(field, operand, value);
+        final ConditionExpression expr = logical(field, operand, value);
         expr.setDuration(duration);
         return expr;
     }
 
     private static PipelineRun runWithTagAndDate(final String tagName, final LocalDateTime tagApplied) {
         final Map<String, String> tags = new HashMap<>();
-        tags.put(tagName, "true");
+        tags.put(tagName, SPOT_TRUE);
         tags.put(tagName + TagLeafEvaluationStrategy.DATE_SUFFIX, formatDate(tagApplied));
         return runWithTags(tags);
     }

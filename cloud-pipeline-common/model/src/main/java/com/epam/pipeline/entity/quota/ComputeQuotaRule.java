@@ -31,8 +31,8 @@ public class ComputeQuotaRule {
     private String name;
     private String description;
     private ComputeQuotaStrategyType strategyType;
-    private QuotaFilterExpression filterExpression;
+    private ConditionExpression statement;
     /** Optional: runs matching this expression are excluded even if they match filterExpression. */
-    private QuotaFilterExpression excludeExpression;
+    private ConditionExpression filter;
     private ComputeQuotaAction action;
 }

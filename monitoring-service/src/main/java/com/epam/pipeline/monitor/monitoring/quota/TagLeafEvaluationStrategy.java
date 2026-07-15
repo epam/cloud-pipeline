@@ -16,11 +16,10 @@
 
 package com.epam.pipeline.monitor.monitoring.quota;
 
-import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.quota.ConditionOperator;
 import com.epam.pipeline.entity.quota.FieldType;
-import com.epam.pipeline.entity.quota.QuotaFilterExpression;
-import com.epam.pipeline.entity.quota.RunField;
+import com.epam.pipeline.entity.quota.ConditionExpression;
+import com.epam.pipeline.entity.quota.SubjectEntityField;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
 
@@ -30,23 +29,26 @@ import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * Evaluates {@link FieldType#TAGS} leaf nodes, optionally applying a duration gate.
  *
  * <p><b>Boolean check</b> ({@link #doEvaluate}): {@code =} matches when the tag key is
- * present in the run's tag map; {@code !=} matches when absent. Comparison is
+ * present in the subject's tag map; {@code !=} matches when absent. Comparison is
  * case-insensitive. Supports {@code =} and {@code !=}.
  *
- * <p><b>Duration gate</b> (when {@link QuotaFilterExpression#getDuration()} is non-null):
+ * <p><b>Duration gate</b> (when {@link ConditionExpression#getDuration()} is non-null):
  * After the boolean check passes, the companion tag {@code <tagName>_date}
- * (e.g. {@code IDLE_date}) is read. Its value is parsed as
- * {@code yyyy-MM-dd HH:mm:ss.SSS} UTC. The leaf only matches if the elapsed time
+ * (e.g. {@code IDLE_date}) is read via the injected {@code tagsExtractor}. Its value is
+ * parsed as {@code yyyy-MM-dd HH:mm:ss.SSS} UTC. The leaf only matches if the elapsed time
  * {@code now − tagDate ≥ duration} hours. A missing or unparseable date tag returns
  * {@code false}.
+ *
+ * @param <T> the subject type being evaluated
  */
 @Slf4j
-class TagLeafEvaluationStrategy extends StandardLeafEvaluationStrategy {
+class TagLeafEvaluationStrategy<T> extends AbstractLeafEvaluationStrategy<T> {
 
     /** Suffix appended to a tag name to form the companion timestamp key (e.g. {@code IDLE_date}). */
     static final String DATE_SUFFIX = "_date";
@@ -54,44 +56,46 @@ class TagLeafEvaluationStrategy extends StandardLeafEvaluationStrategy {
     private static final DateTimeFormatter DATE_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
 
-    TagLeafEvaluationStrategy(final RunField field) {
+    private final Function<T, Map<String, String>> tagsExtractor;
+
+    TagLeafEvaluationStrategy(final SubjectEntityField<T> field, final Function<T, Map<String, String>> tagsExtractor) {
         super(field);
+        this.tagsExtractor = tagsExtractor;
     }
 
     @Override
-    protected boolean doEvaluate(final ConditionOperator op, final String runValue, final String expressionValue) {
-        return ConditionOperator.EQUALS.equals(op) == containsKey(runValue, expressionValue);
+    protected boolean doEvaluate(final ConditionOperator op, final String subjectValue,
+                                 final String expressionValue) {
+        return ConditionOperator.EQUALS.equals(op) == containsKey(subjectValue, expressionValue);
     }
 
     /** Adds the duration gate on top of the base boolean check. */
     @Override
-    public boolean evaluate(final QuotaFilterExpression node, final PipelineRun run, final LocalDateTime now) {
-        final boolean boolResult = super.evaluate(node, run, now);
-        if (!boolResult || node.getDuration() == null) {
+    public boolean evaluate(final ConditionExpression condition, final T subject, final LocalDateTime now) {
+        final boolean boolResult = super.evaluate(condition, subject, now);
+        if (!boolResult || condition.getDuration() == null) {
             return boolResult;
         }
-        return checkDuration(node, run, now);
+        return checkDuration(condition, subject, now);
     }
 
-    private boolean checkDuration(final QuotaFilterExpression node, final PipelineRun run,
-                                  final LocalDateTime now) {
-        final String dateTagKey = node.getValue() + DATE_SUFFIX;
-        final Map<String, String> tags = run.getTags();
+    private boolean checkDuration(final ConditionExpression condition, final T subject, final LocalDateTime now) {
+        final String dateTagKey = condition.getValue() + DATE_SUFFIX;
+        final Map<String, String> tags = tagsExtractor.apply(subject);
         if (MapUtils.isEmpty(tags)) {
             return false;
         }
         final String dateStr = tags.get(dateTagKey);
         if (dateStr == null) {
-            log.debug("Run {} has tag '{}' but companion date tag '{}' is absent — skipping duration check",
-                    run.getId(), node.getValue(), dateTagKey);
+            log.debug("Subject has tag '{}' but companion date tag '{}' is absent — skipping duration check",
+                    condition.getValue(), dateTagKey);
             return false;
         }
         try {
             final LocalDateTime tagSince = LocalDateTime.parse(dateStr, DATE_FORMATTER);
-            return ChronoUnit.HOURS.between(tagSince, now) >= node.getDuration();
+            return ChronoUnit.HOURS.between(tagSince, now) >= condition.getDuration();
         } catch (DateTimeParseException e) {
-            log.warn("Cannot parse date tag '{}' value '{}' on run {}: {}",
-                    dateTagKey, dateStr, run.getId(), e.getMessage());
+            log.warn("Cannot parse date tag '{}' value '{}': {}", dateTagKey, dateStr, e.getMessage());
             return false;
         }
     }

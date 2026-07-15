@@ -16,13 +16,13 @@
 
 package com.epam.pipeline.monitor.monitoring.quota;
 
-import com.epam.pipeline.entity.filter.FilterExpressionType;
+import com.epam.pipeline.entity.quota.ConditionType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.quota.ComputeQuotaRule;
-import com.epam.pipeline.entity.quota.QuotaFilterExpression;
-import com.epam.pipeline.entity.quota.RunField;
+import com.epam.pipeline.entity.quota.ConditionExpression;
+import com.epam.pipeline.entity.quota.PipelineRunField;
+import com.epam.pipeline.entity.quota.SubjectEntityField;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import java.time.LocalDateTime;
@@ -34,97 +34,107 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Evaluates a {@link ComputeQuotaRule} against a {@link PipelineRun} in memory by walking
+ * Evaluates a {@link ComputeQuotaRule} against a subject of type {@code T} in memory by walking
  * the filter and exclude expression trees and delegating each LOGICAL leaf to the appropriate
  * {@link LeafEvaluationStrategy}.
  *
- * <p>Strategies are registered at construction time in a field-name → strategy map, so adding
- * support for a new field requires only a new {@link LeafEvaluationStrategy} implementation
- * and a registration entry — no changes here.
+ * <p>Strategies are registered at construction time via a field-name → strategy map passed to
+ * the constructor. To evaluate rules against a new subject type, build a registry for that type
+ * and pass it in — no changes to this class are needed.
  *
- * <p>A run matches a rule when:
+ * <p>Use {@link #forPipelineRun(UserGroupHolder)} to obtain a ready-made instance for
+ * {@link PipelineRun} evaluation.
+ *
+ * <p>A subject matches a rule when:
  * <ol>
  *   <li>its {@code filterExpression} evaluates to {@code true}, AND</li>
  *   <li>its {@code excludeExpression} is {@code null} or evaluates to {@code false}.</li>
  * </ol>
+ *
+ * @param <T> the subject type to evaluate rules against
  */
 @Slf4j
-@Component
-public class ComputeQuotaRuleEvaluator {
+public class ComputeQuotaRuleEvaluator<T> {
 
-    private final Map<String, LeafEvaluationStrategy> leafStrategies;
+    private final Map<String, LeafEvaluationStrategy<T>> leafStrategies;
 
-    public ComputeQuotaRuleEvaluator(final UserGroupHolder userGroupHolder) {
-        this.leafStrategies = buildRegistry(userGroupHolder);
+    public ComputeQuotaRuleEvaluator(final Map<String, LeafEvaluationStrategy<T>> leafStrategies) {
+        this.leafStrategies = Collections.unmodifiableMap(new HashMap<>(leafStrategies));
     }
 
-    /** Evaluates the rule against the run using the current UTC time for duration checks. */
-    public boolean matches(final ComputeQuotaRule rule, final PipelineRun run) {
-        return matches(rule, run, LocalDateTime.now(ZoneOffset.UTC));
+    /**
+     * Creates an evaluator pre-configured for {@link PipelineRun} subjects, covering all
+     * {@link PipelineRunField} entries with their corresponding strategies.
+     */
+    public static ComputeQuotaRuleEvaluator<PipelineRun> forPipelineRun(final UserGroupHolder userGroupHolder) {
+        return new ComputeQuotaRuleEvaluator<>(buildPipelineRunRegistry(userGroupHolder));
     }
 
-    public boolean matches(final ComputeQuotaRule rule, final PipelineRun run, final LocalDateTime now) {
-        if (!evaluate(rule.getFilterExpression(), run, now)) {
+    /** Evaluates the rule against the subject using the current UTC time for duration checks. */
+    public boolean matches(final ComputeQuotaRule rule, final T subject) {
+        return matches(rule, subject, LocalDateTime.now(ZoneOffset.UTC));
+    }
+
+    public boolean matches(final ComputeQuotaRule rule, final T subject, final LocalDateTime now) {
+        if (!evaluate(rule.getStatement(), subject, now)) {
             return false;
         }
-        return Objects.isNull(rule.getExcludeExpression()) || !evaluate(rule.getExcludeExpression(), run, now);
+        return Objects.isNull(rule.getFilter())
+                || !evaluate(rule.getFilter(), subject, now);
     }
 
-    private boolean evaluate(final QuotaFilterExpression node, final PipelineRun run, final LocalDateTime now) {
-        if (Objects.isNull(node)) {
+    private boolean evaluate(final ConditionExpression condition, final T subject, final LocalDateTime now) {
+        if (Objects.isNull(condition)) {
             return false;
         }
         try {
-            return dispatch(node, run, now);
+            final ConditionType type = condition.getType();
+            Assert.notNull(type, "type must not be null");
+            switch (type) {
+                case AND:     return children(condition).stream().allMatch(child -> evaluate(child, subject, now));
+                case OR:      return children(condition).stream().anyMatch(child -> evaluate(child, subject, now));
+                case LOGICAL: return evaluateLeaf(condition, subject, now);
+                default: throw new IllegalArgumentException("Unknown type: '" + type + "'");
+            }
         } catch (IllegalArgumentException e) {
-            log.warn("Skipping expression node for run {}: {}", run.getId(), e.getMessage());
+            log.warn("Skipping expression condition: {}", e.getMessage());
             return false;
         }
     }
 
-    private boolean dispatch(final QuotaFilterExpression node, final PipelineRun run, final LocalDateTime now) {
-        final FilterExpressionType type = node.getFilterExpressionType();
-        Assert.notNull(type, "filterExpressionType must not be null");
-        switch (type) {
-            case AND:     return children(node).stream().allMatch(child -> evaluate(child, run, now));
-            case OR:      return children(node).stream().anyMatch(child -> evaluate(child, run, now));
-            case LOGICAL: return evaluateLeaf(node, run, now);
-            default: throw new IllegalArgumentException("Unknown filterExpressionType: '" + type + "'");
-        }
-    }
-
-    private boolean evaluateLeaf(final QuotaFilterExpression node, final PipelineRun run, final LocalDateTime now) {
-        final String fieldName = node.getField();
-        final LeafEvaluationStrategy strategy = leafStrategies.get(fieldName);
+    private boolean evaluateLeaf(final ConditionExpression condition, final T subject, final LocalDateTime now) {
+        final String fieldName = condition.getField();
+        final LeafEvaluationStrategy<T> strategy = leafStrategies.get(fieldName);
         Assert.notNull(strategy, "Unknown quota rule field: '" + fieldName + "'");
-        return strategy.evaluate(node, run, now);
+        return strategy.evaluate(condition, subject, now);
     }
 
-    private List<QuotaFilterExpression> children(final QuotaFilterExpression node) {
-        final List<QuotaFilterExpression> exprs = node.getExpressions();
+    private List<ConditionExpression> children(final ConditionExpression condition) {
+        final List<ConditionExpression> exprs = condition.getExpressions();
         return exprs != null ? exprs : Collections.emptyList();
     }
 
-    private static Map<String, LeafEvaluationStrategy> buildRegistry(final UserGroupHolder userGroupHolder) {
-        final Map<String, LeafEvaluationStrategy> map = new HashMap<>();
-        for (final RunField field : RunField.values()) {
-            final LeafEvaluationStrategy strategy = resolveStrategy(field, userGroupHolder);
+    private static Map<String, LeafEvaluationStrategy<PipelineRun>> buildPipelineRunRegistry(
+            final UserGroupHolder userGroupHolder) {
+        final Map<String, LeafEvaluationStrategy<PipelineRun>> map = new HashMap<>();
+        for (final PipelineRunField field : PipelineRunField.values()) {
+            final LeafEvaluationStrategy<PipelineRun> strategy = resolveEntityFieldStrategy(field, userGroupHolder);
             for (final String name : field.getDisplayNames()) {
                 map.put(name, strategy);
             }
         }
-        return Collections.unmodifiableMap(map);
+        return map;
     }
 
-    private static LeafEvaluationStrategy resolveStrategy(final RunField field,
-                                                          final UserGroupHolder userGroupHolder) {
+    private static LeafEvaluationStrategy<PipelineRun> resolveEntityFieldStrategy(
+            final SubjectEntityField<PipelineRun> field, final UserGroupHolder userGroupHolder) {
         switch (field.getType()) {
-            case STRING:  return new StringLeafEvaluationStrategy(field);
-            case NUMERIC: return new NumericLeafEvaluationStrategy(field);
-            case BOOLEAN: return new BooleanLeafEvaluationStrategy(field);
-            case ENUM:    return new EnumLeafEvaluationStrategy(field);
-            case TAGS:    return new TagLeafEvaluationStrategy(field);
-            case GROUPS:  return new UserGroupLeafEvaluationStrategy(userGroupHolder);
+            case STRING:  return new StringLeafEvaluationStrategy<>(field);
+            case NUMERIC: return new NumericLeafEvaluationStrategy<>(field);
+            case BOOLEAN: return new BooleanLeafEvaluationStrategy<>(field);
+            case ENUM:    return new EnumLeafEvaluationStrategy<>(field);
+            case TAGS:    return new TagLeafEvaluationStrategy<>(field, PipelineRun::getTags);
+            case GROUPS:  return new UserGroupLeafEvaluationStrategy<>(userGroupHolder, PipelineRun::getOwner);
             default: throw new IllegalArgumentException(
                     "No leaf evaluation strategy registered for type: " + field.getType());
         }

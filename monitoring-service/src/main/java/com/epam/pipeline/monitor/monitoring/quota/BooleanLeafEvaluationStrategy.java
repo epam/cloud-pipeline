@@ -18,21 +18,24 @@ package com.epam.pipeline.monitor.monitoring.quota;
 
 import com.epam.pipeline.entity.quota.ConditionOperator;
 import com.epam.pipeline.entity.quota.FieldType;
-import com.epam.pipeline.entity.quota.RunField;
+import com.epam.pipeline.entity.quota.SubjectEntityField;
 
 /**
  * Evaluates {@link FieldType#BOOLEAN} leaf nodes (e.g. {@code run.spot}).
  * Rule values are expected to be {@code "true"} or {@code "false"} (case-insensitive).
  * Supports {@code =} and {@code !=}.
+ *
+ * @param <T> the subject type being evaluated
  */
-class BooleanLeafEvaluationStrategy extends StandardLeafEvaluationStrategy {
+class BooleanLeafEvaluationStrategy<T> extends AbstractLeafEvaluationStrategy<T> {
 
-    BooleanLeafEvaluationStrategy(final RunField field) {
+    BooleanLeafEvaluationStrategy(final SubjectEntityField<T> field) {
         super(field);
     }
 
     @Override
-    protected boolean doEvaluate(final ConditionOperator op, final String runValue, final String expressionValue) {
-        return (op == ConditionOperator.EQUALS) == (Boolean.parseBoolean(runValue) == Boolean.parseBoolean(expressionValue));
+    protected boolean doEvaluate(final ConditionOperator op, final String subjectValue, final String expressionValue) {
+        return (op == ConditionOperator.EQUALS)
+                == (Boolean.parseBoolean(subjectValue) == Boolean.parseBoolean(expressionValue));
     }
 }

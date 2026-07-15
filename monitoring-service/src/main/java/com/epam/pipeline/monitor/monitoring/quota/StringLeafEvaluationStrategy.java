@@ -18,7 +18,7 @@ package com.epam.pipeline.monitor.monitoring.quota;
 
 import com.epam.pipeline.entity.quota.ConditionOperator;
 import com.epam.pipeline.entity.quota.FieldType;
-import com.epam.pipeline.entity.quota.RunField;
+import com.epam.pipeline.entity.quota.SubjectEntityField;
 
 import java.util.regex.Pattern;
 
@@ -28,16 +28,18 @@ import java.util.regex.Pattern;
  * <p>{@code *} in the rule value expands to any sequence of characters, consistent with the
  * wildcard convention used in the run Advanced Filter (e.g. {@code node.type = m5.*}).
  * Supports {@code =} and {@code !=}.
+ *
+ * @param <T> the subject type being evaluated
  */
-class StringLeafEvaluationStrategy extends StandardLeafEvaluationStrategy {
+class StringLeafEvaluationStrategy<T> extends AbstractLeafEvaluationStrategy<T> {
 
-    StringLeafEvaluationStrategy(final RunField field) {
+    StringLeafEvaluationStrategy(final SubjectEntityField<T> field) {
         super(field);
     }
 
     @Override
-    protected boolean doEvaluate(final ConditionOperator op, final String runValue, final String expressionValue) {
-        return (op == ConditionOperator.EQUALS) == matchesWildcard(runValue, expressionValue);
+    protected boolean doEvaluate(final ConditionOperator op, final String subjectValue, final String expressionValue) {
+        return (op == ConditionOperator.EQUALS) == matchesWildcard(subjectValue, expressionValue);
     }
 
     /**

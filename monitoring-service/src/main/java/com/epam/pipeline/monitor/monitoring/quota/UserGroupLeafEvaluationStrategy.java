@@ -16,39 +16,42 @@
 
 package com.epam.pipeline.monitor.monitoring.quota;
 
-import com.epam.pipeline.entity.pipeline.PipelineRun;
-import com.epam.pipeline.entity.quota.QuotaFilterExpression;
+import com.epam.pipeline.entity.quota.ConditionExpression;
 import com.epam.pipeline.entity.quota.ConditionOperator;
 import com.epam.pipeline.entity.quota.FieldType;
 import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.function.Function;
 
 /**
- * Evaluates {@link FieldType#GROUPS} leaf nodes by checking whether the run owner
+ * Evaluates {@link FieldType#GROUPS} leaf nodes by checking whether the subject's owner
  * belongs to a given group or role.
  *
- * <p>Group membership cannot be derived from the run alone — it requires the pre-loaded
- * user-group cache in {@link UserGroupHolder}. This strategy encapsulates that dependency,
- * keeping it out of the generic field-evaluation path.
+ * <p>Group membership cannot be derived from the subject alone — it requires the pre-loaded
+ * user-group cache in {@link UserGroupHolder}. The owner username is extracted via the
+ * injected {@code ownerExtractor}, keeping this strategy free of any subject-type coupling.
  *
  * <p>{@code =} matches when the owner is a member of the named group; {@code !=} when not.
  * Comparison is case-insensitive. Supports {@code =} and {@code !=}.
+ *
+ * @param <T> the subject type being evaluated
  */
 @RequiredArgsConstructor
-class UserGroupLeafEvaluationStrategy implements LeafEvaluationStrategy {
+class UserGroupLeafEvaluationStrategy<T> implements LeafEvaluationStrategy<T> {
 
     private final UserGroupHolder userGroupHolder;
+    private final Function<T, String> ownerExtractor;
 
     @Override
-    public boolean evaluate(final QuotaFilterExpression node, final PipelineRun run, final LocalDateTime now) {
+    public boolean evaluate(final ConditionExpression node, final T subject, final LocalDateTime now) {
         final ConditionOperator op = ConditionOperator.fromSymbol(node.getOperand());
         if (!FieldType.GROUPS.supports(op)) {
             throw new IllegalArgumentException(
                     "Operator '" + op.getSymbol() + "' not supported for field '" + node.getField() + "'");
         }
-        final String groups = String.join(",", userGroupHolder.getGroupsForUser(run.getOwner()));
+        final String groups = String.join(",", userGroupHolder.getGroupsForUser(ownerExtractor.apply(subject)));
         return (op == ConditionOperator.EQUALS) == containsKey(groups, node.getValue());
     }
 

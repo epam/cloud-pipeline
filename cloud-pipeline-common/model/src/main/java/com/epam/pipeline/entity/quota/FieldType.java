@@ -21,7 +21,7 @@ import java.util.EnumSet;
 import java.util.Set;
 
 /**
- * Declares the value type of a {@link RunField} and the set of {@link ConditionOperator}s
+ * Declares the value type of a {@link PipelineRunField} and the set of {@link ConditionOperator}s
  * that are valid for it.
  *
  * <p>Evaluation logic (how to compare two values) lives in the dedicated
@@ -52,7 +52,7 @@ public enum FieldType {
 
     /**
      * Set of run tag keys. {@code =} matches when the tag key is present; {@code !=} when absent.
-     * When {@link com.epam.pipeline.entity.quota.QuotaFilterExpression#getDuration()} is set on the
+     * When {@link com.epam.pipeline.entity.quota.ConditionExpression#getDuration()} is set on the
      * leaf node a companion {@code <tagName>_date} tag is used to verify how long the tag has
      * been continuously present.
      */
