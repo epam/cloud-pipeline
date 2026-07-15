@@ -28,7 +28,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
 
-import java.util.Collections;
 import java.util.List;
 
 import static com.epam.pipeline.test.creator.compute.quota.ComputeQuotaRuleCreatorsUtils.COMPUTE_QUOTA_RULE_LIST_TYPE;
@@ -36,6 +35,7 @@ import static com.epam.pipeline.test.creator.compute.quota.ComputeQuotaRuleCreat
 import static com.epam.pipeline.test.creator.compute.quota.ComputeQuotaRuleCreatorsUtils.ID;
 import static com.epam.pipeline.test.creator.compute.quota.ComputeQuotaRuleCreatorsUtils.computeQuotaRule;
 import static com.epam.pipeline.test.creator.compute.quota.ComputeQuotaRuleCreatorsUtils.computeQuotaRuleList;
+import static com.epam.pipeline.test.creator.compute.quota.ComputeQuotaRuleCreatorsUtils.filterFieldVOList;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -130,7 +130,7 @@ public class ComputeQuotaRuleControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldGetKeywords() {
-        final List<FilterFieldVO> keywords = Collections.emptyList();
+        final List<FilterFieldVO> keywords = filterFieldVOList();
         doReturn(keywords).when(mockComputeQuotaRuleApiService).getKeywords();
 
         final MvcResult result = performRequest(get(KEYWORDS_URL));

@@ -18,7 +18,7 @@ package com.epam.pipeline.acl.compute.quota;
 
 import com.epam.pipeline.controller.vo.FilterFieldVO;
 import com.epam.pipeline.dto.compute.quota.ComputeQuotaRule;
-import com.epam.pipeline.manager.compute.quota.ComputeQuotaRuleManager;
+import com.epam.pipeline.manager.compute.quota.ComputeQuotaRuleService;
 import com.epam.pipeline.test.acl.AbstractAclTest;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,26 +42,26 @@ public class ComputeQuotaRuleApiServiceTest extends AbstractAclTest {
     private ComputeQuotaRuleApiService computeQuotaRuleApiService;
 
     @Autowired
-    private ComputeQuotaRuleManager mockComputeQuotaRuleManager;
+    private ComputeQuotaRuleService mockComputeQuotaRuleService;
 
     @Test
     @WithMockUser
     public void shouldLoadAll() {
         final List<ComputeQuotaRule> rules = computeQuotaRuleList();
-        doReturn(rules).when(mockComputeQuotaRuleManager).loadAll();
+        doReturn(rules).when(mockComputeQuotaRuleService).loadAll();
 
         assertThat(computeQuotaRuleApiService.loadAll()).isEqualTo(rules);
-        verify(mockComputeQuotaRuleManager).loadAll();
+        verify(mockComputeQuotaRuleService).loadAll();
     }
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldCreateForAdmin() {
         final ComputeQuotaRule rule = computeQuotaRule();
-        doReturn(rule).when(mockComputeQuotaRuleManager).create(rule);
+        doReturn(rule).when(mockComputeQuotaRuleService).create(rule);
 
         assertThat(computeQuotaRuleApiService.create(rule)).isEqualTo(rule);
-        verify(mockComputeQuotaRuleManager).create(rule);
+        verify(mockComputeQuotaRuleService).create(rule);
     }
 
     @Test
@@ -74,10 +74,10 @@ public class ComputeQuotaRuleApiServiceTest extends AbstractAclTest {
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldUpdateForAdmin() {
         final ComputeQuotaRule rule = computeQuotaRule();
-        doReturn(rule).when(mockComputeQuotaRuleManager).update(ID, rule);
+        doReturn(rule).when(mockComputeQuotaRuleService).update(ID, rule);
 
         assertThat(computeQuotaRuleApiService.update(ID, rule)).isEqualTo(rule);
-        verify(mockComputeQuotaRuleManager).update(ID, rule);
+        verify(mockComputeQuotaRuleService).update(ID, rule);
     }
 
     @Test
@@ -91,7 +91,7 @@ public class ComputeQuotaRuleApiServiceTest extends AbstractAclTest {
     public void shouldDeleteForAdmin() {
         computeQuotaRuleApiService.delete(ID);
 
-        verify(mockComputeQuotaRuleManager).delete(ID);
+        verify(mockComputeQuotaRuleService).delete(ID);
     }
 
     @Test
@@ -104,9 +104,9 @@ public class ComputeQuotaRuleApiServiceTest extends AbstractAclTest {
     @WithMockUser
     public void shouldGetKeywords() {
         final List<FilterFieldVO> keywords = Collections.emptyList();
-        doReturn(keywords).when(mockComputeQuotaRuleManager).getKeywords();
+        doReturn(keywords).when(mockComputeQuotaRuleService).getKeywords();
 
         assertThat(computeQuotaRuleApiService.getKeywords()).isEqualTo(keywords);
-        verify(mockComputeQuotaRuleManager).getKeywords();
+        verify(mockComputeQuotaRuleService).getKeywords();
     }
 }

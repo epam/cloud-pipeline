@@ -136,7 +136,7 @@ import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preprocessing.NgsPreprocessingManager;
-import com.epam.pipeline.manager.compute.quota.ComputeQuotaRuleManager;
+import com.epam.pipeline.manager.compute.quota.ComputeQuotaRuleService;
 import com.epam.pipeline.manager.quota.QuotaService;
 import com.epam.pipeline.manager.quota.RunLimitsService;
 import com.epam.pipeline.manager.region.CloudRegionManager;
@@ -580,7 +580,7 @@ public class AclTestBeans {
     protected QuotaService mockQuotaService;
 
     @MockBean
-    protected ComputeQuotaRuleManager mockComputeQuotaRuleManager;
+    protected ComputeQuotaRuleService mockComputeQuotaRuleService;
 
     @MockBean
     protected UsersUsageReportService usersUsageReportService;

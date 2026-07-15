@@ -20,6 +20,8 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.FilterFieldVO;
 import com.epam.pipeline.dto.compute.quota.ComputeQuotaRule;
 import com.epam.pipeline.dto.compute.quota.ComputeQuotaStrategyType;
+import com.epam.pipeline.dto.compute.quota.FilterExpressionType;
+import com.epam.pipeline.dto.compute.quota.QuotaFilterExpression;
 import com.epam.pipeline.dto.compute.quota.RunField;
 import com.epam.pipeline.entity.compute.quota.ComputeQuotaRuleEntity;
 import com.epam.pipeline.mapper.compute.quota.ComputeQuotaRuleMapper;
@@ -45,13 +47,13 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class ComputeQuotaRuleManagerTest {
+public class ComputeQuotaRuleServiceTest {
 
     private final ComputeQuotaRuleRepository repository = mock(ComputeQuotaRuleRepository.class);
     private final ComputeQuotaRuleMapper mapper = mock(ComputeQuotaRuleMapper.class);
     private final MessageHelper messageHelper = mock(MessageHelper.class);
-    private final ComputeQuotaRuleManager manager =
-            new ComputeQuotaRuleManager(repository, mapper, messageHelper);
+    private final ComputeQuotaRuleService manager =
+            new ComputeQuotaRuleService(repository, mapper, messageHelper);
 
     @Test
     public void shouldLoadAll() {
@@ -212,5 +214,140 @@ public class ComputeQuotaRuleManagerTest {
         keywords.forEach(kw -> assertThat(
                 "Expected non-empty operands for field: " + kw.getFieldName(),
                 kw.getSupportedOperands().isEmpty(), is(false)));
+    }
+
+    // --- expression validation ---
+
+    @Test
+    public void shouldFailCreateIfFilterExpressionHasUnknownField() {
+        final ComputeQuotaRule rule = computeQuotaRule();
+        rule.setFilterExpression(leafExpression("unknown.field", "=", null));
+
+        assertThrows(IllegalArgumentException.class, () -> manager.create(rule));
+    }
+
+    @Test
+    public void shouldFailCreateIfExcludeExpressionHasUnknownField() {
+        final ComputeQuotaRule rule = computeQuotaRule();
+        rule.setExcludeExpression(leafExpression("unknown.field", "=", null));
+
+        assertThrows(IllegalArgumentException.class, () -> manager.create(rule));
+    }
+
+    @Test
+    public void shouldFailCreateIfOperandIsUnknownSymbol() {
+        final ComputeQuotaRule rule = computeQuotaRule();
+        // BOOLEAN field run.spot only supports = and !=; "??" is not a known operator at all
+        rule.setFilterExpression(leafExpression("run.spot", "??", null));
+
+        assertThrows(IllegalArgumentException.class, () -> manager.create(rule));
+    }
+
+    @Test
+    public void shouldFailCreateIfOperandIsNotSupportedForFieldType() {
+        final ComputeQuotaRule rule = computeQuotaRule();
+        // BOOLEAN field run.spot only supports = and !=; ">" is valid syntax but not for BOOLEAN
+        rule.setFilterExpression(leafExpression("run.spot", ">", null));
+
+        assertThrows(IllegalArgumentException.class, () -> manager.create(rule));
+    }
+
+    @Test
+    public void shouldFailCreateIfDurationSetOnNonDurationField() {
+        final ComputeQuotaRule rule = computeQuotaRule();
+        // run.status is ENUM and does NOT support duration
+        rule.setFilterExpression(leafExpression("run.status", "=", 24));
+
+        assertThrows(IllegalArgumentException.class, () -> manager.create(rule));
+    }
+
+    @Test
+    public void shouldCreateWithDurationOnTagField() {
+        final ComputeQuotaRule rule = computeQuotaRule();
+        // run.tag is the only field that supports duration
+        rule.setFilterExpression(leafExpression("run.tag", "=", 48));
+        final ComputeQuotaRuleEntity entity = computeQuotaRuleEntity();
+        doReturn(entity).when(mapper).toEntity(rule);
+        doReturn(entity).when(repository).save(any(ComputeQuotaRuleEntity.class));
+        doReturn(rule).when(mapper).toDto(entity);
+
+        manager.create(rule);
+
+        verify(repository).save(any(ComputeQuotaRuleEntity.class));
+    }
+
+    @Test
+    public void shouldValidateLeafNodesInsideAndExpression() {
+        final ComputeQuotaRule rule = computeQuotaRule();
+        final QuotaFilterExpression unknown = leafExpression("unknown.field", "=", null);
+        final QuotaFilterExpression valid = leafExpression("run.tag", "=", null);
+        final QuotaFilterExpression and = new QuotaFilterExpression();
+        and.setFilterExpressionType(FilterExpressionType.AND);
+        and.setExpressions(Arrays.asList(valid, unknown));
+        rule.setFilterExpression(and);
+
+        assertThrows(IllegalArgumentException.class, () -> manager.create(rule));
+    }
+
+    // --- field normalization ---
+
+    @Test
+    public void shouldNormalizeFieldToLowerCaseOnCreate() {
+        final ComputeQuotaRule rule = computeQuotaRule();
+        rule.setFilterExpression(leafExpression("RUN.TAG", "=", 48));
+        final ComputeQuotaRuleEntity entity = computeQuotaRuleEntity();
+        doReturn(entity).when(mapper).toEntity(rule);
+        doReturn(entity).when(repository).save(any(ComputeQuotaRuleEntity.class));
+        doReturn(rule).when(mapper).toDto(entity);
+
+        manager.create(rule);
+
+        assertThat(rule.getFilterExpression().getField(), is("run.tag"));
+    }
+
+    @Test
+    public void shouldNormalizeExcludeExpressionFieldToLowerCase() {
+        final ComputeQuotaRule rule = computeQuotaRule();
+        rule.setExcludeExpression(leafExpression("Node.Type", "=", null));
+        final ComputeQuotaRuleEntity entity = computeQuotaRuleEntity();
+        doReturn(entity).when(mapper).toEntity(rule);
+        doReturn(entity).when(repository).save(any(ComputeQuotaRuleEntity.class));
+        doReturn(rule).when(mapper).toDto(entity);
+
+        manager.create(rule);
+
+        assertThat(rule.getExcludeExpression().getField(), is("node.type"));
+    }
+
+    @Test
+    public void shouldNormalizeFieldsInsideAndExpression() {
+        final ComputeQuotaRule rule = computeQuotaRule();
+        final QuotaFilterExpression leaf1 = leafExpression("RUN.OWNER", "=", null);
+        final QuotaFilterExpression leaf2 = leafExpression("RUN.SPOT", "=", null);
+        final QuotaFilterExpression and = new QuotaFilterExpression();
+        and.setFilterExpressionType(FilterExpressionType.AND);
+        and.setExpressions(Arrays.asList(leaf1, leaf2));
+        rule.setFilterExpression(and);
+        final ComputeQuotaRuleEntity entity = computeQuotaRuleEntity();
+        doReturn(entity).when(mapper).toEntity(rule);
+        doReturn(entity).when(repository).save(any(ComputeQuotaRuleEntity.class));
+        doReturn(rule).when(mapper).toDto(entity);
+
+        manager.create(rule);
+
+        assertThat(leaf1.getField(), is("run.owner"));
+        assertThat(leaf2.getField(), is("run.spot"));
+    }
+
+    private static QuotaFilterExpression leafExpression(final String field,
+                                                        final String operand,
+                                                        final Integer duration) {
+        final QuotaFilterExpression expr = new QuotaFilterExpression();
+        expr.setFilterExpressionType(FilterExpressionType.LOGICAL);
+        expr.setField(field);
+        expr.setOperand(operand);
+        expr.setValue("someValue");
+        expr.setDuration(duration);
+        return expr;
     }
 }

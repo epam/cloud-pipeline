@@ -71,6 +71,7 @@ import com.epam.pipeline.manager.billing.detail.EntityBillingDetailsLoader;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.PodMonitor;
+import com.epam.pipeline.manager.compute.quota.ComputeQuotaRuleService;
 import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceHandler;
 import com.epam.pipeline.manager.datastorage.StorageQuotaTriggersManager;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManager;
@@ -549,4 +550,7 @@ public class AspectTestBeans {
 
     @MockBean
     protected PipelineRunMetricsDao pipelineRunMetricsDao;
+
+    @MockBean
+    protected ComputeQuotaRuleService computeQuotaRuleService;
 }

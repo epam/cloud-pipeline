@@ -18,7 +18,7 @@ package com.epam.pipeline.acl.compute.quota;
 
 import com.epam.pipeline.controller.vo.FilterFieldVO;
 import com.epam.pipeline.dto.compute.quota.ComputeQuotaRule;
-import com.epam.pipeline.manager.compute.quota.ComputeQuotaRuleManager;
+import com.epam.pipeline.manager.compute.quota.ComputeQuotaRuleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -31,7 +31,7 @@ import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
 @RequiredArgsConstructor
 public class ComputeQuotaRuleApiService {
 
-    private final ComputeQuotaRuleManager manager;
+    private final ComputeQuotaRuleService manager;
 
     public List<ComputeQuotaRule> loadAll() {
         return manager.loadAll();

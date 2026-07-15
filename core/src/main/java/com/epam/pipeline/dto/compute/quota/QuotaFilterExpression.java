@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.dto.compute.quota;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -37,6 +38,7 @@ import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor
+@EqualsAndHashCode
 public class QuotaFilterExpression {
 
     private String field;

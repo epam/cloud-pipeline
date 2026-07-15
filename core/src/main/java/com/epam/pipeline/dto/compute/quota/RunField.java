@@ -19,7 +19,11 @@ package com.epam.pipeline.dto.compute.quota;
 import lombok.Getter;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import static com.epam.pipeline.dto.compute.quota.FieldType.BOOLEAN;
 import static com.epam.pipeline.dto.compute.quota.FieldType.ENUM;
@@ -113,5 +117,21 @@ public enum RunField {
     /** All expression names that resolve to this field. */
     public List<String> getDisplayNames() {
         return Arrays.asList(displayNames);
+    }
+
+    private static final Map<String, RunField> BY_DISPLAY_NAME;
+
+    static {
+        final Map<String, RunField> map = new HashMap<>();
+        for (final RunField f : values()) {
+            for (final String name : f.getDisplayNames()) {
+                map.put(name, f);
+            }
+        }
+        BY_DISPLAY_NAME = Collections.unmodifiableMap(map);
+    }
+
+    public static Optional<RunField> findByDisplayName(final String name) {
+        return Optional.ofNullable(BY_DISPLAY_NAME.get(name));
     }
 }

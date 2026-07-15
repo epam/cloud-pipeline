@@ -938,6 +938,11 @@ public final class MessageConstants {
     public static final String ERROR_COMPUTE_QUOTA_RULE_NAME_EMPTY = "error.compute.quota.rule.name.empty";
     public static final String ERROR_COMPUTE_QUOTA_RULE_FILTER_EMPTY = "error.compute.quota.rule.filter.empty";
     public static final String ERROR_COMPUTE_QUOTA_RULE_ACTION_EMPTY = "error.compute.quota.rule.action.empty";
+    public static final String ERROR_COMPUTE_QUOTA_RULE_UNKNOWN_FIELD = "error.compute.quota.rule.unknown.field";
+    public static final String ERROR_COMPUTE_QUOTA_RULE_UNSUPPORTED_OPERAND =
+            "error.compute.quota.rule.unsupported.operand";
+    public static final String ERROR_COMPUTE_QUOTA_RULE_DURATION_NOT_SUPPORTED =
+            "error.compute.quota.rule.duration.not.supported";
 
     private MessageConstants() {
         // no-op

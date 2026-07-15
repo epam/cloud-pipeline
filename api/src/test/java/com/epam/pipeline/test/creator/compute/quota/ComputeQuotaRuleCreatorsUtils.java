@@ -17,6 +17,7 @@
 package com.epam.pipeline.test.creator.compute.quota;
 
 import com.epam.pipeline.controller.Result;
+import com.epam.pipeline.controller.vo.FilterFieldVO;
 import com.epam.pipeline.dto.compute.quota.ComputeQuotaAction;
 import com.epam.pipeline.dto.compute.quota.ComputeQuotaActionType;
 import com.epam.pipeline.dto.compute.quota.ComputeQuotaRule;
@@ -27,6 +28,7 @@ import com.epam.pipeline.entity.compute.quota.ComputeQuotaRuleEntity;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -52,7 +54,6 @@ public interface ComputeQuotaRuleCreatorsUtils {
         expression.setValue(FIELD_VALUE);
         expression.setOperand(FIELD_OPERAND);
         expression.setFilterExpressionType(FilterExpressionType.LOGICAL);
-        expression.setDuration(48);
         return expression;
     }
 
@@ -94,5 +95,16 @@ public interface ComputeQuotaRuleCreatorsUtils {
 
     static List<ComputeQuotaRule> computeQuotaRuleList() {
         return Collections.singletonList(computeQuotaRule());
+    }
+
+    static FilterFieldVO filterFieldVO() {
+        final FilterFieldVO vo = new FilterFieldVO();
+        vo.setFieldName(FIELD_NAME);
+        vo.setSupportedOperands(Arrays.asList("=", "!="));
+        return vo;
+    }
+
+    static List<FilterFieldVO> filterFieldVOList() {
+        return Collections.singletonList(filterFieldVO());
     }
 }
