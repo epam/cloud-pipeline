@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.utils.condition;
 
+import com.epam.pipeline.utils.condition.field.PipelineRunField;
+
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
@@ -62,7 +64,14 @@ public enum FieldType {
      * Set of group and role names the run owner belongs to, resolved at monitoring time.
      * {@code =} matches when the owner is a member; {@code !=} when not.
      */
-    USER_AUTHORITIES(EnumSet.of(ConditionOperator.EQUALS, ConditionOperator.NOT_EQUALS));
+    USER_AUTHORITIES(EnumSet.of(ConditionOperator.EQUALS, ConditionOperator.NOT_EQUALS)),
+
+    /**
+     * Key-value map (e.g. run parameters, environment variables).
+     * Expression value is {@code <name>} (key-presence check) or {@code <name>=<valuePattern>}
+     * (key present with value matching a wildcard pattern). Supports {@code =} and {@code !=}.
+     */
+    KEY_VALUE(EnumSet.of(ConditionOperator.EQUALS, ConditionOperator.NOT_EQUALS));
 
     private final Set<ConditionOperator> supportedOperators;
 

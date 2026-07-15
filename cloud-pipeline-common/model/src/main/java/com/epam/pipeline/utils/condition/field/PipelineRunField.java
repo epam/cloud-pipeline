@@ -21,6 +21,7 @@ import com.epam.pipeline.utils.condition.ConditionExpression;
 import com.epam.pipeline.utils.condition.FieldType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import lombok.Getter;
 
 import java.util.Arrays;
@@ -30,9 +31,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.epam.pipeline.utils.condition.FieldType.BOOLEAN;
 import static com.epam.pipeline.utils.condition.FieldType.ENUM;
+import static com.epam.pipeline.utils.condition.FieldType.KEY_VALUE;
 import static com.epam.pipeline.utils.condition.FieldType.NUMERIC;
 import static com.epam.pipeline.utils.condition.FieldType.STRING;
 import static com.epam.pipeline.utils.condition.FieldType.TAGS;
@@ -146,7 +149,31 @@ public enum PipelineRunField implements SubjectEntityField<PipelineRun> {
     OWNER_AUTHORITIES(FieldType.USER_AUTHORITIES,
             PipelineRun::getOwner,
             false,
-            "run.owner.authorities", "owner.authorities");
+            "run.owner.authorities", "owner.authorities"),
+
+    /**
+     * Matches against the run's pipeline parameters.
+     * Expression value is {@code <name>} (parameter present) or {@code <name>=<valuePattern>}
+     * (parameter present with value matching a wildcard pattern).
+     * Comparison is case-insensitive. Expression names: {@code run.parameter}, {@code parameter}.
+     */
+    PARAMETER(KEY_VALUE,
+            null,
+            PipelineRunField::parametersToMap,
+            false,
+            "run.parameter", "parameter"),
+
+    /**
+     * Matches against the run's environment variables.
+     * Expression value is {@code <name>} (variable present) or {@code <name>=<valuePattern>}
+     * (variable present with value matching a wildcard pattern).
+     * Comparison is case-insensitive. Expression names: {@code run.env_var}, {@code env_var}.
+     */
+    ENV_VAR(KEY_VALUE,
+            null,
+            PipelineRunField::envVarsToMap,
+            false,
+            "run.env_var", "env_var");
 
     /** Value type that governs which operators are valid and how comparisons are performed. */
     @Getter
@@ -154,6 +181,9 @@ public enum PipelineRunField implements SubjectEntityField<PipelineRun> {
 
     /** Extracts the field's string representation from a run for comparison against the rule value. */
     private final Function<PipelineRun, String> extractor;
+
+    /** Extracts the key-value map from a run; non-null only for {@link FieldType#KEY_VALUE} fields. */
+    private final Function<PipelineRun, Map<String, String>> mapExtractor;
 
     /**
      * Whether this field supports the duration gate on a filter expression leaf.
@@ -171,14 +201,46 @@ public enum PipelineRunField implements SubjectEntityField<PipelineRun> {
                      final Function<PipelineRun, String> extractor,
                      final boolean supportsDuration,
                      final String... displayNames) {
+        this(type, extractor, null, supportsDuration, displayNames);
+    }
+
+    PipelineRunField(final FieldType type,
+                     final Function<PipelineRun, String> extractor,
+                     final Function<PipelineRun, Map<String, String>> mapExtractor,
+                     final boolean supportsDuration,
+                     final String... displayNames) {
         this.type = type;
         this.extractor = extractor;
+        this.mapExtractor = mapExtractor;
         this.supportsDuration = supportsDuration;
         this.displayNames = displayNames;
     }
 
     public String extract(final PipelineRun run) {
-        return extractor.apply(run);
+        return extractor != null ? extractor.apply(run) : null;
+    }
+
+    @Override
+    public Map<String, String> extractMap(final PipelineRun run) {
+        return mapExtractor != null ? mapExtractor.apply(run) : Collections.emptyMap();
+    }
+
+    private static Map<String, String> parametersToMap(final PipelineRun run) {
+        final List<PipelineRunParameter> params = run.getPipelineRunParameters();
+        if (params == null) {
+            return Collections.emptyMap();
+        }
+        return params.stream()
+                .filter(p -> p.getName() != null)
+                .collect(Collectors.toMap(
+                        PipelineRunParameter::getName,
+                    p -> p.getValue() != null ? p.getValue() : "",
+                    (a, b) -> a));
+    }
+
+    private static Map<String, String> envVarsToMap(final PipelineRun run) {
+        final Map<String, String> envVars = run.getEnvVars();
+        return envVars != null ? envVars : Collections.emptyMap();
     }
 
     /** All expression names that resolve to this field. */

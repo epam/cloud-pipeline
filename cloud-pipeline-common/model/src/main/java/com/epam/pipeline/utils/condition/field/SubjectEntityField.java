@@ -16,10 +16,14 @@
 
 package com.epam.pipeline.utils.condition.field;
 
+import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.utils.condition.ConditionExpression;
 import com.epam.pipeline.utils.condition.FieldType;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Describes a single filterable field of a domain object of type {@code T}.
@@ -48,6 +52,26 @@ public interface SubjectEntityField<T> {
      */
     String extract(T subject);
 
+    /**
+     * Extracts a string-to-string map from {@code subject} for {@link FieldType#KEY_VALUE} fields.
+     * Returns an empty map by default; {@link FieldType#KEY_VALUE} fields must override this.
+     */
+    default Map<String, String> extractMap(T subject) {
+        return Collections.emptyMap();
+    }
+
     /** One or more names by which this field can be referenced in a rule expression. */
     List<String> getDisplayNames();
+
+    /**
+     * Returns all fields that can be evaluated against the given subject type,
+     * or an empty list if the type is not recognised.
+     */
+    @SuppressWarnings("unchecked")
+    static <T> List<SubjectEntityField<T>> forSubjectType(final Class<T> subjectType) {
+        if (subjectType == PipelineRun.class) {
+            return (List<SubjectEntityField<T>>) (List<?>) Arrays.asList(PipelineRunField.values());
+        }
+        return Collections.emptyList();
+    }
 }

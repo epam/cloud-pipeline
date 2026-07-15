@@ -20,12 +20,14 @@ import com.epam.pipeline.utils.condition.ConditionType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.quota.ComputeQuotaAction;
 import com.epam.pipeline.entity.quota.ComputeQuotaActionType;
 import com.epam.pipeline.entity.quota.ComputeQuotaRule;
 import com.epam.pipeline.entity.quota.ComputeQuotaStrategyType;
 import com.epam.pipeline.utils.condition.ConditionExpression;
 import com.epam.pipeline.utils.condition.evaluation.TagFieldEvaluationStrategy;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
@@ -96,10 +98,16 @@ class ComputeQuotaRuleEvaluatorTest {
     private static final int HOURS_80_ELAPSED = 80;
     private static final int ACTION_VALUE     = 100;
 
-    private final Map<String, Set<String>> authorities = new HashMap<>();
-    private final ComputeQuotaRuleEvaluator<PipelineRun> evaluator = new ComputeQuotaRuleEvaluator<>(
-            CloudPipelineApiAwareEntityFieldConditionStrategyComposer.buildPipelineRunRegistry(
-                username -> authorities.getOrDefault(username, Collections.emptySet())));
+    private Map<String, Set<String>> authorities;
+    private ComputeQuotaRuleEvaluator evaluator;
+
+    @BeforeEach
+    void setUp() {
+        authorities = new HashMap<>();
+        evaluator = new ComputeQuotaRuleEvaluator(
+                ComputeQuotaRuleEvaluator.buildRegistry(
+                    username -> authorities.getOrDefault(username, Collections.emptySet())));
+    }
 
     // ARRAY
 
@@ -366,40 +374,46 @@ class ComputeQuotaRuleEvaluatorTest {
     }
 
     /**
-     * node.type = [m5.*, c5.*] is stored as an OR of two LOGICAL nodes.
-     * A c5.xlarge spot run satisfies the filter (spot=true) but is excluded by the OR list.
+     * node.type = [m5.*, c5.*] is an OR-based include filter.
+     * A c5.xlarge spot run passes the filter (c5.xlarge matches c5.*) and matches the statement.
      */
     @Test
-    void shouldExcludeRunWhenNodeTypeMatchesOrExcludeList() {
+    void shouldMatchRunWhenFilterOrExpressionContainsNodeType() {
         final PipelineRun run = runWithInstance(instance(NODE_TYPE_C5_XLARGE, true, REGION_1));
         final ComputeQuotaRule rule = rule(
                 logical(FIELD_RUN_SPOT, EQ, SPOT_TRUE),
                 orExpr(logical(FIELD_NODE_TYPE, EQ, PATTERN_M5_WILDCARD),
                         logical(FIELD_NODE_TYPE, EQ, PATTERN_C5_WILDCARD))
         );
+        assertTrue(evaluator.matches(rule, run));
+    }
+
+    /**
+     * node.type = [m5.*, c5.*] is an OR-based include filter.
+     * An m5.xlarge run does not match the c5.* part but the OR passes on the m5.* part.
+     * A run with a node type outside both families fails the filter and is not matched.
+     */
+    @Test
+    void shouldNotMatchRunWhenFilterOrExpressionDoesNotContainNodeType() {
+        final PipelineRun run = runWithInstance(instance(NODE_TYPE_C5_XLARGE, true, REGION_1));
+        final ComputeQuotaRule rule = rule(
+                logical(FIELD_RUN_SPOT, EQ, SPOT_TRUE),
+                logical(FIELD_NODE_TYPE, EQ, PATTERN_M5_WILDCARD)
+        );
         assertFalse(evaluator.matches(rule, run));
     }
 
-    // Exclude expression
+    // Filter expression (include pre-condition)
 
     @Test
-    void shouldMatchRunWhenExcludeExpressionIsNull() {
+    void shouldMatchRunWhenFilterExpressionIsNull() {
         final PipelineRun run = runWithStatus(TaskStatus.RUNNING);
         assertTrue(evaluator.matches(rule(logical(FIELD_RUN_STATUS, EQ, STATUS_RUNNING), null), run));
     }
 
     @Test
-    void shouldNotMatchRunWhenExcludeExpressionMatches() {
+    void shouldMatchRunWhenFilterExpressionMatches() {
         final PipelineRun run = runWithInstance(instance(NODE_TYPE_M5_XLARGE, true, REGION_1));
-        assertFalse(evaluator.matches(rule(
-                logical(FIELD_RUN_SPOT, EQ, SPOT_TRUE),
-                logical(FIELD_RUN_REGION_ID, EQ, REGION_1S)
-        ), run));
-    }
-
-    @Test
-    void shouldMatchRunWhenExcludeExpressionDoesNotMatch() {
-        final PipelineRun run = runWithInstance(instance(NODE_TYPE_M5_XLARGE, true, REGION_2));
         assertTrue(evaluator.matches(rule(
                 logical(FIELD_RUN_SPOT, EQ, SPOT_TRUE),
                 logical(FIELD_RUN_REGION_ID, EQ, REGION_1S)
@@ -407,8 +421,17 @@ class ComputeQuotaRuleEvaluatorTest {
     }
 
     @Test
-    void shouldNotMatchRunWhenConditionExpressionFailsRegardlessOfExclude() {
-        final PipelineRun run = runWithInstance(instance(NODE_TYPE_M5_XLARGE, false, REGION_2));
+    void shouldNotMatchRunWhenFilterExpressionDoesNotMatch() {
+        final PipelineRun run = runWithInstance(instance(NODE_TYPE_M5_XLARGE, true, REGION_2));
+        assertFalse(evaluator.matches(rule(
+                logical(FIELD_RUN_SPOT, EQ, SPOT_TRUE),
+                logical(FIELD_RUN_REGION_ID, EQ, REGION_1S)
+        ), run));
+    }
+
+    @Test
+    void shouldNotMatchRunWhenStatementFailsEvenThoughFilterPasses() {
+        final PipelineRun run = runWithInstance(instance(NODE_TYPE_M5_XLARGE, false, REGION_1));
         assertFalse(evaluator.matches(rule(
                 logical(FIELD_RUN_SPOT, EQ, SPOT_TRUE),
                 logical(FIELD_RUN_REGION_ID, EQ, REGION_1S)
@@ -690,5 +713,139 @@ class ComputeQuotaRuleEvaluatorTest {
 
     private static String formatDate(final LocalDateTime dateTime) {
         return DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS").format(dateTime);
+    }
+
+    // run.parameter
+
+    private static final String FIELD_RUN_PARAMETER = "run.parameter";
+    private static final String PARAM_NAME_DATASET  = "dataset";
+    private static final String PARAM_NAME_MISSING  = "missing_param";
+    private static final String PARAM_VALUE_PROD    = "prod-dataset";
+    private static final String PARAM_VALUE_OTHER   = "other-dataset";
+    private static final String PARAM_PATTERN_PROD  = "prod-*";
+
+    @Test
+    void shouldMatchRunWhenParameterNameExists() {
+        final PipelineRun run = runWithParameters(new PipelineRunParameter(PARAM_NAME_DATASET, PARAM_VALUE_PROD));
+        assertTrue(evaluator.matches(rule(logical(FIELD_RUN_PARAMETER, EQ, PARAM_NAME_DATASET)), run));
+    }
+
+    @Test
+    void shouldNotMatchRunWhenParameterNameAbsent() {
+        final PipelineRun run = runWithParameters(new PipelineRunParameter(PARAM_NAME_DATASET, PARAM_VALUE_PROD));
+        assertFalse(evaluator.matches(rule(logical(FIELD_RUN_PARAMETER, EQ, PARAM_NAME_MISSING)), run));
+    }
+
+    @Test
+    void shouldMatchRunOnNotEqualsWhenParameterAbsent() {
+        final PipelineRun run = runWithParameters(new PipelineRunParameter(PARAM_NAME_DATASET, PARAM_VALUE_PROD));
+        assertTrue(evaluator.matches(rule(logical(FIELD_RUN_PARAMETER, NEQ, PARAM_NAME_MISSING)), run));
+    }
+
+    @Test
+    void shouldMatchRunWhenParameterNameAndValueMatch() {
+        final PipelineRun run = runWithParameters(new PipelineRunParameter(PARAM_NAME_DATASET, PARAM_VALUE_PROD));
+        assertTrue(evaluator.matches(
+                rule(logical(FIELD_RUN_PARAMETER, EQ, PARAM_NAME_DATASET + "=" + PARAM_VALUE_PROD)), run));
+    }
+
+    @Test
+    void shouldNotMatchRunWhenParameterValueDoesNotMatch() {
+        final PipelineRun run = runWithParameters(new PipelineRunParameter(PARAM_NAME_DATASET, PARAM_VALUE_PROD));
+        assertFalse(evaluator.matches(
+                rule(logical(FIELD_RUN_PARAMETER, EQ, PARAM_NAME_DATASET + "=" + PARAM_VALUE_OTHER)), run));
+    }
+
+    @Test
+    void shouldMatchRunWhenParameterValueMatchesWildcard() {
+        final PipelineRun run = runWithParameters(new PipelineRunParameter(PARAM_NAME_DATASET, PARAM_VALUE_PROD));
+        assertTrue(evaluator.matches(
+                rule(logical(FIELD_RUN_PARAMETER, EQ, PARAM_NAME_DATASET + "=" + PARAM_PATTERN_PROD)), run));
+    }
+
+    @Test
+    void shouldMatchRunParameterNameCaseInsensitively() {
+        final PipelineRun run = runWithParameters(new PipelineRunParameter("Dataset", PARAM_VALUE_PROD));
+        assertTrue(evaluator.matches(rule(logical(FIELD_RUN_PARAMETER, EQ, PARAM_NAME_DATASET)), run));
+    }
+
+    @Test
+    void shouldNotMatchRunWhenParameterListIsNull() {
+        final PipelineRun run = runWithParameters();
+        assertFalse(evaluator.matches(rule(logical(FIELD_RUN_PARAMETER, EQ, PARAM_NAME_DATASET)), run));
+    }
+
+    // run.env_var
+
+    private static final String FIELD_RUN_ENV_VAR  = "run.env_var";
+    private static final String ENV_NAME_MODE       = "PIPELINE_MODE";
+    private static final String ENV_NAME_MISSING    = "MISSING_VAR";
+    private static final String ENV_VALUE_BATCH     = "batch";
+    private static final String ENV_VALUE_OTHER     = "interactive";
+    private static final String ENV_PATTERN_BATCH   = "bat*";
+
+    @Test
+    void shouldMatchRunWhenEnvVarNameExists() {
+        final PipelineRun run = runWithEnvVars(Collections.singletonMap(ENV_NAME_MODE, ENV_VALUE_BATCH));
+        assertTrue(evaluator.matches(rule(logical(FIELD_RUN_ENV_VAR, EQ, ENV_NAME_MODE)), run));
+    }
+
+    @Test
+    void shouldNotMatchRunWhenEnvVarNameAbsent() {
+        final PipelineRun run = runWithEnvVars(Collections.singletonMap(ENV_NAME_MODE, ENV_VALUE_BATCH));
+        assertFalse(evaluator.matches(rule(logical(FIELD_RUN_ENV_VAR, EQ, ENV_NAME_MISSING)), run));
+    }
+
+    @Test
+    void shouldMatchRunOnNotEqualsWhenEnvVarAbsent() {
+        final PipelineRun run = runWithEnvVars(Collections.singletonMap(ENV_NAME_MODE, ENV_VALUE_BATCH));
+        assertTrue(evaluator.matches(rule(logical(FIELD_RUN_ENV_VAR, NEQ, ENV_NAME_MISSING)), run));
+    }
+
+    @Test
+    void shouldMatchRunWhenEnvVarNameAndValueMatch() {
+        final PipelineRun run = runWithEnvVars(Collections.singletonMap(ENV_NAME_MODE, ENV_VALUE_BATCH));
+        assertTrue(evaluator.matches(
+                rule(logical(FIELD_RUN_ENV_VAR, EQ, ENV_NAME_MODE + "=" + ENV_VALUE_BATCH)), run));
+    }
+
+    @Test
+    void shouldNotMatchRunWhenEnvVarValueDoesNotMatch() {
+        final PipelineRun run = runWithEnvVars(Collections.singletonMap(ENV_NAME_MODE, ENV_VALUE_BATCH));
+        assertFalse(evaluator.matches(
+                rule(logical(FIELD_RUN_ENV_VAR, EQ, ENV_NAME_MODE + "=" + ENV_VALUE_OTHER)), run));
+    }
+
+    @Test
+    void shouldMatchRunWhenEnvVarValueMatchesWildcard() {
+        final PipelineRun run = runWithEnvVars(Collections.singletonMap(ENV_NAME_MODE, ENV_VALUE_BATCH));
+        assertTrue(evaluator.matches(
+                rule(logical(FIELD_RUN_ENV_VAR, EQ, ENV_NAME_MODE + "=" + ENV_PATTERN_BATCH)), run));
+    }
+
+    @Test
+    void shouldMatchRunEnvVarNameCaseInsensitively() {
+        final PipelineRun run = runWithEnvVars(Collections.singletonMap("pipeline_mode", ENV_VALUE_BATCH));
+        assertTrue(evaluator.matches(rule(logical(FIELD_RUN_ENV_VAR, EQ, ENV_NAME_MODE)), run));
+    }
+
+    @Test
+    void shouldNotMatchRunWhenEnvVarMapIsNull() {
+        final PipelineRun run = runWithEnvVars(null);
+        assertFalse(evaluator.matches(rule(logical(FIELD_RUN_ENV_VAR, EQ, ENV_NAME_MODE)), run));
+    }
+
+    private static PipelineRun runWithParameters(final PipelineRunParameter... params) {
+        final PipelineRun run = mock(PipelineRun.class);
+        when(run.getPipelineRunParameters()).thenReturn(params.length == 0 ? null : Arrays.asList(params));
+        when(run.getTags()).thenReturn(Collections.emptyMap());
+        return run;
+    }
+
+    private static PipelineRun runWithEnvVars(final Map<String, String> envVars) {
+        final PipelineRun run = mock(PipelineRun.class);
+        when(run.getEnvVars()).thenReturn(envVars);
+        when(run.getTags()).thenReturn(Collections.emptyMap());
+        return run;
     }
 }
