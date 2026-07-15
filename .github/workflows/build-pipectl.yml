@@ -221,78 +221,22 @@ jobs:
             context: cp-mlflow-server
             tag: mlflow-server-$DOCKERS_VERSION
 
+          - service: cp-dav
+            context: cp-dav
+            tag: dav-$DOCKERS_VERSION
+            pre_build_commands: cp -r scripts/nfs-roles-management $DOCKERS_SOURCES_PATH/cp-dav/
+            post_build_commands: rm -rf $DOCKERS_SOURCES_PATH/cp-dav/nfs-roles-management
+
           - service: cp-run-cleanup-job
             context: cp-run-cleanup-job
             needs_dist_url: true
             tag: cp-run-cleanup-job-$DOCKERS_VERSION
-
-          - service: cp-tools-base-centos-vanilla
-            context: cp-tools/base/centos/vanilla
-            tag: tools-base-centos-7-$DOCKERS_VERSION
-            manifest_pretty_names: "library/centos:7|library/centos:latest"
-            manifest_spec_path: cp-tools/base/centos/vanilla
-
-          - service: cp-tools-base-centos-vanilla-optimized
-            context: cp-tools/base/centos/vanilla
-            dockerfile: cp-tools/base/centos/vanilla/Dockerfile.optimized
-            needs_dist_url: true
-            tag: tools-base-centos-7-optimized-$DOCKERS_VERSION
-            manifest_pretty_names: "library/centos:7-optimized"
-            manifest_spec_path: cp-tools/base/centos/vanilla
-
-          - service: cp-tools-base-centos-cuda-11
-            context: cp-tools/base/centos/cuda
-            base_image: nvidia/cuda:11.3.1-cudnn8-runtime-centos7
-            tag: tools-base-centos-7-cuda11-$DOCKERS_VERSION
-            manifest_pretty_names: "library/centos-cuda:7-cuda11"
-            manifest_spec_path: cp-tools/base/centos/cuda
-
-          - service: cp-tools-base-centos-cuda
-            context: cp-tools/base/centos/cuda
-            base_image: nvidia/cuda:11.3.1-cudnn8-runtime-centos7
-            tag: tools-base-centos-7-cuda-$DOCKERS_VERSION
-            manifest_pretty_names: "library/centos-cuda:latest"
-            manifest_spec_path: cp-tools/base/centos/cuda
-
-          - service: cp-tools-base-ubuntu-vanilla-16.04
-            context: cp-tools/base/ubuntu/vanilla
-            base_image: library/ubuntu:16.04
-            tag: tools-base-ubuntu-16.04-$DOCKERS_VERSION
-            manifest_pretty_names: "library/ubuntu:16.04"
-            manifest_spec_path: cp-tools/base/ubuntu/vanilla
-
-          - service: cp-tools-base-ubuntu-vanilla-18.04
-            context: cp-tools/base/ubuntu/vanilla
-            base_image: library/ubuntu:18.04
-            tag: tools-base-ubuntu-18.04-$DOCKERS_VERSION
-            manifest_pretty_names: "library/ubuntu:18.04|library/ubuntu:latest"
-            manifest_spec_path: cp-tools/base/ubuntu/vanilla
-
-          - service: cp-tools-base-ubuntu-cuda-11
-            context: cp-tools/base/ubuntu/cuda
-            base_image: nvidia/cuda:11.3.1-cudnn8-runtime-ubuntu18.04
-            tag: tools-base-ubuntu-18.04-cuda11-$DOCKERS_VERSION
-            manifest_pretty_names: "library/ubuntu-cuda:18.04-cuda11"
-            manifest_spec_path: cp-tools/base/ubuntu/cuda
-
-          - service: cp-tools-base-ubuntu-cuda
-            context: cp-tools/base/ubuntu/cuda
-            base_image: nvidia/cuda:11.3.1-cudnn8-runtime-ubuntu18.04
-            tag: tools-base-ubuntu-18.04-cuda-$DOCKERS_VERSION
-            manifest_pretty_names: "library/ubuntu-cuda:latest"
-            manifest_spec_path: cp-tools/base/ubuntu/cuda
 
           - service: cp-tools-base-rockylinux-vanilla
             context: cp-tools/base/rockylinux/vanilla
             tag: tools-base-rockylinux-8-$DOCKERS_VERSION
             manifest_pretty_names: "library/rockylinux:8|library/rockylinux:latest"
             manifest_spec_path: cp-tools/base/rockylinux/vanilla
-
-          - service: cp-tools-base-cromwell
-            context: cp-tools/base/cromwell
-            tag: tools-base-cromwell-$DOCKERS_VERSION
-            manifest_pretty_names: "library/cromwell:latest"
-            manifest_spec_path: cp-tools/base/cromwell
 
           - service: cp-tools-base-nextflow
             context: cp-tools/base/nextflow
@@ -312,12 +256,6 @@ jobs:
             tag: tools-system-system-job-$DOCKERS_VERSION
             manifest_pretty_names: "system/system-job-launcher:latest"
             manifest_spec_path: cp-tools/system/system-job
-
-          - service: cp-dav
-            context: cp-dav
-            tag: dav-$DOCKERS_VERSION
-            pre_build_commands: cp -r scripts/nfs-roles-management $DOCKERS_SOURCES_PATH/cp-dav/
-            post_build_commands: rm -rf $DOCKERS_SOURCES_PATH/cp-dav/nfs-roles-management
 
     steps:
       - name: Checkout
