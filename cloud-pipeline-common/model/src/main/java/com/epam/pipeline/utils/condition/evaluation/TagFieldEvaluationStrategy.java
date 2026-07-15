@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.monitor.monitoring.quota;
+package com.epam.pipeline.utils.condition.evaluation;
 
-import com.epam.pipeline.entity.quota.ConditionOperator;
-import com.epam.pipeline.entity.quota.FieldType;
-import com.epam.pipeline.entity.quota.ConditionExpression;
-import com.epam.pipeline.entity.quota.SubjectEntityField;
+import com.epam.pipeline.utils.condition.ConditionExpression;
+import com.epam.pipeline.utils.condition.ConditionOperator;
+import com.epam.pipeline.utils.condition.FieldType;
+import com.epam.pipeline.utils.condition.field.SubjectEntityField;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
 
@@ -48,17 +48,18 @@ import java.util.function.Function;
  * @param <T> the subject type being evaluated
  */
 @Slf4j
-class TagLeafEvaluationStrategy<T> extends AbstractLeafEvaluationStrategy<T> {
+public class TagFieldEvaluationStrategy<T> extends AbstractLeafEvaluationStrategy<T> {
 
     /** Suffix appended to a tag name to form the companion timestamp key (e.g. {@code IDLE_date}). */
-    static final String DATE_SUFFIX = "_date";
+    public static final String DATE_SUFFIX = "_date";
 
     private static final DateTimeFormatter DATE_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
 
     private final Function<T, Map<String, String>> tagsExtractor;
 
-    TagLeafEvaluationStrategy(final SubjectEntityField<T> field, final Function<T, Map<String, String>> tagsExtractor) {
+    public TagFieldEvaluationStrategy(final SubjectEntityField<T> field,
+                                      final Function<T, Map<String, String>> tagsExtractor) {
         super(field);
         this.tagsExtractor = tagsExtractor;
     }

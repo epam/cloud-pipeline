@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.monitor.monitoring.quota;
+package com.epam.pipeline.utils.condition.evaluation;
 
-import com.epam.pipeline.entity.quota.ConditionExpression;
-import com.epam.pipeline.entity.quota.ConditionOperator;
-import com.epam.pipeline.entity.quota.SubjectEntityField;
+
+import com.epam.pipeline.utils.condition.ConditionExpression;
+import com.epam.pipeline.utils.condition.ConditionOperator;
+import com.epam.pipeline.utils.condition.field.SubjectEntityField;
 
 import java.time.LocalDateTime;
 
 /**
- * Abstract base for all {@link SubjectEntityField}-based {@link LeafEvaluationStrategy} implementations.
+ * Abstract base for all {@link SubjectEntityField}-based {@link EntityConditionEvaluationStrategy} implementations.
  *
  * <p>Handles the common plumbing for every leaf node backed by a {@link SubjectEntityField}:
  * <ol>
@@ -40,11 +41,11 @@ import java.time.LocalDateTime;
  *
  * @param <T> the subject type being evaluated
  */
-abstract class AbstractLeafEvaluationStrategy<T> implements LeafEvaluationStrategy<T> {
+public abstract class AbstractLeafEvaluationStrategy<T> implements EntityConditionEvaluationStrategy<T> {
 
     protected final SubjectEntityField<T> field;
 
-    AbstractLeafEvaluationStrategy(final SubjectEntityField<T> field) {
+    public AbstractLeafEvaluationStrategy(final SubjectEntityField<T> field) {
         this.field = field;
     }
 

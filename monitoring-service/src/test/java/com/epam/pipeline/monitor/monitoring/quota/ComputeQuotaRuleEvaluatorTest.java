@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.monitor.monitoring.quota;
 
-import com.epam.pipeline.entity.quota.ConditionType;
+import com.epam.pipeline.utils.condition.ConditionType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
@@ -24,7 +24,8 @@ import com.epam.pipeline.entity.quota.ComputeQuotaAction;
 import com.epam.pipeline.entity.quota.ComputeQuotaActionType;
 import com.epam.pipeline.entity.quota.ComputeQuotaRule;
 import com.epam.pipeline.entity.quota.ComputeQuotaStrategyType;
-import com.epam.pipeline.entity.quota.ConditionExpression;
+import com.epam.pipeline.utils.condition.ConditionExpression;
+import com.epam.pipeline.utils.condition.evaluation.TagFieldEvaluationStrategy;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
@@ -33,6 +34,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -55,7 +57,7 @@ class ComputeQuotaRuleEvaluatorTest {
     private static final String FIELD_NODE_DISK     = "node.disk";
     private static final String FIELD_RUN_OWNER     = "run.owner";
     private static final String FIELD_OWNER_ALIAS   = "owner";
-    private static final String FIELD_OWNER_GROUP   = "run.owner.group";
+    private static final String FIELD_OWNER_GROUP   = "run.owner.authorities";
     private static final String FIELD_UNKNOWN       = "run.no_such_field";
 
     private static final String TAG_IDLE         = "IDLE";
@@ -94,9 +96,10 @@ class ComputeQuotaRuleEvaluatorTest {
     private static final int HOURS_80_ELAPSED = 80;
     private static final int ACTION_VALUE     = 100;
 
-    private final UserGroupHolder userGroupHolder = mock(UserGroupHolder.class);
-    private final ComputeQuotaRuleEvaluator<PipelineRun> evaluator =
-            ComputeQuotaRuleEvaluator.forPipelineRun(userGroupHolder);
+    private final Map<String, Set<String>> authorities = new HashMap<>();
+    private final ComputeQuotaRuleEvaluator<PipelineRun> evaluator = new ComputeQuotaRuleEvaluator<>(
+            CloudPipelineApiAwareEntityFieldConditionStrategyComposer.buildPipelineRunRegistry(
+                username -> authorities.getOrDefault(username, Collections.emptySet())));
 
     // ARRAY
 
@@ -448,31 +451,31 @@ class ComputeQuotaRuleEvaluatorTest {
 
     @Test
     void shouldMatchRunWhenOwnerBelongsToGroup() {
-        when(userGroupHolder.getGroupsForUser(OWNER_USER1)).thenReturn(Collections.singleton(GROUP_TEAM_A));
+        authorities.put(OWNER_USER1, Collections.singleton(GROUP_TEAM_A));
         assertTrue(evaluator.matches(rule(logical(FIELD_OWNER_GROUP, EQ, GROUP_TEAM_A)), runWithOwner(OWNER_USER1)));
     }
 
     @Test
     void shouldNotMatchRunWhenOwnerDoesNotBelongToGroup() {
-        when(userGroupHolder.getGroupsForUser(OWNER_USER1)).thenReturn(Collections.singleton(GROUP_TEAM_B));
+        authorities.put(OWNER_USER1, Collections.singleton(GROUP_TEAM_B));
         assertFalse(evaluator.matches(rule(logical(FIELD_OWNER_GROUP, EQ, GROUP_TEAM_A)), runWithOwner(OWNER_USER1)));
     }
 
     @Test
     void shouldMatchRunOnNotEqualsWhenOwnerNotInGroup() {
-        when(userGroupHolder.getGroupsForUser(OWNER_USER1)).thenReturn(Collections.singleton(GROUP_TEAM_B));
+        authorities.put(OWNER_USER1, Collections.singleton(GROUP_TEAM_B));
         assertTrue(evaluator.matches(rule(logical(FIELD_OWNER_GROUP, NEQ, GROUP_TEAM_A)), runWithOwner(OWNER_USER1)));
     }
 
     @Test
     void shouldMatchRunOwnerGroupCaseInsensitively() {
-        when(userGroupHolder.getGroupsForUser(OWNER_USER1)).thenReturn(Collections.singleton("Team-A"));
+        authorities.put(OWNER_USER1, Collections.singleton("Team-A"));
         assertTrue(evaluator.matches(rule(logical(FIELD_OWNER_GROUP, EQ, GROUP_TEAM_A)), runWithOwner(OWNER_USER1)));
     }
 
     @Test
     void shouldMatchRunWhenOwnerBelongsToAnyGroupViaOrTree() {
-        when(userGroupHolder.getGroupsForUser(OWNER_USER1)).thenReturn(Collections.singleton(GROUP_TEAM_B));
+        authorities.put(OWNER_USER1, Collections.singleton(GROUP_TEAM_B));
         assertTrue(evaluator.matches(rule(orExpr(
                 logical(FIELD_OWNER_GROUP, EQ, GROUP_TEAM_A),
                 logical(FIELD_OWNER_GROUP, EQ, GROUP_TEAM_B)
@@ -481,7 +484,6 @@ class ComputeQuotaRuleEvaluatorTest {
 
     @Test
     void shouldNotMatchRunWhenOwnerBelongsToNeitherGroupInOrTree() {
-        when(userGroupHolder.getGroupsForUser(OWNER_USER1)).thenReturn(Collections.emptySet());
         assertFalse(evaluator.matches(rule(orExpr(
                 logical(FIELD_OWNER_GROUP, EQ, GROUP_TEAM_A),
                 logical(FIELD_OWNER_GROUP, EQ, GROUP_TEAM_B)
@@ -490,7 +492,6 @@ class ComputeQuotaRuleEvaluatorTest {
 
     @Test
     void shouldNotMatchRunOwnerGroupWhenOwnerIsNull() {
-        when(userGroupHolder.getGroupsForUser(null)).thenReturn(Collections.emptySet());
         final PipelineRun run = mock(PipelineRun.class);
         when(run.getOwner()).thenReturn(null);
         when(run.getTags()).thenReturn(Collections.emptyMap());
@@ -543,7 +544,7 @@ class ComputeQuotaRuleEvaluatorTest {
         final LocalDateTime now = LocalDateTime.of(2026, 7, 13, 12, 0, 0);
         final Map<String, String> tags = new HashMap<>();
         tags.put(TAG_IDLE, SPOT_TRUE);
-        tags.put(TAG_IDLE + TagLeafEvaluationStrategy.DATE_SUFFIX, "not-a-date");
+        tags.put(TAG_IDLE + TagFieldEvaluationStrategy.DATE_SUFFIX, "not-a-date");
         final PipelineRun run = runWithTags(tags);
         assertFalse(evaluator.matches(rule(logicalWithDuration(FIELD_RUN_TAG, EQ, TAG_IDLE, DURATION_48H)), run, now));
     }
@@ -569,10 +570,10 @@ class ComputeQuotaRuleEvaluatorTest {
         final LocalDateTime now = LocalDateTime.of(2026, 7, 13, 12, 0, 0);
         final Map<String, String> tags = new HashMap<>();
         tags.put(TAG_IDLE, SPOT_TRUE);
-        tags.put(TAG_IDLE + TagLeafEvaluationStrategy.DATE_SUFFIX,
+        tags.put(TAG_IDLE + TagFieldEvaluationStrategy.DATE_SUFFIX,
                 formatDate(now.minusHours(HOURS_50_ELAPSED)));
         tags.put(TAG_LONG_RUNNING, SPOT_TRUE);
-        tags.put(TAG_LONG_RUNNING + TagLeafEvaluationStrategy.DATE_SUFFIX,
+        tags.put(TAG_LONG_RUNNING + TagFieldEvaluationStrategy.DATE_SUFFIX,
                 formatDate(now.minusHours(HOURS_80_ELAPSED)));
         final PipelineRun run = runWithTags(tags);
         assertTrue(evaluator.matches(rule(and(
@@ -586,10 +587,10 @@ class ComputeQuotaRuleEvaluatorTest {
         final LocalDateTime now = LocalDateTime.of(2026, 7, 13, 12, 0, 0);
         final Map<String, String> tags = new HashMap<>();
         tags.put(TAG_IDLE, SPOT_TRUE);
-        tags.put(TAG_IDLE + TagLeafEvaluationStrategy.DATE_SUFFIX,
+        tags.put(TAG_IDLE + TagFieldEvaluationStrategy.DATE_SUFFIX,
                 formatDate(now.minusHours(HOURS_50_ELAPSED)));
         tags.put(TAG_LONG_RUNNING, SPOT_TRUE);
-        tags.put(TAG_LONG_RUNNING + TagLeafEvaluationStrategy.DATE_SUFFIX,
+        tags.put(TAG_LONG_RUNNING + TagFieldEvaluationStrategy.DATE_SUFFIX,
                 formatDate(now.minusHours(10)));
         final PipelineRun run = runWithTags(tags);
         assertFalse(evaluator.matches(rule(and(
@@ -683,7 +684,7 @@ class ComputeQuotaRuleEvaluatorTest {
     private static PipelineRun runWithTagAndDate(final String tagName, final LocalDateTime tagApplied) {
         final Map<String, String> tags = new HashMap<>();
         tags.put(tagName, SPOT_TRUE);
-        tags.put(tagName + TagLeafEvaluationStrategy.DATE_SUFFIX, formatDate(tagApplied));
+        tags.put(tagName + TagFieldEvaluationStrategy.DATE_SUFFIX, formatDate(tagApplied));
         return runWithTags(tags);
     }
 

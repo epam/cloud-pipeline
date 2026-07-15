@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.monitor.monitoring.quota;
+package com.epam.pipeline.utils.condition.evaluation;
 
-import com.epam.pipeline.entity.quota.ConditionOperator;
-import com.epam.pipeline.entity.quota.FieldType;
-import com.epam.pipeline.entity.quota.SubjectEntityField;
+
+import com.epam.pipeline.utils.condition.ConditionOperator;
+import com.epam.pipeline.utils.condition.FieldType;
+import com.epam.pipeline.utils.condition.field.SubjectEntityField;
 
 import java.util.regex.Pattern;
 
@@ -31,9 +32,9 @@ import java.util.regex.Pattern;
  *
  * @param <T> the subject type being evaluated
  */
-class StringLeafEvaluationStrategy<T> extends AbstractLeafEvaluationStrategy<T> {
+public class StringFieldEvaluationStrategy<T> extends AbstractLeafEvaluationStrategy<T> {
 
-    StringLeafEvaluationStrategy(final SubjectEntityField<T> field) {
+    public StringFieldEvaluationStrategy(final SubjectEntityField<T> field) {
         super(field);
     }
 

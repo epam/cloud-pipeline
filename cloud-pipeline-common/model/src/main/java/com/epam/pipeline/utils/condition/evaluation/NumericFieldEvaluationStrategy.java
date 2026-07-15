@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.monitor.monitoring.quota;
+package com.epam.pipeline.utils.condition.evaluation;
 
-import com.epam.pipeline.entity.quota.ConditionOperator;
-import com.epam.pipeline.entity.quota.FieldType;
-import com.epam.pipeline.entity.quota.SubjectEntityField;
+
+import com.epam.pipeline.utils.condition.ConditionOperator;
+import com.epam.pipeline.utils.condition.FieldType;
+import com.epam.pipeline.utils.condition.field.SubjectEntityField;
 
 /**
  * Evaluates {@link FieldType#NUMERIC} leaf nodes using standard double-precision arithmetic.
@@ -27,9 +28,9 @@ import com.epam.pipeline.entity.quota.SubjectEntityField;
  *
  * @param <T> the subject type being evaluated
  */
-class NumericLeafEvaluationStrategy<T> extends AbstractLeafEvaluationStrategy<T> {
+public class NumericFieldEvaluationStrategy<T> extends AbstractLeafEvaluationStrategy<T> {
 
-    NumericLeafEvaluationStrategy(final SubjectEntityField<T> field) {
+    public NumericFieldEvaluationStrategy(final SubjectEntityField<T> field) {
         super(field);
     }
 

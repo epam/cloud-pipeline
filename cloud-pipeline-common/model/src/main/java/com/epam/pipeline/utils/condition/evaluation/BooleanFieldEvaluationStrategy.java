@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.monitor.monitoring.quota;
+package com.epam.pipeline.utils.condition.evaluation;
 
-import com.epam.pipeline.entity.quota.ConditionOperator;
-import com.epam.pipeline.entity.quota.FieldType;
-import com.epam.pipeline.entity.quota.SubjectEntityField;
+
+import com.epam.pipeline.utils.condition.ConditionOperator;
+import com.epam.pipeline.utils.condition.FieldType;
+import com.epam.pipeline.utils.condition.field.SubjectEntityField;
 
 /**
  * Evaluates {@link FieldType#BOOLEAN} leaf nodes (e.g. {@code run.spot}).
@@ -27,9 +28,9 @@ import com.epam.pipeline.entity.quota.SubjectEntityField;
  *
  * @param <T> the subject type being evaluated
  */
-class BooleanLeafEvaluationStrategy<T> extends AbstractLeafEvaluationStrategy<T> {
+public class BooleanFieldEvaluationStrategy<T> extends AbstractLeafEvaluationStrategy<T> {
 
-    BooleanLeafEvaluationStrategy(final SubjectEntityField<T> field) {
+    public BooleanFieldEvaluationStrategy(final SubjectEntityField<T> field) {
         super(field);
     }
 

@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.quota;
+package com.epam.pipeline.utils.condition.field;
 
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.utils.condition.ConditionExpression;
+import com.epam.pipeline.utils.condition.FieldType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import lombok.Getter;
@@ -29,12 +31,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
-import static com.epam.pipeline.entity.quota.FieldType.BOOLEAN;
-import static com.epam.pipeline.entity.quota.FieldType.ENUM;
-import static com.epam.pipeline.entity.quota.FieldType.GROUPS;
-import static com.epam.pipeline.entity.quota.FieldType.NUMERIC;
-import static com.epam.pipeline.entity.quota.FieldType.STRING;
-import static com.epam.pipeline.entity.quota.FieldType.TAGS;
+import static com.epam.pipeline.utils.condition.FieldType.BOOLEAN;
+import static com.epam.pipeline.utils.condition.FieldType.ENUM;
+import static com.epam.pipeline.utils.condition.FieldType.NUMERIC;
+import static com.epam.pipeline.utils.condition.FieldType.STRING;
+import static com.epam.pipeline.utils.condition.FieldType.TAGS;
 
 /**
  * Filterable fields available in compute quota rule expressions.
@@ -142,10 +143,10 @@ public enum PipelineRunField implements SubjectEntityField<PipelineRun> {
      * Evaluated by the monitoring service using cached user-group data.
      * Expression names: {@code run.owner.group}, {@code owner.group}.
      */
-    OWNER_GROUP(GROUPS,
-            AbstractSecuredEntity::getOwner,
+    OWNER_AUTHORITIES(FieldType.USER_AUTHORITIES,
+            PipelineRun::getOwner,
             false,
-            "run.owner.group", "owner.group");
+            "run.owner.authorities", "owner.authorities");
 
     /** Value type that governs which operators are valid and how comparisons are performed. */
     @Getter

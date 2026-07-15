@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.monitor.monitoring.quota;
+package com.epam.pipeline.utils.condition.evaluation;
 
-import com.epam.pipeline.entity.quota.ConditionExpression;
+
+import com.epam.pipeline.utils.condition.ConditionExpression;
 
 import java.time.LocalDateTime;
 
@@ -32,7 +33,7 @@ import java.time.LocalDateTime;
  * @param <T> the subject type being evaluated (e.g. {@code PipelineRun})
  */
 @FunctionalInterface
-interface LeafEvaluationStrategy<T> {
+public interface EntityConditionEvaluationStrategy<T> {
 
     /**
      * @param node    the LOGICAL leaf node to evaluate

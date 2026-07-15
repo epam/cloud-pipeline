@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.quota;
+package com.epam.pipeline.utils.condition.field;
+
+import com.epam.pipeline.utils.condition.ConditionExpression;
+import com.epam.pipeline.utils.condition.FieldType;
 
 import java.util.List;
 

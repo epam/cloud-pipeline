@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity.quota;
 
+import com.epam.pipeline.utils.condition.ConditionExpression;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
