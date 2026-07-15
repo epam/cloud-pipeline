@@ -934,15 +934,15 @@ public final class MessageConstants {
     public static final String DEBUG_ARCHIVE_RUN_LOADED_STATUSES = "debug.archive.run.loaded.statuses";
 
     // Compute quota rules
-    public static final String ERROR_COMPUTE_QUOTA_RULE_NOT_FOUND = "error.compute.quota.rule.not.found";
-    public static final String ERROR_COMPUTE_QUOTA_RULE_NAME_EMPTY = "error.compute.quota.rule.name.empty";
-    public static final String ERROR_COMPUTE_QUOTA_RULE_FILTER_EMPTY = "error.compute.quota.rule.filter.empty";
-    public static final String ERROR_COMPUTE_QUOTA_RULE_ACTION_EMPTY = "error.compute.quota.rule.action.empty";
-    public static final String ERROR_COMPUTE_QUOTA_RULE_UNKNOWN_FIELD = "error.compute.quota.rule.unknown.field";
-    public static final String ERROR_COMPUTE_QUOTA_RULE_UNSUPPORTED_OPERAND =
-            "error.compute.quota.rule.unsupported.operand";
-    public static final String ERROR_COMPUTE_QUOTA_RULE_DURATION_NOT_SUPPORTED =
-            "error.compute.quota.rule.duration.not.supported";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_NOT_FOUND = "error.platform.usage.credits.rule.not.found";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_NAME_EMPTY = "error.platform.usage.credits.rule.name.empty";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_FILTER_EMPTY = "error.platform.usage.credits.rule.filter.empty";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_ACTION_EMPTY = "error.platform.usage.credits.rule.action.empty";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_UNKNOWN_FIELD = "error.platform.usage.credits.rule.unknown.field";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_UNSUPPORTED_OPERAND =
+            "error.platform.usage.credits.rule.unsupported.operand";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_DURATION_NOT_SUPPORTED =
+            "error.platform.usage.credits.rule.duration.not.supported";
 
     private MessageConstants() {
         // no-op

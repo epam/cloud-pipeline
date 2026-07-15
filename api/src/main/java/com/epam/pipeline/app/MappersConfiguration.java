@@ -22,7 +22,7 @@ import com.epam.pipeline.mapper.cluster.KubernetesMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolUsageMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodeScheduleMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
-import com.epam.pipeline.mapper.compute.quota.ComputeQuotaRuleMapper;
+import com.epam.pipeline.mapper.credits.PlatformUsageCreditsRuleMapper;
 import com.epam.pipeline.mapper.datastorage.lifecycle.StorageLifecycleEntityMapper;
 import com.epam.pipeline.mapper.git.AzureDevOpsMapper;
 import com.epam.pipeline.mapper.git.BitbucketCloudMapper;
@@ -193,7 +193,7 @@ public class MappersConfiguration {
     }
 
     @Bean
-    public ComputeQuotaRuleMapper computeQuotaRuleMapper() {
-        return Mappers.getMapper(ComputeQuotaRuleMapper.class);
+    public PlatformUsageCreditsRuleMapper platformUsageCreditsRuleMapper() {
+        return Mappers.getMapper(PlatformUsageCreditsRuleMapper.class);
     }
 }

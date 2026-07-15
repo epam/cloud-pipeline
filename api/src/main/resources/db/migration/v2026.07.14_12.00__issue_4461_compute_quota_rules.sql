@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS pipeline.compute_quota_rule (
+CREATE TABLE IF NOT EXISTS pipeline.usage_credits_update_rule (
     id                 BIGSERIAL                   PRIMARY KEY,
     name               TEXT        NOT NULL,
     description        TEXT,
