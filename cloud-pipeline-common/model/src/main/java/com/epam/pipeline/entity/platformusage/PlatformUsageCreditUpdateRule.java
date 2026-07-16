@@ -16,18 +16,24 @@
 
 package com.epam.pipeline.entity.platformusage;
 
+import com.epam.pipeline.utils.condition.ConditionExpression;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PlatformUsageScoreUserBalance {
+public class PlatformUsageCreditUpdateRule {
 
-    private Long userId;
-    private int currentValue;
-    private LocalDateTime modifiedDate;
+    private Long id;
+    private String name;
+    private String description;
+    private PlatformUsageCreditUpdateRuleType strategyType;
+    private ConditionExpression statement;
+    /** Optional: runs matching this expression are excluded even if they match statement expression. */
+    private ConditionExpression exclude;
+    private PlatformUsageCreditUpdateAction action;
 }

@@ -17,18 +17,17 @@
 package com.epam.pipeline.entity.platformusage;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PlatformUsageScoreAction {
+public class PlatformUsageCreditUserBalance {
 
-    private PlatformUsageScoreActionType type;
-    private int value;
-    private String message;
-    private boolean perIncident;
+    private Long userId;
+    private int currentValue;
+    private LocalDateTime modifiedDate;
 }

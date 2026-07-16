@@ -21,10 +21,9 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
-import com.epam.pipeline.entity.platformusage.PlatformUsageScoreAction;
-import com.epam.pipeline.entity.platformusage.PlatformUsageScoreActionType;
-import com.epam.pipeline.entity.platformusage.PlatformUsageScoreRule;
-import com.epam.pipeline.entity.platformusage.PlatformUsageScoreRuleType;
+import com.epam.pipeline.entity.platformusage.PlatformUsageCreditUpdateAction;
+import com.epam.pipeline.entity.platformusage.PlatformUsageCreditUpdateRule;
+import com.epam.pipeline.entity.platformusage.PlatformUsageCreditUpdateRuleType;
 import com.epam.pipeline.utils.condition.ConditionExpression;
 import com.epam.pipeline.utils.condition.evaluation.TagFieldEvaluationStrategy;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class PlatformUsageScoreRuleEvaluatorTest {
+class PlatformUsageCreditUpdateRuleEvaluatorTest {
 
     private static final String EQ  = "=";
     private static final String NEQ = "!=";
@@ -99,13 +98,13 @@ class PlatformUsageScoreRuleEvaluatorTest {
     private static final int ACTION_VALUE     = 100;
 
     private Map<String, Set<String>> authorities;
-    private PlatformUsageScoreRuleEvaluator evaluator;
+    private PlatformUsageCreditUpdateRuleEvaluator evaluator;
 
     @BeforeEach
     void setUp() {
         authorities = new HashMap<>();
-        evaluator = new PlatformUsageScoreRuleEvaluator(
-                PlatformUsageScoreRuleEvaluator.buildRegistry(
+        evaluator = new PlatformUsageCreditUpdateRuleEvaluator(
+                PlatformUsageCreditUpdateRuleEvaluator.buildRegistry(
                     username -> authorities.getOrDefault(username, Collections.emptySet())));
     }
 
@@ -374,55 +373,45 @@ class PlatformUsageScoreRuleEvaluatorTest {
     }
 
     /**
-     * node.type = [m5.*, c5.*] is an OR-based include filter.
-     * A c5.xlarge spot run passes the filter (c5.xlarge matches c5.*) and matches the statement.
+     * node.type in [m5.*, c5.*] is an OR-based exclude expression.
+     * A c5.xlarge spot run matches the exclude (c5.xlarge matches c5.*) and is therefore not matched.
      */
     @Test
-    void shouldMatchRunWhenFilterOrExpressionContainsNodeType() {
+    void shouldNotMatchRunWhenExcludeOrExpressionMatchesNodeType() {
         final PipelineRun run = runWithInstance(instance(NODE_TYPE_C5_XLARGE, true, REGION_1));
-        final PlatformUsageScoreRule rule = rule(
+        final PlatformUsageCreditUpdateRule rule = rule(
                 logical(FIELD_RUN_SPOT, EQ, SPOT_TRUE),
                 orExpr(logical(FIELD_NODE_TYPE, EQ, PATTERN_M5_WILDCARD),
                         logical(FIELD_NODE_TYPE, EQ, PATTERN_C5_WILDCARD))
         );
-        assertTrue(evaluator.matches(rule, run));
-    }
-
-    /**
-     * node.type = [m5.*, c5.*] is an OR-based include filter.
-     * An m5.xlarge run does not match the c5.* part but the OR passes on the m5.* part.
-     * A run with a node type outside both families fails the filter and is not matched.
-     */
-    @Test
-    void shouldNotMatchRunWhenFilterOrExpressionDoesNotContainNodeType() {
-        final PipelineRun run = runWithInstance(instance(NODE_TYPE_C5_XLARGE, true, REGION_1));
-        final PlatformUsageScoreRule rule = rule(
-                logical(FIELD_RUN_SPOT, EQ, SPOT_TRUE),
-                logical(FIELD_NODE_TYPE, EQ, PATTERN_M5_WILDCARD)
-        );
         assertFalse(evaluator.matches(rule, run));
     }
 
-    // Filter expression (include pre-condition)
+    /**
+     * node.type = m5.* exclude does not match c5.xlarge, so the run is evaluated against the statement.
+     * spot=true matches → the run is matched.
+     */
+    @Test
+    void shouldMatchRunWhenExcludeExpressionDoesNotMatchNodeType() {
+        final PipelineRun run = runWithInstance(instance(NODE_TYPE_C5_XLARGE, true, REGION_1));
+        final PlatformUsageCreditUpdateRule rule = rule(
+                logical(FIELD_RUN_SPOT, EQ, SPOT_TRUE),
+                logical(FIELD_NODE_TYPE, EQ, PATTERN_M5_WILDCARD)
+        );
+        assertTrue(evaluator.matches(rule, run));
+    }
+
+    // Exclude expression (exclusion post-condition)
 
     @Test
-    void shouldMatchRunWhenFilterExpressionIsNull() {
+    void shouldMatchRunWhenExcludeExpressionIsNull() {
         final PipelineRun run = runWithStatus(TaskStatus.RUNNING);
         assertTrue(evaluator.matches(rule(logical(FIELD_RUN_STATUS, EQ, STATUS_RUNNING), null), run));
     }
 
     @Test
-    void shouldMatchRunWhenFilterExpressionMatches() {
+    void shouldNotMatchRunWhenExcludeExpressionMatches() {
         final PipelineRun run = runWithInstance(instance(NODE_TYPE_M5_XLARGE, true, REGION_1));
-        assertTrue(evaluator.matches(rule(
-                logical(FIELD_RUN_SPOT, EQ, SPOT_TRUE),
-                logical(FIELD_RUN_REGION_ID, EQ, REGION_1S)
-        ), run));
-    }
-
-    @Test
-    void shouldNotMatchRunWhenFilterExpressionDoesNotMatch() {
-        final PipelineRun run = runWithInstance(instance(NODE_TYPE_M5_XLARGE, true, REGION_2));
         assertFalse(evaluator.matches(rule(
                 logical(FIELD_RUN_SPOT, EQ, SPOT_TRUE),
                 logical(FIELD_RUN_REGION_ID, EQ, REGION_1S)
@@ -430,8 +419,17 @@ class PlatformUsageScoreRuleEvaluatorTest {
     }
 
     @Test
-    void shouldNotMatchRunWhenStatementFailsEvenThoughFilterPasses() {
-        final PipelineRun run = runWithInstance(instance(NODE_TYPE_M5_XLARGE, false, REGION_1));
+    void shouldMatchRunWhenExcludeExpressionDoesNotMatch() {
+        final PipelineRun run = runWithInstance(instance(NODE_TYPE_M5_XLARGE, true, REGION_2));
+        assertTrue(evaluator.matches(rule(
+                logical(FIELD_RUN_SPOT, EQ, SPOT_TRUE),
+                logical(FIELD_RUN_REGION_ID, EQ, REGION_1S)
+        ), run));
+    }
+
+    @Test
+    void shouldNotMatchRunWhenStatementFailsEvenThoughExcludeDoesNotMatch() {
+        final PipelineRun run = runWithInstance(instance(NODE_TYPE_M5_XLARGE, false, REGION_2));
         assertFalse(evaluator.matches(rule(
                 logical(FIELD_RUN_SPOT, EQ, SPOT_TRUE),
                 logical(FIELD_RUN_REGION_ID, EQ, REGION_1S)
@@ -645,20 +643,20 @@ class PlatformUsageScoreRuleEvaluatorTest {
         return expr;
     }
 
-    private static PlatformUsageScoreRule rule(final ConditionExpression filter) {
+    private static PlatformUsageCreditUpdateRule rule(final ConditionExpression filter) {
         return rule(filter, null);
     }
 
-    private static PlatformUsageScoreRule rule(final ConditionExpression filter,
-                                               final ConditionExpression exclude) {
-        return PlatformUsageScoreRule.builder()
+    private static PlatformUsageCreditUpdateRule rule(final ConditionExpression filter,
+                                                      final ConditionExpression exclude) {
+        return PlatformUsageCreditUpdateRule.builder()
                 .id(1L)
                 .name("test-rule")
-                .strategyType(PlatformUsageScoreRuleType.RUN_STATE)
+                .strategyType(PlatformUsageCreditUpdateRuleType.RUN_STATE)
                 .statement(filter)
-                .filter(exclude)
-                .action(PlatformUsageScoreAction.builder()
-                        .type(PlatformUsageScoreActionType.DEDUCTION)
+                .exclude(exclude)
+                .action(PlatformUsageCreditUpdateAction.builder()
+                        .type(PlatformUsageCreditUpdateAction.ActionType.DEDUCTION)
                         .value(ACTION_VALUE)
                         .build())
                 .build();

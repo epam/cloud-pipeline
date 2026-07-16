@@ -16,7 +16,28 @@
 
 package com.epam.pipeline.entity.platformusage;
 
-public enum PlatformUsageScoreActionType {
-    INCOME,
-    DEDUCTION
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class PlatformUsageCreditUpdateEvent {
+
+    private Long id;
+    private Long userId;
+    /** Null for manual admin adjustments. */
+    private Long ruleId;
+    /** Null for non-run events. */
+    private Long runId;
+    private PlatformUsageCreditUpdateAction.ActionType incidentType;
+    /** Always positive; direction is given by incidentType. */
+    private int value;
+    private String message;
+    private LocalDateTime createdDate;
 }
