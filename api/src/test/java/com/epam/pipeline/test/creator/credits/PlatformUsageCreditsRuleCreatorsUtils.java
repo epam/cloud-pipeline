@@ -18,7 +18,7 @@ package com.epam.pipeline.test.creator.credits;
 
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.FilterFieldVO;
-import com.epam.pipeline.dto.credits.PlatformUsageCreditsStrategyType;
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateRuleType;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateAction;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateRule;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateRuleEntity;
@@ -71,7 +71,7 @@ public interface PlatformUsageCreditsRuleCreatorsUtils {
                 .id(ID)
                 .name(RULE_NAME)
                 .description(RULE_DESCRIPTION)
-                .strategyType(PlatformUsageCreditsStrategyType.RUN_STATE)
+                .ruleType(PlatformUsageCreditsUpdateRuleType.RUN_STATE)
                 .statement(filterExpression())
                 .action(platformUsageCreditsAction())
                 .build();
@@ -82,7 +82,7 @@ public interface PlatformUsageCreditsRuleCreatorsUtils {
                 .id(ID)
                 .name(RULE_NAME)
                 .description(RULE_DESCRIPTION)
-                .strategyType(PlatformUsageCreditsStrategyType.RUN_STATE)
+                .ruleType(PlatformUsageCreditsUpdateRuleType.RUN_STATE)
                 .statement(filterExpression())
                 .actionType(PlatformUsageCreditsUpdateAction.ActionType.DEDUCTION)
                 .actionValue(ACTION_VALUE)
@@ -110,6 +110,6 @@ public interface PlatformUsageCreditsRuleCreatorsUtils {
 
     static Map<String, List<FilterFieldVO>> filterFieldVOMap() {
         return Collections.singletonMap(
-                PlatformUsageCreditsStrategyType.RUN_STATE.name(), filterFieldVOList());
+                PlatformUsageCreditsUpdateRuleType.RUN_STATE.name(), filterFieldVOList());
     }
 }

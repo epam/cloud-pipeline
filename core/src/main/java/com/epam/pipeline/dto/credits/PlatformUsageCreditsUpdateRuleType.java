@@ -54,12 +54,12 @@ import lombok.Getter;
  * }</pre>
  */
 @Getter
-public enum PlatformUsageCreditsStrategyType {
+public enum PlatformUsageCreditsUpdateRuleType {
     RUN_STATE(PipelineRun.class);
 
     private final Class<? extends AbstractSecuredEntity> entityClass;
 
-    PlatformUsageCreditsStrategyType(final Class<? extends AbstractSecuredEntity> entityClass) {
+    PlatformUsageCreditsUpdateRuleType(final Class<? extends AbstractSecuredEntity> entityClass) {
         this.entityClass = entityClass;
     }
 }

@@ -34,6 +34,7 @@ public class PlatformUsageCreditsRuleApiService {
 
     private final PlatformUsageCreditsRuleService manager;
 
+    @PreAuthorize(ADMIN_ONLY)
     public List<PlatformUsageCreditsUpdateRule> loadAll() {
         return manager.loadAll();
     }
@@ -53,6 +54,7 @@ public class PlatformUsageCreditsRuleApiService {
         manager.delete(id);
     }
 
+    @PreAuthorize(ADMIN_ONLY)
     public Map<String, List<FilterFieldVO>> getKeywords() {
         return manager.getKeywords();
     }

@@ -18,7 +18,7 @@ package com.epam.pipeline.entity.credits;
 
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateAction;
 import com.epam.pipeline.utils.condition.ConditionExpression;
-import com.epam.pipeline.dto.credits.PlatformUsageCreditsStrategyType;
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateRuleType;
 import com.epam.pipeline.entity.utils.TimestampConverter;
 import com.epam.pipeline.hibernate.ConditionExpressionUserType;
 import lombok.AllArgsConstructor;
@@ -60,15 +60,15 @@ public class PlatformUsageCreditsUpdateRuleEntity {
     private String description;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "strategy_type", nullable = false)
-    private PlatformUsageCreditsStrategyType strategyType;
+    @Column(name = "rule_type", nullable = false)
+    private PlatformUsageCreditsUpdateRuleType ruleType;
 
     @Type(type = "ConditionExpressionUserType")
-    @Column(name = "filter_expression", nullable = false)
+    @Column(name = "statement", nullable = false)
     private ConditionExpression statement;
 
     @Type(type = "ConditionExpressionUserType")
-    @Column(name = "exclude_expression")
+    @Column(name = "exclude")
     private ConditionExpression exclude;
 
     @Enumerated(EnumType.STRING)

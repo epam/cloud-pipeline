@@ -22,8 +22,7 @@ import org.junit.Test;
 import org.mapstruct.factory.Mappers;
 
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsRuleCreatorsUtils.platformUsageCreditsRule;
-import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsRuleCreatorsUtils
-        .platformUsageCreditsRuleEntity;
+import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsRuleCreatorsUtils.platformUsageCreditsRuleEntity;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -42,7 +41,7 @@ public class PlatformUsageCreditsUpdateRuleMapperTest {
         assertThat(dto.getId(), is(entity.getId()));
         assertThat(dto.getName(), is(entity.getName()));
         assertThat(dto.getDescription(), is(entity.getDescription()));
-        assertThat(dto.getStrategyType(), is(entity.getStrategyType()));
+        assertThat(dto.getRuleType(), is(entity.getRuleType()));
         assertThat(dto.getStatement(), is(entity.getStatement()));
         assertThat(dto.getExclude(), is(entity.getExclude()));
         assertThat(dto.getAction(), notNullValue());
@@ -61,7 +60,7 @@ public class PlatformUsageCreditsUpdateRuleMapperTest {
         assertThat(entity.getId(), is(dto.getId()));
         assertThat(entity.getName(), is(dto.getName()));
         assertThat(entity.getDescription(), is(dto.getDescription()));
-        assertThat(entity.getStrategyType(), is(dto.getStrategyType()));
+        assertThat(entity.getRuleType(), is(dto.getRuleType()));
         assertThat(entity.getStatement(), is(dto.getStatement()));
         assertThat(entity.getExclude(), is(dto.getExclude()));
         assertThat(entity.getActionType(), is(dto.getAction().getType()));

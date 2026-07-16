@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.repository.credits;
 
-import com.epam.pipeline.dto.credits.PlatformUsageCreditsStrategyType;
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateRuleType;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateAction;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateRuleEntity;
 import com.epam.pipeline.test.repository.AbstractJpaTest;
@@ -57,7 +57,7 @@ public class PlatformUsageCreditsUpdateRuleRepositoryTest extends AbstractJpaTes
         assertThat(loaded, notNullValue());
         assertThat(loaded.getName(), is(rule.getName()));
         assertThat(loaded.getDescription(), is(rule.getDescription()));
-        assertThat(loaded.getStrategyType(), is(rule.getStrategyType()));
+        assertThat(loaded.getRuleType(), is(rule.getRuleType()));
         assertThat(loaded.getActionType(), is(rule.getActionType()));
         assertThat(loaded.getActionValue(), is(rule.getActionValue()));
         assertThat(loaded.getActionMessage(), is(rule.getActionMessage()));
@@ -71,7 +71,7 @@ public class PlatformUsageCreditsUpdateRuleRepositoryTest extends AbstractJpaTes
                 is(rule.getStatement().getDuration()));
 
         loaded.setActionType(PlatformUsageCreditsUpdateAction.ActionType.INCREASE);
-        loaded.setStrategyType(PlatformUsageCreditsStrategyType.RUN_STATE);
+        loaded.setRuleType(PlatformUsageCreditsUpdateRuleType.RUN_STATE);
         repository.save(loaded);
 
         entityManager.flush();

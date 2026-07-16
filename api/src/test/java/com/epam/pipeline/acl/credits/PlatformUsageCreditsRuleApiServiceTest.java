@@ -46,7 +46,7 @@ public class PlatformUsageCreditsRuleApiServiceTest extends AbstractAclTest {
     private PlatformUsageCreditsRuleService mockPlatformUsageCreditsRuleService;
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = ADMIN_ROLE)
     public void shouldLoadAll() {
         final List<PlatformUsageCreditsUpdateRule> rules = platformUsageCreditsRuleList();
         doReturn(rules).when(mockPlatformUsageCreditsRuleService).loadAll();
@@ -104,7 +104,7 @@ public class PlatformUsageCreditsRuleApiServiceTest extends AbstractAclTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = ADMIN_ROLE)
     public void shouldGetKeywords() {
         final Map<String, List<FilterFieldVO>> keywords = filterFieldVOMap();
         doReturn(keywords).when(mockPlatformUsageCreditsRuleService).getKeywords();

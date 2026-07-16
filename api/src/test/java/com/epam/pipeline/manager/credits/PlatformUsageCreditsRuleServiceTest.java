@@ -18,7 +18,7 @@ package com.epam.pipeline.manager.credits;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.FilterFieldVO;
-import com.epam.pipeline.dto.credits.PlatformUsageCreditsStrategyType;
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateRuleType;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateRule;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateRuleEntity;
 import com.epam.pipeline.mapper.credits.PlatformUsageCreditsRuleMapper;
@@ -146,7 +146,7 @@ public class PlatformUsageCreditsRuleServiceTest {
                 ArgumentCaptor.forClass(PlatformUsageCreditsUpdateRuleEntity.class);
         verify(repository).save(captor.capture());
         assertThat(captor.getValue().getId(), is(ID));
-        assertThat(captor.getValue().getStrategyType(), is(existing.getStrategyType()));
+        assertThat(captor.getValue().getRuleType(), is(existing.getRuleType()));
         assertThat(captor.getValue().getCreatedDate(), is(existing.getCreatedDate()));
         assertThat(captor.getValue().getModifiedDate(), notNullValue());
         assertThat(result, is(rule));
@@ -179,13 +179,13 @@ public class PlatformUsageCreditsRuleServiceTest {
     public void shouldGetKeywordsForAllStrategyTypes() {
         final Map<String, List<FilterFieldVO>> keywords = manager.getKeywords();
 
-        assertThat(keywords.containsKey(PlatformUsageCreditsStrategyType.RUN_STATE.name()), is(true));
+        assertThat(keywords.containsKey(PlatformUsageCreditsUpdateRuleType.RUN_STATE.name()), is(true));
     }
 
     @Test
     public void shouldGetKeywordsForAllRunFields() {
         final List<FilterFieldVO> keywords =
-                manager.getKeywords().get(PlatformUsageCreditsStrategyType.RUN_STATE.name());
+                manager.getKeywords().get(PlatformUsageCreditsUpdateRuleType.RUN_STATE.name());
 
         final List<String> expectedNames = Arrays.stream(PipelineRunField.values())
                 .flatMap(f -> f.getDisplayNames().stream())
@@ -199,7 +199,7 @@ public class PlatformUsageCreditsRuleServiceTest {
     @Test
     public void shouldGetKeywordsWithSupportedOperands() {
         final List<FilterFieldVO> keywords =
-                manager.getKeywords().get(PlatformUsageCreditsStrategyType.RUN_STATE.name());
+                manager.getKeywords().get(PlatformUsageCreditsUpdateRuleType.RUN_STATE.name());
 
         keywords.forEach(kw -> assertThat(
                 "Expected non-empty operands for field: " + kw.getFieldName(),
