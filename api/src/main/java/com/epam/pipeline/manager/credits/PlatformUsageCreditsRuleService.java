@@ -19,7 +19,8 @@ package com.epam.pipeline.manager.credits;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.FilterFieldVO;
-import com.epam.pipeline.dto.credits.*;
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsStrategyType;
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateRule;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateRuleEntity;
 import com.epam.pipeline.entity.utils.DateUtils;
@@ -40,14 +41,18 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * Business-logic layer for compute quota rules.
+ * Business-logic layer for platform usage credits update rules.
  *
- * <p>A quota rule describes a condition evaluated against run attributes (field, operand, value)
- * and an associated action (income or deduction) applied to the owner's quota balance when the
+ * <p>A Platfor Usage Credits Update rule describes a condition evaluated against run attributes (field, operand, value)
+ * and an associated action (increase or deduction) applied to the owner's credits balance when the
  * condition is met. Rules are evaluated periodically by the monitoring service; this service
  * is responsible only for their lifecycle management.
  *
@@ -55,10 +60,10 @@ import java.util.stream.Collectors;
  * <pre>{@code
  * {
  *   "name": "Idle Run Penalty",
- *   "filterExpression": { "filterExpressionType": "LOGICAL",
+ *   "statement": { "conditionType": "LOGICAL",
  *                         "field": "run.tag", "operand": "=",
  *                         "value": "IDLE", "duration": 48 },
- *   "excludeExpression": { "filterExpressionType": "LOGICAL",
+ *   "exclude": { "conditionType": "LOGICAL",
  *                          "field": "run.spot", "operand": "=", "value": "true" },
  *   "action": { "type": "DEDUCTION", "value": 100, "perIncident": true }
  * }
@@ -70,9 +75,9 @@ import java.util.stream.Collectors;
  * <pre>{@code
  * {
  *   "name": "Spot Usage Reward",
- *   "filterExpression": { "filterExpressionType": "LOGICAL",
+ *   "statement": { "conditionType": "LOGICAL",
  *                         "field": "run.spot", "operand": "=", "value": "true" },
- *   "action": { "type": "INCOME", "value": 200, "perIncident": false }
+ *   "action": { "type": "INCREASE", "value": 200, "perIncident": false }
  * }
  * }</pre>
  * Awards 200 CPU credits once per spot run regardless of how often the rule fires.

@@ -20,14 +20,14 @@ import com.epam.pipeline.utils.condition.ConditionExpression;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.utils.condition.FieldType;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Describes a single filterable field of a domain object of type {@code T}.
- *
- * <p>Implementations register their display names, value type, and extraction logic so that
- * {@code ComputeQuotaRuleEvaluator} can evaluate filter expression trees against any subject
- * type — not just {@link PipelineRun}.
  *
  * @param <T> the subject type this field belongs to (e.g. {@code PipelineRun})
  */
