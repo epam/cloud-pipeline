@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.quota;
+package com.epam.pipeline.entity.platformusage;
 
+import com.epam.pipeline.utils.condition.ConditionExpression;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -25,10 +26,14 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ComputeQuotaAction {
+public class PlatformUsageCreditUpdateRule {
 
-    private ComputeQuotaActionType type;
-    private int value;
-    private String message;
-    private boolean perIncident;
+    private Long id;
+    private String name;
+    private String description;
+    private PlatformUsageCreditUpdateRuleType strategyType;
+    private ConditionExpression statement;
+    /** Optional: runs matching this expression are excluded even if they match statement expression. */
+    private ConditionExpression exclude;
+    private PlatformUsageCreditUpdateAction action;
 }

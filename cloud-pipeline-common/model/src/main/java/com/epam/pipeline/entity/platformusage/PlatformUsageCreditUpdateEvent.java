@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.quota;
+package com.epam.pipeline.entity.platformusage;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,7 +27,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ComputeQuotaEvent {
+public class PlatformUsageCreditUpdateEvent {
 
     private Long id;
     private Long userId;
@@ -35,7 +35,7 @@ public class ComputeQuotaEvent {
     private Long ruleId;
     /** Null for non-run events. */
     private Long runId;
-    private ComputeQuotaActionType incidentType;
+    private PlatformUsageCreditUpdateAction.ActionType incidentType;
     /** Always positive; direction is given by incidentType. */
     private int value;
     private String message;

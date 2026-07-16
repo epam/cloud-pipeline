@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.monitor.monitoring.quota;
+package com.epam.pipeline.monitor.monitoring.platformusage;
 
 import com.epam.pipeline.entity.pipeline.PipelineRun;
-import com.epam.pipeline.entity.quota.ComputeQuotaRule;
+import com.epam.pipeline.entity.platformusage.PlatformUsageCreditUpdateRule;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.monitor.rest.CloudPipelineAPIClient;
@@ -46,21 +46,21 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Evaluates a {@link ComputeQuotaRule} against a {@link PipelineRun}.
+ * Evaluates a {@link PlatformUsageCreditUpdateRule} against a {@link PipelineRun}.
  *
  * <p>A run matches a rule when:
  * <ol>
- *   <li>the rule's {@code filter} expression is {@code null} or evaluates to {@code true}, AND</li>
+ *   <li>the rule's {@code exclude} expression is {@code null} or evaluates to {@code false}, AND</li>
  *   <li>the rule's {@code statement} expression evaluates to {@code true}.</li>
  * </ol>
  */
 @Component
-public class ComputeQuotaRuleEvaluator {
+public class PlatformUsageCreditUpdateRuleEvaluator {
 
     private final ConditionExpressionEvaluator<PipelineRun> expressionEvaluator;
 
     @Autowired
-    public ComputeQuotaRuleEvaluator(final CloudPipelineAPIClient cloudPipelineAPIClient) {
+    public PlatformUsageCreditUpdateRuleEvaluator(final CloudPipelineAPIClient cloudPipelineAPIClient) {
         this.expressionEvaluator = new ConditionExpressionEvaluator<>(buildRegistry(
             username -> {
                 if (username == null) {
@@ -78,21 +78,21 @@ public class ComputeQuotaRuleEvaluator {
             }));
     }
 
-    ComputeQuotaRuleEvaluator(final Map<String, EntityConditionEvaluationStrategy<PipelineRun>> registry) {
+    PlatformUsageCreditUpdateRuleEvaluator(final Map<String, EntityConditionEvaluationStrategy<PipelineRun>> registry) {
         this.expressionEvaluator = new ConditionExpressionEvaluator<>(registry);
     }
 
     /**
      * Evaluates the rule against the run using the current UTC time for duration checks.
      */
-    public boolean matches(final ComputeQuotaRule rule, final PipelineRun run) {
+    public boolean matches(final PlatformUsageCreditUpdateRule rule, final PipelineRun run) {
         return matches(rule, run, LocalDateTime.now(ZoneOffset.UTC));
     }
 
-    public boolean matches(final ComputeQuotaRule rule, final PipelineRun run,
-                            final LocalDateTime evaluationTime) {
-        if (!Objects.isNull(rule.getFilter())
-                && !expressionEvaluator.evaluate(rule.getFilter(), run, evaluationTime)) {
+    public boolean matches(final PlatformUsageCreditUpdateRule rule, final PipelineRun run,
+                           final LocalDateTime evaluationTime) {
+        if (!Objects.isNull(rule.getExclude())
+                && expressionEvaluator.evaluate(rule.getExclude(), run, evaluationTime)) {
             return false;
         }
         return expressionEvaluator.evaluate(rule.getStatement(), run, evaluationTime);

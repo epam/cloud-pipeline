@@ -14,9 +14,20 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.quota;
+package com.epam.pipeline.entity.platformusage;
 
-public enum ComputeQuotaActionType {
-    INCOME,
-    DEDUCTION
+import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.pipeline.PipelineRun;
+import lombok.Getter;
+
+@Getter
+public enum PlatformUsageCreditUpdateRuleType {
+    RUN_STATE(PipelineRun.class);
+
+    private final Class<? extends AbstractSecuredEntity> entityClass;
+
+    PlatformUsageCreditUpdateRuleType(Class<? extends AbstractSecuredEntity> entityClass) {
+        this.entityClass = entityClass;
+    }
+
 }

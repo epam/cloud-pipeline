@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.quota;
+package com.epam.pipeline.entity.platformusage;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -25,7 +25,7 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ComputeQuotaUserBalance {
+public class PlatformUsageCreditUserBalance {
 
     private Long userId;
     private int currentValue;

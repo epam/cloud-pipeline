@@ -29,7 +29,7 @@ import java.util.Map;
  * Describes a single filterable field of a domain object of type {@code T}.
  *
  * <p>Implementations register their display names, value type, and extraction logic so that
- * {@code ComputeQuotaRuleEvaluator} can evaluate filter expression trees against any subject
+ * {@code PlatformUsageCreditRuleEvaluator} can evaluate filter expression trees against any subject
  * type — not just {@link com.epam.pipeline.entity.pipeline.PipelineRun}.
  *
  * @param <T> the subject type this field belongs to (e.g. {@code PipelineRun})
