@@ -56,6 +56,10 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
+import com.epam.pipeline.entity.platformusage.PlatformUsageCreditEventFilterVO;
+import com.epam.pipeline.entity.platformusage.PlatformUsageCreditUpdateEvent;
+import com.epam.pipeline.entity.platformusage.PlatformUsageCreditUpdateRule;
+import com.epam.pipeline.entity.platformusage.PlatformUsageCreditUserBalance;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AwsRegion;
@@ -67,6 +71,7 @@ import com.epam.pipeline.vo.EntityPermissionVO;
 import com.epam.pipeline.vo.EntityVO;
 import com.epam.pipeline.vo.FilterNodesVO;
 import com.epam.pipeline.vo.PagingRunFilterExpressionVO;
+import com.epam.pipeline.vo.PagingRunFilterVO;
 import com.epam.pipeline.vo.RunStatusVO;
 import com.epam.pipeline.vo.cluster.pool.NodePoolUsage;
 import com.epam.pipeline.vo.data.storage.DataStorageTagInsertBatchRequest;
@@ -129,6 +134,9 @@ public interface CloudPipelineAPI {
 
     @GET("run/{runId}/logs")
     Call<Result<List<RunLog>>> loadLogs(@Path(RUN_ID) Long runId);
+
+    @POST("run/filter")
+    Call<Result<PagedResult<List<PipelineRun>>>> filterRuns(@Body PagingRunFilterVO filterVO);
 
     @POST("run/search")
     Call<Result<PagedResult<List<PipelineRun>>>> searchPipelineRuns(@Body PagingRunFilterExpressionVO filterVO);
@@ -363,4 +371,19 @@ public interface CloudPipelineAPI {
     @POST("cluster/node/filter")
     Call<Result<List<NodeInstance>>> filterNodes(@Body FilterNodesVO filter,
                                                  @Query("machineType") MachineType machineType);
+
+    @GET("usage/credits/rules")
+    Call<Result<List<PlatformUsageCreditUpdateRule>>> loadAllPlatformUsageCreditRules();
+
+    @POST("usage/credits/events/filter")
+    Call<Result<List<PlatformUsageCreditUpdateEvent>>> filterPlatformUsageCreditEvents(
+            @Body PlatformUsageCreditEventFilterVO filter);
+
+    @POST("usage/credits/events")
+    Call<Result<List<PlatformUsageCreditUpdateEvent>>> savePlatformUsageCreditEvents(
+            @Body List<PlatformUsageCreditUpdateEvent> events);
+
+    @GET("usage/credits/balance/{userId}")
+    Call<Result<PlatformUsageCreditUserBalance>> loadPlatformUsageCreditUserBalance(
+            @Path("userId") Long userId);
 }
