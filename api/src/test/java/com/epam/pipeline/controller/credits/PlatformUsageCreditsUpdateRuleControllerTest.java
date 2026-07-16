@@ -47,7 +47,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 @WebMvcTest(controllers = PlatformUsageCreditsRuleController.class)
 public class PlatformUsageCreditsUpdateRuleControllerTest extends AbstractControllerTest {
 
-    private static final String RULES_URL = SERVLET_PATH + "/compute/quotas/rules";
+    private static final String RULES_URL = SERVLET_PATH + "/usage/credits/rules";
     private static final String RULE_BY_ID_URL = RULES_URL + "/%d";
     private static final String KEYWORDS_URL = RULES_URL + "/keywords";
     private static final TypeReference<Result<Map<String, List<FilterFieldVO>>>> KEYWORDS_TYPE =

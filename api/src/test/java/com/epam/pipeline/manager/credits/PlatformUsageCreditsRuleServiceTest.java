@@ -50,6 +50,7 @@ import static org.mockito.Mockito.verify;
 
 public class PlatformUsageCreditsRuleServiceTest {
 
+    private static final int DURATION = 24;
     private final PlatformUsageCreditsRuleRepository repository = mock(PlatformUsageCreditsRuleRepository.class);
     private final PlatformUsageCreditsRuleMapper mapper = mock(PlatformUsageCreditsRuleMapper.class);
     private final MessageHelper messageHelper = mock(MessageHelper.class);
@@ -116,7 +117,7 @@ public class PlatformUsageCreditsRuleServiceTest {
     @Test
     public void shouldFailCreateIfFilterExpressionIsNull() {
         final PlatformUsageCreditsUpdateRule rule = platformUsageCreditsRule();
-        rule.setFilterExpression(null);
+        rule.setStatement(null);
 
         assertThrows(IllegalArgumentException.class, () -> manager.create(rule));
     }
@@ -213,7 +214,7 @@ public class PlatformUsageCreditsRuleServiceTest {
     @Test
     public void shouldFailCreateIfFilterExpressionHasUnknownField() {
         final PlatformUsageCreditsUpdateRule rule = platformUsageCreditsRule();
-        rule.setFilterExpression(leafExpression("unknown.field", "=", null));
+        rule.setStatement(leafExpression("unknown.field", "=", null));
 
         assertThrows(IllegalArgumentException.class, () -> manager.create(rule));
     }
@@ -221,7 +222,7 @@ public class PlatformUsageCreditsRuleServiceTest {
     @Test
     public void shouldFailCreateIfExcludeExpressionHasUnknownField() {
         final PlatformUsageCreditsUpdateRule rule = platformUsageCreditsRule();
-        rule.setExcludeExpression(leafExpression("unknown.field", "=", null));
+        rule.setExclude(leafExpression("unknown.field", "=", null));
 
         assertThrows(IllegalArgumentException.class, () -> manager.create(rule));
     }
@@ -230,7 +231,7 @@ public class PlatformUsageCreditsRuleServiceTest {
     public void shouldFailCreateIfOperandIsUnknownSymbol() {
         final PlatformUsageCreditsUpdateRule rule = platformUsageCreditsRule();
         // BOOLEAN field run.spot only supports = and !=; "??" is not a known operator at all
-        rule.setFilterExpression(leafExpression("run.spot", "??", null));
+        rule.setStatement(leafExpression("run.spot", "??", null));
 
         assertThrows(IllegalArgumentException.class, () -> manager.create(rule));
     }
@@ -239,7 +240,7 @@ public class PlatformUsageCreditsRuleServiceTest {
     public void shouldFailCreateIfOperandIsNotSupportedForFieldType() {
         final PlatformUsageCreditsUpdateRule rule = platformUsageCreditsRule();
         // BOOLEAN field run.spot only supports = and !=; ">" is valid syntax but not for BOOLEAN
-        rule.setFilterExpression(leafExpression("run.spot", ">", null));
+        rule.setStatement(leafExpression("run.spot", ">", null));
 
         assertThrows(IllegalArgumentException.class, () -> manager.create(rule));
     }
@@ -248,7 +249,7 @@ public class PlatformUsageCreditsRuleServiceTest {
     public void shouldFailCreateIfDurationSetOnNonDurationField() {
         final PlatformUsageCreditsUpdateRule rule = platformUsageCreditsRule();
         // run.status is ENUM and does NOT support duration
-        rule.setFilterExpression(leafExpression("run.status", "=", 24));
+        rule.setStatement(leafExpression("run.status", "=", DURATION));
 
         assertThrows(IllegalArgumentException.class, () -> manager.create(rule));
     }
@@ -257,7 +258,7 @@ public class PlatformUsageCreditsRuleServiceTest {
     public void shouldCreateWithDurationOnTagField() {
         final PlatformUsageCreditsUpdateRule rule = platformUsageCreditsRule();
         // run.tag is the only field that supports duration
-        rule.setFilterExpression(leafExpression("run.tag", "=", 48));
+        rule.setStatement(leafExpression("run.tag", "=", DURATION));
         final PlatformUsageCreditsUpdateRuleEntity entity = platformUsageCreditsRuleEntity();
         doReturn(entity).when(mapper).toEntity(rule);
         doReturn(entity).when(repository).save(any(PlatformUsageCreditsUpdateRuleEntity.class));
@@ -276,7 +277,7 @@ public class PlatformUsageCreditsRuleServiceTest {
         final ConditionExpression and = new ConditionExpression();
         and.setConditionType(ConditionType.AND);
         and.setExpressions(Arrays.asList(valid, unknown));
-        rule.setFilterExpression(and);
+        rule.setStatement(and);
 
         assertThrows(IllegalArgumentException.class, () -> manager.create(rule));
     }
@@ -286,7 +287,7 @@ public class PlatformUsageCreditsRuleServiceTest {
     @Test
     public void shouldNormalizeFieldToLowerCaseOnCreate() {
         final PlatformUsageCreditsUpdateRule rule = platformUsageCreditsRule();
-        rule.setFilterExpression(leafExpression("RUN.TAG", "=", 48));
+        rule.setStatement(leafExpression("RUN.TAG", "=", DURATION));
         final PlatformUsageCreditsUpdateRuleEntity entity = platformUsageCreditsRuleEntity();
         doReturn(entity).when(mapper).toEntity(rule);
         doReturn(entity).when(repository).save(any(PlatformUsageCreditsUpdateRuleEntity.class));
@@ -294,13 +295,13 @@ public class PlatformUsageCreditsRuleServiceTest {
 
         manager.create(rule);
 
-        assertThat(rule.getFilterExpression().getField(), is("run.tag"));
+        assertThat(rule.getStatement().getField(), is("run.tag"));
     }
 
     @Test
     public void shouldNormalizeExcludeExpressionFieldToLowerCase() {
         final PlatformUsageCreditsUpdateRule rule = platformUsageCreditsRule();
-        rule.setExcludeExpression(leafExpression("Node.Type", "=", null));
+        rule.setExclude(leafExpression("Node.Type", "=", null));
         final PlatformUsageCreditsUpdateRuleEntity entity = platformUsageCreditsRuleEntity();
         doReturn(entity).when(mapper).toEntity(rule);
         doReturn(entity).when(repository).save(any(PlatformUsageCreditsUpdateRuleEntity.class));
@@ -308,7 +309,7 @@ public class PlatformUsageCreditsRuleServiceTest {
 
         manager.create(rule);
 
-        assertThat(rule.getExcludeExpression().getField(), is("node.type"));
+        assertThat(rule.getExclude().getField(), is("node.type"));
     }
 
     @Test
@@ -319,7 +320,7 @@ public class PlatformUsageCreditsRuleServiceTest {
         final ConditionExpression and = new ConditionExpression();
         and.setConditionType(ConditionType.AND);
         and.setExpressions(Arrays.asList(leaf1, leaf2));
-        rule.setFilterExpression(and);
+        rule.setStatement(and);
         final PlatformUsageCreditsUpdateRuleEntity entity = platformUsageCreditsRuleEntity();
         doReturn(entity).when(mapper).toEntity(rule);
         doReturn(entity).when(repository).save(any(PlatformUsageCreditsUpdateRuleEntity.class));

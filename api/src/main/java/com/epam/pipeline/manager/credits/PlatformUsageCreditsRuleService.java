@@ -147,8 +147,8 @@ public class PlatformUsageCreditsRuleService {
 
     public Map<String, List<FilterFieldVO>> getKeywords() {
         return Arrays.stream(PlatformUsageCreditsStrategyType.values())
-                .collect(Collectors.toMap(PlatformUsageCreditsStrategyType::name,
-                        t -> SubjectEntityField.forSubjectType(t.getEntityClass()).stream()
+                .collect(Collectors.toMap(PlatformUsageCreditsStrategyType::name, t ->
+                        SubjectEntityField.forSubjectType(t.getEntityClass()).stream()
                                 .flatMap(f -> f.getDisplayNames().stream()
                                         .map(name -> toKeyword(name, f)))
                                 .collect(Collectors.toList())));
@@ -157,22 +157,22 @@ public class PlatformUsageCreditsRuleService {
     private void validate(final PlatformUsageCreditsUpdateRule rule) {
         Assert.isTrue(StringUtils.isNotBlank(rule.getName()),
                 messageHelper.getMessage(MessageConstants.ERROR_PLATFORM_USAGE_CREDITS_RULE_NAME_EMPTY));
-        Assert.notNull(rule.getFilterExpression(),
+        Assert.notNull(rule.getStatement(),
                 messageHelper.getMessage(MessageConstants.ERROR_PLATFORM_USAGE_CREDITS_RULE_FILTER_EMPTY));
         Assert.notNull(rule.getAction(),
                 messageHelper.getMessage(MessageConstants.ERROR_PLATFORM_USAGE_CREDITS_RULE_ACTION_EMPTY));
         final Map<String, ? extends SubjectEntityField<? extends AbstractSecuredEntity>> displayNames =
                 SubjectEntityField.byDisplayNames(rule.getStrategyType().getEntityClass());
-        validateExpression(rule.getFilterExpression(), displayNames);
-        validateExpression(rule.getExcludeExpression(), displayNames);
+        validateExpression(rule.getStatement(), displayNames);
+        validateExpression(rule.getExclude(), displayNames);
     }
 
     private void normalize(final PlatformUsageCreditsUpdateRule rule) {
         if (Objects.isNull(rule.getStrategyType())) {
             rule.setStrategyType(PlatformUsageCreditsStrategyType.RUN_STATE);
         }
-        normalizeExpression(rule.getFilterExpression());
-        normalizeExpression(rule.getExcludeExpression());
+        normalizeExpression(rule.getStatement());
+        normalizeExpression(rule.getExclude());
     }
 
     private void normalizeExpression(final ConditionExpression expression) {

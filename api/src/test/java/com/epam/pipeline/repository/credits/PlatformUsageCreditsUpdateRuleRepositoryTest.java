@@ -16,8 +16,8 @@
 
 package com.epam.pipeline.repository.credits;
 
-import com.epam.pipeline.dto.credits.CreditsUpdateRuleActionType;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsStrategyType;
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateAction;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateRuleEntity;
 import com.epam.pipeline.test.repository.AbstractJpaTest;
 import org.junit.Test;
@@ -62,15 +62,15 @@ public class PlatformUsageCreditsUpdateRuleRepositoryTest extends AbstractJpaTes
         assertThat(loaded.getActionValue(), is(rule.getActionValue()));
         assertThat(loaded.getActionMessage(), is(rule.getActionMessage()));
         assertThat(loaded.isPerIncident(), is(rule.isPerIncident()));
-        assertThat(loaded.getFilterExpression(), notNullValue());
-        assertThat(loaded.getFilterExpression().getField(),
-                is(rule.getFilterExpression().getField()));
-        assertThat(loaded.getFilterExpression().getValue(),
-                is(rule.getFilterExpression().getValue()));
-        assertThat(loaded.getFilterExpression().getDuration(),
-                is(rule.getFilterExpression().getDuration()));
+        assertThat(loaded.getStatement(), notNullValue());
+        assertThat(loaded.getStatement().getField(),
+                is(rule.getStatement().getField()));
+        assertThat(loaded.getStatement().getValue(),
+                is(rule.getStatement().getValue()));
+        assertThat(loaded.getStatement().getDuration(),
+                is(rule.getStatement().getDuration()));
 
-        loaded.setActionType(CreditsUpdateRuleActionType.INCOME);
+        loaded.setActionType(PlatformUsageCreditsUpdateAction.ActionType.INCREASE);
         loaded.setStrategyType(PlatformUsageCreditsStrategyType.RUN_STATE);
         repository.save(loaded);
 
@@ -78,7 +78,7 @@ public class PlatformUsageCreditsUpdateRuleRepositoryTest extends AbstractJpaTes
         entityManager.clear();
 
         final PlatformUsageCreditsUpdateRuleEntity updated = repository.findOne(id);
-        assertThat(updated.getActionType(), is(CreditsUpdateRuleActionType.INCOME));
+        assertThat(updated.getActionType(), is(PlatformUsageCreditsUpdateAction.ActionType.INCREASE));
 
         repository.delete(id);
 

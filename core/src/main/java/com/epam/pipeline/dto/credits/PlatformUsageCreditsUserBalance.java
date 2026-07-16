@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,18 +17,17 @@
 package com.epam.pipeline.dto.credits;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreditsUpdateRuleAction {
+public class PlatformUsageCreditsUserBalance {
 
-    private CreditsUpdateRuleActionType type;
-    private int value;
-    private String message;
-    private boolean perIncident;
+    private Long userId;
+    private int currentValue;
+    private LocalDateTime modifiedDate;
 }

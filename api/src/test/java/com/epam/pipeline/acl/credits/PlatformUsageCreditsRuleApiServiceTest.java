@@ -37,7 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 
-public class PlatformUsageCreditsUpdateRuleApiServiceTest extends AbstractAclTest {
+public class PlatformUsageCreditsRuleApiServiceTest extends AbstractAclTest {
 
     @Autowired
     private PlatformUsageCreditsRuleApiService platformUsageCreditsRuleApiService;
@@ -68,7 +68,8 @@ public class PlatformUsageCreditsUpdateRuleApiServiceTest extends AbstractAclTes
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyCreateForNonAdmin() {
-        assertThrows(AccessDeniedException.class, () -> platformUsageCreditsRuleApiService.create(platformUsageCreditsRule()));
+        assertThrows(AccessDeniedException.class, () ->
+                platformUsageCreditsRuleApiService.create(platformUsageCreditsRule()));
     }
 
     @Test
@@ -84,7 +85,8 @@ public class PlatformUsageCreditsUpdateRuleApiServiceTest extends AbstractAclTes
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyUpdateForNonAdmin() {
-        assertThrows(AccessDeniedException.class, () -> platformUsageCreditsRuleApiService.update(ID, platformUsageCreditsRule()));
+        assertThrows(AccessDeniedException.class, () ->
+                platformUsageCreditsRuleApiService.update(ID, platformUsageCreditsRule()));
     }
 
     @Test

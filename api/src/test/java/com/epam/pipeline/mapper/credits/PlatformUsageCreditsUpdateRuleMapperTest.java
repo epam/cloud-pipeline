@@ -22,7 +22,8 @@ import org.junit.Test;
 import org.mapstruct.factory.Mappers;
 
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsRuleCreatorsUtils.platformUsageCreditsRule;
-import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsRuleCreatorsUtils.platformUsageCreditsRuleEntity;
+import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsRuleCreatorsUtils
+        .platformUsageCreditsRuleEntity;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -42,8 +43,8 @@ public class PlatformUsageCreditsUpdateRuleMapperTest {
         assertThat(dto.getName(), is(entity.getName()));
         assertThat(dto.getDescription(), is(entity.getDescription()));
         assertThat(dto.getStrategyType(), is(entity.getStrategyType()));
-        assertThat(dto.getFilterExpression(), is(entity.getFilterExpression()));
-        assertThat(dto.getExcludeExpression(), is(entity.getExcludeExpression()));
+        assertThat(dto.getStatement(), is(entity.getStatement()));
+        assertThat(dto.getExclude(), is(entity.getExclude()));
         assertThat(dto.getAction(), notNullValue());
         assertThat(dto.getAction().getType(), is(entity.getActionType()));
         assertThat(dto.getAction().getValue(), is(entity.getActionValue()));
@@ -61,8 +62,8 @@ public class PlatformUsageCreditsUpdateRuleMapperTest {
         assertThat(entity.getName(), is(dto.getName()));
         assertThat(entity.getDescription(), is(dto.getDescription()));
         assertThat(entity.getStrategyType(), is(dto.getStrategyType()));
-        assertThat(entity.getFilterExpression(), is(dto.getFilterExpression()));
-        assertThat(entity.getExcludeExpression(), is(dto.getExcludeExpression()));
+        assertThat(entity.getStatement(), is(dto.getStatement()));
+        assertThat(entity.getExclude(), is(dto.getExclude()));
         assertThat(entity.getActionType(), is(dto.getAction().getType()));
         assertThat(entity.getActionValue(), is(dto.getAction().getValue()));
         assertThat(entity.getActionMessage(), is(dto.getAction().getMessage()));

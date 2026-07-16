@@ -18,7 +18,9 @@ package com.epam.pipeline.test.creator.credits;
 
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.FilterFieldVO;
-import com.epam.pipeline.dto.credits.*;
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsStrategyType;
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateAction;
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateRule;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateRuleEntity;
 import com.epam.pipeline.utils.condition.ConditionExpression;
 import com.epam.pipeline.utils.condition.ConditionType;
@@ -55,9 +57,9 @@ public interface PlatformUsageCreditsRuleCreatorsUtils {
         return expression;
     }
 
-    static CreditsUpdateRuleAction platformUsageCreditsAction() {
-        return CreditsUpdateRuleAction.builder()
-                .type(CreditsUpdateRuleActionType.DEDUCTION)
+    static PlatformUsageCreditsUpdateAction platformUsageCreditsAction() {
+        return PlatformUsageCreditsUpdateAction.builder()
+                .type(PlatformUsageCreditsUpdateAction.ActionType.DEDUCTION)
                 .value(ACTION_VALUE)
                 .message(ACTION_MESSAGE)
                 .perIncident(true)
@@ -70,7 +72,7 @@ public interface PlatformUsageCreditsRuleCreatorsUtils {
                 .name(RULE_NAME)
                 .description(RULE_DESCRIPTION)
                 .strategyType(PlatformUsageCreditsStrategyType.RUN_STATE)
-                .filterExpression(filterExpression())
+                .statement(filterExpression())
                 .action(platformUsageCreditsAction())
                 .build();
     }
@@ -81,8 +83,8 @@ public interface PlatformUsageCreditsRuleCreatorsUtils {
                 .name(RULE_NAME)
                 .description(RULE_DESCRIPTION)
                 .strategyType(PlatformUsageCreditsStrategyType.RUN_STATE)
-                .filterExpression(filterExpression())
-                .actionType(CreditsUpdateRuleActionType.DEDUCTION)
+                .statement(filterExpression())
+                .actionType(PlatformUsageCreditsUpdateAction.ActionType.DEDUCTION)
                 .actionValue(ACTION_VALUE)
                 .actionMessage(ACTION_MESSAGE)
                 .perIncident(true)

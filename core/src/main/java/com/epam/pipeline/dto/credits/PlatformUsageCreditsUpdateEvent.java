@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,26 +16,28 @@
 
 package com.epam.pipeline.dto.credits;
 
-import com.epam.pipeline.utils.condition.ConditionExpression;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode
-public class PlatformUsageCreditsUpdateRule {
+public class PlatformUsageCreditsUpdateEvent {
 
     private Long id;
-    private String name;
-    private String description;
-    private PlatformUsageCreditsStrategyType strategyType;
-    private ConditionExpression statement;
-    /** Optional: runs matching this expression are excluded even if they match filterExpression. */
-    private ConditionExpression exclude;
-    private PlatformUsageCreditsUpdateAction action;
+    private Long userId;
+    /** Null for manual admin adjustments. */
+    private Long ruleId;
+    /** Null for non-run events. */
+    private Long runId;
+    private PlatformUsageCreditsUpdateAction.ActionType incidentType;
+    /** Always positive; direction is given by incidentType. */
+    private int value;
+    private String message;
+    private LocalDateTime createdDate;
 }

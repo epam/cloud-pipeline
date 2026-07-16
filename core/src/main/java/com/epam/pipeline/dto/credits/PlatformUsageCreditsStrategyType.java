@@ -20,6 +20,39 @@ import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import lombok.Getter;
 
+/**
+ * Identifies the type of domain object a {@link PlatformUsageCreditsUpdateRule} is evaluated
+ * against, and carries the corresponding subject class so that callers can resolve the available
+ * filter fields without hard-coding strategy-specific logic.
+ *
+ * <p>The {@code entityClass} is the bridge to
+ * {@link com.epam.pipeline.utils.condition.field.SubjectEntityField}: pass it to either static
+ * factory method to obtain the fields that belong to this strategy.
+ *
+ * <p><b>List all filterable fields for a strategy:</b>
+ * <pre>{@code
+ * List<SubjectEntityField<PipelineRun>> fields =
+ *         SubjectEntityField.forSubjectType(RUN_STATE.getEntityClass());
+ * // → all PipelineRunField enum constants
+ * }</pre>
+ *
+ * <p><b>Look up a field by its expression display name (e.g. for validation):</b>
+ * <pre>{@code
+ * Map<String, SubjectEntityField<PipelineRun>> index =
+ *         SubjectEntityField.byDisplayNames(RUN_STATE.getEntityClass());
+ *
+ * SubjectEntityField<PipelineRun> field = index.get("run.tag");  // null when name is unknown
+ * }</pre>
+ *
+ * <p><b>Resolve fields directly from a rule's strategy type (generic, strategy-agnostic):</b>
+ * <pre>{@code
+ * PlatformUsageCreditsStrategyType strategyType = rule.getStrategyType();
+ *
+ * List<?>                 fields = SubjectEntityField.forSubjectType(strategyType.getEntityClass());
+ * Map<String, ?> index = SubjectEntityField.byDisplayNames(strategyType.getEntityClass());
+ * SubjectEntityField<?>   field  = index.get(leaf.getField());
+ * }</pre>
+ */
 @Getter
 public enum PlatformUsageCreditsStrategyType {
     RUN_STATE(PipelineRun.class);
