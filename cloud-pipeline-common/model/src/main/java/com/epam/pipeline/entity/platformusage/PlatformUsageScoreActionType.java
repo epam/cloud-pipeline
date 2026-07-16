@@ -14,19 +14,9 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.quota;
+package com.epam.pipeline.entity.platformusage;
 
-import com.epam.pipeline.entity.pipeline.PipelineRun;
-import lombok.Getter;
-
-@Getter
-public enum ComputeQuotaStrategyType {
-    RUN_STATE(PipelineRun.class);
-
-    private final Class<PipelineRun> entityClass;
-
-    ComputeQuotaStrategyType(Class<PipelineRun> entityClass) {
-        this.entityClass = entityClass;
-    }
-
+public enum PlatformUsageScoreActionType {
+    INCOME,
+    DEDUCTION
 }

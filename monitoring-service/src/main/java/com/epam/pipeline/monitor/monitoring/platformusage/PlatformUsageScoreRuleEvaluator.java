@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.monitor.monitoring.quota;
+package com.epam.pipeline.monitor.monitoring.platformusage;
 
 import com.epam.pipeline.entity.pipeline.PipelineRun;
-import com.epam.pipeline.entity.quota.ComputeQuotaRule;
+import com.epam.pipeline.entity.platformusage.PlatformUsageScoreRule;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.monitor.rest.CloudPipelineAPIClient;
@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Evaluates a {@link ComputeQuotaRule} against a {@link PipelineRun}.
+ * Evaluates a {@link PlatformUsageScoreRule} against a {@link PipelineRun}.
  *
  * <p>A run matches a rule when:
  * <ol>
@@ -55,12 +55,12 @@ import java.util.stream.Stream;
  * </ol>
  */
 @Component
-public class ComputeQuotaRuleEvaluator {
+public class PlatformUsageScoreRuleEvaluator {
 
     private final ConditionExpressionEvaluator<PipelineRun> expressionEvaluator;
 
     @Autowired
-    public ComputeQuotaRuleEvaluator(final CloudPipelineAPIClient cloudPipelineAPIClient) {
+    public PlatformUsageScoreRuleEvaluator(final CloudPipelineAPIClient cloudPipelineAPIClient) {
         this.expressionEvaluator = new ConditionExpressionEvaluator<>(buildRegistry(
             username -> {
                 if (username == null) {
@@ -78,18 +78,18 @@ public class ComputeQuotaRuleEvaluator {
             }));
     }
 
-    ComputeQuotaRuleEvaluator(final Map<String, EntityConditionEvaluationStrategy<PipelineRun>> registry) {
+    PlatformUsageScoreRuleEvaluator(final Map<String, EntityConditionEvaluationStrategy<PipelineRun>> registry) {
         this.expressionEvaluator = new ConditionExpressionEvaluator<>(registry);
     }
 
     /**
      * Evaluates the rule against the run using the current UTC time for duration checks.
      */
-    public boolean matches(final ComputeQuotaRule rule, final PipelineRun run) {
+    public boolean matches(final PlatformUsageScoreRule rule, final PipelineRun run) {
         return matches(rule, run, LocalDateTime.now(ZoneOffset.UTC));
     }
 
-    public boolean matches(final ComputeQuotaRule rule, final PipelineRun run,
+    public boolean matches(final PlatformUsageScoreRule rule, final PipelineRun run,
                             final LocalDateTime evaluationTime) {
         if (!Objects.isNull(rule.getFilter())
                 && !expressionEvaluator.evaluate(rule.getFilter(), run, evaluationTime)) {

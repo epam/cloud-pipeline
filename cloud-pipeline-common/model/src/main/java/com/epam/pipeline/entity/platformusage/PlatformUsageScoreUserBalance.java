@@ -14,9 +14,20 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.quota;
+package com.epam.pipeline.entity.platformusage;
 
-public enum ComputeQuotaActionType {
-    INCOME,
-    DEDUCTION
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class PlatformUsageScoreUserBalance {
+
+    private Long userId;
+    private int currentValue;
+    private LocalDateTime modifiedDate;
 }

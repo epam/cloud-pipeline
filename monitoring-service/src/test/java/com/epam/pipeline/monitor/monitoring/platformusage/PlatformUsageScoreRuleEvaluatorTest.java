@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.monitor.monitoring.quota;
+package com.epam.pipeline.monitor.monitoring.platformusage;
 
 import com.epam.pipeline.utils.condition.ConditionType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
-import com.epam.pipeline.entity.quota.ComputeQuotaAction;
-import com.epam.pipeline.entity.quota.ComputeQuotaActionType;
-import com.epam.pipeline.entity.quota.ComputeQuotaRule;
-import com.epam.pipeline.entity.quota.ComputeQuotaStrategyType;
+import com.epam.pipeline.entity.platformusage.PlatformUsageScoreAction;
+import com.epam.pipeline.entity.platformusage.PlatformUsageScoreActionType;
+import com.epam.pipeline.entity.platformusage.PlatformUsageScoreRule;
+import com.epam.pipeline.entity.platformusage.PlatformUsageScoreRuleType;
 import com.epam.pipeline.utils.condition.ConditionExpression;
 import com.epam.pipeline.utils.condition.evaluation.TagFieldEvaluationStrategy;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class ComputeQuotaRuleEvaluatorTest {
+class PlatformUsageScoreRuleEvaluatorTest {
 
     private static final String EQ  = "=";
     private static final String NEQ = "!=";
@@ -99,13 +99,13 @@ class ComputeQuotaRuleEvaluatorTest {
     private static final int ACTION_VALUE     = 100;
 
     private Map<String, Set<String>> authorities;
-    private ComputeQuotaRuleEvaluator evaluator;
+    private PlatformUsageScoreRuleEvaluator evaluator;
 
     @BeforeEach
     void setUp() {
         authorities = new HashMap<>();
-        evaluator = new ComputeQuotaRuleEvaluator(
-                ComputeQuotaRuleEvaluator.buildRegistry(
+        evaluator = new PlatformUsageScoreRuleEvaluator(
+                PlatformUsageScoreRuleEvaluator.buildRegistry(
                     username -> authorities.getOrDefault(username, Collections.emptySet())));
     }
 
@@ -380,7 +380,7 @@ class ComputeQuotaRuleEvaluatorTest {
     @Test
     void shouldMatchRunWhenFilterOrExpressionContainsNodeType() {
         final PipelineRun run = runWithInstance(instance(NODE_TYPE_C5_XLARGE, true, REGION_1));
-        final ComputeQuotaRule rule = rule(
+        final PlatformUsageScoreRule rule = rule(
                 logical(FIELD_RUN_SPOT, EQ, SPOT_TRUE),
                 orExpr(logical(FIELD_NODE_TYPE, EQ, PATTERN_M5_WILDCARD),
                         logical(FIELD_NODE_TYPE, EQ, PATTERN_C5_WILDCARD))
@@ -396,7 +396,7 @@ class ComputeQuotaRuleEvaluatorTest {
     @Test
     void shouldNotMatchRunWhenFilterOrExpressionDoesNotContainNodeType() {
         final PipelineRun run = runWithInstance(instance(NODE_TYPE_C5_XLARGE, true, REGION_1));
-        final ComputeQuotaRule rule = rule(
+        final PlatformUsageScoreRule rule = rule(
                 logical(FIELD_RUN_SPOT, EQ, SPOT_TRUE),
                 logical(FIELD_NODE_TYPE, EQ, PATTERN_M5_WILDCARD)
         );
@@ -645,19 +645,20 @@ class ComputeQuotaRuleEvaluatorTest {
         return expr;
     }
 
-    private static ComputeQuotaRule rule(final ConditionExpression filter) {
+    private static PlatformUsageScoreRule rule(final ConditionExpression filter) {
         return rule(filter, null);
     }
 
-    private static ComputeQuotaRule rule(final ConditionExpression filter, final ConditionExpression exclude) {
-        return ComputeQuotaRule.builder()
+    private static PlatformUsageScoreRule rule(final ConditionExpression filter,
+                                               final ConditionExpression exclude) {
+        return PlatformUsageScoreRule.builder()
                 .id(1L)
                 .name("test-rule")
-                .strategyType(ComputeQuotaStrategyType.RUN_STATE)
+                .strategyType(PlatformUsageScoreRuleType.RUN_STATE)
                 .statement(filter)
                 .filter(exclude)
-                .action(ComputeQuotaAction.builder()
-                        .type(ComputeQuotaActionType.DEDUCTION)
+                .action(PlatformUsageScoreAction.builder()
+                        .type(PlatformUsageScoreActionType.DEDUCTION)
                         .value(ACTION_VALUE)
                         .build())
                 .build();
