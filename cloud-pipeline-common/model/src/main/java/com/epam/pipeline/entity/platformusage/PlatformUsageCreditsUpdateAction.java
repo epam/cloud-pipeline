@@ -25,7 +25,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PlatformUsageCreditUpdateAction {
+public class PlatformUsageCreditsUpdateAction {
 
     public enum ActionType {
         INCREASE,

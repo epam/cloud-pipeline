@@ -16,24 +16,18 @@
 
 package com.epam.pipeline.entity.platformusage;
 
-import com.epam.pipeline.utils.condition.ConditionExpression;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.pipeline.PipelineRun;
+import lombok.Getter;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class PlatformUsageCreditUpdateRule {
+@Getter
+public enum PlatformUsageCreditsUpdateRuleType {
+    RUN_STATE(PipelineRun.class);
 
-    private Long id;
-    private String name;
-    private String description;
-    private PlatformUsageCreditUpdateRuleType strategyType;
-    private ConditionExpression statement;
-    /** Optional: runs matching this expression are excluded even if they match statement expression. */
-    private ConditionExpression exclude;
-    private PlatformUsageCreditUpdateAction action;
+    private final Class<? extends AbstractSecuredEntity> entityClass;
+
+    PlatformUsageCreditsUpdateRuleType(Class<? extends AbstractSecuredEntity> entityClass) {
+        this.entityClass = entityClass;
+    }
+
 }

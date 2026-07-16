@@ -21,9 +21,9 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
-import com.epam.pipeline.entity.platformusage.PlatformUsageCreditUpdateAction;
-import com.epam.pipeline.entity.platformusage.PlatformUsageCreditUpdateRule;
-import com.epam.pipeline.entity.platformusage.PlatformUsageCreditUpdateRuleType;
+import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateAction;
+import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateRule;
+import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateRuleType;
 import com.epam.pipeline.utils.condition.ConditionExpression;
 import com.epam.pipeline.utils.condition.evaluation.TagFieldEvaluationStrategy;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class PlatformUsageCreditUpdateRuleEvaluatorTest {
+class PlatformUsageCreditsUpdateRuleEvaluatorTest {
 
     private static final String EQ  = "=";
     private static final String NEQ = "!=";
@@ -98,13 +98,13 @@ class PlatformUsageCreditUpdateRuleEvaluatorTest {
     private static final int ACTION_VALUE     = 100;
 
     private Map<String, Set<String>> authorities;
-    private PlatformUsageCreditUpdateRuleEvaluator evaluator;
+    private PlatformUsageCreditsUpdateRuleEvaluator evaluator;
 
     @BeforeEach
     void setUp() {
         authorities = new HashMap<>();
-        evaluator = new PlatformUsageCreditUpdateRuleEvaluator(
-                PlatformUsageCreditUpdateRuleEvaluator.buildRegistry(
+        evaluator = new PlatformUsageCreditsUpdateRuleEvaluator(
+                PlatformUsageCreditsUpdateRuleEvaluator.buildRegistry(
                     username -> authorities.getOrDefault(username, Collections.emptySet())));
     }
 
@@ -379,7 +379,7 @@ class PlatformUsageCreditUpdateRuleEvaluatorTest {
     @Test
     void shouldNotMatchRunWhenExcludeOrExpressionMatchesNodeType() {
         final PipelineRun run = runWithInstance(instance(NODE_TYPE_C5_XLARGE, true, REGION_1));
-        final PlatformUsageCreditUpdateRule rule = rule(
+        final PlatformUsageCreditsUpdateRule rule = rule(
                 logical(FIELD_RUN_SPOT, EQ, SPOT_TRUE),
                 orExpr(logical(FIELD_NODE_TYPE, EQ, PATTERN_M5_WILDCARD),
                         logical(FIELD_NODE_TYPE, EQ, PATTERN_C5_WILDCARD))
@@ -394,7 +394,7 @@ class PlatformUsageCreditUpdateRuleEvaluatorTest {
     @Test
     void shouldMatchRunWhenExcludeExpressionDoesNotMatchNodeType() {
         final PipelineRun run = runWithInstance(instance(NODE_TYPE_C5_XLARGE, true, REGION_1));
-        final PlatformUsageCreditUpdateRule rule = rule(
+        final PlatformUsageCreditsUpdateRule rule = rule(
                 logical(FIELD_RUN_SPOT, EQ, SPOT_TRUE),
                 logical(FIELD_NODE_TYPE, EQ, PATTERN_M5_WILDCARD)
         );
@@ -643,20 +643,20 @@ class PlatformUsageCreditUpdateRuleEvaluatorTest {
         return expr;
     }
 
-    private static PlatformUsageCreditUpdateRule rule(final ConditionExpression filter) {
+    private static PlatformUsageCreditsUpdateRule rule(final ConditionExpression filter) {
         return rule(filter, null);
     }
 
-    private static PlatformUsageCreditUpdateRule rule(final ConditionExpression filter,
+    private static PlatformUsageCreditsUpdateRule rule(final ConditionExpression filter,
                                                       final ConditionExpression exclude) {
-        return PlatformUsageCreditUpdateRule.builder()
+        return PlatformUsageCreditsUpdateRule.builder()
                 .id(1L)
                 .name("test-rule")
-                .strategyType(PlatformUsageCreditUpdateRuleType.RUN_STATE)
+                .strategyType(PlatformUsageCreditsUpdateRuleType.RUN_STATE)
                 .statement(filter)
                 .exclude(exclude)
-                .action(PlatformUsageCreditUpdateAction.builder()
-                        .type(PlatformUsageCreditUpdateAction.ActionType.DEDUCTION)
+                .action(PlatformUsageCreditsUpdateAction.builder()
+                        .type(PlatformUsageCreditsUpdateAction.ActionType.DEDUCTION)
                         .value(ACTION_VALUE)
                         .build())
                 .build();

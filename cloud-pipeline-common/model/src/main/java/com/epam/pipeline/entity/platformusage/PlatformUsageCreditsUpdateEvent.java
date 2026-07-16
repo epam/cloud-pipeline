@@ -17,17 +17,27 @@
 package com.epam.pipeline.entity.platformusage;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PlatformUsageCreditUserBalance {
+public class PlatformUsageCreditsUpdateEvent {
 
+    private Long id;
     private Long userId;
-    private int currentValue;
-    private LocalDateTime modifiedDate;
+    /** Null for manual admin adjustments. */
+    private Long ruleId;
+    /** Null for non-run events. */
+    private Long runId;
+    private PlatformUsageCreditsUpdateAction.ActionType incidentType;
+    /** Always positive; direction is given by incidentType. */
+    private int value;
+    private String message;
+    private LocalDateTime createdDate;
 }

@@ -16,18 +16,18 @@
 
 package com.epam.pipeline.entity.platformusage;
 
-import com.epam.pipeline.entity.AbstractSecuredEntity;
-import com.epam.pipeline.entity.pipeline.PipelineRun;
-import lombok.Getter;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Getter
-public enum PlatformUsageCreditUpdateRuleType {
-    RUN_STATE(PipelineRun.class);
+import java.time.LocalDateTime;
 
-    private final Class<? extends AbstractSecuredEntity> entityClass;
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class PlatformUsageCreditsUserBalance {
 
-    PlatformUsageCreditUpdateRuleType(Class<? extends AbstractSecuredEntity> entityClass) {
-        this.entityClass = entityClass;
-    }
-
+    private Long userId;
+    private int currentValue;
+    private LocalDateTime modifiedDate;
 }

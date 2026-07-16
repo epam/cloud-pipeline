@@ -16,28 +16,24 @@
 
 package com.epam.pipeline.entity.platformusage;
 
+import com.epam.pipeline.utils.condition.ConditionExpression;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PlatformUsageCreditUpdateEvent {
+public class PlatformUsageCreditsUpdateRule {
 
     private Long id;
-    private Long userId;
-    /** Null for manual admin adjustments. */
-    private Long ruleId;
-    /** Null for non-run events. */
-    private Long runId;
-    private PlatformUsageCreditUpdateAction.ActionType incidentType;
-    /** Always positive; direction is given by incidentType. */
-    private int value;
-    private String message;
-    private LocalDateTime createdDate;
+    private String name;
+    private String description;
+    private PlatformUsageCreditsUpdateRuleType strategyType;
+    private ConditionExpression statement;
+    /** Optional: runs matching this expression are excluded even if they match statement expression. */
+    private ConditionExpression exclude;
+    private PlatformUsageCreditsUpdateAction action;
 }

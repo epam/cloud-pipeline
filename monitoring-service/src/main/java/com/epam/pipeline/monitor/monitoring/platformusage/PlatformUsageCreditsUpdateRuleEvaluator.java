@@ -17,7 +17,7 @@
 package com.epam.pipeline.monitor.monitoring.platformusage;
 
 import com.epam.pipeline.entity.pipeline.PipelineRun;
-import com.epam.pipeline.entity.platformusage.PlatformUsageCreditUpdateRule;
+import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateRule;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.monitor.rest.CloudPipelineAPIClient;
@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Evaluates a {@link PlatformUsageCreditUpdateRule} against a {@link PipelineRun}.
+ * Evaluates a {@link PlatformUsageCreditsUpdateRule} against a {@link PipelineRun}.
  *
  * <p>A run matches a rule when:
  * <ol>
@@ -55,12 +55,12 @@ import java.util.stream.Stream;
  * </ol>
  */
 @Component
-public class PlatformUsageCreditUpdateRuleEvaluator {
+public class PlatformUsageCreditsUpdateRuleEvaluator {
 
     private final ConditionExpressionEvaluator<PipelineRun> expressionEvaluator;
 
     @Autowired
-    public PlatformUsageCreditUpdateRuleEvaluator(final CloudPipelineAPIClient cloudPipelineAPIClient) {
+    public PlatformUsageCreditsUpdateRuleEvaluator(final CloudPipelineAPIClient cloudPipelineAPIClient) {
         this.expressionEvaluator = new ConditionExpressionEvaluator<>(buildRegistry(
             username -> {
                 if (username == null) {
@@ -78,18 +78,19 @@ public class PlatformUsageCreditUpdateRuleEvaluator {
             }));
     }
 
-    PlatformUsageCreditUpdateRuleEvaluator(final Map<String, EntityConditionEvaluationStrategy<PipelineRun>> registry) {
+    PlatformUsageCreditsUpdateRuleEvaluator(
+            final Map<String, EntityConditionEvaluationStrategy<PipelineRun>> registry) {
         this.expressionEvaluator = new ConditionExpressionEvaluator<>(registry);
     }
 
     /**
      * Evaluates the rule against the run using the current UTC time for duration checks.
      */
-    public boolean matches(final PlatformUsageCreditUpdateRule rule, final PipelineRun run) {
+    public boolean matches(final PlatformUsageCreditsUpdateRule rule, final PipelineRun run) {
         return matches(rule, run, LocalDateTime.now(ZoneOffset.UTC));
     }
 
-    public boolean matches(final PlatformUsageCreditUpdateRule rule, final PipelineRun run,
+    public boolean matches(final PlatformUsageCreditsUpdateRule rule, final PipelineRun run,
                            final LocalDateTime evaluationTime) {
         if (!Objects.isNull(rule.getExclude())
                 && expressionEvaluator.evaluate(rule.getExclude(), run, evaluationTime)) {
