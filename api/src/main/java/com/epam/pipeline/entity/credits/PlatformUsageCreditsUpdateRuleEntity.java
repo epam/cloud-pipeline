@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.entity.credits;
 
-import com.epam.pipeline.dto.credits.ConditionExpression;
+import com.epam.pipeline.utils.condition.ConditionExpression;
 import com.epam.pipeline.dto.credits.CreditsUpdateRuleActionType;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsStrategyType;
 import com.epam.pipeline.entity.utils.TimestampConverter;

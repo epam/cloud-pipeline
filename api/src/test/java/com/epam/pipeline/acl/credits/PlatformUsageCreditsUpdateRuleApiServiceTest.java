@@ -25,10 +25,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsRuleCreatorsUtils.ID;
+import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsRuleCreatorsUtils.filterFieldVOMap;
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsRuleCreatorsUtils.platformUsageCreditsRule;
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsRuleCreatorsUtils.platformUsageCreditsRuleList;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
@@ -103,7 +104,7 @@ public class PlatformUsageCreditsUpdateRuleApiServiceTest extends AbstractAclTes
     @Test
     @WithMockUser
     public void shouldGetKeywords() {
-        final List<FilterFieldVO> keywords = Collections.emptyList();
+        final Map<String, List<FilterFieldVO>> keywords = filterFieldVOMap();
         doReturn(keywords).when(mockPlatformUsageCreditsRuleService).getKeywords();
 
         assertThat(platformUsageCreditsRuleApiService.getKeywords()).isEqualTo(keywords);

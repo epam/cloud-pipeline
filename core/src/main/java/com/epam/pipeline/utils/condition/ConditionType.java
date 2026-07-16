@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dto.credits;
+package com.epam.pipeline.utils.condition;
 
 /**
  * Structural type of a filter expression node.

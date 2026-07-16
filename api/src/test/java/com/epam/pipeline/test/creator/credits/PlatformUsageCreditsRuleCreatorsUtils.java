@@ -20,12 +20,15 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.FilterFieldVO;
 import com.epam.pipeline.dto.credits.*;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateRuleEntity;
+import com.epam.pipeline.utils.condition.ConditionExpression;
+import com.epam.pipeline.utils.condition.ConditionType;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 public interface PlatformUsageCreditsRuleCreatorsUtils {
 
@@ -101,5 +104,10 @@ public interface PlatformUsageCreditsRuleCreatorsUtils {
 
     static List<FilterFieldVO> filterFieldVOList() {
         return Collections.singletonList(filterFieldVO());
+    }
+
+    static Map<String, List<FilterFieldVO>> filterFieldVOMap() {
+        return Collections.singletonMap(
+                PlatformUsageCreditsStrategyType.RUN_STATE.name(), filterFieldVOList());
     }
 }

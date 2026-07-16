@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.hibernate;
 
-import com.epam.pipeline.dto.credits.ConditionExpression;
+import com.epam.pipeline.utils.condition.ConditionExpression;
 
 public class ConditionExpressionUserType extends AbstractJsonUserType<ConditionExpression> {
 

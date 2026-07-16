@@ -29,13 +29,14 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.util.List;
+import java.util.Map;
 
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsRuleCreatorsUtils.PLATFORM_USAGE_CREDITS_RULE_LIST_TYPE;
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsRuleCreatorsUtils.PLATFORM_USAGE_CREDITS_RULE_TYPE;
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsRuleCreatorsUtils.ID;
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsRuleCreatorsUtils.platformUsageCreditsRule;
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsRuleCreatorsUtils.platformUsageCreditsRuleList;
-import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsRuleCreatorsUtils.filterFieldVOList;
+import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsRuleCreatorsUtils.filterFieldVOMap;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -49,8 +50,8 @@ public class PlatformUsageCreditsUpdateRuleControllerTest extends AbstractContro
     private static final String RULES_URL = SERVLET_PATH + "/compute/quotas/rules";
     private static final String RULE_BY_ID_URL = RULES_URL + "/%d";
     private static final String KEYWORDS_URL = RULES_URL + "/keywords";
-    private static final TypeReference<Result<List<FilterFieldVO>>> FILTER_FIELD_LIST_TYPE =
-            new TypeReference<Result<List<FilterFieldVO>>>() {};
+    private static final TypeReference<Result<Map<String, List<FilterFieldVO>>>> KEYWORDS_TYPE =
+            new TypeReference<Result<Map<String, List<FilterFieldVO>>>>() {};
 
     @Autowired
     private PlatformUsageCreditsRuleApiService mockPlatformUsageCreditsRuleApiService;
@@ -130,12 +131,12 @@ public class PlatformUsageCreditsUpdateRuleControllerTest extends AbstractContro
     @Test
     @WithMockUser
     public void shouldGetKeywords() {
-        final List<FilterFieldVO> keywords = filterFieldVOList();
+        final Map<String, List<FilterFieldVO>> keywords = filterFieldVOMap();
         doReturn(keywords).when(mockPlatformUsageCreditsRuleApiService).getKeywords();
 
         final MvcResult result = performRequest(get(KEYWORDS_URL));
 
         verify(mockPlatformUsageCreditsRuleApiService).getKeywords();
-        assertResponse(result, keywords, FILTER_FIELD_LIST_TYPE);
+        assertResponse(result, keywords, KEYWORDS_TYPE);
     }
 }

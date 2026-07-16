@@ -24,6 +24,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
 
@@ -52,7 +53,7 @@ public class PlatformUsageCreditsRuleApiService {
         manager.delete(id);
     }
 
-    public List<FilterFieldVO> getKeywords() {
+    public Map<String, List<FilterFieldVO>> getKeywords() {
         return manager.getKeywords();
     }
 }

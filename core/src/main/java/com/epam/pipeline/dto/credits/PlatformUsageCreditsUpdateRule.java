@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.dto.credits;
 
+import com.epam.pipeline.utils.condition.ConditionExpression;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

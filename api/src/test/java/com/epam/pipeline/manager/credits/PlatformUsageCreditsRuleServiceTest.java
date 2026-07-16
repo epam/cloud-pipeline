@@ -18,16 +18,21 @@ package com.epam.pipeline.manager.credits;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.FilterFieldVO;
-import com.epam.pipeline.dto.credits.*;
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsStrategyType;
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateRule;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateRuleEntity;
 import com.epam.pipeline.mapper.credits.PlatformUsageCreditsRuleMapper;
 import com.epam.pipeline.repository.credits.PlatformUsageCreditsRuleRepository;
+import com.epam.pipeline.utils.condition.ConditionExpression;
+import com.epam.pipeline.utils.condition.ConditionType;
+import com.epam.pipeline.utils.condition.field.PipelineRunField;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsRuleCreatorsUtils.ID;
@@ -43,7 +48,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class PlatformUsageCreditsUpdateRuleServiceTest {
+public class PlatformUsageCreditsRuleServiceTest {
 
     private final PlatformUsageCreditsRuleRepository repository = mock(PlatformUsageCreditsRuleRepository.class);
     private final PlatformUsageCreditsRuleMapper mapper = mock(PlatformUsageCreditsRuleMapper.class);
@@ -98,24 +103,6 @@ public class PlatformUsageCreditsUpdateRuleServiceTest {
         assertThat(captor.getValue().getCreatedDate(), notNullValue());
         assertThat(captor.getValue().getModifiedDate(), notNullValue());
         assertThat(result, is(rule));
-    }
-
-    @Test
-    public void shouldSetDefaultStrategyTypeOnCreate() {
-        final PlatformUsageCreditsUpdateRule rule = platformUsageCreditsRule();
-        rule.setStrategyType(null);
-        final PlatformUsageCreditsUpdateRuleEntity entity = platformUsageCreditsRuleEntity();
-        entity.setStrategyType(null);
-        doReturn(entity).when(mapper).toEntity(rule);
-        doReturn(entity).when(repository).save(any(PlatformUsageCreditsUpdateRuleEntity.class));
-        doReturn(rule).when(mapper).toDto(entity);
-
-        manager.create(rule);
-
-        final ArgumentCaptor<PlatformUsageCreditsUpdateRuleEntity> captor =
-                ArgumentCaptor.forClass(PlatformUsageCreditsUpdateRuleEntity.class);
-        verify(repository).save(captor.capture());
-        assertThat(captor.getValue().getStrategyType(), is(PlatformUsageCreditsStrategyType.RUN_STATE));
     }
 
     @Test
@@ -188,8 +175,16 @@ public class PlatformUsageCreditsUpdateRuleServiceTest {
     }
 
     @Test
+    public void shouldGetKeywordsForAllStrategyTypes() {
+        final Map<String, List<FilterFieldVO>> keywords = manager.getKeywords();
+
+        assertThat(keywords.containsKey(PlatformUsageCreditsStrategyType.RUN_STATE.name()), is(true));
+    }
+
+    @Test
     public void shouldGetKeywordsForAllRunFields() {
-        final List<FilterFieldVO> keywords = manager.getKeywords();
+        final List<FilterFieldVO> keywords =
+                manager.getKeywords().get(PlatformUsageCreditsStrategyType.RUN_STATE.name());
 
         final List<String> expectedNames = Arrays.stream(PipelineRunField.values())
                 .flatMap(f -> f.getDisplayNames().stream())
@@ -202,7 +197,8 @@ public class PlatformUsageCreditsUpdateRuleServiceTest {
 
     @Test
     public void shouldGetKeywordsWithSupportedOperands() {
-        final List<FilterFieldVO> keywords = manager.getKeywords();
+        final List<FilterFieldVO> keywords =
+                manager.getKeywords().get(PlatformUsageCreditsStrategyType.RUN_STATE.name());
 
         keywords.forEach(kw -> assertThat(
                 "Expected non-empty operands for field: " + kw.getFieldName(),

@@ -20,11 +20,18 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.FilterFieldVO;
 import com.epam.pipeline.dto.credits.*;
+import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateRuleEntity;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.mapper.credits.PlatformUsageCreditsRuleMapper;
 import com.epam.pipeline.repository.credits.PlatformUsageCreditsRuleRepository;
 import com.epam.pipeline.utils.CommonUtils;
+import com.epam.pipeline.utils.condition.ConditionExpression;
+import com.epam.pipeline.utils.condition.ConditionOperator;
+import com.epam.pipeline.utils.condition.FieldType;
+import com.epam.pipeline.utils.condition.ConditionType;
+import com.epam.pipeline.utils.condition.field.PipelineRunField;
+import com.epam.pipeline.utils.condition.field.SubjectEntityField;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -33,9 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -115,9 +120,6 @@ public class PlatformUsageCreditsRuleService {
         entity.setId(null);
         entity.setCreatedDate(now);
         entity.setModifiedDate(now);
-        if (Objects.isNull(entity.getStrategyType())) {
-            entity.setStrategyType(PlatformUsageCreditsStrategyType.RUN_STATE);
-        }
         return mapper.toDto(repository.save(entity));
     }
 
@@ -143,11 +145,13 @@ public class PlatformUsageCreditsRuleService {
         repository.delete(id);
     }
 
-    public List<FilterFieldVO> getKeywords() {
-        return Arrays.stream(PipelineRunField.values())
-                .flatMap(f -> f.getDisplayNames().stream()
-                        .map(name -> toKeyword(name, f)))
-                .collect(Collectors.toList());
+    public Map<String, List<FilterFieldVO>> getKeywords() {
+        return Arrays.stream(PlatformUsageCreditsStrategyType.values())
+                .collect(Collectors.toMap(PlatformUsageCreditsStrategyType::name,
+                        t -> SubjectEntityField.forSubjectType(t.getEntityClass()).stream()
+                                .flatMap(f -> f.getDisplayNames().stream()
+                                        .map(name -> toKeyword(name, f)))
+                                .collect(Collectors.toList())));
     }
 
     private void validate(final PlatformUsageCreditsUpdateRule rule) {
@@ -157,11 +161,16 @@ public class PlatformUsageCreditsRuleService {
                 messageHelper.getMessage(MessageConstants.ERROR_PLATFORM_USAGE_CREDITS_RULE_FILTER_EMPTY));
         Assert.notNull(rule.getAction(),
                 messageHelper.getMessage(MessageConstants.ERROR_PLATFORM_USAGE_CREDITS_RULE_ACTION_EMPTY));
-        validateExpression(rule.getFilterExpression());
-        validateExpression(rule.getExcludeExpression());
+        final Map<String, ? extends SubjectEntityField<? extends AbstractSecuredEntity>> displayNames =
+                SubjectEntityField.byDisplayNames(rule.getStrategyType().getEntityClass());
+        validateExpression(rule.getFilterExpression(), displayNames);
+        validateExpression(rule.getExcludeExpression(), displayNames);
     }
 
     private void normalize(final PlatformUsageCreditsUpdateRule rule) {
+        if (Objects.isNull(rule.getStrategyType())) {
+            rule.setStrategyType(PlatformUsageCreditsStrategyType.RUN_STATE);
+        }
         normalizeExpression(rule.getFilterExpression());
         normalizeExpression(rule.getExcludeExpression());
     }
@@ -179,35 +188,42 @@ public class PlatformUsageCreditsRuleService {
         }
     }
 
-    private void validateExpression(final ConditionExpression expression) {
+    private void validateExpression(final ConditionExpression expression,
+                                    final Map<String, ? extends SubjectEntityField<? extends AbstractSecuredEntity>>
+                                            displayNames) {
         if (Objects.isNull(expression)) {
             return;
         }
         if (ConditionType.LOGICAL.equals(expression.getConditionType())) {
-            validateLeafExpression(expression);
+            validateLeafExpression(expression, displayNames);
         } else {
-            ListUtils.emptyIfNull(expression.getExpressions()).forEach(this::validateExpression);
+            ListUtils.emptyIfNull(expression.getExpressions())
+                    .forEach(e -> validateExpression(e,  displayNames));
         }
     }
 
-    private void validateLeafExpression(final ConditionExpression leaf) {
+    private void validateLeafExpression(final ConditionExpression leaf,
+                                        final Map<String, ? extends SubjectEntityField<? extends AbstractSecuredEntity>>
+                                                displayNames) {
         final String fieldName = leaf.getField();
-        final PipelineRunField pipelineRunField = PipelineRunField.findByDisplayName(fieldName)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        messageHelper.getMessage(
-                                MessageConstants.ERROR_PLATFORM_USAGE_CREDITS_RULE_UNKNOWN_FIELD, fieldName)));
+        final SubjectEntityField<? extends AbstractSecuredEntity> field =
+                Optional.ofNullable(displayNames.get(fieldName))
+                        .orElseThrow(() -> new IllegalArgumentException(
+                                messageHelper.getMessage(
+                                        MessageConstants.ERROR_PLATFORM_USAGE_CREDITS_RULE_UNKNOWN_FIELD, fieldName)));
 
         final ConditionOperator operator = ConditionOperator.fromSymbol(leaf.getOperand());
-        Assert.isTrue(Objects.nonNull(operator) && pipelineRunField.getType().supports(operator),
+        Assert.isTrue(Objects.nonNull(operator) && field.getType().supports(operator),
                 messageHelper.getMessage(MessageConstants.ERROR_PLATFORM_USAGE_CREDITS_RULE_UNSUPPORTED_OPERAND,
                         leaf.getOperand(), fieldName));
 
-        Assert.isTrue(Objects.isNull(leaf.getDuration()) || pipelineRunField.isSupportsDuration(),
+        Assert.isTrue(Objects.isNull(leaf.getDuration()) || field.isSupportsDuration(),
                 messageHelper.getMessage(
                         MessageConstants.ERROR_PLATFORM_USAGE_CREDITS_RULE_DURATION_NOT_SUPPORTED, fieldName));
     }
 
-    private FilterFieldVO toKeyword(final String name, final PipelineRunField field) {
+    private FilterFieldVO toKeyword(final String name,
+                                    final SubjectEntityField<? extends AbstractSecuredEntity> field) {
         final FilterFieldVO vo = new FilterFieldVO();
         vo.setFieldName(name);
         vo.setSupportedOperands(field.getType().getSupportedOperators().stream()

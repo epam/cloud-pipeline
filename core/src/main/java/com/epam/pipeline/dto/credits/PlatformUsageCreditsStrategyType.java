@@ -16,6 +16,17 @@
 
 package com.epam.pipeline.dto.credits;
 
+import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.pipeline.PipelineRun;
+import lombok.Getter;
+
+@Getter
 public enum PlatformUsageCreditsStrategyType {
-    RUN_STATE
+    RUN_STATE(PipelineRun.class);
+
+    private final Class<? extends AbstractSecuredEntity> entityClass;
+
+    PlatformUsageCreditsStrategyType(final Class<? extends AbstractSecuredEntity> entityClass) {
+        this.entityClass = entityClass;
+    }
 }

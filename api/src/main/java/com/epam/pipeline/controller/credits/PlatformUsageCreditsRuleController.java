@@ -37,6 +37,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @Api(value = "Platform usage credits rules management")
@@ -89,7 +90,7 @@ public class PlatformUsageCreditsRuleController extends AbstractRestController {
             value = "Returns allowed filter fields for platform usage credits update rule expressions.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<List<FilterFieldVO>> getKeywords() {
+    public Result<Map<String, List<FilterFieldVO>>> getKeywords() {
         return Result.success(apiService.getKeywords());
     }
 }
