@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.controller.vo;
+package com.epam.pipeline.dto.credits;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import java.util.List;
+import java.time.LocalDateTime;
 
-@Getter
-@Setter
-@EqualsAndHashCode
-public class FilterFieldVO {
-    private String fieldName;
-    private String fieldDescription;
-    private List<String> supportedOperands;
-    private boolean regex;
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class PlatformUsageCreditsUserBalance {
+
+    private Long userId;
+    private int currentValue;
+    private LocalDateTime modifiedDate;
 }

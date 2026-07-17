@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,14 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.controller.vo;
+package com.epam.pipeline.hibernate;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
+import com.epam.pipeline.utils.condition.ConditionExpression;
 
-import java.util.List;
+public class ConditionExpressionUserType extends AbstractJsonUserType<ConditionExpression> {
 
-@Getter
-@Setter
-@EqualsAndHashCode
-public class FilterFieldVO {
-    private String fieldName;
-    private String fieldDescription;
-    private List<String> supportedOperands;
-    private boolean regex;
+    @Override
+    protected Class<ConditionExpression> jsonType() {
+        return ConditionExpression.class;
+    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,10 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.controller.vo;
+package com.epam.pipeline.repository.credits;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
+import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateRuleEntity;
+import org.springframework.data.repository.CrudRepository;
 
-import java.util.List;
-
-@Getter
-@Setter
-@EqualsAndHashCode
-public class FilterFieldVO {
-    private String fieldName;
-    private String fieldDescription;
-    private List<String> supportedOperands;
-    private boolean regex;
+public interface PlatformUsageCreditsRuleRepository extends CrudRepository<PlatformUsageCreditsUpdateRuleEntity, Long> {
 }
