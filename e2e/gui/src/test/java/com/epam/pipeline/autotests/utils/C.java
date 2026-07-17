@@ -80,7 +80,6 @@ public class C {
         ANOTHER_INSTANCE = conf.getProperty("e2e.ui.another.instance.type");
         DEFAULT_INSTANCE_FAMILY_NAME = conf.getProperty("e2e.ui.default.instance.family.name");
         ANOTHER_TESTING_TOOL_NAME = conf.getProperty("e2e.ui.another.testing.tool");
-        LDAP_SERVER_TEST_TOOL = conf.getProperty("e2e.ui.ldap.server.test.tool");
         ANOTHER_GROUP = conf.getProperty("e2e.ui.another.group");
         PLATFORM_NAME = conf.getProperty("e2e.ui.platform.name");
         ANONYMOUS_NAME = conf.getProperty("e2e.ui.anonymous.name");
@@ -106,18 +105,12 @@ public class C {
         PIPE_INSTALLATION_CONTENT = conf.getProperty("e2e.ui.pipe.installation.content");
         PIPE_CONFIG_CONTENT_PATH = conf.getProperty("e2e.ui.pipe.config.content.path");
         IMPERSONATE_AUTH = conf.getProperty("e2e.ui.impersonate.auth");
-        EXTENSION_PATH = conf.getProperty("e2e.ui.extension.path");
-        INVALID_EXTENSION_PATH = conf.getProperty("e2e.ui.invalid.extension.path");
-        ANONYM_EXTENSION_PATH = conf.getProperty("e2e.ui.anonym.extension.path");
+        INVALID_TOKEN = conf.getProperty("e2e.ui.invalid.token");
         ADMIN_TOKEN_IS_SERVICE = conf.getProperty("e2e.ui.login.isservice");
         WEBDAV_ADDRESS = conf.getProperty("e2e.ui.webdav.address");
         NAT_PROXY_SERVICE_PREFIX = conf.getProperty("e2e.ui.nat.proxy.service.prefix");
         NAT_PROXY_SERVER_NAMES = Arrays.asList(conf.getProperty("e2e.ui.nat.proxy.service.names")
                 .split("\\s*,\\s*"));
-        LDAP_URLS = conf.getProperty("e2e.ui.ldap.server.urls");
-        LDAP_BASE_PATH = conf.getProperty("e2e.ui.ldap.server.base.path");
-        LDAP_USERNAME = conf.getProperty("e2e.ui.ldap.server.username");
-        LDAP_PASSWORD = conf.getProperty("e2e.ui.ldap.server.password");
         SYSTEM_MONITOR_DELAY = conf.getProperty("e2e.ui.system.monitor.delay");
 
         BACKUP_STORAGE_NAMES = Arrays.asList(conf.getProperty("e2e.ui.backup.storage.names")
@@ -129,6 +122,7 @@ public class C {
         DEFAULT_CLOUD_REGION = conf.getProperty("e2e.ui.default.cloud.region");
         SSH_CLOUD_REGION = conf.getProperty("e2e.ssh.cloud.region");
         DEFAULT_INSTANCE_PRICE_TYPE_TOOL = conf.getProperty("e2e.ui.default.instance.price.type.tool");
+        CLUSTER_INSTANCE_HDD_SCALE_DELTA_RATIO = conf.getProperty("e2e.ui.cluster.instance.hdd.scale.delta.ratio");
     }
 
     public static final int DEFAULT_TIMEOUT;
@@ -163,7 +157,6 @@ public class C {
     public static final String TESTING_TOOL_NAME;
     public static final String TOOL_WITHOUT_DEFAULT_SETTINGS;
     public static final String ANOTHER_TESTING_TOOL_NAME;
-    public static final String LDAP_SERVER_TEST_TOOL;
 
     public static final String REGISTRY_PATH_FOR_TOOL;
     public static final String INVALID_REGISTRY_PATH_FOR_TOOL;
@@ -217,18 +210,12 @@ public class C {
     public static final String PIPE_CONFIG_CONTENT_PATH;
 
     public static final String IMPERSONATE_AUTH;
-    public static final String EXTENSION_PATH;
-    public static final String INVALID_EXTENSION_PATH;
-    public static final String ANONYM_EXTENSION_PATH;
+    public static final String INVALID_TOKEN;
     public static final String ADMIN_TOKEN_IS_SERVICE;
 
     public static final String NAT_PROXY_SERVICE_PREFIX;
     public static final List<String> NAT_PROXY_SERVER_NAMES;
 
-    public static final String LDAP_URLS;
-    public static final String LDAP_BASE_PATH;
-    public static final String LDAP_USERNAME;
-    public static final String LDAP_PASSWORD;
     public static final String SYSTEM_MONITOR_DELAY;
 
     public static final List<String> BACKUP_STORAGE_NAMES;
@@ -237,4 +224,5 @@ public class C {
     public static final String TEST_RUN_TAG;
     public static final String SSH_CLOUD_REGION;
     public static final String DEFAULT_INSTANCE_PRICE_TYPE_TOOL;
+    public static final String CLUSTER_INSTANCE_HDD_SCALE_DELTA_RATIO;
 }

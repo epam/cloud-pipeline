@@ -112,14 +112,15 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
     @Test
     @TestCase(value = "EPMCMBIBPC-3015")
     public void failedAuthentication() {
-        Selenide.closeWindow();
         if ("true".equalsIgnoreCase(C.AUTH_TOKEN)) {
             if (impersonateMode()) {
                 Selenide.clearBrowserCookies();
-                addExtension(C.INVALID_EXTENSION_PATH);
+                Selenide.closeWindow();
+                changeSession(C.INVALID_TOKEN);
                 open(C.ROOT_ADDRESS);
                 checkFailedAuthentication();
             } else {
+                setUpConfiguration();
                 open(C.ROOT_ADDRESS);
                 validateErrorPage(singletonList("type=Unauthorized, status=401"));
                 Selenide.clearBrowserCookies();
@@ -301,9 +302,9 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
                 .attr("href");
         logout();
         if (impersonateMode()) {
-            Selenide.closeWindow();
             Selenide.clearBrowserCookies();
-            addExtension(C.ANONYM_EXTENSION_PATH);
+            Selenide.closeWindow();
+            setUpConfiguration();
             open(endpoint);
             checkFailedAuthentication();
             restartBrowser(C.ROOT_ADDRESS);
@@ -322,9 +323,10 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
         logout();
         final Account anonymousAccount = new Account(C.ANONYMOUS_NAME, C.ANONYMOUS_TOKEN);
         if (impersonateMode()) {
-            Selenide.closeWindow();
             Selenide.clearBrowserCookies();
+            Selenide.closeWindow();
             final String edgeUrl = endpoint.split(format("pipeline-%s-%s-0", getLastRunId(), C.VALID_ENDPOINT))[0];
+            setUpConfiguration();
             open(edgeUrl);
             Cookie cookie = new Cookie("bearer", anonymousAccount.password);
             WebDriverRunner.getWebDriver().manage().addCookie(cookie);

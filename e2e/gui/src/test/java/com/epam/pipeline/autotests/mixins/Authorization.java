@@ -27,10 +27,11 @@ import java.util.Arrays;
 import java.util.List;
 
 import static com.codeborne.selenide.Condition.appear;
-import static com.codeborne.selenide.Condition.empty;
 import static com.codeborne.selenide.Condition.enabled;
+import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Selectors.byCssSelector;
+import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
@@ -39,7 +40,6 @@ import static com.codeborne.selenide.Selenide.sleep;
 import static com.epam.pipeline.autotests.utils.Utils.refresh;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.openqa.selenium.By.tagName;
 
 public interface Authorization extends Navigation {
     Account admin = new Account(C.LOGIN, C.PASSWORD);
@@ -184,7 +184,7 @@ public interface Authorization extends Navigation {
     }
 
     default void checkFailedAuthentication() {
-        $(tagName("body")).shouldBe(empty);
+        $(byId("navigation-button-library")).shouldNot(exist);
     }
 
     class Account {

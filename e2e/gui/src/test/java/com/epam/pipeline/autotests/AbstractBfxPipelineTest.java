@@ -97,12 +97,16 @@ public abstract class AbstractBfxPipelineTest implements ITest {
         login(address);
     }
 
-    public void addExtension(final String extensionPath) {
-        final ChromeOptions options = new ChromeOptions();
-        options.addArguments("--no-sandbox");
-        options.addExtensions(new File(extensionPath));
-        WebDriver webDriver = new ChromeDriver(options);
-        WebDriverRunner.setWebDriver(webDriver);
+    public void changeSession(final String sessionPath) {
+        final String address = C.ROOT_ADDRESS;
+        final String suffixPathToNotRedirect = "restapi";
+        final String URI = address.endsWith("/")
+                ? address + suffixPathToNotRedirect
+                : address + "/" + suffixPathToNotRedirect;
+        setUpConfiguration();
+        Selenide.open(URI);
+        Cookie cookie = new Cookie("SESSION", sessionPath, "/pipeline/");
+        WebDriverRunner.getWebDriver().manage().addCookie(cookie);
     }
 
     @Override
@@ -154,14 +158,20 @@ public abstract class AbstractBfxPipelineTest implements ITest {
     }
 
     private void login(final String address) {
+        WebDriverRunner.getWebDriver().manage().deleteAllCookies();
         if ("true".equals(C.AUTH_TOKEN)) {
             if ("true".equalsIgnoreCase(C.IMPERSONATE_AUTH)) {
-                addExtension(C.EXTENSION_PATH);
+                final String suffixPathToNotRedirect = "restapi";
+                final String URI = address.endsWith("/")
+                        ? address + suffixPathToNotRedirect
+                        : address + "/" + suffixPathToNotRedirect;
+                Selenide.open(URI);
+                Cookie cookie = new Cookie("SESSION", C.PASSWORD, "/pipeline/");
+                WebDriverRunner.getWebDriver().manage().addCookie(cookie);
             } else {
                 Selenide.open(address);
                 Cookie cookie = new Cookie("HttpAuthorization", C.PASSWORD);
                 WebDriverRunner.getWebDriver().manage().addCookie(cookie);
-
             }
         }
         Selenide.open(address);
