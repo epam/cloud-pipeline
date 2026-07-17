@@ -173,7 +173,9 @@ public class CloudPipelineAPIClient {
 
     public List<PlatformUsageCreditsUpdateEvent> filterPlatformUsageCreditsEvents(
             final PlatformUsageCreditsEventFilterVO filter) {
-        return ListUtils.emptyIfNull(executor.execute(cloudPipelineAPI.filterPlatformUsageCreditsEvents(filter)));
+        final PagedResult<List<PlatformUsageCreditsUpdateEvent>> result =
+                executor.execute(cloudPipelineAPI.filterPlatformUsageCreditsEvents(filter));
+        return result != null ? ListUtils.emptyIfNull(result.getElements()) : Collections.emptyList();
     }
 
     public List<PlatformUsageCreditsUpdateEvent> savePlatformUsageCreditsEvents(

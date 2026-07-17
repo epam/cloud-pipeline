@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.dto.credits;
 
+import com.epam.pipeline.vo.SecuredEntityVO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -33,8 +34,8 @@ public class PlatformUsageCreditsUpdateEvent {
     private Long userId;
     /** Null for manual admin adjustments. */
     private Long ruleId;
-    /** Null for non-run events. */
-    private Long runId;
+    /** Null for manual admin adjustments. */
+    private SecuredEntityVO entity;
     private PlatformUsageCreditsUpdateAction.ActionType incidentType;
     /** Always positive; direction is given by incidentType. */
     private int value;

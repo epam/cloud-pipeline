@@ -79,6 +79,9 @@ public class PlatformUsageCreditsMonitoringService implements MonitoringService 
 
         final LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         final LocalDateTime lastExecTime = readLastExecutionTime();
+        log.info("Platform usage credit monitoring started, period: {} - {}",
+                lastExecTime != null ? lastExecTime.format(DATE_FORMATTER) : "beginning",
+                now.format(DATE_FORMATTER));
 
         final List<PlatformUsageCreditsUpdateRule> rules = client.loadAllPlatformUsageCreditsRules();
         if (rules.isEmpty()) {
@@ -86,6 +89,7 @@ public class PlatformUsageCreditsMonitoringService implements MonitoringService 
             writeLastExecutionTime(now);
             return;
         }
+        log.info("Loaded {} platform usage credit rule(s)", rules.size());
 
         final Map<PlatformUsageCreditsUpdateRuleType, List<PlatformUsageCreditsUpdateRule>> rulesByType =
                 rules.stream()
@@ -101,14 +105,18 @@ public class PlatformUsageCreditsMonitoringService implements MonitoringService 
                 log.warn("No handler registered for rule type {}, skipping", entry.getKey());
                 continue;
             }
+            log.info("Processing {} rule(s) of type {}", entry.getValue().size(), entry.getKey());
             newEvents.addAll(handler.process(entry.getValue(), lastExecTime, now));
         }
 
+        log.info("Platform usage credit monitoring produced {} new event(s)", newEvents.size());
         if (!newEvents.isEmpty()) {
+            log.info("Saving {} platform usage credit event(s)", newEvents.size());
             client.savePlatformUsageCreditsEvents(newEvents);
         }
 
         writeLastExecutionTime(now);
+        log.info("Platform usage credit monitoring completed");
     }
 
     private LocalDateTime readLastExecutionTime() {

@@ -376,7 +376,7 @@ public interface CloudPipelineAPI {
     Call<Result<List<PlatformUsageCreditsUpdateRule>>> loadAllPlatformUsageCreditsRules();
 
     @POST("usage/credits/events/filter")
-    Call<Result<List<PlatformUsageCreditsUpdateEvent>>> filterPlatformUsageCreditsEvents(
+    Call<Result<PagedResult<List<PlatformUsageCreditsUpdateEvent>>>> filterPlatformUsageCreditsEvents(
             @Body PlatformUsageCreditsEventFilterVO filter);
 
     @POST("usage/credits/events")

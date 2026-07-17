@@ -144,6 +144,8 @@ class PipelineRunUsageCreditsRuleHandlerTest {
                                 SecuredEntityVO.from(PipelineRun.class, RUN_ID_1),
                                 SecuredEntityVO.from(PipelineRun.class, RUN_ID_2)))
                         .ruleId(RULE_ID)
+                        .page(1)
+                        .pageSize(2)
                         .build());
     }
 
@@ -229,6 +231,68 @@ class PipelineRunUsageCreditsRuleHandlerTest {
                 .map(PlatformUsageCreditsUpdateEvent::getUserId).orElse(null));
     }
 
+    @Test
+    void perIncidentFalseCreatesOneEventRegardlessOfMatchingRunCount() {
+        final PlatformUsageCreditsUpdateRule rule = nonPerIncidentRule();
+        final PipelineRun run1 = run(RUN_ID_1, OWNER);
+        final PipelineRun run2 = run(RUN_ID_2, OWNER);
+
+        when(client.filterRuns(any())).thenReturn(Arrays.asList(run1, run2));
+        when(client.loadUserByName(OWNER)).thenReturn(user(USER_ID));
+        when(evaluator.matches(any(), any(), any())).thenReturn(true);
+        when(client.filterPlatformUsageCreditsEvents(any())).thenReturn(Collections.emptyList());
+
+        final List<PlatformUsageCreditsUpdateEvent> result =
+                handler.process(Collections.singletonList(rule), null, now);
+
+        assertEquals(1, result.size());
+        assertNotNull(result.get(0).getEntity());
+        assertEquals(RUN_ID_1.longValue(), result.get(0).getEntity().getEntityId());
+        assertEquals(USER_ID, result.get(0).getUserId());
+        assertEquals(RULE_ID, result.get(0).getRuleId());
+    }
+
+    @Test
+    void perIncidentFalseSkipsWhenEventAlreadyExistsForUserAndRule() {
+        final PlatformUsageCreditsUpdateRule rule = nonPerIncidentRule();
+
+        when(client.filterRuns(any())).thenReturn(Collections.singletonList(run(RUN_ID_1, OWNER)));
+        when(client.loadUserByName(OWNER)).thenReturn(user(USER_ID));
+        when(evaluator.matches(any(), any(), any())).thenReturn(true);
+        when(client.filterPlatformUsageCreditsEvents(any()))
+                .thenReturn(Collections.singletonList(
+                        PlatformUsageCreditsUpdateEvent.builder()
+                                .userId(USER_ID)
+                                .ruleId(RULE_ID)
+                                .entity(SecuredEntityVO.from(PipelineRun.class, RUN_ID_1))
+                                .build()));
+
+        final List<PlatformUsageCreditsUpdateEvent> result =
+                handler.process(Collections.singletonList(rule), null, now);
+
+        assertEquals(Collections.emptyList(), result);
+    }
+
+    @Test
+    void perIncidentFalseFilterCalledWithUserIdsAndRuleId() {
+        final PlatformUsageCreditsUpdateRule rule = nonPerIncidentRule();
+
+        when(client.filterRuns(any())).thenReturn(Collections.singletonList(run(RUN_ID_1, OWNER)));
+        when(client.loadUserByName(OWNER)).thenReturn(user(USER_ID));
+        when(evaluator.matches(any(), any(), any())).thenReturn(true);
+        when(client.filterPlatformUsageCreditsEvents(any())).thenReturn(Collections.emptyList());
+
+        handler.process(Collections.singletonList(rule), null, now);
+
+        verify(client).filterPlatformUsageCreditsEvents(
+                PlatformUsageCreditsEventFilterVO.builder()
+                        .userIds(Collections.singletonList(USER_ID))
+                        .ruleId(RULE_ID)
+                        .page(1)
+                        .pageSize(1)
+                        .build());
+    }
+
     private static PlatformUsageCreditsUpdateRule runStateRule() {
         return PlatformUsageCreditsUpdateRule.builder()
                 .id(RULE_ID)
@@ -237,6 +301,20 @@ class PipelineRunUsageCreditsRuleHandlerTest {
                         .type(PlatformUsageCreditsUpdateAction.ActionType.DEDUCTION)
                         .value(ACTION_VALUE)
                         .message(ACTION_MESSAGE)
+                        .perIncident(true)
+                        .build())
+                .build();
+    }
+
+    private static PlatformUsageCreditsUpdateRule nonPerIncidentRule() {
+        return PlatformUsageCreditsUpdateRule.builder()
+                .id(RULE_ID)
+                .ruleType(PlatformUsageCreditsUpdateRuleType.RUN_STATE)
+                .action(PlatformUsageCreditsUpdateAction.builder()
+                        .type(PlatformUsageCreditsUpdateAction.ActionType.INCREASE)
+                        .value(ACTION_VALUE)
+                        .message(ACTION_MESSAGE)
+                        .perIncident(false)
                         .build())
                 .build();
     }

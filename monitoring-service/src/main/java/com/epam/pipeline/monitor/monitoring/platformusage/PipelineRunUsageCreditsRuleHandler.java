@@ -76,10 +76,13 @@ public class PipelineRunUsageCreditsRuleHandler implements PlatformUsageCreditsR
 
         final Map<String, List<PipelineRun>> runsByOwner = runs.stream()
                 .collect(Collectors.groupingBy(PipelineRun::getOwner));
+        log.info("Evaluating {} RUN_STATE rule(s) against {} run(s) across {} user(s)",
+                rules.size(), runs.size(), runsByOwner.size());
 
         final List<PlatformUsageCreditsUpdateEvent> newEvents = new ArrayList<>();
 
         for (final PlatformUsageCreditsUpdateRule rule : rules) {
+            log.debug("Processing rule '{}' (id={})", rule.getName(), rule.getId());
             for (final Map.Entry<String, List<PipelineRun>> entry : runsByOwner.entrySet()) {
                 final String owner = entry.getKey();
                 final List<PipelineRun> userRuns = entry.getValue();
@@ -94,44 +97,71 @@ public class PipelineRunUsageCreditsRuleHandler implements PlatformUsageCreditsR
                         .filter(run -> evaluator.matches(rule, run, now))
                         .collect(Collectors.toList());
                 if (matchingRuns.isEmpty()) {
+                    log.debug("Rule '{}': no matching runs for user '{}'", rule.getName(), owner);
                     continue;
                 }
 
-                final List<PlatformUsageCreditsUpdateEvent> existingEvents =
-                        client.filterPlatformUsageCreditsEvents(
-                                PlatformUsageCreditsEventFilterVO.builder()
-                                        .entities(matchingRuns.stream()
-                                                .map(r -> SecuredEntityVO.from(PipelineRun.class, r.getId()))
-                                                .collect(Collectors.toList()))
-                                        .ruleId(rule.getId())
-                                        .build());
+                final Set<Long> processedRuns = buildProcessedRunIds(rule, user, matchingRuns);
 
-                final Set<Long> processedEntityIds = existingEvents.stream()
-                        .map(PlatformUsageCreditsUpdateEvent::getEntity)
-                        .filter(Objects::nonNull)
-                        .map(SecuredEntityVO::getEntityId)
-                        .collect(Collectors.toSet());
-
-                final List<PipelineRun> newRuns = matchingRuns.stream()
-                        .filter(r -> !processedEntityIds.contains(r.getId()))
-                        .collect(Collectors.toList());
-                if (newRuns.isEmpty()) {
-                    continue;
+                if (rule.getAction().isPerIncident()) {
+                    matchingRuns.stream()
+                            .filter(r -> !processedRuns.contains(r.getId()))
+                            .forEach(run -> newEvents.add(buildEvent(rule, user, run)));
+                    log.debug("Rule '{}': {} matching run(s) for user '{}', {} already processed",
+                            rule.getName(), matchingRuns.size(), owner, processedRuns.size());
+                } else if (processedRuns.isEmpty()) {
+                    newEvents.add(buildEvent(rule, user, matchingRuns.get(0)));
+                    log.debug("Rule '{}': firing single event for user '{}'", rule.getName(), owner);
+                } else {
+                    log.debug("Rule '{}': already fired for user '{}', skipping", rule.getName(), owner);
                 }
-
-                newRuns.forEach(run ->
-                        newEvents.add(PlatformUsageCreditsUpdateEvent.builder()
-                                .userId(user.getId())
-                                .ruleId(rule.getId())
-                                .entity(SecuredEntityVO.from(PipelineRun.class, run.getId()))
-                                .incidentType(rule.getAction().getType())
-                                .value(rule.getAction().getValue())
-                                .message(rule.getAction().getMessage())
-                                .build()));
             }
         }
 
+        log.info("RUN_STATE handler produced {} new event(s)", newEvents.size());
         return newEvents;
+    }
+
+    private Set<Long> buildProcessedRunIds(final PlatformUsageCreditsUpdateRule rule,
+                                           final PipelineUser user,
+                                           final List<PipelineRun> matchingRuns) {
+        PlatformUsageCreditsEventFilterVO filter;
+        if (rule.getAction().isPerIncident()) {
+            filter = PlatformUsageCreditsEventFilterVO.builder()
+                    .entities(matchingRuns.stream()
+                            .map(r -> SecuredEntityVO.from(PipelineRun.class, r.getId()))
+                            .collect(Collectors.toList()))
+                    .ruleId(rule.getId())
+                    .page(1)
+                    .pageSize(matchingRuns.size())
+                    .build();
+        } else {
+            filter = PlatformUsageCreditsEventFilterVO.builder()
+                    .userIds(Collections.singletonList(user.getId()))
+                    .ruleId(rule.getId())
+                    .page(1)
+                    .pageSize(matchingRuns.size())
+                    .build();
+        }
+        final List<PlatformUsageCreditsUpdateEvent> existing = client.filterPlatformUsageCreditsEvents(filter);
+        return existing.stream()
+                .map(PlatformUsageCreditsUpdateEvent::getEntity)
+                .filter(Objects::nonNull)
+                .map(SecuredEntityVO::getEntityId)
+                .collect(Collectors.toSet());
+    }
+
+    private PlatformUsageCreditsUpdateEvent buildEvent(final PlatformUsageCreditsUpdateRule rule,
+                                                       final PipelineUser user,
+                                                       final PipelineRun run) {
+        return PlatformUsageCreditsUpdateEvent.builder()
+                .userId(user.getId())
+                .ruleId(rule.getId())
+                .entity(run != null ? SecuredEntityVO.from(PipelineRun.class, run.getId()) : null)
+                .incidentType(rule.getAction().getType())
+                .value(rule.getAction().getValue())
+                .message(rule.getAction().getMessage())
+                .build();
     }
 
     private List<PipelineRun> loadAllPlatformUsageCreditsRuns(final LocalDateTime from) {

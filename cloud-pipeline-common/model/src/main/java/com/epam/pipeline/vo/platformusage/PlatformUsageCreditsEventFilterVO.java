@@ -34,4 +34,6 @@ public class PlatformUsageCreditsEventFilterVO {
     private Long ruleId;
     private List<Long> userIds;
     private List<PlatformUsageCreditsUpdateAction.ActionType> incidentTypes;
+    private int page;
+    private int pageSize;
 }
