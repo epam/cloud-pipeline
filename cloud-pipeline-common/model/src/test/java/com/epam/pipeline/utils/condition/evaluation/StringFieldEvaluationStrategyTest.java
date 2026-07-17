@@ -16,38 +16,40 @@ import static org.junit.Assert.assertTrue;
 public class StringFieldEvaluationStrategyTest {
 
     private static final LocalDateTime NOW = LocalDateTime.of(2026, 1, 1, 0, 0, 0);
+    private static final String M5_XLARGE = "m5.xlarge";
+    private static final String M5_WILDCARD = "m5.*";
 
     private final StringFieldEvaluationStrategy<String> strategy =
             new StringFieldEvaluationStrategy<>(field());
 
     @Test
     public void shouldMatchOnExactEquality() {
-        assertTrue(strategy.evaluate(leaf("=", "m5.xlarge"), "m5.xlarge", NOW));
+        assertTrue(strategy.evaluate(leaf("=", M5_XLARGE), M5_XLARGE, NOW));
     }
 
     @Test
     public void shouldNotMatchWhenValuesAreDifferent() {
-        assertFalse(strategy.evaluate(leaf("=", "m5.xlarge"), "c5.xlarge", NOW));
+        assertFalse(strategy.evaluate(leaf("=", M5_XLARGE), "c5.xlarge", NOW));
     }
 
     @Test
     public void shouldMatchCaseInsensitively() {
-        assertTrue(strategy.evaluate(leaf("=", "m5.xlarge"), "M5.XLARGE", NOW));
+        assertTrue(strategy.evaluate(leaf("=", M5_XLARGE), "M5.XLARGE", NOW));
     }
 
     @Test
     public void shouldMatchWildcardSuffix() {
-        assertTrue(strategy.evaluate(leaf("=", "m5.*"), "m5.xlarge", NOW));
+        assertTrue(strategy.evaluate(leaf("=", M5_WILDCARD), M5_XLARGE, NOW));
     }
 
     @Test
     public void shouldMatchWildcardPrefix() {
-        assertTrue(strategy.evaluate(leaf("=", "*.xlarge"), "m5.xlarge", NOW));
+        assertTrue(strategy.evaluate(leaf("=", "*.xlarge"), M5_XLARGE, NOW));
     }
 
     @Test
     public void shouldMatchWildcardInMiddle() {
-        assertTrue(strategy.evaluate(leaf("=", "m5.x*ge"), "m5.xlarge", NOW));
+        assertTrue(strategy.evaluate(leaf("=", "m5.x*ge"), M5_XLARGE, NOW));
     }
 
     @Test
@@ -57,7 +59,7 @@ public class StringFieldEvaluationStrategyTest {
 
     @Test
     public void shouldNotMatchWildcardPatternForDifferentFamily() {
-        assertFalse(strategy.evaluate(leaf("=", "m5.*"), "c5.xlarge", NOW));
+        assertFalse(strategy.evaluate(leaf("=", M5_WILDCARD), "c5.xlarge", NOW));
     }
 
     @Test
@@ -67,32 +69,32 @@ public class StringFieldEvaluationStrategyTest {
 
     @Test
     public void shouldTreatDotAsLiteralNotRegexWildcard() {
-        assertFalse(strategy.evaluate(leaf("=", "m5.xlarge"), "m5Axlarge", NOW));
+        assertFalse(strategy.evaluate(leaf("=", M5_XLARGE), "m5Axlarge", NOW));
     }
 
     @Test
     public void shouldReturnTrueForNotEqualsWhenValuesAreDifferent() {
-        assertTrue(strategy.evaluate(leaf("!=", "m5.*"), "c5.xlarge", NOW));
+        assertTrue(strategy.evaluate(leaf("!=", M5_WILDCARD), "c5.xlarge", NOW));
     }
 
     @Test
     public void shouldReturnFalseForNotEqualsWhenPatternMatches() {
-        assertFalse(strategy.evaluate(leaf("!=", "m5.*"), "m5.xlarge", NOW));
+        assertFalse(strategy.evaluate(leaf("!=", M5_WILDCARD), M5_XLARGE, NOW));
     }
 
     @Test
     public void shouldReturnFalseWhenSubjectValueIsNull() {
-        assertFalse(strategy.evaluate(leaf("=", "m5.xlarge"), null, NOW));
+        assertFalse(strategy.evaluate(leaf("=", M5_XLARGE), null, NOW));
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldThrowForUnsupportedNumericOperator() {
-        strategy.evaluate(leaf(">", "m5.xlarge"), "m5.xlarge", NOW);
+        strategy.evaluate(leaf(">", M5_XLARGE), M5_XLARGE, NOW);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldThrowForUnknownOperatorSymbol() {
-        strategy.evaluate(leaf("<>", "m5.xlarge"), "m5.xlarge", NOW);
+        strategy.evaluate(leaf("<>", M5_XLARGE), M5_XLARGE, NOW);
     }
 
     private static ConditionExpression leaf(final String operand, final String value) {

@@ -31,7 +31,7 @@ public class PlatformUsageCreditsUpdateRule {
     private Long id;
     private String name;
     private String description;
-    private PlatformUsageCreditsUpdateRuleType strategyType;
+    private PlatformUsageCreditsUpdateRuleType ruleType;
     private ConditionExpression statement;
     /** Optional: runs matching this expression are excluded even if they match statement expression. */
     private ConditionExpression exclude;

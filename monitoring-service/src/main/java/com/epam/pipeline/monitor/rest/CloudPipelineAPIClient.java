@@ -27,10 +27,10 @@ import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.PodInstance;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
-import com.epam.pipeline.entity.platformusage.PlatformUsageCreditEventFilterVO;
-import com.epam.pipeline.entity.platformusage.PlatformUsageCreditUpdateEvent;
-import com.epam.pipeline.entity.platformusage.PlatformUsageCreditUpdateRule;
-import com.epam.pipeline.entity.platformusage.PlatformUsageCreditUserBalance;
+import com.epam.pipeline.vo.platformusage.PlatformUsageCreditsEventFilterVO;
+import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateEvent;
+import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateRule;
+import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUserBalance;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
@@ -151,8 +151,8 @@ public class CloudPipelineAPIClient {
 
     private static final int RUN_FILTER_PAGE_SIZE = 1000;
 
-    public List<PlatformUsageCreditUpdateRule> loadAllPlatformUsageCreditRules() {
-        return ListUtils.emptyIfNull(executor.execute(cloudPipelineAPI.loadAllPlatformUsageCreditRules()));
+    public List<PlatformUsageCreditsUpdateRule> loadAllPlatformUsageCreditsRules() {
+        return ListUtils.emptyIfNull(executor.execute(cloudPipelineAPI.loadAllPlatformUsageCreditsRules()));
     }
 
     public List<PipelineRun> filterRuns(final PagingRunFilterVO filter) {
@@ -171,17 +171,17 @@ public class CloudPipelineAPIClient {
         return result;
     }
 
-    public List<PlatformUsageCreditUpdateEvent> filterPlatformUsageCreditEvents(
-            final PlatformUsageCreditEventFilterVO filter) {
-        return ListUtils.emptyIfNull(executor.execute(cloudPipelineAPI.filterPlatformUsageCreditEvents(filter)));
+    public List<PlatformUsageCreditsUpdateEvent> filterPlatformUsageCreditsEvents(
+            final PlatformUsageCreditsEventFilterVO filter) {
+        return ListUtils.emptyIfNull(executor.execute(cloudPipelineAPI.filterPlatformUsageCreditsEvents(filter)));
     }
 
-    public List<PlatformUsageCreditUpdateEvent> savePlatformUsageCreditEvents(
-            final List<PlatformUsageCreditUpdateEvent> events) {
-        return ListUtils.emptyIfNull(executor.execute(cloudPipelineAPI.savePlatformUsageCreditEvents(events)));
+    public List<PlatformUsageCreditsUpdateEvent> savePlatformUsageCreditsEvents(
+            final List<PlatformUsageCreditsUpdateEvent> events) {
+        return ListUtils.emptyIfNull(executor.execute(cloudPipelineAPI.savePlatformUsageCreditsEvents(events)));
     }
 
-    public PlatformUsageCreditUserBalance loadPlatformUsageCreditUserBalance(final Long userId) {
-        return executor.execute(cloudPipelineAPI.loadPlatformUsageCreditUserBalance(userId));
+    public PlatformUsageCreditsUserBalance loadPlatformUsageCreditsUserBalance(final Long userId) {
+        return executor.execute(cloudPipelineAPI.loadPlatformUsageCreditsUserBalance(userId));
     }
 }

@@ -18,10 +18,11 @@ package com.epam.pipeline.monitor.monitoring.platformusage;
 
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
-import com.epam.pipeline.entity.platformusage.PlatformUsageCreditEventFilterVO;
-import com.epam.pipeline.entity.platformusage.PlatformUsageCreditUpdateEvent;
-import com.epam.pipeline.entity.platformusage.PlatformUsageCreditUpdateRule;
-import com.epam.pipeline.entity.platformusage.PlatformUsageCreditUpdateRuleType;
+import com.epam.pipeline.vo.platformusage.PlatformUsageCreditsEventFilterVO;
+import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateEvent;
+import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateRule;
+import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateRuleType;
+import com.epam.pipeline.vo.SecuredEntityVO;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.monitor.monitoring.MonitoringService;
 import com.epam.pipeline.monitor.rest.CloudPipelineAPIClient;
@@ -41,6 +42,7 @@ import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -53,7 +55,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-public class PlatformUsageCreditMonitoringService implements MonitoringService {
+public class PipelineRunUsageCreditsMonitoringService implements MonitoringService {
 
     private static final DateTimeFormatter DATE_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
@@ -61,19 +63,20 @@ public class PlatformUsageCreditMonitoringService implements MonitoringService {
             TaskStatus.RUNNING, TaskStatus.PAUSING, TaskStatus.PAUSED, TaskStatus.RESUMING);
     private static final List<TaskStatus> FINAL_RUN_STATUSES = Arrays.asList(
             TaskStatus.SUCCESS, TaskStatus.FAILURE, TaskStatus.STOPPED);
+    private static final int FILE_READER_BLOCK_SIZE = 4096;
 
     private final String monitorEnabledPreferenceName;
     private final String lastExecutionFilePath;
     private final CloudPipelineAPIClient client;
-    private final PlatformUsageCreditUpdateRuleEvaluator evaluator;
+    private final PlatformUsageCreditsUpdateRuleEvaluator evaluator;
 
-    public PlatformUsageCreditMonitoringService(
+    public PipelineRunUsageCreditsMonitoringService(
             @Value("${preference.name.platform.usage.credit.monitor.enable}")
                 final String monitorEnabledPreferenceName,
             @Value("${platform.usage.credit.monitor.last.execution.file}")
                 final String lastExecutionFilePath,
             final CloudPipelineAPIClient client,
-            final PlatformUsageCreditUpdateRuleEvaluator evaluator) {
+            final PlatformUsageCreditsUpdateRuleEvaluator evaluator) {
         this.monitorEnabledPreferenceName = monitorEnabledPreferenceName;
         this.lastExecutionFilePath = lastExecutionFilePath;
         this.client = client;
@@ -90,14 +93,14 @@ public class PlatformUsageCreditMonitoringService implements MonitoringService {
         final LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         final LocalDateTime lastExecTime = readLastExecutionTime();
 
-        final List<PlatformUsageCreditUpdateRule> rules = client.loadAllPlatformUsageCreditRules();
+        final List<PlatformUsageCreditsUpdateRule> rules = client.loadAllPlatformUsageCreditsRules();
         if (rules.isEmpty()) {
             log.info("No platform usage credit rules found, skipping");
             writeLastExecutionTime(now);
             return;
         }
 
-        final List<PipelineRun> runs = loadAllPlatformUsageCreditRuns(lastExecTime);
+        final List<PipelineRun> runs = loadAllPlatformUsageCreditsRuns(lastExecTime);
         if (runs.isEmpty()) {
             log.info("No runs found for credit evaluation, skipping");
             writeLastExecutionTime(now);
@@ -107,10 +110,10 @@ public class PlatformUsageCreditMonitoringService implements MonitoringService {
         final Map<String, List<PipelineRun>> runsByOwner = runs.stream()
                 .collect(Collectors.groupingBy(PipelineRun::getOwner));
 
-        final List<PlatformUsageCreditUpdateEvent> newEvents = new ArrayList<>();
+        final List<PlatformUsageCreditsUpdateEvent> newEvents = new ArrayList<>();
 
-        for (final PlatformUsageCreditUpdateRule rule : rules) {
-            if (rule.getStrategyType() != PlatformUsageCreditUpdateRuleType.RUN_STATE) {
+        for (final PlatformUsageCreditsUpdateRule rule : rules) {
+            if (rule.getRuleType() != PlatformUsageCreditsUpdateRuleType.RUN_STATE) {
                 continue;
             }
             for (final Map.Entry<String, List<PipelineRun>> entry : runsByOwner.entrySet()) {
@@ -130,32 +133,33 @@ public class PlatformUsageCreditMonitoringService implements MonitoringService {
                     continue;
                 }
 
-                final List<PlatformUsageCreditUpdateEvent> existingEvents =
-                        client.filterPlatformUsageCreditEvents(
-                                PlatformUsageCreditEventFilterVO.builder()
-                                        .runIds(matchingRuns.stream()
-                                                .map(PipelineRun::getId)
+                final List<PlatformUsageCreditsUpdateEvent> existingEvents =
+                        client.filterPlatformUsageCreditsEvents(
+                                PlatformUsageCreditsEventFilterVO.builder()
+                                        .entities(matchingRuns.stream()
+                                                .map(r -> SecuredEntityVO.from(PipelineRun.class, r.getId()))
                                                 .collect(Collectors.toList()))
                                         .ruleId(rule.getId())
                                         .build());
 
-                final Set<Long> processedRunIds = existingEvents.stream()
-                        .map(PlatformUsageCreditUpdateEvent::getRunId)
+                final Set<Long> processedEntityIds = existingEvents.stream()
+                        .map(PlatformUsageCreditsUpdateEvent::getEntity)
                         .filter(Objects::nonNull)
+                        .map(SecuredEntityVO::getEntityId)
                         .collect(Collectors.toSet());
 
                 final List<PipelineRun> newRuns = matchingRuns.stream()
-                        .filter(r -> !processedRunIds.contains(r.getId()))
+                        .filter(r -> !processedEntityIds.contains(r.getId()))
                         .collect(Collectors.toList());
                 if (newRuns.isEmpty()) {
                     continue;
                 }
 
                 newRuns.forEach(run ->
-                        newEvents.add(PlatformUsageCreditUpdateEvent.builder()
+                        newEvents.add(PlatformUsageCreditsUpdateEvent.builder()
                                 .userId(user.getId())
                                 .ruleId(rule.getId())
-                                .runId(run.getId())
+                                .entity(SecuredEntityVO.from(PipelineRun.class, run.getId()))
                                 .incidentType(rule.getAction().getType())
                                 .value(rule.getAction().getValue())
                                 .message(rule.getAction().getMessage())
@@ -164,13 +168,13 @@ public class PlatformUsageCreditMonitoringService implements MonitoringService {
         }
 
         if (!newEvents.isEmpty()) {
-            client.savePlatformUsageCreditEvents(newEvents);
+            client.savePlatformUsageCreditsEvents(newEvents);
         }
 
         writeLastExecutionTime(now);
     }
 
-    private List<PipelineRun> loadAllPlatformUsageCreditRuns(final LocalDateTime from) {
+    private List<PipelineRun> loadAllPlatformUsageCreditsRuns(final LocalDateTime from) {
         final Map<Long, PipelineRun> result = new LinkedHashMap<>();
         final PagingRunFilterVO activeFilter = new PagingRunFilterVO();
         activeFilter.setStatuses(ACTIVE_RUN_STATUSES);
@@ -186,7 +190,7 @@ public class PlatformUsageCreditMonitoringService implements MonitoringService {
 
     private LocalDateTime readLastExecutionTime() {
         try (ReversedLinesFileReader reader = new ReversedLinesFileReader(
-                new File(lastExecutionFilePath), 4096, StandardCharsets.UTF_8)) {
+                new File(lastExecutionFilePath), FILE_READER_BLOCK_SIZE, StandardCharsets.UTF_8)) {
             final String lastLine = reader.readLine();
             if (StringUtils.isBlank(lastLine)) {
                 return null;
@@ -195,7 +199,7 @@ public class PlatformUsageCreditMonitoringService implements MonitoringService {
         } catch (IOException e) {
             log.trace("Error reading last execution time file {}", lastExecutionFilePath, e);
             return null;
-        } catch (Exception e) {
+        } catch (DateTimeParseException e) {
             log.warn("Failed to parse last execution time from {}", lastExecutionFilePath, e);
             return null;
         }

@@ -18,6 +18,9 @@ import static org.junit.Assert.assertTrue;
 public class KeyValueFieldEvaluationStrategyTest {
 
     private static final LocalDateTime NOW = LocalDateTime.of(2026, 1, 1, 0, 0, 0);
+    private static final String KEY_DATASET = "dataset";
+    private static final String VALUE_PROD = "prod";
+    private static final String KEY_KV = "key";
 
     private final KeyValueFieldEvaluationStrategy<Map<String, String>> strategy =
             new KeyValueFieldEvaluationStrategy<>(mapField());
@@ -26,99 +29,99 @@ public class KeyValueFieldEvaluationStrategyTest {
 
     @Test
     public void shouldMatchWhenKeyIsPresentAndNoValueRequired() {
-        assertTrue(strategy.evaluate(leaf("=", "dataset"), map("dataset", "prod"), NOW));
+        assertTrue(strategy.evaluate(leaf("=", KEY_DATASET), map(KEY_DATASET, VALUE_PROD), NOW));
     }
 
     @Test
     public void shouldNotMatchWhenKeyIsAbsentAndEqualOperator() {
-        assertFalse(strategy.evaluate(leaf("=", "missing"), map("dataset", "prod"), NOW));
+        assertFalse(strategy.evaluate(leaf("=", "missing"), map(KEY_DATASET, VALUE_PROD), NOW));
     }
 
     @Test
     public void shouldReturnTrueForNotEqualsWhenKeyIsAbsent() {
-        assertTrue(strategy.evaluate(leaf("!=", "missing"), map("dataset", "prod"), NOW));
+        assertTrue(strategy.evaluate(leaf("!=", "missing"), map(KEY_DATASET, VALUE_PROD), NOW));
     }
 
     @Test
     public void shouldReturnFalseForNotEqualsWhenKeyIsPresent() {
-        assertFalse(strategy.evaluate(leaf("!=", "dataset"), map("dataset", "prod"), NOW));
+        assertFalse(strategy.evaluate(leaf("!=", KEY_DATASET), map(KEY_DATASET, VALUE_PROD), NOW));
     }
 
     @Test
     public void shouldMatchKeyNameCaseInsensitively() {
-        assertTrue(strategy.evaluate(leaf("=", "DATASET"), map("dataset", "prod"), NOW));
-        assertTrue(strategy.evaluate(leaf("=", "dataset"), map("DATASET", "prod"), NOW));
+        assertTrue(strategy.evaluate(leaf("=", "DATASET"), map(KEY_DATASET, VALUE_PROD), NOW));
+        assertTrue(strategy.evaluate(leaf("=", KEY_DATASET), map("DATASET", VALUE_PROD), NOW));
     }
 
     // Key + value expressions
 
     @Test
     public void shouldMatchWhenKeyAndValueBothMatch() {
-        assertTrue(strategy.evaluate(leaf("=", "dataset=prod"), map("dataset", "prod"), NOW));
+        assertTrue(strategy.evaluate(leaf("=", "dataset=prod"), map(KEY_DATASET, VALUE_PROD), NOW));
     }
 
     @Test
     public void shouldNotMatchWhenKeyPresentButValueDiffers() {
-        assertFalse(strategy.evaluate(leaf("=", "dataset=staging"), map("dataset", "prod"), NOW));
+        assertFalse(strategy.evaluate(leaf("=", "dataset=staging"), map(KEY_DATASET, VALUE_PROD), NOW));
     }
 
     @Test
     public void shouldNotMatchWhenKeyAbsentInKeyValueExpression() {
-        assertFalse(strategy.evaluate(leaf("=", "missing=prod"), map("dataset", "prod"), NOW));
+        assertFalse(strategy.evaluate(leaf("=", "missing=prod"), map(KEY_DATASET, VALUE_PROD), NOW));
     }
 
     @Test
     public void shouldMatchKeyValueWithWildcardInValue() {
-        assertTrue(strategy.evaluate(leaf("=", "dataset=prod-*"), map("dataset", "prod-dataset"), NOW));
+        assertTrue(strategy.evaluate(leaf("=", "dataset=prod-*"), map(KEY_DATASET, "prod-dataset"), NOW));
     }
 
     @Test
     public void shouldNotMatchKeyValueWhenWildcardPatternFails() {
-        assertFalse(strategy.evaluate(leaf("=", "dataset=staging-*"), map("dataset", "prod-dataset"), NOW));
+        assertFalse(strategy.evaluate(leaf("=", "dataset=staging-*"), map(KEY_DATASET, "prod-dataset"), NOW));
     }
 
     @Test
     public void shouldMatchKeyValueWildcardCaseInsensitively() {
-        assertTrue(strategy.evaluate(leaf("=", "dataset=PROD*"), map("dataset", "prod-dataset"), NOW));
+        assertTrue(strategy.evaluate(leaf("=", "dataset=PROD*"), map(KEY_DATASET, "prod-dataset"), NOW));
     }
 
     @Test
     public void shouldMatchEmptyValueWhenSubjectValueIsEmpty() {
-        assertTrue(strategy.evaluate(leaf("=", "dataset="), map("dataset", ""), NOW));
+        assertTrue(strategy.evaluate(leaf("=", "dataset="), map(KEY_DATASET, ""), NOW));
     }
 
     @Test
     public void shouldReturnTrueForNotEqualsWhenKeyPresentButValueDiffers() {
-        assertTrue(strategy.evaluate(leaf("!=", "dataset=staging"), map("dataset", "prod"), NOW));
+        assertTrue(strategy.evaluate(leaf("!=", "dataset=staging"), map(KEY_DATASET, VALUE_PROD), NOW));
     }
 
     @Test
     public void shouldReturnFalseForNotEqualsWhenKeyAndValueBothMatch() {
-        assertFalse(strategy.evaluate(leaf("!=", "dataset=prod"), map("dataset", "prod"), NOW));
+        assertFalse(strategy.evaluate(leaf("!=", "dataset=prod"), map(KEY_DATASET, VALUE_PROD), NOW));
     }
 
     // Null / empty map
 
     @Test
     public void shouldReturnFalseForNullMap() {
-        assertFalse(strategy.evaluate(leaf("=", "key"), null, NOW));
+        assertFalse(strategy.evaluate(leaf("=", KEY_KV), null, NOW));
     }
 
     @Test
     public void shouldReturnFalseForEmptyMap() {
-        assertFalse(strategy.evaluate(leaf("=", "key"), Collections.emptyMap(), NOW));
+        assertFalse(strategy.evaluate(leaf("=", KEY_KV), Collections.emptyMap(), NOW));
     }
 
     // Operator validation
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldThrowForUnsupportedOperator() {
-        strategy.evaluate(leaf(">", "key"), map("key", "val"), NOW);
+        strategy.evaluate(leaf(">", KEY_KV), map(KEY_KV, "val"), NOW);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldThrowForUnknownOperatorSymbol() {
-        strategy.evaluate(leaf("<>", "key"), map("key", "val"), NOW);
+        strategy.evaluate(leaf("<>", KEY_KV), map(KEY_KV, "val"), NOW);
     }
 
     private static Map<String, String> map(final String key, final String value) {

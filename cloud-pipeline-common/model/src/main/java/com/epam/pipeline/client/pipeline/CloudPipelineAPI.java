@@ -56,10 +56,10 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
-import com.epam.pipeline.entity.platformusage.PlatformUsageCreditEventFilterVO;
-import com.epam.pipeline.entity.platformusage.PlatformUsageCreditUpdateEvent;
-import com.epam.pipeline.entity.platformusage.PlatformUsageCreditUpdateRule;
-import com.epam.pipeline.entity.platformusage.PlatformUsageCreditUserBalance;
+import com.epam.pipeline.vo.platformusage.PlatformUsageCreditsEventFilterVO;
+import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateEvent;
+import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateRule;
+import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUserBalance;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AwsRegion;
@@ -373,17 +373,17 @@ public interface CloudPipelineAPI {
                                                  @Query("machineType") MachineType machineType);
 
     @GET("usage/credits/rules")
-    Call<Result<List<PlatformUsageCreditUpdateRule>>> loadAllPlatformUsageCreditRules();
+    Call<Result<List<PlatformUsageCreditsUpdateRule>>> loadAllPlatformUsageCreditsRules();
 
     @POST("usage/credits/events/filter")
-    Call<Result<List<PlatformUsageCreditUpdateEvent>>> filterPlatformUsageCreditEvents(
-            @Body PlatformUsageCreditEventFilterVO filter);
+    Call<Result<List<PlatformUsageCreditsUpdateEvent>>> filterPlatformUsageCreditsEvents(
+            @Body PlatformUsageCreditsEventFilterVO filter);
 
     @POST("usage/credits/events")
-    Call<Result<List<PlatformUsageCreditUpdateEvent>>> savePlatformUsageCreditEvents(
-            @Body List<PlatformUsageCreditUpdateEvent> events);
+    Call<Result<List<PlatformUsageCreditsUpdateEvent>>> savePlatformUsageCreditsEvents(
+            @Body List<PlatformUsageCreditsUpdateEvent> events);
 
     @GET("usage/credits/balance/{userId}")
-    Call<Result<PlatformUsageCreditUserBalance>> loadPlatformUsageCreditUserBalance(
+    Call<Result<PlatformUsageCreditsUserBalance>> loadPlatformUsageCreditsUserBalance(
             @Path("userId") Long userId);
 }
