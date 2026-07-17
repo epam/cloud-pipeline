@@ -250,6 +250,20 @@ tbody[class*="ant-table-tbody"] .tree-item-name {
 .checkbox-cell-versions {
   width: 60px;
   vertical-align: middle;
+  white-space: nowrap;
+}
+
+.checkbox-cell-versions :global(.ant-table-row-expand-icon) {
+  float: none;
+  display: inline-flex;
+  vertical-align: middle;
+  margin-top: 0;
+  margin-inline-end: 8px;
+}
+
+.checkbox-cell-versions :global(.ant-checkbox-wrapper) {
+  display: inline-flex;
+  vertical-align: middle;
 }
 
 .checkbox-cell {

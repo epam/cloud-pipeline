@@ -232,6 +232,9 @@ class DataStorage extends React.Component {
   }
 
   get showMetadata() {
+    if (this.props.showMetadata !== undefined) {
+      return !!this.props.showMetadata;
+    }
     if (this.state.metadata === undefined && this.storage.info) {
       return this.storage.info.hasMetadata && this.storage.readAllowed;
     }
@@ -239,10 +242,24 @@ class DataStorage extends React.Component {
   }
 
   get showJobs() {
+    if (this.props.showJobs !== undefined) {
+      return !!(this.props.showJobs && this.storage.info && this.storage.readAllowed);
+    }
     if (this.state.importedJobs) {
       return this.storage.info && this.storage.readAllowed;
     }
     return this.state.importedJobs;
+  }
+
+  get presentationOptions() {
+    return {
+      attributes: true,
+      jobs: !!this.isOmicsStore,
+      archives:
+        !this.isOmicsStore &&
+        (this.userLifeCyclePermissions.read || this.userLifeCyclePermissions.write),
+      versions: !!this.versionControlsEnabled,
+    };
   }
 
   get region() {
@@ -559,9 +576,9 @@ class DataStorage extends React.Component {
       this.closeOmicsDialog();
       this.storage.refreshStorageInfo();
       this.props.folders.invalidateFolder(parentFolderId);
+      this.setShowJobs(true);
       this.setState(
         {
-          importedJobs: true,
           updateJobsSearch: true,
         },
         () => {
@@ -1301,6 +1318,7 @@ class DataStorage extends React.Component {
               display: 'flex',
               textDecoration: 'none',
               alignItems: 'center',
+              minWidth: '32px'
             }}
           />,
         );
@@ -1920,20 +1938,18 @@ class DataStorage extends React.Component {
   didSelectDataStorageItem = (item) => {
     if (item.type.toLowerCase() === 'folder') {
       this.navigate(this.props.storageId, item.path, {clearPathMarkers: false});
-      if (this.state.metadata) {
-        this.setState({
-          importedJobs: this.isOmicsStore,
-        });
+      if (this.showMetadata) {
+        this.setShowJobs(this.isOmicsStore);
       }
       return;
     }
     if (item.type.toLowerCase() === 'file' && !item.deleteMarker) {
       const extension = (item.path || '').split('.').pop().toLowerCase();
+      this.setShowMetadata(true);
+      this.setShowJobs(this.isOmicsStore);
       this.setState(
         {
           selectedFile: item,
-          metadata: true,
-          importedJobs: this.isOmicsStore,
         },
         () => {
           switch (extension) {
@@ -2642,57 +2658,72 @@ class DataStorage extends React.Component {
     );
   };
 
+  setShowMetadata = (visible, options = {}) => {
+    const {clearSelectedFile = false} = options;
+    if (this.props.onShowMetadataChange) {
+      this.props.onShowMetadataChange(visible);
+    }
+    this.setState({
+      metadata: visible,
+      ...(clearSelectedFile ? {selectedFile: null} : {}),
+    });
+  };
+
+  setShowJobs = (visible) => {
+    if (this.props.onShowJobsChange) {
+      this.props.onShowJobsChange(visible);
+    }
+    this.setState({
+      importedJobs: visible,
+    });
+  };
+
   onToggleMetadata = () => {
     if (this.showMetadata) {
-      this.setState({metadata: !this.showMetadata, selectedFile: null});
+      this.setShowMetadata(false, {clearSelectedFile: true});
     } else {
-      this.setState({metadata: !this.showMetadata});
+      this.setShowMetadata(true);
     }
   };
 
   onToggleJobs = () => {
-    this.setState({
-      importedJobs: !this.showJobs,
-    });
+    this.setShowJobs(!this.showJobs);
   };
 
   onPanelClose = (key) => {
     switch (key) {
       case METADATA_PANEL_KEY:
-        this.setState({
-          metadata: false,
-          importedJobs: false,
-        });
+        this.setShowMetadata(false);
+        this.setShowJobs(false);
         break;
     }
   };
 
   renderPresentationConfiguration = () => {
+    const options = this.presentationOptions;
     const metadataAction = {
       key: 'attributes',
       title: 'Show attributes',
       checked: this.showMetadata,
-      available: true,
+      available: options.attributes,
     };
     const jobAction = {
       key: 'jobs',
       title: 'Show import jobs',
       checked: this.showJobs,
-      available: this.isOmicsStore,
+      available: options.jobs,
     };
     const archivedFilesAction = {
       key: 'archive',
       title: 'Show archived files',
       checked: this.showArchives,
-      available:
-        !this.isOmicsStore &&
-        (this.userLifeCyclePermissions.read || this.userLifeCyclePermissions.write),
+      available: options.archives,
     };
     const versionsAction = {
       key: 'version',
       title: 'Show file versions',
       checked: this.showVersions,
-      available: this.versionControlsEnabled,
+      available: options.versions,
     };
     const doAction = (action) => {
       if (!action) {
@@ -2817,7 +2848,9 @@ class DataStorage extends React.Component {
         style={{
           display: 'flex',
           flexDirection: 'column',
-          height: 'calc(100vh - 25px)',
+          height: '100%',
+          minHeight: 0,
+          overflow: 'hidden',
         }}
       >
         {/* Legacy header */}
@@ -2883,13 +2916,19 @@ class DataStorage extends React.Component {
           </Col>
         </Row> */}
         <ContentMetadataPanel
-          style={{flex: 1, overflow: 'auto'}}
+          style={{flex: 1, minHeight: 0, overflow: 'hidden'}}
           onPanelClose={this.onPanelClose}
-          contentContainerStyle={{overflow: 'inherit'}}
+          contentContainerStyle={{overflow: 'hidden', minHeight: 0}}
         >
           <div
             key={CONTENT_PANEL_KEY}
-            style={{flex: 1, display: 'flex', flexDirection: 'column', overflow: 'auto'}}
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              minHeight: 0,
+              overflow: 'hidden',
+            }}
           >
             <Row className={styles.dataStorageInfoContainer}>
               {description && (
@@ -3006,7 +3045,7 @@ class DataStorage extends React.Component {
                 storageId: Number(this.props.storageId),
               }}
               jobList={
-                this.isOmicsStore && this.state.importedJobs ? (
+                this.isOmicsStore && this.showJobs ? (
                   <JobList
                     storageId={this.props.storageId}
                     updateJobsSearch={this.state.updateJobsSearch}
@@ -3217,6 +3256,43 @@ class DataStorage extends React.Component {
     this.storage.destroy();
   }
 
+  exposePresentationOptions = () => {
+    const {onExposePresentationOptions} = this.props;
+    if (!onExposePresentationOptions) {
+      return;
+    }
+    const options = this.presentationOptions;
+    const prev = this._lastPresentationOptions;
+    if (
+      prev &&
+      prev.attributes === options.attributes &&
+      prev.jobs === options.jobs &&
+      prev.archives === options.archives &&
+      prev.versions === options.versions
+    ) {
+      return;
+    }
+    this._lastPresentationOptions = options;
+    onExposePresentationOptions(options);
+  };
+
+  /**
+   * Match develop: attributes panel opens by default when storage has metadata.
+   */
+  applyDefaultMetadataVisibility = () => {
+    if (this.props.showMetadata === undefined || !this.props.onShowMetadataChange) {
+      return;
+    }
+    if (this._metadataDefaultApplied || !this.storage.info) {
+      return;
+    }
+    this._metadataDefaultApplied = true;
+    const shouldShow = !!(this.storage.info.hasMetadata && this.storage.readAllowed);
+    if (shouldShow !== !!this.props.showMetadata) {
+      this.props.onShowMetadataChange(shouldShow);
+    }
+  };
+
   componentDidMount() {
     const {openPreview, path, onExposeRefresh} = this.props;
     if (onExposeRefresh) {
@@ -3233,12 +3309,19 @@ class DataStorage extends React.Component {
       this.closeImportedJobsIfRequired();
     }
     this.updateStorageIfRequired();
+    this.exposePresentationOptions();
+    this.applyDefaultMetadataVisibility();
   }
 
   componentDidUpdate(prevProps) {
     this.clearSelectedItemsIfRequired();
     this.updateStorageIfRequired();
     this.closeImportedJobsIfRequired(prevProps.storageId);
+    if (prevProps.storageId !== this.props.storageId) {
+      this._lastPresentationOptions = undefined;
+    }
+    this.exposePresentationOptions();
+    this.applyDefaultMetadataVisibility();
   }
 
   updateStorageIfRequired = () => {
@@ -3268,9 +3351,9 @@ class DataStorage extends React.Component {
   }
 
   closeImportedJobsIfRequired = (prevStorageId) => {
-    if (this.state.importedJobs) {
+    if (this.showJobs) {
       if (!this.isOmicsStore && prevStorageId !== this.props.storageId) {
-        this.setState({importedJobs: false});
+        this.setShowJobs(false);
       }
     }
   };

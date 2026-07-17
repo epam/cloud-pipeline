@@ -64,7 +64,7 @@ function InfoTooltip({sizes, isNFS}) {
   );
 
   return (
-    <Tooltip title={tooltip} placement="top">
+    <Tooltip title={tooltip} placement="topRight">
       <InfoCircleFilled className="cp-text" style={{marginRight: 5, marginLeft: 5}} />
     </Tooltip>
   );

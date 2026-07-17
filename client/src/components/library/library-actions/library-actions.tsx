@@ -39,7 +39,7 @@ function LibraryActions(
               id: action.key,
               key: action.key,
               label: (
-                <div className="flex items-center">
+                <div className="flex items-center gap-[5px]">
                   <span>{action.title}</span>
                   {action.checked && <CheckCircleFilled className="ml-auto" />}
                 </div>
@@ -91,7 +91,7 @@ function LibraryActions(
           menu={{
             items: displayOptionsMenuItems,
             onClick: onSelectDisplayOption,
-            style: {width: 125},
+            style: {minWidth: 125, maxWidth: 200},
           }}
         >
           <Button id="display-attributes" style={{lineHeight: 1}} size="small">

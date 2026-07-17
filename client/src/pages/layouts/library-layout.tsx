@@ -62,26 +62,26 @@ function LibraryLayoutInner() {
         />
       </Splitter.Panel>
       <Splitter.Panel>
-        <section className="min-w-0 flex-1 overflow-auto h-full flex flex-col p-2">
+        <section className="min-w-0 min-h-0 flex-1 overflow-hidden h-full flex flex-col p-2">
           <header className="shrink-0 flex items-start w-full">
             <LibraryHeader className="flex-1" activeItemId={activeItemId} />
             <LibraryActions className="shrink-0" actionsStore={actionsStore} />
           </header>
-          <Splitter className="flex-1 overflow-auto w-full" onResize={() => {}}>
-            <Splitter.Panel key="content" className="h-full overflow-auto">
+          <Splitter className="flex-1 min-w-0 min-h-0 overflow-hidden" onResize={() => {}}>
+            <Splitter.Panel key="content" className="h-full min-w-0 min-h-0 overflow-hidden">
               <Outlet context={outletContext} />
             </Splitter.Panel>
             <Splitter.Panel
-              className="h-full overflow-auto"
+              className="h-full min-w-0 overflow-auto"
               key="side-panels"
               min={100}
               defaultSize={200}
               size={sidePanelsVisible ? undefined : 0}
             >
-              <Splitter className="w-full h-full overflow-auto">
+              <Splitter className="h-full min-w-0 min-h-0 overflow-hidden">
                 <Splitter.Panel
                   key="issues"
-                  className="h-full overflow-auto"
+                  className="h-full min-w-0 overflow-auto"
                   size={issuesPanelVisible ? undefined : 0}
                   min={100}
                 >
@@ -94,7 +94,7 @@ function LibraryLayoutInner() {
                 </Splitter.Panel>
                 <Splitter.Panel
                   key="metadata"
-                  className="h-full overflow-auto"
+                  className="h-full min-w-0 overflow-auto"
                   size={metadataPanelVisible ? undefined : 0}
                   min={100}
                 >

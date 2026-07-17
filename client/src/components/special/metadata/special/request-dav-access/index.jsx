@@ -35,7 +35,7 @@ function InfoTooltip({tooltip}) {
     return null;
   }
   return (
-    <Popover content={<Markdown md={tooltip} />} mouseEnterDelay={1}>
+    <Popover content={<Markdown md={tooltip} />} placement="topRight" mouseEnterDelay={1}>
       <InfoCircleFilled className="cp-text" />
     </Popover>
   );
