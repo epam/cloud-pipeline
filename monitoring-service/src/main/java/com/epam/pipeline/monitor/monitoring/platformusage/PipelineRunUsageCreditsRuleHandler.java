@@ -24,27 +24,16 @@ import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateRule;
 import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateRuleType;
 import com.epam.pipeline.vo.SecuredEntityVO;
 import com.epam.pipeline.entity.user.PipelineUser;
-import com.epam.pipeline.monitor.monitoring.MonitoringService;
 import com.epam.pipeline.monitor.rest.CloudPipelineAPIClient;
 import com.epam.pipeline.vo.PagingRunFilterVO;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.input.ReversedLinesFileReader;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -53,58 +42,36 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Service
+@Component
 @Slf4j
-public class PipelineRunUsageCreditsMonitoringService implements MonitoringService {
+public class PipelineRunUsageCreditsRuleHandler implements PlatformUsageCreditsRuleHandler {
 
-    private static final DateTimeFormatter DATE_FORMATTER =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
     private static final List<TaskStatus> ACTIVE_RUN_STATUSES = Arrays.asList(
             TaskStatus.RUNNING, TaskStatus.PAUSING, TaskStatus.PAUSED, TaskStatus.RESUMING);
     private static final List<TaskStatus> FINAL_RUN_STATUSES = Arrays.asList(
             TaskStatus.SUCCESS, TaskStatus.FAILURE, TaskStatus.STOPPED);
-    private static final int FILE_READER_BLOCK_SIZE = 4096;
 
-    private final String monitorEnabledPreferenceName;
-    private final String lastExecutionFilePath;
     private final CloudPipelineAPIClient client;
     private final PlatformUsageCreditsUpdateRuleEvaluator evaluator;
 
-    public PipelineRunUsageCreditsMonitoringService(
-            @Value("${preference.name.platform.usage.credit.monitor.enable}")
-                final String monitorEnabledPreferenceName,
-            @Value("${platform.usage.credit.monitor.last.execution.file}")
-                final String lastExecutionFilePath,
-            final CloudPipelineAPIClient client,
-            final PlatformUsageCreditsUpdateRuleEvaluator evaluator) {
-        this.monitorEnabledPreferenceName = monitorEnabledPreferenceName;
-        this.lastExecutionFilePath = lastExecutionFilePath;
+    public PipelineRunUsageCreditsRuleHandler(final CloudPipelineAPIClient client,
+                                              final PlatformUsageCreditsUpdateRuleEvaluator evaluator) {
         this.client = client;
         this.evaluator = evaluator;
     }
 
     @Override
-    public void monitor() {
-        if (!client.getBooleanPreference(monitorEnabledPreferenceName)) {
-            log.debug("Platform usage credit monitor is not enabled");
-            return;
-        }
+    public PlatformUsageCreditsUpdateRuleType getRuleType() {
+        return PlatformUsageCreditsUpdateRuleType.RUN_STATE;
+    }
 
-        final LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
-        final LocalDateTime lastExecTime = readLastExecutionTime();
-
-        final List<PlatformUsageCreditsUpdateRule> rules = client.loadAllPlatformUsageCreditsRules();
-        if (rules.isEmpty()) {
-            log.info("No platform usage credit rules found, skipping");
-            writeLastExecutionTime(now);
-            return;
-        }
-
-        final List<PipelineRun> runs = loadAllPlatformUsageCreditsRuns(lastExecTime);
+    @Override
+    public List<PlatformUsageCreditsUpdateEvent> process(final List<PlatformUsageCreditsUpdateRule> rules,
+                                                          final LocalDateTime from, final LocalDateTime now) {
+        final List<PipelineRun> runs = loadAllPlatformUsageCreditsRuns(from);
         if (runs.isEmpty()) {
             log.info("No runs found for credit evaluation, skipping");
-            writeLastExecutionTime(now);
-            return;
+            return Collections.emptyList();
         }
 
         final Map<String, List<PipelineRun>> runsByOwner = runs.stream()
@@ -113,9 +80,6 @@ public class PipelineRunUsageCreditsMonitoringService implements MonitoringServi
         final List<PlatformUsageCreditsUpdateEvent> newEvents = new ArrayList<>();
 
         for (final PlatformUsageCreditsUpdateRule rule : rules) {
-            if (rule.getRuleType() != PlatformUsageCreditsUpdateRuleType.RUN_STATE) {
-                continue;
-            }
             for (final Map.Entry<String, List<PipelineRun>> entry : runsByOwner.entrySet()) {
                 final String owner = entry.getKey();
                 final List<PipelineRun> userRuns = entry.getValue();
@@ -167,11 +131,7 @@ public class PipelineRunUsageCreditsMonitoringService implements MonitoringServi
             }
         }
 
-        if (!newEvents.isEmpty()) {
-            client.savePlatformUsageCreditsEvents(newEvents);
-        }
-
-        writeLastExecutionTime(now);
+        return newEvents;
     }
 
     private List<PipelineRun> loadAllPlatformUsageCreditsRuns(final LocalDateTime from) {
@@ -186,32 +146,5 @@ public class PipelineRunUsageCreditsMonitoringService implements MonitoringServi
             client.filterRuns(completedFilter).forEach(r -> result.putIfAbsent(r.getId(), r));
         }
         return new ArrayList<>(result.values());
-    }
-
-    private LocalDateTime readLastExecutionTime() {
-        try (ReversedLinesFileReader reader = new ReversedLinesFileReader(
-                new File(lastExecutionFilePath), FILE_READER_BLOCK_SIZE, StandardCharsets.UTF_8)) {
-            final String lastLine = reader.readLine();
-            if (StringUtils.isBlank(lastLine)) {
-                return null;
-            }
-            return LocalDateTime.parse(lastLine.trim(), DATE_FORMATTER);
-        } catch (IOException e) {
-            log.trace("Error reading last execution time file {}", lastExecutionFilePath, e);
-            return null;
-        } catch (DateTimeParseException e) {
-            log.warn("Failed to parse last execution time from {}", lastExecutionFilePath, e);
-            return null;
-        }
-    }
-
-    private void writeLastExecutionTime(final LocalDateTime time) {
-        try {
-            Files.write(Paths.get(lastExecutionFilePath),
-                    (time.format(DATE_FORMATTER) + System.lineSeparator()).getBytes(),
-                    StandardOpenOption.APPEND, StandardOpenOption.CREATE);
-        } catch (IOException e) {
-            log.error("Failed to write last execution time to {}", lastExecutionFilePath, e);
-        }
     }
 }

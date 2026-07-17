@@ -27,14 +27,10 @@ import com.epam.pipeline.vo.SecuredEntityVO;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.monitor.rest.CloudPipelineAPIClient;
 import com.epam.pipeline.vo.PagingRunFilterVO;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -50,10 +46,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
-class PipelineRunUsageCreditsMonitoringServiceTest {
+class PipelineRunUsageCreditsRuleHandlerTest {
 
     private static final String UNCHECKED = "unchecked";
-    private static final String ENABLE_PREF = "enable.pref";
     private static final Long RULE_ID = 1L;
     private static final Long RUN_ID_1 = 10L;
     private static final Long RUN_ID_2 = 20L;
@@ -62,62 +57,24 @@ class PipelineRunUsageCreditsMonitoringServiceTest {
     private static final int ACTION_VALUE = 50;
     private static final String ACTION_MESSAGE = "Test deduction";
 
-    private Path tempDir;
-    private Path lastExecFile;
-
     private final CloudPipelineAPIClient client = mock(CloudPipelineAPIClient.class);
     private final PlatformUsageCreditsUpdateRuleEvaluator evaluator =
             mock(PlatformUsageCreditsUpdateRuleEvaluator.class);
 
-    private PipelineRunUsageCreditsMonitoringService monitor;
+    private final PipelineRunUsageCreditsRuleHandler handler =
+            new PipelineRunUsageCreditsRuleHandler(client, evaluator);
 
-    @BeforeEach
-    void setUp() throws IOException {
-        tempDir = Files.createTempDirectory("credit-monitor-test");
-        lastExecFile = tempDir.resolve("last_exec.txt");
-        monitor = new PipelineRunUsageCreditsMonitoringService(
-                ENABLE_PREF, lastExecFile.toString(), client, evaluator);
-    }
-
-    @AfterEach
-    void tearDown() throws IOException {
-        Files.deleteIfExists(lastExecFile);
-        Files.deleteIfExists(tempDir);
-    }
-
-    @Test
-    void monitorDisabled() {
-        when(client.getBooleanPreference(ENABLE_PREF)).thenReturn(false);
-
-        monitor.monitor();
-
-        verify(client, never()).loadAllPlatformUsageCreditsRules();
-        verifyZeroInteractions(evaluator);
-    }
-
-    @Test
-    void noRulesFound() {
-        when(client.getBooleanPreference(ENABLE_PREF)).thenReturn(true);
-        when(client.loadAllPlatformUsageCreditsRules()).thenReturn(Collections.emptyList());
-
-        monitor.monitor();
-
-        verify(client, never()).filterRuns(any());
-        verify(client, never()).savePlatformUsageCreditsEvents(any());
-    }
+    private final LocalDateTime now = LocalDateTime.of(2026, 1, 1, 12, 0, 0);
 
     @Test
     void noRunsFound() {
-        when(client.getBooleanPreference(ENABLE_PREF)).thenReturn(true);
-        when(client.loadAllPlatformUsageCreditsRules())
-                .thenReturn(Collections.singletonList(runStateRule()));
-        when(client.filterRuns(any()))
-                .thenReturn(Collections.emptyList());
+        when(client.filterRuns(any())).thenReturn(Collections.emptyList());
 
-        monitor.monitor();
+        final List<PlatformUsageCreditsUpdateEvent> result =
+                handler.process(Collections.singletonList(runStateRule()), null, now);
 
+        assertEquals(Collections.emptyList(), result);
         verify(client, never()).filterPlatformUsageCreditsEvents(any());
-        verify(client, never()).savePlatformUsageCreditsEvents(any());
     }
 
     @Test
@@ -126,26 +83,16 @@ class PipelineRunUsageCreditsMonitoringServiceTest {
         final PipelineRun run = run(RUN_ID_1, OWNER);
         final PipelineUser user = user(USER_ID);
 
-        when(client.getBooleanPreference(ENABLE_PREF)).thenReturn(true);
-        when(client.loadAllPlatformUsageCreditsRules())
-                .thenReturn(Collections.singletonList(rule));
-        when(client.filterRuns(any()))
-                .thenReturn(Collections.singletonList(run));
+        when(client.filterRuns(any())).thenReturn(Collections.singletonList(run));
         when(client.loadUserByName(OWNER)).thenReturn(user);
         when(evaluator.matches(any(), any(), any())).thenReturn(true);
-        when(client.filterPlatformUsageCreditsEvents(any()))
-                .thenReturn(Collections.emptyList());
+        when(client.filterPlatformUsageCreditsEvents(any())).thenReturn(Collections.emptyList());
 
-        monitor.monitor();
+        final List<PlatformUsageCreditsUpdateEvent> result =
+                handler.process(Collections.singletonList(rule), null, now);
 
-        @SuppressWarnings(UNCHECKED)
-        final ArgumentCaptor<List<PlatformUsageCreditsUpdateEvent>> captor =
-                ArgumentCaptor.forClass(List.class);
-        verify(client).savePlatformUsageCreditsEvents(captor.capture());
-
-        final List<PlatformUsageCreditsUpdateEvent> saved = captor.getValue();
-        assertEquals(1, saved.size());
-        final PlatformUsageCreditsUpdateEvent event = saved.get(0);
+        assertEquals(1, result.size());
+        final PlatformUsageCreditsUpdateEvent event = result.get(0);
         assertEquals(USER_ID, event.getUserId());
         assertEquals(RULE_ID, event.getRuleId());
         assertNotNull(event.getEntity());
@@ -161,31 +108,21 @@ class PipelineRunUsageCreditsMonitoringServiceTest {
         final PipelineRun run1 = run(RUN_ID_1, OWNER);
         final PipelineRun run2 = run(RUN_ID_2, OWNER);
 
-        when(client.getBooleanPreference(ENABLE_PREF)).thenReturn(true);
-        when(client.loadAllPlatformUsageCreditsRules())
-                .thenReturn(Collections.singletonList(rule));
-        when(client.filterRuns(any()))
-                .thenReturn(Arrays.asList(run1, run2));
+        when(client.filterRuns(any())).thenReturn(Arrays.asList(run1, run2));
         when(client.loadUserByName(OWNER)).thenReturn(user(USER_ID));
         when(evaluator.matches(any(), any(), any())).thenReturn(true);
-        // RUN_ID_1 already has an event for this rule
         when(client.filterPlatformUsageCreditsEvents(any()))
                 .thenReturn(Collections.singletonList(
                         PlatformUsageCreditsUpdateEvent.builder()
                                 .entity(SecuredEntityVO.from(PipelineRun.class, RUN_ID_1))
                                 .ruleId(RULE_ID).build()));
 
-        monitor.monitor();
+        final List<PlatformUsageCreditsUpdateEvent> result =
+                handler.process(Collections.singletonList(rule), null, now);
 
-        @SuppressWarnings(UNCHECKED)
-        final ArgumentCaptor<List<PlatformUsageCreditsUpdateEvent>> captor =
-                ArgumentCaptor.forClass(List.class);
-        verify(client).savePlatformUsageCreditsEvents(captor.capture());
-
-        final List<PlatformUsageCreditsUpdateEvent> saved = captor.getValue();
-        assertEquals(1, saved.size());
-        assertNotNull(saved.get(0).getEntity());
-        assertEquals(RUN_ID_2.longValue(), saved.get(0).getEntity().getEntityId());
+        assertEquals(1, result.size());
+        assertNotNull(result.get(0).getEntity());
+        assertEquals(RUN_ID_2.longValue(), result.get(0).getEntity().getEntityId());
     }
 
     @Test
@@ -194,17 +131,12 @@ class PipelineRunUsageCreditsMonitoringServiceTest {
         final PipelineRun run1 = run(RUN_ID_1, OWNER);
         final PipelineRun run2 = run(RUN_ID_2, OWNER);
 
-        when(client.getBooleanPreference(ENABLE_PREF)).thenReturn(true);
-        when(client.loadAllPlatformUsageCreditsRules())
-                .thenReturn(Collections.singletonList(rule));
-        when(client.filterRuns(any()))
-                .thenReturn(Arrays.asList(run1, run2));
+        when(client.filterRuns(any())).thenReturn(Arrays.asList(run1, run2));
         when(client.loadUserByName(OWNER)).thenReturn(user(USER_ID));
         when(evaluator.matches(any(), any(), any())).thenReturn(true);
-        when(client.filterPlatformUsageCreditsEvents(any()))
-                .thenReturn(Collections.emptyList());
+        when(client.filterPlatformUsageCreditsEvents(any())).thenReturn(Collections.emptyList());
 
-        monitor.monitor();
+        handler.process(Collections.singletonList(rule), null, now);
 
         verify(client).filterPlatformUsageCreditsEvents(
                 PlatformUsageCreditsEventFilterVO.builder()
@@ -217,45 +149,35 @@ class PipelineRunUsageCreditsMonitoringServiceTest {
 
     @Test
     void skipsRunsNotMatchingRule() {
-        when(client.getBooleanPreference(ENABLE_PREF)).thenReturn(true);
-        when(client.loadAllPlatformUsageCreditsRules())
-                .thenReturn(Collections.singletonList(runStateRule()));
-        when(client.filterRuns(any()))
-                .thenReturn(Collections.singletonList(run(RUN_ID_1, OWNER)));
+        when(client.filterRuns(any())).thenReturn(Collections.singletonList(run(RUN_ID_1, OWNER)));
         when(client.loadUserByName(OWNER)).thenReturn(user(USER_ID));
         when(evaluator.matches(any(), any(), any())).thenReturn(false);
 
-        monitor.monitor();
+        final List<PlatformUsageCreditsUpdateEvent> result =
+                handler.process(Collections.singletonList(runStateRule()), null, now);
 
+        assertEquals(Collections.emptyList(), result);
         verify(client, never()).filterPlatformUsageCreditsEvents(any());
-        verify(client, never()).savePlatformUsageCreditsEvents(any());
     }
 
     @Test
     void skipsUnknownUser() {
-        when(client.getBooleanPreference(ENABLE_PREF)).thenReturn(true);
-        when(client.loadAllPlatformUsageCreditsRules())
-                .thenReturn(Collections.singletonList(runStateRule()));
-        when(client.filterRuns(any()))
-                .thenReturn(Collections.singletonList(run(RUN_ID_1, OWNER)));
+        when(client.filterRuns(any())).thenReturn(Collections.singletonList(run(RUN_ID_1, OWNER)));
         when(client.loadUserByName(OWNER)).thenReturn(null);
 
-        monitor.monitor();
+        final List<PlatformUsageCreditsUpdateEvent> result =
+                handler.process(Collections.singletonList(runStateRule()), null, now);
 
+        assertEquals(Collections.emptyList(), result);
         verifyZeroInteractions(evaluator);
-        verify(client, never()).savePlatformUsageCreditsEvents(any());
     }
 
     @Test
-    void firstRunQueriesOnlyActiveStatuses() {
-        when(client.getBooleanPreference(ENABLE_PREF)).thenReturn(true);
-        when(client.loadAllPlatformUsageCreditsRules())
-                .thenReturn(Collections.singletonList(runStateRule()));
+    void processWithNullFromUsesOnlyActiveStatuses() {
         when(client.filterRuns(any())).thenReturn(Collections.emptyList());
 
-        monitor.monitor();
+        handler.process(Collections.singletonList(runStateRule()), null, now);
 
-        // Only one filterRuns call (active statuses); no completed-runs call when there is no prior timestamp.
         @SuppressWarnings(UNCHECKED)
         final ArgumentCaptor<PagingRunFilterVO> captor = ArgumentCaptor.forClass(PagingRunFilterVO.class);
         verify(client, times(1)).filterRuns(captor.capture());
@@ -266,20 +188,16 @@ class PipelineRunUsageCreditsMonitoringServiceTest {
     }
 
     @Test
-    void subsequentRunAlsoQueriesCompletedRunsWithTimestamp() {
-        when(client.getBooleanPreference(ENABLE_PREF)).thenReturn(true);
-        when(client.loadAllPlatformUsageCreditsRules())
-                .thenReturn(Collections.singletonList(runStateRule()));
+    void processWithFromDateAlsoQueriesCompletedRuns() {
+        final LocalDateTime from = LocalDateTime.of(2026, 1, 1, 10, 0, 0);
         when(client.filterRuns(any())).thenReturn(Collections.emptyList());
 
-        monitor.monitor(); // first call — no file, only active query, writes timestamp
-        monitor.monitor(); // second call — active query + completed query with startDateFrom
+        handler.process(Collections.singletonList(runStateRule()), from, now);
 
         @SuppressWarnings(UNCHECKED)
         final ArgumentCaptor<PagingRunFilterVO> captor = ArgumentCaptor.forClass(PagingRunFilterVO.class);
-        // first call: 1 filterRuns; second call: 2 filterRuns → 3 total
-        verify(client, times(3)).filterRuns(captor.capture());
-        final PagingRunFilterVO completedFilter = captor.getAllValues().get(2);
+        verify(client, times(2)).filterRuns(captor.capture());
+        final PagingRunFilterVO completedFilter = captor.getAllValues().get(1);
         assertEquals(
                 Arrays.asList(TaskStatus.SUCCESS, TaskStatus.FAILURE, TaskStatus.STOPPED),
                 completedFilter.getStatuses());
@@ -288,36 +206,25 @@ class PipelineRunUsageCreditsMonitoringServiceTest {
 
     @Test
     void multipleRunsAcrossDifferentOwners() {
-        final PlatformUsageCreditsUpdateRule rule = runStateRule();
         final String owner2 = "anotherUser";
         final Long userId2 = 200L;
         final PipelineRun run1 = run(RUN_ID_1, OWNER);
         final PipelineRun run2 = run(RUN_ID_2, owner2);
 
-        when(client.getBooleanPreference(ENABLE_PREF)).thenReturn(true);
-        when(client.loadAllPlatformUsageCreditsRules())
-                .thenReturn(Collections.singletonList(rule));
-        when(client.filterRuns(any()))
-                .thenReturn(Arrays.asList(run1, run2));
+        when(client.filterRuns(any())).thenReturn(Arrays.asList(run1, run2));
         when(client.loadUserByName(OWNER)).thenReturn(user(USER_ID));
         when(client.loadUserByName(owner2)).thenReturn(user(userId2));
         when(evaluator.matches(any(), any(), any())).thenReturn(true);
-        when(client.filterPlatformUsageCreditsEvents(any()))
-                .thenReturn(Collections.emptyList());
+        when(client.filterPlatformUsageCreditsEvents(any())).thenReturn(Collections.emptyList());
 
-        monitor.monitor();
+        final List<PlatformUsageCreditsUpdateEvent> result =
+                handler.process(Collections.singletonList(runStateRule()), null, now);
 
-        @SuppressWarnings(UNCHECKED)
-        final ArgumentCaptor<List<PlatformUsageCreditsUpdateEvent>> captor =
-                ArgumentCaptor.forClass(List.class);
-        verify(client).savePlatformUsageCreditsEvents(captor.capture());
-
-        final List<PlatformUsageCreditsUpdateEvent> saved = captor.getValue();
-        assertEquals(2, saved.size());
-        assertEquals(USER_ID, saved.stream()
+        assertEquals(2, result.size());
+        assertEquals(USER_ID, result.stream()
                 .filter(e -> e.getEntity() != null && e.getEntity().getEntityId() == RUN_ID_1).findFirst()
                 .map(PlatformUsageCreditsUpdateEvent::getUserId).orElse(null));
-        assertEquals(userId2, saved.stream()
+        assertEquals(userId2, result.stream()
                 .filter(e -> e.getEntity() != null && e.getEntity().getEntityId() == RUN_ID_2).findFirst()
                 .map(PlatformUsageCreditsUpdateEvent::getUserId).orElse(null));
     }
