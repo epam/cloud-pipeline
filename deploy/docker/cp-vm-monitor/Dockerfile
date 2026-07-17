@@ -30,21 +30,22 @@ RUN yum install -y \
 RUN curl -L -o /etc/yum.repos.d/corretto.repo https://yum.corretto.aws/corretto.repo && \
     yum install -y java-21-amazon-corretto-devel
 
-# API distribution
-ARG CP_API_DIST_URL=""
 ENV CP_VM_MONITOR_HOME="/opt/vm-monitor" \
     CP_VM_MONITOR_TEMPLATES_LOCATION="${CP_VM_MONITOR_HOME}/templates"
-RUN cd /tmp && \
-    wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
-    tar -zxf cloud-pipeline.tgz && \
-    mkdir -p $CP_VM_MONITOR_HOME && \
-    mv bin/vm-monitor.jar $CP_VM_MONITOR_HOME/ && \
-    mv bin/vm-monitor-templates ${CP_VM_MONITOR_TEMPLATES_LOCATION} && \
-    rm -rf /tmp/*
 
+RUN mkdir -p $CP_VM_MONITOR_HOME
 ADD config $CP_VM_MONITOR_HOME/config
 
 ADD init /init
 RUN chmod +x /init
+
+# API distribution
+ARG CP_API_DIST_URL=""
+RUN cd /tmp && \
+    wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
+    tar -zxf cloud-pipeline.tgz && \
+    mv bin/vm-monitor.jar $CP_VM_MONITOR_HOME/ && \
+    mv bin/vm-monitor-templates ${CP_VM_MONITOR_TEMPLATES_LOCATION} && \
+    rm -rf /tmp/*
 
 CMD ["/init"]

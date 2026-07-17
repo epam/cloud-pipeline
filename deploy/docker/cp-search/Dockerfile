@@ -46,18 +46,9 @@ RUN cd /tmp && \
     package-cleanup --cleandupes -y && \
     rm -rf lustre-client*
 
-# API distribution
-ARG CP_API_DIST_URL=""
 ENV CP_SEARCH_HOME="/opt/search"
+RUN mkdir -p $CP_SEARCH_HOME
 ENV CP_SEARCH_MAPPINGS_LOCATION="$CP_SEARCH_HOME/search-mappings"
-RUN cd /tmp && \
-    wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
-    tar -zxf cloud-pipeline.tgz && \
-    mkdir -p $CP_SEARCH_HOME && \
-    mv bin/elasticsearch-agent.jar $CP_SEARCH_HOME/ && \
-    mv bin/search-mappings $CP_SEARCH_MAPPINGS_LOCATION && \
-    rm -rf /tmp/*
-
 ADD config $CP_SEARCH_HOME/config
 
 ADD init /init
@@ -65,5 +56,13 @@ RUN chmod +x /init
 
 ADD liveness.sh /liveness.sh
 RUN chmod +x /liveness.sh
+# API distribution
+ARG CP_API_DIST_URL=""
+RUN cd /tmp && \
+    wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
+    tar -zxf cloud-pipeline.tgz && \
+    mv bin/elasticsearch-agent.jar $CP_SEARCH_HOME/ && \
+    mv bin/search-mappings $CP_SEARCH_MAPPINGS_LOCATION && \
+    rm -rf /tmp/*
 
 CMD ["/init"]

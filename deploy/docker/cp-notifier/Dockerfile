@@ -30,22 +30,23 @@ RUN yum install -y \
 RUN curl -L -o /etc/yum.repos.d/corretto.repo https://yum.corretto.aws/corretto.repo && \
     yum install -y java-21-amazon-corretto-devel
 
-# API distribution
-ARG CP_API_DIST_URL=""
-ENV CP_NOTIFIER_HOME="/opt/notifier"
-RUN cd /tmp && \
-    wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
-    tar -zxf cloud-pipeline.tgz && \
-    mkdir -p $CP_NOTIFIER_HOME && \
-    mv bin/notifier.jar $CP_NOTIFIER_HOME/ && \
-    rm -rf /tmp/*
-
-ADD config $CP_NOTIFIER_HOME/config
-
 ADD init /init
 RUN chmod +x /init
 
 ADD liveness.sh /liveness.sh
 RUN chmod +x /liveness.sh
+
+ENV CP_NOTIFIER_HOME="/opt/notifier"
+RUN mkdir -p $CP_NOTIFIER_HOME
+ADD config $CP_NOTIFIER_HOME/config
+
+# API distribution
+ARG CP_API_DIST_URL=""
+
+RUN cd /tmp && \
+    wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
+    tar -zxf cloud-pipeline.tgz && \
+    mv bin/notifier.jar $CP_NOTIFIER_HOME/ && \
+    rm -rf /tmp/*
 
 CMD ["/init"]

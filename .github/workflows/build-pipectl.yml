@@ -1,4 +1,4 @@
-name: Build and Push Docker Images (matrix)
+name: Build-Pipectl-And-Dockers
 
 on:
   workflow_dispatch:
@@ -12,6 +12,8 @@ on:
         description: 'URL to cloud-pipeline distribution tarball'
         required: true
         type: string
+
+concurrency: Build-Pipectl-And-Dockers
 
 env:
   DOCKERS_SOURCES_PATH: deploy/docker
@@ -219,78 +221,22 @@ jobs:
             context: cp-mlflow-server
             tag: mlflow-server-$DOCKERS_VERSION
 
+          - service: cp-dav
+            context: cp-dav
+            tag: dav-$DOCKERS_VERSION
+            pre_build_commands: cp -r scripts/nfs-roles-management $DOCKERS_SOURCES_PATH/cp-dav/
+            post_build_commands: rm -rf $DOCKERS_SOURCES_PATH/cp-dav/nfs-roles-management
+
           - service: cp-run-cleanup-job
             context: cp-run-cleanup-job
             needs_dist_url: true
             tag: cp-run-cleanup-job-$DOCKERS_VERSION
-
-          - service: cp-tools-base-centos-vanilla
-            context: cp-tools/base/centos/vanilla
-            tag: tools-base-centos-7-$DOCKERS_VERSION
-            manifest_pretty_names: "library/centos:7|library/centos:latest"
-            manifest_spec_path: cp-tools/base/centos/vanilla
-
-          - service: cp-tools-base-centos-vanilla-optimized
-            context: cp-tools/base/centos/vanilla
-            dockerfile: cp-tools/base/centos/vanilla/Dockerfile.optimized
-            needs_dist_url: true
-            tag: tools-base-centos-7-optimized-$DOCKERS_VERSION
-            manifest_pretty_names: "library/centos:7-optimized"
-            manifest_spec_path: cp-tools/base/centos/vanilla
-
-          - service: cp-tools-base-centos-cuda-11
-            context: cp-tools/base/centos/cuda
-            base_image: nvidia/cuda:11.3.1-cudnn8-runtime-centos7
-            tag: tools-base-centos-7-cuda11-$DOCKERS_VERSION
-            manifest_pretty_names: "library/centos-cuda:7-cuda11"
-            manifest_spec_path: cp-tools/base/centos/cuda
-
-          - service: cp-tools-base-centos-cuda
-            context: cp-tools/base/centos/cuda
-            base_image: nvidia/cuda:11.3.1-cudnn8-runtime-centos7
-            tag: tools-base-centos-7-cuda-$DOCKERS_VERSION
-            manifest_pretty_names: "library/centos-cuda:latest"
-            manifest_spec_path: cp-tools/base/centos/cuda
-
-          - service: cp-tools-base-ubuntu-vanilla-16.04
-            context: cp-tools/base/ubuntu/vanilla
-            base_image: library/ubuntu:16.04
-            tag: tools-base-ubuntu-16.04-$DOCKERS_VERSION
-            manifest_pretty_names: "library/ubuntu:16.04"
-            manifest_spec_path: cp-tools/base/ubuntu/vanilla
-
-          - service: cp-tools-base-ubuntu-vanilla-18.04
-            context: cp-tools/base/ubuntu/vanilla
-            base_image: library/ubuntu:18.04
-            tag: tools-base-ubuntu-18.04-$DOCKERS_VERSION
-            manifest_pretty_names: "library/ubuntu:18.04|library/ubuntu:latest"
-            manifest_spec_path: cp-tools/base/ubuntu/vanilla
-
-          - service: cp-tools-base-ubuntu-cuda-11
-            context: cp-tools/base/ubuntu/cuda
-            base_image: nvidia/cuda:11.3.1-cudnn8-runtime-ubuntu18.04
-            tag: tools-base-ubuntu-18.04-cuda11-$DOCKERS_VERSION
-            manifest_pretty_names: "library/ubuntu-cuda:18.04-cuda11"
-            manifest_spec_path: cp-tools/base/ubuntu/cuda
-
-          - service: cp-tools-base-ubuntu-cuda
-            context: cp-tools/base/ubuntu/cuda
-            base_image: nvidia/cuda:11.3.1-cudnn8-runtime-ubuntu18.04
-            tag: tools-base-ubuntu-18.04-cuda-$DOCKERS_VERSION
-            manifest_pretty_names: "library/ubuntu-cuda:latest"
-            manifest_spec_path: cp-tools/base/ubuntu/cuda
 
           - service: cp-tools-base-rockylinux-vanilla
             context: cp-tools/base/rockylinux/vanilla
             tag: tools-base-rockylinux-8-$DOCKERS_VERSION
             manifest_pretty_names: "library/rockylinux:8|library/rockylinux:latest"
             manifest_spec_path: cp-tools/base/rockylinux/vanilla
-
-          - service: cp-tools-base-cromwell
-            context: cp-tools/base/cromwell
-            tag: tools-base-cromwell-$DOCKERS_VERSION
-            manifest_pretty_names: "library/cromwell:latest"
-            manifest_spec_path: cp-tools/base/cromwell
 
           - service: cp-tools-base-nextflow
             context: cp-tools/base/nextflow
@@ -310,12 +256,6 @@ jobs:
             tag: tools-system-system-job-$DOCKERS_VERSION
             manifest_pretty_names: "system/system-job-launcher:latest"
             manifest_spec_path: cp-tools/system/system-job
-
-          - service: cp-dav
-            context: cp-dav
-            tag: dav-$DOCKERS_VERSION
-            pre_build_commands: cp -r scripts/nfs-roles-management $DOCKERS_SOURCES_PATH/cp-dav/
-            post_build_commands: rm -rf $DOCKERS_SOURCES_PATH/cp-dav/nfs-roles-management
 
     steps:
       - name: Checkout
@@ -338,7 +278,8 @@ jobs:
       - name: Compute tag
         id: tag
         run: |
-          echo "value=$(eval echo "${{ matrix.tag }}")" >> "$GITHUB_OUTPUT"
+          TAG_SUFFIX=$(eval echo "${{ matrix.tag }}")
+          echo "value=${{ secrets.CP_DOCKER_DIST_SRV }}${{ secrets.CP_DOCKER_USER }}/cloud-pipeline:${TAG_SUFFIX}" >> "$GITHUB_OUTPUT"
 
       - name: Build and push ${{ matrix.service }}
         uses: docker/build-push-action@v7
@@ -348,9 +289,9 @@ jobs:
           context: ${{ env.DOCKERS_SOURCES_PATH }}/${{ matrix.context }}
           file: ${{ matrix.dockerfile && format('{0}/{1}', env.DOCKERS_SOURCES_PATH, matrix.dockerfile) || '' }}
           push: true
-          tags: ${{ secrets.CP_DOCKER_DIST_SRV }}:${{ steps.tag.outputs.value }}
-          cache-from: type=registry,ref=${{ secrets.CP_DOCKER_DIST_SRV }}:${{ steps.tag.outputs.value }}-cache
-          cache-to: type=registry,ref=${{ secrets.CP_DOCKER_DIST_SRV }}:${{ steps.tag.outputs.value }}-cache,mode=max
+          tags: ${{ steps.tag.outputs.value }}
+          cache-from: type=registry,ref=${{ steps.tag.outputs.value }}-cache
+          cache-to: type=registry,ref=${{ steps.tag.outputs.value }}-cache,mode=max
           build-args: |
             ${{ matrix.needs_dist_url && format('CP_API_DIST_URL={0}', inputs.cp_dist_url) || '' }}
             ${{ matrix.base_image && format('BASE_IMAGE={0}', matrix.base_image) || '' }}
@@ -371,7 +312,7 @@ jobs:
     env:
       CP_VERSION_SHORT: ${{ needs.prebuild.outputs.version }}
       CP_VERSION_FULL: ${{ needs.prebuild.outputs.version_full }}
-      CP_DIST_REPO_NAME: ${{ secrets.CP_DOCKER_DIST_SRV }}
+      CP_DIST_REPO_NAME: "${{ secrets.CP_DOCKER_DIST_SRV }}${{ secrets.CP_DOCKER_USER }}/cloud-pipeline"
       BUILD_DIR: /tmp/cp-deploy-build
 
     steps:
@@ -383,14 +324,14 @@ jobs:
           python3 - <<'EOF'
           import yaml, os, shutil
 
-          workflow_file = ".github/workflows/build-dockers-matrix.yml"
+          workflow_file = ".github/workflows/build-pipectl.yml"
           with open(workflow_file) as f:
               wf = yaml.safe_load(f)
 
           matrix   = wf["jobs"]["build"]["strategy"]["matrix"]["include"]
           tools    = [e for e in matrix if e.get("manifest_pretty_names")]
 
-          repo     = os.environ["CP_DIST_REPO_NAME"]
+          repo     = os.environ["CP_DIST_REPO_NAME"].rstrip("/")
           version  = os.environ["CP_VERSION_SHORT"]
           sources  = os.environ["DOCKERS_SOURCES_PATH"]
           mdir     = os.environ["BUILD_DIR"] + "/dockers-manifest"

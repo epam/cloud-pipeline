@@ -53,6 +53,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
@@ -75,7 +77,8 @@ public class BitbucketCloudService implements GitClientService {
     private static final String USER_NAME = "user name";
     private static final String BITBUCKET_CLOUD_FOLDER_MARKER = "commit_directory";
     private static final String BITBUCKET_CLOUD_FILE_MARKER = "commit_file";
-    private static final String PAGE_PARAMETER = "page=";
+    private static final String PAGE_PARAMETER = "page";
+    private static final String QUERY_PARAM_SEPARATOR = "&";
     private static final String AT_SIGN_ENCODED = "%40";
     private static final int MAX_DEPTH = 20;
 
@@ -211,9 +214,13 @@ public class BitbucketCloudService implements GitClientService {
                                               final boolean issueToken, final Long duration) {
         final GitRepositoryUrl repositoryUrl = GitRepositoryUrl.fromBitbucketCloud(pipeline.getRepository());
         final String token = pipeline.getRepositoryToken();
-        final String username = repositoryUrl.getUsername()
-                .flatMap(this::trimUsername)
-                .orElse(preferenceManager.getPreference(SystemPreferences.BITBUCKET_CLOUD_STATIC_USERNAME));
+        final String staticUsername = preferenceManager
+                .getPreference(SystemPreferences.BITBUCKET_CLOUD_STATIC_USERNAME);
+        final String username = StringUtils.isBlank(staticUsername)
+                ? repositoryUrl.getUsername()
+                  .flatMap(this::trimUsername)
+                  .orElseThrow(() -> buildUrlParseError(USER_NAME))
+                : staticUsername;
         final String host = repositoryUrl.getHost();
         return GitCredentials.builder()
                 .url(GitRepositoryUrl.asString(repositoryUrl.getProtocol(), username, token, host,
@@ -251,11 +258,11 @@ public class BitbucketCloudService implements GitClientService {
         BitbucketCloudPagedResponse<BitbucketCloudSource> response = client.getFiles(path, version, null, maxDepth);
         final List<BitbucketCloudSource> values = response.getValues();
         while (response.getNext() != null) {
-            String[] params = response.getNext().split(PAGE_PARAMETER);
-            if (params.length < 2) {
+            final Optional<String> pageToken = extractPageToken(response.getNext());
+            if (!pageToken.isPresent()) {
                 break;
             }
-            response = client.getFiles(path, version, params[1], maxDepth);
+            response = client.getFiles(path, version, pageToken.get(), maxDepth);
             values.addAll(response.getValues());
         }
 
@@ -354,7 +361,7 @@ public class BitbucketCloudService implements GitClientService {
         return buildClient(repositoryPath, token);
     }
 
-    private BitbucketCloudClient buildClient(final String repositoryPath, final String token) {
+    protected BitbucketCloudClient buildClient(final String repositoryPath, final String token) {
         final GitRepositoryUrl repositoryUrl = GitRepositoryUrl.fromBitbucketCloud(repositoryPath);
         final String projectName = repositoryUrl.getNamespace().orElseThrow(() -> buildUrlParseError(PROJECT_NAME));
         final String repositoryName = repositoryUrl.getProject().orElseThrow(() -> buildUrlParseError(REPOSITORY_NAME));
@@ -407,6 +414,24 @@ public class BitbucketCloudService implements GitClientService {
 
     private boolean fileExists(final BitbucketCloudClient client, final String path, final Pipeline pipeline) {
         return client.searchFile(pipeline.getBranch(), path).getValues().size() > 0;
+    }
+
+    private Optional<String> extractPageToken(final String url) {
+        try {
+            final String query = new URI(url).getQuery();
+            if (query == null) {
+                return Optional.empty();
+            }
+            for (final String param : query.split(QUERY_PARAM_SEPARATOR)) {
+                final int eq = param.indexOf('=');
+                if (eq > 0 && param.substring(0, eq).equals(PAGE_PARAMETER)) {
+                    return Optional.of(param.substring(eq + 1));
+                }
+            }
+        } catch (URISyntaxException e) {
+            log.warn("Failed to parse next page URL: {}", url);
+        }
+        return Optional.empty();
     }
 
     private Optional<String> decodeUsername(final String username) {

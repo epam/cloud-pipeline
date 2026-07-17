@@ -29,20 +29,19 @@ RUN yum install -y \
 RUN curl -L -o /etc/yum.repos.d/corretto.repo https://yum.corretto.aws/corretto.repo && \
     yum install -y java-21-amazon-corretto-devel
 
-# API distribution
-ARG CP_API_DIST_URL=""
 ENV CP_BILLING_HOME="/opt/billing"
-
-RUN cd /tmp && \
-    wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
-    tar -zxf cloud-pipeline.tgz && \
-    mkdir -p $CP_BILLING_HOME && \
-    mv bin/billing-report-agent.jar $CP_BILLING_HOME/ && \
-    rm -rf /tmp/*
-
+RUN mkdir -p $CP_BILLING_HOME
 ADD config $CP_BILLING_HOME/config
 
 ADD init /init
 RUN chmod +x /init
+
+# API distribution
+ARG CP_API_DIST_URL=""
+RUN cd /tmp && \
+    wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
+    tar -zxf cloud-pipeline.tgz && \
+    mv bin/billing-report-agent.jar $CP_BILLING_HOME/ && \
+    rm -rf /tmp/*
 
 CMD ["/init"]

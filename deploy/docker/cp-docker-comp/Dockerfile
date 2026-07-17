@@ -31,19 +31,19 @@ RUN curl -L -o /etc/yum.repos.d/corretto.repo https://yum.corretto.aws/corretto.
     yum install -y java-21-amazon-corretto-devel
 
 
-# API distribution
-ARG CP_API_DIST_URL=""
 ENV CP_DOCKER_COMP_HOME="/opt/docker-comp"
-RUN cd /tmp && \
-    wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
-    tar -zxf cloud-pipeline.tgz && \
-    mkdir -p $CP_DOCKER_COMP_HOME && \
-    mv bin/docker-comp-scan.jar $CP_DOCKER_COMP_HOME/ && \
-    rm -rf /tmp/*
-
+RUN mkdir -p $CP_DOCKER_COMP_HOME
 ADD config $CP_DOCKER_COMP_HOME/config
 
 ADD init /init
 RUN chmod +x /init
+
+# API distribution
+ARG CP_API_DIST_URL=""
+RUN cd /tmp && \
+    wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
+    tar -zxf cloud-pipeline.tgz && \
+    mv bin/docker-comp-scan.jar $CP_DOCKER_COMP_HOME/ && \
+    rm -rf /tmp/*
 
 CMD ["/init"]
