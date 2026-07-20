@@ -18,6 +18,7 @@ package com.epam.pipeline.monitor.monitoring.platformusage;
 
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.monitor.monitoring.platformusage.handler.PipelineRunUsageCreditsRuleHandler;
 import com.epam.pipeline.vo.platformusage.PlatformUsageCreditsEventFilterVO;
 import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateAction;
 import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateEvent;

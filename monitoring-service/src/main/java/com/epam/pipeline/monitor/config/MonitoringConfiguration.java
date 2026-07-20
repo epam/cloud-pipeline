@@ -106,7 +106,7 @@ public class MonitoringConfiguration {
             final TaskScheduler scheduler,
             final PlatformUsageCreditsMonitoringService monitoringService,
             final CloudPipelineAPIClient client,
-            @Value("${preference.name.platform.usage.credit.monitor.delay}")
+            @Value("${preference.name.platform.usage.credits.monitor.delay}")
                 final String monitorDelayPreferenceName,
             final PreferencesService preferencesService) {
         return new SchedulingService(scheduler, monitoringService, client,

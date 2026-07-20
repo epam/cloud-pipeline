@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.monitor.monitoring.platformusage;
+package com.epam.pipeline.monitor.monitoring.platformusage.handler;
 
 import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateEvent;
 import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateRule;

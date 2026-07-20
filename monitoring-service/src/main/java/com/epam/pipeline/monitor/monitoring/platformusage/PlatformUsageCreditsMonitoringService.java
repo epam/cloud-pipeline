@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateEvent;
 import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateRule;
 import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateRuleType;
 import com.epam.pipeline.monitor.monitoring.MonitoringService;
+import com.epam.pipeline.monitor.monitoring.platformusage.handler.PlatformUsageCreditsRuleHandler;
 import com.epam.pipeline.monitor.rest.CloudPipelineAPIClient;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.input.ReversedLinesFileReader;
@@ -57,9 +58,9 @@ public class PlatformUsageCreditsMonitoringService implements MonitoringService 
     private final Map<PlatformUsageCreditsUpdateRuleType, PlatformUsageCreditsRuleHandler> handlers;
 
     public PlatformUsageCreditsMonitoringService(
-            @Value("${preference.name.platform.usage.credit.monitor.enable}")
+            @Value("${preference.name.platform.usage.credits.monitor.enable}")
                 final String monitorEnabledPreferenceName,
-            @Value("${platform.usage.credit.monitor.last.execution.file}")
+            @Value("${platform.usage.credits.monitor.execution.timestamp.file}")
                 final String lastExecutionFilePath,
             final CloudPipelineAPIClient client,
             final List<PlatformUsageCreditsRuleHandler> handlers) {
@@ -73,23 +74,23 @@ public class PlatformUsageCreditsMonitoringService implements MonitoringService 
     @Override
     public void monitor() {
         if (!client.getBooleanPreference(monitorEnabledPreferenceName)) {
-            log.debug("Platform usage credit monitor is not enabled");
+            log.debug("Platform usage credits monitor is not enabled");
             return;
         }
 
         final LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         final LocalDateTime lastExecTime = readLastExecutionTime();
-        log.info("Platform usage credit monitoring started, period: {} - {}",
+        log.info("Platform usage credits monitoring started, period: {} - {}",
                 lastExecTime != null ? lastExecTime.format(DATE_FORMATTER) : "beginning",
                 now.format(DATE_FORMATTER));
 
         final List<PlatformUsageCreditsUpdateRule> rules = client.loadAllPlatformUsageCreditsRules();
         if (rules.isEmpty()) {
-            log.info("No platform usage credit rules found, skipping");
+            log.info("No platform usage credits rules found, skipping");
             writeLastExecutionTime(now);
             return;
         }
-        log.info("Loaded {} platform usage credit rule(s)", rules.size());
+        log.info("Loaded {} platform usage credits rule(s)", rules.size());
 
         final Map<PlatformUsageCreditsUpdateRuleType, List<PlatformUsageCreditsUpdateRule>> rulesByType =
                 rules.stream()
@@ -109,14 +110,14 @@ public class PlatformUsageCreditsMonitoringService implements MonitoringService 
             newEvents.addAll(handler.process(entry.getValue(), lastExecTime, now));
         }
 
-        log.info("Platform usage credit monitoring produced {} new event(s)", newEvents.size());
+        log.info("Platform usage credits monitoring produced {} new event(s)", newEvents.size());
         if (!newEvents.isEmpty()) {
-            log.info("Saving {} platform usage credit event(s)", newEvents.size());
+            log.info("Saving {} platform usage credits event(s)", newEvents.size());
             client.savePlatformUsageCreditsEvents(newEvents);
         }
 
         writeLastExecutionTime(now);
-        log.info("Platform usage credit monitoring completed");
+        log.info("Platform usage credits monitoring completed");
     }
 
     private LocalDateTime readLastExecutionTime() {

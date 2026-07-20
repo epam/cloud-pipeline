@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateAction;
 import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateEvent;
 import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateRule;
 import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateRuleType;
+import com.epam.pipeline.monitor.monitoring.platformusage.handler.PlatformUsageCreditsRuleHandler;
 import com.epam.pipeline.monitor.rest.CloudPipelineAPIClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
