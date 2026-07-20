@@ -82,6 +82,8 @@ public class PipelineConfiguration implements Cloneable {
     @JsonProperty(value = INSTANCE_SIZE)
     private String instanceType;
 
+    private List<String> fallbackInstanceTypes;
+
     @JsonProperty(value = INSTANCE_IMAGE)
     private String instanceImage;
 
