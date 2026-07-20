@@ -652,7 +652,7 @@ class PlatformUsageCreditsUpdateRuleEvaluatorTest {
         return PlatformUsageCreditsUpdateRule.builder()
                 .id(1L)
                 .name("test-rule")
-                .strategyType(PlatformUsageCreditsUpdateRuleType.RUN_STATE)
+                .ruleType(PlatformUsageCreditsUpdateRuleType.RUN_STATE)
                 .statement(filter)
                 .exclude(exclude)
                 .action(PlatformUsageCreditsUpdateAction.builder()

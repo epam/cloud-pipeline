@@ -85,14 +85,14 @@ public class ConditionExpressionEvaluatorTest {
     @Test
     public void shouldReturnTrueForOrNodeWhenOneChildMatches() {
         assertTrue(evaluator.evaluate(
-                or(nodeTypeLeaf("=", NODE_TYPE_C5), nodeTypeLeaf("=", NODE_TYPE_M5)),
+                orExpr(nodeTypeLeaf("=", NODE_TYPE_C5), nodeTypeLeaf("=", NODE_TYPE_M5)),
                 RUN, NOW));
     }
 
     @Test
     public void shouldReturnFalseForOrNodeWhenNoChildMatches() {
         assertFalse(evaluator.evaluate(
-                or(nodeTypeLeaf("=", NODE_TYPE_C5), nodeTypeLeaf("=", NODE_TYPE_C5)),
+                orExpr(nodeTypeLeaf("=", NODE_TYPE_C5), nodeTypeLeaf("=", NODE_TYPE_C5)),
                 RUN, NOW));
     }
 
@@ -131,7 +131,7 @@ public class ConditionExpressionEvaluatorTest {
     public void shouldEvaluateNestedAndInsideOrCorrectly() {
         // OR( AND(m5 match, c5 no-match), AND(m5 match, m5 match) ) → OR(false, true) → true
         assertTrue(evaluator.evaluate(
-                or(
+                orExpr(
                     and(nodeTypeLeaf("=", NODE_TYPE_M5), nodeTypeLeaf("=", NODE_TYPE_C5)),
                     and(nodeTypeLeaf("=", NODE_TYPE_M5), nodeTypeLeaf("=", NODE_TYPE_M5))
                 ),
@@ -143,8 +143,8 @@ public class ConditionExpressionEvaluatorTest {
         // AND( OR(c5 no-match, m5 match), OR(m5 match, c5 no-match) ) → AND(true, true) → true
         assertTrue(evaluator.evaluate(
                 and(
-                    or(nodeTypeLeaf("=", NODE_TYPE_C5), nodeTypeLeaf("=", NODE_TYPE_M5)),
-                    or(nodeTypeLeaf("=", NODE_TYPE_M5), nodeTypeLeaf("=", NODE_TYPE_C5))
+                    orExpr(nodeTypeLeaf("=", NODE_TYPE_C5), nodeTypeLeaf("=", NODE_TYPE_M5)),
+                    orExpr(nodeTypeLeaf("=", NODE_TYPE_M5), nodeTypeLeaf("=", NODE_TYPE_C5))
                 ),
                 RUN, NOW));
     }
@@ -153,7 +153,7 @@ public class ConditionExpressionEvaluatorTest {
     public void shouldReturnFalseForNestedAndInsideOrWhenBothAndsFail() {
         // OR( AND(m5 match, c5 no-match), AND(c5 no-match, m5 match) ) → OR(false, false) → false
         assertFalse(evaluator.evaluate(
-                or(
+                orExpr(
                     and(nodeTypeLeaf("=", NODE_TYPE_M5), nodeTypeLeaf("=", NODE_TYPE_C5)),
                     and(nodeTypeLeaf("=", NODE_TYPE_C5), nodeTypeLeaf("=", NODE_TYPE_M5))
                 ),
@@ -180,7 +180,7 @@ public class ConditionExpressionEvaluatorTest {
         return e;
     }
 
-    private static ConditionExpression or(final ConditionExpression... children) {
+    private static ConditionExpression orExpr(final ConditionExpression... children) {
         final ConditionExpression e = new ConditionExpression();
         e.setType(ConditionType.OR);
         e.setExpressions(Arrays.asList(children));

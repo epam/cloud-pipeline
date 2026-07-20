@@ -14,31 +14,26 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dto.credits;
+package com.epam.pipeline.vo.platformusage;
 
+import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateAction;
 import com.epam.pipeline.vo.SecuredEntityVO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PlatformUsageCreditsUpdateEvent {
-
-    private Long id;
-    private Long userId;
-    /** Null for manual admin adjustments. */
+public class PlatformUsageCreditsEventFilterVO {
+    private List<SecuredEntityVO> entities;
     private Long ruleId;
-    /** Null for manual admin adjustments. */
-    private SecuredEntityVO entity;
-    private PlatformUsageCreditsUpdateAction.ActionType incidentType;
-    /** Always positive; direction is given by incidentType. */
-    private int value;
-    private String message;
-    private LocalDateTime createdDate;
+    private List<Long> userIds;
+    private List<PlatformUsageCreditsUpdateAction.ActionType> incidentTypes;
+    private int page;
+    private int pageSize;
 }

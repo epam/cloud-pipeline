@@ -22,6 +22,9 @@ import static org.junit.Assert.assertTrue;
 public class UserAuthoritiesFieldEvaluationStrategyTest {
 
     private static final LocalDateTime NOW = LocalDateTime.of(2026, 1, 1, 0, 0, 0);
+    private static final String ALICE = "alice";
+    private static final String TEAM_A = "team-a";
+    private static final String TEAM_B = "team-b";
 
     private Map<String, Set<String>> authoritiesStore;
     private UserAuthoritiesFieldEvaluationStrategy<String> strategy;
@@ -36,70 +39,70 @@ public class UserAuthoritiesFieldEvaluationStrategyTest {
 
     @Test
     public void shouldMatchWhenOwnerIsMemberOfGroup() {
-        authoritiesStore.put("alice", Collections.singleton("team-a"));
-        assertTrue(strategy.evaluate(leaf("=", "team-a"), "alice", NOW));
+        authoritiesStore.put(ALICE, Collections.singleton(TEAM_A));
+        assertTrue(strategy.evaluate(leaf("=", TEAM_A), ALICE, NOW));
     }
 
     @Test
     public void shouldNotMatchWhenOwnerIsNotMemberOfGroup() {
-        authoritiesStore.put("alice", Collections.singleton("team-b"));
-        assertFalse(strategy.evaluate(leaf("=", "team-a"), "alice", NOW));
+        authoritiesStore.put(ALICE, Collections.singleton(TEAM_B));
+        assertFalse(strategy.evaluate(leaf("=", TEAM_A), ALICE, NOW));
     }
 
     @Test
     public void shouldReturnFalseForNotEqualsWhenOwnerIsMember() {
-        authoritiesStore.put("alice", Collections.singleton("team-a"));
-        assertFalse(strategy.evaluate(leaf("!=", "team-a"), "alice", NOW));
+        authoritiesStore.put(ALICE, Collections.singleton(TEAM_A));
+        assertFalse(strategy.evaluate(leaf("!=", TEAM_A), ALICE, NOW));
     }
 
     @Test
     public void shouldReturnTrueForNotEqualsWhenOwnerIsNotMember() {
-        authoritiesStore.put("alice", Collections.singleton("team-b"));
-        assertTrue(strategy.evaluate(leaf("!=", "team-a"), "alice", NOW));
+        authoritiesStore.put(ALICE, Collections.singleton(TEAM_B));
+        assertTrue(strategy.evaluate(leaf("!=", TEAM_A), ALICE, NOW));
     }
 
     @Test
     public void shouldMatchGroupCaseInsensitively() {
-        authoritiesStore.put("alice", Collections.singleton("Team-A"));
-        assertTrue(strategy.evaluate(leaf("=", "team-a"), "alice", NOW));
+        authoritiesStore.put(ALICE, Collections.singleton("Team-A"));
+        assertTrue(strategy.evaluate(leaf("=", TEAM_A), ALICE, NOW));
     }
 
     @Test
     public void shouldMatchOwnerInAnyOfMultipleGroups() {
-        authoritiesStore.put("alice", new HashSet<>(Arrays.asList("team-a", "team-b")));
-        assertTrue(strategy.evaluate(leaf("=", "team-b"), "alice", NOW));
+        authoritiesStore.put(ALICE, new HashSet<>(Arrays.asList(TEAM_A, TEAM_B)));
+        assertTrue(strategy.evaluate(leaf("=", TEAM_B), ALICE, NOW));
     }
 
     @Test
     public void shouldReturnFalseWhenOwnerHasNoAuthorities() {
-        assertFalse(strategy.evaluate(leaf("=", "team-a"), "alice", NOW));
+        assertFalse(strategy.evaluate(leaf("=", TEAM_A), ALICE, NOW));
     }
 
     @Test
     public void shouldReturnFalseWhenOwnerIsNull() {
-        assertFalse(strategy.evaluate(leaf("=", "team-a"), null, NOW));
+        assertFalse(strategy.evaluate(leaf("=", TEAM_A), null, NOW));
     }
 
     @Test
     public void shouldReturnTrueForNotEqualsWhenOwnerIsNull() {
-        assertTrue(strategy.evaluate(leaf("!=", "team-a"), null, NOW));
+        assertTrue(strategy.evaluate(leaf("!=", TEAM_A), null, NOW));
     }
 
     @Test
     public void shouldReturnFalseWhenAuthoritiesResolverReturnsNull() {
         final UserAuthoritiesFieldEvaluationStrategy<String> strategyWithNullResolver =
                 new UserAuthoritiesFieldEvaluationStrategy<>(ownerField(), owner -> null);
-        assertFalse(strategyWithNullResolver.evaluate(leaf("=", "team-a"), "alice", NOW));
+        assertFalse(strategyWithNullResolver.evaluate(leaf("=", TEAM_A), ALICE, NOW));
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldThrowForUnsupportedOperator() {
-        strategy.evaluate(leaf(">", "team-a"), "alice", NOW);
+        strategy.evaluate(leaf(">", TEAM_A), ALICE, NOW);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldThrowForUnknownOperatorSymbol() {
-        strategy.evaluate(leaf("<>", "team-a"), "alice", NOW);
+        strategy.evaluate(leaf("<>", TEAM_A), ALICE, NOW);
     }
 
     private static ConditionExpression leaf(final String operand, final String value) {
