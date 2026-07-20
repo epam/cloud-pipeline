@@ -68,7 +68,7 @@ public class PipelineRunUsageCreditsRuleHandler implements PlatformUsageCreditsR
 
     @Override
     public List<PlatformUsageCreditsUpdateEvent> process(final List<PlatformUsageCreditsUpdateRule> rules,
-                                                          final LocalDateTime from, final LocalDateTime now) {
+                                                          final LocalDateTime from, final LocalDateTime till) {
         final List<PipelineRun> runs = loadAllPlatformUsageCreditsRuns(from);
         if (runs.isEmpty()) {
             log.info("No runs found for credit evaluation, skipping");
@@ -95,7 +95,7 @@ public class PipelineRunUsageCreditsRuleHandler implements PlatformUsageCreditsR
                 }
 
                 final List<PipelineRun> matchingRuns = userRuns.stream()
-                        .filter(run -> evaluator.matches(rule, run, now))
+                        .filter(run -> evaluator.matches(rule, run, till))
                         .collect(Collectors.toList());
                 if (matchingRuns.isEmpty()) {
                     log.debug("Rule '{}': no matching runs for user '{}'", rule.getName(), owner);

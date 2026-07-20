@@ -26,5 +26,5 @@ import java.util.List;
 public interface PlatformUsageCreditsRuleHandler {
     PlatformUsageCreditsUpdateRuleType getRuleType();
     List<PlatformUsageCreditsUpdateEvent> process(List<PlatformUsageCreditsUpdateRule> rules,
-                                                   LocalDateTime from, LocalDateTime now);
+                                                   LocalDateTime from, LocalDateTime till);
 }
