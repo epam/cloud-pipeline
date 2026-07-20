@@ -21,23 +21,14 @@ import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateRule;
 import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateRuleType;
 import com.epam.pipeline.monitor.monitoring.MonitoringService;
 import com.epam.pipeline.monitor.monitoring.platformusage.handler.PlatformUsageCreditsRuleHandler;
+import com.epam.pipeline.monitor.monitoring.utils.ExecutionTimestampFile;
 import com.epam.pipeline.monitor.rest.CloudPipelineAPIClient;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.input.ReversedLinesFileReader;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -48,24 +39,20 @@ import java.util.stream.Collectors;
 @Slf4j
 public class PlatformUsageCreditsMonitoringService implements MonitoringService {
 
-    private static final DateTimeFormatter DATE_FORMATTER =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
-    private static final int FILE_READER_BLOCK_SIZE = 4096;
-
-    private final String monitorEnabledPreferenceName;
-    private final String lastExecutionFilePath;
     private final CloudPipelineAPIClient client;
+    private final String monitorEnabledPreference;
+    private final ExecutionTimestampFile executionTimestampFile;
     private final Map<PlatformUsageCreditsUpdateRuleType, PlatformUsageCreditsRuleHandler> handlers;
 
     public PlatformUsageCreditsMonitoringService(
-            @Value("${preference.name.platform.usage.credits.monitor.enable}")
-                final String monitorEnabledPreferenceName,
+            @Value("${preference.name.platform.usage.credits.monitor.enable:-monitoring.platform.usage.credits.enable}")
+                final String monitorEnabledPreference,
             @Value("${platform.usage.credits.monitor.execution.timestamp.file}")
                 final String lastExecutionFilePath,
             final CloudPipelineAPIClient client,
             final List<PlatformUsageCreditsRuleHandler> handlers) {
-        this.monitorEnabledPreferenceName = monitorEnabledPreferenceName;
-        this.lastExecutionFilePath = lastExecutionFilePath;
+        this.monitorEnabledPreference = monitorEnabledPreference;
+        this.executionTimestampFile = new ExecutionTimestampFile(lastExecutionFilePath);
         this.client = client;
         this.handlers = handlers.stream()
                 .collect(Collectors.toMap(PlatformUsageCreditsRuleHandler::getRuleType, Function.identity()));
@@ -73,21 +60,19 @@ public class PlatformUsageCreditsMonitoringService implements MonitoringService 
 
     @Override
     public void monitor() {
-        if (!client.getBooleanPreference(monitorEnabledPreferenceName)) {
+        if (!client.getBooleanPreference(monitorEnabledPreference)) {
             log.debug("Platform usage credits monitor is not enabled");
             return;
         }
 
         final LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
-        final LocalDateTime lastExecTime = readLastExecutionTime();
-        log.info("Platform usage credits monitoring started, period: {} - {}",
-                lastExecTime != null ? lastExecTime.format(DATE_FORMATTER) : "beginning",
-                now.format(DATE_FORMATTER));
+        final LocalDateTime lastExecTime = executionTimestampFile.read();
+        log.info("Platform usage credits monitoring started.");
 
         final List<PlatformUsageCreditsUpdateRule> rules = client.loadAllPlatformUsageCreditsRules();
         if (rules.isEmpty()) {
             log.info("No platform usage credits rules found, skipping");
-            writeLastExecutionTime(now);
+            executionTimestampFile.write(now);
             return;
         }
         log.info("Loaded {} platform usage credits rule(s)", rules.size());
@@ -116,34 +101,8 @@ public class PlatformUsageCreditsMonitoringService implements MonitoringService 
             client.savePlatformUsageCreditsEvents(newEvents);
         }
 
-        writeLastExecutionTime(now);
+        executionTimestampFile.write(now);
         log.info("Platform usage credits monitoring completed");
     }
 
-    private LocalDateTime readLastExecutionTime() {
-        try (ReversedLinesFileReader reader = new ReversedLinesFileReader(
-                new File(lastExecutionFilePath), FILE_READER_BLOCK_SIZE, StandardCharsets.UTF_8)) {
-            final String lastLine = reader.readLine();
-            if (StringUtils.isBlank(lastLine)) {
-                return null;
-            }
-            return LocalDateTime.parse(lastLine.trim(), DATE_FORMATTER);
-        } catch (IOException e) {
-            log.trace("Error reading last execution time file {}", lastExecutionFilePath, e);
-            return null;
-        } catch (DateTimeParseException e) {
-            log.warn("Failed to parse last execution time from {}", lastExecutionFilePath, e);
-            return null;
-        }
-    }
-
-    private void writeLastExecutionTime(final LocalDateTime time) {
-        try {
-            Files.write(Paths.get(lastExecutionFilePath),
-                    (time.format(DATE_FORMATTER) + System.lineSeparator()).getBytes(),
-                    StandardOpenOption.APPEND, StandardOpenOption.CREATE);
-        } catch (IOException e) {
-            log.error("Failed to write last execution time to {}", lastExecutionFilePath, e);
-        }
-    }
 }
