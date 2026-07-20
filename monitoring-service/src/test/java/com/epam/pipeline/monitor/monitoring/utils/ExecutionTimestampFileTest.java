@@ -32,6 +32,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ExecutionTimestampFileTest {
 
+    private static final int YEAR = 2026;
+    private static final int DAY = 15;
+    private static final int MINUTE = 30;
+    private static final long NANOS_123MS = 123_000_000L;
+
     private Path tempDir;
     private Path timestampFile;
     private ExecutionTimestampFile executionTimestampFile;
@@ -75,7 +80,7 @@ class ExecutionTimestampFileTest {
         Files.write(timestampFile, "not-a-timestamp\n".getBytes());
 
         assertThrows(IllegalArgumentException.class,
-                () -> new ExecutionTimestampFile(timestampFile.toString()));
+            () -> new ExecutionTimestampFile(timestampFile.toString()));
     }
 
     @Test
@@ -105,7 +110,7 @@ class ExecutionTimestampFileTest {
 
         final LocalDateTime result = executionTimestampFile.read();
 
-        assertEquals(LocalDateTime.of(2026, 1, 15, 10, 30, 0), result);
+        assertEquals(LocalDateTime.of(YEAR, 1, DAY, 10, MINUTE, 0), result);
     }
 
     @Test
@@ -116,7 +121,7 @@ class ExecutionTimestampFileTest {
 
         final LocalDateTime result = executionTimestampFile.read();
 
-        assertEquals(LocalDateTime.of(2026, 1, 3, 10, 0, 0), result);
+        assertEquals(LocalDateTime.of(YEAR, 1, 3, 10, 0, 0), result);
     }
 
     @Test
@@ -141,12 +146,12 @@ class ExecutionTimestampFileTest {
 
     @Test
     void writeAndReadRoundtripPreservesMilliseconds() {
-        final LocalDateTime time = LocalDateTime.of(2026, 6, 15, 23, 59, 59, 123_000_000);
+        final LocalDateTime time = LocalDateTime.of(YEAR, 6, DAY, 23, 59, 59, (int) NANOS_123MS);
 
         executionTimestampFile.write(time);
         final LocalDateTime result = executionTimestampFile.read();
 
         assertNotNull(result);
-        assertEquals(time.withNano(0).plusNanos(123_000_000L), result);
+        assertEquals(time.withNano(0).plusNanos(NANOS_123MS), result);
     }
 }

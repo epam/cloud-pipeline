@@ -51,78 +51,78 @@ public enum PipelineRunField implements SubjectEntityField<PipelineRun> {
 
     /** Numeric run identifier. Expression names: {@code run.id}, {@code id}. */
     RUN_ID(NUMERIC,
-            run -> str(run.getId()),
-            false,
-            "run.id", "id"),
+        run -> str(run.getId()),
+        false,
+        "run.id", "id"),
 
     /**
      * Current run status as an enum name (e.g. {@code RUNNING}, {@code STOPPED}).
      * Comparison is case-insensitive. Expression names: {@code run.status}, {@code status}.
      */
     STATUS(ENUM,
-            run -> run.getStatus() != null ? run.getStatus().name() : null,
-            false,
-            "run.status", "status"),
+        run -> run.getStatus() != null ? run.getStatus().name() : null,
+        false,
+        "run.status", "status"),
 
     /**
      * Node instance type (e.g. {@code m5.xlarge}). Supports wildcard patterns such as {@code m5.*}.
      * Expression name: {@code node.type}.
      */
     INSTANCE_TYPE(STRING,
-            run -> instance(run) != null ? instance(run).getNodeType() : null,
-            false,
-            "node.type"),
+        run -> instance(run) != null ? instance(run).getNodeType() : null,
+        false,
+        "node.type"),
 
     /** Root disk size of the node in GB. Expression name: {@code node.disk}. */
     NODE_DISK(NUMERIC,
-            run -> instance(run) != null ? str(instance(run).getNodeDisk()) : null,
-            false,
-            "node.disk"),
+        run -> instance(run) != null ? str(instance(run).getNodeDisk()) : null,
+        false,
+        "node.disk"),
 
     /** Full docker image reference of the run tool. Expression name: {@code docker.image}. */
     DOCKER_IMAGE(STRING,
-            PipelineRun::getDockerImage,
-            false,
-            "docker.image"),
+        PipelineRun::getDockerImage,
+        false,
+        "docker.image"),
 
     /** Numeric identifier of the pipeline the run belongs to. Expression name: {@code pipeline.id}. */
     PIPELINE_ID(NUMERIC,
-            run -> str(run.getPipelineId()),
-            false,
-            "pipeline.id"),
+        run -> str(run.getPipelineId()),
+        false,
+        "pipeline.id"),
 
     /** Display name of the pipeline the run belongs to. Expression name: {@code pipeline.name}. */
     PIPELINE_NAME(STRING,
-            PipelineRun::getPipelineName,
-            false,
-            "pipeline.name"),
+        PipelineRun::getPipelineName,
+        false,
+        "pipeline.name"),
 
     /**
      * Username of the run owner. Supports wildcard patterns such as {@code john.*}.
      * Expression names: {@code run.owner}, {@code owner}.
      */
     OWNER(STRING,
-            AbstractSecuredEntity::getOwner,
-            false,
-            "run.owner", "owner"),
+        AbstractSecuredEntity::getOwner,
+        false,
+        "run.owner", "owner"),
 
     /**
      * Whether the run is using a spot (preemptible) instance.
      * Accepts {@code true} or {@code false}. Expression names: {@code run.spot}, {@code spot}.
      */
     SPOT(BOOLEAN,
-            run -> instance(run) != null ? str(instance(run).getSpot()) : null,
-            false,
-            "run.spot", "spot"),
+        run -> instance(run) != null ? str(instance(run).getSpot()) : null,
+        false,
+        "run.spot", "spot"),
 
     /**
      * Numeric identifier of the cloud region the run's node is provisioned in.
      * Expression names: {@code run.region_id}, {@code region_id}.
      */
     REGION_ID(NUMERIC,
-            run -> instance(run) != null ? str(instance(run).getCloudRegionId()) : null,
-            false,
-            "run.region_id", "region_id"),
+        run -> instance(run) != null ? str(instance(run).getCloudRegionId()) : null,
+        false,
+        "run.region_id", "region_id"),
 
     /**
      * Matches against the keys of the run's tags map.
@@ -137,9 +137,9 @@ public enum PipelineRunField implements SubjectEntityField<PipelineRun> {
      * Expression names: {@code run.tag}, {@code tag}.
      */
     TAG(TAGS,
-            run -> run.getTags() != null ? String.join(",", run.getTags().keySet()) : "",
-            true,
-            "run.tag", "tag"),
+        run -> run.getTags() != null ? String.join(",", run.getTags().keySet()) : "",
+        true,
+        "run.tag", "tag"),
 
     /**
      * Matches against the set of groups and roles the run owner belongs to.
@@ -147,9 +147,9 @@ public enum PipelineRunField implements SubjectEntityField<PipelineRun> {
      * Expression names: {@code run.owner.group}, {@code owner.group}.
      */
     OWNER_AUTHORITIES(FieldType.USER_AUTHORITIES,
-            PipelineRun::getOwner,
-            false,
-            "run.owner.authorities", "owner.authorities"),
+        PipelineRun::getOwner,
+        false,
+        "run.owner.authorities", "owner.authorities"),
 
     /**
      * Matches against the run's pipeline parameters.
@@ -158,10 +158,10 @@ public enum PipelineRunField implements SubjectEntityField<PipelineRun> {
      * Comparison is case-insensitive. Expression names: {@code run.parameter}, {@code parameter}.
      */
     PARAMETER(KEY_VALUE,
-            null,
-            PipelineRunField::parametersToMap,
-            false,
-            "run.parameter", "parameter"),
+        null,
+        PipelineRunField::parametersToMap,
+        false,
+        "run.parameter", "parameter"),
 
     /**
      * Matches against the run's environment variables.
@@ -170,10 +170,10 @@ public enum PipelineRunField implements SubjectEntityField<PipelineRun> {
      * Comparison is case-insensitive. Expression names: {@code run.env_var}, {@code env_var}.
      */
     ENV_VAR(KEY_VALUE,
-            null,
-            PipelineRunField::envVarsToMap,
-            false,
-            "run.env_var", "env_var");
+        null,
+        PipelineRunField::envVarsToMap,
+        false,
+        "run.env_var", "env_var");
 
     /** Value type that governs which operators are valid and how comparisons are performed. */
     @Getter
@@ -234,8 +234,8 @@ public enum PipelineRunField implements SubjectEntityField<PipelineRun> {
                 .filter(p -> p.getName() != null)
                 .collect(Collectors.toMap(
                         PipelineRunParameter::getName,
-                        p -> p.getValue() != null ? p.getValue() : "",
-                        (a, b) -> a));
+                    p -> p.getValue() != null ? p.getValue() : "",
+                    (a, b) -> a));
     }
 
     private static Map<String, String> envVarsToMap(final PipelineRun run) {
