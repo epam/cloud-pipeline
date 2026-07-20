@@ -55,6 +55,7 @@ public class ClusterCommandService {
                 .runId(nodeLabel)
                 .instanceImage(instance.getNodeImage())
                 .instanceType(instance.getNodeType())
+                .fallbackInstanceTypes(instance.getFallbackInstanceTypes())
                 .instanceDisk(String.valueOf(instance.getEffectiveNodeDisk()))
                 .kubeIP(kubeMasterIP)
                 .kubeToken(kubeToken)

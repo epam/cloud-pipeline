@@ -49,6 +49,7 @@ public class NodeUpCommand extends AbstractClusterCommand {
     private final Set<String> prePulledImages;
     private final Map<String, String> runtimeParameters;
     private final Map<String, String> tags;
+    private final List<String> fallbackInstanceTypes;
 
     @Override
     protected List<String> buildCommandArguments() {
@@ -101,6 +102,12 @@ public class NodeUpCommand extends AbstractClusterCommand {
             commands.add("--tags");
             commands.add(key + "=" + value);
         });
+        if (fallbackInstanceTypes != null && !fallbackInstanceTypes.isEmpty()) {
+            fallbackInstanceTypes.forEach(e -> {
+                commands.add("--fallback_ins_types");
+                commands.add(e);
+            });
+        }
         return commands;
     }
 }

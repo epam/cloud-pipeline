@@ -1550,6 +1550,7 @@ public class PipelineRunManager {
         instance.setEffectiveNodeDisk(Optional.ofNullable(configuration.getEffectiveDiskSize())
                 .orElse(instance.getNodeDisk()));
         instance.setNodeType(configuration.getInstanceType());
+        instance.setFallbackInstanceTypes(configuration.getFallbackInstanceTypes());
         instance.setNodeImage(configuration.getInstanceImage());
         Optional.ofNullable(region).map(AbstractCloudRegion::getId).ifPresent(instance::setCloudRegionId);
         Optional.ofNullable(region).map(AbstractCloudRegion::getProvider).ifPresent(instance::setCloudProvider);

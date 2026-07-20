@@ -33,6 +33,7 @@
                         r.terminating,
                         r.pod_id,
                         r.node_type,
+                        r.instance_fallback_types,
                         r.node_disk,
                         r.node_ip,
                         r.node_id,
