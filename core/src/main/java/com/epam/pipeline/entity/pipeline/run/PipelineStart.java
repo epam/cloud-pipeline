@@ -35,6 +35,7 @@ public class PipelineStart {
     private String version;
     private Long timeout;
     private String instanceType;
+    private List<String> fallbackInstanceTypes;
     private String instanceImage;
     private Integer hddSize;
     private String dockerImage;
