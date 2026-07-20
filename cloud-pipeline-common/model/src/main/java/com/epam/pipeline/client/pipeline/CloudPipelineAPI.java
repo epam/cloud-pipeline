@@ -59,7 +59,6 @@ import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.vo.platformusage.PlatformUsageCreditsEventFilterVO;
 import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateEvent;
 import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateRule;
-import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUserBalance;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AwsRegion;
@@ -383,7 +382,4 @@ public interface CloudPipelineAPI {
     Call<Result<List<PlatformUsageCreditsUpdateEvent>>> savePlatformUsageCreditsEvents(
             @Body List<PlatformUsageCreditsUpdateEvent> events);
 
-    @GET("usage/credits/balance/{userId}")
-    Call<Result<PlatformUsageCreditsUserBalance>> loadPlatformUsageCreditsUserBalance(
-            @Path("userId") Long userId);
 }

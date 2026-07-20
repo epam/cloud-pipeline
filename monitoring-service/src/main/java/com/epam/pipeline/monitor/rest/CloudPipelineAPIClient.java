@@ -30,7 +30,6 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.vo.platformusage.PlatformUsageCreditsEventFilterVO;
 import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateEvent;
 import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateRule;
-import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUserBalance;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
@@ -183,7 +182,4 @@ public class CloudPipelineAPIClient {
         return ListUtils.emptyIfNull(executor.execute(cloudPipelineAPI.savePlatformUsageCreditsEvents(events)));
     }
 
-    public PlatformUsageCreditsUserBalance loadPlatformUsageCreditsUserBalance(final Long userId) {
-        return executor.execute(cloudPipelineAPI.loadPlatformUsageCreditsUserBalance(userId));
-    }
 }
