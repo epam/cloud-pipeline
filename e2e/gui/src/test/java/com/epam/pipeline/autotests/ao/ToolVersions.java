@@ -24,6 +24,7 @@ import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
+import static org.openqa.selenium.By.className;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.Color;
@@ -375,9 +376,9 @@ public class ToolVersions extends ToolTab<ToolVersions> {
     }
 
     public ToolVersions addToWhiteList(final String version) {
-        $(toolVersion(version)).find(button("Add to white list")).click();
-        $(toolVersion(version)).find(button("Remove from white list")).should(visible);
-        $(toolVersion(version)).find(button("Add to white list")).should(hidden);
+        $(toolVersion(version)).find(button("Configure access")).click();
+        $(className("rc-dropdown-menu")).$(withText("Add to white list")).click();
+        $(toolVersion(version)).find(button("White-listed")).should(visible);
         return this;
     }
 
