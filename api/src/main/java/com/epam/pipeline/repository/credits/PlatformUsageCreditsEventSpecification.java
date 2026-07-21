@@ -58,6 +58,9 @@ public final class PlatformUsageCreditsEventSpecification {
                 predicates.add(root.get(FIELD_ENTITY_ID).in(filter.getEntities().stream()
                         .map(SecuredEntityVO::getEntityId).collect(Collectors.toList())));
             }
+            if (Boolean.TRUE.equals(filter.getWithoutEntityLink())) {
+                predicates.add(cb.isNull(root.get(FIELD_ENTITY_CLASS)));
+            }
             return cb.and(predicates.toArray(new Predicate[0]));
         };
     }

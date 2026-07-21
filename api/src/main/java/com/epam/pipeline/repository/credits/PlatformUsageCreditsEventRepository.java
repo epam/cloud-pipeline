@@ -19,31 +19,8 @@ package com.epam.pipeline.repository.credits;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateEventEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-
-import java.sql.Timestamp;
 
 public interface PlatformUsageCreditsEventRepository
         extends JpaRepository<PlatformUsageCreditsUpdateEventEntity, Long>,
                 JpaSpecificationExecutor<PlatformUsageCreditsUpdateEventEntity> {
-
-    @Modifying
-    @Query(value = "INSERT INTO pipeline.usage_credits_update_event"
-            + " (user_id, rule_id, entity_class, entity_id, incident_type, value, message, created_date)"
-            + " VALUES (:userId, :ruleId, :entityClass, :entityId, :incidentType, :value, :message, :createdDate)"
-            + " ON CONFLICT (rule_id, entity_class, entity_id, incident_type)"
-            + " WHERE rule_id IS NOT NULL AND entity_class IS NOT NULL AND entity_id IS NOT NULL"
-            + " DO NOTHING",
-           nativeQuery = true)
-    void insertIfAbsent(
-            @Param("userId") Long userId,
-            @Param("ruleId") Long ruleId,
-            @Param("entityClass") String entityClass,
-            @Param("entityId") Long entityId,
-            @Param("incidentType") String incidentType,
-            @Param("value") int value,
-            @Param("message") String message,
-            @Param("createdDate") Timestamp createdDate);
 }

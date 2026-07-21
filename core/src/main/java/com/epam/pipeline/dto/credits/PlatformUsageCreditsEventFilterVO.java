@@ -30,10 +30,13 @@ import java.util.List;
 @AllArgsConstructor
 public class PlatformUsageCreditsEventFilterVO {
 
-    private List<SecuredEntityVO> entities;
     private Long ruleId;
     private List<Long> userIds;
     private List<PlatformUsageCreditsUpdateAction.ActionType> incidentTypes;
+    /** Can't be used together with {@code entities}. */
+    private Boolean withoutEntityLink;
+    /** Can't be used together with {@code withoutEntityLink}. */
+    private List<SecuredEntityVO> entities;
     private int page;
     private int pageSize;
 }

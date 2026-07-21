@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,20 +21,15 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PlatformUsageCreditsUpdateAction {
+public class PlatformUsageCreditsResetRequest {
 
-    public enum ActionType {
-        INCREASE,
-        DEDUCTION,
-        RESET
-    }
-
-    private ActionType type;
+    /** If null or empty, reset is applied to all users. */
+    private List<Long> userIds;
     private int value;
-    private String message;
-    private boolean perIncident;
 }
