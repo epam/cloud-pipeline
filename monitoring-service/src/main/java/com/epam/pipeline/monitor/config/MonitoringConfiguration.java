@@ -18,7 +18,7 @@ package com.epam.pipeline.monitor.config;
 
 import com.epam.pipeline.monitor.monitoring.SchedulingService;
 import com.epam.pipeline.monitor.monitoring.node.GpuUsageMonitoringService;
-import com.epam.pipeline.monitor.monitoring.platformusage.PlatformUsageCreditsMonitoringService;
+import com.epam.pipeline.monitor.monitoring.credits.PlatformUsageCreditsMonitoringService;
 import com.epam.pipeline.monitor.monitoring.pool.NodePoolMonitoringService;
 import com.epam.pipeline.monitor.monitoring.pool.NodePoolUsageCleanerService;
 import com.epam.pipeline.monitor.monitoring.run.ArchiveRunsMonitoringService;

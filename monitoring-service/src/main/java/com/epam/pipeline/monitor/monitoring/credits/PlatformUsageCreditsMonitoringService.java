@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.monitor.monitoring.platformusage;
+package com.epam.pipeline.monitor.monitoring.credits;
 
-import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateEvent;
-import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateRule;
-import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateRuleType;
+import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateEvent;
+import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateRule;
+import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateRuleType;
 import com.epam.pipeline.monitor.monitoring.MonitoringService;
-import com.epam.pipeline.monitor.monitoring.platformusage.handler.PlatformUsageCreditsRuleHandler;
+import com.epam.pipeline.monitor.monitoring.credits.handler.PlatformUsageCreditsRuleHandler;
 import com.epam.pipeline.monitor.monitoring.utils.ExecutionTimestampFile;
 import com.epam.pipeline.monitor.rest.CloudPipelineAPIClient;
 import lombok.extern.slf4j.Slf4j;

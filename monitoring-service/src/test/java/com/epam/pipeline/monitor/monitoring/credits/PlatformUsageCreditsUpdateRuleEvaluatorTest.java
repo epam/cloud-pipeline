@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.monitor.monitoring.platformusage;
+package com.epam.pipeline.monitor.monitoring.credits;
 
 import com.epam.pipeline.utils.condition.ConditionType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
-import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateAction;
-import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateRule;
-import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateRuleType;
+import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateAction;
+import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateRule;
+import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateRuleType;
 import com.epam.pipeline.utils.condition.ConditionExpression;
 import com.epam.pipeline.utils.condition.evaluation.TagFieldEvaluationStrategy;
 import org.junit.jupiter.api.BeforeEach;

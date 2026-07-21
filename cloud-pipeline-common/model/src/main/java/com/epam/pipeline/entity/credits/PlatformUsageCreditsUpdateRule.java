@@ -14,31 +14,26 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.platformusage;
+package com.epam.pipeline.entity.credits;
 
-import com.epam.pipeline.vo.SecuredEntityVO;
+import com.epam.pipeline.utils.condition.ConditionExpression;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PlatformUsageCreditsUpdateEvent {
+public class PlatformUsageCreditsUpdateRule {
 
     private Long id;
-    private Long userId;
-    /** Null for manual admin adjustments. */
-    private Long ruleId;
-    /** Null for manual admin adjustments. */
-    private SecuredEntityVO entity;
-    private PlatformUsageCreditsUpdateAction.ActionType incidentType;
-    /** Always positive; direction is given by incidentType. */
-    private int value;
-    private String message;
-    private LocalDateTime createdDate;
+    private String name;
+    private String description;
+    private PlatformUsageCreditsUpdateRuleType ruleType;
+    private ConditionExpression statement;
+    /** Optional: runs matching this expression are excluded even if they match statement expression. */
+    private ConditionExpression exclude;
+    private PlatformUsageCreditsUpdateAction action;
 }

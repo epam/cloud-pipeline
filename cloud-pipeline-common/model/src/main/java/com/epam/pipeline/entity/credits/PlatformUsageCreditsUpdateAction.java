@@ -14,20 +14,26 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.platformusage;
+package com.epam.pipeline.entity.credits;
 
-import com.epam.pipeline.entity.AbstractSecuredEntity;
-import com.epam.pipeline.entity.pipeline.PipelineRun;
-import lombok.Getter;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Getter
-public enum PlatformUsageCreditsUpdateRuleType {
-    RUN_STATE(PipelineRun.class);
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class PlatformUsageCreditsUpdateAction {
 
-    private final Class<? extends AbstractSecuredEntity> entityClass;
-
-    PlatformUsageCreditsUpdateRuleType(Class<? extends AbstractSecuredEntity> entityClass) {
-        this.entityClass = entityClass;
+    public enum ActionType {
+        INCREASE,
+        DEDUCTION
     }
 
+    private ActionType type;
+    private int value;
+    private String message;
+    private boolean perIncident;
 }

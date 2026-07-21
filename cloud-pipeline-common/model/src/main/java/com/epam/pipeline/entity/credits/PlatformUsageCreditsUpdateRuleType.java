@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.platformusage;
+package com.epam.pipeline.entity.credits;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.pipeline.PipelineRun;
+import lombok.Getter;
 
-import java.time.LocalDateTime;
+@Getter
+public enum PlatformUsageCreditsUpdateRuleType {
+    RUN_STATE(PipelineRun.class);
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class PlatformUsageCreditsUserBalance {
+    private final Class<? extends AbstractSecuredEntity> entityClass;
 
-    private Long userId;
-    private int currentValue;
-    private LocalDateTime modifiedDate;
+    PlatformUsageCreditsUpdateRuleType(Class<? extends AbstractSecuredEntity> entityClass) {
+        this.entityClass = entityClass;
+    }
+
 }

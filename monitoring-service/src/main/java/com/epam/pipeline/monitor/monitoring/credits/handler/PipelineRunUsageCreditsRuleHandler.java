@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.monitor.monitoring.platformusage.handler;
+package com.epam.pipeline.monitor.monitoring.credits.handler;
 
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
-import com.epam.pipeline.monitor.monitoring.platformusage.PlatformUsageCreditsUpdateRuleEvaluator;
-import com.epam.pipeline.vo.platformusage.PlatformUsageCreditsEventFilterVO;
-import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateEvent;
-import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateRule;
-import com.epam.pipeline.entity.platformusage.PlatformUsageCreditsUpdateRuleType;
+import com.epam.pipeline.monitor.monitoring.credits.PlatformUsageCreditsUpdateRuleEvaluator;
+import com.epam.pipeline.vo.credits.PlatformUsageCreditsEventFilterVO;
+import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateEvent;
+import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateRule;
+import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateRuleType;
 import com.epam.pipeline.vo.SecuredEntityVO;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.monitor.rest.CloudPipelineAPIClient;
