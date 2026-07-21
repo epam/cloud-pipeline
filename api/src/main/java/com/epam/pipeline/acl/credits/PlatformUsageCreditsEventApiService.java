@@ -35,18 +35,13 @@ public class PlatformUsageCreditsEventApiService {
     private final PlatformUsageCreditsEventService platformUsageCreditsUpdateEventManager;
 
     @PreAuthorize(ADMIN_ONLY)
-    public List<PlatformUsageCreditsUpdateEvent> save(final List<PlatformUsageCreditsUpdateEvent> events) {
-        return platformUsageCreditsUpdateEventManager.save(events);
-    }
-
-    @PreAuthorize(ADMIN_ONLY)
-    public PagedResult<List<PlatformUsageCreditsUpdateEvent>> filter(
-            final PlatformUsageCreditsEventFilterVO filter) {
-        return platformUsageCreditsUpdateEventManager.filter(filter);
+    public List<PlatformUsageCreditsUpdateEvent> process(final List<PlatformUsageCreditsUpdateEvent> events) {
+        return platformUsageCreditsUpdateEventManager.process(events);
     }
 
     @PreAuthorize(ADMIN_OR_GENERAL_USER)
-    public PagedResult<List<PlatformUsageCreditsUpdateEvent>> findMy(final int page, final int pageSize) {
-        return platformUsageCreditsUpdateEventManager.findMy(page, pageSize);
+    public PagedResult<List<PlatformUsageCreditsUpdateEvent>> filter(
+            final PlatformUsageCreditsEventFilterVO filter) {
+        return platformUsageCreditsUpdateEventManager.filter(filter);
     }
 }

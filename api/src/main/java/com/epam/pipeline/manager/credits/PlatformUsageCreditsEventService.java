@@ -28,102 +28,101 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.mapper.credits.PlatformUsageCreditsEventMapper;
 import com.epam.pipeline.repository.credits.PlatformUsageCreditsEventRepository;
-import com.epam.pipeline.vo.SecuredEntityVO;
+import com.epam.pipeline.repository.credits.PlatformUsageCreditsEventSpecification;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
-import javax.persistence.criteria.Predicate;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PlatformUsageCreditsEventService {
 
-    private static final String FIELD_RULE_ID = "ruleId";
-    private static final String FIELD_USER_ID = "userId";
-    private static final String FIELD_INCIDENT_TYPE = "incidentType";
-    private static final String FIELD_ENTITY_CLASS = "entityClass";
-    private static final String FIELD_ENTITY_ID = "entityId";
     private static final String FIELD_CREATED_DATE = "createdDate";
 
-    private final PlatformUsageCreditsEventRepository repository;
+    private final PlatformUsageCreditsEventRepository usageCreditsEventRepository;
     private final PlatformUsageCreditsEventMapper mapper;
     private final AuthManager authManager;
     private final UserManager userManager;
     private final MessageHelper messageHelper;
 
     @Transactional
-    public List<PlatformUsageCreditsUpdateEvent> save(final List<PlatformUsageCreditsUpdateEvent> events) {
-        ListUtils.emptyIfNull(events).forEach(event -> {
-            final PlatformUsageCreditsUpdateEventEntity entity = mapper.toEntity(event);
-            entity.setCreatedDate(Optional.ofNullable(event.getCreatedDate()).orElseGet(DateUtils::nowUTC));
-            repository.insertIfAbsent(
-                    entity.getUserId(),
-                    entity.getRuleId(),
-                    entity.getEntityClass(),
-                    entity.getEntityId(),
-                    entity.getIncidentType().name(),
-                    entity.getValue(),
-                    entity.getMessage(),
-                    Timestamp.valueOf(entity.getCreatedDate()));
-        });
-        return events;
+    public List<PlatformUsageCreditsUpdateEvent> process(final List<PlatformUsageCreditsUpdateEvent> events) {
+        return ListUtils.emptyIfNull(events).stream()
+                .map(this::applyBalanceUpdate)
+                .filter(applied -> applied.getValue() != 0)
+                .peek(applied -> {
+                    final PlatformUsageCreditsUpdateEventEntity entity = mapper.toEntity(applied);
+                    entity.setCreatedDate(
+                            Optional.ofNullable(applied.getCreatedDate()).orElseGet(DateUtils::nowUTC));
+                    usageCreditsEventRepository.insertIfAbsent(
+                            entity.getUserId(),
+                            entity.getRuleId(),
+                            entity.getEntityClass(),
+                            entity.getEntityId(),
+                            entity.getIncidentType().name(),
+                            entity.getValue(),
+                            entity.getMessage(),
+                            Timestamp.valueOf(entity.getCreatedDate()));
+                })
+                .collect(Collectors.toList());
     }
 
-    public PagedResult<List<PlatformUsageCreditsUpdateEvent>> filter(
-            final PlatformUsageCreditsEventFilterVO filter) {
-        final Page<PlatformUsageCreditsUpdateEventEntity> page = repository.findAll(
-                buildSpec(filter),
-                new PageRequest(filter.getPage(), filter.getPageSize(),
+    public PagedResult<List<PlatformUsageCreditsUpdateEvent>> filter(final PlatformUsageCreditsEventFilterVO filter) {
+        final PlatformUsageCreditsEventFilterVO effectiveFilter = authManager.isAdmin()
+                ? filter
+                : restrictToCurrentUser(filter);
+        final Page<PlatformUsageCreditsUpdateEventEntity> page = usageCreditsEventRepository.findAll(
+                PlatformUsageCreditsEventSpecification.fromFilter(effectiveFilter),
+                new PageRequest(effectiveFilter.getPage(), effectiveFilter.getPageSize(),
                         new Sort(Sort.Direction.DESC, FIELD_CREATED_DATE)));
         return new PagedResult<>(
                 page.getContent().stream().map(mapper::toDto).collect(Collectors.toList()),
                 (int) page.getTotalElements());
     }
 
-    public PagedResult<List<PlatformUsageCreditsUpdateEvent>> findMy(final int page, final int pageSize) {
+    // TODO: implement balance update logic
+    private PlatformUsageCreditsUpdateEvent applyBalanceUpdate(final PlatformUsageCreditsUpdateEvent event) {
+        PlatformUsageCreditsUpdateEvent applied = event;
+        if (applied.getValue() != event.getValue()) {
+            log.warn("Credits balance update for user={} rule={} entity={} incidentType={}: "
+                            + "requested value={} adjusted to={}",
+                    event.getUserId(), event.getRuleId(), event.getEntity(),
+                    event.getIncidentType(), event.getValue(), applied.getValue());
+        }
+        return applied;
+    }
+
+    private PlatformUsageCreditsEventFilterVO restrictToCurrentUser(final PlatformUsageCreditsEventFilterVO filter) {
         final String username = authManager.getAuthorizedUser();
         final PipelineUser user = userManager.loadUserByName(username);
         Assert.notNull(user, messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_NOT_FOUND, username));
-        return filter(PlatformUsageCreditsEventFilterVO.builder()
+        final List<Long> requestedUserIds = filter.getUserIds();
+        if (!ListUtils.emptyIfNull(requestedUserIds).isEmpty()
+                && !(requestedUserIds.size() == 1 && requestedUserIds.get(0).equals(user.getId()))) {
+            log.warn("Non-admin user '{}' requested events for userIds {}; overriding to [{}]",
+                    username, requestedUserIds, user.getId());
+        }
+        return PlatformUsageCreditsEventFilterVO.builder()
+                .entities(filter.getEntities())
+                .ruleId(filter.getRuleId())
+                .incidentTypes(filter.getIncidentTypes())
                 .userIds(Collections.singletonList(user.getId()))
-                .page(page)
-                .pageSize(pageSize)
-                .build());
+                .page(filter.getPage())
+                .pageSize(filter.getPageSize())
+                .build();
     }
 
-    private Specification<PlatformUsageCreditsUpdateEventEntity> buildSpec(
-            final PlatformUsageCreditsEventFilterVO filter) {
-        return (root, query, cb) -> {
-            final List<Predicate> predicates = new ArrayList<>();
-            if (filter.getRuleId() != null) {
-                predicates.add(cb.equal(root.get(FIELD_RULE_ID), filter.getRuleId()));
-            }
-            if (!ListUtils.emptyIfNull(filter.getUserIds()).isEmpty()) {
-                predicates.add(root.get(FIELD_USER_ID).in(filter.getUserIds()));
-            }
-            if (!ListUtils.emptyIfNull(filter.getIncidentTypes()).isEmpty()) {
-                predicates.add(root.get(FIELD_INCIDENT_TYPE).in(filter.getIncidentTypes()));
-            }
-            if (!ListUtils.emptyIfNull(filter.getEntities()).isEmpty()) {
-                predicates.add(root.get(FIELD_ENTITY_CLASS).in(filter.getEntities().stream()
-                        .map(SecuredEntityVO::getEntityClass).collect(Collectors.toList())));
-                predicates.add(root.get(FIELD_ENTITY_ID).in(filter.getEntities().stream()
-                        .map(SecuredEntityVO::getEntityId).collect(Collectors.toList())));
-            }
-            return cb.and(predicates.toArray(new Predicate[0]));
-        };
-    }
 }

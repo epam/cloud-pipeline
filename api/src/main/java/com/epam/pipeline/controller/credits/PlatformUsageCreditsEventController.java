@@ -28,11 +28,9 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -50,25 +48,15 @@ public class PlatformUsageCreditsEventController extends AbstractRestController 
             value = "Saves platform usage credits update events. Admin only.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<List<PlatformUsageCreditsUpdateEvent>> save(
+    public Result<List<PlatformUsageCreditsUpdateEvent>> process(
             @RequestBody final List<PlatformUsageCreditsUpdateEvent> events) {
-        return Result.success(apiService.save(events));
-    }
-
-    @GetMapping("/my")
-    @ApiOperation(
-            value = "Loads platform usage credits update events for the current user.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<PagedResult<List<PlatformUsageCreditsUpdateEvent>>> findMy(
-            @RequestParam final int page,
-            @RequestParam final int pageSize) {
-        return Result.success(apiService.findMy(page, pageSize));
+        return Result.success(apiService.process(events));
     }
 
     @PostMapping("/filter")
     @ApiOperation(
-            value = "Filters platform usage credits update events with pagination. Admin only.",
+            value = "Filters platform usage credits update events with pagination. "
+                    + "Non-admin users are restricted to their own events.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<PagedResult<List<PlatformUsageCreditsUpdateEvent>>> filter(
