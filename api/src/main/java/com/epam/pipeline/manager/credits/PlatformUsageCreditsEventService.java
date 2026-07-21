@@ -21,6 +21,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsEventFilterVO;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateEvent;
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateRequest;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateEventEntity;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
@@ -42,7 +43,6 @@ import org.springframework.util.Assert;
 import java.sql.Timestamp;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -59,14 +59,15 @@ public class PlatformUsageCreditsEventService {
     private final MessageHelper messageHelper;
 
     @Transactional
-    public List<PlatformUsageCreditsUpdateEvent> process(final List<PlatformUsageCreditsUpdateEvent> events) {
-        return ListUtils.emptyIfNull(events).stream()
+    public List<PlatformUsageCreditsUpdateRequest> process(final List<PlatformUsageCreditsUpdateRequest> requests) {
+        return ListUtils.emptyIfNull(requests).stream()
                 .map(this::applyBalanceUpdate)
                 .filter(applied -> applied.getValue() != 0)
                 .peek(applied -> {
                     final PlatformUsageCreditsUpdateEventEntity entity = mapper.toEntity(applied);
-                    entity.setCreatedDate(
-                            Optional.ofNullable(applied.getCreatedDate()).orElseGet(DateUtils::nowUTC));
+                    if (entity.getCreatedDate() == null) {
+                        entity.setCreatedDate(DateUtils.nowUTC());
+                    }
                     usageCreditsEventRepository.insertIfAbsent(
                             entity.getUserId(),
                             entity.getRuleId(),
@@ -94,15 +95,8 @@ public class PlatformUsageCreditsEventService {
     }
 
     // TODO: implement balance update logic
-    private PlatformUsageCreditsUpdateEvent applyBalanceUpdate(final PlatformUsageCreditsUpdateEvent event) {
-        PlatformUsageCreditsUpdateEvent applied = event;
-        if (applied.getValue() != event.getValue()) {
-            log.warn("Credits balance update for user={} rule={} entity={} incidentType={}: "
-                            + "requested value={} adjusted to={}",
-                    event.getUserId(), event.getRuleId(), event.getEntity(),
-                    event.getIncidentType(), event.getValue(), applied.getValue());
-        }
-        return applied;
+    private PlatformUsageCreditsUpdateRequest applyBalanceUpdate(final PlatformUsageCreditsUpdateRequest request) {
+        return request;
     }
 
     private PlatformUsageCreditsEventFilterVO restrictToCurrentUser(final PlatformUsageCreditsEventFilterVO filter) {

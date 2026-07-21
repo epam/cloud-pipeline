@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.monitor.monitoring.credits.PlatformUsageCreditsUpdateRuleEvaluator;
 import com.epam.pipeline.vo.credits.PlatformUsageCreditsEventFilterVO;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateEvent;
+import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateRequest;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateRule;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateRuleType;
 import com.epam.pipeline.vo.SecuredEntityVO;
@@ -67,8 +68,8 @@ public class PipelineRunUsageCreditsRuleHandler implements PlatformUsageCreditsR
     }
 
     @Override
-    public List<PlatformUsageCreditsUpdateEvent> process(final List<PlatformUsageCreditsUpdateRule> rules,
-                                                          final LocalDateTime from, final LocalDateTime till) {
+    public List<PlatformUsageCreditsUpdateRequest> process(final List<PlatformUsageCreditsUpdateRule> rules,
+                                                           final LocalDateTime from, final LocalDateTime till) {
         final List<PipelineRun> runs = loadAllPlatformUsageCreditsRuns(from);
         if (runs.isEmpty()) {
             log.info("No runs found for credit evaluation, skipping");
@@ -80,7 +81,7 @@ public class PipelineRunUsageCreditsRuleHandler implements PlatformUsageCreditsR
         log.info("Evaluating {} RUN_STATE rule(s) against {} run(s) across {} user(s)",
                 rules.size(), runs.size(), runsByOwner.size());
 
-        final List<PlatformUsageCreditsUpdateEvent> newEvents = new ArrayList<>();
+        final List<PlatformUsageCreditsUpdateRequest> newEvents = new ArrayList<>();
 
         for (final PlatformUsageCreditsUpdateRule rule : rules) {
             log.debug("Processing rule '{}' (id={})", rule.getName(), rule.getId());
@@ -152,10 +153,10 @@ public class PipelineRunUsageCreditsRuleHandler implements PlatformUsageCreditsR
                 .collect(Collectors.toSet());
     }
 
-    private PlatformUsageCreditsUpdateEvent buildEvent(final PlatformUsageCreditsUpdateRule rule,
-                                                       final PipelineUser user,
-                                                       final PipelineRun run) {
-        return PlatformUsageCreditsUpdateEvent.builder()
+    private PlatformUsageCreditsUpdateRequest buildEvent(final PlatformUsageCreditsUpdateRule rule,
+                                                         final PipelineUser user,
+                                                         final PipelineRun run) {
+        return PlatformUsageCreditsUpdateRequest.builder()
                 .userId(user.getId())
                 .ruleId(rule.getId())
                 .entity(run != null ? SecuredEntityVO.from(PipelineRun.class, run.getId()) : null)

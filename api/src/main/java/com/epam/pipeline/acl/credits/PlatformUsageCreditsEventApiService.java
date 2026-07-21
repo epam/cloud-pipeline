@@ -19,6 +19,7 @@ package com.epam.pipeline.acl.credits;
 import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsEventFilterVO;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateEvent;
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateRequest;
 import com.epam.pipeline.manager.credits.PlatformUsageCreditsEventService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -35,8 +36,8 @@ public class PlatformUsageCreditsEventApiService {
     private final PlatformUsageCreditsEventService platformUsageCreditsUpdateEventManager;
 
     @PreAuthorize(ADMIN_ONLY)
-    public List<PlatformUsageCreditsUpdateEvent> process(final List<PlatformUsageCreditsUpdateEvent> events) {
-        return platformUsageCreditsUpdateEventManager.process(events);
+    public List<PlatformUsageCreditsUpdateRequest> process(final List<PlatformUsageCreditsUpdateRequest> requests) {
+        return platformUsageCreditsUpdateEventManager.process(requests);
     }
 
     @PreAuthorize(ADMIN_OR_GENERAL_USER)

@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.vo.credits.PlatformUsageCreditsEventFilterVO;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateEvent;
+import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateRequest;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateRule;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.user.PipelineUser;
@@ -177,9 +178,9 @@ public class CloudPipelineAPIClient {
         return result != null ? ListUtils.emptyIfNull(result.getElements()) : Collections.emptyList();
     }
 
-    public List<PlatformUsageCreditsUpdateEvent> savePlatformUsageCreditsEvents(
-            final List<PlatformUsageCreditsUpdateEvent> events) {
-        return ListUtils.emptyIfNull(executor.execute(cloudPipelineAPI.savePlatformUsageCreditsEvents(events)));
+    public List<PlatformUsageCreditsUpdateRequest> savePlatformUsageCreditsEvents(
+            final List<PlatformUsageCreditsUpdateRequest> requests) {
+        return ListUtils.emptyIfNull(executor.execute(cloudPipelineAPI.savePlatformUsageCreditsEvents(requests)));
     }
 
 }

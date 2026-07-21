@@ -58,6 +58,7 @@ import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.vo.credits.PlatformUsageCreditsEventFilterVO;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateEvent;
+import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateRequest;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateRule;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
@@ -379,7 +380,7 @@ public interface CloudPipelineAPI {
             @Body PlatformUsageCreditsEventFilterVO filter);
 
     @POST("usage/credits/events")
-    Call<Result<List<PlatformUsageCreditsUpdateEvent>>> savePlatformUsageCreditsEvents(
-            @Body List<PlatformUsageCreditsUpdateEvent> events);
+    Call<Result<List<PlatformUsageCreditsUpdateRequest>>> savePlatformUsageCreditsEvents(
+            @Body List<PlatformUsageCreditsUpdateRequest> requests);
 
 }

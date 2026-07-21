@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.monitor.monitoring.credits;
 
-import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateEvent;
+import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateRequest;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateRule;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateRuleType;
 import com.epam.pipeline.monitor.monitoring.MonitoringService;
@@ -82,7 +82,7 @@ public class PlatformUsageCreditsMonitoringService implements MonitoringService 
                         .filter(r -> r.getRuleType() != null)
                         .collect(Collectors.groupingBy(PlatformUsageCreditsUpdateRule::getRuleType));
 
-        final List<PlatformUsageCreditsUpdateEvent> newEvents = new ArrayList<>();
+        final List<PlatformUsageCreditsUpdateRequest> newEvents = new ArrayList<>();
 
         for (final Map.Entry<PlatformUsageCreditsUpdateRuleType,
                 List<PlatformUsageCreditsUpdateRule>> entry : rulesByType.entrySet()) {

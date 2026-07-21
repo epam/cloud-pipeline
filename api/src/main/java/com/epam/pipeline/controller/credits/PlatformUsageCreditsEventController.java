@@ -22,6 +22,7 @@ import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsEventFilterVO;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateEvent;
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateRequest;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -48,9 +49,9 @@ public class PlatformUsageCreditsEventController extends AbstractRestController 
             value = "Saves platform usage credits update events. Admin only.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<List<PlatformUsageCreditsUpdateEvent>> process(
-            @RequestBody final List<PlatformUsageCreditsUpdateEvent> events) {
-        return Result.success(apiService.process(events));
+    public Result<List<PlatformUsageCreditsUpdateRequest>> process(
+            @RequestBody final List<PlatformUsageCreditsUpdateRequest> requests) {
+        return Result.success(apiService.process(requests));
     }
 
     @PostMapping("/filter")

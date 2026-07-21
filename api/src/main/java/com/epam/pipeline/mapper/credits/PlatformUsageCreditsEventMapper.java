@@ -17,6 +17,7 @@
 package com.epam.pipeline.mapper.credits;
 
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateEvent;
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateRequest;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateEventEntity;
 import com.epam.pipeline.vo.SecuredEntityVO;
 import org.mapstruct.Mapper;
@@ -31,9 +32,7 @@ public interface PlatformUsageCreditsEventMapper {
 
     @Mapping(target = "entityClass", source = "entity.entityClass")
     @Mapping(target = "entityId",    source = "entity.entityId")
-    @Mapping(target = "id",          ignore = true)
-    @Mapping(target = "createdDate", ignore = true)
-    PlatformUsageCreditsUpdateEventEntity toEntity(PlatformUsageCreditsUpdateEvent dto);
+    PlatformUsageCreditsUpdateEventEntity toEntity(PlatformUsageCreditsUpdateRequest request);
 
     default SecuredEntityVO toEntityVO(final String entityClass, final Long entityId) {
         if (entityClass == null || entityId == null) {
