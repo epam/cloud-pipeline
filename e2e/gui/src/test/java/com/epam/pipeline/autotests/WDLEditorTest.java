@@ -72,7 +72,6 @@ public class WDLEditorTest extends AbstractBfxPipelineTest implements Navigation
         getFirstVersion(pipelineName)
                 .graphTab()
                 .click(PROPERTIES)
-                .openEntry("HelloWorld")
                 .openAddTaskDialog()
                 .parent()
                 .clickTask(defaultTask)
