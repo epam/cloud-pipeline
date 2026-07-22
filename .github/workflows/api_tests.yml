@@ -1,0 +1,52 @@
+name: API Tests
+
+on:
+  pull_request:
+    branches: [ develop, 'release/**', 'stage/**' ]
+    types: [ opened, reopened ]
+
+  workflow_dispatch:
+
+jobs:
+  api-tests:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.action == 'opened' ||
+      github.event.action == 'reopened'
+    runs-on: ubuntu-24.04
+
+    services:
+      postgres:
+        image: postgres:16.4
+        env:
+          POSTGRES_DB: pipeline_test
+          POSTGRES_USER: pipeline
+          POSTGRES_PASSWORD: pipeline
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pipeline -d pipeline_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: "temurin"
+          java-version: "8"
+          cache: "gradle"
+
+      - name: Run API tests
+        run: ./gradlew :api:test
+
+      - name: Upload test results on failure
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-results
+          path: api/build/test-results/test/
+          retention-days: 7
