@@ -20,6 +20,7 @@ import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalanceFilterVO;
 import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceService;
+import io.reactivex.annotations.Nullable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -41,7 +42,7 @@ public class PlatformUsageCreditsUserBalanceApiService {
     }
 
     @PreAuthorize(ADMIN_ONLY)
-    public void reset(final int value, final Long userId) {
-        manager.reset(value, userId);
+    public void reset(final int value, @Nullable final List<Long> userIds) {
+        manager.reset(value, userIds);
     }
 }

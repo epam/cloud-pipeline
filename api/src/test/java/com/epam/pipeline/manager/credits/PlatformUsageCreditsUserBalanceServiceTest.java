@@ -17,9 +17,13 @@
 package com.epam.pipeline.manager.credits;
 
 import com.epam.pipeline.controller.PagedResult;
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateEvent;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalanceFilterVO;
+import com.epam.pipeline.entity.contextual.ContextualPreference;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUserBalanceEntity;
+import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.mapper.credits.PlatformUsageCreditsUserBalanceMapper;
 import com.epam.pipeline.repository.credits.PlatformUsageCreditsUserBalanceRepository;
 import org.junit.Test;
@@ -28,16 +32,23 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.Arrays;
 import java.util.Collections;
+
 import java.util.List;
 import java.util.Optional;
 
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.BALANCE_VALUE;
+import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.DEFAULT_BALANCE;
+import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.MAX_BALANCE;
+import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.MIN_BALANCE;
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.RESET_VALUE;
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.USER_ID;
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.balanceDto;
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.balanceEntity;
+import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.deductionEvent;
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.filterVO;
+import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.increaseEvent;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
@@ -55,8 +66,10 @@ public class PlatformUsageCreditsUserBalanceServiceTest {
             mock(PlatformUsageCreditsUserBalanceRepository.class);
     private final PlatformUsageCreditsUserBalanceMapper mapper =
             mock(PlatformUsageCreditsUserBalanceMapper.class);
+    private final ContextualPreferenceManager contextualPreferenceManager =
+            mock(ContextualPreferenceManager.class);
     private final PlatformUsageCreditsUserBalanceService service =
-            new PlatformUsageCreditsUserBalanceService(repository, mapper);
+            new PlatformUsageCreditsUserBalanceService(repository, mapper, contextualPreferenceManager);
 
     @Test
     public void shouldReturnPagedBalancesOnFilter() {
@@ -89,10 +102,11 @@ public class PlatformUsageCreditsUserBalanceServiceTest {
 
     @Test
     public void shouldUpdateExistingEntityOnResetForUser() {
+        mockPreferences(MIN_BALANCE, MAX_BALANCE, DEFAULT_BALANCE);
         final PlatformUsageCreditsUserBalanceEntity entity = balanceEntity();
         doReturn(Optional.of(entity)).when(repository).findByUserId(USER_ID);
 
-        service.reset(RESET_VALUE, USER_ID);
+        service.reset(RESET_VALUE, Collections.singletonList(USER_ID));
 
         final ArgumentCaptor<PlatformUsageCreditsUserBalanceEntity> captor =
                 ArgumentCaptor.forClass(PlatformUsageCreditsUserBalanceEntity.class);
@@ -104,9 +118,10 @@ public class PlatformUsageCreditsUserBalanceServiceTest {
 
     @Test
     public void shouldCreateEntityWhenUserHasNoBalanceOnReset() {
+        mockPreferences(MIN_BALANCE, MAX_BALANCE, DEFAULT_BALANCE);
         doReturn(Optional.empty()).when(repository).findByUserId(USER_ID);
 
-        service.reset(RESET_VALUE, USER_ID);
+        service.reset(RESET_VALUE, Collections.singletonList(USER_ID));
 
         final ArgumentCaptor<PlatformUsageCreditsUserBalanceEntity> captor =
                 ArgumentCaptor.forClass(PlatformUsageCreditsUserBalanceEntity.class);
@@ -120,8 +135,41 @@ public class PlatformUsageCreditsUserBalanceServiceTest {
     public void shouldBulkResetAllWhenUserIdIsNull() {
         service.reset(RESET_VALUE, null);
 
-        verify(repository).resetAll(anyInt(), any());
+        verify(repository).resetAll(RESET_VALUE);
         verify(repository, never()).findByUserId(any());
+        verify(repository, never()).save(any(PlatformUsageCreditsUserBalanceEntity.class));
+    }
+
+    @Test
+    public void shouldBulkResetAllWhenUserIdsIsEmpty() {
+        service.reset(RESET_VALUE, Collections.emptyList());
+
+        verify(repository).resetAll(RESET_VALUE);
+        verify(repository, never()).findByUserId(any());
+        verify(repository, never()).save(any(PlatformUsageCreditsUserBalanceEntity.class));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldFailResetWhenValueBelowMin() {
+        mockPreferences(MIN_BALANCE, MAX_BALANCE, DEFAULT_BALANCE);
+
+        service.reset(MIN_BALANCE - 1, Collections.singletonList(USER_ID));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldFailResetWhenValueAboveMax() {
+        mockPreferences(MIN_BALANCE, MAX_BALANCE, DEFAULT_BALANCE);
+
+        service.reset(MAX_BALANCE + 1, Collections.singletonList(USER_ID));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldFailResetOnFirstInvalidUserAndSkipRemaining() {
+        final Long secondUserId = USER_ID + 1;
+        mockPreferences(MIN_BALANCE, MAX_BALANCE, DEFAULT_BALANCE);
+
+        service.reset(MAX_BALANCE + 1, Arrays.asList(USER_ID, secondUserId));
+
         verify(repository, never()).save(any(PlatformUsageCreditsUserBalanceEntity.class));
     }
 
@@ -172,4 +220,144 @@ public class PlatformUsageCreditsUserBalanceServiceTest {
 
         verify(repository).findAll(any(Specification.class), any(Pageable.class));
     }
+
+    @Test
+    public void shouldIncreaseBalanceWithinBounds() {
+        mockPreferences(MIN_BALANCE, MAX_BALANCE, DEFAULT_BALANCE);
+        doReturn(Optional.of(entityWithValue(2000))).when(repository).findByUserId(USER_ID);
+
+        final PlatformUsageCreditsUpdateEvent result = service.updateByEvent(increaseEvent(100));
+
+        assertThat(result.getValue(), is(100));
+        final ArgumentCaptor<PlatformUsageCreditsUserBalanceEntity> captor =
+                ArgumentCaptor.forClass(PlatformUsageCreditsUserBalanceEntity.class);
+        verify(repository).save(captor.capture());
+        assertThat(captor.getValue().getCurrentValue(), is(2100));
+    }
+
+    @Test
+    public void shouldClampIncreaseToMax() {
+        mockPreferences(MIN_BALANCE, MAX_BALANCE, DEFAULT_BALANCE);
+        doReturn(Optional.of(entityWithValue(2900))).when(repository).findByUserId(USER_ID);
+
+        final PlatformUsageCreditsUpdateEvent result = service.updateByEvent(increaseEvent(200));
+
+        assertThat(result.getValue(), is(100));
+        final ArgumentCaptor<PlatformUsageCreditsUserBalanceEntity> captor =
+                ArgumentCaptor.forClass(PlatformUsageCreditsUserBalanceEntity.class);
+        verify(repository).save(captor.capture());
+        assertThat(captor.getValue().getCurrentValue(), is(MAX_BALANCE));
+    }
+
+    @Test
+    public void shouldReturnZeroValueWhenAlreadyAtMax() {
+        mockPreferences(MIN_BALANCE, MAX_BALANCE, DEFAULT_BALANCE);
+        doReturn(Optional.of(entityWithValue(MAX_BALANCE))).when(repository).findByUserId(USER_ID);
+
+        final PlatformUsageCreditsUpdateEvent result = service.updateByEvent(increaseEvent(200));
+
+        assertThat(result.getValue(), is(0));
+        verify(repository, never()).save(any(PlatformUsageCreditsUserBalanceEntity.class));
+    }
+
+    @Test
+    public void shouldDeductBalanceWithinBounds() {
+        mockPreferences(MIN_BALANCE, MAX_BALANCE, DEFAULT_BALANCE);
+        doReturn(Optional.of(entityWithValue(2000))).when(repository).findByUserId(USER_ID);
+
+        final PlatformUsageCreditsUpdateEvent result = service.updateByEvent(deductionEvent(100));
+
+        assertThat(result.getValue(), is(100));
+        final ArgumentCaptor<PlatformUsageCreditsUserBalanceEntity> captor =
+                ArgumentCaptor.forClass(PlatformUsageCreditsUserBalanceEntity.class);
+        verify(repository).save(captor.capture());
+        assertThat(captor.getValue().getCurrentValue(), is(1900));
+    }
+
+    @Test
+    public void shouldClampDeductionToMin() {
+        mockPreferences(MIN_BALANCE, MAX_BALANCE, DEFAULT_BALANCE);
+        doReturn(Optional.of(entityWithValue(50))).when(repository).findByUserId(USER_ID);
+
+        final PlatformUsageCreditsUpdateEvent result = service.updateByEvent(deductionEvent(100));
+
+        assertThat(result.getValue(), is(26));
+        final ArgumentCaptor<PlatformUsageCreditsUserBalanceEntity> captor =
+                ArgumentCaptor.forClass(PlatformUsageCreditsUserBalanceEntity.class);
+        verify(repository).save(captor.capture());
+        assertThat(captor.getValue().getCurrentValue(), is(MIN_BALANCE));
+    }
+
+    @Test
+    public void shouldReturnZeroValueWhenAlreadyAtMin() {
+        mockPreferences(MIN_BALANCE, MAX_BALANCE, DEFAULT_BALANCE);
+        doReturn(Optional.of(entityWithValue(MIN_BALANCE))).when(repository).findByUserId(USER_ID);
+
+        final PlatformUsageCreditsUpdateEvent result = service.updateByEvent(deductionEvent(100));
+
+        assertThat(result.getValue(), is(0));
+        verify(repository, never()).save(any(PlatformUsageCreditsUserBalanceEntity.class));
+    }
+
+    @Test
+    public void shouldUseDefaultBalanceWhenNoRowExists() {
+        mockPreferences(MIN_BALANCE, MAX_BALANCE, DEFAULT_BALANCE);
+        doReturn(Optional.empty()).when(repository).findByUserId(USER_ID);
+
+        final PlatformUsageCreditsUpdateEvent result = service.updateByEvent(increaseEvent(100));
+
+        assertThat(result.getValue(), is(100));
+        final ArgumentCaptor<PlatformUsageCreditsUserBalanceEntity> captor =
+                ArgumentCaptor.forClass(PlatformUsageCreditsUserBalanceEntity.class);
+        verify(repository).save(captor.capture());
+        assertThat(captor.getValue().getCurrentValue(), is(DEFAULT_BALANCE + 100));
+        assertThat(captor.getValue().getUserId(), is(USER_ID));
+    }
+
+    @Test
+    public void shouldUpdateExistingRowOnEvent() {
+        mockPreferences(MIN_BALANCE, MAX_BALANCE, DEFAULT_BALANCE);
+        final PlatformUsageCreditsUserBalanceEntity entity = entityWithValue(2000);
+        doReturn(Optional.of(entity)).when(repository).findByUserId(USER_ID);
+
+        service.updateByEvent(increaseEvent(100));
+
+        verify(repository).save(entity);
+    }
+
+    @Test
+    public void shouldCreateNewRowWhenNoBalanceExists() {
+        mockPreferences(MIN_BALANCE, MAX_BALANCE, DEFAULT_BALANCE);
+        doReturn(Optional.empty()).when(repository).findByUserId(USER_ID);
+
+        service.updateByEvent(increaseEvent(100));
+
+        final ArgumentCaptor<PlatformUsageCreditsUserBalanceEntity> captor =
+                ArgumentCaptor.forClass(PlatformUsageCreditsUserBalanceEntity.class);
+        verify(repository).save(captor.capture());
+        assertThat(captor.getValue().getUserId(), is(USER_ID));
+        assertThat(captor.getValue().getModifiedDate(), notNullValue());
+    }
+
+    private void mockPreferences(final int min, final int max, final int defaultValue) {
+        doReturn(new ContextualPreference(SystemPreferences.USAGE_CREDITS_MIN.getKey(), String.valueOf(min)))
+                .when(contextualPreferenceManager)
+                .search(Collections.singletonList(SystemPreferences.USAGE_CREDITS_MIN.getKey()), USER_ID);
+        doReturn(new ContextualPreference(SystemPreferences.USAGE_CREDITS_MAX.getKey(), String.valueOf(max)))
+                .when(contextualPreferenceManager)
+                .search(Collections.singletonList(SystemPreferences.USAGE_CREDITS_MAX.getKey()), USER_ID);
+        doReturn(new ContextualPreference(SystemPreferences.USAGE_CREDITS_DEFAULT.getKey(),
+                        String.valueOf(defaultValue)))
+                .when(contextualPreferenceManager)
+                .search(Collections.singletonList(SystemPreferences.USAGE_CREDITS_DEFAULT.getKey()), USER_ID);
+    }
+
+    private PlatformUsageCreditsUserBalanceEntity entityWithValue(final int value) {
+        return PlatformUsageCreditsUserBalanceEntity.builder()
+                .id(1L)
+                .userId(USER_ID)
+                .currentValue(value)
+                .build();
+    }
+
 }

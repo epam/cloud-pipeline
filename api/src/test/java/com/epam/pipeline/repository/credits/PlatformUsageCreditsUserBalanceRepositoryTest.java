@@ -220,7 +220,22 @@ public class PlatformUsageCreditsUserBalanceRepositoryTest extends AbstractJpaTe
         entityManager.flush();
         entityManager.clear();
 
-        repository.resetAll(RESET_VALUE, DateUtils.nowUTC());
+        repository.resetAll(RESET_VALUE);
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(repository.findByUserId(user1.getId()).get().getCurrentValue(), is(RESET_VALUE));
+        assertThat(repository.findByUserId(user2.getId()).get().getCurrentValue(), is(RESET_VALUE));
+    }
+
+    @Test
+    public void shouldCreateMissingBalanceRowsOnResetAll() {
+        repository.save(entity(user1.getId(), VALUE_HIGH));
+        // user2 has no balance row
+        entityManager.flush();
+        entityManager.clear();
+
+        repository.resetAll(RESET_VALUE);
         entityManager.flush();
         entityManager.clear();
 

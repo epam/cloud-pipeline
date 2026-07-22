@@ -18,6 +18,8 @@ package com.epam.pipeline.test.creator.credits;
 
 import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.Result;
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateAction;
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateEvent;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalanceFilterVO;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUserBalanceEntity;
@@ -36,6 +38,9 @@ public interface PlatformUsageCreditsUserBalanceCreatorUtils {
     Long USER_ID = 1L;
     int BALANCE_VALUE = 1000;
     int RESET_VALUE = 2000;
+    int DEFAULT_BALANCE = 2000;
+    int MIN_BALANCE = 24;
+    int MAX_BALANCE = 3000;
     String OPERATION_GT = ">";
     String OPERATION_LT = "<";
     String OPERATION_EQ = "=";
@@ -65,5 +70,21 @@ public interface PlatformUsageCreditsUserBalanceCreatorUtils {
 
     static PagedResult<List<PlatformUsageCreditsUserBalance>> pagedResult() {
         return new PagedResult<>(Collections.singletonList(balanceDto()), 1);
+    }
+
+    static PlatformUsageCreditsUpdateEvent increaseEvent(final int value) {
+        return PlatformUsageCreditsUpdateEvent.builder()
+                .userId(USER_ID)
+                .incidentType(PlatformUsageCreditsUpdateAction.ActionType.INCREASE)
+                .value(value)
+                .build();
+    }
+
+    static PlatformUsageCreditsUpdateEvent deductionEvent(final int value) {
+        return PlatformUsageCreditsUpdateEvent.builder()
+                .userId(USER_ID)
+                .incidentType(PlatformUsageCreditsUpdateAction.ActionType.DEDUCTION)
+                .value(value)
+                .build();
     }
 }

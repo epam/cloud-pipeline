@@ -26,6 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 
+import java.util.Collections;
 import java.util.List;
 
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.RESET_VALUE;
@@ -65,9 +66,9 @@ public class PlatformUsageCreditsUserBalanceApiServiceTest extends AbstractAclTe
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldResetForSpecificUserForAdmin() {
-        apiService.reset(RESET_VALUE, USER_ID);
+        apiService.reset(RESET_VALUE, Collections.singletonList(USER_ID));
 
-        verify(mockPlatformUsageCreditsUserBalanceService).reset(RESET_VALUE, USER_ID);
+        verify(mockPlatformUsageCreditsUserBalanceService).reset(RESET_VALUE, Collections.singletonList(USER_ID));
     }
 
     @Test
@@ -81,6 +82,7 @@ public class PlatformUsageCreditsUserBalanceApiServiceTest extends AbstractAclTe
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyResetForNonAdmin() {
-        assertThrows(AccessDeniedException.class, () -> apiService.reset(RESET_VALUE, USER_ID));
+        assertThrows(AccessDeniedException.class,
+                () -> apiService.reset(RESET_VALUE, Collections.singletonList(USER_ID)));
     }
 }

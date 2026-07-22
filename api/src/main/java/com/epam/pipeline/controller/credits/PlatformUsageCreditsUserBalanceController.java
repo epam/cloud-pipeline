@@ -56,13 +56,13 @@ public class PlatformUsageCreditsUserBalanceController extends AbstractRestContr
 
     @PostMapping("/reset")
     @ApiOperation(
-            value = "Resets the credits balance for a specific user, or for all users if userId is omitted. "
+            value = "Resets the credits balance for specific users, or for all users if userIds is omitted. "
                     + "Admin only.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<Void> reset(@RequestParam final int value,
-                              @RequestParam(required = false) final Long userId) {
-        apiService.reset(value, userId);
+                              @RequestParam(required = false) final List<Long> userIds) {
+        apiService.reset(value, userIds);
         return Result.success(null);
     }
 }

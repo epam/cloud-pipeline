@@ -27,6 +27,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
 
+import java.util.Collections;
 import java.util.List;
 
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.BALANCE_PAGED_TYPE;
@@ -78,9 +79,9 @@ public class PlatformUsageCreditsUserBalanceControllerTest extends AbstractContr
         final MvcResult result = performRequest(
                 post(RESET_URL)
                         .param("value", String.valueOf(RESET_VALUE))
-                        .param("userId", String.valueOf(USER_ID)));
+                        .param("userIds", String.valueOf(USER_ID)));
 
-        verify(mockApiService).reset(RESET_VALUE, USER_ID);
+        verify(mockApiService).reset(RESET_VALUE, Collections.singletonList(USER_ID));
         assertResponse(result, null, VOID_TYPE);
     }
 

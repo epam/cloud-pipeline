@@ -23,16 +23,25 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 public interface PlatformUsageCreditsUserBalanceRepository
         extends PagingAndSortingRepository<PlatformUsageCreditsUserBalanceEntity, Long>,
         JpaSpecificationExecutor<PlatformUsageCreditsUserBalanceEntity> {
 
+    String BATCH_RESET = "INSERT INTO pipeline.usage_credits_user_balance (user_id, current_value, modified_date) "
+            + "SELECT id, :value, NOW() FROM pipeline.user "
+            + "ON CONFLICT (user_id) DO UPDATE "
+            + "SET current_value = EXCLUDED.current_value, modified_date = EXCLUDED.modified_date";
+
     Optional<PlatformUsageCreditsUserBalanceEntity> findByUserId(Long userId);
 
+    /**
+     * Upserts a balance row for every user in {@code pipeline.user}.
+     * Users who already have a row get their balance updated; users with no row get one created.
+     * The timestamp is set by the database so all rows share a consistent {@code NOW()} value.
+     */
     @Modifying
-    @Query("UPDATE PlatformUsageCreditsUserBalanceEntity e SET e.currentValue = :value, e.modifiedDate = :now")
-    void resetAll(@Param("value") Integer value, @Param("now") LocalDateTime now);
+    @Query(value = BATCH_RESET, nativeQuery = true)
+    void resetAll(@Param("value") int value);
 }

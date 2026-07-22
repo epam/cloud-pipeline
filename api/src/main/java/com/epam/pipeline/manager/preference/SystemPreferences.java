@@ -149,6 +149,7 @@ public class SystemPreferences {
     private static final String LUSTRE_GROUP = "Lustre FS";
     private static final String LDAP_GROUP = "LDAP";
     private static final String BILLING_QUOTAS_GROUP= "Billing Quotas";
+    private static final String USAGE_CREDITS_GROUP = "Usage Credits";
     private static final String NGS_PREPROCESSING_GROUP = "NGS Preprocessing";
     private static final String MONITORING_GROUP = "Monitoring";
     private static final String CLOUD = "Cloud";
@@ -1552,6 +1553,19 @@ public class SystemPreferences {
     public static final IntPreference BILLING_QUOTAS_CLEARING_PERIOD_SECONDS = new IntPreference(
             "billing.quotas.clear.period.seconds", Constants.SECONDS_IN_DAY * 30,
             BILLING_QUOTAS_GROUP, isGreaterThan(10));
+
+    // Usage Credits
+    public static final IntPreference USAGE_CREDITS_DEFAULT = new IntPreference(
+            "usage.credits.default", 2000, USAGE_CREDITS_GROUP, isGreaterThan(0));
+    public static final IntPreference USAGE_CREDITS_MIN = new IntPreference(
+            "usage.credits.min", 24, USAGE_CREDITS_GROUP, isGreaterThan(0));
+    public static final IntPreference USAGE_CREDITS_MAX = new IntPreference(
+            "usage.credits.max", 3000, USAGE_CREDITS_GROUP, isGreaterThan(0));
+    public static final ObjectPreference<Map<String, Integer>> USAGE_CREDITS_RESOURCE_WEIGHTS =
+            new ObjectPreference<>("usage.credits.resource.weights",
+                    CommonUtils.toMap(Pair.of("CPU", 1), Pair.of("GPU", 100)),
+                    new TypeReference<Map<String, Integer>>() {}, USAGE_CREDITS_GROUP,
+                    isNullOrValidJson(new TypeReference<Map<String, Integer>>() {}));
 
     // Lustre FS
     public static final BooleanPreference LUSTRE_FS_SCALE_ENABLED = new BooleanPreference(
