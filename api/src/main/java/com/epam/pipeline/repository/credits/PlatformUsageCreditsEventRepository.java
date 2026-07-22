@@ -21,6 +21,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 public interface PlatformUsageCreditsEventRepository
-        extends JpaRepository<PlatformUsageCreditsUpdateEventEntity, Long>,
+        extends JpaRepository<PlatformUsageCreditsUpdateEventEntity, String>,
                 JpaSpecificationExecutor<PlatformUsageCreditsUpdateEventEntity> {
 }

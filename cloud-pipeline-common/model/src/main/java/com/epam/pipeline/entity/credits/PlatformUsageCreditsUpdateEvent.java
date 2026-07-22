@@ -30,7 +30,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class PlatformUsageCreditsUpdateEvent {
 
-    private Long id;
+    private String id;
     private Long userId;
     /** Null for manual admin adjustments. */
     private Long ruleId;

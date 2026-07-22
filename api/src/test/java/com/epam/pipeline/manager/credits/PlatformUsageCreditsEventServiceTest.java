@@ -42,6 +42,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static com.epam.pipeline.manager.credits.PlatformUsageCreditsEventService.computeEventId;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyListOf;
@@ -107,6 +109,30 @@ public class PlatformUsageCreditsEventServiceTest {
                 ArgumentCaptor.forClass((Class) List.class);
         verify(repository).save(captor.capture());
         assertThat(captor.getValue().get(0).getCreatedDate()).isNotNull();
+    }
+
+    @Test
+    public void processSkipsDuplicateEventById() {
+        final String id = computeEventId(entity(USER_ID_1, VALUE));
+        doReturn(true).when(repository).exists(id);
+
+        final List<PlatformUsageCreditsUpdateEvent> result =
+                service.process(Collections.singletonList(request(USER_ID_1, VALUE)));
+
+        verify(repository, never()).save(anyListOf(PlatformUsageCreditsUpdateEventEntity.class));
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    public void processAllowsNewEventById() {
+        final String id = computeEventId(entity(USER_ID_1, VALUE));
+        doReturn(false).when(repository).exists(id);
+        doReturn(Collections.singletonList(entity(USER_ID_1, VALUE)))
+                .when(repository).save(anyListOf(PlatformUsageCreditsUpdateEventEntity.class));
+
+        service.process(Collections.singletonList(request(USER_ID_1, VALUE)));
+
+        verify(repository).save(anyListOf(PlatformUsageCreditsUpdateEventEntity.class));
     }
 
     @Test

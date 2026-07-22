@@ -27,14 +27,15 @@ import org.mapstruct.Mapping;
 public interface PlatformUsageCreditsEventMapper {
 
     @Mapping(target = "entity",
-             expression = "java(toEntityVO(entity.getEntityClass(), entity.getEntityId()))")
+             expression = "java(toSecuredEntityVO(entity.getEntityClass(), entity.getEntityId()))")
     PlatformUsageCreditsUpdateEvent toDto(PlatformUsageCreditsUpdateEventEntity entity);
 
+    @Mapping(target = "id",          ignore = true)
     @Mapping(target = "entityClass", source = "entity.entityClass")
     @Mapping(target = "entityId",    source = "entity.entityId")
     PlatformUsageCreditsUpdateEventEntity toEntity(PlatformUsageCreditsUpdateRequest request);
 
-    default SecuredEntityVO toEntityVO(final String entityClass, final Long entityId) {
+    default SecuredEntityVO toSecuredEntityVO(final String entityClass, final Long entityId) {
         if (entityClass == null || entityId == null) {
             return null;
         }

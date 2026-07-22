@@ -43,9 +43,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.StringJoiner;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -71,18 +74,18 @@ public class PlatformUsageCreditsEventService {
      */
     @Transactional
     public List<PlatformUsageCreditsUpdateEvent> process(final List<PlatformUsageCreditsUpdateRequest> requests) {
-        final List<PlatformUsageCreditsUpdateRequest> applied = ListUtils.emptyIfNull(requests).stream()
-                .map(this::applyBalanceUpdate)
-                .filter(request -> request.getValue() != 0)
-                .collect(Collectors.toList());
-        final List<PlatformUsageCreditsUpdateEventEntity> entities = applied.stream()
+        final List<PlatformUsageCreditsUpdateEventEntity> entities = ListUtils.emptyIfNull(requests).stream()
                 .map(request -> {
                     final PlatformUsageCreditsUpdateEventEntity entity = mapper.toEntity(request);
+                    entity.setId(computeEventId(entity));
                     if (entity.getCreatedDate() == null) {
                         entity.setCreatedDate(DateUtils.nowUTC());
                     }
                     return entity;
                 })
+                .filter(entity -> !usageCreditsEventRepository.exists(entity.getId()))
+                .map(this::applyBalanceUpdate)
+                .filter(entity -> entity.getValue() != 0)
                 .collect(Collectors.toList());
         if (entities.isEmpty()) {
             return Collections.emptyList();
@@ -132,12 +135,34 @@ public class PlatformUsageCreditsEventService {
                 : userManager.loadUsersById(resetRequest.getUserIds());
         final List<PlatformUsageCreditsUpdateEventEntity> events = users.stream()
                 .map(user -> PlatformUsageCreditsUpdateEventEntity.builder()
+                        // for reset operation we shouldn't deduplicate, to allow several resets
+                        .id(UUID.randomUUID().toString())
                         .userId(user.getId())
                         .incidentType(PlatformUsageCreditsUpdateAction.ActionType.RESET)
                         .value(resetRequest.getValue())
                         .build())
                 .collect(Collectors.toList());
+        if (events.isEmpty()) {
+            return Collections.emptyList();
+        }
         return usageCreditsEventRepository.save(events).stream().map(mapper::toDto).collect(Collectors.toList());
+    }
+
+    static String computeEventId(final PlatformUsageCreditsUpdateEventEntity entity) {
+        final StringJoiner key = new StringJoiner(":");
+        key.add(String.valueOf(entity.getUserId()));
+        if (entity.getRuleId() != null) {
+            key.add(String.valueOf(entity.getRuleId()));
+        }
+        if (entity.getEntityClass() != null) {
+            key.add(entity.getEntityClass());
+        }
+        if (entity.getEntityId() != null) {
+            key.add(String.valueOf(entity.getEntityId()));
+        }
+        key.add(entity.getIncidentType().name());
+        key.add(String.valueOf(entity.getValue()));
+        return UUID.nameUUIDFromBytes(key.toString().getBytes(StandardCharsets.UTF_8)).toString();
     }
 
     // TODO: implement balance update logic
@@ -147,8 +172,9 @@ public class PlatformUsageCreditsEventService {
     }
 
     // TODO: implement balance update logic
-    private PlatformUsageCreditsUpdateRequest applyBalanceUpdate(final PlatformUsageCreditsUpdateRequest request) {
-        return request;
+    private PlatformUsageCreditsUpdateEventEntity applyBalanceUpdate(
+            final PlatformUsageCreditsUpdateEventEntity entity) {
+        return entity;
     }
 
     private PlatformUsageCreditsEventFilterVO restrictToCurrentUser(final PlatformUsageCreditsEventFilterVO filter) {
