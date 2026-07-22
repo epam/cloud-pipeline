@@ -39,6 +39,10 @@ CAP_BLOCK_TAG = "Capacity Block"
 GIB = 1073741824
 FLOAT_DECIMAL = 6
 PIPELINE_INCLUDE_CONFIG_NAME = os.getenv('CP_USAGE_METRICS_PIPELINE_INCLUDE_CONFIG_NAME', True)
+# Run TSV cells: "{without ADMIN}|{anyone}" (excluded first).
+DUAL_RUN_VALUE_SEPARATOR = "|"
+# date, active users, onboarded users, and capacity_*.
+NON_RUN_TSV_COLUMN_INDICES: FrozenSet[int] = frozenset({0, 1, 2, 6, 7, 8, 9, 10, 11, 12, 13, 14})
 
 
 class ReportSchema:
@@ -138,6 +142,32 @@ def owners_matching_excluded_user_groups(users: List[dict], excluded_lower: Froz
         if matched:
             excluded_users.add(str(username).strip().lower())
     return frozenset(excluded_users)
+
+
+def merge_excluded_and_all_tsv_rows(rows_excluded: List[str], rows_all: List[str]) -> List[str]:
+    """Combine run metrics: cell = excluded|all; non-run columns stay a single value."""
+    if len(rows_excluded) != len(rows_all):
+        raise SystemExit(
+            f"Internal error: excluded/all row counts differ "
+            f"({len(rows_excluded)} vs {len(rows_all)})."
+        )
+    merged: List[str] = []
+    for row_excluded, row_all in zip(rows_excluded, rows_all):
+        cells_excluded = row_excluded.split("\t")
+        cells_all = row_all.split("\t")
+        if len(cells_excluded) != len(cells_all):
+            raise SystemExit(
+                f"Internal error: excluded/all column counts differ "
+                f"({len(cells_excluded)} vs {len(cells_all)})."
+            )
+        out_cells: List[str] = []
+        for index, (cell_excluded, cell_all) in enumerate(zip(cells_excluded, cells_all)):
+            if index in NON_RUN_TSV_COLUMN_INDICES:
+                out_cells.append(cell_excluded)
+            else:
+                out_cells.append(f"{cell_excluded}{DUAL_RUN_VALUE_SEPARATOR}{cell_all}")
+        merged.append("\t".join(out_cells))
+    return merged
 
 
 class RunTimeline:
@@ -436,10 +466,10 @@ class PipelineRestClient:
             if isinstance(opts, dict) and opts.get("tag") == CAP_BLOCK_TAG
         }
 
-    def active_pool_ids(self) -> Dict[int, str]:
-        response = self.get_json("/cluster/pool?loadStatus=true")
+    def all_pool_ids(self) -> Dict[int, str]:
+        response = self.get_json("/cluster/pool")
         pools = response.get("payload") or []
-        return {p["id"]: p.get("name", str(p["id"])) for p in pools if p.get("count", 0) > 0}
+        return {p["id"]: p.get("name", str(p["id"])) for p in pools}
 
     def pool_report(self, rep_from: str, rep_to_excl: str) -> List[dict]:
         payload = self.post_json(
@@ -479,53 +509,7 @@ class PipelineRestClient:
             total_users_count = day_data.get("totalUsersCount")
             if total_users_count is not None:
                 counts_by_calendar_day[calendar_day] = int(total_users_count)
-                continue
-            fallback_username_list = day_data.get("totalUsers")
-            counts_by_calendar_day[calendar_day] = (
-                len(fallback_username_list) if isinstance(fallback_username_list, list) else 0
-            )
         return counts_by_calendar_day
-
-    def unique_active_usernames_in_range(self, range_start_day: date, range_end_day: date) -> Set[str]:
-        """Distinct usernames active on at least one day in [range_start_day, range_end_day] (inclusive).
-
-        Calls ``POST /report/users`` with ``interval`` ``DAYS`` and unions each bucket's ``totalUsers``.
-        If a day has counts but no ``totalUsers`` list, that day cannot contribute names; see stderr warning.
-        """
-        range_start_iso = f"{range_start_day.isoformat()} 00:00:00.000"
-        range_end_exclusive_iso = (
-            f"{(range_end_day + timedelta(days=1)).isoformat()} 00:00:00.000"
-        )
-        api_response = self.post_json(
-            "/report/users",
-            {
-                "from": range_start_iso,
-                "to": range_end_exclusive_iso,
-                "interval": "DAYS",
-            },
-        )
-        daily_buckets = api_response.get("payload")
-        if not isinstance(daily_buckets, list):
-            raise SystemExit(f"Unexpected /report/users response: {api_response!r}")
-        unique_names: Set[str] = set()
-        buckets_without_usernames = 0
-        for day_bucket in daily_buckets:
-            if not isinstance(day_bucket, dict):
-                continue
-            username_list = day_bucket.get("totalUsers")
-            if isinstance(username_list, list) and username_list:
-                for name in username_list:
-                    if name is not None and str(name).strip():
-                        unique_names.add(str(name).strip())
-            elif day_bucket.get("totalUsersCount"):
-                buckets_without_usernames += 1
-        if buckets_without_usernames:
-            print(
-                f"[WARN] {buckets_without_usernames} daily bucket(s) had totalUsersCount but no "
-                "totalUsers list; unique count may be understated.",
-                file=sys.stderr,
-            )
-        return unique_names
 
 
 class PoolUtilization:
@@ -559,11 +543,11 @@ class PoolUtilization:
         return stats
 
     @classmethod
-    def group_records_by_day(cls, pools_payload: List[dict], active_pool_ids: Set[int]) -> Dict[str, List[dict]]:
+    def group_records_by_day(cls, pools_payload: List[dict], pool_ids: Set[int]) -> Dict[str, List[dict]]:
         by_day: DefaultDict[str, List[dict]] = defaultdict(list)
         for pool in pools_payload or []:
             pool_id = pool.get("poolId")
-            if pool_id not in active_pool_ids:
+            if pool_id not in pool_ids:
                 continue
             for record in pool.get("records") or []:
                 period_day_key = cls.period_start_day(record.get("periodStart"))
@@ -1026,11 +1010,13 @@ def main() -> None:
 
     users = client.load_users()
     excluded_owners = owners_matching_excluded_user_groups(users, EXCLUDED_USER_GROUPS_LOWER)
-    run_number_before = len(runs)
-    runs = [r for r in runs if not RunFields.run_matches_excluded_owner(r, excluded_owners)]
+    runs_all = runs
+    runs_excluded = [r for r in runs_all if not RunFields.run_matches_excluded_owner(r, excluded_owners)]
     print(
-        f"Excluded {run_number_before - len(runs)} run(s) whose owner is among "
-        f"{len(excluded_owners)} user(s) with roles/groups in {sorted(EXCLUDED_USER_GROUPS_LOWER)!r}.",
+        f"Dual run metrics: {len(runs_excluded)} run(s) after excluding owners in "
+        f"{sorted(EXCLUDED_USER_GROUPS_LOWER)!r} "
+        f"({len(runs_all) - len(runs_excluded)} of {len(runs_all)} omitted); "
+        f"TSV run cells are excluded{DUAL_RUN_VALUE_SEPARATOR}all.",
         file=sys.stderr,
     )
 
@@ -1042,35 +1028,41 @@ def main() -> None:
     now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
 
     pool_by_day: Dict[str, Dict[str, Dict[str, float]]] = {}
-    active = client.active_pool_ids()
-    if active:
+    pools = client.all_pool_ids()
+    if pools:
         rep_from = f"{report_start_day.isoformat()} 00:00:00.000"
         rep_to_excl = (report_end_day + timedelta(days=1)).isoformat() + " 00:00:00.000"
         pool_payload = client.pool_report(rep_from, rep_to_excl)
-        by_day_recs = PoolUtilization.group_records_by_day(pool_payload, set(active.keys()))
+        by_day_recs = PoolUtilization.group_records_by_day(pool_payload, set(pools.keys()))
         for day_str, recs in by_day_recs.items():
             pool_by_day[day_str] = PoolUtilization.analyse_pool(recs)
     else:
-        print("Warning: no active pools; capacity columns will be 0.", file=sys.stderr)
+        print("Warning: no pools found; capacity columns will be 0.", file=sys.stderr)
 
-    failures = DayFailureCounts.from_filtered_runs(runs, report_start_day, report_end_day)
+    failures_excluded = DayFailureCounts.from_filtered_runs(
+        runs_excluded, report_start_day, report_end_day
+    )
+    failures_all = DayFailureCounts.from_filtered_runs(runs_all, report_start_day, report_end_day)
 
     users_active_by_day = client.load_users_usage_by_day(report_start_day, report_end_day)
 
     new_users_onboarded_by_day = new_users_onboarded_by_calendar_day(users, report_start_day, report_end_day)
 
     builder = DailyMetricsBuilder()
-    rows = builder.build_rows(
-        report_start_day,
-        report_end_day,
-        runs,
-        now_naive,
-        cb_types,
-        pool_by_day,
-        failures,
-        users_active_by_day,
-        new_users_onboarded_by_day,
+    build_kwargs = dict(
+        report_start_day=report_start_day,
+        report_end_day=report_end_day,
+        now_naive=now_naive,
+        cb_types=cb_types,
+        pool_by_day=pool_by_day,
+        users_active_by_day=users_active_by_day,
+        new_users_onboarded_by_day=new_users_onboarded_by_day,
     )
+    rows_excluded = builder.build_rows(
+        runs=runs_excluded, failures=failures_excluded, **build_kwargs
+    )
+    rows_all = builder.build_rows(runs=runs_all, failures=failures_all, **build_kwargs)
+    rows = merge_excluded_and_all_tsv_rows(rows_excluded, rows_all)
 
     mode = "w" if args.rewrite or not os.path.isfile(out_path) else "a"
     with open(out_path, mode, encoding="utf-8") as f:
