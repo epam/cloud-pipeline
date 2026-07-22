@@ -42,8 +42,11 @@ import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 /**
  * Business-logic layer for platform usage credits user balances.
@@ -82,6 +85,28 @@ public class PlatformUsageCreditsUserBalanceService {
                 .map(mapper::toDto)
                 .collect(Collectors.toList());
         return new PagedResult<>(elements, (int) page.getTotalElements());
+    }
+
+    /**
+     * Returns the credits balance for a single user, or empty if no record exists yet.
+     *
+     * @param userId the user whose balance to look up
+     * @return the balance DTO, or {@link Optional#empty()} if no row exists for the user
+     */
+    public Optional<PlatformUsageCreditsUserBalance> findByUserId(final Long userId) {
+        return repository.findByUserId(userId).map(mapper::toDto);
+    }
+
+    /**
+     * Returns all recorded balances keyed by {@code userId}.
+     * Intended for bulk enrichment to avoid N+1 queries.
+     *
+     * @return map from userId to the corresponding balance DTO
+     */
+    public Map<Long, PlatformUsageCreditsUserBalance> findAllAsMap() {
+        return StreamSupport.stream(repository.findAll().spliterator(), false)
+                .map(mapper::toDto)
+                .collect(Collectors.toMap(PlatformUsageCreditsUserBalance::getUserId, Function.identity()));
     }
 
     /**
