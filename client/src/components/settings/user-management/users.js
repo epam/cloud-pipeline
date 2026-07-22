@@ -46,6 +46,7 @@ import UserStatus from './user-status-indicator';
 import displayDate from '../../../utils/displayDate';
 import {QuotasDisclaimerComponent} from './quota-info';
 import MarkedToBeBlockedInfo from './marked-to-be-blocked-info';
+import UsageCreditsCounter from '../user-profile/usage-credits-statistics/credits-counter';
 
 const PAGE_SIZE = 20;
 
@@ -91,6 +92,14 @@ export default class UsersManagement extends React.Component {
     metadataKeys: [],
     filterUsers: USERS_FILTERS.all
   };
+
+  componentDidMount () {
+    this.props.users.fetch();
+  }
+
+  componentWillUnmount () {
+    this.props.usersStore.fetch();
+  }
 
   get isAdmin () {
     const {authenticatedUserInfo} = this.props;
@@ -534,6 +543,15 @@ export default class UsersManagement extends React.Component {
                     quotas={user.activeQuotas || []}
                   />
                 </Row>
+                <Row>
+                  <UsageCreditsCounter
+                    user={user}
+                    style={{
+                      container: {fontSize: 'smaller'},
+                      label: {fontWeight: 'normal'}
+                    }}
+                  />
+                </Row>
                 {
                   blockInfo && (
                     <Row>
@@ -554,6 +572,15 @@ export default class UsersManagement extends React.Component {
                     {blockedSpan}
                   </span>
                 </span>
+              </Row>
+              <Row>
+                <UsageCreditsCounter
+                  user={user}
+                  style={{
+                    container: {fontSize: 'smaller'},
+                    label: {fontWeight: 'normal'}
+                  }}
+                />
               </Row>
               {
                 blockInfo && (
@@ -611,7 +638,7 @@ export default class UsersManagement extends React.Component {
         onRowClick={(user) => this.openEditUserRolesDialog(user)}
         pagination={{
           total: this.filteredUsers.length,
-          PAGE_SIZE,
+          pageSize: PAGE_SIZE,
           current: this.state.usersTableCurrentPage
         }}
         size="small"
@@ -743,13 +770,5 @@ export default class UsersManagement extends React.Component {
         />
       </div>
     );
-  }
-
-  componentDidMount () {
-    this.props.users.fetch();
-  }
-
-  componentWillUnmount () {
-    this.props.usersStore.fetch();
   }
 }

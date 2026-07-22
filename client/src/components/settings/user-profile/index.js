@@ -24,6 +24,7 @@ import AppearanceSettings, {MANAGEMENT_SECTION} from './appearance';
 import LaunchProfilesSettings from './launch-profiles';
 import roleModel from '../../../utils/roleModel';
 import UserInfoSummary from '../forms/EditUserRolesDialog/UserInfoSummary';
+import UsageCreditsStatistics from './usage-credits-statistics';
 
 @roleModel.authenticationInfo
 @observer
@@ -125,6 +126,15 @@ export default class UserProfile extends React.Component {
       title: 'STATISTICS',
       render: () => (
         <UserInfoSummary
+          user={this.user}
+        />
+      )
+    });
+    sections.push({
+      key: 'usage-credits',
+      title: 'USAGE CREDITS',
+      render: () => (
+        <UsageCreditsStatistics
           user={this.user}
         />
       )

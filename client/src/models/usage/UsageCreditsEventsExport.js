@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-import Remote from '../basic/Remote';
+import RemotePost from '../basic/RemotePost';
 
-export default class User extends Remote {
-  constructor (id, credits = false) {
+export default class UsageCreditsEventsExport extends RemotePost {
+  static isJson = false;
+
+  constructor () {
     super();
-    const query = credits ? '?credits=true' : '';
-    this.url = `/user/${id}${query}`;
+    this.url = '/usage/credits/events/export';
   }
 }
