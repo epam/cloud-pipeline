@@ -30,6 +30,8 @@ import {
   Tabs
 } from 'antd';
 import UserInfoSummary from './UserInfoSummary';
+import UsageCreditsStatistics from '../../user-profile/usage-credits-statistics';
+import UsageCreditsCounter from '../../user-profile/usage-credits-statistics/credits-counter';
 import User from '../../../../models/user/User';
 import Roles from '../../../../models/user/Roles';
 import MetadataUpdateKeys from '../../../../models/metadata/MetadataUpdateKeys';
@@ -880,6 +882,16 @@ export default class EditUserRolesDialog extends React.Component {
             }
           </tbody>
         </table>
+        <UsageCreditsCounter
+          user={this.props.user}
+          style={{
+            container: {gap: 2},
+            label: {
+              width: 150,
+              fontWeight: 'normal'
+            }
+          }}
+        />
       </div>
     );
   }
@@ -1328,6 +1340,12 @@ export default class EditUserRolesDialog extends React.Component {
             />
           )
         }
+        {
+          <Tabs.TabPane
+            tab="USAGE CREDITS"
+            key="usage-credits"
+          />
+        }
       </Tabs>
     );
   };
@@ -1360,6 +1378,16 @@ export default class EditUserRolesDialog extends React.Component {
         <UserTokensTable
           userId={userId}
         />
+      );
+    }
+    if (activeTab === 'usage-credits') {
+      return (
+        <div style={{flex: 1, overflow: 'auto'}}>
+          <UsageCreditsStatistics
+            user={user}
+            pageSize={10}
+          />
+        </div>
       );
     }
     return this.renderUserRolesTab();

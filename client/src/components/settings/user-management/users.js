@@ -46,6 +46,8 @@ import UserStatus from './user-status-indicator';
 import displayDate from '../../../utils/displayDate';
 import {QuotasDisclaimerComponent} from './quota-info';
 import MarkedToBeBlockedInfo from './marked-to-be-blocked-info';
+import UsageCreditsCounter from '../user-profile/usage-credits-statistics/credits-counter';
+import UsageCreditsUsersMock from '../../../models/usage/UsageCreditsUsersMock';
 
 const PAGE_SIZE = 20;
 
@@ -89,7 +91,59 @@ export default class UsersManagement extends React.Component {
     operationInProgress: false,
     userDataToExport: [],
     metadataKeys: [],
-    filterUsers: USERS_FILTERS.all
+    filterUsers: USERS_FILTERS.all,
+    usersCredits: {}
+  };
+
+  componentDidMount () {
+    this.loadUsersCredits();
+  }
+
+  componentDidUpdate (prevProps, prevState) {
+    const pageChanged = prevState.usersTableCurrentPage !== this.state.usersTableCurrentPage;
+    const filtersChanged = prevState.userSearchText !== this.state.userSearchText ||
+      prevState.filterUsers !== this.state.filterUsers;
+    const usersWerePending = prevProps.users && prevProps.users.pending;
+    const usersLoaded = this.props.users &&
+      this.props.users.loaded &&
+      !this.props.users.pending;
+    const usersJustLoaded = usersWerePending && usersLoaded;
+    if (pageChanged || filtersChanged || usersJustLoaded) {
+      this.loadUsersCredits();
+    }
+  }
+
+  get currentPageUserIds () {
+    const {usersTableCurrentPage} = this.state;
+    const start = (usersTableCurrentPage - 1) * PAGE_SIZE;
+    return this.filteredUsers
+      .slice(start, start + PAGE_SIZE)
+      .map((user) => user.id)
+      .filter((id) => id !== undefined && id !== null);
+  }
+
+  loadUsersCredits = async () => {
+    const userIds = this.currentPageUserIds;
+    const requestKey = userIds.join(',');
+    this._creditsRequestKey = requestKey;
+    if (!userIds.length) {
+      this.setState({usersCredits: {}});
+      return;
+    }
+    const request = new UsageCreditsUsersMock();
+    await request.send({userIds});
+    if (this._creditsRequestKey !== requestKey) {
+      return;
+    }
+    if (request.loaded && request.value && request.value.elements) {
+      const usersCredits = {};
+      (request.value.elements || []).forEach((element) => {
+        if (element && element.userId != null && element.creditsBalance) {
+          usersCredits[element.userId] = element.creditsBalance.current;
+        }
+      });
+      this.setState({usersCredits});
+    }
   };
 
   get isAdmin () {
@@ -534,6 +588,16 @@ export default class UsersManagement extends React.Component {
                     quotas={user.activeQuotas || []}
                   />
                 </Row>
+                <Row>
+                  <UsageCreditsCounter
+                    user={user}
+                    credits={this.state.usersCredits[user.id]}
+                    style={{
+                      container: {fontSize: 'smaller'},
+                      label: {fontWeight: 'normal'}
+                    }}
+                  />
+                </Row>
                 {
                   blockInfo && (
                     <Row>
@@ -554,6 +618,16 @@ export default class UsersManagement extends React.Component {
                     {blockedSpan}
                   </span>
                 </span>
+              </Row>
+              <Row>
+                <UsageCreditsCounter
+                  user={user}
+                  credits={this.state.usersCredits[user.id]}
+                  style={{
+                    container: {fontSize: 'smaller'},
+                    label: {fontWeight: 'normal'}
+                  }}
+                />
               </Row>
               {
                 blockInfo && (
@@ -611,7 +685,7 @@ export default class UsersManagement extends React.Component {
         onRowClick={(user) => this.openEditUserRolesDialog(user)}
         pagination={{
           total: this.filteredUsers.length,
-          PAGE_SIZE,
+          pageSize: PAGE_SIZE,
           current: this.state.usersTableCurrentPage
         }}
         size="small"
