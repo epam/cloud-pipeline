@@ -2,7 +2,7 @@ name: Java Tests
 
 on:
   pull_request:
-    branches: [ develop, 'release/**', 'stage/**' ]
+    branches: [ develop]
     paths:
       - 'api/**'
       - 'core/**'
