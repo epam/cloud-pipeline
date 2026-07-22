@@ -26,7 +26,6 @@ import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateEvent;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateRequest;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateEventEntity;
 import com.epam.pipeline.entity.user.PipelineUser;
-import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.mapper.credits.PlatformUsageCreditsEventMapper;
@@ -43,12 +42,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.StringJoiner;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -74,23 +70,17 @@ public class PlatformUsageCreditsEventService {
      */
     @Transactional
     public List<PlatformUsageCreditsUpdateEvent> process(final List<PlatformUsageCreditsUpdateRequest> requests) {
-        final List<PlatformUsageCreditsUpdateEventEntity> entities = ListUtils.emptyIfNull(requests).stream()
-                .map(request -> {
-                    final PlatformUsageCreditsUpdateEventEntity entity = mapper.toEntity(request);
-                    entity.setId(computeEventId(entity));
-                    if (entity.getCreatedDate() == null) {
-                        entity.setCreatedDate(DateUtils.nowUTC());
-                    }
-                    return entity;
-                })
+        final List<PlatformUsageCreditsUpdateEvent> events = ListUtils.emptyIfNull(requests).stream()
+                .map(PlatformUsageCreditsUpdateEvent::fromRequest)
                 .filter(entity -> !usageCreditsEventRepository.exists(entity.getId()))
                 .map(this::applyBalanceUpdate)
                 .filter(entity -> entity.getValue() != 0)
                 .collect(Collectors.toList());
-        if (entities.isEmpty()) {
+        if (events.isEmpty()) {
             return Collections.emptyList();
         }
-        return usageCreditsEventRepository.save(entities).stream().map(mapper::toDto).collect(Collectors.toList());
+        usageCreditsEventRepository.save(events.stream().map(mapper::toEntity).collect(Collectors.toList()));
+        return events;
     }
 
     /**
@@ -136,7 +126,7 @@ public class PlatformUsageCreditsEventService {
         final List<PlatformUsageCreditsUpdateEventEntity> events = users.stream()
                 .map(user -> PlatformUsageCreditsUpdateEventEntity.builder()
                         // for reset operation we shouldn't deduplicate, to allow several resets
-                        .id(UUID.randomUUID().toString())
+                        .id(PlatformUsageCreditsUpdateEvent.computeId(null))
                         .userId(user.getId())
                         .incidentType(PlatformUsageCreditsUpdateAction.ActionType.RESET)
                         .value(resetRequest.getValue())
@@ -148,23 +138,6 @@ public class PlatformUsageCreditsEventService {
         return usageCreditsEventRepository.save(events).stream().map(mapper::toDto).collect(Collectors.toList());
     }
 
-    static String computeEventId(final PlatformUsageCreditsUpdateEventEntity entity) {
-        final StringJoiner key = new StringJoiner(":");
-        key.add(String.valueOf(entity.getUserId()));
-        if (entity.getRuleId() != null) {
-            key.add(String.valueOf(entity.getRuleId()));
-        }
-        if (entity.getEntityClass() != null) {
-            key.add(entity.getEntityClass());
-        }
-        if (entity.getEntityId() != null) {
-            key.add(String.valueOf(entity.getEntityId()));
-        }
-        key.add(entity.getIncidentType().name());
-        key.add(String.valueOf(entity.getValue()));
-        return UUID.nameUUIDFromBytes(key.toString().getBytes(StandardCharsets.UTF_8)).toString();
-    }
-
     // TODO: implement balance update logic
     @SuppressWarnings("PMD.UnusedFormalParameter")
     private void applyCreditReset(final int value, final List<Long> users) {
@@ -172,9 +145,8 @@ public class PlatformUsageCreditsEventService {
     }
 
     // TODO: implement balance update logic
-    private PlatformUsageCreditsUpdateEventEntity applyBalanceUpdate(
-            final PlatformUsageCreditsUpdateEventEntity entity) {
-        return entity;
+    private PlatformUsageCreditsUpdateEvent applyBalanceUpdate(final PlatformUsageCreditsUpdateEvent event) {
+        return event;
     }
 
     private PlatformUsageCreditsEventFilterVO restrictToCurrentUser(final PlatformUsageCreditsEventFilterVO filter) {

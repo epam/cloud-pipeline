@@ -42,7 +42,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static com.epam.pipeline.manager.credits.PlatformUsageCreditsEventService.computeEventId;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
@@ -113,7 +112,7 @@ public class PlatformUsageCreditsEventServiceTest {
 
     @Test
     public void processSkipsDuplicateEventById() {
-        final String id = computeEventId(entity(USER_ID_1, VALUE));
+        final String id = PlatformUsageCreditsUpdateEvent.fromRequest(request(USER_ID_1, VALUE)).getId();
         doReturn(true).when(repository).exists(id);
 
         final List<PlatformUsageCreditsUpdateEvent> result =
@@ -125,7 +124,7 @@ public class PlatformUsageCreditsEventServiceTest {
 
     @Test
     public void processAllowsNewEventById() {
-        final String id = computeEventId(entity(USER_ID_1, VALUE));
+        final String id = PlatformUsageCreditsUpdateEvent.fromRequest(request(USER_ID_1, VALUE)).getId();
         doReturn(false).when(repository).exists(id);
         doReturn(Collections.singletonList(entity(USER_ID_1, VALUE)))
                 .when(repository).save(anyListOf(PlatformUsageCreditsUpdateEventEntity.class));

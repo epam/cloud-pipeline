@@ -16,19 +16,26 @@
 
 package com.epam.pipeline.dto.credits;
 
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.vo.SecuredEntityVO;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.StringJoiner;
+import java.util.UUID;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class PlatformUsageCreditsUpdateEvent {
+
+    private static final String ID_DELIMITER = ":";
 
     private String id;
     private Long userId;
@@ -41,4 +48,38 @@ public class PlatformUsageCreditsUpdateEvent {
     private int value;
     private String message;
     private LocalDateTime createdDate;
+
+    public static PlatformUsageCreditsUpdateEvent fromRequest(final PlatformUsageCreditsUpdateRequest request) {
+        final PlatformUsageCreditsUpdateEvent event = PlatformUsageCreditsUpdateEvent.builder().userId(request.getUserId())
+                .ruleId(request.getRuleId())
+                .entity(request.getEntity())
+                .incidentType(request.getIncidentType())
+                .value(request.getValue())
+                .message(request.getMessage())
+                .createdDate(request.getCreatedDate())
+                .build();
+        if (event.getCreatedDate() == null) {
+            event.setCreatedDate(DateUtils.nowUTC());
+        }
+        event.setId(PlatformUsageCreditsUpdateEvent.computeId(event));
+        return event;
+    }
+
+    public static String computeId(final PlatformUsageCreditsUpdateEvent event) {
+        if (event == null) {
+            return UUID.randomUUID().toString();
+        }
+        final StringJoiner key = new StringJoiner(ID_DELIMITER);
+        key.add(String.valueOf(event.getUserId()));
+        if (event.getRuleId() != null) {
+            key.add(String.valueOf(event.getRuleId()));
+        }
+        if (event.getEntity() != null) {
+            key.add(event.getEntity().getEntityClass());
+            key.add(String.valueOf(event.getEntity().getEntityId()));
+        }
+        key.add(event.getIncidentType().name());
+        key.add(String.valueOf(event.getValue()));
+        return UUID.nameUUIDFromBytes(key.toString().getBytes(StandardCharsets.UTF_8)).toString();
+    }
 }
