@@ -42,7 +42,7 @@ jobs:
         env:
           CP_API_TEST_DB_USER: pipeline
           CP_API_TEST_DB_PASSWORD: pipeline
-        run: ./gradlew :api:test
+        run: ./gradlew :api:test --no-build-cache
 
       - name: Upload test results on failure
         uses: actions/upload-artifact@v4
