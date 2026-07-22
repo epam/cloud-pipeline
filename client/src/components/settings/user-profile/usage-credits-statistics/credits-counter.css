@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,45 +15,12 @@
  */
 
 .container {
-  flex: 1;
-  overflow: auto;
-}
-
-.container .attributes {
-  margin: 0 5px;
-}
-
-.header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  font-size: large;
+  gap: 5px;
+}
+
+.label {
   font-weight: bold;
-  margin: 0 8px;
 }
 
-.info {
-  width: 150px;
-  vertical-align: top;
-}
-
-.info-value {
-  vertical-align: top;
-}
-
-.divider {
-  margin: 10px 0;
-}
-
-.roles {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.role {
-  margin: 0 5px 5px 0;
-  border: 1px solid #ddd;
-  padding: 2px 5px;
-  border-radius: 5px;
-}
