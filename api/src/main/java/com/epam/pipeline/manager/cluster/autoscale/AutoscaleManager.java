@@ -78,8 +78,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
-import static com.epam.pipeline.manager.cluster.autoscale.AutoscaleContants.NODEUP_INSUFFICIENT_CAPACITY_EXIT_CODE;
-
 @Service
 @Slf4j
 @ConditionalOnProperty(value = "cluster.disable.autoscaling", matchIfMissing = true, havingValue = "false")
@@ -558,43 +556,20 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             long longId = Long.parseLong(runId);
             addNodeUpTask(longId);
             tasks.add(CompletableFuture.runAsync(() -> {
-                RunInstance instance = requiredInstance.getInstance();
-
-                List<String> allNodeTypesToTry = new ArrayList<>();
-                allNodeTypesToTry.add(instance.getNodeType());
-                allNodeTypesToTry.addAll(ListUtils.emptyIfNull(instance.getFallbackInstanceTypes()));
-                CmdExecutionException lastException = null;
-                for (String currentNodeType : allNodeTypesToTry) {
-                    try {
-                        Instant start = Instant.now();
-                        instance.setNodeType(currentNodeType);
-                        //save required instance
-                        pipelineRunManager.updateRunInstance(longId, instance);
-                        RunInstance startedInstance = cloudFacade.scaleUpNode(longId, requiredInstance.getInstance(),
-                                requiredInstance.getRuntimeParameters(), requiredInstance.getTags());
-                        //save instance ID and IP
-                        pipelineRunManager.updateRunInstance(longId, startedInstance);
-                        pipelineRunManager.updateRunInstanceStartDate(longId, DateUtils.nowUTC());
-                        autoscalerService.registerDisks(longId, startedInstance);
-                        Instant end = Instant.now();
-                        removeNodeUpTask(longId);
-                        log.debug("Time to create a node for run {} : {} s.", runId,
-                                Duration.between(start, end).getSeconds());
-                        return;
-                    } catch (CmdExecutionException ex) {
-                        if (!Objects.equals(NODEUP_INSUFFICIENT_CAPACITY_EXIT_CODE, ex.getExitCode())) {
-                            //before throwing an exception, we need to return a node type to its original value
-                            instance.setNodeType(allNodeTypesToTry.get(0));
-                            pipelineRunManager.updateRunInstance(longId, instance);
-                            throw ex;
-                        }
-                        lastException = ex;
-                    }
-                }
-                //all fallbackTypes tried, we need to return a node type to its original value
-                instance.setNodeType(allNodeTypesToTry.get(0));
+                Instant start = Instant.now();
+                //save required instance
+                pipelineRunManager.updateRunInstance(longId, requiredInstance.getInstance());
+                RunInstance instance = cloudFacade
+                        .scaleUpNode(longId, requiredInstance.getInstance(), requiredInstance.getRuntimeParameters(),
+                                requiredInstance.getTags());
+                //save instance ID and IP
                 pipelineRunManager.updateRunInstance(longId, instance);
-                throw lastException;
+                pipelineRunManager.updateRunInstanceStartDate(longId, DateUtils.nowUTC());
+                autoscalerService.registerDisks(longId, instance);
+                Instant end = Instant.now();
+                removeNodeUpTask(longId);
+                log.debug("Time to create a node for run {} : {} s.", runId,
+                        Duration.between(start, end).getSeconds());
             }, executorService.getExecutorService()).exceptionally(e -> {
                 log.error(e.getMessage(), e);
 
@@ -610,7 +585,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                     nodeUpAttempts.merge(longId, 1, (oldVal, newVal) -> oldVal - 1);
                 }
                 if (e.getCause() instanceof CmdExecutionException && Objects.equals(
-                        NODEUP_INSUFFICIENT_CAPACITY_EXIT_CODE,
+                        AutoscaleContants.NODEUP_INSUFFICIENT_CAPACITY_EXIT_CODE,
                         ((CmdExecutionException) e.getCause()).getExitCode())) {
                     final int retryCount = nodeUpAttempts.getOrDefault(longId, 0);
                     final int nodeUpRetryCount = preferenceManager.getPreference(

@@ -76,7 +76,6 @@ public class PipelineConfiguration implements Cloneable {
     private static final String RAW_EDIT = "raw";
     private static final String FRIENDLY_URL = "friendly_url";
     private static final String CONFIG_VALIDATION = "config_validation";
-    private static final String FALLBACK_INSTANCE_TYPES = "fallback_instance_types";
 
     public static final String EXECUTION_ENVIRONMENT = "EXEC_ENVIRONMENT";
 
@@ -88,9 +87,6 @@ public class PipelineConfiguration implements Cloneable {
 
     @JsonProperty(value = INSTANCE_SIZE)
     private String instanceType;
-
-    @JsonProperty(value = FALLBACK_INSTANCE_TYPES)
-    private List<String> fallbackInstanceTypes;
 
     @JsonProperty(value = INSTANCE_IMAGE)
     private String instanceImage;

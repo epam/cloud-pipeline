@@ -1435,43 +1435,6 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         assertThat(runs.size(), is(1));
     }
 
-    @Test
-    public void shouldCreatePipelineRunWithFallbacks() {
-        final PipelineRun run = buildPipelineRun(testPipeline.getId());
-        List<String> fallbackInstanceTypes = new ArrayList<>();
-        fallbackInstanceTypes.add(NODE_TYPE);
-        fallbackInstanceTypes.add(NODE_TYPE_2);
-        run.getInstance().setFallbackInstanceTypes(fallbackInstanceTypes);
-
-        pipelineRunDao.createPipelineRun(run);
-
-        final PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
-
-        List<String> dbFallbackInstanceTypes = loadedRun.getInstance().getFallbackInstanceTypes();
-        assertThat(dbFallbackInstanceTypes.size(), is(2));
-        assertTrue(dbFallbackInstanceTypes.contains(NODE_TYPE));
-        assertTrue(dbFallbackInstanceTypes.contains(NODE_TYPE_2));
-    }
-
-    @Test
-    public void shouldUpdateFallbacks() {
-        PipelineRun run = createTestPipelineRun(testPipeline.getId());
-        assertTrue(Objects.isNull(run.getInstance().getFallbackInstanceTypes()));
-
-        List<String> fallbackInstanceTypes = new ArrayList<>();
-        fallbackInstanceTypes.add(NODE_TYPE);
-        fallbackInstanceTypes.add(NODE_TYPE_2);
-        run.getInstance().setFallbackInstanceTypes(fallbackInstanceTypes);
-
-        pipelineRunDao.updateRun(run);
-        PipelineRun loaded = pipelineRunDao.loadPipelineRun(run.getId());
-        assertEquals(run.getId(), loaded.getId());
-        List<String> dbFallbackInstanceTypes = loaded.getInstance().getFallbackInstanceTypes();
-        assertThat(dbFallbackInstanceTypes.size(), is(2));
-        assertTrue(dbFallbackInstanceTypes.contains(NODE_TYPE));
-        assertTrue(dbFallbackInstanceTypes.contains(NODE_TYPE_2));
-    }
-
     private PipelineRun createTestPipelineRun() {
         return createTestPipelineRun(testPipeline.getId());
     }

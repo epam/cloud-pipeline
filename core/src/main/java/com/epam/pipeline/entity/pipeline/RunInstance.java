@@ -25,7 +25,6 @@ import lombok.Setter;
 import lombok.ToString;
 import org.springframework.util.StringUtils;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -39,7 +38,6 @@ import java.util.Set;
 @ToString
 public class RunInstance {
     private String nodeType;
-    private List<String> fallbackInstanceTypes;
     /**
      * Node size the was requested by user
      */
