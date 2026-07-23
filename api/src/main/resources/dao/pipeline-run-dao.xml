@@ -1865,7 +1865,8 @@
                         node_start_date,
                         project_id,
                         parameters_json,
-                        logs_storage_path
+                        logs_storage_path,
+                        instance_fallback_types
                     FROM
                         pipeline.pipeline_run r
                     INNER JOIN (SELECT DISTINCT ON (run_id) run_id, status
