@@ -23,6 +23,7 @@ import org.apache.commons.collections4.ListUtils;
 import org.springframework.data.jpa.domain.Specification;
 
 import javax.persistence.criteria.Predicate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -34,6 +35,7 @@ public final class PlatformUsageCreditsEventSpecification {
     public static final String FIELD_INCIDENT_TYPE = "incidentType";
     public static final String FIELD_ENTITY_CLASS = "entityClass";
     public static final String FIELD_ENTITY_ID = "entityId";
+    public static final String FIELD_CREATED_DATE = "createdDate";
 
     private PlatformUsageCreditsEventSpecification() {
         //
@@ -60,6 +62,14 @@ public final class PlatformUsageCreditsEventSpecification {
             }
             if (Boolean.TRUE.equals(filter.getWithoutEntityLink())) {
                 predicates.add(cb.isNull(root.get(FIELD_ENTITY_CLASS)));
+            }
+            final LocalDateTime from = filter.getFrom();
+            if (from != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get(FIELD_CREATED_DATE), from));
+            }
+            final LocalDateTime to = filter.getTo();
+            if (to != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get(FIELD_CREATED_DATE), to));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         };

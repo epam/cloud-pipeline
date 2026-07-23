@@ -173,6 +173,8 @@ public class PlatformUsageCreditsEventService {
                 .ruleId(filter.getRuleId())
                 .incidentTypes(filter.getIncidentTypes())
                 .userIds(Collections.singletonList(user.getId()))
+                .from(filter.getFrom())
+                .to(filter.getTo())
                 .page(filter.getPage())
                 .pageSize(filter.getPageSize())
                 .build();

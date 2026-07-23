@@ -22,6 +22,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -37,6 +38,8 @@ public class PlatformUsageCreditsEventFilterVO {
     private Boolean withoutEntityLink;
     /** Can't be used together with {@code withoutEntityLink}. */
     private List<SecuredEntityVO> entities;
+    private LocalDateTime from;
+    private LocalDateTime to;
     private int page;
     private int pageSize;
 }
