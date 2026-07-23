@@ -18,7 +18,9 @@ package com.epam.pipeline.manager.datastorage.providers.nfs;
 
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -166,6 +168,12 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
         ReflectionTestUtils.setField(nfsStorageMounter, "dataStorageDao", dataStorageDao);
         ReflectionTestUtils.setField(nfsStorageMounter, "rootMountPoint", testMountPoint.getAbsolutePath());
         ReflectionTestUtils.setField(nfsStorageMounter, "cmdExecutor", mockCmdExecutor);
+
+        // NFSStorageMounter.isMounted() reads /proc/mounts; tests use temp dirs that are not real mounts.
+        // Mock getProcMountsPath() to return a nonexistent path so isMounted() falls back to File.exists().
+        NFSStorageMounter spyMounter = spy(nfsStorageMounter);
+        doReturn("/nonexistent/proc/mounts").when(spyMounter).getProcMountsPath();
+        Whitebox.setInternalState(nfsProvider, "nfsStorageMounter", spyMounter);
 
         when(mockCmdExecutor.executeCommand(anyString())).thenReturn("");
 
