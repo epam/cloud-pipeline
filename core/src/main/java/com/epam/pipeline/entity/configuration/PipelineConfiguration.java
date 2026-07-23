@@ -270,6 +270,9 @@ public class PipelineConfiguration implements Cloneable {
             if (this.kubeLabels != null) {
                 clone.setKubeLabels(new HashMap<>(this.kubeLabels));
             }
+            if (this.fallbackInstanceTypes != null) {
+                clone.setFallbackInstanceTypes(new ArrayList<>(this.fallbackInstanceTypes));
+            }
             return clone;
         } catch (CloneNotSupportedException e) {
             throw new AssertionError("There was an error while trying to clone PipelineConfiguration object", e);

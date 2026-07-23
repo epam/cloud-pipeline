@@ -1360,11 +1360,13 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             instance.setNodeIP(rs.getString(NODE_IP.name()));
             instance.setNodeType(rs.getString(NODE_TYPE.name()));
 
-            String fallbackInstanceTypes = rs.getString(INSTANCE_FALLBACK_TYPES.name());
-            if (fallbackInstanceTypes != null && !fallbackInstanceTypes.equals("[]")) {
+            final String fallbackInstanceTypesJson = rs.getString(INSTANCE_FALLBACK_TYPES.name());
+            if (fallbackInstanceTypesJson != null) {
                 final List<String> fallbackInstanceList =
-                        JsonMapper.parseData(fallbackInstanceTypes, new TypeReference<List<String>>() {});
-                instance.setFallbackInstanceTypes(fallbackInstanceList);
+                        JsonMapper.parseData(fallbackInstanceTypesJson, new TypeReference<List<String>>() {});
+                if (CollectionUtils.isNotEmpty(fallbackInstanceList)) {
+                    instance.setFallbackInstanceTypes(fallbackInstanceList);
+                }
             }
 
             instance.setNodeImage(rs.getString(NODE_IMAGE.name()));
