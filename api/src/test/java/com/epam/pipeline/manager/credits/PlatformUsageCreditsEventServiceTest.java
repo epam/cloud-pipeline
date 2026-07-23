@@ -45,6 +45,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyCollectionOf;
 import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -72,6 +73,8 @@ public class PlatformUsageCreditsEventServiceTest {
 
     @Test
     public void processFiltersOutZeroValueRequests() {
+        doReturn(Collections.<String>emptySet()).when(repository).findExistingIds(anyCollectionOf(String.class));
+
         service.process(Collections.singletonList(request(USER_ID_1, 0)));
 
         verify(repository, never()).save(anyListOf(PlatformUsageCreditsUpdateEventEntity.class));
@@ -79,6 +82,7 @@ public class PlatformUsageCreditsEventServiceTest {
 
     @Test
     public void processSavesNonZeroRequestsAsEntities() {
+        doReturn(Collections.<String>emptySet()).when(repository).findExistingIds(anyCollectionOf(String.class));
         doReturn(Collections.singletonList(entity(USER_ID_1, VALUE)))
                 .when(repository).save(anyListOf(PlatformUsageCreditsUpdateEventEntity.class));
 
@@ -99,6 +103,7 @@ public class PlatformUsageCreditsEventServiceTest {
     public void processSetsCreatedDateWhenNull() {
         final PlatformUsageCreditsUpdateRequest req = request(USER_ID_1, VALUE);
         req.setCreatedDate(null);
+        doReturn(Collections.<String>emptySet()).when(repository).findExistingIds(anyCollectionOf(String.class));
         doReturn(Collections.singletonList(entity(USER_ID_1, VALUE)))
                 .when(repository).save(anyListOf(PlatformUsageCreditsUpdateEventEntity.class));
 
@@ -113,7 +118,7 @@ public class PlatformUsageCreditsEventServiceTest {
     @Test
     public void processSkipsDuplicateEventById() {
         final String id = PlatformUsageCreditsUpdateEvent.fromRequest(request(USER_ID_1, VALUE)).getId();
-        doReturn(true).when(repository).exists(id);
+        doReturn(Collections.singleton(id)).when(repository).findExistingIds(anyCollectionOf(String.class));
 
         final List<PlatformUsageCreditsUpdateEvent> result =
                 service.process(Collections.singletonList(request(USER_ID_1, VALUE)));
@@ -124,8 +129,7 @@ public class PlatformUsageCreditsEventServiceTest {
 
     @Test
     public void processAllowsNewEventById() {
-        final String id = PlatformUsageCreditsUpdateEvent.fromRequest(request(USER_ID_1, VALUE)).getId();
-        doReturn(false).when(repository).exists(id);
+        doReturn(Collections.<String>emptySet()).when(repository).findExistingIds(anyCollectionOf(String.class));
         doReturn(Collections.singletonList(entity(USER_ID_1, VALUE)))
                 .when(repository).save(anyListOf(PlatformUsageCreditsUpdateEventEntity.class));
 
@@ -139,6 +143,7 @@ public class PlatformUsageCreditsEventServiceTest {
         final LocalDateTime createdDate = LocalDateTime.of(2026, 1, 1, 12, 0, 0);
         final PlatformUsageCreditsUpdateRequest req = request(USER_ID_1, VALUE);
         req.setCreatedDate(createdDate);
+        doReturn(Collections.<String>emptySet()).when(repository).findExistingIds(anyCollectionOf(String.class));
         doReturn(Collections.singletonList(entity(USER_ID_1, VALUE)))
                 .when(repository).save(anyListOf(PlatformUsageCreditsUpdateEventEntity.class));
 

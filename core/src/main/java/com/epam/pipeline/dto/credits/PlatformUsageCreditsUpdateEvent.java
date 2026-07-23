@@ -66,7 +66,7 @@ public class PlatformUsageCreditsUpdateEvent {
     }
 
     public static String computeId(final PlatformUsageCreditsUpdateEvent event) {
-        if (event == null) {
+        if (event == null || event.getRuleId() == null) {
             return UUID.randomUUID().toString();
         }
         final StringJoiner key = new StringJoiner(ID_DELIMITER);
@@ -79,7 +79,6 @@ public class PlatformUsageCreditsUpdateEvent {
             key.add(String.valueOf(event.getEntity().getEntityId()));
         }
         key.add(event.getIncidentType().name());
-        key.add(String.valueOf(event.getValue()));
         return UUID.nameUUIDFromBytes(key.toString().getBytes(StandardCharsets.UTF_8)).toString();
     }
 }

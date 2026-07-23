@@ -45,6 +45,7 @@ import org.springframework.util.Assert;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -70,11 +71,18 @@ public class PlatformUsageCreditsEventService {
      */
     @Transactional
     public List<PlatformUsageCreditsUpdateEvent> process(final List<PlatformUsageCreditsUpdateRequest> requests) {
-        final List<PlatformUsageCreditsUpdateEvent> events = ListUtils.emptyIfNull(requests).stream()
+        final List<PlatformUsageCreditsUpdateEvent> candidates = ListUtils.emptyIfNull(requests).stream()
                 .map(PlatformUsageCreditsUpdateEvent::fromRequest)
-                .filter(entity -> !usageCreditsEventRepository.exists(entity.getId()))
+                .collect(Collectors.toList());
+        if (candidates.isEmpty()) {
+            return Collections.emptyList();
+        }
+        final Set<String> existingIds = usageCreditsEventRepository.findExistingIds(
+                candidates.stream().map(PlatformUsageCreditsUpdateEvent::getId).collect(Collectors.toList()));
+        final List<PlatformUsageCreditsUpdateEvent> events = candidates.stream()
+                .filter(event -> !existingIds.contains(event.getId()))
                 .map(this::applyBalanceUpdate)
-                .filter(entity -> entity.getValue() != 0)
+                .filter(event -> event.getValue() != 0)
                 .collect(Collectors.toList());
         if (events.isEmpty()) {
             return Collections.emptyList();

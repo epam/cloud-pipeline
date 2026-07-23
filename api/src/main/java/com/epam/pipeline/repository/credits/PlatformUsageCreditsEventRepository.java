@@ -19,8 +19,16 @@ package com.epam.pipeline.repository.credits;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateEventEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.Collection;
+import java.util.Set;
 
 public interface PlatformUsageCreditsEventRepository
         extends JpaRepository<PlatformUsageCreditsUpdateEventEntity, String>,
                 JpaSpecificationExecutor<PlatformUsageCreditsUpdateEventEntity> {
+
+    @Query("SELECT e.id FROM PlatformUsageCreditsUpdateEventEntity e WHERE e.id IN :ids")
+    Set<String> findExistingIds(@Param("ids") Collection<String> ids);
 }

@@ -47,7 +47,7 @@ public class PlatformUsageCreditsEventController extends AbstractRestController 
 
     @PostMapping
     @ApiOperation(
-            value = "Saves platform usage credits update events. Admin only.",
+            value = "Send platform usage credits update events. Admin only.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<List<PlatformUsageCreditsUpdateEvent>> process(
