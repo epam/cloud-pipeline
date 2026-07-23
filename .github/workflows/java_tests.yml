@@ -18,7 +18,8 @@ on:
       - '.github/**'
 
 jobs:
-  changes:
+  CalculateCodeChanges:
+    name: Calculate Codebase changes
     runs-on: ubuntu-24.04
     outputs:
       api:           ${{ steps.detect.outputs.api }}
@@ -50,8 +51,9 @@ jobs:
           echo "monitoring=$(detect    '^(vm-monitor|billing-report-agent|monitoring-service)/')"   >> $GITHUB_OUTPUT
 
   api-tests:
-    needs: changes
-    if: needs.changes.outputs.api == 'true'
+    needs: CalculateCodeChanges
+    name: API test suite
+    if: needs.CalculateCodeChanges.outputs.api == 'true'
     runs-on: ubuntu-24.04
     services:
       postgres:
@@ -77,7 +79,7 @@ jobs:
       - name: Verify PostgreSQL connection
         run: psql -h 127.0.0.1 -U pipeline -d pipeline_test -c "SELECT 1"
       - name: Run API tests
-        run: ./gradlew :api:test --no-build-cache
+        run: ./gradlew :api:copyConfiguration :api:test --no-build-cache
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
@@ -86,8 +88,9 @@ jobs:
           retention-days: 7
 
   core-libs-tests:
-    needs: changes
-    if: needs.changes.outputs.core-libs == 'true'
+    needs: CalculateCodeChanges
+    name: Core lib test suite
+    if: needs.CalculateCodeChanges.outputs.core-libs == 'true'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v3
@@ -114,8 +117,9 @@ jobs:
           retention-days: 7
 
   notifier-tests:
-    needs: changes
-    if: needs.changes.outputs.notifier == 'true'
+    needs: CalculateCodeChanges
+    name: Notifier test suite
+    if: needs.CalculateCodeChanges.outputs.notifier == 'true'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v3
@@ -134,8 +138,9 @@ jobs:
           retention-days: 7
 
   data-transfer-tests:
-    needs: changes
-    if: needs.changes.outputs.data-transfer == 'true'
+    needs: CalculateCodeChanges
+    name: DataTransfer service test suite
+    if: needs.CalculateCodeChanges.outputs.data-transfer == 'true'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v3
@@ -154,8 +159,9 @@ jobs:
           retention-days: 7
 
   docker-scan-tests:
-    needs: changes
-    if: needs.changes.outputs.docker-scan == 'true'
+    needs: CalculateCodeChanges
+    name: Docker Comp Scan service test suite
+    if: needs.CalculateCodeChanges.outputs.docker-scan == 'true'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v3
@@ -174,8 +180,9 @@ jobs:
           retention-days: 7
 
   elasticsearch-tests:
-    needs: changes
-    if: needs.changes.outputs.elasticsearch == 'true'
+    needs: CalculateCodeChanges
+    name: Elastisearch srv service test suite
+    if: needs.CalculateCodeChanges.outputs.elasticsearch == 'true'
     runs-on: ubuntu-24.04
     services:
       postgres:
@@ -209,8 +216,9 @@ jobs:
           retention-days: 7
 
   monitoring-tests:
-    needs: changes
-    if: needs.changes.outputs.monitoring == 'true'
+    needs: CalculateCodeChanges
+    name: Monitoring service test suite
+    if: needs.CalculateCodeChanges.outputs.monitoring == 'true'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v3
