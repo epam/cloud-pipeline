@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS pipeline.usage_credits_update_event (
-    id            TEXT        PRIMARY KEY DEFAULT gen_random_uuid()::text;,
+    id            TEXT        PRIMARY KEY DEFAULT gen_random_uuid()::text,
     user_id       BIGINT      NOT NULL,
     rule_id       BIGINT      REFERENCES pipeline.usage_credits_update_rule(id) ON DELETE SET NULL,
     entity_class  TEXT,
