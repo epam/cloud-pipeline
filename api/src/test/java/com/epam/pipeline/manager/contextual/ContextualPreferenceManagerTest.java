@@ -267,7 +267,8 @@ public class ContextualPreferenceManagerTest {
         when(authManager.getCurrentUser()).thenReturn(USER_WITHOUT_ROLES);
         when(userManager.load(eq(USER_WITHOUT_ROLES.getId()))).thenReturn(USER);
 
-        final ContextualPreference searchedPreference = manager.search(NAMES, (ContextualPreferenceExternalResource) null);
+        final ContextualPreference searchedPreference = manager.search(NAMES,
+                (ContextualPreferenceExternalResource) null);
 
         assertThat(searchedPreference, is(preference));
     }

@@ -33,8 +33,40 @@ public interface PlatformUsageCreditsUserBalanceRepository
             + "SELECT id, :value, NOW() FROM pipeline.user "
             + "ON CONFLICT (user_id) DO UPDATE "
             + "SET current_value = EXCLUDED.current_value, modified_date = EXCLUDED.modified_date";
+    String ATOMIC_UPSERT = "WITH upsert AS ( "
+            + "INSERT INTO pipeline.usage_credits_user_balance (user_id, current_value, modified_date) "
+            + "VALUES (:userId, GREATEST(:min, LEAST(:max, :defaultBalance + :delta)), NOW()) "
+            + "ON CONFLICT (user_id) DO UPDATE "
+            + "SET current_value = GREATEST(:min, LEAST(:max, "
+            + "    pipeline.usage_credits_user_balance.current_value + :delta)), "
+            + "    modified_date = NOW() "
+            + "RETURNING current_value "
+            + ") SELECT current_value FROM upsert";
 
     Optional<PlatformUsageCreditsUserBalanceEntity> findByUserId(Long userId);
+
+    /**
+     * Atomically upserts the credits balance for a single user and returns the resulting value.
+     *
+     * <p>The arithmetic and clamping are performed entirely inside the database using a single SQL
+     * statement, so concurrent calls for the same user cannot race. The DML is wrapped in a CTE and
+     * exposed as a {@code SELECT} so that Spring Data JPA returns the {@code RETURNING} value
+     * directly without requiring a separate follow-up read.
+     *
+     * @param userId         the target user
+     * @param delta          signed delta: positive for INCREASE, negative for DEDUCTION
+     * @param defaultBalance starting balance when no row exists yet
+     * @param min            lower bound for clamping
+     * @param max            upper bound for clamping
+     * @return the new {@code current_value} after the update
+     */
+    @Query(value = ATOMIC_UPSERT, nativeQuery = true)
+    Integer atomicUpdateBalance(
+            @Param("userId") Long userId,
+            @Param("delta") int delta,
+            @Param("defaultBalance") int defaultBalance,
+            @Param("min") int min,
+            @Param("max") int max);
 
     /**
      * Upserts a balance row for every user in {@code pipeline.user}.

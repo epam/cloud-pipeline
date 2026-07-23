@@ -61,7 +61,7 @@ public class PlatformUsageCreditsUserBalanceController extends AbstractRestContr
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<Void> reset(@RequestParam final int value,
-                              @RequestParam(required = false) final List<Long> userIds) {
+                              @RequestBody(required = false) final List<Long> userIds) {
         apiService.reset(value, userIds);
         return Result.success(null);
     }

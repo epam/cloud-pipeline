@@ -22,12 +22,13 @@ import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalanceFilterVO;
 import com.epam.pipeline.entity.contextual.ContextualPreference;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUserBalanceEntity;
+import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.mapper.credits.PlatformUsageCreditsUserBalanceMapper;
 import com.epam.pipeline.repository.credits.PlatformUsageCreditsUserBalanceRepository;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.PageImpl;
@@ -42,7 +43,11 @@ import java.util.Optional;
 
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.BALANCE_ABOVE_THRESHOLD;
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.BALANCE_BELOW_THRESHOLD;
+import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.BALANCE_NEAR_MAX;
+import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.BALANCE_NEAR_MIN;
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.BALANCE_VALUE;
+import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.CURRENT_BALANCE;
+import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.EVENT_VALUE;
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.DEFAULT_BALANCE;
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.MAX_BALANCE;
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.MIN_BALANCE;
@@ -50,6 +55,7 @@ import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBal
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.RESET_VALUE;
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.USER_ID;
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.balanceDto;
+import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.pipelineUser;
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.balanceEntity;
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.deductionEvent;
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.filterVO;
@@ -75,12 +81,11 @@ public class PlatformUsageCreditsUserBalanceServiceTest {
             mock(ContextualPreferenceManager.class);
     private final NotificationManager notificationManager =
             mock(NotificationManager.class);
-    private final PlatformUsageCreditsUserBalanceService service;
-
-    {
-        service = new PlatformUsageCreditsUserBalanceService(repository, mapper, contextualPreferenceManager);
-        ReflectionTestUtils.setField(service, "notificationManager", notificationManager);
-    }
+    private final UserManager userManager =
+            mock(UserManager.class);
+    private final PlatformUsageCreditsUserBalanceService service =
+            new PlatformUsageCreditsUserBalanceService(
+                    repository, mapper, contextualPreferenceManager, notificationManager, userManager);
 
     @Test
     public void shouldReturnPagedBalancesOnFilter() {
@@ -235,147 +240,131 @@ public class PlatformUsageCreditsUserBalanceServiceTest {
     @Test
     public void shouldIncreaseBalanceWithinBounds() {
         mockPreferences(MIN_BALANCE, MAX_BALANCE, DEFAULT_BALANCE);
-        doReturn(Optional.of(entityWithValue(2000))).when(repository).findByUserId(USER_ID);
+        doReturn(Optional.of(entityWithValue(CURRENT_BALANCE))).when(repository).findByUserId(USER_ID);
+        mockJdbcUpdate(CURRENT_BALANCE + EVENT_VALUE);
 
-        final PlatformUsageCreditsUpdateEvent result = service.updateByEvent(increaseEvent(100));
+        final PlatformUsageCreditsUpdateEvent result = service.updateByEvent(increaseEvent(EVENT_VALUE));
 
-        assertThat(result.getValue(), is(100));
-        final ArgumentCaptor<PlatformUsageCreditsUserBalanceEntity> captor =
-                ArgumentCaptor.forClass(PlatformUsageCreditsUserBalanceEntity.class);
-        verify(repository).save(captor.capture());
-        assertThat(captor.getValue().getCurrentValue(), is(2100));
+        assertThat(result.getValue(), is(EVENT_VALUE));
     }
 
     @Test
     public void shouldClampIncreaseToMax() {
         mockPreferences(MIN_BALANCE, MAX_BALANCE, DEFAULT_BALANCE);
-        doReturn(Optional.of(entityWithValue(2900))).when(repository).findByUserId(USER_ID);
+        doReturn(Optional.of(entityWithValue(BALANCE_NEAR_MAX))).when(repository).findByUserId(USER_ID);
+        mockJdbcUpdate(MAX_BALANCE);
 
         final PlatformUsageCreditsUpdateEvent result = service.updateByEvent(increaseEvent(200));
 
-        assertThat(result.getValue(), is(100));
-        final ArgumentCaptor<PlatformUsageCreditsUserBalanceEntity> captor =
-                ArgumentCaptor.forClass(PlatformUsageCreditsUserBalanceEntity.class);
-        verify(repository).save(captor.capture());
-        assertThat(captor.getValue().getCurrentValue(), is(MAX_BALANCE));
+        assertThat(result.getValue(), is(MAX_BALANCE - BALANCE_NEAR_MAX));
     }
 
     @Test
     public void shouldReturnZeroValueWhenAlreadyAtMax() {
         mockPreferences(MIN_BALANCE, MAX_BALANCE, DEFAULT_BALANCE);
         doReturn(Optional.of(entityWithValue(MAX_BALANCE))).when(repository).findByUserId(USER_ID);
+        mockJdbcUpdate(MAX_BALANCE);
 
         final PlatformUsageCreditsUpdateEvent result = service.updateByEvent(increaseEvent(200));
 
         assertThat(result.getValue(), is(0));
-        verify(repository, never()).save(any(PlatformUsageCreditsUserBalanceEntity.class));
     }
 
     @Test
     public void shouldDeductBalanceWithinBounds() {
         mockPreferences(MIN_BALANCE, MAX_BALANCE, DEFAULT_BALANCE);
-        doReturn(Optional.of(entityWithValue(2000))).when(repository).findByUserId(USER_ID);
+        doReturn(Optional.of(entityWithValue(CURRENT_BALANCE))).when(repository).findByUserId(USER_ID);
+        mockJdbcUpdate(CURRENT_BALANCE - EVENT_VALUE);
 
-        final PlatformUsageCreditsUpdateEvent result = service.updateByEvent(deductionEvent(100));
+        final PlatformUsageCreditsUpdateEvent result = service.updateByEvent(deductionEvent(EVENT_VALUE));
 
-        assertThat(result.getValue(), is(100));
-        final ArgumentCaptor<PlatformUsageCreditsUserBalanceEntity> captor =
-                ArgumentCaptor.forClass(PlatformUsageCreditsUserBalanceEntity.class);
-        verify(repository).save(captor.capture());
-        assertThat(captor.getValue().getCurrentValue(), is(1900));
+        assertThat(result.getValue(), is(EVENT_VALUE));
     }
 
     @Test
     public void shouldClampDeductionToMin() {
         mockPreferences(MIN_BALANCE, MAX_BALANCE, DEFAULT_BALANCE);
-        doReturn(Optional.of(entityWithValue(50))).when(repository).findByUserId(USER_ID);
+        doReturn(Optional.of(entityWithValue(BALANCE_NEAR_MIN))).when(repository).findByUserId(USER_ID);
+        mockJdbcUpdate(MIN_BALANCE);
 
-        final PlatformUsageCreditsUpdateEvent result = service.updateByEvent(deductionEvent(100));
+        final PlatformUsageCreditsUpdateEvent result = service.updateByEvent(deductionEvent(EVENT_VALUE));
 
-        assertThat(result.getValue(), is(26));
-        final ArgumentCaptor<PlatformUsageCreditsUserBalanceEntity> captor =
-                ArgumentCaptor.forClass(PlatformUsageCreditsUserBalanceEntity.class);
-        verify(repository).save(captor.capture());
-        assertThat(captor.getValue().getCurrentValue(), is(MIN_BALANCE));
+        assertThat(result.getValue(), is(BALANCE_NEAR_MIN - MIN_BALANCE));
     }
 
     @Test
     public void shouldReturnZeroValueWhenAlreadyAtMin() {
         mockPreferences(MIN_BALANCE, MAX_BALANCE, DEFAULT_BALANCE);
         doReturn(Optional.of(entityWithValue(MIN_BALANCE))).when(repository).findByUserId(USER_ID);
+        mockJdbcUpdate(MIN_BALANCE);
 
         final PlatformUsageCreditsUpdateEvent result = service.updateByEvent(deductionEvent(100));
 
         assertThat(result.getValue(), is(0));
-        verify(repository, never()).save(any(PlatformUsageCreditsUserBalanceEntity.class));
     }
 
     @Test
     public void shouldUseDefaultBalanceWhenNoRowExists() {
         mockPreferences(MIN_BALANCE, MAX_BALANCE, DEFAULT_BALANCE);
         doReturn(Optional.empty()).when(repository).findByUserId(USER_ID);
+        mockJdbcUpdate(DEFAULT_BALANCE + EVENT_VALUE);
 
-        final PlatformUsageCreditsUpdateEvent result = service.updateByEvent(increaseEvent(100));
+        final PlatformUsageCreditsUpdateEvent result = service.updateByEvent(increaseEvent(EVENT_VALUE));
 
-        assertThat(result.getValue(), is(100));
-        final ArgumentCaptor<PlatformUsageCreditsUserBalanceEntity> captor =
-                ArgumentCaptor.forClass(PlatformUsageCreditsUserBalanceEntity.class);
-        verify(repository).save(captor.capture());
-        assertThat(captor.getValue().getCurrentValue(), is(DEFAULT_BALANCE + 100));
-        assertThat(captor.getValue().getUserId(), is(USER_ID));
+        assertThat(result.getValue(), is(EVENT_VALUE));
     }
 
     @Test
     public void shouldUpdateExistingRowOnEvent() {
         mockPreferences(MIN_BALANCE, MAX_BALANCE, DEFAULT_BALANCE);
-        final PlatformUsageCreditsUserBalanceEntity entity = entityWithValue(2000);
-        doReturn(Optional.of(entity)).when(repository).findByUserId(USER_ID);
+        doReturn(Optional.of(entityWithValue(CURRENT_BALANCE))).when(repository).findByUserId(USER_ID);
+        mockJdbcUpdate(CURRENT_BALANCE + EVENT_VALUE);
 
-        service.updateByEvent(increaseEvent(100));
+        service.updateByEvent(increaseEvent(EVENT_VALUE));
 
-        verify(repository).save(entity);
+        verify(repository).atomicUpdateBalance(any(), anyInt(), anyInt(), anyInt(), anyInt());
     }
 
     @Test
     public void shouldCreateNewRowWhenNoBalanceExists() {
         mockPreferences(MIN_BALANCE, MAX_BALANCE, DEFAULT_BALANCE);
         doReturn(Optional.empty()).when(repository).findByUserId(USER_ID);
+        mockJdbcUpdate(DEFAULT_BALANCE + EVENT_VALUE);
 
-        service.updateByEvent(increaseEvent(100));
+        service.updateByEvent(increaseEvent(EVENT_VALUE));
 
-        final ArgumentCaptor<PlatformUsageCreditsUserBalanceEntity> captor =
-                ArgumentCaptor.forClass(PlatformUsageCreditsUserBalanceEntity.class);
-        verify(repository).save(captor.capture());
-        assertThat(captor.getValue().getUserId(), is(USER_ID));
-        assertThat(captor.getValue().getModifiedDate(), notNullValue());
+        verify(repository).atomicUpdateBalance(any(), anyInt(), anyInt(), anyInt(), anyInt());
     }
 
     private void mockPreferences(final int min, final int max, final int defaultValue) {
+        final PipelineUser user = pipelineUser();
+        doReturn(user).when(userManager).load(USER_ID);
         doReturn(new ContextualPreference(SystemPreferences.USAGE_CREDITS_MIN.getKey(), String.valueOf(min)))
                 .when(contextualPreferenceManager)
-                .search(Collections.singletonList(SystemPreferences.USAGE_CREDITS_MIN.getKey()), USER_ID);
+                .search(Collections.singletonList(SystemPreferences.USAGE_CREDITS_MIN.getKey()), user);
         doReturn(new ContextualPreference(SystemPreferences.USAGE_CREDITS_MAX.getKey(), String.valueOf(max)))
                 .when(contextualPreferenceManager)
-                .search(Collections.singletonList(SystemPreferences.USAGE_CREDITS_MAX.getKey()), USER_ID);
+                .search(Collections.singletonList(SystemPreferences.USAGE_CREDITS_MAX.getKey()), user);
         doReturn(new ContextualPreference(SystemPreferences.USAGE_CREDITS_DEFAULT.getKey(),
                         String.valueOf(defaultValue)))
                 .when(contextualPreferenceManager)
-                .search(Collections.singletonList(SystemPreferences.USAGE_CREDITS_DEFAULT.getKey()), USER_ID);
+                .search(Collections.singletonList(SystemPreferences.USAGE_CREDITS_DEFAULT.getKey()), user);
         doReturn(new ContextualPreference(SystemPreferences.USAGE_CREDITS_NOTIFICATION_THRESHOLD.getKey(),
                         String.valueOf(NOTIFICATION_THRESHOLD)))
                 .when(contextualPreferenceManager)
                 .search(Collections.singletonList(
-                        SystemPreferences.USAGE_CREDITS_NOTIFICATION_THRESHOLD.getKey()), USER_ID);
+                        SystemPreferences.USAGE_CREDITS_NOTIFICATION_THRESHOLD.getKey()), user);
     }
 
     @Test
     public void shouldNotifyWhenBalanceDropsBelowThreshold() {
         // BALANCE_BELOW_THRESHOLD=700 < absoluteValue=768 → notify
         mockPreferences(MIN_BALANCE, MAX_BALANCE, DEFAULT_BALANCE);
-        doReturn(Optional.of(entityWithValue(BALANCE_BELOW_THRESHOLD + 100)))
+        doReturn(Optional.of(entityWithValue(BALANCE_BELOW_THRESHOLD + EVENT_VALUE)))
                 .when(repository).findByUserId(USER_ID);
+        mockJdbcUpdate(BALANCE_BELOW_THRESHOLD);
 
-        service.updateByEvent(deductionEvent(100));
+        service.updateByEvent(deductionEvent(EVENT_VALUE));
 
         verify(notificationManager).notifyLowUsageCredits(USER_ID, BALANCE_BELOW_THRESHOLD);
     }
@@ -384,23 +373,30 @@ public class PlatformUsageCreditsUserBalanceServiceTest {
     public void shouldNotNotifyWhenBalanceIsAboveThreshold() {
         // BALANCE_ABOVE_THRESHOLD=800 >= absoluteValue=768 → no notify
         mockPreferences(MIN_BALANCE, MAX_BALANCE, DEFAULT_BALANCE);
-        doReturn(Optional.of(entityWithValue(BALANCE_ABOVE_THRESHOLD - 100)))
+        doReturn(Optional.of(entityWithValue(BALANCE_ABOVE_THRESHOLD - EVENT_VALUE)))
                 .when(repository).findByUserId(USER_ID);
+        mockJdbcUpdate(BALANCE_ABOVE_THRESHOLD);
 
-        service.updateByEvent(increaseEvent(100));
+        service.updateByEvent(increaseEvent(EVENT_VALUE));
 
         verify(notificationManager, never()).notifyLowUsageCredits(any(), anyInt());
     }
 
     @Test
     public void shouldNotNotifyWhenEventHasNoEffect() {
-        // balance already at MAX, INCREASE → actualValue=0, no save, no notify
+        // balance already at MAX, INCREASE → actualValue=0, no notify
         mockPreferences(MIN_BALANCE, MAX_BALANCE, DEFAULT_BALANCE);
         doReturn(Optional.of(entityWithValue(MAX_BALANCE))).when(repository).findByUserId(USER_ID);
+        mockJdbcUpdate(MAX_BALANCE);
 
-        service.updateByEvent(increaseEvent(100));
+        service.updateByEvent(increaseEvent(EVENT_VALUE));
 
         verify(notificationManager, never()).notifyLowUsageCredits(any(), anyInt());
+    }
+
+    private void mockJdbcUpdate(final int newBalance) {
+        doReturn(newBalance).when(repository)
+                .atomicUpdateBalance(any(), anyInt(), anyInt(), anyInt(), anyInt());
     }
 
     private PlatformUsageCreditsUserBalanceEntity entityWithValue(final int value) {

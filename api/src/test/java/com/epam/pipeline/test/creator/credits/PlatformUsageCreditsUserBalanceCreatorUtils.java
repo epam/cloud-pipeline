@@ -23,6 +23,7 @@ import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateEvent;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalanceFilterVO;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUserBalanceEntity;
+import com.epam.pipeline.entity.user.PipelineUser;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.time.LocalDateTime;
@@ -45,9 +46,18 @@ public interface PlatformUsageCreditsUserBalanceCreatorUtils {
     int NOTIFICATION_THRESHOLD = 25;
     int BALANCE_BELOW_THRESHOLD = 700;
     int BALANCE_ABOVE_THRESHOLD = 800;
+    int CURRENT_BALANCE = 2000;
+    int EVENT_VALUE = 100;
+    int BALANCE_NEAR_MAX = 2900;
+    int BALANCE_NEAR_MIN = 50;
     String OPERATION_GT = ">";
-    String OPERATION_LT = "<";
-    String OPERATION_EQ = "=";
+
+    static PipelineUser pipelineUser() {
+        final PipelineUser user = new PipelineUser();
+        user.setId(USER_ID);
+        user.setRoles(Collections.emptyList());
+        return user;
+    }
 
     static PlatformUsageCreditsUserBalanceEntity balanceEntity() {
         return PlatformUsageCreditsUserBalanceEntity.builder()

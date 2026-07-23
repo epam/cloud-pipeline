@@ -164,26 +164,21 @@ public class ContextualPreferenceManager {
     }
 
     /**
-     * Searches for a contextual preference using an explicit target user as the lookup context
-     * instead of the currently authenticated user.
-     *
-     * <p>Useful when the caller (e.g. a background monitoring service) is not the user whose
-     * preferences should be consulted. The USER- and ROLE-level resources are built from the
-     * target user's data, so any per-user or per-role overrides are correctly honoured.
+     * Searches for a contextual preference using an already-loaded user as the lookup context.
+     * Prefer this overload when the caller has already loaded the user to avoid a redundant DB call.
      *
      * @param preferences list of preference key names to search
-     * @param userId      ID of the user whose USER- and ROLE-level overrides should be consulted
+     * @param user        the user whose USER- and ROLE-level overrides should be consulted
      * @throws IllegalArgumentException if no preference is found
      */
-    public ContextualPreference search(final List<String> preferences, final Long userId) {
+    public ContextualPreference search(final List<String> preferences, final PipelineUser user) {
         validateNames(preferences);
-        final PipelineUser targetUser = userManager.load(userId);
         final List<ContextualPreferenceExternalResource> allResources = new ArrayList<>();
-        allResources.add(userResource(targetUser));
-        allResources.addAll(rolesResources(targetUser.getRoles()));
+        allResources.add(userResource(user));
+        allResources.addAll(rolesResources(user.getRoles()));
         return contextualPreferenceHandler.search(preferences, allResources)
                 .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
-                        MessageConstants.ERROR_CONTEXTUAL_PREFERENCE_NOT_FOUND, preferences, userId)));
+                        MessageConstants.ERROR_CONTEXTUAL_PREFERENCE_NOT_FOUND, preferences, user.getId())));
     }
 
     /**

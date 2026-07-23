@@ -83,6 +83,6 @@ public class PlatformUsageCreditsUserBalanceApiServiceTest extends AbstractAclTe
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyResetForNonAdmin() {
         assertThrows(AccessDeniedException.class,
-                () -> apiService.reset(RESET_VALUE, Collections.singletonList(USER_ID)));
+            () -> apiService.reset(RESET_VALUE, Collections.singletonList(USER_ID)));
     }
 }

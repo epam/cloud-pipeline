@@ -22,22 +22,23 @@ import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateEvent;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalanceFilterVO;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUserBalanceEntity;
+import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.mapper.credits.PlatformUsageCreditsUserBalanceMapper;
 import com.epam.pipeline.repository.credits.PlatformUsageCreditsUserBalanceRepository;
 import com.epam.pipeline.repository.credits.PlatformUsageCreditsUserBalanceSpecification;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
 
 import org.apache.commons.collections4.CollectionUtils;
 
@@ -60,16 +61,26 @@ import java.util.stream.StreamSupport;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class PlatformUsageCreditsUserBalanceService {
 
     private final PlatformUsageCreditsUserBalanceRepository repository;
     private final PlatformUsageCreditsUserBalanceMapper mapper;
     private final ContextualPreferenceManager contextualPreferenceManager;
+    private final NotificationManager notificationManager;
+    private final UserManager userManager;
 
-    @Autowired
-    @Lazy
-    private NotificationManager notificationManager;
+    public PlatformUsageCreditsUserBalanceService(
+            final PlatformUsageCreditsUserBalanceRepository repository,
+            final PlatformUsageCreditsUserBalanceMapper mapper,
+            final ContextualPreferenceManager contextualPreferenceManager,
+            @Lazy final NotificationManager notificationManager,
+            @Lazy final UserManager userManager) {
+        this.repository = repository;
+        this.mapper = mapper;
+        this.contextualPreferenceManager = contextualPreferenceManager;
+        this.notificationManager = notificationManager;
+        this.userManager = userManager;
+    }
 
     /**
      * Returns a paged, optionally filtered list of user balances.
@@ -135,10 +146,17 @@ public class PlatformUsageCreditsUserBalanceService {
     public void reset(final int value, @Nullable final List<Long> userIds) {
         final LocalDateTime now = DateUtils.nowUTC();
         if (CollectionUtils.isNotEmpty(userIds)) {
-            userIds.forEach(userId -> validateResetValue(value, userId));
+            userIds.forEach(userId -> {
+                final PipelineUser user = userManager.load(userId);
+                final int min = getIntPreference(SystemPreferences.USAGE_CREDITS_MIN, user);
+                final int max = getIntPreference(SystemPreferences.USAGE_CREDITS_MAX, user);
+                validateResetValue(value, min, max, userId);
+            });
             userIds.forEach(userId -> upsertBalance(value, now, userId));
         } else {
+            log.debug("Resetting credits balance to {} for all users", value);
             repository.resetAll(value);
+            log.debug("Credits balance reset to {} completed for all users", value);
         }
     }
 
@@ -155,56 +173,63 @@ public class PlatformUsageCreditsUserBalanceService {
      * event), nothing is written to the database and the returned event has {@code value = 0}.
      *
      * @param event the event to apply; {@code value} must be positive; direction is {@code incidentType}
-     * @return a copy of the event with {@code value} set to the actual amount applied
+     * @return the event with {@code value} set to the actual amount applied
      */
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     @Transactional
     public PlatformUsageCreditsUpdateEvent updateByEvent(final PlatformUsageCreditsUpdateEvent event) {
-        final Optional<PlatformUsageCreditsUserBalanceEntity> existing =
-                repository.findByUserId(event.getUserId());
-        final int currentBalance = existing
+        Assert.notNull(event, "Credits event must not be null");
+        Assert.notNull(event.getUserId(), "Credits event userId must not be null");
+        Assert.notNull(event.getIncidentType(), "Credits event incidentType must not be null");
+        final Long userId = event.getUserId();
+        final PipelineUser user = userManager.load(userId);
+        final int minBalance = getIntPreference(SystemPreferences.USAGE_CREDITS_MIN, user);
+        final int maxBalance = getIntPreference(SystemPreferences.USAGE_CREDITS_MAX, user);
+        final int defaultBalance = getIntPreference(SystemPreferences.USAGE_CREDITS_DEFAULT, user);
+        final int threshold = getIntPreference(SystemPreferences.USAGE_CREDITS_NOTIFICATION_THRESHOLD, user);
+
+        final int oldBalance = repository.findByUserId(userId)
                 .map(PlatformUsageCreditsUserBalanceEntity::getCurrentValue)
-                .orElseGet(() -> getIntPreference(SystemPreferences.USAGE_CREDITS_DEFAULT, event.getUserId()));
+                .orElse(defaultBalance);
 
-        final int minBalance = getIntPreference(SystemPreferences.USAGE_CREDITS_MIN, event.getUserId());
-        final int maxBalance = getIntPreference(SystemPreferences.USAGE_CREDITS_MAX, event.getUserId());
+        final int delta = ActionType.INCREASE.equals(event.getIncidentType())
+                ? event.getValue() : -event.getValue();
 
-        final int rawNewBalance = ActionType.INCREASE.equals(event.getIncidentType())
-                ? currentBalance + event.getValue()
-                : currentBalance - event.getValue();
+        final int newBalance = repository.atomicUpdateBalance(
+                userId, delta, defaultBalance, minBalance, maxBalance);
 
-        final int clampedBalance = Math.max(minBalance, Math.min(maxBalance, rawNewBalance));
-        final int actualValue = Math.abs(clampedBalance - currentBalance);
+        final int actualValue = Math.abs(newBalance - oldBalance);
         event.setValue(actualValue);
 
         if (actualValue == 0) {
             log.info("Credits event for user {} has no effect: balance already at boundary {}",
-                    event.getUserId(), currentBalance);
+                    userId, oldBalance);
             return event;
         }
 
-        final PlatformUsageCreditsUserBalanceEntity entity = existing
-                .orElseGet(() -> PlatformUsageCreditsUserBalanceEntity.builder()
-                        .userId(event.getUserId())
-                        .build());
-        entity.setCurrentValue(clampedBalance);
-        entity.setModifiedDate(DateUtils.nowUTC());
-        repository.save(entity);
+        log.debug("Credits balance updated for user {}: {} -> {} (actual delta={})",
+                userId, oldBalance, newBalance, actualValue);
 
-        if (!isNotificationThresholdExceeded(clampedBalance, event.getUserId())) {
-            notificationManager.notifyLowUsageCredits(event.getUserId(), clampedBalance);
+        if (isBelowNotificationThreshold(newBalance, minBalance, maxBalance, threshold)) {
+            log.debug("Balance {} for user {} is below notification threshold, sending notification",
+                    newBalance, userId);
+            try {
+                notificationManager.notifyLowUsageCredits(userId, newBalance);
+            } catch (Exception e) {
+                log.warn("Failed to send low credits notification", e);
+            }
         }
 
         return event;
     }
 
-    private int getIntPreference(final AbstractSystemPreference.IntPreference intPreference, final Long userId) {
+    private int getIntPreference(final AbstractSystemPreference.IntPreference intPreference,
+                                  final PipelineUser user) {
         return Integer.parseInt(contextualPreferenceManager.search(
-                Collections.singletonList(intPreference.getKey()), userId).getValue());
+                Collections.singletonList(intPreference.getKey()), user).getValue());
     }
 
-    private void validateResetValue(final int value, final Long userId) {
-        final int min = getIntPreference(SystemPreferences.USAGE_CREDITS_MIN, userId);
-        final int max = getIntPreference(SystemPreferences.USAGE_CREDITS_MAX, userId);
+    private void validateResetValue(final int value, final int min, final int max, final Long userId) {
         if (value < min || value > max) {
             throw new IllegalArgumentException(String.format(
                     "Reset value %d is out of allowed range [%d, %d] for user %d", value, min, max, userId));
@@ -213,17 +238,19 @@ public class PlatformUsageCreditsUserBalanceService {
 
     private void upsertBalance(final int value, final LocalDateTime now, final Long userId) {
         final PlatformUsageCreditsUserBalanceEntity entity = repository.findByUserId(userId)
-                .orElseGet(() -> PlatformUsageCreditsUserBalanceEntity.builder().userId(userId).build());
+                .orElseGet(() -> {
+                    log.debug("No existing balance row for user {}, creating new", userId);
+                    return PlatformUsageCreditsUserBalanceEntity.builder().userId(userId).build();
+                });
         entity.setCurrentValue(value);
         entity.setModifiedDate(now);
         repository.save(entity);
+        log.debug("Saved credits balance {} for user {}", value, userId);
     }
 
-    private boolean isNotificationThresholdExceeded(final int currentValue, final Long userId) {
-        final int min = getIntPreference(SystemPreferences.USAGE_CREDITS_MIN, userId);
-        final int max = getIntPreference(SystemPreferences.USAGE_CREDITS_MAX, userId);
-        final int threshold = getIntPreference(SystemPreferences.USAGE_CREDITS_NOTIFICATION_THRESHOLD, userId);
+    private boolean isBelowNotificationThreshold(final int currentValue, final int min, final int max,
+                                                  final int threshold) {
         final double absoluteValue = min + (threshold / 100.0) * (max - min);
-        return currentValue >= absoluteValue;
+        return currentValue < absoluteValue;
     }
 }

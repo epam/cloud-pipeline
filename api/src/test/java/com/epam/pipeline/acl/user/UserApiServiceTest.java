@@ -55,7 +55,6 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING_
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 public class UserApiServiceTest extends AbstractAclTest {

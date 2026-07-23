@@ -75,11 +75,13 @@ public class PlatformUsageCreditsUserBalanceControllerTest extends AbstractContr
 
     @Test
     @WithMockUser
-    public void shouldResetForSpecificUser() {
+    public void shouldResetForSpecificUser() throws Exception {
+        final String content = getObjectMapper().writeValueAsString(Collections.singletonList(USER_ID));
+
         final MvcResult result = performRequest(
                 post(RESET_URL)
                         .param("value", String.valueOf(RESET_VALUE))
-                        .param("userIds", String.valueOf(USER_ID)));
+                        .content(content));
 
         verify(mockApiService).reset(RESET_VALUE, Collections.singletonList(USER_ID));
         assertResponse(result, null, VOID_TYPE);

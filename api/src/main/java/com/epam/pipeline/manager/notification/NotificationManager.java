@@ -739,6 +739,24 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         monitoringNotificationDao.createMonitoringNotification(message);
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void notifyLowUsageCredits(final Long userId, final int creditsBalance) {
+        final NotificationType type = NotificationType.LOW_USAGE_CREDITS;
+        final NotificationSettings settings = settingsManager.load(type);
+        if (settings == null || !settings.isEnabled() || settings.getTemplateId() == 0) {
+            log.info(messageHelper.getMessage(MessageConstants.INFO_NOTIFICATION_TEMPLATE_NOT_CONFIGURED,
+                    "usage credits"));
+            return;
+        }
+        final PipelineUser user = userManager.load(userId);
+        final NotificationMessage message = new NotificationMessage();
+        message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
+        message.setTemplateParameters(parameterManager.build(type, user, creditsBalance));
+        message.setToUserId(userId);
+        message.setCopyUserIds(getCCUsers(settings));
+        saveNotification(message);
+    }
+
     private List<Long> mapRecipientsToUserIds(final List<? extends Sid> recipients) {
         final Stream<PipelineUser> plainUsersStream = recipients.stream()
                 .filter(Sid::isPrincipal)
@@ -975,22 +993,5 @@ public class NotificationManager implements NotificationService { // TODO: rewri
             default:
                 return false;
         }
-    }
-
-    @Transactional(propagation = Propagation.REQUIRED)
-    public void notifyLowUsageCredits(final Long userId, final int creditsBalance) {
-        final NotificationType type = NotificationType.LOW_USAGE_CREDITS;
-        final NotificationSettings settings = settingsManager.load(type);
-        if (settings == null || !settings.isEnabled() || settings.getTemplateId() == 0) {
-            log.info("No template configured for {} notification or it was disabled!", type);
-            return;
-        }
-        final PipelineUser user = userManager.load(userId);
-        final NotificationMessage message = new NotificationMessage();
-        message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
-        message.setTemplateParameters(parameterManager.build(type, user, creditsBalance));
-        message.setToUserId(userId);
-        message.setCopyUserIds(getCCUsers(settings));
-        saveNotification(message);
     }
 }

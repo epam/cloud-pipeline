@@ -47,6 +47,12 @@ public class PlatformUsageCreditsUserBalanceRepositoryTest extends AbstractJpaTe
     private static final int VALUE_HIGH = 2000;
     private static final int VALUE_LOW = 500;
     private static final int RESET_VALUE = 1500;
+    private static final int MIN_BALANCE = 24;
+    private static final int MAX_BALANCE = 3000;
+    private static final int DEFAULT_BALANCE = 2000;
+    private static final int DELTA = 100;
+    private static final int BALANCE_NEAR_MAX = 2950;
+    private static final int BALANCE_NEAR_MIN = 50;
 
     @Autowired
     private PlatformUsageCreditsUserBalanceRepository repository;
@@ -279,6 +285,91 @@ public class PlatformUsageCreditsUserBalanceRepositoryTest extends AbstractJpaTe
                         new PageRequest(0, 10));
 
         assertThat(page.getTotalElements(), is(2L));
+    }
+
+    @Test
+    public void shouldIncreaseBalanceAtomicallyAndReturnNewValue() {
+        repository.save(entity(user1.getId(), VALUE_HIGH));
+        entityManager.flush();
+        entityManager.clear();
+
+        final int result = repository.atomicUpdateBalance(
+                user1.getId(), DELTA, DEFAULT_BALANCE, MIN_BALANCE, MAX_BALANCE);
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(result, is(VALUE_HIGH + DELTA));
+        assertThat(repository.findByUserId(user1.getId()).get().getCurrentValue(), is(VALUE_HIGH + DELTA));
+    }
+
+    @Test
+    public void shouldDeductBalanceAtomicallyAndReturnNewValue() {
+        repository.save(entity(user1.getId(), VALUE_HIGH));
+        entityManager.flush();
+        entityManager.clear();
+
+        final int result = repository.atomicUpdateBalance(
+                user1.getId(), -DELTA, DEFAULT_BALANCE, MIN_BALANCE, MAX_BALANCE);
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(result, is(VALUE_HIGH - DELTA));
+        assertThat(repository.findByUserId(user1.getId()).get().getCurrentValue(), is(VALUE_HIGH - DELTA));
+    }
+
+    @Test
+    public void shouldClampIncreaseToMax() {
+        repository.save(entity(user1.getId(), BALANCE_NEAR_MAX));
+        entityManager.flush();
+        entityManager.clear();
+
+        final int result = repository.atomicUpdateBalance(
+                user1.getId(), DELTA * 2, DEFAULT_BALANCE, MIN_BALANCE, MAX_BALANCE);
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(result, is(MAX_BALANCE));
+        assertThat(repository.findByUserId(user1.getId()).get().getCurrentValue(), is(MAX_BALANCE));
+    }
+
+    @Test
+    public void shouldClampDeductionToMin() {
+        repository.save(entity(user1.getId(), BALANCE_NEAR_MIN));
+        entityManager.flush();
+        entityManager.clear();
+
+        final int result = repository.atomicUpdateBalance(
+                user1.getId(), -DELTA, DEFAULT_BALANCE, MIN_BALANCE, MAX_BALANCE);
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(result, is(MIN_BALANCE));
+        assertThat(repository.findByUserId(user1.getId()).get().getCurrentValue(), is(MIN_BALANCE));
+    }
+
+    @Test
+    public void shouldCreateRowFromDefaultBalanceWhenNoRowExists() {
+        // user1 has no balance row
+        final int result = repository.atomicUpdateBalance(
+                user1.getId(), DELTA, DEFAULT_BALANCE, MIN_BALANCE, MAX_BALANCE);
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(result, is(DEFAULT_BALANCE + DELTA));
+        assertThat(repository.findByUserId(user1.getId()).get().getCurrentValue(), is(DEFAULT_BALANCE + DELTA));
+    }
+
+    @Test
+    public void shouldClampDefaultPlusDeltaToMaxOnFirstInsert() {
+        // no row; default + delta would exceed max
+        final int highDefault = MAX_BALANCE - DELTA / 2;
+        final int result = repository.atomicUpdateBalance(
+                user1.getId(), DELTA, highDefault, MIN_BALANCE, MAX_BALANCE);
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(result, is(MAX_BALANCE));
+        assertThat(repository.findByUserId(user1.getId()).get().getCurrentValue(), is(MAX_BALANCE));
     }
 
     private static PlatformUsageCreditsUserBalanceEntity entity(final Long userId, final int value) {
