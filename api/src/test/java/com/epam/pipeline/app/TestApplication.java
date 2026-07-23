@@ -27,6 +27,7 @@ import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManager;
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
+import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.cluster.performancemonitoring.ESMonitoringManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolUsageService;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManager;
@@ -200,6 +201,9 @@ public class TestApplication {
 
     @MockBean
     public AccessCodeRepository accessCodeRepository;
+
+    @MockBean
+    public KubernetesManager kubernetesManager;
 
     @MockBean
     public AccessCodeCleaner accessCodeCleaner;
