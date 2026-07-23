@@ -1566,6 +1566,8 @@ public class SystemPreferences {
                     CommonUtils.toMap(Pair.of("CPU", 1), Pair.of("GPU", 100)),
                     new TypeReference<Map<String, Integer>>() {}, USAGE_CREDITS_GROUP,
                     isNullOrValidJson(new TypeReference<Map<String, Integer>>() {}));
+    public static final IntPreference USAGE_CREDITS_NOTIFICATION_THRESHOLD = new IntPreference(
+            "usage.credits.notification.threshold", 25, USAGE_CREDITS_GROUP, isGreaterThan(0));
 
     // Lustre FS
     public static final BooleanPreference LUSTRE_FS_SCALE_ENABLED = new BooleanPreference(

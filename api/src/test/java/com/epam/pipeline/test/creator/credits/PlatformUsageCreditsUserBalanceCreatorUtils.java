@@ -41,6 +41,10 @@ public interface PlatformUsageCreditsUserBalanceCreatorUtils {
     int DEFAULT_BALANCE = 2000;
     int MIN_BALANCE = 24;
     int MAX_BALANCE = 3000;
+    // threshold 25% → absoluteValue = 24 + 0.25*(3000-24) = 768
+    int NOTIFICATION_THRESHOLD = 25;
+    int BALANCE_BELOW_THRESHOLD = 700;
+    int BALANCE_ABOVE_THRESHOLD = 800;
     String OPERATION_GT = ">";
     String OPERATION_LT = "<";
     String OPERATION_EQ = "=";

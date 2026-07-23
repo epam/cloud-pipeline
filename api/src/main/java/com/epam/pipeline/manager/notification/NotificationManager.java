@@ -976,4 +976,21 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                 return false;
         }
     }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void notifyLowUsageCredits(final Long userId, final int creditsBalance) {
+        final NotificationType type = NotificationType.LOW_USAGE_CREDITS;
+        final NotificationSettings settings = settingsManager.load(type);
+        if (settings == null || !settings.isEnabled() || settings.getTemplateId() == 0) {
+            log.info("No template configured for {} notification or it was disabled!", type);
+            return;
+        }
+        final PipelineUser user = userManager.load(userId);
+        final NotificationMessage message = new NotificationMessage();
+        message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
+        message.setTemplateParameters(parameterManager.build(type, user, creditsBalance));
+        message.setToUserId(userId);
+        message.setCopyUserIds(getCCUsers(settings));
+        saveNotification(message);
+    }
 }

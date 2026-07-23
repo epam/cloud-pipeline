@@ -23,9 +23,11 @@ import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalanceFilterVO;
 import com.epam.pipeline.entity.contextual.ContextualPreference;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUserBalanceEntity;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
+import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.mapper.credits.PlatformUsageCreditsUserBalanceMapper;
 import com.epam.pipeline.repository.credits.PlatformUsageCreditsUserBalanceRepository;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.PageImpl;
@@ -38,10 +40,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.BALANCE_ABOVE_THRESHOLD;
+import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.BALANCE_BELOW_THRESHOLD;
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.BALANCE_VALUE;
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.DEFAULT_BALANCE;
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.MAX_BALANCE;
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.MIN_BALANCE;
+import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.NOTIFICATION_THRESHOLD;
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.RESET_VALUE;
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.USER_ID;
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.balanceDto;
@@ -68,8 +73,14 @@ public class PlatformUsageCreditsUserBalanceServiceTest {
             mock(PlatformUsageCreditsUserBalanceMapper.class);
     private final ContextualPreferenceManager contextualPreferenceManager =
             mock(ContextualPreferenceManager.class);
-    private final PlatformUsageCreditsUserBalanceService service =
-            new PlatformUsageCreditsUserBalanceService(repository, mapper, contextualPreferenceManager);
+    private final NotificationManager notificationManager =
+            mock(NotificationManager.class);
+    private final PlatformUsageCreditsUserBalanceService service;
+
+    {
+        service = new PlatformUsageCreditsUserBalanceService(repository, mapper, contextualPreferenceManager);
+        ReflectionTestUtils.setField(service, "notificationManager", notificationManager);
+    }
 
     @Test
     public void shouldReturnPagedBalancesOnFilter() {
@@ -350,6 +361,46 @@ public class PlatformUsageCreditsUserBalanceServiceTest {
                         String.valueOf(defaultValue)))
                 .when(contextualPreferenceManager)
                 .search(Collections.singletonList(SystemPreferences.USAGE_CREDITS_DEFAULT.getKey()), USER_ID);
+        doReturn(new ContextualPreference(SystemPreferences.USAGE_CREDITS_NOTIFICATION_THRESHOLD.getKey(),
+                        String.valueOf(NOTIFICATION_THRESHOLD)))
+                .when(contextualPreferenceManager)
+                .search(Collections.singletonList(
+                        SystemPreferences.USAGE_CREDITS_NOTIFICATION_THRESHOLD.getKey()), USER_ID);
+    }
+
+    @Test
+    public void shouldNotifyWhenBalanceDropsBelowThreshold() {
+        // BALANCE_BELOW_THRESHOLD=700 < absoluteValue=768 → notify
+        mockPreferences(MIN_BALANCE, MAX_BALANCE, DEFAULT_BALANCE);
+        doReturn(Optional.of(entityWithValue(BALANCE_BELOW_THRESHOLD + 100)))
+                .when(repository).findByUserId(USER_ID);
+
+        service.updateByEvent(deductionEvent(100));
+
+        verify(notificationManager).notifyLowUsageCredits(USER_ID, BALANCE_BELOW_THRESHOLD);
+    }
+
+    @Test
+    public void shouldNotNotifyWhenBalanceIsAboveThreshold() {
+        // BALANCE_ABOVE_THRESHOLD=800 >= absoluteValue=768 → no notify
+        mockPreferences(MIN_BALANCE, MAX_BALANCE, DEFAULT_BALANCE);
+        doReturn(Optional.of(entityWithValue(BALANCE_ABOVE_THRESHOLD - 100)))
+                .when(repository).findByUserId(USER_ID);
+
+        service.updateByEvent(increaseEvent(100));
+
+        verify(notificationManager, never()).notifyLowUsageCredits(any(), anyInt());
+    }
+
+    @Test
+    public void shouldNotNotifyWhenEventHasNoEffect() {
+        // balance already at MAX, INCREASE → actualValue=0, no save, no notify
+        mockPreferences(MIN_BALANCE, MAX_BALANCE, DEFAULT_BALANCE);
+        doReturn(Optional.of(entityWithValue(MAX_BALANCE))).when(repository).findByUserId(USER_ID);
+
+        service.updateByEvent(increaseEvent(100));
+
+        verify(notificationManager, never()).notifyLowUsageCredits(any(), anyInt());
     }
 
     private PlatformUsageCreditsUserBalanceEntity entityWithValue(final int value) {

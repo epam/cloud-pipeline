@@ -24,6 +24,7 @@ import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalanceFilterVO;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUserBalanceEntity;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
+import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.mapper.credits.PlatformUsageCreditsUserBalanceMapper;
@@ -31,6 +32,8 @@ import com.epam.pipeline.repository.credits.PlatformUsageCreditsUserBalanceRepos
 import com.epam.pipeline.repository.credits.PlatformUsageCreditsUserBalanceSpecification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -63,6 +66,10 @@ public class PlatformUsageCreditsUserBalanceService {
     private final PlatformUsageCreditsUserBalanceRepository repository;
     private final PlatformUsageCreditsUserBalanceMapper mapper;
     private final ContextualPreferenceManager contextualPreferenceManager;
+
+    @Autowired
+    @Lazy
+    private NotificationManager notificationManager;
 
     /**
      * Returns a paged, optionally filtered list of user balances.
@@ -183,6 +190,10 @@ public class PlatformUsageCreditsUserBalanceService {
         entity.setModifiedDate(DateUtils.nowUTC());
         repository.save(entity);
 
+        if (!isNotificationThresholdExceeded(clampedBalance, event.getUserId())) {
+            notificationManager.notifyLowUsageCredits(event.getUserId(), clampedBalance);
+        }
+
         return event;
     }
 
@@ -206,5 +217,13 @@ public class PlatformUsageCreditsUserBalanceService {
         entity.setCurrentValue(value);
         entity.setModifiedDate(now);
         repository.save(entity);
+    }
+
+    private boolean isNotificationThresholdExceeded(final int currentValue, final Long userId) {
+        final int min = getIntPreference(SystemPreferences.USAGE_CREDITS_MIN, userId);
+        final int max = getIntPreference(SystemPreferences.USAGE_CREDITS_MAX, userId);
+        final int threshold = getIntPreference(SystemPreferences.USAGE_CREDITS_NOTIFICATION_THRESHOLD, userId);
+        final double absoluteValue = min + (threshold / 100.0) * (max - min);
+        return currentValue >= absoluteValue;
     }
 }
