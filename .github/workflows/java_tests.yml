@@ -189,6 +189,7 @@ jobs:
         image: postgres:16.4
         env:
           POSTGRES_DB: pipeline_test
+          POSTGRES_USER: pipeline
           POSTGRES_HOST_AUTH_METHOD: trust
         ports:
           - 5432:5432
