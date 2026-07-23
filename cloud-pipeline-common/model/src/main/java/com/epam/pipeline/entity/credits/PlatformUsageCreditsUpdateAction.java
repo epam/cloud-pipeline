@@ -29,7 +29,8 @@ public class PlatformUsageCreditsUpdateAction {
 
     public enum ActionType {
         INCREASE,
-        DEDUCTION
+        DEDUCTION,
+        RESET
     }
 
     private ActionType type;
