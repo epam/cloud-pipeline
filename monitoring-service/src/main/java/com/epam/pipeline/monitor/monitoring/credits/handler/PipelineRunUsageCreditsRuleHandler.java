@@ -40,6 +40,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -102,15 +103,24 @@ public class PipelineRunUsageCreditsRuleHandler implements PlatformUsageCreditsR
                     continue;
                 }
 
-                final Set<Long> processedRuns = buildProcessedRunIds(rule, user, matchingRuns);
+                final List<PlatformUsageCreditsUpdateEvent> existingEvents = getExistingEvents(
+                        rule, user, matchingRuns
+                );
 
                 if (rule.getAction().isPerIncident()) {
+                    final Set<Long> processedRuns = existingEvents.stream()
+                            .map(PlatformUsageCreditsUpdateEvent::getEntity)
+                            .map(
+                                    securedEntityVO -> Optional.ofNullable(securedEntityVO)
+                                            .map(SecuredEntityVO::getEntityId).orElse(null)
+                            ).filter(Objects::nonNull)
+                            .collect(Collectors.toSet());
                     matchingRuns.stream()
                             .filter(r -> !processedRuns.contains(r.getId()))
                             .forEach(run -> newEvents.add(buildEvent(rule, user, run)));
                     log.debug("Rule '{}': {} matching run(s) for user '{}', {} already processed",
                             rule.getName(), matchingRuns.size(), owner, processedRuns.size());
-                } else if (processedRuns.isEmpty()) {
+                } else if (existingEvents.isEmpty()) {
                     newEvents.add(buildEvent(rule, user, matchingRuns.get(0)));
                     log.debug("Rule '{}': firing single event for user '{}'", rule.getName(), owner);
                 } else {
@@ -123,9 +133,9 @@ public class PipelineRunUsageCreditsRuleHandler implements PlatformUsageCreditsR
         return newEvents;
     }
 
-    private Set<Long> buildProcessedRunIds(final PlatformUsageCreditsUpdateRule rule,
-                                           final PipelineUser user,
-                                           final List<PipelineRun> matchingRuns) {
+    private List<PlatformUsageCreditsUpdateEvent> getExistingEvents(final PlatformUsageCreditsUpdateRule rule,
+                                                                    final PipelineUser user,
+                                                                    final List<PipelineRun> matchingRuns) {
         PlatformUsageCreditsEventFilterVO filter;
         if (rule.getAction().isPerIncident()) {
             filter = PlatformUsageCreditsEventFilterVO.builder()
@@ -144,12 +154,7 @@ public class PipelineRunUsageCreditsRuleHandler implements PlatformUsageCreditsR
                     .pageSize(matchingRuns.size())
                     .build();
         }
-        final List<PlatformUsageCreditsUpdateEvent> existing = client.filterPlatformUsageCreditsEvents(filter);
-        return existing.stream()
-                .map(PlatformUsageCreditsUpdateEvent::getEntity)
-                .filter(Objects::nonNull)
-                .map(SecuredEntityVO::getEntityId)
-                .collect(Collectors.toSet());
+        return client.filterPlatformUsageCreditsEvents(filter);
     }
 
     private PlatformUsageCreditsUpdateEvent buildEvent(final PlatformUsageCreditsUpdateRule rule,
