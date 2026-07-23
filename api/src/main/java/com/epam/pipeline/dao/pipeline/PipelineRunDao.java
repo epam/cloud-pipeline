@@ -1265,7 +1265,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             params.addValue(NODE_POOL_ID.name(), instance.map(RunInstance::getPoolId).orElse(null));
             params.addValue(INSTANCE_FALLBACK_TYPES.name(), instance
                     .map(RunInstance::getFallbackInstanceTypes)
-                    .map(JsonMapper::convertDataToJsonStringForQuery)
+                    .map(JsonMapper::convertListToJsonStringForQuery)
                     .orElse(null));
         }
 
