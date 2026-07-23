@@ -23,7 +23,6 @@ import com.epam.pipeline.dto.credits.PlatformUsageCreditsEventFilterVO;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsResetRequest;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateAction;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateEvent;
-import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateRequest;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateEventEntity;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -45,6 +44,7 @@ import org.springframework.util.Assert;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -62,33 +62,36 @@ public class PlatformUsageCreditsEventService {
     private final MessageHelper messageHelper;
 
     /**
-     * Applies balance update logic to each request, filters out zero-value results,
-     * and persists the remaining events. If {@code createdDate} is absent on a request,
-     * the current UTC time is used.
+     * Applies balance update logic to each event, filters out zero-value results,
+     * and persists the remaining events. Events without an {@code id} are always
+     * treated as new; events with an {@code id} are deduplicated against the DB.
+     * If {@code createdDate} is absent on an event, the current UTC time is used.
      *
-     * @param requests inbound update requests from the monitoring service
-     * @return persisted events, in the same order as the non-zero requests
+     * @param events inbound update events from the monitoring service or admin API
+     * @return persisted events, in the same order as the non-zero, non-duplicate input
      */
     @Transactional
-    public List<PlatformUsageCreditsUpdateEvent> process(final List<PlatformUsageCreditsUpdateRequest> requests) {
-        final List<PlatformUsageCreditsUpdateEvent> candidates = ListUtils.emptyIfNull(requests).stream()
-                .map(PlatformUsageCreditsUpdateEvent::fromRequest)
-                .collect(Collectors.toList());
-        if (candidates.isEmpty()) {
+    public List<PlatformUsageCreditsUpdateEvent> process(final List<PlatformUsageCreditsUpdateEvent> events) {
+        if (events.isEmpty()) {
             return Collections.emptyList();
         }
-        final Set<String> existingIds = usageCreditsEventRepository.findExistingIds(
-                candidates.stream().map(PlatformUsageCreditsUpdateEvent::getId).collect(Collectors.toList()));
-        final List<PlatformUsageCreditsUpdateEvent> events = candidates.stream()
+        final List<String> idsToCheck = events.stream()
+                .map(PlatformUsageCreditsUpdateEvent::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        final Set<String> existingIds = idsToCheck.isEmpty()
+                ? Collections.emptySet()
+                : usageCreditsEventRepository.findExistingIds(idsToCheck);
+        final List<PlatformUsageCreditsUpdateEvent> newEvents = events.stream()
                 .filter(event -> !existingIds.contains(event.getId()))
                 .map(this::applyBalanceUpdate)
                 .filter(event -> event.getValue() != 0)
                 .collect(Collectors.toList());
-        if (events.isEmpty()) {
+        if (newEvents.isEmpty()) {
             return Collections.emptyList();
         }
-        usageCreditsEventRepository.save(events.stream().map(mapper::toEntity).collect(Collectors.toList()));
-        return events;
+        usageCreditsEventRepository.save(newEvents.stream().map(mapper::toEntity).collect(Collectors.toList()));
+        return newEvents;
     }
 
     /**
@@ -133,8 +136,6 @@ public class PlatformUsageCreditsEventService {
                 : userManager.loadUsersById(resetRequest.getUserIds());
         final List<PlatformUsageCreditsUpdateEventEntity> events = users.stream()
                 .map(user -> PlatformUsageCreditsUpdateEventEntity.builder()
-                        // for reset operation we shouldn't deduplicate, to allow several resets
-                        .id(PlatformUsageCreditsUpdateEvent.computeId(null))
                         .userId(user.getId())
                         .incidentType(PlatformUsageCreditsUpdateAction.ActionType.RESET)
                         .value(resetRequest.getValue())

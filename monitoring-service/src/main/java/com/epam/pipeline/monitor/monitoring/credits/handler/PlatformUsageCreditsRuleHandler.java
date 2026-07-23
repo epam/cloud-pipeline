@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.monitor.monitoring.credits.handler;
 
-import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateRequest;
+import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateEvent;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateRule;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateRuleType;
 
@@ -25,6 +25,6 @@ import java.util.List;
 
 public interface PlatformUsageCreditsRuleHandler {
     PlatformUsageCreditsUpdateRuleType getRuleType();
-    List<PlatformUsageCreditsUpdateRequest> process(List<PlatformUsageCreditsUpdateRule> rules,
-                                                    LocalDateTime from, LocalDateTime till);
+    List<PlatformUsageCreditsUpdateEvent> process(List<PlatformUsageCreditsUpdateRule> rules,
+                                                   LocalDateTime from, LocalDateTime till);
 }

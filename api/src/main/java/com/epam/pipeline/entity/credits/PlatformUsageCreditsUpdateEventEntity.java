@@ -30,8 +30,10 @@ import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.Id;
+import javax.persistence.PrePersist;
 import javax.persistence.Table;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Getter
@@ -70,4 +72,11 @@ public class PlatformUsageCreditsUpdateEventEntity {
     @Convert(converter = TimestampConverter.class)
     @Column(name = "created_date", nullable = false)
     private LocalDateTime createdDate;
+
+    @PrePersist
+    void assignId() {
+        if (id == null) {
+            id = UUID.randomUUID().toString();
+        }
+    }
 }

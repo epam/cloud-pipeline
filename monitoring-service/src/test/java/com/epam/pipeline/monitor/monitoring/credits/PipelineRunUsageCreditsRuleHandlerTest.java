@@ -22,7 +22,6 @@ import com.epam.pipeline.monitor.monitoring.credits.handler.PipelineRunUsageCred
 import com.epam.pipeline.vo.credits.PlatformUsageCreditsEventFilterVO;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateAction;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateEvent;
-import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateRequest;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateRule;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateRuleType;
 import com.epam.pipeline.vo.SecuredEntityVO;
@@ -72,7 +71,7 @@ class PipelineRunUsageCreditsRuleHandlerTest {
     void noRunsFound() {
         when(client.filterRuns(any())).thenReturn(Collections.emptyList());
 
-        final List<PlatformUsageCreditsUpdateRequest> result =
+        final List<PlatformUsageCreditsUpdateEvent> result =
                 handler.process(Collections.singletonList(runStateRule()), null, now);
 
         assertEquals(Collections.emptyList(), result);
@@ -90,11 +89,11 @@ class PipelineRunUsageCreditsRuleHandlerTest {
         when(evaluator.matches(any(), any(), any())).thenReturn(true);
         when(client.filterPlatformUsageCreditsEvents(any())).thenReturn(Collections.emptyList());
 
-        final List<PlatformUsageCreditsUpdateRequest> result =
+        final List<PlatformUsageCreditsUpdateEvent> result =
                 handler.process(Collections.singletonList(rule), null, now);
 
         assertEquals(1, result.size());
-        final PlatformUsageCreditsUpdateRequest event = result.get(0);
+        final PlatformUsageCreditsUpdateEvent event = result.get(0);
         assertEquals(USER_ID, event.getUserId());
         assertEquals(RULE_ID, event.getRuleId());
         assertNotNull(event.getEntity());
@@ -119,7 +118,7 @@ class PipelineRunUsageCreditsRuleHandlerTest {
                                 .entity(SecuredEntityVO.from(PipelineRun.class, RUN_ID_1))
                                 .ruleId(RULE_ID).build()));
 
-        final List<PlatformUsageCreditsUpdateRequest> result =
+        final List<PlatformUsageCreditsUpdateEvent> result =
                 handler.process(Collections.singletonList(rule), null, now);
 
         assertEquals(1, result.size());
@@ -157,7 +156,7 @@ class PipelineRunUsageCreditsRuleHandlerTest {
         when(client.loadUserByName(OWNER)).thenReturn(user(USER_ID));
         when(evaluator.matches(any(), any(), any())).thenReturn(false);
 
-        final List<PlatformUsageCreditsUpdateRequest> result =
+        final List<PlatformUsageCreditsUpdateEvent> result =
                 handler.process(Collections.singletonList(runStateRule()), null, now);
 
         assertEquals(Collections.emptyList(), result);
@@ -169,7 +168,7 @@ class PipelineRunUsageCreditsRuleHandlerTest {
         when(client.filterRuns(any())).thenReturn(Collections.singletonList(run(RUN_ID_1, OWNER)));
         when(client.loadUserByName(OWNER)).thenReturn(null);
 
-        final List<PlatformUsageCreditsUpdateRequest> result =
+        final List<PlatformUsageCreditsUpdateEvent> result =
                 handler.process(Collections.singletonList(runStateRule()), null, now);
 
         assertEquals(Collections.emptyList(), result);
@@ -221,16 +220,16 @@ class PipelineRunUsageCreditsRuleHandlerTest {
         when(evaluator.matches(any(), any(), any())).thenReturn(true);
         when(client.filterPlatformUsageCreditsEvents(any())).thenReturn(Collections.emptyList());
 
-        final List<PlatformUsageCreditsUpdateRequest> result =
+        final List<PlatformUsageCreditsUpdateEvent> result =
                 handler.process(Collections.singletonList(runStateRule()), null, now);
 
         assertEquals(2, result.size());
         assertEquals(USER_ID, result.stream()
                 .filter(e -> e.getEntity() != null && e.getEntity().getEntityId() == RUN_ID_1).findFirst()
-                .map(PlatformUsageCreditsUpdateRequest::getUserId).orElse(null));
+                .map(PlatformUsageCreditsUpdateEvent::getUserId).orElse(null));
         assertEquals(userId2, result.stream()
                 .filter(e -> e.getEntity() != null && e.getEntity().getEntityId() == RUN_ID_2).findFirst()
-                .map(PlatformUsageCreditsUpdateRequest::getUserId).orElse(null));
+                .map(PlatformUsageCreditsUpdateEvent::getUserId).orElse(null));
     }
 
     @Test
@@ -244,7 +243,7 @@ class PipelineRunUsageCreditsRuleHandlerTest {
         when(evaluator.matches(any(), any(), any())).thenReturn(true);
         when(client.filterPlatformUsageCreditsEvents(any())).thenReturn(Collections.emptyList());
 
-        final List<PlatformUsageCreditsUpdateRequest> result =
+        final List<PlatformUsageCreditsUpdateEvent> result =
                 handler.process(Collections.singletonList(rule), null, now);
 
         assertEquals(1, result.size());
@@ -269,7 +268,7 @@ class PipelineRunUsageCreditsRuleHandlerTest {
                                 .entity(SecuredEntityVO.from(PipelineRun.class, RUN_ID_1))
                                 .build()));
 
-        final List<PlatformUsageCreditsUpdateRequest> result =
+        final List<PlatformUsageCreditsUpdateEvent> result =
                 handler.process(Collections.singletonList(rule), null, now);
 
         assertEquals(Collections.emptyList(), result);

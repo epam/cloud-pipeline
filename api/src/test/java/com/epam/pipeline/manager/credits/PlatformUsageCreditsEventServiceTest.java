@@ -22,7 +22,6 @@ import com.epam.pipeline.dto.credits.PlatformUsageCreditsEventFilterVO;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsResetRequest;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateAction;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateEvent;
-import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateRequest;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateEventEntity;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -41,6 +40,7 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -75,7 +75,7 @@ public class PlatformUsageCreditsEventServiceTest {
     public void processFiltersOutZeroValueRequests() {
         doReturn(Collections.<String>emptySet()).when(repository).findExistingIds(anyCollectionOf(String.class));
 
-        service.process(Collections.singletonList(request(USER_ID_1, 0)));
+        service.process(Collections.singletonList(event(USER_ID_1, 0)));
 
         verify(repository, never()).save(anyListOf(PlatformUsageCreditsUpdateEventEntity.class));
     }
@@ -87,7 +87,7 @@ public class PlatformUsageCreditsEventServiceTest {
                 .when(repository).save(anyListOf(PlatformUsageCreditsUpdateEventEntity.class));
 
         final List<PlatformUsageCreditsUpdateEvent> result =
-                service.process(Collections.singletonList(request(USER_ID_1, VALUE)));
+                service.process(Collections.singletonList(event(USER_ID_1, VALUE)));
 
         final ArgumentCaptor<List<PlatformUsageCreditsUpdateEventEntity>> captor =
                 ArgumentCaptor.forClass((Class) List.class);
@@ -100,28 +100,12 @@ public class PlatformUsageCreditsEventServiceTest {
     }
 
     @Test
-    public void processSetsCreatedDateWhenNull() {
-        final PlatformUsageCreditsUpdateRequest req = request(USER_ID_1, VALUE);
-        req.setCreatedDate(null);
-        doReturn(Collections.<String>emptySet()).when(repository).findExistingIds(anyCollectionOf(String.class));
-        doReturn(Collections.singletonList(entity(USER_ID_1, VALUE)))
-                .when(repository).save(anyListOf(PlatformUsageCreditsUpdateEventEntity.class));
-
-        service.process(Collections.singletonList(req));
-
-        final ArgumentCaptor<List<PlatformUsageCreditsUpdateEventEntity>> captor =
-                ArgumentCaptor.forClass((Class) List.class);
-        verify(repository).save(captor.capture());
-        assertThat(captor.getValue().get(0).getCreatedDate()).isNotNull();
-    }
-
-    @Test
     public void processSkipsDuplicateEventById() {
-        final String id = PlatformUsageCreditsUpdateEvent.fromRequest(request(USER_ID_1, VALUE)).getId();
+        final String id = UUID.randomUUID().toString();
         doReturn(Collections.singleton(id)).when(repository).findExistingIds(anyCollectionOf(String.class));
 
         final List<PlatformUsageCreditsUpdateEvent> result =
-                service.process(Collections.singletonList(request(USER_ID_1, VALUE)));
+                service.process(Collections.singletonList(eventWithId(USER_ID_1, VALUE, id)));
 
         verify(repository, never()).save(anyListOf(PlatformUsageCreditsUpdateEventEntity.class));
         assertThat(result).isEmpty();
@@ -133,7 +117,7 @@ public class PlatformUsageCreditsEventServiceTest {
         doReturn(Collections.singletonList(entity(USER_ID_1, VALUE)))
                 .when(repository).save(anyListOf(PlatformUsageCreditsUpdateEventEntity.class));
 
-        service.process(Collections.singletonList(request(USER_ID_1, VALUE)));
+        service.process(Collections.singletonList(event(USER_ID_1, VALUE)));
 
         verify(repository).save(anyListOf(PlatformUsageCreditsUpdateEventEntity.class));
     }
@@ -141,18 +125,30 @@ public class PlatformUsageCreditsEventServiceTest {
     @Test
     public void processPreservesCreatedDateWhenPresent() {
         final LocalDateTime createdDate = LocalDateTime.of(2026, 1, 1, 12, 0, 0);
-        final PlatformUsageCreditsUpdateRequest req = request(USER_ID_1, VALUE);
-        req.setCreatedDate(createdDate);
+        final PlatformUsageCreditsUpdateEvent ev = event(USER_ID_1, VALUE);
+        ev.setCreatedDate(createdDate);
         doReturn(Collections.<String>emptySet()).when(repository).findExistingIds(anyCollectionOf(String.class));
         doReturn(Collections.singletonList(entity(USER_ID_1, VALUE)))
                 .when(repository).save(anyListOf(PlatformUsageCreditsUpdateEventEntity.class));
 
-        service.process(Collections.singletonList(req));
+        service.process(Collections.singletonList(ev));
 
         final ArgumentCaptor<List<PlatformUsageCreditsUpdateEventEntity>> captor =
                 ArgumentCaptor.forClass((Class) List.class);
         verify(repository).save(captor.capture());
         assertThat(captor.getValue().get(0).getCreatedDate()).isEqualTo(createdDate);
+    }
+
+    @Test
+    public void processEventWithoutIdIsAlwaysNew() {
+        final PlatformUsageCreditsUpdateEvent ev = event(USER_ID_1, VALUE);
+        assertThat(ev.getId()).isNull();
+        doReturn(Collections.singletonList(entity(USER_ID_1, VALUE)))
+                .when(repository).save(anyListOf(PlatformUsageCreditsUpdateEventEntity.class));
+
+        service.process(Collections.singletonList(ev));
+
+        verify(repository).save(anyListOf(PlatformUsageCreditsUpdateEventEntity.class));
     }
 
     // filter
@@ -293,8 +289,18 @@ public class PlatformUsageCreditsEventServiceTest {
                 .containsExactlyInAnyOrder(USER_ID_1, USER_ID_2);
     }
 
-    private static PlatformUsageCreditsUpdateRequest request(final Long userId, final int value) {
-        return PlatformUsageCreditsUpdateRequest.builder()
+    private static PlatformUsageCreditsUpdateEvent event(final Long userId, final int value) {
+        return PlatformUsageCreditsUpdateEvent.builder()
+                .userId(userId)
+                .incidentType(PlatformUsageCreditsUpdateAction.ActionType.DEDUCTION)
+                .value(value)
+                .build();
+    }
+
+    private static PlatformUsageCreditsUpdateEvent eventWithId(final Long userId, final int value,
+                                                                final String id) {
+        return PlatformUsageCreditsUpdateEvent.builder()
+                .id(id)
                 .userId(userId)
                 .incidentType(PlatformUsageCreditsUpdateAction.ActionType.DEDUCTION)
                 .value(value)
