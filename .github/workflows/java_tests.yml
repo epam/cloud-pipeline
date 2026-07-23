@@ -206,7 +206,7 @@ jobs:
           java-version: "8"
           cache: "gradle"
       - name: Verify PostgreSQL connection
-        run: psql -h 127.0.0.1 -U postgres -d pipeline_test -c "SELECT 1"
+        run: psql -h 127.0.0.1 -U pipeline -d pipeline_test -c "SELECT 1"
       - name: Run elasticsearch agent tests
         run: ./gradlew :elasticsearch-agent:test --no-build-cache
       - uses: actions/upload-artifact@v4
