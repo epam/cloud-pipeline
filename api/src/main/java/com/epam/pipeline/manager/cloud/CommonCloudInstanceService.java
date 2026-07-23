@@ -131,11 +131,6 @@ public class CommonCloudInstanceService {
             instance.setNodeId(node[0]);
             instance.setNodeIP(node[1]);
             instance.setNodeName(node[2]);
-        } else if (node.length == 4) {
-            instance.setNodeId(node[0]);
-            instance.setNodeIP(node[1]);
-            instance.setNodeName(node[2]);
-            instance.setNodeType(node[3]);
         }
     }
 

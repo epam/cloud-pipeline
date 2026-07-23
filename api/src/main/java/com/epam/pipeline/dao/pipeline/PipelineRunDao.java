@@ -1263,10 +1263,10 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
                     instance.map(RunInstance::getCloudProvider).map(CloudProvider::name).orElse(null));
             params.addValue(NODE_PLATFORM.name(), instance.map(RunInstance::getNodePlatform).orElse(null));
             params.addValue(NODE_POOL_ID.name(), instance.map(RunInstance::getPoolId).orElse(null));
-            instance.ifPresent(ins ->
-                params.addValue(INSTANCE_FALLBACK_TYPES.name(),
-                        JsonMapper.convertDataToJsonStringForQuery(ins.getFallbackInstanceTypes()))
-            );
+            params.addValue(INSTANCE_FALLBACK_TYPES.name(), instance
+                    .map(RunInstance::getFallbackInstanceTypes)
+                    .map(JsonMapper::convertDataToJsonStringForQuery)
+                    .orElse(null));
         }
 
         static ResultSetExtractor<Collection<PipelineRun>> getRunGroupExtractor() {
@@ -1360,15 +1360,11 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             instance.setNodeIP(rs.getString(NODE_IP.name()));
             instance.setNodeType(rs.getString(NODE_TYPE.name()));
 
-            try {
-                String fallbackInstanceTypes = rs.getString(INSTANCE_FALLBACK_TYPES.name());
-                if (fallbackInstanceTypes != null && !fallbackInstanceTypes.equals("{}")) {
-                    final List<String> fallbackInstanceList =
-                            JsonMapper.parseData(fallbackInstanceTypes, new TypeReference<List<String>>() {});
-                    instance.setFallbackInstanceTypes(fallbackInstanceList);
-                }
-            } catch (SQLException e) {
-                log.error("Query doesn't include INSTANCE_FALLBACK_TYPES column!", e);
+            String fallbackInstanceTypes = rs.getString(INSTANCE_FALLBACK_TYPES.name());
+            if (fallbackInstanceTypes != null && !fallbackInstanceTypes.equals("[]")) {
+                final List<String> fallbackInstanceList =
+                        JsonMapper.parseData(fallbackInstanceTypes, new TypeReference<List<String>>() {});
+                instance.setFallbackInstanceTypes(fallbackInstanceList);
             }
 
             instance.setNodeImage(rs.getString(NODE_IMAGE.name()));
