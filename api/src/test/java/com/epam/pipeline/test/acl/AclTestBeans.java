@@ -136,6 +136,7 @@ import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preprocessing.NgsPreprocessingManager;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsEventService;
 import com.epam.pipeline.manager.credits.PlatformUsageCreditsRuleService;
 import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceService;
 import com.epam.pipeline.manager.quota.QuotaService;
@@ -585,6 +586,9 @@ public class AclTestBeans {
 
     @MockBean
     protected PlatformUsageCreditsUserBalanceService mockPlatformUsageCreditsUserBalanceService;
+
+    @MockBean
+    protected PlatformUsageCreditsEventService mockPlatformUsageCreditsEventService;
 
     @MockBean
     protected UsersUsageReportService usersUsageReportService;

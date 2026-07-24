@@ -17,14 +17,15 @@
 package com.epam.pipeline.acl.credits;
 
 import com.epam.pipeline.controller.PagedResult;
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsResetRequest;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalanceFilterVO;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsEventService;
 import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Nullable;
 import java.util.List;
 
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
@@ -33,16 +34,17 @@ import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
 @RequiredArgsConstructor
 public class PlatformUsageCreditsUserBalanceApiService {
 
-    private final PlatformUsageCreditsUserBalanceService manager;
+    private final PlatformUsageCreditsUserBalanceService userBalanceService;
+    private final PlatformUsageCreditsEventService eventService;
 
     @PreAuthorize(ADMIN_ONLY)
     public PagedResult<List<PlatformUsageCreditsUserBalance>> filter(
             final PlatformUsageCreditsUserBalanceFilterVO filter) {
-        return manager.filter(filter);
+        return userBalanceService.filter(filter);
     }
 
     @PreAuthorize(ADMIN_ONLY)
-    public void reset(final int value, @Nullable final List<Long> userIds) {
-        manager.reset(value, userIds);
+    public void reset(final PlatformUsageCreditsResetRequest resetRequest) {
+        eventService.reset(resetRequest);
     }
 }

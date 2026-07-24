@@ -18,7 +18,6 @@ package com.epam.pipeline.acl.credits;
 
 import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsEventFilterVO;
-import com.epam.pipeline.dto.credits.PlatformUsageCreditsResetRequest;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateEvent;
 import com.epam.pipeline.manager.credits.PlatformUsageCreditsEventService;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +26,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-import static com.epam.pipeline.security.acl.AclExpressions.*;
+import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
+import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_GENERAL_USER;
 
 @Service
 @RequiredArgsConstructor
@@ -44,10 +44,5 @@ public class PlatformUsageCreditsEventApiService {
     public PagedResult<List<PlatformUsageCreditsUpdateEvent>> filter(
             final PlatformUsageCreditsEventFilterVO filter) {
         return platformUsageCreditsUpdateEventManager.filter(filter);
-    }
-
-    @PreAuthorize(ADMIN_ONLY)
-    public List<PlatformUsageCreditsUpdateEvent> reset(final PlatformUsageCreditsResetRequest resetRequest) {
-        return platformUsageCreditsUpdateEventManager.reset(resetRequest);
     }
 }

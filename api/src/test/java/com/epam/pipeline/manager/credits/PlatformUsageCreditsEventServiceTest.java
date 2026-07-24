@@ -25,8 +25,8 @@ import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateEvent;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateEventEntity;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.security.AuthManager;
-import com.epam.pipeline.vo.SecuredEntityVO;
 import com.epam.pipeline.manager.user.UserManager;
+import com.epam.pipeline.vo.SecuredEntityVO;
 import com.epam.pipeline.mapper.credits.PlatformUsageCreditsEventMapper;
 import com.epam.pipeline.repository.credits.PlatformUsageCreditsEventRepository;
 import org.junit.Test;
@@ -43,10 +43,13 @@ import java.util.List;
 import java.util.UUID;
 
 
+import org.junit.Before;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyCollectionOf;
 import static org.mockito.Matchers.anyListOf;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -59,6 +62,7 @@ public class PlatformUsageCreditsEventServiceTest {
     private static final Long USER_ID_2 = 2L;
     private static final String USERNAME = "testUser";
     private static final int VALUE = 100;
+    private static final LocalDateTime DATE = LocalDateTime.of(2026, 1, 1, 0, 0, 0);
 
     private final PlatformUsageCreditsEventRepository repository =
             mock(PlatformUsageCreditsEventRepository.class);
@@ -67,9 +71,18 @@ public class PlatformUsageCreditsEventServiceTest {
     private final AuthManager authManager = mock(AuthManager.class);
     private final UserManager userManager = mock(UserManager.class);
     private final MessageHelper messageHelper = mock(MessageHelper.class);
+    private final PlatformUsageCreditsUserBalanceService userBalanceService =
+            mock(PlatformUsageCreditsUserBalanceService.class);
 
     private final PlatformUsageCreditsEventService service =
-            new PlatformUsageCreditsEventService(repository, mapper, authManager, userManager, messageHelper);
+            new PlatformUsageCreditsEventService(repository, mapper, authManager, userManager, messageHelper,
+                    userBalanceService);
+
+    @Before
+    public void setUp() {
+        doAnswer(invocation -> invocation.getArguments()[0])
+                .when(userBalanceService).updateByEvent(any(PlatformUsageCreditsUpdateEvent.class));
+    }
 
     @Test
     public void processFiltersOutZeroValueRequests() {
@@ -124,9 +137,8 @@ public class PlatformUsageCreditsEventServiceTest {
 
     @Test
     public void processPreservesCreatedDateWhenPresent() {
-        final LocalDateTime createdDate = LocalDateTime.of(2026, 1, 1, 12, 0, 0);
         final PlatformUsageCreditsUpdateEvent ev = event(USER_ID_1, VALUE);
-        ev.setCreatedDate(createdDate);
+        ev.setCreatedDate(DATE);
         doReturn(Collections.<String>emptySet()).when(repository).findExistingIds(anyCollectionOf(String.class));
         doReturn(Collections.singletonList(entity(USER_ID_1, VALUE)))
                 .when(repository).save(anyListOf(PlatformUsageCreditsUpdateEventEntity.class));
@@ -136,7 +148,7 @@ public class PlatformUsageCreditsEventServiceTest {
         final ArgumentCaptor<List<PlatformUsageCreditsUpdateEventEntity>> captor =
                 ArgumentCaptor.forClass((Class) List.class);
         verify(repository).save(captor.capture());
-        assertThat(captor.getValue().get(0).getCreatedDate()).isEqualTo(createdDate);
+        assertThat(captor.getValue().get(0).getCreatedDate()).isEqualTo(DATE);
     }
 
     @Test
@@ -312,7 +324,7 @@ public class PlatformUsageCreditsEventServiceTest {
                 .userId(userId)
                 .incidentType(PlatformUsageCreditsUpdateAction.ActionType.DEDUCTION)
                 .value(value)
-                .createdDate(LocalDateTime.of(2026, 1, 1, 0, 0, 0))
+                .createdDate(DATE)
                 .build();
     }
 

@@ -21,7 +21,6 @@ import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsEventFilterVO;
-import com.epam.pipeline.dto.credits.PlatformUsageCreditsResetRequest;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateEvent;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -63,16 +62,5 @@ public class PlatformUsageCreditsEventController extends AbstractRestController 
     public Result<PagedResult<List<PlatformUsageCreditsUpdateEvent>>> filter(
             @RequestBody final PlatformUsageCreditsEventFilterVO filter) {
         return Result.success(apiService.filter(filter));
-    }
-
-    @PostMapping("/reset")
-    @ApiOperation(
-            value = "Resets platform usage credits to the given value for the specified users. "
-                    + "If userIds is omitted, resets for all users. Admin only.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<List<PlatformUsageCreditsUpdateEvent>> reset(
-            @RequestBody final PlatformUsageCreditsResetRequest resetRequest) {
-        return Result.success(apiService.reset(resetRequest));
     }
 }

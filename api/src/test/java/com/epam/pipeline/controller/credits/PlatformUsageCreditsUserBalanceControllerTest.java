@@ -18,6 +18,7 @@ package com.epam.pipeline.controller.credits;
 
 import com.epam.pipeline.acl.credits.PlatformUsageCreditsUserBalanceApiService;
 import com.epam.pipeline.controller.PagedResult;
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsResetRequest;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalanceFilterVO;
 import com.epam.pipeline.test.web.AbstractControllerTest;
@@ -76,24 +77,26 @@ public class PlatformUsageCreditsUserBalanceControllerTest extends AbstractContr
     @Test
     @WithMockUser
     public void shouldResetForSpecificUser() throws Exception {
-        final String content = getObjectMapper().writeValueAsString(Collections.singletonList(USER_ID));
+        final PlatformUsageCreditsResetRequest request = PlatformUsageCreditsResetRequest.builder()
+                .value(RESET_VALUE).userIds(Collections.singletonList(USER_ID)).build();
+        final String content = getObjectMapper().writeValueAsString(request);
 
-        final MvcResult result = performRequest(
-                post(RESET_URL)
-                        .param("value", String.valueOf(RESET_VALUE))
-                        .content(content));
+        final MvcResult result = performRequest(post(RESET_URL).content(content));
 
-        verify(mockApiService).reset(RESET_VALUE, Collections.singletonList(USER_ID));
+        verify(mockApiService).reset(request);
         assertResponse(result, null, VOID_TYPE);
     }
 
     @Test
     @WithMockUser
-    public void shouldResetForAllUsers() {
-        final MvcResult result = performRequest(
-                post(RESET_URL).param("value", String.valueOf(RESET_VALUE)));
+    public void shouldResetForAllUsers() throws Exception {
+        final PlatformUsageCreditsResetRequest request = PlatformUsageCreditsResetRequest.builder()
+                .value(RESET_VALUE).build();
+        final String content = getObjectMapper().writeValueAsString(request);
 
-        verify(mockApiService).reset(RESET_VALUE, null);
+        final MvcResult result = performRequest(post(RESET_URL).content(content));
+
+        verify(mockApiService).reset(request);
         assertResponse(result, null, VOID_TYPE);
     }
 }

@@ -25,6 +25,7 @@ import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateAction;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateEvent;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateEventEntity;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.mapper.credits.PlatformUsageCreditsEventMapper;
@@ -60,6 +61,7 @@ public class PlatformUsageCreditsEventService {
     private final AuthManager authManager;
     private final UserManager userManager;
     private final MessageHelper messageHelper;
+    private final PlatformUsageCreditsUserBalanceService userBalanceService;
 
     /**
      * Applies balance update logic to each event, filters out zero-value results,
@@ -84,8 +86,13 @@ public class PlatformUsageCreditsEventService {
                 : usageCreditsEventRepository.findExistingIds(idsToCheck);
         final List<PlatformUsageCreditsUpdateEvent> newEvents = events.stream()
                 .filter(event -> !existingIds.contains(event.getId()))
-                .map(this::applyBalanceUpdate)
+                .map(userBalanceService::updateByEvent)
                 .filter(event -> event.getValue() != 0)
+                .peek(event -> {
+                    if (Objects.isNull(event.getCreatedDate())) {
+                        event.setCreatedDate(DateUtils.nowUTC());
+                    }
+                })
                 .collect(Collectors.toList());
         if (newEvents.isEmpty()) {
             return Collections.emptyList();
@@ -130,7 +137,7 @@ public class PlatformUsageCreditsEventService {
      */
     @Transactional
     public List<PlatformUsageCreditsUpdateEvent> reset(final PlatformUsageCreditsResetRequest resetRequest) {
-        applyCreditReset(resetRequest.getValue(), resetRequest.getUserIds());
+        userBalanceService.reset(resetRequest.getValue(), resetRequest.getUserIds());
         final Collection<PipelineUser> users = CollectionUtils.isEmpty(resetRequest.getUserIds())
                 ? userManager.loadAllUsers()
                 : userManager.loadUsersById(resetRequest.getUserIds());
@@ -139,23 +146,13 @@ public class PlatformUsageCreditsEventService {
                         .userId(user.getId())
                         .incidentType(PlatformUsageCreditsUpdateAction.ActionType.RESET)
                         .value(resetRequest.getValue())
+                        .createdDate(DateUtils.nowUTC())
                         .build())
                 .collect(Collectors.toList());
         if (events.isEmpty()) {
             return Collections.emptyList();
         }
         return usageCreditsEventRepository.save(events).stream().map(mapper::toDto).collect(Collectors.toList());
-    }
-
-    // TODO: implement balance update logic
-    @SuppressWarnings("PMD.UnusedFormalParameter")
-    private void applyCreditReset(final int value, final List<Long> users) {
-
-    }
-
-    // TODO: implement balance update logic
-    private PlatformUsageCreditsUpdateEvent applyBalanceUpdate(final PlatformUsageCreditsUpdateEvent event) {
-        return event;
     }
 
     private PlatformUsageCreditsEventFilterVO restrictToCurrentUser(final PlatformUsageCreditsEventFilterVO filter) {

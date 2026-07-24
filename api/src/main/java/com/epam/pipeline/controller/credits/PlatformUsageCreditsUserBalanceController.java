@@ -20,6 +20,7 @@ import com.epam.pipeline.acl.credits.PlatformUsageCreditsUserBalanceApiService;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.Result;
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsResetRequest;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalanceFilterVO;
 import io.swagger.annotations.Api;
@@ -31,7 +32,6 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -60,9 +60,8 @@ public class PlatformUsageCreditsUserBalanceController extends AbstractRestContr
                     + "Admin only.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<Void> reset(@RequestParam final int value,
-                              @RequestBody(required = false) final List<Long> userIds) {
-        apiService.reset(value, userIds);
+    public Result<Void> reset(@RequestBody final PlatformUsageCreditsResetRequest resetRequest) {
+        apiService.reset(resetRequest);
         return Result.success(null);
     }
 }

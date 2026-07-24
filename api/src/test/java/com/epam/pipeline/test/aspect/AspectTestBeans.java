@@ -71,6 +71,7 @@ import com.epam.pipeline.manager.billing.detail.EntityBillingDetailsLoader;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.PodMonitor;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsEventService;
 import com.epam.pipeline.manager.credits.PlatformUsageCreditsRuleService;
 import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceHandler;
 import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceService;
@@ -557,4 +558,7 @@ public class AspectTestBeans {
 
     @MockBean
     protected PlatformUsageCreditsUserBalanceService platformUsageCreditsUserBalanceService;
+
+    @MockBean
+    protected PlatformUsageCreditsEventService platformUsageCreditsEventService;
 }
