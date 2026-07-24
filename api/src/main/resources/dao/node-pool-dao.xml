@@ -130,6 +130,7 @@
                         ON n.schedule_id = s.id
                     LEFT JOIN pipeline.node_schedule_entry as e
                         ON s.id = e.schedule_id
+                    order by n.id, s.id, e.schedule_id
                 ]]>
             </value>
         </constructor-arg>

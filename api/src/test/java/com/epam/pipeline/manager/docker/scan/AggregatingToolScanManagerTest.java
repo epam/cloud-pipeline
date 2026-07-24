@@ -312,7 +312,7 @@ public class AggregatingToolScanManagerTest {
     }
 
     @Test
-    public void testScanTool() throws ToolScanExternalServiceException {
+    public void testScanTool() throws ToolScanExternalServiceException, InterruptedException {
         when(toolManager.loadToolVersionAttributes(Mockito.anyLong(), Mockito.anyString()))
             .thenReturn(new ToolVersionAttributes());
         ToolVersionScanResult result = aggregatingToolScanManager.scanTool(testTool, LATEST_VERSION, false);
@@ -348,6 +348,7 @@ public class AggregatingToolScanManagerTest {
         assertEquals(feature.getVersion(), loadedDependency.getVersion());
 
         //check that rescan works
+        Thread.sleep(1);
         ToolVersionScanResult rescan = aggregatingToolScanManager.scanTool(testTool, LATEST_VERSION, true);
 
         assertNotEquals(rescan.getScanDate(), result.getScanDate());

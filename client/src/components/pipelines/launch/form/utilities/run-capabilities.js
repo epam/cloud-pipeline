@@ -930,7 +930,8 @@ export function normalizeCapabilities (parameters) {
       value: false
     };
   };
-  const isEnabled = (parameter) => parameters[parameter] && parameters[parameter].value === true;
+  const isEnabled = (parameter) => parameters[parameter] &&
+    `${parameters[parameter].value}`.toLowerCase() === 'true';
   if (
     isEnabled(RUN_CAPABILITIES_PARAMETERS[RUN_CAPABILITIES.dcv]) &&
     isEnabled(RUN_CAPABILITIES_PARAMETERS[RUN_CAPABILITIES.noMachine])
