@@ -79,7 +79,7 @@ jobs:
       - name: Verify PostgreSQL connection
         run: psql -h 127.0.0.1 -U pipeline -d pipeline_test -c "SELECT 1"
       - name: Run API tests
-        run: ./gradlew :api:copyConfiguration :api:test --no-build-cache
+        run: ./gradlew :api:test --no-build-cache
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

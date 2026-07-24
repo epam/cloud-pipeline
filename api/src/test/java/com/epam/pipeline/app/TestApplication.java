@@ -204,9 +204,6 @@ public class TestApplication {
     public AccessCodeRepository accessCodeRepository;
 
     @MockBean
-    public KubernetesManager kubernetesManager;
-
-    @MockBean
     public ClusterCommandService clusterCommandService;
 
     @MockBean
