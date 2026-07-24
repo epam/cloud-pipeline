@@ -84,7 +84,9 @@ jobs:
         if: failure()
         with:
           name: test-results-api
-          path: api/build/test-results/test/
+          path: |
+            api/build/test-results/test/
+            api/build/reports/tests/test/
           retention-days: 7
 
   core-libs-tests:
@@ -112,8 +114,11 @@ jobs:
           name: test-results-core-libs
           path: |
             core/build/test-results/test/
+            core/build/reports/tests/test/
             cloud-pipeline-common/model/build/test-results/test/
+            cloud-pipeline-common/model/build/reports/tests/test/
             cloud-pipeline-common/event-sourcing-java-client/build/test-results/test/
+            cloud-pipeline-common/event-sourcing-java-client/build/reports/tests/test/
           retention-days: 7
 
   notifier-tests:
@@ -134,7 +139,9 @@ jobs:
         if: failure()
         with:
           name: test-results-notifier
-          path: notifier/smtp/build/test-results/test/
+          path: |
+            notifier/smtp/build/test-results/test/
+            notifier/smtp/build/reports/tests/test/
           retention-days: 7
 
   data-transfer-tests:
@@ -155,7 +162,9 @@ jobs:
         if: failure()
         with:
           name: test-results-data-transfer
-          path: data-transfer-service/build/test-results/test/
+          path: |
+            data-transfer-service/build/test-results/test/
+            data-transfer-service/build/reports/tests/test/
           retention-days: 7
 
   docker-scan-tests:
@@ -176,7 +185,9 @@ jobs:
         if: failure()
         with:
           name: test-results-docker-scan
-          path: docker-comp-scan/build/test-results/test/
+          path: |
+            docker-comp-scan/build/test-results/test/
+            docker-comp-scan/build/reports/tests/test/
           retention-days: 7
 
   elasticsearch-tests:
@@ -210,7 +221,7 @@ jobs:
       - name: Apply API database migrations
         run: |
           psql -h 127.0.0.1 -U pipeline -d pipeline_test -c "CREATE SCHEMA IF NOT EXISTS pipeline;"
-          find api/src/main/resources/db/migration -name 'v*.sql' | sort | \
+          find api/src/main/resources/db/migration -name 'v*.sql' | sort -V | \
             while IFS= read -r f; do
               sed 's/\${default\.admin}/admin_test@epam.com/g; s/\${default\.admin\.id}/1/g' "$f" | \
                 psql -h 127.0.0.1 -U pipeline -d pipeline_test
@@ -221,7 +232,9 @@ jobs:
         if: failure()
         with:
           name: test-results-elasticsearch
-          path: elasticsearch-agent/build/test-results/test/
+          path: |
+            elasticsearch-agent/build/test-results/test/
+            elasticsearch-agent/build/reports/tests/test/
           retention-days: 7
 
   monitoring-tests:
@@ -249,6 +262,9 @@ jobs:
           name: test-results-monitoring
           path: |
             vm-monitor/build/test-results/test/
+            vm-monitor/build/reports/tests/test/
             billing-report-agent/build/test-results/test/
+            billing-report-agent/build/reports/tests/test/
             monitoring-service/build/test-results/test/
+            monitoring-service/build/reports/tests/test/
           retention-days: 7
