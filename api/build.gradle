@@ -67,6 +67,8 @@ jar {
 
 // >>>>> Exclude tests through property defined in the build.gradle file
 test {
+    // GitHub runner has 2 cores
+    maxParallelForks = Math.max(2, Runtime.runtime.availableProcessors().intdiv(2))
     if (project.hasProperty('excludeTests')) {
         exclude project.property('excludeTests')
     }
