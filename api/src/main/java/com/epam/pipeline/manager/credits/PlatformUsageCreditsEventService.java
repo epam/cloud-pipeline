@@ -117,9 +117,11 @@ public class PlatformUsageCreditsEventService {
         final PlatformUsageCreditsEventFilterVO effectiveFilter = authManager.isAdmin()
                 ? filter
                 : restrictToCurrentUser(filter);
+        Assert.isTrue(effectiveFilter.getPage() >= 1, "Page index must be >= 1");
+        Assert.isTrue(effectiveFilter.getPageSize() > 0, "Page size must be > 0");
         final Page<PlatformUsageCreditsUpdateEventEntity> page = usageCreditsEventRepository.findAll(
                 PlatformUsageCreditsEventSpecification.fromFilter(effectiveFilter),
-                new PageRequest(effectiveFilter.getPage(), effectiveFilter.getPageSize(),
+                new PageRequest(effectiveFilter.getPage() - 1, effectiveFilter.getPageSize(),
                         new Sort(Sort.Direction.DESC, FIELD_CREATED_DATE)));
         return new PagedResult<>(
                 page.getContent().stream().map(mapper::toDto).collect(Collectors.toList()),

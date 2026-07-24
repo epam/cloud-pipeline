@@ -194,7 +194,7 @@ public class PlatformUsageCreditsUserBalanceServiceTest {
         final PlatformUsageCreditsUserBalanceFilterVO filter = PlatformUsageCreditsUserBalanceFilterVO.builder()
                 .value(BALANCE_VALUE)
                 .operation(">")
-                .page(0)
+                .page(1)
                 .pageSize(10)
                 .build();
         doReturn(new PageImpl<>(Collections.emptyList()))
@@ -210,7 +210,7 @@ public class PlatformUsageCreditsUserBalanceServiceTest {
         final PlatformUsageCreditsUserBalanceFilterVO filter = PlatformUsageCreditsUserBalanceFilterVO.builder()
                 .value(BALANCE_VALUE)
                 .operation("<")
-                .page(0)
+                .page(1)
                 .pageSize(10)
                 .build();
         doReturn(new PageImpl<>(Collections.emptyList()))
@@ -226,7 +226,7 @@ public class PlatformUsageCreditsUserBalanceServiceTest {
         final PlatformUsageCreditsUserBalanceFilterVO filter = PlatformUsageCreditsUserBalanceFilterVO.builder()
                 .value(BALANCE_VALUE)
                 .operation("=")
-                .page(0)
+                .page(1)
                 .pageSize(10)
                 .build();
         doReturn(new PageImpl<>(Collections.emptyList()))

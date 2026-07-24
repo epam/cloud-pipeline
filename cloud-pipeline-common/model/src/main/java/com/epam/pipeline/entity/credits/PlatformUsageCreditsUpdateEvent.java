@@ -30,6 +30,17 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class PlatformUsageCreditsUpdateEvent {
 
+    /**
+     * Optional client-supplied deduplication key.
+     *
+     * <p>When set, the server skips persisting the event if a record with the same {@code id}
+     * already exists in the database, making the call idempotent. Clients that may retry a
+     * batch (e.g. after a network timeout) should supply a stable, deterministic id — for
+     * example a UUID derived from the business key — so that retried batches do not
+     * double-apply credit changes.
+     *
+     * <p>If {@code null} the event is always treated as new and saved unconditionally.
+     */
     private String id;
     private Long userId;
     /** Null for manual admin adjustments. */
