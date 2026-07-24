@@ -24,6 +24,7 @@ import com.epam.pipeline.dao.run.RunServiceUrlDao;
 import com.epam.pipeline.manager.access.AccessCodeCleaner;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.cloud.CloudFacade;
+import com.epam.pipeline.manager.cloud.commands.ClusterCommandService;
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManager;
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
@@ -200,6 +201,9 @@ public class TestApplication {
 
     @MockBean
     public AccessCodeRepository accessCodeRepository;
+
+    @MockBean
+    public ClusterCommandService clusterCommandService;
 
     @MockBean
     public AccessCodeCleaner accessCodeCleaner;

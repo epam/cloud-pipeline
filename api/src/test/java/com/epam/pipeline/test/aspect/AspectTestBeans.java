@@ -85,6 +85,7 @@ import com.epam.pipeline.manager.security.NamedJwtTokenManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationSettingsManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunResultManager;
 import com.epam.pipeline.manager.scheduling.RunScheduler;
+import com.epam.pipeline.dao.monitoring.metricrequester.HeapsterElasticRestHighLevelClient;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
 import com.epam.pipeline.mapper.cluster.KubernetesMapper;
 import com.epam.pipeline.mapper.git.AzureDevOpsMapper;
@@ -546,6 +547,9 @@ public class AspectTestBeans {
 
     @MockBean
     protected GlobalSearchElasticHelper globalSearchElasticHelper;
+
+    @MockBean
+    protected HeapsterElasticRestHighLevelClient heapsterElasticRestHighLevelClient;
 
     @MockBean
     protected PipelineRunMetricsDao pipelineRunMetricsDao;
