@@ -15,7 +15,6 @@ on:
       - 'vm-monitor/**'
       - 'billing-report-agent/**'
       - 'monitoring-service/**'
-      - '.github/**'
 
 jobs:
   CalculateCodeChanges:
