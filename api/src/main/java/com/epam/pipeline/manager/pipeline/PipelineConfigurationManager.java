@@ -196,6 +196,8 @@ public class PipelineConfigurationManager {
         }
         if (runVO.getFallbackInstanceTypes() != null) {
             configuration.setFallbackInstanceTypes(runVO.getFallbackInstanceTypes());
+        } else {
+            configuration.setFallbackInstanceTypes(defaultConfig.getFallbackInstanceTypes());
         }
         if (runVO.getTimeout() != null) {
             configuration.setTimeout(runVO.getTimeout());

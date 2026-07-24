@@ -1182,10 +1182,10 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             params.addValue(NODE_CLOUD_PROVIDER.name(),
                     instance.map(RunInstance::getCloudProvider).map(CloudProvider::name).orElse(null));
             params.addValue(NODE_POOL_ID.name(), instance.map(RunInstance::getPoolId).orElse(null));
-            instance.ifPresent(ins ->
-                params.addValue(INSTANCE_FALLBACK_TYPES.name(),
-                        JsonMapper.convertDataToJsonStringForQuery(ins.getFallbackInstanceTypes()))
-            );
+            params.addValue(INSTANCE_FALLBACK_TYPES.name(), instance
+                    .map(RunInstance::getFallbackInstanceTypes)
+                    .map(JsonMapper::convertListToJsonStringForQuery)
+                    .orElse(null));
         }
 
         static ResultSetExtractor<Collection<PipelineRun>> getRunGroupExtractor() {
@@ -1271,15 +1271,13 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             instance.setNodeIP(rs.getString(NODE_IP.name()));
             instance.setNodeType(rs.getString(NODE_TYPE.name()));
 
-            try {
-                String fallbackInstanceTypes = rs.getString(INSTANCE_FALLBACK_TYPES.name());
-                if (fallbackInstanceTypes != null && !fallbackInstanceTypes.equals("{}")) {
-                    final List<String> fallbackInstanceList =
-                            JsonMapper.parseData(fallbackInstanceTypes, new TypeReference<List<String>>() {});
+            final String fallbackInstanceTypesJson = rs.getString(INSTANCE_FALLBACK_TYPES.name());
+            if (fallbackInstanceTypesJson != null) {
+                final List<String> fallbackInstanceList =
+                        JsonMapper.parseData(fallbackInstanceTypesJson, new TypeReference<List<String>>() {});
+                if (CollectionUtils.isNotEmpty(fallbackInstanceList)) {
                     instance.setFallbackInstanceTypes(fallbackInstanceList);
                 }
-            } catch (SQLException e) {
-                log.error("Query doesn't include INSTANCE_FALLBACK_TYPES column!", e);
             }
 
             instance.setNodeImage(rs.getString(NODE_IMAGE.name()));

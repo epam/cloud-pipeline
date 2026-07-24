@@ -1834,7 +1834,8 @@
                         node_pool_id,
                         node_start_date,
                         project_id,
-                        logs_storage_path
+                        logs_storage_path,
+                        instance_fallback_types
                     FROM
                         pipeline.pipeline_run r
                     INNER JOIN (SELECT DISTINCT ON (run_id) run_id, status
@@ -1908,7 +1909,8 @@
                         node_pool_id,
                         node_start_date,
                         project_id,
-                        logs_storage_path
+                        logs_storage_path,
+                        instance_fallback_types
                     FROM
                         pipeline.pipeline_run r
                     INNER JOIN (SELECT DISTINCT ON (run_id) run_id, status
@@ -1977,7 +1979,8 @@
                         ar.node_pool_id,
                         ar.node_start_date,
                         null as project_id,
-                        ar.logs_storage_path
+                        ar.logs_storage_path,
+                        null
                     FROM
                         pipeline.archive_run ar
                     WHERE ar.end_date BETWEEN :PERIOD_START AND :PERIOD_END
