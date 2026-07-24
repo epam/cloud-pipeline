@@ -2,7 +2,7 @@ name: Java Tests
 
 on:
   pull_request:
-    branches: [ develop]
+    branches: [ develop ]
     paths:
       - 'api/**'
       - 'core/**'
@@ -210,10 +210,11 @@ jobs:
       - name: Apply API database migrations
         run: |
           psql -h 127.0.0.1 -U pipeline -d pipeline_test -c "CREATE SCHEMA IF NOT EXISTS pipeline;"
-          for f in $(ls api/src/main/resources/db/migration/v*.sql | sort); do
-            sed 's/\${default\.admin}/admin_test@epam.com/g; s/\${default\.admin\.id}/1/g' "$f" | \
-              psql -h 127.0.0.1 -U pipeline -d pipeline_test
-          done
+          find api/src/main/resources/db/migration -name 'v*.sql' | sort | \
+            while IFS= read -r f; do
+              sed 's/\${default\.admin}/admin_test@epam.com/g; s/\${default\.admin\.id}/1/g' "$f" | \
+                psql -h 127.0.0.1 -U pipeline -d pipeline_test
+            done
       - name: Run elasticsearch agent tests
         run: ./gradlew :elasticsearch-agent:test --no-build-cache
       - uses: actions/upload-artifact@v4
