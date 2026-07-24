@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,14 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.notification;
+package com.epam.pipeline.mapper.credits;
 
-public enum NotificationGroup {
-    LONG_RUNNING,
-    ISSUE,
-    PIPELINE_RUN_STATUS,
-    IDLE_RUN,
-    RESOURCE_CONSUMING,
-    LONG_STATUS,
-    LONG_PAUSED,
-    USER,
-    NODE_POOL,
-    DATASTORAGE_LIFECYCLE,
-    USAGE_CREDITS
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
+import com.epam.pipeline.entity.credits.PlatformUsageCreditsUserBalanceEntity;
+import org.mapstruct.Mapper;
+
+@Mapper(componentModel = "spring")
+public interface PlatformUsageCreditsUserBalanceMapper {
+
+    PlatformUsageCreditsUserBalance toDto(PlatformUsageCreditsUserBalanceEntity entity);
 }

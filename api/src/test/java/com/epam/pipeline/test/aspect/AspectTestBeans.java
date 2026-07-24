@@ -73,6 +73,7 @@ import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.PodMonitor;
 import com.epam.pipeline.manager.credits.PlatformUsageCreditsRuleService;
 import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceHandler;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceService;
 import com.epam.pipeline.manager.datastorage.StorageQuotaTriggersManager;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManager;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoreManager;
@@ -553,4 +554,7 @@ public class AspectTestBeans {
 
     @MockBean
     protected PlatformUsageCreditsRuleService platformUsageCreditsRuleService;
+
+    @MockBean
+    protected PlatformUsageCreditsUserBalanceService platformUsageCreditsUserBalanceService;
 }
