@@ -373,7 +373,7 @@ public abstract class AbstractAzurePriceListLoader {
         return retrofit.create(AzurePricingClient.class);
     }
 
-    private String buildVMKey(final String input) {
+    String buildVMKey(final String input) {
         return input.replaceAll("_|-|\\s+", "")
                 .toLowerCase();
     }
