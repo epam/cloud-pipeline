@@ -96,9 +96,11 @@ public class PlatformUsageCreditsUserBalanceService {
      */
     public PagedResult<List<PlatformUsageCreditsUserBalance>> filter(
             final PlatformUsageCreditsUserBalanceFilterVO filter) {
+        Assert.isTrue(filter.getPage() >= 1, "Page index must be >= 1");
+        Assert.isTrue(filter.getPageSize() > 0, "Page size must be > 0");
         final Page<PlatformUsageCreditsUserBalanceEntity> page =
                 repository.findAll(PlatformUsageCreditsUserBalanceSpecification.build(filter),
-                        new PageRequest(filter.getPage(), filter.getPageSize()));
+                        new PageRequest(filter.getPage() - 1, filter.getPageSize()));
         final List<PlatformUsageCreditsUserBalance> elements = page.getContent().stream()
                 .map(mapper::toDto)
                 .collect(Collectors.toList());

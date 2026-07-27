@@ -77,7 +77,7 @@ public interface PlatformUsageCreditsUserBalanceCreatorUtils {
                 .userIds(Collections.singletonList(USER_ID))
                 .value(BALANCE_VALUE)
                 .operation(OPERATION_GT)
-                .page(0)
+                .page(1)
                 .pageSize(10)
                 .build();
     }

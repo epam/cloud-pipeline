@@ -30,6 +30,7 @@ import com.epam.pipeline.vo.PagingRunFilterVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -42,6 +43,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Component
@@ -157,10 +159,23 @@ public class PipelineRunUsageCreditsRuleHandler implements PlatformUsageCreditsR
         return client.filterPlatformUsageCreditsEvents(filter);
     }
 
+    /**
+     * Builds a credit update event for the given rule, user and (optionally) run.
+     *
+     * <p>The {@code id} is computed deterministically from the business key so that the
+     * server-side deduplication check in {@code PlatformUsageCreditsEventService#process}
+     * can recognise and discard a duplicate if the monitoring cycle fires the same event
+     * twice — see {@link com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateEvent#id}.
+     */
     private PlatformUsageCreditsUpdateEvent buildEvent(final PlatformUsageCreditsUpdateRule rule,
                                                         final PipelineUser user,
                                                         final PipelineRun run) {
+        final String key = rule.getAction().isPerIncident() && run != null
+                ? "r:" + rule.getId() + ":PipelineRun:" + run.getId()
+                : "r:" + rule.getId() + ":u:" + user.getId();
+        final String id = UUID.nameUUIDFromBytes(key.getBytes(StandardCharsets.UTF_8)).toString();
         return PlatformUsageCreditsUpdateEvent.builder()
+                .id(id)
                 .userId(user.getId())
                 .ruleId(rule.getId())
                 .entity(run != null ? SecuredEntityVO.from(PipelineRun.class, run.getId()) : null)
