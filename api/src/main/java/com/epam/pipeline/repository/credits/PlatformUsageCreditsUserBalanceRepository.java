@@ -23,6 +23,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface PlatformUsageCreditsUserBalanceRepository
@@ -33,35 +34,46 @@ public interface PlatformUsageCreditsUserBalanceRepository
             + "SELECT id, :value, NOW() FROM pipeline.user "
             + "ON CONFLICT (user_id) DO UPDATE "
             + "SET current_value = EXCLUDED.current_value, modified_date = EXCLUDED.modified_date";
-    String ATOMIC_UPSERT = "WITH upsert AS ( "
-            + "INSERT INTO pipeline.usage_credits_user_balance (user_id, current_value, modified_date) "
-            + "VALUES (:userId, GREATEST(:min, LEAST(:max, :defaultBalance + :delta)), NOW()) "
-            + "ON CONFLICT (user_id) DO UPDATE "
-            + "SET current_value = GREATEST(:min, LEAST(:max, "
-            + "    pipeline.usage_credits_user_balance.current_value + :delta)), "
-            + "    modified_date = NOW() "
-            + "RETURNING current_value "
-            + ") SELECT current_value FROM upsert";
+
+    // 'old' CTE captures the pre-update value before the UPSERT runs.
+    // In RETURNING, all column references refer to post-update state, so reading
+    // the old value in a separate CTE is the only way to compute the actual delta.
+    // LEFT JOIN ensures the INSERT path (no existing row) yields a single result row
+    // with old=NULL, which COALESCE maps to :defaultBalance.
+    String ATOMIC_UPSERT = "WITH old AS ( "
+            + "    SELECT current_value FROM pipeline.usage_credits_user_balance WHERE user_id = :userId "
+            + "), upsert AS ( "
+            + "    INSERT INTO pipeline.usage_credits_user_balance (user_id, current_value, modified_date) "
+            + "    VALUES (:userId, GREATEST(:min, LEAST(:max, :defaultBalance + :delta)), NOW()) "
+            + "    ON CONFLICT (user_id) DO UPDATE "
+            + "    SET current_value = GREATEST(:min, LEAST(:max, "
+            + "        pipeline.usage_credits_user_balance.current_value + :delta)), "
+            + "        modified_date = NOW() "
+            + "    RETURNING current_value "
+            + ") "
+            + "SELECT u.current_value, "
+            + "    u.current_value - COALESCE(o.current_value, :defaultBalance) AS actual_delta "
+            + "FROM upsert u LEFT JOIN old o ON true";
 
     Optional<PlatformUsageCreditsUserBalanceEntity> findByUserId(Long userId);
 
     /**
-     * Atomically upserts the credits balance for a single user and returns the resulting value.
+     * Atomically upserts the credits balance for a single user and returns the result.
      *
      * <p>The arithmetic and clamping are performed entirely inside the database using a single SQL
-     * statement, so concurrent calls for the same user cannot race. The DML is wrapped in a CTE and
-     * exposed as a {@code SELECT} so that Spring Data JPA returns the {@code RETURNING} value
-     * directly without requiring a separate follow-up read.
+     * statement, so concurrent calls for the same user cannot race. The old value is captured via
+     * a pre-read CTE so that the returned delta is derived from the same snapshot as the update.
      *
      * @param userId         the target user
      * @param delta          signed delta: positive for INCREASE, negative for DEDUCTION
      * @param defaultBalance starting balance when no row exists yet
      * @param min            lower bound for clamping
      * @param max            upper bound for clamping
-     * @return the new {@code current_value} after the update
+     * @return single-element list; the only row is {@code Object[]{newCurrentValue, actualDelta}}
+     *         where {@code actualDelta = newValue - oldValue} (signed)
      */
     @Query(value = ATOMIC_UPSERT, nativeQuery = true)
-    Integer atomicUpdateBalance(
+    List<Object[]> atomicUpdateBalance(
             @Param("userId") Long userId,
             @Param("delta") int delta,
             @Param("defaultBalance") int defaultBalance,
