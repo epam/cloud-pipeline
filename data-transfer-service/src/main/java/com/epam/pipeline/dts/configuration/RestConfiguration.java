@@ -18,31 +18,30 @@ package com.epam.pipeline.dts.configuration;
 
 import com.epam.pipeline.dts.common.json.JsonMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.info.Contact;
-import io.swagger.v3.oas.models.info.Info;
-import io.swagger.v3.oas.models.info.License;
-import io.swagger.v3.oas.models.servers.Server;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.info.Info;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.http.converter.xml.MappingJackson2XmlHttpMessageConverter;
 import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.util.UrlPathHelper;
 
-import java.util.Collections;
 import java.util.List;
 
 @Configuration
+@OpenAPIDefinition(info = @Info(title = "Data Transfer Service - REST API"))
 public class RestConfiguration implements WebMvcConfigurer {
 
     @Override
-    public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
-        MappingJackson2HttpMessageConverter converter =
-                new MappingJackson2HttpMessageConverter();
-        converter.setObjectMapper(objectMapper());
-        converters.add(converter);
+    public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
+        converters.removeIf(MappingJackson2XmlHttpMessageConverter.class::isInstance);
+        converters.stream()
+                .filter(MappingJackson2HttpMessageConverter.class::isInstance)
+                .map(MappingJackson2HttpMessageConverter.class::cast)
+                .forEach(converter -> converter.setObjectMapper(objectMapper()));
     }
 
     @Override
@@ -55,23 +54,5 @@ public class RestConfiguration implements WebMvcConfigurer {
     @Bean
     public ObjectMapper objectMapper() {
         return new JsonMapper();
-    }
-
-    @Bean
-    public OpenAPI customOpenAPI() {
-        return new OpenAPI()
-                .info(new Info()
-                        .title("Template REST API")
-                        .version("API TOS")
-                        .description("Some custom description of API.")
-                        .contact(new Contact()
-                                .name("dev")
-                                .email("email"))
-                        .license(new License()
-                                .name("License of API")
-                                .url("API license URL")))
-                .servers(Collections.singletonList(
-                        new Server().url("http://localhost:8080").description("Development server")
-                ));
     }
 }

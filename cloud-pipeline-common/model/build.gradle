@@ -19,66 +19,69 @@ plugins {
     id 'maven-publish'
     id 'jacoco'
     id 'io.spring.dependency-management' version '1.1.7'
-    id 'org.sonarqube' version '2.6.1'
 }
 
 group 'com.epam.pipeline'
 
-ext { springBootVersion = '2.7.18' }
-
-java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
-    withSourcesJar() // Modern way to create sources jar
+ext {
+    springBootVersion = '3.3.13'
 }
 
-repositories { mavenCentral() }
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+    withSourcesJar()
+}
 
-dependencies {
-    implementation("org.springframework.boot:spring-boot-starter")
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-
-    implementation group: 'org.springframework.security', name: 'spring-security-acl', version: '4.2.2.RELEASE'
-
-    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.8.7'
-    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.8.7'
-    implementation group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-jsr310', version: '2.9.6'
-
-    implementation group: 'commons-io', name: "commons-io", version: "2.4"
-    implementation group: 'commons-validator', name: "commons-validator", version: "1.5.0"
-    implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.7'
-    implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
-    implementation group: 'org.apache.commons', name: "commons-collections4", version: "4.0"
-    implementation group: "org.apache.commons", name: "commons-text", version: "1.4"
-
-    implementation 'org.projectlombok:lombok:1.18.34'
-    annotationProcessor 'org.projectlombok:lombok:1.18.34'
-
-    implementation group: 'io.springfox', name: 'springfox-swagger2', version: '2.6.1'
-
-    implementation 'io.fabric8:kubernetes-model:1.0.67'
-
-    // Retrofit
-    implementation group: 'com.squareup.retrofit2', name: 'retrofit', version: '2.3.0'
-    implementation group: 'com.squareup.retrofit2', name: 'converter-jackson', version: '2.3.0'
-    implementation group: 'com.squareup.okhttp3', name: 'okhttp', version: '3.9.1'
-    implementation group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-jsr310', version: '2.9.6'
-    implementation group: 'com.squareup.retrofit2', name: 'converter-scalars', version: '2.3.0'
-
-    // Mockito
-    testImplementation group: "org.mockito", name: "mockito-core", version: '2.21.0'
-
-    // Map struct
-    implementation 'org.mapstruct:mapstruct-jdk8:1.2.0.Final'
-    implementation 'org.mapstruct:mapstruct-processor:1.2.0.Final'
+repositories {
+    mavenCentral()
 }
 
 dependencyManagement {
     imports {
         mavenBom("org.springframework.boot:spring-boot-dependencies:${springBootVersion}")
     }
+}
+
+dependencies {
+    implementation 'org.springframework.security:spring-security-acl'
+    implementation 'jakarta.persistence:jakarta.persistence-api'
+
+    // Jackson (versions from Boot BOM)
+    implementation 'com.fasterxml.jackson.core:jackson-annotations'
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+
+    // OpenAPI annotations only (@Schema) — not the full springdoc UI starter
+    implementation 'io.swagger.core.v3:swagger-annotations:2.2.22'
+
+    // Apache commons (only commons-lang3 is managed by the Boot BOM)
+    implementation 'commons-io:commons-io:2.16.1'
+    implementation 'org.apache.commons:commons-lang3'
+    implementation 'commons-collections:commons-collections:3.2.2'
+    implementation 'org.apache.commons:commons-collections4:4.4'
+    implementation 'org.apache.commons:commons-text:1.12.0'
+
+    // Logging API used by @Slf4j / LoggerFactory (implementation provided by consumers)
+    implementation 'org.slf4j:slf4j-api'
+
+    // Kubernetes model + Retrofit clients
+    implementation 'io.fabric8:kubernetes-model:3.0.3'
+    implementation 'com.squareup.retrofit2:retrofit:2.3.0'
+    implementation 'com.squareup.retrofit2:converter-jackson:2.3.0'
+    implementation 'com.squareup.okhttp3:okhttp:3.9.1'
+
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    implementation 'org.mapstruct:mapstruct:1.6.3'
+    annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
+    annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.mockito:mockito-core'
+    testImplementation 'org.hamcrest:hamcrest'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 publishing {
@@ -88,7 +91,6 @@ publishing {
         }
     }
 }
-
 
 test {
     useJUnitPlatform()
