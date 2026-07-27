@@ -30,6 +30,7 @@ import com.epam.pipeline.vo.SecuredEntityVO;
 import com.epam.pipeline.mapper.credits.PlatformUsageCreditsEventMapper;
 import com.epam.pipeline.repository.credits.PlatformUsageCreditsEventRepository;
 import org.junit.Test;
+import org.junit.Before;
 import org.mapstruct.factory.Mappers;
 import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.PageImpl;
@@ -41,9 +42,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-
-
-import org.junit.Before;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;

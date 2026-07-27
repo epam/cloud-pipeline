@@ -26,7 +26,6 @@ import javax.persistence.criteria.Predicate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public final class PlatformUsageCreditsEventSpecification {
 
@@ -55,10 +54,12 @@ public final class PlatformUsageCreditsEventSpecification {
                 predicates.add(root.get(FIELD_INCIDENT_TYPE).in(filter.getIncidentTypes()));
             }
             if (!ListUtils.emptyIfNull(filter.getEntities()).isEmpty()) {
-                predicates.add(root.get(FIELD_ENTITY_CLASS).in(filter.getEntities().stream()
-                        .map(SecuredEntityVO::getEntityClass).collect(Collectors.toList())));
-                predicates.add(root.get(FIELD_ENTITY_ID).in(filter.getEntities().stream()
-                        .map(SecuredEntityVO::getEntityId).collect(Collectors.toList())));
+                final Predicate[] pairs = filter.getEntities().stream()
+                        .map(e -> cb.and(
+                                cb.equal(root.get(FIELD_ENTITY_CLASS), e.getEntityClass()),
+                                cb.equal(root.get(FIELD_ENTITY_ID), e.getEntityId())))
+                        .toArray(Predicate[]::new);
+                predicates.add(cb.or(pairs));
             }
             if (Boolean.TRUE.equals(filter.getWithoutEntityLink())) {
                 predicates.add(cb.isNull(root.get(FIELD_ENTITY_CLASS)));

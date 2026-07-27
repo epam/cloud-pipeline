@@ -42,6 +42,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -55,6 +57,7 @@ import java.util.stream.Collectors;
 public class PlatformUsageCreditsEventService {
 
     private static final String FIELD_CREATED_DATE = "createdDate";
+    private static final int EXPORT_PAGE_SIZE = 1000;
 
     private final PlatformUsageCreditsEventRepository usageCreditsEventRepository;
     private final PlatformUsageCreditsEventMapper mapper;
@@ -129,10 +132,31 @@ public class PlatformUsageCreditsEventService {
     }
 
     /**
+     * Exports all credits events matching the filter as a UTF-8 encoded CSV byte array.
+     * The filter body is identical to {@link #filter}; the {@code page} and {@code pageSize}
+     * fields are ignored — all matching rows are fetched page by page at {@value EXPORT_PAGE_SIZE}
+     * records per page. Non-admin callers are restricted to their own events.
+     *
+     * @param filter query criteria (pagination fields ignored)
+     * @return UTF-8 CSV bytes with a header row followed by one row per event
+     */
+    public byte[] export(final PlatformUsageCreditsEventFilterVO filter) {
+        final List<PlatformUsageCreditsUpdateEvent> all = new ArrayList<>();
+        int page = 1;
+        List<PlatformUsageCreditsUpdateEvent> batch;
+        do {
+            final PlatformUsageCreditsEventFilterVO pageFilter =
+                    filter.toBuilder().page(page++).pageSize(EXPORT_PAGE_SIZE).build();
+            batch = filter(pageFilter).getElements();
+            all.addAll(batch);
+        } while (batch.size() == EXPORT_PAGE_SIZE);
+        return new PlatformUsageCreditsEventExporter().export(all).getBytes(Charset.defaultCharset());
+    }
+
+    /**
      * Resets credits to the requested value for the given users and persists one
      * {@link com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateAction.ActionType#RESET RESET} event per user.
      * If {@code userIds} in the request is null or empty, the reset is applied to all users.
-     * Users that cannot be found by the supplied IDs are silently skipped.
      *
      * @param resetRequest target value and optional list of user IDs to reset
      * @return persisted reset events, one per resolved user

@@ -33,16 +33,21 @@ import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_GENERAL_USE
 @RequiredArgsConstructor
 public class PlatformUsageCreditsEventApiService {
 
-    private final PlatformUsageCreditsEventService platformUsageCreditsUpdateEventManager;
+    private final PlatformUsageCreditsEventService platformUsageCreditsUpdateEventService;
 
     @PreAuthorize(ADMIN_ONLY)
     public List<PlatformUsageCreditsUpdateEvent> process(final List<PlatformUsageCreditsUpdateEvent> events) {
-        return platformUsageCreditsUpdateEventManager.process(events);
+        return platformUsageCreditsUpdateEventService.process(events);
     }
 
     @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public PagedResult<List<PlatformUsageCreditsUpdateEvent>> filter(
             final PlatformUsageCreditsEventFilterVO filter) {
-        return platformUsageCreditsUpdateEventManager.filter(filter);
+        return platformUsageCreditsUpdateEventService.filter(filter);
+    }
+
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    public byte[] export(final PlatformUsageCreditsEventFilterVO filter) {
+        return platformUsageCreditsUpdateEventService.export(filter);
     }
 }
