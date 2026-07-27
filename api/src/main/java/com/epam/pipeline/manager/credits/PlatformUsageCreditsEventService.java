@@ -193,15 +193,8 @@ public class PlatformUsageCreditsEventService {
             log.warn("Non-admin user '{}' requested events for userIds {}; overriding to [{}]",
                     username, requestedUserIds, user.getId());
         }
-        return PlatformUsageCreditsEventFilterVO.builder()
-                .entities(filter.getEntities())
-                .ruleId(filter.getRuleId())
-                .incidentTypes(filter.getIncidentTypes())
+        return filter.toBuilder()
                 .userIds(Collections.singletonList(user.getId()))
-                .from(filter.getFrom())
-                .to(filter.getTo())
-                .page(filter.getPage())
-                .pageSize(filter.getPageSize())
                 .build();
     }
 

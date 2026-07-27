@@ -18,7 +18,6 @@ package com.epam.pipeline.repository.credits;
 
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsEventFilterVO;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateEventEntity;
-import com.epam.pipeline.vo.SecuredEntityVO;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.data.jpa.domain.Specification;
 
