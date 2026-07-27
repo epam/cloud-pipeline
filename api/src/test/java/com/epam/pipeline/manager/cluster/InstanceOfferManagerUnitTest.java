@@ -46,8 +46,14 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import com.epam.pipeline.entity.cluster.InstanceOffer;
+import org.mockito.InOrder;
+
 import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -328,6 +334,42 @@ public class InstanceOfferManagerUnitTest {
 
         assertTrue(instanceOfferManager.isPriceTypeAllowed(SPOT, null));
         verify(contextualPreferenceManager).search(eq(PRICE_TYPES_PREFERENCES), eq(null));
+    }
+
+    @Test
+    public void updatePriceListForRegionShouldNotUpdateDbWhenCloudFacadeReturnsNull() {
+        when(cloudFacade.refreshPriceListForRegion(REGION_ID)).thenReturn(null);
+
+        final List<InstanceOffer> result = instanceOfferManager.updatePriceListForRegion(defaultRegion);
+
+        assertThat(result, is(Collections.emptyList()));
+        verify(instanceOfferDao, never()).removeInstanceOffersForRegion(any());
+        verify(instanceOfferDao, never()).insertInstanceOffers(any());
+    }
+
+    @Test
+    public void updatePriceListForRegionShouldDeleteThenInsertWhenCloudFacadeReturnsOffers() {
+        final List<InstanceOffer> offers = Collections.singletonList(new InstanceOffer());
+        when(cloudFacade.refreshPriceListForRegion(REGION_ID)).thenReturn(offers);
+
+        instanceOfferManager.updatePriceListForRegion(defaultRegion);
+
+        final InOrder inOrder = inOrder(instanceOfferDao);
+        inOrder.verify(instanceOfferDao).removeInstanceOffersForRegion(REGION_ID);
+        inOrder.verify(instanceOfferDao).insertInstanceOffers(offers);
+    }
+
+    @Test
+    public void refreshPriceListShouldRemoveOffersForInactiveRegionsBeforeUpdatingRegions() {
+        doReturn(Collections.singletonList(defaultRegion)).when(cloudRegionManager).loadAll();
+        when(cloudFacade.refreshPriceListForRegion(REGION_ID)).thenReturn(null);
+        when(cloudFacade.getAllInstanceTypes(any(), anyBoolean())).thenReturn(Collections.emptyList());
+
+        instanceOfferManager.refreshPriceList();
+
+        final InOrder inOrder = inOrder(instanceOfferDao, cloudFacade);
+        inOrder.verify(instanceOfferDao).removeInstanceOffersForInactiveRegions();
+        inOrder.verify(cloudFacade).refreshPriceListForRegion(REGION_ID);
     }
 
     private InstanceType instanceType(final String name, final AbstractCloudRegion region) {

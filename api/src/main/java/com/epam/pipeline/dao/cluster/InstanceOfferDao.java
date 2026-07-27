@@ -44,6 +44,8 @@ public class InstanceOfferDao extends NamedParameterJdbcDaoSupport {
     private final String loadFirstInstanceOffer;
     private final String loadInstanceTypesQuery;
     private final String removeInstanceOffersForRegionQuery;
+    private final String removeInstanceOffersForInactiveRegionsQuery;
+    private final String getPriceListPublishDateForRegionQuery;
 
     private static final int INSERT_BATCH_SIZE = 10000;
 
@@ -71,6 +73,11 @@ public class InstanceOfferDao extends NamedParameterJdbcDaoSupport {
     @Transactional(propagation = Propagation.MANDATORY)
     public void removeInstanceOffersForRegion(Long regionId) {
         getJdbcTemplate().update(removeInstanceOffersForRegionQuery, regionId);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void removeInstanceOffersForInactiveRegions() {
+        getJdbcTemplate().update(removeInstanceOffersForInactiveRegionsQuery);
     }
 
     public List<InstanceOffer> loadInstanceOffers(InstanceOfferRequestVO instanceOfferRequestVO) {
@@ -101,6 +108,15 @@ public class InstanceOfferDao extends NamedParameterJdbcDaoSupport {
             return offers.get(0).getPriceListPublishDate();
         }
         return null;
+    }
+
+    public Date getPriceListPublishDateForRegion(final Long regionId) {
+        final List<Date> dates = getNamedParameterJdbcTemplate().query(
+                getPriceListPublishDateForRegionQuery,
+                new MapSqlParameterSource(InstanceOfferParameters.REGION.name(), regionId),
+                (rs, rowNum) -> new Date(
+                        rs.getTimestamp(InstanceOfferParameters.PRICE_LIST_PUBLISH_DATE.name()).getTime()));
+        return CollectionUtils.isNotEmpty(dates) ? dates.get(0) : null;
     }
 
     private String makeFilterCondition(InstanceOfferRequestVO requestVO, MapSqlParameterSource params) {

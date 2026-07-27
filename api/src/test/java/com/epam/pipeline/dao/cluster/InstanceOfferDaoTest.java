@@ -32,10 +32,13 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 public class InstanceOfferDaoTest extends AbstractSpringTest  {
@@ -114,6 +117,40 @@ public class InstanceOfferDaoTest extends AbstractSpringTest  {
         assertThat(instanceType1.getName(), is(INSTANCE_TYPE));
         final InstanceType instanceType2 = instanceTypes.get(2);
         assertThat(instanceType2.getName(), is(ANOTHER_INSTANCE_TYPE));
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void removeInstanceOffersForInactiveRegionsShouldRemoveOffersForDeletedRegion() {
+        final AbstractCloudRegion deletedRegion = createRegion("deletedRegion");
+        instanceOfferDao.insertInstanceOffers(
+                Collections.singletonList(offer(deletedRegion.getId(), INSTANCE_TYPE)));
+        cloudRegionDao.delete(deletedRegion.getId());
+
+        instanceOfferDao.removeInstanceOffersForInactiveRegions();
+
+        assertThat(instanceOfferDao.getPriceListPublishDateForRegion(deletedRegion.getId()), is(nullValue()));
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void removeInstanceOffersForInactiveRegionsShouldKeepOffersForActiveRegions() {
+        instanceOfferDao.removeInstanceOffersForInactiveRegions();
+
+        assertThat(instanceOfferDao.getPriceListPublishDateForRegion(region.getId()), is(notNullValue()));
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void getPriceListPublishDateForRegionShouldReturnDateWhenOffersExist() {
+        assertThat(instanceOfferDao.getPriceListPublishDateForRegion(region.getId()), is(notNullValue()));
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void getPriceListPublishDateForRegionShouldReturnNullWhenNoOffersForRegion() {
+        final AbstractCloudRegion emptyRegion = createRegion("emptyRegion");
+        assertThat(instanceOfferDao.getPriceListPublishDateForRegion(emptyRegion.getId()), is(nullValue()));
     }
 
     private InstanceOffer offer(final Long regionId, final String instanceType) {

@@ -18,8 +18,7 @@ package com.epam.pipeline.manager.cloud.azure;
 
 import com.epam.pipeline.entity.pricing.azure.AzureEAPricingResult;
 import com.epam.pipeline.entity.pricing.azure.AzureRateCardPricingResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.lang.StringUtils;
 import retrofit2.Call;
 import retrofit2.Response;
 import retrofit2.http.GET;
@@ -28,9 +27,9 @@ import retrofit2.http.Path;
 import retrofit2.http.Query;
 
 import java.io.IOException;
+import java.util.Optional;
 
 public interface AzurePricingClient {
-    Logger LOGGER = LoggerFactory.getLogger(AzurePricingClient.class);
 
     String AUTH_HEADER = "Authorization";
 
@@ -48,18 +47,18 @@ public interface AzurePricingClient {
                                              @Query("$top") int top,
                                              @Query(value = "$skiptoken", encoded = true) String skiptoken);
 
-    static <T> T executeRequest(Call<T> request) {
-        try {
-            Response<T> response = request.execute();
-            if (response.isSuccessful()) {
-                return response.body();
-            } else {
-                LOGGER.error("Failed to execute Azure request: {}", response.message());
-                return null;
-            }
-        } catch (IOException e) {
-            LOGGER.error(e.getMessage(), e);
-            return null;
+    static <T> T executeRequest(Call<T> request) throws IOException {
+        final Response<T> response = request.execute();
+        if (response.isSuccessful()) {
+            return response.body();
         }
+        final String errorBody = Optional.ofNullable(response.errorBody()).map(body -> {
+            try {
+                return body.string();
+            } catch (IOException e) {
+                return "Failed to read error body";
+            }
+        }).orElse(StringUtils.EMPTY);
+        throw new IOException(String.format("Azure request failed: %s %s", response.message(), errorBody));
     }
 }

@@ -113,7 +113,9 @@ public class AzurePriceListLoaderTest {
 
         final AzureRateCardPriceListLoader loader = new AzureRateCardPriceListLoader(ANY, ANY, "",
                 "https://any.com/");
-        final List<InstanceOffer> actualOffers = loader.mergeSkusWithPrices(prices, vmSkus, diskSkus,
+        final Map<String, ResourceSkuInner> normalizedVmSkus = new HashMap<>();
+        vmSkus.forEach((k, v) -> normalizedVmSkus.put(loader.buildVMKey(k), v));
+        final List<InstanceOffer> actualOffers = loader.mergeSkusWithPrices(prices, normalizedVmSkus, diskSkus,
                 METER_REGION, REGION_ID);
 
         final Map<String, InstanceOffer> expectedOffers = new HashMap<>();
@@ -202,7 +204,9 @@ public class AzurePriceListLoaderTest {
 
         final AzureEAPriceListLoader loader = new AzureEAPriceListLoader(ANY, "",
                 "https://any.com/");
-        final List<InstanceOffer> actualOffers = loader.mergeSkusWithPrices(prices, vmSkus, diskSkus,
+        final Map<String, ResourceSkuInner> normalizedVmSkus = new HashMap<>();
+        vmSkus.forEach((k, v) -> normalizedVmSkus.put(loader.buildVMKey(k), v));
+        final List<InstanceOffer> actualOffers = loader.mergeSkusWithPrices(prices, normalizedVmSkus, diskSkus,
                 METER_REGION, REGION_ID);
 
         final Map<String, InstanceOffer> expectedOffers = new HashMap<>();
@@ -291,7 +295,9 @@ public class AzurePriceListLoaderTest {
 
         final AzureEAPriceListLoader loader = new AzureEAPriceListLoader(ANY, "",
                 "https://any.com/");
-        final List<InstanceOffer> actualOffers = loader.mergeSkusWithPrices(prices, vmSkus, diskSkus,
+        final Map<String, ResourceSkuInner> normalizedVmSkus = new HashMap<>();
+        vmSkus.forEach((k, v) -> normalizedVmSkus.put(loader.buildVMKey(k), v));
+        final List<InstanceOffer> actualOffers = loader.mergeSkusWithPrices(prices, normalizedVmSkus, diskSkus,
                 METER_REGION, REGION_ID);
 
         final Map<String, InstanceOffer> expectedOffers = new HashMap<>();
