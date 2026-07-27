@@ -17,8 +17,10 @@
 package com.epam.pipeline.acl.credits;
 
 import com.epam.pipeline.controller.PagedResult;
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsResetRequest;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalanceFilterVO;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsEventService;
 import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceService;
 import com.epam.pipeline.test.acl.AbstractAclTest;
 import org.junit.Test;
@@ -46,6 +48,9 @@ public class PlatformUsageCreditsUserBalanceApiServiceTest extends AbstractAclTe
     @Autowired
     private PlatformUsageCreditsUserBalanceService mockPlatformUsageCreditsUserBalanceService;
 
+    @Autowired
+    private PlatformUsageCreditsEventService mockPlatformUsageCreditsEventService;
+
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldFilterForAdmin() {
@@ -66,23 +71,28 @@ public class PlatformUsageCreditsUserBalanceApiServiceTest extends AbstractAclTe
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldResetForSpecificUserForAdmin() {
-        apiService.reset(RESET_VALUE, Collections.singletonList(USER_ID));
+        final PlatformUsageCreditsResetRequest request = PlatformUsageCreditsResetRequest.builder()
+                .value(RESET_VALUE).userIds(Collections.singletonList(USER_ID)).build();
+        apiService.reset(request);
 
-        verify(mockPlatformUsageCreditsUserBalanceService).reset(RESET_VALUE, Collections.singletonList(USER_ID));
+        verify(mockPlatformUsageCreditsEventService).reset(request);
     }
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldResetForAllUsersForAdmin() {
-        apiService.reset(RESET_VALUE, null);
+        final PlatformUsageCreditsResetRequest request = PlatformUsageCreditsResetRequest.builder()
+                .value(RESET_VALUE).build();
+        apiService.reset(request);
 
-        verify(mockPlatformUsageCreditsUserBalanceService).reset(RESET_VALUE, null);
+        verify(mockPlatformUsageCreditsEventService).reset(request);
     }
 
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyResetForNonAdmin() {
         assertThrows(AccessDeniedException.class,
-            () -> apiService.reset(RESET_VALUE, Collections.singletonList(USER_ID)));
+            () -> apiService.reset(PlatformUsageCreditsResetRequest.builder()
+                    .value(RESET_VALUE).userIds(Collections.singletonList(USER_ID)).build()));
     }
 }

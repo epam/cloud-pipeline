@@ -17,6 +17,7 @@
 package com.epam.pipeline.dto.credits;
 
 import com.epam.pipeline.vo.SecuredEntityVO;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -29,8 +30,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PlatformUsageCreditsUpdateEvent {
-
-    private Long id;
+    private String id;
     private Long userId;
     /** Null for manual admin adjustments. */
     private Long ruleId;

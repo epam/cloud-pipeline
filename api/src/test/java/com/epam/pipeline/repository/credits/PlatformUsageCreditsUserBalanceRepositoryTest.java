@@ -32,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static com.epam.pipeline.test.creator.user.UserCreatorUtils.getPipelineUser;
@@ -293,12 +294,13 @@ public class PlatformUsageCreditsUserBalanceRepositoryTest extends AbstractJpaTe
         entityManager.flush();
         entityManager.clear();
 
-        final int result = repository.atomicUpdateBalance(
-                user1.getId(), DELTA, DEFAULT_BALANCE, MIN_BALANCE, MAX_BALANCE);
+        final Object[] result = repository.atomicUpdateBalance(
+                user1.getId(), DELTA, DEFAULT_BALANCE, MIN_BALANCE, MAX_BALANCE).get(0);
         entityManager.flush();
         entityManager.clear();
 
-        assertThat(result, is(VALUE_HIGH + DELTA));
+        assertThat(((Number) result[0]).intValue(), is(VALUE_HIGH + DELTA));
+        assertThat(((Number) result[1]).intValue(), is(DELTA));
         assertThat(repository.findByUserId(user1.getId()).get().getCurrentValue(), is(VALUE_HIGH + DELTA));
     }
 
@@ -308,12 +310,13 @@ public class PlatformUsageCreditsUserBalanceRepositoryTest extends AbstractJpaTe
         entityManager.flush();
         entityManager.clear();
 
-        final int result = repository.atomicUpdateBalance(
-                user1.getId(), -DELTA, DEFAULT_BALANCE, MIN_BALANCE, MAX_BALANCE);
+        final Object[] result = repository.atomicUpdateBalance(
+                user1.getId(), -DELTA, DEFAULT_BALANCE, MIN_BALANCE, MAX_BALANCE).get(0);
         entityManager.flush();
         entityManager.clear();
 
-        assertThat(result, is(VALUE_HIGH - DELTA));
+        assertThat(((Number) result[0]).intValue(), is(VALUE_HIGH - DELTA));
+        assertThat(((Number) result[1]).intValue(), is(-DELTA));
         assertThat(repository.findByUserId(user1.getId()).get().getCurrentValue(), is(VALUE_HIGH - DELTA));
     }
 
@@ -323,12 +326,13 @@ public class PlatformUsageCreditsUserBalanceRepositoryTest extends AbstractJpaTe
         entityManager.flush();
         entityManager.clear();
 
-        final int result = repository.atomicUpdateBalance(
-                user1.getId(), DELTA * 2, DEFAULT_BALANCE, MIN_BALANCE, MAX_BALANCE);
+        final Object[] result = repository.atomicUpdateBalance(
+                user1.getId(), DELTA * 2, DEFAULT_BALANCE, MIN_BALANCE, MAX_BALANCE).get(0);
         entityManager.flush();
         entityManager.clear();
 
-        assertThat(result, is(MAX_BALANCE));
+        assertThat(((Number) result[0]).intValue(), is(MAX_BALANCE));
+        assertThat(((Number) result[1]).intValue(), is(MAX_BALANCE - BALANCE_NEAR_MAX));
         assertThat(repository.findByUserId(user1.getId()).get().getCurrentValue(), is(MAX_BALANCE));
     }
 
@@ -338,24 +342,26 @@ public class PlatformUsageCreditsUserBalanceRepositoryTest extends AbstractJpaTe
         entityManager.flush();
         entityManager.clear();
 
-        final int result = repository.atomicUpdateBalance(
-                user1.getId(), -DELTA, DEFAULT_BALANCE, MIN_BALANCE, MAX_BALANCE);
+        final Object[] result = repository.atomicUpdateBalance(
+                user1.getId(), -DELTA, DEFAULT_BALANCE, MIN_BALANCE, MAX_BALANCE).get(0);
         entityManager.flush();
         entityManager.clear();
 
-        assertThat(result, is(MIN_BALANCE));
+        assertThat(((Number) result[0]).intValue(), is(MIN_BALANCE));
+        assertThat(((Number) result[1]).intValue(), is(MIN_BALANCE - BALANCE_NEAR_MIN));
         assertThat(repository.findByUserId(user1.getId()).get().getCurrentValue(), is(MIN_BALANCE));
     }
 
     @Test
     public void shouldCreateRowFromDefaultBalanceWhenNoRowExists() {
         // user1 has no balance row
-        final int result = repository.atomicUpdateBalance(
-                user1.getId(), DELTA, DEFAULT_BALANCE, MIN_BALANCE, MAX_BALANCE);
+        final Object[] result = repository.atomicUpdateBalance(
+                user1.getId(), DELTA, DEFAULT_BALANCE, MIN_BALANCE, MAX_BALANCE).get(0);
         entityManager.flush();
         entityManager.clear();
 
-        assertThat(result, is(DEFAULT_BALANCE + DELTA));
+        assertThat(((Number) result[0]).intValue(), is(DEFAULT_BALANCE + DELTA));
+        assertThat(((Number) result[1]).intValue(), is(DELTA));
         assertThat(repository.findByUserId(user1.getId()).get().getCurrentValue(), is(DEFAULT_BALANCE + DELTA));
     }
 
@@ -363,12 +369,13 @@ public class PlatformUsageCreditsUserBalanceRepositoryTest extends AbstractJpaTe
     public void shouldClampDefaultPlusDeltaToMaxOnFirstInsert() {
         // no row; default + delta would exceed max
         final int highDefault = MAX_BALANCE - DELTA / 2;
-        final int result = repository.atomicUpdateBalance(
-                user1.getId(), DELTA, highDefault, MIN_BALANCE, MAX_BALANCE);
+        final Object[] result = repository.atomicUpdateBalance(
+                user1.getId(), DELTA, highDefault, MIN_BALANCE, MAX_BALANCE).get(0);
         entityManager.flush();
         entityManager.clear();
 
-        assertThat(result, is(MAX_BALANCE));
+        assertThat(((Number) result[0]).intValue(), is(MAX_BALANCE));
+        assertThat(((Number) result[1]).intValue(), is(MAX_BALANCE - highDefault));
         assertThat(repository.findByUserId(user1.getId()).get().getCurrentValue(), is(MAX_BALANCE));
     }
 
@@ -381,7 +388,7 @@ public class PlatformUsageCreditsUserBalanceRepositoryTest extends AbstractJpaTe
     }
 
     private static PlatformUsageCreditsUserBalanceFilterVO filterVO(
-            final java.util.List<Long> userIds, final Integer value, final String operation) {
+            final List<Long> userIds, final Integer value, final String operation) {
         return PlatformUsageCreditsUserBalanceFilterVO.builder()
                 .userIds(userIds)
                 .value(value)

@@ -23,6 +23,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -30,10 +31,15 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PlatformUsageCreditsEventFilterVO {
-    private List<SecuredEntityVO> entities;
     private Long ruleId;
     private List<Long> userIds;
     private List<PlatformUsageCreditsUpdateAction.ActionType> incidentTypes;
+    /** Can't be used together with {@code entities}. */
+    private Boolean withoutEntityLink;
+    /** Can't be used together with {@code withoutEntityLink}. */
+    private List<SecuredEntityVO> entities;
+    private LocalDateTime from;
+    private LocalDateTime to;
     private int page;
     private int pageSize;
 }

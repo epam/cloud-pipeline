@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,11 +17,9 @@
 package com.epam.pipeline.acl.credits;
 
 import com.epam.pipeline.controller.PagedResult;
-import com.epam.pipeline.dto.credits.PlatformUsageCreditsResetRequest;
-import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
-import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalanceFilterVO;
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsEventFilterVO;
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateEvent;
 import com.epam.pipeline.manager.credits.PlatformUsageCreditsEventService;
-import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -29,22 +27,27 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
+import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_GENERAL_USER;
 
 @Service
 @RequiredArgsConstructor
-public class PlatformUsageCreditsUserBalanceApiService {
+public class PlatformUsageCreditsEventApiService {
 
-    private final PlatformUsageCreditsUserBalanceService userBalanceService;
-    private final PlatformUsageCreditsEventService eventService;
+    private final PlatformUsageCreditsEventService platformUsageCreditsUpdateEventService;
 
     @PreAuthorize(ADMIN_ONLY)
-    public PagedResult<List<PlatformUsageCreditsUserBalance>> filter(
-            final PlatformUsageCreditsUserBalanceFilterVO filter) {
-        return userBalanceService.filter(filter);
+    public List<PlatformUsageCreditsUpdateEvent> process(final List<PlatformUsageCreditsUpdateEvent> events) {
+        return platformUsageCreditsUpdateEventService.process(events);
     }
 
-    @PreAuthorize(ADMIN_ONLY)
-    public void reset(final PlatformUsageCreditsResetRequest resetRequest) {
-        eventService.reset(resetRequest);
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    public PagedResult<List<PlatformUsageCreditsUpdateEvent>> filter(
+            final PlatformUsageCreditsEventFilterVO filter) {
+        return platformUsageCreditsUpdateEventService.filter(filter);
+    }
+
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    public byte[] export(final PlatformUsageCreditsEventFilterVO filter) {
+        return platformUsageCreditsUpdateEventService.export(filter);
     }
 }

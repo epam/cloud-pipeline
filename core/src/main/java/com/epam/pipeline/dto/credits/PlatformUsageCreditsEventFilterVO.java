@@ -16,25 +16,30 @@
 
 package com.epam.pipeline.dto.credits;
 
+import com.epam.pipeline.vo.SecuredEntityVO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 @Data
-@Builder
+@Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class PlatformUsageCreditsUpdateAction {
+public class PlatformUsageCreditsEventFilterVO {
 
-    public enum ActionType {
-        INCREASE,
-        DEDUCTION,
-        RESET
-    }
-
-    private ActionType type;
-    private int value;
-    private String message;
-    private boolean perIncident;
+    private Long ruleId;
+    private List<Long> userIds;
+    private List<PlatformUsageCreditsUpdateAction.ActionType> incidentTypes;
+    /** Can't be used together with {@code entities}. */
+    private Boolean withoutEntityLink;
+    /** Can't be used together with {@code withoutEntityLink}. */
+    private List<SecuredEntityVO> entities;
+    private LocalDateTime from;
+    private LocalDateTime to;
+    private int page;
+    private int pageSize;
 }

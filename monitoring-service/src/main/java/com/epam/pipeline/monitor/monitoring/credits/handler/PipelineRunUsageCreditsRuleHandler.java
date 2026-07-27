@@ -30,6 +30,7 @@ import com.epam.pipeline.vo.PagingRunFilterVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -40,7 +41,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Component
@@ -102,15 +105,24 @@ public class PipelineRunUsageCreditsRuleHandler implements PlatformUsageCreditsR
                     continue;
                 }
 
-                final Set<Long> processedRuns = buildProcessedRunIds(rule, user, matchingRuns);
+                final List<PlatformUsageCreditsUpdateEvent> existingEvents = getExistingEvents(
+                        rule, user, matchingRuns
+                );
 
                 if (rule.getAction().isPerIncident()) {
+                    final Set<Long> processedRuns = existingEvents.stream()
+                            .map(PlatformUsageCreditsUpdateEvent::getEntity)
+                            .map(
+                                    securedEntityVO -> Optional.ofNullable(securedEntityVO)
+                                            .map(SecuredEntityVO::getEntityId).orElse(null)
+                            ).filter(Objects::nonNull)
+                            .collect(Collectors.toSet());
                     matchingRuns.stream()
                             .filter(r -> !processedRuns.contains(r.getId()))
                             .forEach(run -> newEvents.add(buildEvent(rule, user, run)));
                     log.debug("Rule '{}': {} matching run(s) for user '{}', {} already processed",
                             rule.getName(), matchingRuns.size(), owner, processedRuns.size());
-                } else if (processedRuns.isEmpty()) {
+                } else if (existingEvents.isEmpty()) {
                     newEvents.add(buildEvent(rule, user, matchingRuns.get(0)));
                     log.debug("Rule '{}': firing single event for user '{}'", rule.getName(), owner);
                 } else {
@@ -123,9 +135,9 @@ public class PipelineRunUsageCreditsRuleHandler implements PlatformUsageCreditsR
         return newEvents;
     }
 
-    private Set<Long> buildProcessedRunIds(final PlatformUsageCreditsUpdateRule rule,
-                                           final PipelineUser user,
-                                           final List<PipelineRun> matchingRuns) {
+    private List<PlatformUsageCreditsUpdateEvent> getExistingEvents(final PlatformUsageCreditsUpdateRule rule,
+                                                                    final PipelineUser user,
+                                                                    final List<PipelineRun> matchingRuns) {
         PlatformUsageCreditsEventFilterVO filter;
         if (rule.getAction().isPerIncident()) {
             filter = PlatformUsageCreditsEventFilterVO.builder()
@@ -144,18 +156,26 @@ public class PipelineRunUsageCreditsRuleHandler implements PlatformUsageCreditsR
                     .pageSize(matchingRuns.size())
                     .build();
         }
-        final List<PlatformUsageCreditsUpdateEvent> existing = client.filterPlatformUsageCreditsEvents(filter);
-        return existing.stream()
-                .map(PlatformUsageCreditsUpdateEvent::getEntity)
-                .filter(Objects::nonNull)
-                .map(SecuredEntityVO::getEntityId)
-                .collect(Collectors.toSet());
+        return client.filterPlatformUsageCreditsEvents(filter);
     }
 
+    /**
+     * Builds a credit update event for the given rule, user and (optionally) run.
+     *
+     * <p>The {@code id} is computed deterministically from the business key so that the
+     * server-side deduplication check in {@code PlatformUsageCreditsEventService#process}
+     * can recognise and discard a duplicate if the monitoring cycle fires the same event
+     * twice — see {@link com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateEvent#id}.
+     */
     private PlatformUsageCreditsUpdateEvent buildEvent(final PlatformUsageCreditsUpdateRule rule,
-                                                       final PipelineUser user,
-                                                       final PipelineRun run) {
+                                                        final PipelineUser user,
+                                                        final PipelineRun run) {
+        final String key = rule.getAction().isPerIncident() && run != null
+                ? "r:" + rule.getId() + ":PipelineRun:" + run.getId()
+                : "r:" + rule.getId() + ":u:" + user.getId();
+        final String id = UUID.nameUUIDFromBytes(key.getBytes(StandardCharsets.UTF_8)).toString();
         return PlatformUsageCreditsUpdateEvent.builder()
+                .id(id)
                 .userId(user.getId())
                 .ruleId(rule.getId())
                 .entity(run != null ? SecuredEntityVO.from(PipelineRun.class, run.getId()) : null)

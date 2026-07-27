@@ -96,9 +96,11 @@ public class PlatformUsageCreditsUserBalanceService {
      */
     public PagedResult<List<PlatformUsageCreditsUserBalance>> filter(
             final PlatformUsageCreditsUserBalanceFilterVO filter) {
+        Assert.isTrue(filter.getPage() >= 1, "Page index must be >= 1");
+        Assert.isTrue(filter.getPageSize() > 0, "Page size must be > 0");
         final Page<PlatformUsageCreditsUserBalanceEntity> page =
                 repository.findAll(PlatformUsageCreditsUserBalanceSpecification.build(filter),
-                        new PageRequest(filter.getPage(), filter.getPageSize()));
+                        new PageRequest(filter.getPage() - 1, filter.getPageSize()));
         final List<PlatformUsageCreditsUserBalance> elements = page.getContent().stream()
                 .map(mapper::toDto)
                 .collect(Collectors.toList());
@@ -188,17 +190,22 @@ public class PlatformUsageCreditsUserBalanceService {
         final int defaultBalance = getIntPreference(SystemPreferences.USAGE_CREDITS_DEFAULT, user);
         final int threshold = getIntPreference(SystemPreferences.USAGE_CREDITS_NOTIFICATION_THRESHOLD, user);
 
-        final int oldBalance = repository.findByUserId(userId)
-                .map(PlatformUsageCreditsUserBalanceEntity::getCurrentValue)
-                .orElse(defaultBalance);
-
         final int delta = ActionType.INCREASE.equals(event.getIncidentType())
                 ? event.getValue() : -event.getValue();
 
-        final int newBalance = repository.atomicUpdateBalance(
+        final List<Object[]> rows = repository.atomicUpdateBalance(
                 userId, delta, defaultBalance, minBalance, maxBalance);
-
-        final int actualValue = Math.abs(newBalance - oldBalance);
+        if (CollectionUtils.isEmpty(rows)) {
+            log.warn("atomicUpdateBalance returned no rows for user {}, skipping event", userId);
+            return event;
+        }
+        final Object[] row = rows.get(0);
+        Assert.isTrue(row.length == 2,
+                "atomicUpdateBalance row must contain 2 columns but got " + row.length);
+        final int newBalance = ((Number) row[0]).intValue();
+        final int actualDelta = ((Number) row[1]).intValue();
+        final int oldBalance = newBalance - actualDelta;
+        final int actualValue = Math.abs(actualDelta);
         event.setValue(actualValue);
 
         if (actualValue == 0) {
