@@ -55,10 +55,11 @@ public class AzureRateCardPriceListLoader extends AbstractAzurePriceListLoader {
                                                     final Map<String, ResourceSkuInner> diskSkusByName)
                                                     throws IOException {
         final Optional<AzureRateCardPricingResult> prices = getPricing(client.subscriptionId(), credentials);
-        return prices.filter(p -> CollectionUtils.isNotEmpty(p.getMeters()))
-                .map(p -> mergeSkusWithPrices(p.getMeters(), vmSkusByName, diskSkusByName,
-                        meterRegionName, region.getId()))
-                .orElseGet(() -> getOffersFromSku(vmSkusByName, diskSkusByName, region.getId()));
+        if (!prices.isPresent() || CollectionUtils.isEmpty(prices.get().getMeters())) {
+            return null;
+        }
+        return mergeSkusWithPrices(prices.get().getMeters(), vmSkusByName, diskSkusByName,
+                meterRegionName, region.getId());
     }
 
     @Override

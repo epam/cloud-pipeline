@@ -57,10 +57,11 @@ public class AzureEAPriceListLoader extends AbstractAzurePriceListLoader {
                                                     final Map<String, ResourceSkuInner> diskSkusByName)
                                                     throws IOException {
         final Optional<AzureEAPricingResult> prices = getPricing(client.subscriptionId(), credentials);
-        return prices.filter(p -> CollectionUtils.isNotEmpty(p.getProperties().getPricesheets()))
-                .map(p -> mergeSkusWithPrices(p.getProperties().getPricesheets(), vmSkusByName, diskSkusByName,
-                        meterRegionName, region.getId()))
-                .orElseGet(() -> getOffersFromSku(vmSkusByName, diskSkusByName, region.getId()));
+        if (!prices.isPresent() || CollectionUtils.isEmpty(prices.get().getProperties().getPricesheets())) {
+            return null;
+        }
+        return mergeSkusWithPrices(prices.get().getProperties().getPricesheets(), vmSkusByName, diskSkusByName,
+                meterRegionName, region.getId());
     }
 
     @Override
@@ -95,15 +96,16 @@ public class AzureEAPriceListLoader extends AbstractAzurePriceListLoader {
         Assert.isTrue(StringUtils.isNotBlank(token), "Could not find access token");
         final AzureEAPricingResult meterDetails = executeRequest(azurePricingClient.getPricesheet(
                 "Bearer " + token, subscription, getAPIVersion(), "meterDetails", BATCH_SIZE, skiptoken));
-        if (meterDetails != null && meterDetails.getProperties() != null) {
-            buffer.addAll(meterDetails.getProperties().getPricesheets());
-            if (StringUtils.isNotBlank(meterDetails.getProperties().getNextLink())) {
-                Pattern pattern = Pattern.compile(".*skiptoken=([^&]+).*");
-                Matcher matcher = pattern.matcher(meterDetails.getProperties().getNextLink());
-                if (matcher.matches()) {
-                    skiptoken = matcher.group(1);
-                    return getPriceSheet(buffer, subscription, credentials, skiptoken);
-                }
+        if (meterDetails == null || meterDetails.getProperties() == null) {
+            throw new IOException("Azure EA price sheet response body is empty");
+        }
+        buffer.addAll(meterDetails.getProperties().getPricesheets());
+        if (StringUtils.isNotBlank(meterDetails.getProperties().getNextLink())) {
+            Pattern pattern = Pattern.compile(".*skiptoken=([^&]+).*");
+            Matcher matcher = pattern.matcher(meterDetails.getProperties().getNextLink());
+            if (matcher.matches()) {
+                skiptoken = matcher.group(1);
+                return getPriceSheet(buffer, subscription, credentials, skiptoken);
             }
         }
         return buffer;

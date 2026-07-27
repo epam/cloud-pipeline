@@ -103,7 +103,7 @@ public abstract class AbstractAzurePriceListLoader {
 
     }
 
-    public List<InstanceOffer> load(final AbstractCloudRegion region) throws IOException {
+    public List<InstanceOffer> load(final AbstractCloudRegion region, final boolean useFallback) throws IOException {
         final AzureTokenCredentials credentials = getAzureCredentials();
         final Azure client = AzureHelper.buildClient(authPath);
 
@@ -122,7 +122,12 @@ public abstract class AbstractAzurePriceListLoader {
                 .filter(sku -> Objects.nonNull(sku.size()) && isAvailableForSubscription(sku))
                 .collect(Collectors.toMap(ResourceSkuInner::size, Function.identity(), (o1, o2) -> o1));
 
-        return getInstanceOffers(region, credentials, client, vmSkusByName, diskSkusByName);
+        final List<InstanceOffer> offers =
+                getInstanceOffers(region, credentials, client, vmSkusByName, diskSkusByName);
+        if (offers == null && useFallback) {
+            return getOffersFromSku(vmSkusByName, diskSkusByName, region.getId());
+        }
+        return offers;
     }
 
     protected abstract List<InstanceOffer> getInstanceOffers(AbstractCloudRegion region,

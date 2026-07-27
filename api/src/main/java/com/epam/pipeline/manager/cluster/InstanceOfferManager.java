@@ -443,7 +443,7 @@ public class InstanceOfferManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public void refreshPriceList() {
         LOGGER.debug(messageHelper.getMessage(MessageConstants.DEBUG_INSTANCE_OFFERS_UPDATE_STARTED));
-        instanceOfferDao.removeInstanceOffers();
+        instanceOfferDao.removeInstanceOffersForInactiveRegions();
         List<InstanceOffer> instanceOffers = cloudRegionManager.loadAll()
                 .stream()
                 .map(this::updatePriceListForRegion)
@@ -459,8 +459,13 @@ public class InstanceOfferManager {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public List<InstanceOffer> updatePriceListForRegion(AbstractCloudRegion cloudRegion) {
+        final List<InstanceOffer> instanceOffers = cloudFacade.refreshPriceListForRegion(cloudRegion.getId());
+        if (instanceOffers == null) {
+            LOGGER.warn("Price list refresh for region {} returned no data, keeping existing offers",
+                    cloudRegion.getName());
+            return Collections.emptyList();
+        }
         instanceOfferDao.removeInstanceOffersForRegion(cloudRegion.getId());
-        List<InstanceOffer> instanceOffers = cloudFacade.refreshPriceListForRegion(cloudRegion.getId());
         instanceOfferDao.insertInstanceOffers(instanceOffers);
         return instanceOffers;
     }
