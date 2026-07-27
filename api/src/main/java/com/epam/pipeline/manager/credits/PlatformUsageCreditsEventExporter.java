@@ -22,6 +22,7 @@ import com.epam.pipeline.vo.SecuredEntityVO;
 import com.opencsv.CSVWriter;
 import org.apache.commons.lang.StringUtils;
 
+import java.io.IOException;
 import java.io.StringWriter;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -37,9 +38,12 @@ public class PlatformUsageCreditsEventExporter {
 
     public String export(final List<PlatformUsageCreditsUpdateEvent> events) {
         final StringWriter writer = new StringWriter();
-        final CSVWriter csvWriter = new CSVWriter(writer);
-        csvWriter.writeNext(HEADER, false);
-        events.forEach(event -> csvWriter.writeNext(toLine(event), false));
+        try (CSVWriter csvWriter = new CSVWriter(writer)) {
+            csvWriter.writeNext(HEADER, false);
+            events.forEach(event -> csvWriter.writeNext(toLine(event), false));
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to export credits events to CSV", e);
+        }
         return writer.toString();
     }
 

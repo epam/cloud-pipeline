@@ -42,7 +42,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -113,6 +113,7 @@ public class PlatformUsageCreditsEventService {
      * @return paged result containing matched events and total count
      * @throws IllegalArgumentException if both {@code entities} and {@code withoutEntityLink} are set
      */
+    @Transactional(readOnly = true)
     public PagedResult<List<PlatformUsageCreditsUpdateEvent>> filter(final PlatformUsageCreditsEventFilterVO filter) {
         Assert.isTrue(!Boolean.TRUE.equals(filter.getWithoutEntityLink())
                         || ListUtils.emptyIfNull(filter.getEntities()).isEmpty(),
@@ -140,6 +141,7 @@ public class PlatformUsageCreditsEventService {
      * @param filter query criteria (pagination fields ignored)
      * @return UTF-8 CSV bytes with a header row followed by one row per event
      */
+    @Transactional(readOnly = true)
     public byte[] export(final PlatformUsageCreditsEventFilterVO filter) {
         final List<PlatformUsageCreditsUpdateEvent> all = new ArrayList<>();
         int page = 1;
@@ -150,7 +152,7 @@ public class PlatformUsageCreditsEventService {
             batch = filter(pageFilter).getElements();
             all.addAll(batch);
         } while (batch.size() == EXPORT_PAGE_SIZE);
-        return new PlatformUsageCreditsEventExporter().export(all).getBytes(Charset.defaultCharset());
+        return new PlatformUsageCreditsEventExporter().export(all).getBytes(StandardCharsets.UTF_8);
     }
 
     /**
