@@ -397,6 +397,7 @@ public class InstanceOfferManager {
 
     public void refreshPriceList() {
         LOGGER.debug(messageHelper.getMessage(MessageConstants.DEBUG_INSTANCE_OFFERS_UPDATE_STARTED));
+        instanceOfferDao.removeInstanceOffersForInactiveRegions();
         List<InstanceOffer> offers = cloudRegionManager.loadAll()
                 .stream()
                 .map(this::updatePriceList)
@@ -420,6 +421,11 @@ public class InstanceOfferManager {
     private List<InstanceOffer> updatePriceList(final AbstractCloudRegion region) {
         try {
             final List<InstanceOffer> offers = retrievePriceList(region);
+            if (offers == null) {
+                LOGGER.warn("Price list refresh for region {} {} #{} returned no data, keeping existing offers",
+                        region.getProvider(), region.getRegionCode(), region.getId());
+                return Collections.emptyList();
+            }
             if (offers.isEmpty()) {
                 LOGGER.warn("Skipping instance offers update for region {} {} #{} " +
                                 "because no instance offers have been retrieved...",
@@ -439,8 +445,10 @@ public class InstanceOfferManager {
         LOGGER.debug("Retrieving instance offers for region {} {} #{}...",
                 region.getProvider(), region.getRegionCode(), region.getId());
         final List<InstanceOffer> offers = cloudFacade.refreshPriceListForRegion(region.getId());
-        LOGGER.debug("Retrieved {} instance offers for region {} {} #{}.",
-                offers.size(), region.getProvider(), region.getRegionCode(), region.getId());
+        if (offers != null) {
+            LOGGER.debug("Retrieved {} instance offers for region {} {} #{}.",
+                    offers.size(), region.getProvider(), region.getRegionCode(), region.getId());
+        }
         return offers;
     }
 

@@ -28,8 +28,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -51,19 +49,33 @@ public class AzureInstancePriceService implements CloudInstancePriceService<Azur
     @Override
     public List<InstanceOffer> refreshPriceListForRegion(final AzureRegion region) {
         try {
-            final String authPath = region.getAuthFile();
-            if (region.isEnterpriseAgreements()) {
-                return new AzureEAPriceListLoader(authPath, region.getMeterRegionName(), region.getAzureApiUrl())
-                        .load(region);
-            } else {
-                return new AzureRateCardPriceListLoader(authPath, region.getPriceOfferId(),
-                        region.getMeterRegionName(), region.getAzureApiUrl())
-                        .load(region);
+            final List<InstanceOffer> result = getLoaderForRegion(region).load(
+                    region, !hasExistingOffersInDb(region.getId())
+            );
+            if (result != null) {
+                return result;
             }
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
-            return Collections.emptyList();
+            log.warn("Azure prices not available for region {}, keeping existing offers", region.getId());
+            return null;
+        } catch (Exception e) {
+            log.error("Failed to load Azure prices for region {}, keeping existing offers",
+                    region.getId(), e);
+            return null;
         }
+    }
+
+    private static AbstractAzurePriceListLoader getLoaderForRegion(final AzureRegion region) {
+        if (region.isEnterpriseAgreements()) {
+            return new AzureEAPriceListLoader(region.getAuthFile(),
+                    region.getMeterRegionName(), region.getAzureApiUrl());
+        } else {
+            return new AzureRateCardPriceListLoader(region.getAuthFile(), region.getPriceOfferId(),
+                    region.getMeterRegionName(), region.getAzureApiUrl());
+        }
+    }
+
+    private boolean hasExistingOffersInDb(final Long regionId) {
+        return instanceOfferDao.getPriceListPublishDateForRegion(regionId) != null;
     }
 
     @Override

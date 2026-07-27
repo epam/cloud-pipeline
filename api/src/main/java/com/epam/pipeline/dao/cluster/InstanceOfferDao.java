@@ -52,6 +52,8 @@ public class InstanceOfferDao extends NamedParameterJdbcDaoSupport {
     private final String loadFirstInstanceOffer;
     private final String loadInstanceTypesQuery;
     private final String removeInstanceOffersForRegionQuery;
+    private final String removeInstanceOffersForInactiveRegionsQuery;
+    private final String getPriceListPublishDateForRegionQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
     @SuppressWarnings("unchecked")
@@ -72,6 +74,11 @@ public class InstanceOfferDao extends NamedParameterJdbcDaoSupport {
     @Transactional(propagation = Propagation.MANDATORY)
     public void removeInstanceOffersForRegion(Long regionId) {
         getJdbcTemplate().update(removeInstanceOffersForRegionQuery, regionId);
+    }
+
+    @Transactional
+    public void removeInstanceOffersForInactiveRegions() {
+        getJdbcTemplate().update(removeInstanceOffersForInactiveRegionsQuery);
     }
 
     @Transactional
@@ -99,6 +106,15 @@ public class InstanceOfferDao extends NamedParameterJdbcDaoSupport {
         String query = wherePattern.matcher(loadInstanceTypesQuery)
             .replaceFirst("");
         return getNamedParameterJdbcTemplate().query(query, params, InstanceTypeParameters.getRowMapper());
+    }
+
+    public Date getPriceListPublishDateForRegion(final Long regionId) {
+        final List<Date> dates = getNamedParameterJdbcTemplate().query(
+                getPriceListPublishDateForRegionQuery,
+                new MapSqlParameterSource(InstanceOfferParameters.REGION.name(), regionId),
+                (rs, rowNum) -> new Date(
+                        rs.getTimestamp(InstanceOfferParameters.PRICE_LIST_PUBLISH_DATE.name()).getTime()));
+        return CollectionUtils.isNotEmpty(dates) ? dates.get(0) : null;
     }
 
     public Date getPriceListPublishDate() {

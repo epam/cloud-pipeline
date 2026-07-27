@@ -29,6 +29,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.util.Assert;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -52,12 +53,14 @@ public class AzureRateCardPriceListLoader extends AbstractAzurePriceListLoader {
                                                     final TokenCredential credential,
                                                     final AzureResourceManager client,
                                                     final Map<String, ResourceSkuInner> vmSkusByName,
-                                                    final Map<String, ResourceSkuInner> diskSkusByName) {
+                                                    final Map<String, ResourceSkuInner> diskSkusByName)
+                                                    throws IOException {
         final Optional<AzureRateCardPricingResult> prices = getPricing(client.subscriptionId(), credential);
-        return prices.filter(p -> CollectionUtils.isNotEmpty(p.getMeters()))
-                .map(p -> mergeSkusWithPrices(p.getMeters(), vmSkusByName, diskSkusByName,
-                        meterRegionName, region.getId()))
-                .orElseGet(() -> getOffersFromSku(vmSkusByName, diskSkusByName, region.getId()));
+        if (!prices.isPresent() || CollectionUtils.isEmpty(prices.get().getMeters())) {
+            return null;
+        }
+        return mergeSkusWithPrices(prices.get().getMeters(), vmSkusByName, diskSkusByName,
+                meterRegionName, region.getId());
     }
 
     @Override
@@ -66,7 +69,7 @@ public class AzureRateCardPriceListLoader extends AbstractAzurePriceListLoader {
     }
 
     private Optional<AzureRateCardPricingResult> getPricing(final String subscription,
-                                                            final TokenCredential credential) {
+                                                            final TokenCredential credential) throws IOException {
         if (StringUtils.isBlank(offerId)) {
             return Optional.empty();
         }

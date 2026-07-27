@@ -40,6 +40,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
+import org.mockito.InOrder;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -50,7 +51,10 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -340,6 +344,38 @@ public class InstanceOfferManagerUnitTest {
 
         assertTrue(instanceOfferManager.isPriceTypeAllowed(SPOT));
         verify(contextualPreferenceManager).searchList(eq(PRICE_TYPES_PREFERENCES), eq(null));
+    }
+
+    @Test
+    public void updatePriceListShouldNotUpdateDbWhenCloudFacadeReturnsNull() {
+        when(cloudFacade.refreshPriceListForRegion(REGION_ID)).thenReturn(null);
+
+        instanceOfferManager.refreshPriceList(defaultRegion);
+
+        verify(instanceOfferDao, never()).replaceInstanceOffersForRegion(any(), any(), anyInt());
+    }
+
+    @Test
+    public void updatePriceListShouldReplaceOffersWhenCloudFacadeReturnsOffers() {
+        final List<InstanceOffer> offers = Collections.singletonList(new InstanceOffer());
+        when(cloudFacade.refreshPriceListForRegion(REGION_ID)).thenReturn(offers);
+
+        instanceOfferManager.refreshPriceList(defaultRegion);
+
+        verify(instanceOfferDao).replaceInstanceOffersForRegion(eq(REGION_ID), anyList(), anyInt());
+    }
+
+    @Test
+    public void refreshPriceListShouldRemoveOffersForInactiveRegionsBeforeUpdatingRegions() {
+        doReturn(Collections.singletonList(defaultRegion)).when(cloudRegionManager).loadAll();
+        when(cloudFacade.refreshPriceListForRegion(REGION_ID)).thenReturn(null);
+        when(cloudFacade.getAllInstanceTypes(any(), anyBoolean())).thenReturn(Collections.emptyList());
+
+        instanceOfferManager.refreshPriceList();
+
+        final InOrder inOrder = inOrder(instanceOfferDao, cloudFacade);
+        inOrder.verify(instanceOfferDao).removeInstanceOffersForInactiveRegions();
+        inOrder.verify(cloudFacade).refreshPriceListForRegion(REGION_ID);
     }
 
     private InstanceType instanceType(final String name, final AbstractCloudRegion region) {

@@ -84,6 +84,17 @@
                 ]]>
             </value>
         </constructor-arg>
+        <constructor-arg name="removeInstanceOffersForInactiveRegionsQuery">
+            <value>
+                <![CDATA[
+                    WITH active_regions AS (
+                        SELECT region_id FROM pipeline.cloud_region
+                    )
+                    DELETE FROM pipeline.instance_offer
+                    WHERE region NOT IN (SELECT region_id FROM active_regions)
+                ]]>
+            </value>
+        </constructor-arg>
         <constructor-arg name="loadInstanceOfferQuery">
             <value>
                 <![CDATA[
@@ -175,6 +186,16 @@
                     FROM
                         pipeline.instance_offer i
                     INNER JOIN pipeline.cloud_region r ON r.region_id = i.region
+                    LIMIT 1
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg name="getPriceListPublishDateForRegionQuery">
+            <value>
+                <![CDATA[
+                    SELECT i.price_list_publish_date
+                    FROM pipeline.instance_offer i
+                    WHERE i.region = :REGION
                     LIMIT 1
                 ]]>
             </value>

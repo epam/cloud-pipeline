@@ -58,10 +58,11 @@ public class AzureEAPriceListLoader extends AbstractAzurePriceListLoader {
                                                     final Map<String, ResourceSkuInner> diskSkusByName)
                                                     throws IOException {
         final Optional<AzureEAPricingResult> prices = getPricing(client.subscriptionId(), credentials);
-        return prices.filter(p -> CollectionUtils.isNotEmpty(p.getProperties().getPricesheets()))
-                .map(p -> mergeSkusWithPrices(p.getProperties().getPricesheets(), vmSkusByName, diskSkusByName,
-                        meterRegionName, region.getId()))
-                .orElseGet(() -> getOffersFromSku(vmSkusByName, diskSkusByName, region.getId()));
+        if (!prices.isPresent() || CollectionUtils.isEmpty(prices.get().getProperties().getPricesheets())) {
+            return null;
+        }
+        return mergeSkusWithPrices(prices.get().getProperties().getPricesheets(), vmSkusByName, diskSkusByName,
+                meterRegionName, region.getId());
     }
 
     @Override
@@ -70,12 +71,13 @@ public class AzureEAPriceListLoader extends AbstractAzurePriceListLoader {
     }
 
     private Optional<AzureEAPricingResult> getPricing(final String subscription,
-                                                      final TokenCredential credentials) {
+                                                      final TokenCredential credentials) throws IOException {
         Assert.isTrue(StringUtils.isNotBlank(subscription), "Could not find subscription ID");
         return Optional.of(getPriceSheet(subscription, credentials));
     }
 
-    private AzureEAPricingResult getPriceSheet(final String subscription, final TokenCredential credentials) {
+    private AzureEAPricingResult getPriceSheet(final String subscription, final TokenCredential credentials)
+            throws IOException {
         return AzureEAPricingResult.builder().properties(
                 AzureEAPricingResult.PricingProperties.builder().pricesheets(
                     getPriceSheet(new ArrayList<>(), subscription, credentials, null)
@@ -87,20 +89,22 @@ public class AzureEAPriceListLoader extends AbstractAzurePriceListLoader {
     }
 
     private List<AzureEAPricingMeter> getPriceSheet(final List<AzureEAPricingMeter> buffer, final String subscription,
-                                                    final TokenCredential credentials, String skiptoken) {
+                                                    final TokenCredential credentials, String skiptoken)
+            throws IOException {
         final String token = AzureHelper.getBearerToken(credentials);
         Assert.isTrue(StringUtils.isNotBlank(token), "Could not find access token");
         final AzureEAPricingResult meterDetails = executeRequest(azurePricingClient.getPricesheet(
                 "Bearer " + token, subscription, getAPIVersion(), "meterDetails", BATCH_SIZE, skiptoken));
-        if (meterDetails != null && meterDetails.getProperties() != null) {
-            buffer.addAll(meterDetails.getProperties().getPricesheets());
-            if (StringUtils.isNotBlank(meterDetails.getProperties().getNextLink())) {
-                Pattern pattern = Pattern.compile(".*skiptoken=([^&]+).*");
-                Matcher matcher = pattern.matcher(meterDetails.getProperties().getNextLink());
-                if (matcher.matches()) {
-                    skiptoken = matcher.group(1);
-                    return getPriceSheet(buffer, subscription, credentials, skiptoken);
-                }
+        if (meterDetails == null || meterDetails.getProperties() == null) {
+            throw new IOException("Azure EA price sheet response body is empty");
+        }
+        buffer.addAll(meterDetails.getProperties().getPricesheets());
+        if (StringUtils.isNotBlank(meterDetails.getProperties().getNextLink())) {
+            Pattern pattern = Pattern.compile(".*skiptoken=([^&]+).*");
+            Matcher matcher = pattern.matcher(meterDetails.getProperties().getNextLink());
+            if (matcher.matches()) {
+                skiptoken = matcher.group(1);
+                return getPriceSheet(buffer, subscription, credentials, skiptoken);
             }
         }
         return buffer;

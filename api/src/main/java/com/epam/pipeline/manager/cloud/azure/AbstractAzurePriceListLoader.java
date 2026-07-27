@@ -101,7 +101,7 @@ public abstract class AbstractAzurePriceListLoader {
 
     }
 
-    public List<InstanceOffer> load(final AzureRegion region) throws IOException {
+    public List<InstanceOffer> load(final AzureRegion region, final boolean useFallback) throws IOException {
         final AzureCredentials credential = AzureHelper.getAzureCredentials(region);
         final AzureResourceManager client = AzureHelper.buildClient(credential);
 
@@ -120,7 +120,12 @@ public abstract class AbstractAzurePriceListLoader {
                 .filter(sku -> Objects.nonNull(sku.size()) && isAvailableForSubscription(sku))
                 .collect(Collectors.toMap(ResourceSkuInner::size, Function.identity(), (o1, o2) -> o1));
 
-        return getInstanceOffers(region, credential.getCredential(), client, vmSkusByName, diskSkusByName);
+        final List<InstanceOffer> offers =
+                getInstanceOffers(region, credential.getCredential(), client, vmSkusByName, diskSkusByName);
+        if (offers == null && useFallback) {
+            return getOffersFromSku(vmSkusByName, diskSkusByName, region.getId());
+        }
+        return offers;
     }
 
     protected abstract List<InstanceOffer> getInstanceOffers(AzureRegion region,
@@ -359,7 +364,7 @@ public abstract class AbstractAzurePriceListLoader {
         return retrofit.create(AzurePricingClient.class);
     }
 
-    private String buildVMKey(final String input) {
+    String buildVMKey(final String input) {
         return input.replaceAll("_|-|\\s+", "")
                 .toLowerCase();
     }
