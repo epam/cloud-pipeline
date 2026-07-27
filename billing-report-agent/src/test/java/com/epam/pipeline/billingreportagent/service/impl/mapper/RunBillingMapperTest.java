@@ -168,7 +168,7 @@ public class RunBillingMapperTest {
 
         assertEquals(SearchDocumentType.PIPELINE_RUN.name(),
                 mappedFields.get(ElasticsearchSynchronizer.DOC_TYPE_FIELD));
-        assertEquals(TEST_DATE, mappedFields.get("created_date"));
+        assertEquals(TEST_DATE.toString(), mappedFields.get("created_date"));
         assertEquals(ResourceType.COMPUTE, mappedFields.get("resource_type"));
         assertEquals(TEST_REGION_ID, mappedFields.get("cloudRegionId"));
         assertEquals(TEST_REGION_NAME, mappedFields.get("cloud_region_name"));
