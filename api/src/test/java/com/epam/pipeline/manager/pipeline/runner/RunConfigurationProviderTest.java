@@ -178,7 +178,7 @@ public class RunConfigurationProviderTest {
         runConfigurationEntry.setConfiguration(pipelineConfiguration);
 
         assertThrows(IllegalArgumentException.class,
-                () -> runConfigurationProvider.validateEntry(runConfigurationEntry));
+            () -> runConfigurationProvider.validateEntry(runConfigurationEntry));
     }
 
     @Test
