@@ -31,6 +31,8 @@ import static org.mockito.Mockito.when;
 
 public class AzurePricingClientTest {
 
+    public static final int CODE_500 = 500;
+
     @Test
     public void executeRequestShouldReturnBodyOnSuccessfulResponse() throws IOException {
         final Call<String> call = mock(Call.class);
@@ -45,7 +47,7 @@ public class AzurePricingClientTest {
     public void executeRequestShouldThrowIOExceptionOnNonSuccessfulResponse() throws IOException {
         final Call<String> call = mock(Call.class);
         when(call.execute()).thenReturn(
-                Response.error(500, ResponseBody.create(MediaType.parse("text/plain"), "server error")));
+                Response.error(CODE_500, ResponseBody.create(MediaType.parse("text/plain"), "server error")));
 
         AzurePricingClient.executeRequest(call);
     }
