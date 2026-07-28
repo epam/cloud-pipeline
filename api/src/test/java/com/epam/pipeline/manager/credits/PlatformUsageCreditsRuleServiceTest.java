@@ -246,6 +246,32 @@ public class PlatformUsageCreditsRuleServiceTest {
     }
 
     @Test
+    public void shouldFailCreateIfTimeWindowIsZero() {
+        final PlatformUsageCreditsUpdateRule rule = platformUsageCreditsRule();
+        rule.setTimeWindow(0);
+
+        assertThrows(IllegalArgumentException.class, () -> manager.create(rule));
+    }
+
+    @Test
+    public void shouldFailCreateIfTimeWindowIsNegative() {
+        final PlatformUsageCreditsUpdateRule rule = platformUsageCreditsRule();
+        rule.setTimeWindow(-1);
+
+        assertThrows(IllegalArgumentException.class, () -> manager.create(rule));
+    }
+
+    @Test
+    public void shouldFailUpdateIfTimeWindowIsZero() {
+        final PlatformUsageCreditsUpdateRuleEntity existing = platformUsageCreditsRuleEntity();
+        doReturn(existing).when(repository).findOne(ID);
+        final PlatformUsageCreditsUpdateRule rule = platformUsageCreditsRule();
+        rule.setTimeWindow(0);
+
+        assertThrows(IllegalArgumentException.class, () -> manager.update(ID, rule));
+    }
+
+    @Test
     public void shouldFailCreateIfDurationSetOnNonDurationField() {
         final PlatformUsageCreditsUpdateRule rule = platformUsageCreditsRule();
         // run.status is ENUM and does NOT support duration

@@ -36,5 +36,4 @@ public class PlatformUsageCreditsUpdateAction {
     private ActionType type;
     private int value;
     private String message;
-    private boolean perIncident;
 }

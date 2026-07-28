@@ -27,13 +27,11 @@ public interface PlatformUsageCreditsRuleMapper {
     @Mapping(target = "action.type", source = "actionType")
     @Mapping(target = "action.value", source = "actionValue")
     @Mapping(target = "action.message", source = "actionMessage")
-    @Mapping(target = "action.perIncident", source = "perIncident")
     PlatformUsageCreditsUpdateRule toDto(PlatformUsageCreditsUpdateRuleEntity entity);
 
     @Mapping(target = "actionType", source = "action.type")
     @Mapping(target = "actionValue", source = "action.value")
     @Mapping(target = "actionMessage", source = "action.message")
-    @Mapping(target = "perIncident", source = "action.perIncident")
     @Mapping(target = "createdDate", ignore = true)
     @Mapping(target = "modifiedDate", ignore = true)
     PlatformUsageCreditsUpdateRuleEntity toEntity(PlatformUsageCreditsUpdateRule rule);

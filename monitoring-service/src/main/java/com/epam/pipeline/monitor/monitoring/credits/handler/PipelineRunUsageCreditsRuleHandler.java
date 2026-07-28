@@ -106,10 +106,10 @@ public class PipelineRunUsageCreditsRuleHandler implements PlatformUsageCreditsR
                 }
 
                 final List<PlatformUsageCreditsUpdateEvent> existingEvents = getExistingEvents(
-                        rule, user, matchingRuns
+                        rule, user, matchingRuns, till
                 );
 
-                if (rule.getAction().isPerIncident()) {
+                if (rule.getTimeWindow() == null) {
                     final Set<Long> processedRuns = existingEvents.stream()
                             .map(PlatformUsageCreditsUpdateEvent::getEntity)
                             .map(
@@ -126,7 +126,8 @@ public class PipelineRunUsageCreditsRuleHandler implements PlatformUsageCreditsR
                     newEvents.add(buildEvent(rule, user, matchingRuns.get(0)));
                     log.debug("Rule '{}': firing single event for user '{}'", rule.getName(), owner);
                 } else {
-                    log.debug("Rule '{}': already fired for user '{}', skipping", rule.getName(), owner);
+                    log.debug("Rule '{}': already fired for user '{}' within {}h window, skipping",
+                            rule.getName(), owner, rule.getTimeWindow());
                 }
             }
         }
@@ -137,9 +138,10 @@ public class PipelineRunUsageCreditsRuleHandler implements PlatformUsageCreditsR
 
     private List<PlatformUsageCreditsUpdateEvent> getExistingEvents(final PlatformUsageCreditsUpdateRule rule,
                                                                     final PipelineUser user,
-                                                                    final List<PipelineRun> matchingRuns) {
-        PlatformUsageCreditsEventFilterVO filter;
-        if (rule.getAction().isPerIncident()) {
+                                                                    final List<PipelineRun> matchingRuns,
+                                                                    final LocalDateTime till) {
+        final PlatformUsageCreditsEventFilterVO filter;
+        if (rule.getTimeWindow() == null) {
             filter = PlatformUsageCreditsEventFilterVO.builder()
                     .entities(matchingRuns.stream()
                             .map(r -> SecuredEntityVO.from(PipelineRun.class, r.getId()))
@@ -152,28 +154,36 @@ public class PipelineRunUsageCreditsRuleHandler implements PlatformUsageCreditsR
             filter = PlatformUsageCreditsEventFilterVO.builder()
                     .userIds(Collections.singletonList(user.getId()))
                     .ruleId(rule.getId())
+                    .from(till.minusHours(rule.getTimeWindow()))
                     .page(1)
-                    .pageSize(matchingRuns.size())
+                    .pageSize(1)
                     .build();
         }
         return client.filterPlatformUsageCreditsEvents(filter);
     }
 
     /**
-     * Builds a credit update event for the given rule, user and (optionally) run.
+     * Builds a credit update event for the given rule, user and run.
      *
-     * <p>The {@code id} is computed deterministically from the business key so that the
-     * server-side deduplication check in {@code PlatformUsageCreditsEventService#process}
-     * can recognise and discard a duplicate if the monitoring cycle fires the same event
-     * twice — see {@link com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateEvent#id}.
+     * <p>For per-incident rules ({@code timeWindow == null}) the id is deterministic
+     * (keyed on rule + run) so that the server-side dedup in
+     * {@code PlatformUsageCreditsEventService#process} discards a duplicate if the same
+     * monitoring cycle fires the same event twice.
+     *
+     * <p>For rolling time-window rules the id is a random UUID — deduplication is handled
+     * entirely by the {@code getExistingEvents} filter (rolling lookback of {@code timeWindow}
+     * hours), so there is no need for a stable id across cycles.
      */
     private PlatformUsageCreditsUpdateEvent buildEvent(final PlatformUsageCreditsUpdateRule rule,
                                                         final PipelineUser user,
                                                         final PipelineRun run) {
-        final String key = rule.getAction().isPerIncident() && run != null
-                ? "r:" + rule.getId() + ":PipelineRun:" + run.getId()
-                : "r:" + rule.getId() + ":u:" + user.getId();
-        final String id = UUID.nameUUIDFromBytes(key.getBytes(StandardCharsets.UTF_8)).toString();
+        final String id;
+        if (rule.getTimeWindow() == null) {
+            final String key = "r:" + rule.getId() + ":PipelineRun:" + run.getId();
+            id = UUID.nameUUIDFromBytes(key.getBytes(StandardCharsets.UTF_8)).toString();
+        } else {
+            id = UUID.randomUUID().toString();
+        }
         return PlatformUsageCreditsUpdateEvent.builder()
                 .id(id)
                 .userId(user.getId())

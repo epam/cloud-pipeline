@@ -61,7 +61,7 @@ public class PlatformUsageCreditsUpdateRuleRepositoryTest extends AbstractJpaTes
         assertThat(loaded.getActionType(), is(rule.getActionType()));
         assertThat(loaded.getActionValue(), is(rule.getActionValue()));
         assertThat(loaded.getActionMessage(), is(rule.getActionMessage()));
-        assertThat(loaded.isPerIncident(), is(rule.isPerIncident()));
+        assertThat(loaded.getTimeWindow(), is(rule.getTimeWindow()));
         assertThat(loaded.getStatement(), notNullValue());
         assertThat(loaded.getStatement().getField(),
                 is(rule.getStatement().getField()));

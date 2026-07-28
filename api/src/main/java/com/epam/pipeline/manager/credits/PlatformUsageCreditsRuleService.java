@@ -56,7 +56,7 @@ import java.util.stream.Collectors;
  * condition is met. Rules are evaluated periodically by the monitoring service; this service
  * is responsible only for their lifecycle management.
  *
- * <p><b>Example — penalise idle runs:</b>
+ * <p><b>Example — penalise idle runs (per incident, no time window):</b>
  * <pre>{@code
  * {
  *   "name": "Idle Run Penalty",
@@ -65,22 +65,25 @@ import java.util.stream.Collectors;
  *                         "value": "IDLE", "duration": 48 },
  *   "exclude": { "conditionType": "LOGICAL",
  *                          "field": "run.spot", "operand": "=", "value": "true" },
- *   "action": { "type": "DEDUCTION", "value": 100, "perIncident": true }
+ *   "action": { "type": "DEDUCTION", "value": 100 }
  * }
  * }</pre>
- * Deducts 100 CPU credits each time a non-spot run has carried the {@code IDLE} tag for
- * at least 48 hours.
+ * Deducts 100 CPU credits for each matching non-spot run individually ({@code timeWindow} absent
+ * → per-incident mode: one event per run).
  *
- * <p><b>Example — reward spot usage:</b>
+ * <p><b>Example — reward spot usage (once per 24-hour window):</b>
  * <pre>{@code
  * {
  *   "name": "Spot Usage Reward",
  *   "statement": { "conditionType": "LOGICAL",
  *                         "field": "run.spot", "operand": "=", "value": "true" },
- *   "action": { "type": "INCREASE", "value": 200, "perIncident": false }
+ *   "action": { "type": "INCREASE", "value": 200 },
+ *   "timeWindow": 24
  * }
  * }</pre>
- * Awards 200 CPU credits once per spot run regardless of how often the rule fires.
+ * Awards 200 CPU credits at most once per user in any rolling 24-hour window, regardless of
+ * how many matching runs exist. {@code timeWindow} is expressed in hours and must be a positive
+ * integer when set.
  *
  * <p>Before any rule is persisted, the service:
  * <ul>
@@ -166,6 +169,7 @@ public class PlatformUsageCreditsRuleService {
                 messageHelper.getMessage(MessageConstants.ERROR_PLATFORM_USAGE_CREDITS_RULE_FILTER_EMPTY));
         Assert.notNull(rule.getAction(),
                 messageHelper.getMessage(MessageConstants.ERROR_PLATFORM_USAGE_CREDITS_RULE_ACTION_EMPTY));
+        validateTimeWindow(rule);
         final Map<String, ? extends SubjectEntityField<? extends AbstractSecuredEntity>> displayNames =
                 SubjectEntityField.byDisplayNames(rule.getRuleType().getEntityClass());
         validateExpression(rule.getStatement(), displayNames);
@@ -225,6 +229,11 @@ public class PlatformUsageCreditsRuleService {
         Assert.isTrue(Objects.isNull(leaf.getDuration()) || field.isSupportsDuration(),
                 messageHelper.getMessage(
                         MessageConstants.ERROR_PLATFORM_USAGE_CREDITS_RULE_DURATION_NOT_SUPPORTED, fieldName));
+    }
+
+    private void validateTimeWindow(final PlatformUsageCreditsUpdateRule rule) {
+        Assert.isTrue(Objects.isNull(rule.getTimeWindow()) || rule.getTimeWindow() > 0,
+                messageHelper.getMessage(MessageConstants.ERROR_PLATFORM_USAGE_CREDITS_RULE_TIME_WINDOW_INVALID));
     }
 
     private FilterFieldVO toKeyword(final String name,
