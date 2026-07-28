@@ -431,6 +431,8 @@ public final class MessageConstants {
     public static final String ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED = "instance.type.not.allowed";
     public static final String ERROR_PRICE_TYPE_IS_NOT_ALLOWED = "price.type.not.allowed";
     public static final String ERROR_INSTANCE_DISK_IS_INVALID = "instance.disk.invalid";
+    public static final String ERROR_FALLBACK_INSTANCE_TYPES_EXCEEDS_LIMIT =
+            "fallback.instance.types.exceed.limit";
 
     // Cloud
     public static final String CLOUD_BUCKET_ALREADY_EXISTS = "cloud.bucket.already.exists";
