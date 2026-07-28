@@ -19,6 +19,7 @@ package com.epam.pipeline.monitor.monitoring.credits.handler;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.monitor.monitoring.credits.PlatformUsageCreditsUpdateRuleEvaluator;
+import com.epam.pipeline.monitor.monitoring.utils.LazyCache;
 import com.epam.pipeline.vo.credits.PlatformUsageCreditsEventFilterVO;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateEvent;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateRule;
@@ -83,6 +84,14 @@ public class PipelineRunUsageCreditsRuleHandler implements PlatformUsageCreditsR
         log.info("Evaluating {} RUN_STATE rule(s) against {} run(s) across {} user(s)",
                 rules.size(), runs.size(), runsByOwner.size());
 
+        final LazyCache<String, PipelineUser> userCache = new LazyCache<>(username -> {
+            final PipelineUser user = client.loadUserByName(username);
+            if (user == null) {
+                log.warn("Cannot resolve user '{}', skipping", username);
+            }
+            return user;
+        });
+
         final List<PlatformUsageCreditsUpdateEvent> newEvents = new ArrayList<>();
 
         for (final PlatformUsageCreditsUpdateRule rule : rules) {
@@ -91,11 +100,11 @@ public class PipelineRunUsageCreditsRuleHandler implements PlatformUsageCreditsR
                 final String owner = entry.getKey();
                 final List<PipelineRun> userRuns = entry.getValue();
 
-                final PipelineUser user = client.loadUserByName(owner);
-                if (user == null) {
-                    log.warn("Cannot resolve user '{}', skipping", owner);
+                final Optional<PipelineUser> cachedUser = userCache.get(owner);
+                if (!cachedUser.isPresent()) {
                     continue;
                 }
+                final PipelineUser user = cachedUser.get();
 
                 final List<PipelineRun> matchingRuns = userRuns.stream()
                         .filter(run -> evaluator.matches(rule, run, till))

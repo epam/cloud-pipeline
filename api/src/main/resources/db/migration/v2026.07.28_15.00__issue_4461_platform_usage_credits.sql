@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS pipeline.usage_credits_update_event (
 
 CREATE INDEX usage_credits_update_event_user_idx ON pipeline.usage_credits_update_event (user_id);
 CREATE INDEX usage_credits_update_event_rule_idx ON pipeline.usage_credits_update_event (rule_id);
+CREATE INDEX usage_credits_update_event_created_date_idx ON pipeline.usage_credits_update_event (created_date);
 
 CREATE TABLE IF NOT EXISTS pipeline.usage_credits_user_balance (
     id            BIGSERIAL    PRIMARY KEY,

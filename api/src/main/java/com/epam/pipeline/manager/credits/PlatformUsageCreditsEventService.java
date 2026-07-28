@@ -42,8 +42,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import com.opencsv.CSVWriter;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -133,26 +137,32 @@ public class PlatformUsageCreditsEventService {
     }
 
     /**
-     * Exports all credits events matching the filter as a UTF-8 encoded CSV byte array.
+     * Streams all credits events matching the filter as UTF-8 CSV directly to the given output stream.
      * The filter body is identical to {@link #filter}; the {@code page} and {@code pageSize}
      * fields are ignored — all matching rows are fetched page by page at {@value EXPORT_PAGE_SIZE}
      * records per page. Non-admin callers are restricted to their own events.
      *
-     * @param filter query criteria (pagination fields ignored)
-     * @return UTF-8 CSV bytes with a header row followed by one row per event
+     * <p>The output stream is flushed but not closed — the caller owns the stream lifecycle.
+     *
+     * @param filter       query criteria (pagination fields ignored)
+     * @param outputStream destination stream; must be open and writable for the duration of this call
      */
     @Transactional(readOnly = true)
-    public byte[] export(final PlatformUsageCreditsEventFilterVO filter) {
-        final List<PlatformUsageCreditsUpdateEvent> all = new ArrayList<>();
-        int page = 1;
-        List<PlatformUsageCreditsUpdateEvent> batch;
-        do {
-            final PlatformUsageCreditsEventFilterVO pageFilter =
-                    filter.toBuilder().page(page++).pageSize(EXPORT_PAGE_SIZE).build();
-            batch = filter(pageFilter).getElements();
-            all.addAll(batch);
-        } while (batch.size() == EXPORT_PAGE_SIZE);
-        return new PlatformUsageCreditsEventExporter().export(all).getBytes(StandardCharsets.UTF_8);
+    public void export(final PlatformUsageCreditsEventFilterVO filter, final OutputStream outputStream) {
+        final PlatformUsageCreditsEventExporter exporter = new PlatformUsageCreditsEventExporter();
+        try (CSVWriter csvWriter = new CSVWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8))) {
+            csvWriter.writeNext(exporter.header(), false);
+            int page = 1;
+            List<PlatformUsageCreditsUpdateEvent> batch;
+            do {
+                final PlatformUsageCreditsEventFilterVO pageFilter =
+                        filter.toBuilder().page(page++).pageSize(EXPORT_PAGE_SIZE).build();
+                batch = filter(pageFilter).getElements();
+                exporter.lines(batch).forEach(line -> csvWriter.writeNext(line, false));
+            } while (batch.size() == EXPORT_PAGE_SIZE);
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to export credits events to CSV", e);
+        }
     }
 
     /**
