@@ -109,11 +109,12 @@ public class InstanceOfferDao extends NamedParameterJdbcDaoSupport {
     }
 
     public Date getPriceListPublishDateForRegion(final Long regionId) {
+        final RowMapper<Date> dateMapper = (rs, rowNum) ->
+                new Date(rs.getTimestamp(InstanceOfferParameters.PRICE_LIST_PUBLISH_DATE.name()).getTime());
         final List<Date> dates = getNamedParameterJdbcTemplate().query(
                 getPriceListPublishDateForRegionQuery,
                 new MapSqlParameterSource(InstanceOfferParameters.REGION.name(), regionId),
-                (rs, rowNum) -> new Date(
-                        rs.getTimestamp(InstanceOfferParameters.PRICE_LIST_PUBLISH_DATE.name()).getTime()));
+                dateMapper);
         return CollectionUtils.isNotEmpty(dates) ? dates.get(0) : null;
     }
 

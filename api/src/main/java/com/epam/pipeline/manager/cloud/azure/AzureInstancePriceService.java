@@ -28,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -57,7 +58,7 @@ public class AzureInstancePriceService implements CloudInstancePriceService<Azur
             }
             log.warn("Azure prices not available for region {}, keeping existing offers", region.getId());
             return null;
-        } catch (Exception e) {
+        } catch (IOException e) {
             log.error("Failed to load Azure prices for region {}, keeping existing offers",
                     region.getId(), e);
             return null;
