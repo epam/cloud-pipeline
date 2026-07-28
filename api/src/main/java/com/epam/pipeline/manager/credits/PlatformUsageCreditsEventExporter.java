@@ -19,32 +19,24 @@ package com.epam.pipeline.manager.credits;
 import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateEvent;
 import com.epam.pipeline.vo.SecuredEntityVO;
-import com.opencsv.CSVWriter;
 import org.apache.commons.lang.StringUtils;
 
-import java.io.IOException;
-import java.io.StringWriter;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class PlatformUsageCreditsEventExporter {
 
-    private static final String[] HEADER = {
-        "Timestamp", "User ID", "Rule ID", "Entity Class", "Entity ID", "Type", "Value", "Message"
-    };
     private static final DateTimeFormatter DATE_FORMATTER =
             DateTimeFormatter.ofPattern(Constants.EXPORT_DATE_TIME_FORMAT);
 
-    public String export(final List<PlatformUsageCreditsUpdateEvent> events) {
-        final StringWriter writer = new StringWriter();
-        try (CSVWriter csvWriter = new CSVWriter(writer)) {
-            csvWriter.writeNext(HEADER, false);
-            events.forEach(event -> csvWriter.writeNext(toLine(event), false));
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to export credits events to CSV", e);
-        }
-        return writer.toString();
+    public String[] header() {
+        return new String[]{"Timestamp", "User ID", "Rule ID", "Entity Class", "Entity ID", "Type", "Value", "Message"};
+    }
+
+    public List<String[]> lines(final List<PlatformUsageCreditsUpdateEvent> events) {
+        return events.stream().map(this::toLine).collect(Collectors.toList());
     }
 
     private String[] toLine(final PlatformUsageCreditsUpdateEvent event) {

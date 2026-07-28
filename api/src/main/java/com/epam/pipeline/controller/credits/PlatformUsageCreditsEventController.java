@@ -75,6 +75,8 @@ public class PlatformUsageCreditsEventController extends AbstractRestController 
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public void export(@RequestBody final PlatformUsageCreditsEventFilterVO filter,
                        final HttpServletResponse response) throws IOException {
-        writeFileToResponse(response, apiService.export(filter), "credits_events.csv");
+        response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE);
+        response.setHeader("Content-Disposition", "attachment;filename=credits_events.csv");
+        apiService.export(filter, response.getOutputStream());
     }
 }

@@ -24,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
+import java.io.OutputStream;
 import java.util.List;
 
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
@@ -47,7 +48,7 @@ public class PlatformUsageCreditsEventApiService {
     }
 
     @PreAuthorize(ADMIN_OR_GENERAL_USER)
-    public byte[] export(final PlatformUsageCreditsEventFilterVO filter) {
-        return platformUsageCreditsUpdateEventService.export(filter);
+    public void export(final PlatformUsageCreditsEventFilterVO filter, final OutputStream outputStream) {
+        platformUsageCreditsUpdateEventService.export(filter, outputStream);
     }
 }

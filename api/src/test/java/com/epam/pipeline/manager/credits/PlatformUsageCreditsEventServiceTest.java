@@ -29,6 +29,8 @@ import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.vo.SecuredEntityVO;
 import com.epam.pipeline.mapper.credits.PlatformUsageCreditsEventMapper;
 import com.epam.pipeline.repository.credits.PlatformUsageCreditsEventRepository;
+import com.opencsv.CSVReader;
+import lombok.SneakyThrows;
 import org.junit.Test;
 import org.junit.Before;
 import org.mapstruct.factory.Mappers;
@@ -37,6 +39,10 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
@@ -51,6 +57,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @SuppressWarnings("unchecked")
@@ -324,6 +331,58 @@ public class PlatformUsageCreditsEventServiceTest {
                 .value(value)
                 .createdDate(DATE)
                 .build();
+    }
+
+    // export
+
+    @Test
+    public void exportWritesHeaderAndEvents() {
+        doReturn(true).when(authManager).isAdmin();
+        doReturn(new PageImpl<>(Collections.singletonList(entity(USER_ID_1, VALUE))))
+                .when(repository).findAll(any(Specification.class), any(Pageable.class));
+        final ByteArrayOutputStream output = new ByteArrayOutputStream();
+
+        service.export(PlatformUsageCreditsEventFilterVO.builder().build(), output);
+
+        final List<String[]> rows = parseCsv(output.toByteArray());
+        assertThat(rows).hasSize(2);
+        assertThat(rows.get(0)).containsExactly(
+                "Timestamp", "User ID", "Rule ID", "Entity Class", "Entity ID", "Type", "Value", "Message");
+        assertThat(rows.get(1)[1]).isEqualTo(String.valueOf(USER_ID_1));
+    }
+
+    @Test
+    public void exportPaginatesUntilPartialPage() {
+        doReturn(true).when(authManager).isAdmin();
+        final List<PlatformUsageCreditsUpdateEventEntity> fullPage =
+                Collections.nCopies(1000, entity(USER_ID_1, VALUE));
+        doReturn(new PageImpl<>(fullPage))
+                .doReturn(new PageImpl<>(Collections.emptyList()))
+                .when(repository).findAll(any(Specification.class), any(Pageable.class));
+
+        service.export(PlatformUsageCreditsEventFilterVO.builder().build(), new ByteArrayOutputStream());
+
+        verify(repository, times(2)).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    @Test
+    public void exportNonAdminRestrictsToCurrentUser() {
+        doReturn(false).when(authManager).isAdmin();
+        doReturn(USERNAME).when(authManager).getAuthorizedUser();
+        doReturn(user(USER_ID_1)).when(userManager).loadUserByName(USERNAME);
+        doReturn("error").when(messageHelper).getMessage(any(String.class), any(Object[].class));
+        doReturn(new PageImpl<>(Collections.emptyList()))
+                .when(repository).findAll(any(Specification.class), any(Pageable.class));
+
+        service.export(PlatformUsageCreditsEventFilterVO.builder().build(), new ByteArrayOutputStream());
+
+        verify(userManager).loadUserByName(USERNAME);
+    }
+
+    @SneakyThrows
+    private static List<String[]> parseCsv(final byte[] bytes) {
+        return new CSVReader(
+                new InputStreamReader(new ByteArrayInputStream(bytes), StandardCharsets.UTF_8)).readAll();
     }
 
     private static PipelineUser user(final Long id) {
