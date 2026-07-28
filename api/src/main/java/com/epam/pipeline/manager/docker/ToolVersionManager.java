@@ -20,11 +20,15 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.tool.ToolVersionDao;
 import com.epam.pipeline.entity.configuration.ConfigurationEntry;
+import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.manager.pipeline.ToolManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +38,7 @@ import org.springframework.util.StringUtils;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -42,6 +47,7 @@ public class ToolVersionManager {
     private final ToolVersionDao toolVersionDao;
     private final ToolManager toolManager;
     private final MessageHelper messageHelper;
+    private final PreferenceManager preferenceManager;
 
     /**
      * Updates existing tool version according to it's state on docker registry. If required tool version
@@ -124,6 +130,12 @@ public class ToolVersionManager {
     public ToolVersion createToolVersionSettings(final Long toolId, final String version, final boolean allowCommit,
                                                  final List<ConfigurationEntry> settings) {
         validateToolExistsAndCanBeModified(toolId);
+        if (settings != null) {
+            settings.stream()
+                    .map(ConfigurationEntry::getConfiguration)
+                    .filter(Objects::nonNull)
+                    .forEach(this::validateFallbackInstanceTypesCount);
+        }
         Optional<ToolVersion> toolVersion = toolVersionDao.loadToolVersion(toolId, version);
         ToolVersion toolVersionWithSettings;
         if (toolVersion.isPresent()) {
@@ -175,6 +187,18 @@ public class ToolVersionManager {
     private void validateToolCanBeModified(final Tool tool) {
         Assert.isTrue(tool.isNotSymlink(), messageHelper.getMessage(
                 MessageConstants.ERROR_TOOL_SYMLINK_MODIFICATION_NOT_SUPPORTED));
+    }
+
+    private void validateFallbackInstanceTypesCount(final PipelineConfiguration configuration) {
+        final List<String> fallbackTypes = configuration.getFallbackInstanceTypes();
+        if (CollectionUtils.isEmpty(fallbackTypes)) {
+            return;
+        }
+        final int maxCount = preferenceManager.getPreference(
+                SystemPreferences.CLUSTER_FALLBACK_INSTANCE_TYPES_MAX_COUNT);
+        Assert.isTrue(fallbackTypes.size() <= maxCount,
+                messageHelper.getMessage(MessageConstants.ERROR_FALLBACK_INSTANCE_TYPES_EXCEEDS_LIMIT,
+                        fallbackTypes.size(), maxCount));
     }
 
 }
