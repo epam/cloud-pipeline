@@ -47,6 +47,7 @@ public interface PlatformUsageCreditsRuleCreatorsUtils {
     String FIELD_NAME = "run.tag";
     String FIELD_VALUE = "IDLE";
     String FIELD_OPERAND = "=";
+    int TIME_WINDOW = 24;
 
     static ConditionExpression filterExpression() {
         final ConditionExpression expression = new ConditionExpression();
@@ -62,7 +63,6 @@ public interface PlatformUsageCreditsRuleCreatorsUtils {
                 .type(PlatformUsageCreditsUpdateAction.ActionType.DEDUCTION)
                 .value(ACTION_VALUE)
                 .message(ACTION_MESSAGE)
-                .perIncident(true)
                 .build();
     }
 
@@ -74,6 +74,7 @@ public interface PlatformUsageCreditsRuleCreatorsUtils {
                 .ruleType(PlatformUsageCreditsUpdateRuleType.RUN_STATE)
                 .statement(filterExpression())
                 .action(platformUsageCreditsAction())
+                .timeWindow(TIME_WINDOW)
                 .build();
     }
 
@@ -87,7 +88,7 @@ public interface PlatformUsageCreditsRuleCreatorsUtils {
                 .actionType(PlatformUsageCreditsUpdateAction.ActionType.DEDUCTION)
                 .actionValue(ACTION_VALUE)
                 .actionMessage(ACTION_MESSAGE)
-                .perIncident(true)
+                .timeWindow(TIME_WINDOW)
                 .createdDate(LocalDateTime.now())
                 .modifiedDate(LocalDateTime.now())
                 .build();

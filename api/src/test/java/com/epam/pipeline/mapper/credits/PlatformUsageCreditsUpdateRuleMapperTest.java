@@ -48,7 +48,7 @@ public class PlatformUsageCreditsUpdateRuleMapperTest {
         assertThat(dto.getAction().getType(), is(entity.getActionType()));
         assertThat(dto.getAction().getValue(), is(entity.getActionValue()));
         assertThat(dto.getAction().getMessage(), is(entity.getActionMessage()));
-        assertThat(dto.getAction().isPerIncident(), is(entity.isPerIncident()));
+        assertThat(dto.getTimeWindow(), is(entity.getTimeWindow()));
     }
 
     @Test
@@ -66,7 +66,7 @@ public class PlatformUsageCreditsUpdateRuleMapperTest {
         assertThat(entity.getActionType(), is(dto.getAction().getType()));
         assertThat(entity.getActionValue(), is(dto.getAction().getValue()));
         assertThat(entity.getActionMessage(), is(dto.getAction().getMessage()));
-        assertThat(entity.isPerIncident(), is(dto.getAction().isPerIncident()));
+        assertThat(entity.getTimeWindow(), is(dto.getTimeWindow()));
         assertThat(entity.getCreatedDate(), nullValue());
         assertThat(entity.getModifiedDate(), nullValue());
     }

@@ -81,8 +81,8 @@ public class PlatformUsageCreditsUpdateRuleEntity {
     @Column(name = "action_message")
     private String actionMessage;
 
-    @Column(name = "per_incident", nullable = false)
-    private boolean perIncident;
+    @Column(name = "time_window")
+    private Integer timeWindow;
 
     @Convert(converter = TimestampConverter.class)
     @Column(name = "created_date", nullable = false)

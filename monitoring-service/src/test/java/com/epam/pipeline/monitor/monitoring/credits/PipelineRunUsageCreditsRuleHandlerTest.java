@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -57,6 +58,7 @@ class PipelineRunUsageCreditsRuleHandlerTest {
     private static final String OWNER = "testUser";
     private static final int ACTION_VALUE = 50;
     private static final String ACTION_MESSAGE = "Test deduction";
+    private static final int TIME_WINDOW_HOURS = 24;
 
     private final CloudPipelineAPIClient client = mock(CloudPipelineAPIClient.class);
     private final PlatformUsageCreditsUpdateRuleEvaluator evaluator =
@@ -233,8 +235,8 @@ class PipelineRunUsageCreditsRuleHandlerTest {
     }
 
     @Test
-    void perIncidentFalseCreatesOneEventRegardlessOfMatchingRunCount() {
-        final PlatformUsageCreditsUpdateRule rule = nonPerIncidentRule();
+    void timeWindowCreatesOneEventRegardlessOfMatchingRunCount() {
+        final PlatformUsageCreditsUpdateRule rule = timeWindowRule();
         final PipelineRun run1 = run(RUN_ID_1, OWNER);
         final PipelineRun run2 = run(RUN_ID_2, OWNER);
 
@@ -254,8 +256,8 @@ class PipelineRunUsageCreditsRuleHandlerTest {
     }
 
     @Test
-    void perIncidentFalseSkipsWhenEventAlreadyExistsForUserAndRule() {
-        final PlatformUsageCreditsUpdateRule rule = nonPerIncidentRule();
+    void timeWindowSkipsWhenEventAlreadyExistsInWindow() {
+        final PlatformUsageCreditsUpdateRule rule = timeWindowRule();
 
         when(client.filterRuns(any())).thenReturn(Collections.singletonList(run(RUN_ID_1, OWNER)));
         when(client.loadUserByName(OWNER)).thenReturn(user(USER_ID));
@@ -275,8 +277,8 @@ class PipelineRunUsageCreditsRuleHandlerTest {
     }
 
     @Test
-    void perIncidentFalseFilterCalledWithUserIdsAndRuleId() {
-        final PlatformUsageCreditsUpdateRule rule = nonPerIncidentRule();
+    void timeWindowFilterCalledWithUserIdsAndTimeRangeAndRuleId() {
+        final PlatformUsageCreditsUpdateRule rule = timeWindowRule();
 
         when(client.filterRuns(any())).thenReturn(Collections.singletonList(run(RUN_ID_1, OWNER)));
         when(client.loadUserByName(OWNER)).thenReturn(user(USER_ID));
@@ -285,10 +287,14 @@ class PipelineRunUsageCreditsRuleHandlerTest {
 
         handler.process(Collections.singletonList(rule), null, now);
 
+        final long epochHour = now.toEpochSecond(ZoneOffset.UTC) / 3600;
+        final LocalDateTime expectedWindowStart = LocalDateTime.ofEpochSecond(
+                (epochHour / TIME_WINDOW_HOURS) * TIME_WINDOW_HOURS * 3600, 0, ZoneOffset.UTC);
         verify(client).filterPlatformUsageCreditsEvents(
                 PlatformUsageCreditsEventFilterVO.builder()
                         .userIds(Collections.singletonList(USER_ID))
                         .ruleId(RULE_ID)
+                        .from(expectedWindowStart)
                         .page(1)
                         .pageSize(1)
                         .build());
@@ -302,20 +308,19 @@ class PipelineRunUsageCreditsRuleHandlerTest {
                         .type(PlatformUsageCreditsUpdateAction.ActionType.DEDUCTION)
                         .value(ACTION_VALUE)
                         .message(ACTION_MESSAGE)
-                        .perIncident(true)
                         .build())
                 .build();
     }
 
-    private static PlatformUsageCreditsUpdateRule nonPerIncidentRule() {
+    private static PlatformUsageCreditsUpdateRule timeWindowRule() {
         return PlatformUsageCreditsUpdateRule.builder()
                 .id(RULE_ID)
                 .ruleType(PlatformUsageCreditsUpdateRuleType.RUN_STATE)
+                .timeWindow(TIME_WINDOW_HOURS)
                 .action(PlatformUsageCreditsUpdateAction.builder()
                         .type(PlatformUsageCreditsUpdateAction.ActionType.INCREASE)
                         .value(ACTION_VALUE)
                         .message(ACTION_MESSAGE)
-                        .perIncident(false)
                         .build())
                 .build();
     }

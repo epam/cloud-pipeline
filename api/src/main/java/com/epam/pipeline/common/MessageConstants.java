@@ -948,6 +948,8 @@ public final class MessageConstants {
             "error.platform.usage.credits.rule.unsupported.operand";
     public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_DURATION_NOT_SUPPORTED =
             "error.platform.usage.credits.rule.duration.not.supported";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_TIME_WINDOW_INVALID =
+            "error.platform.usage.credits.rule.time.window.invalid";
 
     private MessageConstants() {
         // no-op

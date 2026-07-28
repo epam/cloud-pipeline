@@ -38,4 +38,8 @@ public class PlatformUsageCreditsUpdateRule {
     /** Optional: runs matching this expression are excluded even if they match filterExpression. */
     private ConditionExpression exclude;
     private PlatformUsageCreditsUpdateAction action;
+    /** If null, the rule is applied per incident. If set, the rule
+     *  fires at most once per user within the given number of hours, regardless of how many
+     *  matching incidents exist. */
+    private Integer timeWindow;
 }
