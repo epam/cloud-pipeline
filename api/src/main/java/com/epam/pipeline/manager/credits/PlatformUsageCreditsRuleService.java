@@ -81,8 +81,9 @@ import java.util.stream.Collectors;
  *   "timeWindow": 24
  * }
  * }</pre>
- * Awards 200 CPU credits at most once per user per 24 hours, regardless of how many matching
- * runs exist. {@code timeWindow} is expressed in hours and must be a positive integer when set.
+ * Awards 200 CPU credits at most once per user in any rolling 24-hour window, regardless of
+ * how many matching runs exist. {@code timeWindow} is expressed in hours and must be a positive
+ * integer when set.
  *
  * <p>Before any rule is persisted, the service:
  * <ul>

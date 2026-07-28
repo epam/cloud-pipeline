@@ -50,8 +50,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class PipelineRunUsageCreditsRuleHandler implements PlatformUsageCreditsRuleHandler {
 
-    private static final int SECONDS_PER_HOUR = 3600;
-
     private static final List<TaskStatus> ACTIVE_RUN_STATUSES = Arrays.asList(
             TaskStatus.RUNNING, TaskStatus.PAUSING, TaskStatus.PAUSED, TaskStatus.RESUMING);
     private static final List<TaskStatus> FINAL_RUN_STATUSES = Arrays.asList(
@@ -121,11 +119,11 @@ public class PipelineRunUsageCreditsRuleHandler implements PlatformUsageCreditsR
                             .collect(Collectors.toSet());
                     matchingRuns.stream()
                             .filter(r -> !processedRuns.contains(r.getId()))
-                            .forEach(run -> newEvents.add(buildEvent(rule, user, run, till)));
+                            .forEach(run -> newEvents.add(buildEvent(rule, user, run)));
                     log.debug("Rule '{}': {} matching run(s) for user '{}', {} already processed",
                             rule.getName(), matchingRuns.size(), owner, processedRuns.size());
                 } else if (existingEvents.isEmpty()) {
-                    newEvents.add(buildEvent(rule, user, matchingRuns.get(0), till));
+                    newEvents.add(buildEvent(rule, user, matchingRuns.get(0)));
                     log.debug("Rule '{}': firing single event for user '{}'", rule.getName(), owner);
                 } else {
                     log.debug("Rule '{}': already fired for user '{}' within {}h window, skipping",
@@ -156,7 +154,7 @@ public class PipelineRunUsageCreditsRuleHandler implements PlatformUsageCreditsR
             filter = PlatformUsageCreditsEventFilterVO.builder()
                     .userIds(Collections.singletonList(user.getId()))
                     .ruleId(rule.getId())
-                    .from(tumblingWindowStart(till, rule.getTimeWindow()))
+                    .from(till.minusHours(rule.getTimeWindow()))
                     .page(1)
                     .pageSize(1)
                     .build();
@@ -167,28 +165,25 @@ public class PipelineRunUsageCreditsRuleHandler implements PlatformUsageCreditsR
     /**
      * Builds a credit update event for the given rule, user and run.
      *
-     * <p>The {@code id} is computed deterministically from the business key so that the
-     * server-side deduplication check in {@code PlatformUsageCreditsEventService#process}
-     * can recognise and discard a duplicate if the monitoring cycle fires the same event
-     * twice — see {@link com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateEvent#id}.
+     * <p>For per-incident rules ({@code timeWindow == null}) the id is deterministic
+     * (keyed on rule + run) so that the server-side dedup in
+     * {@code PlatformUsageCreditsEventService#process} discards a duplicate if the same
+     * monitoring cycle fires the same event twice.
      *
-     * <p>For per-incident rules (timeWindow == null) the key is unique per run.
-     * For time-window rules the key encodes the tumbling bucket boundary so that exactly one
-     * event is stored per user per bucket, and a new event can be created in the next bucket.
+     * <p>For rolling time-window rules the id is a random UUID — deduplication is handled
+     * entirely by the {@code getExistingEvents} filter (rolling lookback of {@code timeWindow}
+     * hours), so there is no need for a stable id across cycles.
      */
     private PlatformUsageCreditsUpdateEvent buildEvent(final PlatformUsageCreditsUpdateRule rule,
                                                         final PipelineUser user,
-                                                        final PipelineRun run,
-                                                        final LocalDateTime till) {
-        final String key;
+                                                        final PipelineRun run) {
+        final String id;
         if (rule.getTimeWindow() == null) {
-            key = "r:" + rule.getId() + ":PipelineRun:" + run.getId();
+            final String key = "r:" + rule.getId() + ":PipelineRun:" + run.getId();
+            id = UUID.nameUUIDFromBytes(key.getBytes(StandardCharsets.UTF_8)).toString();
         } else {
-            final long windowStartEpochHour =
-                    tumblingWindowStart(till, rule.getTimeWindow()).toEpochSecond(ZoneOffset.UTC) / SECONDS_PER_HOUR;
-            key = "r:" + rule.getId() + ":u:" + user.getId() + ":t:" + windowStartEpochHour;
+            id = UUID.randomUUID().toString();
         }
-        final String id = UUID.nameUUIDFromBytes(key.getBytes(StandardCharsets.UTF_8)).toString();
         return PlatformUsageCreditsUpdateEvent.builder()
                 .id(id)
                 .userId(user.getId())
@@ -198,29 +193,6 @@ public class PipelineRunUsageCreditsRuleHandler implements PlatformUsageCreditsR
                 .value(rule.getAction().getValue())
                 .message(rule.getAction().getMessage())
                 .build();
-    }
-
-    /**
-     * Returns the start of the tumbling window that contains {@code till}.
-     *
-     * <p>Windows are fixed-width buckets of {@code timeWindowHours} hours anchored to the
-     * Unix epoch. The start is computed by flooring the epoch-hour to the nearest multiple
-     * of {@code timeWindowHours}:
-     * <pre>
-     *   epochHour       = seconds-since-epoch / SECONDS_PER_HOUR
-     *   windowStartHour = (epochHour / timeWindowHours) * timeWindowHours  // strip remainder
-     * </pre>
-     * Example: {@code till = 2026-07-28T10:00 UTC}, {@code timeWindowHours = 72}
-     * <pre>
-     *   epochHour       = 487138
-     *   windowStartHour = (487138 / 72) * 72 = 6765 * 72 = 487080  →  2026-07-26T00:00 UTC
-     * </pre>
-     */
-    private LocalDateTime tumblingWindowStart(final LocalDateTime till, final int timeWindowHours) {
-        final long epochHour = till.toEpochSecond(ZoneOffset.UTC) / SECONDS_PER_HOUR;
-        // floor epochHour to the nearest multiple of timeWindowHours
-        final long windowStartEpochHour = (epochHour / timeWindowHours) * timeWindowHours;
-        return LocalDateTime.ofEpochSecond(windowStartEpochHour * SECONDS_PER_HOUR, 0, ZoneOffset.UTC);
     }
 
     private List<PipelineRun> loadAllPlatformUsageCreditsRuns(final LocalDateTime from) {

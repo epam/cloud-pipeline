@@ -32,7 +32,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -287,14 +286,11 @@ class PipelineRunUsageCreditsRuleHandlerTest {
 
         handler.process(Collections.singletonList(rule), null, now);
 
-        final long epochHour = now.toEpochSecond(ZoneOffset.UTC) / 3600;
-        final LocalDateTime expectedWindowStart = LocalDateTime.ofEpochSecond(
-                (epochHour / TIME_WINDOW_HOURS) * TIME_WINDOW_HOURS * 3600, 0, ZoneOffset.UTC);
         verify(client).filterPlatformUsageCreditsEvents(
                 PlatformUsageCreditsEventFilterVO.builder()
                         .userIds(Collections.singletonList(USER_ID))
                         .ruleId(RULE_ID)
-                        .from(expectedWindowStart)
+                        .from(now.minusHours(TIME_WINDOW_HOURS))
                         .page(1)
                         .pageSize(1)
                         .build());
