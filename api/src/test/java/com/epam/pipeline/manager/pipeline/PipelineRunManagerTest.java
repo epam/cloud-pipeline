@@ -44,11 +44,14 @@ import org.junit.Test;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.Matchers.any;
@@ -84,7 +87,7 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     @MockBean
     private ToolManager toolManager;
 
-    @MockBean
+    @SpyBean
     private PipelineConfigurationManager pipelineConfigurationManager;
 
     @MockBean
@@ -188,6 +191,46 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         preferenceManager.update(Collections.singletonList(new Preference(
                 SystemPreferences.DOCKER_SECURITY_TOOL_POLICY_DENY_NOT_SCANNED.getKey(), Boolean.toString(true))));
         startVO.setDockerImage(TEST_IMAGE);
+        pipelineRunManager.runCmd(startVO);
+    }
+
+    @WithMockUser(roles = "ADMIN")
+    @Test(expected = IllegalArgumentException.class)
+    public void testRunCmdFailsWhenFallbackTypesExceedLimit() {
+        preferenceManager.update(Collections.singletonList(new Preference(
+                SystemPreferences.CLUSTER_FALLBACK_INSTANCE_TYPES_MAX_COUNT.getKey(), "2")));
+        final PipelineConfiguration configWithFallbacks = new PipelineConfiguration();
+        configWithFallbacks.setDockerImage(TEST_IMAGE);
+        configWithFallbacks.setInstanceDisk(INSTANCE_DISK);
+        configWithFallbacks.setIsSpot(true);
+        configWithFallbacks.setCloudRegionId(REGION_ID);
+        configWithFallbacks.setFallbackInstanceTypes(Arrays.asList("m5.large", "c5.large", "r4.large"));
+        doReturn(configWithFallbacks).when(pipelineConfigurationManager).getPipelineConfiguration(any(), any());
+
+        final PipelineStart startVO = new PipelineStart();
+        startVO.setDockerImage(TEST_IMAGE);
+        startVO.setInstanceType(INSTANCE_TYPE);
+        startVO.setHddSize(1);
+        pipelineRunManager.runCmd(startVO);
+    }
+
+    @WithMockUser(roles = "ADMIN")
+    @Test
+    public void testRunCmdSucceedsWhenFallbackTypesWithinLimit() {
+        preferenceManager.update(Collections.singletonList(new Preference(
+                SystemPreferences.CLUSTER_FALLBACK_INSTANCE_TYPES_MAX_COUNT.getKey(), "2")));
+        final PipelineConfiguration configWithFallbacks = new PipelineConfiguration();
+        configWithFallbacks.setDockerImage(TEST_IMAGE);
+        configWithFallbacks.setInstanceDisk(INSTANCE_DISK);
+        configWithFallbacks.setIsSpot(true);
+        configWithFallbacks.setCloudRegionId(REGION_ID);
+        configWithFallbacks.setFallbackInstanceTypes(Arrays.asList("m5.large", "c5.large"));
+        doReturn(configWithFallbacks).when(pipelineConfigurationManager).getPipelineConfiguration(any(), any());
+
+        final PipelineStart startVO = new PipelineStart();
+        startVO.setDockerImage(TEST_IMAGE);
+        startVO.setInstanceType(INSTANCE_TYPE);
+        startVO.setHddSize(1);
         pipelineRunManager.runCmd(startVO);
     }
 

@@ -34,9 +34,12 @@ import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.pipeline.PipelineConfigurationManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Arrays;
 import java.util.List;
@@ -58,17 +61,27 @@ public class RunConfigurationProviderTest {
     private static final List<ContextualPreferenceExternalResource> RESOURCES =
             Arrays.asList(TOOL_RESOURCE, REGION_RESOURCE);
 
+    private static final int DEFAULT_FALLBACK_MAX_COUNT = 5;
+
     private final PipelineManager pipelineManager = mock(PipelineManager.class);
     private final ToolManager toolManager = mock(ToolManager.class);
     private final CheckPermissionHelper permissionsHelper = mock(CheckPermissionHelper.class);
-    private final PipelineConfigurationManager pipelineConfigurationManager = mock(PipelineConfigurationManager.class);
     private final InstanceOfferManager instanceOfferManager = mock(InstanceOfferManager.class);
     private final MessageHelper messageHelper = mock(MessageHelper.class);
     private final CloudPlatformRunner runner = mock(CloudPlatformRunner.class);
     private final CloudRegionDao cloudRegionDao = mock(CloudRegionDao.class);
+    private final PreferenceManager preferenceManager = mock(PreferenceManager.class);
+    private final PipelineConfigurationManager pipelineConfigurationManager = buildPipelineConfigurationManager();
     private final RunConfigurationProvider runConfigurationProvider = new RunConfigurationProvider(pipelineManager,
             toolManager, permissionsHelper, pipelineConfigurationManager, instanceOfferManager, messageHelper, runner,
             cloudRegionDao);
+
+    private PipelineConfigurationManager buildPipelineConfigurationManager() {
+        final PipelineConfigurationManager manager = new PipelineConfigurationManager();
+        ReflectionTestUtils.setField(manager, "preferenceManager", preferenceManager);
+        ReflectionTestUtils.setField(manager, "messageHelper", messageHelper);
+        return manager;
+    }
 
     @Before
     public void setUp() {
@@ -77,6 +90,8 @@ public class RunConfigurationProviderTest {
         when(instanceOfferManager.isToolInstanceAllowed(eq(NOT_ALLOWED_INSTANCE_TYPE), any(), any(), eq(false)))
                 .thenReturn(false);
         when(cloudRegionDao.loadDefaultRegion()).thenReturn(Optional.empty());
+        when(preferenceManager.getPreference(SystemPreferences.CLUSTER_FALLBACK_INSTANCE_TYPES_MAX_COUNT))
+                .thenReturn(DEFAULT_FALLBACK_MAX_COUNT);
 
         final Tool tool = new Tool();
         tool.setName(TOOL_IMAGE);
@@ -150,5 +165,32 @@ public class RunConfigurationProviderTest {
         runConfigurationProvider.validateEntry(runConfigurationEntry);
 
         verify(instanceOfferManager).isToolInstanceAllowed(eq(ALLOWED_INSTANCE_TYPE), any(), eq(NO_REGION), eq(false));
+    }
+
+    @Test
+    public void validateShouldFailIfFallbackInstanceTypesExceedLimit() {
+        when(preferenceManager.getPreference(SystemPreferences.CLUSTER_FALLBACK_INSTANCE_TYPES_MAX_COUNT))
+                .thenReturn(2);
+        final PipelineConfiguration pipelineConfiguration = new PipelineConfiguration();
+        pipelineConfiguration.setCloudRegionId(REGION_ID);
+        pipelineConfiguration.setFallbackInstanceTypes(Arrays.asList("m5.large", "c5.large", "r4.large"));
+        final RunConfigurationEntry runConfigurationEntry = new RunConfigurationEntry();
+        runConfigurationEntry.setConfiguration(pipelineConfiguration);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> runConfigurationProvider.validateEntry(runConfigurationEntry));
+    }
+
+    @Test
+    public void validateShouldSucceedIfFallbackInstanceTypesWithinLimit() {
+        when(preferenceManager.getPreference(SystemPreferences.CLUSTER_FALLBACK_INSTANCE_TYPES_MAX_COUNT))
+                .thenReturn(2);
+        final PipelineConfiguration pipelineConfiguration = new PipelineConfiguration();
+        pipelineConfiguration.setCloudRegionId(REGION_ID);
+        pipelineConfiguration.setFallbackInstanceTypes(Arrays.asList("m5.large", "c5.large"));
+        final RunConfigurationEntry runConfigurationEntry = new RunConfigurationEntry();
+        runConfigurationEntry.setConfiguration(pipelineConfiguration);
+
+        runConfigurationProvider.validateEntry(runConfigurationEntry);
     }
 }
