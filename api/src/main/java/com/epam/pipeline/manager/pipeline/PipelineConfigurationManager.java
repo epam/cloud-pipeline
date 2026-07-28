@@ -153,6 +153,18 @@ public class PipelineConfigurationManager {
         return configuration;
     }
 
+    public void validateFallbackInstanceTypesCount(final PipelineConfiguration configuration) {
+        final List<String> fallbackTypes = configuration.getFallbackInstanceTypes();
+        if (CollectionUtils.isEmpty(fallbackTypes)) {
+            return;
+        }
+        final int maxCount = preferenceManager.getPreference(
+                SystemPreferences.CLUSTER_FALLBACK_INSTANCE_TYPES_MAX_COUNT);
+        Assert.isTrue(fallbackTypes.size() <= maxCount,
+                messageHelper.getMessage(MessageConstants.ERROR_FALLBACK_INSTANCE_TYPES_EXCEEDS_LIMIT,
+                        fallbackTypes.size(), maxCount));
+    }
+
     public PipelineConfiguration mergeParameters(PipelineStart runVO, PipelineConfiguration defaultConfig) {
         Map<String, PipeConfValueVO> params = Optional.ofNullable(runVO.getParams()).orElseGet(Collections::emptyMap);
         PipelineConfiguration configuration = new PipelineConfiguration();
